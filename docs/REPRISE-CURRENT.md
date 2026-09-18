@@ -1,313 +1,518 @@
-# SAAS-CORE-API — Reprise courante
+# SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : document temporaire de développement**
+> **Statut : reprise produit — bootstrap technique en cours**
 >
-> Cette synthèse décrit l’état courant après validation réelle de D-017 — dérivation et upgrade d’un SaaS pilote.
+> **Dernière mise à jour : 2026-09-18**
 >
-> Le code actuel, les contraintes DB, les tests réellement exécutés et les contrats canoniques priment toujours sur ce document.
+> Le code réel, les contraintes DB, les tests/gates réellement exécutés et les contrats canoniques priment sur cette synthèse.
 >
-> **Dernière mise à jour : 2026-09-17**
+> **Aucun module métier n’a encore été implémenté.**
 
 ---
 
-## 1. Hiérarchie d’autorité
+## 1. Autorité et méthode
 
-En cas de contradiction :
+Ordre d’autorité :
 
-1. code actuel et contraintes DB ;
-2. tests automatisés réellement exécutés et validés ;
-3. contrats canoniques ;
-4. architecture, sécurité et guidelines canoniques ;
-5. `docs/DEBT.md` ;
-6. documentation opérationnelle ;
-7. présent fichier de reprise.
+1. code réel + contraintes DB ;
+2. tests/gates réellement exécutés ;
+3. contrats fonctionnels validés ;
+4. contrats Core de la version intégrée ;
+5. architecture/sécurité/guidelines ;
+6. dette active ;
+7. documentation opérationnelle ;
+8. présente reprise.
 
-Les anciennes synthèses de reprise ne sont pas autoritatives lorsqu’elles sont dépassées.
+À chaque nouvelle conversation : lire la base de connaissance, lire cette reprise, vérifier GitHub, identifier le lot en cours, puis seulement modifier.
+
+Principe directeur :
+
+```text
+Core = fondations génériques
+Produit = métier
+```
+
+Tout besoin générique doit être traité dans le Core, testé/versionné, puis intégré au produit via une branche `core-update/vX.Y.Z`.
 
 ---
 
-## 2. État Core de référence
+## 2. Produit et provenance
 
-Le `main` Core ayant servi à la publication de RC2 est :
-
-```text
-5c61c7066eeb56460adb164ba39ae0a0462bef53
-```
-
-Release candidate actuelle :
+Dépôt produit :
 
 ```text
-version : 1.0.0-rc.2
-tag : v1.0.0-rc.2
-commit : 5c61c7066eeb56460adb164ba39ae0a0462bef53
-GitHub Release : Core 1.0.0-rc.2
-statut : pre-release
+greg44500/saas-fiches-techniques-gms
 ```
 
-Validation Core RC2 post-merge :
+Répertoire local :
 
 ```text
-Core Gate #34
-run : 35239618709
-result : success
+C:\Users\gregd\Documents\Web-Projects\saas-fiches-techniques-gms
 ```
 
-Le tag `v1.0.0-rc.2` est immuable et ne doit pas être déplacé ou réécrit.
+Le dépôt Core local reste séparé :
+
+```text
+C:\Users\gregd\Documents\Web-Projects\saas-core-api
+```
+
+Le pilote `saas-core-derived-pilot` reste uniquement une preuve de dérivation/upgrade.
+
+Core source :
+
+```text
+greg44500/saas-core-api
+version : 1.0.0
+tag     : v1.0.0
+commit  : dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff
+```
+
+Remotes produit :
+
+```text
+origin        → https://github.com/greg44500/saas-fiches-techniques-gms.git
+upstream-core → https://github.com/greg44500/saas-core-api.git
+```
+
+Le produit a été créé en conservant l’historique Git complet du Core puis en positionnant `main` sur `v1.0.0`. Les tags Core n’ont pas été poussés dans le dépôt produit.
+
+Ne jamais faire de `git pull` aveugle depuis `upstream-core/main`.
 
 ---
 
-## 3. D-017 — état final
+## 3. core-origin.json
 
-D-017 est **VALIDÉE le 2026-09-17**.
+Le produit contient :
 
-L’exercice réel a démontré :
-
-```text
-Core 1.0.0-rc.1
-→ dépôt dérivé avec historique Git commun
-→ provenance core-origin.json
-→ module métier catalog
-→ évolution générique du Core
-→ publication 1.0.0-rc.2
-→ merge Git réel de RC2 dans le pilote
-→ zéro conflit manuel
-→ provenance mise à jour après validation
-→ gates Core + métier + frontend + E2E vertes
-→ fusion dans main du pilote
-→ gate post-merge verte
+```json
+{
+  "schemaVersion": 1,
+  "repository": "greg44500/saas-core-api",
+  "version": "1.0.0",
+  "tag": "v1.0.0",
+  "commit": "dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff",
+  "integratedAt": "2026-09-18T08:58:51Z"
+}
 ```
 
-Document de preuve :
+Contrôles effectués :
+
+- JSON valide ;
+- UTF-8 sans BOM ;
+- provenance exacte ;
+- aucun autre fichier dans le commit.
+
+Commit :
 
 ```text
-docs/debt/D-017-derived-saas-upgrade-validation.md
-```
-
----
-
-## 4. Pilote dérivé validé
-
-Dépôt :
-
-```text
-greg44500/saas-core-derived-pilot
-```
-
-Module métier :
-
-```text
-catalog
-```
-
-PR métier :
-
-```text
-#2 — D-017 — Add derived catalog pilot module
-merge : f0bb28ce06d782d5b4bb125f659789b5fdb04e49
-Core Gate #6 : success
-```
-
-Le module contient notamment :
-
-```text
-backend modulaire
-validation Zod
-RBAC catalog:item:read / catalog:item:create
-capability catalog
-migration métier des rôles système persistés
-RTK Query
-route/navigation Workspace
-page catalog
-widget Dashboard
-extension du centre d’aide
-tests métier et de composition
-```
-
-L’aide métier est ajoutée par le point d’extension applicatif, sans réécrire le corpus Core.
-
----
-
-## 5. Upgrade réel rc.1 → rc.2
-
-Branche d’upgrade pilote :
-
-```text
-core-update/1.0.0-rc.2
-```
-
-Merge Git Core → pilote :
-
-```text
-c654c3e4e3b3f4821b9bd210cb3b21e2afbe37ea
-```
-
-Parents :
-
-```text
-pilote avant upgrade : cd13ab0f6a1a1b28a1b8e84102ae990ad0543ce1
-Core rc.2            : 5c61c7066eeb56460adb164ba39ae0a0462bef53
-```
-
-Résultat :
-
-```text
-MERGE_CONFLICT_COUNT=0
-```
-
-Aucune modification fonctionnelle de `catalog` n’a été nécessaire.
-
-La RC2 n’a introduit pour cet upgrade :
-
-- aucune migration Core nouvelle ;
-- aucune variable d’environnement nouvelle ;
-- aucune dépendance ajoutée, supprimée ou mise à niveau ;
-- aucun changement de contrat DB.
-
-La migration métier `catalog` reste dans le produit dérivé.
-
----
-
-## 6. Provenance finale du pilote
-
-`core-origin.json` identifie :
-
-```text
-repository : greg44500/saas-core-api
-version    : 1.0.0-rc.2
-tag        : v1.0.0-rc.2
-commit     : 5c61c7066eeb56460adb164ba39ae0a0462bef53
-integratedAt : 2026-09-17T15:49:58Z
-```
-
-La provenance n’a été mise à jour qu’après validation de l’upgrade RC2 sans provenance finale.
-
----
-
-## 7. Gates finales du pilote
-
-Avant mise à jour de provenance :
-
-```text
-HEAD : c654c3e4e3b3f4821b9bd210cb3b21e2afbe37ea
-Core Gate #9
-run : 35242233294
-result : success
-```
-
-Après mise à jour de provenance :
-
-```text
-HEAD : bbf8c79bd803b9f31dd504388f8c7e98068b8a2e
-Core Gate #10
-run : 35242912831
-result : success
-```
-
-Après fusion de la PR d’upgrade dans `main` du pilote :
-
-```text
-PR #3 — D-017 — Upgrade derived pilot to Core 1.0.0-rc.2
-merge : fd7a31d6532898e951b02e75940c09de1eec63ea
-Core Gate #11
-run : 35243957546
-result : success
-Run canonical Core gate : success
-```
-
-Cette dernière gate est la preuve post-merge de l’état réellement intégré du SaaS dérivé.
-
----
-
-## 8. État canonique des dettes
-
-Les blockers applicatifs génériques décidés avant le gel Core 1.0 sont levés :
-
-```text
-D-002  VALIDÉ
-D-011  VALIDÉ
-D-015  VALIDÉ — 2026-09-17
-D-016  VALIDÉ — 2026-09-17
-D-017  VALIDÉ — 2026-09-17
-D-021  VALIDÉ
-D-022  VALIDÉ
-D-025  VALIDÉ — 2026-09-16
-```
-
-Restent distinctes les dettes liées à un produit ou un environnement réel :
-
-```text
-D-003 conformité / RGPD
-D-004 Billing / Payment
-D-005 observabilité
-D-006 rétention / anonymisation réglementaire
-D-007 stockage fichiers production
-D-012 E2E propres à chaque application dérivée
-D-013 configuration / déploiement production
-D-020 validation terrain invitation commerciale / onboarding bêta
-```
-
-Évolutions déjà différées après Core 1.0 :
-
-```text
-D-023 demande gouvernée de transfert de propriété — Core 1.1
-D-024 console Platform contextualisée du Workspace — Core 1.1
+e7627b511c5f8cc532121c01397251c9ffd5ffb9
+chore: record Core v1.0.0 provenance
 ```
 
 ---
 
-## 9. Conséquence de D-017
+## 4. PR #1 et gates GitHub
 
-D-017 démontre que le Core peut réellement être dérivé puis mis à niveau en conservant le métier.
-
-Elle ne démontre pas qu’un SaaS dérivé est automatiquement production-ready.
+PR :
 
 ```text
-Core 1.0 stable
-≠
-produit dérivé automatiquement prêt pour la production
+#1 — Bootstrap — Enregistrer la provenance Core v1.0.0
+branche : chore/bootstrap-product
 ```
 
-Les obligations propres au produit, à son infrastructure et à son contexte légal/commercial restent à traiter au niveau du dérivé concerné.
+Première Core Gate PR : un seul test frontend hérité du Core a échoué :
+
+```text
+platform-subscription-grant-trial-form.test.jsx
+Unable to find an accessible element with the role "option" and name "Beta"
+```
+
+Cette tentative avait tout de même :
+
+```text
+backend  : 330 fichiers / 1565 tests passés
+frontend : 237/238 fichiers / 814/815 tests passés
+```
+
+Le même test était identique dans Core `v1.0.0` et le `main` Core et avait passé dans les gates Core de référence. Une réexécution sans changement de code a réussi :
+
+```text
+Core Gate #2
+run     : 35328016494
+attempt : 2
+result  : success
+```
+
+Conclusion : incident très probablement intermittent/flaky dans un test Core hérité. Aucune correction n’a été faite dans le produit.
+
+La PR #1 a été fusionnée.
+
+Main produit de référence :
+
+```text
+8d7fb89d81393d54be63373baf1ed278b0a57c7c
+```
+
+Gate post-merge :
+
+```text
+Core Gate #3
+run        : 35329384101
+head       : 8d7fb89d81393d54be63373baf1ed278b0a57c7c
+conclusion : success
+```
 
 ---
 
-## 10. Prochaine séquence vers `v1.0.0`
+## 5. État local avant arrêt
 
-Le tag stable n’est pas encore créé.
-
-La prochaine séquence doit respecter D-015 :
+Le local a été réaligné sur le main distant :
 
 ```text
-clôture documentaire D-017 fusionnée et validée
-→ préparer les métadonnées Core 1.0.0
-→ préparer les notes de release stable
-→ vérifier le manifest de migrations
-→ npm run release:check
-→ PR de release stable
-→ Core Gate verte
-→ fusion dans main
-→ Core Gate post-merge verte si le workflow la déclenche
-→ tag annoté v1.0.0 sur le SHA exact validé
-→ GitHub Release stable Core 1.0.0
+8d7fb89d (HEAD -> main, origin/main)
+working tree clean
 ```
 
-Ne pas déplacer les tags `v1.0.0-rc.1` ou `v1.0.0-rc.2`.
+Après le build frontend, une nouvelle vérification `git status --short` reste à faire à la reprise.
 
-Ne pas créer `v1.0.0` avant la fin de cette séquence de release.
+Versions contrôlées :
+
+```text
+Node : v24.19.0
+npm  : 10.9.2
+```
+
+Contrat Core : Node `>=24.7 <25`. Version conforme.
 
 ---
 
-## 11. Rappel de méthode
+## 6. Dépendances installées
 
-À chaque reprise :
+Racine :
 
 ```text
-Git réel
-→ code réel
-→ tests réellement exécutés
-→ contrats canoniques
-→ docs canoniques
-→ synthèse de reprise
+npm ci
+309 packages
+6 vulnerabilities : 4 moderate, 2 high
 ```
 
-Ne jamais faire l’inverse.
+Ces mêmes alertes étaient présentes dans des gates Core vertes. Aucun `npm audit fix` automatique n’a été lancé.
+
+Frontend :
+
+```text
+npm --prefix frontend ci
+309 packages
+0 vulnérabilité
+```
+
+E2E :
+
+```text
+npm --prefix e2e ci
+3 packages
+0 vulnérabilité
+```
+
+Après les installations, Git restait propre.
+
+---
+
+## 7. MongoDB local et bases dédiées
+
+Infrastructure existante réellement vérifiée :
+
+```text
+127.0.0.1:27017
+replica set : rs0
+ping        : 1
+```
+
+Aucun nouveau serveur/port/cluster/replica set n’a été créé.
+
+Bases produit :
+
+```text
+développement  : saas_fiches_techniques_gms_dev
+tests backend  : saas_fiches_techniques_gms_test
+E2E cible      : saas_fiches_techniques_gms_e2e_test
+```
+
+Les E2E doivent toujours utiliser une base terminant strictement par `_e2e_test`.
+
+---
+
+## 8. .env local
+
+Aucun `.env` n’existait initialement.
+
+Un `.env` local a été créé ; il est ignoré par Git et contient des secrets locaux générés aléatoirement. Ne jamais afficher, copier ou versionner ces secrets.
+
+URI dev :
+
+```text
+mongodb://127.0.0.1:27017/saas_fiches_techniques_gms_dev?replicaSet=rs0
+```
+
+Le fichier est organisé avec des commentaires professionnels par blocs : application, DB, JWT, workspaces, SMTP, fichiers, ClamAV, trial, sécurité dev.
+
+Choix provisoire conservé pendant le bootstrap :
+
+```text
+JWT_ACCESS_ISSUER   = saas-core-api
+JWT_ACCESS_AUDIENCE = saas-core-api
+```
+
+Ne pas renommer avant audit de l’identité produit versionnée.
+
+Validation Zod réelle :
+
+```text
+ENV_OK
+```
+
+SMTP dev :
+
+```text
+localhost:1025
+```
+
+---
+
+## 9. Baseline manuelle
+
+Backend :
+
+```text
+npm run start
+```
+
+Endpoint santé :
+
+```text
+GET http://localhost:5000/api/health
+status  : success
+message : API opérationnelle
+```
+
+Frontend :
+
+```text
+npm --prefix frontend run dev
+```
+
+Vite utilise par défaut `http://localhost:5000` pour le proxy `/api`. Aucun `frontend/.env` n’a été nécessaire.
+
+Interface visuelle : visible et fonctionnelle.
+
+---
+
+## 10. Tests locaux déjà validés
+
+Premier `npm test` : refus de sécurité normal parce que le `.env` pointait vers la base dev.
+
+Le Core impose une base contenant `_test` pour les tests Mongoose.
+
+Overrides temporaires utilisés dans le terminal de test :
+
+```powershell
+$env:NODE_ENV="test"
+$env:MONGODB_URI="mongodb://127.0.0.1:27017/saas_fiches_techniques_gms_test?replicaSet=rs0"
+```
+
+Le `.env` de développement n’a pas été modifié.
+
+Backend final :
+
+```text
+Test Files : 330 passed (330)
+Tests      : 1565 passed (1565)
+```
+
+Frontend :
+
+```text
+Test Files : 238 passed (238)
+Tests      : 815 passed (815)
+```
+
+Build frontend :
+
+```text
+vite v8.2.2
+2734 modules transformed
+built in 1.51s
+SUCCESS
+```
+
+Avertissement non bloquant hérité :
+
+```text
+Some chunks are larger than 500 kB after minification
+index-BfKpZlmJ.js : 567.78 kB / gzip 164.28 kB
+```
+
+Aucune optimisation de bundle n’a été entreprise dans le produit.
+
+---
+
+## 11. Ce qui reste à faire AVANT le métier
+
+La baseline technique n’est pas encore clôturée.
+
+### A. Reprise immédiate
+
+1. vérifier GitHub réel ;
+2. vérifier l’état de la branche/PR documentaire `docs/reprise-bootstrap-current` ;
+3. réaligner le local si nécessaire ;
+4. exécuter `git status --short` après le build.
+
+### B. E2E locaux
+
+Les dépendances E2E sont installées mais Chromium Playwright n’a pas encore été installé/vérifié dans cette séquence.
+
+À faire :
+
+1. installer/vérifier Chromium Playwright ;
+2. définir une URI E2E produit :
+   `mongodb://127.0.0.1:27017/saas_fiches_techniques_gms_e2e_test?replicaSet=rs0` ;
+3. exécuter les E2E ;
+4. ne jamais utiliser la base dev pour un nettoyage E2E.
+
+### C. Gate canonique locale
+
+`npm run release:check` n’a pas encore été exécuté localement sur la baseline produit.
+
+Attention :
+
+- le `.env` pointe vers `_dev` ;
+- les tests backend de la gate doivent recevoir la base `saas_fiches_techniques_gms_test` via variables du terminal ;
+- les E2E doivent recevoir `saas_fiches_techniques_gms_e2e_test` ;
+- ne jamais annoncer une gate verte sans preuve.
+
+### D. Identité technique versionnée du produit
+
+Plusieurs éléments hérités portent encore l’identité `saas-core-*` :
+
+- package racine ;
+- package frontend ;
+- `core-release.json` ;
+- JWT CI/E2E ;
+- bases CI/E2E par défaut ;
+- noms SMTP CI/E2E ;
+- autres métadonnées éventuelles.
+
+Avant toute modification :
+
+1. relire `docs/derived-saas/DERIVED-SAAS.md` ;
+2. relire `docs/releases/RELEASE-POLICY.md` ;
+3. inspecter le pilote réel ;
+4. comprendre `release:verify` et `core-release.json` ;
+5. distinguer métadonnée de provenance Core et identité applicative du produit.
+
+Ne pas casser `release:check` par un renommage naïf.
+
+### E. .env.example produit
+
+Le `.env.example` versionné est encore celui du Core. Il devra être adapté après l’audit ci-dessus, avec commentaires professionnels, base produit, placeholders non secrets et cohérence Zod/CI/E2E.
+
+### F. Gouvernance Git et documentation produit
+
+Encore à traiter :
+
+- `AGENTS.md` produit ;
+- guidelines architecture/backend/frontend/UIUX/tests ;
+- protection/ruleset de `main` ;
+- PR/checks obligatoires selon la gouvernance retenue.
+
+Le Core `v1.0.0` ne contient pas forcément les documents ajoutés après sa release sur `upstream-core/main`. Ne pas cherry-pick aveuglément ces évolutions.
+
+### G. Cadrage produit global
+
+Avant le premier modèle métier Mongoose, créer/adapter et valider :
+
+```text
+docs/PRODUCT-SCOPE.md
+docs/ROADMAP.md
+docs/DEBT.md
+docs/REPRISE-CURRENT.md
+docs/domain/GLOSSARY.md
+docs/domain/DOMAIN-MODEL.md
+```
+
+Aucun module métier n’est cadré ou codé à ce stade.
+
+Le cadrage global doit couvrir : problème, utilisateurs, valeur, V1/hors V1, domaines, vocabulaire, tenancy/ownership, rôles, capabilities, quotas, intégrations, contraintes réglementaires, roadmap.
+
+Seulement après validation globale : cadrer `M-001`.
+
+---
+
+## 12. Règle Core / produit
+
+```text
+générique et réutilisable → candidat Core
+spécifique au produit     → produit
+```
+
+Si une évolution générique est nécessaire :
+
+1. la traiter dans `saas-core-api` ;
+2. la tester et la versionner ;
+3. l’intégrer ensuite par `core-update/vX.Y.Z`.
+
+Le test Select Base UI intermittent de la PR #1 illustre cette règle.
+
+---
+
+## 13. État synthétique
+
+```text
+Provenance Core                       VALIDÉE
+PR #1                                 FUSIONNÉE
+Core Gate #2 attempt 2                SUCCESS
+Core Gate #3 post-merge               SUCCESS
+Node/npm local                        CONFORMES
+Dépendances racine/frontend/e2e       INSTALLÉES
+MongoDB rs0                           VALIDÉ
+.env Zod                              ENV_OK
+Backend manuel + /api/health          OK
+Frontend manuel                       OK
+Tests backend                         330/330 — 1565/1565
+Tests frontend                        238/238 — 815/815
+Build frontend                        SUCCESS
+E2E locaux                            À FAIRE
+release:check local                   À FAIRE
+Identité produit versionnée           À AUDITER
+.env.example produit                  À ADAPTER
+Gouvernance produit                   À METTRE EN PLACE
+Cadrage métier                        NON COMMENCÉ
+```
+
+---
+
+## 14. Point de départ de la prochaine conversation
+
+La prochaine conversation doit reprendre **avant les E2E locaux**.
+
+Ordre recommandé :
+
+```text
+1. lire KB-START-HERE / base de connaissance
+2. lire cette reprise
+3. vérifier GitHub réel et HEAD main
+4. vérifier/terminer la PR de cette reprise documentaire
+5. réaligner le local
+6. vérifier git status --short
+7. auditer identité produit héritée / contrats de release
+8. installer/vérifier Chromium Playwright
+9. exécuter E2E sur saas_fiches_techniques_gms_e2e_test
+10. exécuter lint/gates applicables
+11. exécuter release:check avec environnement sûr
+12. finaliser bootstrap technique
+13. adapter identité/.env.example/gouvernance
+14. cadrer le produit global
+15. seulement ensuite cadrer M-001
+```
+
+Ne pas coder de métier avant la clôture et la preuve de cette baseline.
