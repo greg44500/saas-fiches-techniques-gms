@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "repository": "greg44500/saas-core-api",
-  "version": "1.0.0",
-  "tag": "v1.0.0",
-  "commit": "dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff",
-  "integratedAt": "2026-09-18T08:58:51Z"
+  "version": "1.0.1",
+  "tag": "v1.0.1",
+  "commit": "9613bdb0c70ee1950dfa7da68e5cbefa704e88f1",
+  "integratedAt": "2026-09-18T15:26:08.840Z"
 }
