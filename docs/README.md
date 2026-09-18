@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Index documentaire
 
 **Statut :** index canonique de la documentation du projet  
-**Dernière consolidation :** 2026-09-17  
+**Dernière consolidation :** 2026-09-18  
 **Chantier documentaire DOC-0 → DOC-11 :** terminé
 
 ## 1. Objet
@@ -34,6 +34,18 @@ Lorsqu'un contrat canonique décrit explicitement une **cible à implémenter**,
 ---
 
 ## 3. Porte d'entrée du dépôt
+
+Pour tout agent IA ou développeur assisté, lire d'abord :
+
+```text
+AGENTS.md
+→ méthode de travail
+→ ordre d'autorité
+→ règles architecture / sécurité / tests / Git
+→ références vers les contrats détaillés
+```
+
+Puis utiliser le README général :
 
 ```text
 README.md
@@ -100,7 +112,8 @@ Décisions D-015 structurantes :
 - `npm run release:check` est la gate canonique locale et CI ;
 - les migrations restent des runners explicites inventoriés par manifest tant qu'un besoin réel ne justifie pas un registre persistant ;
 - `core-origin.json` est le contrat cible de provenance d'un SaaS dérivé ;
-- D-017 a validé la stratégie réelle de dérivation et d’upgrade ; le tag stable `v1.0.0` reste soumis aux gates et règles de publication de `RELEASE-POLICY.md`.
+- `product-release.json` porte l’identité et la version applicative propres au dérivé, indépendamment des métadonnées Core ;
+- D-017 a validé la stratégie réelle de dérivation et d’upgrade ; `v1.0.0` a ensuite été publiée conformément à `RELEASE-POLICY.md` sur le commit post-merge validé `dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff`.
 
 D-016 a étendu `npm run release:check` avec les E2E Playwright. La définition courante d’une Core Gate verte inclut donc la vérification de release, le lint et les tests backend, le lint/tests/build frontend puis Playwright.
 
@@ -189,7 +202,7 @@ docs/derived-saas/DERIVED-SAAS.md
   stratégie Git, upgrades, migrations, tests et points d'extension
 ```
 
-Le produit dérivé conserve l'historique Git du Core, possède son propre `origin` et conserve le Core comme `upstream-core`. D-015 définit le contrat de provenance `core-origin.json`; D-017 a validé cette stratégie par un exercice réel de dérivation + upgrade sur `saas-core-derived-pilot`.
+Le produit dérivé conserve l'historique Git du Core, possède son propre `origin` et conserve le Core comme `upstream-core`. D-015 définit le contrat de provenance `core-origin.json`; l’identité/version applicative indépendante est portée par `product-release.json`; D-017 a validé la stratégie Git et la provenance par un exercice réel de dérivation + upgrade sur `saas-core-derived-pilot`.
 
 D-025 fournit un mécanisme d’extension permettant à un dérivé d’ajouter ses fiches d’aide métier sans dupliquer ni réécrire le corpus Core.
 
@@ -358,22 +371,30 @@ Toute future suppression documentaire suit la même règle : contenu utile véri
 
 ---
 
-## 11. Prochaine étape
+## 11. État post-release et prochaines trajectoires
 
-Séquence courante de finalisation :
+La trajectoire de publication Core 1.0 est terminée :
 
 ```text
 D-015 release governance / provenance / migrations         VALIDÉE — 2026-09-17
 → D-016 Playwright E2E Core                                VALIDÉE — 2026-09-17
-→ audit final architecture / sécurité / qualité            TERMINÉ — aucun nouveau blocker démontré
-→ synchronisation documentaire post-audit                  EN COURS
-→ nouvelle Core Gate
 → D-017 dérivation + upgrade pilote                        VALIDÉE — 2026-09-17
-→ release Core stable                                           PROCHAINE ÉTAPE
+→ PR de release stable #23                                 FUSIONNÉE
+→ Core Gate #38 / run 35248517242                          SUCCESS
+→ tag annoté v1.0.0                                       PUBLIÉ
+→ GitHub Release stable 390898671                          PUBLIÉE
 ```
+
+Les trajectoires suivantes sont indépendantes :
+
+- synchronisation documentaire post-release ;
+- upgrade du pilote de `v1.0.0-rc.2` vers `v1.0.0` si ce contrôle supplémentaire est décidé ;
+- démarrage d’un premier SaaS métier dérivé depuis la stable ;
+- évolutions génériques Core 1.1, notamment D-023 et D-024 ;
+- dettes de production à traiter dans le contexte du produit réel.
 
 D-020 reste différée à la validation terrain avec des bêta-testeurs Platform et Workspace sur une application dérivée déployée. Cette validation n’est pas bloquante pour Core 1.0.
 
-Le chatbot/assistant IA au-dessus de l'aide est explicitement différé et ne bloque pas Core 1.0.
+Le chatbot/assistant IA au-dessus de l'aide reste explicitement différé.
 
-`REPRISE-CURRENT.md` reste l'unique document temporaire de reprise tant que le Core n'est pas finalisé.
+`REPRISE-CURRENT.md` reste le document temporaire de transition tant que la prochaine trajectoire de travail n’a pas été formellement engagée.

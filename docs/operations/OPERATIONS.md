@@ -315,7 +315,7 @@ npm run release:verify
 npm run release:check
 ```
 
-`release:verify` contrôle la cohérence machine-readable des métadonnées de version et de l’inventaire des migrations.
+`release:verify` contrôle la cohérence machine-readable des métadonnées de version et de l’inventaire des migrations. Dans un SaaS dérivé, la présence de `core-origin.json` impose également un `product-release.json` valide afin de séparer explicitement l’identité/version du produit de celles du Core.
 
 `release:check` est la gate canonique exécutée localement et en CI. Elle enchaîne la vérification de release, le lint backend/tooling/E2E, les tests backend, puis le lint, les tests et le build frontend, et enfin les parcours Playwright E2E du Core.
 

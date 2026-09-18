@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+    collectDerivedProductReleaseErrors,
     collectMigrationManifestErrors,
     collectReleaseIdentityErrors,
     parseSemver,
@@ -73,6 +74,77 @@ describe('release metadata', () => {
         ).toContain(
             'Le canal stable exige une version >= 1.0.0 sans prerelease.',
         );
+    });
+});
+
+describe('derived product release metadata', () => {
+    const createProductRelease = (version = '0.1.0') => ({
+        schemaVersion: 1,
+        name: 'saas-example-product',
+        repository: 'example/saas-example-product',
+        version,
+        channel: 'development',
+    });
+
+    it('ne demande aucune identité produit dans le dépôt Core', () => {
+        expect(
+            collectDerivedProductReleaseErrors({
+                coreOriginExists: false,
+                productRelease: null,
+            }),
+        ).toEqual([]);
+    });
+
+    it('exige product-release.json dès qu’un core-origin.json est présent', () => {
+        expect(
+            collectDerivedProductReleaseErrors({
+                coreOriginExists: true,
+                productRelease: null,
+            }),
+        ).toContain(
+            'Un SaaS dérivé avec core-origin.json doit déclarer product-release.json.',
+        );
+    });
+
+    it('refuse product-release.json hors d’un SaaS dérivé', () => {
+        expect(
+            collectDerivedProductReleaseErrors({
+                coreOriginExists: false,
+                productRelease: createProductRelease(),
+            }),
+        ).toContain(
+            'product-release.json est réservé à un SaaS dérivé déclarant core-origin.json.',
+        );
+    });
+
+    it('valide une version produit indépendante de la version Core', () => {
+        expect(
+            collectDerivedProductReleaseErrors({
+                coreOriginExists: true,
+                productRelease: createProductRelease('0.3.0'),
+            }),
+        ).toEqual([]);
+    });
+
+    it('valide les canaux rc et stable du produit', () => {
+        const rcRelease = createProductRelease('1.2.0-rc.2');
+        rcRelease.channel = 'rc';
+
+        const stableRelease = createProductRelease('1.2.0');
+        stableRelease.channel = 'stable';
+
+        expect(
+            collectDerivedProductReleaseErrors({
+                coreOriginExists: true,
+                productRelease: rcRelease,
+            }),
+        ).toEqual([]);
+        expect(
+            collectDerivedProductReleaseErrors({
+                coreOriginExists: true,
+                productRelease: stableRelease,
+            }),
+        ).toEqual([]);
     });
 });
 
