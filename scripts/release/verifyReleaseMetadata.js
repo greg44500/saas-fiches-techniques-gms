@@ -6,6 +6,7 @@ import {
 import path from 'node:path';
 
 import {
+    collectDerivedProductReleaseErrors,
     collectMigrationManifestErrors,
     collectReleaseIdentityErrors,
 } from './releaseMetadata.js';
@@ -37,6 +38,16 @@ const verifyReleaseMetadata = () => {
     const migrationManifest = readJson(
         'docs/releases/migration-manifest.json',
     );
+    const coreOriginExists = existsSync(
+        path.join(repositoryRoot, 'core-origin.json'),
+    );
+    const productReleasePath = path.join(
+        repositoryRoot,
+        'product-release.json',
+    );
+    const productRelease = existsSync(productReleasePath)
+        ? readJson('product-release.json')
+        : null;
 
     const requiredFiles = [
         'CHANGELOG.md',
@@ -51,6 +62,10 @@ const verifyReleaseMetadata = () => {
             rootLock,
             frontendPackage,
             frontendLock,
+        }),
+        ...collectDerivedProductReleaseErrors({
+            coreOriginExists,
+            productRelease,
         }),
         ...collectMigrationManifestErrors({
             manifest: migrationManifest,

@@ -98,6 +98,78 @@ const collectReleaseIdentityErrors = ({
     return errors;
 };
 
+const collectDerivedProductReleaseErrors = ({
+    coreOriginExists,
+    productRelease,
+}) => {
+    const errors = [];
+    const productReleaseExists = Boolean(productRelease);
+
+    if (!coreOriginExists && !productReleaseExists) {
+        return errors;
+    }
+
+    if (coreOriginExists && !productReleaseExists) {
+        errors.push(
+            'Un SaaS dérivé avec core-origin.json doit déclarer product-release.json.',
+        );
+        return errors;
+    }
+
+    if (!coreOriginExists && productReleaseExists) {
+        errors.push(
+            'product-release.json est réservé à un SaaS dérivé déclarant core-origin.json.',
+        );
+        return errors;
+    }
+
+    if (productRelease.schemaVersion !== 1) {
+        errors.push('product-release.json doit utiliser schemaVersion = 1.');
+    }
+
+    if (!productRelease.name?.trim()) {
+        errors.push('product-release.json doit déclarer name.');
+    }
+
+    if (!productRelease.repository?.trim()) {
+        errors.push('product-release.json doit déclarer repository.');
+    }
+
+    const version = productRelease.version;
+    const parsedVersion = parseSemver(version ?? '');
+
+    if (!parsedVersion) {
+        errors.push('La version produit doit respecter SemVer.');
+        return errors;
+    }
+
+    if (productRelease.channel === RELEASE_CHANNEL.DEVELOPMENT) {
+        if (parsedVersion.major !== 0 || parsedVersion.prerelease !== null) {
+            errors.push(
+                'Le canal development produit doit utiliser une version 0.x.y sans prerelease.',
+            );
+        }
+    } else if (productRelease.channel === RELEASE_CHANNEL.RC) {
+        if (!/^rc\.[1-9]\d*$/.test(parsedVersion.prerelease ?? '')) {
+            errors.push(
+                'Le canal rc produit exige un suffixe prerelease rc.N avec N >= 1.',
+            );
+        }
+    } else if (productRelease.channel === RELEASE_CHANNEL.STABLE) {
+        if (parsedVersion.major < 1 || parsedVersion.prerelease !== null) {
+            errors.push(
+                'Le canal stable produit exige une version >= 1.0.0 sans prerelease.',
+            );
+        }
+    } else {
+        errors.push(
+            `Canal de release produit inconnu : ${productRelease.channel ?? 'absent'}.`,
+        );
+    }
+
+    return errors;
+};
+
 const detectDependencyCycle = (migrationsById) => {
     const visiting = new Set();
     const visited = new Set();
@@ -263,6 +335,7 @@ const collectMigrationManifestErrors = ({
 
 export {
     RELEASE_CHANNEL,
+    collectDerivedProductReleaseErrors,
     collectMigrationManifestErrors,
     collectReleaseIdentityErrors,
     parseSemver,

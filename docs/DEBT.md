@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Registre canonique des dettes actives
 
 **Statut :** source de vérité documentaire pour les dettes non résolues  
-**Dernière mise à jour :** 2026-09-17  
+**Dernière mise à jour :** 2026-09-18  
 **Périmètre :** Core clonable et, lorsque précisé, applications dérivées
 
 ---
@@ -96,7 +96,7 @@ Les blockers applicatifs génériques décidés avant le gel sont levés : D-002
 
 **D-020 n’est pas bloquante pour Core 1.0.** Sa validation fonctionnelle terrain est explicitement différée au déploiement de l’application métier avec des bêta-testeurs réels.
 
-La publication stable `v1.0.0` reste une opération de release distincte à exécuter selon D-015. La validation de D-017 autorise sa préparation ; elle ne crée pas automatiquement le tag stable.
+La publication stable `v1.0.0` a été exécutée selon D-015 le 2026-09-17. Le tag annoté `v1.0.0` cible `dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff`, la GitHub Release `390898671` est stable, et la Core Gate #38 (run `35248517242`) est verte sur ce même commit.
 
 ### 3.2 Non-blockers Core 1.0 mais blockers possibles d'un produit réel
 
@@ -252,7 +252,7 @@ Le drawer Workspace doit évoluer après Core 1.0 vers une console contextualis�
 
 État validé, résumé : identité machine-readable du Core, SemVer et canaux de release, provenance des dérivés, manifest et politique de migrations, vérifications `release:verify` / `release:check`, workflow GitHub Actions `Core Gate`, ruleset `Main protection`, PR obligatoire et status check obligatoire.
 
-D-015 définit le processus utilisé ensuite pour publier les RC de D-017 et devra également être appliqué à la release stable.
+D-015 définit le processus utilisé pour publier les RC de D-017 puis la release stable `v1.0.0`; ce processus a été appliqué jusqu’à la validation post-merge et à la publication du tag/release stable.
 
 ### D-016 — E2E du Core avec Playwright
 
@@ -357,31 +357,40 @@ Le détail historique de ces lots reste consultable dans Git et dans leurs docum
 
 ## 7. Ordre de traitement recommandé
 
+La trajectoire Core 1.0 est désormais clôturée :
+
 ```text
 D-025 centre d’aide Workspace / Platform sécurisé           VALIDÉ — 2026-09-16
 D-020 invitation commerciale / validation terrain           DIFFÉRÉ — non bloquant Core 1.0
 → gate globale pré-D-015                                    VALIDÉE — 2026-09-16
 → D-015 release governance / provenance / migrations        VALIDÉE — 2026-09-17
 → D-016 Playwright E2E Core                                 VALIDÉE — 2026-09-17
-→ audit final architecture / sécurité / qualité             TERMINÉ — aucun nouveau blocker démontré
+→ audit final architecture / sécurité / qualité             TERMINÉ
 → synchronisation documentaire post-audit                   VALIDÉE / fusionnée — PR #16
-→ Core Gate #24 sur main                                    VALIDÉE — 2026-09-17
 → D-017 dérivation + upgrade pilote                         VALIDÉE — 2026-09-17
-    → phase A : première RC Core                             TERMINÉE
-    → phase B : dépôt pilote dérivé                         TERMINÉE
-    → phase C : module métier minimal                       TERMINÉE
-    → phase D : évolution Core compatible                   TERMINÉE
-    → phase E : upgrade réel du pilote                      TERMINÉE
-    → phase F : bilan et décision de clôture                TERMINÉE
-→ clôture documentaire D-017
-→ préparation release stable Core 1.0.0 selon D-015
-→ gate canonique de la release stable
-→ tag/release v1.0.0 uniquement sur le SHA validé
---- évolution post-v1.0 ---
-→ D-023 demande gouvernée de transfert de propriété         DIFFÉRÉ — cible Core 1.1
-→ D-024 console Platform contextualisée du Workspace        DIFFÉRÉ — cible Core 1.1
---- validation terrain du produit dérivé ---
-→ D-020 validation bêta des parcours d’invitation/onboarding dans l’environnement réel applicable
+→ clôture documentaire D-017                                VALIDÉE
+→ préparation release stable Core 1.0.0                     VALIDÉE
+→ Core Gate stable post-merge #38                           VALIDÉE — run 35248517242
+→ tag annoté / GitHub Release v1.0.0                        PUBLIÉS — 2026-09-17
+```
+
+Après `v1.0.0`, les trajectoires ne doivent pas être mélangées :
+
+```text
+Core 1.1
+→ D-023 demande gouvernée de transfert de propriété
+→ D-024 console Platform contextualisée du Workspace
+
+SaaS dérivés réels
+→ reclassification des dettes produit / production applicables
+→ D-012 E2E métier propres au produit
+→ D-020 validation terrain invitation/onboarding lorsqu’elle devient applicable
+
+Infrastructure / production
+→ D-005 observabilité
+→ D-007 stockage fichiers production
+→ D-013 configuration / déploiement
+→ autres obligations D-003 / D-004 / D-006 selon le produit réel
 ```
 
 ---
@@ -445,6 +454,19 @@ workflow : Core Gate
 run : 35239618709
 run number : 34
 conclusion : success
+```
+
+### Core stable 1.0.0 post-merge
+
+```text
+HEAD validé : dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff
+workflow : Core Gate
+run : 35248517242
+run number : 38
+conclusion : success
+Run canonical Core gate : success
+tag : v1.0.0
+GitHub Release : 390898671
 ```
 
 ### Pilote après merge RC2, avant provenance finale

@@ -6,7 +6,7 @@ Socle SaaS fullstack générique et réutilisable, destiné à être dérivé en
 
 Le Core suit désormais la ligne stable `1.0.0`. D-015 — versionnement / provenance / release process / migrations —, D-016 — E2E Core Playwright — et D-017 — dérivation et upgrade réel d’un SaaS pilote — sont validées. Aucun blocker Core 1.0 actif n’est démontré par le registre canonique.
 
-Une publication stable reste soumise à `docs/releases/RELEASE-POLICY.md` : PR de release validée, fusion dans `main`, Core Gate post-merge verte, puis création du tag immuable `v1.0.0` et de la GitHub Release. La stabilité du Core ne signifie pas qu’une application dérivée est automatiquement prête pour la production. D-020 — invitation commerciale — reste différée à une validation terrain sur application dérivée / bêta et ne bloque pas Core 1.0.
+`v1.0.0` a été publiée conformément à `docs/releases/RELEASE-POLICY.md` après fusion de la PR de release et Core Gate post-merge verte ; son tag annoté cible le commit validé `dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff`. Les futures releases restent soumises à cette politique. La stabilité du Core ne signifie pas qu’une application dérivée est automatiquement prête pour la production. D-020 — invitation commerciale — reste différée à une validation terrain sur application dérivée / bêta et ne bloque pas Core 1.0.
 
 ## Ce que fournit le Core
 

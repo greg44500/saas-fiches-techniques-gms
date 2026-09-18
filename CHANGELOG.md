@@ -6,13 +6,35 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ## Unreleased
 
-Aucune modification non publiée après la préparation de `1.0.0`.
+Aucun changement supplémentaire documenté.
+
+---
+
+## 1.0.1 — 2026-09-18
+
+Patch de gouvernance des SaaS dérivés corrigeant l’écart entre le contrat 1.0 — version applicative du produit indépendante du Core — et la gate de release héritée.
+
+### Changed
+
+- ajout du contrat machine-readable `product-release.json` pour l’identité et la version applicative propres au produit dérivé ;
+- `release:verify` exige ce fichier lorsqu’un `core-origin.json` est présent ;
+- `product-release.json` est refusé dans le dépôt Core lorsqu’aucun `core-origin.json` n’existe ;
+- validation SemVer et des canaux `development`, `rc` et `stable` pour la version produit ;
+- maintien de `core-release.json` et des package/lockfiles comme métadonnées techniques du Core afin de limiter les conflits d’upgrade.
+
+### Impact
+
+- aucune migration MongoDB ;
+- aucune variable d’environnement ;
+- aucune dépendance ajoutée ou mise à niveau ;
+- aucun changement de contrat DB ;
+- aucun changement métier ou runtime de l’API.
 
 ---
 
 ## 1.0.0 — 2026-09-17
 
-Première release stable du Core, préparée après validation de D-015, D-016 et D-017.
+Première release stable du Core, publiée après validation de D-015, D-016 et D-017.
 
 ### Validation stable
 
@@ -22,7 +44,18 @@ Première release stable du Core, préparée après validation de D-015, D-016 e
 - la Core Gate #36 (run `35245765480`) a validé le `main` post-clôture D-017 au commit `5bf91252415e3e8f97b60c5aa1e165bd9829a3a2` ;
 - la préparation stable ne modifie ni contrat DB, ni dépendance, ni variable d’environnement, ni migration applicative.
 
-Le tag immuable `v1.0.0` et la GitHub Release ne sont publiés qu’après fusion de la PR de release et validation de la Core Gate post-merge correspondante.
+Publication finale validée :
+
+```text
+commit : dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff
+Core Gate : #38
+run : 35248517242
+conclusion : success
+tag : v1.0.0
+GitHub Release : 390898671
+```
+
+Le tag `v1.0.0` est publié et immuable.
 
 ---
 

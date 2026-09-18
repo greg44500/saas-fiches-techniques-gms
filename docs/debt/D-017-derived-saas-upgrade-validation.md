@@ -445,6 +445,18 @@ Core versionné
 → validation complète
 ```
 
-La prochaine étape est la préparation formelle de la release stable `1.0.0` selon le processus D-015 : métadonnées de release, notes, PR, gate canonique, puis tag/release stable uniquement sur le SHA validé.
+Au moment de la clôture de D-017, l’étape suivante était la préparation formelle de la release stable `1.0.0` selon le processus D-015.
 
-D-017 ne crée ni ne déplace le tag `v1.0.0` elle-même.
+Cette étape a ensuite été réalisée :
+
+```text
+PR de release : #23
+commit stable : dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff
+Core Gate post-merge : #38
+run : 35248517242
+conclusion : success
+tag annoté : v1.0.0
+GitHub Release : 390898671
+```
+
+D-017 reste la preuve de validation de la dérivation et de l’upgrade RC1 → RC2 ; la publication stable ultérieure ne modifie pas cette preuve historique.

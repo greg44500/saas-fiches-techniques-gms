@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Politique de versionnement et de release
 
 **Statut :** canonique — D-015 validée  
-**Dernière mise à jour :** 2026-09-17  
+**Dernière mise à jour :** 2026-09-18  
 **Périmètre :** versionnement du Core, release candidate, tags, provenance et notes de version
 
 ---
@@ -18,7 +18,7 @@ version d’un SaaS dérivé
 version du Core intégrée dans un SaaS dérivé
 ```
 
-D-015 — gouvernance de release —, D-016 — E2E Core Playwright — et D-017 — dérivation et upgrade réel d’un SaaS pilote — sont validées. La première release stable peut être préparée dès lors que les autres critères de la présente politique restent satisfaits.
+D-015 — gouvernance de release —, D-016 — E2E Core Playwright — et D-017 — dérivation et upgrade réel d’un SaaS pilote — sont validées. La première release stable `v1.0.0` a été publiée le 2026-09-17 après validation des critères de la présente politique.
 
 ---
 
@@ -52,6 +52,10 @@ channel
 ```
 
 Il ne contient pas le SHA du commit qui le contient lui-même. La provenance immuable d’une release est portée par le tag Git et le commit qu’il référence.
+
+Cette cohérence concerne l’identité de release du Core. Dans un SaaS dérivé, les `package.json` et lockfiles hérités restent des métadonnées techniques du Core afin de limiter les divergences récurrentes lors des upgrades. Ils ne portent pas l’identité commerciale ni la version applicative du produit dérivé.
+
+L’identité/version applicative du dérivé est portée séparément par `product-release.json`, décrit en section 9.
 
 ---
 
@@ -126,7 +130,7 @@ stable
 → version SemVer sans suffixe prerelease
 ```
 
-La cible stable courante est :
+La release stable courante publiée est :
 
 ```text
 version = 1.0.0
@@ -151,7 +155,7 @@ v1.0.0-rc.1
 → v1.0.0-rc.2
 ```
 
-D-017 étant validée, le tag stable `v1.0.0` peut être publié uniquement lorsqu’aucun blocker Core 1.0 ne subsiste et que le commit `main` cible a passé la gate de release requise.
+`v1.0.0` a été publiée après validation de D-017, absence de blocker Core 1.0 actif et Core Gate post-merge verte sur le commit `dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff`. Les releases ultérieures restent soumises aux mêmes principes de validation applicables à leur version.
 
 ---
 
@@ -231,9 +235,44 @@ Contrat cible :
 
 Le SaaS dérivé met à jour ce fichier après intégration validée d’une nouvelle version du Core.
 
-La version applicative du produit dérivé reste indépendante de la version du Core.
+La version applicative du produit dérivé reste indépendante de la version du Core. Cette identité est déclarée dans :
 
-D-017 a validé ce mécanisme sur le dépôt dérivé réel `saas-core-derived-pilot`, avec mise à niveau de `v1.0.0-rc.1` vers `v1.0.0-rc.2` et mise à jour de `core-origin.json`.
+```text
+product-release.json
+```
+
+Contrat :
+
+```json
+{
+  "schemaVersion": 1,
+  "name": "saas-example-product",
+  "repository": "owner/saas-example-product",
+  "version": "0.1.0",
+  "channel": "development"
+}
+```
+
+Règles :
+
+```text
+core-release.json
+→ identité/version du Core
+
+core-origin.json
+→ provenance exacte du Core intégré dans le produit
+
+product-release.json
+→ identité/version applicative propre au produit
+```
+
+`product-release.json` utilise SemVer et les canaux `development`, `rc` et `stable` selon les mêmes contraintes de forme que les releases Core, mais sa version n’est pas comparée à celle de `core-release.json` ni aux versions des packages Core hérités.
+
+La gate `release:verify` exige désormais `product-release.json` lorsqu’un dépôt contient `core-origin.json`. Inversement, `product-release.json` n’est pas accepté dans le dépôt Core sans `core-origin.json`.
+
+Un produit dérivé ne doit donc pas renommer ou reversionner les packages Core uniquement pour porter son identité applicative. Cette séparation réduit les conflits lors des futurs merges `core-update/vX.Y.Z`.
+
+D-017 a validé la provenance via `core-origin.json` sur le dépôt dérivé réel `saas-core-derived-pilot`. Le contrat `product-release.json` complète cette séparation pour les produits dérivés réels créés après la stable 1.0.
 
 ---
 
