@@ -293,33 +293,67 @@ Le taux de rendement est distinct du pourcentage de recette.
 
 Le rendement de référence est défini sur le produit et utilisé automatiquement dans la fiche technique.
 
-### 8.4 Fournisseurs et prix
+### 8.4 Fournisseurs, articles, conditionnements et tarifs
 
-Le modèle doit séparer :
+Le modèle sépare :
 
 ```text
 Produit
 Fournisseur
-Article / offre fournisseur
+Article fournisseur
 Conditionnement
-Condition commerciale magasin
+Tarif fournisseur de référence
+Tarif spécifique magasin
+Prix observé
 ```
+
+Règles validées :
+
+- un même Produit peut avoir plusieurs Articles chez un même Fournisseur ;
+- un même Produit peut être proposé par plusieurs Fournisseurs ;
+- le conditionnement doit être structuré pour permettre les conversions ;
+- le libellé fournisseur original peut être conservé sans devenir l'unique source de calcul ;
+- un Tarif fournisseur de référence peut exister sans connaître de magasin ;
+- un Tarif spécifique magasin est optionnel et reste séparé ;
+- un Prix observé peut provenir notamment d'une facture ;
+- la provenance, la date et le contexte éventuel du magasin sont conservés ;
+- l'OCR est une extension future qui doit alimenter le même historique tarifaire après contrôles ;
+- les prix d'achat utilisés pour les coûts matière sont HT ;
+- les prix unitaires et normalisés sont affichés avec exactement 3 décimales ;
+- le moteur conserve une précision interne suffisante et n'arrondit pas prématurément.
 
 Le prix n’est pas une propriété directe et intemporelle du Produit.
 
-Une mise à jour de prix doit préserver l’historique et permettre l’analyse des écarts et des fiches impactées.
+Une mise à jour tarifaire ajoute une nouvelle valeur historisée et ne détruit pas silencieusement l'ancienne.
 
-### 8.5 Fiche technique
+Le point encore ouvert est la priorité exacte permettant de déterminer le Prix applicable lorsqu'il existe plusieurs sources valides.
 
-Les principes suivants sont déjà retenus :
+### 8.5 Fiche technique et coûts
+
+Les principes suivants sont désormais validés :
 
 - fiche structurée, non simple document ;
+- l'utilisateur saisit la quantité nette réellement présente dans la recette ;
+- la quantité brute est calculée automatiquement : `quantité nette / rendement` ;
+- le % de recette est calculé sur les quantités nettes ;
+- les pertes de rendement influencent la quantité brute et le coût, pas la composition proportionnelle ;
+- le prix d'achat HT normalisé sert de base au coût matière ;
+- le coût HT d'une ligne ingrédient = quantité brute × prix d'achat HT normalisé ;
+- Coût Matière (CM) = somme des coûts HT des lignes d'ingrédients ;
+- l'Économat regroupe les consommables achetés nécessaires à la fabrication, au conditionnement ou à la commercialisation ;
+- les consommables utilisent, lorsque pertinent, les mêmes mécanismes Fournisseur / Article / Conditionnement / Tarif ;
+- les consommables n'utilisent pas les attributs alimentaires non pertinents ;
+- l'utilisateur renseigne leur quantité réellement consommée ;
+- le système calcule leur coût à partir du prix normalisé ;
+- Coût total de fabrication = CM + Économat ;
+- l'énergie est exclue de cette définition ;
 - composition distincte de la valorisation économique ;
 - recalcul avec les prix courants ;
 - conservation d’une lecture historique ;
-- distinction matières premières / emballages-économat ;
 - calcul automatique maximal ;
 - valeurs et formules non démontrées non implémentées par hypothèse.
+
+Restent notamment à cadrer : prix applicable, TVA, marge, coefficient, prix théorique, prix conseillé/retenu, marge semi-nette et arrondis des totaux.
 
 ### 8.6 Extensibilité
 
@@ -352,21 +386,33 @@ Les candidats identifiés — TVA, marge par défaut, arrondis, seuils, unités,
 
 Le cadrage global n’est pas terminé.
 
+Le bloc Produit / approvisionnement / coûts directs est désormais avancé.
+
 Prochaines décisions prioritaires :
 
-1. Fournisseur ;
-2. Article / référence fournisseur ;
-3. Conditionnement / colisage ;
-4. Prix par magasin ;
-5. Historique et sélection de l’offre applicable ;
-6. calculs exacts de la fiche technique ;
-7. frontière fiche technique / fiche process ;
-8. utilisateurs et rôles métier ;
-9. capabilities et quotas ;
-10. intégrations ;
-11. contraintes réglementaires ;
-12. périmètre V1 / hors V1 ;
-13. roadmap finale.
+1. règle du Prix applicable entre tarif fournisseur de référence, tarif spécifique magasin et prix observé ;
+2. TVA et portée de la TVA ;
+3. objectif de marge ;
+4. coefficient / prix théorique ;
+5. prix de vente conseillé / retenu ;
+6. marge réelle et marge semi-nette ;
+7. règles d'arrondi des montants agrégés ;
+8. versionnement / validation d'une fiche technique ;
+9. frontière fiche technique / fiche process ;
+10. dossier / magasin et données minimales ;
+11. utilisateurs et rôles métier ;
+12. capabilities et quotas ;
+13. intégrations ;
+14. contraintes réglementaires ;
+15. périmètre V1 / hors V1 ;
+16. roadmap finale.
+
+Points d'approvisionnement encore ouverts :
+
+- données minimales définitives du Fournisseur ;
+- règles d'unicité/lifecycle d'un Article fournisseur ;
+- Article privilégié éventuel ;
+- liste/gouvernance finale des types de conditionnement.
 
 Aucune de ces questions ne doit être tranchée implicitement pendant l’implémentation.
 
@@ -428,18 +474,47 @@ branche
 
 ---
 
-## 12. Point de reprise immédiat
+## 12. Granularité Git / PR
+
+Règle de travail validée :
+
+> Une PR correspond à un lot fonctionnel cohérent et vérifiable, pas à une couche technique isolée.
+
+Un modèle Mongoose et une validation Zod peuvent faire l'objet de commits sur une branche, mais ne justifient pas à eux seuls une PR par défaut.
+
+La PR #5 constitue le lot documentaire global de cadrage en cours. Il ne faut pas multiplier les PR documentaires pendant cette phase.
+
+En développement, viser des vertical slices cohérentes : backend, permissions, frontend, tests et documentation du lot lorsque cela est pertinent.
+
+---
+
+## 13. Point de reprise immédiat
 
 Reprendre le cadrage métier à partir de :
 
 ```text
-Fournisseur
-→ Article fournisseur
-→ Conditionnement
-→ Prix magasin
-→ Historique
+Prix applicable
+→ TVA
+→ marge / coefficient
+→ prix théorique
+→ prix de vente conseillé / retenu
+→ marge réelle / semi-nette
+→ arrondis
+→ versionnement de la fiche
 ```
 
-Puis finaliser les calculs détaillés de la fiche technique.
+Puis poursuivre avec :
+
+```text
+Fiche process
+→ Dossier / magasin
+→ utilisateurs / RBAC / capabilities / quotas
+→ intégrations / réglementation
+→ V1 / hors V1
+→ validation globale
+→ cadrage M-001
+```
+
+Ne pas créer de modèle métier avant validation du cadrage global.
 
 Ne pas repartir dans des travaux Core génériques en l’absence de blocage réel du produit.
