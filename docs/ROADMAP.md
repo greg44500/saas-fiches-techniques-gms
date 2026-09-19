@@ -122,91 +122,82 @@ Décisions établies :
 - convention technique exacte de la durée de fraîcheur.
 
 
+
 ### 2.4 Fiches techniques
 
-**État : architecture fonctionnelle largement cadrée — formules économiques et Atelier d'optimisation à finaliser**
+**État : socle économique suffisamment cadré pour ne plus bloquer M-001**
 
 Décisions établies :
 
 - quantité nette saisie, brute calculée ;
 - coûts HT ;
 - CM + Économat ;
-- concurrence prix/édition sans réécriture silencieuse ;
 - version DRAFT / VALIDATED / ARCHIVED ;
 - version VALIDATED immuable ;
 - revalorisation explicite ;
 - snapshot économique historique ;
 - validation backend complète ;
 - absence de prix distincte de zéro ;
-- invariants applicables au Workspace Owner ;
 - copie inter-magasin sans prix ni historique source ;
-- archivage avant éventuelle suppression définitive ;
-- aucune purge automatique uniquement par âge ;
-- politique Workspace de cycle de vie avec comportement standard ;
-- TVA distincte des coûts HT, taux réellement utilisé conservé dans la version validée ;
-- Objectif de marge = taux de marge souhaitable défini dans le contexte du magasin et utilisé comme cible de la fiche ;
-- aucun remplacement arbitraire de cet indicateur par taux de marque ou autre métrique ;
-- Atelier d'optimisation non destructif inspiré de Lightroom comme capability payante différenciante ;
-- sliders globaux et courbe multipoints complémentaires ;
-- histogramme composition/coût, avant/après et visualisations professionnelles ;
-- lignes modulables avec quantité de référence et bornes min/max configurables ;
-- pièces/unités et lignes verrouillées non modulables ;
-- redistribution sous contrainte afin de conserver 100 % de composition et le poids final lorsqu'il est verrouillé ;
-- enveloppe de qualité perçue et refus explicite d'un objectif économiquement impossible ;
-- validations backend indépendantes des valeurs envoyées par l'utilisateur ;
-- application d'une simulation au DRAFT uniquement sur action explicite.
+- TVA distincte des coûts HT ;
+- Objectif de marge = `(PV HT - coût fabrication HT) / PV HT` ;
+- coefficient = `1 / (1 - objectif de marge)` ;
+- Prix théorique HT = `Coût fabrication HT × coefficient` ;
+- Prix conseillé obtenu après application de la règle d'arrondi Workspace au Prix théorique TTC ;
+- Prix définitif choisi humainement ;
+- invariant `Prix définitif TTC >= Prix conseillé TTC >= Prix théorique TTC` ;
+- marge réelle % et € calculées depuis le Prix définitif ;
+- règle standard d'arrondi = multiple de 0,50 € immédiatement supérieur ou égal ;
+- règles d'arrondi personnalisables par stratégies structurées ;
+- marge semi-nette explicitement différée et non bloquante ;
+- Atelier d'optimisation Premium cadré fonctionnellement.
 
-À finaliser :
+À cadrer avant les modules concernés, pas avant M-001 :
 
-- formule exacte Objectif de marge → coefficient → prix théorique ;
-- prix conseillé / retenu ;
-- marge réelle / semi-nette ;
-- arrondis ;
-- paramètres mathématiques exacts des sliders et de la courbe ;
-- bornes de sécurité globales de l'optimiseur ;
-- placement commercial exact de la capability et inclusion V1 ou phase suivante ;
-- types/motifs exacts de version ;
-- rétention/suppression définitive.
+- types/motifs exacts de versions avant M-004 ;
+- définition de la marge semi-nette lorsqu'elle sera disponible ;
+- paramètres mathématiques fins et garde-fous de l'optimiseur avant M-005 ;
+- catalogue complet des stratégies d'arrondi ;
+- rétention/purge définitive avant implémentation.
+
 
 ### 2.5 Fiches process
 
-**État : À CADRER**
+**État : DIFFÉRÉ — non bloquant pour M-001**
 
-Définir relation avec la fiche technique, étapes, durées, points critiques, critères d'acceptabilité, versionnement et données communes/séparées.
+Le domaine reste prévu mais son cadrage détaillé n'est plus une condition préalable au démarrage.
+
+Il sera cadré avant son implémentation : relation avec la Fiche technique, étapes, durées, points critiques, critères d'acceptabilité, versionnement et données communes/séparées.
 
 
 ### 2.6 Utilisateurs, RBAC, capabilities et quotas
 
-**État : architecture RBAC validée — matrice détaillée à terminer**
+**État : baseline RBAC validée — détails techniques par module**
 
 Décisions établies :
 
 - réutilisation du RBAC Workspace du Core ;
-- un WorkspaceMember porte un seul Role dans le Core v1.0.1 ;
-- un rôle personnalisé peut combiner plusieurs responsabilités par ses permissions ;
-- Workspace Owner = toutes les permissions métier + tous les dossiers de son Workspace ;
-- invariants métier non contournables par l'Owner ;
+- un WorkspaceMember porte un seul Role ;
+- un rôle personnalisé combine plusieurs responsabilités par ses permissions ;
+- Workspace Owner = toutes les permissions métier + tous les dossiers ;
 - PlatformRole sans accès implicite aux données métier Workspace ;
 - rôle et périmètre dossier séparés ;
-- invitation Core = entrée dans le Workspace + Role ;
-- après acceptation, le Workspace Owner affecte séparément les dossiers/magasins ;
-- un membre peut temporairement appartenir au Workspace sans dossier affecté ;
-- changement de Role et changement de périmètre dossier sont indépendants ;
-- l'état du dossier participe à l'autorisation effective ;
-- rôles types : Acheteur, Économe, Responsable fiches techniques, Contributeur fiches techniques, Lecteur métier ;
-- suppression définitive des fiches réservée au Workspace Owner dans le cadrage courant ;
+- invitation Core puis affectation Dossier après acceptation ;
+- un membre peut appartenir au Workspace avec zéro Dossier ;
+- changement de Role et changement de périmètre indépendants ;
+- l'état du Dossier participe à l'autorisation effective ;
+- baseline des profils Acheteur, Économe, Responsable FT, Contributeur FT et Lecteur validée ;
+- Économe : validation des Prix facturés, revues et revalorisation, sans validation FT par défaut ;
+- Contributeur/Lecteur : Prix applicable nécessaire sans historique commercial détaillé ;
+- administration du Dossier et affectations Owner-only par défaut ;
 - Atelier d'optimisation = capability payante distincte du RBAC.
 
-À finaliser :
+À finaliser au cadrage des modules :
 
-- matrice précise des permissions par rôle type ;
-- permission de validation par défaut de l'Économe ;
-- lecture des historiques détaillés par le Lecteur métier ;
-- stockage technique des affectations dossier ;
-- rattachement commercial exact de la capability d'optimisation ;
-- autres capabilities commerciales ;
-- quotas.
-
+- clés de permissions techniques exactes ;
+- persistance métier des affectations Dossier pour M-001 ;
+- rattachement commercial exact de l'optimisation avant M-005 ;
+- quotas uniquement lorsqu'un besoin quantitatif est démontré.
 
 ### 2.7 Paramètres métier
 
@@ -255,65 +246,80 @@ Paramètres métier déjà identifiés : politique de prix, fraîcheur factures,
 
 Aucune obligation réglementaire ne doit être inventée.
 
+
 ### 2.9 Périmètre V1 / hors V1
 
-**État : À FINALISER**
+**État : périmètre initial structuré — dernière validation globale à effectuer**
 
-Le périmètre V1 sera validé après le bloc économique, les permissions finales, la fiche process et les contraintes réglementaires.
+Ordre initial recommandé :
 
----
+```text
+M-001 Dossiers / Magasins + affectations
+M-002 Catalogue Produits
+M-003 Fournisseurs + Articles + prix/catalogues
+M-004 Fiches techniques + valorisation
+M-005 Atelier d'optimisation Premium
+M-006+ Process / imports / OCR / extensions
+```
+
+Ne bloquent plus M-001 :
+
+- marge semi-nette ;
+- Fiche process ;
+- OCR / IA ;
+- imports avancés ;
+- paramètres fins de l'optimiseur ;
+- purge physique ;
+- analyses avancées.
+
+Dernière gate avant M-001 :
+
+- champs obligatoires minimaux du Dossier ;
+- représentation/persistance des affectations Dossier ;
+- vérification des contraintes réglementaires utiles à M-001 ;
+- revue de cohérence documentaire ;
+- validation formelle du cadrage global.
+
 
 ## 3. Phase 2 — Validation documentaire globale
 
-**Statut : NON DÉMARRÉE**
+**Statut : PROCHE — dernière passe nécessaire**
 
-Après validation des sujets de la Phase 1 :
+La validation globale confirme que les fondations transversales sont suffisamment stables ; elle n'exige plus de spécifier les fonctionnalités futures non nécessaires à M-001.
 
-- finaliser `docs/PRODUCT-SCOPE.md` ;
-- finaliser `docs/domain/GLOSSARY.md` ;
-- finaliser `docs/domain/DOMAIN-MODEL.md` ;
-- finaliser la présente roadmap ;
-- réévaluer `docs/DEBT.md` ;
-- mettre à jour `docs/REPRISE-CURRENT.md`.
+À terminer :
 
-Gate de décision :
+- fermer les champs obligatoires minimaux du Dossier ;
+- fixer la persistance métier des affectations Dossier ;
+- vérifier les contraintes réglementaires structurantes pour M-001 ;
+- revoir la cohérence de PRODUCT-SCOPE, GLOSSARY, DOMAIN-MODEL et ROADMAP ;
+- réévaluer DEBT uniquement si une dette réelle existe ;
+- mettre à jour REPRISE-CURRENT ;
+- passer les documents globaux en VALIDÉ si cohérents.
+
+Gate :
 
 ```text
 cadrage global validé
-→ autorisation de cadrer M-001
+→ cadrage M-001 autorisé
 ```
 
 Aucun modèle métier Mongoose avant cette gate.
 
----
 
 ## 4. Phase 3 — Cadrage M-001
 
-**Statut : BLOQUÉ par la validation du cadrage global**
+**Statut : PROCHAIN LOT — encore bloqué par la dernière validation globale**
 
-Le premier module ne sera choisi qu'après finalisation de la Phase 2.
+Module recommandé :
 
-Le cadrage M-001 devra couvrir les exigences définies dans `AGENTS.md` :
+```text
+M-001 — Dossiers / Magasins + affectations
+```
 
-- objectif ;
-- acteurs ;
-- cas d'usage ;
-- modèles ;
-- règles métier ;
-- invariants ;
-- lifecycle ;
-- tenancy / ownership ;
-- RBAC ;
-- capabilities / quotas ;
-- API ;
-- validation ;
-- audit ;
-- frontend ;
-- migrations ;
-- tests ;
-- critères d'acceptation.
+Ce module dépend directement du Workspace Core, crée la frontière métier magasin et prépare M-002/M-003 sans dépendre encore des Fiches techniques.
 
----
+Le cadrage M-001 couvrira au minimum : objectif, acteurs, cas d'usage, modèle Dossier, relation d'affectation, lifecycle, tenancy, RBAC, API, validations, audit, suppression logique/restauration, drawer/ouverture de contexte, tests et critères d'acceptation.
 
 ## 5. Phase 4 — Implémentation métier
 
@@ -389,22 +395,19 @@ développement immédiat
 ---
 
 
+
 ## 7. Prochaine étape immédiate
 
-Poursuivre sans coder dans cet ordre :
+La longue phase de cadrage transversal est presque terminée.
 
-1. terminer la matrice détaillée des permissions des rôles types ;
-2. figer la formule Objectif de marge → coefficient → prix théorique à partir des fiches de référence ;
-3. cadrer prix conseillé / prix retenu ;
-4. cadrer marge réelle / marge semi-nette ;
-5. cadrer les règles d'arrondi ;
-6. cadrer la Fiche process ;
-7. terminer les champs obligatoires et règles de persistance du Dossier/Magasin ;
-8. cadrer les paramètres mathématiques et de sécurité de l'Atelier d'optimisation ;
-9. finaliser capabilities / quotas ;
-10. finaliser intégrations et contraintes réglementaires ;
-11. fixer V1 / hors V1 ;
-12. valider globalement la documentation ;
-13. seulement ensuite cadrer M-001.
+Prochaine conversation :
 
-Aucun modèle métier Mongoose avant cette validation globale.
+1. fermer les champs obligatoires minimaux du Dossier ;
+2. choisir la représentation métier de l'affectation Dossier ;
+3. vérifier les contraintes réglementaires pertinentes pour M-001 ;
+4. effectuer la revue finale de cohérence ;
+5. passer les documents globaux en VALIDÉ ;
+6. cadrer M-001 ;
+7. seulement après validation M-001, créer la branche d'implémentation et commencer le code.
+
+La marge semi-nette, la Fiche process, l'OCR/IA et l'optimiseur détaillé ne bloquent pas ce passage.

@@ -774,6 +774,25 @@ Chaque Produit et Article proposé à la sélection doit disposer d'une **carte 
 
 ---
 
+
+### 6.13 Détail d'un Produit dans un magasin
+
+Le détail d'un Produit doit disposer d'une vue contextualisée par magasin, distincte de son identité globale dans le catalogue Workspace.
+
+Cette vue de pilotage rapide doit présenter au minimum :
+
+- le Prix applicable HT courant ;
+- sa source et sa fraîcheur ;
+- une courbe d'évolution des prix HT dans le temps ;
+- le nombre de Fiches techniques courantes dans lesquelles le Produit est présent ;
+- la liste de ces Fiches techniques.
+
+La courbe est strictement contextualisée par magasin et ne peut jamais agréger ou révéler les données commerciales d'un autre magasin.
+
+La série principale représente par défaut le Prix applicable HT tel que résolu par le backend au fil du temps. Des séries complémentaires pourront être ajoutées ultérieurement si elles apportent une valeur de pilotage et si les permissions l'autorisent.
+
+Le compteur principal porte sur les Fiches techniques courantes non archivées. Les fiches archivées peuvent être incluses via un filtre distinct. Les versions historiques d'une même fiche ne doivent pas gonfler artificiellement le compteur principal.
+
 ## 7. Conditionnement et colisage
 
 Le conditionnement fournisseur doit être lisible pour l'utilisateur **et structuré pour les calculs**.
@@ -1014,149 +1033,127 @@ L'énergie est explicitement exclue de ce calcul.
 Aucune autre charge ne doit être ajoutée à cette définition sans nouvelle validation métier.
 
 
+
 ### 8.8 Valorisation économique
 
 La composition technique et la valorisation économique restent distinctes.
 
-Une même composition peut être revalorisée lorsque les tarifs changent.
-
-Le système doit pouvoir conserver :
-
-```text
-composition
-+
-valorisation courante
-+
-historique des valorisations
-```
-
 #### 8.8.1 TVA
 
-Règles validées :
+Le Coût Matière, l'Économat et le Coût total de fabrication restent calculés en HT. La fiche/version porte le taux de TVA réellement applicable à sa commercialisation. Le backend est l'autorité des calculs HT / TVA / TTC et une version VALIDATED conserve le taux utilisé.
 
-- le Coût Matière et l'Économat sont calculés exclusivement en HT ;
-- la TVA ne modifie jamais le Coût total de fabrication HT ;
-- le Workspace peut fournir un taux standard pour faciliter la saisie ;
-- ce taux standard n'est jamais une règle fiscale universelle imposée à toutes les fiches ;
-- la fiche / version porte le taux réellement applicable à sa commercialisation ;
-- le backend est l'autorité des calculs HT / TVA / TTC ;
-- une version VALIDATED conserve le taux de TVA effectivement utilisé ;
-- une modification ultérieure du paramétrage ne réécrit jamais l'historique.
+#### 8.8.2 Objectif de marge, coefficient et Prix théorique
 
-La TVA relève donc de la commercialisation du produit fini et non d'un attribut permanent du Produit ingrédient.
-
-#### 8.8.2 Objectif de marge
-
-L'Objectif de marge est le **taux de marge souhaitable à atteindre**, défini dans le contexte du magasin et utilisé comme cible de la Fiche technique.
-
-Exemples métier possibles :
+Convention métier validée :
 
 ```text
-48 %
-52 %
-55 %
+Objectif de marge
+=
+(Prix de vente HT - Coût total de fabrication HT)
+/
+Prix de vente HT
 ```
 
-Le magasin peut disposer d'une valeur de référence ; chaque Fiche technique doit pouvoir utiliser la cible réellement retenue pour son calcul et sa simulation.
-
-L'Objectif de marge est un paramètre de pilotage, pas la marge réellement obtenue. Une version VALIDATED doit conserver la valeur utilisée pour expliquer sa valorisation.
-
-La formule exacte reliant Objectif de marge, coefficient, prix théorique, prix conseillé/retenu et marges calculées doit être dérivée des fiches de référence et validée avant implémentation. Le produit ne substitue pas arbitrairement « taux de marque » ou une autre notion à l'indicateur métier attendu.
-
-Restent à cadrer précisément :
-
-- coefficient ;
-- prix théorique ;
-- prix de vente conseillé ;
-- prix de vente retenu ;
-- marge réelle ;
-- marge semi-nette ;
-- règles d'arrondi.
-
-#### 8.8.3 Atelier d'optimisation de Fiche technique
-
-Une capability commerciale payante dédiée doit proposer un **atelier d'optimisation non destructif inspiré de la logique de Lightroom**, transposé aux Fiches techniques.
-
-L'objectif n'est pas d'imiter visuellement un logiciel photo sans sens métier, mais de fournir plusieurs niveaux de réglage complémentaires :
+Le coefficient est calculé depuis cet objectif :
 
 ```text
-sliders globaux
-≠
-courbe d'équilibre multipoints
-≠
-réglages fins par ingrédient
-≠
-scénarios / presets éventuels
+coefficient = 1 / (1 - objectif de marge)
 ```
 
-Les sliders pilotent des variables globales distinctes telles que l'Objectif de marge, le prix de vente lorsque modifiable, l'intensité de l'optimisation ou d'autres paramètres dont la traduction mathématique aura été validée.
-
-La courbe d'équilibre permet une modulation globale de la répartition des efforts d'optimisation selon la contribution économique des ingrédients. Elle doit pouvoir recevoir plusieurs points manipulables, avec un rendu graphique professionnel et un recalcul fluide en temps réel.
-
-L'atelier doit également disposer de visualisations métier de niveau professionnel, notamment :
-
-- histogramme général composition / coût ;
-- visualisation de la relation entre part dans la recette et contribution au coût ;
-- état des marges de modulation restantes ;
-- avant / après ;
-- signalement visuel des limites atteintes, analogue à l'écrêtage en retouche photo mais fondé sur des bornes métier réelles.
-
-Les ingrédients modulables possèdent conceptuellement :
+Puis :
 
 ```text
-quantité de référence
-minimum autorisé
-maximum autorisé
+Prix théorique HT
+=
+Coût total de fabrication HT × coefficient
 ```
 
-Les bornes sont paramétrables, par exemple :
+Le vocabulaire produit reste « Objectif de marge ».
+
+#### 8.8.3 Prix conseillé et arrondi Workspace
+
+Le Prix conseillé est obtenu après application de la règle d'arrondi commerciale effective au Prix théorique TTC.
+
+Invariant :
 
 ```text
-référence : 30 g
-minimum : 25 g
-maximum : 35 g
+Prix conseillé TTC >= Prix théorique TTC
 ```
 
-Elles ne sont jamais déduites arbitrairement d'un pourcentage fixe.
-
-Les lignes exprimées en pièce / unité ou explicitement verrouillées restent fixes pendant l'optimisation.
-
-Invariant de composition :
+Règle standard du SaaS :
 
 ```text
-variation d'une ligne ajustable
-→ compensation par une ou plusieurs autres lignes ajustables
-→ quantité finale conservée lorsqu'elle est verrouillée
-→ composition totale = 100 %
+multiple de 0,50 € immédiatement supérieur ou égal
 ```
 
-Le moteur doit maintenir une **enveloppe de qualité perçue** définie par les bornes et contraintes métier. Il ne peut jamais sacrifier arbitrairement la qualité commerciale pour atteindre un objectif économique.
-
-Les bornes configurées par l'utilisateur restent soumises à des validations et limites de sécurité backend indépendantes : aucune valeur envoyée par le frontend n'est considérée comme fiable par défaut.
-
-Lorsque l'objectif demandé ne peut pas être atteint sans sortir des contraintes :
+Exemples :
 
 ```text
-objectif demandé
-→ non atteignable dans l'enveloppe actuelle
-→ explication des contraintes
-→ aucun contournement automatique
+7,21 € → 7,50 €
+7,50 € → 7,50 €
+7,51 € → 8,00 €
+8,13 € → 8,50 €
 ```
 
-L'atelier est non destructif :
+Le Workspace peut, lorsque sa capability le permet, choisir une autre stratégie structurée, par exemple « euro supérieur - 0,10 € » pour obtenir une terminaison en `,90`. La stratégie ne peut jamais produire un Prix conseillé inférieur au Prix théorique. Aucune formule arbitraire exécutable n'est acceptée.
+
+#### 8.8.4 Prix définitif
+
+Le Prix définitif est un choix humain.
+
+Invariant backend :
 
 ```text
-Fiche DRAFT
-→ simulation
-→ comparaison avant / après
-→ Appliquer au DRAFT
-→ modification réelle du DRAFT
-→ validation explicite ultérieure
+Prix définitif TTC >= Prix conseillé TTC
 ```
 
-Déplacer un slider, une courbe ou un réglage ne modifie jamais directement une version VALIDATED.
+Si une revalorisation rend le Prix définitif inférieur au nouveau Prix conseillé, le DRAFT devient non conforme jusqu'à ajustement du prix ou de la composition.
 
-La fonctionnalité d'optimisation avancée relève d'une **capability payante dédiée**. Le rattachement précis à une offre commerciale et son exposition éventuelle pendant un Trial restent à décider dans le cadrage commercial final.
+#### 8.8.5 Marge réelle
+
+```text
+Marge réelle %
+=
+(Prix définitif HT - Coût total de fabrication HT)
+/
+Prix définitif HT
+× 100
+```
+
+```text
+Marge réelle €
+=
+Prix définitif HT - Coût total de fabrication HT
+```
+
+Le système expose également l'écart en points entre marge réelle et Objectif de marge.
+
+#### 8.8.6 Marge semi-nette
+
+La notion reste identifiée mais sa formule n'est pas encore connue.
+
+```text
+marge semi-nette
+→ question métier différée
+→ aucune formule inventée
+→ ne bloque pas le démarrage du développement
+```
+
+#### 8.8.7 Snapshot économique
+
+Une version VALIDATED conserve notamment Objectif de marge, coefficient, Coût total de fabrication HT, TVA, Prix théorique, Prix conseillé, Prix définitif, marge réelle en valeur et en pourcentage.
+
+#### 8.8.8 Atelier d'optimisation
+
+L'Atelier d'optimisation est une capability commerciale payante et non destructive, inspirée de la logique de Lightroom transposée aux Fiches techniques.
+
+Il combine sliders globaux, courbe d'équilibre multipoints, histogramme composition/coût, réglages fins par ingrédient, avant/après et signalement visuel des limites.
+
+Chaque ligne modulable possède une quantité de référence, un minimum et un maximum configurables. Les pièces/unités et lignes verrouillées restent fixes.
+
+Toute variation doit respecter les contraintes, conserver 100 % de composition lorsque le poids final est verrouillé et rester dans l'enveloppe de qualité perçue. Des garde-fous backend indépendants des valeurs utilisateur restent obligatoires.
+
+La simulation ne modifie le DRAFT qu'après action explicite « Appliquer au DRAFT ». Les mathématiques fines des sliders, de la courbe et des garde-fous seront cadrées avant le module d'optimisation et ne bloquent pas M-001.
 
 ### 8.9 Concurrence, revalorisation et prix modifiés en cours de travail
 
@@ -1686,86 +1683,83 @@ Un accès dossier conservé pour audit n'accorde aucun accès opérationnel lors
 
 Le rôle détermine ce que l'utilisateur peut demander. Les invariants déterminent ce que le système accepte comme état valide.
 
-### 13.6 Orientations de matrice de permissions
 
-Sans figer encore la matrice finale, les directions validées sont :
+### 13.6 Matrice de référence des rôles types
 
-- Acheteur / Responsable achats : Fournisseurs, Articles, catalogues, négociations et conditions commerciales selon permissions ;
-- Économe / Gestionnaire des prix : consultation/gestion des prix, validation des Prix facturés, revues tarifaires et correction/revalorisation des fiches dans son périmètre selon permissions ;
-- Responsable fiches techniques : création, modification, validation, archivage et restauration selon permissions ;
-- Contributeur fiches techniques : création et travail sur ses DRAFTS selon permissions, sans administration tarifaire implicite ;
-- Lecteur métier : consultation des données autorisées ;
-- suppression définitive des Fiches techniques : réservée au Workspace Owner dans le cadrage actuel.
+La baseline validée est la suivante ; les permissions effectives restent l'autorité technique et les rôles personnalisés peuvent combiner plusieurs responsabilités.
 
-La permission de validation d'une Fiche technique reste une permission indépendante : elle pourra être accordée explicitement à un rôle personnalisé sans imposer qu'elle appartienne à tous les Économes.
+| Action | Owner | Acheteur | Économe | Responsable FT | Contributeur FT | Lecteur |
+| --- | --- | --- | --- | --- | --- | --- |
+| Voir Produits | Oui | Oui | Oui | Oui | Oui | Oui |
+| Créer / modifier Produits | Oui | Oui | Non | Oui | Non | Non |
+| Voir Fournisseurs / Articles | Oui | Oui | Oui | Oui | Oui | Oui |
+| Gérer Fournisseurs / Articles | Oui | Oui | Non | Non | Non | Non |
+| Gérer catalogues fournisseur | Oui | Oui | Non | Non | Non | Non |
+| Voir le Prix applicable nécessaire | Oui | Oui | Oui | Oui | Oui | Oui |
+| Voir l'historique commercial détaillé | Oui | Oui | Oui | Non | Non | Non |
+| Gérer Tarifs négociés | Oui | Oui | Non | Non | Non | Non |
+| Saisir / corriger Prix facturés | Oui | Non | Oui | Non | Non | Non |
+| Valider Prix facturés | Oui | Non | Oui | Non | Non | Non |
+| Exécuter une revue tarifaire | Oui | Non | Oui | Non | Non | Non |
+| Gérer Références favorites | Oui | Oui | Oui | Oui | Non | Non |
+| Créer une Fiche technique | Oui | Non | Non | Oui | Oui | Non |
+| Modifier ses DRAFTS | Oui | Non | Non | Oui | Oui | Non |
+| Modifier les DRAFTS d'autrui | Oui | Non | Non | Oui | Non | Non |
+| Revaloriser ses fiches | Oui | Non | Oui | Oui | Oui | Non |
+| Revaloriser toute fiche du périmètre | Oui | Non | Oui | Oui | Non | Non |
+| Valider une Fiche technique | Oui | Non | Non | Oui | Non | Non |
+| Archiver / restaurer une fiche | Oui | Non | Non | Oui | Non | Non |
+| Consulter les Fiches techniques | Oui | Selon besoin | Oui | Oui | Oui | Oui |
+| Modifier les informations d'un Dossier | Oui | Non | Non | Non par défaut | Non | Non |
+| Gérer les accès Dossier | Oui | Non | Non | Non | Non | Non |
+| Changer le statut d'un Dossier | Oui | Non | Non | Non | Non | Non |
+| Lire la configuration métier | Oui | Oui | Oui | Oui | Oui | Oui |
+| Modifier la configuration métier | Oui | Non | Non | Non | Non | Non |
+| Suppression définitive d'une fiche | Oui uniquement | Non | Non | Non | Non | Non |
 
----
+L'Économe ne valide pas les Fiches techniques par défaut. Contributeur et Lecteur peuvent recevoir le Prix applicable nécessaire sans accès à l'historique commercial détaillé. L'administration du Dossier et l'affectation des magasins restent Owner-only par défaut.
 
 
 ## 14. V1 / hors V1
 
-Le périmètre V1 n'est pas encore finalisé.
+Le cadrage global ne doit plus exiger la spécification exhaustive de toutes les extensions futures avant le premier module.
 
-Éléments considérés comme fondamentaux pour le cadrage du socle :
+Ordre recommandé :
 
-- Workspace + dossiers magasin ;
-- identité, coordonnées, modification et cycle de vie des dossiers ;
-- affectations de magasins distinctes du Role Workspace ;
-- consultation rapide du dossier en drawer sans changement de contexte ;
-- ouverture explicite d'un dossier comme contexte métier ;
-- Dashboard Workspace comme surface de pilotage et retour global ;
-- Dashboard personnalisable à partir des mécanismes Core ;
-- catalogue Produit commun au Workspace ;
-- catégories et rendement ;
-- Fournisseurs et Articles fournisseur ;
-- conditionnements structurés ;
-- catalogues fournisseur de référence historisés ;
-- prix magasin isolés et historisés ;
-- politique de Prix applicable du Workspace ;
-- fraîcheur standard des Prix facturés ;
-- références favorites / fréquemment utilisées par magasin ;
-- cartes d'identité Produit/Article ;
-- Fiches techniques calculées, versionnées et validables ;
-- TVA séparée des coûts HT et historisée dans les versions validées ;
-- Objectif de marge comme cible métier de la fiche ;
-- archivage et historique ;
-- configuration métier avec comportements standards ;
-- RBAC Workspace étendu par les permissions métier ;
-- périmètres magasin indépendants du rôle.
+```text
+M-001 → Dossiers / Magasins + affectations
+M-002 → Catalogue Produits
+M-003 → Fournisseurs + Articles + prix/catalogues
+M-004 → Fiches techniques + valorisation
+M-005 → Atelier d'optimisation Premium
+M-006+ → Fiches process / imports / OCR / extensions
+```
 
-L'Atelier d'optimisation de Fiche technique est identifié comme une capability payante différenciante du produit. Son rattachement exact à la V1 ou à une étape commerciale ultérieure reste à arbitrer avec le périmètre final.
+Sont explicitement différés et non bloquants pour M-001 :
 
-Les imports structurés de catalogues, l'OCR/IA, les automatisations avancées et certaines personnalisations peuvent rester différables selon l'arbitrage V1 final.
+- marge semi-nette ;
+- Fiche process ;
+- mathématiques fines de l'Atelier d'optimisation ;
+- catalogue complet des stratégies d'arrondi personnalisées ;
+- OCR / IA ;
+- imports avancés ;
+- purge physique définitive ;
+- analyses et alertes avancées.
+
+Ces sujets seront cadrés avant le module qui les implémente.
 
 
-## 15. Points ouverts à résoudre avant validation globale
+## 15. Points ouverts avant passage à M-001
 
-Le cadrage global reste DRAFT. Les points suivants ne doivent pas être inventés pendant l'implémentation :
+Les derniers bloqueurs globaux sont désormais limités à :
 
-- matrice détaillée finale des permissions des rôles types ;
-- lecture détaillée des historiques de prix pour le Lecteur métier ;
-- stockage technique exact du périmètre dossier / affectations ;
-- caractère obligatoire ou facultatif de l'enseigne, de l'email documents et du responsable ;
-- source technique finale d'autocomplétion d'adresse / commune et contrat de résilience associé ;
-- convention technique exacte de fraîcheur standard du Prix facturé ;
-- valeur standard du seuil « fréquemment utilisée » ;
-- traitement des fiches archivées dans ce calcul ;
-- données minimales Fournisseur ;
-- lifecycle Article fournisseur ;
-- gouvernance finale des revues tarifaires ;
-- formule exacte Objectif de marge → coefficient → prix théorique ;
-- prix conseillé / prix retenu ;
-- marge réelle / marge semi-nette ;
-- arrondis ;
-- bornes de sécurité globales de l'Atelier d'optimisation ;
-- paramètres exacts utilisables par sliders, courbe, presets et groupes sans introduire de contrôle décoratif ;
-- rattachement commercial exact de la capability payante d'optimisation et exposition éventuelle au Trial ;
-- types/motifs exacts de version ;
-- règles de rétention et purge définitive ;
-- détail de la Fiche process ;
-- quotas ;
-- intégrations et contraintes réglementaires ;
-- périmètre V1 / hors V1 final.
+- fixer les champs obligatoires minimaux du Dossier ;
+- fixer la représentation/persistance métier des affectations Dossier ;
+- confirmer qu'aucune contrainte réglementaire connue ne modifie structurellement M-001 ;
+- effectuer la revue finale de cohérence ;
+- passer les documents canoniques de DRAFT à VALIDÉ.
+
+Les autres questions sont rattachées au module concerné : catégories/unités Produit avant M-002 ; Fournisseur/Article/prix avant M-003 ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge avant implémentation.
 
 ## 16. Sources de cadrage utilisées
 

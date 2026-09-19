@@ -391,6 +391,19 @@ Vue opérationnelle unique regroupant les Articles fournisseur pertinents d'un m
 
 ---
 
+
+## Détail Produit / Magasin
+
+Vue contextualisée d'un Produit pour un magasin déterminé.
+
+Elle présente notamment le Prix applicable HT courant, son historique graphique dans ce magasin et les Fiches techniques courantes utilisant le Produit.
+
+## Courbe d'évolution des prix HT
+
+Graphique temporel affichant par défaut l'évolution du Prix applicable HT d'un Produit dans un magasin.
+
+Il ne mélange jamais les données commerciales de plusieurs magasins.
+
 ## Carte d'identité Produit / Article
 
 Présentation professionnelle des informations nécessaires à une sélection fiable : Produit, Fournisseur, référence, désignation d'origine, marque éventuelle, conditionnement, Prix applicable du magasin courant, source, temporalité et alertes.
@@ -710,15 +723,22 @@ Une permission autorise à demander une action ; elle n'autorise jamais à crée
 ---
 
 
+
 ## Objectif de marge
 
-Taux de marge souhaitable à atteindre pour une Fiche technique dans le contexte d'un magasin.
+Taux de marge souhaitable à atteindre pour une Fiche technique.
+
+Convention validée :
+
+```text
+Objectif de marge
+=
+(Prix de vente HT - Coût total de fabrication HT)
+/
+Prix de vente HT
+```
 
 Il constitue une cible de pilotage et peut différer de la marge réellement obtenue.
-
-Une valeur de référence peut être fournie par le magasin ; la fiche utilise la cible réellement retenue pour ses calculs et sa simulation.
-
-Il ne doit pas être remplacé implicitement par une autre notion économique comme le taux de marque.
 
 ## TVA de la fiche
 
@@ -726,22 +746,74 @@ Taux de TVA appliqué à la commercialisation du produit fini.
 
 Les coûts matière, Économat et Coût total de fabrication restent calculés en HT.
 
-Le Workspace peut proposer un taux standard, mais la version validée conserve le taux réellement utilisé pour ses calculs HT / TVA / TTC.
+## Coefficient
+
+Valeur calculée depuis l'Objectif de marge :
+
+```text
+coefficient = 1 / (1 - objectif de marge)
+```
+
+Il n'est pas une donnée libre indépendante de l'objectif.
 
 ## Prix théorique
 
-Prix calculé automatiquement pour atteindre un objectif de marge donné selon la formule métier validée.
+Prix calculé pour atteindre l'Objectif de marge avant application de la stratégie commerciale d'arrondi.
 
----
+```text
+Prix théorique HT
+=
+Coût total de fabrication HT × coefficient
+```
 
-## Prix de vente retenu / conseillé
+## Prix conseillé
 
-Prix effectivement proposé ou choisi pour la fiche.
+Prix minimum proposé par le SaaS après application au Prix théorique TTC de la règle d'arrondi effective du Workspace.
 
-Il peut être différent du prix théorique nécessaire pour atteindre l'objectif de marge.
+Il ne peut jamais être inférieur au Prix théorique correspondant.
 
----
+## Prix définitif
 
+Prix de vente décidé humainement pour la Fiche technique.
+
+Invariant :
+
+```text
+Prix définitif TTC >= Prix conseillé TTC
+```
+
+## Marge réelle
+
+Résultat économique calculé à partir du Prix définitif réellement choisi.
+
+```text
+Marge réelle %
+=
+(Prix définitif HT - Coût total de fabrication HT)
+/
+Prix définitif HT
+× 100
+```
+
+La marge réelle en euros correspond à la différence entre Prix définitif HT et Coût total de fabrication HT.
+
+## Marge semi-nette
+
+Indicateur métier identifié dont la définition exacte est encore attendue.
+
+Aucune formule ne doit être inventée. Son absence de définition ne bloque pas le démarrage des premiers modules.
+
+## Règle d'arrondi du Workspace
+
+Stratégie structurée transformant le Prix théorique TTC en Prix conseillé TTC.
+
+Règle standard du SaaS :
+
+```text
+multiple de 0,50 € immédiatement supérieur ou égal
+```
+
+Le Workspace peut utiliser une stratégie personnalisée lorsque sa capability le permet, par exemple une terminaison commerciale en `,90`, tout en respectant `Prix conseillé >= Prix théorique`.
 
 ## Atelier d'optimisation de Fiche technique
 

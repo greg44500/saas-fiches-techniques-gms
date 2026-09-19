@@ -238,13 +238,13 @@ base : main
 Dernière preuve CI vérifiée avant le présent enrichissement documentaire :
 
 ```text
-Core Gate #29
-run        : 35462554312
-head       : 435f44dd4202732befe11672ed5e735e49fa3e71
+Core Gate #30
+run        : 35466401908
+head       : 806a0588576306f5c894d2ddea474551989e9004
 conclusion : success
 ```
 
-Le présent lot documentaire avance ensuite la branche. Toute nouvelle gate déclenchée sur son nouveau HEAD doit être vérifiée sur GitHub avant merge ; cette synthèse ne doit jamais extrapoler un statut vert non observé.
+Le présent lot documentaire avance ensuite la branche. Toute nouvelle gate déclenchée sur son nouveau HEAD doit être vérifiée avant merge ; cette synthèse ne doit jamais extrapoler un statut vert non observé.
 
 Documents ajoutés en statut DRAFT :
 
@@ -395,6 +395,19 @@ La politique Workspace peut fonctionner en manuel, suggestion ou ajout automatiq
 Une vue unique « Références du magasin » peut prioriser Favorites et Fréquemment utilisées puis donner accès au catalogue complet.
 
 Chaque Produit/Article proposé doit disposer d'une carte d'identité professionnelle : Fournisseur, référence, désignation, conditionnement, marque éventuelle, Prix applicable courant, source, temporalité et alertes. Ces informations viennent du backend.
+
+
+### 8.4.2 Détail Produit / Magasin
+
+Décision validée :
+
+- le détail d'un Produit dans un magasin affiche le Prix applicable HT courant ;
+- une courbe montre l'évolution de ce Prix applicable HT dans le temps ;
+- la vue affiche le nombre de Fiches techniques courantes utilisant le Produit ;
+- la liste de ces fiches est accessible ;
+- le compteur principal ne gonfle pas avec les versions historiques ;
+- les fiches archivées peuvent être incluses via un filtre distinct ;
+- toutes les données restent strictement limitées au magasin courant.
 
 ### 8.5 Fiche technique, versionnement et coûts
 
@@ -618,42 +631,68 @@ Les widgets configurables peuvent ensuite être masqués/réaffichés individuel
 
 Les préférences d'affichage ne modifient jamais les règles métier.
 
-### 8.7.4 TVA, Objectif de marge et Atelier d'optimisation
+
+### 8.7.4 TVA, chaîne économique et Atelier d'optimisation
 
 TVA validée :
 
 - coûts de fabrication toujours HT ;
 - taux standard Workspace possible ;
 - taux réellement applicable porté par la fiche/version ;
-- calculs HT / TVA / TTC autoritatifs backend ;
-- snapshot TVA dans la version VALIDATED ;
-- aucune réécriture historique après changement de paramètre.
+- snapshot TVA dans la version VALIDATED.
 
-Objectif de marge :
+Chaîne économique validée :
 
-- taux de marge souhaitable à atteindre ;
-- cible définie dans le contexte du magasin et utilisée par la Fiche technique ;
-- exemples possibles : 48 %, 52 %, 55 % ;
-- aucune substitution arbitraire par un taux de marque ;
-- coefficient, prix théorique, prix conseillé/retenu, marge réelle/semi-nette et arrondis restent à formaliser.
+```text
+Objectif de marge
+= (Prix de vente HT - Coût fabrication HT) / Prix de vente HT
+
+coefficient
+= 1 / (1 - objectif de marge)
+
+Prix théorique HT
+= Coût fabrication HT × coefficient
+
+Prix théorique TTC
+→ règle d'arrondi Workspace
+
+Prix conseillé TTC
+→ minimum commercial calculé
+
+Prix définitif TTC
+→ décision humaine
+```
+
+Invariants :
+
+```text
+Prix conseillé TTC >= Prix théorique TTC
+Prix définitif TTC >= Prix conseillé TTC
+```
+
+Règle d'arrondi standard :
+
+```text
+multiple de 0,50 € immédiatement supérieur ou égal
+```
+
+Le Workspace peut utiliser des stratégies structurées personnalisées lorsque la capability le permet, par exemple une terminaison en `,90`. Aucune formule arbitraire n'est exécutée.
+
+La marge réelle % et € est calculée depuis le Prix définitif.
+
+La marge semi-nette reste volontairement non définie et ne bloque pas le développement.
 
 Atelier d'optimisation :
 
 - capability commerciale payante et différenciante ;
 - logique « Lightroom des Fiches techniques » ;
-- sliders globaux conservés ;
-- courbe d'équilibre multipoints complémentaire ;
-- histogramme composition/coût et graphiques professionnels ;
-- réglages fins par ingrédient ;
-- quantités de référence + bornes min/max configurables ;
+- sliders globaux + courbe multipoints + histogramme métier ;
+- bornes min/max configurables et garde-fous backend ;
 - pièces/unités verrouillées ;
-- composition conservée à 100 % lorsque la quantité finale est verrouillée ;
-- compensation entre ingrédients modulables ;
-- enveloppe de qualité perçue ;
-- bornes utilisateur complétées par des limites de sécurité backend ;
-- objectif impossible signalé explicitement ;
+- composition à 100 % lorsque le poids final est verrouillé ;
 - simulation non destructive ;
-- application explicite au DRAFT avant toute persistance métier.
+- application explicite au DRAFT ;
+- mathématiques fines à cadrer avant M-005, pas avant M-001.
 
 ### 8.8 Principe invariants vs permissions
 
@@ -672,47 +711,41 @@ Aucune permission, y compris celles du Workspace Owner, ne permet de contourner 
 ---
 
 
-## 9. Points métier restant à cadrer
 
-Le cadrage global n'est pas terminé, mais les blocs Dossier, navigation, Dashboard, TVA et optimisation avancée sont désormais fortement précisés.
+## 9. État réel du cadrage avant M-001
 
-Ordre recommandé de reprise :
+Le cadrage transversal est suffisamment avancé pour ne plus faire dépendre le démarrage de sujets appartenant à des modules futurs.
 
-1. finaliser la matrice précise des permissions des rôles types ;
-2. valider la formule Objectif de marge → coefficient → prix théorique à partir des fiches de référence ;
-3. cadrer prix conseillé / prix retenu ;
-4. cadrer marge réelle / semi-nette ;
-5. cadrer arrondis ;
-6. cadrer Fiche process ;
-7. finaliser les champs obligatoires et la persistance du périmètre Dossier ;
-8. cadrer les paramètres mathématiques / sécurité de l'Atelier d'optimisation ;
-9. finaliser capabilities / quotas ;
-10. finaliser intégrations et contraintes réglementaires ;
-11. fixer V1 / hors V1 ;
-12. validation documentaire globale ;
-13. seulement ensuite cadrage M-001.
+### Bloqueurs réels restants avant le cadrage M-001
 
-Points encore ouverts dans les blocs déjà travaillés :
+1. fixer les champs obligatoires minimaux du Dossier ;
+2. fixer la représentation/persistance métier des affectations Dossier ;
+3. vérifier les contraintes réglementaires réellement structurantes pour M-001 ;
+4. effectuer la revue finale de cohérence ;
+5. passer le cadrage global en VALIDÉ.
 
-- lecture détaillée des historiques de prix par le Lecteur métier ;
-- permission de validation par défaut de l'Économe ;
-- persistance technique du périmètre dossier ;
-- caractère obligatoire de l'enseigne, email documents et responsable ;
-- fournisseur technique final d'autocomplétion géographique ;
-- convention exacte de fraîcheur du Prix facturé ;
-- seuil « fréquemment utilisée » et traitement des fiches archivées ;
-- données minimales Fournisseur ;
-- lifecycle Article fournisseur ;
-- gouvernance finale des revues tarifaires ;
-- formule économique complète après Objectif de marge ;
-- bornes de sécurité et paramètres exacts de l'optimiseur ;
-- rattachement commercial exact de la capability payante d'optimisation ;
-- types/motifs exacts de version ;
-- rétention / purge définitive ;
-- détail de la Fiche process ;
-- quotas, réglementation et V1 final.
+### Sujets différés qui ne bloquent plus M-001
 
-Aucune de ces questions ne doit être résolue implicitement pendant l'implémentation.
+- marge semi-nette ;
+- Fiche process ;
+- OCR / IA ;
+- imports avancés ;
+- mathématiques fines de l'optimiseur ;
+- catalogue complet des arrondis commerciaux ;
+- purge physique définitive ;
+- analyses avancées ;
+- quotas non encore démontrés.
+
+### Ordre de modules recommandé
+
+```text
+M-001 Dossiers / Magasins + affectations
+M-002 Catalogue Produits
+M-003 Fournisseurs + Articles + prix/catalogues
+M-004 Fiches techniques + valorisation
+M-005 Atelier d'optimisation Premium
+M-006+ Process / imports / OCR / extensions
+```
 
 ## 10. Points techniques non bloquants à suivre
 
@@ -781,33 +814,23 @@ En développement, viser des vertical slices cohérentes : backend, permissions,
 ---
 
 
+
 ## 13. Point de reprise immédiat
 
-Reprendre par la fin du bloc économique et RBAC, sans coder :
+La prochaine conversation doit terminer la **courte gate restante avant M-001**, sans repartir dans un cadrage exhaustif.
 
-```text
-1. matrice permissions finales
-2. Objectif de marge → coefficient → prix théorique
-3. prix conseillé / retenu
-4. marge réelle / semi-nette
-5. arrondis
-```
+Ordre :
 
-Puis :
+1. décider quels champs Dossier sont obligatoires en V1 ;
+2. choisir la relation métier d'affectation Dossier et ses invariants ;
+3. vérifier les contraintes réglementaires pertinentes pour ce module ;
+4. revoir PRODUCT-SCOPE / GLOSSARY / DOMAIN-MODEL / ROADMAP ;
+5. déclarer le cadrage global VALIDÉ si cohérent ;
+6. cadrer M-001 — Dossiers / Magasins + affectations ;
+7. seulement après validation M-001, créer la branche et développer.
 
-```text
-Fiche process
-→ détails Dossier / affectations
-→ cadrage mathématique de l'Atelier d'optimisation
-→ capabilities / quotas
-→ intégrations / réglementation
-→ V1 / hors V1
-→ validation globale
-→ cadrage M-001
-```
+La marge semi-nette et la Fiche process sont explicitement différées et non bloquantes.
 
-Ne créer aucun modèle métier Mongoose avant validation du cadrage global.
+Ne créer aucun modèle métier Mongoose avant validation de cette dernière gate globale.
 
-Ne créer aucun second système de rôles, de Dashboard ou de navigation parallèle au Core.
-
-Ne jamais confondre Workspace Owner et rôle Platform.
+Ne créer aucun second système de rôles, Dashboard ou navigation parallèle au Core.

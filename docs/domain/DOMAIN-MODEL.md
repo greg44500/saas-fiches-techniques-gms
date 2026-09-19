@@ -644,6 +644,26 @@ Le frontend ne reconstruit ni la valorisabilité, ni le statut favori/fréquent,
 
 ---
 
+
+### 9.12 Détail Produit / Magasin
+
+Le Produit reste global au Workspace, mais sa projection opérationnelle dans un Dossier/Magasin expose des informations contextualisées.
+
+```text
+Produit
+× Dossier/Magasin
+→ Prix applicable HT courant
+→ historique graphique du Prix applicable HT
+→ nombre de Fiches techniques courantes utilisant le Produit
+→ liste des Fiches techniques concernées
+```
+
+Le compteur principal repose sur les fiches courantes non archivées et ne compte pas plusieurs fois une même fiche à cause de ses versions historiques.
+
+Les fiches archivées peuvent être incluses via un filtre distinct.
+
+La courbe principale utilise le Prix applicable HT résolu par le backend dans le temps. Toute série commerciale complémentaire reste soumise aux permissions et à l'isolation du magasin.
+
 ## 10. Historique tarifaire
 
 Une nouvelle donnée tarifaire ajoute une nouvelle réalité temporelle ; elle ne détruit pas l'ancienne.
@@ -750,23 +770,77 @@ CM HT + Économat HT
 L'énergie est exclue.
 
 
-### 11.9 TVA et Objectif de marge
+
+### 11.9 TVA et chaîne économique
 
 Le Coût Matière, l'Économat et le Coût total de fabrication restent calculés en HT.
 
-La version de Fiche technique porte le taux de TVA réellement appliqué à sa commercialisation et l'Objectif de marge réellement utilisé.
+Convention d'Objectif de marge :
 
 ```text
-Workspace
-→ peut fournir des valeurs standards
-
-Fiche / version
-→ conserve les valeurs effectivement utilisées
+Objectif de marge
+=
+(Prix de vente HT - Coût total de fabrication HT)
+/
+Prix de vente HT
 ```
 
-L'Objectif de marge est le taux de marge souhaitable à atteindre. Il constitue une cible distincte de la marge réellement obtenue.
+Coefficient :
 
-Les formules exactes reliant Objectif de marge, coefficient, prix théorique, prix conseillé/retenu et marges restent à valider à partir des fiches de référence.
+```text
+coefficient = 1 / (1 - objectif de marge)
+```
+
+Prix théorique :
+
+```text
+Prix théorique HT
+=
+Coût total de fabrication HT × coefficient
+```
+
+Le Prix théorique TTC est calculé avec la TVA de la fiche.
+
+La règle d'arrondi effective du Workspace produit ensuite le Prix conseillé TTC.
+
+Règle standard :
+
+```text
+Prix conseillé TTC
+=
+multiple de 0,50 € immédiatement supérieur ou égal
+au Prix théorique TTC
+```
+
+Invariants :
+
+```text
+Prix conseillé TTC >= Prix théorique TTC
+Prix définitif TTC >= Prix conseillé TTC
+```
+
+Le Prix définitif reste une décision humaine.
+
+Marge réelle :
+
+```text
+Marge réelle %
+=
+(Prix définitif HT - Coût total de fabrication HT)
+/
+Prix définitif HT
+× 100
+```
+
+```text
+Marge réelle €
+=
+Prix définitif HT - Coût total de fabrication HT
+```
+
+La marge semi-nette reste non définie et explicitement différée.
+
+Une version VALIDATED conserve le snapshot nécessaire à l'explication de cette chaîne économique.
 
 ## 12. Composition, valorisation et concurrence
 
@@ -1084,6 +1158,24 @@ L'autorisation effective combine membership, permission, accès dossier, état d
 ---
 
 
+
+## 19.2 Baseline RBAC des rôles types
+
+La baseline fonctionnelle est validée :
+
+- Owner : toutes les permissions métier et tous les Dossiers ;
+- Acheteur : gestion Produits selon baseline, Fournisseurs, Articles, catalogues et Tarifs négociés ;
+- Économe : gestion/validation des Prix facturés, revues tarifaires et revalorisation, sans validation FT par défaut ;
+- Responsable FT : création, édition, validation, archivage/restauration des Fiches techniques ;
+- Contributeur FT : création et modification de ses DRAFTS, revalorisation de ses fiches, sans administration tarifaire ;
+- Lecteur : consultation des ressources autorisées sans historique commercial détaillé par défaut.
+
+Contributeur et Lecteur peuvent recevoir le Prix applicable nécessaire sans recevoir l'historique commercial confidentiel.
+
+Administration du Dossier et affectations restent Owner-only par défaut.
+
+Les rôles personnalisés combinent les permissions lorsque plusieurs responsabilités sont requises.
+
 ## 20. Invariants métier déjà établis
 
 - Workspace = frontière de tenancy ;
@@ -1111,26 +1203,24 @@ L'autorisation effective combine membership, permission, accès dossier, état d
 - les invariants s'appliquent au Workspace Owner comme aux autres membres.
 
 
+
 ## 21. Questions de domaine encore ouvertes
 
-Avant implémentation, restent notamment à trancher :
+### Bloqueurs restants avant cadrage M-001
 
-- matrice détaillée des permissions des rôles types ;
-- persistance exacte des affectations dossier ;
-- caractère obligatoire de certains champs Dossier ;
-- intégration technique de l'autocomplétion géographique ;
-- convention exacte de fraîcheur du Prix facturé ;
-- seuil et calcul des références fréquemment utilisées ;
-- lifecycle Article fournisseur ;
-- gouvernance des revues tarifaires ;
-- formule exacte Objectif de marge → coefficient → prix théorique ;
-- prix conseillé / retenu ;
-- marge réelle / semi-nette ;
-- règles d'arrondi ;
-- bornes de sécurité globales et paramètres mathématiques exacts de l'Atelier d'optimisation ;
-- rattachement commercial exact de la capability d'optimisation ;
-- Fiche process ;
-- rétention / purge ;
-- quotas ;
-- contraintes réglementaires ;
-- V1 / hors V1 final.
+- champs obligatoires minimaux du Dossier ;
+- représentation/persistance exacte des affectations Dossier ;
+- vérification des contraintes réglementaires réellement structurantes pour M-001 ;
+- validation documentaire globale.
+
+### À cadrer avant les modules concernés
+
+- catégories, unités et lifecycle Produit avant M-002 ;
+- données minimales Fournisseur et lifecycle Article avant M-003 ;
+- convention technique de fraîcheur Prix facturé et revues tarifaires avant M-003/M-004 ;
+- types/motifs finaux de versions avant M-004 ;
+- marge semi-nette lorsqu'une définition métier fiable sera disponible ;
+- paramètres mathématiques fins et garde-fous de l'Atelier avant M-005 ;
+- Fiche process avant son module ;
+- purge/rétention physique avant implémentation ;
+- quotas et capabilities supplémentaires lorsqu'un besoin réel est démontré.
