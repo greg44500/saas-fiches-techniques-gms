@@ -297,237 +297,293 @@ Le rendement de référence est défini sur le produit et utilisé automatiqueme
 
 ### 8.4 Fournisseurs, articles, conditionnements et tarifs
 
-Le modèle sépare :
+Le domaine sépare strictement Produit, Fournisseur, Article fournisseur, conditionnement, catalogue fournisseur, Tarif négocié magasin et Prix facturé.
 
-```text
-Produit
-Fournisseur
-Article fournisseur
-Conditionnement
-Tarif fournisseur de référence
-Tarif spécifique magasin
-Prix observé
-```
+Politique Workspace validée :
+
+~~~text
+Tarif fournisseur
+Tarif négocié ← standard
+Prix facturé
+~~~
+
+Résolution :
+
+~~~text
+Tarif fournisseur
+→ Tarif fournisseur de référence applicable
+
+Tarif négocié
+→ Tarif négocié valide du même magasin
+→ sinon Tarif fournisseur
+
+Prix facturé
+→ dernier Prix facturé VALIDE, exploitable et suffisamment frais du même magasin
+→ sinon Tarif négocié valide du même magasin
+→ sinon Tarif fournisseur
+~~~
+
+Aucun prix d'un autre magasin n'est jamais proposé comme fallback.
+
+Le backend est la seule autorité de résolution et expose source, Article, valeur, temporalité, fallback, raison et alertes.
+
+Le Prix facturé :
+
+- est exploitable seulement après rattachement fiable et validation ;
+- conserve les états À VALIDER / VALIDÉ / REJETÉ ;
+- utilise la date de facture comme origine de fraîcheur ;
+- possède une durée standard de fraîcheur d'un an ;
+- peut utiliser une durée personnalisée par Workspace lorsque la capability le permet ;
+- reste VALIDÉ et historique lorsqu'il devient trop ancien, mais ne participe plus automatiquement à la résolution courante.
+
+La convention technique exacte « 12 mois calendaires vs représentation équivalente » reste à fixer.
+
+Les catalogues fournisseur de référence peuvent être préchargés et sont historisés par édition/millésime. Une nouvelle édition ne détruit pas l'ancienne. Un catalogue hors validité peut rester consultable ou servir de dernier fallback de référence à condition d'être clairement signalé.
+
+Un futur import CSV/XLS/XLSX doit créer une nouvelle édition après mapping, contrôles, aperçu et validation. Le mapping Fournisseur peut être mémorisé. L'IA/OCR pourra assister plus tard mais ne devient jamais l'autorité tarifaire.
+
+### 8.4.1 Sélection d'Article et Références du magasin
+
+Lorsqu'un Produit possède plusieurs Articles exploitables dans le même magasin :
+
+- le SaaS ne choisit jamais automatiquement le moins cher ;
+- un Article explicitement choisi reste associé à la version concernée ;
+- un seul candidat exploitable peut être résolu automatiquement ;
+- plusieurs candidats sans décision explicite déclenchent une sélection utilisateur ;
+- changement de prix du même Article = revalorisation ;
+- changement d'Article = modification d'approvisionnement distincte.
+
+Le raccourci opérationnel du magasin porte sur des **références favorites**, c'est-à-dire des Articles fournisseur précis, pas sur un Produit générique.
+
+Une référence favorite pointe vers l'Article ; son Prix applicable est recalculé dynamiquement dans le contexte du magasin.
+
+Plusieurs références favorites peuvent correspondre au même Produit.
+
+Deux notions sont conservées :
+
+~~~text
+Favorite
+→ préférence opérationnelle
+
+Fréquemment utilisée
+→ observation calculée de l'usage
+~~~
+
+La fréquence se base sur des Fiches techniques VALIDÉES distinctes du magasin ; une revalorisation ou nouvelle version de la même fiche ne gonfle pas le compteur.
+
+La politique Workspace peut fonctionner en manuel, suggestion ou ajout automatique aux favoris. Le seuil exact reste configurable et sa valeur standard définitive reste à fixer.
+
+Une vue unique « Références du magasin » peut prioriser Favorites et Fréquemment utilisées puis donner accès au catalogue complet.
+
+Chaque Produit/Article proposé doit disposer d'une carte d'identité professionnelle : Fournisseur, référence, désignation, conditionnement, marque éventuelle, Prix applicable courant, source, temporalité et alertes. Ces informations viennent du backend.
+
+### 8.5 Fiche technique, versionnement et coûts
 
 Règles validées :
 
-- un même Produit peut avoir plusieurs Articles chez un même Fournisseur ;
-- un même Produit peut être proposé par plusieurs Fournisseurs ;
-- le conditionnement doit être structuré pour permettre les conversions ;
-- le libellé fournisseur original peut être conservé sans devenir l'unique source de calcul ;
-- un Tarif fournisseur de référence peut exister sans connaître de magasin ;
-- un Tarif spécifique magasin est optionnel et reste séparé ;
-- un Prix observé peut provenir notamment d'une facture ;
-- la provenance, la date et le contexte éventuel du magasin sont conservés ;
-- l'OCR est une extension future qui doit alimenter le même historique tarifaire après contrôles ;
-- les prix d'achat utilisés pour les coûts matière sont HT ;
-- les prix unitaires et normalisés sont affichés avec exactement 3 décimales ;
-- le moteur conserve une précision interne suffisante et n'arrondit pas prématurément.
+- quantité nette saisie ;
+- quantité brute calculée via rendement ;
+- pourcentage recette calculé sur le net ;
+- prix HT normalisé ;
+- CM = somme des lignes ingrédients ;
+- Économat séparé ;
+- Coût total fabrication = CM + Économat ;
+- énergie exclue ;
+- absence de prix jamais représentée par zéro ;
+- une ligne requise sans Prix applicable empêche la validation officielle.
 
-Le prix n’est pas une propriété directe et intemporelle du Produit.
+Cycle de vie conceptuel :
 
-Une mise à jour tarifaire ajoute une nouvelle valeur historisée et ne détruit pas silencieusement l'ancienne.
+~~~text
+DRAFT
+→ travail en cours, possiblement incomplet
 
-La politique de sélection du Prix applicable est désormais cadrée au niveau du Workspace.
+VALIDATED
+→ version officielle, historiquement immuable
 
-Modes :
+ARCHIVED
+→ sortie de l'usage actif, historique conservé
+~~~
 
-```text
-Tarif fournisseur
-Tarif négocié ← valeur par défaut
-Prix facturé
-```
+Modifier une version VALIDATED crée/ouvre un nouveau DRAFT.
 
-Fallbacks validés :
+Une revalorisation peut créer un nouveau DRAFT à composition identique avec les Prix applicables courants, puis nécessite une validation explicite.
 
-```text
-Mode Tarif fournisseur
-→ Tarif fournisseur de référence applicable
+Chaque version validée conserve le snapshot nécessaire à la reproductibilité économique : Produit, Article, quantités, rendement, prix, source, magasin et date de valorisation.
 
-Mode Tarif négocié
-→ Tarif négocié valide pour le magasin
-→ sinon Tarif fournisseur
+Le backend vérifie avant validation permissions, périmètre magasin, complétude, cohérence, Articles, Prix applicables, actualité de la valorisation et conflits concurrents.
 
-Mode Prix facturé
-→ dernier Prix facturé exploitable et validé
-→ sinon Tarif négocié valide
-→ sinon Tarif fournisseur
-```
+Les invariants métier s'appliquent à tous les membres, y compris au Workspace Owner.
 
-La source réellement utilisée doit rester traçable et un fallback peut déclencher une alerte/information.
+La copie inter-magasin reprend la composition mais jamais les prix, valorisations ou historiques économiques du magasin source.
 
-La valorisabilité est contextuelle :
+### 8.5.1 Archivage et suppression
 
-```text
-Produit × magasin × politique Workspace × date
-```
+Le cycle normal utilise l'archivage.
 
-Un même Produit peut être valorisable dans un magasin et non dans un autre. Il peut rester dans le catalogue sans Prix applicable dans le magasin courant, mais il ne peut pas être ajouté à une Fiche technique de ce magasin tant qu'aucun Prix applicable ne peut être déterminé.
+Aucune suppression automatique n'est déclenchée uniquement par l'âge.
 
-Le Tarif fournisseur de référence reste général au Fournisseur et peut évoluer avec les catalogues/mercuriales. Un Tarif négocié est spécifique à un magasin et possède sa propre période de validité.
+Le Workspace Owner peut, selon la politique de cycle de vie, supprimer définitivement une fiche ancienne déjà archivée après contrôles et audit.
 
-La validité commerciale d'un tarif est distincte de sa revue opérationnelle. Les magasins doivent pouvoir organiser des revues tarifaires tracées, y compris en masse, sans prolonger artificiellement les dates contractuelles.
+Une fiche VALIDATED active n'est pas supprimée directement.
 
-Un Prix facturé n'est exploitable que s'il est correctement rattaché au Fournisseur, à l'Article, au magasin et à la date de facture, normalisable de façon fiable et explicitement validé. États minimaux : À VALIDER / VALIDÉ / REJETÉ.
+La fiche et ses versions sont traitées comme une unité cohérente et un audit minimal de suppression doit subsister.
 
-### 8.5 Fiche technique et coûts
+Les contraintes de rétention légale/réglementaire restent à cadrer.
 
-Les principes suivants sont désormais validés :
+### 8.6 Configuration métier du Workspace
 
-- fiche structurée, non simple document ;
-- l'utilisateur saisit la quantité nette réellement présente dans la recette ;
-- la quantité brute est calculée automatiquement : `quantité nette / rendement` ;
-- le % de recette est calculé sur les quantités nettes ;
-- les pertes de rendement influencent la quantité brute et le coût, pas la composition proportionnelle ;
-- le prix d'achat HT normalisé sert de base au coût matière ;
-- le coût HT d'une ligne ingrédient = quantité brute × prix d'achat HT normalisé ;
-- Coût Matière (CM) = somme des coûts HT des lignes d'ingrédients ;
-- l'Économat regroupe les consommables achetés nécessaires à la fabrication, au conditionnement ou à la commercialisation ;
-- les consommables utilisent, lorsque pertinent, les mêmes mécanismes Fournisseur / Article / Conditionnement / Tarif ;
-- les consommables n'utilisent pas les attributs alimentaires non pertinents ;
-- l'utilisateur renseigne leur quantité réellement consommée ;
-- le système calcule leur coût à partir du prix normalisé ;
-- Coût total de fabrication = CM + Économat ;
-- l'énergie est exclue de cette définition ;
-- composition distincte de la valorisation économique ;
-- recalcul avec les prix courants ;
-- conservation d’une lecture historique ;
-- calcul automatique maximal ;
-- valeurs et formules non démontrées non implémentées par hypothèse ;
-- une modification de prix pendant l'édition d'une fiche ne la modifie jamais silencieusement ;
-- la fiche en cours conserve les valeurs réellement utilisées jusqu'à revalorisation explicite ;
-- le système signale lorsqu'un Prix applicable plus récent existe ;
-- avant validation définitive, le backend vérifie la cohérence avec les Prix applicables courants et impose une revalorisation si nécessaire ;
-- une fiche validée conserve sa valorisation historique.
+Le panneau de configuration devient une surface structurante et reste visible.
 
-Restent notamment à cadrer : seuil éventuel de fraîcheur du Prix facturé, règles finales d'alerte tarifaire, TVA, marge, coefficient, prix théorique, prix conseillé/retenu, marge semi-nette et arrondis des totaux.
+Chaque paramètre distingue :
 
-### 8.5.1 Copie inter-magasin d'une Fiche technique
+~~~text
+valeur standard
+valeur configurée éventuelle
+valeur effective
+droit de personnalisation
+~~~
 
-Une Fiche technique peut être copiée d'un magasin vers un autre pour éviter une ressaisie de sa composition.
+Le backend calcule la valeur effective. Aucun fallback métier n'est codé en dur dans le frontend.
 
-La copie reprend la structure réutilisable de la fiche, notamment les Produits, quantités et unités.
+Principe commercial validé :
 
-Elle ne reprend jamais :
+~~~text
+Free
+→ comportements standards
+→ personnalisation verrouillée selon capabilities
 
-- Tarifs négociés ;
-- Prix facturés ;
-- Prix applicables déjà calculés ;
-- valorisations économiques ;
-- historique de validation ou de revalorisation du magasin source.
+Trial
+→ comportements standards dès le départ
+→ personnalisation facultative pour tester l'offre
 
-La fiche cible est une nouvelle fiche dans le contexte du magasin cible. Ses Articles/Prix applicables sont résolus à nouveau et sa valorisation est recalculée dans ce contexte.
+Payant
+→ personnalisation autorisée par le plan
+~~~
 
-Son historique métier et économique démarre vierge. Une simple provenance vers la fiche source peut être conservée pour l'audit.
+Un downgrade ne détruit pas automatiquement les valeurs personnalisées ; elles peuvent devenir inactives pendant que les standards redeviennent effectifs.
 
-### 8.6 Extensibilité
+Paramètres identifiés : politique de prix, fraîcheur factures, politique des références favorites/fréquentes, cycle de vie des fiches, TVA, marge, coefficient, arrondis et autres paramètres démontrés.
 
-Les extensions identifiées doivent rester possibles sans obligation de les développer immédiatement.
+### 8.7 RBAC, Workspace Owner et périmètres magasin
 
-Sont notamment identifiés :
+Le produit réutilise le système de rôles du Core v1.0.1.
 
-- alertes et graphiques d’évolution ;
-- comparaison fournisseurs ;
-- import de mercuriales ;
-- OCR facture / catalogue ;
-- reverse recipe ;
-- optimisation de marge par IA ;
-- analyse de portefeuille de fiches ;
-- assistant process ;
-- infographies ;
-- rappels ;
-- recherche globale ;
-- exports avancés.
+Constat Core vérifié :
 
-### 8.7 Paramètres métier
+~~~text
+WorkspaceInvitation
+→ roleId
 
-Le panneau de paramètres peut être différé.
+acceptation
+→ WorkspaceMember.role
 
-Les candidats identifiés — TVA, marge par défaut, arrondis, seuils, unités, catégories, conditionnements — ne doivent cependant pas être codés comme des constantes rigides sans validation de leur portée.
+WorkspaceMember
+→ un seul Role
+~~~
 
-### 8.8 Utilisateurs et rôles métier
+Le produit ne crée donc pas un système de rôles cumulables.
 
-Le rôle Core `owner` du Workspace est retenu comme autorité complète du produit dans son Workspace.
+Les responsabilités multiples sont regroupées dans un rôle personnalisé contenant les permissions nécessaires.
 
-Le Owner :
-
-- possède implicitement toutes les permissions métier ;
-- peut agir sur tous les magasins/dossiers ;
-- n'a pas besoin de recevoir séparément les rôles Acheteur, Économe ou Responsable fiches techniques ;
-- reste soumis aux capabilities, quotas, validations métier et règles de sécurité.
-
-Aucun rôle métier `Admin` spécifique au produit n'est créé à ce stade.
-
-Une future administration déléguée du Workspace sans transfert de propriété est identifiée comme une évolution générique potentielle du Core.
-
-Socle des autres rôles métier :
+Profils types retenus :
 
 - Acheteur / Responsable achats ;
 - Économe / Gestionnaire des prix ;
 - Responsable fiches techniques ;
-- Utilisateur métier.
+- Contributeur fiches techniques ;
+- Lecteur métier si besoin.
 
-Ces rôles peuvent être cumulés et leur périmètre peut être limité à certains magasins/dossiers.
+Le Workspace Owner :
 
-Le fait d'utiliser les Produits et Fiches techniques n'accorde pas automatiquement le droit de modifier ou valider les prix.
+- est le rôle owner du Workspace, pas un rôle Platform ;
+- possède toutes les permissions métier du produit ;
+- possède tous les dossiers de son Workspace ;
+- peut paramétrer le Workspace selon les capabilities disponibles ;
+- reste soumis aux invariants métier.
 
-La matrice détaillée des permissions reste à finaliser.
+Un PlatformRole, y compris d'administration plateforme, ne donne aucun accès implicite aux dossiers, fiches ou données commerciales d'un Workspace.
 
-L'accès multi-magasins doit être explicitement attribué et ne modifie jamais l'isolation du contexte actif. Même un utilisateur autorisé sur plusieurs magasins travaille dans un seul dossier/magasin à la fois pour créer, modifier ou valoriser une fiche.
+Le rôle répond à « que peut faire le membre ? ». Le périmètre dossier répond à « où peut-il le faire ? ».
+
+L'autorisation effective combine :
+
+~~~text
+membership actif
++ permission du Role
++ accès dossier
++ état ressource
++ capability éventuelle
++ invariants métier
+~~~
+
+Le parcours d'invitation du produit peut afficher rôle et magasins dans un même formulaire, mais le périmètre dossier reste une donnée métier séparée. Son stockage et son éventuelle préparation avant acceptation doivent encore être cadrés sans modifier silencieusement le Core.
+
+### 8.8 Principe invariants vs permissions
+
+Règle validée :
+
+~~~text
+RBAC
+→ ce qu'un utilisateur peut demander
+
+Invariants métier
+→ ce que le Workspace peut accepter comme état valide
+~~~
+
+Aucune permission, y compris celles du Workspace Owner, ne permet de contourner un invariant de valorisation, d'isolation, d'historisation ou de cohérence.
 
 ---
 
 ## 9. Points métier restant à cadrer
 
-Le cadrage global n’est pas terminé.
+Le cadrage global n'est pas terminé, mais les blocs prix/références, versionnement, configuration et architecture RBAC sont désormais fortement avancés.
 
-Le bloc Produit / approvisionnement / coûts directs est désormais avancé.
+Ordre recommandé de reprise :
 
-Prochaines décisions prioritaires :
+1. finaliser la matrice précise des permissions des rôles types et le périmètre dossier ;
+2. cadrer TVA et portée de TVA ;
+3. cadrer objectif de marge ;
+4. cadrer coefficient et prix théorique ;
+5. cadrer prix conseillé / prix retenu ;
+6. cadrer marge réelle / semi-nette ;
+7. cadrer arrondis ;
+8. cadrer Fiche process ;
+9. finaliser données minimales/lifecycle du dossier-magasin ;
+10. finaliser capabilities / quotas ;
+11. finaliser intégrations et contraintes réglementaires ;
+12. fixer V1 / hors V1 ;
+13. validation documentaire globale ;
+14. seulement ensuite cadrage M-001.
 
-1. finaliser le bloc Prix applicable : seuil éventuel de fraîcheur du Prix facturé, alertes et gouvernance détaillée des revues tarifaires ;
-2. finaliser la matrice des permissions des rôles métier et leurs périmètres magasin ;
-3. TVA et portée de la TVA ;
-4. objectif de marge ;
-5. coefficient / prix théorique ;
-6. prix de vente conseillé / retenu ;
-7. marge réelle et marge semi-nette ;
-8. règles d'arrondi des montants agrégés ;
-9. versionnement / validation d'une fiche technique ;
-10. frontière fiche technique / fiche process ;
-11. données minimales et lifecycle du dossier/magasin ;
-12. capabilities et quotas ;
-13. intégrations ;
-14. contraintes réglementaires ;
-15. périmètre V1 / hors V1 ;
-16. roadmap finale.
+Points encore ouverts dans les blocs déjà travaillés :
 
-Points d'approvisionnement encore ouverts :
+- convention technique exacte de fraîcheur standard du Prix facturé ;
+- valeur standard du seuil « fréquemment utilisée » ;
+- traitement des fiches archivées dans ce calcul ;
+- données minimales Fournisseur ;
+- lifecycle Article fournisseur ;
+- gouvernance finale des revues tarifaires ;
+- permission de validation par défaut de l'Économe ;
+- stockage du périmètre dossier et orchestration invitation ;
+- types/motifs exacts de version ;
+- règles de rétention et suppression définitive.
 
-- données minimales définitives du Fournisseur ;
-- règles d'unicité/lifecycle d'un Article fournisseur ;
-- Article privilégié éventuel ;
-- liste/gouvernance finale des types de conditionnement.
-
-Aucune de ces questions ne doit être tranchée implicitement pendant l’implémentation.
+Aucune de ces questions ne doit être résolue implicitement pendant l'implémentation.
 
 ---
 
 ## 10. Points techniques non bloquants à suivre
 
-Certains éléments hérités portent encore une identité technique Core, notamment selon les fichiers :
+Les points d'extension Core v1.0.1 doivent être utilisés avant toute modification de fondation, notamment le registre de permissions métier Workspace.
 
-- valeurs par défaut JWT issuer/audience ;
-- certaines valeurs CI/E2E ;
-- `.env.example` ;
-- identité visible frontend héritée ;
-- noms SMTP hérités.
+Le Core v1.0.1 confirme qu'un WorkspaceMember porte un seul Role et que l'invitation reçoit un roleId.
 
-Ces éléments ne doivent pas être renommés aveuglément.
+Le périmètre dossier n'est pas une primitive native du WorkspaceMember : son besoin doit rester côté produit sauf démonstration d'un besoin générique réutilisable justifiant une évolution Core.
 
-Ils seront adaptés lorsqu’un besoin produit explicite le justifiera, sans casser les contrats Core ni compliquer les futurs upgrades.
+Certains éléments hérités portent encore une identité technique Core et ne doivent pas être renommés aveuglément.
 
-Toute évolution générique reste à traiter dans `saas-core-api`.
+Toute évolution générique reste à traiter d'abord dans saas-core-api puis à intégrer via une branche core-update.
 
 ---
 
@@ -585,34 +641,66 @@ En développement, viser des vertical slices cohérentes : backend, permissions,
 
 ## 13. Point de reprise immédiat
 
-Reprendre le cadrage métier à partir de :
+Reprendre par la **matrice de permissions**, en tenant compte du contrat Core réel :
 
-```text
-Finalisation Prix applicable
-→ fraîcheur éventuelle du Prix facturé
-→ alertes / fallback / revues tarifaires
-→ matrice rôles-permissions et périmètres magasin
-→ TVA
-→ marge / coefficient
-→ prix théorique
-→ prix de vente conseillé / retenu
+~~~text
+Workspace Owner
+→ toutes permissions métier
+→ tous dossiers du Workspace
+
+WorkspaceMember non-owner
+→ un seul Role Workspace
+→ permissions du Role
+→ périmètre dossier indépendant
+~~~
+
+La prochaine décision à formaliser est la répartition exacte des permissions entre :
+
+- Acheteur / Responsable achats ;
+- Économe / Gestionnaire des prix ;
+- Responsable fiches techniques ;
+- Contributeur fiches techniques ;
+- Lecteur métier si nécessaire.
+
+Points à trancher en priorité :
+
+- qui peut créer/modifier Produits, Fournisseurs et Articles ;
+- qui peut gérer catalogues et Tarifs négociés ;
+- qui peut valider Prix facturés et mener les revues ;
+- qui peut gérer les références favorites ;
+- qui peut créer/modifier ses propres DRAFTS ;
+- qui peut modifier les DRAFTS d'autrui ;
+- qui peut revaloriser ;
+- qui possède technical-sheet:validate par défaut ;
+- qui archive/restaure ;
+- suppression définitive : Workspace Owner uniquement dans le cadrage actuel ;
+- lecture/modification de la configuration métier.
+
+Une fois cette matrice stabilisée, poursuivre immédiatement le bloc économique :
+
+~~~text
+TVA
+→ objectif de marge
+→ coefficient / prix théorique
+→ prix conseillé / retenu
 → marge réelle / semi-nette
 → arrondis
-→ versionnement de la fiche
-```
+~~~
 
-Puis poursuivre avec :
+Puis :
 
-```text
+~~~text
 Fiche process
-→ données minimales / lifecycle du Dossier-magasin
+→ Dossier-magasin
 → capabilities / quotas
 → intégrations / réglementation
 → V1 / hors V1
 → validation globale
 → cadrage M-001
-```
+~~~
 
-Ne pas créer de modèle métier avant validation du cadrage global.
+Ne créer aucun modèle métier Mongoose avant validation du cadrage global.
 
-Ne pas repartir dans des travaux Core génériques en l’absence de blocage réel du produit.
+Ne créer aucun second système de rôles métier parallèle au RBAC Workspace du Core.
+
+Ne jamais confondre Workspace Owner et rôle Platform.

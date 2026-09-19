@@ -259,93 +259,115 @@ Le conditionnement doit pouvoir être ramené à l'unité de référence du Prod
 
 ## Tarif fournisseur de référence
 
-Prix issu d'un catalogue ou d'une mercuriale Fournisseur, sans nécessité de connaître un magasin.
+Prix issu d'un catalogue ou d'une mercuriale Fournisseur sans condition commerciale spécifique à un magasin.
 
-Il constitue une référence commerciale et ne doit pas être présenté comme un tarif négocié magasin sans preuve.
+Il peut être associé à une édition/millésime et à une période de validité.
+
+Un tarif ancien reste historique ; s'il sert exceptionnellement de dernier fallback, son ancienneté et son édition doivent être signalées.
 
 ---
 
-## Tarif spécifique magasin
+## Édition de catalogue fournisseur
 
-Prix connu pour un Article fournisseur dans un magasin donné.
+Version identifiable d'un catalogue de référence d'un Fournisseur.
 
-Il est conservé séparément du Tarif fournisseur de référence.
+Une nouvelle édition n'écrase pas l'ancienne.
+
+---
+
+## Tarif négocié
+
+Condition commerciale spécifique à un magasin et à un Article fournisseur.
+
+Sa validité repose sur sa propre période commerciale et non sur un seuil générique d'ancienneté.
 
 ---
 
 ## Prix observé
 
-Prix réellement constaté à une date donnée, par exemple sur une facture.
+Prix réellement constaté à une date donnée, notamment sur une facture.
 
-Il peut être rattaché à un magasin lorsque le contexte est identifiable.
-
-Sa provenance doit être conservée.
+Sa provenance et son contexte magasin sont conservés.
 
 ---
 
 ## Prix facturé exploitable
 
-Prix observé provenant d'une facture et pouvant être utilisé dans la valorisation courante.
+Prix de facture correctement rattaché, normalisable et explicitement validé.
 
-Il doit être correctement rattaché au Fournisseur, à l'Article fournisseur, au magasin/dossier et à la date de facture, disposer de données suffisantes pour être normalisé de façon fiable et avoir été explicitement validé.
+Seul un prix VALIDÉ peut participer à la résolution automatique, sous réserve de sa fraîcheur.
 
-États minimaux :
+---
 
-- À VALIDER ;
-- VALIDÉ ;
-- REJETÉ.
+## Fraîcheur d'un Prix facturé
 
-Un prix à valider ou rejeté ne peut jamais devenir automatiquement le Prix applicable.
+Éligibilité temporelle d'un Prix facturé VALIDÉ à l'usage automatique courant.
+
+Elle se calcule depuis la date de facture.
+
+Le comportement standard retenu est un an ; la représentation technique exacte reste à fixer.
+
+Une perte de fraîcheur ne retire pas le statut VALIDÉ.
 
 ---
 
 ## Validité commerciale d'un tarif
 
-Période pendant laquelle une condition tarifaire est applicable selon les informations connues.
+Période pendant laquelle une condition commerciale est applicable selon sa source.
 
-Pour un Tarif négocié, elle repose notamment sur une date de début et une date de fin éventuelle.
-
-Elle est distincte de la date à laquelle un utilisateur a vérifié le tarif.
+Elle est distincte de la fraîcheur d'un Prix facturé et de la date d'une revue opérationnelle.
 
 ---
 
 ## Revue tarifaire
 
-Contrôle opérationnel effectué sur les tarifs d'un magasin afin de confirmer les valeurs encore cohérentes, corriger les changements et identifier les anomalies.
+Contrôle opérationnel effectué sur les tarifs d'un magasin.
 
-Une revue peut porter en masse sur plusieurs tarifs.
-
-Elle conserve notamment la date de contrôle, l'auteur, le périmètre et une éventuelle prochaine date de revue.
-
-Une revue tarifaire ne prolonge pas artificiellement une période de validité contractuelle.
+Une revue peut être réalisée en masse mais ne modifie pas artificiellement les dates contractuelles.
 
 ---
 
 ## Produit valorisable
 
-État calculé d'un Produit dans le contexte d'un magasin.
+Produit pour lequel le backend peut résoudre, dans le magasin courant, un Article et un Prix applicable conformes aux règles du Workspace.
 
-Un Produit est valorisable lorsqu'un Prix applicable peut être déterminé selon la politique de prix du Workspace.
+---
 
-Un même Produit peut être valorisable dans un magasin et non valorisable dans un autre.
+## Référence favorite
 
-Un Produit non valorisable peut rester présent dans le catalogue commun afin d'éviter sa recréation.
+Article fournisseur précis identifié comme favori dans un magasin.
+
+Le favori ne stocke pas son prix : le Prix applicable est résolu dynamiquement.
+
+Plusieurs références favorites peuvent correspondre au même Produit.
+
+---
+
+## Référence fréquemment utilisée
+
+Article fournisseur dont l'usage réel est calculé à partir de Fiches techniques VALIDÉES distinctes d'un magasin.
+
+Ce statut est une observation calculée et non une préférence utilisateur.
+
+---
+
+## Références du magasin
+
+Vue opérationnelle unique regroupant les Articles fournisseur pertinents d'un magasin, avec notamment les états Favorite et Fréquemment utilisée et un accès au catalogue complet.
+
+---
+
+## Carte d'identité Produit / Article
+
+Présentation professionnelle des informations nécessaires à une sélection fiable : Produit, Fournisseur, référence, désignation d'origine, marque éventuelle, conditionnement, Prix applicable du magasin courant, source, temporalité et alertes.
+
+Les données de cette carte proviennent du backend.
 
 ---
 
 ## Provenance tarifaire
 
-Origine d'une donnée de prix.
-
-Provenances déjà identifiées :
-
-- catalogue fournisseur ;
-- mercuriale ;
-- tarif spécifique magasin ;
-- facture ;
-- saisie manuelle ;
-- import fichier ;
-- futur OCR.
+Origine d'une donnée de prix : catalogue, mercuriale, Tarif négocié, facture, saisie contrôlée, import ou futur OCR.
 
 ---
 
@@ -456,6 +478,32 @@ L'utilisateur sélectionne les produits et renseigne les faits nécessaires ; l'
 
 ---
 
+## Version de Fiche technique
+
+État historisé d'une Fiche technique à un moment donné.
+
+Une version VALIDATED est immuable. Une modification ultérieure produit un nouveau DRAFT.
+
+---
+
+## DRAFT
+
+Version de travail non officielle pouvant être incomplète.
+
+---
+
+## VALIDATED
+
+Version officielle ayant passé les contrôles backend de validation et conservant son snapshot économique.
+
+---
+
+## ARCHIVED
+
+Fiche ou version sortie de l'usage actif sans destruction de son historique.
+
+---
+
 ## Ligne de composition
 
 Utilisation d'un produit dans une fiche technique avec une quantité donnée.
@@ -557,37 +605,73 @@ Aucune autre charge ne doit être ajoutée sans validation métier.
 
 Propriétaire du Workspace au sens du Core.
 
-Dans ce SaaS, il dispose implicitement de toutes les permissions métier du Workspace et de tous ses magasins/dossiers, sans devoir recevoir séparément les rôles métier.
+Dans ce SaaS, il reçoit toutes les permissions métier du produit et tous les dossiers de CE Workspace.
 
-Les capabilities commerciales, quotas, validations métier et règles de sécurité continuent de s'appliquer.
+Il reste soumis aux invariants métier, capabilities, quotas et règles de sécurité.
 
-Aucun rôle métier `Admin` spécifique au produit n'est défini à ce stade.
+Il ne faut pas le confondre avec un rôle Platform.
+
+---
+
+## PlatformRole
+
+Rôle d'administration de la plateforme.
+
+Il ne donne aucun accès implicite aux données métier d'un Workspace.
+
+---
+
+## Rôle Workspace
+
+Groupe de permissions rattaché à un Workspace et attribué à un WorkspaceMember.
+
+Le Core v1.0.1 porte un seul rôle par membre. Un rôle personnalisé peut donc combiner plusieurs responsabilités métier.
+
+---
+
+## Périmètre dossier
+
+Ensemble des dossiers/magasins sur lesquels un membre est autorisé à exercer les permissions de son rôle.
+
+Le périmètre est distinct du rôle.
 
 ---
 
 ## Acheteur / Responsable achats
 
-Rôle métier chargé, selon ses permissions et son périmètre, des Fournisseurs, Articles fournisseur, négociations et conditions commerciales.
+Profil de rôle type orienté Fournisseurs, Articles, catalogues, négociations et conditions commerciales.
 
 ---
 
 ## Économe / Gestionnaire des prix
 
-Rôle métier chargé, selon ses permissions et son périmètre magasin, du contrôle et de la validation des prix, notamment des Prix facturés et des revues tarifaires.
+Profil de rôle type orienté contrôle des prix, validation des Prix facturés, revues tarifaires et revalorisation/correction des fiches selon permissions.
 
 ---
 
 ## Responsable fiches techniques
 
-Rôle métier chargé, selon ses permissions, de créer, modifier et valider fonctionnellement les Fiches techniques.
+Profil de rôle type orienté création, modification, validation et cycle de vie des Fiches techniques selon permissions.
 
 ---
 
-## Utilisateur métier
+## Contributeur fiches techniques
 
-Utilisateur pouvant consulter et utiliser les Produits et Fiches autorisés sans recevoir implicitement de droits de gestion ou de validation tarifaire.
+Profil de rôle type pouvant créer une fiche et travailler sur les DRAFTS autorisés sans recevoir implicitement de droits tarifaires ou administratifs.
 
-Les rôles métier peuvent être cumulés et limités à certains magasins/dossiers.
+---
+
+## Lecteur métier
+
+Profil de rôle type limité à la consultation des données métier autorisées.
+
+---
+
+## Invariant métier
+
+Règle qui définit un état acceptable du Workspace indépendamment du rôle de l'utilisateur.
+
+Une permission autorise à demander une action ; elle n'autorise jamais à créer un état métier incohérent.
 
 ---
 
@@ -625,26 +709,41 @@ La frontière exacte entre les données process portées par la fiche technique 
 
 Valeur ou règle susceptible d'influencer les calculs ou comportements du produit.
 
-Exemples candidats :
+---
 
-- TVA ;
-- marge par défaut ;
-- arrondis ;
-- seuils d'alerte.
+## Valeur standard
 
-Le panneau de paramètres peut être développé plus tard.
+Comportement fourni par le SaaS lorsqu'aucune personnalisation effective ne le remplace.
 
 ---
 
-## Valeur par défaut
+## Valeur configurée
 
-Valeur proposée automatiquement lors d'une création, mais potentiellement modifiable si le contrat métier l'autorise.
+Valeur choisie par le Workspace lorsque son plan/capability autorise la personnalisation.
+
+Elle peut être conservée sans être active après un downgrade.
+
+---
+
+## Valeur effective
+
+Valeur réellement appliquée par le backend après résolution entre standard, configuration et droits commerciaux.
+
+Le frontend consomme cette valeur et ne reconstruit pas la règle.
+
+---
+
+## Personnalisation métier
+
+Capacité commerciale permettant de remplacer certaines valeurs standards par des valeurs propres au Workspace.
+
+Free peut rester sur les standards ; Trial peut tester la personnalisation ; une offre payante peut l'activer selon ses capabilities.
 
 ---
 
 ## Contrainte
 
-Règle qui doit être respectée et ne constitue pas seulement une valeur proposée.
+Règle obligatoire et non une simple valeur proposée.
 
 ---
 
