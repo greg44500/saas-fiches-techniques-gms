@@ -64,21 +64,31 @@ Objectif : obtenir un contrat produit suffisamment précis pour interdire les hy
 - unités supportées ;
 - détails de lifecycle / archivage.
 
-### 2.3 Fournisseurs, articles et conditionnements
+### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
-**État : prochaine étape de cadrage**
+**État : largement cadré — règles de sélection à finaliser**
 
-À définir :
+Déjà établi :
 
-- fiche Fournisseur ;
-- article / référence fournisseur ;
-- conditionnement ;
-- poids net / poids égoutté ;
-- prix par magasin ;
-- disponibilité ;
-- date d'effet ;
-- historique ;
-- choix/priorité entre plusieurs offres.
+- un Produit peut avoir plusieurs Articles chez un même Fournisseur ;
+- un Article conserve référence, désignation fournisseur et conditionnement ;
+- le conditionnement doit être structuré pour permettre les conversions ;
+- poids net / poids net égoutté sont conservés lorsqu'ils sont pertinents ;
+- un Tarif fournisseur de référence peut exister sans magasin ;
+- un Tarif spécifique magasin est optionnel et séparé ;
+- un Prix observé peut provenir d'une facture, d'un import ou plus tard d'un OCR ;
+- toutes les données tarifaires sont sourcées et historisées ;
+- les prix d'achat sont gérés en HT ;
+- les prix unitaires et normalisés sont affichés avec 3 décimales ;
+- le moteur conserve une précision interne suffisante.
+
+À finaliser :
+
+- données minimales exactes de la fiche Fournisseur ;
+- règles d'unicité/lifecycle des Articles fournisseur ;
+- sélection éventuelle d'un Article privilégié ;
+- priorité du Prix applicable lorsqu'il existe plusieurs sources ;
+- disponibilité et dates d'effet exactes.
 
 ### 2.4 Fiches techniques
 
@@ -88,23 +98,31 @@ Déjà établi :
 
 - l'utilisateur renseigne les faits nécessaires ;
 - les données dérivées sont calculées automatiquement ;
+- l'utilisateur saisit la quantité nette ;
+- la quantité brute est calculée via le rendement ;
+- le % recette est calculé sur les quantités nettes ;
 - % recette distinct du rendement ;
 - rendement récupéré depuis le Produit ;
+- prix d'achat HT comme base du coût matière ;
+- CM = somme des coûts HT des lignes d'ingrédients ;
+- Économat = consommables achetés intégrés séparément ;
+- les consommables utilisent des quantités réelles et des prix normalisés ;
+- Coût total de fabrication = CM + Économat ;
+- énergie exclue du Coût total de fabrication ;
 - composition distincte de la valorisation ;
 - historique des valorisations ;
-- impact des changements de prix ;
-- distinction matières premières / emballages.
+- impact des changements de prix.
 
 À finaliser :
 
-- quantité brute vs nette ;
-- toutes les formules de coût ;
+- règle du Prix applicable en présence de plusieurs sources ;
 - TVA ;
 - marge ;
 - coefficient ;
 - prix théorique ;
 - prix conseillé / retenu ;
 - marge semi-nette ;
+- arrondis des montants agrégés ;
 - versionnement / validation d'une fiche.
 
 ### 2.5 Fiches process
@@ -251,6 +269,30 @@ branche
 → documentation
 ```
 
+### Granularité Git / PR
+
+Règle de travail validée :
+
+> Une PR correspond à un lot fonctionnel cohérent et vérifiable, pas à une couche technique isolée.
+
+Ainsi :
+
+```text
+modèle + validation Zod
+→ commits possibles
+→ pas une PR autonome par défaut
+
+capacité métier complète
+→ backend
+→ permissions
+→ frontend
+→ tests
+→ documentation
+→ une PR cohérente
+```
+
+Les PR ne doivent ni être des micro-lots techniques, ni devenir des regroupements de fonctionnalités indépendantes.
+
 ---
 
 ## 6. Extensions à préserver sans les développer prématurément
@@ -284,14 +326,43 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Continuer le cadrage du bloc :
+Le bloc Produit / approvisionnement / coût direct est désormais suffisamment avancé pour poursuivre sur les calculs économiques encore ouverts.
+
+Ordre recommandé :
 
 ```text
-Fournisseur
-→ Article fournisseur
-→ Conditionnement
-→ Prix magasin
-→ Historique
+1. règle du Prix applicable
+   → référence fournisseur
+   → tarif magasin
+   → prix observé
+
+2. TVA et portée de la TVA
+
+3. objectif de marge
+
+4. coefficient / prix théorique
+
+5. prix de vente conseillé / retenu
+
+6. marge réelle / marge semi-nette
+
+7. règles d'arrondi des totaux
+
+8. versionnement / validation d'une fiche technique
+
+9. fiche process
+
+10. dossier / magasin
+
+11. utilisateurs / RBAC / capabilities / quotas
+
+12. intégrations / réglementation
+
+13. V1 / hors V1
+
+14. validation documentaire globale
+
+15. seulement ensuite cadrage M-001
 ```
 
-Puis revenir aux calculs détaillés de la fiche technique avec ces données stabilisées.
+La PR documentaire #5 reste le lot unique de cadrage global jusqu'à clôture de cette phase.
