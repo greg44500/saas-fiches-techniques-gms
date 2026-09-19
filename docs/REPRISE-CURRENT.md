@@ -227,6 +227,24 @@ Branche documentaire de travail :
 docs/product-business-framing-foundation
 ```
 
+Pull Request de cadrage :
+
+```text
+PR #5 — Docs: formalize initial product business framing
+état : ouverte
+base : main
+```
+
+Dernière preuve CI explicitement confirmée avant les derniers enrichissements documentaires :
+
+```text
+Core Gate #26
+head       : c70f2c66b24c571b20cbf042523c558ce6777bdc
+conclusion : success
+```
+
+Des commits documentaires supplémentaires ont ensuite consolidé les décisions validées. Leur gate courante doit être vérifiée sur GitHub avant merge ; cette synthèse ne doit jamais extrapoler un statut vert non observé.
+
 Documents ajoutés en statut DRAFT :
 
 ```text
