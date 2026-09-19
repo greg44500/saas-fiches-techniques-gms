@@ -95,9 +95,10 @@ Le dossier contextualise notamment :
 - fiches techniques ;
 - fiches process.
 
+**Règle V1 validée :** `1 dossier = 1 magasin`.
+
 **À valider avant implémentation :**
 
-- cardinalité stricte `1 dossier = 1 magasin` en V1 ;
 - informations minimales du magasin ;
 - cycle de vie du dossier ;
 - copie/import entre dossiers.
@@ -394,7 +395,131 @@ Provenances identifiées :
 - import fichier ;
 - futur OCR.
 
-**Point ouvert :** règle de priorité permettant de déterminer le Prix applicable à une fiche lorsqu'il existe plusieurs sources valides.
+### 9.4 Politique de prix du Workspace
+
+La stratégie de sélection du Prix applicable est un paramètre du Workspace, commun à tous ses magasins/dossiers.
+
+Modes retenus :
+
+```text
+Tarif fournisseur
+Tarif négocié
+Prix facturé
+```
+
+Valeur par défaut :
+
+```text
+Tarif négocié
+```
+
+Règles de sélection validées :
+
+```text
+Mode Tarif fournisseur
+→ Tarif fournisseur de référence applicable
+
+Mode Tarif négocié
+→ Tarif négocié valide pour le magasin + Article + date
+→ sinon Tarif fournisseur de référence
+
+Mode Prix facturé
+→ dernier Prix facturé exploitable et validé pour le magasin + Article
+→ sinon Tarif négocié valide
+→ sinon Tarif fournisseur de référence
+```
+
+Le moteur doit conserver la source réellement utilisée et savoir si un fallback a été appliqué.
+
+### 9.5 Valorisabilité contextuelle
+
+Le Prix applicable n'est jamais une propriété globale du Produit.
+
+La capacité à valoriser un Produit dépend conceptuellement de :
+
+```text
+Produit
+× magasin/dossier
+× Article fournisseur
+× politique de prix Workspace
+× date de valorisation
+```
+
+Un Produit peut donc :
+
+- être valorisable dans un magasin ;
+- ne pas être valorisable dans un autre ;
+- exister dans le catalogue commun sans prix applicable courant.
+
+Pour être ajouté à une Fiche technique dans un magasin, un Prix applicable doit pouvoir être déterminé.
+
+Le Produit peut néanmoins rester visible dans le catalogue du Workspace afin d'éviter les doublons et permettre de compléter ultérieurement son approvisionnement ou ses tarifs.
+
+### 9.6 Prix facturé exploitable
+
+Un Prix observé issu d'une facture ne devient pas automatiquement un Prix applicable.
+
+Pour devenir exploitable, il doit pouvoir être rattaché de manière fiable :
+
+- au Fournisseur ;
+- à l'Article fournisseur ;
+- au magasin/dossier ;
+- à la date de facture ;
+- au prix source et à son unité d'expression ;
+- aux données nécessaires à une normalisation fiable.
+
+Il doit ensuite être explicitement validé.
+
+États fonctionnels minimaux :
+
+```text
+À VALIDER
+VALIDÉ
+REJETÉ
+```
+
+Seul un Prix facturé VALIDÉ peut être utilisé par la politique Workspace `Prix facturé`.
+
+Le seuil de fraîcheur éventuel d'un Prix facturé validé reste à finaliser.
+
+---
+
+## 9.7 Validité commerciale et revue tarifaire
+
+Le Tarif fournisseur de référence est général au Fournisseur et peut évoluer dans le temps lorsqu'un nouveau catalogue ou une nouvelle mercuriale entre en vigueur.
+
+Un Tarif négocié est spécifique à un magasin et à un Article fournisseur.
+
+Il doit pouvoir porter :
+
+- une date de début de validité ;
+- une date de fin éventuelle ;
+- sa provenance ;
+- sa traçabilité.
+
+La validité commerciale est déterminée par ces dates et non par un âge générique du tarif.
+
+Le domaine distingue :
+
+```text
+validité commerciale
+≠
+revue opérationnelle
+```
+
+Une revue tarifaire par magasin permet de confirmer les prix toujours cohérents, corriger les valeurs modifiées et identifier les anomalies.
+
+La revue doit pouvoir conserver au minimum :
+
+- date de dernière revue ;
+- auteur ;
+- périmètre contrôlé ;
+- prochaine date de revue éventuelle ;
+- anomalies restantes.
+
+Une revue ne modifie pas automatiquement les dates contractuelles du tarif.
+
+La fréquence exacte de revue reste à cadrer/configurer et ne doit pas être figée universellement.
 
 ---
 
@@ -439,6 +564,14 @@ Fiche technique
 → lignes d'ingrédients
 → lignes d'Économat
 ```
+
+### 11.0 Éligibilité d'un Produit à la fiche
+
+Un Produit ne peut être ajouté à une Fiche technique que si le moteur peut déterminer un Prix applicable pour le magasin/dossier courant.
+
+Cette éligibilité est calculée par le backend ; elle n'est pas saisie manuellement.
+
+Un Produit sans Prix applicable dans le magasin courant peut continuer à exister dans le catalogue du Workspace et être valorisable dans d'autres magasins.
 
 ### 11.1 Ligne d'ingrédient
 
@@ -553,6 +686,25 @@ Valorisation
 Une variation de prix ne doit pas obliger à modifier la composition.
 
 Les paramètres financiers encore ouverts — TVA, marge, coefficient, prix théorique, prix de vente, marge semi-nette et arrondis finaux — seront cadrés séparément avant implémentation.
+
+---
+
+## 12.1 Concurrence entre mise à jour tarifaire et édition d'une fiche
+
+Une modification tarifaire crée une nouvelle version/réalité temporelle et ne modifie jamais rétroactivement la valeur déjà utilisée par une Fiche technique en cours.
+
+Lorsqu'un utilisateur travaille sur une fiche pendant qu'un Économe ou un Acheteur modifie un prix :
+
+- le nouveau tarif devient disponible selon sa date d'effet ;
+- la fiche en cours conserve temporairement les valeurs avec lesquelles elle a été calculée ;
+- le système détecte qu'un nouveau Prix applicable existe ;
+- l'utilisateur est informé qu'une revalorisation est disponible ou nécessaire.
+
+Avant validation définitive d'une fiche, le backend vérifie que la valorisation correspond aux Prix applicables courants. Si des prix ont changé, la fiche doit être revalorisée explicitement avant validation.
+
+Une fiche déjà validée conserve son historique et peut être comparée à une valorisation courante.
+
+Le domaine ne requiert pas de verrou global empêchant une mise à jour tarifaire parce qu'un autre utilisateur édite une fiche.
 
 ---
 
@@ -713,6 +865,41 @@ Invariant :
 
 ---
 
+## 19.1 Rôles métier et périmètres
+
+Les rôles Core et les responsabilités métier restent distincts.
+
+### Workspace Owner
+
+Le rôle `owner` du Workspace, fourni par le Core, possède implicitement toutes les permissions métier du produit dans son Workspace et dans tous ses magasins/dossiers.
+
+Il n'a pas besoin de recevoir chaque rôle métier séparément.
+
+Les capabilities commerciales, quotas, validations métier et règles de sécurité restent applicables.
+
+Aucun rôle métier `Admin` spécifique au produit n'est défini à ce stade.
+
+Une future administration déléguée du Workspace sans transfert de propriété est identifiée comme un besoin générique potentiel du Core.
+
+### Autres rôles métier
+
+Socle retenu :
+
+- Acheteur / Responsable achats ;
+- Économe / Gestionnaire des prix ;
+- Responsable fiches techniques ;
+- Utilisateur métier.
+
+Ces rôles peuvent être cumulés.
+
+Ils peuvent être limités à certains magasins/dossiers.
+
+Le droit d'utiliser un Produit dans une Fiche technique ne donne pas implicitement le droit de modifier ou valider ses tarifs.
+
+La matrice exacte des permissions reste à finaliser avant implémentation.
+
+---
+
 ## 20. Invariants métier déjà établis
 
 1. Un Produit n'est pas un prix.
@@ -738,6 +925,15 @@ Invariant :
 21. Une valorisation historique ne doit pas être détruite par une modification future.
 22. Les calculs métier ont leur autorité côté backend.
 23. Les extensions futures doivent rester possibles sans sur-conception immédiate.
+24. La politique de Prix applicable est définie au niveau du Workspace.
+25. Le mode par défaut est Tarif négocié, avec fallback vers Tarif fournisseur.
+26. En mode Prix facturé, le fallback est Prix facturé validé → Tarif négocié → Tarif fournisseur.
+27. La valorisabilité d'un Produit est contextualisée au magasin et n'est pas une propriété globale du Produit.
+28. La validité commerciale d'un tarif est distincte de sa dernière revue opérationnelle.
+29. Un Prix facturé n'est exploitable qu'après validation.
+30. Une modification tarifaire ne réécrit jamais silencieusement une fiche en cours ou une valorisation historique.
+31. Le Workspace Owner possède implicitement toutes les permissions métier du produit dans son Workspace.
+32. Aucun rôle métier Admin spécifique au produit n'est défini à ce stade.
 
 ---
 
@@ -745,7 +941,6 @@ Invariant :
 
 Avant création d'un premier modèle Mongoose, il reste notamment à trancher :
 
-- dossier exactement égal à magasin ?
 - données minimales du magasin ;
 - catégories et cardinalités ;
 - unités supportées ;
@@ -753,7 +948,8 @@ Avant création d'un premier modèle Mongoose, il reste notamment à trancher :
 - règles de conversion encore non couvertes ;
 - sélection de fournisseur/article ;
 - fournisseur/article privilégié ;
-- priorité du prix applicable entre référence / magasin / observation ;
+- seuil éventuel de fraîcheur d'un Prix facturé validé ;
+- fréquence et gouvernance finales des revues tarifaires ;
 - lifecycle d'une référence fournisseur remplacée ;
 - TVA et sa portée ;
 - marge, coefficient et prix de vente ;
@@ -762,7 +958,7 @@ Avant création d'un premier modèle Mongoose, il reste notamment à trancher :
 - frontière fiche technique / fiche process ;
 - lifecycle et versionnement des fiches ;
 - V1 / hors V1 ;
-- rôles métier ;
+- matrice détaillée des permissions des rôles métier et périmètres magasin ;
 - capabilities et quotas ;
 - intégrations ;
 - contraintes réglementaires.
