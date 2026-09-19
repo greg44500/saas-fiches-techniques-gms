@@ -36,12 +36,17 @@ Objectif : obtenir un contrat produit suffisamment précis pour interdire les hy
 - dossier comme contexte magasin ;
 - règle V1 : `1 dossier = 1 magasin` ;
 - catalogue produit mutualisé dans le Workspace ;
-- prix et conditions contextualisés par magasin.
+- prix et conditions contextualisés par magasin ;
+- accès multi-magasins = changement de contexte, jamais partage ou mélange des données locales ;
+- un prix spécifique d'un autre magasin ne constitue jamais un fallback ;
+- une Fiche technique peut être copiée d'un magasin à un autre en reprenant la composition réutilisable mais jamais les prix, valorisations ou historiques ;
+- la fiche cible est recalculée intégralement dans son propre contexte et démarre avec son propre historique.
 
 **À terminer :**
 
 - définir les données minimales d'un magasin/dossier ;
-- préciser le lifecycle du dossier et les éventuels imports/copies.
+- préciser le lifecycle du dossier ;
+- préciser les détails UX et règles d'éligibilité de la copie/import.
 
 ### 2.2 Catalogue Produit
 
@@ -166,6 +171,8 @@ Décisions établies :
 - aucun rôle métier `Admin` spécifique au produit n'est créé à ce stade ;
 - les autres rôles métier peuvent être cumulés ;
 - leur périmètre peut être limité à certains magasins/dossiers ;
+- l'accès à tous les magasins permet de changer de contexte sans fusionner les données de ces magasins ;
+- les contrôles d'isolation magasin sont imposés par le backend, y compris pour les utilisateurs ayant plusieurs rôles ;
 - utiliser une Fiche technique ne confère pas implicitement le droit de modifier ou valider les prix ;
 - rôles métier retenus pour poursuivre le cadrage :
   - Acheteur / Responsable achats ;
