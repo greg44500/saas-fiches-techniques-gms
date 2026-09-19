@@ -231,11 +231,11 @@ Le client doit pouvoir créer ses fournisseurs.
 
 ---
 
-## 7. Article / offre fournisseur
+## 7. Article fournisseur
 
-Le domaine doit séparer le Produit de sa représentation chez un fournisseur.
+Le domaine sépare le Produit de sa représentation commerciale chez un Fournisseur.
 
-Conceptuellement :
+Relations conceptuelles :
 
 ```text
 Produit
@@ -247,97 +247,186 @@ Fournisseur
 → 0..n Articles fournisseur
 ```
 
-Le modèle ne doit pas empêcher plusieurs fournisseurs ou plusieurs références pour un même produit.
+Règle validée :
 
-Un article fournisseur peut porter :
+> Un même Produit peut avoir plusieurs Articles fournisseur actifs chez un même Fournisseur.
 
-- référence ;
-- désignation fournisseur ;
+Cela permet de représenter des références ou conditionnements différents sans dupliquer le Produit métier.
+
+Un Article fournisseur peut porter :
+
+- référence fournisseur ;
+- désignation fournisseur originale ;
 - marque éventuelle ;
-- conditionnement ;
+- conditionnement structuré ;
+- libellé fournisseur du conditionnement ;
 - poids net ;
-- poids net égoutté si applicable.
+- poids net égoutté si applicable ;
+- statut ;
+- createdAt / updatedAt ;
+- createdBy / updatedBy.
 
-**À valider :**
+Le modèle doit aussi permettre qu'un même Produit soit proposé par plusieurs Fournisseurs.
 
-- cardinalités exactes ;
-- règles d'unicité ;
-- article privilégié ;
-- article actif/inactif.
+**À valider avant implémentation :**
+
+- règles exactes d'unicité ;
+- lifecycle d'une référence remplacée ;
+- notion éventuelle d'Article privilégié.
 
 ---
 
 ## 8. Conditionnement
 
-Le conditionnement décrit la façon dont l'article est acheté.
+Le conditionnement décrit la façon dont un Article fournisseur est acheté.
+
+Le domaine doit stocker des données structurées suffisantes pour les calculs.
 
 Exemples :
 
 ```text
+type : carton
+nombre d'unités : 4
+quantité par unité : 2,5
+unité : kg
+
+total calculé
+→ 10 kg
+```
+
+Autres cas :
+
+```text
 sac de 25 kg
 carton de 6 × 1 L
-boîte
-barquette de 500 g
-carton de 24 unités
+carton de 24 × 125 g
 ```
 
 Invariant :
 
-> Le conditionnement commercial doit pouvoir être converti vers l'unité de référence nécessaire aux calculs.
+> Le conditionnement commercial doit pouvoir être converti vers l'unité de référence lorsque les données disponibles sont suffisantes.
 
-Le modèle doit permettre l'ajout futur de nouveaux types de conditionnement sans transformer chaque type en logique spécifique dispersée.
+Le libellé fournisseur d'origine (`5/1`, `4/4`, etc.) peut être conservé pour la traçabilité sans devenir l'unique source de calcul.
 
----
+Pour les produits concernés, poids net et poids net égoutté doivent pouvoir être conservés.
 
-## 9. Condition commerciale magasin
+### 8.1 Prix source et prix normalisé
 
-Le prix doit être contextualisé.
-
-Le domaine doit permettre conceptuellement :
+Le prix source reste conservé tel qu'il est exprimé commercialement :
 
 ```text
-Article fournisseur
-+
-Dossier / magasin
-+
-Période
-→ Condition commerciale
+40,625 € HT / sac
+3,560 € HT / boîte
+52,000 € HT / carton
 ```
 
-Une condition commerciale peut inclure :
+Lorsque le conditionnement le permet, le moteur calcule un prix normalisé dans l'unité de référence.
 
-- prix ;
-- disponibilité ;
-- date d'effet ;
-- éventuellement date de fin ;
-- provenance de la donnée ;
-- historique.
+Exemple :
 
-Invariant majeur :
+```text
+sac 25 kg
+prix source : 40,625 € HT / sac
 
-> Le prix n'est jamais une propriété directe et intemporelle du Produit.
+prix normalisé
+→ 1,625 €/kg HT
+```
+
+S'il manque une donnée fiable, le prix normalisé reste indisponible.
+
+### 8.2 Précision
+
+Règle validée :
+
+- prix d'achat unitaire affiché avec exactement 3 décimales ;
+- prix normalisé affiché avec exactement 3 décimales ;
+- précision interne conservée pour éviter les arrondis intermédiaires non maîtrisés.
+
+Les règles d'arrondi des montants agrégés et prix de vente restent à cadrer.
 
 ---
 
-## 10. Historique des prix
+## 9. Données tarifaires
 
-Une mise à jour de prix ajoute une nouvelle réalité temporelle ; elle ne doit pas détruire l'ancienne.
+Le prix n'est jamais une propriété directe et intemporelle du Produit.
+
+Le domaine distingue trois réalités tarifaires.
+
+### 9.1 Tarif fournisseur de référence
+
+Prix provenant d'un catalogue ou d'une mercuriale Fournisseur.
+
+Il peut exister sans connaître de magasin.
+
+Les catalogues Sysco et SYCAL disponibles sont traités comme des sources tarifaires Fournisseur de référence tant qu'aucune information plus précise n'est démontrée.
+
+### 9.2 Tarif spécifique magasin
+
+Prix connu pour un Article fournisseur dans un magasin donné.
+
+Il est enregistré séparément du Tarif fournisseur de référence.
+
+### 9.3 Prix observé
+
+Prix réellement constaté, notamment sur une facture.
+
+Il peut être contextualisé par magasin lorsque celui-ci est identifiable.
+
+Chaque donnée tarifaire doit pouvoir porter conceptuellement :
+
+- Article fournisseur ;
+- montant source ;
+- base / unité du prix ;
+- devise ;
+- date ou période ;
+- provenance ;
+- contexte magasin éventuel ;
+- prix normalisé calculé lorsque possible ;
+- traçabilité de création / modification.
+
+Provenances identifiées :
+
+- catalogue fournisseur ;
+- mercuriale ;
+- tarif spécifique magasin ;
+- facture ;
+- saisie manuelle ;
+- import fichier ;
+- futur OCR.
+
+**Point ouvert :** règle de priorité permettant de déterminer le Prix applicable à une fiche lorsqu'il existe plusieurs sources valides.
+
+---
+
+## 10. Historique tarifaire
+
+Une nouvelle donnée tarifaire ajoute une nouvelle réalité temporelle ; elle ne détruit pas l'ancienne.
 
 Le modèle doit pouvoir répondre à :
 
-- quel était le prix à une date donnée ?
-- quel est le prix courant ?
-- quel est l'écart absolu ?
-- quel est l'écart relatif ?
-- quelles fiches sont impactées ?
+- quel était le tarif de référence à une date donnée ?
+- quel tarif spécifique était connu pour un magasin ?
+- quel prix a réellement été observé sur une facture ?
+- quel est le prix normalisé ?
+- quel est l'écart absolu et relatif ?
+- quelles fiches peuvent être impactées ?
 
-Les graphiques et alertes peuvent être différés, mais la donnée nécessaire doit être préservée dès le socle.
+L'historique doit préserver :
+
+- valeur source ;
+- unité d'expression ;
+- valeur normalisée lorsque disponible ;
+- date / période ;
+- provenance ;
+- contexte magasin éventuel.
+
+L'extension OCR doit alimenter ce même historique après contrôles et ne pas créer un second mécanisme de prix.
 
 ---
 
 ## 11. Fiche technique
 
-Une Fiche technique appartient au contexte d'un dossier/magasin et utilise les Produits du catalogue du Workspace.
+Une Fiche technique appartient au contexte d'un dossier/magasin et utilise les marchandises du catalogue du Workspace.
 
 Conceptuellement :
 
@@ -347,48 +436,101 @@ Dossier
 → 0..n Fiches techniques
 
 Fiche technique
-1
-→ plusieurs Lignes de composition
+→ lignes d'ingrédients
+→ lignes d'Économat
 ```
 
-### 11.1 Ligne de composition
+### 11.1 Ligne d'ingrédient
 
-Une ligne associe au minimum :
+L'utilisateur renseigne au minimum :
 
-- produit ;
-- quantité nécessaire.
+- Produit ;
+- quantité nette nécessaire.
 
-Les autres informations doivent être récupérées ou calculées autant que possible.
+Le système récupère ou calcule :
 
-### 11.2 Données calculées
+- unité ;
+- rendement ;
+- quantité brute nécessaire ;
+- % de recette ;
+- prix d'achat HT applicable et normalisé ;
+- coût HT de ligne.
 
-Le système doit calculer notamment, lorsque les données nécessaires sont disponibles :
+### 11.2 Quantité nette
 
-- poids/quantité totale ;
-- part de chaque produit dans la recette ;
-- coût de chaque ligne ;
-- coût matières premières ;
-- coût emballages / économat ;
-- coût total ;
-- éléments de marge et prix selon les formules validées.
+Règle validée :
 
-### 11.3 % de recette
+> La quantité saisie est la quantité nette réellement présente dans la recette.
+
+### 11.3 Quantité brute
+
+Calcul automatique :
 
 ```text
-part recette ligne
+quantité brute
 =
-quantité de la ligne / quantité totale pertinente × 100
+quantité nette / rendement
 ```
 
-La formule exacte devra préciser la gestion des unités compatibles et le périmètre du dénominateur.
+Les pertes de rendement augmentent donc les besoins d'achat et le coût sans modifier la composition nette de la recette.
 
-L'utilisateur ne saisit pas librement cette valeur.
+### 11.4 % de recette
 
-### 11.4 Rendement dans la fiche
+Le pourcentage de recette est calculé sur les quantités nettes.
 
-Le rendement utilisé provient par défaut du produit.
+```text
+% recette ligne
+=
+quantité nette ligne / total net pertinent × 100
+```
 
-Le calcul économique doit tenir compte du rendement selon la définition finale quantité brute / quantité nette qui reste à verrouiller.
+Il n'est pas saisi librement.
+
+### 11.5 Coût matière de ligne
+
+Base validée :
+
+```text
+quantité brute nécessaire
+×
+prix achat HT normalisé
+=
+coût matière HT de la ligne
+```
+
+Le prix d'achat HT est l'autorité économique de ce calcul.
+
+### 11.6 Coût Matière
+
+```text
+CM HT
+=
+Σ coûts HT des lignes d'ingrédients
+```
+
+### 11.7 Ligne d'Économat
+
+L'Économat représente les consommables achetés nécessaires à la fabrication, au conditionnement ou à la commercialisation.
+
+L'utilisateur renseigne la quantité réellement consommée dans l'unité de référence du consommable.
+
+Le système calcule le coût HT à partir du conditionnement et du prix normalisé.
+
+Les consommables utilisent les mêmes mécanismes d'approvisionnement et d'historisation que les ingrédients lorsque pertinent, sans attributs alimentaires non applicables.
+
+### 11.8 Coût total de fabrication
+
+Définition métier validée :
+
+```text
+Coût total de fabrication HT
+=
+Coût Matière HT + Économat HT
+```
+
+L'énergie est exclue.
+
+Aucune autre charge ne doit être ajoutée sans validation métier.
 
 ---
 
@@ -398,13 +540,19 @@ La composition et la valorisation sont deux dimensions distinctes.
 
 ```text
 Composition
-→ quels produits et quelles quantités ?
+→ quels ingrédients ?
+→ quelles quantités nettes ?
+→ quels consommables d'Économat ?
 
 Valorisation
-→ combien cette composition coûte-t-elle avec les données économiques applicables ?
+→ quels prix HT applicables ?
+→ quelles quantités brutes ?
+→ quels coûts ?
 ```
 
 Une variation de prix ne doit pas obliger à modifier la composition.
+
+Les paramètres financiers encore ouverts — TVA, marge, coefficient, prix théorique, prix de vente, marge semi-nette et arrondis finaux — seront cadrés séparément avant implémentation.
 
 ---
 
@@ -431,23 +579,29 @@ Le choix technique entre snapshots, événements, versions ou combinaison sera �
 
 ---
 
-## 14. Emballages / économat
+## 14. Marchandises achetées et Économat
 
-Les exemples métier distinguent les matières premières des emballages / décorations.
-
-Le modèle doit préserver cette distinction économique.
-
-**À décider :**
+Le domaine reconnaît au moins deux natures de marchandises achetées intégrables à une Fiche technique :
 
 ```text
-Option A
-→ même catalogue avec catégorie/type distinct
+Ingrédient
+→ contribue au Coût Matière
+→ peut avoir gamme / rendement / % recette
 
-Option B
-→ concept spécialisé de consommable
+Économat / consommable
+→ contribue à l'Économat
+→ ne possède pas les attributs alimentaires non pertinents
 ```
 
-Aucune décision de persistance n'est prise à ce stade.
+Les deux natures peuvent partager les mécanismes d'approvisionnement :
+
+- Fournisseur ;
+- Article fournisseur ;
+- conditionnement ;
+- tarif HT ;
+- historique.
+
+La structure technique exacte — modèle commun, spécialisation ou autre composition — sera décidée lors du cadrage du module concerné. Le contrat métier prime : les règles de calcul doivent rester distinctes.
 
 ---
 
@@ -564,18 +718,26 @@ Invariant :
 1. Un Produit n'est pas un prix.
 2. Un Produit n'est pas un article fournisseur.
 3. Le catalogue est mutualisé dans le Workspace.
-4. Le contexte magasin détermine les conditions commerciales applicables.
-5. Les prix doivent être historisés.
-6. Les modifications Produit doivent être traçables.
-7. Le % de recette est calculé.
-8. Le taux de rendement est distinct du % de recette.
-9. Le rendement de référence appartient au Produit et est réutilisé automatiquement.
-10. La gamme n'est renseignée que lorsqu'elle est pertinente.
-11. Les unités mathématiques et les conditionnements commerciaux sont distincts.
-12. La composition technique et la valorisation économique sont distinctes.
-13. Une valorisation historique ne doit pas être détruite par une modification future.
-14. Les calculs métier ont leur autorité côté backend.
-15. Les extensions futures doivent rester possibles sans sur-conception immédiate.
+4. Un même Produit peut avoir plusieurs Articles chez un même Fournisseur.
+5. Un tarif Fournisseur peut exister sans connaître de magasin.
+6. Un tarif spécifique magasin ou un prix observé est conservé séparément du tarif de référence.
+7. Les prix sont HT pour le calcul du coût matière.
+8. Les prix unitaires et normalisés sont affichés avec 3 décimales sans arrondi prématuré du moteur.
+9. Les données tarifaires sont sourcées et historisées.
+10. Les modifications Produit doivent être traçables.
+11. L'utilisateur saisit la quantité nette ; la quantité brute est calculée via le rendement.
+12. Le % de recette est calculé sur les quantités nettes.
+13. Le taux de rendement est distinct du % de recette.
+14. Le rendement de référence appartient au Produit et est réutilisé automatiquement.
+15. La gamme n'est renseignée que lorsqu'elle est pertinente.
+16. Les unités mathématiques et les conditionnements commerciaux sont distincts.
+17. CM = somme des coûts HT des lignes d'ingrédients.
+18. L'Économat est une nature distincte de marchandise achetée et reste séparé du CM.
+19. Coût total de fabrication = CM + Économat ; l'énergie est exclue.
+20. La composition technique et la valorisation économique sont distinctes.
+21. Une valorisation historique ne doit pas être détruite par une modification future.
+22. Les calculs métier ont leur autorité côté backend.
+23. Les extensions futures doivent rester possibles sans sur-conception immédiate.
 
 ---
 
@@ -587,15 +749,16 @@ Avant création d'un premier modèle Mongoose, il reste notamment à trancher :
 - données minimales du magasin ;
 - catégories et cardinalités ;
 - unités supportées ;
-- types de conditionnement ;
-- quantité nette vs quantité brute dans une ligne de fiche ;
-- règles de conversion et de rendement ;
+- liste/gouvernance exacte des types de conditionnement ;
+- règles de conversion encore non couvertes ;
 - sélection de fournisseur/article ;
 - fournisseur/article privilégié ;
-- calculs financiers exacts ;
-- TVA ;
+- priorité du prix applicable entre référence / magasin / observation ;
+- lifecycle d'une référence fournisseur remplacée ;
+- TVA et sa portée ;
+- marge, coefficient et prix de vente ;
 - marge semi-nette ;
-- emballages ;
+- arrondis des montants agrégés ;
 - frontière fiche technique / fiche process ;
 - lifecycle et versionnement des fiches ;
 - V1 / hors V1 ;
