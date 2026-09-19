@@ -293,8 +293,9 @@ Le modèle doit aussi permettre qu'un même Produit soit proposé par plusieurs 
 **À valider avant implémentation :**
 
 - règles exactes d'unicité ;
-- lifecycle d'une référence remplacée ;
-- notion éventuelle d'Article privilégié.
+- lifecycle d'une référence remplacée.
+
+La sélection opérationnelle n'est plus modélisée par un unique « Article privilégié » générique : le magasin dispose de Références favorites pouvant contenir plusieurs Articles d'un même Produit. Une éventuelle notion future de référence par défaut ne sera ajoutée que si un besoin distinct est démontré.
 
 ---
 

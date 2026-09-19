@@ -347,45 +347,46 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le bloc Produit / approvisionnement / coût direct est désormais suffisamment avancé pour poursuivre sur les calculs économiques encore ouverts.
+Le bloc Prix applicable / Articles / Références du magasin est désormais suffisamment cadré pour ne plus constituer le point de reprise prioritaire.
 
 Ordre recommandé :
 
-```text
-1. finaliser le bloc Prix applicable
-   → seuil éventuel de fraîcheur du Prix facturé
-   → alertes selon source/fallback
-   → fréquence/gouvernance détaillée des revues tarifaires
+~~~text
+1. finaliser la matrice rôles / permissions / périmètres dossier
+   → Acheteur / Responsable achats
+   → Économe / Gestionnaire des prix
+   → Responsable fiches techniques
+   → Contributeur fiches techniques
+   → Lecteur métier si nécessaire
+   → stockage/orchestration du périmètre dossier
 
-2. finaliser la matrice des rôles/permissions métier liés aux prix et aux magasins
+2. TVA et portée de la TVA
 
-3. TVA et portée de la TVA
+3. objectif de marge
 
-4. objectif de marge
+4. coefficient / prix théorique
 
-5. coefficient / prix théorique
+5. prix de vente conseillé / retenu
 
-6. prix de vente conseillé / retenu
+6. marge réelle / marge semi-nette
 
-7. marge réelle / marge semi-nette
+7. règles d'arrondi des totaux
 
-8. règles d'arrondi des totaux
+8. fiche process
 
-9. versionnement / validation d'une fiche technique
+9. données minimales et lifecycle du dossier/magasin
 
-10. fiche process
+10. capabilities / quotas
 
-11. données minimales et lifecycle du dossier/magasin
+11. intégrations / réglementation
 
-12. capabilities / quotas
+12. V1 / hors V1
 
-13. intégrations / réglementation
+13. validation documentaire globale
 
-14. V1 / hors V1
+14. seulement ensuite cadrage M-001
+~~~
 
-15. validation documentaire globale
-
-16. seulement ensuite cadrage M-001
-```
+Les détails encore ouverts dans des blocs déjà avancés — convention technique de fraîcheur, seuil de fréquence, lifecycle Article, rétention — restent à fermer avant validation globale sans bloquer la poursuite du cadrage économique.
 
 La PR documentaire #5 reste le lot unique de cadrage global jusqu'à clôture de cette phase.
