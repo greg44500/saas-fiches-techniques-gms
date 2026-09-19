@@ -1,12 +1,12 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : bootstrap technique validé — cadrage produit métier à démarrer**
+> **Statut : bootstrap technique validé — cadrage produit métier en cours**
 >
-> **Dernière mise à jour : 2026-09-18**
+> **Dernière mise à jour : 2026-09-19**
 >
 > Le code réel, les contraintes DB, les tests/gates réellement exécutés et les contrats canoniques priment sur cette synthèse.
 >
-> **Aucun module métier n’a encore été implémenté.**
+> **Aucun module métier n’a encore été implémenté. Aucun modèle métier Mongoose n’a été créé.**
 
 ---
 
@@ -45,8 +45,16 @@ greg44500/saas-fiches-techniques-gms
 Main validé :
 
 ```text
-644c76b8c3db408ace0e494f1f50caf52107181d
-Merge pull request #3 from greg44500/core-update/v1.0.1
+9f2b6326c66d8d10460789a19602b70f00066d1e
+Merge pull request #4 from greg44500/docs/reprise-after-core-1.0.1
+```
+
+Validation post-merge associée :
+
+```text
+Core Gate #10
+run        : 35366434371
+conclusion : success
 ```
 
 Remotes attendus :
@@ -85,7 +93,7 @@ Le conflit sur `docs/REPRISE-CURRENT.md` a été résolu en conservant la synth�
 
 ## 4. Identité de release
 
-Le contrat Core 1.0.1 distingue désormais :
+Le contrat Core 1.0.1 distingue :
 
 ```text
 core-release.json
@@ -109,7 +117,7 @@ channel    : development
 
 Les `package.json` et lockfiles conservent l’identité/version du Core conformément au contrat de dérivation.
 
-`AGENTS.md` est maintenant adapté au produit et rappelle explicitement la frontière Core / métier.
+`AGENTS.md` est adapté au produit et rappelle explicitement la frontière Core / métier.
 
 ---
 
@@ -154,7 +162,7 @@ Merge :
 main : 644c76b8c3db408ace0e494f1f50caf52107181d
 ```
 
-Validation post-merge :
+Validation post-merge upgrade :
 
 ```text
 Core Gate #8
@@ -162,6 +170,8 @@ run        : 35364254446
 head       : 644c76b8c3db408ace0e494f1f50caf52107181d
 conclusion : success
 ```
+
+La mise à jour documentaire post-upgrade a ensuite été fusionnée via la PR #4 et le `main` `9f2b6326...` a été validé par la Core Gate #10.
 
 L’upgrade Core `v1.0.1` est donc validé de bout en bout.
 
@@ -201,73 +211,426 @@ Le socle Core est opérationnel et validé.
 
 Aucun modèle métier GMS n’a encore été créé.
 
-Aucun module métier n’a encore été cadré ou implémenté.
+Aucun module M-001 / M-002 / ... n’a encore été cadré ou implémenté.
 
 Les tests Core ne remplaceront jamais les futurs tests métier.
 
----
-
-## 8. Points techniques non bloquants à suivre
-
-Certains éléments hérités portent encore une identité technique Core, notamment selon les fichiers :
-
-- valeurs par défaut JWT issuer/audience ;
-- certaines valeurs CI/E2E ;
-- `.env.example` ;
-- identité visible frontend héritée ;
-- noms SMTP hérités.
-
-Ces éléments ne doivent pas être renommés aveuglément.
-
-Ils seront adaptés lorsqu’un besoin produit explicite le justifiera, sans casser les contrats Core ni compliquer les futurs upgrades.
-
-Toute évolution générique reste à traiter dans `saas-core-api`.
+Le cadrage global du produit a en revanche commencé le 2026-09-19.
 
 ---
 
-## 9. Prochaine étape : cadrage produit global
+## 8. Cadrage métier désormais formalisé
 
-La prochaine étape prioritaire est désormais le cadrage du SaaS métier.
+Branche documentaire de travail :
 
-Avant tout modèle métier Mongoose, créer/adapter et valider :
+```text
+docs/product-business-framing-foundation
+```
+
+Pull Request de cadrage :
+
+```text
+PR #5 — Docs: formalize initial product business framing
+état : ouverte
+base : main
+```
+
+Dernière preuve CI explicitement confirmée avant les derniers enrichissements documentaires :
+
+```text
+Core Gate #26
+head       : c70f2c66b24c571b20cbf042523c558ce6777bdc
+conclusion : success
+```
+
+Des commits documentaires supplémentaires ont ensuite consolidé les décisions validées. Leur gate courante doit être vérifiée sur GitHub avant merge ; cette synthèse ne doit jamais extrapoler un statut vert non observé.
+
+Documents ajoutés en statut DRAFT :
 
 ```text
 docs/PRODUCT-SCOPE.md
 docs/ROADMAP.md
-docs/DEBT.md
-docs/REPRISE-CURRENT.md
 docs/domain/GLOSSARY.md
 docs/domain/DOMAIN-MODEL.md
 ```
 
-Le cadrage doit couvrir au minimum :
+Ils formalisent les décisions métier validées sans transformer les points ouverts en hypothèses techniques.
 
-- problème métier ;
-- utilisateurs ;
-- proposition de valeur ;
-- périmètre V1 ;
-- hors périmètre ;
-- domaines fonctionnels ;
-- vocabulaire métier ;
-- ownership / tenancy ;
-- rôles ;
-- capabilities commerciales ;
-- quotas éventuels ;
-- intégrations externes ;
-- contraintes réglementaires ;
-- roadmap initiale.
+### 8.1 Organisation
 
-Aucune entité métier ne doit être inventée avant validation de ce cadrage global.
+Organisation validée :
+
+```text
+Workspace
+→ plusieurs dossiers
+→ 1 dossier = exactement 1 magasin
+```
+
+Le Workspace conserve un catalogue commun de produits.
+
+Les conditions commerciales sont contextualisées par magasin/dossier.
+
+L'accès à plusieurs magasins permet uniquement de changer de contexte. Les contextes ne sont jamais fusionnés : une Fiche technique du magasin Nantes ne peut jamais utiliser un Tarif négocié ou Prix facturé du magasin Saint-Nazaire. En l'absence de prix local applicable, le fallback reste le Tarif fournisseur de référence, jamais le prix d'un autre magasin.
+
+### 8.2 Produit
+
+Principes déjà établis :
+
+- nom métier directement compréhensible ;
+- nom simple pour un produit entier / standard ;
+- précision de préparation dans le nom lorsqu’elle est nécessaire ;
+- catégorie ;
+- gamme alimentaire uniquement lorsqu’elle est pertinente ;
+- unité de référence ;
+- rendement produit ;
+- photo facultative ;
+- dates/auteurs de création et modification ;
+- historique des changements significatifs.
+
+Exemple :
+
+```text
+Oignon
+→ produit entier
+
+Oignon émincé
+→ produit préparé distinct
+```
+
+La farine constitue un exemple de produit pour lequel la gamme peut être non applicable avec un rendement de 100 %.
+
+### 8.3 Fiabilité et calculs
+
+Principe métier validé :
+
+> L’utilisateur déclare les faits nécessaires ; le système calcule tout ce qui peut être déduit.
+
+Le backend reste l’autorité des calculs et validations.
+
+Le pourcentage de recette est calculé à partir des quantités.
+
+Le taux de rendement est distinct du pourcentage de recette.
+
+Le rendement de référence est défini sur le produit et utilisé automatiquement dans la fiche technique.
+
+### 8.4 Fournisseurs, articles, conditionnements et tarifs
+
+Le domaine sépare strictement Produit, Fournisseur, Article fournisseur, conditionnement, catalogue fournisseur, Tarif négocié magasin et Prix facturé.
+
+Politique Workspace validée :
+
+~~~text
+Tarif fournisseur
+Tarif négocié ← standard
+Prix facturé
+~~~
+
+Résolution :
+
+~~~text
+Tarif fournisseur
+→ Tarif fournisseur de référence applicable
+
+Tarif négocié
+→ Tarif négocié valide du même magasin
+→ sinon Tarif fournisseur
+
+Prix facturé
+→ dernier Prix facturé VALIDE, exploitable et suffisamment frais du même magasin
+→ sinon Tarif négocié valide du même magasin
+→ sinon Tarif fournisseur
+~~~
+
+Aucun prix d'un autre magasin n'est jamais proposé comme fallback.
+
+Le backend est la seule autorité de résolution et expose source, Article, valeur, temporalité, fallback, raison et alertes.
+
+Le Prix facturé :
+
+- est exploitable seulement après rattachement fiable et validation ;
+- conserve les états À VALIDER / VALIDÉ / REJETÉ ;
+- utilise la date de facture comme origine de fraîcheur ;
+- possède une durée standard de fraîcheur d'un an ;
+- peut utiliser une durée personnalisée par Workspace lorsque la capability le permet ;
+- reste VALIDÉ et historique lorsqu'il devient trop ancien, mais ne participe plus automatiquement à la résolution courante.
+
+La convention technique exacte « 12 mois calendaires vs représentation équivalente » reste à fixer.
+
+Les catalogues fournisseur de référence peuvent être préchargés et sont historisés par édition/millésime. Une nouvelle édition ne détruit pas l'ancienne. Un catalogue hors validité peut rester consultable ou servir de dernier fallback de référence à condition d'être clairement signalé.
+
+Un futur import CSV/XLS/XLSX doit créer une nouvelle édition après mapping, contrôles, aperçu et validation. Le mapping Fournisseur peut être mémorisé. L'IA/OCR pourra assister plus tard mais ne devient jamais l'autorité tarifaire.
+
+### 8.4.1 Sélection d'Article et Références du magasin
+
+Lorsqu'un Produit possède plusieurs Articles exploitables dans le même magasin :
+
+- le SaaS ne choisit jamais automatiquement le moins cher ;
+- un Article explicitement choisi reste associé à la version concernée ;
+- un seul candidat exploitable peut être résolu automatiquement ;
+- plusieurs candidats sans décision explicite déclenchent une sélection utilisateur ;
+- changement de prix du même Article = revalorisation ;
+- changement d'Article = modification d'approvisionnement distincte.
+
+Le raccourci opérationnel du magasin porte sur des **références favorites**, c'est-à-dire des Articles fournisseur précis, pas sur un Produit générique.
+
+Une référence favorite pointe vers l'Article ; son Prix applicable est recalculé dynamiquement dans le contexte du magasin.
+
+Plusieurs références favorites peuvent correspondre au même Produit.
+
+Deux notions sont conservées :
+
+~~~text
+Favorite
+→ préférence opérationnelle
+
+Fréquemment utilisée
+→ observation calculée de l'usage
+~~~
+
+La fréquence se base sur des Fiches techniques VALIDÉES distinctes du magasin ; une revalorisation ou nouvelle version de la même fiche ne gonfle pas le compteur.
+
+La politique Workspace peut fonctionner en manuel, suggestion ou ajout automatique aux favoris. Le seuil exact reste configurable et sa valeur standard définitive reste à fixer.
+
+Une vue unique « Références du magasin » peut prioriser Favorites et Fréquemment utilisées puis donner accès au catalogue complet.
+
+Chaque Produit/Article proposé doit disposer d'une carte d'identité professionnelle : Fournisseur, référence, désignation, conditionnement, marque éventuelle, Prix applicable courant, source, temporalité et alertes. Ces informations viennent du backend.
+
+### 8.5 Fiche technique, versionnement et coûts
+
+Règles validées :
+
+- quantité nette saisie ;
+- quantité brute calculée via rendement ;
+- pourcentage recette calculé sur le net ;
+- prix HT normalisé ;
+- CM = somme des lignes ingrédients ;
+- Économat séparé ;
+- Coût total fabrication = CM + Économat ;
+- énergie exclue ;
+- absence de prix jamais représentée par zéro ;
+- une ligne requise sans Prix applicable empêche la validation officielle.
+
+Cycle de vie conceptuel :
+
+~~~text
+DRAFT
+→ travail en cours, possiblement incomplet
+
+VALIDATED
+→ version officielle, historiquement immuable
+
+ARCHIVED
+→ sortie de l'usage actif, historique conservé
+~~~
+
+Modifier une version VALIDATED crée/ouvre un nouveau DRAFT.
+
+Une revalorisation peut créer un nouveau DRAFT à composition identique avec les Prix applicables courants, puis nécessite une validation explicite.
+
+Chaque version validée conserve le snapshot nécessaire à la reproductibilité économique : Produit, Article, quantités, rendement, prix, source, magasin et date de valorisation.
+
+Le backend vérifie avant validation permissions, périmètre magasin, complétude, cohérence, Articles, Prix applicables, actualité de la valorisation et conflits concurrents.
+
+Les invariants métier s'appliquent à tous les membres, y compris au Workspace Owner.
+
+La copie inter-magasin reprend la composition mais jamais les prix, valorisations ou historiques économiques du magasin source.
+
+### 8.5.1 Archivage et suppression
+
+Le cycle normal utilise l'archivage.
+
+Aucune suppression automatique n'est déclenchée uniquement par l'âge.
+
+Le Workspace Owner peut, selon la politique de cycle de vie, supprimer définitivement une fiche ancienne déjà archivée après contrôles et audit.
+
+Une fiche VALIDATED active n'est pas supprimée directement.
+
+La fiche et ses versions sont traitées comme une unité cohérente et un audit minimal de suppression doit subsister.
+
+Les contraintes de rétention légale/réglementaire restent à cadrer.
+
+### 8.6 Configuration métier du Workspace
+
+Le panneau de configuration devient une surface structurante et reste visible.
+
+Chaque paramètre distingue :
+
+~~~text
+valeur standard
+valeur configurée éventuelle
+valeur effective
+droit de personnalisation
+~~~
+
+Le backend calcule la valeur effective. Aucun fallback métier n'est codé en dur dans le frontend.
+
+Principe commercial validé :
+
+~~~text
+Free
+→ comportements standards
+→ personnalisation verrouillée selon capabilities
+
+Trial
+→ comportements standards dès le départ
+→ personnalisation facultative pour tester l'offre
+
+Payant
+→ personnalisation autorisée par le plan
+~~~
+
+Un downgrade ne détruit pas automatiquement les valeurs personnalisées ; elles peuvent devenir inactives pendant que les standards redeviennent effectifs.
+
+Paramètres identifiés : politique de prix, fraîcheur factures, politique des références favorites/fréquentes, cycle de vie des fiches, TVA, marge, coefficient, arrondis et autres paramètres démontrés.
+
+### 8.7 RBAC, Workspace Owner et périmètres magasin
+
+Le produit réutilise le système de rôles du Core v1.0.1.
+
+Constat Core vérifié :
+
+~~~text
+WorkspaceInvitation
+→ roleId
+
+acceptation
+→ WorkspaceMember.role
+
+WorkspaceMember
+→ un seul Role
+~~~
+
+Le produit ne crée donc pas un système de rôles cumulables.
+
+Les responsabilités multiples sont regroupées dans un rôle personnalisé contenant les permissions nécessaires.
+
+Profils types retenus :
+
+- Acheteur / Responsable achats ;
+- Économe / Gestionnaire des prix ;
+- Responsable fiches techniques ;
+- Contributeur fiches techniques ;
+- Lecteur métier si besoin.
+
+Le Workspace Owner :
+
+- est le rôle owner du Workspace, pas un rôle Platform ;
+- possède toutes les permissions métier du produit ;
+- possède tous les dossiers de son Workspace ;
+- peut paramétrer le Workspace selon les capabilities disponibles ;
+- reste soumis aux invariants métier.
+
+Un PlatformRole, y compris d'administration plateforme, ne donne aucun accès implicite aux dossiers, fiches ou données commerciales d'un Workspace.
+
+Le rôle répond à « que peut faire le membre ? ». Le périmètre dossier répond à « où peut-il le faire ? ».
+
+L'autorisation effective combine :
+
+~~~text
+membership actif
++ permission du Role
++ accès dossier
++ état ressource
++ capability éventuelle
++ invariants métier
+~~~
+
+Le parcours d'invitation du produit peut afficher rôle et magasins dans un même formulaire, mais le périmètre dossier reste une donnée métier séparée. Son stockage et son éventuelle préparation avant acceptation doivent encore être cadrés sans modifier silencieusement le Core.
+
+### 8.8 Principe invariants vs permissions
+
+Règle validée :
+
+~~~text
+RBAC
+→ ce qu'un utilisateur peut demander
+
+Invariants métier
+→ ce que le Workspace peut accepter comme état valide
+~~~
+
+Aucune permission, y compris celles du Workspace Owner, ne permet de contourner un invariant de valorisation, d'isolation, d'historisation ou de cohérence.
 
 ---
 
-## 10. Après validation du cadrage global
+## 9. Points métier restant à cadrer
 
-Seulement après validation des documents produit :
+Le cadrage global n'est pas terminé, mais les blocs prix/références, versionnement, configuration et architecture RBAC sont désormais fortement avancés.
+
+Ordre recommandé de reprise :
+
+1. finaliser la matrice précise des permissions des rôles types et le périmètre dossier ;
+2. cadrer TVA et portée de TVA ;
+3. cadrer objectif de marge ;
+4. cadrer coefficient et prix théorique ;
+5. cadrer prix conseillé / prix retenu ;
+6. cadrer marge réelle / semi-nette ;
+7. cadrer arrondis ;
+8. cadrer Fiche process ;
+9. finaliser données minimales/lifecycle du dossier-magasin ;
+10. finaliser capabilities / quotas ;
+11. finaliser intégrations et contraintes réglementaires ;
+12. fixer V1 / hors V1 ;
+13. validation documentaire globale ;
+14. seulement ensuite cadrage M-001.
+
+Points encore ouverts dans les blocs déjà travaillés :
+
+- convention technique exacte de fraîcheur standard du Prix facturé ;
+- valeur standard du seuil « fréquemment utilisée » ;
+- traitement des fiches archivées dans ce calcul ;
+- données minimales Fournisseur ;
+- lifecycle Article fournisseur ;
+- gouvernance finale des revues tarifaires ;
+- permission de validation par défaut de l'Économe ;
+- stockage du périmètre dossier et orchestration invitation ;
+- types/motifs exacts de version ;
+- règles de rétention et suppression définitive.
+
+Aucune de ces questions ne doit être résolue implicitement pendant l'implémentation.
+
+---
+
+## 10. Points techniques non bloquants à suivre
+
+Les points d'extension Core v1.0.1 doivent être utilisés avant toute modification de fondation, notamment le registre de permissions métier Workspace.
+
+Le Core v1.0.1 confirme qu'un WorkspaceMember porte un seul Role et que l'invitation reçoit un roleId.
+
+Le périmètre dossier n'est pas une primitive native du WorkspaceMember : son besoin doit rester côté produit sauf démonstration d'un besoin générique réutilisable justifiant une évolution Core.
+
+Certains éléments hérités portent encore une identité technique Core et ne doivent pas être renommés aveuglément.
+
+Toute évolution générique reste à traiter d'abord dans saas-core-api puis à intégrer via une branche core-update.
+
+---
+
+## 11. Gate avant tout code métier
+
+Avant tout modèle métier Mongoose :
 
 ```text
-cadrer M-001
-→ branche dédiée
+PRODUCT-SCOPE validé
++
+GLOSSARY validé
++
+DOMAIN-MODEL validé
++
+V1 / hors V1 validé
++
+rôles / capabilities / quotas cadrés
++
+contraintes réglementaires cadrées
++
+ROADMAP validée
+↓
+cadrage M-001
+```
+
+Seulement après validation de M-001 :
+
+```text
+branche
 → backend
 → tests backend
 → frontend
@@ -278,23 +641,84 @@ cadrer M-001
 → documentation
 ```
 
-Chaque module devra expliciter notamment les règles métier, invariants, ownership, tenancy, RBAC, capabilities, quotas, API, validation, audit, lifecycle, migrations et critères d’acceptation.
+---
+
+## 12. Granularité Git / PR
+
+Règle de travail validée :
+
+> Une PR correspond à un lot fonctionnel cohérent et vérifiable, pas à une couche technique isolée.
+
+Un modèle Mongoose et une validation Zod peuvent faire l'objet de commits sur une branche, mais ne justifient pas à eux seuls une PR par défaut.
+
+La PR #5 constitue le lot documentaire global de cadrage en cours. Il ne faut pas multiplier les PR documentaires pendant cette phase.
+
+En développement, viser des vertical slices cohérentes : backend, permissions, frontend, tests et documentation du lot lorsque cela est pertinent.
 
 ---
 
-## 11. Point de départ de la prochaine conversation
+## 13. Point de reprise immédiat
 
-Ordre recommandé :
+Reprendre par la **matrice de permissions**, en tenant compte du contrat Core réel :
 
-```text
-1. lire KB-START-HERE / base de connaissance
-2. lire cette reprise
-3. vérifier GitHub réel et HEAD main
-4. confirmer que Core v1.0.1 reste la provenance intégrée
-5. démarrer le cadrage produit global
-6. créer/adapter PRODUCT-SCOPE, ROADMAP, DEBT, GLOSSARY et DOMAIN-MODEL
-7. valider le cadrage avec l’utilisateur
-8. seulement ensuite cadrer M-001
-```
+~~~text
+Workspace Owner
+→ toutes permissions métier
+→ tous dossiers du Workspace
 
-Ne pas repartir dans des travaux Core génériques en l’absence de blocage réel du produit.
+WorkspaceMember non-owner
+→ un seul Role Workspace
+→ permissions du Role
+→ périmètre dossier indépendant
+~~~
+
+La prochaine décision à formaliser est la répartition exacte des permissions entre :
+
+- Acheteur / Responsable achats ;
+- Économe / Gestionnaire des prix ;
+- Responsable fiches techniques ;
+- Contributeur fiches techniques ;
+- Lecteur métier si nécessaire.
+
+Points à trancher en priorité :
+
+- qui peut créer/modifier Produits, Fournisseurs et Articles ;
+- qui peut gérer catalogues et Tarifs négociés ;
+- qui peut valider Prix facturés et mener les revues ;
+- qui peut gérer les références favorites ;
+- qui peut créer/modifier ses propres DRAFTS ;
+- qui peut modifier les DRAFTS d'autrui ;
+- qui peut revaloriser ;
+- qui possède technical-sheet:validate par défaut ;
+- qui archive/restaure ;
+- suppression définitive : Workspace Owner uniquement dans le cadrage actuel ;
+- lecture/modification de la configuration métier.
+
+Une fois cette matrice stabilisée, poursuivre immédiatement le bloc économique :
+
+~~~text
+TVA
+→ objectif de marge
+→ coefficient / prix théorique
+→ prix conseillé / retenu
+→ marge réelle / semi-nette
+→ arrondis
+~~~
+
+Puis :
+
+~~~text
+Fiche process
+→ Dossier-magasin
+→ capabilities / quotas
+→ intégrations / réglementation
+→ V1 / hors V1
+→ validation globale
+→ cadrage M-001
+~~~
+
+Ne créer aucun modèle métier Mongoose avant validation du cadrage global.
+
+Ne créer aucun second système de rôles métier parallèle au RBAC Workspace du Core.
+
+Ne jamais confondre Workspace Owner et rôle Platform.
