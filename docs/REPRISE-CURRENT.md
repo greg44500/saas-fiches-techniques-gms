@@ -252,6 +252,8 @@ Le Workspace conserve un catalogue commun de produits.
 
 Les conditions commerciales sont contextualisées par magasin/dossier.
 
+L'accès à plusieurs magasins permet uniquement de changer de contexte. Les contextes ne sont jamais fusionnés : une Fiche technique du magasin Nantes ne peut jamais utiliser un Tarif négocié ou Prix facturé du magasin Saint-Nazaire. En l'absence de prix local applicable, le fallback reste le Tarif fournisseur de référence, jamais le prix d'un autre magasin.
+
 ### 8.2 Produit
 
 Principes déjà établis :
@@ -400,6 +402,24 @@ Les principes suivants sont désormais validés :
 
 Restent notamment à cadrer : seuil éventuel de fraîcheur du Prix facturé, règles finales d'alerte tarifaire, TVA, marge, coefficient, prix théorique, prix conseillé/retenu, marge semi-nette et arrondis des totaux.
 
+### 8.5.1 Copie inter-magasin d'une Fiche technique
+
+Une Fiche technique peut être copiée d'un magasin vers un autre pour éviter une ressaisie de sa composition.
+
+La copie reprend la structure réutilisable de la fiche, notamment les Produits, quantités et unités.
+
+Elle ne reprend jamais :
+
+- Tarifs négociés ;
+- Prix facturés ;
+- Prix applicables déjà calculés ;
+- valorisations économiques ;
+- historique de validation ou de revalorisation du magasin source.
+
+La fiche cible est une nouvelle fiche dans le contexte du magasin cible. Ses Articles/Prix applicables sont résolus à nouveau et sa valorisation est recalculée dans ce contexte.
+
+Son historique métier et économique démarre vierge. Une simple provenance vers la fiche source peut être conservée pour l'audit.
+
 ### 8.6 Extensibilité
 
 Les extensions identifiées doivent rester possibles sans obligation de les développer immédiatement.
@@ -452,6 +472,8 @@ Ces rôles peuvent être cumulés et leur périmètre peut être limité à cert
 Le fait d'utiliser les Produits et Fiches techniques n'accorde pas automatiquement le droit de modifier ou valider les prix.
 
 La matrice détaillée des permissions reste à finaliser.
+
+L'accès multi-magasins doit être explicitement attribué et ne modifie jamais l'isolation du contexte actif. Même un utilisateur autorisé sur plusieurs magasins travaille dans un seul dossier/magasin à la fois pour créer, modifier ou valoriser une fiche.
 
 ---
 
