@@ -22,7 +22,7 @@ Contexte de travail créé par l'utilisateur pour un magasin.
 
 Le dossier sert notamment à contextualiser les prix, disponibilités, fiches techniques et fiches process.
 
-**Ouvert :** confirmer que la règle V1 est strictement `1 dossier = 1 magasin`.
+**Règle V1 validée :** `1 dossier = 1 magasin`. Le dossier constitue le contexte métier du magasin dans le SaaS.
 
 ---
 
@@ -265,6 +265,56 @@ Sa provenance doit être conservée.
 
 ---
 
+## Prix facturé exploitable
+
+Prix observé provenant d'une facture et pouvant être utilisé dans la valorisation courante.
+
+Il doit être correctement rattaché au Fournisseur, à l'Article fournisseur, au magasin/dossier et à la date de facture, disposer de données suffisantes pour être normalisé de façon fiable et avoir été explicitement validé.
+
+États minimaux :
+
+- À VALIDER ;
+- VALIDÉ ;
+- REJETÉ.
+
+Un prix à valider ou rejeté ne peut jamais devenir automatiquement le Prix applicable.
+
+---
+
+## Validité commerciale d'un tarif
+
+Période pendant laquelle une condition tarifaire est applicable selon les informations connues.
+
+Pour un Tarif négocié, elle repose notamment sur une date de début et une date de fin éventuelle.
+
+Elle est distincte de la date à laquelle un utilisateur a vérifié le tarif.
+
+---
+
+## Revue tarifaire
+
+Contrôle opérationnel effectué sur les tarifs d'un magasin afin de confirmer les valeurs encore cohérentes, corriger les changements et identifier les anomalies.
+
+Une revue peut porter en masse sur plusieurs tarifs.
+
+Elle conserve notamment la date de contrôle, l'auteur, le périmètre et une éventuelle prochaine date de revue.
+
+Une revue tarifaire ne prolonge pas artificiellement une période de validité contractuelle.
+
+---
+
+## Produit valorisable
+
+État calculé d'un Produit dans le contexte d'un magasin.
+
+Un Produit est valorisable lorsqu'un Prix applicable peut être déterminé selon la politique de prix du Workspace.
+
+Un même Produit peut être valorisable dans un magasin et non valorisable dans un autre.
+
+Un Produit non valorisable peut rester présent dans le catalogue commun afin d'éviter sa recréation.
+
+---
+
 ## Provenance tarifaire
 
 Origine d'une donnée de prix.
@@ -296,11 +346,45 @@ S'il manque des données fiables, le prix normalisé reste indisponible : il n'e
 
 ---
 
+## Politique de prix du Workspace
+
+Paramètre déterminant la source tarifaire préférée par le moteur pour tous les magasins/dossiers du Workspace.
+
+Modes retenus :
+
+- Tarif fournisseur ;
+- Tarif négocié ;
+- Prix facturé.
+
+La valeur par défaut est **Tarif négocié**.
+
+La politique est globale au Workspace, mais les tarifs négociés et prix facturés restent propres à chaque magasin lorsqu'ils sont contextualisés.
+
+---
+
 ## Prix applicable
 
-Prix retenu par le moteur de calcul pour valoriser une fiche dans son contexte.
+Prix retenu par le moteur pour valoriser une fiche dans le contexte d'un magasin, d'un Article fournisseur et d'une date de valorisation.
 
-La priorité exacte entre tarif fournisseur de référence, tarif spécifique magasin et prix observé reste à cadrer.
+Hiérarchie validée :
+
+```text
+Mode Tarif fournisseur
+→ Tarif fournisseur de référence applicable
+
+Mode Tarif négocié
+→ Tarif négocié valide
+→ sinon Tarif fournisseur
+
+Mode Prix facturé
+→ dernier Prix facturé exploitable et validé
+→ sinon Tarif négocié valide
+→ sinon Tarif fournisseur
+```
+
+La source réellement utilisée et l'existence d'un fallback doivent rester traçables.
+
+Le Prix applicable n'est pas une propriété globale du Produit.
 
 ---
 
@@ -386,6 +470,8 @@ Elle permet de comprendre pourquoi une fiche affichait un certain coût ou une c
 
 Calcul effectué avec les données actuellement applicables, notamment les prix courants.
 
+Si un tarif devient plus récent ou plus applicable pendant qu'une fiche est en cours d'édition, la fiche n'est pas modifiée silencieusement. Le système signale qu'une revalorisation est disponible ou nécessaire.
+
 ---
 
 ## Coût Matière (CM)
@@ -432,6 +518,44 @@ Coût Matière HT + Économat HT
 L'énergie est exclue de ce calcul.
 
 Aucune autre charge ne doit être ajoutée sans validation métier.
+
+---
+
+## Workspace Owner
+
+Propriétaire du Workspace au sens du Core.
+
+Dans ce SaaS, il dispose implicitement de toutes les permissions métier du Workspace et de tous ses magasins/dossiers, sans devoir recevoir séparément les rôles métier.
+
+Les capabilities commerciales, quotas, validations métier et règles de sécurité continuent de s'appliquer.
+
+Aucun rôle métier `Admin` spécifique au produit n'est défini à ce stade.
+
+---
+
+## Acheteur / Responsable achats
+
+Rôle métier chargé, selon ses permissions et son périmètre, des Fournisseurs, Articles fournisseur, négociations et conditions commerciales.
+
+---
+
+## Économe / Gestionnaire des prix
+
+Rôle métier chargé, selon ses permissions et son périmètre magasin, du contrôle et de la validation des prix, notamment des Prix facturés et des revues tarifaires.
+
+---
+
+## Responsable fiches techniques
+
+Rôle métier chargé, selon ses permissions, de créer, modifier et valider fonctionnellement les Fiches techniques.
+
+---
+
+## Utilisateur métier
+
+Utilisateur pouvant consulter et utiliser les Produits et Fiches autorisés sans recevoir implicitement de droits de gestion ou de validation tarifaire.
+
+Les rôles métier peuvent être cumulés et limités à certains magasins/dossiers.
 
 ---
 
