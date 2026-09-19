@@ -249,72 +249,218 @@ Si le poids net égoutté n'est pas disponible, le système ne doit pas inventer
 
 ---
 
-## 6. Fournisseurs, articles fournisseur et prix
+## 6. Fournisseurs, articles fournisseur et tarifs
 
-Le produit ne doit pas contenir directement :
+Le Produit ne contient pas directement son fournisseur, sa référence commerciale, son conditionnement ni son prix.
 
-- fournisseur ;
-- référence fournisseur ;
-- prix ;
-- conditionnement fournisseur ;
-- prix magasin.
-
-Ces informations varient indépendamment du produit.
-
-Le domaine doit donc distinguer conceptuellement :
+Le domaine distingue conceptuellement :
 
 ```text
 Produit
-→ ce qui est utilisé dans la fiche
+→ ce qui est réellement utilisé dans une fiche
 
 Fournisseur
 → acteur qui commercialise
 
-Article / offre fournisseur
-→ référence, désignation, marque éventuelle, conditionnement
+Article fournisseur
+→ référence commerciale précise d'un Produit chez un Fournisseur
 
-Condition commerciale magasin
-→ prix, disponibilité, date d'effet, historique
+Tarif fournisseur de référence
+→ prix issu d'un catalogue / mercuriale sans magasin nécessaire
+
+Tarif spécifique magasin
+→ condition commerciale connue pour un magasin donné
+
+Prix observé
+→ prix réellement constaté, par exemple sur une facture
 ```
 
-L'utilisateur doit pouvoir créer des fournisseurs et associer des produits à ces fournisseurs.
+### 6.1 Fournisseur
 
-Le modèle ne doit pas empêcher qu'un même produit soit associé à plusieurs fournisseurs ou plusieurs références.
+Les fournisseurs sont créés et gérés par le client ; Sysco et SYCAL ne sont que les premières sources réelles disponibles pour les essais.
 
-**Point ouvert :** règles de sélection d'un fournisseur ou article privilégié dans un magasin.
+Le Fournisseur n'est pas un CRM. Le socle envisagé reste volontairement simple : nom, éventuel code interne, coordonnées/notes facultatives, statut et traçabilité.
+
+### 6.2 Plusieurs articles pour un même Produit
+
+Règle validée :
+
+> Un même Produit peut être associé à plusieurs Articles fournisseur actifs chez un même Fournisseur.
+
+Exemple :
+
+```text
+Mozzarella râpée
+└── Sysco
+    ├── réf. A123 — sac 2 kg
+    ├── réf. B456 — carton 4 × 2,5 kg
+    └── réf. C789 — sachet 500 g
+```
+
+Chaque Article fournisseur possède sa propre référence, sa désignation fournisseur, son conditionnement, ses tarifs et son historique.
+
+Le modèle doit également permettre qu'un même Produit soit proposé par plusieurs Fournisseurs.
+
+### 6.3 Données d'un Article fournisseur
+
+Le socle fonctionnel doit pouvoir représenter au minimum :
+
+- Fournisseur ;
+- Produit associé ;
+- référence fournisseur lorsqu'elle existe ;
+- désignation fournisseur originale ;
+- marque éventuelle ;
+- conditionnement structuré ;
+- libellé fournisseur du conditionnement ;
+- poids net lorsqu'il est pertinent ;
+- poids net égoutté lorsqu'il est pertinent ;
+- statut actif / archivé ;
+- dates et auteurs de création / modification.
+
+La désignation fournisseur originale est conservée même si le SaaS utilise un nom Produit métier plus lisible.
+
+### 6.4 Tarif fournisseur de référence
+
+L'utilisateur ne connaît pas nécessairement à l'avance le magasin dans lequel il travaillera.
+
+Les catalogues Sysco et SYCAL disponibles constituent donc des **tarifs fournisseur de référence**, indépendants de tout magasin tant qu'aucune information plus précise n'est connue.
+
+Un tarif catalogue ne doit jamais être présenté comme un tarif négocié magasin sans preuve.
+
+### 6.5 Tarif spécifique magasin
+
+Lorsqu'un prix propre à un magasin est connu, il est enregistré séparément.
+
+Il ne remplace pas ni ne détruit le tarif fournisseur de référence.
+
+Exemple conceptuel :
+
+```text
+Tarif catalogue Sysco
+→ 2,180 €/kg HT
+
+Tarif spécifique Magasin A
+→ 2,050 €/kg HT
+```
+
+Le choix exact du tarif applicable dans une fiche lorsqu'il existe plusieurs sources reste à finaliser.
+
+### 6.6 Prix observé et provenance
+
+Une facture, une saisie contrôlée, un import ou un futur OCR peuvent produire une nouvelle observation de prix.
+
+Une observation doit être rattachable à :
+
+- Article fournisseur ;
+- Fournisseur ;
+- date ;
+- montant ;
+- unité d'expression du prix ;
+- provenance ;
+- magasin/dossier lorsque celui-ci est identifiable.
+
+Provenances déjà identifiées :
+
+- catalogue fournisseur ;
+- mercuriale ;
+- tarif spécifique magasin ;
+- facture ;
+- saisie manuelle ;
+- import fichier ;
+- futur OCR.
+
+L'OCR est une extension différable. Il devra alimenter le même historique tarifaire et ne jamais écraser automatiquement un prix existant sans contrôles suffisants.
+
+### 6.7 Historisation
+
+Une nouvelle donnée tarifaire ajoute une nouvelle réalité temporelle ; elle ne doit pas écraser silencieusement l'ancienne.
+
+Le système doit pouvoir déterminer :
+
+- valeur source ;
+- valeur normalisée ;
+- date / période d'effet ;
+- provenance ;
+- contexte magasin éventuel ;
+- date et auteur d'enregistrement.
+
+**Point ouvert :** priorité exacte entre tarif fournisseur de référence, tarif magasin et prix observé pour déterminer le prix applicable à une fiche.
 
 ---
 
 ## 7. Conditionnement et colisage
 
-Les fournisseurs peuvent commercialiser un produit avec des conditionnements différents :
+Le conditionnement fournisseur doit être lisible pour l'utilisateur **et structuré pour les calculs**.
 
-- kg ;
-- unité ;
-- carton ;
-- sac ;
-- boîte ;
-- barquette ;
-- seau ;
-- autres conditionnements à définir.
+Un simple texte comme `carton 4 × 2,5 kg` ne suffit pas comme seule donnée.
 
-Le système doit conserver le conditionnement commercial tout en ramenant les calculs à une unité de référence normalisée.
-
-Exemples conceptuels :
+Le domaine doit pouvoir représenter conceptuellement :
 
 ```text
-Farine
-→ unité de référence : kg
-→ article fournisseur : sac de 25 kg
+type de conditionnement : carton
+nombre d'unités        : 4
+quantité par unité     : 2,5
+unité                  : kg
 
-Boisson
-→ unité de référence : L
-→ article fournisseur : carton de 6 × 1 L
+quantité totale calculée
+→ 10 kg
 ```
 
-Pour les conserves, les données de poids net et de poids net égoutté doivent pouvoir être exploitées lorsqu'elles sont disponibles.
+Exemples :
 
-La liste et le paramétrage exact des conditionnements restent à cadrer.
+```text
+sac de 25 kg
+→ 1 × 25 kg
+→ total 25 kg
+
+carton de 6 × 1 L
+→ total 6 L
+
+carton de 24 × 125 g
+→ total 3 kg
+```
+
+Le système conserve également le libellé fournisseur d'origine lorsqu'il existe (`5/1`, `4/4`, `6X1KG`, etc.) sans dépendre de ce texte pour les calculs.
+
+Pour les conserves ou produits comparables, les données de poids net et de poids net égoutté doivent pouvoir être exploitées lorsqu'elles sont disponibles.
+
+### 7.1 Prix source et prix normalisé
+
+Le SaaS conserve le prix tel qu'il est fourni par le Fournisseur puis calcule, lorsque les données sont suffisantes, un prix normalisé dans l'unité de référence.
+
+Exemple :
+
+```text
+sac de farine : 25 kg
+prix fournisseur : 40,625 € HT / sac
+
+prix normalisé
+→ 1,625 €/kg HT
+```
+
+Le prix source et le prix normalisé restent tous les deux traçables.
+
+Si les données de conditionnement ne permettent pas une conversion fiable, le prix normalisé reste indisponible et le système signale l'information manquante ; il ne devine pas.
+
+### 7.2 Précision des prix
+
+Règle validée :
+
+> Les prix d'achat unitaires et les prix normalisés sont affichés avec exactement trois décimales.
+
+Exemples :
+
+```text
+1,625 €/kg HT
+2,300 €/L HT
+4,000 €/unité HT
+```
+
+Une source `2,68 €/kg` s'affiche `2,680 €/kg`.
+
+Cette règle d'affichage ne doit pas provoquer d'arrondi prématuré dans le moteur de calcul. La précision interne nécessaire est conservée jusqu'au point d'arrondi métier défini.
+
+La règle d'affichage des montants totaux et prix de vente finaux sera cadrée séparément.
 
 ---
 
@@ -322,50 +468,170 @@ La liste et le paramétrage exact des conditionnements restent à cadrer.
 
 La fiche technique est une donnée métier structurée, pas un document statique.
 
-Elle doit s'appuyer sur le catalogue et le contexte du dossier/magasin.
+Elle s'appuie sur le catalogue, les Articles fournisseur, les données tarifaires et le contexte éventuel du dossier/magasin.
 
-### 8.1 Composition
+### 8.1 Quantité nette saisie
 
-Pour chaque ligne de composition, l'utilisateur choisit un produit et indique la quantité nécessaire.
+Règle validée :
 
-L'application doit ensuite récupérer ou calculer les informations dérivées applicables :
+> L'utilisateur saisit la quantité nette réellement nécessaire et présente dans la recette.
 
-- unité ;
-- rendement ;
-- prix applicable au magasin ;
-- part du produit dans la recette ;
-- coût de la ligne ;
-- impact sur les totaux.
+Le système ne demande pas à l'utilisateur de calculer la quantité brute nécessaire avant pertes.
 
-### 8.2 Part dans la recette
+### 8.2 Quantité brute calculée
 
-Le « % de la recette » représente la proportion du produit dans la totalité de la recette.
+Le système applique automatiquement le rendement Produit :
 
-Il doit être calculé automatiquement à partir des quantités.
+```text
+quantité brute nécessaire
+=
+quantité nette / rendement
+```
 
 Exemple :
 
 ```text
-recette totale = 10 kg
-emmental = 1,5 kg
+Oignon
+quantité nette : 1,000 kg
+rendement : 80 %
 
-part de l'emmental = 1,5 / 10 × 100
-                    = 15 %
+quantité brute
+= 1,000 / 0,80
+= 1,250 kg
 ```
 
-La somme des proportions des composants de la recette doit tendre vers 100 % selon les règles exactes qui seront validées.
+Pour un Produit à 100 % de rendement, quantité nette et quantité brute sont identiques.
 
-### 8.3 Rendement
+### 8.3 Part dans la recette
 
-Le « % utilisé » des exemples de fiches correspond au taux de rendement matière.
+Le « % de la recette » est calculé automatiquement sur les **quantités nettes réellement présentes dans la recette**.
 
-Il ne doit pas être confondu avec le « % de la recette ».
+Les pertes de rendement influencent la quantité brute nécessaire et le coût, mais ne modifient pas la composition proportionnelle de la recette.
 
-### 8.4 Valorisation économique
+Exemple :
 
-La composition technique et la valorisation économique doivent être distinguées.
+```text
+Oignon net : 1 kg
+Tomate nette : 3 kg
+Total net recette : 4 kg
 
-Une même composition peut être revalorisée lorsque les prix changent.
+Oignon
+→ 25 %
+
+Tomate
+→ 75 %
+```
+
+Le « % de la recette » reste distinct du taux de rendement.
+
+### 8.4 Prix d'achat et coût de ligne
+
+Règle validée :
+
+> Le coût matière est basé sur les prix d'achat HT.
+
+Pour une ligne d'ingrédient :
+
+```text
+quantité brute nécessaire
+×
+prix d'achat HT normalisé
+=
+coût matière HT de la ligne
+```
+
+Exemple :
+
+```text
+Oignon
+quantité nette : 1,000 kg
+rendement : 80 %
+quantité brute : 1,250 kg
+prix achat : 1,625 €/kg HT
+
+coût ligne
+= 1,250 × 1,625
+= 2,03125 € HT
+```
+
+Le moteur conserve la précision nécessaire ; les règles d'arrondi des montants agrégés restent à cadrer.
+
+### 8.5 Coût Matière
+
+Définition métier validée :
+
+> **Coût Matière (CM) = somme des coûts HT de toutes les lignes d'ingrédients.**
+
+```text
+CM HT
+=
+Σ coûts HT des lignes d'ingrédients
+```
+
+### 8.6 Économat
+
+L'Économat regroupe les consommables achetés nécessaires à la fabrication, au conditionnement ou à la commercialisation du produit.
+
+Exemples :
+
+- barquette ;
+- étiquette ;
+- film ;
+- sachet ;
+- autres consommables.
+
+L'Économat est une nature de marchandise achetée différente des ingrédients mais intégrée dans la fiche technique.
+
+Les consommables peuvent utiliser les mêmes mécanismes d'approvisionnement que les ingrédients :
+
+- Fournisseur ;
+- Article fournisseur ;
+- conditionnement ;
+- tarif HT ;
+- historique.
+
+Ils ne sont pas soumis aux attributs alimentaires qui ne leur sont pas applicables, notamment gamme alimentaire, rendement matière ou % de recette.
+
+Chaque consommable possède une unité de référence adaptée à sa consommation réelle : unité, mètre, kg, litre, etc.
+
+L'utilisateur saisit la quantité réellement consommée dans la fiche ; le SaaS normalise le prix fournisseur et calcule automatiquement le coût de la ligne d'Économat.
+
+Exemple :
+
+```text
+Barquette
+carton de 300
+prix carton : 42,000 € HT
+
+prix normalisé
+→ 0,140 €/unité HT
+
+fiche technique
+→ 1 barquette
+→ coût Économat : 0,140 € HT
+```
+
+### 8.7 Coût total de fabrication
+
+Définition métier validée :
+
+> **Coût total de fabrication = Coût Matière + Économat.**
+
+```text
+Coût total de fabrication HT
+=
+CM HT + Économat HT
+```
+
+L'énergie est explicitement exclue de ce calcul.
+
+Aucune autre charge ne doit être ajoutée à cette définition sans nouvelle validation métier.
+
+### 8.8 Valorisation économique
+
+La composition technique et la valorisation économique restent distinctes.
+
+Une même composition peut être revalorisée lorsque les tarifs changent.
 
 Le système doit pouvoir conserver :
 
@@ -377,32 +643,20 @@ valorisation courante
 historique des valorisations
 ```
 
-Les exemples fournis montrent notamment les notions suivantes :
+Restent à valider avant implémentation :
 
-- prix d'achat ;
-- prix de revient ligne ;
-- prix de revient matières premières ;
-- coût d'emballages / économat ;
-- prix de revient total ;
+- règle exacte du prix applicable lorsqu'il existe plusieurs sources tarifaires ;
+- TVA et sa portée ;
 - objectif de marge ;
 - coefficient multiplicateur ;
-- prix théorique correspondant à l'objectif ;
+- prix théorique ;
 - prix de vente retenu / conseillé ;
 - marge réellement obtenue ;
 - taux de marge ;
-- taux de marge semi-nette.
+- taux de marge semi-nette ;
+- arrondis des totaux et prix de vente.
 
-Toutes les formules ne sont pas encore validées.
-
-Aucune formule non démontrée dans les sources métier ne doit être implémentée par hypothèse.
-
-### 8.5 Emballages / décoration
-
-Les exemples de fiches techniques distinguent les matières premières des emballages / décorations.
-
-Le domaine doit donc permettre de valoriser séparément les consommables ou emballages nécessaires à la fiche.
-
-**Point ouvert :** décider s'ils utilisent le même catalogue que les produits alimentaires ou un sous-type / domaine distinct.
+Aucune formule non démontrée ne doit être implémentée par hypothèse.
 
 ---
 
@@ -412,43 +666,65 @@ L'historisation est une exigence de conception dès le départ.
 
 ### 9.1 Produit
 
-Un produit doit permettre de consulter :
+Un Produit doit permettre de consulter :
 
 - ses modifications ;
-- ses fournisseurs et références associés ;
-- son historique de prix via les conditions commerciales ;
+- ses Articles fournisseur associés ;
+- ses Fournisseurs associés ;
+- son historique commercial ;
 - son utilisation dans les fiches techniques ;
-- les dossiers/magasins dans lesquels il intervient lorsque cette visibilité est autorisée.
+- les dossiers/magasins concernés lorsque cette visibilité est autorisée.
 
-### 9.2 Prix
+### 9.2 Tarifs
 
-Une mise à jour de prix ne doit pas simplement écraser l'ancienne valeur.
+Une mise à jour tarifaire ne doit pas simplement écraser l'ancienne valeur.
 
 Le système doit préserver :
 
 - ancien prix ;
 - nouveau prix ;
-- date d'effet ;
+- unité d'expression ;
+- date / période ;
+- provenance ;
+- contexte magasin éventuel ;
+- valeur normalisée lorsque calculable ;
 - écart en valeur ;
 - écart en pourcentage ;
-- fiches impactées ;
-- conséquences sur leurs coûts et marges lorsque calculables.
+- fiches potentiellement impactées.
 
-### 9.3 Fiches techniques
+Il doit être possible de distinguer l'évolution d'un tarif fournisseur de référence de celle d'un tarif ou prix observé spécifique à un magasin.
+
+### 9.3 OCR / facture
+
+Extension structurellement prévue :
+
+```text
+Facture
+→ OCR
+→ fournisseur / date / établissement / référence / quantité / prix
+→ rapprochement Article fournisseur
+→ contrôles
+→ validation si nécessaire
+→ nouvelle observation tarifaire historisée
+```
+
+L'OCR ne doit jamais écraser directement un prix sur la seule base d'une lecture automatique.
+
+### 9.4 Fiches techniques
 
 Le système doit pouvoir distinguer :
 
 ```text
 valorisation historique
-→ ce qui était vrai lors d'une version/validation donnée
+→ valeurs réellement utilisées lors d'une version / date donnée
 
 valorisation courante
-→ ce que donnent les prix actuellement applicables
+→ recalcul à partir des données actuellement applicables
 ```
 
-La consultation de l'écart doit être visuelle et facilement accessible.
+La consultation des écarts de coûts et marges doit pouvoir devenir visuelle et facilement accessible.
 
-Les alertes détaillées sont une extension à cadrer ; l'architecture ne doit pas les rendre difficiles à ajouter.
+Les alertes et graphiques détaillés peuvent être différés ; les données nécessaires doivent être préservées dès le socle.
 
 ---
 
@@ -574,9 +850,12 @@ Le périmètre V1 n'est pas encore finalisé.
 - gamme lorsque pertinente ;
 - rendement produit ;
 - fournisseurs ;
-- conditionnements ;
-- prix contextualisés par magasin ;
-- historique des prix ;
+- plusieurs Articles fournisseur par Produit et par Fournisseur ;
+- conditionnements structurés ;
+- tarifs fournisseur de référence sans obligation de connaître un magasin ;
+- tarifs spécifiques magasin lorsque connus ;
+- prix observés sourcés et historisés ;
+- normalisation automatique des prix HT ;
 - fiches techniques calculées ;
 - traçabilité des changements ;
 - base de fiche process.
@@ -591,13 +870,14 @@ Les arbitrages précis V1 / différé seront réalisés après cadrage des fourn
 - définir la liste et la gouvernance des catégories ;
 - décider catégorie unique ou multiple ;
 - préciser les types d'unités de référence supportés ;
-- préciser le paramétrage des conditionnements ;
-- définir les règles de sélection fournisseur/article dans un magasin ;
-- valider toutes les formules financières des fiches ;
+- finaliser la liste/gouvernance des types de conditionnement ;
+- définir les règles de sélection fournisseur/article et du prix applicable lorsqu'il existe plusieurs sources ;
+- définir le lifecycle exact d'un Article fournisseur remplacé ou archivé ;
 - valider la TVA et sa portée ;
+- valider les formules de marge, coefficient et prix de vente ;
 - valider la notion de prix de vente conseillé / retenu ;
 - définir le calcul de la marge semi-nette ;
-- définir le traitement exact des emballages ;
+- définir les règles d'arrondi des montants agrégés ;
 - définir la frontière fiche technique / fiche process ;
 - cadrer les utilisateurs et rôles métier ;
 - cadrer capabilities et quotas commerciaux ;
