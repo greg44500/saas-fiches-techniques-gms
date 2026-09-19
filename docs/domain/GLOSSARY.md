@@ -153,11 +153,33 @@ rendement = poids net égoutté / poids net × 100
 
 ---
 
+## Quantité nette
+
+Quantité réellement nécessaire et présente dans la recette.
+
+C'est la quantité saisie par l'utilisateur pour une ligne d'ingrédient.
+
+---
+
+## Quantité brute
+
+Quantité à acheter ou à mettre en œuvre avant pertes.
+
+Elle est calculée automatiquement :
+
+```text
+quantité brute = quantité nette / rendement
+```
+
+---
+
 ## % de la recette
 
-Part d'un produit dans la totalité de la recette.
+Part d'un Produit dans la totalité de la recette.
 
-Il s'agit d'une donnée calculée automatiquement à partir des quantités.
+Elle est calculée automatiquement à partir des quantités nettes réellement présentes dans la recette.
+
+Les pertes de rendement n'entrent pas dans ce pourcentage.
 
 Elle est distincte du taux de rendement.
 
@@ -173,50 +195,122 @@ Les fournisseurs doivent pouvoir être créés par le client dans son contexte d
 
 ## Article fournisseur
 
-Représentation commerciale d'un produit chez un fournisseur.
+Référence commerciale précise d'un Produit chez un Fournisseur.
 
-Il peut porter notamment :
+Un même Produit peut avoir plusieurs Articles fournisseur actifs chez un même Fournisseur, par exemple avec des références ou conditionnements différents.
+
+Un Article fournisseur peut porter notamment :
 
 - référence fournisseur ;
-- désignation fournisseur ;
+- désignation fournisseur originale ;
 - marque éventuelle ;
-- conditionnement ;
+- conditionnement structuré ;
+- libellé fournisseur du conditionnement ;
 - poids net ;
-- poids net égoutté si applicable.
+- poids net égoutté si applicable ;
+- statut et traçabilité.
 
-Un produit ne doit pas être confondu avec un article fournisseur.
+Un Produit ne doit pas être confondu avec un Article fournisseur.
 
 ---
 
 ## Conditionnement / colisage
 
-Façon dont un fournisseur commercialise un article.
+Façon dont un Fournisseur commercialise un Article.
+
+Le conditionnement doit être à la fois lisible et structuré pour les calculs.
 
 Exemples :
 
-- sac de 25 kg ;
-- carton de 6 × 1 L ;
-- boîte ;
-- barquette ;
-- seau ;
-- carton d'unités.
+```text
+sac de 25 kg
+→ 1 × 25 kg
 
-Le conditionnement doit pouvoir être ramené à l'unité de référence du produit pour les calculs.
+carton de 6 × 1 L
+→ total 6 L
+
+carton de 24 × 125 g
+→ total 3 kg
+```
+
+Le système conserve le libellé fournisseur d'origine lorsqu'il existe mais ne dépend pas uniquement de ce texte pour les calculs.
+
+Le conditionnement doit pouvoir être ramené à l'unité de référence du Produit lorsque les données disponibles le permettent.
 
 ---
 
-## Condition commerciale magasin
+## Tarif fournisseur de référence
 
-Données qui rendent un article fournisseur applicable dans un magasin à une période donnée.
+Prix issu d'un catalogue ou d'une mercuriale Fournisseur, sans nécessité de connaître un magasin.
 
-Elles comprennent conceptuellement :
+Il constitue une référence commerciale et ne doit pas être présenté comme un tarif négocié magasin sans preuve.
 
-- prix ;
-- disponibilité ;
-- date d'effet ;
-- historique.
+---
 
-Le prix n'est donc pas une propriété directe du produit.
+## Tarif spécifique magasin
+
+Prix connu pour un Article fournisseur dans un magasin donné.
+
+Il est conservé séparément du Tarif fournisseur de référence.
+
+---
+
+## Prix observé
+
+Prix réellement constaté à une date donnée, par exemple sur une facture.
+
+Il peut être rattaché à un magasin lorsque le contexte est identifiable.
+
+Sa provenance doit être conservée.
+
+---
+
+## Provenance tarifaire
+
+Origine d'une donnée de prix.
+
+Provenances déjà identifiées :
+
+- catalogue fournisseur ;
+- mercuriale ;
+- tarif spécifique magasin ;
+- facture ;
+- saisie manuelle ;
+- import fichier ;
+- futur OCR.
+
+---
+
+## Prix normalisé
+
+Prix calculé automatiquement dans l'unité de référence du Produit à partir du prix source et du conditionnement.
+
+Exemple :
+
+```text
+40,625 € HT / sac de 25 kg
+→ 1,625 €/kg HT
+```
+
+S'il manque des données fiables, le prix normalisé reste indisponible : il n'est pas deviné.
+
+---
+
+## Prix applicable
+
+Prix retenu par le moteur de calcul pour valoriser une fiche dans son contexte.
+
+La priorité exacte entre tarif fournisseur de référence, tarif spécifique magasin et prix observé reste à cadrer.
+
+---
+
+## Prix d'achat HT
+
+Base économique utilisée pour le calcul du Coût Matière.
+
+Les prix d'achat unitaires et prix normalisés sont affichés avec exactement trois décimales.
+
+L'affichage à trois décimales ne doit pas provoquer d'arrondi prématuré dans les calculs internes.
 
 ---
 
@@ -294,11 +388,50 @@ Calcul effectué avec les données actuellement applicables, notamment les prix 
 
 ---
 
-## Emballages / décoration / économat
+## Coût Matière (CM)
 
-Composants non assimilés aux matières premières alimentaires dans les exemples métier fournis mais participant au coût total de la fiche.
+Somme des coûts HT de toutes les lignes d'ingrédients.
 
-**Ouvert :** déterminer s'ils utilisent le même catalogue produit ou un domaine spécialisé.
+```text
+CM HT = Σ coûts HT des lignes d'ingrédients
+```
+
+Le coût d'une ligne utilise la quantité brute nécessaire et le prix d'achat HT normalisé.
+
+---
+
+## Économat
+
+Ensemble des consommables achetés nécessaires à la fabrication, au conditionnement ou à la commercialisation du produit.
+
+Exemples :
+
+- barquette ;
+- étiquette ;
+- film ;
+- sachet.
+
+L'Économat est une nature de marchandise achetée différente des ingrédients mais intégrée à la fiche technique.
+
+Les consommables utilisent les mêmes mécanismes d'approvisionnement, de conditionnement, de tarif et d'historisation lorsque pertinent, sans être soumis aux attributs alimentaires non applicables.
+
+L'utilisateur renseigne la quantité réellement consommée ; le SaaS calcule le coût à partir du prix normalisé.
+
+---
+
+## Coût total de fabrication
+
+Définition métier du produit :
+
+```text
+Coût total de fabrication HT
+=
+Coût Matière HT + Économat HT
+```
+
+L'énergie est exclue de ce calcul.
+
+Aucune autre charge ne doit être ajoutée sans validation métier.
 
 ---
 
