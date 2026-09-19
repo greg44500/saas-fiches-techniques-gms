@@ -69,7 +69,42 @@ Le dossier sert notamment à déterminer les prix, disponibilités et autres con
 
 **Règle V1 validée :** un dossier correspond exactement à un magasin. Le dossier est donc le contexte métier du magasin dans le SaaS.
 
-### 3.3 Catalogue commun au Workspace
+### 3.3 Isolation stricte des contextes magasin
+
+L'accès d'un utilisateur à plusieurs magasins permet de **changer de contexte**, jamais de fusionner les contextes.
+
+Invariant :
+
+```text
+contexte actif = un seul dossier / magasin
+```
+
+Toutes les données commerciales contextualisées utilisées dans une Fiche technique doivent provenir du magasin actif :
+
+- Tarif négocié ;
+- Prix facturé ;
+- revue tarifaire ;
+- autres conditions commerciales locales.
+
+Un prix spécifique d'un autre magasin ne fait jamais partie de la chaîne de fallback, même si l'utilisateur possède les droits d'accès aux deux magasins.
+
+Exemple :
+
+```text
+Fiche du Magasin Nantes
+→ Prix facturé Nantes si applicable
+→ sinon Tarif négocié Nantes
+→ sinon Tarif fournisseur de référence
+
+Tarif négocié Saint-Nazaire
+→ jamais utilisé dans le contexte Nantes
+```
+
+Le contrôle doit être garanti par le backend et non par l'interface seule.
+
+Le Workspace Owner peut accéder à tous les magasins, et un collaborateur peut recevoir un périmètre multi-magasins, mais tous travaillent toujours dans un contexte magasin actif lorsqu'ils créent, modifient ou valorisent une fiche.
+
+### 3.4 Catalogue commun au Workspace
 
 Le Workspace dispose d'une base de produits commune dans laquelle les dossiers viennent puiser.
 
@@ -801,6 +836,40 @@ Aucun verrou métier global ne doit empêcher la mise à jour d'un tarif uniquem
 
 
 ---
+
+### 8.10 Copie d'une Fiche technique entre magasins
+
+Une Fiche technique peut être copiée/importée d'un magasin vers un autre afin d'éviter une ressaisie inutile.
+
+Cette opération copie uniquement la **structure métier réutilisable** de la fiche, notamment :
+
+- Produits / ingrédients ;
+- quantités ;
+- unités et autres données de composition réutilisables.
+
+Elle ne copie jamais :
+
+- Prix facturés ;
+- Tarifs négociés ;
+- Prix applicables calculés ;
+- valorisations économiques ;
+- historique tarifaire ;
+- historique de validation ou de revalorisation du magasin source.
+
+La fiche créée dans le magasin cible constitue une **nouvelle fiche dans un nouveau contexte**.
+
+À son arrivée dans le magasin cible :
+
+```text
+composition copiée
+→ résolution des Articles / Prix applicables dans le contexte cible
+→ recalcul complet avec les données du magasin cible
+→ nouvel historique local
+```
+
+Si aucun Prix applicable ne peut être déterminé pour un Produit dans le magasin cible, la ligne doit être signalée comme non valorisable jusqu'à résolution.
+
+La nouvelle fiche peut conserver une information de provenance minimale indiquant qu'elle a été créée à partir d'une fiche d'un autre magasin, mais elle ne reprend pas l'historique opérationnel ni économique de la fiche source.
 
 ## 9. Historique, évolution et analyses
 
