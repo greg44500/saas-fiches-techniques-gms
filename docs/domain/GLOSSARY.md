@@ -32,6 +32,24 @@ Contexte opérationnel pour lequel l'utilisateur réalise ses fiches et dans leq
 
 ---
 
+## Contexte magasin actif
+
+Dossier/magasin dans lequel l'utilisateur travaille à un instant donné.
+
+Même lorsqu'un utilisateur possède un accès à plusieurs magasins, une Fiche technique est toujours créée, modifiée et valorisée dans un seul contexte magasin actif.
+
+L'accès multi-magasins permet de changer de contexte ; il ne permet jamais de mélanger les données commerciales entre magasins.
+
+---
+
+## Isolation inter-magasin
+
+Règle garantissant que les Tarifs négociés, Prix facturés, revues tarifaires et autres conditions locales d'un magasin ne sont jamais utilisés ni exposés dans le contexte d'un autre magasin sans autorisation explicite.
+
+Un prix spécifique d'un autre magasin ne constitue jamais un fallback.
+
+---
+
 ## Catalogue produit
 
 Base de produits commune à un Workspace.
@@ -411,6 +429,20 @@ Il ne remplace pas l'historique des prix.
 Suite chronologique des prix applicables à un article ou produit dans un magasin.
 
 Une mise à jour ne doit pas écraser silencieusement la valeur précédente.
+
+---
+
+## Copie inter-magasin d'une Fiche technique
+
+Création d'une nouvelle Fiche technique dans un magasin cible à partir de la structure d'une fiche source.
+
+La copie peut reprendre la composition réutilisable : Produits, quantités, unités et autres données de recette validées pour la copie.
+
+Elle ne reprend jamais les prix, valorisations ni historiques du magasin source.
+
+La fiche cible est recalculée avec les Articles et Prix applicables de son propre contexte.
+
+Une information minimale de provenance peut être conservée sans reprendre l'historique source.
 
 ---
 
