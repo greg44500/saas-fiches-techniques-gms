@@ -100,8 +100,29 @@ Le dossier contextualise notamment :
 **À valider avant implémentation :**
 
 - informations minimales du magasin ;
-- cycle de vie du dossier ;
-- copie/import entre dossiers.
+- cycle de vie du dossier.
+
+**Règle de copie/import validée :** une Fiche technique peut être copiée d'un magasin à un autre, mais la copie transporte uniquement sa structure de composition réutilisable. Elle ne transporte jamais les prix, valorisations ni historiques du magasin source.
+
+---
+
+## 4.1 Isolation du contexte magasin
+
+Un utilisateur peut disposer d'un accès à plusieurs magasins, mais une opération métier sur une Fiche technique s'exécute toujours dans un **contexte magasin unique**.
+
+Invariant :
+
+```text
+accès multi-magasins
+≠
+mélange des données entre magasins
+```
+
+Toutes les données commerciales contextualisées utilisées pour valoriser une fiche doivent appartenir au même magasin que la fiche.
+
+Un Tarif négocié ou Prix facturé d'un autre magasin ne peut jamais être utilisé comme fallback.
+
+Le backend doit imposer cette isolation indépendamment de l'état du frontend.
 
 ---
 
@@ -708,6 +729,33 @@ Le domaine ne requiert pas de verrou global empêchant une mise à jour tarifair
 
 ---
 
+## 12.2 Copie d'une fiche entre magasins
+
+La copie inter-magasin crée une nouvelle fiche dans le magasin cible.
+
+Elle peut reprendre :
+
+- les références Produit ;
+- les quantités ;
+- les unités ;
+- les autres données de composition explicitement réutilisables.
+
+Elle ne reprend jamais :
+
+- les Tarifs négociés du magasin source ;
+- les Prix facturés du magasin source ;
+- les Prix applicables déjà calculés ;
+- les valorisations économiques ;
+- l'historique de validation ou de revalorisation du magasin source.
+
+Après copie, le moteur résout les Articles et Prix applicables dans le contexte du magasin cible et recalcule intégralement la valorisation.
+
+La nouvelle fiche démarre avec son propre historique. Une simple information de provenance vers la fiche source peut être conservée pour la traçabilité sans importer son historique.
+
+Si une ligne copiée n'est pas valorisable dans le magasin cible, elle doit être signalée et ne peut pas recevoir implicitement un prix provenant du magasin source ou d'un autre magasin.
+
+---
+
 ## 13. Valorisation courante et historique
 
 Le modèle doit permettre deux lectures :
@@ -934,6 +982,11 @@ La matrice exacte des permissions reste à finaliser avant implémentation.
 30. Une modification tarifaire ne réécrit jamais silencieusement une fiche en cours ou une valorisation historique.
 31. Le Workspace Owner possède implicitement toutes les permissions métier du produit dans son Workspace.
 32. Aucun rôle métier Admin spécifique au produit n'est défini à ce stade.
+33. L'accès à plusieurs magasins autorise un changement de contexte, jamais un mélange de leurs données commerciales.
+34. Une Fiche technique utilise exclusivement les données contextualisées de son propre magasin.
+35. Un prix spécifique d'un autre magasin ne constitue jamais un fallback.
+36. La copie d'une Fiche technique entre magasins ne transporte ni prix, ni valorisation, ni historique du magasin source.
+37. La fiche cible est revalorisée intégralement dans son propre contexte magasin.
 
 ---
 
