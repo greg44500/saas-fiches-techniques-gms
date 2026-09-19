@@ -235,15 +235,16 @@ PR #5 — Docs: formalize initial product business framing
 base : main
 ```
 
-Dernière preuve CI explicitement confirmée avant les derniers enrichissements documentaires :
+Dernière preuve CI vérifiée avant le présent enrichissement documentaire :
 
 ```text
-Core Gate #26
-head       : c70f2c66b24c571b20cbf042523c558ce6777bdc
+Core Gate #29
+run        : 35462554312
+head       : 435f44dd4202732befe11672ed5e735e49fa3e71
 conclusion : success
 ```
 
-Des commits documentaires supplémentaires ont ensuite consolidé les décisions validées. Leur gate courante doit être vérifiée sur GitHub avant merge ; cette synthèse ne doit jamais extrapoler un statut vert non observé.
+Le présent lot documentaire avance ensuite la branche. Toute nouvelle gate déclenchée sur son nouveau HEAD doit être vérifiée sur GitHub avant merge ; cette synthèse ne doit jamais extrapoler un statut vert non observé.
 
 Documents ajoutés en statut DRAFT :
 
@@ -537,6 +538,123 @@ membership actif
 
 Le parcours d'invitation du produit peut afficher rôle et magasins dans un même formulaire, mais le périmètre dossier reste une donnée métier séparée. Son stockage et son éventuelle préparation avant acceptation doivent encore être cadrés sans modifier silencieusement le Core.
 
+
+### 8.7.1 Invitation puis organisation interne des accès magasin
+
+Décision validée :
+
+```text
+Invitation Core
+→ entrée dans le Workspace
+→ Role Workspace
+→ acceptation
+→ WorkspaceMember
+
+Puis
+
+organisation métier interne
+→ Workspace Owner affecte les dossiers/magasins autorisés
+```
+
+Un membre peut temporairement appartenir au Workspace sans dossier.
+
+Le Workspace Owner dispose implicitement de tous les dossiers.
+
+Role et périmètre magasin évoluent indépendamment.
+
+### 8.7.2 Dossier / magasin — identité, lifecycle et UX
+
+Le dossier possède désormais un cadrage plus précis :
+
+- 1 dossier = 1 magasin ;
+- nom / enseigne éventuelle ;
+- localisation avec assistance d'autocomplétion publique à confirmer techniquement ;
+- email destiné notamment aux documents ;
+- téléphone facultatif ;
+- responsable métier distinct du créateur du dossier ;
+- informations opérationnelles modifiables et auditables ;
+- statuts `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+- `DELETED` = suppression logique et coupure immédiate des accès métier ;
+- restauration vers `PAUSED` avant remise en production ;
+- purge physique séparée et soumise à la rétention.
+
+UX structurante :
+
+```text
+Dashboard Workspace
+→ pilotage global
+
+Drawer dossier
+→ consultation / navigation
+→ pas de changement de contexte
+
+Ouvrir le dossier
+→ travail métier contextualisé
+
+Retour Workspace
+→ un clic
+```
+
+Le drawer doit pouvoir montrer informations, KPI, fiches/process, accès, activité et administration selon permissions.
+
+La Sidebar devra être enrichie par les sections métier via le point d'extension Core, sans créer une navigation parallèle.
+
+### 8.7.3 Dashboard personnalisable
+
+Le Dashboard Workspace devient le centre de pilotage global.
+
+Le produit réutilise le mécanisme Core v1.0.1 :
+
+```text
+widgets Core + widgets métier
+→ filtrage permissions / capabilities
+→ préférences utilisateur
+→ affichage final
+```
+
+Le comportement par défaut actuel du Core est conservé : `hiddenWidgetIds = []`, donc tous les widgets accessibles sont visibles initialement.
+
+Les widgets configurables peuvent ensuite être masqués/réaffichés individuellement ; les widgets non configurables restent visibles.
+
+Les préférences d'affichage ne modifient jamais les règles métier.
+
+### 8.7.4 TVA, Objectif de marge et Atelier d'optimisation
+
+TVA validée :
+
+- coûts de fabrication toujours HT ;
+- taux standard Workspace possible ;
+- taux réellement applicable porté par la fiche/version ;
+- calculs HT / TVA / TTC autoritatifs backend ;
+- snapshot TVA dans la version VALIDATED ;
+- aucune réécriture historique après changement de paramètre.
+
+Objectif de marge :
+
+- taux de marge souhaitable à atteindre ;
+- cible définie dans le contexte du magasin et utilisée par la Fiche technique ;
+- exemples possibles : 48 %, 52 %, 55 % ;
+- aucune substitution arbitraire par un taux de marque ;
+- coefficient, prix théorique, prix conseillé/retenu, marge réelle/semi-nette et arrondis restent à formaliser.
+
+Atelier d'optimisation :
+
+- capability commerciale payante et différenciante ;
+- logique « Lightroom des Fiches techniques » ;
+- sliders globaux conservés ;
+- courbe d'équilibre multipoints complémentaire ;
+- histogramme composition/coût et graphiques professionnels ;
+- réglages fins par ingrédient ;
+- quantités de référence + bornes min/max configurables ;
+- pièces/unités verrouillées ;
+- composition conservée à 100 % lorsque la quantité finale est verrouillée ;
+- compensation entre ingrédients modulables ;
+- enveloppe de qualité perçue ;
+- bornes utilisateur complétées par des limites de sécurité backend ;
+- objectif impossible signalé explicitement ;
+- simulation non destructive ;
+- application explicite au DRAFT avant toute persistance métier.
+
 ### 8.8 Principe invariants vs permissions
 
 Règle validée :
@@ -553,43 +671,48 @@ Aucune permission, y compris celles du Workspace Owner, ne permet de contourner 
 
 ---
 
+
 ## 9. Points métier restant à cadrer
 
-Le cadrage global n'est pas terminé, mais les blocs prix/références, versionnement, configuration et architecture RBAC sont désormais fortement avancés.
+Le cadrage global n'est pas terminé, mais les blocs Dossier, navigation, Dashboard, TVA et optimisation avancée sont désormais fortement précisés.
 
 Ordre recommandé de reprise :
 
-1. finaliser la matrice précise des permissions des rôles types et le périmètre dossier ;
-2. cadrer TVA et portée de TVA ;
-3. cadrer objectif de marge ;
-4. cadrer coefficient et prix théorique ;
-5. cadrer prix conseillé / prix retenu ;
-6. cadrer marge réelle / semi-nette ;
-7. cadrer arrondis ;
-8. cadrer Fiche process ;
-9. finaliser données minimales/lifecycle du dossier-magasin ;
-10. finaliser capabilities / quotas ;
-11. finaliser intégrations et contraintes réglementaires ;
-12. fixer V1 / hors V1 ;
-13. validation documentaire globale ;
-14. seulement ensuite cadrage M-001.
+1. finaliser la matrice précise des permissions des rôles types ;
+2. valider la formule Objectif de marge → coefficient → prix théorique à partir des fiches de référence ;
+3. cadrer prix conseillé / prix retenu ;
+4. cadrer marge réelle / semi-nette ;
+5. cadrer arrondis ;
+6. cadrer Fiche process ;
+7. finaliser les champs obligatoires et la persistance du périmètre Dossier ;
+8. cadrer les paramètres mathématiques / sécurité de l'Atelier d'optimisation ;
+9. finaliser capabilities / quotas ;
+10. finaliser intégrations et contraintes réglementaires ;
+11. fixer V1 / hors V1 ;
+12. validation documentaire globale ;
+13. seulement ensuite cadrage M-001.
 
 Points encore ouverts dans les blocs déjà travaillés :
 
-- convention technique exacte de fraîcheur standard du Prix facturé ;
-- valeur standard du seuil « fréquemment utilisée » ;
-- traitement des fiches archivées dans ce calcul ;
+- lecture détaillée des historiques de prix par le Lecteur métier ;
+- permission de validation par défaut de l'Économe ;
+- persistance technique du périmètre dossier ;
+- caractère obligatoire de l'enseigne, email documents et responsable ;
+- fournisseur technique final d'autocomplétion géographique ;
+- convention exacte de fraîcheur du Prix facturé ;
+- seuil « fréquemment utilisée » et traitement des fiches archivées ;
 - données minimales Fournisseur ;
 - lifecycle Article fournisseur ;
 - gouvernance finale des revues tarifaires ;
-- permission de validation par défaut de l'Économe ;
-- stockage du périmètre dossier et orchestration invitation ;
+- formule économique complète après Objectif de marge ;
+- bornes de sécurité et paramètres exacts de l'optimiseur ;
+- rattachement commercial exact de la capability payante d'optimisation ;
 - types/motifs exacts de version ;
-- règles de rétention et suppression définitive.
+- rétention / purge définitive ;
+- détail de la Fiche process ;
+- quotas, réglementation et V1 final.
 
 Aucune de ces questions ne doit être résolue implicitement pendant l'implémentation.
-
----
 
 ## 10. Points techniques non bloquants à suivre
 
@@ -657,68 +780,34 @@ En développement, viser des vertical slices cohérentes : backend, permissions,
 
 ---
 
+
 ## 13. Point de reprise immédiat
 
-Reprendre par la **matrice de permissions**, en tenant compte du contrat Core réel :
+Reprendre par la fin du bloc économique et RBAC, sans coder :
 
-~~~text
-Workspace Owner
-→ toutes permissions métier
-→ tous dossiers du Workspace
-
-WorkspaceMember non-owner
-→ un seul Role Workspace
-→ permissions du Role
-→ périmètre dossier indépendant
-~~~
-
-La prochaine décision à formaliser est la répartition exacte des permissions entre :
-
-- Acheteur / Responsable achats ;
-- Économe / Gestionnaire des prix ;
-- Responsable fiches techniques ;
-- Contributeur fiches techniques ;
-- Lecteur métier si nécessaire.
-
-Points à trancher en priorité :
-
-- qui peut créer/modifier Produits, Fournisseurs et Articles ;
-- qui peut gérer catalogues et Tarifs négociés ;
-- qui peut valider Prix facturés et mener les revues ;
-- qui peut gérer les références favorites ;
-- qui peut créer/modifier ses propres DRAFTS ;
-- qui peut modifier les DRAFTS d'autrui ;
-- qui peut revaloriser ;
-- qui possède technical-sheet:validate par défaut ;
-- qui archive/restaure ;
-- suppression définitive : Workspace Owner uniquement dans le cadrage actuel ;
-- lecture/modification de la configuration métier.
-
-Une fois cette matrice stabilisée, poursuivre immédiatement le bloc économique :
-
-~~~text
-TVA
-→ objectif de marge
-→ coefficient / prix théorique
-→ prix conseillé / retenu
-→ marge réelle / semi-nette
-→ arrondis
-~~~
+```text
+1. matrice permissions finales
+2. Objectif de marge → coefficient → prix théorique
+3. prix conseillé / retenu
+4. marge réelle / semi-nette
+5. arrondis
+```
 
 Puis :
 
-~~~text
+```text
 Fiche process
-→ Dossier-magasin
+→ détails Dossier / affectations
+→ cadrage mathématique de l'Atelier d'optimisation
 → capabilities / quotas
 → intégrations / réglementation
 → V1 / hors V1
 → validation globale
 → cadrage M-001
-~~~
+```
 
 Ne créer aucun modèle métier Mongoose avant validation du cadrage global.
 
-Ne créer aucun second système de rôles métier parallèle au RBAC Workspace du Core.
+Ne créer aucun second système de rôles, de Dashboard ou de navigation parallèle au Core.
 
 Ne jamais confondre Workspace Owner et rôle Platform.

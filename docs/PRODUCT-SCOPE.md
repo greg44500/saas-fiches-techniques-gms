@@ -53,21 +53,89 @@ Il représente l'espace de travail du client du SaaS et peut contenir plusieurs 
 
 Les données métier d'un Workspace ne doivent pas être partagées implicitement avec un autre Workspace.
 
+
 ### 3.2 Dossier / magasin
 
 L'utilisateur travaille dans un dossier correspondant au contexte d'un magasin pour lequel il réalise ses travaux.
 
-Orientation actuelle :
+Organisation validée :
 
 ```text
 Workspace
 → plusieurs dossiers
-→ chaque dossier contextualise le travail pour un magasin
+→ 1 dossier = exactement 1 magasin en V1
 ```
 
-Le dossier sert notamment à déterminer les prix, disponibilités et autres conditions applicables lors de la création et de la valorisation des fiches.
+Le dossier est une identité métier durable. Il porte les informations opérationnelles du magasin et contextualise notamment les prix, références locales, fiches techniques, fiches process et droits d'accès.
 
-**Règle V1 validée :** un dossier correspond exactement à un magasin. Le dossier est donc le contexte métier du magasin dans le SaaS.
+Données métier déjà identifiées pour le dossier :
+
+- nom du dossier / magasin ;
+- enseigne, distincte du nom lorsque cette distinction apporte une valeur métier ;
+- localisation avec au minimum ville et code postal lorsque disponibles ;
+- adresse complète lorsqu'elle est connue ;
+- identifiant géographique normalisé récupérable automatiquement lorsque la source le permet ;
+- email principal destiné notamment à l'envoi de documents depuis l'application ;
+- téléphone facultatif ;
+- nom du responsable / interlocuteur métier, distinct de l'utilisateur qui crée le dossier ;
+- statut du dossier ;
+- dates et auteurs de création / modification.
+
+Le caractère obligatoire ou facultatif de l'enseigne, de l'email et du responsable reste à fixer avant implémentation. Le téléphone est explicitement facultatif.
+
+La saisie de localisation doit bénéficier d'une autocomplétion ville / code postal / adresse fondée sur une source publique et fiable. L'intégration cible doit privilégier les services publics actuels autour de la Base Adresse Nationale / Géoplateforme ; le fournisseur technique exact sera confirmé au cadrage du module afin de ne pas figer une API obsolète.
+
+Les informations opérationnelles du dossier sont modifiables par un utilisateur autorisé sans créer un nouveau dossier : nom, enseigne, localisation, email, téléphone, responsable et autres données utiles au fonctionnement métier. Les changements significatifs sont auditables.
+
+```text
+responsable / interlocuteur
+→ donnée métier du magasin
+
+createdBy / updatedBy
+→ audit système
+```
+
+Une modification des coordonnées du dossier ne réécrit pas l'historique économique ou les versions validées des fiches.
+
+#### Cycle de vie du dossier
+
+États fonctionnels validés :
+
+```text
+ACTIVE
+→ dossier opérationnel
+
+PAUSED
+→ activité temporairement suspendue
+→ affectations conservées mais non opérationnelles
+
+ARCHIVED
+→ activité terminée / sortie de l'usage courant
+→ historique conservé et consultation contrôlée
+
+DELETED
+→ suppression logique
+→ accès métier coupé immédiatement
+→ ressources enfants conservées historiquement mais inaccessibles dans les flux normaux
+```
+
+La suppression d'un dossier n'entraîne pas une destruction immédiate des Fiches techniques, Fiches process, prix, historiques ou affectations. Elle rend le contexte indisponible et invalide fonctionnellement les accès existants.
+
+Les relations d'accès peuvent rester conservées pour l'audit mais n'accordent aucun droit effectif lorsque le dossier ne permet pas l'action demandée.
+
+La restauration d'un dossier supprimé est possible tant qu'une purge définitive n'a pas eu lieu. La restauration doit revenir dans un état non opérationnel nécessitant une vérification, par défaut `PAUSED`, plutôt que de réactiver silencieusement le magasin.
+
+La purge physique constitue une opération distincte, contrôlée, auditée et soumise aux règles de rétention à cadrer. Elle n'est jamais assimilée à l'action utilisateur courante « supprimer ».
+
+Transitions conceptuelles retenues :
+
+```text
+ACTIVE ↔ PAUSED
+ACTIVE / PAUSED → ARCHIVED
+ARCHIVED → ACTIVE ou PAUSED
+ACTIVE / PAUSED / ARCHIVED → DELETED
+DELETED → PAUSED après restauration contrôlée
+```
 
 ### 3.3 Isolation stricte des contextes magasin
 
@@ -111,6 +179,49 @@ Le Workspace dispose d'une base de produits commune dans laquelle les dossiers v
 La donnée produit ne doit pas être dupliquée pour chaque magasin uniquement parce que son prix change.
 
 ---
+
+
+### 3.5 Navigation Workspace, consultation d'un dossier et contexte actif
+
+Le produit distingue trois actions :
+
+```text
+Dashboard Workspace
+→ pilotage global
+
+Drawer dossier
+→ consultation / navigation / administration légère
+→ ne change pas le contexte magasin actif
+
+Ouvrir le dossier
+→ active explicitement le contexte magasin
+→ permet le travail métier approfondi
+```
+
+Le drawer d'un dossier doit permettre de comprendre son contenu sans l'ouvrir comme contexte de travail. Il peut présenter selon les permissions :
+
+- une vue d'ensemble avec les KPI utiles ;
+- les informations générales du magasin ;
+- les Fiches techniques et Fiches process ;
+- les membres ayant accès au dossier ;
+- l'activité / l'audit utile ;
+- les actions d'administration du lifecycle.
+
+L'ouverture du drawer de Nantes puis de Saint-Nazaire ne doit jamais modifier implicitement le contexte magasin actif.
+
+Depuis tout dossier ouvert, le Dashboard Workspace doit rester accessible en un clic.
+
+Le Dashboard Workspace constitue la surface de pilotage globale du Workspace : Produits, Dossiers, Fiches techniques, Fiches process, alertes, activité et accès au panneau de configuration métier selon les modules réellement disponibles.
+
+La Sidebar Workspace devra être recomposée avec les sections métier du produit en utilisant le point d'extension Core `frontend/src/app/workspace-navigation.js`. Sa structure définitive sera arrêtée après validation du périmètre V1 afin de distinguer clairement :
+
+```text
+ressources globales Workspace
+→ Produits, Fournisseurs, catalogues, administration...
+
+ressources contextualisées dossier
+→ Fiches, références magasin, prix locaux, process...
+```
 
 ## 4. Principe de fiabilité des données
 
@@ -902,6 +1013,7 @@ L'énergie est explicitement exclue de ce calcul.
 
 Aucune autre charge ne doit être ajoutée à cette définition sans nouvelle validation métier.
 
+
 ### 8.8 Valorisation économique
 
 La composition technique et la valorisation économique restent distinctes.
@@ -918,20 +1030,133 @@ valorisation courante
 historique des valorisations
 ```
 
-Restent à valider avant implémentation :
+#### 8.8.1 TVA
 
-- règle exacte du prix applicable lorsqu'il existe plusieurs sources tarifaires ;
-- TVA et sa portée ;
-- objectif de marge ;
-- coefficient multiplicateur ;
+Règles validées :
+
+- le Coût Matière et l'Économat sont calculés exclusivement en HT ;
+- la TVA ne modifie jamais le Coût total de fabrication HT ;
+- le Workspace peut fournir un taux standard pour faciliter la saisie ;
+- ce taux standard n'est jamais une règle fiscale universelle imposée à toutes les fiches ;
+- la fiche / version porte le taux réellement applicable à sa commercialisation ;
+- le backend est l'autorité des calculs HT / TVA / TTC ;
+- une version VALIDATED conserve le taux de TVA effectivement utilisé ;
+- une modification ultérieure du paramétrage ne réécrit jamais l'historique.
+
+La TVA relève donc de la commercialisation du produit fini et non d'un attribut permanent du Produit ingrédient.
+
+#### 8.8.2 Objectif de marge
+
+L'Objectif de marge est le **taux de marge souhaitable à atteindre**, défini dans le contexte du magasin et utilisé comme cible de la Fiche technique.
+
+Exemples métier possibles :
+
+```text
+48 %
+52 %
+55 %
+```
+
+Le magasin peut disposer d'une valeur de référence ; chaque Fiche technique doit pouvoir utiliser la cible réellement retenue pour son calcul et sa simulation.
+
+L'Objectif de marge est un paramètre de pilotage, pas la marge réellement obtenue. Une version VALIDATED doit conserver la valeur utilisée pour expliquer sa valorisation.
+
+La formule exacte reliant Objectif de marge, coefficient, prix théorique, prix conseillé/retenu et marges calculées doit être dérivée des fiches de référence et validée avant implémentation. Le produit ne substitue pas arbitrairement « taux de marque » ou une autre notion à l'indicateur métier attendu.
+
+Restent à cadrer précisément :
+
+- coefficient ;
 - prix théorique ;
-- prix de vente retenu / conseillé ;
-- marge réellement obtenue ;
-- taux de marge ;
-- taux de marge semi-nette ;
-- arrondis des totaux et prix de vente.
+- prix de vente conseillé ;
+- prix de vente retenu ;
+- marge réelle ;
+- marge semi-nette ;
+- règles d'arrondi.
 
-Aucune formule non démontrée ne doit être implémentée par hypothèse.
+#### 8.8.3 Atelier d'optimisation de Fiche technique
+
+Une capability commerciale payante dédiée doit proposer un **atelier d'optimisation non destructif inspiré de la logique de Lightroom**, transposé aux Fiches techniques.
+
+L'objectif n'est pas d'imiter visuellement un logiciel photo sans sens métier, mais de fournir plusieurs niveaux de réglage complémentaires :
+
+```text
+sliders globaux
+≠
+courbe d'équilibre multipoints
+≠
+réglages fins par ingrédient
+≠
+scénarios / presets éventuels
+```
+
+Les sliders pilotent des variables globales distinctes telles que l'Objectif de marge, le prix de vente lorsque modifiable, l'intensité de l'optimisation ou d'autres paramètres dont la traduction mathématique aura été validée.
+
+La courbe d'équilibre permet une modulation globale de la répartition des efforts d'optimisation selon la contribution économique des ingrédients. Elle doit pouvoir recevoir plusieurs points manipulables, avec un rendu graphique professionnel et un recalcul fluide en temps réel.
+
+L'atelier doit également disposer de visualisations métier de niveau professionnel, notamment :
+
+- histogramme général composition / coût ;
+- visualisation de la relation entre part dans la recette et contribution au coût ;
+- état des marges de modulation restantes ;
+- avant / après ;
+- signalement visuel des limites atteintes, analogue à l'écrêtage en retouche photo mais fondé sur des bornes métier réelles.
+
+Les ingrédients modulables possèdent conceptuellement :
+
+```text
+quantité de référence
+minimum autorisé
+maximum autorisé
+```
+
+Les bornes sont paramétrables, par exemple :
+
+```text
+référence : 30 g
+minimum : 25 g
+maximum : 35 g
+```
+
+Elles ne sont jamais déduites arbitrairement d'un pourcentage fixe.
+
+Les lignes exprimées en pièce / unité ou explicitement verrouillées restent fixes pendant l'optimisation.
+
+Invariant de composition :
+
+```text
+variation d'une ligne ajustable
+→ compensation par une ou plusieurs autres lignes ajustables
+→ quantité finale conservée lorsqu'elle est verrouillée
+→ composition totale = 100 %
+```
+
+Le moteur doit maintenir une **enveloppe de qualité perçue** définie par les bornes et contraintes métier. Il ne peut jamais sacrifier arbitrairement la qualité commerciale pour atteindre un objectif économique.
+
+Les bornes configurées par l'utilisateur restent soumises à des validations et limites de sécurité backend indépendantes : aucune valeur envoyée par le frontend n'est considérée comme fiable par défaut.
+
+Lorsque l'objectif demandé ne peut pas être atteint sans sortir des contraintes :
+
+```text
+objectif demandé
+→ non atteignable dans l'enveloppe actuelle
+→ explication des contraintes
+→ aucun contournement automatique
+```
+
+L'atelier est non destructif :
+
+```text
+Fiche DRAFT
+→ simulation
+→ comparaison avant / après
+→ Appliquer au DRAFT
+→ modification réelle du DRAFT
+→ validation explicite ultérieure
+```
+
+Déplacer un slider, une courbe ou un réglage ne modifie jamais directement une version VALIDATED.
+
+La fonctionnalité d'optimisation avancée relève d'une **capability payante dédiée**. Le rattachement précis à une offre commerciale et son exposition éventuelle pendant un Trial restent à décider dans le cadrage commercial final.
 
 ### 8.9 Concurrence, revalorisation et prix modifiés en cours de travail
 
@@ -1297,6 +1522,40 @@ Il faut distinguer la fraîcheur fonctionnelle d'une recette de la fraîcheur é
 
 ---
 
+
+### 12.3 Préférences d'affichage et Dashboard Workspace
+
+Les préférences d'affichage sont distinctes de la configuration métier :
+
+```text
+configuration métier
+→ modifie le comportement du moteur
+
+préférences d'affichage
+→ modifient uniquement ce que l'utilisateur voit
+```
+
+Le produit réutilise le mécanisme Dashboard du Core v1.0.1 :
+
+```text
+widgets Core
++
+widgets métier du produit
+→ widgets accessibles selon capabilities + permissions
+→ préférences utilisateur
+→ widgets réellement visibles
+```
+
+Le comportement Core courant affiche par défaut tous les widgets accessibles : `hiddenWidgetIds = []`.
+
+Un widget `configurable: true` peut ensuite être masqué ou réaffiché par l'utilisateur. Un widget `configurable: false` reste visible.
+
+Masquer un KPI n'altère jamais la donnée, la règle métier, une alerte bloquante ou une capability.
+
+Les modules métier pourront fournir davantage de KPI que ceux qu'un utilisateur souhaite conserver à l'écran. Le Dashboard doit donc rester utile par défaut puis réellement personnalisable individuellement.
+
+Le produit ne crée pas un second système de Dashboard et utilise le point d'extension Core `frontend/src/app/application-dashboard.js`.
+
 ## 13. Utilisateurs, rôles et périmètres
 
 Le produit réutilise le RBAC Workspace du Core. Il ne crée pas un second système de rôles parallèle.
@@ -1365,48 +1624,65 @@ Les profils suivants servent de rôles types/presets de cadrage :
 
 Le nom affiché du rôle n'est jamais utilisé comme autorité technique : les permissions effectives gouvernent les actions.
 
+
 ### 13.4 Invitation et affectation
 
-Le mécanisme d'invitation du Core est conservé.
+Le mécanisme d'invitation du Core est conservé sans le surcharger avec la logique magasin.
 
-~~~text
-Owner / acteur autorisé
-→ invitation email
+Parcours validé :
+
+```text
+acteur autorisé
+→ invitation email dans le Workspace
 → choix d'un Role du Workspace
 → acceptation
-→ WorkspaceMember avec ce Role
-~~~
+→ création / activation du WorkspaceMember
+→ ensuite affectation des dossiers/magasins par le Workspace Owner
+```
+
+L'invitation gère l'entrée dans l'organisation ; l'affectation des magasins est une organisation interne du Workspace après acceptation.
+
+Un membre peut donc appartenir au Workspace tout en n'ayant temporairement accès à aucun dossier.
 
 Le rôle owner ne peut pas être attribué par invitation.
 
-L'interface produit pourra réunir dans un même parcours le choix du rôle et le périmètre de magasins, mais les responsabilités restent séparées :
+Les responsabilités restent strictement séparées :
 
-~~~text
+```text
 Role Workspace
 → ce que le membre peut faire
 
 Périmètre dossiers
 → où il peut le faire
-~~~
+```
 
-Le Core v1.0.1 ne porte pas nativement ce périmètre métier dans WorkspaceMember/WorkspaceInvitation. Le stockage et l'orchestration du périmètre dossier devront donc être cadrés dans le produit en utilisant les points d'extension disponibles, sans modifier silencieusement le Core.
+Aucune évolution du Core n'est nécessaire pour préparer atomiquement le périmètre magasin au moment de l'acceptation : cette exigence n'est pas retenue.
+
 
 ### 13.5 Périmètre magasin et autorisation effective
 
-Pour un membre non-owner, l'accès peut porter sur un ou plusieurs dossiers explicitement autorisés.
+Pour un membre non-owner, l'accès peut porter sur zéro, un ou plusieurs dossiers explicitement autorisés.
+
+Le Workspace Owner dispose implicitement de tous les dossiers de son Workspace et n'a pas besoin d'une affectation métier par dossier pour conserver cet accès. La création d'un nouveau magasin lui devient donc immédiatement accessible.
+
+La relation d'affectation magasin est une notion métier distincte du WorkspaceMember Core. Le cadrage technique futur pourra utiliser une relation dédiée de type conceptuel `DossierAccessGrant`, sans modifier le modèle Core tant qu'aucun besoin générique ne l'exige.
+
+Modifier le Role d'un membre ne modifie pas automatiquement ses magasins. Modifier son périmètre magasin ne modifie pas son Role.
 
 Le contexte actif reste toujours un seul magasin à la fois.
 
 L'autorisation métier effective combine conceptuellement :
 
-~~~text
+```text
 membership actif
 + permission du rôle
 + accès au dossier
-+ état de la ressource
++ état du dossier / de la ressource
 + capability commerciale si nécessaire
 + invariants métier
-~~~
+```
+
+Un accès dossier conservé pour audit n'accorde aucun accès opérationnel lorsque le dossier est PAUSED, ARCHIVED ou DELETED pour l'action concernée.
 
 Le rôle détermine ce que l'utilisateur peut demander. Les invariants déterminent ce que le système accepte comme état valide.
 
@@ -1425,6 +1701,7 @@ La permission de validation d'une Fiche technique reste une permission indépend
 
 ---
 
+
 ## 14. V1 / hors V1
 
 Le périmètre V1 n'est pas encore finalisé.
@@ -1432,6 +1709,12 @@ Le périmètre V1 n'est pas encore finalisé.
 Éléments considérés comme fondamentaux pour le cadrage du socle :
 
 - Workspace + dossiers magasin ;
+- identité, coordonnées, modification et cycle de vie des dossiers ;
+- affectations de magasins distinctes du Role Workspace ;
+- consultation rapide du dossier en drawer sans changement de contexte ;
+- ouverture explicite d'un dossier comme contexte métier ;
+- Dashboard Workspace comme surface de pilotage et retour global ;
+- Dashboard personnalisable à partir des mécanismes Core ;
 - catalogue Produit commun au Workspace ;
 - catégories et rendement ;
 - Fournisseurs et Articles fournisseur ;
@@ -1443,46 +1726,46 @@ Le périmètre V1 n'est pas encore finalisé.
 - références favorites / fréquemment utilisées par magasin ;
 - cartes d'identité Produit/Article ;
 - Fiches techniques calculées, versionnées et validables ;
+- TVA séparée des coûts HT et historisée dans les versions validées ;
+- Objectif de marge comme cible métier de la fiche ;
 - archivage et historique ;
 - configuration métier avec comportements standards ;
 - RBAC Workspace étendu par les permissions métier ;
 - périmètres magasin indépendants du rôle.
 
+L'Atelier d'optimisation de Fiche technique est identifié comme une capability payante différenciante du produit. Son rattachement exact à la V1 ou à une étape commerciale ultérieure reste à arbitrer avec le périmètre final.
+
 Les imports structurés de catalogues, l'OCR/IA, les automatisations avancées et certaines personnalisations peuvent rester différables selon l'arbitrage V1 final.
 
----
 
 ## 15. Points ouverts à résoudre avant validation globale
 
-- définir la liste et la gouvernance des catégories ;
-- décider catégorie unique ou multiple ;
-- préciser les types d'unités de référence supportés ;
-- finaliser la liste/gouvernance des types de conditionnement ;
-- fixer la convention technique exacte de la durée standard de fraîcheur d'un Prix facturé : 12 mois calendaires ou autre représentation équivalente ;
-- définir la valeur standard définitive du seuil « fréquemment utilisée » et les règles de comptage des fiches archivées ;
-- finaliser les permissions exactes de chaque rôle type ;
-- cadrer le stockage du périmètre dossier et son éventuelle préparation dès l'invitation ;
-- définir les données minimales définitives du Fournisseur ;
-- définir le lifecycle exact d'un Article fournisseur remplacé ou archivé ;
-- finaliser la gouvernance détaillée des revues tarifaires ;
-- valider la TVA et sa portée ;
-- valider les formules de marge, coefficient et prix de vente ;
-- valider la notion de prix de vente conseillé / retenu ;
-- définir le calcul de la marge semi-nette ;
-- définir les règles d'arrondi des montants agrégés ;
-- finaliser les motifs/types de version d'une Fiche technique ;
-- cadrer les règles exactes de rétention et de suppression définitive ;
-- définir la frontière fiche technique / fiche process ;
-- cadrer capabilities et quotas commerciaux ;
-- cadrer les intégrations externes V1 ;
-- cadrer les contraintes réglementaires réellement applicables ;
-- finaliser le périmètre V1 / hors V1 ;
-- finaliser la roadmap ;
-- seulement ensuite proposer M-001.
+Le cadrage global reste DRAFT. Les points suivants ne doivent pas être inventés pendant l'implémentation :
 
-Aucune de ces questions ne doit être résolue implicitement dans le code.
-
----
+- matrice détaillée finale des permissions des rôles types ;
+- lecture détaillée des historiques de prix pour le Lecteur métier ;
+- stockage technique exact du périmètre dossier / affectations ;
+- caractère obligatoire ou facultatif de l'enseigne, de l'email documents et du responsable ;
+- source technique finale d'autocomplétion d'adresse / commune et contrat de résilience associé ;
+- convention technique exacte de fraîcheur standard du Prix facturé ;
+- valeur standard du seuil « fréquemment utilisée » ;
+- traitement des fiches archivées dans ce calcul ;
+- données minimales Fournisseur ;
+- lifecycle Article fournisseur ;
+- gouvernance finale des revues tarifaires ;
+- formule exacte Objectif de marge → coefficient → prix théorique ;
+- prix conseillé / prix retenu ;
+- marge réelle / marge semi-nette ;
+- arrondis ;
+- bornes de sécurité globales de l'Atelier d'optimisation ;
+- paramètres exacts utilisables par sliders, courbe, presets et groupes sans introduire de contrôle décoratif ;
+- rattachement commercial exact de la capability payante d'optimisation et exposition éventuelle au Trial ;
+- types/motifs exacts de version ;
+- règles de rétention et purge définitive ;
+- détail de la Fiche process ;
+- quotas ;
+- intégrations et contraintes réglementaires ;
+- périmètre V1 / hors V1 final.
 
 ## 16. Sources de cadrage utilisées
 

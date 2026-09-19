@@ -73,11 +73,12 @@ Les ressources métier appartenant au Workspace doivent utiliser l'ownership exp
 
 ---
 
+
 ## 4. Dossier / magasin
 
-Le dossier fournit le contexte dans lequel l'utilisateur travaille pour un magasin.
+Le dossier fournit le contexte métier durable d'un magasin.
 
-Relations actuelles :
+Relations :
 
 ```text
 Workspace
@@ -85,28 +86,42 @@ Workspace
 → plusieurs Dossiers
 
 Dossier
-→ contexte magasin
+→ exactement 1 magasin en V1
 ```
 
 Le dossier contextualise notamment :
 
 - conditions commerciales ;
-- disponibilité des produits ;
-- fiches techniques ;
-- fiches process.
+- références favorites / fréquentes ;
+- Fiches techniques ;
+- Fiches process ;
+- membres autorisés ;
+- coordonnées et responsable métier ;
+- état opérationnel.
 
-**Règle V1 validée :** `1 dossier = 1 magasin`.
+Données conceptuelles identifiées :
 
-**À valider avant implémentation :**
+```text
+nom
+enseigne éventuelle
+adresse éventuelle
+code postal
+ville
+identifiant géographique normalisé éventuel
+email documents
+téléphone facultatif
+responsable / interlocuteur
+status
+audit création / modification
+```
 
-- informations minimales du magasin ;
-- cycle de vie du dossier.
+Le responsable métier n'est pas `createdBy`.
 
-**Règle de copie/import validée :** une Fiche technique peut être copiée d'un magasin à un autre, mais la copie transporte uniquement sa structure de composition réutilisable. Elle ne transporte jamais les prix, valorisations ni historiques du magasin source.
+Les informations opérationnelles sont modifiables sans changer l'identité du dossier ni réécrire ses historiques.
 
----
+La localisation doit pouvoir être assistée par autocomplétion à partir d'une source publique fiable. Le fournisseur technique exact sera fixé lors du cadrage du module.
 
-## 4.1 Isolation du contexte magasin
+### 4.1 Isolation du contexte magasin
 
 Un utilisateur peut disposer d'un accès à plusieurs magasins, mais une opération métier sur une Fiche technique s'exécute toujours dans un **contexte magasin unique**.
 
@@ -124,7 +139,67 @@ Un Tarif négocié ou Prix facturé d'un autre magasin ne peut jamais être util
 
 Le backend doit imposer cette isolation indépendamment de l'état du frontend.
 
----
+### 4.2 Cycle de vie du dossier
+
+États :
+
+```text
+ACTIVE
+PAUSED
+ARCHIVED
+DELETED
+```
+
+`PAUSED` suspend le travail opérationnel sans détruire les affectations.
+
+`ARCHIVED` sort le dossier de l'usage courant tout en conservant l'historique et une consultation contrôlée.
+
+`DELETED` est une suppression logique : le contexte devient inaccessible dans les flux métier normaux et toutes les affectations deviennent inopérantes, mais les données enfants conservent leur état historique réel.
+
+Une Fiche technique VALIDATED d'un dossier supprimé reste historiquement VALIDATED ; elle devient inaccessible parce que son conteneur est supprimé.
+
+La restauration d'un dossier supprimé revient par défaut vers `PAUSED` afin d'imposer une vérification avant remise en production.
+
+La purge définitive reste une opération séparée, auditée et soumise à la politique de rétention.
+
+### 4.3 Accès au dossier
+
+Le Role Workspace et le périmètre dossier sont orthogonaux.
+
+```text
+Role
+→ ce que le membre peut faire
+
+Affectation dossier
+→ où il peut le faire
+```
+
+Après acceptation d'une invitation Core et création du WorkspaceMember, le Workspace Owner affecte les dossiers/magasins autorisés.
+
+Un membre peut avoir zéro, un ou plusieurs dossiers.
+
+Le Workspace Owner possède implicitement tous les dossiers du Workspace et ne dépend pas d'une ligne d'affectation par magasin.
+
+Le stockage futur peut utiliser une relation métier dédiée de type conceptuel `DossierAccessGrant`, sans modifier le modèle WorkspaceMember Core.
+
+L'autorisation effective d'une ressource magasin combine :
+
+```text
+membership actif
++ permission du Role
++ affectation dossier
++ état du dossier / ressource
++ capability éventuelle
++ invariants métier
+```
+
+### 4.4 Consultation et ouverture
+
+Le drawer d'un dossier est une surface de consultation / navigation / administration légère. Son ouverture ne modifie pas le contexte magasin actif.
+
+L'action « Ouvrir le dossier » active explicitement le contexte métier.
+
+Depuis un dossier ouvert, le Dashboard Workspace doit rester accessible en un clic.
 
 ## 5. Produit
 
@@ -674,6 +749,25 @@ CM HT + Économat HT
 
 L'énergie est exclue.
 
+
+### 11.9 TVA et Objectif de marge
+
+Le Coût Matière, l'Économat et le Coût total de fabrication restent calculés en HT.
+
+La version de Fiche technique porte le taux de TVA réellement appliqué à sa commercialisation et l'Objectif de marge réellement utilisé.
+
+```text
+Workspace
+→ peut fournir des valeurs standards
+
+Fiche / version
+→ conserve les valeurs effectivement utilisées
+```
+
+L'Objectif de marge est le taux de marge souhaitable à atteindre. Il constitue une cible distincte de la marge réellement obtenue.
+
+Les formules exactes reliant Objectif de marge, coefficient, prix théorique, prix conseillé/retenu et marges restent à valider à partir des fiches de référence.
+
 ## 12. Composition, valorisation et concurrence
 
 Composition et valorisation sont distinctes.
@@ -735,6 +829,58 @@ Aucune purge n'est déclenchée automatiquement par l'âge.
 La suppression définitive éventuelle est réservée au Workspace Owner dans le cadrage actuel, après archivage, contrôles backend, audit et application de la politique de rétention.
 
 La fiche et ses versions sont traitées comme un ensemble cohérent.
+
+
+## 12.5 Atelier d'optimisation
+
+L'Atelier d'optimisation est une capability payante distincte de l'édition ordinaire d'une fiche.
+
+Il opère uniquement sur un DRAFT ou une simulation issue d'un DRAFT.
+
+Conceptuellement, une ligne d'ingrédient modulable peut porter pour l'optimisation :
+
+```text
+quantité de référence
+minimum autorisé
+maximum autorisé
+verrouillage
+```
+
+Les pièces / unités et lignes déclarées fixes restent verrouillées.
+
+Invariant :
+
+```text
+composition totale = 100 %
+```
+
+Lorsque la quantité finale est verrouillée, toute diminution d'une ligne doit être compensée par une augmentation conforme d'une ou plusieurs autres lignes modulables.
+
+Les bornes sont configurables, mais le backend applique également des limites de sécurité propres au moteur afin d'empêcher des valeurs incohérentes ou dangereuses même si elles sont envoyées directement à l'API.
+
+Le moteur doit préserver l'enveloppe de qualité perçue et peut conclure qu'un objectif est impossible.
+
+La couche UX transpose un environnement de retouche paramétrique professionnel :
+
+- sliders globaux ;
+- courbe d'équilibre multipoints ;
+- histogramme composition/coût ;
+- réglages fins par ingrédient ;
+- visualisation des bornes atteintes ;
+- comparaison avant / après ;
+- scénarios/presets uniquement lorsqu'ils correspondent à des règles mathématiques explicables.
+
+Les sliders et la courbe ne sont pas interchangeables : ils agissent sur des dimensions différentes.
+
+Aucune manipulation ne persiste automatiquement :
+
+```text
+simulation
+→ Appliquer au DRAFT
+→ validation explicite ultérieure
+```
+
+Une version VALIDATED n'est jamais modifiée par l'atelier.
 
 ## 13. Valorisation courante et historique
 
@@ -833,6 +979,7 @@ Une donnée calculée ne doit pas devenir une saisie utilisateur simplement parc
 
 ---
 
+
 ## 18. Paramètres métier
 
 Le Workspace possède une configuration métier centrale avec des comportements standards immédiatement utilisables.
@@ -866,7 +1013,13 @@ Payant
 
 Un downgrade ne détruit pas la configuration personnalisée ; elle peut devenir inactive pendant que les valeurs standards redeviennent effectives.
 
-Paramètres déjà identifiés : politique de prix, fraîcheur des Prix facturés, favoris/fréquence, cycle de vie des fiches, TVA, marge, coefficient et arrondis.
+Paramètres déjà identifiés : politique de prix, fraîcheur des Prix facturés, favoris/fréquence, cycle de vie des fiches, TVA, Objectif de marge, coefficient et arrondis.
+
+Les préférences d'affichage utilisateur sont séparées de cette configuration métier.
+
+Le Dashboard Workspace réutilise le registre Core de widgets. Les modules métier ajoutent leurs descriptors ; les permissions et capabilities déterminent les widgets accessibles ; les préférences utilisateur déterminent ensuite les widgets visibles.
+
+Le Core v1.0.1 utilise `hiddenWidgetIds = []` par défaut : tous les widgets accessibles sont initialement visibles. Un widget configurable peut ensuite être masqué ou réaffiché ; un widget non configurable reste visible.
 
 ## 19. Extensibilité
 
@@ -930,74 +1083,54 @@ L'autorisation effective combine membership, permission, accès dossier, état d
 
 ---
 
+
 ## 20. Invariants métier déjà établis
 
-1. Un Produit n'est ni un prix ni un Article fournisseur.
-2. Le catalogue Produit est mutualisé dans le Workspace.
-3. Un Produit peut avoir plusieurs Articles chez un même Fournisseur et chez plusieurs Fournisseurs.
-4. Les données commerciales propres à un magasin restent isolées de celles des autres magasins.
-5. Un prix spécifique d'un autre magasin n'est jamais un fallback.
-6. Les prix utilisés pour les coûts directs sont HT.
-7. Les prix unitaires et normalisés sont affichés avec trois décimales sans arrondi prématuré du moteur.
-8. Les données tarifaires sont sourcées, temporelles et historisées.
-9. La politique de Prix applicable est définie au niveau Workspace.
-10. Le mode standard est Tarif négocié.
-11. Le mode Prix facturé applique Prix facturé frais et valide → Tarif négocié → Tarif fournisseur.
-12. La fraîcheur d'un Prix facturé part de la date de facture ; le standard métier est un an.
-13. Une perte de fraîcheur n'altère pas le statut VALIDÉ ni l'historique.
-14. Les catalogues fournisseur sont versionnés par édition/millésime et ne sont pas écrasés.
-15. Un catalogue ancien reste identifiable comme tel et ne doit jamais être présenté comme actuel sans signalement.
-16. Le SaaS ne choisit jamais automatiquement l'Article le moins cher parmi plusieurs candidats.
-17. Une référence favorite correspond à un Article fournisseur précis dans un magasin, pas à un Produit générique.
-18. Favori et fréquemment utilisée sont deux concepts distincts.
-19. Le prix d'une référence favorite est résolu dynamiquement et n'est pas dupliqué dans le favori.
-20. L'utilisateur saisit la quantité nette ; la quantité brute est calculée via le rendement.
-21. Le pourcentage de recette est calculé sur les quantités nettes.
-22. Coût Matière = somme des coûts HT des lignes d'ingrédients.
-23. Économat est distinct du Coût Matière.
-24. Coût total de fabrication = Coût Matière + Économat ; énergie exclue.
-25. Une modification tarifaire ne réécrit jamais silencieusement une fiche.
-26. Une version VALIDATED est immuable ; toute modification crée/ouvre un nouveau DRAFT.
-27. Une ligne sans Prix applicable ne peut pas être considérée comme valant zéro.
-28. Une fiche officielle exige une valorisation valide de toutes les lignes requises.
-29. Les invariants métier s'appliquent aussi au Workspace Owner.
-30. La copie inter-magasin transporte la composition mais jamais les prix, valorisations ou historiques économiques.
-31. Le backend est la seule autorité pour la résolution des prix, l'état, les actions autorisées, les alertes, l'exportabilité, les versions et les valeurs effectives de configuration.
-32. Le frontend ne contient aucun fallback métier statique.
-33. Un WorkspaceMember porte un seul Role Core ; un rôle personnalisé peut combiner plusieurs responsabilités par ses permissions.
-34. Le périmètre dossier est indépendant du Role.
-35. Un PlatformRole ne donne aucun accès implicite aux données métier d'un Workspace.
-36. Le Workspace Owner possède toutes les permissions métier et tous les dossiers de son propre Workspace, sans contourner les invariants.
-37. Free utilise les comportements standards ; Trial peut tester la personnalisation ; les offres payantes peuvent personnaliser selon leurs capabilities.
-38. Un downgrade ne détruit pas automatiquement les configurations personnalisées.
-39. Aucune suppression automatique d'une fiche n'est déclenchée uniquement par son âge.
-40. La suppression définitive éventuelle est contrôlée, auditée et postérieure à l'archivage.
+- Workspace = frontière de tenancy ;
+- 1 dossier = 1 magasin en V1 ;
+- un contexte magasin actif à la fois pour le travail métier ;
+- aucune donnée commerciale d'un autre magasin comme fallback ;
+- le Role définit « quoi », l'affectation dossier définit « où » ;
+- invitation Workspace et affectation magasin sont deux étapes distinctes ;
+- le Workspace Owner possède implicitement tous les dossiers ;
+- un dossier PAUSED / ARCHIVED / DELETED restreint ou coupe les actions indépendamment du Role ;
+- la suppression logique d'un dossier coupe les accès sans réécrire l'état historique de ses ressources ;
+- quantité nette saisie, quantité brute calculée ;
+- composition recette calculée sur le net ;
+- CM HT + Économat HT = Coût total de fabrication HT ;
+- TVA distincte du coût de fabrication HT ;
+- une version VALIDATED est immuable ;
+- absence de prix ≠ prix à zéro ;
+- l'Objectif de marge est une cible métier distincte de la marge obtenue ;
+- l'Atelier d'optimisation est non destructif jusqu'à « Appliquer au DRAFT » ;
+- l'optimisation ne peut pas dépasser ses bornes métier ni les limites de sécurité backend ;
+- lorsqu'un poids final est verrouillé, la composition optimisée reste à 100 % ;
+- une pièce / unité verrouillée n'est jamais ajustée par le moteur ;
+- un objectif impossible doit être signalé, jamais atteint en dégradant silencieusement la qualité perçue ;
+- masquer un KPI ne désactive aucune règle métier ;
+- les invariants s'appliquent au Workspace Owner comme aux autres membres.
 
----
 
 ## 21. Questions de domaine encore ouvertes
 
-Avant création du premier modèle Mongoose, il reste notamment à trancher :
+Avant implémentation, restent notamment à trancher :
 
-- données minimales définitives du magasin ;
-- catégories et cardinalités ;
-- unités supportées ;
-- gouvernance finale des types de conditionnement ;
-- convention technique exacte pour la durée standard de fraîcheur d'un Prix facturé ;
-- seuil standard et détails de calcul de « fréquemment utilisée » ;
-- lifecycle d'un Article fournisseur remplacé ou archivé ;
-- fréquence/gouvernance finale des revues tarifaires ;
-- matrice finale des permissions des rôles types ;
-- stockage du périmètre dossier et orchestration lors de l'invitation ;
-- TVA et sa portée ;
-- marge, coefficient, prix théorique, prix conseillé/retenu et marge semi-nette ;
-- arrondis des montants agrégés ;
-- types/motifs exacts de version des Fiches techniques ;
-- règles exactes de rétention et suppression définitive ;
-- frontière fiche technique / fiche process ;
-- V1 / hors V1 ;
-- capabilities et quotas ;
-- intégrations ;
-- contraintes réglementaires.
-
-Aucune de ces questions ne doit être résolue implicitement dans le code.
+- matrice détaillée des permissions des rôles types ;
+- persistance exacte des affectations dossier ;
+- caractère obligatoire de certains champs Dossier ;
+- intégration technique de l'autocomplétion géographique ;
+- convention exacte de fraîcheur du Prix facturé ;
+- seuil et calcul des références fréquemment utilisées ;
+- lifecycle Article fournisseur ;
+- gouvernance des revues tarifaires ;
+- formule exacte Objectif de marge → coefficient → prix théorique ;
+- prix conseillé / retenu ;
+- marge réelle / semi-nette ;
+- règles d'arrondi ;
+- bornes de sécurité globales et paramètres mathématiques exacts de l'Atelier d'optimisation ;
+- rattachement commercial exact de la capability d'optimisation ;
+- Fiche process ;
+- rétention / purge ;
+- quotas ;
+- contraintes réglementaires ;
+- V1 / hors V1 final.

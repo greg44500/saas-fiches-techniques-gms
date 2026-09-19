@@ -27,26 +27,40 @@
 
 Objectif : obtenir un contrat produit suffisamment précis pour interdire les hypothèses métier pendant l'implémentation.
 
+
 ### 2.1 Problème métier et organisation
 
-**État : largement validé**
+**État : fortement cadré**
+
+Décisions établies :
 
 - Workspace comme espace de travail du client ;
 - plusieurs dossiers dans un Workspace ;
-- dossier comme contexte magasin ;
 - règle V1 : `1 dossier = 1 magasin` ;
+- identité du dossier modifiable sans recréer le contexte ;
+- données magasin : nom, enseigne si pertinente, localisation, email documents, téléphone facultatif, responsable métier distinct de `createdBy` ;
+- autocomplétion de localisation via une source publique fiable à confirmer techniquement ;
+- lifecycle dossier `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+- suppression logique avant éventuelle purge physique ;
+- suppression logique = coupure immédiate des accès métier et des ressources du dossier dans les flux normaux sans destruction automatique de l'historique ;
+- restauration contrôlée vers un état non opérationnel, par défaut `PAUSED` ;
 - catalogue produit mutualisé dans le Workspace ;
 - prix et conditions contextualisés par magasin ;
 - accès multi-magasins = changement de contexte, jamais partage ou mélange des données locales ;
-- un prix spécifique d'un autre magasin ne constitue jamais un fallback ;
-- une Fiche technique peut être copiée d'un magasin à un autre en reprenant la composition réutilisable mais jamais les prix, valorisations ou historiques ;
-- la fiche cible est recalculée intégralement dans son propre contexte et démarre avec son propre historique.
+- invitation Workspace puis affectation séparée des magasins après acceptation ;
+- Workspace Owner implicitement autorisé sur tous les dossiers ;
+- drawer de consultation sans activation du contexte ;
+- ouverture explicite du dossier pour le travail métier ;
+- retour au Dashboard Workspace en un clic ;
+- Dashboard Workspace comme surface globale de pilotage ;
+- Sidebar métier recomposée via le point d'extension Core.
 
-**À terminer :**
+À terminer :
 
-- définir les données minimales d'un magasin/dossier ;
-- préciser le lifecycle du dossier ;
-- préciser les détails UX et règles d'éligibilité de la copie/import.
+- fixer le caractère obligatoire de certains champs de contact ;
+- choisir le contrat technique final d'autocomplétion de localisation ;
+- définir la persistance métier exacte des affectations dossier ;
+- préciser les règles de rétention / purge.
 
 ### 2.2 Catalogue Produit
 
@@ -107,9 +121,10 @@ Décisions établies :
 - détails finaux des revues tarifaires ;
 - convention technique exacte de la durée de fraîcheur.
 
+
 ### 2.4 Fiches techniques
 
-**État : architecture fonctionnelle largement cadrée — bloc économique à poursuivre**
+**État : architecture fonctionnelle largement cadrée — formules économiques et Atelier d'optimisation à finaliser**
 
 Décisions établies :
 
@@ -127,17 +142,29 @@ Décisions établies :
 - copie inter-magasin sans prix ni historique source ;
 - archivage avant éventuelle suppression définitive ;
 - aucune purge automatique uniquement par âge ;
-- politique Workspace de cycle de vie avec comportement standard.
+- politique Workspace de cycle de vie avec comportement standard ;
+- TVA distincte des coûts HT, taux réellement utilisé conservé dans la version validée ;
+- Objectif de marge = taux de marge souhaitable défini dans le contexte du magasin et utilisé comme cible de la fiche ;
+- aucun remplacement arbitraire de cet indicateur par taux de marque ou autre métrique ;
+- Atelier d'optimisation non destructif inspiré de Lightroom comme capability payante différenciante ;
+- sliders globaux et courbe multipoints complémentaires ;
+- histogramme composition/coût, avant/après et visualisations professionnelles ;
+- lignes modulables avec quantité de référence et bornes min/max configurables ;
+- pièces/unités et lignes verrouillées non modulables ;
+- redistribution sous contrainte afin de conserver 100 % de composition et le poids final lorsqu'il est verrouillé ;
+- enveloppe de qualité perçue et refus explicite d'un objectif économiquement impossible ;
+- validations backend indépendantes des valeurs envoyées par l'utilisateur ;
+- application d'une simulation au DRAFT uniquement sur action explicite.
 
 À finaliser :
 
-- TVA ;
-- marge ;
-- coefficient ;
-- prix théorique ;
+- formule exacte Objectif de marge → coefficient → prix théorique ;
 - prix conseillé / retenu ;
-- marge semi-nette ;
+- marge réelle / semi-nette ;
 - arrondis ;
+- paramètres mathématiques exacts des sliders et de la courbe ;
+- bornes de sécurité globales de l'optimiseur ;
+- placement commercial exact de la capability et inclusion V1 ou phase suivante ;
 - types/motifs exacts de version ;
 - rétention/suppression définitive.
 
@@ -146,6 +173,7 @@ Décisions établies :
 **État : À CADRER**
 
 Définir relation avec la fiche technique, étapes, durées, points critiques, critères d'acceptabilité, versionnement et données communes/séparées.
+
 
 ### 2.6 Utilisateurs, RBAC, capabilities et quotas
 
@@ -160,18 +188,25 @@ Décisions établies :
 - invariants métier non contournables par l'Owner ;
 - PlatformRole sans accès implicite aux données métier Workspace ;
 - rôle et périmètre dossier séparés ;
-- invitation Core conserve le choix du roleId ;
-- futur formulaire peut associer visuellement rôle + dossiers sans fusionner les modèles ;
+- invitation Core = entrée dans le Workspace + Role ;
+- après acceptation, le Workspace Owner affecte séparément les dossiers/magasins ;
+- un membre peut temporairement appartenir au Workspace sans dossier affecté ;
+- changement de Role et changement de périmètre dossier sont indépendants ;
+- l'état du dossier participe à l'autorisation effective ;
 - rôles types : Acheteur, Économe, Responsable fiches techniques, Contributeur fiches techniques, Lecteur métier ;
-- suppression définitive des fiches réservée au Workspace Owner dans le cadrage courant.
+- suppression définitive des fiches réservée au Workspace Owner dans le cadrage courant ;
+- Atelier d'optimisation = capability payante distincte du RBAC.
 
 À finaliser :
 
 - matrice précise des permissions par rôle type ;
 - permission de validation par défaut de l'Économe ;
-- stockage/orchestration du périmètre dossier ;
-- capabilities commerciales ;
+- lecture des historiques détaillés par le Lecteur métier ;
+- stockage technique des affectations dossier ;
+- rattachement commercial exact de la capability d'optimisation ;
+- autres capabilities commerciales ;
 - quotas.
+
 
 ### 2.7 Paramètres métier
 
@@ -185,14 +220,21 @@ standard
 → effectif calculé par le backend
 ~~~
 
-- panneau visible et comportements standards immédiatement utilisables ;
+- panneau métier visible et comportements standards immédiatement utilisables ;
 - Free = standards, personnalisation selon capabilities ;
 - Trial = standards + personnalisation facultative pour tester l'offre ;
 - Payant = personnalisation autorisée par le plan ;
 - downgrade sans destruction automatique des valeurs configurées ;
-- aucune valeur métier de remplacement codée en dur dans le frontend.
+- aucune valeur métier de remplacement codée en dur dans le frontend ;
+- préférences d'affichage séparées de la configuration métier ;
+- Dashboard Core + widgets métier ;
+- tous les widgets accessibles sont visibles par défaut avec le Core v1.0.1 (`hiddenWidgetIds = []`) ;
+- les widgets configurables peuvent ensuite être masqués/réaffichés par utilisateur ;
+- les widgets non configurables restent visibles ;
+- masquer un KPI ne désactive jamais une règle métier ou une alerte bloquante.
 
-Paramètres déjà identifiés : politique de prix, fraîcheur factures, favoris/fréquence, cycle de vie des fiches, TVA, marge, coefficient, arrondis.
+Paramètres métier déjà identifiés : politique de prix, fraîcheur factures, favoris/fréquence, cycle de vie des fiches, TVA standard, Objectif de marge, coefficient, arrondis et contraintes de l'optimiseur lorsque leur portée sera validée.
+
 
 ### 2.8 Intégrations et contraintes réglementaires
 
@@ -200,10 +242,11 @@ Paramètres déjà identifiés : politique de prix, fraîcheur factures, favoris
 
 À étudier :
 
+- autocomplétion ville / code postal / adresse via une source publique actuelle, avec la Géoplateforme / BAN comme candidate à confirmer ;
 - import catalogues/mercuriales CSV/XLS/XLSX ;
 - fichiers / images ;
 - export PDF / CSV ;
-- e-mail ;
+- e-mail, notamment envoi de documents à l'adresse configurée du dossier ;
 - OCR ;
 - assistance IA ;
 - règles fiscales réellement applicables ;
@@ -345,48 +388,23 @@ développement immédiat
 
 ---
 
+
 ## 7. Prochaine étape immédiate
 
-Le bloc Prix applicable / Articles / Références du magasin est désormais suffisamment cadré pour ne plus constituer le point de reprise prioritaire.
+Poursuivre sans coder dans cet ordre :
 
-Ordre recommandé :
+1. terminer la matrice détaillée des permissions des rôles types ;
+2. figer la formule Objectif de marge → coefficient → prix théorique à partir des fiches de référence ;
+3. cadrer prix conseillé / prix retenu ;
+4. cadrer marge réelle / marge semi-nette ;
+5. cadrer les règles d'arrondi ;
+6. cadrer la Fiche process ;
+7. terminer les champs obligatoires et règles de persistance du Dossier/Magasin ;
+8. cadrer les paramètres mathématiques et de sécurité de l'Atelier d'optimisation ;
+9. finaliser capabilities / quotas ;
+10. finaliser intégrations et contraintes réglementaires ;
+11. fixer V1 / hors V1 ;
+12. valider globalement la documentation ;
+13. seulement ensuite cadrer M-001.
 
-~~~text
-1. finaliser la matrice rôles / permissions / périmètres dossier
-   → Acheteur / Responsable achats
-   → Économe / Gestionnaire des prix
-   → Responsable fiches techniques
-   → Contributeur fiches techniques
-   → Lecteur métier si nécessaire
-   → stockage/orchestration du périmètre dossier
-
-2. TVA et portée de la TVA
-
-3. objectif de marge
-
-4. coefficient / prix théorique
-
-5. prix de vente conseillé / retenu
-
-6. marge réelle / marge semi-nette
-
-7. règles d'arrondi des totaux
-
-8. fiche process
-
-9. données minimales et lifecycle du dossier/magasin
-
-10. capabilities / quotas
-
-11. intégrations / réglementation
-
-12. V1 / hors V1
-
-13. validation documentaire globale
-
-14. seulement ensuite cadrage M-001
-~~~
-
-Les détails encore ouverts dans des blocs déjà avancés — convention technique de fraîcheur, seuil de fréquence, lifecycle Article, rétention — restent à fermer avant validation globale sans bloquer la poursuite du cadrage économique.
-
-La PR documentaire #5 reste le lot unique de cadrage global jusqu'à clôture de cette phase.
+Aucun modèle métier Mongoose avant cette validation globale.

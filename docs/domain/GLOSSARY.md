@@ -16,15 +16,49 @@ Un Workspace peut contenir plusieurs dossiers correspondant à des contextes mag
 
 ---
 
+
 ## Dossier
 
-Contexte de travail créé par l'utilisateur pour un magasin.
+Contexte métier durable correspondant à exactement un magasin en V1.
 
-Le dossier sert notamment à contextualiser les prix, disponibilités, fiches techniques et fiches process.
+Il porte notamment l'identité opérationnelle du magasin, sa localisation, ses contacts, son responsable métier, son statut, ses affectations et ses ressources contextualisées.
 
-**Règle V1 validée :** `1 dossier = 1 magasin`. Le dossier constitue le contexte métier du magasin dans le SaaS.
+Ses informations opérationnelles peuvent évoluer sans recréer un nouveau dossier.
 
----
+## Statut du dossier
+
+État de cycle de vie du contexte magasin :
+
+```text
+ACTIVE
+PAUSED
+ARCHIVED
+DELETED
+```
+
+`DELETED` désigne une suppression logique : les accès métier sont coupés mais les données ne sont pas immédiatement détruites.
+
+## Suppression logique du dossier
+
+Action rendant le dossier et ses ressources inaccessibles dans les flux métier normaux sans effacement physique immédiat.
+
+Elle invalide fonctionnellement les affectations existantes tout en permettant de conserver leur trace pour l'audit.
+
+La purge définitive est une opération distincte.
+
+## Responsable / interlocuteur du dossier
+
+Personne métier responsable ou interlocutrice du magasin.
+
+Cette donnée ne doit pas être confondue avec `createdBy`, qui identifie l'utilisateur SaaS ayant créé le dossier.
+
+## Affectation dossier
+
+Relation métier donnant à un WorkspaceMember non-owner l'accès à un dossier/magasin déterminé.
+
+Elle est indépendante du Role Workspace.
+
+Le Workspace Owner possède implicitement tous les dossiers de son Workspace.
 
 ## Magasin
 
@@ -675,13 +709,24 @@ Une permission autorise à demander une action ; elle n'autorise jamais à crée
 
 ---
 
+
 ## Objectif de marge
 
-Marge cible utilisée pour calculer un prix théorique.
+Taux de marge souhaitable à atteindre pour une Fiche technique dans le contexte d'un magasin.
 
-Une valeur par défaut éventuelle ne signifie pas nécessairement une contrainte obligatoire.
+Il constitue une cible de pilotage et peut différer de la marge réellement obtenue.
 
----
+Une valeur de référence peut être fournie par le magasin ; la fiche utilise la cible réellement retenue pour ses calculs et sa simulation.
+
+Il ne doit pas être remplacé implicitement par une autre notion économique comme le taux de marque.
+
+## TVA de la fiche
+
+Taux de TVA appliqué à la commercialisation du produit fini.
+
+Les coûts matière, Économat et Coût total de fabrication restent calculés en HT.
+
+Le Workspace peut proposer un taux standard, mais la version validée conserve le taux réellement utilisé pour ses calculs HT / TVA / TTC.
 
 ## Prix théorique
 
@@ -696,6 +741,51 @@ Prix effectivement proposé ou choisi pour la fiche.
 Il peut être différent du prix théorique nécessaire pour atteindre l'objectif de marge.
 
 ---
+
+
+## Atelier d'optimisation de Fiche technique
+
+Capability commerciale payante permettant de simuler une optimisation économique d'une Fiche technique sous contraintes de composition et de qualité.
+
+Son UX transpose la logique d'un panneau de développement professionnel de type Lightroom : sliders globaux, courbe d'équilibre multipoints, histogramme métier, réglages fins, avant/après et limites visuelles.
+
+La simulation est non destructive tant qu'elle n'est pas explicitement appliquée au DRAFT.
+
+## Simulation d'optimisation
+
+État temporaire calculé à partir d'un DRAFT sans modifier la fiche persistée.
+
+Elle permet de comparer la référence et le scénario avant une action explicite « Appliquer au DRAFT ».
+
+## Quantité de référence d'optimisation
+
+Quantité de départ d'une ligne d'ingrédient utilisée comme point d'ancrage de la simulation.
+
+Elle reste distincte des bornes minimum et maximum.
+
+## Bornes d'optimisation
+
+Minimum et maximum configurés pour une ligne modulable.
+
+Elles définissent l'enveloppe commercialement acceptable de variation, mais restent soumises à des limites de sécurité backend.
+
+## Enveloppe de qualité perçue
+
+Ensemble des bornes, verrouillages et contraintes garantissant que l'optimisation ne dégrade pas arbitrairement la perception commerciale du produit.
+
+Si l'objectif économique n'est pas atteignable dans cette enveloppe, le moteur doit le signaler plutôt que la dépasser.
+
+## Courbe d'équilibre
+
+Courbe interactive multipoints agissant sur la répartition globale de l'effort d'optimisation selon la contribution économique des ingrédients.
+
+Elle ne remplace pas les sliders : les deux contrôles agissent sur des dimensions différentes du moteur.
+
+## Histogramme métier
+
+Visualisation synthétique de la composition et de la contribution économique des ingrédients utilisée dans l'Atelier d'optimisation.
+
+Les zones proches de leurs limites de modulation doivent être signalées visuellement.
 
 ## Fiche process
 
