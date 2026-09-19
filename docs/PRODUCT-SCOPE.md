@@ -67,7 +67,7 @@ Workspace
 
 Le dossier sert notamment à déterminer les prix, disponibilités et autres conditions applicables lors de la création et de la valorisation des fiches.
 
-**Point restant à verrouiller :** confirmer si, en V1, un dossier représente toujours exactement un magasin et aucun autre type de contexte.
+**Règle V1 validée :** un dossier correspond exactement à un magasin. Le dossier est donc le contexte métier du magasin dans le SaaS.
 
 ### 3.3 Catalogue commun au Workspace
 
@@ -386,6 +386,128 @@ Le système doit pouvoir déterminer :
 
 **Point ouvert :** priorité exacte entre tarif fournisseur de référence, tarif magasin et prix observé pour déterminer le prix applicable à une fiche.
 
+### 6.8 Politique de Prix applicable du Workspace
+
+La stratégie générale de sélection du prix est un **paramètre du Workspace** et s'applique à tous ses magasins/dossiers.
+
+Modes prévus :
+
+```text
+Tarif fournisseur
+Tarif négocié
+Prix facturé
+```
+
+Valeur par défaut validée :
+
+```text
+Tarif négocié
+```
+
+La stratégie est commune au Workspace, mais les valeurs tarifaires restent contextualisées : les magasins peuvent négocier indépendamment leurs prix.
+
+Règles de fallback validées :
+
+```text
+Mode Tarif fournisseur
+→ Tarif fournisseur de référence applicable
+
+Mode Tarif négocié
+→ Tarif négocié valide pour le magasin et l'Article
+→ sinon Tarif fournisseur de référence applicable
+
+Mode Prix facturé
+→ dernier Prix facturé exploitable et validé pour le magasin et l'Article
+→ sinon Tarif négocié valide
+→ sinon Tarif fournisseur de référence applicable
+```
+
+Le moteur conserve la **source réellement utilisée** et signale lorsqu'un fallback a été nécessaire.
+
+Le Prix applicable n'est donc pas une propriété globale du Produit. Il résulte du contexte :
+
+```text
+Produit
+× magasin/dossier
+× Article fournisseur
+× politique de prix du Workspace
+× date de valorisation
+```
+
+Un Produit peut être non valorisable dans un magasin et valorisable dans un autre. Il peut également exister dans le catalogue sans Prix applicable courant.
+
+Pour créer ou modifier une Fiche technique, un Produit ne peut être ajouté que si le moteur peut déterminer un Prix applicable dans le magasin courant. Le catalogue commun doit néanmoins permettre d'identifier qu'un Produit existe déjà, afin d'éviter sa recréation lorsqu'il lui manque seulement une condition tarifaire locale.
+
+### 6.9 Validité commerciale et revue tarifaire
+
+Le Tarif fournisseur de référence est un prix général du Fournisseur, non spécifique à un magasin. Il peut évoluer dans le temps lorsqu'un nouveau catalogue ou une nouvelle mercuriale entre en vigueur. Chaque évolution est historisée.
+
+Un Tarif négocié est une condition commerciale spécifique à un magasin et à un Article fournisseur.
+
+Il doit pouvoir porter :
+
+- une date de début de validité ;
+- une date de fin éventuelle ;
+- la provenance de la condition ;
+- la traçabilité de création et modification.
+
+La validité commerciale d'un Tarif négocié est déterminée par ses dates et non par un seuil universel d'ancienneté. Un accord peut par exemple être valable six mois ou un an.
+
+Le SaaS distingue strictement :
+
+```text
+validité commerciale du tarif
+≠
+dernière vérification opérationnelle du tarif
+```
+
+Une revue tarifaire peut être organisée par magasin pour confirmer que les prix connus sont toujours cohérents, corriger les changements et planifier un prochain contrôle.
+
+Cette revue doit pouvoir préserver au minimum :
+
+- date de dernière revue ;
+- auteur de la revue ;
+- périmètre contrôlé ;
+- prochaine date de revue lorsqu'elle est planifiée ;
+- anomalies ou tarifs restant à vérifier.
+
+Une action de revue en masse ne doit pas prolonger artificiellement une date de validité contractuelle. Elle confirme seulement qu'une vérification opérationnelle a été effectuée.
+
+La fréquence exacte des revues reste configurable/cadrable et ne doit pas être figée arbitrairement pour tous les magasins ou toutes les familles de produits.
+
+### 6.10 Prix facturé exploitable
+
+Un prix lu ou importé depuis une facture n'est pas automatiquement utilisable dans les calculs.
+
+Pour devenir exploitable, un Prix facturé doit pouvoir être rattaché sans ambiguïté :
+
+- au bon Fournisseur ;
+- au bon Article fournisseur ;
+- au bon magasin/dossier ;
+- à une date de facture ;
+- à un prix source et une unité d'expression ;
+- aux données suffisantes pour calculer un prix normalisé fiable.
+
+Il doit également être **validé** avant d'être utilisé automatiquement.
+
+États fonctionnels minimaux retenus :
+
+```text
+À VALIDER
+→ conservé mais non utilisable comme Prix applicable
+
+VALIDÉ
+→ utilisable comme Prix applicable
+
+REJETÉ
+→ conservé pour la traçabilité mais jamais utilisé
+```
+
+La validation doit pouvoir porter sur la donnée tarifaire de la ligne, et pas seulement sur l'authenticité globale du document.
+
+Le seuil de fraîcheur éventuel d'un Prix facturé validé reste à finaliser. Il ne doit pas être confondu avec la durée contractuelle d'un Tarif négocié.
+
+
 ---
 
 ## 7. Conditionnement et colisage
@@ -658,6 +780,26 @@ Restent à valider avant implémentation :
 
 Aucune formule non démontrée ne doit être implémentée par hypothèse.
 
+### 8.9 Concurrence, revalorisation et prix modifiés en cours de travail
+
+Une modification tarifaire crée une nouvelle réalité temporelle et ne réécrit jamais silencieusement le prix déjà utilisé dans une Fiche technique en cours.
+
+Lorsqu'une Fiche technique est calculée, elle doit pouvoir conserver la référence tarifaire et les valeurs effectivement utilisées pour expliquer son état courant.
+
+Si un Économe ou un Acheteur modifie un prix pendant qu'un autre utilisateur travaille sur la fiche :
+
+- le nouveau tarif devient disponible pour les nouvelles valorisations selon sa date d'effet ;
+- la fiche en cours ne change pas silencieusement ;
+- le système détecte qu'une donnée tarifaire plus récente/applicable existe ;
+- l'utilisateur est informé qu'une revalorisation est disponible ou nécessaire.
+
+Avant validation définitive d'une fiche, le backend doit contrôler que sa valorisation reste cohérente avec les Prix applicables courants. En cas d'écart, une revalorisation explicite est requise avant validation.
+
+Une fiche déjà validée conserve sa valorisation historique. Elle peut être comparée à une valorisation courante sans destruction de l'état passé.
+
+Aucun verrou métier global ne doit empêcher la mise à jour d'un tarif uniquement parce qu'un autre utilisateur consulte ou édite une fiche.
+
+
 ---
 
 ## 9. Historique, évolution et analyses
@@ -828,13 +970,80 @@ Le panneau de paramètres peut être reporté tant que les données susceptibles
 
 ## 13. Utilisateurs et rôles
 
-À ce stade, le seul acteur métier explicitement établi est :
+Les rôles Core et les rôles métier du produit restent distincts.
 
-- utilisateur travaillant dans un Workspace et créant/utilisant des dossiers magasin, produits, fiches techniques et fiches process selon ses autorisations.
+### 13.1 Workspace Owner
 
-Les rôles métier précis ne sont pas encore validés.
+Le rôle `owner` du Workspace existe déjà dans le Core et constitue l'autorité complète à l'intérieur de son Workspace.
 
-Les rôles Core existants et les permissions métier futures doivent rester distincts.
+Pour ce produit, le Owner :
+
+- dispose implicitement de toutes les permissions métier du SaaS ;
+- peut agir sur tous les magasins/dossiers du Workspace ;
+- peut gérer Produits, Fournisseurs, Articles, tarifs, revues, Fiches techniques et Fiches process ;
+- peut gérer les utilisateurs et paramètres du Workspace dans les limites du Core ;
+- n'a pas besoin de recevoir séparément chaque rôle métier.
+
+Le Owner ne contourne cependant pas les autres mécanismes :
+
+```text
+RBAC
+→ qui peut agir
+
+Capability
+→ la fonctionnalité est-elle disponible dans le plan
+
+Quota
+→ quelle quantité est autorisée
+
+Validation métier / sécurité
+→ invariants toujours obligatoires
+```
+
+Aucun rôle métier `Admin` spécifique au produit n'est défini à ce stade.
+
+Une future administration déléguée du Workspace, sans transfert de propriété, est identifiée comme une évolution générique potentielle du Core et ne doit pas être inventée directement dans le produit.
+
+### 13.2 Rôles métier
+
+Les autres utilisateurs reçoivent explicitement un ou plusieurs rôles métier et, lorsque nécessaire, un périmètre de magasins.
+
+Socle retenu pour poursuivre le cadrage :
+
+- **Acheteur / Responsable achats** : Fournisseurs, Articles fournisseur, négociations et conditions commerciales selon permissions ;
+- **Économe / Gestionnaire des prix** : contrôle, validation des Prix facturés, revues tarifaires et cohérence des prix selon permissions ;
+- **Responsable fiches techniques** : création, modification et validation fonctionnelle des fiches selon permissions ;
+- **Utilisateur métier** : consultation et utilisation des Produits/Fiches autorisés sans administration tarifaire implicite.
+
+Les rôles peuvent être cumulés.
+
+Exemple :
+
+```text
+Utilisateur
+→ Acheteur
+→ Économe
+→ Responsable fiches techniques
+→ Magasins A et B
+```
+
+Le fait de créer ou utiliser une Fiche technique n'accorde jamais implicitement le droit de modifier ou valider les tarifs.
+
+### 13.3 Périmètre magasin
+
+Un rôle métier peut être limité à certains magasins/dossiers du Workspace.
+
+Exemple :
+
+```text
+Économe A
+→ Magasin A
+
+Économe B
+→ Magasins B et C
+```
+
+La matrice exacte des permissions métier reste à finaliser avant implémentation.
 
 ---
 
@@ -866,12 +1075,13 @@ Les arbitrages précis V1 / différé seront réalisés après cadrage des fourn
 
 ## 15. Points ouverts à résoudre avant validation globale
 
-- confirmer la cardinalité exacte dossier ↔ magasin ;
 - définir la liste et la gouvernance des catégories ;
 - décider catégorie unique ou multiple ;
 - préciser les types d'unités de référence supportés ;
 - finaliser la liste/gouvernance des types de conditionnement ;
-- définir les règles de sélection fournisseur/article et du prix applicable lorsqu'il existe plusieurs sources ;
+- finaliser les détails de sélection d'Article fournisseur lorsqu'il existe plusieurs Articles valides ;
+- finaliser le seuil éventuel de fraîcheur d'un Prix facturé validé et les règles d'alerte associées ;
+- finaliser la fréquence/gouvernance des revues tarifaires ;
 - définir le lifecycle exact d'un Article fournisseur remplacé ou archivé ;
 - valider la TVA et sa portée ;
 - valider les formules de marge, coefficient et prix de vente ;
@@ -879,7 +1089,7 @@ Les arbitrages précis V1 / différé seront réalisés après cadrage des fourn
 - définir le calcul de la marge semi-nette ;
 - définir les règles d'arrondi des montants agrégés ;
 - définir la frontière fiche technique / fiche process ;
-- cadrer les utilisateurs et rôles métier ;
+- finaliser la matrice des permissions des rôles métier et leur périmètre magasin ;
 - cadrer capabilities et quotas commerciaux ;
 - cadrer les intégrations externes V1 ;
 - cadrer les contraintes réglementaires réellement applicables ;
