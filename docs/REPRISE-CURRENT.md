@@ -240,12 +240,12 @@ Ils formalisent les décisions métier validées sans transformer les points ouv
 
 ### 8.1 Organisation
 
-Orientation actuelle :
+Organisation validée :
 
 ```text
 Workspace
 → plusieurs dossiers
-→ contexte magasin
+→ 1 dossier = exactement 1 magasin
 ```
 
 Le Workspace conserve un catalogue commun de produits.
@@ -326,7 +326,47 @@ Le prix n’est pas une propriété directe et intemporelle du Produit.
 
 Une mise à jour tarifaire ajoute une nouvelle valeur historisée et ne détruit pas silencieusement l'ancienne.
 
-Le point encore ouvert est la priorité exacte permettant de déterminer le Prix applicable lorsqu'il existe plusieurs sources valides.
+La politique de sélection du Prix applicable est désormais cadrée au niveau du Workspace.
+
+Modes :
+
+```text
+Tarif fournisseur
+Tarif négocié ← valeur par défaut
+Prix facturé
+```
+
+Fallbacks validés :
+
+```text
+Mode Tarif fournisseur
+→ Tarif fournisseur de référence applicable
+
+Mode Tarif négocié
+→ Tarif négocié valide pour le magasin
+→ sinon Tarif fournisseur
+
+Mode Prix facturé
+→ dernier Prix facturé exploitable et validé
+→ sinon Tarif négocié valide
+→ sinon Tarif fournisseur
+```
+
+La source réellement utilisée doit rester traçable et un fallback peut déclencher une alerte/information.
+
+La valorisabilité est contextuelle :
+
+```text
+Produit × magasin × politique Workspace × date
+```
+
+Un même Produit peut être valorisable dans un magasin et non dans un autre. Il peut rester dans le catalogue sans Prix applicable dans le magasin courant, mais il ne peut pas être ajouté à une Fiche technique de ce magasin tant qu'aucun Prix applicable ne peut être déterminé.
+
+Le Tarif fournisseur de référence reste général au Fournisseur et peut évoluer avec les catalogues/mercuriales. Un Tarif négocié est spécifique à un magasin et possède sa propre période de validité.
+
+La validité commerciale d'un tarif est distincte de sa revue opérationnelle. Les magasins doivent pouvoir organiser des revues tarifaires tracées, y compris en masse, sans prolonger artificiellement les dates contractuelles.
+
+Un Prix facturé n'est exploitable que s'il est correctement rattaché au Fournisseur, à l'Article, au magasin et à la date de facture, normalisable de façon fiable et explicitement validé. États minimaux : À VALIDER / VALIDÉ / REJETÉ.
 
 ### 8.5 Fiche technique et coûts
 
@@ -351,9 +391,14 @@ Les principes suivants sont désormais validés :
 - recalcul avec les prix courants ;
 - conservation d’une lecture historique ;
 - calcul automatique maximal ;
-- valeurs et formules non démontrées non implémentées par hypothèse.
+- valeurs et formules non démontrées non implémentées par hypothèse ;
+- une modification de prix pendant l'édition d'une fiche ne la modifie jamais silencieusement ;
+- la fiche en cours conserve les valeurs réellement utilisées jusqu'à revalorisation explicite ;
+- le système signale lorsqu'un Prix applicable plus récent existe ;
+- avant validation définitive, le backend vérifie la cohérence avec les Prix applicables courants et impose une revalorisation si nécessaire ;
+- une fiche validée conserve sa valorisation historique.
 
-Restent notamment à cadrer : prix applicable, TVA, marge, coefficient, prix théorique, prix conseillé/retenu, marge semi-nette et arrondis des totaux.
+Restent notamment à cadrer : seuil éventuel de fraîcheur du Prix facturé, règles finales d'alerte tarifaire, TVA, marge, coefficient, prix théorique, prix conseillé/retenu, marge semi-nette et arrondis des totaux.
 
 ### 8.6 Extensibilité
 
@@ -380,6 +425,34 @@ Le panneau de paramètres peut être différé.
 
 Les candidats identifiés — TVA, marge par défaut, arrondis, seuils, unités, catégories, conditionnements — ne doivent cependant pas être codés comme des constantes rigides sans validation de leur portée.
 
+### 8.8 Utilisateurs et rôles métier
+
+Le rôle Core `owner` du Workspace est retenu comme autorité complète du produit dans son Workspace.
+
+Le Owner :
+
+- possède implicitement toutes les permissions métier ;
+- peut agir sur tous les magasins/dossiers ;
+- n'a pas besoin de recevoir séparément les rôles Acheteur, Économe ou Responsable fiches techniques ;
+- reste soumis aux capabilities, quotas, validations métier et règles de sécurité.
+
+Aucun rôle métier `Admin` spécifique au produit n'est créé à ce stade.
+
+Une future administration déléguée du Workspace sans transfert de propriété est identifiée comme une évolution générique potentielle du Core.
+
+Socle des autres rôles métier :
+
+- Acheteur / Responsable achats ;
+- Économe / Gestionnaire des prix ;
+- Responsable fiches techniques ;
+- Utilisateur métier.
+
+Ces rôles peuvent être cumulés et leur périmètre peut être limité à certains magasins/dossiers.
+
+Le fait d'utiliser les Produits et Fiches techniques n'accorde pas automatiquement le droit de modifier ou valider les prix.
+
+La matrice détaillée des permissions reste à finaliser.
+
 ---
 
 ## 9. Points métier restant à cadrer
@@ -390,17 +463,17 @@ Le bloc Produit / approvisionnement / coûts directs est désormais avancé.
 
 Prochaines décisions prioritaires :
 
-1. règle du Prix applicable entre tarif fournisseur de référence, tarif spécifique magasin et prix observé ;
-2. TVA et portée de la TVA ;
-3. objectif de marge ;
-4. coefficient / prix théorique ;
-5. prix de vente conseillé / retenu ;
-6. marge réelle et marge semi-nette ;
-7. règles d'arrondi des montants agrégés ;
-8. versionnement / validation d'une fiche technique ;
-9. frontière fiche technique / fiche process ;
-10. dossier / magasin et données minimales ;
-11. utilisateurs et rôles métier ;
+1. finaliser le bloc Prix applicable : seuil éventuel de fraîcheur du Prix facturé, alertes et gouvernance détaillée des revues tarifaires ;
+2. finaliser la matrice des permissions des rôles métier et leurs périmètres magasin ;
+3. TVA et portée de la TVA ;
+4. objectif de marge ;
+5. coefficient / prix théorique ;
+6. prix de vente conseillé / retenu ;
+7. marge réelle et marge semi-nette ;
+8. règles d'arrondi des montants agrégés ;
+9. versionnement / validation d'une fiche technique ;
+10. frontière fiche technique / fiche process ;
+11. données minimales et lifecycle du dossier/magasin ;
 12. capabilities et quotas ;
 13. intégrations ;
 14. contraintes réglementaires ;
@@ -493,7 +566,10 @@ En développement, viser des vertical slices cohérentes : backend, permissions,
 Reprendre le cadrage métier à partir de :
 
 ```text
-Prix applicable
+Finalisation Prix applicable
+→ fraîcheur éventuelle du Prix facturé
+→ alertes / fallback / revues tarifaires
+→ matrice rôles-permissions et périmètres magasin
 → TVA
 → marge / coefficient
 → prix théorique
@@ -507,8 +583,8 @@ Puis poursuivre avec :
 
 ```text
 Fiche process
-→ Dossier / magasin
-→ utilisateurs / RBAC / capabilities / quotas
+→ données minimales / lifecycle du Dossier-magasin
+→ capabilities / quotas
 → intégrations / réglementation
 → V1 / hors V1
 → validation globale
