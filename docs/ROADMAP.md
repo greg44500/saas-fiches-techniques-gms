@@ -29,18 +29,19 @@ Objectif : obtenir un contrat produit suffisamment précis pour interdire les hy
 
 ### 2.1 Problème métier et organisation
 
-**État : partiellement validé**
+**État : largement validé**
 
 - Workspace comme espace de travail du client ;
 - plusieurs dossiers dans un Workspace ;
 - dossier comme contexte magasin ;
+- règle V1 : `1 dossier = 1 magasin` ;
 - catalogue produit mutualisé dans le Workspace ;
 - prix et conditions contextualisés par magasin.
 
 **À terminer :**
 
-- confirmer strictement `1 dossier = 1 magasin` en V1 ;
-- définir les données minimales d'un magasin/dossier.
+- définir les données minimales d'un magasin/dossier ;
+- préciser le lifecycle du dossier et les éventuels imports/copies.
 
 ### 2.2 Catalogue Produit
 
@@ -66,7 +67,7 @@ Objectif : obtenir un contrat produit suffisamment précis pour interdire les hy
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
-**État : largement cadré — règles de sélection à finaliser**
+**État : largement cadré — politique de Prix applicable validée, détails opérationnels à finaliser**
 
 Déjà établi :
 
@@ -80,15 +81,27 @@ Déjà établi :
 - toutes les données tarifaires sont sourcées et historisées ;
 - les prix d'achat sont gérés en HT ;
 - les prix unitaires et normalisés sont affichés avec 3 décimales ;
-- le moteur conserve une précision interne suffisante.
+- le moteur conserve une précision interne suffisante ;
+- la politique de prix est un paramètre du Workspace, commun à tous les magasins ;
+- la valeur par défaut est `Tarif négocié` ;
+- mode Tarif négocié : tarif négocié valide → sinon tarif fournisseur ;
+- mode Prix facturé : dernier prix facturé exploitable et validé → sinon tarif négocié → sinon tarif fournisseur ;
+- un Produit peut être valorisable dans un magasin et non dans un autre ;
+- un Produit ne peut être ajouté à une fiche que si un Prix applicable existe dans le magasin courant ;
+- les Tarifs négociés sont spécifiques aux magasins et portent leur propre période de validité ;
+- validité commerciale et revue opérationnelle sont distinctes ;
+- les revues tarifaires peuvent être conduites par magasin et historisées ;
+- un Prix facturé doit être contrôlé puis validé pour devenir exploitable.
 
 À finaliser :
 
 - données minimales exactes de la fiche Fournisseur ;
 - règles d'unicité/lifecycle des Articles fournisseur ;
 - sélection éventuelle d'un Article privilégié ;
-- priorité du Prix applicable lorsqu'il existe plusieurs sources ;
-- disponibilité et dates d'effet exactes.
+- seuil éventuel de fraîcheur d'un Prix facturé validé ;
+- règles finales d'alerte selon la source réellement utilisée ;
+- fréquence/gouvernance détaillée des revues tarifaires ;
+- disponibilité et dates d'effet exactes dans les cas encore non couverts.
 
 ### 2.4 Fiches techniques
 
@@ -112,6 +125,10 @@ Déjà établi :
 - composition distincte de la valorisation ;
 - historique des valorisations ;
 - impact des changements de prix.
+- une modification tarifaire ne réécrit pas silencieusement une fiche en cours ;
+- une fiche en cours peut signaler qu'une revalorisation est nécessaire ;
+- le backend contrôle les Prix applicables courants avant validation définitive ;
+- une fiche validée conserve sa valorisation historique.
 
 À finaliser :
 
@@ -141,13 +158,26 @@ Définir :
 
 ### 2.6 Utilisateurs, RBAC, capabilities et quotas
 
-**État : À CADRER**
+**État : socle des rôles métier cadré — matrice de permissions à finaliser**
 
-Définir les besoins métier sans dupliquer le Core :
+Décisions établies :
 
-- acteurs métier ;
-- permissions métier ;
-- extensions des rôles système si nécessaires ;
+- le Workspace Owner du Core possède implicitement toutes les permissions métier du produit et tous les magasins/dossiers de son Workspace ;
+- aucun rôle métier `Admin` spécifique au produit n'est créé à ce stade ;
+- les autres rôles métier peuvent être cumulés ;
+- leur périmètre peut être limité à certains magasins/dossiers ;
+- utiliser une Fiche technique ne confère pas implicitement le droit de modifier ou valider les prix ;
+- rôles métier retenus pour poursuivre le cadrage :
+  - Acheteur / Responsable achats ;
+  - Économe / Gestionnaire des prix ;
+  - Responsable fiches techniques ;
+  - Utilisateur métier ;
+- une future administration déléguée du Workspace sans transfert de propriété est identifiée comme un besoin générique potentiel du Core, non comme un rôle métier à inventer dans le produit.
+
+À finaliser :
+
+- matrice précise des permissions métier ;
+- périmètres magasin par permission/rôle ;
 - capabilities commerciales ;
 - quotas éventuels.
 
@@ -331,38 +361,40 @@ Le bloc Produit / approvisionnement / coût direct est désormais suffisamment a
 Ordre recommandé :
 
 ```text
-1. règle du Prix applicable
-   → référence fournisseur
-   → tarif magasin
-   → prix observé
+1. finaliser le bloc Prix applicable
+   → seuil éventuel de fraîcheur du Prix facturé
+   → alertes selon source/fallback
+   → fréquence/gouvernance détaillée des revues tarifaires
 
-2. TVA et portée de la TVA
+2. finaliser la matrice des rôles/permissions métier liés aux prix et aux magasins
 
-3. objectif de marge
+3. TVA et portée de la TVA
 
-4. coefficient / prix théorique
+4. objectif de marge
 
-5. prix de vente conseillé / retenu
+5. coefficient / prix théorique
 
-6. marge réelle / marge semi-nette
+6. prix de vente conseillé / retenu
 
-7. règles d'arrondi des totaux
+7. marge réelle / marge semi-nette
 
-8. versionnement / validation d'une fiche technique
+8. règles d'arrondi des totaux
 
-9. fiche process
+9. versionnement / validation d'une fiche technique
 
-10. dossier / magasin
+10. fiche process
 
-11. utilisateurs / RBAC / capabilities / quotas
+11. données minimales et lifecycle du dossier/magasin
 
-12. intégrations / réglementation
+12. capabilities / quotas
 
-13. V1 / hors V1
+13. intégrations / réglementation
 
-14. validation documentaire globale
+14. V1 / hors V1
 
-15. seulement ensuite cadrage M-001
+15. validation documentaire globale
+
+16. seulement ensuite cadrage M-001
 ```
 
 La PR documentaire #5 reste le lot unique de cadrage global jusqu'à clôture de cette phase.
