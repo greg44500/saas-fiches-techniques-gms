@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** DRAFT — cadrage global en cours  
-**Dernière mise à jour :** 2026-09-19
+**Statut :** VALIDÉ — cadrage global clôturé, M-001 autorisé au cadrage détaillé  
+**Dernière mise à jour :** 2026-09-20
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -23,7 +23,7 @@
 
 ## 2. Phase 1 — Cadrage global du produit
 
-**Statut : EN COURS**
+**Statut : VALIDÉ — 2026-09-20**
 
 Objectif : obtenir un contrat produit suffisamment précis pour interdire les hypothèses métier pendant l'implémentation.
 
@@ -55,12 +55,13 @@ Décisions établies :
 - Dashboard Workspace comme surface globale de pilotage ;
 - Sidebar métier recomposée via le point d'extension Core.
 
-À terminer :
+Décisions finales :
 
-- fixer le caractère obligatoire de certains champs de contact ;
-- choisir le contrat technique final d'autocomplétion de localisation ;
-- définir la persistance métier exacte des affectations dossier ;
-- préciser les règles de rétention / purge.
+- seul le nom du Dossier / magasin est obligatoire en saisie métier à la création ;
+- enseigne, localisation, email documents, téléphone et responsable / interlocuteur restent facultatifs ;
+- l'autocomplétion de localisation reste à choisir techniquement pendant M-001 et ne bloque pas le cadrage global ;
+- les affectations sont portées par une relation métier dédiée `DossierAccessGrant`, distincte du `WorkspaceMember` Core ;
+- rétention et purge physique restent différées et suivies par D-006 avant leur implémentation.
 
 ### 2.2 Catalogue Produit
 
@@ -229,9 +230,13 @@ Paramètres métier déjà identifiés : politique de prix, fraîcheur factures,
 
 ### 2.8 Intégrations et contraintes réglementaires
 
-**État : À CADRER**
+**État : VALIDÉ pour les fondations de M-001 — autres obligations à cadrer au module concerné**
 
-À étudier :
+Décision M-001 : les éventuelles coordonnées nominatives du responsable / interlocuteur, email ou téléphone constituent des données personnelles lorsqu'elles identifient une personne. Leur collecte doit donc rester minimisée, protégée par les contrôles d'accès et non rendue obligatoire sans nécessité fonctionnelle démontrée. Aucune contrainte réglementaire vérifiée n'impose un champ métier obligatoire supplémentaire au Dossier.
+
+La conformité globale et la rétention restent suivies par D-003 / D-006 avant production.
+
+À étudier au module concerné :
 
 - autocomplétion ville / code postal / adresse via une source publique actuelle, avec la Géoplateforme / BAN comme candidate à confirmer ;
 - import catalogues/mercuriales CSV/XLS/XLSX ;
@@ -249,7 +254,7 @@ Aucune obligation réglementaire ne doit être inventée.
 
 ### 2.9 Périmètre V1 / hors V1
 
-**État : périmètre initial structuré — dernière validation globale à effectuer**
+**État : VALIDÉ pour l'ordre initial des modules**
 
 Ordre initial recommandé :
 
@@ -272,44 +277,38 @@ Ne bloquent plus M-001 :
 - purge physique ;
 - analyses avancées.
 
-Dernière gate avant M-001 :
+Gate globale avant M-001 : **VALIDÉE le 2026-09-20**.
 
-- champs obligatoires minimaux du Dossier ;
-- représentation/persistance des affectations Dossier ;
-- vérification des contraintes réglementaires utiles à M-001 ;
-- revue de cohérence documentaire ;
-- validation formelle du cadrage global.
+Décisions fermées :
+
+- nom du Dossier comme seul champ métier obligatoire à la création ;
+- affectations persistées via `DossierAccessGrant` ;
+- contraintes réglementaires structurantes de M-001 vérifiées ;
+- cohérence documentaire revue ;
+- cadrage transversal déclaré VALIDÉ.
 
 
 ## 3. Phase 2 — Validation documentaire globale
 
-**Statut : PROCHE — dernière passe nécessaire**
+**Statut : VALIDÉ — 2026-09-20**
 
-La validation globale confirme que les fondations transversales sont suffisamment stables ; elle n'exige plus de spécifier les fonctionnalités futures non nécessaires à M-001.
+Les fondations transversales nécessaires à M-001 sont désormais stables. La validation globale n'impose pas de spécifier les fonctionnalités futures non nécessaires au module suivant.
 
-À terminer :
-
-- fermer les champs obligatoires minimaux du Dossier ;
-- fixer la persistance métier des affectations Dossier ;
-- vérifier les contraintes réglementaires structurantes pour M-001 ;
-- revoir la cohérence de PRODUCT-SCOPE, GLOSSARY, DOMAIN-MODEL et ROADMAP ;
-- réévaluer DEBT uniquement si une dette réelle existe ;
-- mettre à jour REPRISE-CURRENT ;
-- passer les documents globaux en VALIDÉ si cohérents.
-
-Gate :
+Gate franchie :
 
 ```text
 cadrage global validé
 → cadrage M-001 autorisé
 ```
 
-Aucun modèle métier Mongoose avant cette gate.
+La dette existante D-003 / D-006 reste suffisante pour suivre conformité et rétention ; aucune nouvelle dette spécifique à M-001 n'est créée à ce stade.
+
+Aucun modèle métier Mongoose n'est autorisé avant validation détaillée de M-001.
 
 
 ## 4. Phase 3 — Cadrage M-001
 
-**Statut : PROCHAIN LOT — encore bloqué par la dernière validation globale**
+**Statut : PROCHAIN LOT — AUTORISÉ AU CADRAGE**
 
 Module recommandé :
 
@@ -398,16 +397,18 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-La longue phase de cadrage transversal est presque terminée.
+Le cadrage transversal est clôturé. La prochaine étape est le **cadrage détaillé de M-001 — Dossiers / Magasins + affectations**.
 
-Prochaine conversation :
+Ordre de travail :
 
-1. fermer les champs obligatoires minimaux du Dossier ;
-2. choisir la représentation métier de l'affectation Dossier ;
-3. vérifier les contraintes réglementaires pertinentes pour M-001 ;
-4. effectuer la revue finale de cohérence ;
-5. passer les documents globaux en VALIDÉ ;
-6. cadrer M-001 ;
-7. seulement après validation M-001, créer la branche d'implémentation et commencer le code.
+1. cadrer M-001 : objectif, acteurs, cas d'usage et hors périmètre ;
+2. figer le modèle conceptuel Dossier et `DossierAccessGrant` ;
+3. fixer invariants, lifecycle, tenancy, ownership et autorisation effective ;
+4. définir permissions métier, API, validations Zod et audit ;
+5. cadrer suppression logique, restauration, drawer et contexte actif ;
+6. définir migrations/seeds si nécessaires ;
+7. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
+8. valider les critères d'acceptation et la dette différée ;
+9. seulement après validation M-001, créer la branche d'implémentation et développer.
 
-La marge semi-nette, la Fiche process, l'OCR/IA et l'optimiseur détaillé ne bloquent pas ce passage.
+La marge semi-nette, la Fiche process, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants.
