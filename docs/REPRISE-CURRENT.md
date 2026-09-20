@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : bootstrap technique validé — cadrage global produit VALIDÉ — M-001 autorisé au cadrage détaillé**
+> **Statut : bootstrap technique validé — cadrage global produit VALIDÉ — cadrage détaillé M-001 EN COURS**
 >
 > **Dernière mise à jour : 2026-09-20**
 >
@@ -34,7 +34,7 @@ Tout besoin générique doit être traité dans le Core, testé/versionné, puis
 
 ---
 
-## 2. Produit et état GitHub validé
+## 2. Produit et état GitHub réel
 
 Dépôt :
 
@@ -42,20 +42,23 @@ Dépôt :
 greg44500/saas-fiches-techniques-gms
 ```
 
-Main validé :
+Main courant vérifié :
 
 ```text
-9f2b6326c66d8d10460789a19602b70f00066d1e
-Merge pull request #4 from greg44500/docs/reprise-after-core-1.0.1
+a178e5635522ecb5561f4c5a1f802b55f94f00c3
+Merge pull request #5 from greg44500/docs/product-business-framing-foundation
 ```
 
-Validation post-merge associée :
+Validation de la PR #5 réellement vérifiée avant merge :
 
 ```text
-Core Gate #10
-run        : 35366434371
+Core Gate #36
+run        : 35492367660
+head       : 98ca2d21c7a8d7be2f50c95aed6f1110c7e1d3aa
 conclusion : success
 ```
+
+Une Core Gate #37 a ensuite été signalée sur le commit post-merge `a178e563...`. Sa conclusion n'a pas été récupérable via le connecteur GitHub utilisé dans la conversation ; ne pas extrapoler son résultat sans vérification disponible.
 
 Remotes attendus :
 
@@ -211,43 +214,25 @@ Le socle Core est opérationnel et validé.
 
 Aucun modèle métier GMS n’a encore été créé.
 
-Aucun module M-001 / M-002 / ... n’a encore été cadré ou implémenté.
+M-001 est désormais **en cours de cadrage détaillé**. Aucun module métier n'a encore été implémenté et aucun modèle Mongoose métier n'a été créé.
 
 Les tests Core ne remplaceront jamais les futurs tests métier.
 
-Le cadrage global du produit a en revanche commencé le 2026-09-19.
+Le cadrage global du produit, commencé le 2026-09-19, a été validé et fusionné via la PR #5.
 
 ---
 
 ## 8. Cadrage métier désormais formalisé
 
-Branche documentaire de travail :
-
-```text
-docs/product-business-framing-foundation
-```
-
-Pull Request de cadrage :
+Le lot documentaire global a été fusionné :
 
 ```text
 PR #5 — Docs: formalize initial product business framing
-état : ouverte
-base : main
+état : merged
+merge : a178e5635522ecb5561f4c5a1f802b55f94f00c3
 ```
 
-Dernière preuve CI vérifiée avant la clôture du cadrage global :
-
-```text
-Core Gate #31
-run        : 35467592305
-head       : a973a3d5322f61ed7045fd8a35ed023eedae46ba
-conclusion : success
-Run canonical Core gate : success
-```
-
-Cette gate valide le HEAD documentaire `a973a3d5...` antérieur aux derniers commits de clôture du cadrage. Toute nouvelle gate déclenchée sur le nouveau HEAD de la branche doit être vérifiée avant merge ; cette synthèse ne doit jamais extrapoler un statut vert non observé.
-
-Documents ajoutés en statut DRAFT :
+Documents canoniques concernés :
 
 ```text
 docs/PRODUCT-SCOPE.md
@@ -256,7 +241,7 @@ docs/domain/GLOSSARY.md
 docs/domain/DOMAIN-MODEL.md
 ```
 
-Ils formalisent les décisions métier validées sans transformer les points ouverts en hypothèses techniques.
+Ils sont désormais validés au niveau transversal. Le cadrage détaillé de M-001 poursuit ces contrats sans rouvrir les décisions globales, sauf contradiction démontrée par le code réel, les tests ou un contrat Core plus récent.
 
 ### 8.1 Organisation
 
@@ -572,9 +557,24 @@ organisation métier interne
 
 Un membre peut temporairement appartenir au Workspace sans dossier.
 
-Le Workspace Owner dispose implicitement de tous les dossiers.
+L'invitation Core reste strictement une entrée dans le Workspace : elle exige `email + roleId`, ne prépare aucun magasin et crée/réactive le `WorkspaceMember` seulement à l'acceptation. Après cette acceptation, le Workspace Owner affecte explicitement zéro, un ou plusieurs Dossiers.
+
+Le Workspace Owner dispose implicitement de tous les dossiers et ne nécessite aucun `DossierAccessGrant` individuel.
 
 Role et périmètre magasin évoluent indépendamment.
+
+Lifecycle des affectations validé :
+
+```text
+WorkspaceMember SUSPENDED
+→ grants conservés mais inopérants
+
+WorkspaceMember REMOVED
+→ grants métier à révoquer
+→ aucune restauration silencieuse lors d'une future réinvitation
+```
+
+Le Core v1.0.1 intégré ne permet pas encore au produit de participer atomiquement à la transaction `removeWorkspaceMember()`. Ce besoin a été formalisé comme évolution générique Core ; il doit être vérifié au début de la prochaine conversation avant toute décision d'implémentation M-001.
 
 ### 8.7.2 Dossier / magasin — identité, lifecycle et UX
 
@@ -582,7 +582,7 @@ Le dossier possède désormais un cadrage plus précis :
 
 - 1 dossier = 1 magasin ;
 - nom / enseigne éventuelle ;
-- localisation avec assistance d'autocomplétion publique à confirmer techniquement ;
+- localisation facultative avec assistance d'autocomplétion publique faisant partie de l'UX M-001 ; cette aide ne bloque jamais la création du Dossier et la saisie manuelle doit rester possible ;
 - email destiné notamment aux documents ;
 - téléphone facultatif ;
 - responsable métier distinct du créateur du dossier ;
@@ -713,9 +713,9 @@ Aucune permission, y compris celles du Workspace Owner, ne permet de contourner 
 
 
 
-## 9. État réel du cadrage avant M-001
+## 9. État réel du cadrage M-001
 
-Le cadrage transversal est **VALIDÉ depuis le 2026-09-20**. Le cadrage détaillé de M-001 est désormais autorisé.
+Le cadrage transversal est **VALIDÉ depuis le 2026-09-20**. Le cadrage détaillé de M-001 est désormais **EN COURS**.
 
 Décisions finales fermées :
 
@@ -748,17 +748,41 @@ M-005 Atelier d'optimisation Premium
 M-006+ Process / imports / OCR / extensions
 ```
 
-## 10. Points techniques non bloquants à suivre
+## 10. Point Core/Produit à vérifier impérativement à la reprise
 
-Les points d'extension Core v1.0.1 doivent être utilisés avant toute modification de fondation, notamment le registre de permissions métier Workspace.
+Les points d'extension Core doivent être utilisés avant toute modification de fondation.
 
-Le Core v1.0.1 confirme qu'un WorkspaceMember porte un seul Role et que l'invitation reçoit un roleId.
+Le Core v1.0.1 confirme qu'un `WorkspaceMember` porte un seul Role, que l'invitation exige `email + roleId`, et qu'un membership `REMOVED` peut être réactivé lors d'une future invitation.
 
-Le périmètre dossier n'est pas une primitive native du WorkspaceMember : son besoin doit rester côté produit sauf démonstration d'un besoin générique réutilisable justifiant une évolution Core.
+Le produit a démontré un besoin générique supplémentaire : lors de `WorkspaceMember → REMOVED`, un SaaS dérivé doit pouvoir invalider atomiquement ses relations métier liées au membership dans **la même transaction MongoDB** que le retrait Core.
 
-Certains éléments hérités portent encore une identité technique Core et ne doivent pas être renommés aveuglément.
+Pour M-001 :
 
-Toute évolution générique reste à traiter d'abord dans saas-core-api puis à intégrer via une branche core-update.
+```text
+SUSPENDED
+→ DossierAccessGrant conservés
+→ accès inopérant via le Core
+
+REMOVED
+→ DossierAccessGrant ACTIVE doivent devenir REVOKED
+→ réinvitation ultérieure ne doit jamais restaurer automatiquement les anciens magasins
+```
+
+Vérification effectuée sur le Core v1.0.1 intégré : `removeWorkspaceMember()` ouvre sa propre transaction et n'expose ni hook lifecycle applicatif ni session externe. Une orchestration Produit en deux opérations ne garantirait donc pas l'atomicité et laisserait l'endpoint Core directement appelable.
+
+Le besoin a été transmis au projet `saas-core-api` comme candidat Core générique : point d'extension transactionnel du lifecycle `WorkspaceMember`, au minimum pour `REMOVED`, avec composition explicite et session MongoDB active fournie au handler dérivé.
+
+### Action obligatoire au début de la prochaine conversation
+
+1. vérifier le `main` réel de `greg44500/saas-core-api` ;
+2. vérifier si ce besoin a été cadré/implémenté/versionné ;
+3. s'il existe une nouvelle release Core, lire son contrat canonique, ses tests, migrations éventuelles et instructions d'upgrade ;
+4. si l'évolution existe, prévoir son intégration via `core-update/vX.Y.Z` avant l'implémentation M-001 ;
+5. si elle n'existe pas encore, poursuivre le cadrage M-001 mais conserver le retrait atomique comme prérequis bloquant avant passage au code.
+
+L'historique complet des invitations Workspace (`ACCEPTED / REVOKED / EXPIRED`) est un autre candidat Core générique, mais il reste **non bloquant** pour M-001.
+
+Le périmètre Dossier lui-même reste strictement Produit et ne doit pas être ajouté à `WorkspaceMember` Core.
 
 ---
 
@@ -786,7 +810,9 @@ cadrage M-001 autorisé
 
 Aucun modèle métier Mongoose n'est encore autorisé tant que le cadrage détaillé de M-001 n'est pas validé.
 
-Seulement après validation de M-001 :
+Avant l'implémentation M-001, il faut également disposer d'un mécanisme Core validé permettant la révocation atomique des relations métier lors de `WorkspaceMember → REMOVED`, ou d'un contrat Core équivalent démontré comme sûr.
+
+Seulement après validation de M-001 et résolution de ce prérequis Core :
 
 ```text
 branche
@@ -810,7 +836,7 @@ Règle de travail validée :
 
 Un modèle Mongoose et une validation Zod peuvent faire l'objet de commits sur une branche, mais ne justifient pas à eux seuls une PR par défaut.
 
-La PR #5 constitue le lot documentaire global de cadrage en cours. Il ne faut pas multiplier les PR documentaires pendant cette phase.
+La PR #5 a fusionné le cadrage global. Les mises à jour de reprise M-001 doivent rester des lots documentaires cohérents et ne pas devenir des micro-PR sans valeur de reprise.
 
 En développement, viser des vertical slices cohérentes : backend, permissions, frontend, tests et documentation du lot lorsque cela est pertinent.
 
@@ -820,22 +846,54 @@ En développement, viser des vertical slices cohérentes : backend, permissions,
 
 ## 13. Point de reprise immédiat
 
-Le cadrage global est clôturé. Le prochain lot est exclusivement le **cadrage détaillé de M-001 — Dossiers / Magasins + affectations**.
+Le cadrage global est clôturé et le **cadrage détaillé de M-001 — Dossiers / Magasins + affectations** est en cours.
 
-Ordre :
+### Première vérification obligatoire
 
-1. objectif, acteurs, cas d'usage et hors périmètre ;
-2. modèle conceptuel Dossier et `DossierAccessGrant` ;
-3. règles métier, invariants, lifecycle, tenancy et ownership ;
-4. permissions, capabilities/quotas si démontrés, API, validations Zod et audit ;
-5. suppression logique, restauration, drawer et activation du contexte magasin ;
-6. migrations/seeds si nécessaires ;
-7. stratégie de tests unitaires, intégration, permissions, tenancy et E2E critiques ;
-8. critères d'acceptation, dette différée et ordre d'implémentation ;
-9. validation M-001 ;
-10. seulement ensuite, création de la branche d'implémentation et développement.
+Avant de reprendre les décisions M-001, vérifier `greg44500/saas-core-api` pour savoir si le besoin transactionnel `WorkspaceMember → REMOVED` a évolué depuis Core v1.0.1.
 
-La marge semi-nette et la Fiche process restent explicitement différées et non bloquantes.
+Question précise :
+
+> Existe-t-il désormais un point d'extension Core canonique permettant à un SaaS dérivé de participer à la transaction de retrait d'un `WorkspaceMember` avec la même session MongoDB, afin d'invalider atomiquement ses relations métier ?
+
+Si oui : identifier version/tag/commit, contrat, tests, éventuelles migrations et planifier `core-update/vX.Y.Z` du produit avant implémentation M-001.
+
+Si non : ne pas inventer de contournement Produit non atomique ; poursuivre uniquement le cadrage et maintenir ce point comme prérequis avant code.
+
+### Décisions M-001 déjà validées à ne pas rouvrir sans contradiction démontrée
+
+- `1 Dossier = 1 magasin` ;
+- seul le nom du Dossier est obligatoire ;
+- adresse/localisation facultative ; autocomplétion intégrée à l'UX M-001 mais jamais bloquante ;
+- nom non traité comme identifiant unique métier ;
+- `DossierAccessGrant` séparé du `WorkspaceMember` Core ;
+- Role = « quoi ? », grant = « où ? » ;
+- invitation Core = `email + roleId`, aucun magasin dans l'invitation ;
+- affectation des magasins seulement après acceptation et existence du `WorkspaceMember` ;
+- un membre actif peut avoir zéro Dossier ;
+- Owner implicitement sur tous les Dossiers, sans grant individuel ;
+- `SUSPENDED` conserve les grants, inopérants ;
+- `REMOVED` doit révoquer les grants ;
+- réinvitation = anciens grants restent révoqués jusqu'à nouvelle décision explicite de l'Owner ;
+- aucun quota/capability spécifique Dossier démontré à ce stade ;
+- contexte magasin actif frontend = confort UX, jamais autorité de sécurité backend.
+
+### Suite du cadrage M-001
+
+1. fermer les permissions métier exactes ;
+2. définir API REST et ordre des middlewares ;
+3. définir validations Zod ;
+4. définir audit et contrats d'erreur ;
+5. fermer la matrice de transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+6. cadrer drawer Dossier, liste, gestion des affectations et activation du contexte magasin ;
+7. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
+8. définir migrations/seeds si nécessaires ;
+9. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
+10. fixer critères d'acceptation, dette différée et ordre d'implémentation ;
+11. valider M-001 ;
+12. seulement ensuite, et après résolution du prérequis Core `REMOVED`, créer la branche d'implémentation.
+
+La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour le cadrage M-001.
 
 Ne créer aucun modèle métier Mongoose avant validation détaillée de M-001.
 
