@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
 
-**Statut :** DRAFT — cadrage métier en cours  
-**Dernière mise à jour :** 2026-09-19  
+**Statut :** VALIDÉ — modèle conceptuel transversal approuvé avant M-001  
+**Dernière mise à jour :** 2026-09-20  
 **Important :** ce document décrit des concepts métier et leurs relations. Il ne constitue pas un schéma Mongoose.
 
 ---
@@ -102,20 +102,22 @@ Le dossier contextualise notamment :
 Données conceptuelles identifiées :
 
 ```text
-nom
-enseigne éventuelle
-adresse éventuelle
-code postal
-ville
-identifiant géographique normalisé éventuel
-email documents
-téléphone facultatif
-responsable / interlocuteur
-status
-audit création / modification
+nom                                 obligatoire en saisie métier
+enseigne                            facultative
+adresse                             facultative
+code postal                         facultatif
+ville                               facultative
+identifiant géographique normalisé  facultatif
+email documents                     facultatif
+téléphone                            facultatif
+responsable / interlocuteur          facultatif
+status                               système / lifecycle
+audit création / modification        système
 ```
 
 Le responsable métier n'est pas `createdBy`.
+
+Les coordonnées nominatives éventuelles doivent rester minimisées et protégées par les contrôles d'accès. Elles ne deviennent obligatoires que lorsqu'une fonctionnalité qui en dépend l'exige explicitement.
 
 Les informations opérationnelles sont modifiables sans changer l'identité du dossier ni réécrire ses historiques.
 
@@ -180,7 +182,24 @@ Un membre peut avoir zéro, un ou plusieurs dossiers.
 
 Le Workspace Owner possède implicitement tous les dossiers du Workspace et ne dépend pas d'une ligne d'affectation par magasin.
 
-Le stockage futur peut utiliser une relation métier dédiée de type conceptuel `DossierAccessGrant`, sans modifier le modèle WorkspaceMember Core.
+La persistance des affectations utilise une relation métier dédiée de type conceptuel `DossierAccessGrant`, sans modifier le modèle `WorkspaceMember` Core.
+
+Invariants du `DossierAccessGrant` :
+
+```text
+grant.workspace = dossier.workspace = workspaceMember.workspace
+
+1 WorkspaceMember + 1 Dossier
+→ 1 affectation courante
+
+Workspace Owner
+→ accès implicite à tous les Dossiers
+→ aucun grant individuel requis
+
+révocation
+→ accès coupé immédiatement
+→ traçabilité conservée
+```
 
 L'autorisation effective d'une ressource magasin combine :
 
