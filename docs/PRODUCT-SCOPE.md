@@ -1,13 +1,13 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
 
-**Statut :** DRAFT — cadrage métier en cours  
-**Dernière mise à jour :** 2026-09-19  
+**Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
+**Dernière mise à jour :** 2026-09-20  
 **Périmètre :** définition du problème métier, des principes produit et des invariants à préserver avant tout module métier
 
-> Ce document formalise uniquement les décisions validées pendant le cadrage.  
-> Les points encore ouverts sont explicitement signalés et ne doivent pas être transformés en règles techniques par anticipation.
+> Ce document formalise les fondations transversales validées du produit.  
+> Les sujets différés restent rattachés au module qui les nécessite et ne doivent pas être transformés en règles techniques par anticipation.
 >
-> Aucun modèle métier Mongoose ne doit être créé tant que le cadrage global n'est pas validé.
+> Le cadrage global est validé. Aucun modèle métier Mongoose ne doit toutefois être créé avant validation détaillée du module concerné, en commençant par M-001.
 
 ---
 
@@ -81,7 +81,7 @@ Données métier déjà identifiées pour le dossier :
 - statut du dossier ;
 - dates et auteurs de création / modification.
 
-Le caractère obligatoire ou facultatif de l'enseigne, de l'email et du responsable reste à fixer avant implémentation. Le téléphone est explicitement facultatif.
+En V1, le seul champ métier saisi obligatoirement à la création est le **nom du Dossier / magasin**. L'enseigne, l'adresse, le code postal, la ville, l'identifiant géographique normalisé, l'email documents, le téléphone et le responsable / interlocuteur sont facultatifs. Les champs système nécessaires à l'ownership, au lifecycle et à l'audit restent gérés par le backend. Une fonctionnalité ultérieure peut exiger ponctuellement une donnée facultative lorsqu'elle en dépend, par exemple un email avant un envoi de document.
 
 La saisie de localisation doit bénéficier d'une autocomplétion ville / code postal / adresse fondée sur une source publique et fiable. L'intégration cible doit privilégier les services publics actuels autour de la Base Adresse Nationale / Géoplateforme ; le fournisseur technique exact sera confirmé au cadrage du module afin de ne pas figer une API obsolète.
 
@@ -489,7 +489,7 @@ Tarif spécifique Magasin A
 → 2,050 €/kg HT
 ```
 
-Le choix exact du tarif applicable dans une fiche lorsqu'il existe plusieurs sources reste à finaliser.
+Le choix du tarif applicable est défini par la politique de Prix applicable du Workspace décrite ci-dessous.
 
 ### 6.6 Prix observé et provenance
 
@@ -530,7 +530,7 @@ Le système doit pouvoir déterminer :
 - contexte magasin éventuel ;
 - date et auteur d'enregistrement.
 
-**Point ouvert :** priorité exacte entre tarif fournisseur de référence, tarif magasin et prix observé pour déterminer le prix applicable à une fiche.
+La priorité entre les sources est définie par la politique de Prix applicable du Workspace et ses fallbacks strictement contextualisés au même magasin.
 
 ### 6.8 Politique de Prix applicable du Workspace
 
@@ -1662,7 +1662,7 @@ Pour un membre non-owner, l'accès peut porter sur zéro, un ou plusieurs dossie
 
 Le Workspace Owner dispose implicitement de tous les dossiers de son Workspace et n'a pas besoin d'une affectation métier par dossier pour conserver cet accès. La création d'un nouveau magasin lui devient donc immédiatement accessible.
 
-La relation d'affectation magasin est une notion métier distincte du WorkspaceMember Core. Le cadrage technique futur pourra utiliser une relation dédiée de type conceptuel `DossierAccessGrant`, sans modifier le modèle Core tant qu'aucun besoin générique ne l'exige.
+La relation d'affectation magasin est une notion métier distincte du WorkspaceMember Core et sera persistée dans une relation métier dédiée de type conceptuel `DossierAccessGrant`, sans modifier le modèle Core. Cette relation lie un `WorkspaceMember` non-owner à un `Dossier` du même Workspace, conserve sa traçabilité d'attribution/révocation et ne peut exister qu'une fois par couple membre + Dossier dans son état courant. Le Workspace Owner conserve un accès implicite à tous les Dossiers et n'a pas besoin d'un grant par Dossier.
 
 Modifier le Role d'un membre ne modifie pas automatiquement ses magasins. Modifier son périmètre magasin ne modifie pas son Role.
 
@@ -1749,17 +1749,20 @@ Sont explicitement différés et non bloquants pour M-001 :
 Ces sujets seront cadrés avant le module qui les implémente.
 
 
-## 15. Points ouverts avant passage à M-001
+## 15. Validation globale et passage à M-001
 
-Les derniers bloqueurs globaux sont désormais limités à :
+Le cadrage transversal est **VALIDÉ** pour autoriser le cadrage détaillé de `M-001 — Dossiers / Magasins + affectations`.
 
-- fixer les champs obligatoires minimaux du Dossier ;
-- fixer la représentation/persistance métier des affectations Dossier ;
-- confirmer qu'aucune contrainte réglementaire connue ne modifie structurellement M-001 ;
-- effectuer la revue finale de cohérence ;
-- passer les documents canoniques de DRAFT à VALIDÉ.
+Décisions finales fermées le 2026-09-20 :
 
-Les autres questions sont rattachées au module concerné : catégories/unités Produit avant M-002 ; Fournisseur/Article/prix avant M-003 ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge avant implémentation.
+- création d'un Dossier avec le nom comme seul champ métier saisi obligatoire ;
+- persistance des affectations dans une relation métier dédiée `DossierAccessGrant` sans modification de `WorkspaceMember` Core ;
+- contraintes réglementaires structurantes de M-001 vérifiées : les éventuelles coordonnées nominatives sont des données personnelles à minimiser et protéger, mais aucune obligation démontrée n'impose un champ métier obligatoire supplémentaire au Dossier ;
+- conformité globale et rétention restent suivies par D-003 / D-006 avant production.
+
+Les questions restantes sont désormais rattachées au module concerné : catégories/unités Produit avant M-002 ; Fournisseur/Article/prix avant M-003 ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge avant implémentation.
+
+La validation globale n'autorise pas encore l'implémentation de M-001 : son contrat détaillé doit d'abord être cadré et validé.
 
 ## 16. Sources de cadrage utilisées
 
