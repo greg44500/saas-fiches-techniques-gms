@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — cadrage global clôturé, M-001 autorisé au cadrage détaillé  
+**Statut :** VALIDÉ — cadrage global clôturé, M-001 en cours de cadrage détaillé  
 **Dernière mise à jour :** 2026-09-20
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -59,8 +59,9 @@ Décisions finales :
 
 - seul le nom du Dossier / magasin est obligatoire en saisie métier à la création ;
 - enseigne, localisation, email documents, téléphone et responsable / interlocuteur restent facultatifs ;
-- l'autocomplétion de localisation reste à choisir techniquement pendant M-001 et ne bloque pas le cadrage global ;
+- l'autocomplétion d'adresse/localisation fait partie de l'UX M-001, reste facultative et ne bloque jamais la création d'un Dossier ; sa source technique publique fiable reste à choisir pendant M-001 ;
 - les affectations sont portées par une relation métier dédiée `DossierAccessGrant`, distincte du `WorkspaceMember` Core ;
+- l'invitation Core reste limitée à `email + roleId` ; aucun magasin n'est préparé dans l'invitation ; après acceptation et création/réactivation du `WorkspaceMember`, le Workspace Owner affecte explicitement zéro, un ou plusieurs Dossiers ;
 - rétention et purge physique restent différées et suivies par D-006 avant leur implémentation.
 
 ### 2.2 Catalogue Produit
@@ -196,7 +197,8 @@ Décisions établies :
 À finaliser au cadrage des modules :
 
 - clés de permissions techniques exactes ;
-- persistance métier des affectations Dossier pour M-001 ;
+- lifecycle détaillé des affectations Dossier pour M-001 ;
+- vérifier avant implémentation de M-001 si une nouvelle version de `saas-core-api` expose un point d'extension transactionnel du lifecycle `WorkspaceMember` permettant au produit de révoquer atomiquement ses relations métier lors d'un passage à `REMOVED` ;
 - rattachement commercial exact de l'optimisation avant M-005 ;
 - quotas uniquement lorsqu'un besoin quantitatif est démontré.
 
@@ -308,9 +310,9 @@ Aucun modèle métier Mongoose n'est autorisé avant validation détaillée de M
 
 ## 4. Phase 3 — Cadrage M-001
 
-**Statut : PROCHAIN LOT — AUTORISÉ AU CADRAGE**
+**Statut : EN COURS — contrat métier et intégration Core/Produit en cours de fermeture**
 
-Module recommandé :
+Module :
 
 ```text
 M-001 — Dossiers / Magasins + affectations
@@ -318,7 +320,33 @@ M-001 — Dossiers / Magasins + affectations
 
 Ce module dépend directement du Workspace Core, crée la frontière métier magasin et prépare M-002/M-003 sans dépendre encore des Fiches techniques.
 
-Le cadrage M-001 couvrira au minimum : objectif, acteurs, cas d'usage, modèle Dossier, relation d'affectation, lifecycle, tenancy, RBAC, API, validations, audit, suppression logique/restauration, drawer/ouverture de contexte, tests et critères d'acceptation.
+Décisions M-001 déjà validées :
+
+- `1 Dossier = 1 magasin` ;
+- seul le nom du Dossier est obligatoire à la création ;
+- l'adresse/localisation et son autocomplétion font partie de l'UX M-001 mais restent facultatives et non bloquantes ;
+- le nom du Dossier n'est pas une identité unique suffisante ; la localisation peut aider à distinguer des magasins homonymes ;
+- le Role Workspace répond à « quoi ? » et `DossierAccessGrant` à « où ? » ;
+- aucune affectation magasin n'est préparée dans `WorkspaceInvitation` ;
+- l'invitation Core exige `email + roleId`, puis l'acceptation crée/réactive le `WorkspaceMember` ;
+- un `WorkspaceMember` peut rester actif avec zéro Dossier ;
+- le Workspace Owner affecte ensuite explicitement les magasins ;
+- le Workspace Owner dispose implicitement de tous les Dossiers et ne nécessite aucun grant individuel ;
+- une suspension du membership conserve les grants, qui deviennent inopérants tant que le membership n'est pas `ACTIVE` ;
+- un retrait `REMOVED` doit révoquer les grants métier afin qu'une future réinvitation ne restaure jamais silencieusement les anciens magasins.
+
+Prérequis Core identifié avant implémentation :
+
+```text
+WorkspaceMember → REMOVED
+→ permettre au produit dérivé de participer atomiquement
+  à la transaction Core avec la même session MongoDB
+→ M-001 révoque ses DossierAccessGrant dans cette transaction
+```
+
+Le Core `v1.0.1` intégré ne possède pas ce point d'extension. Le besoin a été formalisé pour `saas-core-api` comme évolution générique réutilisable. **Au début de la prochaine conversation M-001, vérifier l'état réel de `saas-core-api` et déterminer si cette évolution a été implémentée/versionnée.** Si oui, lire son contrat canonique et prévoir son intégration via une branche `core-update/vX.Y.Z` avant le code M-001. Si non, poursuivre le cadrage M-001 mais maintenir l'implémentation du retrait atomique comme bloquée.
+
+Le cadrage M-001 doit encore fermer : permissions exactes, API, validations Zod, audit, transitions de lifecycle, drawer/contexte actif, stratégie de tests, critères d'acceptation et ordre d'implémentation.
 
 ## 5. Phase 4 — Implémentation métier
 
@@ -397,18 +425,18 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le cadrage transversal est clôturé. La prochaine étape est le **cadrage détaillé de M-001 — Dossiers / Magasins + affectations**.
+Le cadrage transversal est clôturé et M-001 est en cours.
 
-Ordre de travail :
+Ordre de reprise :
 
-1. cadrer M-001 : objectif, acteurs, cas d'usage et hors périmètre ;
-2. figer le modèle conceptuel Dossier et `DossierAccessGrant` ;
-3. fixer invariants, lifecycle, tenancy, ownership et autorisation effective ;
-4. définir permissions métier, API, validations Zod et audit ;
-5. cadrer suppression logique, restauration, drawer et contexte actif ;
+1. **vérifier en premier l'état réel de `saas-core-api`** concernant le point d'extension transactionnel du lifecycle `WorkspaceMember → REMOVED` ;
+2. si une release Core existe, lire son contrat, ses tests et ses instructions d'upgrade, puis planifier son intégration produit via `core-update/vX.Y.Z` ;
+3. poursuivre le cadrage M-001 sans rouvrir les décisions déjà validées ;
+4. fermer les permissions métier exactes, l'API REST, les validations Zod et l'audit ;
+5. fermer les transitions de lifecycle Dossier, suppression logique/restauration, drawer et contexte magasin actif ;
 6. définir migrations/seeds si nécessaires ;
 7. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
-8. valider les critères d'acceptation et la dette différée ;
-9. seulement après validation M-001, créer la branche d'implémentation et développer.
+8. valider les critères d'acceptation, les prérequis Core et l'ordre d'implémentation ;
+9. seulement après validation complète M-001 et disponibilité du mécanisme Core requis pour `REMOVED`, créer la branche d'implémentation et développer.
 
-La marge semi-nette, la Fiche process, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants.
+La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour le cadrage M-001.
