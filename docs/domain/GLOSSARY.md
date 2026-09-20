@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 
-**Statut :** DRAFT — cadrage métier en cours  
-**Dernière mise à jour :** 2026-09-19
+**Statut :** VALIDÉ — vocabulaire transversal approuvé avant M-001  
+**Dernière mise à jour :** 2026-09-20
 
 > Ce glossaire fixe le vocabulaire déjà stabilisé pendant le cadrage.  
 > Les termes marqués comme ouverts ne doivent pas être transformés en contrats techniques définitifs.
@@ -22,6 +22,8 @@ Un Workspace peut contenir plusieurs dossiers correspondant à des contextes mag
 Contexte métier durable correspondant à exactement un magasin en V1.
 
 Il porte notamment l'identité opérationnelle du magasin, sa localisation, ses contacts, son responsable métier, son statut, ses affectations et ses ressources contextualisées.
+
+En V1, le **nom du Dossier / magasin** est le seul champ métier saisi obligatoirement à la création. L'enseigne, la localisation, l'email documents, le téléphone et le responsable / interlocuteur sont facultatifs.
 
 Ses informations opérationnelles peuvent évoluer sans recréer un nouveau dossier.
 
@@ -56,9 +58,11 @@ Cette donnée ne doit pas être confondue avec `createdBy`, qui identifie l'util
 
 Relation métier donnant à un WorkspaceMember non-owner l'accès à un dossier/magasin déterminé.
 
-Elle est indépendante du Role Workspace.
+Elle est indépendante du Role Workspace et est persistée dans une relation métier dédiée de type conceptuel `DossierAccessGrant`.
 
-Le Workspace Owner possède implicitement tous les dossiers de son Workspace.
+Le grant relie un `WorkspaceMember` et un `Dossier` appartenant au même Workspace, avec une seule affectation courante par couple membre + Dossier. Une révocation coupe l'accès sans perdre la traçabilité d'attribution/révocation.
+
+Le Workspace Owner possède implicitement tous les dossiers de son Workspace et ne nécessite pas de `DossierAccessGrant` individuel.
 
 ## Magasin
 
