@@ -1,8 +1,8 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : bootstrap technique validé — cadrage produit métier en cours**
+> **Statut : bootstrap technique validé — cadrage global produit VALIDÉ — M-001 autorisé au cadrage détaillé**
 >
-> **Dernière mise à jour : 2026-09-19**
+> **Dernière mise à jour : 2026-09-20**
 >
 > Le code réel, les contraintes DB, les tests/gates réellement exécutés et les contrats canoniques priment sur cette synthèse.
 >
@@ -235,16 +235,17 @@ PR #5 — Docs: formalize initial product business framing
 base : main
 ```
 
-Dernière preuve CI vérifiée avant le présent enrichissement documentaire :
+Dernière preuve CI vérifiée avant la clôture du cadrage global :
 
 ```text
-Core Gate #30
-run        : 35466401908
-head       : 806a0588576306f5c894d2ddea474551989e9004
+Core Gate #31
+run        : 35467592305
+head       : a973a3d5322f61ed7045fd8a35ed023eedae46ba
 conclusion : success
+Run canonical Core gate : success
 ```
 
-Le présent lot documentaire avance ensuite la branche. Toute nouvelle gate déclenchée sur son nouveau HEAD doit être vérifiée avant merge ; cette synthèse ne doit jamais extrapoler un statut vert non observé.
+Cette gate valide le HEAD documentaire `a973a3d5...` antérieur aux derniers commits de clôture du cadrage. Toute nouvelle gate déclenchée sur le nouveau HEAD de la branche doit être vérifiée avant merge ; cette synthèse ne doit jamais extrapoler un statut vert non observé.
 
 Documents ajoutés en statut DRAFT :
 
@@ -549,7 +550,7 @@ membership actif
 + invariants métier
 ~~~
 
-Le parcours d'invitation du produit peut afficher rôle et magasins dans un même formulaire, mais le périmètre dossier reste une donnée métier séparée. Son stockage et son éventuelle préparation avant acceptation doivent encore être cadrés sans modifier silencieusement le Core.
+Le parcours d'invitation reste celui du Core : rôle à l'invitation, acceptation, création/activation du WorkspaceMember, puis affectation des Dossiers par le Workspace Owner. Le périmètre Dossier reste une donnée métier séparée et n'est pas préparé avant acceptation.
 
 
 ### 8.7.1 Invitation puis organisation interne des accès magasin
@@ -714,17 +715,17 @@ Aucune permission, y compris celles du Workspace Owner, ne permet de contourner 
 
 ## 9. État réel du cadrage avant M-001
 
-Le cadrage transversal est suffisamment avancé pour ne plus faire dépendre le démarrage de sujets appartenant à des modules futurs.
+Le cadrage transversal est **VALIDÉ depuis le 2026-09-20**. Le cadrage détaillé de M-001 est désormais autorisé.
 
-### Bloqueurs réels restants avant le cadrage M-001
+Décisions finales fermées :
 
-1. fixer les champs obligatoires minimaux du Dossier ;
-2. fixer la représentation/persistance métier des affectations Dossier ;
-3. vérifier les contraintes réglementaires réellement structurantes pour M-001 ;
-4. effectuer la revue finale de cohérence ;
-5. passer le cadrage global en VALIDÉ.
+1. seul le nom du Dossier / magasin est obligatoire en saisie métier à la création ;
+2. les affectations sont persistées dans une relation métier dédiée `DossierAccessGrant`, sans modification du `WorkspaceMember` Core ;
+3. les coordonnées nominatives éventuelles sont minimisées et protégées, mais aucune contrainte réglementaire démontrée n'impose un champ métier obligatoire supplémentaire au Dossier ;
+4. la cohérence documentaire a été revue ;
+5. PRODUCT-SCOPE, ROADMAP, GLOSSARY et DOMAIN-MODEL passent au statut VALIDÉ.
 
-### Sujets différés qui ne bloquent plus M-001
+### Sujets différés qui ne bloquent pas M-001
 
 - marge semi-nette ;
 - Fiche process ;
@@ -763,7 +764,7 @@ Toute évolution générique reste à traiter d'abord dans saas-core-api puis à
 
 ## 11. Gate avant tout code métier
 
-Avant tout modèle métier Mongoose :
+Gate globale franchie le 2026-09-20 :
 
 ```text
 PRODUCT-SCOPE validé
@@ -774,14 +775,16 @@ DOMAIN-MODEL validé
 +
 V1 / hors V1 validé
 +
-rôles / capabilities / quotas cadrés
+rôles / capabilities / quotas cadrés au niveau transversal nécessaire
 +
-contraintes réglementaires cadrées
+contraintes réglementaires structurantes de M-001 vérifiées
 +
 ROADMAP validée
 ↓
-cadrage M-001
+cadrage M-001 autorisé
 ```
+
+Aucun modèle métier Mongoose n'est encore autorisé tant que le cadrage détaillé de M-001 n'est pas validé.
 
 Seulement après validation de M-001 :
 
@@ -817,20 +820,23 @@ En développement, viser des vertical slices cohérentes : backend, permissions,
 
 ## 13. Point de reprise immédiat
 
-La prochaine conversation doit terminer la **courte gate restante avant M-001**, sans repartir dans un cadrage exhaustif.
+Le cadrage global est clôturé. Le prochain lot est exclusivement le **cadrage détaillé de M-001 — Dossiers / Magasins + affectations**.
 
 Ordre :
 
-1. décider quels champs Dossier sont obligatoires en V1 ;
-2. choisir la relation métier d'affectation Dossier et ses invariants ;
-3. vérifier les contraintes réglementaires pertinentes pour ce module ;
-4. revoir PRODUCT-SCOPE / GLOSSARY / DOMAIN-MODEL / ROADMAP ;
-5. déclarer le cadrage global VALIDÉ si cohérent ;
-6. cadrer M-001 — Dossiers / Magasins + affectations ;
-7. seulement après validation M-001, créer la branche et développer.
+1. objectif, acteurs, cas d'usage et hors périmètre ;
+2. modèle conceptuel Dossier et `DossierAccessGrant` ;
+3. règles métier, invariants, lifecycle, tenancy et ownership ;
+4. permissions, capabilities/quotas si démontrés, API, validations Zod et audit ;
+5. suppression logique, restauration, drawer et activation du contexte magasin ;
+6. migrations/seeds si nécessaires ;
+7. stratégie de tests unitaires, intégration, permissions, tenancy et E2E critiques ;
+8. critères d'acceptation, dette différée et ordre d'implémentation ;
+9. validation M-001 ;
+10. seulement ensuite, création de la branche d'implémentation et développement.
 
-La marge semi-nette et la Fiche process sont explicitement différées et non bloquantes.
+La marge semi-nette et la Fiche process restent explicitement différées et non bloquantes.
 
-Ne créer aucun modèle métier Mongoose avant validation de cette dernière gate globale.
+Ne créer aucun modèle métier Mongoose avant validation détaillée de M-001.
 
 Ne créer aucun second système de rôles, Dashboard ou navigation parallèle au Core.
