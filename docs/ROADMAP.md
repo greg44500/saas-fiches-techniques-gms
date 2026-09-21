@@ -233,7 +233,7 @@ Décisions établies :
 - permissions techniques M-001 validées ;
 - matrice d'autorisation M-001 validée ;
 - API REST M-001 validée ;
-- lifecycle détaillé des affectations Dossier encore à fermer ;
+- lifecycle Dossier et effets sur les affectations validés ;
 - Core 1.1.0 fournit désormais le point d'extension transactionnel `WorkspaceMember → REMOVED` requis par M-001 ;
 - rattachement commercial exact de l'optimisation avant M-005 ;
 - quotas uniquement lorsqu'un besoin quantitatif est démontré.
@@ -383,7 +383,7 @@ WorkspaceMember → REMOVED
 
 Les permissions exactes et la matrice technique d'autorisation M-001 sont désormais validées.
 
-Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middleware-service et le contrat de validation Zod / métadonnées backend-driven sont désormais validés. Le cadrage doit encore fermer : audit métier et son éventuel prérequis Core, transitions de lifecycle et effets sur les grants, drawer/contexte actif, autocomplétion, stratégie de tests, critères d'acceptation et ordre d'implémentation.
+Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middleware-service, le contrat de validation Zod / métadonnées backend-driven, l'activité métier produit et le lifecycle Dossier sont désormais validés. Le cadrage doit encore fermer : drawer/contexte actif, gestion UX des affectations, autocomplétion, stratégie de tests, critères d'acceptation et ordre d'implémentation.
 
 ## 5. Phase 4 — Implémentation métier
 
@@ -468,13 +468,11 @@ Core 1.1.0 a résolu le prérequis transactionnel `WorkspaceMember → REMOVED`.
 
 Ordre de reprise :
 
-1. fermer l'audit métier M-001 et traiter le besoin générique Core si confirmé ;
-2. fermer la matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` et leurs effets sur les grants ;
-3. fermer drawer, liste, gestion des affectations et contexte magasin actif ;
-4. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
-5. définir migrations/seeds uniquement si nécessaires ;
-6. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
-7. valider critères d'acceptation et ordre d'implémentation ;
-8. seulement après validation complète M-001, créer la branche d'implémentation et développer.
+1. fermer drawer, liste, gestion des affectations et contexte magasin actif ;
+2. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
+3. définir migrations/seeds uniquement si nécessaires ;
+4. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
+5. valider critères d'acceptation et ordre d'implémentation ;
+6. seulement après validation complète M-001, créer la branche d'implémentation et développer.
 
 La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour le cadrage M-001.
