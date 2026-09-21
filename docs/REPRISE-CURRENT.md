@@ -475,14 +475,53 @@ Le formulaire Dossier est réutilisable entre création et édition et s'appuie 
 
 ---
 
+## 8.4 Autocomplétion d'adresse — VALIDÉE
+
+Contrat canonique :
+
+```text
+docs/m001/M-001-ADDRESS-AUTOCOMPLETE.md
+```
+
+Décisions :
+
+```text
+Géoplateforme / IGN
+→ fournisseur initial
+
+3 caractères minimum
+→ debounce ~300 ms
+→ StreetAddress
+→ max 8 suggestions
+
+fallback manuel
+→ permanent
+→ jamais bloquant
+```
+
+Le formulaire passe par un adapter frontend et ne dépend pas du payload brut du fournisseur.
+
+M-001 persiste uniquement :
+
+```text
+address
+postalCode
+city
+```
+
+Aucun identifiant BAN/Géoplateforme, coordonnées ou payload complet n'est stocké.
+
+Aucun seed BAN, table de villes ou proxy backend anticipé n'est créé.
+
+---
+
 ## 9. Ce qu'il reste à fermer avant le premier modèle métier
 
-1. source technique d'autocomplétion avec fallback manuel ;
-2. migrations/seeds uniquement si besoin démontré ;
-3. stratégie de tests ;
-4. critères d'acceptation ;
-5. ordre d'implémentation ;
-6. validation finale M-001.
+1. migrations/seeds uniquement si besoin démontré ;
+2. stratégie de tests ;
+3. critères d'acceptation ;
+4. ordre d'implémentation ;
+5. validation finale M-001.
 
 Après seulement :
 
