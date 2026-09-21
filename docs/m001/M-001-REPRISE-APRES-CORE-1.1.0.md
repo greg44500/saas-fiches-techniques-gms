@@ -336,24 +336,69 @@ Voir `docs/domain/STORAGE-RETENTION.md`.
 
 ---
 
+## 5.3 API REST M-001 — VALIDÉE
+
+Le contrat REST M-001 est désormais fermé et documenté dans :
+
+```text
+docs/m001/M-001-API-REST.md
+```
+
+Surface validée :
+
+```text
+GET    /api/workspaces/:workspaceId/dossiers
+POST   /api/workspaces/:workspaceId/dossiers
+
+GET    /api/workspaces/:workspaceId/dossiers/:dossierId
+PATCH  /api/workspaces/:workspaceId/dossiers/:dossierId
+PATCH  /api/workspaces/:workspaceId/dossiers/:dossierId/status
+
+GET    /api/workspaces/:workspaceId/dossiers/:dossierId/access-grants
+PUT    /api/workspaces/:workspaceId/dossiers/:dossierId/access-grants/:membershipId
+DELETE /api/workspaces/:workspaceId/dossiers/:dossierId/access-grants/:membershipId
+```
+
+Décisions associées validées :
+
+- `workspaceId` vient de l'URL et reste l'autorité de tenancy ;
+- liste normale = `ACTIVE + PAUSED`, avec filtres unitaires `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+- pagination Core : page 1, limit 20, maximum 100 ;
+- recherche simple : nom, enseigne, ville, code postal ;
+- création Dossier = `ACTIVE` imposé par le backend ;
+- création non-owner autorisée = Dossier + premier grant ACTIVE dans la même transaction ;
+- modification générale séparée du lifecycle ;
+- lifecycle uniquement via `PATCH /:dossierId/status` ;
+- aucun `DELETE` physique du Dossier en M-001 ;
+- PUT grant idempotent, ancien `REVOKED` jamais réactivé ;
+- DELETE grant = révocation logique idempotente ;
+- aucun endpoint backend d'ouverture/activation du contexte ;
+- aucun top-level `DossierAccessGrant` ;
+- membres affectables réutilisent les `WorkspaceMember` Core ;
+- anti-énumération : Dossier absent / autre Workspace / hors scope = même famille `404` ;
+- formats de réponse et codes HTTP alignés sur les conventions Core.
+
+Le contrat API ne doit plus être rouvert pendant le cadrage suivant sauf contradiction démontrée.
+
+---
+
 ## 6. Ce qu’il reste à fermer dans le cadrage M-001
 
 Avant toute première écriture de modèle métier, le projet GMS doit encore valider les points suivants.
 
-1. validation finale de l'API REST M-001 et des conventions d'URL proposées ;
-2. ordre des middlewares sécurité / membership / permission / DossierAccessGrant ;
-3. validations Zod d'entrée ;
-4. contrats d'erreur ;
-5. stratégie d'audit métier ;
-6. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
-7. règles finales de restauration et traitement des grants lors des transitions ;
-8. contrat du drawer Dossier et de l'ouverture explicite du contexte magasin ;
-9. gestion des affectations Dossier ;
-10. source technique d'autocomplétion d'adresse avec fallback manuel ;
-11. migrations/seeds uniquement si un besoin réel est démontré ;
-12. stratégie de tests unitaires, intégration, tenancy, permissions et E2E ;
-13. critères d'acceptation M-001 ;
-14. ordre d'implémentation du premier lot métier.
+1. ordre des middlewares sécurité / membership / permission / DossierAccessGrant et frontière middleware/service ;
+2. validations Zod d'entrée ;
+3. contrats d'erreur ;
+4. stratégie d'audit métier ;
+5. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+6. règles finales de restauration et traitement des grants lors des transitions ;
+7. contrat du drawer Dossier et de l'ouverture explicite du contexte magasin ;
+8. gestion des affectations Dossier ;
+9. source technique d'autocomplétion d'adresse avec fallback manuel ;
+10. migrations/seeds uniquement si un besoin réel est démontré ;
+11. stratégie de tests unitaires, intégration, tenancy, permissions et E2E ;
+12. critères d'acceptation M-001 ;
+13. ordre d'implémentation du premier lot métier.
 
 ---
 
@@ -472,11 +517,11 @@ Utiliser cette amorce dans le projet consacré au produit métier :
 >
 > Le cadrage global produit est validé. M-001 reste EN COURS de cadrage détaillé.
 >
-> Les permissions exactes et la matrice technique d'autorisation sont désormais VALIDÉES.
+> Les permissions exactes, la matrice technique d'autorisation et le contrat API REST M-001 sont désormais VALIDÉS.
 >
 > Reprendre maintenant, sans rouvrir les décisions déjà fermées, dans cet ordre :
 >
-> 1. valider définitivement l'API REST proposée et l'ordre des middlewares ;
+> 1. définir l'ordre exact des middlewares et la frontière middleware/service ;
 > 2. validations Zod ;
 > 3. audit et contrats d'erreur ;
 > 4. transitions ACTIVE / PAUSED / ARCHIVED / DELETED et effets sur les grants ;
