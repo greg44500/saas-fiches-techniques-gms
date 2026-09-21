@@ -72,18 +72,30 @@ Données métier déjà identifiées pour le dossier :
 
 - nom du dossier / magasin ;
 - enseigne, distincte du nom lorsque cette distinction apporte une valeur métier ;
-- localisation avec au minimum ville et code postal lorsque disponibles ;
+- localisation avec ville et code postal lorsque disponibles ;
 - adresse complète lorsqu'elle est connue ;
-- identifiant géographique normalisé récupérable automatiquement lorsque la source le permet ;
 - email principal destiné notamment à l'envoi de documents depuis l'application ;
 - téléphone facultatif ;
 - nom du responsable / interlocuteur métier, distinct de l'utilisateur qui crée le dossier ;
 - statut du dossier ;
 - dates et auteurs de création / modification.
 
-En V1, le seul champ métier saisi obligatoirement à la création est le **nom du Dossier / magasin**. L'enseigne, l'adresse, le code postal, la ville, l'identifiant géographique normalisé, l'email documents, le téléphone et le responsable / interlocuteur sont facultatifs. Les champs système nécessaires à l'ownership, au lifecycle et à l'audit restent gérés par le backend. Une fonctionnalité ultérieure peut exiger ponctuellement une donnée facultative lorsqu'elle en dépend, par exemple un email avant un envoi de document.
+En V1, le seul champ métier saisi obligatoirement à la création est le **nom du Dossier / magasin**. L'enseigne, l'adresse, le code postal, la ville, l'email documents, le téléphone et le responsable / interlocuteur sont facultatifs. Les champs système nécessaires à l'ownership, au lifecycle et à l'audit restent gérés par le backend. Une fonctionnalité ultérieure peut exiger ponctuellement une donnée facultative lorsqu'elle en dépend, par exemple un email avant un envoi de document.
 
-La saisie de localisation doit bénéficier d'une autocomplétion ville / code postal / adresse fondée sur une source publique et fiable. L'intégration cible doit privilégier les services publics actuels autour de la Base Adresse Nationale / Géoplateforme ; le fournisseur technique exact sera confirmé au cadrage du module afin de ne pas figer une API obsolète.
+La saisie de localisation bénéficie d'une autocomplétion facultative basée en V1 sur le service d'autocomplétion de la Géoplateforme / IGN alimenté notamment par la Base Adresse Nationale.
+
+Contrat M-001 :
+
+```text
+3 caractères significatifs minimum
+→ debounce d'environ 300 ms
+→ type StreetAddress
+→ maximum 8 suggestions
+```
+
+La saisie manuelle reste toujours disponible. Une indisponibilité, un timeout, une limitation de débit ou l'absence de résultat ne bloque jamais la création ou la modification du Dossier.
+
+L'intégration frontend passe par un adapter dédié afin que le formulaire ne dépende pas du payload brut du fournisseur. M-001 ne persiste que `address`, `postalCode` et `city` ; aucune coordonnée, identifiant BAN/Géoplateforme ou payload fournisseur n'est stocké sans besoin métier ultérieur démontré.
 
 Les informations opérationnelles du dossier sont modifiables par un utilisateur autorisé sans créer un nouveau dossier : nom, enseigne, localisation, email, téléphone, responsable et autres données utiles au fonctionnement métier. Les changements significatifs sont auditables.
 
