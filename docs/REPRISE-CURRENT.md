@@ -255,32 +255,33 @@ La Fiche technique/version structurée reste la source de vérité.
 
 ---
 
-## 7. API REST M-001 — pas encore validée définitivement
+## 7. API REST M-001 — VALIDÉE
 
-Une surface REST cohérente a été proposée pendant le cadrage, mais la discussion a été interrompue avant validation explicite pour traiter le sujet stockage/rétention.
+Contrat canonique : `docs/m001/M-001-API-REST.md`.
 
-Elle ne doit donc pas encore être traitée comme contrat fermé.
+Les 8 endpoints M-001, leur sémantique, les filtres/pagination, les réponses, les règles de grants, l'absence de suppression physique et l'absence d'endpoint backend d'activation du contexte sont désormais fermés.
 
-La prochaine décision de cadrage doit reprendre par sa validation finale puis fixer l'ordre exact des middlewares.
+Cette décision ne doit pas être rouverte sans contradiction démontrée.
+
+La prochaine décision de cadrage est l'ordre exact des middlewares et la frontière middleware/service.
 
 ---
 
 ## 8. Ce qu'il reste à fermer avant le premier modèle métier
 
-1. validation finale de l'API REST M-001 et des conventions d'URL ;
-2. ordre exact des middlewares ;
-3. validations Zod ;
-4. contrats d'erreur ;
-5. audit métier ;
-6. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
-7. effets lifecycle sur les `DossierAccessGrant` ;
-8. drawer/liste/gestion des affectations/contexte actif ;
-9. source technique d'autocomplétion avec fallback manuel ;
-10. migrations/seeds uniquement si besoin démontré ;
-11. stratégie de tests ;
-12. critères d'acceptation ;
-13. ordre d'implémentation ;
-14. validation finale M-001.
+1. ordre exact des middlewares et frontière middleware/service ;
+2. validations Zod ;
+3. contrats d'erreur ;
+4. audit métier ;
+5. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+6. effets lifecycle sur les `DossierAccessGrant` ;
+7. drawer/liste/gestion des affectations/contexte actif ;
+8. source technique d'autocomplétion avec fallback manuel ;
+9. migrations/seeds uniquement si besoin démontré ;
+10. stratégie de tests ;
+11. critères d'acceptation ;
+12. ordre d'implémentation ;
+13. validation finale M-001.
 
 Après seulement :
 
