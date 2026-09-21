@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 
 **Statut :** VALIDÉ — vocabulaire transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-20
+**Dernière mise à jour :** 2026-09-21
 
 > Ce glossaire fixe le vocabulaire déjà stabilisé pendant le cadrage.  
 > Les termes marqués comme ouverts ne doivent pas être transformés en contrats techniques définitifs.
@@ -13,6 +13,32 @@
 Espace de travail du client du SaaS et frontière de tenancy héritée du Core.
 
 Un Workspace peut contenir plusieurs dossiers correspondant à des contextes magasin.
+
+Il porte également la capacité de stockage du produit : les Dossiers consomment cette capacité commune et ne possèdent pas de quota dur de stockage propre en V1.
+
+---
+
+## Quota de stockage Workspace
+
+Limite de capacité appliquée au Workspace dans son ensemble.
+
+Elle ne réserve pas une part fixe à chaque Dossier. Une ventilation de consommation par Dossier peut être affichée à des fins de pilotage sans devenir une autorité de blocage.
+
+---
+
+## Corbeille métier
+
+État temporaire d'une ressource métier explicitement supprimée mais encore restaurable avant son échéance de purge.
+
+La durée standard validée est de 30 jours. Lorsqu'une personnalisation est autorisée, la valeur effective doit rester comprise entre 7 et 90 jours et est figée pour la ressource au moment de sa suppression.
+
+---
+
+## Artefact d'export temporaire
+
+Fichier reproductible généré depuis une donnée métier pour un usage immédiat, sans devenir une ressource persistante.
+
+CSV et XLS(X) sont générés à la demande pour téléchargement. Le PDF est généré à la demande comme pièce jointe lors de l'envoi d'un document par e-mail. Ces artefacts sont supprimés après traitement et ne constituent pas un historique parallèle.
 
 ---
 
@@ -539,13 +565,13 @@ Une version VALIDATED est immuable. Une modification ultérieure produit un nouv
 
 ## DRAFT
 
-Version de travail non officielle pouvant être incomplète.
+Version de travail non officielle pouvant être incomplète. Un DRAFT actif n'est jamais purgé uniquement pour ancienneté ; un DRAFT explicitement supprimé relève de la corbeille métier et de sa politique de rétention.
 
 ---
 
 ## VALIDATED
 
-Version officielle ayant passé les contrôles backend de validation et conservant son snapshot économique.
+Version officielle ayant passé les contrôles backend de validation et conservant son snapshot économique. Elle n'est pas purgée automatiquement par simple ancienneté ; l'archivage reste le mécanisme normal de sortie de l'usage actif.
 
 ---
 
