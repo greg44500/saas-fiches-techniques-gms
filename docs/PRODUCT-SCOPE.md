@@ -1861,15 +1861,17 @@ Les profils `Acheteur`, `Économe`, `Responsable FT`, `Contributeur FT` ou `Lect
 
 ### 13.1 Workspace Owner
 
-Le rôle système owner du Workspace, fourni par le Core, constitue l'autorité complète à l'intérieur de CE Workspace.
+Le rôle système `owner` du Workspace reste générique et inchangé côté Core.
 
 Pour ce produit, le Workspace Owner :
 
-- reçoit toutes les permissions métier applicatives prévues pour owner via le point d'extension RBAC du Core ;
+- est reconnu par la politique d'autorisation métier du produit comme autorité complète dans CE Workspace ;
 - peut agir sur tous les magasins/dossiers de son Workspace ;
 - peut créer, modifier, revaloriser, valider, archiver et administrer les données métier selon les contrats ;
 - peut gérer les membres, rôles et paramètres dans les limites des mécanismes Core ;
-- n'a pas besoin d'un rôle métier supplémentaire.
+- n'a pas besoin d'un profil métier supplémentaire.
+
+Les permissions métier restent déclarées dans le produit et sont utilisables par les rôles personnalisés du Workspace. La règle spéciale Owner n'ajoute ni rôle métier ni permission persistée au rôle système Core.
 
 Le Workspace Owner ne contourne jamais les invariants métier, les capabilities, les quotas ni les validations de sécurité.
 
