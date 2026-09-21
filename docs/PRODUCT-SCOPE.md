@@ -172,11 +172,54 @@ Le contrôle doit être garanti par le backend et non par l'interface seule.
 
 Le Workspace Owner peut accéder à tous les magasins, et un collaborateur peut recevoir un périmètre multi-magasins, mais tous travaillent toujours dans un contexte magasin actif lorsqu'ils créent, modifient ou valorisent une fiche.
 
-### 3.4 Catalogue commun au Workspace
+### 3.4 Référentiel Produit commun au SaaS et catalogue d'usage du Workspace
 
-Le Workspace dispose d'une base de produits commune dans laquelle les dossiers viennent puiser.
+L'identité canonique d'un Produit de référence n'est pas recréée dans chaque Workspace.
 
-La donnée produit ne doit pas être dupliquée pour chaque magasin uniquement parce que son prix change.
+Le SaaS maintient un **référentiel Produit canonique partagé** pour les données génériques non confidentielles :
+
+```text
+Référentiel SaaS
+→ Carotte
+→ Oignon
+→ Farine
+→ Film alimentaire
+→ ...
+```
+
+Un Workspace possède ensuite son **catalogue d'usage**, qui référence les Produits canoniques dont il a besoin sans copier leur identité.
+
+Conceptuellement :
+
+```text
+Produit canonique SaaS
+→ 1 seule identité de référence
+
+Workspace
+→ sélection / relation d'usage vers ce Produit
+→ aucune copie du Produit canonique
+
+Dossier
+→ exploite les Produits disponibles dans son Workspace
+→ contextualise les données magasin
+```
+
+La relation d'usage du Workspace pourra être matérialisée ultérieurement par un concept de type `WorkspaceProduct`, sans préjuger du schéma Mongoose final de M-002.
+
+Les données partagées au niveau SaaS doivent rester strictement génériques. Elles ne contiennent jamais de tarif négocié, prix facturé, historique commercial local, fournisseur choisi par un magasin ou autre donnée confidentielle d'un tenant.
+
+Les utilisateurs autorisés doivent pouvoir rechercher un Produit du référentiel commun puis l'ajouter à leur catalogue Workspace. Si le Produit n'existe réellement pas, le parcours M-002 devra permettre de proposer/créer une nouvelle identité canonique après contrôle de doublon.
+
+Invariant :
+
+```text
+même réalité Produit canonique
+→ une seule identité de référence dans le SaaS
+```
+
+Les variantes de casse, espaces, accents, singulier/pluriel et fautes d'orthographe courantes ne doivent pas créer silencieusement des Produits concurrents. Le contrôle doit combiner normalisation, alias et recherche de proximité avant toute création. L'index d'unicité technique seul ne suffit pas à garantir l'unicité sémantique.
+
+La politique exacte de contribution/modération d'un nouveau Produit global reste à fermer dans M-002 ; elle ne doit pas être inventée pendant M-001.
 
 ---
 
@@ -216,8 +259,11 @@ Le Dashboard Workspace constitue la surface de pilotage globale du Workspace : P
 La Sidebar Workspace devra être recomposée avec les sections métier du produit en utilisant le point d'extension Core `frontend/src/app/workspace-navigation.js`. Sa structure définitive sera arrêtée après validation du périmètre V1 afin de distinguer clairement :
 
 ```text
+référentiel partagé SaaS
+→ identités Produit canoniques
+
 ressources globales Workspace
-→ Produits, Fournisseurs, catalogues, administration...
+→ catalogue d'usage Produit, Fournisseurs, Articles, catalogues fournisseur, administration...
 
 ressources contextualisées dossier
 → Fiches, références magasin, prix locaux, process...
@@ -260,40 +306,63 @@ prix de vente retenu
 
 Un produit représente une denrée ou un composant utilisable dans une fiche technique, indépendamment de son fournisseur et de son prix.
 
-### 5.1 Nom
+### 5.1 Identité canonique, nom et déclinaisons structurées
 
-Le nom doit être immédiatement compréhensible par l'utilisateur.
-
-Règle de nommage :
-
-- si le produit est entier ou utilisé dans sa forme standard : utiliser le nom simple ;
-- si une préparation ou une forme modifie sa compréhension, son rendement ou son usage : préciser cette forme dans le nom.
-
-Exemples :
+Le Produit de référence représente d'abord une identité métier canonique, par exemple :
 
 ```text
 Carotte
 Oignon
-Rumsteck
-Maquereau
-
-Carotte râpée
-Oignon émincé
-Rumsteck tranché
-Maquereau en filet
+Farine
+Film alimentaire
 ```
 
-Il n'est pas prévu à ce stade d'ajouter un champ utilisateur séparé « forme/état ».
+Cette identité ne doit pas être recréée sous des variantes lexicales équivalentes telles que `carotte`, `Carottes` ou une faute d'orthographe reconnue comme désignant la même réalité.
+
+Le libellé affiché reste lisible pour l'utilisateur, mais l'identité ne repose pas uniquement sur une chaîne libre.
+
+Les formes et états qui modifient réellement l'usage, le rendement ou la sélection d'un Article fournisseur doivent être identifiés de manière structurée autour de l'identité canonique.
+
+Axes conceptuels à cadrer précisément dans M-002 :
+
+```text
+Produit canonique
+→ Carotte
+
+forme
+→ entière / rondelles / râpée / dés / julienne / purée / ...
+
+état ou transformation
+→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
+
+conservation lorsque pertinente
+→ fraîche / surgelée / appertisée / ...
+```
+
+Exemple :
+
+```text
+Carotte
+→ forme : râpée
+→ état : prête à l'emploi
+→ conservation : fraîche
+```
+
+L'interface peut composer un libellé lisible comme `Carotte râpée prête à l'emploi`, sans transformer chaque variante orthographique du libellé en nouvelle identité canonique.
+
+Une transformation qui crée réellement un produit composé ou une formulation différente ne doit pas être assimilée automatiquement à une simple forme. Par exemple, une « purée de carottes » industrielle peut contenir d'autres ingrédients. La frontière entre déclinaison et Produit distinct doit être cadrée dans M-002 à partir de critères métier, jamais par simple comparaison de texte.
 
 ### 5.2 Données minimales du produit
 
-Socle actuellement retenu :
+Socle conceptuel actuellement retenu :
 
-- nom — obligatoire ;
+- identité / nom canonique — obligatoire ;
+- clé normalisée et alias — nécessaires au contrôle des doublons et à la recherche ;
 - catégorie — nécessaire au classement, tri, recherche et aux analyses ;
+- forme / état / conservation — structurés lorsqu'ils distinguent réellement l'usage ;
 - gamme alimentaire — uniquement lorsqu'elle est pertinente ;
 - unité de référence — nécessaire aux calculs ;
-- taux de rendement — caractéristique métier du produit ;
+- taux de rendement — caractéristique métier de la déclinaison réellement utilisée lorsque le rendement en dépend ;
 - photo — facultative ;
 - notes — facultatives, sans logique métier cachée ;
 - date de création — système ;
