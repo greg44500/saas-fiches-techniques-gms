@@ -1861,17 +1861,19 @@ Les profils `Acheteur`, `Économe`, `Responsable FT`, `Contributeur FT` ou `Lect
 
 ### 13.1 Workspace Owner
 
-Le rôle système `owner` du Workspace reste générique et inchangé côté Core.
+Le rôle système `owner` du Workspace reste générique dans `saas-core-api` : aucun rôle métier GMS n'est ajouté au Core et aucune constante Core n'est modifiée.
+
+Le produit déclare cependant ses permissions métier dans le point d'extension RBAC applicatif prévu par le Core. Le descriptor produit attribue ces permissions métier au rôle système `owner` lors de la composition du SaaS dérivé, afin que l'Owner reste l'autorité complète de son Workspace sans créer un deuxième moteur RBAC.
 
 Pour ce produit, le Workspace Owner :
 
-- est reconnu par la politique d'autorisation métier du produit comme autorité complète dans CE Workspace ;
+- possède les permissions métier applicatives déclarées par le produit ;
 - peut agir sur tous les magasins/dossiers de son Workspace ;
 - peut créer, modifier, revaloriser, valider, archiver et administrer les données métier selon les contrats ;
 - peut gérer les membres, rôles et paramètres dans les limites des mécanismes Core ;
 - n'a pas besoin d'un profil métier supplémentaire.
 
-Les permissions métier restent déclarées dans le produit et sont utilisables par les rôles personnalisés du Workspace. La règle spéciale Owner n'ajoute ni rôle métier ni permission persistée au rôle système Core.
+Les profils métier nommés restent exclusivement des rôles personnalisés définis par le produit.
 
 Le Workspace Owner ne contourne jamais les invariants métier, les capabilities, les quotas ni les validations de sécurité.
 
