@@ -86,7 +86,7 @@ Relation métier donnant à un WorkspaceMember non-owner l'accès à un dossier/
 
 Elle est indépendante du Role Workspace et est persistée dans une relation métier dédiée de type conceptuel `DossierAccessGrant`.
 
-Le grant relie un `WorkspaceMember` et un `Dossier` appartenant au même Workspace, avec une seule affectation courante par couple membre + Dossier. Une révocation coupe l'accès sans perdre la traçabilité d'attribution/révocation.
+Le grant relie un `WorkspaceMember` et un `Dossier` appartenant au même Workspace, avec une seule affectation courante par couple membre + Dossier. Une révocation coupe l'accès sans perdre la traçabilité d'attribution/révocation. Un passage du Dossier à `DELETED` révoque tous les grants ACTIVE ; une restauration ne réactive jamais les anciens grants.
 
 Le Workspace Owner possède implicitement tous les dossiers de son Workspace et ne nécessite pas de `DossierAccessGrant` individuel.
 
@@ -670,6 +670,16 @@ Version de travail non officielle pouvant être incomplète. Un DRAFT actif n'es
 ## VALIDATED
 
 Version officielle ayant passé les contrôles backend de validation et conservant son snapshot économique. Elle n'est pas purgée automatiquement par simple ancienneté ; l'archivage reste le mécanisme normal de sortie de l'usage actif.
+
+---
+
+## BusinessActivityEvent
+
+Événement immuable décrivant un fait métier effectivement réalisé dans le produit GMS.
+
+Il est distinct de l'`AuditLog` Core, qui reste consacré aux événements génériques de sécurité, d'administration et de fonctionnement du socle.
+
+Un `BusinessActivityEvent` appartient toujours à un Workspace, peut être contextualisé par un Dossier et utilise des actions définies par un registry backend métier.
 
 ---
 
