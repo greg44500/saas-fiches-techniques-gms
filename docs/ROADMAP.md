@@ -214,9 +214,11 @@ Il sera cadré avant son implémentation : relation avec la Fiche technique, ét
 Décisions établies :
 
 - réutilisation du RBAC Workspace du Core ;
+- les rôles système Core restent génériques et inchangés dans leur définition ;
+- les permissions et profils métier GMS appartiennent au produit et utilisent la primitive générique Role/Permission du Core ;
 - un WorkspaceMember porte un seul Role ;
-- un rôle personnalisé combine plusieurs responsabilités par ses permissions ;
-- Workspace Owner = toutes les permissions métier + tous les dossiers ;
+- un rôle métier personnalisé combine plusieurs responsabilités par ses permissions ;
+- Workspace Owner = autorité métier complète du produit + tous les dossiers, sans devenir un rôle métier GMS ;
 - PlatformRole sans accès implicite aux données métier Workspace ;
 - rôle et périmètre dossier séparés ;
 - invitation Core puis affectation Dossier après acceptation ;
