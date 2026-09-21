@@ -2,7 +2,7 @@
 
 **Statut :** canonique — actif  
 **Dernière mise à jour :** 2026-09-10  
-**Périmètre :** D-014 + D-011.C — RBAC, capabilities, routing, navigation et widgets Dashboard métier
+**Périmètre :** RBAC, capabilities, routing, navigation, widgets Dashboard et lifecycle transactionnel WorkspaceMember
 
 ---
 
@@ -426,7 +426,94 @@ Le Dashboard Platform est un cas distinct : il constitue déjà une surface mét
 
 ---
 
-## 9. Règle de composition d’un module métier
+## 9. Point d’extension du lifecycle transactionnel WorkspaceMember
+
+Le Core expose un point de composition pour les relations métier qui dépendent
+durablement d’un `WorkspaceMember` et doivent être invalidées lorsqu’il est
+retiré définitivement du Workspace.
+
+Fichier applicatif :
+
+```text
+backend/config/applicationWorkspaceMemberLifecycle.registry.js
+```
+
+Collections / runtime :
+
+```text
+APPLICATION_WORKSPACE_MEMBER_LIFECYCLE_MODULES
+ACTIVE_APPLICATION_WORKSPACE_MEMBER_LIFECYCLE_REGISTRY
+runApplicationWorkspaceMemberRemovedLifecycle()
+```
+
+La V1 expose uniquement l’événement démontré :
+
+```text
+onMemberRemoved
+```
+
+Descriptor conceptuel :
+
+```js
+{
+    key: 'dossier-access',
+    onMemberRemoved: async ({
+        workspaceId,
+        membershipId,
+        userId,
+        actorId,
+        session,
+        ipAddress,
+        userAgent,
+    }) => {
+        // Écritures MongoDB métier avec la session reçue.
+    },
+}
+```
+
+Le Core appelle ce lifecycle sur les transitions définitives vers
+`WorkspaceMember.status = removed` actuellement réalisées par :
+
+```text
+retrait d’un membre du Workspace
+fermeture du compte utilisateur
+```
+
+Le handler est exécuté après la mutation du membership dans la transaction,
+mais avant la libération du quota membre et l’AuditLog Core de succès. Tous les
+handlers sont attendus séquentiellement dans l’ordre de déclaration.
+
+Invariant :
+
+```text
+handler métier échoue
+→ erreur propagée
+→ transaction MongoDB rollbackée
+→ membership / relations métier / quota / audit restent cohérents
+```
+
+Le contrat est strictement transactionnel. Un handler doit donc être
+déterministe et/ou idempotent face aux retries du callback transactionnel et ne
+doit pas produire d’effet externe irréversible :
+
+```text
+pas d’email immédiat
+pas d’appel API externe
+pas de paiement
+pas de webhook non idempotent
+```
+
+Les écritures MongoDB utilisant la `session` fournie sont le cas d’usage
+attendu.
+
+`SUSPENDED` ne déclenche pas `onMemberRemoved`. Une réactivation ultérieure
+d’un membership historique `REMOVED` par le workflow d’invitation ne réactive
+aucune relation métier dérivée : cette décision appartient explicitement au
+produit.
+
+---
+
+## 10. Règle de composition d’un module métier
 
 Un module métier complet peut donc fournir conceptuellement :
 
@@ -450,6 +537,7 @@ Puis l’application dérivée compose uniquement les descriptors dans :
 backend/config/applicationCapability.registry.js
 backend/config/applicationRolePermission.registry.js
 backend/config/applicationRoutes.registry.js
+backend/config/applicationWorkspaceMemberLifecycle.registry.js
 frontend/src/app/application-routes.js
 frontend/src/app/workspace-navigation.js
 frontend/src/app/application-dashboard.js
@@ -459,7 +547,7 @@ Ces fichiers `app/` et `config/` sont les points de jonction assumés entre le C
 
 ---
 
-## 10. Ce que les points d’extension V1 ne mettent pas en place
+## 11. Ce que les points d’extension V1 ne mettent pas en place
 
 Le Core n’introduit pas :
 
@@ -478,7 +566,7 @@ Ces mécanismes augmenteraient la complexité sans besoin démontré pour le Cor
 
 ---
 
-## 11. Tests obligatoires d’un module dérivé
+## 12. Tests obligatoires d’un module dérivé
 
 Un module métier qui utilise ces points d’extension doit au minimum tester :
 
@@ -511,13 +599,21 @@ dashboard
 → préférence appliquée seulement après le contrôle d’accès
 → identifiant stable
 → composant non autorisé non monté lorsque le contrat le prévoit
+
+lifecycle WorkspaceMember
+→ descriptor explicitement composé
+→ même session MongoDB reçue
+→ exécution déterministe
+→ échec propagé pour rollback
+→ aucune exécution sur SUSPENDED
+→ aucune restauration automatique des relations métier après réinvitation
 ```
 
 Les suites de tests du Core et du module métier restent complémentaires.
 
 ---
 
-## 12. Validation des points d’extension
+## 13. Validation des points d’extension
 
 D-014 a été validée le 2026-09-05 après confirmation locale des suites ciblées, des suites globales et du build frontend.
 
@@ -543,12 +639,14 @@ Le statut canonique des dettes est porté par `docs/DEBT.md`.
 
 ---
 
-## 13. Fichiers de référence
+## 14. Fichiers de référence
 
 ```text
 backend/config/applicationCapability.registry.js
 backend/config/applicationRolePermission.registry.js
 backend/config/applicationRoutes.registry.js
+backend/config/applicationWorkspaceMemberLifecycle.registry.js
+backend/modules/workspaceMember/workspaceMemberLifecycle.registry.js
 backend/modules/plan/planCapability.registry.js
 backend/modules/role/rolePermission.registry.js
 backend/constants/role.constants.js
