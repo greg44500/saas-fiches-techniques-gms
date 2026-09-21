@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 implémenté et validé localement, PR à ouvrir  
+**Statut :** VALIDÉ — M-001 implémenté et validé localement, PR #10 ouverte  
 **Dernière mise à jour :** 2026-09-21
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -522,14 +522,12 @@ développement immédiat
 M-001 a franchi sa gate locale complète. La séquence restante est exclusivement la séquence Git/CI de clôture :
 
 ```text
-1. mettre à jour la documentation finale M-001
-2. nettoyer l'historique de la branche sans modifier son arbre final
-3. ouvrir l'unique PR M-001 vers main
-4. attendre la Core Gate de PR
-5. fusionner uniquement après gate verte
-6. attendre la Core Gate post-merge sur main
-7. clôturer M-001
-8. démarrer le cadrage détaillé M-002 — Produits canoniques
+1. PR #10 ouverte vers main
+2. attendre la Core Gate de PR
+3. fusionner uniquement après gate verte
+4. attendre la Core Gate post-merge sur main
+5. clôturer M-001
+6. démarrer le cadrage détaillé M-002 — Produits canoniques
 ```
 
 Ne pas commencer M-002 dans la PR M-001.

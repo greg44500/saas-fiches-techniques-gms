@@ -1,12 +1,12 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : M-001 PRÊT POUR PR — backend/frontend/E2E implémentés — gate locale complète VALIDÉE**
+> **Statut : M-001 EN PR — PR #10 ouverte — gate locale complète VALIDÉE — Core Gate PR attendue**
 >
 > **Dernière mise à jour : 2026-09-21**
 >
 > Le code réel, les contraintes DB, les tests/gates réellement exécutés et les contrats canoniques priment sur cette synthèse.
 >
-> **Le backend, le frontend métier M-001 et les quatre parcours Playwright critiques sont implémentés sur `feature/m001-dossiers-access`. Le 2026-09-21, l'utilisateur a confirmé la réussite des contrôles locaux demandés, dont les tests backend/frontend, les 11 E2E Playwright et `npm run release:check`. La prochaine étape est la PR M-001 unique puis la Core Gate de PR ; aucune fusion avant cette gate.**
+> **Le backend, le frontend métier M-001 et les quatre parcours Playwright critiques sont implémentés sur `feature/m001-dossiers-access`. Le 2026-09-21, l'utilisateur a confirmé la réussite des contrôles locaux demandés, dont les tests backend/frontend, les 11 E2E Playwright et `npm run release:check`. La PR #10 (`feat(m001): dossiers magasins et affectations`) est ouverte vers `main`. Aucune fusion avant une Core Gate de PR verte.**
 
 ---
 
@@ -56,7 +56,15 @@ checkpoint applicatif final validé localement avant clôture documentaire :
 1d4c9a2930ebd76d5667bc137b6e110b20c8c71c
 ```
 
-La branche est prête pour sa PR fonctionnelle unique. Elle ne doit pas être fusionnée avant la Core Gate de PR ; après fusion, la Core Gate post-merge sur `main` reste obligatoire.
+La branche a été compactée avant PR sans modifier l'arbre final. La PR #10 est ouverte vers `main`.
+
+```text
+PR #10
+head initial après compactage :
+0fda1dede29da9111cb48c840e6fcda79cf05e67
+```
+
+Elle ne doit pas être fusionnée avant la Core Gate de PR ; après fusion, la Core Gate post-merge sur `main` reste obligatoire.
 
 Core intégré :
 
@@ -744,8 +752,7 @@ Ce point est donc un candidat de dette générique Core/tooling à traiter sépa
 ### 9.2 Suite immédiate
 
 ```text
-documentation finale M-001
-→ PR unique feature/m001-dossiers-access → main
+PR #10 ouverte
 → Core Gate de PR
 → merge uniquement après gate verte
 → Core Gate post-merge sur main
