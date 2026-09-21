@@ -790,7 +790,7 @@ Aucune autre charge ne doit être ajoutée sans validation métier.
 
 Propriétaire du Workspace au sens du Core.
 
-Dans ce SaaS, il reçoit toutes les permissions métier du produit et tous les dossiers de CE Workspace.
+Dans ce SaaS, le rôle système `owner` reste générique côté Core. Le produit reconnaît toutefois le Workspace Owner comme autorité métier complète de CE Workspace et lui donne accès à tous ses dossiers.
 
 Il reste soumis aux invariants métier, capabilities, quotas et règles de sécurité.
 
@@ -808,9 +808,11 @@ Il ne donne aucun accès implicite aux données métier d'un Workspace.
 
 ## Rôle Workspace
 
-Groupe de permissions rattaché à un Workspace et attribué à un WorkspaceMember.
+Groupe générique de permissions rattaché à un Workspace et attribué à un WorkspaceMember.
 
-Le Core v1.1.0 porte un seul rôle par membre. Un rôle personnalisé peut donc combiner plusieurs responsabilités métier.
+Les rôles système sont fournis par le Core et restent génériques. Les profils métier comme Acheteur, Économe ou Responsable FT sont définis uniquement par le produit sous forme de rôles personnalisés utilisant la primitive générique du Core.
+
+Le Core v1.1.0 porte un seul rôle par membre. Un rôle personnalisé métier peut donc combiner plusieurs responsabilités.
 
 ---
 
