@@ -225,33 +225,49 @@ La politique exacte de contribution/modération d'un nouveau Produit global rest
 
 ### 3.5 Navigation Workspace, consultation d'un dossier et contexte actif
 
-Le produit distingue trois actions :
+Le produit distingue clairement quatre surfaces UX :
 
 ```text
-Dashboard Workspace
-→ pilotage global
+Liste Dossiers
+→ repérage, recherche et filtres
 
-Drawer dossier
+Drawer Dossier
 → consultation / navigation / administration légère
-→ ne change pas le contexte magasin actif
+→ ne change jamais le contexte magasin actif
 
-Ouvrir le dossier
-→ active explicitement le contexte magasin
-→ permet le travail métier approfondi
+Dialog Dossier
+→ création / modification focalisée
+
+Page Dossier
+→ véritable espace de travail métier
+→ contexte magasin explicite
 ```
 
-Le drawer d'un dossier doit permettre de comprendre son contenu sans l'ouvrir comme contexte de travail. Il peut présenter selon les permissions :
+Le drawer d'un dossier doit permettre de comprendre son contenu sans l'ouvrir comme contexte de travail. En M-001, il présente selon les permissions :
 
-- une vue d'ensemble avec les KPI utiles ;
 - les informations générales du magasin ;
-- les Fiches techniques et Fiches process ;
 - les membres ayant accès au dossier ;
 - l'activité métier du produit ;
-- les actions d'administration du lifecycle.
+- les actions d'administration du lifecycle ;
+- l'action explicite « Ouvrir le dossier » lorsque le Dossier est ACTIVE.
+
+Les futurs modules Fiches techniques, Produits contextualisés, Process et outils d'optimisation ne sont pas exécutés dans le drawer. Ils s'intègrent dans la vraie page de travail du Dossier.
 
 L'activité métier du Dossier est distincte de l'AuditLog Core. Elle est portée par la primitive produit `BusinessActivityEvent` et filtrée selon les permissions et le scope Dossier.
 
 L'ouverture du drawer de Nantes puis de Saint-Nazaire ne doit jamais modifier implicitement le contexte magasin actif.
+
+La création et la modification des informations générales utilisent un Dialog métier basé sur les primitives shadcn/Base UI déjà présentes dans le Core. Le formulaire métier est réutilisable entre création et édition ; `ConfirmationDialog` reste réservé aux confirmations et n'est pas détourné en formulaire CRUD.
+
+L'action « Ouvrir le dossier » navigue vers une vraie route de travail :
+
+```text
+/workspaces/:workspaceId/dossiers/:dossierId
+```
+
+Seul un Dossier ACTIVE peut devenir un contexte de travail opérationnel. PAUSED, ARCHIVED et DELETED restent consultables/administrables selon leurs règles mais ne sont pas ouverts comme contexte actif.
+
+La route constitue la source UX du contexte sélectionné, sans créer de `currentDossier` backend ni de `activeDossierId` persistant comme autorité. Chaque requête backend reste autorisée indépendamment.
 
 Depuis tout dossier ouvert, le Dashboard Workspace doit rester accessible en un clic.
 
