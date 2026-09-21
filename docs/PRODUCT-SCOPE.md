@@ -1840,6 +1840,39 @@ Les modules métier pourront fournir davantage de KPI que ceux qu'un utilisateur
 
 Le produit ne crée pas un second système de Dashboard et utilise le point d'extension Core `frontend/src/app/application-dashboard.js`.
 
+## 12.1 Données initiales et bootstrap métier
+
+Le produit peut fournir des données de référence initiales utiles aux bêta-tests et au démarrage réel, sans confondre bootstrap et migration historique.
+
+Contrat canonique :
+
+```text
+docs/domain/INITIAL-DATA-BOOTSTRAP.md
+```
+
+Principes :
+
+```text
+M-001
+→ aucune migration historique
+→ aucun seed Dossier
+→ Owner suffisant pour le bêta M-001
+
+M-002
+→ bootstrap versionné du référentiel Produit initial
+
+M-003
+→ bootstrap versionné des Fournisseurs / Articles / catalogues de référence partageables
+
+rôles métier
+→ profils/presets définis par le produit
+→ provisionnés uniquement lorsque leurs permissions utiles sont suffisamment cadrées
+```
+
+Tout bootstrap métier est explicite, idempotent, testé, traçable et non destructif.
+
+---
+
 ## 13. Utilisateurs, rôles et périmètres
 
 Le produit réutilise le moteur RBAC Workspace générique du Core, mais le vocabulaire des rôles métier appartient exclusivement au produit.
