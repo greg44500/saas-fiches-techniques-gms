@@ -225,11 +225,42 @@ membership actif
 + invariants métier
 ```
 
-### 4.4 Consultation et ouverture
+### 4.4 Consultation, édition et espace de travail
 
-Le drawer d'un dossier est une surface de consultation / navigation / administration légère. Son ouverture ne modifie pas le contexte magasin actif.
+Le drawer d'un dossier est une surface de consultation / navigation / administration légère. Son ouverture ne modifie jamais le contexte magasin actif.
 
-L'action « Ouvrir le dossier » active explicitement le contexte métier.
+En M-001, il expose les informations générales, les accès, l'activité métier et les actions lifecycle autorisées.
+
+La création et la modification des informations générales sont réalisées dans un Dialog métier basé sur les primitives de Dialog déjà fournies par le Core frontend. Le formulaire Dossier est réutilisable entre création et édition.
+
+L'action « Ouvrir le dossier » navigue vers la vraie page métier :
+
+```text
+/workspaces/:workspaceId/dossiers/:dossierId
+```
+
+Seul un Dossier ACTIVE peut devenir un espace de travail opérationnel.
+
+```text
+ACTIVE
+→ drawer + page de travail
+
+PAUSED
+→ drawer / administration
+→ pas de page de travail opérationnelle
+
+ARCHIVED
+→ consultation historique contrôlée
+→ pas de page de travail opérationnelle
+
+DELETED
+→ administration/restauration contrôlée
+→ pas de page de travail opérationnelle
+```
+
+La page Dossier est destinée à accueillir progressivement les modules métier contextualisés : vue d'ensemble, Fiches techniques, Produits/références magasin, Process et extensions futures.
+
+Le contexte est exprimé par `workspaceId + dossierId` dans l'URL. Aucun état frontend persistant ne constitue une preuve d'autorisation.
 
 Depuis un dossier ouvert, le Dashboard Workspace doit rester accessible en un clic.
 
