@@ -1,9 +1,20 @@
 # M-001 — Reprise après intégration Core 1.1.0
 
-**Statut :** addendum de reprise actif  
+**Statut :** HISTORIQUE — remplacé par le handoff d'implémentation M-001  
 **Date :** 2026-09-21  
 **Produit :** `greg44500/saas-fiches-techniques-gms`
 
+> **Document historique.** Le prérequis Core 1.1.0 décrit ici reste valide, mais les sections de cadrage et l'ancienne amorce ne sont plus l'autorité de reprise.
+>
+> Utiliser désormais :
+>
+> ```text
+> docs/REPRISE-CURRENT.md
+> docs/m001/M-001-TEST-STRATEGY.md
+> docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md
+> docs/m001/M-001-IMPLEMENTATION-HANDOFF.md
+> ```
+>
 > Ce document ne remplace pas le cadrage métier global du produit.  
 > Il remplace uniquement les formulations devenues obsolètes qui indiquent encore que le prérequis Core transactionnel de M-001 reste « à vérifier » ou « non résolu ».
 
