@@ -169,11 +169,11 @@ DELETED
 
 `ARCHIVED` sort le dossier de l'usage courant tout en conservant l'historique et une consultation contrôlée.
 
-`DELETED` est une suppression logique : le contexte devient inaccessible dans les flux métier normaux et toutes les affectations deviennent inopérantes, mais les données enfants conservent leur état historique réel.
+`DELETED` est une suppression logique forte : le contexte devient inaccessible dans les flux métier normaux et tous les `DossierAccessGrant ACTIVE` sont révoqués dans la même transaction. Les données enfants conservent leur état historique réel.
 
 Une Fiche technique VALIDATED d'un dossier supprimé reste historiquement VALIDATED ; elle devient inaccessible parce que son conteneur est supprimé.
 
-La restauration d'un dossier supprimé revient par défaut vers `PAUSED` afin d'imposer une vérification avant remise en production.
+La restauration d'un dossier supprimé revient vers `PAUSED` afin d'imposer une vérification avant remise en production. Elle ne restaure aucun ancien grant révoqué.
 
 La purge définitive reste une opération séparée, auditée et soumise à la politique de rétention.
 
@@ -232,6 +232,28 @@ Le drawer d'un dossier est une surface de consultation / navigation / administra
 L'action « Ouvrir le dossier » active explicitement le contexte métier.
 
 Depuis un dossier ouvert, le Dashboard Workspace doit rester accessible en un clic.
+
+## 4.5 Activité métier
+
+Le produit possède une primitive transversale `BusinessActivityEvent`, distincte de l'`AuditLog` Core.
+
+Elle trace les faits métier effectivement réalisés dans le Workspace et, lorsque pertinent, dans un Dossier.
+
+Pour M-001 :
+
+```text
+DOSSIER_CREATED
+DOSSIER_UPDATED
+DOSSIER_STATUS_CHANGED
+DOSSIER_ACCESS_GRANTED
+DOSSIER_ACCESS_REVOKED
+```
+
+Les événements sont immuables, portent des metadata minimales construites par le backend et sont écrits dans la même transaction que la mutation métier correspondante.
+
+La lecture respecte à la fois les permissions Workspace et le scope Dossier ; une activité d'affectation exige notamment l'autorité `dossier:access:read`.
+
+---
 
 ## 5. Produit
 
