@@ -738,7 +738,7 @@ La raison de ce fallback doit rester explicable.
 
 ### 6.11 Catalogues fournisseur de référence
 
-Le SaaS peut proposer des catalogues fournisseur de référence préchargés afin que le premier usage soit réellement exploitable sans obliger le client à recréer manuellement chaque Article fournisseur.
+Le SaaS peut proposer des catalogues fournisseur de référence préchargés et partagés afin que le premier usage soit réellement exploitable sans obliger chaque client à recréer manuellement les mêmes Articles fournisseur.
 
 Un catalogue doit être identifiable par des informations conceptuelles telles que :
 
@@ -747,7 +747,23 @@ Un catalogue doit être identifiable par des informations conceptuelles telles q
 - date de début et de fin éventuelles ;
 - source ;
 - date d'intégration ;
-- statut/fraîcheur de la source.
+- statut/fraîcheur de la source ;
+- portée de partage.
+
+Deux portées conceptuelles sont retenues :
+
+~~~text
+GLOBAL_SHARED
+→ catalogue de référence vérifié
+→ données non confidentielles
+→ disponible pour plusieurs ou tous les Workspaces selon les règles du produit
+
+WORKSPACE_PRIVATE
+→ import propre à un Workspace
+→ jamais exposé à un autre Workspace
+~~~
+
+Un import réalisé par un utilisateur est `WORKSPACE_PRIVATE` par défaut. Il ne devient jamais global automatiquement. Une édition ne peut être partagée globalement que si sa provenance et son caractère partageable sont établis.
 
 Un catalogue ancien n'est pas écrasé par une édition plus récente.
 
@@ -764,22 +780,123 @@ La résolution peut utiliser un ancien Tarif fournisseur lorsqu'aucune meilleure
 
 Les catalogues fournisseur partagés ne contiennent aucune condition commerciale confidentielle propre à un magasin.
 
-L'import futur de catalogues structurés CSV/XLS/XLSX doit produire une nouvelle édition et non écraser l'ancienne. Le flux envisagé est :
+#### Import structuré sans création massive de Produits
+
+Une ligne de catalogue fournisseur n'est pas un Produit canonique.
+
+Invariant :
 
 ~~~text
-lecture
+ligne CSV/XLS/XLSX
+≠ Produit canonique
+≠ Article fournisseur
+≠ Tarif négocié
+~~~
+
+L'import complet d'un catalogue de plusieurs milliers de lignes ne crée donc pas automatiquement autant de Produits canoniques.
+
+Le flux validé est :
+
+~~~text
+lecture / staging
+→ identification Fournisseur + édition + portée
 → détection/présentation des colonnes
 → mapping utilisateur
-→ contrôles références / unités / conditionnements
-→ détection des doublons et incohérences
+→ normalisation références / désignations / unités / conditionnements
+→ recherche des Articles fournisseur déjà connus
+→ réutilisation de leurs mappings Produit déjà validés
+→ rapprochement des nouvelles références
+→ file des cas ambigus / non résolus
 → aperçu
 → validation
 → nouvelle édition historisée
 ~~~
 
-Le mapping propre à un Fournisseur doit pouvoir être mémorisé et réutilisé.
+Une ligne peut être conservée dans une édition de catalogue sans être immédiatement rapprochée d'un Produit canonique.
 
-L'IA n'est pas nécessaire pour les fichiers structurés. Elle pourra plus tard assister le mapping ambigu, l'interprétation de documents complexes ou l'OCR, mais ne deviendra jamais l'autorité qui écrit directement un prix exploitable sans contrôles métier et validation.
+Lorsqu'un même Fournisseur et une même référence Article ont déjà été validés, une nouvelle édition réutilise ce mapping au lieu de refaire la reconnaissance du Produit.
+
+Ordre de rapprochement recommandé :
+
+~~~text
+1. même Fournisseur + même référence Article connue
+2. désignation normalisée connue
+3. alias Produit / déclinaison
+4. recherche de proximité
+5. proposition utilisateur
+6. création/proposition d'une nouvelle identité uniquement si aucun équivalent crédible n'existe
+~~~
+
+Aucune correspondance ambiguë ne doit créer silencieusement un Produit global.
+
+Le mapping propre à un Fournisseur doit pouvoir être mémorisé et réutilisé, de même que les correspondances validées `Article fournisseur → Produit/déclinaison`.
+
+L'IA n'est pas nécessaire pour les fichiers structurés. Elle pourra plus tard assister le mapping ambigu, l'interprétation de documents complexes ou l'OCR, mais ne deviendra jamais l'autorité qui écrit directement un prix exploitable ou crée un Produit canonique sans contrôles métier et validation.
+
+#### Utilisation sans duplication par Workspace
+
+Un Workspace peut utiliser un catalogue partagé sans en copier toutes les lignes.
+
+Conceptuellement :
+
+~~~text
+Catalogue global
+→ stocké une fois
+
+Workspace
+→ active / référence le catalogue utile
+→ ne duplique pas son contenu
+~~~
+
+Le Workspace peut ensuite ne rattacher à son usage courant que les Produits, Fournisseurs ou Articles réellement nécessaires.
+
+#### Recherche unifiée
+
+La recherche métier doit pouvoir interroger une surface unique avec des filtres de portée et de source.
+
+Portée :
+
+~~~text
+Mon Workspace
+Tout le référentiel autorisé
+~~~
+
+Source :
+
+~~~text
+Toutes
+Produits canoniques
+Catalogues fournisseurs
+Références / Articles fournisseur
+~~~
+
+Exemple :
+
+~~~text
+recherche "carotte"
+
+Produits canoniques
+→ Carotte
+→ déclinaisons pertinentes
+
+Catalogues fournisseurs
+→ lignes de catalogue correspondantes
+
+Références fournisseur
+→ Articles fournisseur connus
+~~~
+
+Le résultat peut agréger plusieurs types de ressources, mais chaque résultat conserve sa nature exacte et son lien vers le Produit canonique lorsqu'il est connu.
+
+Une recherche `Mon Workspace` priorise les ressources déjà utilisées/activées par le Workspace. L'utilisateur peut élargir à `Tout le référentiel` pour rattacher une ressource existante sans la recréer.
+
+La recherche globale ne doit jamais exposer :
+
+- Tarif négocié ;
+- Prix facturé ;
+- historique commercial tenant ;
+- catalogue `WORKSPACE_PRIVATE` d'un autre Workspace ;
+- donnée Dossier non autorisée.
 
 ### 6.12 Sélection d'Article fournisseur et références du magasin
 
