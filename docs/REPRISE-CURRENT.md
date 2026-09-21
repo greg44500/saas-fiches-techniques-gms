@@ -593,29 +593,129 @@ Le premier bêta M-001 peut être exercé intégralement par un Workspace Owner.
 
 ---
 
-## 9. Ce qu'il reste à fermer avant le premier modèle métier
+## 8.6 Stratégie de tests M-001 — VALIDÉE
 
-1. stratégie de tests ;
-2. critères d'acceptation ;
-3. ordre d'implémentation ;
-4. validation finale M-001.
-
-Après seulement :
+Contrat canonique :
 
 ```text
-branche d'implémentation
+docs/m001/M-001-TEST-STRATEGY.md
+```
+
+Couverture obligatoire :
+
+```text
+backend Vitest / Supertest
+→ registries
+→ Zod
+→ modèles
+→ services
+→ transactions
+→ tenancy
+→ permissions
+→ lifecycle
+→ hook WorkspaceMember REMOVED
+→ BusinessActivityEvent
+→ 10 endpoints HTTP
+
+frontend Vitest + RTL
+→ RTK Query
+→ liste
+→ Dialog
+→ Drawer
+→ page Dossier
+→ metadata backend-driven
+→ autocomplétion mockée
+
+Playwright
+→ 4 parcours métier critiques
+```
+
+Les tests automatisés ne dépendent jamais du réseau Géoplateforme réel.
+
+La branche d'implémentation doit d'abord remplacer les noms de bases tests hérités du Core par :
+
+```text
+saas_fiches_techniques_gms_test
+saas_fiches_techniques_gms_e2e_test
+```
+
+La garde `_e2e_test` est conservée.
+
+---
+
+## 8.7 Critères d'acceptation et ordre d'implémentation — VALIDÉS
+
+Contrat canonique :
+
+```text
+docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md
+```
+
+Le lot d'implémentation est unique :
+
+```text
+feature/m001-dossiers-access
 → backend
 → tests backend
 → frontend
 → tests frontend
-→ E2E critiques
-→ gate
-→ PR
+→ E2E métier
+→ gates
 → documentation
+→ une PR fonctionnelle M-001
 ```
+
+Aucune migration historique M-001 et aucun seed Dossier ne sont requis.
+
+M-001 ne provisionne pas artificiellement les presets métier dépendant de M-002/M-003/M-004.
 
 ---
 
+## 9. Cadrage M-001 — COMPLET ET VALIDÉ
+
+Le cadrage détaillé M-001 est désormais fermé.
+
+Ont été validés :
+
+```text
+périmètre / ownership / tenancy
+RBAC et permissions
+DossierAccessGrant
+contrat REST
+middlewares / services
+validation Zod
+metadata backend-driven
+BusinessActivityEvent
+lifecycle Dossier
+effets lifecycle sur les grants
+stockage / rétention applicable
+UX liste / Drawer / Dialog / page de travail
+autocomplétion Géoplateforme
+bootstrap métier
+stratégie de tests
+critères d'acceptation
+ordre d'implémentation
+```
+
+L'implémentation devient autorisée uniquement après :
+
+```text
+PR documentaire #9 fusionnée
++
+Core Gate post-merge verte sur main
+```
+
+Puis :
+
+```text
+main synchronisé
+→ créer feature/m001-dossiers-access
+→ suivre docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md
+```
+
+Aucun modèle métier Mongoose ne doit être créé avant la fusion de la PR #9 et la validation post-merge.
+
+---
 ## 10. Points différés non bloquants
 
 - marge semi-nette ;
