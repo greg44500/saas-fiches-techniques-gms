@@ -1581,7 +1581,7 @@ préférences d'affichage
 → modifient uniquement ce que l'utilisateur voit
 ```
 
-Le produit réutilise le mécanisme Dashboard du Core v1.0.1 :
+Le produit réutilise le mécanisme Dashboard du Core v1.1.0 :
 
 ```text
 widgets Core
@@ -1638,7 +1638,7 @@ Un éventuel futur accès support transversal constituerait une fonctionnalité 
 
 ### 13.3 Un rôle Workspace par membre
 
-Le Core v1.0.1 porte un seul Role sur chaque WorkspaceMember.
+Le Core v1.1.0 porte un seul Role sur chaque WorkspaceMember.
 
 Le cadrage métier s'aligne donc sur ce contrat :
 
