@@ -345,18 +345,19 @@ Décisions M-001 déjà validées :
 - une suspension du membership conserve les grants, qui deviennent inopérants tant que le membership n'est pas `ACTIVE` ;
 - un retrait `REMOVED` doit révoquer les grants métier afin qu'une future réinvitation ne restaure jamais silencieusement les anciens magasins.
 
-Prérequis Core identifié avant implémentation :
+Prérequis Core résolu par Core 1.1.0 :
 
 ```text
 WorkspaceMember → REMOVED
-→ permettre au produit dérivé de participer atomiquement
-  à la transaction Core avec la même session MongoDB
+→ lifecycle applicatif onMemberRemoved
+→ session MongoDB Core transmise
 → M-001 révoque ses DossierAccessGrant dans cette transaction
+→ erreur métier = rollback global
 ```
 
-Le Core `v1.0.1` intégré ne possède pas ce point d'extension. Le besoin a été formalisé pour `saas-core-api` comme évolution générique réutilisable. **Au début de la prochaine conversation M-001, vérifier l'état réel de `saas-core-api` et déterminer si cette évolution a été implémentée/versionnée.** Si oui, lire son contrat canonique et prévoir son intégration via une branche `core-update/vX.Y.Z` avant le code M-001. Si non, poursuivre le cadrage M-001 mais maintenir l'implémentation du retrait atomique comme bloquée.
+Les permissions exactes et la matrice technique d'autorisation M-001 sont désormais validées.
 
-Le cadrage M-001 doit encore fermer : permissions exactes, API, validations Zod, audit, transitions de lifecycle, drawer/contexte actif, stratégie de tests, critères d'acceptation et ordre d'implémentation.
+Le cadrage M-001 doit encore fermer : validation finale de l'API REST proposée, ordre des middlewares, validations Zod, audit/erreurs, transitions de lifecycle et effets sur les grants, drawer/contexte actif, autocomplétion, stratégie de tests, critères d'acceptation et ordre d'implémentation.
 
 ## 5. Phase 4 — Implémentation métier
 
