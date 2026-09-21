@@ -457,7 +457,7 @@ L'opération est idempotente : en absence de grant ACTIVE, la réponse reste `20
 | DELETE grant | oui | oui | non | non |
 | PATCH status | selon matrice lifecycle | selon matrice | selon matrice | restauration contrôlée |
 
-La matrice exacte des transitions reste à fermer dans le bloc lifecycle sans modifier cette surface REST.
+La matrice lifecycle est validée dans `docs/m001/M-001-DOSSIER-LIFECYCLE.md` et ne modifie pas cette surface REST.
 
 ---
 
