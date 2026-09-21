@@ -275,6 +275,29 @@ Règle directrice :
 
 > L'utilisateur déclare les faits métier nécessaires ; l'application contrôle, normalise et calcule automatiquement toute donnée qui peut être déduite.
 
+### 4.1 Vocabulaires métier et statuts backend-driven
+
+Les statuts persistants et autres vocabulaires métier structurants ont une source canonique backend.
+
+Pattern obligatoire :
+
+```text
+registry / constantes backend
+→ modèles
+→ validations Zod
+→ services
+→ métadonnées HTTP
+→ frontend
+```
+
+Le frontend ne maintient pas de liste statique concurrente de statuts ni de mapping métier local des valeurs.
+
+Lorsqu'un écran doit proposer ou afficher un vocabulaire métier, le backend expose les métadonnées nécessaires, notamment `value` et `label`, dérivées de la source canonique.
+
+Cette règle s'applique à M-001 et doit être conservée dans les futurs modules Produits, Articles, Fiches techniques et autres ressources portant un lifecycle.
+
+Le frontend reste responsable de la présentation visuelle ; le backend reste l'autorité du vocabulaire, des transitions et des règles métier.
+
 Conséquences :
 
 - une valeur calculable ne doit pas être demandée en saisie libre ;
