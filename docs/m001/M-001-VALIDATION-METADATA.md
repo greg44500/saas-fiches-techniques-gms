@@ -246,7 +246,7 @@ city
 
 Aucune regex française stricte n'est imposée au code postal.
 
-L'identifiant technique éventuel provenant du futur fournisseur d'autocomplétion ne sera ajouté qu'une fois ce contrat technique validé.
+M-001 ne persiste aucun identifiant technique ni payload du fournisseur d'autocomplétion. Une telle donnée ne sera ajoutée que si un futur besoin métier démontre sa nécessité.
 
 ### documentEmail
 
