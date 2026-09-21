@@ -411,22 +411,45 @@ Les transitions lifecycle, transactions, mutations, audit métier, validation de
 
 ---
 
+## 5.5 Validation Zod, activité métier et lifecycle — VALIDÉS
+
+Contrats canoniques complémentaires :
+
+```text
+docs/m001/M-001-VALIDATION-METADATA.md
+docs/m001/M-001-BUSINESS-ACTIVITY.md
+docs/m001/M-001-DOSSIER-LIFECYCLE.md
+```
+
+Décisions fermées :
+
+- validations Zod strictes et metadata backend-driven ;
+- statuts, transitions, raisons de révocation et actions métier issus de registries/constants backend ;
+- activité métier GMS séparée de l'AuditLog Core via `BusinessActivityEvent` ;
+- route `GET /dossiers/:dossierId/activity` ;
+- `ACTIVE → PAUSED|ARCHIVED|DELETED` ;
+- `PAUSED → ACTIVE|ARCHIVED|DELETED` ;
+- `ARCHIVED → PAUSED|DELETED` ;
+- `DELETED → PAUSED` ;
+- passage à `DELETED` = révocation transactionnelle de tous les grants ACTIVE ;
+- restauration = anciens grants maintenus REVOKED ;
+- raisons de révocation : `MANUAL`, `WORKSPACE_MEMBER_REMOVED`, `DOSSIER_DELETED` ;
+- reason obligatoire pour suppression et restauration.
+
+Aucune extension Audit Core n'est requise pour l'activité métier.
+
+---
+
 ## 6. Ce qu’il reste à fermer dans le cadrage M-001
 
 Avant toute première écriture de modèle métier, le projet GMS doit encore valider les points suivants.
 
-1. validations Zod d'entrée ;
-2. contrats d'erreur ;
-3. stratégie d'audit métier ;
-4. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
-5. règles finales de restauration et traitement des grants lors des transitions ;
-6. contrat du drawer Dossier et de l'ouverture explicite du contexte magasin ;
-7. gestion des affectations Dossier ;
-8. source technique d'autocomplétion d'adresse avec fallback manuel ;
-9. migrations/seeds uniquement si un besoin réel est démontré ;
-10. stratégie de tests unitaires, intégration, tenancy, permissions et E2E ;
-11. critères d'acceptation M-001 ;
-12. ordre d'implémentation du premier lot métier.
+1. contrat UX de la liste Dossiers, du drawer, des affectations et de l'ouverture explicite du contexte magasin ;
+2. source technique d'autocomplétion d'adresse avec fallback manuel ;
+3. migrations/seeds uniquement si un besoin réel est démontré ;
+4. stratégie de tests unitaires, intégration, tenancy, permissions et E2E ;
+5. critères d'acceptation M-001 ;
+6. ordre d'implémentation du premier lot métier.
 
 ---
 
@@ -545,7 +568,7 @@ Utiliser cette amorce dans le projet consacré au produit métier :
 >
 > Le cadrage global produit est validé. M-001 reste EN COURS de cadrage détaillé.
 >
-> Les permissions exactes, la matrice technique d'autorisation, le contrat API REST M-001 et le contrat middlewares/frontière service sont désormais VALIDÉS.
+> Les permissions exactes, la matrice technique d'autorisation, le contrat API REST M-001, le contrat middlewares/frontière service, les validations Zod, l'activité métier produit et le lifecycle Dossier sont désormais VALIDÉS.
 >
 > Reprendre maintenant, sans rouvrir les décisions déjà fermées, dans cet ordre :
 >
