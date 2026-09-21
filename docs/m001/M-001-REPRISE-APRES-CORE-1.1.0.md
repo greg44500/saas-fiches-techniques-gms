@@ -382,23 +382,51 @@ Le contrat API ne doit plus être rouvert pendant le cadrage suivant sauf contra
 
 ---
 
+## 5.4 Middlewares et frontière service — VALIDÉS
+
+Contrat canonique :
+
+```text
+docs/m001/M-001-MIDDLEWARES-AUTHORIZATION.md
+```
+
+Chaîne générale retenue :
+
+```text
+authenticate
+→ validateRequest
+→ loadWorkspaceContext
+→ authorizePermission
+→ enforceWorkspaceAccessMode sur les mutations concernées
+→ capability éventuelle uniquement si elle est réellement définie
+→ loadAuthorizedDossierContext
+→ enforceDossierStatePolicy si l'endpoint possède une compatibilité statique d'état
+→ controller
+→ service
+```
+
+`loadAuthorizedDossierContext` centralise la résolution `Dossier + Workspace + Owner/grant` et applique l'anti-énumération. Il ne réimplémente pas le RBAC Core.
+
+Les transitions lifecycle, transactions, mutations, audit métier, validation de la membership cible et contrôles race-safe restent dans les services.
+
+---
+
 ## 6. Ce qu’il reste à fermer dans le cadrage M-001
 
 Avant toute première écriture de modèle métier, le projet GMS doit encore valider les points suivants.
 
-1. ordre des middlewares sécurité / membership / permission / DossierAccessGrant et frontière middleware/service ;
-2. validations Zod d'entrée ;
-3. contrats d'erreur ;
-4. stratégie d'audit métier ;
-5. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
-6. règles finales de restauration et traitement des grants lors des transitions ;
-7. contrat du drawer Dossier et de l'ouverture explicite du contexte magasin ;
-8. gestion des affectations Dossier ;
-9. source technique d'autocomplétion d'adresse avec fallback manuel ;
-10. migrations/seeds uniquement si un besoin réel est démontré ;
-11. stratégie de tests unitaires, intégration, tenancy, permissions et E2E ;
-12. critères d'acceptation M-001 ;
-13. ordre d'implémentation du premier lot métier.
+1. validations Zod d'entrée ;
+2. contrats d'erreur ;
+3. stratégie d'audit métier ;
+4. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+5. règles finales de restauration et traitement des grants lors des transitions ;
+6. contrat du drawer Dossier et de l'ouverture explicite du contexte magasin ;
+7. gestion des affectations Dossier ;
+8. source technique d'autocomplétion d'adresse avec fallback manuel ;
+9. migrations/seeds uniquement si un besoin réel est démontré ;
+10. stratégie de tests unitaires, intégration, tenancy, permissions et E2E ;
+11. critères d'acceptation M-001 ;
+12. ordre d'implémentation du premier lot métier.
 
 ---
 
@@ -517,7 +545,7 @@ Utiliser cette amorce dans le projet consacré au produit métier :
 >
 > Le cadrage global produit est validé. M-001 reste EN COURS de cadrage détaillé.
 >
-> Les permissions exactes, la matrice technique d'autorisation et le contrat API REST M-001 sont désormais VALIDÉS.
+> Les permissions exactes, la matrice technique d'autorisation, le contrat API REST M-001 et le contrat middlewares/frontière service sont désormais VALIDÉS.
 >
 > Reprendre maintenant, sans rouvrir les décisions déjà fermées, dans cet ordre :
 >
