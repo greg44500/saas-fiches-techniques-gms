@@ -232,7 +232,7 @@ standard
 - aucune valeur métier de remplacement codée en dur dans le frontend ;
 - préférences d'affichage séparées de la configuration métier ;
 - Dashboard Core + widgets métier ;
-- tous les widgets accessibles sont visibles par défaut avec le Core v1.0.1 (`hiddenWidgetIds = []`) ;
+- tous les widgets accessibles sont visibles par défaut avec le Core v1.1.0 (`hiddenWidgetIds = []`) ;
 - les widgets configurables peuvent ensuite être masqués/réaffichés par utilisateur ;
 - les widgets non configurables restent visibles ;
 - masquer un KPI ne désactive jamais une règle métier ou une alerte bloquante.
@@ -437,16 +437,19 @@ développement immédiat
 
 Le cadrage transversal est clôturé et M-001 est en cours.
 
+Core 1.1.0 a résolu le prérequis transactionnel `WorkspaceMember → REMOVED`. Les permissions M-001 et la matrice technique d'autorisation sont désormais validées.
+
 Ordre de reprise :
 
-1. **vérifier en premier l'état réel de `saas-core-api`** concernant le point d'extension transactionnel du lifecycle `WorkspaceMember → REMOVED` ;
-2. si une release Core existe, lire son contrat, ses tests et ses instructions d'upgrade, puis planifier son intégration produit via `core-update/vX.Y.Z` ;
-3. poursuivre le cadrage M-001 sans rouvrir les décisions déjà validées ;
-4. fermer les permissions métier exactes, l'API REST, les validations Zod et l'audit ;
-5. fermer les transitions de lifecycle Dossier, suppression logique/restauration, drawer et contexte magasin actif ;
-6. définir migrations/seeds si nécessaires ;
-7. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
-8. valider les critères d'acceptation, les prérequis Core et l'ordre d'implémentation ;
-9. seulement après validation complète M-001 et disponibilité du mécanisme Core requis pour `REMOVED`, créer la branche d'implémentation et développer.
+1. valider définitivement la surface API REST M-001 proposée ;
+2. fixer l'ordre exact des middlewares sécurité / membership / permission / DossierAccessGrant ;
+3. définir validations Zod, contrats d'erreur et audit métier ;
+4. fermer la matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` et leurs effets sur les grants ;
+5. fermer drawer, liste, gestion des affectations et contexte magasin actif ;
+6. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
+7. définir migrations/seeds uniquement si nécessaires ;
+8. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
+9. valider critères d'acceptation et ordre d'implémentation ;
+10. seulement après validation complète M-001, créer la branche d'implémentation et développer.
 
 La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour le cadrage M-001.
