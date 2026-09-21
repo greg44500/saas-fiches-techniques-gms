@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — cadrage global clôturé, M-001 en cours de cadrage détaillé  
+**Statut :** VALIDÉ — M-001 implémenté et validé localement, PR à ouvrir  
 **Dernière mise à jour :** 2026-09-21
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -377,7 +377,7 @@ Aucun modèle métier Mongoose n'est autorisé avant validation détaillée de M
 
 ## 4. Phase 3 — Cadrage M-001
 
-**Statut : EN COURS — contrat métier et intégration Core/Produit en cours de fermeture**
+**Statut : VALIDÉ — cadrage détaillé clôturé le 2026-09-21**
 
 Module :
 
@@ -418,9 +418,27 @@ Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middl
 
 ## 5. Phase 4 — Implémentation métier
 
-**Statut : PRÊTE À DÉMARRER après fusion de la PR documentaire #9 et Core Gate post-merge verte**
+**Statut : M-001 IMPLÉMENTÉ — gate locale complète validée — PR / Core Gate à finaliser**
 
-Après validation d'un module :
+Branche fonctionnelle unique :
+
+```text
+feature/m001-dossiers-access
+```
+
+Checkpoint applicatif final validé localement le 2026-09-21 :
+
+```text
+1d4c9a2930ebd76d5667bc137b6e110b20c8c71c
+
+tests backend/frontend demandés → verts
+Playwright                       → 11/11 verts
+npm run release:check            → vert
+```
+
+Le backend, le frontend, l'autocomplétion, la gestion des affectations, le lifecycle, le Dashboard métier et les quatre E2E M-001 sont implémentés.
+
+Workflow complet de sortie :
 
 ```text
 branche
@@ -428,11 +446,19 @@ branche
 → tests backend
 → frontend
 → tests frontend
-→ E2E si nécessaire
-→ gate
+→ E2E métier
+→ release:check complet
+→ pull local VS Code
+→ validation fonctionnelle + visuelle utilisateur
+→ corrections éventuelles
 → PR
-→ documentation
+→ Core Gate PR
+→ merge
+→ Core Gate post-merge
+→ documentation finale
 ```
+
+La validation locale visuelle/fonctionnelle par l'utilisateur est obligatoire avant toute fusion finale, pour le Core comme pour un produit métier.
 
 ### Granularité Git / PR
 
@@ -493,34 +519,20 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le cadrage transversal et le cadrage détaillé M-001 sont clôturés.
-
-Contrats de sortie :
+M-001 a franchi sa gate locale complète. La séquence restante est exclusivement la séquence Git/CI de clôture :
 
 ```text
-docs/m001/M-001-TEST-STRATEGY.md
-docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md
+1. mettre à jour la documentation finale M-001
+2. nettoyer l'historique de la branche sans modifier son arbre final
+3. ouvrir l'unique PR M-001 vers main
+4. attendre la Core Gate de PR
+5. fusionner uniquement après gate verte
+6. attendre la Core Gate post-merge sur main
+7. clôturer M-001
+8. démarrer le cadrage détaillé M-002 — Produits canoniques
 ```
 
-Séquence obligatoire :
-
-```text
-1. terminer la PR documentaire #9
-2. Core Gate verte sur son head
-3. fusionner #9
-4. Core Gate post-merge verte sur main
-5. synchroniser main local
-6. créer feature/m001-dossiers-access
-7. implémenter selon l'ordre validé
-```
-
-Le premier changement de la branche d'implémentation doit isoler les bases tests du produit :
-
-```text
-saas_fiches_techniques_gms_test
-saas_fiches_techniques_gms_e2e_test
-```
-
-Puis M-001 est implémenté comme un seul lot fonctionnel cohérent.
+Ne pas commencer M-002 dans la PR M-001.
+`npm run format:check` reste actuellement non conforme sur des fichiers Core inchangés et n'appartient pas à la Core Gate canonique. Ce sujet doit être traité séparément comme besoin générique Core/tooling, sans correction silencieuse dans le produit.
 
 La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour M-001.

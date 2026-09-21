@@ -25,6 +25,33 @@ Page Dossier
 
 Aucune de ces surfaces ne remplace les autres.
 
+### 1.1 Dashboard Workspace — point d’arrivée métier
+
+Le Dashboard Workspace est le point d’arrivée du produit métier après l’entrée dans un Workspace.
+
+M-001 l’enrichit via le point d’extension Core existant :
+
+```text
+frontend/src/app/application-dashboard.js
+```
+
+Le produit ne crée pas un second système de Dashboard.
+
+Le premier bloc métier M-001 est :
+
+```text
+Dossiers
+→ jusqu’à 5 Dossiers accessibles dans le périmètre courant
+→ états ACTIVE / PAUSED issus de la liste backend par défaut
+→ labels issus des metadata backend
+→ accès direct à la page de travail uniquement pour ACTIVE
+→ lien vers la liste complète des Dossiers
+```
+
+Le widget est filtré par `dossier:read` et reste non configurable dans M-001 afin que l’accès aux Dossiers demeure visible sur la surface d’arrivée métier.
+
+Les widgets Core continuent d’apporter le contexte Workspace utile ; les modules métier suivants enrichiront progressivement ce même Dashboard avec leurs propres indicateurs et surfaces de pilotage.
+
 ---
 
 ## 2. Liste Dossiers

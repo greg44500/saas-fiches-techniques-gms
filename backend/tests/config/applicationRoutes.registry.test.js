@@ -6,11 +6,22 @@ import {
 } from 'vitest';
 
 import {
+    APPLICATION_BACKEND_ROUTE_MODULES,
     mountApplicationRoutes,
 } from '../../config/applicationRoutes.registry.js';
 
 
 describe('application backend route composition', () => {
+    it('compose le module Dossiers M-001 sur le namespace Workspace', () => {
+        expect(APPLICATION_BACKEND_ROUTE_MODULES).toEqual([
+            expect.objectContaining({
+                key: 'dossiers',
+                mountPath: '/api/workspaces/:workspaceId/dossiers',
+                router: expect.any(Function),
+            }),
+        ]);
+    });
+
     it('monte un router métier sur son point de composition explicite', () => {
         const use = vi.fn();
         const app = { use };

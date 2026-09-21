@@ -1,12 +1,12 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : bootstrap technique validé — cadrage global produit VALIDÉ — cadrage détaillé M-001 EN COURS**
+> **Statut : M-001 PRÊT POUR PR — backend/frontend/E2E implémentés — gate locale complète VALIDÉE**
 >
 > **Dernière mise à jour : 2026-09-21**
 >
 > Le code réel, les contraintes DB, les tests/gates réellement exécutés et les contrats canoniques priment sur cette synthèse.
 >
-> **Aucun module métier GMS n'a encore été implémenté. Aucun modèle métier Mongoose n'a été créé.**
+> **Le backend, le frontend métier M-001 et les quatre parcours Playwright critiques sont implémentés sur `feature/m001-dossiers-access`. Le 2026-09-21, l'utilisateur a confirmé la réussite des contrôles locaux demandés, dont les tests backend/frontend, les 11 E2E Playwright et `npm run release:check`. La prochaine étape est la PR M-001 unique puis la Core Gate de PR ; aucune fusion avant cette gate.**
 
 ---
 
@@ -36,12 +36,27 @@ Produit = métier
 
 Dépôt produit : `greg44500/saas-fiches-techniques-gms`.
 
-Main vérifié au début de cette phase :
+Base de la branche d'implémentation :
 
 ```text
-3f7de181b63e896c0066d175c644b38f46b4c228
-Merge pull request #8 from greg44500/docs/m001-post-core-1.1.0-handoff
+main
+08a12982fd80526a32e2620b0a35c3b1fe108cac
+Merge pull request #9 from greg44500/docs/m001-retention-storage-framing
 ```
+
+Branche active :
+
+```text
+feature/m001-dossiers-access
+
+checkpoint backend testé localement :
+c8e8f676dfaeebd69180cae6030d1304627ee088
+
+checkpoint applicatif final validé localement avant clôture documentaire :
+1d4c9a2930ebd76d5667bc137b6e110b20c8c71c
+```
+
+La branche est prête pour sa PR fonctionnelle unique. Elle ne doit pas être fusionnée avant la Core Gate de PR ; après fusion, la Core Gate post-merge sur `main` reste obligatoire.
 
 Core intégré :
 
@@ -671,7 +686,77 @@ M-001 ne provisionne pas artificiellement les presets métier dépendant de M-00
 
 ---
 
-## 9. Cadrage M-001 — COMPLET ET VALIDÉ
+## 9. Implémentation M-001 — GATE LOCALE FINALE VALIDÉE
+
+Le cadrage M-001 reste complet et validé. L'implémentation a commencé sur la branche unique :
+
+```text
+feature/m001-dossiers-access
+```
+
+M-001 implémente désormais notamment :
+
+- isolation des bases de tests produit ;
+- permissions et registries métier ;
+- `Dossier` ;
+- `DossierAccessGrant` ;
+- `BusinessActivityEvent` ;
+- validation Zod ;
+- metadata backend-driven ;
+- autorisation tenant-safe / anti-énumération ;
+- services Dossier, lifecycle et grants ;
+- hook transactionnel `WorkspaceMember → REMOVED` ;
+- 10 endpoints REST M-001 ;
+- migration idempotente des indexes M-001.
+
+Le checkpoint backend intermédiaire `c8e8f676dfaeebd69180cae6030d1304627ee088` avait déjà validé localement `release:verify`, le lint et les tests backend.
+
+Validation finale communiquée par l'utilisateur le 2026-09-21 après correction de l'environnement de test local :
+
+```text
+npm test
+→ vert
+
+npm run test:e2e
+→ 11/11 parcours Playwright verts
+→ 7 parcours Core hérités + 4 parcours métier M-001
+
+npm run release:check
+→ vert
+```
+
+La base Vitest/Supertest locale utilise `saas_fiches_techniques_gms_test` via un `.env.test` local ignoré par Git. Playwright conserve sa base isolée `saas_fiches_techniques_gms_e2e_test`.
+
+Les tests backend incluent les tests Core hérités et les tests métier M-001. Les E2E M-001 ne consomment pas le quota d'inscription publique : leurs fixtures provisionnent les identités/workspaces dans la base E2E puis établissent une session via l'API d'authentification, tandis que les parcours Core conservent la couverture réelle de l'inscription.
+
+### 9.1 Point tooling Prettier découvert
+
+`npm run format:check` échoue également sur des fichiers Core inchangés, notamment `backend/app.js`.
+
+Les vérifications locales ont montré que :
+
+- le problème n'est pas spécifique aux fichiers M-001 ;
+- forcer `--end-of-line lf` ou `--end-of-line crlf` ne rend pas le fichier Core conforme ;
+- `format:check` ne fait actuellement pas partie de `release:check` ni de la Core Gate canonique.
+
+Ce point est donc un candidat de dette générique Core/tooling à traiter séparément dans `saas-core-api`. Il ne doit pas être corrigé silencieusement dans le produit ni servir à masquer une régression M-001.
+
+### 9.2 Suite immédiate
+
+```text
+documentation finale M-001
+→ PR unique feature/m001-dossiers-access → main
+→ Core Gate de PR
+→ merge uniquement après gate verte
+→ Core Gate post-merge sur main
+→ clôture M-001
+→ démarrage du cadrage détaillé M-002
+```
+
+Ne pas commencer M-002 sur la branche M-001 avant la fusion et la validation post-merge.
+---
+
+## 10. Cadrage M-001 — COMPLET ET VALIDÉ
 
 Le cadrage détaillé M-001 est désormais fermé.
 
@@ -697,26 +782,22 @@ critères d'acceptation
 ordre d'implémentation
 ```
 
-L'implémentation devient autorisée uniquement après :
+Les préconditions d'implémentation ont été franchies :
 
 ```text
 PR documentaire #9 fusionnée
 +
 Core Gate post-merge verte sur main
++
+feature/m001-dossiers-access créée
++
+backend M-001 implémenté et testé localement
 ```
 
-Puis :
-
-```text
-main synchronisé
-→ créer feature/m001-dossiers-access
-→ suivre docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md
-```
-
-Aucun modèle métier Mongoose ne doit être créé avant la fusion de la PR #9 et la validation post-merge.
+La suite suit `docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md` à partir du frontend.
 
 ---
-## 10. Points différés non bloquants
+## 11. Points différés non bloquants
 
 - marge semi-nette ;
 - Fiches process ;
@@ -725,22 +806,22 @@ Aucun modèle métier Mongoose ne doit être créé avant la fusion de la PR #9 
 - optimiseur détaillé ;
 - purge physique des Dossiers et de leur graphe métier ;
 - historique administratif complet des invitations Core ;
-- modules Produits / Fournisseurs / Tarifs / Fiches techniques tant que M-001 n'est pas validé.
+- modules Produits / Fournisseurs / Tarifs / Fiches techniques tant que M-001 n'est pas clôturé et fusionné.
 
 ---
 
-## 11. Règle de reprise
+## 12. Règle de reprise
 
 À la prochaine conversation :
 
 ```text
-Git réel
-→ code réel
-→ tests/gates réellement validés
-→ contrats produit
-→ docs/m001/M-001-REPRISE-APRES-CORE-1.1.0.md
-→ docs/domain/STORAGE-RETENTION.md
+KB-START-HERE
+→ Git réel du produit
+→ core-origin.json
 → présente reprise
+→ état réel de la PR M-001 / Core Gate
+→ si PR fusionnée et gate post-merge verte : clôturer M-001 puis cadrer M-002
+→ sinon : terminer uniquement la séquence PR / gate / merge M-001
 ```
 
-Ne créer aucun modèle métier Mongoose avant validation détaillée complète de M-001.
+Ne pas reprendre l'implémentation frontend historique de M-001 sauf régression démontrée par Git, la CI ou un test réel.

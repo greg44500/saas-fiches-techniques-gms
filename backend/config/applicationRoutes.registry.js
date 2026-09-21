@@ -1,3 +1,5 @@
+import { dossierRouter } from '../modules/dossier/dossier.routes.js';
+
 const ROUTE_MODULE_KEY_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
 
@@ -112,7 +114,13 @@ const mountApplicationRoutes = (
  *     }),
  * ]);
  */
-const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([]);
+const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
+    Object.freeze({
+        key: 'dossiers',
+        mountPath: '/api/workspaces/:workspaceId/dossiers',
+        router: dossierRouter,
+    }),
+]);
 
 
 export {

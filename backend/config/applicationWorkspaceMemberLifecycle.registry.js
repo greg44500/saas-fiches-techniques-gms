@@ -2,6 +2,9 @@ import {
     createWorkspaceMemberLifecycleRegistry,
     runWorkspaceMemberRemovedLifecycle,
 } from '../modules/workspaceMember/workspaceMemberLifecycle.registry.js';
+import {
+    DOSSIER_ACCESS_WORKSPACE_MEMBER_LIFECYCLE_MODULE,
+} from '../modules/dossier/dossierAccess.lifecycle.js';
 
 
 /**
@@ -29,7 +32,9 @@ import {
  * Les handlers doivent rester déterministes/idempotents dans le contexte
  * transactionnel et ne déclencher aucun effet externe irréversible.
  */
-const APPLICATION_WORKSPACE_MEMBER_LIFECYCLE_MODULES = Object.freeze([]);
+const APPLICATION_WORKSPACE_MEMBER_LIFECYCLE_MODULES = Object.freeze([
+    DOSSIER_ACCESS_WORKSPACE_MEMBER_LIFECYCLE_MODULE,
+]);
 
 const ACTIVE_APPLICATION_WORKSPACE_MEMBER_LIFECYCLE_REGISTRY =
     createWorkspaceMemberLifecycleRegistry(

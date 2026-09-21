@@ -1,5 +1,8 @@
 import { CORE_PERMISSION } from '../constants/permissions.constants.js';
 import {
+    DOSSIER_ROLE_PERMISSION_MODULE,
+} from '../modules/dossier/dossierPermission.registry.js';
+import {
     composeRolePermissionExtensions,
     configureRolePermissionRegistry,
     createRolePermissionRegistry,
@@ -25,7 +28,9 @@ import {
  *     },
  * }
  */
-const APPLICATION_ROLE_PERMISSION_MODULES = Object.freeze([]);
+const APPLICATION_ROLE_PERMISSION_MODULES = Object.freeze([
+    DOSSIER_ROLE_PERMISSION_MODULE,
+]);
 
 const applicationRolePermissionExtensions =
     composeRolePermissionExtensions(

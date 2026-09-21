@@ -1,6 +1,6 @@
 # M-001 — Critères d'acceptation et ordre d'implémentation
 
-**Statut :** VALIDÉ  
+**Statut :** VALIDÉ — implémentation terminée, gate locale finale verte, PR à ouvrir  
 **Date de validation :** 2026-09-21  
 **Module :** Dossiers / magasins + affectations + activité métier
 
@@ -9,6 +9,48 @@
 ## 1. Gate fonctionnelle M-001
 
 M-001 est considéré fonctionnellement terminé uniquement lorsque tous les critères applicables ci-dessous sont démontrés par le code et les tests réellement exécutés.
+
+### Checkpoint d'implémentation — 2026-09-21
+
+Branche :
+
+```text
+feature/m001-dossiers-access
+```
+
+Checkpoint backend testé localement :
+
+```text
+c8e8f676dfaeebd69180cae6030d1304627ee088
+```
+
+Résultats communiqués :
+
+```text
+npm run release:verify → vert
+npm run lint           → vert
+npm test               → vert
+```
+
+Ce checkpoint backend a ensuite été complété par le frontend, les tests RTL et les E2E.
+
+### Validation finale locale — 2026-09-21
+
+Checkpoint applicatif avant clôture documentaire :
+
+```text
+1d4c9a2930ebd76d5667bc137b6e110b20c8c71c
+```
+
+Résultats confirmés par l'utilisateur :
+
+```text
+npm test              → vert
+npm run test:e2e      → 11/11 verts
+npm run release:check → vert
+```
+
+La gate locale M-001 est donc franchie. La séquence restante est : documentation finale → PR unique → Core Gate PR → merge → Core Gate post-merge.
 
 ---
 
@@ -283,20 +325,30 @@ docs/m001/M-001-TEST-STRATEGY.md
 
 ## 16. Gates finales
 
-Avant merge de la PR d'implémentation :
+Avant de considérer la PR M-001 prête :
 
 ```bash
-npm run format:check
 npm run release:check
 ```
 
-Puis :
+Puis, obligatoirement :
 
+- [ ] branche à jour dans le VS Code local ;
+- [ ] application lancée localement ;
+- [ ] validation fonctionnelle et visuelle réalisée par l'utilisateur ;
+- [ ] anomalies éventuelles corrigées ;
+- [ ] `npm run release:check` relancé après les dernières corrections ;
 - [ ] Core Gate verte sur le head de la PR ;
 - [ ] revue ;
 - [ ] merge ;
 - [ ] Core Gate verte post-merge sur main ;
 - [ ] documentation de reprise mise à jour avec preuves réelles.
+
+### Note tooling — Prettier
+
+Au checkpoint backend, `npm run format:check` échoue également sur des fichiers Core inchangés, dont `backend/app.js`. Les essais explicites avec `--end-of-line lf` et `--end-of-line crlf` échouent eux aussi.
+
+`format:check` ne fait actuellement pas partie de `release:check` ni de la Core Gate canonique. Ce problème est traité comme un besoin générique Core/tooling séparé ; M-001 ne doit pas modifier silencieusement le Core pour le contourner.
 
 ---
 
@@ -431,7 +483,7 @@ Respecter l'ordre des routes, notamment `/metadata` avant `/:dossierId`.
 
 Fermer les tests backend/Supertest avant le frontend.
 
-## Étape 11 — RTK Query et routes frontend
+## Étape 11 — RTK Query et routes frontend — PROCHAINE ÉTAPE
 
 Créer la feature Dossiers en réutilisant le `baseApi` Core.
 

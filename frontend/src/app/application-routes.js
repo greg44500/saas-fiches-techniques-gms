@@ -1,6 +1,7 @@
 import {
   CORE_HELP_FRONTEND_ROUTE_MODULE,
 } from '@/features/help/help-routes';
+import { dossiersFrontendRouteModule } from '@/features/dossiers/dossiers-routes';
 
 const APPLICATION_ROUTE_COLLECTION_KEYS = Object.freeze([
   'publicRoutes',
@@ -96,7 +97,9 @@ function composeApplicationFrontendRoutes(modules = []) {
  * modules métier. Les SaaS dérivés ajoutent ensuite leurs routes sans modifier
  * le routeur principal ni découvrir des fichiers automatiquement.
  */
-const APPLICATION_FRONTEND_ROUTE_MODULES = Object.freeze([]);
+const APPLICATION_FRONTEND_ROUTE_MODULES = Object.freeze([
+  dossiersFrontendRouteModule,
+]);
 
 const APPLICATION_FRONTEND_ROUTES = composeApplicationFrontendRoutes([
   CORE_HELP_FRONTEND_ROUTE_MODULE,
