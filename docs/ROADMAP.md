@@ -206,9 +206,11 @@ Décisions établies :
 
 À finaliser au cadrage des modules :
 
-- clés de permissions techniques exactes ;
-- lifecycle détaillé des affectations Dossier pour M-001 ;
-- vérifier avant implémentation de M-001 si une nouvelle version de `saas-core-api` expose un point d'extension transactionnel du lifecycle `WorkspaceMember` permettant au produit de révoquer atomiquement ses relations métier lors d'un passage à `REMOVED` ;
+- permissions techniques M-001 validées ;
+- matrice d'autorisation M-001 validée ;
+- API REST M-001 validée ;
+- lifecycle détaillé des affectations Dossier encore à fermer ;
+- Core 1.1.0 fournit désormais le point d'extension transactionnel `WorkspaceMember → REMOVED` requis par M-001 ;
 - rattachement commercial exact de l'optimisation avant M-005 ;
 - quotas uniquement lorsqu'un besoin quantitatif est démontré.
 
@@ -357,7 +359,7 @@ WorkspaceMember → REMOVED
 
 Les permissions exactes et la matrice technique d'autorisation M-001 sont désormais validées.
 
-Le cadrage M-001 doit encore fermer : validation finale de l'API REST proposée, ordre des middlewares, validations Zod, audit/erreurs, transitions de lifecycle et effets sur les grants, drawer/contexte actif, autocomplétion, stratégie de tests, critères d'acceptation et ordre d'implémentation.
+Le contrat API REST M-001 est désormais validé. Le cadrage doit encore fermer : ordre exact des middlewares et frontière middleware/service, validations Zod, audit/erreurs, transitions de lifecycle et effets sur les grants, drawer/contexte actif, autocomplétion, stratégie de tests, critères d'acceptation et ordre d'implémentation.
 
 ## 5. Phase 4 — Implémentation métier
 
@@ -442,15 +444,14 @@ Core 1.1.0 a résolu le prérequis transactionnel `WorkspaceMember → REMOVED`.
 
 Ordre de reprise :
 
-1. valider définitivement la surface API REST M-001 proposée ;
-2. fixer l'ordre exact des middlewares sécurité / membership / permission / DossierAccessGrant ;
-3. définir validations Zod, contrats d'erreur et audit métier ;
-4. fermer la matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` et leurs effets sur les grants ;
-5. fermer drawer, liste, gestion des affectations et contexte magasin actif ;
-6. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
-7. définir migrations/seeds uniquement si nécessaires ;
-8. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
-9. valider critères d'acceptation et ordre d'implémentation ;
-10. seulement après validation complète M-001, créer la branche d'implémentation et développer.
+1. fixer l'ordre exact des middlewares sécurité / membership / permission / DossierAccessGrant et la frontière middleware/service ;
+2. définir validations Zod, contrats d'erreur et audit métier ;
+3. fermer la matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` et leurs effets sur les grants ;
+4. fermer drawer, liste, gestion des affectations et contexte magasin actif ;
+5. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
+6. définir migrations/seeds uniquement si nécessaires ;
+7. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
+8. valider critères d'acceptation et ordre d'implémentation ;
+9. seulement après validation complète M-001, créer la branche d'implémentation et développer.
 
 La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour le cadrage M-001.
