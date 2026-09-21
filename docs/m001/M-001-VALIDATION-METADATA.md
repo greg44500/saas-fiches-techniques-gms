@@ -138,7 +138,7 @@ Le backend expose au minimum :
 }
 ```
 
-Une fois la matrice lifecycle fermée, cette même métadonnée pourra exposer les transitions structurelles dérivées du backend.
+La matrice lifecycle est désormais fermée. Cette même métadonnée expose les transitions structurelles dérivées du backend, les raisons de révocation des grants et les actions d'activité métier M-001.
 
 L'exposition d'une transition dans les métadonnées ne remplace jamais l'autorisation serveur de la mutation.
 
@@ -456,14 +456,23 @@ Il ne redéfinit pas le vocabulaire métier.
 
 ## 14. Prochaine étape
 
-Les validations Zod et le principe de métadonnées backend-driven sont fermés.
+Les validations Zod, les métadonnées backend-driven, l'activité métier produit et le lifecycle Dossier sont fermés.
+
+Le backend expose notamment :
+
+```text
+dossierStatuses
+statusTransitions
+accessGrantStatuses
+accessRevocationReasons
+businessActivityActions
+```
 
 Restent à fermer avant implémentation :
 
 ```text
-audit métier et éventuel prérequis Core
-→ lifecycle exact Dossier
-→ effets lifecycle sur DossierAccessGrant
-→ UX
+UX liste / drawer / contexte actif / affectations
+→ autocomplétion d'adresse
+→ migrations/seeds si nécessaires
 → tests / critères d'acceptation / ordre d'implémentation
 ```
