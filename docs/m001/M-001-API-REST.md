@@ -24,6 +24,7 @@ Toutes les routes M-001 sont explicitement rattachées au Workspace :
 
 ```text
 GET    /api/workspaces/:workspaceId/dossiers
+GET    /api/workspaces/:workspaceId/dossiers/metadata
 POST   /api/workspaces/:workspaceId/dossiers
 
 GET    /api/workspaces/:workspaceId/dossiers/:dossierId
@@ -36,11 +37,53 @@ PUT    /api/workspaces/:workspaceId/dossiers/:dossierId/access-grants/:membershi
 DELETE /api/workspaces/:workspaceId/dossiers/:dossierId/access-grants/:membershipId
 ```
 
-Aucun autre endpoint M-001 n'est nécessaire.
+Aucun autre endpoint M-001 n'est nécessaire à ce stade au-delà de la surface ci-dessus.
 
 ---
 
-## 3. GET /dossiers
+## 3. GET /dossiers/metadata
+
+Permission :
+
+```text
+dossier:read
+```
+
+Cette route expose le vocabulaire métier nécessaire à l'interface sans obliger le frontend à recopier des listes statiques.
+
+Le backend dérive cette réponse de ses registres/constants canoniques.
+
+Contrat conceptuel :
+
+```json
+{
+  "status": "success",
+  "data": {
+    "metadata": {
+      "dossierStatuses": [
+        { "value": "ACTIVE", "label": "Actif" },
+        { "value": "PAUSED", "label": "En pause" },
+        { "value": "ARCHIVED", "label": "Archivé" },
+        { "value": "DELETED", "label": "Supprimé" }
+      ],
+      "accessGrantStatuses": [
+        { "value": "ACTIVE", "label": "Active" },
+        { "value": "REVOKED", "label": "Révoquée" }
+      ]
+    }
+  }
+}
+```
+
+Les libellés sont des données de présentation fournies par le backend ; le frontend peut les afficher, les traduire ou les mettre en forme selon son contrat UX, mais ne maintient pas une liste métier concurrente.
+
+La future matrice de transitions lifecycle peut être exposée par cette même métadonnée une fois son cadrage fermé. Le frontend ne doit jamais déduire seul une autorisation à partir de cette matrice : le backend reste l'autorité.
+
+Cette route doit être déclarée avant `/:dossierId` afin que `metadata` ne soit jamais interprété comme un identifiant de Dossier.
+
+---
+
+## 5. GET /dossiers
 
 Permission :
 
@@ -97,7 +140,7 @@ Le multi-status n'est pas introduit en M-001.
 
 ---
 
-## 4. POST /dossiers
+## 5. POST /dossiers
 
 Permission :
 
@@ -136,7 +179,7 @@ Réponse de création : `201 Created`.
 
 ---
 
-## 5. GET /dossiers/:dossierId
+## 6. GET /dossiers/:dossierId
 
 Permission :
 
@@ -164,7 +207,7 @@ OU Dossier hors scope de l'acteur
 
 ---
 
-## 6. PATCH /dossiers/:dossierId
+## 7. PATCH /dossiers/:dossierId
 
 Permission :
 
@@ -197,7 +240,7 @@ Réponse : `200 OK`.
 
 ---
 
-## 7. PATCH /dossiers/:dossierId/status
+## 8. PATCH /dossiers/:dossierId/status
 
 Permission :
 
@@ -235,7 +278,7 @@ Il n'existe pas d'endpoints `/pause`, `/archive`, `/delete` ou `/restore` sépar
 
 ---
 
-## 8. Pas de DELETE physique du Dossier
+## 9. Pas de DELETE physique du Dossier
 
 Il n'existe pas :
 
@@ -255,7 +298,7 @@ La purge physique reste hors M-001.
 
 ---
 
-## 9. GET /access-grants
+## 10. GET /access-grants
 
 Route :
 
@@ -283,7 +326,7 @@ Pagination : page 1 par défaut, limit 20 par défaut, maximum 100.
 
 ---
 
-## 10. PUT /access-grants/:membershipId
+## 11. PUT /access-grants/:membershipId
 
 Route :
 
@@ -333,7 +376,7 @@ Le Workspace Owner ne reçoit jamais de `DossierAccessGrant` individuel.
 
 ---
 
-## 11. DELETE /access-grants/:membershipId
+## 12. DELETE /access-grants/:membershipId
 
 Route :
 
@@ -362,7 +405,7 @@ L'opération est idempotente : en absence de grant ACTIVE, la réponse reste `20
 
 ---
 
-## 12. Compatibilité des endpoints avec le statut Dossier
+## 13. Compatibilité des endpoints avec le statut Dossier
 
 | Endpoint / action | ACTIVE | PAUSED | ARCHIVED | DELETED |
 | --- | --- | --- | --- | --- |
@@ -377,7 +420,7 @@ La matrice exacte des transitions reste à fermer dans le bloc lifecycle sans mo
 
 ---
 
-## 13. Contexte Dossier frontend
+## 14. Contexte Dossier frontend
 
 Il n'existe aucun endpoint :
 
@@ -391,7 +434,7 @@ Il n'existe aucun endpoint :
 
 ---
 
-## 14. Réutilisation des ressources Core
+## 15. Réutilisation des ressources Core
 
 Il n'existe pas de top-level :
 
@@ -411,7 +454,7 @@ La liste des membres affectables est obtenue en composant les `WorkspaceMember` 
 
 ---
 
-## 15. Formats de réponse
+## 16. Formats de réponse
 
 Ressource :
 
@@ -462,7 +505,7 @@ Les erreurs réutilisent le contrat général du Core ; les codes métier préci
 
 ---
 
-## 16. Codes HTTP validés
+## 17. Codes HTTP validés
 
 | Situation | HTTP |
 | --- | ---: |
@@ -481,7 +524,7 @@ Les erreurs réutilisent le contrat général du Core ; les codes métier préci
 
 ---
 
-## 17. Exclusions M-001
+## 18. Exclusions M-001
 
 ```text
 pas de DELETE physique Dossier
@@ -496,7 +539,7 @@ pas d'endpoints Produits / Prix / Fiches techniques
 
 ---
 
-## 18. Articulation avec le contrat d'autorisation
+## 19. Articulation avec le contrat d'autorisation
 
 Le contrat REST est fermé.
 
