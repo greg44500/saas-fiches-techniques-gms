@@ -170,7 +170,7 @@ Non-owner :
 authenticate
 → Workspace courant valide
 → WorkspaceMember ACTIVE
-→ permission requise
+→ permission métier issue du Role générique Core
 → Dossier du même Workspace
 → DossierAccessGrant ACTIVE
 → statut Dossier compatible
@@ -178,7 +178,20 @@ authenticate
 → invariants métier
 ```
 
-Owner : même pipeline sans grant individuel, grâce à son périmètre implicite.
+Owner :
+
+```text
+authenticate
+→ Workspace courant valide
+→ WorkspaceMember ACTIVE avec rôle système owner
+→ autorité métier implicite du produit
+→ aucun grant Dossier individuel
+→ statut Dossier compatible
+→ capability éventuelle
+→ invariants métier
+```
+
+Le rôle système `owner` n'est pas enrichi avec des profils métier. La couche produit applique cette exception d'autorisation sans créer un second moteur RBAC.
 
 Invariants :
 
@@ -292,7 +305,7 @@ Principes structurants :
 authenticate
 → validateRequest
 → loadWorkspaceContext
-→ authorizePermission
+→ authorizeProductPermission
 → contrôles commerciaux Core applicables aux mutations
 → scope Dossier produit
 → compatibilité statique du statut si nécessaire
