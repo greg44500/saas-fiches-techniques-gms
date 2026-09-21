@@ -114,47 +114,91 @@ Un prix spécifique d'un autre magasin ne constitue jamais un fallback.
 
 ---
 
-## Catalogue produit
+## Référentiel Produit canonique
 
-Base de produits commune à un Workspace.
+Référentiel partagé à l'échelle du SaaS contenant les identités Produit génériques et non confidentielles.
 
-Les dossiers puisent dans ce catalogue au lieu de recréer les mêmes produits magasin par magasin.
+Invariant :
+
+```text
+même réalité Produit canonique
+→ une seule identité de référence dans le SaaS
+```
+
+Les variantes lexicales équivalentes — casse, singulier/pluriel, accents, espaces ou fautes reconnues — ne doivent pas créer silencieusement de doublons.
 
 ---
 
-## Produit
+## Catalogue Produit du Workspace
 
-Denrée ou composant utilisable dans une fiche technique, indépendamment de son fournisseur et de son prix.
+Sélection des Produits canoniques réellement utilisés par un Workspace.
 
-Le produit porte notamment :
+Le catalogue Workspace référence le référentiel partagé ; il ne copie pas l'identité du Produit. Les Dossiers du Workspace puisent dans cette sélection.
 
-- un nom métier précis ;
+Une relation conceptuelle de type `WorkspaceProduct` peut porter ce rattachement ; son schéma final relève de M-002.
+
+---
+
+## Produit canonique
+
+Denrée, composant ou consommable de référence identifiable indépendamment d'un Workspace, d'un Fournisseur et d'un prix.
+
+Le Produit canonique porte uniquement des données génériques partageables et ne contient jamais de tarif négocié, prix facturé, fournisseur local choisi, historique commercial tenant ou autre donnée confidentielle.
+
+Il porte conceptuellement :
+
+- un nom canonique ;
+- une clé normalisée et des alias de recherche ;
 - une catégorie ;
-- une gamme alimentaire lorsqu'elle est pertinente ;
 - une unité de référence ;
-- un taux de rendement ;
 - une photo facultative ;
-- des métadonnées de création et modification.
+- des métadonnées de création et modification ;
+- les liens vers ses déclinaisons structurées lorsque nécessaires.
 
-### Règle de nommage
+---
 
-Si le produit est entier ou utilisé dans sa forme standard, utiliser le nom simple :
+## Déclinaison Produit
 
-```text
-Carotte
-Oignon
-Rumsteck
-Maquereau
-```
+Description structurée d'une forme réellement différente d'usage d'un Produit canonique lorsque la préparation, l'état ou la conservation modifient son rendement, sa sélection commerciale ou son emploi.
 
-Si une forme de préparation est nécessaire pour comprendre ce qui est réellement utilisé, la préciser dans le nom :
+Axes identifiés :
 
 ```text
-Carotte râpée
-Oignon émincé
-Rumsteck tranché
-Maquereau en filet
+forme
+→ entière / rondelles / râpée / dés / julienne / purée / ...
+
+état / transformation
+→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
+
+conservation
+→ fraîche / surgelée / appertisée / ...
 ```
+
+Exemple :
+
+```text
+Produit canonique : Carotte
+forme             : râpée
+état              : prête à l'emploi
+conservation      : fraîche
+```
+
+Une transformation qui crée une formulation/composition différente peut relever d'un Produit distinct plutôt que d'une simple déclinaison ; cette frontière est à fermer dans M-002.
+
+### Règle de recherche et création
+
+Avant de créer une nouvelle identité canonique, le système recherche les correspondances exactes normalisées, les alias puis les candidats proches.
+
+```text
+carotte
+Carottes
+carote
+```
+
+doivent converger vers `Carotte` lorsqu'ils désignent la même réalité métier.
+
+Le libellé affiché peut intégrer les dimensions structurées, par exemple `Carotte râpée prête à l'emploi`, sans créer une nouvelle identité racine uniquement à cause du texte.
+
 
 ---
 
