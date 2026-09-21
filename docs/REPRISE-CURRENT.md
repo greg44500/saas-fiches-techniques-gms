@@ -133,7 +133,7 @@ Produit GMS
 
 Aucun profil métier n'est ajouté aux rôles système du Core. Les profils métier sont des rôles personnalisés définis/provisionnés par le produit en utilisant la primitive générique Core.
 
-Le Workspace Owner reste le rôle système générique `owner`, mais le produit le reconnaît comme autorité métier complète dans son Workspace ; il n'a pas besoin d'un profil métier supplémentaire.
+Le Workspace Owner reste le rôle système générique `owner`. Le produit déclare ses permissions métier via le point d'extension RBAC applicatif et les compose dans `owner` sans modifier les constantes ou rôles système du dépôt Core. Les profils métier nommés restent exclusivement dans le produit.
 
 
 
@@ -183,15 +183,15 @@ Owner :
 ```text
 authenticate
 → Workspace courant valide
-→ WorkspaceMember ACTIVE avec rôle système owner
-→ autorité métier implicite du produit
+→ WorkspaceMember ACTIVE
+→ permission métier issue du descriptor produit composé dans le rôle owner
 → aucun grant Dossier individuel
 → statut Dossier compatible
 → capability éventuelle
 → invariants métier
 ```
 
-Le rôle système `owner` n'est pas enrichi avec des profils métier. La couche produit applique cette exception d'autorisation sans créer un second moteur RBAC.
+Aucun profil métier n'est ajouté au Core. Le rôle `owner` conserve son identité système générique ; seules les permissions applicatives du produit sont composées par le dérivé via le point d'extension prévu.
 
 Invariants :
 
@@ -305,7 +305,7 @@ Principes structurants :
 authenticate
 → validateRequest
 → loadWorkspaceContext
-→ authorizeProductPermission
+→ authorizePermission
 → contrôles commerciaux Core applicables aux mutations
 → scope Dossier produit
 → compatibilité statique du statut si nécessaire
