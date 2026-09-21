@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
 
 **Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
-**Dernière mise à jour :** 2026-09-20  
+**Dernière mise à jour :** 2026-09-21  
 **Périmètre :** définition du problème métier, des principes produit et des invariants à préserver avant tout module métier
 
 > Ce document formalise les fondations transversales validées du produit.  
@@ -125,7 +125,7 @@ Les relations d'accès peuvent rester conservées pour l'audit mais n'accordent 
 
 La restauration d'un dossier supprimé est possible tant qu'une purge définitive n'a pas eu lieu. La restauration doit revenir dans un état non opérationnel nécessitant une vérification, par défaut `PAUSED`, plutôt que de réactiver silencieusement le magasin.
 
-La purge physique constitue une opération distincte, contrôlée, auditée et soumise aux règles de rétention à cadrer. Elle n'est jamais assimilée à l'action utilisateur courante « supprimer ».
+La purge physique constitue une opération distincte, contrôlée et auditée. Pour M-001, un Dossier `DELETED` n'est soumis à aucune purge automatique : sa purge définitive reste différée jusqu'au cadrage du graphe métier complet. Cette règle est distincte de la politique de corbeille applicable aux ressources métier purgeables comme les futurs DRAFTS supprimés.
 
 Transitions conceptuelles retenues :
 
@@ -1417,8 +1417,8 @@ Extensions actuellement identifiées :
 - génération d'infographies process ;
 - rappels / notifications ;
 - recherche globale intelligente ;
-- exports PDF / CSV ;
-- envoi direct de documents par e-mail.
+- exports CSV / XLS(X) générés à la demande ;
+- envoi direct de documents par e-mail avec PDF généré à la demande comme pièce jointe temporaire.
 
 Aucune de ces extensions n'est considérée comme V1 uniquement parce qu'elle est citée ici.
 
@@ -1465,6 +1465,7 @@ Paramètres candidats déjà identifiés :
 - durée de fraîcheur des Prix facturés ;
 - politique des références favorites/fréquemment utilisées ;
 - politique de cycle de vie des Fiches techniques ;
+- politique de conservation / corbeille des ressources métier supprimées ;
 - TVA ;
 - objectif de marge ;
 - coefficient ;
@@ -1520,7 +1521,55 @@ Il faut distinguer la fraîcheur fonctionnelle d'une recette de la fraîcheur é
 ---
 
 
-### 12.3 Préférences d'affichage et Dashboard Workspace
+### 12.3 Conservation, corbeille métier et stockage Workspace
+
+Le produit distingue la fonctionnalité générique Core de téléversement de fichiers de la politique métier de conservation des ressources générées ou supprimées par le SaaS GMS.
+
+Règles transversales validées :
+
+```text
+capacité de stockage
+→ portée Workspace
+
+Dossier
+→ aucune limite dure de stockage propre en V1
+→ peut consommer la capacité disponible du Workspace
+
+mesure par Dossier
+→ possible pour l'observabilité et le pilotage
+→ jamais autorité de quota en V1
+```
+
+La corbeille métier possède un comportement standard immédiatement utilisable :
+
+```text
+durée standard : 30 jours
+borne minimale : 7 jours
+borne maximale : 90 jours
+```
+
+Lorsque la personnalisation est autorisée, le Workspace peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. La valeur effective de rétention est figée au moment de la suppression sous forme d'une échéance de purge ; un changement ultérieur de configuration n'allonge ni ne raccourcit rétroactivement les éléments déjà placés en corbeille.
+
+Pour les Fiches techniques :
+
+- un DRAFT actif n'est jamais purgé uniquement parce qu'il est ancien ;
+- un DRAFT explicitement supprimé est placé en corbeille puis devient purgeable à l'échéance de la politique métier ;
+- une version VALIDATED reste historiquement immuable et n'est jamais purgée automatiquement par simple ancienneté ;
+- l'archivage reste le mécanisme normal pour sortir une fiche validée de l'usage courant.
+
+Pour les artefacts générés :
+
+- CSV et XLS(X) sont générés à la demande pour l'export puis détruits après remise au client ;
+- le PDF n'est pas une ressource persistante du produit : il est généré à la demande lorsqu'un document est envoyé par e-mail, joint au message puis supprimé du stockage temporaire après traitement ;
+- les artefacts reproductibles ne sont pas conservés durablement et ne créent pas d'historique de fichiers parallèle à la donnée métier source.
+
+Cette politique ne déclenche aucune purge automatique des Dossiers `DELETED` dans M-001.
+
+Le contrat transversal détaillé est conservé dans `docs/domain/STORAGE-RETENTION.md`.
+
+---
+
+### 12.4 Préférences d'affichage et Dashboard Workspace
 
 Les préférences d'affichage sont distinctes de la configuration métier :
 
