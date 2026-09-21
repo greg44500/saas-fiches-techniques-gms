@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
 
 **Statut :** VALIDÉ — modèle conceptuel transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-20  
+**Dernière mise à jour :** 2026-09-21  
 **Important :** ce document décrit des concepts métier et leurs relations. Il ne constitue pas un schéma Mongoose.
 
 ---
@@ -917,9 +917,11 @@ Un prix absent n'est jamais représenté par 0.
 
 L'archivage conserve l'historique et la valorisation.
 
-Aucune purge n'est déclenchée automatiquement par l'âge.
+Aucune Fiche technique VALIDATED n'est purgée automatiquement uniquement par l'âge.
 
-La suppression définitive éventuelle est réservée au Workspace Owner dans le cadrage actuel, après archivage, contrôles backend, audit et application de la politique de rétention.
+Un DRAFT actif reste conservé quelle que soit son ancienneté. Lorsqu'un DRAFT est explicitement supprimé, il relève de la corbeille métier du Workspace et devient purgeable à l'échéance de la durée effective.
+
+La suppression définitive éventuelle d'une fiche VALIDATED reste réservée au Workspace Owner dans le cadrage actuel, après archivage, contrôles backend, audit et contrat spécifique du module.
 
 La fiche et ses versions sont traitées comme un ensemble cohérent.
 
@@ -974,6 +976,47 @@ simulation
 ```
 
 Une version VALIDATED n'est jamais modifiée par l'atelier.
+
+## 12.6 Stockage Workspace, corbeille métier et artefacts générés
+
+Le stockage est gouverné au niveau du Workspace et non au niveau du Dossier.
+
+```text
+Workspace
+→ capacité / quota de stockage
+
+Dossier
+→ consommation rattachable
+→ aucun quota dur propre en V1
+```
+
+Tant que le Workspace dispose de la capacité et des droits nécessaires, ses Dossiers peuvent créer leurs ressources métier et documents associés. Une ventilation de consommation par Dossier peut exister pour le pilotage, sans devenir une limite bloquante.
+
+La politique métier de corbeille est configurable au niveau Workspace selon les capabilities disponibles :
+
+```text
+standard : 30 jours
+minimum  : 7 jours
+maximum  : 90 jours
+```
+
+L'échéance effective est figée lors de la suppression de la ressource. Une modification future de la politique n'est pas rétroactive sur les éléments déjà supprimés.
+
+Règles validées :
+
+- DRAFT actif : aucune purge automatique liée à l'âge ;
+- DRAFT explicitement supprimé : corbeille puis purge à l'échéance ;
+- version VALIDATED : conservation historique, pas de purge automatique par âge ;
+- Dossier `DELETED` : suppression logique sans purge automatique dans M-001.
+
+Les formats de sortie reproductibles ne sont pas des ressources métier persistantes :
+
+- CSV / XLS(X) : génération à la demande puis destruction après remise au client ;
+- PDF : génération à la demande uniquement comme pièce jointe lors de l'envoi d'un document par e-mail, puis destruction du temporaire après traitement.
+
+La donnée structurée de la Fiche technique et ses versions restent la source de vérité ; les exports ne créent aucun historique de fichiers parallèle.
+
+Le contrat transversal détaillé se trouve dans `docs/domain/STORAGE-RETENTION.md`.
 
 ## 13. Valorisation courante et historique
 
@@ -1112,7 +1155,7 @@ Les préférences d'affichage utilisateur sont séparées de cette configuration
 
 Le Dashboard Workspace réutilise le registre Core de widgets. Les modules métier ajoutent leurs descriptors ; les permissions et capabilities déterminent les widgets accessibles ; les préférences utilisateur déterminent ensuite les widgets visibles.
 
-Le Core v1.0.1 utilise `hiddenWidgetIds = []` par défaut : tous les widgets accessibles sont initialement visibles. Un widget configurable peut ensuite être masqué ou réaffiché ; un widget non configurable reste visible.
+Le Core v1.1.0 utilise `hiddenWidgetIds = []` par défaut : tous les widgets accessibles sont initialement visibles. Un widget configurable peut ensuite être masqué ou réaffiché ; un widget non configurable reste visible.
 
 ## 19. Extensibilité
 
@@ -1148,7 +1191,7 @@ Un rôle Platform ne donne aucun accès implicite aux données métier d'un Work
 
 ### Autres membres
 
-Le Core v1.0.1 porte un seul Role par WorkspaceMember.
+Le Core v1.1.0 porte un seul Role par WorkspaceMember.
 
 Les responsabilités multiples sont donc représentées par un rôle personnalisé combinant les permissions nécessaires, et non par plusieurs rôles cumulés.
 
