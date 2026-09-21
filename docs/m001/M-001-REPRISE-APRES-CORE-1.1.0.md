@@ -255,26 +255,105 @@ Une future copie de Fiche technique entre magasins pourra copier la composition,
 
 ---
 
+## 5.1 Permissions M-001 et matrice d'autorisation VALIDÉES
+
+Permissions métier validées :
+
+```text
+dossier:read
+dossier:create
+dossier:update
+dossier:lifecycle:update
+dossier:access:read
+dossier:access:manage
+```
+
+Baseline actuelle :
+
+- Owner : toutes les permissions M-001 et tous les Dossiers par périmètre implicite ;
+- les rôles système Core non-owner peuvent recevoir `dossier:read` afin d'utiliser les grants explicites ;
+- administration du Dossier et des affectations reste Owner-only par défaut dans les profils métier nommés ;
+- les permissions M-001 ne sont pas réservées à ce stade afin de conserver une délégation explicite via rôle personnalisé si un besoin métier est démontré.
+
+Autorisation effective d'un non-owner :
+
+```text
+authenticate
+→ Workspace courant valide
+→ WorkspaceMember ACTIVE
+→ permission M-001 requise
+→ Dossier du même Workspace
+→ DossierAccessGrant ACTIVE
+→ statut Dossier compatible
+→ capability éventuelle
+→ invariants métier
+```
+
+Pour l'Owner, le contrôle de grant est remplacé par son périmètre Dossier implicite ; les permissions, statuts et invariants restent obligatoires.
+
+Règles de statut déjà validées pour l'autorisation :
+
+- `ACTIVE` : travail métier possible ;
+- `PAUSED` : consultation et administration autorisées selon permission, aucun contexte de travail métier ;
+- `ARCHIVED` : consultation historique contrôlée, aucun travail ni édition courante ;
+- `DELETED` : absent des flux normaux, seulement administration contrôlée de restauration ;
+- un grant `REVOKED` n'autorise jamais l'accès ;
+- un PlatformRole n'accorde aucun accès Dossier.
+
+Si un non-owner disposant explicitement de `dossier:create` crée un Dossier, la création du Dossier et de son premier `DossierAccessGrant ACTIVE` doit être atomique.
+
+---
+
+## 5.2 Stockage et conservation — décisions transversales utiles à M-001
+
+La capacité de stockage appartient au Workspace. Aucun quota dur de stockage par Dossier n'est retenu en V1.
+
+La politique métier de corbeille est portée par le Workspace :
+
+```text
+standard : 30 jours
+minimum  : 7 jours
+maximum  : 90 jours
+```
+
+Cette politique vise les futures ressources métier purgeables, notamment les DRAFTS explicitement supprimés. Elle est distincte de la fonctionnalité générique Core de téléversement de fichiers.
+
+Pour M-001 :
+
+- un Dossier `DELETED` n'est pas purgé automatiquement ;
+- sa purge physique reste différée jusqu'au cadrage complet de ses descendants ;
+- les règles de stockage n'introduisent aucun quota propre au Dossier.
+
+Pour les modules suivants :
+
+- un DRAFT actif n'est jamais purgé uniquement pour ancienneté ;
+- un DRAFT supprimé entre en corbeille puis devient purgeable à son échéance ;
+- une version VALIDATED reste historisée et n'est pas purgée automatiquement par âge ;
+- CSV/XLS(X) sont générés à la demande et non conservés durablement ;
+- le PDF est généré uniquement comme pièce jointe temporaire lors d'un envoi par e-mail et n'est pas stocké comme ressource métier.
+
+Voir `docs/domain/STORAGE-RETENTION.md`.
+
+---
+
 ## 6. Ce qu’il reste à fermer dans le cadrage M-001
 
 Avant toute première écriture de modèle métier, le projet GMS doit encore valider les points suivants.
 
-1. clés de permissions métier exactes ;
-2. matrice précise Owner / rôles métier / actions ;
-3. API REST M-001 et conventions d’URL ;
-4. ordre des middlewares sécurité / membership / permission / DossierAccessGrant ;
-5. validations Zod d’entrée ;
-6. contrats d’erreur ;
-7. stratégie d’audit métier ;
-8. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
-9. règles de restauration et de suppression logique ;
-10. contrat du drawer Dossier et de l’ouverture explicite du contexte magasin ;
-11. gestion des affectations Dossier ;
-12. source technique d’autocomplétion d’adresse avec fallback manuel ;
-13. migrations/seeds uniquement si un besoin réel est démontré ;
-14. stratégie de tests unitaires, intégration, tenancy, permissions et E2E ;
-15. critères d’acceptation M-001 ;
-16. ordre d’implémentation du premier lot métier.
+1. validation finale de l'API REST M-001 et des conventions d'URL proposées ;
+2. ordre des middlewares sécurité / membership / permission / DossierAccessGrant ;
+3. validations Zod d'entrée ;
+4. contrats d'erreur ;
+5. stratégie d'audit métier ;
+6. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+7. règles finales de restauration et traitement des grants lors des transitions ;
+8. contrat du drawer Dossier et de l'ouverture explicite du contexte magasin ;
+9. gestion des affectations Dossier ;
+10. source technique d'autocomplétion d'adresse avec fallback manuel ;
+11. migrations/seeds uniquement si un besoin réel est démontré ;
+12. stratégie de tests unitaires, intégration, tenancy, permissions et E2E ;
+13. critères d'acceptation M-001 ;
+14. ordre d'implémentation du premier lot métier.
 
 ---
 
@@ -313,7 +392,7 @@ Le futur lot M-001 devra notamment couvrir :
 2. échec du handler de révocation → rollback du retrait Core et des changements métier ;
 3. membership SUSPENDED → grants conservés ACTIVE mais accès effectif refusé ;
 4. REMOVED puis réinvité → anciens grants restent REVOKED ;
-5. nouvelle affectation explicite par l’Owner → création/réactivation contrôlée d’un nouveau périmètre ;
+5. nouvelle affectation explicite par l’Owner → création d’un nouveau grant ACTIVE ; un ancien grant REVOKED n’est jamais réactivé silencieusement ;
 6. fermeture du compte utilisateur → même révocation transactionnelle des grants ;
 7. tentative d’accès à un Dossier d’un autre Workspace ou sans grant → refus ;
 8. Owner → accès implicite aux Dossiers sans grant individuel.
@@ -329,7 +408,7 @@ Restent hors du cadrage immédiat :
 - OCR / IA ;
 - imports avancés ;
 - optimiseur détaillé ;
-- purge physique ;
+- purge physique définitive des Dossiers et de leur graphe métier ;
 - historique administratif complet des invitations Core ;
 - modules Produits / Fournisseurs / Tarifs / Fiches techniques.
 
@@ -393,21 +472,21 @@ Utiliser cette amorce dans le projet consacré au produit métier :
 >
 > Le cadrage global produit est validé. M-001 reste EN COURS de cadrage détaillé.
 >
+> Les permissions exactes et la matrice technique d'autorisation sont désormais VALIDÉES.
+>
 > Reprendre maintenant, sans rouvrir les décisions déjà fermées, dans cet ordre :
 >
-> 1. permissions métier exactes ;
-> 2. matrice d’autorisation ;
-> 3. API REST et ordre des middlewares ;
-> 4. validations Zod ;
-> 5. audit et contrats d’erreur ;
-> 6. transitions ACTIVE / PAUSED / ARCHIVED / DELETED ;
-> 7. drawer Dossier, liste, affectations et activation du contexte magasin ;
-> 8. contrat technique d’autocomplétion d’adresse ;
-> 9. migrations/seeds éventuels ;
-> 10. stratégie de tests ;
-> 11. critères d’acceptation ;
-> 12. validation finale M-001 ;
-> 13. seulement ensuite commencer les premières écritures de code métier.
+> 1. valider définitivement l'API REST proposée et l'ordre des middlewares ;
+> 2. validations Zod ;
+> 3. audit et contrats d'erreur ;
+> 4. transitions ACTIVE / PAUSED / ARCHIVED / DELETED et effets sur les grants ;
+> 5. drawer Dossier, liste, affectations et activation du contexte magasin ;
+> 6. contrat technique d'autocomplétion d'adresse ;
+> 7. migrations/seeds éventuels ;
+> 8. stratégie de tests ;
+> 9. critères d'acceptation ;
+> 10. validation finale M-001 ;
+> 11. seulement ensuite commencer les premières écritures de code métier.
 >
 > Pendant l’implémentation, privilégier des composants réutilisables, RTK Query pour le server state, Redux uniquement pour un état global réellement nécessaire, et des PR par lots fonctionnels cohérents.
 >
