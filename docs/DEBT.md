@@ -194,12 +194,28 @@ MFA, passkeys, SSO entreprise ou autres providers ne sont pas ajoutés uniquemen
 
 ### D-012 — Tests E2E de chaque application dérivée
 
-**Statut :** À CADRER  
-**Blocage Core 1.0 :** non — D-016 couvre uniquement le Core générique
+**Statut :** PLANIFIÉ — M-001  
+**Blocage Core 1.0 :** non — D-016 couvre uniquement le Core générique  
+**Blocage M-001 :** oui pour la clôture de l'implémentation
 
 Chaque dérivé doit couvrir ses parcours métier/transversaux critiques propres.
 
-D-017 démontre que la gate canonique clonée continue d’exécuter les E2E Core après dérivation et upgrade. Cela ne remplace pas les E2E métier propres à chaque futur produit réel.
+Pour M-001, le périmètre Playwright validé est volontairement limité à quatre parcours :
+
+```text
+1. Owner → création Dossier → drawer → vraie page de travail
+2. affectation réelle d'un membre autorisé
+3. isolation Dossier pour un membre sans grant
+4. suppression → révocation grants → restauration PAUSED sans restauration des accès
+```
+
+Contrat détaillé :
+
+```text
+docs/m001/M-001-TEST-STRATEGY.md
+```
+
+D-012 ne sera considérée validée pour M-001 qu'après exécution réelle des scénarios et de la gate canonique. D-017 démontre seulement que la gate clonée continue d'exécuter les E2E Core après dérivation et upgrade.
 
 ### D-013 — Configuration et déploiement de production
 
