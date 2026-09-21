@@ -229,6 +229,9 @@ Décisions établies :
 - Économe : validation des Prix facturés, revues et revalorisation, sans validation FT par défaut ;
 - Contributeur/Lecteur : Prix applicable nécessaire sans historique commercial détaillé ;
 - administration du Dossier et affectations Owner-only par défaut ;
+- les profils Acheteur, Économe, Responsable FT, Contributeur FT et Lecteur métier sont des presets produit destinés à créer des Roles Workspace personnalisés, jamais des rôles système Core ;
+- leur provisionnement final est progressif et intervient lorsque les permissions des modules concernés sont suffisamment cadrées ; M-001 n'invente pas les permissions M-002/M-003/M-004 ;
+- le Workspace Owner reste le rôle système générique Core enrichi, dans le produit dérivé, par les permissions métier déclarées via le point d'extension RBAC applicatif ;
 - Atelier d'optimisation = capability payante distincte du RBAC.
 
 À finaliser au cadrage des modules :
@@ -307,6 +310,31 @@ M-004 Fiches techniques + valorisation
 M-005 Atelier d'optimisation Premium
 M-006+ Process / imports / OCR / extensions
 ```
+
+### 2.9 Données initiales / bootstrap
+
+**État : stratégie validée**
+
+```text
+M-001
+→ aucune migration historique
+→ aucun seed Dossier
+→ Owner suffisant pour les premiers tests métier
+
+M-002
+→ bootstrap Produits canoniques initiaux
+
+M-003
+→ bootstrap Fournisseurs / Articles / catalogues de référence
+
+Presets de rôles métier
+→ propriété du produit
+→ provisionnement progressif selon les permissions effectivement cadrées
+```
+
+Les données de bootstrap sont versionnées, idempotentes, traçables et respectent les mêmes invariants que les flux métier normaux.
+
+---
 
 Ne bloquent plus M-001 :
 
