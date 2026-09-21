@@ -247,7 +247,24 @@ Compatibilité :
 - ARCHIVED : lecture historique contrôlée ;
 - DELETED : autorité lifecycle supplémentaire.
 
-### 5.5 PATCH /dossiers/:dossierId
+### 5.5 GET /dossiers/:dossierId/activity
+
+```text
+authenticate
+→ validateRequest(params + query)
+→ loadWorkspaceContext
+→ authorizePermission(dossier:read)
+→ loadAuthorizedDossierContext
+→ enforceDossierStatePolicy(READ_ACTIVITY)
+→ controller
+→ businessActivityService.listForDossier
+```
+
+Le service filtre les actions d'affectation lorsque l'acteur ne possède pas `dossier:access:read`.
+
+Aucun `AuditLog` Core n'est lu par cette route.
+
+### 5.6 PATCH /dossiers/:dossierId
 
 ```text
 authenticate
@@ -270,7 +287,7 @@ _id
 + status compatible
 ```
 
-### 5.6 PATCH /dossiers/:dossierId/status
+### 5.7 PATCH /dossiers/:dossierId/status
 
 ```text
 authenticate
@@ -300,7 +317,7 @@ Le service lifecycle reste l'autorité sur :
 - restauration ;
 - `409 Conflict`.
 
-### 5.7 GET /access-grants
+### 5.8 GET /access-grants
 
 ```text
 authenticate
@@ -317,7 +334,7 @@ Le service filtre toujours par Workspace et Dossier.
 
 Le Workspace Owner n'est pas représenté par un grant.
 
-### 5.8 PUT /access-grants/:membershipId
+### 5.9 PUT /access-grants/:membershipId
 
 ```text
 authenticate
@@ -345,7 +362,7 @@ Le service transactionnel vérifie :
 - idempotence et course concurrente ;
 - audit.
 
-### 5.9 DELETE /access-grants/:membershipId
+### 5.10 DELETE /access-grants/:membershipId
 
 Même chaîne que le PUT jusqu'au service :
 
