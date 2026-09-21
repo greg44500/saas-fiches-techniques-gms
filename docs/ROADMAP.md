@@ -414,11 +414,11 @@ WorkspaceMember → REMOVED
 
 Les permissions exactes et la matrice technique d'autorisation M-001 sont désormais validées.
 
-Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middleware-service, le contrat de validation Zod / métadonnées backend-driven, l'activité métier produit, le lifecycle Dossier, le contrat UX liste/drawer/Dialog/page Dossier et l'autocomplétion d'adresse sont désormais validés. Le cadrage doit encore fermer : migrations/seeds éventuels, stratégie de tests, critères d'acceptation et ordre d'implémentation.
+Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middleware-service, le contrat de validation Zod / métadonnées backend-driven, l'activité métier produit, le lifecycle Dossier, le contrat UX liste/drawer/Dialog/page Dossier, l'autocomplétion d'adresse, la stratégie de bootstrap, la stratégie de tests, les critères d'acceptation et l'ordre d'implémentation sont désormais validés. Le cadrage détaillé M-001 est complet.
 
 ## 5. Phase 4 — Implémentation métier
 
-**Statut : NON AUTORISÉE pour le moment**
+**Statut : PRÊTE À DÉMARRER après fusion de la PR documentaire #9 et Core Gate post-merge verte**
 
 Après validation d'un module :
 
@@ -493,15 +493,34 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le cadrage transversal est clôturé et M-001 est en cours.
+Le cadrage transversal et le cadrage détaillé M-001 sont clôturés.
 
-Core 1.1.0 a résolu le prérequis transactionnel `WorkspaceMember → REMOVED`. Les permissions M-001 et la matrice technique d'autorisation sont désormais validées.
+Contrats de sortie :
 
-Ordre de reprise :
+```text
+docs/m001/M-001-TEST-STRATEGY.md
+docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md
+```
 
-1. confirmer l'absence ou le besoin réel de migrations/seeds ;
-2. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
-3. valider critères d'acceptation et ordre d'implémentation ;
-4. seulement après validation complète M-001, créer la branche d'implémentation et développer.
+Séquence obligatoire :
 
-La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour le cadrage M-001.
+```text
+1. terminer la PR documentaire #9
+2. Core Gate verte sur son head
+3. fusionner #9
+4. Core Gate post-merge verte sur main
+5. synchroniser main local
+6. créer feature/m001-dossiers-access
+7. implémenter selon l'ordre validé
+```
+
+Le premier changement de la branche d'implémentation doit isoler les bases tests du produit :
+
+```text
+saas_fiches_techniques_gms_test
+saas_fiches_techniques_gms_e2e_test
+```
+
+Puis M-001 est implémenté comme un seul lot fonctionnel cohérent.
+
+La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour M-001.
