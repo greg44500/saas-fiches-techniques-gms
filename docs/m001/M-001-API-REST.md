@@ -496,8 +496,14 @@ pas d'endpoints Produits / Prix / Fiches techniques
 
 ---
 
-## 18. Prochaine décision de cadrage
+## 18. Articulation avec le contrat d'autorisation
 
 Le contrat REST est fermé.
 
-La prochaine étape est de définir l'ordre exact des middlewares et la frontière middleware/service pour chaque famille d'endpoint, en réutilisant les primitives Core existantes et en centralisant la sécurité Dossier afin que les modules suivants ne la réimplémentent pas.
+L'ordre exact des middlewares et la frontière middleware/service sont désormais validés dans :
+
+```text
+docs/m001/M-001-MIDDLEWARES-AUTHORIZATION.md
+```
+
+La prochaine étape de cadrage porte sur les validations Zod, les contrats d'erreur puis l'audit métier.
