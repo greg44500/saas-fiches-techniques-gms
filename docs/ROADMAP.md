@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
 **Statut :** VALIDÉ — cadrage global clôturé, M-001 en cours de cadrage détaillé  
-**Dernière mise à jour :** 2026-09-20
+**Dernière mise à jour :** 2026-09-21
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.0.1` intégré ;
+- Core `v1.1.0` intégré ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;
@@ -62,7 +62,11 @@ Décisions finales :
 - l'autocomplétion d'adresse/localisation fait partie de l'UX M-001, reste facultative et ne bloque jamais la création d'un Dossier ; sa source technique publique fiable reste à choisir pendant M-001 ;
 - les affectations sont portées par une relation métier dédiée `DossierAccessGrant`, distincte du `WorkspaceMember` Core ;
 - l'invitation Core reste limitée à `email + roleId` ; aucun magasin n'est préparé dans l'invitation ; après acceptation et création/réactivation du `WorkspaceMember`, le Workspace Owner affecte explicitement zéro, un ou plusieurs Dossiers ;
-- rétention et purge physique restent différées et suivies par D-006 avant leur implémentation.
+- les permissions M-001 validées sont `dossier:read`, `dossier:create`, `dossier:update`, `dossier:lifecycle:update`, `dossier:access:read` et `dossier:access:manage` ;
+- pour un non-owner, l'autorisation effective exige membership `ACTIVE` + permission + `DossierAccessGrant ACTIVE` + même Workspace + statut Dossier compatible ; l'Owner dispose d'un périmètre Dossier implicite sans grant individuel ;
+- aucun quota de stockage dur n'est défini par Dossier : la capacité appartient au Workspace ;
+- un Dossier `DELETED` n'est pas purgé automatiquement dans M-001 ; sa purge physique reste différée ;
+- la politique métier de corbeille est validée transversalement pour les futures ressources purgeables : 30 jours par défaut, configurable de 7 à 90 jours lorsque la personnalisation est autorisée.
 
 ### 2.2 Catalogue Produit
 
@@ -152,7 +156,12 @@ Décisions établies :
 - règle standard d'arrondi = multiple de 0,50 € immédiatement supérieur ou égal ;
 - règles d'arrondi personnalisables par stratégies structurées ;
 - marge semi-nette explicitement différée et non bloquante ;
-- Atelier d'optimisation Premium cadré fonctionnellement.
+- Atelier d'optimisation Premium cadré fonctionnellement ;
+- un DRAFT actif n'est jamais purgé pour simple ancienneté ;
+- un DRAFT explicitement supprimé relève de la corbeille métier du Workspace ;
+- une version VALIDATED n'est pas purgée automatiquement par âge ;
+- CSV/XLS(X) sont générés à la demande sans conservation durable ;
+- le PDF est généré uniquement comme pièce jointe temporaire lors d'un envoi de document par e-mail et n'est pas persisté.
 
 À cadrer avant les modules concernés, pas avant M-001 :
 
@@ -160,7 +169,8 @@ Décisions établies :
 - définition de la marge semi-nette lorsqu'elle sera disponible ;
 - paramètres mathématiques fins et garde-fous de l'optimiseur avant M-005 ;
 - catalogue complet des stratégies d'arrondi ;
-- rétention/purge définitive avant implémentation.
+- contrat technique de corbeille/restauration/purge des DRAFTS avant M-004 ;
+- éventuelle suppression définitive des VALIDATED et contraintes réglementaires avant implémentation.
 
 
 ### 2.5 Fiches process
