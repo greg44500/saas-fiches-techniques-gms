@@ -264,7 +264,7 @@ docs/m001/M-001-API-REST.md
 docs/m001/M-001-MIDDLEWARES-AUTHORIZATION.md
 ```
 
-Les 8 endpoints M-001, leur sémantique, les filtres/pagination, les réponses, les règles de grants, l'absence de suppression physique et l'absence d'endpoint backend d'activation du contexte sont fermés.
+Les 9 endpoints M-001, leur sémantique, les filtres/pagination, les réponses, les règles de grants, l'absence de suppression physique et l'absence d'endpoint backend d'activation du contexte sont fermés.
 
 L'ordre des middlewares et la frontière middleware/controller/service sont également fermés.
 
@@ -285,6 +285,35 @@ authenticate
 `loadAuthorizedDossierContext` centralise la résolution tenant-safe du Dossier et le contrôle Owner/grant sans créer un second RBAC. Les transitions lifecycle, transactions, mutations, audit métier et contrôles race-safe restent dans les services.
 
 Ces décisions ne doivent pas être rouvertes sans contradiction démontrée.
+
+### 7.1 Validation Zod et métadonnées métier — VALIDÉES
+
+Contrat canonique :
+
+```text
+docs/m001/M-001-VALIDATION-METADATA.md
+```
+
+Principes fermés :
+
+- `z.strictObject()` pour params/query/body ;
+- ObjectId syntaxiquement invalides rejetés avant Mongoose ;
+- pagination `page=1`, `limit=20`, maximum 100 ;
+- body Dossier limité aux champs métier autorisés ;
+- PATCH vide refusé ;
+- champ facultatif absent = inchangé, `null` = effacement explicite ;
+- statut initial Dossier imposé par le backend ;
+- statut lifecycle validé depuis les constantes backend ;
+- body de grant vide, champs système jamais acceptés depuis le client ;
+- contrat d'erreur HTTP Core conservé.
+
+Les statuts Dossier et DossierAccessGrant sont définis par registries/constants backend et exposés via :
+
+```text
+GET /api/workspaces/:workspaceId/dossiers/metadata
+```
+
+Le frontend consomme ces métadonnées via RTK Query et ne maintient aucune liste statique de statuts.
 
 ---
 
@@ -318,22 +347,54 @@ Aucune donnée commerciale ou confidentielle tenant ne doit être stockée dans 
 
 Le schéma Mongoose final, la politique de contribution/modération/fusion et la frontière exacte entre déclinaison et Produit réellement distinct restent à fermer dans M-002.
 
+### 8.1 Catalogues fournisseur partagés et recherche unifiée — VALIDÉS conceptuellement
+
+Les éditions de catalogue fournisseur peuvent être :
+
+```text
+GLOBAL_SHARED
+→ référence partageable et non confidentielle
+
+WORKSPACE_PRIVATE
+→ import privé à un Workspace
+```
+
+Un import Workspace reste privé par défaut.
+
+Une ligne de catalogue n'est jamais transformée automatiquement en Produit canonique. Les mappings déjà validés `Fournisseur + référence Article → Produit/déclinaison` sont réutilisés dans les éditions suivantes.
+
+Un catalogue global peut être référencé par plusieurs Workspaces sans copie de ses milliers de lignes.
+
+La recherche métier est unifiée :
+
+```text
+portée
+→ Mon Workspace
+→ Tout le référentiel autorisé
+
+source
+→ Toutes
+→ Produits canoniques
+→ Catalogues fournisseurs
+→ Références / Articles fournisseur
+```
+
+Les données privées d'un autre Workspace, les tarifs négociés, prix facturés et historiques locaux n'entrent jamais dans la recherche globale.
+
 ---
 
 ## 9. Ce qu'il reste à fermer avant le premier modèle métier
 
-1. validations Zod ;
-2. contrats d'erreur ;
-3. audit métier ;
-4. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
-5. effets lifecycle sur les `DossierAccessGrant` ;
-6. drawer/liste/gestion des affectations/contexte actif ;
-7. source technique d'autocomplétion avec fallback manuel ;
-8. migrations/seeds uniquement si besoin démontré ;
-9. stratégie de tests ;
-10. critères d'acceptation ;
-11. ordre d'implémentation ;
-12. validation finale M-001.
+1. audit métier M-001 et traitement du besoin Core d'extension Audit si confirmé/validé ;
+2. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+3. effets lifecycle sur les `DossierAccessGrant` ;
+4. drawer/liste/gestion des affectations/contexte actif ;
+5. source technique d'autocomplétion avec fallback manuel ;
+6. migrations/seeds uniquement si besoin démontré ;
+7. stratégie de tests ;
+8. critères d'acceptation ;
+9. ordre d'implémentation ;
+10. validation finale M-001.
 
 Après seulement :
 
