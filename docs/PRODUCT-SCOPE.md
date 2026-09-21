@@ -1842,7 +1842,22 @@ Le produit ne crée pas un second système de Dashboard et utilise le point d'ex
 
 ## 13. Utilisateurs, rôles et périmètres
 
-Le produit réutilise le RBAC Workspace du Core. Il ne crée pas un second système de rôles parallèle.
+Le produit réutilise le moteur RBAC Workspace générique du Core, mais le vocabulaire des rôles métier appartient exclusivement au produit.
+
+Invariant :
+
+```text
+Core
+→ moteur Role / Permission générique
+→ rôles système génériques déjà prévus
+
+Produit GMS
+→ permissions métier
+→ presets / profils de rôles métier
+→ aucune nouvelle notion métier ajoutée aux rôles système du Core
+```
+
+Les profils `Acheteur`, `Économe`, `Responsable FT`, `Contributeur FT` ou `Lecteur métier` ne sont jamais des rôles système Core. Ils sont définis et provisionnés par le produit en s'appuyant sur la primitive générique de rôles du Core.
 
 ### 13.1 Workspace Owner
 
