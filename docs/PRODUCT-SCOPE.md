@@ -130,10 +130,9 @@ La purge physique constitue une opération distincte, contrôlée et auditée. P
 Transitions conceptuelles retenues :
 
 ```text
-ACTIVE ↔ PAUSED
-ACTIVE / PAUSED → ARCHIVED
-ARCHIVED → ACTIVE ou PAUSED
-ACTIVE / PAUSED / ARCHIVED → DELETED
+ACTIVE → PAUSED | ARCHIVED | DELETED
+PAUSED → ACTIVE | ARCHIVED | DELETED
+ARCHIVED → PAUSED | DELETED
 DELETED → PAUSED après restauration contrôlée
 ```
 
@@ -247,8 +246,10 @@ Le drawer d'un dossier doit permettre de comprendre son contenu sans l'ouvrir co
 - les informations générales du magasin ;
 - les Fiches techniques et Fiches process ;
 - les membres ayant accès au dossier ;
-- l'activité / l'audit utile ;
+- l'activité métier du produit ;
 - les actions d'administration du lifecycle.
+
+L'activité métier du Dossier est distincte de l'AuditLog Core. Elle est portée par la primitive produit `BusinessActivityEvent` et filtrée selon les permissions et le scope Dossier.
 
 L'ouverture du drawer de Nantes puis de Saint-Nazaire ne doit jamais modifier implicitement le contexte magasin actif.
 
@@ -1937,7 +1938,7 @@ membership actif
 + invariants métier
 ```
 
-Un accès dossier conservé pour audit n'accorde aucun accès opérationnel lorsque le dossier est PAUSED, ARCHIVED ou DELETED pour l'action concernée.
+Un grant conservé pendant PAUSED ou ARCHIVED n'accorde que les usages compatibles avec l'état courant. Lors du passage à DELETED, tous les grants ACTIVE sont révoqués ; une restauration ne réactive jamais silencieusement ces anciens grants.
 
 Le rôle détermine ce que l'utilisateur peut demander. Les invariants déterminent ce que le système accepte comme état valide.
 
