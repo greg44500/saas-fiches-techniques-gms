@@ -443,15 +443,46 @@ Aucune extension du registre Audit Core n'est requise pour ces événements mét
 
 ---
 
+## 8.3 UX Dossier — VALIDÉE
+
+Contrat canonique :
+
+```text
+docs/m001/M-001-UX-DOSSIERS.md
+```
+
+Surfaces retenues :
+
+```text
+Liste
+→ recherche / filtres
+
+Drawer
+→ Informations / Accès / Activité
+
+Dialog
+→ création / modification
+
+Page Dossier
+→ véritable espace de travail métier
+```
+
+Seul un Dossier ACTIVE peut être ouvert comme contexte de travail.
+
+La route `/workspaces/:workspaceId/dossiers/:dossierId` porte le contexte UX. Aucun `activeDossierId` persistant frontend ni endpoint backend `currentDossier` n'est source d'autorité.
+
+Le formulaire Dossier est réutilisable entre création et édition et s'appuie sur les primitives Dialog Base UI/shadcn déjà présentes dans le Core.
+
+---
+
 ## 9. Ce qu'il reste à fermer avant le premier modèle métier
 
-1. drawer/liste/gestion des affectations/contexte actif ;
-2. source technique d'autocomplétion avec fallback manuel ;
-3. migrations/seeds uniquement si besoin démontré ;
-4. stratégie de tests ;
-5. critères d'acceptation ;
-6. ordre d'implémentation ;
-7. validation finale M-001.
+1. source technique d'autocomplétion avec fallback manuel ;
+2. migrations/seeds uniquement si besoin démontré ;
+3. stratégie de tests ;
+4. critères d'acceptation ;
+5. ordre d'implémentation ;
+6. validation finale M-001.
 
 Après seulement :
 
