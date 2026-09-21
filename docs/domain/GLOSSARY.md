@@ -381,6 +381,60 @@ Version identifiable d'un catalogue de référence d'un Fournisseur.
 
 Une nouvelle édition n'écrase pas l'ancienne.
 
+Une édition possède une portée explicite :
+
+```text
+GLOBAL_SHARED
+→ partageable entre Workspaces
+
+WORKSPACE_PRIVATE
+→ visible uniquement dans son Workspace propriétaire
+```
+
+Un import utilisateur est privé par défaut et ne devient jamais global automatiquement.
+
+---
+
+## Ligne de catalogue fournisseur
+
+Ligne brute ou normalisée appartenant à une édition de catalogue fournisseur.
+
+Elle peut porter notamment une référence fournisseur, une désignation source, un conditionnement et un Tarif fournisseur de référence.
+
+Une ligne de catalogue n'est pas automatiquement un Produit canonique. Elle peut rester non rapprochée jusqu'à validation d'une correspondance fiable.
+
+---
+
+## Rapprochement catalogue
+
+Processus qui relie une ligne ou un Article fournisseur à un Produit canonique et, lorsque nécessaire, à sa déclinaison structurée.
+
+Une correspondance déjà validée pour le même Fournisseur et la même référence Article est réutilisable lors des éditions suivantes.
+
+---
+
+## Recherche unifiée Produit
+
+Surface de recherche permettant de filtrer à la fois par portée et par source.
+
+Portées prévues :
+
+```text
+Mon Workspace
+Tout le référentiel autorisé
+```
+
+Sources prévues :
+
+```text
+Toutes
+Produits canoniques
+Catalogues fournisseurs
+Références / Articles fournisseur
+```
+
+La recherche ne modifie pas les frontières de sécurité : une ressource privée d'un autre Workspace ou une donnée commerciale locale n'entre jamais dans le référentiel global.
+
 ---
 
 ## Tarif négocié
