@@ -157,7 +157,22 @@ La transition lifecycle reste une responsabilité de service.
 
 ## 5. Ordre par endpoint
 
-### 5.1 GET /dossiers
+### 5.1 GET /dossiers/metadata
+
+```text
+authenticate
+→ validateRequest(params)
+→ loadWorkspaceContext
+→ authorizePermission(dossier:read)
+→ controller
+→ dossierMetadataService.get
+```
+
+Cette route ne charge aucun Dossier individuel et n'utilise aucun `DossierAccessGrant`.
+
+Les valeurs exposées sont dérivées des registries/constants backend ; le frontend ne maintient aucune liste statique de statuts.
+
+### 5.2 GET /dossiers
 
 ```text
 authenticate
@@ -188,7 +203,7 @@ charger tous les Dossiers du Workspace
 → filtrer ensuite en JavaScript
 ```
 
-### 5.2 POST /dossiers
+### 5.3 POST /dossiers
 
 ```text
 authenticate
@@ -213,7 +228,7 @@ non-owner autorisé
 → atomique
 ```
 
-### 5.3 GET /dossiers/:dossierId
+### 5.4 GET /dossiers/:dossierId
 
 ```text
 authenticate
@@ -232,7 +247,7 @@ Compatibilité :
 - ARCHIVED : lecture historique contrôlée ;
 - DELETED : autorité lifecycle supplémentaire.
 
-### 5.4 PATCH /dossiers/:dossierId
+### 5.5 PATCH /dossiers/:dossierId
 
 ```text
 authenticate
@@ -255,7 +270,7 @@ _id
 + status compatible
 ```
 
-### 5.5 PATCH /dossiers/:dossierId/status
+### 5.6 PATCH /dossiers/:dossierId/status
 
 ```text
 authenticate
@@ -285,7 +300,7 @@ Le service lifecycle reste l'autorité sur :
 - restauration ;
 - `409 Conflict`.
 
-### 5.6 GET /access-grants
+### 5.7 GET /access-grants
 
 ```text
 authenticate
@@ -302,7 +317,7 @@ Le service filtre toujours par Workspace et Dossier.
 
 Le Workspace Owner n'est pas représenté par un grant.
 
-### 5.7 PUT /access-grants/:membershipId
+### 5.8 PUT /access-grants/:membershipId
 
 ```text
 authenticate
@@ -330,7 +345,7 @@ Le service transactionnel vérifie :
 - idempotence et course concurrente ;
 - audit.
 
-### 5.8 DELETE /access-grants/:membershipId
+### 5.9 DELETE /access-grants/:membershipId
 
 Même chaîne que le PUT jusqu'au service :
 
