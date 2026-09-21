@@ -119,6 +119,24 @@ Un membre ACTIVE peut temporairement avoir zéro Dossier.
 
 ### 4.3 Role et périmètre
 
+Frontière validée :
+
+```text
+Core
+→ rôles système génériques
+→ moteur Role / Permission générique
+
+Produit GMS
+→ permissions métier
+→ profils/presets Acheteur, Économe, Responsable FT, Contributeur FT, Lecteur
+```
+
+Aucun profil métier n'est ajouté aux rôles système du Core. Les profils métier sont des rôles personnalisés définis/provisionnés par le produit en utilisant la primitive générique Core.
+
+Le Workspace Owner reste le rôle système générique `owner`, mais le produit le reconnaît comme autorité métier complète dans son Workspace ; il n'a pas besoin d'un profil métier supplémentaire.
+
+
+
 ```text
 Role
 → QUOI le membre peut faire
