@@ -546,13 +546,59 @@ Aucun seed BAN, table de villes ou proxy backend anticipé n'est créé.
 
 ---
 
+## 8.5 Bootstrap métier et profils de rôles — VALIDÉS
+
+Contrat canonique :
+
+```text
+docs/domain/INITIAL-DATA-BOOTSTRAP.md
+```
+
+Frontière figée :
+
+```text
+Core
+→ rôles système génériques
+→ moteur Role / Permission
+→ points d'extension
+
+Produit GMS
+→ permissions métier
+→ profils/presets métier
+→ données de référence
+→ bootstrap métier
+```
+
+Les rôles métier ne sont jamais ajoutés comme rôles système Core.
+
+Le produit compose ses permissions dans le RBAC actif via le point d'extension applicatif ; le rôle système `owner` conserve son identité Core générique tout en recevant, dans le dérivé, les permissions métier nécessaires.
+
+Les presets Acheteur, Économe, Responsable FT, Contributeur FT et Lecteur métier seront provisionnés progressivement lorsque leurs matrices de permissions seront suffisamment complètes. M-001 ne fige pas artificiellement des permissions futures.
+
+Pour les données initiales :
+
+```text
+M-001
+→ aucune migration historique
+→ aucun seed Dossier
+
+M-002
+→ bootstrap Produits canoniques
+
+M-003
+→ bootstrap Fournisseurs / Articles / catalogues partageables
+```
+
+Le premier bêta M-001 peut être exercé intégralement par un Workspace Owner.
+
+---
+
 ## 9. Ce qu'il reste à fermer avant le premier modèle métier
 
-1. migrations/seeds uniquement si besoin démontré ;
-2. stratégie de tests ;
-3. critères d'acceptation ;
-4. ordre d'implémentation ;
-5. validation finale M-001.
+1. stratégie de tests ;
+2. critères d'acceptation ;
+3. ordre d'implémentation ;
+4. validation finale M-001.
 
 Après seulement :
 
