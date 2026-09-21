@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 
 import {
+    runApplicationWorkspaceMemberRemovedLifecycle,
+} from '../../config/applicationWorkspaceMemberLifecycle.registry.js';
+import {
     AUDIT_ACTION,
     AUDIT_ENTITY_TYPE,
     AUDIT_STATUS,
@@ -210,6 +213,21 @@ const removeWorkspaceMember = async ({
     membership.status = WORKSPACE_MEMBER_STATUS.REMOVED;
     membership.updatedBy = actorId;
     await membership.save({ session });
+
+    /*
+     * Les relations métier d'une application dérivée participent à la même
+     * transaction. Une erreur applicative est propagée afin que MongoDB
+     * rollbacke le membership, les relations dérivées, le quota et l'audit.
+     */
+    await runApplicationWorkspaceMemberRemovedLifecycle({
+        workspaceId,
+        membershipId: membership._id,
+        userId: membership.user,
+        actorId,
+        session,
+        ipAddress,
+        userAgent,
+    });
 
     /*
      * active et suspended occupent tous deux un siège. Le passage à removed

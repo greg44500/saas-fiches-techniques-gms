@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
     auditMock,
+    lifecycleMock,
     findMemberMock,
     findRoleMock,
     releaseMock,
@@ -9,6 +10,7 @@ const {
     transactionMock,
 } = vi.hoisted(() => ({
     auditMock: vi.fn(),
+    lifecycleMock: vi.fn(),
     findMemberMock: vi.fn(),
     findRoleMock: vi.fn(),
     releaseMock: vi.fn(),
@@ -20,6 +22,10 @@ vi.mock('mongoose', () => ({
     default: {
         connection: { transaction: transactionMock },
     },
+}));
+
+vi.mock('../../config/applicationWorkspaceMemberLifecycle.registry.js', () => ({
+    runApplicationWorkspaceMemberRemovedLifecycle: lifecycleMock,
 }));
 
 vi.mock('../../modules/workspaceMember/workspaceMember.model.js', () => ({
@@ -72,6 +78,7 @@ const createMembership = ({
 
 beforeEach(() => {
     vi.clearAllMocks();
+    lifecycleMock.mockResolvedValue(undefined);
     transactionMock.mockImplementation(async (callback) => callback(sessionMock));
 });
 
@@ -135,6 +142,7 @@ describe('workspaceMember.service', () => {
         });
 
         expect(membership.status).toBe('suspended');
+        expect(lifecycleMock).not.toHaveBeenCalled();
         expect(releaseMock).not.toHaveBeenCalled();
         expect(auditMock).toHaveBeenCalledOnce();
     });
@@ -150,6 +158,15 @@ describe('workspaceMember.service', () => {
         });
 
         expect(membership.status).toBe('removed');
+        expect(lifecycleMock).toHaveBeenCalledWith({
+            workspaceId: 'workspace-id',
+            membershipId: membership._id,
+            userId: membership.user,
+            actorId: 'actor-id',
+            session: sessionMock,
+            ipAddress: null,
+            userAgent: null,
+        });
         expect(releaseMock).toHaveBeenCalledWith(expect.objectContaining({
             workspaceId: 'workspace-id',
             metricKey: 'members',
@@ -157,5 +174,22 @@ describe('workspaceMember.service', () => {
             session: sessionMock,
         }));
         expect(auditMock).toHaveBeenCalledOnce();
+    });
+
+    it('propage l’échec lifecycle afin de rollbacker le retrait complet', async () => {
+        const membership = createMembership();
+        const lifecycleError = new Error('dossier cleanup failed');
+        findMemberMock.mockReturnValue(makeMemberQuery(membership));
+        lifecycleMock.mockRejectedValueOnce(lifecycleError);
+
+        await expect(removeWorkspaceMember({
+            workspaceId: 'workspace-id',
+            memberId: 'member-id',
+            actorId: 'actor-id',
+        })).rejects.toBe(lifecycleError);
+
+        expect(membership.save).toHaveBeenCalledWith({ session: sessionMock });
+        expect(releaseMock).not.toHaveBeenCalled();
+        expect(auditMock).not.toHaveBeenCalled();
     });
 });

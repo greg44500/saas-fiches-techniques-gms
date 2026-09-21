@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+    runApplicationWorkspaceMemberRemovedLifecycle,
+} from '../../config/applicationWorkspaceMemberLifecycle.registry.js';
+import {
     AUDIT_ACTION,
 } from '../../constants/auditActions.constants.js';
 import {
@@ -36,6 +39,9 @@ import {
     createAuditLog,
 } from '../../modules/auditLog/auditLog.service.js';
 
+vi.mock('../../config/applicationWorkspaceMemberLifecycle.registry.js', () => ({
+    runApplicationWorkspaceMemberRemovedLifecycle: vi.fn(),
+}));
 vi.mock('../../modules/auth/services/confirmCurrentUserPassword.service.js', () => ({
     confirmCurrentUserPassword: vi.fn(),
 }));
@@ -145,6 +151,9 @@ describe('requestCurrentUserClosure', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         confirmCurrentUserPassword.mockResolvedValue(undefined);
+        runApplicationWorkspaceMemberRemovedLifecycle.mockResolvedValue(
+            undefined,
+        );
         assertUserIsNotPlatformFounder.mockResolvedValue(undefined);
         createAuditLog.mockResolvedValue(undefined);
         releaseCurrentUsageMetric.mockResolvedValue({});
@@ -189,6 +198,17 @@ describe('requestCurrentUserClosure', () => {
         expect(archiveWorkspaceInSession).not.toHaveBeenCalled();
         expect(membership.status).toBe('removed');
         expect(membership.save).toHaveBeenCalledWith({ session });
+        expect(
+            runApplicationWorkspaceMemberRemovedLifecycle,
+        ).toHaveBeenCalledWith({
+            workspaceId: membership.workspace._id,
+            membershipId: membership._id,
+            userId: membership.user,
+            actorId: 'user-id',
+            session,
+            ipAddress: '127.0.0.1',
+            userAgent: 'Test Browser',
+        });
         expect(releaseCurrentUsageMetric).toHaveBeenCalledWith(
             expect.objectContaining({
                 workspaceId: membership.workspace._id,
@@ -353,6 +373,30 @@ describe('requestCurrentUserClosure', () => {
             removedMembershipCount: 3,
             status: 'closed',
         });
+    });
+
+    it('interrompt toute la fermeture si le lifecycle applicatif d’un membership échoue', async () => {
+        mockActiveUser();
+        const membership = createMembership({
+            id: 'member-id',
+            workspaceId: 'workspace-id',
+        });
+        WorkspaceMember.find.mockReturnValue(membershipQuery([membership]));
+        const lifecycleError = new Error('application cleanup failed');
+        runApplicationWorkspaceMemberRemovedLifecycle.mockRejectedValueOnce(
+            lifecycleError,
+        );
+
+        await expect(requestCurrentUserClosure({
+            userId: 'user-id',
+            currentPassword: 'Correct Horse Battery Staple',
+            confirmationEmail: 'greg@example.com',
+        })).rejects.toBe(lifecycleError);
+
+        expect(membership.save).toHaveBeenCalledWith({ session });
+        expect(releaseCurrentUsageMetric).not.toHaveBeenCalled();
+        expect(User.findOneAndUpdate).not.toHaveBeenCalled();
+        expect(revokeAllUserAuthSessions).not.toHaveBeenCalled();
     });
 
     it('révoque les invitations reçues et journalise les deux étapes User', async () => {

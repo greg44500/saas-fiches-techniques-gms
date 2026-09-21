@@ -10,6 +10,37 @@ Aucun changement supplémentaire documenté.
 
 ---
 
+## 1.1.0 — 2026-09-21
+
+Release mineure rétrocompatible ajoutant un point d’extension transactionnel générique au lifecycle `WorkspaceMember`.
+
+### Added
+
+- nouveau composition root `backend/config/applicationWorkspaceMemberLifecycle.registry.js` ;
+- nouveau registre générique `WorkspaceMember lifecycle` ;
+- événement V1 volontairement limité à `onMemberRemoved` ;
+- transmission au handler de `workspaceId`, `membershipId`, `userId`, `actorId`, de la session MongoDB active et du contexte HTTP disponible ;
+- exécution déterministe et séquentielle des handlers applicatifs dans la transaction Core ;
+- couverture des deux voies Core actuelles vers `WorkspaceMember.status = REMOVED` : retrait administratif et fermeture de compte.
+
+### Changed
+
+- un échec d’un handler applicatif de retrait est propagé afin de permettre le rollback transactionnel complet ;
+- `SUSPENDED` ne déclenche pas `onMemberRemoved` ;
+- la réactivation d’un ancien membership `REMOVED` par invitation reste inchangée et ne restaure aucune relation métier dérivée ;
+- les contrats de dérivation documentent les contraintes de retry/idempotence des handlers transactionnels.
+
+### Impact
+
+- aucune migration MongoDB ;
+- aucune variable d’environnement ;
+- aucune dépendance ajoutée, supprimée ou mise à niveau ;
+- aucun changement de modèle ou d’index MongoDB ;
+- aucun breaking change HTTP ;
+- les applications dérivées sans module lifecycle enregistré conservent le comportement Core existant.
+
+---
+
 ## 1.0.1 — 2026-09-18
 
 Patch de gouvernance des SaaS dérivés corrigeant l’écart entre le contrat 1.0 — version applicative du produit indépendante du Core — et la gate de release héritée.

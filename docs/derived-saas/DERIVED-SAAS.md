@@ -896,6 +896,7 @@ Avant de commencer le métier :
 - [ ] composer les capabilities et leurs relations feature → métriques ;
 - [ ] composer les permissions métier et extensions des rôles système ;
 - [ ] composer les routes backend et frontend dans les points applicatifs prévus ;
+- [ ] composer le lifecycle WorkspaceMember lorsqu’un module possède des relations métier à invalider sur REMOVED ;
 - [ ] composer la navigation Workspace ;
 - [ ] configurer le catalogue commercial du produit ;
 - [ ] réévaluer toutes les dettes applicables ;
@@ -912,6 +913,7 @@ Pour chaque nouvelle version Core :
 - [ ] vérifier niveau PATCH / MINOR / MAJOR ;
 - [ ] vérifier sécurité ;
 - [ ] vérifier migrations ;
+- [ ] vérifier les nouveaux points d’extension transactionnels et leurs contrats ;
 - [ ] vérifier variables d’environnement ;
 - [ ] créer une branche `core-update/...` ;
 - [ ] intégrer la version Core ;
@@ -969,6 +971,7 @@ stratégie Git de dérivation
 RBAC extensible
 Capability Registry
 routing dérivé
+lifecycle transactionnel WorkspaceMember
 migrations
 core-origin.json ou son remplacement
 product-release.json
@@ -976,3 +979,71 @@ procédure d’upgrade
 ```
 
 doit vérifier dans le même lot si `DERIVED-SAAS.md` doit être mis à jour.
+
+
+---
+
+## 29. Lifecycle transactionnel WorkspaceMember
+
+Un besoin générique démontré par un produit dérivé impose désormais de
+distinguer clairement le statut d’appartenance Core des relations d’accès
+métier propres au produit.
+
+Exemple de séparation :
+
+```text
+WorkspaceMember / Role
+→ QUE peut faire l’utilisateur dans le Workspace ?
+
+relation métier dérivée
+→ OÙ peut-il le faire ?
+```
+
+Le Core ne connaît jamais ces relations métier, mais il fournit un point
+d’extension transactionnel lors du retrait définitif d’un membership :
+
+```text
+backend/config/applicationWorkspaceMemberLifecycle.registry.js
+```
+
+Un produit peut y enregistrer un descriptor `onMemberRemoved`. Le handler
+reçoit :
+
+```text
+workspaceId
+membershipId
+userId
+actorId
+session MongoDB active
+ipAddress / userAgent lorsque disponibles
+```
+
+Le Core exécute ces handlers dans la même transaction que le passage du
+membership vers `REMOVED`, la libération du quota `members` et l’audit Core.
+Une erreur du produit est fail-closed et provoque le rollback de l’opération.
+
+Le contrat s’applique aux voies Core qui retirent réellement un membership,
+notamment le retrait administratif et la fermeture de compte.
+
+Règles de lifecycle à préserver :
+
+```text
+SUSPENDED
+→ relations métier conservées
+→ aucun handler onMemberRemoved
+
+REMOVED
+→ handler applicatif exécuté dans la transaction
+
+REMOVED puis réinvitation
+→ WorkspaceMember peut redevenir ACTIVE selon le contrat d’invitation
+→ les anciennes relations métier invalidées ne sont pas restaurées par le Core
+```
+
+Les handlers transactionnels doivent uniquement produire des écritures
+compatibles avec les retries MongoDB. Les effets externes irréversibles
+(email, paiement, webhook non idempotent, API tierce) doivent utiliser un autre
+mécanisme.
+
+Ce point d’extension reste volontairement statique, explicite et déterministe.
+Il ne crée ni bus d’événements distribué ni système de plugins dynamiques.

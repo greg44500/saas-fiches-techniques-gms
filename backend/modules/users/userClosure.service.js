@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 
 import {
+    runApplicationWorkspaceMemberRemovedLifecycle,
+} from '../../config/applicationWorkspaceMemberLifecycle.registry.js';
+import {
     AUDIT_ACTION,
     AUDIT_ENTITY_TYPE,
     AUDIT_STATUS,
@@ -214,6 +217,21 @@ const removeClosingUserMembershipsInSession = async ({
         membership.status = WORKSPACE_MEMBER_STATUS.REMOVED;
         membership.updatedBy = userId;
         await membership.save({ session });
+
+        /*
+         * La fermeture de compte est une seconde voie Core vers REMOVED.
+         * Elle doit donc appliquer le même contrat lifecycle que le retrait
+         * administratif d'un membre, dans la transaction déjà ouverte.
+         */
+        await runApplicationWorkspaceMemberRemovedLifecycle({
+            workspaceId: membership.workspace._id,
+            membershipId: membership._id,
+            userId: membership.user,
+            actorId: userId,
+            session,
+            ipAddress,
+            userAgent,
+        });
 
         await releaseCurrentUsageMetric({
             workspaceId: membership.workspace._id,

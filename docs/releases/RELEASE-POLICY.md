@@ -130,12 +130,14 @@ stable
 → version SemVer sans suffixe prerelease
 ```
 
-La release stable courante publiée est :
+La release stable courante publiée avant la préparation de `v1.1.0` est :
 
 ```text
-version = 1.0.0
+version = 1.0.1
 channel = stable
 ```
+
+Une version présente dans `main` n’est considérée comme publiée qu’après création du tag immuable et de la GitHub Release correspondante.
 
 La présence de ces métadonnées dans une branche ou un commit ne constitue pas à elle seule une publication. La gouvernance de release ne crée jamais automatiquement `v1.0.0` : le tag et la GitHub Release ne sont créés qu’après validation du commit `main` concerné.
 
