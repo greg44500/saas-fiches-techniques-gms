@@ -188,7 +188,7 @@ DELETED
 → restauration contrôlée uniquement
 ```
 
-La matrice exacte des transitions lifecycle reste à fermer séparément.
+La matrice lifecycle est validée : `ACTIVE → PAUSED|ARCHIVED|DELETED`, `PAUSED → ACTIVE|ARCHIVED|DELETED`, `ARCHIVED → PAUSED|DELETED`, `DELETED → PAUSED`. Une transition vers `DELETED` révoque atomiquement tous les grants ACTIVE ; une restauration ne les réactive jamais.
 
 ---
 
@@ -264,7 +264,7 @@ docs/m001/M-001-API-REST.md
 docs/m001/M-001-MIDDLEWARES-AUTHORIZATION.md
 ```
 
-Les 9 endpoints M-001, leur sémantique, les filtres/pagination, les réponses, les règles de grants, l'absence de suppression physique et l'absence d'endpoint backend d'activation du contexte sont fermés.
+Les 10 endpoints M-001, leur sémantique, les filtres/pagination, les réponses, les règles de grants, l'absence de suppression physique et l'absence d'endpoint backend d'activation du contexte sont fermés.
 
 L'ordre des middlewares et la frontière middleware/controller/service sont également fermés.
 
@@ -383,18 +383,75 @@ Les données privées d'un autre Workspace, les tarifs négociés, prix facturé
 
 ---
 
+## 8.2 Activité métier et lifecycle Dossier — VALIDÉS
+
+Contrats canoniques :
+
+```text
+docs/m001/M-001-BUSINESS-ACTIVITY.md
+docs/m001/M-001-DOSSIER-LIFECYCLE.md
+```
+
+La séparation est désormais explicite :
+
+```text
+AuditLog Core
+→ sécurité / administration générique
+
+BusinessActivityEvent produit
+→ faits métier GMS
+```
+
+Actions M-001 :
+
+```text
+DOSSIER_CREATED
+DOSSIER_UPDATED
+DOSSIER_STATUS_CHANGED
+DOSSIER_ACCESS_GRANTED
+DOSSIER_ACCESS_REVOKED
+```
+
+Les événements métier sont immuables, backend-driven, permission-scoped et transactionnels avec les mutations correspondantes.
+
+API ajoutée :
+
+```text
+GET /api/workspaces/:workspaceId/dossiers/:dossierId/activity
+```
+
+Le lifecycle est fermé :
+
+```text
+ACTIVE   → PAUSED | ARCHIVED | DELETED
+PAUSED   → ACTIVE | ARCHIVED | DELETED
+ARCHIVED → PAUSED | DELETED
+DELETED  → PAUSED
+```
+
+`DELETED` révoque tous les grants ACTIVE dans la même transaction. Les anciens grants restent REVOKED après restauration.
+
+Raisons de révocation M-001 :
+
+```text
+MANUAL
+WORKSPACE_MEMBER_REMOVED
+DOSSIER_DELETED
+```
+
+Aucune extension du registre Audit Core n'est requise pour ces événements métier.
+
+---
+
 ## 9. Ce qu'il reste à fermer avant le premier modèle métier
 
-1. audit métier M-001 et traitement du besoin Core d'extension Audit si confirmé/validé ;
-2. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
-3. effets lifecycle sur les `DossierAccessGrant` ;
-4. drawer/liste/gestion des affectations/contexte actif ;
-5. source technique d'autocomplétion avec fallback manuel ;
-6. migrations/seeds uniquement si besoin démontré ;
-7. stratégie de tests ;
-8. critères d'acceptation ;
-9. ordre d'implémentation ;
-10. validation finale M-001.
+1. drawer/liste/gestion des affectations/contexte actif ;
+2. source technique d'autocomplétion avec fallback manuel ;
+3. migrations/seeds uniquement si besoin démontré ;
+4. stratégie de tests ;
+5. critères d'acceptation ;
+6. ordre d'implémentation ;
+7. validation finale M-001.
 
 Après seulement :
 
