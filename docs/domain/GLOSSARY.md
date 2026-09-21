@@ -702,7 +702,7 @@ Il ne donne aucun accès implicite aux données métier d'un Workspace.
 
 Groupe de permissions rattaché à un Workspace et attribué à un WorkspaceMember.
 
-Le Core v1.0.1 porte un seul rôle par membre. Un rôle personnalisé peut donc combiner plusieurs responsabilités métier.
+Le Core v1.1.0 porte un seul rôle par membre. Un rôle personnalisé peut donc combiner plusieurs responsabilités métier.
 
 ---
 
