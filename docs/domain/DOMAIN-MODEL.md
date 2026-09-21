@@ -21,37 +21,44 @@ Décrire les concepts nécessaires au produit avant toute implémentation afin d
 ## 2. Vue d'ensemble
 
 ```text
-Workspace
+SaaS
 │
-├── Catalogue produit
-│   ├── Produits
-│   │   ├── Catégorie
-│   │   ├── Gamme éventuelle
-│   │   ├── Unité de référence
-│   │   └── Rendement
-│   │
-│   ├── Fournisseurs
-│   │
-│   └── Articles / offres fournisseur
-│       ├── Référence fournisseur
-│       ├── Conditionnement
-│       ├── Poids net / égoutté si applicable
-│       └── Conditions commerciales par magasin
-│           ├── Prix
-│           ├── Disponibilité
-│           ├── Date d'effet
-│           └── Historique
+├── Référentiel Produit canonique partagé
+│   ├── identité Produit unique
+│   ├── alias / normalisation de recherche
+│   └── déclinaisons structurées lorsque pertinentes
+│       ├── forme
+│       ├── état / transformation
+│       └── conservation
 │
-├── Dossiers magasin
-│   ├── Fiches techniques
-│   │   ├── Composition
-│   │   ├── Valorisations
-│   │   ├── Emballages / économat
-│   │   └── Historique
-│   │
-│   └── Fiches process
-│
-└── Audit / traçabilité
+└── Workspace
+    │
+    ├── Catalogue d'usage Produit
+    │   └── références vers les Produits canoniques utilisés
+    │
+    ├── Fournisseurs
+    │
+    ├── Articles / offres fournisseur
+    │   ├── Produit / déclinaison concerné
+    │   ├── Référence fournisseur
+    │   ├── Conditionnement
+    │   ├── Poids net / égoutté si applicable
+    │   └── Conditions commerciales par magasin
+    │       ├── Prix
+    │       ├── Disponibilité
+    │       ├── Date d'effet
+    │       └── Historique
+    │
+    ├── Dossiers magasin
+    │   ├── Fiches techniques
+    │   │   ├── Composition
+    │   │   ├── Valorisations
+    │   │   ├── Emballages / économat
+    │   │   └── Historique
+    │   │
+    │   └── Fiches process
+    │
+    └── Audit / traçabilité
 ```
 
 ---
@@ -60,16 +67,22 @@ Workspace
 
 Le Workspace est la frontière de tenancy héritée du Core.
 
-Invariant :
+Invariant de tenancy :
 
 ```text
-toute donnée métier du produit
+donnée métier privée d'un client
 → ownership Workspace explicite
+
+donnée de référence canonique partagée
+→ portée SaaS explicite
+→ aucune donnée commerciale ou confidentielle tenant
 ```
 
 Les ressources métier appartenant au Workspace doivent utiliser l'ownership explicite prévu par le Core.
 
-`createdBy` / `updatedBy` servent à l'audit et ne remplacent pas l'ownership.
+Le référentiel Produit canonique constitue une donnée de référence commune au SaaS et non la propriété d'un Workspace. Un Workspace ne copie pas le Produit : il référence les identités canoniques qu'il utilise via son catalogue d'usage.
+
+`createdBy` / `updatedBy` servent à l'audit et ne remplacent jamais l'ownership ou la portée explicite de la ressource.
 
 ---
 
@@ -222,21 +235,30 @@ Depuis un dossier ouvert, le Dashboard Workspace doit rester accessible en un cl
 
 ## 5. Produit
 
-Le Produit est indépendant de son fournisseur et de son prix.
+Le Produit canonique est une donnée de référence générique partagée à l'échelle du SaaS. Il est indépendant d'un Workspace, d'un Fournisseur et d'un prix.
 
-### 5.1 Caractéristiques
+Invariant principal :
+
+```text
+même réalité Produit canonique
+→ une seule identité dans le SaaS
+```
+
+Un Workspace qui utilise `Carotte` référence cette identité ; il ne crée pas une copie de `Carotte`.
+
+### 5.1 Identité canonique et contrôle des doublons
 
 Conceptuellement :
 
 ```text
-Produit
-├── nom
+Produit canonique
+├── nom canonique
+├── clé normalisée
+├── alias de recherche
 ├── catégorie
-├── gamme éventuelle
 ├── unité de référence
-├── taux de rendement
 ├── photo facultative
-├── notes facultatives
+├── notes génériques facultatives
 ├── statut
 ├── createdAt
 ├── updatedAt
@@ -244,33 +266,63 @@ Produit
 └── updatedBy
 ```
 
-Le détail technique de persistance reste à définir ultérieurement.
+Le détail technique de persistance reste à définir en M-002.
 
-### 5.2 Nommage
+Les variantes de casse, espaces, accents, singulier/pluriel et fautes d'orthographe reconnues comme équivalentes ne doivent pas produire plusieurs identités concurrentes.
 
-Invariant de lisibilité :
-
-```text
-produit entier / forme standard
-→ nom simple
-
-forme préparée nécessaire à la compréhension
-→ précision dans le nom
-```
-
-Exemples :
+Le contrôle de création doit combiner au minimum :
 
 ```text
-Oignon
-Oignon émincé
-
-Carotte
-Carotte râpée
+normalisation déterministe
+→ correspondance exacte normalisée
+→ alias connus
+→ recherche de proximité / suggestion
+→ création seulement si aucun équivalent crédible n'est identifié
 ```
 
-Le domaine ne nécessite pas à ce stade un champ utilisateur séparé « forme/état ».
+Un index unique protège une clé normalisée mais ne suffit pas, à lui seul, à résoudre l'unicité sémantique.
 
-### 5.3 Catégorie
+### 5.2 Catalogue d'usage du Workspace
+
+Le Workspace possède une sélection des Produits qu'il utilise, sans dupliquer leur identité canonique.
+
+Conceptuellement :
+
+```text
+Workspace
+→ relation d'usage
+→ Produit canonique
+```
+
+Cette relation pourra être matérialisée par un concept de type `WorkspaceProduct`, à confirmer en M-002.
+
+Elle peut porter ultérieurement des métadonnées propres à l'usage du Workspace si un besoin est démontré, mais ne doit pas copier les propriétés de référence sans nécessité.
+
+### 5.3 Forme, état et conservation
+
+La forme de préparation ne doit pas être encodée uniquement dans un libellé libre lorsqu'elle modifie l'usage, le rendement ou la sélection d'un Article fournisseur.
+
+Axes conceptuels :
+
+```text
+Produit canonique
+→ Carotte
+
+forme
+→ entière / rondelles / râpée / dés / julienne / purée / ...
+
+état / transformation
+→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
+
+conservation
+→ fraîche / surgelée / appertisée / ...
+```
+
+Ces dimensions forment des déclinaisons structurées autour de l'identité canonique plutôt que des copies lexicales du Produit.
+
+Une transformation peut toutefois créer un Produit réellement différent lorsqu'elle introduit une formulation/composition propre. Cette frontière sera décidée en M-002 à partir de critères métier et non d'une simple ressemblance de nom.
+
+### 5.4 Catégorie et gamme
 
 La catégorie est indépendante de la gamme.
 
@@ -281,8 +333,6 @@ Catégorie
 Gamme
 → axe professionnel de préparation / conservation lorsqu'applicable
 ```
-
-### 5.4 Gamme
 
 La gamme est facultative lorsqu'elle n'est pas pertinente.
 
@@ -297,23 +347,27 @@ Le modèle doit permettre :
 non applicable
 ```
 
-Exemple :
-
-```text
-Farine
-→ gamme non applicable
-→ rendement 100 %
-```
+La gamme ne doit pas remplacer les dimensions structurées de forme, état ou conservation lorsqu'elles sont nécessaires au calcul ou à l'usage.
 
 ### 5.5 Rendement
 
-Le rendement est une caractéristique de référence du produit utilisé dans la fiche.
+Le rendement doit correspondre à la réalité effectivement utilisée dans la fiche. Il peut donc dépendre d'une déclinaison structurée plutôt que de la seule identité racine.
+
+Exemple :
+
+```text
+Carotte entière brute
+→ rendement < 100 % possible
+
+Carotte râpée prête à l'emploi
+→ rendement 100 % possible
+```
 
 Invariant :
 
 ```text
 fiche technique
-→ hérite du rendement produit
+→ hérite du rendement de référence applicable
 → ne demande pas une ressaisie libre ordinaire
 ```
 
@@ -328,11 +382,19 @@ poids net égoutté / poids net
 
 Le modèle doit préserver une possibilité future d'exception documentée et historisée sans imposer son développement en V1.
 
+### 5.6 Contribution au référentiel partagé
+
+Un utilisateur autorisé peut rechercher le référentiel global depuis son Workspace et rattacher un Produit existant à son catalogue.
+
+Si aucun équivalent crédible n'existe, M-002 doit permettre la création/proposition d'une nouvelle identité canonique après les contrôles de doublon.
+
+La politique exacte de modération, fusion et correction des Produits globaux reste à fermer en M-002. Elle ne doit pas compromettre l'isolation tenant : aucune donnée commerciale du Workspace ou du Dossier ne remonte dans le Produit canonique.
+
 ---
 
 ## 6. Fournisseur
 
-Un Fournisseur est un acteur commercial pouvant proposer des articles correspondant aux produits du Workspace.
+Un Fournisseur est un acteur commercial du Workspace pouvant proposer des Articles rattachés aux Produits canoniques utilisés par ce Workspace.
 
 Le fournisseur ne doit pas être codé comme une liste fermée : les exemples Sysco et SCAL ne constituent pas les seuls fournisseurs possibles.
 
