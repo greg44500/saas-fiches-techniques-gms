@@ -255,33 +255,85 @@ La Fiche technique/version structurée reste la source de vérité.
 
 ---
 
-## 7. API REST M-001 — VALIDÉE
+## 7. API REST et autorisation M-001 — VALIDÉS
 
-Contrat canonique : `docs/m001/M-001-API-REST.md`.
+Contrats canoniques :
 
-Les 8 endpoints M-001, leur sémantique, les filtres/pagination, les réponses, les règles de grants, l'absence de suppression physique et l'absence d'endpoint backend d'activation du contexte sont désormais fermés.
+```text
+docs/m001/M-001-API-REST.md
+docs/m001/M-001-MIDDLEWARES-AUTHORIZATION.md
+```
 
-Cette décision ne doit pas être rouverte sans contradiction démontrée.
+Les 8 endpoints M-001, leur sémantique, les filtres/pagination, les réponses, les règles de grants, l'absence de suppression physique et l'absence d'endpoint backend d'activation du contexte sont fermés.
 
-La prochaine décision de cadrage est l'ordre exact des middlewares et la frontière middleware/service.
+L'ordre des middlewares et la frontière middleware/controller/service sont également fermés.
+
+Principes structurants :
+
+```text
+authenticate
+→ validateRequest
+→ loadWorkspaceContext
+→ authorizePermission
+→ contrôles commerciaux Core applicables aux mutations
+→ scope Dossier produit
+→ compatibilité statique du statut si nécessaire
+→ controller
+→ service
+```
+
+`loadAuthorizedDossierContext` centralise la résolution tenant-safe du Dossier et le contrôle Owner/grant sans créer un second RBAC. Les transitions lifecycle, transactions, mutations, audit métier et contrôles race-safe restent dans les services.
+
+Ces décisions ne doivent pas être rouvertes sans contradiction démontrée.
 
 ---
 
-## 8. Ce qu'il reste à fermer avant le premier modèle métier
+## 8. Correction transversale du modèle Produit — VALIDÉE
 
-1. ordre exact des middlewares et frontière middleware/service ;
-2. validations Zod ;
-3. contrats d'erreur ;
-4. audit métier ;
-5. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
-6. effets lifecycle sur les `DossierAccessGrant` ;
-7. drawer/liste/gestion des affectations/contexte actif ;
-8. source technique d'autocomplétion avec fallback manuel ;
-9. migrations/seeds uniquement si besoin démontré ;
-10. stratégie de tests ;
-11. critères d'acceptation ;
-12. ordre d'implémentation ;
-13. validation finale M-001.
+Le cadrage historique « catalogue Produit propre au Workspace » a été corrigé avant toute implémentation de M-002.
+
+Fondation retenue :
+
+```text
+SaaS
+→ référentiel Produit canonique partagé
+
+Workspace
+→ catalogue d'usage
+→ références vers les Produits canoniques
+→ aucune copie de l'identité Produit
+
+Dossier
+→ utilise le catalogue du Workspace
+→ contextualise références commerciales, prix et historiques locaux
+```
+
+Même réalité Produit canonique = une seule identité de référence dans le SaaS.
+
+Les variantes de casse, singulier/pluriel et fautes reconnues ne doivent pas créer de doublons. M-002 devra combiner normalisation, alias et recherche de proximité avant création.
+
+Les formes/états/conservations qui modifient réellement l'usage ou le rendement doivent être structurés autour du Produit canonique, par exemple `Carotte → râpée → prête à l'emploi → fraîche`.
+
+Aucune donnée commerciale ou confidentielle tenant ne doit être stockée dans le Produit canonique partagé.
+
+Le schéma Mongoose final, la politique de contribution/modération/fusion et la frontière exacte entre déclinaison et Produit réellement distinct restent à fermer dans M-002.
+
+---
+
+## 9. Ce qu'il reste à fermer avant le premier modèle métier
+
+1. validations Zod ;
+2. contrats d'erreur ;
+3. audit métier ;
+4. matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
+5. effets lifecycle sur les `DossierAccessGrant` ;
+6. drawer/liste/gestion des affectations/contexte actif ;
+7. source technique d'autocomplétion avec fallback manuel ;
+8. migrations/seeds uniquement si besoin démontré ;
+9. stratégie de tests ;
+10. critères d'acceptation ;
+11. ordre d'implémentation ;
+12. validation finale M-001.
 
 Après seulement :
 
@@ -299,7 +351,7 @@ branche d'implémentation
 
 ---
 
-## 9. Points différés non bloquants
+## 10. Points différés non bloquants
 
 - marge semi-nette ;
 - Fiches process ;
@@ -312,7 +364,7 @@ branche d'implémentation
 
 ---
 
-## 10. Règle de reprise
+## 11. Règle de reprise
 
 À la prochaine conversation :
 
