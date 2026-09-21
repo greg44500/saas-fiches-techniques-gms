@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
 **Statut :** VALIDÉ — cadrage global clôturé, M-001 en cours de cadrage détaillé  
-**Dernière mise à jour :** 2026-09-20
+**Dernière mise à jour :** 2026-09-21
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.0.1` intégré ;
+- Core `v1.1.0` intégré ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;
@@ -39,18 +39,19 @@ Décisions établies :
 - règle V1 : `1 dossier = 1 magasin` ;
 - identité du dossier modifiable sans recréer le contexte ;
 - données magasin : nom, enseigne si pertinente, localisation, email documents, téléphone facultatif, responsable métier distinct de `createdBy` ;
-- autocomplétion de localisation via une source publique fiable à confirmer techniquement ;
+- autocomplétion facultative via le service Géoplateforme / IGN, avec fallback manuel permanent ;
 - lifecycle dossier `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
 - suppression logique avant éventuelle purge physique ;
 - suppression logique = coupure immédiate des accès métier et des ressources du dossier dans les flux normaux sans destruction automatique de l'historique ;
 - restauration contrôlée vers un état non opérationnel, par défaut `PAUSED` ;
-- catalogue produit mutualisé dans le Workspace ;
+- référentiel Produit canonique partagé à l'échelle du SaaS, avec catalogue d'usage par Workspace sans duplication de l'identité Produit ;
 - prix et conditions contextualisés par magasin ;
 - accès multi-magasins = changement de contexte, jamais partage ou mélange des données locales ;
 - invitation Workspace puis affectation séparée des magasins après acceptation ;
 - Workspace Owner implicitement autorisé sur tous les dossiers ;
 - drawer de consultation sans activation du contexte ;
-- ouverture explicite du dossier pour le travail métier ;
+- création/édition Dossier via Dialog métier basé sur les primitives Base UI/shadcn existantes ;
+- ouverture explicite du dossier vers une vraie page de travail métier ;
 - retour au Dashboard Workspace en un clic ;
 - Dashboard Workspace comme surface globale de pilotage ;
 - Sidebar métier recomposée via le point d'extension Core.
@@ -59,32 +60,53 @@ Décisions finales :
 
 - seul le nom du Dossier / magasin est obligatoire en saisie métier à la création ;
 - enseigne, localisation, email documents, téléphone et responsable / interlocuteur restent facultatifs ;
-- l'autocomplétion d'adresse/localisation fait partie de l'UX M-001, reste facultative et ne bloque jamais la création d'un Dossier ; sa source technique publique fiable reste à choisir pendant M-001 ;
+- l'autocomplétion d'adresse/localisation utilise en V1 la Géoplateforme / IGN, reste facultative et ne bloque jamais la création ou la modification d'un Dossier ; aucun payload fournisseur, identifiant BAN ou coordonnée n'est persisté en M-001 ;
 - les affectations sont portées par une relation métier dédiée `DossierAccessGrant`, distincte du `WorkspaceMember` Core ;
 - l'invitation Core reste limitée à `email + roleId` ; aucun magasin n'est préparé dans l'invitation ; après acceptation et création/réactivation du `WorkspaceMember`, le Workspace Owner affecte explicitement zéro, un ou plusieurs Dossiers ;
-- rétention et purge physique restent différées et suivies par D-006 avant leur implémentation.
+- les permissions M-001 validées sont `dossier:read`, `dossier:create`, `dossier:update`, `dossier:lifecycle:update`, `dossier:access:read` et `dossier:access:manage` ;
+- pour un non-owner, l'autorisation effective exige membership `ACTIVE` + permission + `DossierAccessGrant ACTIVE` + même Workspace + statut Dossier compatible ; l'Owner dispose d'un périmètre Dossier implicite sans grant individuel ;
+- aucun quota de stockage dur n'est défini par Dossier : la capacité appartient au Workspace ;
+- un Dossier `DELETED` n'est pas purgé automatiquement dans M-001 ; sa purge physique reste différée ;
+- la politique métier de corbeille est validée transversalement pour les futures ressources purgeables : 30 jours par défaut, configurable de 7 à 90 jours lorsque la personnalisation est autorisée.
 
 ### 2.2 Catalogue Produit
 
-**État : socle métier cadré**
+**État : fondation révisée et validée — cadrage détaillé M-002 à poursuivre après M-001**
+
+Décisions établies :
+
+- l'identité Produit canonique est partagée à l'échelle du SaaS et n'est pas dupliquée par Workspace ;
+- un Workspace construit son catalogue d'usage en référençant les Produits canoniques dont il a besoin ;
+- les Dossiers utilisent le catalogue de leur Workspace sans copier l'identité Produit ;
+- aucune donnée commerciale ou confidentielle tenant ne peut être stockée dans le Produit canonique ;
+- les utilisateurs autorisés peuvent rechercher le référentiel partagé et rattacher un Produit existant au Workspace ;
+- si aucun équivalent crédible n'existe, M-002 doit permettre de contribuer/créer une nouvelle identité canonique après contrôle de doublon ;
+- la prévention des doublons ne repose pas uniquement sur la casse : normalisation, alias, singulier/pluriel et recherche de proximité doivent participer au contrôle ;
+- forme, état/transformation et conservation sont des dimensions structurées lorsqu'elles changent réellement l'usage, le rendement ou la sélection d'un Article fournisseur ;
+- une simple faute ou variante orthographique ne crée jamais volontairement un nouveau Produit ;
+- une transformation qui crée une formulation réellement différente peut devenir un Produit distinct : la frontière métier sera fermée en M-002 ;
+- la recherche Produit est unifiée avec filtres de portée `Mon Workspace / Tout le référentiel autorisé` et de source `Toutes / Produits canoniques / Catalogues fournisseurs / Références-Articles fournisseur` ;
+- l'élargissement au référentiel global permet de rattacher une donnée existante au Workspace sans la recréer.
 
 À préserver :
 
-- nom métier précis ;
-- règle de nommage entier / préparation ;
 - catégorie ;
 - gamme lorsque pertinente ;
 - unité de référence ;
-- rendement ;
+- rendement applicable à la déclinaison réellement utilisée ;
 - photo facultative ;
 - traçabilité de création / modification ;
-- historique des modifications.
+- historique des modifications significatives.
 
-**À terminer :**
+**À terminer dans M-002 :**
 
+- schéma conceptuel final entre Produit canonique, déclinaison et relation d'usage Workspace ;
 - gouvernance des catégories ;
 - unités supportées ;
-- détails de lifecycle / archivage.
+- règles exactes d'identité sémantique et d'alias ;
+- politique de contribution/modération/fusion d'un Produit partagé ;
+- critères exacts séparant déclinaison et Produit distinct ;
+- lifecycle / archivage du référentiel et du rattachement Workspace.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
@@ -112,6 +134,13 @@ Décisions établies :
 - modes manuel / suggestion / ajout automatique paramétrables ;
 - carte d'identité professionnelle Produit/Article ;
 - imports CSV/XLS/XLSX prévus comme extension structurée sans obligation d'IA ;
+- une ligne de catalogue importée ne crée jamais automatiquement un Produit canonique ;
+- les éditions de catalogue peuvent être `GLOBAL_SHARED` ou `WORKSPACE_PRIVATE` ;
+- un import Workspace est privé par défaut ; aucune publication globale automatique ;
+- une édition globale peut être référencée par plusieurs Workspaces sans duplication de ses lignes ;
+- les mappings Fournisseur + référence Article déjà validés sont réutilisés dans les éditions suivantes ;
+- une ligne peut rester non rapprochée tant qu'aucune correspondance Produit fiable n'est validée ;
+- l'identité Fournisseur associée aux catalogues globaux doit être réutilisable ; le modèle exact global/Workspace des Fournisseurs reste à fermer en M-003 ;
 - IA/OCR uniquement comme assistance future sous contrôle métier.
 
 À finaliser :
@@ -152,7 +181,12 @@ Décisions établies :
 - règle standard d'arrondi = multiple de 0,50 € immédiatement supérieur ou égal ;
 - règles d'arrondi personnalisables par stratégies structurées ;
 - marge semi-nette explicitement différée et non bloquante ;
-- Atelier d'optimisation Premium cadré fonctionnellement.
+- Atelier d'optimisation Premium cadré fonctionnellement ;
+- un DRAFT actif n'est jamais purgé pour simple ancienneté ;
+- un DRAFT explicitement supprimé relève de la corbeille métier du Workspace ;
+- une version VALIDATED n'est pas purgée automatiquement par âge ;
+- CSV/XLS(X) sont générés à la demande sans conservation durable ;
+- le PDF est généré uniquement comme pièce jointe temporaire lors d'un envoi de document par e-mail et n'est pas persisté.
 
 À cadrer avant les modules concernés, pas avant M-001 :
 
@@ -160,7 +194,8 @@ Décisions établies :
 - définition de la marge semi-nette lorsqu'elle sera disponible ;
 - paramètres mathématiques fins et garde-fous de l'optimiseur avant M-005 ;
 - catalogue complet des stratégies d'arrondi ;
-- rétention/purge définitive avant implémentation.
+- contrat technique de corbeille/restauration/purge des DRAFTS avant M-004 ;
+- éventuelle suppression définitive des VALIDATED et contraintes réglementaires avant implémentation.
 
 
 ### 2.5 Fiches process
@@ -179,9 +214,11 @@ Il sera cadré avant son implémentation : relation avec la Fiche technique, ét
 Décisions établies :
 
 - réutilisation du RBAC Workspace du Core ;
+- les rôles système Core restent génériques et inchangés dans leur définition ;
+- les permissions et profils métier GMS appartiennent au produit et utilisent la primitive générique Role/Permission du Core ;
 - un WorkspaceMember porte un seul Role ;
-- un rôle personnalisé combine plusieurs responsabilités par ses permissions ;
-- Workspace Owner = toutes les permissions métier + tous les dossiers ;
+- un rôle métier personnalisé combine plusieurs responsabilités par ses permissions ;
+- Workspace Owner = autorité métier complète du produit + tous les dossiers, sans devenir un rôle métier GMS ;
 - PlatformRole sans accès implicite aux données métier Workspace ;
 - rôle et périmètre dossier séparés ;
 - invitation Core puis affectation Dossier après acceptation ;
@@ -192,13 +229,18 @@ Décisions établies :
 - Économe : validation des Prix facturés, revues et revalorisation, sans validation FT par défaut ;
 - Contributeur/Lecteur : Prix applicable nécessaire sans historique commercial détaillé ;
 - administration du Dossier et affectations Owner-only par défaut ;
+- les profils Acheteur, Économe, Responsable FT, Contributeur FT et Lecteur métier sont des presets produit destinés à créer des Roles Workspace personnalisés, jamais des rôles système Core ;
+- leur provisionnement final est progressif et intervient lorsque les permissions des modules concernés sont suffisamment cadrées ; M-001 n'invente pas les permissions M-002/M-003/M-004 ;
+- le Workspace Owner reste le rôle système générique Core enrichi, dans le produit dérivé, par les permissions métier déclarées via le point d'extension RBAC applicatif ;
 - Atelier d'optimisation = capability payante distincte du RBAC.
 
 À finaliser au cadrage des modules :
 
-- clés de permissions techniques exactes ;
-- lifecycle détaillé des affectations Dossier pour M-001 ;
-- vérifier avant implémentation de M-001 si une nouvelle version de `saas-core-api` expose un point d'extension transactionnel du lifecycle `WorkspaceMember` permettant au produit de révoquer atomiquement ses relations métier lors d'un passage à `REMOVED` ;
+- permissions techniques M-001 validées ;
+- matrice d'autorisation M-001 validée ;
+- API REST M-001 validée ;
+- lifecycle Dossier et effets sur les affectations validés ;
+- Core 1.1.0 fournit désormais le point d'extension transactionnel `WorkspaceMember → REMOVED` requis par M-001 ;
 - rattachement commercial exact de l'optimisation avant M-005 ;
 - quotas uniquement lorsqu'un besoin quantitatif est démontré.
 
@@ -222,7 +264,7 @@ standard
 - aucune valeur métier de remplacement codée en dur dans le frontend ;
 - préférences d'affichage séparées de la configuration métier ;
 - Dashboard Core + widgets métier ;
-- tous les widgets accessibles sont visibles par défaut avec le Core v1.0.1 (`hiddenWidgetIds = []`) ;
+- tous les widgets accessibles sont visibles par défaut avec le Core v1.1.0 (`hiddenWidgetIds = []`) ;
 - les widgets configurables peuvent ensuite être masqués/réaffichés par utilisateur ;
 - les widgets non configurables restent visibles ;
 - masquer un KPI ne désactive jamais une règle métier ou une alerte bloquante.
@@ -268,6 +310,31 @@ M-004 Fiches techniques + valorisation
 M-005 Atelier d'optimisation Premium
 M-006+ Process / imports / OCR / extensions
 ```
+
+### 2.9 Données initiales / bootstrap
+
+**État : stratégie validée**
+
+```text
+M-001
+→ aucune migration historique
+→ aucun seed Dossier
+→ Owner suffisant pour les premiers tests métier
+
+M-002
+→ bootstrap Produits canoniques initiaux
+
+M-003
+→ bootstrap Fournisseurs / Articles / catalogues de référence
+
+Presets de rôles métier
+→ propriété du produit
+→ provisionnement progressif selon les permissions effectivement cadrées
+```
+
+Les données de bootstrap sont versionnées, idempotentes, traçables et respectent les mêmes invariants que les flux métier normaux.
+
+---
 
 Ne bloquent plus M-001 :
 
@@ -335,22 +402,23 @@ Décisions M-001 déjà validées :
 - une suspension du membership conserve les grants, qui deviennent inopérants tant que le membership n'est pas `ACTIVE` ;
 - un retrait `REMOVED` doit révoquer les grants métier afin qu'une future réinvitation ne restaure jamais silencieusement les anciens magasins.
 
-Prérequis Core identifié avant implémentation :
+Prérequis Core résolu par Core 1.1.0 :
 
 ```text
 WorkspaceMember → REMOVED
-→ permettre au produit dérivé de participer atomiquement
-  à la transaction Core avec la même session MongoDB
+→ lifecycle applicatif onMemberRemoved
+→ session MongoDB Core transmise
 → M-001 révoque ses DossierAccessGrant dans cette transaction
+→ erreur métier = rollback global
 ```
 
-Le Core `v1.0.1` intégré ne possède pas ce point d'extension. Le besoin a été formalisé pour `saas-core-api` comme évolution générique réutilisable. **Au début de la prochaine conversation M-001, vérifier l'état réel de `saas-core-api` et déterminer si cette évolution a été implémentée/versionnée.** Si oui, lire son contrat canonique et prévoir son intégration via une branche `core-update/vX.Y.Z` avant le code M-001. Si non, poursuivre le cadrage M-001 mais maintenir l'implémentation du retrait atomique comme bloquée.
+Les permissions exactes et la matrice technique d'autorisation M-001 sont désormais validées.
 
-Le cadrage M-001 doit encore fermer : permissions exactes, API, validations Zod, audit, transitions de lifecycle, drawer/contexte actif, stratégie de tests, critères d'acceptation et ordre d'implémentation.
+Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middleware-service, le contrat de validation Zod / métadonnées backend-driven, l'activité métier produit, le lifecycle Dossier, le contrat UX liste/drawer/Dialog/page Dossier, l'autocomplétion d'adresse, la stratégie de bootstrap, la stratégie de tests, les critères d'acceptation et l'ordre d'implémentation sont désormais validés. Le cadrage détaillé M-001 est complet.
 
 ## 5. Phase 4 — Implémentation métier
 
-**Statut : NON AUTORISÉE pour le moment**
+**Statut : PRÊTE À DÉMARRER après fusion de la PR documentaire #9 et Core Gate post-merge verte**
 
 Après validation d'un module :
 
@@ -425,18 +493,34 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le cadrage transversal est clôturé et M-001 est en cours.
+Le cadrage transversal et le cadrage détaillé M-001 sont clôturés.
 
-Ordre de reprise :
+Contrats de sortie :
 
-1. **vérifier en premier l'état réel de `saas-core-api`** concernant le point d'extension transactionnel du lifecycle `WorkspaceMember → REMOVED` ;
-2. si une release Core existe, lire son contrat, ses tests et ses instructions d'upgrade, puis planifier son intégration produit via `core-update/vX.Y.Z` ;
-3. poursuivre le cadrage M-001 sans rouvrir les décisions déjà validées ;
-4. fermer les permissions métier exactes, l'API REST, les validations Zod et l'audit ;
-5. fermer les transitions de lifecycle Dossier, suppression logique/restauration, drawer et contexte magasin actif ;
-6. définir migrations/seeds si nécessaires ;
-7. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
-8. valider les critères d'acceptation, les prérequis Core et l'ordre d'implémentation ;
-9. seulement après validation complète M-001 et disponibilité du mécanisme Core requis pour `REMOVED`, créer la branche d'implémentation et développer.
+```text
+docs/m001/M-001-TEST-STRATEGY.md
+docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md
+```
 
-La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour le cadrage M-001.
+Séquence obligatoire :
+
+```text
+1. terminer la PR documentaire #9
+2. Core Gate verte sur son head
+3. fusionner #9
+4. Core Gate post-merge verte sur main
+5. synchroniser main local
+6. créer feature/m001-dossiers-access
+7. implémenter selon l'ordre validé
+```
+
+Le premier changement de la branche d'implémentation doit isoler les bases tests du produit :
+
+```text
+saas_fiches_techniques_gms_test
+saas_fiches_techniques_gms_e2e_test
+```
+
+Puis M-001 est implémenté comme un seul lot fonctionnel cohérent.
+
+La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour M-001.

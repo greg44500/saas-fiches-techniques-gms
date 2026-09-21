@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 
 **Statut :** VALIDÉ — vocabulaire transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-20
+**Dernière mise à jour :** 2026-09-21
 
 > Ce glossaire fixe le vocabulaire déjà stabilisé pendant le cadrage.  
 > Les termes marqués comme ouverts ne doivent pas être transformés en contrats techniques définitifs.
@@ -13,6 +13,32 @@
 Espace de travail du client du SaaS et frontière de tenancy héritée du Core.
 
 Un Workspace peut contenir plusieurs dossiers correspondant à des contextes magasin.
+
+Il porte également la capacité de stockage du produit : les Dossiers consomment cette capacité commune et ne possèdent pas de quota dur de stockage propre en V1.
+
+---
+
+## Quota de stockage Workspace
+
+Limite de capacité appliquée au Workspace dans son ensemble.
+
+Elle ne réserve pas une part fixe à chaque Dossier. Une ventilation de consommation par Dossier peut être affichée à des fins de pilotage sans devenir une autorité de blocage.
+
+---
+
+## Corbeille métier
+
+État temporaire d'une ressource métier explicitement supprimée mais encore restaurable avant son échéance de purge.
+
+La durée standard validée est de 30 jours. Lorsqu'une personnalisation est autorisée, la valeur effective doit rester comprise entre 7 et 90 jours et est figée pour la ressource au moment de sa suppression.
+
+---
+
+## Artefact d'export temporaire
+
+Fichier reproductible généré depuis une donnée métier pour un usage immédiat, sans devenir une ressource persistante.
+
+CSV et XLS(X) sont générés à la demande pour téléchargement. Le PDF est généré à la demande comme pièce jointe lors de l'envoi d'un document par e-mail. Ces artefacts sont supprimés après traitement et ne constituent pas un historique parallèle.
 
 ---
 
@@ -60,7 +86,7 @@ Relation métier donnant à un WorkspaceMember non-owner l'accès à un dossier/
 
 Elle est indépendante du Role Workspace et est persistée dans une relation métier dédiée de type conceptuel `DossierAccessGrant`.
 
-Le grant relie un `WorkspaceMember` et un `Dossier` appartenant au même Workspace, avec une seule affectation courante par couple membre + Dossier. Une révocation coupe l'accès sans perdre la traçabilité d'attribution/révocation.
+Le grant relie un `WorkspaceMember` et un `Dossier` appartenant au même Workspace, avec une seule affectation courante par couple membre + Dossier. Une révocation coupe l'accès sans perdre la traçabilité d'attribution/révocation. Un passage du Dossier à `DELETED` révoque tous les grants ACTIVE ; une restauration ne réactive jamais les anciens grants.
 
 Le Workspace Owner possède implicitement tous les dossiers de son Workspace et ne nécessite pas de `DossierAccessGrant` individuel.
 
@@ -88,47 +114,91 @@ Un prix spécifique d'un autre magasin ne constitue jamais un fallback.
 
 ---
 
-## Catalogue produit
+## Référentiel Produit canonique
 
-Base de produits commune à un Workspace.
+Référentiel partagé à l'échelle du SaaS contenant les identités Produit génériques et non confidentielles.
 
-Les dossiers puisent dans ce catalogue au lieu de recréer les mêmes produits magasin par magasin.
+Invariant :
+
+```text
+même réalité Produit canonique
+→ une seule identité de référence dans le SaaS
+```
+
+Les variantes lexicales équivalentes — casse, singulier/pluriel, accents, espaces ou fautes reconnues — ne doivent pas créer silencieusement de doublons.
 
 ---
 
-## Produit
+## Catalogue Produit du Workspace
 
-Denrée ou composant utilisable dans une fiche technique, indépendamment de son fournisseur et de son prix.
+Sélection des Produits canoniques réellement utilisés par un Workspace.
 
-Le produit porte notamment :
+Le catalogue Workspace référence le référentiel partagé ; il ne copie pas l'identité du Produit. Les Dossiers du Workspace puisent dans cette sélection.
 
-- un nom métier précis ;
+Une relation conceptuelle de type `WorkspaceProduct` peut porter ce rattachement ; son schéma final relève de M-002.
+
+---
+
+## Produit canonique
+
+Denrée, composant ou consommable de référence identifiable indépendamment d'un Workspace, d'un Fournisseur et d'un prix.
+
+Le Produit canonique porte uniquement des données génériques partageables et ne contient jamais de tarif négocié, prix facturé, fournisseur local choisi, historique commercial tenant ou autre donnée confidentielle.
+
+Il porte conceptuellement :
+
+- un nom canonique ;
+- une clé normalisée et des alias de recherche ;
 - une catégorie ;
-- une gamme alimentaire lorsqu'elle est pertinente ;
 - une unité de référence ;
-- un taux de rendement ;
 - une photo facultative ;
-- des métadonnées de création et modification.
+- des métadonnées de création et modification ;
+- les liens vers ses déclinaisons structurées lorsque nécessaires.
 
-### Règle de nommage
+---
 
-Si le produit est entier ou utilisé dans sa forme standard, utiliser le nom simple :
+## Déclinaison Produit
 
-```text
-Carotte
-Oignon
-Rumsteck
-Maquereau
-```
+Description structurée d'une forme réellement différente d'usage d'un Produit canonique lorsque la préparation, l'état ou la conservation modifient son rendement, sa sélection commerciale ou son emploi.
 
-Si une forme de préparation est nécessaire pour comprendre ce qui est réellement utilisé, la préciser dans le nom :
+Axes identifiés :
 
 ```text
-Carotte râpée
-Oignon émincé
-Rumsteck tranché
-Maquereau en filet
+forme
+→ entière / rondelles / râpée / dés / julienne / purée / ...
+
+état / transformation
+→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
+
+conservation
+→ fraîche / surgelée / appertisée / ...
 ```
+
+Exemple :
+
+```text
+Produit canonique : Carotte
+forme             : râpée
+état              : prête à l'emploi
+conservation      : fraîche
+```
+
+Une transformation qui crée une formulation/composition différente peut relever d'un Produit distinct plutôt que d'une simple déclinaison ; cette frontière est à fermer dans M-002.
+
+### Règle de recherche et création
+
+Avant de créer une nouvelle identité canonique, le système recherche les correspondances exactes normalisées, les alias puis les candidats proches.
+
+```text
+carotte
+Carottes
+carote
+```
+
+doivent converger vers `Carotte` lorsqu'ils désignent la même réalité métier.
+
+Le libellé affiché peut intégrer les dimensions structurées, par exemple `Carotte râpée prête à l'emploi`, sans créer une nouvelle identité racine uniquement à cause du texte.
+
 
 ---
 
@@ -310,6 +380,60 @@ Un tarif ancien reste historique ; s'il sert exceptionnellement de dernier fallb
 Version identifiable d'un catalogue de référence d'un Fournisseur.
 
 Une nouvelle édition n'écrase pas l'ancienne.
+
+Une édition possède une portée explicite :
+
+```text
+GLOBAL_SHARED
+→ partageable entre Workspaces
+
+WORKSPACE_PRIVATE
+→ visible uniquement dans son Workspace propriétaire
+```
+
+Un import utilisateur est privé par défaut et ne devient jamais global automatiquement.
+
+---
+
+## Ligne de catalogue fournisseur
+
+Ligne brute ou normalisée appartenant à une édition de catalogue fournisseur.
+
+Elle peut porter notamment une référence fournisseur, une désignation source, un conditionnement et un Tarif fournisseur de référence.
+
+Une ligne de catalogue n'est pas automatiquement un Produit canonique. Elle peut rester non rapprochée jusqu'à validation d'une correspondance fiable.
+
+---
+
+## Rapprochement catalogue
+
+Processus qui relie une ligne ou un Article fournisseur à un Produit canonique et, lorsque nécessaire, à sa déclinaison structurée.
+
+Une correspondance déjà validée pour le même Fournisseur et la même référence Article est réutilisable lors des éditions suivantes.
+
+---
+
+## Recherche unifiée Produit
+
+Surface de recherche permettant de filtrer à la fois par portée et par source.
+
+Portées prévues :
+
+```text
+Mon Workspace
+Tout le référentiel autorisé
+```
+
+Sources prévues :
+
+```text
+Toutes
+Produits canoniques
+Catalogues fournisseurs
+Références / Articles fournisseur
+```
+
+La recherche ne modifie pas les frontières de sécurité : une ressource privée d'un autre Workspace ou une donnée commerciale locale n'entre jamais dans le référentiel global.
 
 ---
 
@@ -539,13 +663,23 @@ Une version VALIDATED est immuable. Une modification ultérieure produit un nouv
 
 ## DRAFT
 
-Version de travail non officielle pouvant être incomplète.
+Version de travail non officielle pouvant être incomplète. Un DRAFT actif n'est jamais purgé uniquement pour ancienneté ; un DRAFT explicitement supprimé relève de la corbeille métier et de sa politique de rétention.
 
 ---
 
 ## VALIDATED
 
-Version officielle ayant passé les contrôles backend de validation et conservant son snapshot économique.
+Version officielle ayant passé les contrôles backend de validation et conservant son snapshot économique. Elle n'est pas purgée automatiquement par simple ancienneté ; l'archivage reste le mécanisme normal de sortie de l'usage actif.
+
+---
+
+## BusinessActivityEvent
+
+Événement immuable décrivant un fait métier effectivement réalisé dans le produit GMS.
+
+Il est distinct de l'`AuditLog` Core, qui reste consacré aux événements génériques de sécurité, d'administration et de fonctionnement du socle.
+
+Un `BusinessActivityEvent` appartient toujours à un Workspace, peut être contextualisé par un Dossier et utilise des actions définies par un registry backend métier.
 
 ---
 
@@ -656,7 +790,7 @@ Aucune autre charge ne doit être ajoutée sans validation métier.
 
 Propriétaire du Workspace au sens du Core.
 
-Dans ce SaaS, il reçoit toutes les permissions métier du produit et tous les dossiers de CE Workspace.
+Dans ce SaaS, le rôle système `owner` reste générique côté Core. Le produit reconnaît toutefois le Workspace Owner comme autorité métier complète de CE Workspace et lui donne accès à tous ses dossiers.
 
 Il reste soumis aux invariants métier, capabilities, quotas et règles de sécurité.
 
@@ -674,9 +808,11 @@ Il ne donne aucun accès implicite aux données métier d'un Workspace.
 
 ## Rôle Workspace
 
-Groupe de permissions rattaché à un Workspace et attribué à un WorkspaceMember.
+Groupe générique de permissions rattaché à un Workspace et attribué à un WorkspaceMember.
 
-Le Core v1.0.1 porte un seul rôle par membre. Un rôle personnalisé peut donc combiner plusieurs responsabilités métier.
+Les rôles système sont fournis par le Core et restent génériques. Les profils métier comme Acheteur, Économe ou Responsable FT sont définis uniquement par le produit sous forme de rôles personnalisés utilisant la primitive générique du Core.
+
+Le Core v1.1.0 porte un seul rôle par membre. Un rôle personnalisé métier peut donc combiner plusieurs responsabilités.
 
 ---
 

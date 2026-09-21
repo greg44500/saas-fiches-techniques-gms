@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
 
 **Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
-**Dernière mise à jour :** 2026-09-20  
+**Dernière mise à jour :** 2026-09-21  
 **Périmètre :** définition du problème métier, des principes produit et des invariants à préserver avant tout module métier
 
 > Ce document formalise les fondations transversales validées du produit.  
@@ -72,18 +72,30 @@ Données métier déjà identifiées pour le dossier :
 
 - nom du dossier / magasin ;
 - enseigne, distincte du nom lorsque cette distinction apporte une valeur métier ;
-- localisation avec au minimum ville et code postal lorsque disponibles ;
+- localisation avec ville et code postal lorsque disponibles ;
 - adresse complète lorsqu'elle est connue ;
-- identifiant géographique normalisé récupérable automatiquement lorsque la source le permet ;
 - email principal destiné notamment à l'envoi de documents depuis l'application ;
 - téléphone facultatif ;
 - nom du responsable / interlocuteur métier, distinct de l'utilisateur qui crée le dossier ;
 - statut du dossier ;
 - dates et auteurs de création / modification.
 
-En V1, le seul champ métier saisi obligatoirement à la création est le **nom du Dossier / magasin**. L'enseigne, l'adresse, le code postal, la ville, l'identifiant géographique normalisé, l'email documents, le téléphone et le responsable / interlocuteur sont facultatifs. Les champs système nécessaires à l'ownership, au lifecycle et à l'audit restent gérés par le backend. Une fonctionnalité ultérieure peut exiger ponctuellement une donnée facultative lorsqu'elle en dépend, par exemple un email avant un envoi de document.
+En V1, le seul champ métier saisi obligatoirement à la création est le **nom du Dossier / magasin**. L'enseigne, l'adresse, le code postal, la ville, l'email documents, le téléphone et le responsable / interlocuteur sont facultatifs. Les champs système nécessaires à l'ownership, au lifecycle et à l'audit restent gérés par le backend. Une fonctionnalité ultérieure peut exiger ponctuellement une donnée facultative lorsqu'elle en dépend, par exemple un email avant un envoi de document.
 
-La saisie de localisation doit bénéficier d'une autocomplétion ville / code postal / adresse fondée sur une source publique et fiable. L'intégration cible doit privilégier les services publics actuels autour de la Base Adresse Nationale / Géoplateforme ; le fournisseur technique exact sera confirmé au cadrage du module afin de ne pas figer une API obsolète.
+La saisie de localisation bénéficie d'une autocomplétion facultative basée en V1 sur le service d'autocomplétion de la Géoplateforme / IGN alimenté notamment par la Base Adresse Nationale.
+
+Contrat M-001 :
+
+```text
+3 caractères significatifs minimum
+→ debounce d'environ 300 ms
+→ type StreetAddress
+→ maximum 8 suggestions
+```
+
+La saisie manuelle reste toujours disponible. Une indisponibilité, un timeout, une limitation de débit ou l'absence de résultat ne bloque jamais la création ou la modification du Dossier.
+
+L'intégration frontend passe par un adapter dédié afin que le formulaire ne dépende pas du payload brut du fournisseur. M-001 ne persiste que `address`, `postalCode` et `city` ; aucune coordonnée, identifiant BAN/Géoplateforme ou payload fournisseur n'est stocké sans besoin métier ultérieur démontré.
 
 Les informations opérationnelles du dossier sont modifiables par un utilisateur autorisé sans créer un nouveau dossier : nom, enseigne, localisation, email, téléphone, responsable et autres données utiles au fonctionnement métier. Les changements significatifs sont auditables.
 
@@ -125,15 +137,14 @@ Les relations d'accès peuvent rester conservées pour l'audit mais n'accordent 
 
 La restauration d'un dossier supprimé est possible tant qu'une purge définitive n'a pas eu lieu. La restauration doit revenir dans un état non opérationnel nécessitant une vérification, par défaut `PAUSED`, plutôt que de réactiver silencieusement le magasin.
 
-La purge physique constitue une opération distincte, contrôlée, auditée et soumise aux règles de rétention à cadrer. Elle n'est jamais assimilée à l'action utilisateur courante « supprimer ».
+La purge physique constitue une opération distincte, contrôlée et auditée. Pour M-001, un Dossier `DELETED` n'est soumis à aucune purge automatique : sa purge définitive reste différée jusqu'au cadrage du graphe métier complet. Cette règle est distincte de la politique de corbeille applicable aux ressources métier purgeables comme les futurs DRAFTS supprimés.
 
 Transitions conceptuelles retenues :
 
 ```text
-ACTIVE ↔ PAUSED
-ACTIVE / PAUSED → ARCHIVED
-ARCHIVED → ACTIVE ou PAUSED
-ACTIVE / PAUSED / ARCHIVED → DELETED
+ACTIVE → PAUSED | ARCHIVED | DELETED
+PAUSED → ACTIVE | ARCHIVED | DELETED
+ARCHIVED → PAUSED | DELETED
 DELETED → PAUSED après restauration contrôlée
 ```
 
@@ -172,42 +183,103 @@ Le contrôle doit être garanti par le backend et non par l'interface seule.
 
 Le Workspace Owner peut accéder à tous les magasins, et un collaborateur peut recevoir un périmètre multi-magasins, mais tous travaillent toujours dans un contexte magasin actif lorsqu'ils créent, modifient ou valorisent une fiche.
 
-### 3.4 Catalogue commun au Workspace
+### 3.4 Référentiel Produit commun au SaaS et catalogue d'usage du Workspace
 
-Le Workspace dispose d'une base de produits commune dans laquelle les dossiers viennent puiser.
+L'identité canonique d'un Produit de référence n'est pas recréée dans chaque Workspace.
 
-La donnée produit ne doit pas être dupliquée pour chaque magasin uniquement parce que son prix change.
+Le SaaS maintient un **référentiel Produit canonique partagé** pour les données génériques non confidentielles :
+
+```text
+Référentiel SaaS
+→ Carotte
+→ Oignon
+→ Farine
+→ Film alimentaire
+→ ...
+```
+
+Un Workspace possède ensuite son **catalogue d'usage**, qui référence les Produits canoniques dont il a besoin sans copier leur identité.
+
+Conceptuellement :
+
+```text
+Produit canonique SaaS
+→ 1 seule identité de référence
+
+Workspace
+→ sélection / relation d'usage vers ce Produit
+→ aucune copie du Produit canonique
+
+Dossier
+→ exploite les Produits disponibles dans son Workspace
+→ contextualise les données magasin
+```
+
+La relation d'usage du Workspace pourra être matérialisée ultérieurement par un concept de type `WorkspaceProduct`, sans préjuger du schéma Mongoose final de M-002.
+
+Les données partagées au niveau SaaS doivent rester strictement génériques. Elles ne contiennent jamais de tarif négocié, prix facturé, historique commercial local, fournisseur choisi par un magasin ou autre donnée confidentielle d'un tenant.
+
+Les utilisateurs autorisés doivent pouvoir rechercher un Produit du référentiel commun puis l'ajouter à leur catalogue Workspace. Si le Produit n'existe réellement pas, le parcours M-002 devra permettre de proposer/créer une nouvelle identité canonique après contrôle de doublon.
+
+Invariant :
+
+```text
+même réalité Produit canonique
+→ une seule identité de référence dans le SaaS
+```
+
+Les variantes de casse, espaces, accents, singulier/pluriel et fautes d'orthographe courantes ne doivent pas créer silencieusement des Produits concurrents. Le contrôle doit combiner normalisation, alias et recherche de proximité avant toute création. L'index d'unicité technique seul ne suffit pas à garantir l'unicité sémantique.
+
+La politique exacte de contribution/modération d'un nouveau Produit global reste à fermer dans M-002 ; elle ne doit pas être inventée pendant M-001.
 
 ---
 
 
 ### 3.5 Navigation Workspace, consultation d'un dossier et contexte actif
 
-Le produit distingue trois actions :
+Le produit distingue clairement quatre surfaces UX :
 
 ```text
-Dashboard Workspace
-→ pilotage global
+Liste Dossiers
+→ repérage, recherche et filtres
 
-Drawer dossier
+Drawer Dossier
 → consultation / navigation / administration légère
-→ ne change pas le contexte magasin actif
+→ ne change jamais le contexte magasin actif
 
-Ouvrir le dossier
-→ active explicitement le contexte magasin
-→ permet le travail métier approfondi
+Dialog Dossier
+→ création / modification focalisée
+
+Page Dossier
+→ véritable espace de travail métier
+→ contexte magasin explicite
 ```
 
-Le drawer d'un dossier doit permettre de comprendre son contenu sans l'ouvrir comme contexte de travail. Il peut présenter selon les permissions :
+Le drawer d'un dossier doit permettre de comprendre son contenu sans l'ouvrir comme contexte de travail. En M-001, il présente selon les permissions :
 
-- une vue d'ensemble avec les KPI utiles ;
 - les informations générales du magasin ;
-- les Fiches techniques et Fiches process ;
 - les membres ayant accès au dossier ;
-- l'activité / l'audit utile ;
-- les actions d'administration du lifecycle.
+- l'activité métier du produit ;
+- les actions d'administration du lifecycle ;
+- l'action explicite « Ouvrir le dossier » lorsque le Dossier est ACTIVE.
+
+Les futurs modules Fiches techniques, Produits contextualisés, Process et outils d'optimisation ne sont pas exécutés dans le drawer. Ils s'intègrent dans la vraie page de travail du Dossier.
+
+L'activité métier du Dossier est distincte de l'AuditLog Core. Elle est portée par la primitive produit `BusinessActivityEvent` et filtrée selon les permissions et le scope Dossier.
 
 L'ouverture du drawer de Nantes puis de Saint-Nazaire ne doit jamais modifier implicitement le contexte magasin actif.
+
+La création et la modification des informations générales utilisent un Dialog métier basé sur les primitives shadcn/Base UI déjà présentes dans le Core. Le formulaire métier est réutilisable entre création et édition ; `ConfirmationDialog` reste réservé aux confirmations et n'est pas détourné en formulaire CRUD.
+
+L'action « Ouvrir le dossier » navigue vers une vraie route de travail :
+
+```text
+/workspaces/:workspaceId/dossiers/:dossierId
+```
+
+Seul un Dossier ACTIVE peut devenir un contexte de travail opérationnel. PAUSED, ARCHIVED et DELETED restent consultables/administrables selon leurs règles mais ne sont pas ouverts comme contexte actif.
+
+La route constitue la source UX du contexte sélectionné, sans créer de `currentDossier` backend ni de `activeDossierId` persistant comme autorité. Chaque requête backend reste autorisée indépendamment.
 
 Depuis tout dossier ouvert, le Dashboard Workspace doit rester accessible en un clic.
 
@@ -216,8 +288,11 @@ Le Dashboard Workspace constitue la surface de pilotage globale du Workspace : P
 La Sidebar Workspace devra être recomposée avec les sections métier du produit en utilisant le point d'extension Core `frontend/src/app/workspace-navigation.js`. Sa structure définitive sera arrêtée après validation du périmètre V1 afin de distinguer clairement :
 
 ```text
+référentiel partagé SaaS
+→ identités Produit canoniques
+
 ressources globales Workspace
-→ Produits, Fournisseurs, catalogues, administration...
+→ catalogue d'usage Produit, Fournisseurs, Articles, catalogues fournisseur, administration...
 
 ressources contextualisées dossier
 → Fiches, références magasin, prix locaux, process...
@@ -228,6 +303,29 @@ ressources contextualisées dossier
 Règle directrice :
 
 > L'utilisateur déclare les faits métier nécessaires ; l'application contrôle, normalise et calcule automatiquement toute donnée qui peut être déduite.
+
+### 4.1 Vocabulaires métier et statuts backend-driven
+
+Les statuts persistants et autres vocabulaires métier structurants ont une source canonique backend.
+
+Pattern obligatoire :
+
+```text
+registry / constantes backend
+→ modèles
+→ validations Zod
+→ services
+→ métadonnées HTTP
+→ frontend
+```
+
+Le frontend ne maintient pas de liste statique concurrente de statuts ni de mapping métier local des valeurs.
+
+Lorsqu'un écran doit proposer ou afficher un vocabulaire métier, le backend expose les métadonnées nécessaires, notamment `value` et `label`, dérivées de la source canonique.
+
+Cette règle s'applique à M-001 et doit être conservée dans les futurs modules Produits, Articles, Fiches techniques et autres ressources portant un lifecycle.
+
+Le frontend reste responsable de la présentation visuelle ; le backend reste l'autorité du vocabulaire, des transitions et des règles métier.
 
 Conséquences :
 
@@ -260,40 +358,63 @@ prix de vente retenu
 
 Un produit représente une denrée ou un composant utilisable dans une fiche technique, indépendamment de son fournisseur et de son prix.
 
-### 5.1 Nom
+### 5.1 Identité canonique, nom et déclinaisons structurées
 
-Le nom doit être immédiatement compréhensible par l'utilisateur.
-
-Règle de nommage :
-
-- si le produit est entier ou utilisé dans sa forme standard : utiliser le nom simple ;
-- si une préparation ou une forme modifie sa compréhension, son rendement ou son usage : préciser cette forme dans le nom.
-
-Exemples :
+Le Produit de référence représente d'abord une identité métier canonique, par exemple :
 
 ```text
 Carotte
 Oignon
-Rumsteck
-Maquereau
-
-Carotte râpée
-Oignon émincé
-Rumsteck tranché
-Maquereau en filet
+Farine
+Film alimentaire
 ```
 
-Il n'est pas prévu à ce stade d'ajouter un champ utilisateur séparé « forme/état ».
+Cette identité ne doit pas être recréée sous des variantes lexicales équivalentes telles que `carotte`, `Carottes` ou une faute d'orthographe reconnue comme désignant la même réalité.
+
+Le libellé affiché reste lisible pour l'utilisateur, mais l'identité ne repose pas uniquement sur une chaîne libre.
+
+Les formes et états qui modifient réellement l'usage, le rendement ou la sélection d'un Article fournisseur doivent être identifiés de manière structurée autour de l'identité canonique.
+
+Axes conceptuels à cadrer précisément dans M-002 :
+
+```text
+Produit canonique
+→ Carotte
+
+forme
+→ entière / rondelles / râpée / dés / julienne / purée / ...
+
+état ou transformation
+→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
+
+conservation lorsque pertinente
+→ fraîche / surgelée / appertisée / ...
+```
+
+Exemple :
+
+```text
+Carotte
+→ forme : râpée
+→ état : prête à l'emploi
+→ conservation : fraîche
+```
+
+L'interface peut composer un libellé lisible comme `Carotte râpée prête à l'emploi`, sans transformer chaque variante orthographique du libellé en nouvelle identité canonique.
+
+Une transformation qui crée réellement un produit composé ou une formulation différente ne doit pas être assimilée automatiquement à une simple forme. Par exemple, une « purée de carottes » industrielle peut contenir d'autres ingrédients. La frontière entre déclinaison et Produit distinct doit être cadrée dans M-002 à partir de critères métier, jamais par simple comparaison de texte.
 
 ### 5.2 Données minimales du produit
 
-Socle actuellement retenu :
+Socle conceptuel actuellement retenu :
 
-- nom — obligatoire ;
+- identité / nom canonique — obligatoire ;
+- clé normalisée et alias — nécessaires au contrôle des doublons et à la recherche ;
 - catégorie — nécessaire au classement, tri, recherche et aux analyses ;
+- forme / état / conservation — structurés lorsqu'ils distinguent réellement l'usage ;
 - gamme alimentaire — uniquement lorsqu'elle est pertinente ;
 - unité de référence — nécessaire aux calculs ;
-- taux de rendement — caractéristique métier du produit ;
+- taux de rendement — caractéristique métier de la déclinaison réellement utilisée lorsque le rendement en dépend ;
 - photo — facultative ;
 - notes — facultatives, sans logique métier cachée ;
 - date de création — système ;
@@ -669,7 +790,7 @@ La raison de ce fallback doit rester explicable.
 
 ### 6.11 Catalogues fournisseur de référence
 
-Le SaaS peut proposer des catalogues fournisseur de référence préchargés afin que le premier usage soit réellement exploitable sans obliger le client à recréer manuellement chaque Article fournisseur.
+Le SaaS peut proposer des catalogues fournisseur de référence préchargés et partagés afin que le premier usage soit réellement exploitable sans obliger chaque client à recréer manuellement les mêmes Articles fournisseur.
 
 Un catalogue doit être identifiable par des informations conceptuelles telles que :
 
@@ -678,7 +799,23 @@ Un catalogue doit être identifiable par des informations conceptuelles telles q
 - date de début et de fin éventuelles ;
 - source ;
 - date d'intégration ;
-- statut/fraîcheur de la source.
+- statut/fraîcheur de la source ;
+- portée de partage.
+
+Deux portées conceptuelles sont retenues :
+
+~~~text
+GLOBAL_SHARED
+→ catalogue de référence vérifié
+→ données non confidentielles
+→ disponible pour plusieurs ou tous les Workspaces selon les règles du produit
+
+WORKSPACE_PRIVATE
+→ import propre à un Workspace
+→ jamais exposé à un autre Workspace
+~~~
+
+Un import réalisé par un utilisateur est `WORKSPACE_PRIVATE` par défaut. Il ne devient jamais global automatiquement. Une édition ne peut être partagée globalement que si sa provenance et son caractère partageable sont établis.
 
 Un catalogue ancien n'est pas écrasé par une édition plus récente.
 
@@ -695,22 +832,123 @@ La résolution peut utiliser un ancien Tarif fournisseur lorsqu'aucune meilleure
 
 Les catalogues fournisseur partagés ne contiennent aucune condition commerciale confidentielle propre à un magasin.
 
-L'import futur de catalogues structurés CSV/XLS/XLSX doit produire une nouvelle édition et non écraser l'ancienne. Le flux envisagé est :
+#### Import structuré sans création massive de Produits
+
+Une ligne de catalogue fournisseur n'est pas un Produit canonique.
+
+Invariant :
 
 ~~~text
-lecture
+ligne CSV/XLS/XLSX
+≠ Produit canonique
+≠ Article fournisseur
+≠ Tarif négocié
+~~~
+
+L'import complet d'un catalogue de plusieurs milliers de lignes ne crée donc pas automatiquement autant de Produits canoniques.
+
+Le flux validé est :
+
+~~~text
+lecture / staging
+→ identification Fournisseur + édition + portée
 → détection/présentation des colonnes
 → mapping utilisateur
-→ contrôles références / unités / conditionnements
-→ détection des doublons et incohérences
+→ normalisation références / désignations / unités / conditionnements
+→ recherche des Articles fournisseur déjà connus
+→ réutilisation de leurs mappings Produit déjà validés
+→ rapprochement des nouvelles références
+→ file des cas ambigus / non résolus
 → aperçu
 → validation
 → nouvelle édition historisée
 ~~~
 
-Le mapping propre à un Fournisseur doit pouvoir être mémorisé et réutilisé.
+Une ligne peut être conservée dans une édition de catalogue sans être immédiatement rapprochée d'un Produit canonique.
 
-L'IA n'est pas nécessaire pour les fichiers structurés. Elle pourra plus tard assister le mapping ambigu, l'interprétation de documents complexes ou l'OCR, mais ne deviendra jamais l'autorité qui écrit directement un prix exploitable sans contrôles métier et validation.
+Lorsqu'un même Fournisseur et une même référence Article ont déjà été validés, une nouvelle édition réutilise ce mapping au lieu de refaire la reconnaissance du Produit.
+
+Ordre de rapprochement recommandé :
+
+~~~text
+1. même Fournisseur + même référence Article connue
+2. désignation normalisée connue
+3. alias Produit / déclinaison
+4. recherche de proximité
+5. proposition utilisateur
+6. création/proposition d'une nouvelle identité uniquement si aucun équivalent crédible n'existe
+~~~
+
+Aucune correspondance ambiguë ne doit créer silencieusement un Produit global.
+
+Le mapping propre à un Fournisseur doit pouvoir être mémorisé et réutilisé, de même que les correspondances validées `Article fournisseur → Produit/déclinaison`.
+
+L'IA n'est pas nécessaire pour les fichiers structurés. Elle pourra plus tard assister le mapping ambigu, l'interprétation de documents complexes ou l'OCR, mais ne deviendra jamais l'autorité qui écrit directement un prix exploitable ou crée un Produit canonique sans contrôles métier et validation.
+
+#### Utilisation sans duplication par Workspace
+
+Un Workspace peut utiliser un catalogue partagé sans en copier toutes les lignes.
+
+Conceptuellement :
+
+~~~text
+Catalogue global
+→ stocké une fois
+
+Workspace
+→ active / référence le catalogue utile
+→ ne duplique pas son contenu
+~~~
+
+Le Workspace peut ensuite ne rattacher à son usage courant que les Produits, Fournisseurs ou Articles réellement nécessaires.
+
+#### Recherche unifiée
+
+La recherche métier doit pouvoir interroger une surface unique avec des filtres de portée et de source.
+
+Portée :
+
+~~~text
+Mon Workspace
+Tout le référentiel autorisé
+~~~
+
+Source :
+
+~~~text
+Toutes
+Produits canoniques
+Catalogues fournisseurs
+Références / Articles fournisseur
+~~~
+
+Exemple :
+
+~~~text
+recherche "carotte"
+
+Produits canoniques
+→ Carotte
+→ déclinaisons pertinentes
+
+Catalogues fournisseurs
+→ lignes de catalogue correspondantes
+
+Références fournisseur
+→ Articles fournisseur connus
+~~~
+
+Le résultat peut agréger plusieurs types de ressources, mais chaque résultat conserve sa nature exacte et son lien vers le Produit canonique lorsqu'il est connu.
+
+Une recherche `Mon Workspace` priorise les ressources déjà utilisées/activées par le Workspace. L'utilisateur peut élargir à `Tout le référentiel` pour rattacher une ressource existante sans la recréer.
+
+La recherche globale ne doit jamais exposer :
+
+- Tarif négocié ;
+- Prix facturé ;
+- historique commercial tenant ;
+- catalogue `WORKSPACE_PRIVATE` d'un autre Workspace ;
+- donnée Dossier non autorisée.
 
 ### 6.12 Sélection d'Article fournisseur et références du magasin
 
@@ -1417,8 +1655,8 @@ Extensions actuellement identifiées :
 - génération d'infographies process ;
 - rappels / notifications ;
 - recherche globale intelligente ;
-- exports PDF / CSV ;
-- envoi direct de documents par e-mail.
+- exports CSV / XLS(X) générés à la demande ;
+- envoi direct de documents par e-mail avec PDF généré à la demande comme pièce jointe temporaire.
 
 Aucune de ces extensions n'est considérée comme V1 uniquement parce qu'elle est citée ici.
 
@@ -1465,6 +1703,7 @@ Paramètres candidats déjà identifiés :
 - durée de fraîcheur des Prix facturés ;
 - politique des références favorites/fréquemment utilisées ;
 - politique de cycle de vie des Fiches techniques ;
+- politique de conservation / corbeille des ressources métier supprimées ;
 - TVA ;
 - objectif de marge ;
 - coefficient ;
@@ -1520,7 +1759,55 @@ Il faut distinguer la fraîcheur fonctionnelle d'une recette de la fraîcheur é
 ---
 
 
-### 12.3 Préférences d'affichage et Dashboard Workspace
+### 12.3 Conservation, corbeille métier et stockage Workspace
+
+Le produit distingue la fonctionnalité générique Core de téléversement de fichiers de la politique métier de conservation des ressources générées ou supprimées par le SaaS GMS.
+
+Règles transversales validées :
+
+```text
+capacité de stockage
+→ portée Workspace
+
+Dossier
+→ aucune limite dure de stockage propre en V1
+→ peut consommer la capacité disponible du Workspace
+
+mesure par Dossier
+→ possible pour l'observabilité et le pilotage
+→ jamais autorité de quota en V1
+```
+
+La corbeille métier possède un comportement standard immédiatement utilisable :
+
+```text
+durée standard : 30 jours
+borne minimale : 7 jours
+borne maximale : 90 jours
+```
+
+Lorsque la personnalisation est autorisée, le Workspace peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. La valeur effective de rétention est figée au moment de la suppression sous forme d'une échéance de purge ; un changement ultérieur de configuration n'allonge ni ne raccourcit rétroactivement les éléments déjà placés en corbeille.
+
+Pour les Fiches techniques :
+
+- un DRAFT actif n'est jamais purgé uniquement parce qu'il est ancien ;
+- un DRAFT explicitement supprimé est placé en corbeille puis devient purgeable à l'échéance de la politique métier ;
+- une version VALIDATED reste historiquement immuable et n'est jamais purgée automatiquement par simple ancienneté ;
+- l'archivage reste le mécanisme normal pour sortir une fiche validée de l'usage courant.
+
+Pour les artefacts générés :
+
+- CSV et XLS(X) sont générés à la demande pour l'export puis détruits après remise au client ;
+- le PDF n'est pas une ressource persistante du produit : il est généré à la demande lorsqu'un document est envoyé par e-mail, joint au message puis supprimé du stockage temporaire après traitement ;
+- les artefacts reproductibles ne sont pas conservés durablement et ne créent pas d'historique de fichiers parallèle à la donnée métier source.
+
+Cette politique ne déclenche aucune purge automatique des Dossiers `DELETED` dans M-001.
+
+Le contrat transversal détaillé est conservé dans `docs/domain/STORAGE-RETENTION.md`.
+
+---
+
+### 12.4 Préférences d'affichage et Dashboard Workspace
 
 Les préférences d'affichage sont distinctes de la configuration métier :
 
@@ -1532,7 +1819,7 @@ préférences d'affichage
 → modifient uniquement ce que l'utilisateur voit
 ```
 
-Le produit réutilise le mécanisme Dashboard du Core v1.0.1 :
+Le produit réutilise le mécanisme Dashboard du Core v1.1.0 :
 
 ```text
 widgets Core
@@ -1553,21 +1840,73 @@ Les modules métier pourront fournir davantage de KPI que ceux qu'un utilisateur
 
 Le produit ne crée pas un second système de Dashboard et utilise le point d'extension Core `frontend/src/app/application-dashboard.js`.
 
+## 12.1 Données initiales et bootstrap métier
+
+Le produit peut fournir des données de référence initiales utiles aux bêta-tests et au démarrage réel, sans confondre bootstrap et migration historique.
+
+Contrat canonique :
+
+```text
+docs/domain/INITIAL-DATA-BOOTSTRAP.md
+```
+
+Principes :
+
+```text
+M-001
+→ aucune migration historique
+→ aucun seed Dossier
+→ Owner suffisant pour le bêta M-001
+
+M-002
+→ bootstrap versionné du référentiel Produit initial
+
+M-003
+→ bootstrap versionné des Fournisseurs / Articles / catalogues de référence partageables
+
+rôles métier
+→ profils/presets définis par le produit
+→ provisionnés uniquement lorsque leurs permissions utiles sont suffisamment cadrées
+```
+
+Tout bootstrap métier est explicite, idempotent, testé, traçable et non destructif.
+
+---
+
 ## 13. Utilisateurs, rôles et périmètres
 
-Le produit réutilise le RBAC Workspace du Core. Il ne crée pas un second système de rôles parallèle.
+Le produit réutilise le moteur RBAC Workspace générique du Core, mais le vocabulaire des rôles métier appartient exclusivement au produit.
+
+Invariant :
+
+```text
+Core
+→ moteur Role / Permission générique
+→ rôles système génériques déjà prévus
+
+Produit GMS
+→ permissions métier
+→ presets / profils de rôles métier
+→ aucune nouvelle notion métier ajoutée aux rôles système du Core
+```
+
+Les profils `Acheteur`, `Économe`, `Responsable FT`, `Contributeur FT` ou `Lecteur métier` ne sont jamais des rôles système Core. Ils sont définis et provisionnés par le produit en s'appuyant sur la primitive générique de rôles du Core.
 
 ### 13.1 Workspace Owner
 
-Le rôle système owner du Workspace, fourni par le Core, constitue l'autorité complète à l'intérieur de CE Workspace.
+Le rôle système `owner` du Workspace reste générique dans `saas-core-api` : aucun rôle métier GMS n'est ajouté au Core et aucune constante Core n'est modifiée.
+
+Le produit déclare cependant ses permissions métier dans le point d'extension RBAC applicatif prévu par le Core. Le descriptor produit attribue ces permissions métier au rôle système `owner` lors de la composition du SaaS dérivé, afin que l'Owner reste l'autorité complète de son Workspace sans créer un deuxième moteur RBAC.
 
 Pour ce produit, le Workspace Owner :
 
-- reçoit toutes les permissions métier applicatives prévues pour owner via le point d'extension RBAC du Core ;
+- possède les permissions métier applicatives déclarées par le produit ;
 - peut agir sur tous les magasins/dossiers de son Workspace ;
 - peut créer, modifier, revaloriser, valider, archiver et administrer les données métier selon les contrats ;
 - peut gérer les membres, rôles et paramètres dans les limites des mécanismes Core ;
-- n'a pas besoin d'un rôle métier supplémentaire.
+- n'a pas besoin d'un profil métier supplémentaire.
+
+Les profils métier nommés restent exclusivement des rôles personnalisés définis par le produit.
 
 Le Workspace Owner ne contourne jamais les invariants métier, les capabilities, les quotas ni les validations de sécurité.
 
@@ -1589,7 +1928,7 @@ Un éventuel futur accès support transversal constituerait une fonctionnalité 
 
 ### 13.3 Un rôle Workspace par membre
 
-Le Core v1.0.1 porte un seul Role sur chaque WorkspaceMember.
+Le Core v1.1.0 porte un seul Role sur chaque WorkspaceMember.
 
 Le cadrage métier s'aligne donc sur ce contrat :
 
@@ -1679,7 +2018,7 @@ membership actif
 + invariants métier
 ```
 
-Un accès dossier conservé pour audit n'accorde aucun accès opérationnel lorsque le dossier est PAUSED, ARCHIVED ou DELETED pour l'action concernée.
+Un grant conservé pendant PAUSED ou ARCHIVED n'accorde que les usages compatibles avec l'état courant. Lors du passage à DELETED, tous les grants ACTIVE sont révoqués ; une restauration ne réactive jamais silencieusement ces anciens grants.
 
 Le rôle détermine ce que l'utilisateur peut demander. Les invariants déterminent ce que le système accepte comme état valide.
 
