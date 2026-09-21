@@ -28,6 +28,7 @@ GET    /api/workspaces/:workspaceId/dossiers/metadata
 POST   /api/workspaces/:workspaceId/dossiers
 
 GET    /api/workspaces/:workspaceId/dossiers/:dossierId
+GET    /api/workspaces/:workspaceId/dossiers/:dossierId/activity
 PATCH  /api/workspaces/:workspaceId/dossiers/:dossierId
 
 PATCH  /api/workspaces/:workspaceId/dossiers/:dossierId/status
@@ -207,7 +208,36 @@ OU Dossier hors scope de l'acteur
 
 ---
 
-## 7. PATCH /dossiers/:dossierId
+## 7. GET /dossiers/:dossierId/activity
+
+Permission de base :
+
+```text
+dossier:read
+```
+
+Le Dossier doit être dans le scope réel de l'acteur.
+
+Query :
+
+```text
+page
+→ défaut 1
+
+limit
+→ défaut 20
+→ maximum 100
+```
+
+La réponse contient uniquement les `BusinessActivityEvent` que l'acteur est autorisé à voir.
+
+Les événements généraux du Dossier sont accessibles avec `dossier:read`. Les événements d'affectation exigent en plus `dossier:access:read`.
+
+Cette route n'expose jamais l'`AuditLog` Core.
+
+---
+
+## 8. PATCH /dossiers/:dossierId
 
 Permission :
 
@@ -240,7 +270,7 @@ Réponse : `200 OK`.
 
 ---
 
-## 8. PATCH /dossiers/:dossierId/status
+## 9. PATCH /dossiers/:dossierId/status
 
 Permission :
 
@@ -258,7 +288,7 @@ Body conceptuel :
 }
 ```
 
-Un champ `reason` peut être accepté par le contrat de validation lorsqu'une transition le justifie ; son caractère obligatoire ou facultatif par transition sera fermé dans le cadrage lifecycle.
+Le champ `reason` est facultatif syntaxiquement. Le service l'exige pour toute transition vers `DELETED` et pour `DELETED → PAUSED`.
 
 Un seul service métier de lifecycle reste l'autorité :
 
@@ -274,11 +304,22 @@ Une demande vers le même statut est idempotente : `200 OK`, aucune nouvelle tra
 
 Une transition lifecycle interdite retourne `409 Conflict`.
 
+Matrice validée :
+
+```text
+ACTIVE   → PAUSED | ARCHIVED | DELETED
+PAUSED   → ACTIVE | ARCHIVED | DELETED
+ARCHIVED → PAUSED | DELETED
+DELETED  → PAUSED
+```
+
+Lors du passage à `DELETED`, tous les grants ACTIVE sont révoqués dans la même transaction. Une restauration vers `PAUSED` ne restaure jamais ces grants.
+
 Il n'existe pas d'endpoints `/pause`, `/archive`, `/delete` ou `/restore` séparés.
 
 ---
 
-## 9. Pas de DELETE physique du Dossier
+## 10. Pas de DELETE physique du Dossier
 
 Il n'existe pas :
 
@@ -298,7 +339,7 @@ La purge physique reste hors M-001.
 
 ---
 
-## 10. GET /access-grants
+## 11. GET /access-grants
 
 Route :
 
@@ -326,7 +367,7 @@ Pagination : page 1 par défaut, limit 20 par défaut, maximum 100.
 
 ---
 
-## 11. PUT /access-grants/:membershipId
+## 12. PUT /access-grants/:membershipId
 
 Route :
 
@@ -376,7 +417,7 @@ Le Workspace Owner ne reçoit jamais de `DossierAccessGrant` individuel.
 
 ---
 
-## 12. DELETE /access-grants/:membershipId
+## 13. DELETE /access-grants/:membershipId
 
 Route :
 
@@ -405,7 +446,7 @@ L'opération est idempotente : en absence de grant ACTIVE, la réponse reste `20
 
 ---
 
-## 13. Compatibilité des endpoints avec le statut Dossier
+## 14. Compatibilité des endpoints avec le statut Dossier
 
 | Endpoint / action | ACTIVE | PAUSED | ARCHIVED | DELETED |
 | --- | --- | --- | --- | --- |
@@ -420,7 +461,7 @@ La matrice exacte des transitions reste à fermer dans le bloc lifecycle sans mo
 
 ---
 
-## 14. Contexte Dossier frontend
+## 15. Contexte Dossier frontend
 
 Il n'existe aucun endpoint :
 
@@ -434,7 +475,7 @@ Il n'existe aucun endpoint :
 
 ---
 
-## 15. Réutilisation des ressources Core
+## 16. Réutilisation des ressources Core
 
 Il n'existe pas de top-level :
 
@@ -454,7 +495,7 @@ La liste des membres affectables est obtenue en composant les `WorkspaceMember` 
 
 ---
 
-## 16. Formats de réponse
+## 17. Formats de réponse
 
 Ressource :
 
@@ -505,7 +546,7 @@ Les erreurs réutilisent le contrat général du Core ; les codes métier préci
 
 ---
 
-## 17. Codes HTTP validés
+## 18. Codes HTTP validés
 
 | Situation | HTTP |
 | --- | ---: |
@@ -524,7 +565,7 @@ Les erreurs réutilisent le contrat général du Core ; les codes métier préci
 
 ---
 
-## 18. Exclusions M-001
+## 19. Exclusions M-001
 
 ```text
 pas de DELETE physique Dossier
@@ -539,7 +580,7 @@ pas d'endpoints Produits / Prix / Fiches techniques
 
 ---
 
-## 19. Articulation avec le contrat d'autorisation
+## 20. Articulation avec le contrat d'autorisation
 
 Le contrat REST est fermé.
 
