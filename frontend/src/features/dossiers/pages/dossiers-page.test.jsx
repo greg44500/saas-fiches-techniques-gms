@@ -126,10 +126,19 @@ describe('DossiersPage', () => {
     expect(screen.getByText('44000 Nantes')).toBeInTheDocument();
     expect(screen.getByText('Actif')).toBeInTheDocument();
     expect(screen.getByText('En pause')).toBeInTheDocument();
+    expect(screen.queryByText('Magasins rattachés à Acme.')).not.toBeInTheDocument();
+
+    const dossierRow = screen.getByText('Nantes Centre').closest('tr');
+    expect(dossierRow).toHaveClass('hover:bg-muted/50');
+
+    const openLink = screen.getByRole('link', { name: 'Ouvrir' });
+    const viewButton = screen.getByRole('button', { name: 'Voir Nantes Centre' });
 
     expect(screen.getAllByRole('link', { name: 'Ouvrir' })).toHaveLength(1);
+    expect(openLink).toHaveClass('h-10');
+    expect(viewButton).toHaveClass('size-10');
 
-    await user.click(screen.getByRole('button', { name: 'Voir Nantes Centre' }));
+    await user.click(viewButton);
 
     expect(screen.getByText('Drawer ouvert')).toBeInTheDocument();
   });

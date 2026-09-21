@@ -102,12 +102,29 @@ Le drawer réutilise `EntityDetailsDrawer`.
 
 Il reste une surface de consultation et d'administration légère.
 
-Sections M-001 :
+Le contenu M-001 est organisé en onglets afin d'éviter un empilement vertical trop long :
 
 ```text
-Informations
+Infos
 Accès
-Activité
+Activités
+Administration
+```
+
+Répartition :
+
+```text
+Infos
+→ identité, localisation, contact, statut, édition
+
+Accès
+→ affectations DossierAccessGrant
+
+Activités
+→ journal métier du Dossier
+
+Administration
+→ cycle de vie et transitions autorisées
 ```
 
 Il ne contient pas les futurs espaces de travail Fiches techniques, Produits contextualisés, Process ou optimisation.

@@ -1,12 +1,12 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : M-001 EN PR — PR #10 ouverte — gate locale complète VALIDÉE — Core Gate PR attendue**
+> **Statut : M-001 EN PR — PR #10 ouverte — corrections UX post-revue intégrées — validation locale/Core Gate à relancer sur le nouveau head**
 >
 > **Dernière mise à jour : 2026-09-21**
 >
 > Le code réel, les contraintes DB, les tests/gates réellement exécutés et les contrats canoniques priment sur cette synthèse.
 >
-> **Le backend, le frontend métier M-001 et les quatre parcours Playwright critiques sont implémentés sur `feature/m001-dossiers-access`. Le 2026-09-21, l'utilisateur a confirmé la réussite des contrôles locaux demandés, dont les tests backend/frontend, les 11 E2E Playwright et `npm run release:check`. La PR #10 (`feat(m001): dossiers magasins et affectations`) est ouverte vers `main`. Aucune fusion avant une Core Gate de PR verte.**
+> **Le backend, le frontend métier M-001 et les quatre parcours Playwright critiques sont implémentés sur `feature/m001-dossiers-access`. Les contrôles locaux complets étaient verts avant la revue visuelle. La PR #10 reste ouverte vers `main` et reçoit maintenant les corrections UX de la liste et du drawer ; ces changements doivent être revalidés localement et par une nouvelle Core Gate sur le nouveau head avant toute fusion.**
 
 ---
 

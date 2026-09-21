@@ -232,10 +232,11 @@ businessActivityActions
 
 ### Drawer
 
-- [ ] Informations ;
+- [ ] navigation par onglets, sans empilement vertical des quatre zones ;
+- [ ] Infos ;
 - [ ] Accès ;
-- [ ] Activité ;
-- [ ] lifecycle léger ;
+- [ ] Activités ;
+- [ ] Administration avec lifecycle léger ;
 - [ ] ouverture du drawer ne change pas le contexte de travail ;
 - [ ] Owner représenté comme accès implicite, jamais comme faux grant.
 

@@ -5,6 +5,12 @@ import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EntityDetailsDrawer } from '@/components/shared/entity-details-drawer';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import { useGetDossierByIdQuery } from '@/features/dossiers/api/dossiers-api';
 import { DossierAccessSection } from '@/features/dossiers/components/dossier-access-section';
 import { DossierActivitySection } from '@/features/dossiers/components/dossier-activity-section';
@@ -66,66 +72,82 @@ function DossierDetailsDrawer({
           title="Dossier indisponible"
         />
       ) : dossier ? (
-        <div className="space-y-7">
-          <section>
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold">Informations</h3>
+        <Tabs defaultValue="infos">
+          <TabsList aria-label="Détails du dossier" variant="section">
+            <TabsTrigger value="infos" variant="section">
+              Infos
+            </TabsTrigger>
+            <TabsTrigger value="access" variant="section">
+              Accès
+            </TabsTrigger>
+            <TabsTrigger value="activity" variant="section">
+              Activités
+            </TabsTrigger>
+            <TabsTrigger value="administration" variant="section">
+              Administration
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="infos" variant="section">
+            <div className="space-y-3">
               {can(DOSSIER_PERMISSION.UPDATE) && ['ACTIVE', 'PAUSED'].includes(dossier.status) && (
-                <ActionIconButton
-                  Icon={Pencil}
-                  label="Modifier le dossier"
-                  onClick={() => onEdit(dossier)}
-                  variant="outline"
-                />
-              )}
-            </div>
-
-            <div className="mt-3 rounded-lg border border-border px-4">
-              <dl>
-                <DetailRow label="Nom" value={dossier.name} />
-                <DetailRow label="Enseigne" value={dossier.brand} />
-                <DetailRow label="Localisation" value={formatDossierLocation(dossier)} />
-                <DetailRow label="Email documents" value={dossier.documentEmail} />
-                <DetailRow label="Téléphone" value={dossier.phone} />
-                <DetailRow label="Responsable" value={dossier.contactName} />
-                <div className="grid gap-1 py-3 sm:grid-cols-[150px_1fr]">
-                  <dt className="text-sm text-muted-foreground">Statut</dt>
-                  <dd className="sm:text-right">
-                    <StatusBadge tone={getDossierStatusTone(dossier.status)}>
-                      {getDossierStatusLabel(dossier.status, metadata)}
-                    </StatusBadge>
-                  </dd>
+                <div className="flex justify-end">
+                  <ActionIconButton
+                    Icon={Pencil}
+                    label="Modifier le dossier"
+                    onClick={() => onEdit(dossier)}
+                    variant="outline"
+                  />
                 </div>
-              </dl>
+              )}
+
+              <div className="rounded-lg border border-border px-4">
+                <dl>
+                  <DetailRow label="Nom" value={dossier.name} />
+                  <DetailRow label="Enseigne" value={dossier.brand} />
+                  <DetailRow label="Localisation" value={formatDossierLocation(dossier)} />
+                  <DetailRow label="Email documents" value={dossier.documentEmail} />
+                  <DetailRow label="Téléphone" value={dossier.phone} />
+                  <DetailRow label="Responsable" value={dossier.contactName} />
+                  <div className="grid gap-1 py-3 sm:grid-cols-[150px_1fr]">
+                    <dt className="text-sm text-muted-foreground">Statut</dt>
+                    <dd className="sm:text-right">
+                      <StatusBadge tone={getDossierStatusTone(dossier.status)}>
+                        {getDossierStatusLabel(dossier.status, metadata)}
+                      </StatusBadge>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
             </div>
-          </section>
+          </TabsContent>
 
-          <section className="space-y-3">
-            <h3 className="text-sm font-semibold">Cycle de vie</h3>
-            <DossierLifecycleSection
-              dossier={dossier}
-              metadata={metadata}
-              workspaceId={workspaceId}
-            />
-          </section>
-
-          <section className="space-y-3">
-            <h3 className="text-sm font-semibold">Accès</h3>
+          <TabsContent value="access" variant="section">
             <DossierAccessSection
               dossier={dossier}
               workspaceId={workspaceId}
             />
-          </section>
+          </TabsContent>
 
-          <section className="space-y-3">
-            <h3 className="text-sm font-semibold">Activité</h3>
+          <TabsContent value="activity" variant="section">
             <DossierActivitySection
               dossierId={dossier.id}
               metadata={metadata}
               workspaceId={workspaceId}
             />
-          </section>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="administration" variant="section">
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold">Cycle de vie</h3>
+              <DossierLifecycleSection
+                dossier={dossier}
+                metadata={metadata}
+                workspaceId={workspaceId}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       ) : null}
     </EntityDetailsDrawer>
   );

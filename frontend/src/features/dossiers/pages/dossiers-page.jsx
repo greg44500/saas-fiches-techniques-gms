@@ -212,6 +212,7 @@ function DossiersPage() {
           <ActionIconButton
             Icon={Eye}
             label={`Voir ${dossier.name}`}
+            tooltipLabel="Voir"
             onClick={() => setDrawerState({
               dossierId: dossier.id,
               open: true,
@@ -219,7 +220,7 @@ function DossiersPage() {
             variant="outline"
           />
           {dossier.status === 'ACTIVE' && (
-            <Button asChild size="sm" variant="outline">
+            <Button asChild variant="outline">
               <Link to={`/workspaces/${workspace.id}/dossiers/${dossier.id}`}>
                 Ouvrir
               </Link>
@@ -236,12 +237,7 @@ function DossiersPage() {
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-2">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Dossiers</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Magasins rattachés à {workspace.name}.
-            </p>
-          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dossiers</h1>
           <InfoTooltip content={help} label="À propos des dossiers" />
         </div>
 
@@ -312,6 +308,7 @@ function DossiersPage() {
                 />
               )}
               getRowKey={(dossier) => dossier.id}
+              rowClassName="transition-colors hover:bg-muted/50"
             />
 
             <div className="px-5 pb-5">
