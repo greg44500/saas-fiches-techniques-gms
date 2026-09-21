@@ -1358,7 +1358,7 @@ Le produit étend le RBAC Workspace du Core ; il ne crée pas un RBAC parallèle
 
 ### Workspace Owner
 
-Le rôle système owner du Workspace reçoit toutes les permissions métier du produit et tous les dossiers de CE Workspace.
+Le rôle système `owner` du Workspace reste générique et inchangé côté Core. Le produit reconnaît le Workspace Owner comme autorité métier complète dans CE Workspace et lui donne implicitement accès à tous les Dossiers, sans transformer `owner` en rôle métier GMS.
 
 Il reste soumis aux invariants, capabilities, quotas et règles de sécurité.
 
@@ -1370,9 +1370,9 @@ Un rôle Platform ne donne aucun accès implicite aux données métier d'un Work
 
 ### Autres membres
 
-Le Core v1.1.0 porte un seul Role par WorkspaceMember.
+Le Core v1.1.0 fournit la primitive générique `Role` et porte un seul Role par WorkspaceMember.
 
-Les responsabilités multiples sont donc représentées par un rôle personnalisé combinant les permissions nécessaires, et non par plusieurs rôles cumulés.
+Les rôles système Core restent génériques. Les profils métier GMS sont des rôles personnalisés définis par le produit en utilisant cette primitive générique. Les responsabilités multiples sont représentées par un rôle métier personnalisé combinant les permissions nécessaires, et non par l'ajout de nouveaux rôles système Core.
 
 Profils types retenus pour le cadrage :
 
