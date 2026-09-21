@@ -44,7 +44,7 @@ Décisions établies :
 - suppression logique avant éventuelle purge physique ;
 - suppression logique = coupure immédiate des accès métier et des ressources du dossier dans les flux normaux sans destruction automatique de l'historique ;
 - restauration contrôlée vers un état non opérationnel, par défaut `PAUSED` ;
-- catalogue produit mutualisé dans le Workspace ;
+- référentiel Produit canonique partagé à l'échelle du SaaS, avec catalogue d'usage par Workspace sans duplication de l'identité Produit ;
 - prix et conditions contextualisés par magasin ;
 - accès multi-magasins = changement de contexte, jamais partage ou mélange des données locales ;
 - invitation Workspace puis affectation séparée des magasins après acceptation ;
@@ -70,25 +70,40 @@ Décisions finales :
 
 ### 2.2 Catalogue Produit
 
-**État : socle métier cadré**
+**État : fondation révisée et validée — cadrage détaillé M-002 à poursuivre après M-001**
+
+Décisions établies :
+
+- l'identité Produit canonique est partagée à l'échelle du SaaS et n'est pas dupliquée par Workspace ;
+- un Workspace construit son catalogue d'usage en référençant les Produits canoniques dont il a besoin ;
+- les Dossiers utilisent le catalogue de leur Workspace sans copier l'identité Produit ;
+- aucune donnée commerciale ou confidentielle tenant ne peut être stockée dans le Produit canonique ;
+- les utilisateurs autorisés peuvent rechercher le référentiel partagé et rattacher un Produit existant au Workspace ;
+- si aucun équivalent crédible n'existe, M-002 doit permettre de contribuer/créer une nouvelle identité canonique après contrôle de doublon ;
+- la prévention des doublons ne repose pas uniquement sur la casse : normalisation, alias, singulier/pluriel et recherche de proximité doivent participer au contrôle ;
+- forme, état/transformation et conservation sont des dimensions structurées lorsqu'elles changent réellement l'usage, le rendement ou la sélection d'un Article fournisseur ;
+- une simple faute ou variante orthographique ne crée jamais volontairement un nouveau Produit ;
+- une transformation qui crée une formulation réellement différente peut devenir un Produit distinct : la frontière métier sera fermée en M-002.
 
 À préserver :
 
-- nom métier précis ;
-- règle de nommage entier / préparation ;
 - catégorie ;
 - gamme lorsque pertinente ;
 - unité de référence ;
-- rendement ;
+- rendement applicable à la déclinaison réellement utilisée ;
 - photo facultative ;
 - traçabilité de création / modification ;
-- historique des modifications.
+- historique des modifications significatives.
 
-**À terminer :**
+**À terminer dans M-002 :**
 
+- schéma conceptuel final entre Produit canonique, déclinaison et relation d'usage Workspace ;
 - gouvernance des catégories ;
 - unités supportées ;
-- détails de lifecycle / archivage.
+- règles exactes d'identité sémantique et d'alias ;
+- politique de contribution/modération/fusion d'un Produit partagé ;
+- critères exacts séparant déclinaison et Produit distinct ;
+- lifecycle / archivage du référentiel et du rattachement Workspace.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
@@ -359,7 +374,7 @@ WorkspaceMember → REMOVED
 
 Les permissions exactes et la matrice technique d'autorisation M-001 sont désormais validées.
 
-Le contrat API REST M-001 est désormais validé. Le cadrage doit encore fermer : ordre exact des middlewares et frontière middleware/service, validations Zod, audit/erreurs, transitions de lifecycle et effets sur les grants, drawer/contexte actif, autocomplétion, stratégie de tests, critères d'acceptation et ordre d'implémentation.
+Le contrat API REST M-001 et le contrat d'ordre des middlewares / frontière middleware-service sont désormais validés. Le cadrage doit encore fermer : validations Zod, contrats d'erreur et audit métier, transitions de lifecycle et effets sur les grants, drawer/contexte actif, autocomplétion, stratégie de tests, critères d'acceptation et ordre d'implémentation.
 
 ## 5. Phase 4 — Implémentation métier
 
@@ -444,14 +459,13 @@ Core 1.1.0 a résolu le prérequis transactionnel `WorkspaceMember → REMOVED`.
 
 Ordre de reprise :
 
-1. fixer l'ordre exact des middlewares sécurité / membership / permission / DossierAccessGrant et la frontière middleware/service ;
-2. définir validations Zod, contrats d'erreur et audit métier ;
-3. fermer la matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` et leurs effets sur les grants ;
-4. fermer drawer, liste, gestion des affectations et contexte magasin actif ;
-5. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
-6. définir migrations/seeds uniquement si nécessaires ;
-7. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
-8. valider critères d'acceptation et ordre d'implémentation ;
-9. seulement après validation complète M-001, créer la branche d'implémentation et développer.
+1. définir validations Zod, contrats d'erreur et audit métier ;
+2. fermer la matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` et leurs effets sur les grants ;
+3. fermer drawer, liste, gestion des affectations et contexte magasin actif ;
+4. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
+5. définir migrations/seeds uniquement si nécessaires ;
+6. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
+7. valider critères d'acceptation et ordre d'implémentation ;
+8. seulement après validation complète M-001, créer la branche d'implémentation et développer.
 
 La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour le cadrage M-001.
