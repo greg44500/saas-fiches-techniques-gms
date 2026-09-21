@@ -83,7 +83,9 @@ Décisions établies :
 - la prévention des doublons ne repose pas uniquement sur la casse : normalisation, alias, singulier/pluriel et recherche de proximité doivent participer au contrôle ;
 - forme, état/transformation et conservation sont des dimensions structurées lorsqu'elles changent réellement l'usage, le rendement ou la sélection d'un Article fournisseur ;
 - une simple faute ou variante orthographique ne crée jamais volontairement un nouveau Produit ;
-- une transformation qui crée une formulation réellement différente peut devenir un Produit distinct : la frontière métier sera fermée en M-002.
+- une transformation qui crée une formulation réellement différente peut devenir un Produit distinct : la frontière métier sera fermée en M-002 ;
+- la recherche Produit est unifiée avec filtres de portée `Mon Workspace / Tout le référentiel autorisé` et de source `Toutes / Produits canoniques / Catalogues fournisseurs / Références-Articles fournisseur` ;
+- l'élargissement au référentiel global permet de rattacher une donnée existante au Workspace sans la recréer.
 
 À préserver :
 
@@ -131,6 +133,13 @@ Décisions établies :
 - modes manuel / suggestion / ajout automatique paramétrables ;
 - carte d'identité professionnelle Produit/Article ;
 - imports CSV/XLS/XLSX prévus comme extension structurée sans obligation d'IA ;
+- une ligne de catalogue importée ne crée jamais automatiquement un Produit canonique ;
+- les éditions de catalogue peuvent être `GLOBAL_SHARED` ou `WORKSPACE_PRIVATE` ;
+- un import Workspace est privé par défaut ; aucune publication globale automatique ;
+- une édition globale peut être référencée par plusieurs Workspaces sans duplication de ses lignes ;
+- les mappings Fournisseur + référence Article déjà validés sont réutilisés dans les éditions suivantes ;
+- une ligne peut rester non rapprochée tant qu'aucune correspondance Produit fiable n'est validée ;
+- l'identité Fournisseur associée aux catalogues globaux doit être réutilisable ; le modèle exact global/Workspace des Fournisseurs reste à fermer en M-003 ;
 - IA/OCR uniquement comme assistance future sous contrôle métier.
 
 À finaliser :
@@ -374,7 +383,7 @@ WorkspaceMember → REMOVED
 
 Les permissions exactes et la matrice technique d'autorisation M-001 sont désormais validées.
 
-Le contrat API REST M-001 et le contrat d'ordre des middlewares / frontière middleware-service sont désormais validés. Le cadrage doit encore fermer : validations Zod, contrats d'erreur et audit métier, transitions de lifecycle et effets sur les grants, drawer/contexte actif, autocomplétion, stratégie de tests, critères d'acceptation et ordre d'implémentation.
+Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middleware-service et le contrat de validation Zod / métadonnées backend-driven sont désormais validés. Le cadrage doit encore fermer : audit métier et son éventuel prérequis Core, transitions de lifecycle et effets sur les grants, drawer/contexte actif, autocomplétion, stratégie de tests, critères d'acceptation et ordre d'implémentation.
 
 ## 5. Phase 4 — Implémentation métier
 
@@ -459,7 +468,7 @@ Core 1.1.0 a résolu le prérequis transactionnel `WorkspaceMember → REMOVED`.
 
 Ordre de reprise :
 
-1. définir validations Zod, contrats d'erreur et audit métier ;
+1. fermer l'audit métier M-001 et traiter le besoin générique Core si confirmé ;
 2. fermer la matrice exacte des transitions `ACTIVE / PAUSED / ARCHIVED / DELETED` et leurs effets sur les grants ;
 3. fermer drawer, liste, gestion des affectations et contexte magasin actif ;
 4. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
