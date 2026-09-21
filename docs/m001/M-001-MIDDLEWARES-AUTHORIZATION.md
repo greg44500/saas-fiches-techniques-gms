@@ -22,7 +22,7 @@ enforceWorkspaceAccessMode
 
 Les permissions métier `dossier:*` sont déclarées par le produit dans le registre applicatif prévu par le Core. Les profils métier utilisent la primitive générique `Role` du Core sous forme de rôles personnalisés ; aucun profil métier ne devient un rôle système Core.
 
-Le produit ajoute uniquement les contrôles nécessaires à sa politique métier, notamment l'autorité implicite du Workspace Owner et le périmètre Dossier.
+Le produit compose ses permissions dans le RBAC actif via le point d'extension applicatif. Cette composition appartient au produit et ne modifie ni les constantes Core ni la liste des rôles système génériques.
 
 Invariant :
 
@@ -40,21 +40,11 @@ statut Dossier
 → SI l'action est compatible avec l'état courant
 ```
 
-Le produit ne crée pas un second moteur RBAC.
+Aucun middleware produit ne réimplémente le moteur RBAC.
 
-Il utilise un adaptateur d'autorisation métier unique, conceptuellement `authorizeProductPermission(permission)` :
+Le produit utilise `authorizePermission` du Core avec les permissions métier déclarées par le produit dans le registre applicatif actif.
 
-```text
-Workspace Owner système
-→ autorisé pour la permission métier demandée
-→ sans modifier le rôle système owner du Core
-
-non-owner
-→ permission exigée dans req.permissions
-→ permissions provenant du Role générique Core
-```
-
-Cet adaptateur ne possède aucun registre de rôles parallèle, ne charge aucun rôle métier alternatif et ne duplique pas la persistance RBAC du Core. Pour les non-owners, il applique la même source d'autorité `req.permissions` que `authorizePermission`.
+Le descriptor produit peut enrichir le rôle système `owner` avec les permissions métier nécessaires, sans modifier la définition du rôle dans `saas-core-api`. Les autres profils métier restent des rôles personnalisés du Workspace définis par le produit.
 
 ---
 
@@ -66,7 +56,7 @@ Pour une route portant `:dossierId` :
 authenticate
 → validateRequest
 → loadWorkspaceContext
-→ authorizeProductPermission
+→ authorizePermission
 → enforceWorkspaceAccessMode        [mutations uniquement lorsque requis par le Core]
 → capability éventuelle             [uniquement si une capability M-001 est réellement définie]
 → loadAuthorizedDossierContext
@@ -136,7 +126,7 @@ Le middleware ne doit pas révéler lequel de ces cas s'est produit.
 
 `loadAuthorizedDossierContext` :
 
-- ne remplace pas `authorizeProductPermission` ;
+- ne remplace pas `authorizePermission` ;
 - ne décide pas des transitions lifecycle ;
 - ne crée ni ne révoque de grant ;
 - n'ouvre pas de transaction métier ;
@@ -179,7 +169,7 @@ La transition lifecycle reste une responsabilité de service.
 authenticate
 → validateRequest(params)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:read)
+→ authorizePermission(dossier:read)
 → controller
 → dossierMetadataService.get
 ```
@@ -194,7 +184,7 @@ Les valeurs exposées sont dérivées des registries/constants backend ; le fron
 authenticate
 → validateRequest(params + query)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:read)
+→ authorizePermission(dossier:read)
 → contrôle lifecycle supplémentaire si status=DELETED
 → controller
 → dossierService.listDossiers
@@ -225,7 +215,7 @@ charger tous les Dossiers du Workspace
 authenticate
 → validateRequest(params + body)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:create)
+→ authorizePermission(dossier:create)
 → enforceWorkspaceAccessMode
 → capability éventuelle si définie
 → controller
@@ -250,7 +240,7 @@ non-owner autorisé
 authenticate
 → validateRequest(params)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:read)
+→ authorizePermission(dossier:read)
 → loadAuthorizedDossierContext
 → enforceDossierStatePolicy(READ)
 → controller
@@ -269,7 +259,7 @@ Compatibilité :
 authenticate
 → validateRequest(params + query)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:read)
+→ authorizePermission(dossier:read)
 → loadAuthorizedDossierContext
 → enforceDossierStatePolicy(READ_ACTIVITY)
 → controller
@@ -286,7 +276,7 @@ Aucun `AuditLog` Core n'est lu par cette route.
 authenticate
 → validateRequest(params + body)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:update)
+→ authorizePermission(dossier:update)
 → enforceWorkspaceAccessMode
 → capability éventuelle si définie
 → loadAuthorizedDossierContext
@@ -309,7 +299,7 @@ _id
 authenticate
 → validateRequest(params + body)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:lifecycle:update)
+→ authorizePermission(dossier:lifecycle:update)
 → enforceWorkspaceAccessMode
 → capability éventuelle si définie
 → loadAuthorizedDossierContext
@@ -339,7 +329,7 @@ Le service lifecycle reste l'autorité sur :
 authenticate
 → validateRequest(params + query)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:access:read)
+→ authorizePermission(dossier:access:read)
 → loadAuthorizedDossierContext
 → enforceDossierStatePolicy(GRANT_READ)
 → controller
@@ -356,7 +346,7 @@ Le Workspace Owner n'est pas représenté par un grant.
 authenticate
 → validateRequest(params)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:access:manage)
+→ authorizePermission(dossier:access:manage)
 → enforceWorkspaceAccessMode
 → capability éventuelle si définie
 → loadAuthorizedDossierContext
@@ -386,7 +376,7 @@ Même chaîne que le PUT jusqu'au service :
 authenticate
 → validateRequest(params)
 → loadWorkspaceContext
-→ authorizeProductPermission(dossier:access:manage)
+→ authorizePermission(dossier:access:manage)
 → enforceWorkspaceAccessMode
 → capability éventuelle si définie
 → loadAuthorizedDossierContext
@@ -419,8 +409,7 @@ Responsabilités autorisées :
 - authentification ;
 - validation HTTP Zod ;
 - construction du contexte Workspace Core ;
-- contexte RBAC Core ;
-- politique métier Owner + permissions produit via `authorizeProductPermission` ;
+- RBAC Core enrichi par le descriptor produit ;
 - blocage commercial Core applicable ;
 - contrôle du scope Dossier ;
 - compatibilité statique de l'état courant.
