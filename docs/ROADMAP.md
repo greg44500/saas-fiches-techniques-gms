@@ -39,7 +39,7 @@ Décisions établies :
 - règle V1 : `1 dossier = 1 magasin` ;
 - identité du dossier modifiable sans recréer le contexte ;
 - données magasin : nom, enseigne si pertinente, localisation, email documents, téléphone facultatif, responsable métier distinct de `createdBy` ;
-- autocomplétion de localisation via une source publique fiable à confirmer techniquement ;
+- autocomplétion facultative via le service Géoplateforme / IGN, avec fallback manuel permanent ;
 - lifecycle dossier `ACTIVE / PAUSED / ARCHIVED / DELETED` ;
 - suppression logique avant éventuelle purge physique ;
 - suppression logique = coupure immédiate des accès métier et des ressources du dossier dans les flux normaux sans destruction automatique de l'historique ;
@@ -60,7 +60,7 @@ Décisions finales :
 
 - seul le nom du Dossier / magasin est obligatoire en saisie métier à la création ;
 - enseigne, localisation, email documents, téléphone et responsable / interlocuteur restent facultatifs ;
-- l'autocomplétion d'adresse/localisation fait partie de l'UX M-001, reste facultative et ne bloque jamais la création d'un Dossier ; sa source technique publique fiable reste à choisir pendant M-001 ;
+- l'autocomplétion d'adresse/localisation utilise en V1 la Géoplateforme / IGN, reste facultative et ne bloque jamais la création ou la modification d'un Dossier ; aucun payload fournisseur, identifiant BAN ou coordonnée n'est persisté en M-001 ;
 - les affectations sont portées par une relation métier dédiée `DossierAccessGrant`, distincte du `WorkspaceMember` Core ;
 - l'invitation Core reste limitée à `email + roleId` ; aucun magasin n'est préparé dans l'invitation ; après acceptation et création/réactivation du `WorkspaceMember`, le Workspace Owner affecte explicitement zéro, un ou plusieurs Dossiers ;
 - les permissions M-001 validées sont `dossier:read`, `dossier:create`, `dossier:update`, `dossier:lifecycle:update`, `dossier:access:read` et `dossier:access:manage` ;
@@ -384,7 +384,7 @@ WorkspaceMember → REMOVED
 
 Les permissions exactes et la matrice technique d'autorisation M-001 sont désormais validées.
 
-Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middleware-service, le contrat de validation Zod / métadonnées backend-driven, l'activité métier produit, le lifecycle Dossier et le contrat UX liste/drawer/Dialog/page Dossier sont désormais validés. Le cadrage doit encore fermer : autocomplétion d'adresse, stratégie de tests, critères d'acceptation et ordre d'implémentation.
+Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middleware-service, le contrat de validation Zod / métadonnées backend-driven, l'activité métier produit, le lifecycle Dossier, le contrat UX liste/drawer/Dialog/page Dossier et l'autocomplétion d'adresse sont désormais validés. Le cadrage doit encore fermer : migrations/seeds éventuels, stratégie de tests, critères d'acceptation et ordre d'implémentation.
 
 ## 5. Phase 4 — Implémentation métier
 
@@ -469,10 +469,9 @@ Core 1.1.0 a résolu le prérequis transactionnel `WorkspaceMember → REMOVED`.
 
 Ordre de reprise :
 
-1. choisir le contrat technique d'autocomplétion d'adresse avec fallback manuel ;
-2. définir migrations/seeds uniquement si nécessaires ;
-3. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
-4. valider critères d'acceptation et ordre d'implémentation ;
-5. seulement après validation complète M-001, créer la branche d'implémentation et développer.
+1. confirmer l'absence ou le besoin réel de migrations/seeds ;
+2. définir tests unitaires, intégration, permissions, tenancy et E2E critiques ;
+3. valider critères d'acceptation et ordre d'implémentation ;
+4. seulement après validation complète M-001, créer la branche d'implémentation et développer.
 
 La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour le cadrage M-001.
