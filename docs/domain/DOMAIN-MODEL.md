@@ -680,9 +680,73 @@ Une nouvelle édition ajoute une nouvelle réalité et ne remplace pas destructi
 
 Un catalogue hors période peut rester consultable et éventuellement servir de dernier fallback de référence, à condition que son édition et son état hors validité soient explicitement exposés.
 
-Le catalogue partagé au Workspace ne contient aucune condition commerciale spécifique à un magasin.
+Deux portées conceptuelles sont retenues :
 
-Un futur import CSV/XLS/XLSX crée une nouvelle édition après mapping, contrôles, aperçu et validation. Un mapping propre au Fournisseur peut être mémorisé.
+```text
+GLOBAL_SHARED
+→ édition de référence partageable
+→ aucune donnée commerciale confidentielle tenant
+
+WORKSPACE_PRIVATE
+→ édition importée dans un Workspace
+→ inaccessible aux autres Workspaces
+```
+
+Un import Workspace est privé par défaut. Le caractère global exige une provenance et un droit de partage établis.
+
+Une édition globale est stockée une seule fois et peut être référencée par plusieurs Workspaces sans recopier ses lignes.
+
+Un import CSV/XLS/XLSX crée une nouvelle édition après staging, mapping, contrôles, aperçu et validation.
+
+Invariant :
+
+```text
+1 ligne de catalogue
+≠ 1 Produit canonique créé automatiquement
+```
+
+Une ligne d'édition peut rester non rapprochée tant qu'aucune correspondance Produit/Article suffisamment fiable n'a été validée.
+
+Lorsqu'une référence Article du même Fournisseur possède déjà un mapping validé vers un Produit/déclinaison, les éditions suivantes réutilisent cette correspondance.
+
+Le rapprochement suit conceptuellement :
+
+```text
+Fournisseur + référence Article connue
+→ désignation normalisée
+→ alias
+→ proximité
+→ validation utilisateur
+→ nouvelle identité seulement si nécessaire
+```
+
+Les mappings Fournisseur ainsi que les correspondances `Article fournisseur → Produit/déclinaison` doivent pouvoir être mémorisés et réutilisés.
+
+### 9.8.1 Recherche transverse Produits / catalogues / références
+
+Le produit expose conceptuellement une recherche unifiée, avec au moins deux axes.
+
+Portée :
+
+```text
+Mon Workspace
+Tout le référentiel autorisé
+```
+
+Source :
+
+```text
+Toutes
+Produits canoniques
+Catalogues fournisseurs
+Références / Articles fournisseur
+```
+
+Cette recherche agrège des ressources de natures différentes sans les confondre.
+
+Un résultat issu d'un catalogue conserve son Fournisseur, son édition, sa référence et son libellé source. Lorsqu'un mapping canonique existe, il pointe vers le Produit/déclinaison correspondant.
+
+La portée globale n'expose jamais les catalogues privés, prix négociés, prix facturés ou historiques commerciaux d'un autre tenant.
 
 ### 9.9 Résolution des Articles fournisseur
 
