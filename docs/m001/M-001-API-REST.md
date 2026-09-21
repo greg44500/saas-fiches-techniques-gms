@@ -83,7 +83,7 @@ Cette route doit être déclarée avant `/:dossierId` afin que `metadata` ne soi
 
 ---
 
-## 5. GET /dossiers
+## 4. GET /dossiers
 
 Permission :
 
