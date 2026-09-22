@@ -19,6 +19,22 @@ const BUSINESS_ACTIVITY_ACTION_REGISTRY = Object.freeze({
         value: 'DOSSIER_ACCESS_REVOKED',
         label: 'Accès au dossier révoqué',
     }),
+    PRODUCT_CATALOG_ATTACHED: Object.freeze({
+        value: 'PRODUCT_CATALOG_ATTACHED',
+        label: 'Produit ajouté au catalogue',
+    }),
+    PRODUCT_CATALOG_ARCHIVED: Object.freeze({
+        value: 'PRODUCT_CATALOG_ARCHIVED',
+        label: 'Produit retiré du catalogue',
+    }),
+    PRODUCT_CATALOG_REACTIVATED: Object.freeze({
+        value: 'PRODUCT_CATALOG_REACTIVATED',
+        label: 'Produit réactivé dans le catalogue',
+    }),
+    PRODUCT_CONTRIBUTION_SUBMITTED: Object.freeze({
+        value: 'PRODUCT_CONTRIBUTION_SUBMITTED',
+        label: 'Contribution Produit envoyée',
+    }),
 });
 
 const BUSINESS_ACTIVITY_ACTION = Object.freeze(
@@ -33,6 +49,9 @@ const BUSINESS_ACTIVITY_ACTION = Object.freeze(
 const BUSINESS_ACTIVITY_ENTITY_TYPE = Object.freeze({
     DOSSIER: 'DOSSIER',
     DOSSIER_ACCESS_GRANT: 'DOSSIER_ACCESS_GRANT',
+    CANONICAL_PRODUCT: 'CANONICAL_PRODUCT',
+    PRODUCT_VARIANT: 'PRODUCT_VARIANT',
+    WORKSPACE_PRODUCT: 'WORKSPACE_PRODUCT',
 });
 
 

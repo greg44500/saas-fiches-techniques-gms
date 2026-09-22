@@ -108,6 +108,12 @@
       "script": "migration:m001-indexes",
       "runner": "backend/migrations/runEnsureM001IndexesMigration.js",
       "dependsOn": []
+    },
+    {
+      "id": "m002-catalog",
+      "script": "migration:m002-catalog",
+      "runner": "backend/migrations/runEnsureM002CatalogMigration.js",
+      "dependsOn": []
     }
   ]
 }

@@ -48,10 +48,12 @@
     "job:purge-files": "node backend/jobs/files/runPurgeDeletedFilesJob.js",
     "job:retention": "node backend/jobs/retention/runScheduledRetentionPoliciesJob.js",
     "dev:reset-trial": "node backend/operations/development/runResetTrialDevelopment.js",
-    "migration:m001-indexes": "node backend/migrations/runEnsureM001IndexesMigration.js"
+    "migration:m001-indexes": "node backend/migrations/runEnsureM001IndexesMigration.js",
+    "migration:m002-catalog": "node backend/migrations/runEnsureM002CatalogMigration.js"
   },
   "license": "UNLICENSED",
   "dependencies": {
+    "@e965/xlsx": "0.20.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
