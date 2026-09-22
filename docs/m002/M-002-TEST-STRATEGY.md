@@ -1,6 +1,6 @@
 # M-002 — Stratégie de tests
 
-**Statut : PROPOSÉ — à valider avant implémentation**
+**Statut : RECADRÉ — stratégie à adapter avant exécution finale**
 
 ## 1. Risques principaux
 
@@ -35,7 +35,8 @@ M-002 est globalement partagé. Les risques prioritaires sont :
 - gammes ;
 - motifs de rejet ;
 - permissions Workspace ;
-- permissions Platform.
+- capabilities M-002 ;
+- autorité métier globale retenue.
 
 ### Sérialisation
 
@@ -98,12 +99,12 @@ Workspace :
 - catalog manage ;
 - contribute.
 
-Platform :
+Gouvernance métier globale :
 
-- products read ;
-- products manage ;
-- permission Workspace insuffisante pour une route Platform ;
-- permission Platform n'accorde pas automatiquement l'accès à un catalogue Workspace.
+- utilisateur non autorisé refusé ;
+- rôle Platform seul insuffisant ;
+- autorité métier globale n'accorde pas automatiquement l'accès à un catalogue Workspace ;
+- aucun `platform:products:*` dans le contrat final.
 
 ## 6. Tests HTTP Supertest
 
@@ -133,12 +134,13 @@ Workspace :
 - contribution PENDING ;
 - drawer Produit.
 
-Platform :
+Administration métier globale :
 
 - file d'approbation ;
 - approbation/rejet ;
 - catégories ;
-- permissions.
+- autorisation métier globale ;
+- absence de dépendance à `PlatformLayout`.
 
 Dashboard :
 
@@ -166,7 +168,11 @@ Couvrir au minimum :
 - commit revalidé côté serveur ;
 - import concurrent ne créant pas de doublon ;
 - rollback transactionnel sur échec ;
-- aucune fuite entre Workspaces.
+- aucune fuite entre Workspaces ;
+- capability `product_catalog_import` réellement contrôlée ;
+- création de contribution refusée sans `product_contribution` ;
+- téléversement temporaire utilisant la chaîne de sécurité Core ;
+- absence de document `File` durable créé pour le seul import.
 
 ## 9. E2E critiques proposés
 
@@ -200,7 +206,7 @@ contribution
 → En validation
 ```
 
-Platform autorisée :
+Utilisateur autorisé par la gouvernance métier globale :
 
 ```text
 approuve
