@@ -194,7 +194,7 @@ MFA, passkeys, SSO entreprise ou autres providers ne sont pas ajoutés uniquemen
 
 ### D-012 — Tests E2E de chaque application dérivée
 
-**Statut :** PLANIFIÉ — M-001  
+**Statut :** PLANIFIÉ par module — checkpoint M-001 VALIDÉ le 2026-09-22  
 **Blocage Core 1.0 :** non — D-016 couvre uniquement le Core générique  
 **Blocage M-001 :** oui pour la clôture de l'implémentation
 
@@ -215,7 +215,7 @@ Contrat détaillé :
 docs/m001/M-001-TEST-STRATEGY.md
 ```
 
-D-012 ne sera considérée validée pour M-001 qu'après exécution réelle des scénarios et de la gate canonique. D-017 démontre seulement que la gate clonée continue d'exécuter les E2E Core après dérivation et upgrade.
+Checkpoint M-001 validé : les quatre parcours métier sont intégrés au corpus Playwright, l'exécution locale finale compte 11/11 tests verts et la Core Gate #101 est `success` sur le head applicatif `79cfe24579e4b39232835fd156009d6f038d9465`. D-012 reste à poursuivre pour chaque nouveau module métier : la validation M-001 ne remplace pas les futurs E2E M-002+.
 
 ### D-013 — Configuration et déploiement de production
 

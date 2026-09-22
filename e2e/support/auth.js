@@ -15,6 +15,22 @@ function createRegistrationIdentity() {
   };
 }
 
+async function loginWithIdentity(page, identity) {
+  await page.context().clearCookies();
+
+  const response = await page.request.post('/api/auth/login', {
+    data: {
+      email: identity.email,
+      password: identity.password,
+    },
+  });
+
+  expect(
+    response.ok(),
+    `E2E session login failed with status ${response.status()}`,
+  ).toBe(true);
+}
+
 async function registerAndLogin(page) {
   const identity = createRegistrationIdentity();
 
@@ -45,4 +61,4 @@ async function registerAndLogin(page) {
   return identity;
 }
 
-export { registerAndLogin };
+export { E2E_PASSWORD, loginWithIdentity, registerAndLogin };

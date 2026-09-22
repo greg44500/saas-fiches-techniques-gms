@@ -47,7 +47,8 @@
     "job:apply-scheduled-downgrades": "node backend/jobs/subscriptions/runApplyScheduledDowngradesJob.js",
     "job:purge-files": "node backend/jobs/files/runPurgeDeletedFilesJob.js",
     "job:retention": "node backend/jobs/retention/runScheduledRetentionPoliciesJob.js",
-    "dev:reset-trial": "node backend/operations/development/runResetTrialDevelopment.js"
+    "dev:reset-trial": "node backend/operations/development/runResetTrialDevelopment.js",
+    "migration:m001-indexes": "node backend/migrations/runEnsureM001IndexesMigration.js"
   },
   "license": "UNLICENSED",
   "dependencies": {

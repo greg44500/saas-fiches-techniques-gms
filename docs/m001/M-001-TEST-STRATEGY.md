@@ -1,6 +1,6 @@
 # M-001 — Stratégie de tests
 
-**Statut :** VALIDÉ  
+**Statut :** VALIDÉ — exécution finale locale réussie le 2026-09-21  
 **Date de validation :** 2026-09-21  
 **Périmètre :** Dossiers, DossierAccessGrant, BusinessActivityEvent, autorisation, lifecycle, frontend et E2E
 
@@ -30,7 +30,53 @@ Les tests automatisés ne doivent jamais dépendre d'une API externe réelle.
 
 ---
 
-## 2. Isolation des bases de tests
+## 2. Checkpoint backend exécuté
+
+Le checkpoint backend M-001 a été exécuté localement le 2026-09-21 sur :
+
+```text
+feature/m001-dossiers-access
+c8e8f676dfaeebd69180cae6030d1304627ee088
+```
+
+Résultats communiqués :
+
+```text
+npm run release:verify → vert
+npm run lint           → vert
+npm test               → vert
+```
+
+Cette preuve autorise le passage au frontend. Elle ne remplace pas les tests frontend, les E2E ni `release:check` complet avant PR.
+
+### Gate locale finale exécutée
+
+Après implémentation complète du frontend et des E2E M-001, l'utilisateur a confirmé le 2026-09-21 :
+
+```text
+npm test
+→ vert
+
+npm run test:e2e
+→ 11/11 verts
+→ 7 parcours Core hérités
+→ 4 parcours métier M-001
+
+npm run release:check
+→ vert
+```
+
+Le premier lancement de `npm test` après modification du `.env` de développement a été bloqué volontairement par la garde `_test`. La configuration locale a été corrigée avec un `.env.test` ignoré par Git pointant vers :
+
+```text
+mongodb://127.0.0.1:27017/saas_fiches_techniques_gms_test?replicaSet=rs0
+```
+
+Ce garde-fou doit rester intact : les tests backend ne doivent jamais vider la base de développement.
+
+---
+
+## 3. Isolation des bases de tests
 
 Le produit doit utiliser ses propres bases logiques :
 
@@ -42,17 +88,15 @@ Playwright
 → saas_fiches_techniques_gms_e2e_test
 ```
 
-Le dépôt hérite encore de noms `saas_core_test` / `saas_core_e2e_test` dans certaines configurations.
+La branche M-001 a aligné les configurations concernées sur ces noms produit avant l'ajout des tests métier.
 
-La première étape de la branche d'implémentation M-001 doit aligner ces noms sur le produit avant d'ajouter les tests métier.
-
-La garde E2E imposant le suffixe `_e2e_test` reste obligatoire.
+La garde E2E imposant le suffixe `_e2e_test` reste obligatoire et est conservée.
 
 Aucun test M-001 ne peut viser la base de développement.
 
 ---
 
-## 3. Registry RBAC produit
+## 4. Registry RBAC produit
 
 Tests obligatoires :
 
@@ -76,7 +120,7 @@ dossier:access:manage
 
 ---
 
-## 4. Registries et metadata métier
+## 5. Registries et metadata métier
 
 Tester les sources backend canoniques :
 
@@ -99,7 +143,7 @@ Vérifications :
 
 ---
 
-## 5. Validation Zod
+## 6. Validation Zod
 
 Cas minimum :
 
@@ -150,7 +194,7 @@ Cas minimum :
 
 ---
 
-## 6. Modèle Dossier
+## 7. Modèle Dossier
 
 Tester au minimum :
 
@@ -166,7 +210,7 @@ Le modèle ne doit pas contenir d'historique lifecycle redondant de type `paused
 
 ---
 
-## 7. DossierAccessGrant
+## 8. DossierAccessGrant
 
 Tests de modèle/service :
 
@@ -210,7 +254,7 @@ Invariants :
 
 ---
 
-## 8. Autorisation et tenancy
+## 9. Autorisation et tenancy
 
 Tests d'intégration obligatoires :
 
@@ -243,7 +287,7 @@ Une permission manquante doit être refusée même avec un grant ACTIVE.
 
 ---
 
-## 9. Liste Dossiers
+## 10. Liste Dossiers
 
 Tester :
 
@@ -259,7 +303,7 @@ Tester :
 
 ---
 
-## 10. Création Dossier
+## 11. Création Dossier
 
 ### Owner
 
@@ -284,7 +328,7 @@ Rollback obligatoire si une écriture indispensable échoue.
 
 ---
 
-## 11. Mise à jour des informations
+## 12. Mise à jour des informations
 
 Tester :
 
@@ -299,7 +343,7 @@ Tester :
 
 ---
 
-## 12. Lifecycle Dossier
+## 13. Lifecycle Dossier
 
 Transitions autorisées :
 
@@ -329,7 +373,7 @@ Tester également :
 
 ---
 
-## 13. Effets lifecycle sur les grants
+## 14. Effets lifecycle sur les grants
 
 Tester :
 
@@ -368,7 +412,7 @@ Une erreur obligatoire doit rollback l'ensemble.
 
 ---
 
-## 14. Lifecycle WorkspaceMember REMOVED
+## 15. Lifecycle WorkspaceMember REMOVED
 
 Test d'intégration réel via le point Core `onMemberRemoved`.
 
@@ -402,7 +446,7 @@ Une réinvitation ultérieure ne restaure aucun ancien grant.
 
 ---
 
-## 15. BusinessActivityEvent
+## 16. BusinessActivityEvent
 
 Tests :
 
@@ -425,7 +469,7 @@ Lecture :
 
 ---
 
-## 16. Contrat HTTP / Supertest
+## 17. Contrat HTTP / Supertest
 
 Les 10 endpoints M-001 doivent être couverts au niveau HTTP :
 
@@ -455,7 +499,7 @@ La route `/metadata` doit être déclarée avant `/:dossierId`.
 
 ---
 
-## 17. Frontend — RTK Query
+## 18. Frontend — RTK Query
 
 Tester :
 
@@ -469,7 +513,7 @@ Le frontend ne reconstruit jamais une règle d'autorisation backend à partir de
 
 ---
 
-## 18. Frontend — liste Dossiers
+## 19. Frontend — liste Dossiers
 
 RTL couvre :
 
@@ -487,7 +531,7 @@ RTL couvre :
 
 ---
 
-## 19. Frontend — Dialog Dossier
+## 20. Frontend — Dialog Dossier
 
 Tester :
 
@@ -505,7 +549,7 @@ Le même formulaire métier est réutilisé entre création et édition.
 
 ---
 
-## 20. Frontend — Drawer
+## 21. Frontend — Drawer
 
 Tester :
 
@@ -527,7 +571,7 @@ et :
 
 ---
 
-## 21. Frontend — page de travail Dossier
+## 22. Frontend — page de travail Dossier
 
 Tester :
 
@@ -540,7 +584,7 @@ Tester :
 
 ---
 
-## 22. Autocomplétion d'adresse
+## 23. Autocomplétion d'adresse
 
 Les tests utilisent un provider mocké/fake.
 
@@ -575,7 +619,7 @@ Le payload brut fournisseur n'est jamais envoyé au backend.
 
 ---
 
-## 23. E2E Playwright M-001
+## 24. E2E Playwright M-001
 
 Playwright reste volontairement ciblé.
 
@@ -626,16 +670,23 @@ L'autocomplétion externe n'est pas une dépendance de ces parcours ; la saisie 
 
 ---
 
-## 24. Commandes et gates
+## 25. Commandes et gates
 
 Pendant l'implémentation, exécuter les tests ciblés du lot après chaque bloc cohérent.
 
-Avant la PR fonctionnelle M-001 :
+Avant la PR fonctionnelle M-001, la gate canonique a été exécutée localement et déclarée verte par l'utilisateur :
 
 ```bash
-npm run format:check
 npm run release:check
 ```
+
+Les contrôles locaux demandés ont été confirmés OK le 2026-09-21. La PR M-001 peut donc être ouverte ; la Core Gate de PR puis la Core Gate post-merge restent obligatoires.
+
+### Note sur `format:check`
+
+Au checkpoint backend, `npm run format:check` échoue sur des fichiers Core inchangés, dont `backend/app.js`, indépendamment du choix LF/CRLF. Cette commande n'est actuellement pas incluse dans `release:check` ni dans la Core Gate canonique.
+
+Ce point doit être traité séparément comme besoin générique Core/tooling. Il ne doit pas être corrigé silencieusement dans M-001.
 
 La gate canonique `release:check` exécute actuellement :
 
@@ -654,4 +705,20 @@ La Core Gate GitHub Actions doit être verte sur :
 1. le head de la PR ;
 2. le merge final sur `main`.
 
-Aucun test vert n'est annoncé sans résultat réellement exécuté.
+La séquence de readiness est donc :
+
+```text
+tests automatisés
+→ release:check complet
+→ pull local VS Code
+→ lancement application
+→ validation fonctionnelle + visuelle utilisateur
+→ corrections éventuelles
+→ relance des gates
+→ PR
+→ Core Gate PR
+→ merge
+→ Core Gate post-merge
+```
+
+Aucun test vert et aucune validation visuelle ne sont annoncés sans exécution réelle.

@@ -1,6 +1,6 @@
 # M-001 — Critères d'acceptation et ordre d'implémentation
 
-**Statut :** VALIDÉ  
+**Statut :** VALIDÉ — implémentation terminée, validation technique finale acquise, clôture Git/CI en cours  
 **Date de validation :** 2026-09-21  
 **Module :** Dossiers / magasins + affectations + activité métier
 
@@ -9,6 +9,48 @@
 ## 1. Gate fonctionnelle M-001
 
 M-001 est considéré fonctionnellement terminé uniquement lorsque tous les critères applicables ci-dessous sont démontrés par le code et les tests réellement exécutés.
+
+### Checkpoint d'implémentation — 2026-09-21
+
+Branche :
+
+```text
+feature/m001-dossiers-access
+```
+
+Checkpoint backend testé localement :
+
+```text
+c8e8f676dfaeebd69180cae6030d1304627ee088
+```
+
+Résultats communiqués :
+
+```text
+npm run release:verify → vert
+npm run lint           → vert
+npm test               → vert
+```
+
+Ce checkpoint backend a ensuite été complété par le frontend, les tests RTL et les E2E.
+
+### Validation technique finale — 2026-09-22
+
+Checkpoint applicatif après intégration de Core v1.1.1 et réalignement des E2E avec le drawer à onglets :
+
+```text
+79cfe24579e4b39232835fd156009d6f038d9465
+```
+
+Résultats confirmés :
+
+```text
+npm run release:check → vert
+Playwright            → 11/11 verts
+Core Gate #101        → success
+```
+
+La validation technique M-001 est acquise sur ce head applicatif. La documentation de clôture modifie ensuite le head de PR et doit donc être couverte par une Core Gate verte avant fusion. Après merge, une Core Gate post-merge sur `main` reste obligatoire.
 
 ---
 
@@ -190,10 +232,11 @@ businessActivityActions
 
 ### Drawer
 
-- [ ] Informations ;
+- [ ] navigation par onglets, sans empilement vertical des quatre zones ;
+- [ ] Infos ;
 - [ ] Accès ;
-- [ ] Activité ;
-- [ ] lifecycle léger ;
+- [ ] Activités ;
+- [ ] Administration avec lifecycle léger ;
 - [ ] ouverture du drawer ne change pas le contexte de travail ;
 - [ ] Owner représenté comme accès implicite, jamais comme faux grant.
 
@@ -283,20 +326,30 @@ docs/m001/M-001-TEST-STRATEGY.md
 
 ## 16. Gates finales
 
-Avant merge de la PR d'implémentation :
+Avant de considérer la PR M-001 prête :
 
 ```bash
-npm run format:check
 npm run release:check
 ```
 
-Puis :
+Puis, obligatoirement :
 
+- [ ] branche à jour dans le VS Code local ;
+- [ ] application lançable localement ;
+- [ ] `npm run release:check` vert sur le lot final ;
+- [ ] anomalies techniques bloquantes corrigées ;
+- [ ] les ajustements purement visuels non bloquants peuvent être traités après merge dans un lot UX M-001 dédié ;
 - [ ] Core Gate verte sur le head de la PR ;
 - [ ] revue ;
 - [ ] merge ;
 - [ ] Core Gate verte post-merge sur main ;
 - [ ] documentation de reprise mise à jour avec preuves réelles.
+
+### Note tooling — Prettier
+
+Au checkpoint backend, `npm run format:check` échoue également sur des fichiers Core inchangés, dont `backend/app.js`. Les essais explicites avec `--end-of-line lf` et `--end-of-line crlf` échouent eux aussi.
+
+`format:check` ne fait actuellement pas partie de `release:check` ni de la Core Gate canonique. Ce problème est traité comme un besoin générique Core/tooling séparé ; M-001 ne doit pas modifier silencieusement le Core pour le contourner.
 
 ---
 
@@ -431,7 +484,7 @@ Respecter l'ordre des routes, notamment `/metadata` avant `/:dossierId`.
 
 Fermer les tests backend/Supertest avant le frontend.
 
-## Étape 11 — RTK Query et routes frontend
+## Étape 11 — RTK Query et routes frontend — TERMINÉE
 
 Créer la feature Dossiers en réutilisant le `baseApi` Core.
 
@@ -449,14 +502,15 @@ Formulaire commun création/édition.
 
 Pas de duplication de formulaire.
 
-## Étape 14 — Drawer
+## Étape 14 — Drawer — TERMINÉE
 
-Sections :
+Onglets validés :
 
 ```text
-Informations
+Infos
 Accès
-Activité
+Activités
+Administration
 ```
 
 Réutiliser EntityDetailsDrawer/ConfirmationDialog.
@@ -485,12 +539,13 @@ Ajouter les quatre parcours Playwright validés.
 
 ## Étape 19 — Gates
 
-Exécuter :
+Exécuter la gate canonique :
 
 ```bash
-npm run format:check
 npm run release:check
 ```
+
+`format:check` reste hors gate canonique et relève du sujet Core/tooling documenté séparément.
 
 Corriger toute régression Core ou métier avant PR prête à merger.
 

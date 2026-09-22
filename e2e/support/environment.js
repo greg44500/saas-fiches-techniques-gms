@@ -1,7 +1,7 @@
 const E2E_BACKEND_ORIGIN = 'http://127.0.0.1:5100';
 const E2E_FRONTEND_ORIGIN = 'http://127.0.0.1:5174';
 const DEFAULT_E2E_MONGODB_URI =
-  'mongodb://127.0.0.1:27017/saas_core_e2e_test?replicaSet=rs0';
+  'mongodb://127.0.0.1:27017/saas_fiches_techniques_gms_e2e_test?replicaSet=rs0';
 
 const E2E_FOUNDER = Object.freeze({
   firstName: 'E2E',

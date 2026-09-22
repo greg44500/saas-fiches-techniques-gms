@@ -6,10 +6,6 @@ import {
 } from 'vitest';
 
 import {
-    ACTIVE_APPLICATION_WORKSPACE_MEMBER_LIFECYCLE_REGISTRY,
-    runApplicationWorkspaceMemberRemovedLifecycle,
-} from '../../config/applicationWorkspaceMemberLifecycle.registry.js';
-import {
     createWorkspaceMemberLifecycleRegistry,
     runWorkspaceMemberRemovedLifecycle,
 } from '../../modules/workspaceMember/workspaceMemberLifecycle.registry.js';
@@ -17,13 +13,14 @@ import {
 
 describe('WorkspaceMember lifecycle registry', () => {
     it('conserve le comportement Core lorsqu’aucun module applicatif n’est enregistré', async () => {
-        expect(
-            ACTIVE_APPLICATION_WORKSPACE_MEMBER_LIFECYCLE_REGISTRY
-                .memberRemovedHandlers,
-        ).toEqual([]);
+        const registry =
+            createWorkspaceMemberLifecycleRegistry([]);
+
+        expect(registry.memberRemovedHandlers).toEqual([]);
 
         await expect(
-            runApplicationWorkspaceMemberRemovedLifecycle({
+            runWorkspaceMemberRemovedLifecycle({
+                registry,
                 workspaceId: 'workspace-id',
                 membershipId: 'membership-id',
                 userId: 'user-id',

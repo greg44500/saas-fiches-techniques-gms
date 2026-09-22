@@ -1,8 +1,11 @@
 # M-001 — Handoff d'implémentation
 
-**Statut :** PRÊT POUR IMPLÉMENTATION après fusion de la PR documentaire #9 et Core Gate post-merge verte  
+**Statut :** HISTORIQUE — M-001 implémenté, gate locale finale validée le 2026-09-21  
 **Date :** 2026-09-21  
 **Produit :** `greg44500/saas-fiches-techniques-gms`
+
+> Pour toute reprise actuelle, utiliser d'abord `docs/REPRISE-CURRENT.md` et vérifier l'état réel de la PR M-001.  
+> Les handoffs d'implémentation/frontend sont désormais historiques et ne doivent plus conduire à recréer la branche, le backend ou le frontend.
 
 ---
 
