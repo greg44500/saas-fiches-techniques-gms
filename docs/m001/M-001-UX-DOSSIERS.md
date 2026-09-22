@@ -282,6 +282,17 @@ WorkspaceMember ACTIVE
 → PUT access-grant
 ```
 
+La liste des membres assignables compose également la capability commerciale Core :
+
+```text
+dossier:access:manage
++ member:read
++ team_management
+→ charger les WorkspaceMembers assignables
+```
+
+Si `team_management` n'est pas disponible, le frontend ne déclenche pas la requête Core `GET /workspaces/:workspaceId/members` et affiche un état informatif neutre. L'absence d'affectation ou de membre assignable est un état vide et ne doit pas être présentée comme une erreur. Une `ErrorState` avec action `Réessayer` reste réservée à une véritable erreur de chargement lorsque la requête est autorisée.
+
 Révocation manuelle :
 
 ```text
@@ -306,6 +317,8 @@ statusTransitions
 Le frontend n'encode pas localement la matrice.
 
 Les transitions sensibles utilisent `ConfirmationDialog`.
+
+Dans le drawer, les transitions sont présentées avec `ActionIconButton` afin de garder une administration compacte. Chaque bouton expose une icône et un libellé accessible/tooltip formulé comme une action à l'infinitif, par exemple `Mettre en pause`, `Réactiver`, `Archiver`, `Supprimer` ou `Restaurer`. Les labels de statut restent issus des metadata backend et sont utilisés dans les confirmations.
 
 La suppression et la restauration exigent un `reason` côté service et l'interface fournit donc le champ approprié dans la confirmation.
 

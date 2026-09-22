@@ -7,6 +7,7 @@ import { ToastProvider } from '@/components/shared/toast-provider';
 const mocks = vi.hoisted(() => ({
   can: vi.fn(),
   grant: vi.fn(),
+  hasFeature: vi.fn(),
   grantsQuery: vi.fn(),
   membersQuery: vi.fn(),
   revoke: vi.fn(),
@@ -15,6 +16,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: () => ({
     can: mocks.can,
+    hasFeature: mocks.hasFeature,
   }),
 }));
 
@@ -75,10 +77,12 @@ describe('DossierAccessSection', () => {
     mocks.can.mockReset();
     mocks.grant.mockReset();
     mocks.grantsQuery.mockReset();
+    mocks.hasFeature.mockReset();
     mocks.membersQuery.mockReset();
     mocks.revoke.mockReset();
 
     mocks.can.mockReturnValue(true);
+    mocks.hasFeature.mockReturnValue(true);
     mocks.grantsQuery.mockReturnValue(queryResult({
       accessGrants: [],
       pagination: {
@@ -112,6 +116,7 @@ describe('DossierAccessSection', () => {
     expect(
       screen.getByText(/Aucun grant individuel n’est créé/),
     ).toBeInTheDocument();
+    expect(screen.getByText('Pas de membres affectés.')).toBeInTheDocument();
   });
 
   it('affecte un membre actif depuis le périmètre Workspace', async () => {
@@ -129,6 +134,72 @@ describe('DossierAccessSection', () => {
         membershipId: 'membership-2',
       });
     });
+  });
+
+  it('n’interroge pas les membres si la gestion d’équipe n’est pas disponible', () => {
+    mocks.hasFeature.mockReturnValue(false);
+    mocks.membersQuery.mockReturnValue({
+      ...queryResult(null),
+      isError: true,
+    });
+
+    renderAccess();
+
+    expect(mocks.membersQuery).toHaveBeenLastCalledWith(
+      {
+        workspaceId: 'workspace-1',
+        page: 1,
+        limit: 10,
+      },
+      { skip: true },
+    );
+    expect(
+      screen.getByText('La gestion des membres n’est pas disponible pour ce workspace.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Membres indisponibles')).not.toBeInTheDocument();
+  });
+
+  it('affiche une erreur de chargement uniquement pour une vraie erreur de requête', () => {
+    mocks.membersQuery.mockReturnValue({
+      ...queryResult(null),
+      isError: true,
+    });
+
+    renderAccess();
+
+    expect(screen.getByText('Membres indisponibles')).toBeInTheDocument();
+    expect(
+      screen.getByText('Les membres du workspace n’ont pas pu être chargés.'),
+    ).toBeInTheDocument();
+  });
+
+  it('affiche un état vide neutre lorsqu’aucun membre n’est assignable', () => {
+    mocks.membersQuery.mockReturnValue(queryResult({
+      members: [{
+        id: 'membership-owner',
+        status: 'active',
+        user: {
+          firstName: 'Olivia',
+          lastName: 'Owner',
+        },
+        role: {
+          key: 'owner',
+          name: 'Owner',
+        },
+      }],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
+      },
+    }));
+
+    renderAccess();
+
+    expect(
+      screen.getByText('Aucun membre disponible à l’affectation.'),
+    ).toBeInTheDocument();
   });
 
   it('affiche une erreur métier si l’affectation échoue', async () => {
