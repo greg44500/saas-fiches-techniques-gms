@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 implémenté et validé techniquement, clôture Git/CI finale avant M-002  
+**Statut :** VALIDÉ — M-001 clôturé techniquement — M-002 devient le prochain lot métier  
 **Dernière mise à jour :** 2026-09-22
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -418,7 +418,7 @@ Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middl
 
 ## 5. Phase 4 — Implémentation métier
 
-**Statut : M-001 IMPLÉMENTÉ ET VALIDÉ TECHNIQUEMENT — clôture Git/CI finale avant M-002**
+**Statut : M-001 CLÔTURÉ TECHNIQUEMENT — PR #10 fusionnée et Core Gate post-merge validée**
 
 Branche fonctionnelle unique :
 
@@ -426,17 +426,16 @@ Branche fonctionnelle unique :
 feature/m001-dossiers-access
 ```
 
-Checkpoint applicatif validé le 2026-09-22 après intégration de Core v1.1.1 et correction E2E des onglets du drawer :
+Validation finale du lot M-001 le 2026-09-22 :
 
 ```text
-79cfe24579e4b39232835fd156009d6f038d9465
-
 npm run release:check → vert
 Playwright            → 11/11 verts
-Core Gate #101        → success
+head final PR #10     → 91bab9f80bce3b4095f5c806bc45e166729f33b8
+Core Gate #104        → success
+merge PR #10          → 8a10a859f567d7f038e5fc5e7b436580d3471b89
+Core Gate #105        → success selon le résultat signalé par l'utilisateur
 ```
-
-Toute modification documentaire du head final doit repasser la Core Gate avant fusion.
 
 Le backend, le frontend, l'autocomplétion, la gestion des affectations, le lifecycle, le Dashboard métier et les quatre E2E M-001 sont implémentés.
 
@@ -521,18 +520,17 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-M-001 a franchi sa validation technique locale et la Core Gate #101 sur le head applicatif. La séquence restante est la clôture Git/CI du head final :
+M-001 est techniquement clôturé. La prochaine étape de roadmap est :
 
 ```text
-1. intégrer la documentation de clôture au head final de la PR #10
-2. valider la Core Gate sur ce head exact
-3. fusionner uniquement après gate verte
-4. valider la Core Gate post-merge sur main
-5. considérer M-001 techniquement clôturé
-6. démarrer le cadrage détaillé M-002 — Produits canoniques
+M-002 — Catalogue Produits / Produits canoniques
+→ reprendre le cadrage détaillé déjà amorcé
+→ fermer le modèle conceptuel Produit canonique / déclinaisons / usage Workspace
+→ définir gouvernance, identité sémantique, alias, lifecycle et bootstrap
+→ seulement après validation : implémentation sur une branche dédiée
 ```
 
-Ne pas commencer M-002 dans la PR M-001.
+Ne pas rouvrir M-001 sauf régression démontrée. Les éventuels ajustements purement visuels du module Dossiers pourront être traités dans un lot UX post-merge distinct.
 `npm run format:check` reste actuellement non conforme sur des fichiers Core inchangés et n'appartient pas à la Core Gate canonique. Ce sujet doit être traité séparément comme besoin générique Core/tooling, sans correction silencieuse dans le produit.
 
 La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour M-001.

@@ -1,6 +1,6 @@
 # M-001 — Critères d'acceptation et ordre d'implémentation
 
-**Statut :** VALIDÉ — implémentation terminée, validation technique finale acquise, clôture Git/CI en cours  
+**Statut :** VALIDÉ — implémentation terminée et clôture Git/CI acquise  
 **Date de validation :** 2026-09-21  
 **Module :** Dossiers / magasins + affectations + activité métier
 
@@ -50,7 +50,7 @@ Playwright            → 11/11 verts
 Core Gate #101        → success
 ```
 
-La validation technique M-001 est acquise sur ce head applicatif. La documentation de clôture modifie ensuite le head de PR et doit donc être couverte par une Core Gate verte avant fusion. Après merge, une Core Gate post-merge sur `main` reste obligatoire.
+La validation technique M-001 est acquise. Le head final de la PR #10 (`91bab9f80bce3b4095f5c806bc45e166729f33b8`) a passé la Core Gate #104 avec succès. La PR #10 a été fusionnée dans `main` au commit `8a10a859f567d7f038e5fc5e7b436580d3471b89`, puis la Core Gate post-merge #105 a été signalée terminée avec succès par l'utilisateur. M-001 est donc techniquement clôturé.
 
 ---
 

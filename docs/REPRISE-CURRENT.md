@@ -1,12 +1,12 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : M-001 IMPLÉMENTÉ ET VALIDÉ TECHNIQUEMENT — Core v1.1.1 — lot fonctionnel PR #10 en clôture Git/CI**
+> **Statut : M-001 CLÔTURÉ TECHNIQUEMENT — PR #10 fusionnée — Core Gate post-merge validée — prochaine étape M-002**
 >
 > **Dernière mise à jour : 2026-09-22**
 >
 > Le code réel, les contraintes DB, les tests/gates réellement exécutés et les contrats canoniques priment sur cette synthèse.
 >
-> **Le backend, le frontend métier M-001 et les quatre parcours Playwright critiques sont implémentés sur `feature/m001-dossiers-access`. Après intégration de Core v1.1.1 et réalignement des E2E avec le drawer à quatre onglets, `npm run release:check` est vert localement avec 11/11 Playwright. La Core Gate #101 est `success` sur le head applicatif `79cfe24579e4b39232835fd156009d6f038d9465`. Toute modification documentaire finale du head doit repasser la Core Gate avant fusion ; une Core Gate post-merge sur `main` reste obligatoire. Les éventuels ajustements purement visuels découverts ultérieurement seront traités comme un lot UX post-merge sans rouvrir le cadrage M-001.**
+> **M-001 est fusionné dans `main` via la PR #10. Le head final de PR `91bab9f80bce3b4095f5c806bc45e166729f33b8` a passé la Core Gate #104 avec succès, puis le commit de merge `8a10a859f567d7f038e5fc5e7b436580d3471b89` a passé la Core Gate post-merge #105 selon le résultat signalé par l'utilisateur. Le socle technique M-001 est donc clôturé. Les éventuels ajustements purement visuels découverts ultérieurement seront traités comme un lot UX M-001 post-merge sans rouvrir le cadrage fonctionnel ni l'architecture.**
 
 ---
 
@@ -36,35 +36,30 @@ Produit = métier
 
 Dépôt produit : `greg44500/saas-fiches-techniques-gms`.
 
-Base Core/produit synchronisée avant clôture M-001 :
+État `main` de référence après clôture M-001 :
 
 ```text
 main
-9b3b469def624e70a9a857b9e3cee8a0fed1bb1a
-Merge pull request #11 from greg44500/core-update/v1.1.1
+8a10a859f567d7f038e5fc5e7b436580d3471b89
+Merge pull request #10 from greg44500/feature/m001-dossiers-access
 ```
 
-Branche active :
+Branche de travail de référence :
+
+```text
+main
+```
+
+Historique M-001 clôturé :
 
 ```text
 feature/m001-dossiers-access
-
-checkpoint backend testé localement :
-c8e8f676dfaeebd69180cae6030d1304627ee088
-
-checkpoint applicatif final validé localement avant clôture documentaire :
-1d4c9a2930ebd76d5667bc137b6e110b20c8c71c
+→ PR #10
+→ head final : 91bab9f80bce3b4095f5c806bc45e166729f33b8
+→ Core Gate #104 : success
+→ merge : 8a10a859f567d7f038e5fc5e7b436580d3471b89
+→ Core Gate post-merge #105 : terminée avec succès selon le résultat signalé par l'utilisateur
 ```
-
-La branche a été compactée avant PR sans modifier l'arbre final. La PR #10 est ouverte vers `main`.
-
-```text
-PR #10
-head initial après compactage :
-0fda1dede29da9111cb48c840e6fcda79cf05e67
-```
-
-Elle ne doit pas être fusionnée avant la Core Gate de PR ; après fusion, la Core Gate post-merge sur `main` reste obligatoire.
 
 Core intégré :
 
