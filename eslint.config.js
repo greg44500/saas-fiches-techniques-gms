@@ -47,6 +47,7 @@ export default [
     {
         files: [
             'backend/modules/file/file.service.js',
+            'backend/services/fileInspection/secureTemporaryUpload.service.js',
             'backend/services/fileInspection/uploadedFileInspection.service.js',
         ],
         rules: {
