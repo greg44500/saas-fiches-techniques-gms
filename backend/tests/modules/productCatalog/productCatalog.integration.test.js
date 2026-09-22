@@ -41,55 +41,6 @@ let ownerContext;
 
 beforeEach(async () => {
     ownerContext = await createWorkspaceOwnerFixture();
-    it('conserve une référence globale archivée déjà rattachée au Workspace', async () => {
-        const reference = await createActiveProductReference({
-            actorId: ownerContext.owner._id,
-            name: 'Riz long',
-        });
-
-        await attachVariantToWorkspace({
-            workspaceId: ownerContext.workspace._id,
-            variantId: reference.variant._id,
-            actorId: ownerContext.owner._id,
-        });
-
-        await updateProductStatus({
-            actorId: ownerContext.owner._id,
-            productId: reference.product._id,
-            status: 'ARCHIVED',
-        });
-
-        const workspaceSearch = await listProductSearch({
-            workspaceId: ownerContext.workspace._id,
-            scope: 'WORKSPACE',
-        });
-        const referenceSearch = await listProductSearch({
-            workspaceId: ownerContext.workspace._id,
-            scope: 'REFERENCE',
-        });
-
-        expect(workspaceSearch.results).toHaveLength(1);
-        expect(workspaceSearch.results[0].product.status).toBe('ARCHIVED');
-        expect(referenceSearch.results).toHaveLength(0);
-
-        await expect(getWorkspaceProductDetail({
-            workspaceId: ownerContext.workspace._id,
-            productId: reference.product._id,
-        })).resolves.toMatchObject({
-            product: {
-                status: 'ARCHIVED',
-            },
-        });
-
-        const other = await createWorkspaceOwnerFixture();
-
-        await expect(getWorkspaceProductDetail({
-            workspaceId: other.workspace._id,
-            productId: reference.product._id,
-        })).rejects.toMatchObject({
-            statusCode: 404,
-        });
-    });
 });
 
 describe('M-002 product catalog services', () => {
@@ -254,5 +205,55 @@ describe('M-002 product catalog services', () => {
         });
 
         expect(restored.status).toBe('ACTIVE');
+    });
+
+    it('conserve une référence globale archivée déjà rattachée au Workspace', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Riz long',
+        });
+
+        await attachVariantToWorkspace({
+            workspaceId: ownerContext.workspace._id,
+            variantId: reference.variant._id,
+            actorId: ownerContext.owner._id,
+        });
+
+        await updateProductStatus({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            status: 'ARCHIVED',
+        });
+
+        const workspaceSearch = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'WORKSPACE',
+        });
+        const referenceSearch = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'REFERENCE',
+        });
+
+        expect(workspaceSearch.results).toHaveLength(1);
+        expect(workspaceSearch.results[0].product.status).toBe('ARCHIVED');
+        expect(referenceSearch.results).toHaveLength(0);
+
+        await expect(getWorkspaceProductDetail({
+            workspaceId: ownerContext.workspace._id,
+            productId: reference.product._id,
+        })).resolves.toMatchObject({
+            product: {
+                status: 'ARCHIVED',
+            },
+        });
+
+        const other = await createWorkspaceOwnerFixture();
+
+        await expect(getWorkspaceProductDetail({
+            workspaceId: other.workspace._id,
+            productId: reference.product._id,
+        })).rejects.toMatchObject({
+            statusCode: 404,
+        });
     });
 });

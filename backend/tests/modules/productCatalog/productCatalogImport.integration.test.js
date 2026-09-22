@@ -29,67 +29,6 @@ let ownerContext;
 
 beforeEach(async () => {
     ownerContext = await createWorkspaceOwnerFixture();
-    it('signale les colonnes commerciales M-003 sans les absorber', async () => {
-        const inspected = await inspectProductImport({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
-            file: csvFile(
-                'Produit;Fournisseur;Référence Article;Conditionnement;Tarif HT\n'
-                + 'Carotte;Sysco;CAR-001;Sac 5 kg;12,50',
-            ),
-        });
-
-        expect(
-            inspected.outOfScopeColumns.map(({ kind }) => kind),
-        ).toEqual([
-            'SUPPLIER',
-            'SUPPLIER_REFERENCE',
-            'PACKAGING',
-            'PRICE',
-        ]);
-    });
-
-    it('refuse un commit fondé sur une prévisualisation devenue obsolète', async () => {
-        const inspected = await inspectProductImport({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
-            file: csvFile('Produit\nPanais'),
-        });
-
-        const preview = await previewProductImport({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
-            importId: inspected.importId,
-            mapping: { name: 0 },
-            defaults: { referenceUnit: 'KG' },
-        });
-
-        expect(preview.counts.PROPOSE_PRODUCT).toBe(1);
-
-        await createActiveProductReference({
-            actorId: ownerContext.owner._id,
-            name: 'Panais',
-        });
-
-        await expect(commitProductImport({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
-            importId: inspected.importId,
-        })).rejects.toMatchObject({
-            statusCode: 409,
-            code: 'PRODUCT_REVIEW_OUTDATED',
-        });
-
-        const refreshed = await previewProductImport({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
-            importId: inspected.importId,
-            mapping: { name: 0 },
-            defaults: { referenceUnit: 'KG' },
-        });
-
-        expect(refreshed.counts.ATTACH_EXISTING).toBe(1);
-    });
 });
 
 const csvFile = (content) => ({
@@ -197,5 +136,67 @@ describe('M-002 product import service', () => {
         expect(preview.rows[0].errors).toContain(
             'Unité de référence obligatoire ou invalide.',
         );
+    });
+
+    it('signale les colonnes commerciales M-003 sans les absorber', async () => {
+        const inspected = await inspectProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            file: csvFile(
+                'Produit;Fournisseur;Référence Article;Conditionnement;Tarif HT\n'
+                + 'Carotte;Sysco;CAR-001;Sac 5 kg;12,50',
+            ),
+        });
+
+        expect(
+            inspected.outOfScopeColumns.map(({ kind }) => kind),
+        ).toEqual([
+            'SUPPLIER',
+            'SUPPLIER_REFERENCE',
+            'PACKAGING',
+            'PRICE',
+        ]);
+    });
+
+    it('refuse un commit fondé sur une prévisualisation devenue obsolète', async () => {
+        const inspected = await inspectProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            file: csvFile('Produit\nPanais'),
+        });
+
+        const preview = await previewProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+            mapping: { name: 0 },
+            defaults: { referenceUnit: 'KG' },
+        });
+
+        expect(preview.counts.PROPOSE_PRODUCT).toBe(1);
+
+        await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Panais',
+        });
+
+        await expect(commitProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+        })).rejects.toMatchObject({
+            statusCode: 409,
+            code: 'PRODUCT_REVIEW_OUTDATED',
+        });
+
+        const refreshed = await previewProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+            mapping: { name: 0 },
+            defaults: { referenceUnit: 'KG' },
+        });
+
+        expect(refreshed.counts.ATTACH_EXISTING).toBe(1);
     });
 });
