@@ -177,13 +177,24 @@ permission product:catalog:manage / product:contribute
 
 Les deux contrôles sont indépendants et backend-enforced.
 
-### 6.2 `file_upload` ne remplace pas `product_catalog_import`
+### 6.2 Primitive File Core ≠ fonctionnalité commerciale d'import
 
-`file_upload` représente le téléversement / stockage documentaire générique du Core.
+Le Core peut conserver une capability générique `file_upload` pour les SaaS qui exposent réellement un stockage documentaire durable.
 
-`product_catalog_import` représente un cas d'usage métier M-002 qui peut utiliser un fichier temporaire puis le supprimer après transformation en données structurées.
+Le produit GMS n'a pas à activer ni commercialiser cette capability uniquement parce que M-002 reçoit temporairement un fichier.
 
-Un plan peut donc autoriser l'import catalogue sans autoriser le stockage documentaire durable, ou l'inverse.
+`product_catalog_import` représente la valeur métier vendable : analyser un catalogue CSV/XLS/XLSX et transformer son contenu en données Produit.
+
+Le fichier temporaire nécessaire à ce traitement :
+
+- n'est pas un document utilisateur durable ;
+- ne crée pas un espace de type Drive ;
+- ne consomme pas un quota commercial de stockage persistant ;
+- peut utiliser les primitives internes File du Core même si la fonctionnalité de stockage documentaire durable n'est pas incluse dans le plan.
+
+Les garde-fous de taille, TTL ou concurrence restent des limites techniques d'exécution, distinctes d'un quota de stockage.
+
+Si un futur module veut conserver durablement des documents, ce besoin sera commercialisé et quota-é séparément.
 
 ## 7. Fichiers d'import — frontière Core / Produit
 
@@ -206,7 +217,9 @@ Le Core reste responsable des primitives génériques de sécurité fichier :
 - antivirus ;
 - nettoyage des temporaires.
 
-Le fichier source d'import n'est pas une ressource documentaire durable. Après traitement réussi, les Produits, déclinaisons et relations Workspace persistent ; le fichier peut être supprimé.
+Le fichier source d'import n'est pas une ressource documentaire durable. Après traitement réussi, les Produits, déclinaisons et relations Workspace persistent ; le fichier est supprimé selon le cycle temporaire prévu.
+
+Son occupation disque transitoire relève de l'infrastructure d'exécution et non d'une capacité de stockage vendue au Workspace.
 
 ### 7.1 Dette d'implémentation actuelle
 
