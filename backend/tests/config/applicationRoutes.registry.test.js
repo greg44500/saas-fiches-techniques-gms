@@ -12,14 +12,26 @@ import {
 
 
 describe('application backend route composition', () => {
-    it('compose le module Dossiers M-001 sur le namespace Workspace', () => {
-        expect(APPLICATION_BACKEND_ROUTE_MODULES).toEqual([
-            expect.objectContaining({
-                key: 'dossiers',
-                mountPath: '/api/workspaces/:workspaceId/dossiers',
-                router: expect.any(Function),
-            }),
-        ]);
+    it('compose les modules métier M-001 et M-002', () => {
+        expect(APPLICATION_BACKEND_ROUTE_MODULES).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    key: 'dossiers',
+                    mountPath: '/api/workspaces/:workspaceId/dossiers',
+                    router: expect.any(Function),
+                }),
+                expect.objectContaining({
+                    key: 'products',
+                    mountPath: '/api/workspaces/:workspaceId/products',
+                    router: expect.any(Function),
+                }),
+                expect.objectContaining({
+                    key: 'platform-products',
+                    mountPath: '/api/platform/products',
+                    router: expect.any(Function),
+                }),
+            ]),
+        );
     });
 
     it('monte un router métier sur son point de composition explicite', () => {

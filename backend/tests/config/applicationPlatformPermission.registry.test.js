@@ -14,6 +14,9 @@ import {
     composeApplicationPlatformPermissions,
     getPlatformPermissionDefinition,
 } from '../../config/applicationPlatformPermission.registry.js';
+import {
+    PRODUCT_CATALOG_PLATFORM_PERMISSION,
+} from '../../modules/productCatalog/productCatalogPlatformPermission.registry.js';
 
 
 describe('applicationPlatformPermission registry', () => {
@@ -74,6 +77,28 @@ describe('applicationPlatformPermission registry', () => {
             expect.objectContaining({
                 key: 'platform:catalog:read',
                 category: 'catalog',
+            }),
+        );
+    });
+
+    it('compose les permissions Platform M-002 du produit', () => {
+        expect(
+            ACTIVE_PLATFORM_PERMISSION_REGISTRY.permissionKeys,
+        ).toEqual(
+            expect.arrayContaining([
+                PRODUCT_CATALOG_PLATFORM_PERMISSION.READ,
+                PRODUCT_CATALOG_PLATFORM_PERMISSION.MANAGE,
+            ]),
+        );
+
+        expect(
+            getPlatformPermissionDefinition(
+                PRODUCT_CATALOG_PLATFORM_PERMISSION.MANAGE,
+            ),
+        ).toEqual(
+            expect.objectContaining({
+                category: 'products',
+                sensitivity: PLATFORM_PERMISSION_SENSITIVITY.RESERVED,
             }),
         );
     });
