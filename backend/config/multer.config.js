@@ -1,21 +1,21 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
 
-import multer from 'multer';
+import multer from "multer";
 
 import {
     ALLOWED_FILE_MIME_TYPES,
-} from '../constants/file.constants.js';
+} from "../constants/file.constants.js";
 
-import { storageConfig } from './storage.config.js';
-import { env } from './env.js';
+import { storageConfig } from "./storage.config.js";
+import { env } from "./env.js";
 
 import {
     FILE_UPLOAD_REJECTION_REASON,
-} from '../constants/fileAudit.constants.js';
+} from "../constants/fileAudit.constants.js";
 
 import {
     fileUploadRejectedError,
-} from '../modules/file/fileUploadRejected.error.js';
+} from "../modules/file/fileUploadRejected.error.js";
 
 
 /**
@@ -25,7 +25,8 @@ import {
  * n'est ajoutée avant que le type réel du contenu ait été identifié.
  */
 const temporaryDiskStorage = multer.diskStorage({
-    destination: storageConfig.local.temporaryDirectory,
+    destination:
+        storageConfig.local.temporaryDirectory,
 
     filename: (request, file, callback) => {
         callback(null, randomUUID());
@@ -34,65 +35,122 @@ const temporaryDiskStorage = multer.diskStorage({
 
 
 /**
- * Effectue un premier filtrage sur le type déclaré par le client.
+ * Construit le filtrage préliminaire du MIME déclaré par le client.
  *
- * Ce contrôle réduit les uploads manifestement hors périmètre, mais ne
- * constitue pas une preuve du type réel. Une seconde validation analysera
- * obligatoirement le contenu binaire après réception.
+ * Ce contrôle reste volontairement une première barrière. L'acceptation
+ * définitive dépend toujours de l'inspection du contenu après réception.
  */
-const preliminaryMimeTypeFilter = (
-    request,
-    file,
-    callback,
-) => {
-    const declaredMimeType =
-        file.mimetype?.trim().toLowerCase();
-
+const createPreliminaryMimeTypeFilter = ({
+    allowedMimeTypes,
+}) => {
     if (
-        !ALLOWED_FILE_MIME_TYPES.includes(
-            declaredMimeType,
+        !Array.isArray(allowedMimeTypes)
+        || allowedMimeTypes.length === 0
+        || allowedMimeTypes.some(
+            (mimeType) =>
+                typeof mimeType !== "string"
+                || mimeType.trim() === "",
         )
     ) {
-        callback(
-            new fileUploadRejectedError(
-                'Le type de fichier déclaré n’est pas autorisé.',
-                415,
-                FILE_UPLOAD_REJECTION_REASON
-                    .FILE_TYPE_NOT_ALLOWED,
-            ),
+        throw new TypeError(
+            "La liste des types MIME autorisés est invalide.",
         );
-
-        return;
     }
 
-    callback(null, true);
+    const allowedMimeTypeSet = new Set(
+        allowedMimeTypes.map((mimeType) =>
+            mimeType.trim().toLowerCase(),
+        ),
+    );
+
+    return (
+        request,
+        file,
+        callback,
+    ) => {
+        const declaredMimeType =
+            file.mimetype?.trim().toLowerCase();
+
+        if (
+            !allowedMimeTypeSet.has(
+                declaredMimeType,
+            )
+        ) {
+            callback(
+                new fileUploadRejectedError(
+                    "Le type de fichier déclaré n’est pas autorisé.",
+                    415,
+                    FILE_UPLOAD_REJECTION_REASON
+                        .FILE_TYPE_NOT_ALLOWED,
+                ),
+            );
+
+            return;
+        }
+
+        callback(null, true);
+    };
 };
 
 
 /**
- * Configuration multipart limitée à un fichier par requête.
+ * Construit une instance Multer pour un pipeline temporaire sécurisé.
  *
- * Les limites complémentaires protègent également les champs texte et le
- * nombre total de parties contre des requêtes multipart excessives.
+ * La politique par défaut correspond strictement au module File historique.
+ * Un SaaS dérivé peut fournir une autre liste MIME et une autre limite sans
+ * modifier la politique des fichiers durables du Core.
  */
-const multerUpload = multer({
-    storage: temporaryDiskStorage,
-    fileFilter: preliminaryMimeTypeFilter,
+const createMulterUpload = ({
+    allowedMimeTypes =
+        ALLOWED_FILE_MIME_TYPES,
+    maxFileSizeBytes =
+        env.UPLOAD_MAX_FILE_SIZE_BYTES,
+    storage = temporaryDiskStorage,
+} = {}) => {
+    if (
+        !Number.isInteger(maxFileSizeBytes)
+        || maxFileSizeBytes <= 0
+    ) {
+        throw new TypeError(
+            "La taille maximale du fichier est invalide.",
+        );
+    }
 
-    limits: {
-        fileSize: env.UPLOAD_MAX_FILE_SIZE_BYTES,
-        files: 1,
-        fields: 5,
-        parts: 6,
-        fieldNameSize: 100,
-        fieldSize: 16 * 1024,
-        headerPairs: 100,
-        fieldNestingDepth: 0,
-    },
+    return multer({
+        storage,
+        fileFilter:
+            createPreliminaryMimeTypeFilter({
+                allowedMimeTypes,
+            }),
 
-    preservePath: false,
-    defParamCharset: 'utf8',
-});
+        limits: {
+            fileSize: maxFileSizeBytes,
+            files: 1,
+            fields: 5,
+            parts: 6,
+            fieldNameSize: 100,
+            fieldSize: 16 * 1024,
+            headerPairs: 100,
+            fieldNestingDepth: 0,
+        },
+
+        preservePath: false,
+        defParamCharset: "utf8",
+    });
+};
 
 
-export { multerUpload };
+/**
+ * Instance historique utilisée par le module File.
+ *
+ * Elle conserve exactement la politique PDF/JPEG/PNG et la taille maximale
+ * configurée par l'environnement.
+ */
+const multerUpload = createMulterUpload();
+
+
+export {
+    createMulterUpload,
+    createPreliminaryMimeTypeFilter,
+    multerUpload,
+};

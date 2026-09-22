@@ -694,3 +694,64 @@ Le dérivé initialise ses rôles et son premier gouverneur avec :
     bootstrapApplicationGlobalMember()
 
 Ces primitives sont destinées aux seeds ou migrations du produit et non à des endpoints publics.
+
+
+---
+
+## Upload temporaire sécurisé configurable
+
+Le Core expose une primitive générique pour les artefacts techniques qui doivent
+être reçus, inspectés puis consommés sans devenir des documents `File`
+persistants.
+
+Factory :
+
+```text
+createSecureTemporaryUploadService({ policy })
+```
+
+Fichiers de référence :
+
+```text
+backend/config/multer.config.js
+backend/services/fileInspection/temporaryUploadPolicy.service.js
+backend/services/fileInspection/fileType.service.js
+backend/services/fileInspection/secureTemporaryUpload.service.js
+docs/contracts/SECURE-TEMPORARY-UPLOAD.md
+```
+
+Le produit dérivé fournit explicitement :
+
+```text
+types MIME autorisés
+extensions autorisées
+taille maximale
+contentInspector lorsque file-type ne suffit pas
+```
+
+Le Core conserve :
+
+```text
+quarantaine disque
+limites multipart
+checksum SHA-256
+antivirus fail-closed
+nettoyage sur échec
+nettoyage après consommation
+purge des temporaires abandonnés
+confinement des chemins
+```
+
+Cette primitive est distincte du module File durable. Elle ne crée ni document
+`File`, ni consommation `storage_bytes`, ni exigence implicite de
+`file_upload`.
+
+Un dérivé qui utilise cette primitive doit tester sa politique réelle et, pour
+tout `contentInspector` spécialisé, utiliser des fixtures représentatives du
+format autorisé et de ses cas de spoofing.
+
+Référence canonique :
+
+```text
+docs/contracts/SECURE-TEMPORARY-UPLOAD.md
+```
