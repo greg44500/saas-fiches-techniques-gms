@@ -1759,24 +1759,30 @@ Il faut distinguer la fraîcheur fonctionnelle d'une recette de la fraîcheur é
 ---
 
 
-### 12.3 Conservation, corbeille métier et stockage Workspace
+### 12.3 Conservation, corbeille métier et temporaires techniques
 
-Le produit distingue la fonctionnalité générique Core de téléversement de fichiers de la politique métier de conservation des ressources générées ou supprimées par le SaaS GMS.
-
-Règles transversales validées :
+Le produit distingue trois notions :
 
 ```text
-capacité de stockage
-→ portée Workspace
+persistance des données métier structurées
+→ MongoDB
+→ source de vérité du produit
 
-Dossier
-→ aucune limite dure de stockage propre en V1
-→ peut consommer la capacité disponible du Workspace
+fichiers temporaires techniques
+→ import / export / génération PDF
+→ nécessaires à l'exécution
+→ supprimés après traitement
 
-mesure par Dossier
-→ possible pour l'observabilité et le pilotage
-→ jamais autorité de quota en V1
+stockage durable de fichiers utilisateur
+→ aucun besoin V1 démontré à ce stade
+→ ne constitue pas un Drive implicite du produit
 ```
+
+Le Core conserve ses primitives génériques de téléversement, inspection, antivirus, stockage et rétention, mais le produit GMS n'est pas obligé d'exposer ni de commercialiser un stockage documentaire durable.
+
+Un import CSV/XLS/XLSX peut donc utiliser temporairement la chaîne de sécurité File du Core sans consommer un quota commercial de stockage durable. De même, un PDF ou un CSV généré peut exister le temps du téléchargement ou de l'envoi puis être détruit.
+
+Les limites applicables aux temporaires — taille maximale, TTL, concurrence de traitement — sont des garde-fous techniques et non un espace de stockage vendu au Workspace.
 
 La corbeille métier possède un comportement standard immédiatement utilisable :
 
@@ -1786,7 +1792,7 @@ borne minimale : 7 jours
 borne maximale : 90 jours
 ```
 
-Lorsque la personnalisation est autorisée, le Workspace peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. La valeur effective de rétention est figée au moment de la suppression sous forme d'une échéance de purge ; un changement ultérieur de configuration n'allonge ni ne raccourcit rétroactivement les éléments déjà placés en corbeille.
+Lorsque la personnalisation est autorisée, le Workspace peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. Cette rétention concerne les ressources métier supprimées, pas des fichiers temporaires d'import/export.
 
 Pour les Fiches techniques :
 
@@ -1798,10 +1804,12 @@ Pour les Fiches techniques :
 Pour les artefacts générés :
 
 - CSV et XLS(X) sont générés à la demande pour l'export puis détruits après remise au client ;
-- le PDF n'est pas une ressource persistante du produit : il est généré à la demande lorsqu'un document est envoyé par e-mail, joint au message puis supprimé du stockage temporaire après traitement ;
+- le PDF est généré à la demande pour téléchargement ou envoi selon le module concerné, puis supprimé du stockage temporaire après traitement ;
 - les artefacts reproductibles ne sont pas conservés durablement et ne créent pas d'historique de fichiers parallèle à la donnée métier source.
 
 Cette politique ne déclenche aucune purge automatique des Dossiers `DELETED` dans M-001.
+
+Si un futur module démontre un besoin de conservation durable de documents binaires, son usage, sa capability commerciale et son éventuel quota Workspace devront être cadrés séparément au lieu d'être déduits du simple fait que le Core sait stocker des fichiers.
 
 Le contrat transversal détaillé est conservé dans `docs/domain/STORAGE-RETENTION.md`.
 
