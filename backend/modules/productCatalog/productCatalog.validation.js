@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 import {
     PRODUCT_CATEGORY_STATUS,
-    PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_REJECTION_REASON,
     PRODUCT_STATUS,
@@ -51,7 +50,7 @@ const variantBodySchema = z.strictObject({
     form: nullableText(80).optional(),
     processingState: nullableText(80).optional(),
     preservation: nullableText(80).optional(),
-    foodRange: z.enum(PRODUCT_FOOD_RANGES).nullable().optional(),
+    foodRange: z.number().int().min(1).max(5).nullable().optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 });
@@ -169,7 +168,7 @@ const updateVariantBodySchema = z.strictObject({
     form: nullableText(80).optional(),
     processingState: nullableText(80).optional(),
     preservation: nullableText(80).optional(),
-    foodRange: z.enum(PRODUCT_FOOD_RANGES).nullable().optional(),
+    foodRange: z.number().int().min(1).max(5).nullable().optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 }).refine(

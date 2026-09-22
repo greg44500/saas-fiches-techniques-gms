@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import {
     buildSearchGrams,
@@ -128,7 +129,7 @@ const assertProductCreationReviewed = async ({
     });
 
     if (duplicateCheck.exactMatch || duplicateCheck.privateConflict) {
-        const error = new Error('PRODUCT_EXACT_DUPLICATE');
+        const error = new AppError('Un Produit équivalent existe déjà.', 409);
         error.code = 'PRODUCT_EXACT_DUPLICATE';
         error.duplicateCheck = duplicateCheck;
         throw error;
@@ -140,7 +141,10 @@ const assertProductCreationReviewed = async ({
     );
 
     if (missingCandidate) {
-        const error = new Error('PRODUCT_DUPLICATE_REVIEW_REQUIRED');
+        const error = new AppError(
+            'Des Produits proches doivent être examinés avant création.',
+            409,
+        );
         error.code = 'PRODUCT_DUPLICATE_REVIEW_REQUIRED';
         error.duplicateCheck = duplicateCheck;
         throw error;

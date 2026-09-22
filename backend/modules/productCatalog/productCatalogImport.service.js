@@ -4,7 +4,6 @@ import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
 import {
-    archiveVariantFromWorkspace,
     attachVariantToWorkspace,
     createProductContribution,
     createVariantContribution,

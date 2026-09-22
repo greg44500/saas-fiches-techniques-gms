@@ -14,7 +14,6 @@ const productCategorySchema = new Schema(
             required: true,
             trim: true,
             maxlength: 120,
-            immutable: true,
         },
         status: {
             type: String,
