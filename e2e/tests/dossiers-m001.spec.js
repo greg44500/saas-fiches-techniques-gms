@@ -42,7 +42,10 @@ test('M-001 owner crée, consulte et ouvre un Dossier', async ({ page }) => {
   await selectDossierDrawerTab(page, 'Accès');
 
   await expect(
-    page.getByText('Workspace Owner', { exact: true }),
+    page.getByText('Membres affectés (0)', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Aucun membre affecté.', { exact: true }),
   ).toBeVisible();
 
   await closeDossierDrawer(page);
@@ -85,7 +88,7 @@ test('M-001 owner affecte un membre qui voit et ouvre le Dossier', async ({ page
 
   await page.getByRole('button', { name: 'Affecter' }).click();
   await expect(
-    page.getByRole('button', { name: 'Révoquer' }),
+    page.getByRole('button', { name: 'Retirer l’accès' }),
   ).toBeVisible();
 
   await closeDossierDrawer(page);
@@ -150,7 +153,7 @@ test('M-001 suppression révoque les grants et restauration PAUSED ne les restau
 
   await page.getByRole('button', { name: 'Affecter' }).click();
   await expect(
-    page.getByRole('button', { name: 'Révoquer' }),
+    page.getByRole('button', { name: 'Retirer l’accès' }),
   ).toBeVisible();
 
   await selectDossierDrawerTab(page, 'Administration');

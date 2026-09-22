@@ -109,14 +109,13 @@ describe('DossierAccessSection', () => {
     }));
   });
 
-  it('affiche l’accès implicite Owner sans créer de faux grant', () => {
+  it('n’affiche que les informations utiles sur les membres affectés', () => {
     renderAccess();
 
-    expect(screen.getByText('Workspace Owner')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Aucun grant individuel n’est créé/),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Pas de membres affectés.')).toBeInTheDocument();
+    expect(screen.queryByText('Workspace Owner')).not.toBeInTheDocument();
+    expect(screen.queryByText(/grant/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Membres affectés (0)')).toBeInTheDocument();
+    expect(screen.getByText('Aucun membre affecté.')).toBeInTheDocument();
   });
 
   it('affecte un membre actif depuis le périmètre Workspace', async () => {
@@ -154,7 +153,7 @@ describe('DossierAccessSection', () => {
       { skip: true },
     );
     expect(
-      screen.getByText('La gestion des membres n’est pas disponible pour ce workspace.'),
+      screen.getByText('La gestion des membres n’est pas disponible avec l’offre actuelle.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('Membres indisponibles')).not.toBeInTheDocument();
   });
@@ -169,7 +168,7 @@ describe('DossierAccessSection', () => {
 
     expect(screen.getByText('Membres indisponibles')).toBeInTheDocument();
     expect(
-      screen.getByText('Les membres du workspace n’ont pas pu être chargés.'),
+      screen.getByText('Les membres de l’espace de travail n’ont pas pu être chargés.'),
     ).toBeInTheDocument();
   });
 
@@ -230,7 +229,7 @@ describe('DossierAccessSection', () => {
     renderAccess();
 
     expect(
-      screen.queryByRole('heading', { name: 'Gérer les affectations' }),
+      screen.queryByRole('heading', { name: 'Gérer les accès' }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Affecter' }),
