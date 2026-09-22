@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Index documentaire
 
 **Statut :** index canonique de la documentation du projet  
-**Dernière consolidation :** 2026-09-18  
+**Dernière consolidation :** 2026-09-21  
 **Chantier documentaire DOC-0 → DOC-11 :** terminé
 
 ## 1. Objet
@@ -101,6 +101,9 @@ docs/releases/MIGRATION-POLICY.md
 → discipline de migration, runners explicites, dépendances, phases de release,
   idempotence et stratégie de reprise
 
+docs/releases/1.1.0.md
+→ contrat et preuves de la release stable Core 1.1.0
+
 docs/releases/migration-manifest.json
 → inventaire machine-readable des migrations de release exécutables
 ```
@@ -113,7 +116,9 @@ Décisions D-015 structurantes :
 - les migrations restent des runners explicites inventoriés par manifest tant qu'un besoin réel ne justifie pas un registre persistant ;
 - `core-origin.json` est le contrat cible de provenance d'un SaaS dérivé ;
 - `product-release.json` porte l’identité et la version applicative propres au dérivé, indépendamment des métadonnées Core ;
-- D-017 a validé la stratégie réelle de dérivation et d’upgrade ; `v1.0.0` a ensuite été publiée conformément à `RELEASE-POLICY.md` sur le commit post-merge validé `dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff`.
+- D-017 a validé la stratégie réelle de dérivation et d’upgrade ;
+- `v1.1.0` est la release stable courante, publiée le 2026-09-21 sur `8326fb48856dcef151b5ab01495c934951050d6d` ;
+- `v1.1.0` ajoute le point d’extension transactionnel `WorkspaceMember.onMemberRemoved`, documenté dans `docs/derived-saas/EXTENSION-POINTS.md`.
 
 D-016 a étendu `npm run release:check` avec les E2E Playwright. La définition courante d’une Core Gate verte inclut donc la vérification de release, le lint et les tests backend, le lint/tests/build frontend puis Playwright.
 
@@ -276,6 +281,7 @@ docs/
 ├── releases/
 │   ├── RELEASE-POLICY.md
 │   ├── MIGRATION-POLICY.md
+│   ├── 1.1.0.md
 │   └── migration-manifest.json
 │
 ├── debt/
@@ -373,7 +379,7 @@ Toute future suppression documentaire suit la même règle : contenu utile véri
 
 ## 11. État post-release et prochaines trajectoires
 
-La trajectoire de publication Core 1.0 est terminée :
+La ligne stable courante est désormais Core 1.1.0. La trajectoire initiale Core 1.0 reste validée et sert de baseline historique :
 
 ```text
 D-015 release governance / provenance / migrations         VALIDÉE — 2026-09-17
@@ -398,3 +404,19 @@ D-020 reste différée à la validation terrain avec des bêta-testeurs Platform
 Le chatbot/assistant IA au-dessus de l'aide reste explicitement différé.
 
 `REPRISE-CURRENT.md` reste le document temporaire de transition tant que la prochaine trajectoire de travail n’a pas été formellement engagée.
+
+
+### Publication Core 1.1.0
+
+```text
+PR fonctionnelle #29 / Core Gate #49                 SUCCESS
+merge fonctionnel 065b64a / Core Gate #50            SUCCESS
+PR release #30 / Core Gate #51                       SUCCESS
+merge release 8326fb4 / Core Gate #52                SUCCESS
+tag v1.1.0                                             PUBLIÉ
+GitHub Release 392837893                               PUBLIÉE — stable
+```
+
+Le prochain flux prioritaire est l’upgrade contrôlé du produit réel
+`greg44500/saas-fiches-techniques-gms` depuis Core `v1.0.1` vers
+`v1.1.0`. L’implémentation de ses relations métier reste hors du Core.
