@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
+import { Archive, ArrowRight, Pause, Play, RotateCcw, Trash2 } from 'lucide-react';
 
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/shared/toast-provider';
 import { useUpdateDossierStatusMutation } from '@/features/dossiers/api/dossiers-api';
@@ -11,6 +12,33 @@ import {
   transitionNeedsReason,
 } from '@/features/dossiers/lib/dossier-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
+
+function getLifecycleAction(currentStatus, targetStatus, labels) {
+  if (targetStatus === 'ACTIVE') {
+    return { Icon: Play, label: 'Réactiver' };
+  }
+
+  if (targetStatus === 'PAUSED') {
+    if (['ARCHIVED', 'DELETED'].includes(currentStatus)) {
+      return { Icon: RotateCcw, label: 'Restaurer' };
+    }
+
+    return { Icon: Pause, label: 'Mettre en pause' };
+  }
+
+  if (targetStatus === 'ARCHIVED') {
+    return { Icon: Archive, label: 'Archiver' };
+  }
+
+  if (targetStatus === 'DELETED') {
+    return { Icon: Trash2, label: 'Supprimer' };
+  }
+
+  return {
+    Icon: ArrowRight,
+    label: `Passer à ${labels.get(targetStatus) ?? targetStatus}`,
+  };
+}
 
 function DossierLifecycleSection({ dossier, metadata, workspaceId }) {
   const { can } = useWorkspaceContext();
@@ -87,17 +115,19 @@ function DossierLifecycleSection({ dossier, metadata, workspaceId }) {
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        {transitions.map((status) => (
-          <Button
-            key={status}
-            onClick={() => openTransition(status)}
-            size="sm"
-            type="button"
-            variant={status === 'DELETED' ? 'destructive' : 'outline'}
-          >
-            {labels.get(status) ?? status}
-          </Button>
-        ))}
+        {transitions.map((status) => {
+          const action = getLifecycleAction(dossier.status, status, labels);
+
+          return (
+            <ActionIconButton
+              Icon={action.Icon}
+              key={status}
+              label={action.label}
+              onClick={() => openTransition(status)}
+              variant={status === 'DELETED' ? 'destructive' : 'outline'}
+            />
+          );
+        })}
       </div>
 
       <ConfirmationDialog
@@ -134,4 +164,4 @@ function DossierLifecycleSection({ dossier, metadata, workspaceId }) {
   );
 }
 
-export { DossierLifecycleSection };
+export { DossierLifecycleSection, getLifecycleAction };

@@ -12,6 +12,7 @@ import {
 import { DOSSIER_PERMISSION } from '@/features/dossiers/constants/dossier-permissions';
 import { useListWorkspaceMembersQuery } from '@/features/workspace-members/api/workspace-members-api';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
+import { WORKSPACE_FEATURE } from '@/features/workspace/constants/workspace-features';
 import { WORKSPACE_PERMISSION } from '@/features/workspace/constants/workspace-permissions';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
@@ -25,12 +26,13 @@ function getMemberLabel(member) {
 }
 
 function DossierAccessSection({ dossier, workspaceId }) {
-  const { can } = useWorkspaceContext();
+  const { can, hasFeature } = useWorkspaceContext();
   const { toast } = useToast();
   const [mutationError, setMutationError] = useState(null);
   const canRead = can(DOSSIER_PERMISSION.ACCESS_READ);
   const canManage = can(DOSSIER_PERMISSION.ACCESS_MANAGE);
   const canReadMembers = can(WORKSPACE_PERMISSION.MEMBER_READ);
+  const hasTeamManagement = hasFeature(WORKSPACE_FEATURE.TEAM_MANAGEMENT);
   const canManageInCurrentState = ['ACTIVE', 'PAUSED'].includes(dossier.status);
   const {
     page,
@@ -54,7 +56,7 @@ function DossierAccessSection({ dossier, workspaceId }) {
       page,
       limit: pageSize,
     },
-    { skip: !canManage || !canReadMembers },
+    { skip: !canManage || !canReadMembers || !hasTeamManagement },
   );
   const [grantAccess, grantState] = useGrantDossierAccessMutation();
   const [revokeAccess, revokeState] = useRevokeDossierAccessMutation();
@@ -149,7 +151,7 @@ function DossierAccessSection({ dossier, workspaceId }) {
         </p>
         {activeGrants.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
-            Aucun membre non-owner n’est actuellement affecté.
+            Pas de membres affectés.
           </p>
         ) : (
           <ul className="mt-2 divide-y divide-border rounded-md border border-border">
@@ -179,6 +181,10 @@ function DossierAccessSection({ dossier, workspaceId }) {
             <p className="mt-2 text-sm text-muted-foreground">
               La consultation des membres du workspace est nécessaire pour attribuer un dossier.
             </p>
+          ) : !hasTeamManagement ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              La gestion des membres n’est pas disponible pour ce workspace.
+            </p>
           ) : membersQuery.isError ? (
             <ErrorState
               className="mt-2 p-0"
@@ -199,7 +205,7 @@ function DossierAccessSection({ dossier, workspaceId }) {
                   <p className="text-sm text-muted-foreground">Chargement des membres…</p>
                 ) : candidateMembers.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Aucun membre actif assignable sur cette page.
+                    Aucun membre disponible à l’affectation.
                   </p>
                 ) : candidateMembers.map((member) => {
                   const assigned = activeGrantByMembershipId.has(member.id);

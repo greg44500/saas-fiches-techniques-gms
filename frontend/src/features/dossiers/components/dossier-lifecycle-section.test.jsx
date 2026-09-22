@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ToastProvider } from '@/components/shared/toast-provider';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
   can: vi.fn(),
@@ -39,11 +40,13 @@ const metadata = {
 function renderLifecycle(dossier) {
   return render(
     <ToastProvider>
-      <DossierLifecycleSection
-        dossier={dossier}
-        metadata={metadata}
-        workspaceId="workspace-1"
-      />
+      <TooltipProvider>
+        <DossierLifecycleSection
+          dossier={dossier}
+          metadata={metadata}
+          workspaceId="workspace-1"
+        />
+      </TooltipProvider>
     </ToastProvider>,
   );
 }
@@ -58,11 +61,31 @@ describe('DossierLifecycleSection', () => {
     }));
   });
 
-  it('utilise les transitions et labels fournis par les metadata', () => {
+  it('affiche les transitions comme actions iconiques à l’infinitif', async () => {
+    const user = userEvent.setup();
+
     renderLifecycle({ id: 'dossier-1', status: 'ACTIVE' });
 
-    expect(screen.getByRole('button', { name: 'En pause' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Supprimé' })).toBeInTheDocument();
+    const pauseButton = screen.getByRole('button', { name: 'Mettre en pause' });
+
+    expect(pauseButton).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Supprimer' })).toBeInTheDocument();
+
+    await user.hover(pauseButton);
+
+    expect(await screen.findByText('Mettre en pause')).toBeInTheDocument();
+
+    await user.click(pauseButton);
+
+    expect(
+      screen.getByText('Passer ce dossier au statut « En pause » ?'),
+    ).toBeInTheDocument();
+  });
+
+  it('nomme une restauration avec une action explicite', () => {
+    renderLifecycle({ id: 'dossier-1', status: 'DELETED' });
+
+    expect(screen.getByRole('button', { name: 'Restaurer' })).toBeInTheDocument();
   });
 
   it('exige une raison avant une suppression puis envoie la transition', async () => {
@@ -70,7 +93,7 @@ describe('DossierLifecycleSection', () => {
 
     renderLifecycle({ id: 'dossier-1', status: 'ACTIVE' });
 
-    await user.click(screen.getByRole('button', { name: 'Supprimé' }));
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
     await user.click(
       screen.getByRole('button', { name: 'Confirmer le changement' }),
     );
