@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -27,7 +27,7 @@ vi.mock('@/features/files/lib/download-blob', () => ({
   downloadBlob: mocks.downloadBlob,
 }));
 
-import { WorkspaceFilesPage } from '@/features/files/pages/workspace-files-page';
+import { SEARCH_DEBOUNCE_MS, WorkspaceFilesPage } from '@/features/files/pages/workspace-files-page';
 import { WorkspaceProvider } from '@/features/workspace/components/workspace-context';
 import { WORKSPACE_FEATURE } from '@/features/workspace/constants/workspace-features';
 import { WORKSPACE_PERMISSION } from '@/features/workspace/constants/workspace-permissions';
@@ -102,6 +102,7 @@ describe('WorkspaceFilesPage', () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -289,6 +290,43 @@ describe('WorkspaceFilesPage', () => {
 
     renderPage();
     await user.click(screen.getByRole('button', { name: 'Suivant' }));
+
+    expect(mocks.useListWorkspaceFilesQuery).toHaveBeenLastCalledWith({
+      workspaceId: 'workspace-1',
+      page: 2,
+      limit: 10,
+    });
+  });
+
+  it('ne réinitialise pas la pagination après le debounce initial vide', () => {
+    vi.useFakeTimers();
+
+    mocks.useListWorkspaceFilesQuery.mockReturnValue({
+      data: {
+        files: [file],
+        pagination: { page: 1, limit: 10, total: 25, totalPages: 3 },
+      },
+      error: undefined,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(vi.getTimerCount()).toBe(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Suivant' }));
+
+    expect(mocks.useListWorkspaceFilesQuery).toHaveBeenLastCalledWith({
+      workspaceId: 'workspace-1',
+      page: 2,
+      limit: 10,
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(SEARCH_DEBOUNCE_MS + 1);
+    });
 
     expect(mocks.useListWorkspaceFilesQuery).toHaveBeenLastCalledWith({
       workspaceId: 'workspace-1',

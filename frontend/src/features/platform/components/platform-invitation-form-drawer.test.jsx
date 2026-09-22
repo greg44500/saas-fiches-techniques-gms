@@ -117,8 +117,16 @@ describe('PlatformInvitationFormDrawer', () => {
     await user.type(screen.getByLabelText('Prénom'), 'Marie');
     await user.type(screen.getByLabelText('Nom'), 'Martin');
     await user.type(screen.getByLabelText('Adresse email'), 'marie@example.com');
-    await user.click(screen.getByRole('combobox', { name: 'Rôle prévu' }));
-    await user.click(screen.getByRole('option', { name: 'Support technique' }));
+
+    const roleTrigger = screen.getByRole('combobox', { name: 'Rôle prévu' });
+    vi.spyOn(roleTrigger, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 24, y: 24, width: 240, height: 40 }),
+    );
+
+    await user.click(roleTrigger);
+    await user.click(
+      await screen.findByRole('option', { name: 'Support technique' }),
+    );
     await user.click(screen.getByRole('button', { name: 'Envoyer l’invitation' }));
 
     expect(mocks.createInvitation).toHaveBeenCalledWith({

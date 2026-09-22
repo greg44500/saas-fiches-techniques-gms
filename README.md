@@ -4,9 +4,9 @@ Socle SaaS fullstack générique et réutilisable, destiné à être dérivé en
 
 ## Statut du projet
 
-Le Core suit désormais la ligne stable `1.0.0`. D-015 — versionnement / provenance / release process / migrations —, D-016 — E2E Core Playwright — et D-017 — dérivation et upgrade réel d’un SaaS pilote — sont validées. Aucun blocker Core 1.0 actif n’est démontré par le registre canonique.
+Le Core suit désormais la ligne stable `1.1.0`. D-015 — versionnement / provenance / release process / migrations —, D-016 — E2E Core Playwright — et D-017 — dérivation et upgrade réel d’un SaaS pilote — sont validées.
 
-`v1.0.0` a été publiée conformément à `docs/releases/RELEASE-POLICY.md` après fusion de la PR de release et Core Gate post-merge verte ; son tag annoté cible le commit validé `dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff`. Les futures releases restent soumises à cette politique. La stabilité du Core ne signifie pas qu’une application dérivée est automatiquement prête pour la production. D-020 — invitation commerciale — reste différée à une validation terrain sur application dérivée / bêta et ne bloque pas Core 1.0.
+`v1.1.0` a été publiée le 2026-09-21 conformément à `docs/releases/RELEASE-POLICY.md`. Son tag `v1.1.0` cible exactement le commit validé `8326fb48856dcef151b5ab01495c934951050d6d` après Core Gate #52 verte. Cette release ajoute le lifecycle transactionnel extensible `WorkspaceMember.onMemberRemoved` destiné aux relations métier des SaaS dérivés, sans introduire leurs modèles dans le Core. La stabilité du Core ne signifie pas qu’une application dérivée est automatiquement prête pour la production.
 
 ## Ce que fournit le Core
 
@@ -16,6 +16,7 @@ Le Core fournit des mécanismes génériques réutilisables :
 - comptes utilisateurs ;
 - Workspaces multi-tenant ;
 - memberships, invitations, rôles et permissions ;
+- lifecycle transactionnel extensible lors du retrait définitif d’un `WorkspaceMember` ;
 - transfert d'ownership ;
 - Plans, Subscription, trial et baseline ;
 - Capability Registry extensible ;

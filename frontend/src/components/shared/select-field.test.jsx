@@ -29,8 +29,12 @@ describe('SelectField', () => {
     const trigger = screen.getByRole('combobox', { name: 'Statut' });
     expect(trigger).toHaveTextContent('Choisir un statut');
 
+    vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 24, y: 24, width: 240, height: 40 }),
+    );
+
     await user.click(trigger);
-    await user.click(screen.getByRole('option', { name: 'Actif' }));
+    await user.click(await screen.findByRole('option', { name: 'Actif' }));
 
     expect(onValueChange).toHaveBeenCalledWith('active');
   });
@@ -47,8 +51,13 @@ describe('SelectField', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox', { name: 'Statut' }));
-    expect(screen.getByRole('option', { name: 'Inactif' })).toHaveAttribute(
+    const trigger = screen.getByRole('combobox', { name: 'Statut' });
+    vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 24, y: 24, width: 240, height: 40 }),
+    );
+
+    await user.click(trigger);
+    expect(await screen.findByRole('option', { name: 'Inactif' })).toHaveAttribute(
       'aria-disabled',
       'true',
     );
