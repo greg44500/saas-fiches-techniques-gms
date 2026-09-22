@@ -1,214 +1,206 @@
-# M-002 — Critères d'acceptation et ordre d'implémentation
+# M-002 — Critères d'acceptation et ordre de reprise
 
-**Statut : BACKEND IMPLÉMENTÉ — exécution locale des gates backend requise avant handoff frontend**
+**Statut : RECADRAGE VALIDÉ — implémentation existante partiellement à corriger avant finalisation**  
 **Module : Catalogue Produits / Produits canoniques**
 
-## 1. Condition de démarrage du code
+## 1. Discipline du lot
 
-Aucun modèle Mongoose M-002 avant validation explicite du cadrage complet :
-
-- Scope / domaine ;
-- autorisation / gouvernance ;
-- validation / doublons ;
-- API REST ;
-- UX ;
-- bootstrap / migrations ;
-- stratégie de tests.
-
-La branche unique existe déjà :
+Branche unique :
 
 ```text
 feature/m002-catalogue-produits
 ```
 
-Une seule PR fonctionnelle sera créée à la fin du lot.
+Règle :
 
-## 2. Critères Domaine
+```text
+un bloc fonctionnel M-002
+→ plusieurs commits cohérents si nécessaire
+→ aucune micro-PR
+→ une seule PR M-002
+→ une seule fusion après validation complète
+```
+
+Aucune PR de réparation séparée ne doit être créée pour les corrections décrites ici.
+
+## 2. Fondations déjà conservées
 
 - [x] Produit canonique global sans ownership Workspace ;
 - [x] Déclinaison séparée de l'identité canonique ;
-- [x] WorkspaceProduct référence une déclinaison sans copie d'identité ;
-- [x] catégorie globale mono-catégorie V1 ;
+- [x] `WorkspaceProduct` référence une déclinaison sans copie d'identité ;
+- [x] catégorie globale ;
 - [x] rendement porté par la déclinaison et jamais deviné ;
 - [x] unité normalisée backend-driven ;
-- [x] aucun prix/fournisseur/conditionnement M-003 dans le modèle M-002.
-
-## 3. Critères Gouvernance
-
-- [x] contribution Workspace PENDING_REVIEW ;
-- [x] PENDING visible uniquement au Workspace contributeur + Platform ;
-- [x] validation Platform avant exposition globale ACTIVE ;
-- [x] correction globale réservée à Platform ;
-- [x] aucun edit global arbitraire via permission Workspace ;
+- [x] aucun prix/fournisseur/conditionnement M-003 dans le modèle M-002 ;
+- [x] contribution Workspace `PENDING_REVIEW` ;
+- [x] anti-doublon, proximité et revue explicite ;
 - [x] archive globale non destructive ;
-- [x] fusion destructive différée tant que le graphe M-003/M-004 n'est pas complet.
+- [x] fusion destructive différée.
 
-## 4. Critères Doublons
+## 3. Corrections d'architecture obligatoires
 
-- [x] normalisation backend unique ;
-- [x] searchKeys uniques ;
-- [x] aliases ;
-- [x] recherche de proximité ;
-- [x] exact match impossible à recréer ;
-- [x] near match impose une revue explicite ;
-- [x] serveur recalcule les candidats lors de la contribution ;
-- [x] signature de déclinaison unique par Produit.
+- [ ] supprimer `platform:products:read` et `platform:products:manage` ;
+- [ ] retirer le module Produit du registre de permissions Platform ;
+- [ ] supprimer/repositionner `/api/platform/products` ;
+- [ ] supprimer/repositionner `/platform/products` ;
+- [ ] conserver les services de gouvernance utiles mais les rendre indépendants de Platform ;
+- [ ] fermer le mécanisme d'autorisation de la gouvernance globale métier ;
+- [ ] vérifier si ce mécanisme nécessite réellement une primitive Core générique avant de l'implémenter dans le produit.
 
-## 5. Critères RBAC
+## 4. Capabilities commerciales à intégrer
 
-Workspace :
-
-- [x] `product:read` ;
-- [x] `product:catalog:manage` ;
-- [x] `product:contribute` ;
-- [x] owner enrichi via le descriptor produit.
-
-Platform :
-
-- [x] `platform:products:read` ;
-- [x] `platform:products:manage` ;
-- [x] gestion enregistrée via le point d'extension Platform du Core.
-
-## 6. Critères API
-
-Workspace :
-
-- [x] metadata ;
-- [x] search ;
-- [x] detail ;
-- [x] duplicate-check ;
-- [x] contribution Produit ;
-- [x] contribution Déclinaison ;
-- [x] ajout catalogue ;
-- [x] retrait catalogue.
-
-Platform :
-
-- [x] list/detail ;
-- [x] catégories ;
-- [x] update Produit ;
-- [x] approve/reject Produit ;
-- [x] lifecycle Produit ;
-- [x] update/approve/reject/lifecycle Déclinaison.
-
-## 7. Critères Frontend
-
-- [ ] navigation Produits ;
-- [ ] page Mon catalogue / Tout le référentiel ;
-- [ ] recherche serveur ;
-- [ ] filtres/pagination ;
-- [ ] drawer Produit ;
-- [ ] ajout/retrait catalogue ;
-- [ ] flow contribution avec doublons ;
-- [ ] état En validation ;
-- [ ] page Platform gouvernance ;
-- [ ] catégories Platform ;
-- [ ] widget Dashboard.
-
-## 8. Critères Bootstrap
-
-- [x] seed versionné ;
-- [x] idempotent ;
-- [x] mêmes invariants que runtime ;
-- [ ] dataset nettoyé/revu — volontairement différé : `m002-reference.v1.json` reste `ready: false` ;
-- [x] aucune donnée M-003 injectée comme attribut Produit ;
-- [x] migration indexes idempotente ;
-- [x] manifest migration synchronisé.
-
-## 9. Critères Import
-
-- [x] CSV / XLS / XLSX Produits pris en charge par un pipeline M-002 ;
-- [x] mapping de colonnes avant import ;
-- [x] prévisualisation obligatoire ;
-- [x] exact duplicates rattachés, jamais recréés ;
-- [x] near duplicates nécessitent une revue ;
-- [x] nouvelles identités/déclinaisons passent par PENDING_REVIEW ;
-- [x] lignes ambiguës non créées automatiquement ;
-- [x] données fournisseur/prix détectées comme hors périmètre M-002 ;
-- [x] aucun fichier source durable n'est créé uniquement pour l'import ;
-- [x] contrat M-003 figé : catalogue fournisseur partagé au Workspace, conditions locales par Dossier sans duplication du catalogue.
-
-## 10. Critères Tests
-
-- [x] normalisation ;
-- [x] models/indexes ;
-- [x] services ;
-- [x] transaction rollback ;
-- [x] tenancy ;
-- [x] Workspace RBAC ;
-- [x] Platform RBAC ;
-- [x] API ;
-- [ ] frontend RTL ;
-- [ ] 4 E2E critiques ;
-- [x] bootstrap/migration.
-
-## 11. Ordre d'implémentation après validation
+Le produit déclare ses features via le registre de capabilities applicatives du Core :
 
 ```text
-Étape 1
-→ registries / permissions / normalisation
-
-Étape 2
-→ modèles + indexes
-→ CanonicalProduct
-→ ProductVariant
-→ WorkspaceProduct
-→ ProductCategory
-→ ProductReferenceEvent
-
-Étape 3
-→ services dedup/search
-
-Étape 4
-→ services contribution/catalogue
-
-Étape 5
-→ services gouvernance Platform
-
-Étape 6
-→ validations / serializers / controllers / routes
-
-Étape 7
-→ migration indexes + manifest
-
-Étape 8
-→ tests backend complets
-
-Étape 9
-→ RTK Query + composition routes/navigation/dashboard
-
-Étape 10
-→ frontend Workspace
-
-Étape 11
-→ frontend Platform
-
-Étape 12
-→ tests frontend
-
-Étape 13
-→ import Produits CSV / XLS / XLSX
-→ analyse / mapping / prévisualisation / commit
-
-Étape 14
-→ bootstrap initial versionné
-
-Étape 15
-→ E2E
-
-Étape 16
-→ release:check
-
-Étape 17
-→ validation visuelle
-
-Étape 18
-→ documentation finale
-→ UNE SEULE PR M-002
+product_reference_access
+product_catalog_import
+product_contribution
 ```
 
-## 12. Règle de lot
+Critères :
 
-Aucune micro-PR.
+- [ ] features enregistrées dans le produit sans modifier les constantes Core ;
+- [ ] Plans capables de les activer/désactiver ;
+- [ ] `EntitlementOverride` continue de fonctionner sur ces features ;
+- [ ] backend contrôle réellement les entitlements ;
+- [ ] RBAC Workspace reste un contrôle distinct ;
+- [ ] `file_upload` n'est pas utilisé comme substitut de `product_catalog_import`.
 
-Les commits intermédiaires sont autorisés sur la branche pour préserver une histoire lisible, mais le lot n'est proposé à la fusion qu'une seule fois, après validation fonctionnelle et technique complète.
+Exemple commercial initial à conserver comme configuration, non comme constante : Free peut accéder au référentiel global ; Premium peut en plus importer et contribuer.
+
+## 5. Import — correction obligatoire
+
+Le pipeline métier inspect → preview → commit est conservé.
+
+À corriger :
+
+- [ ] supprimer le pipeline parallèle `multer.memoryStorage()` M-002 ;
+- [ ] réutiliser les primitives Core de téléversement temporaire sécurisé ;
+- [ ] conserver CSV / XLS / XLSX comme politique métier d'import ;
+- [ ] ne pas créer de `File` durable pour le seul import ;
+- [ ] supprimer le temporaire après traitement ;
+- [ ] conserver la session d'import métier et les données Produit résultantes ;
+- [ ] si le Core v1.1.2 ne permet pas cette composition sans duplication de sécurité, traiter une unique évolution générique dans `saas-core-api`, puis l'intégrer au produit.
+
+## 6. Workspace M-002
+
+À conserver et vérifier :
+
+- [ ] metadata ;
+- [ ] summary Dashboard ;
+- [ ] search WORKSPACE / REFERENCE ;
+- [ ] detail ;
+- [ ] duplicate-check ;
+- [ ] contribution Produit ;
+- [ ] contribution Déclinaison ;
+- [ ] ajout/retrait catalogue ;
+- [ ] import inspect/preview/commit ;
+- [ ] navigation Produits ;
+- [ ] Mon catalogue / Tout le référentiel ;
+- [ ] recherche, filtres, pagination ;
+- [ ] drawer Produit ;
+- [ ] flow contribution ;
+- [ ] état En validation ;
+- [ ] widget Dashboard.
+
+Le frontend déjà présent sur la branche est un travail à vérifier, pas un résultat déclaré vert.
+
+## 7. Gouvernance métier globale
+
+À reconstruire sur la bonne frontière :
+
+- [ ] liste/détail complet du référentiel ;
+- [ ] file de contributions ;
+- [ ] catégories ;
+- [ ] approve/reject Produit ;
+- [ ] approve/reject Déclinaison ;
+- [ ] correction ;
+- [ ] archivage/réactivation ;
+- [ ] historique métier ;
+- [ ] surface frontend d'administration métier hors `PlatformLayout` ;
+- [ ] contrôles d'autorisation métier globale.
+
+## 8. Bootstrap / migrations
+
+- [x] seed versionné ;
+- [x] moteur idempotent présent ;
+- [ ] dataset réel nettoyé/revu — différé, `m002-reference.v1.json` reste `ready: false` ;
+- [x] aucune donnée M-003 injectée comme attribut Produit ;
+- [x] migration indexes présente ;
+- [x] manifest migration synchronisé ;
+- [ ] toute mention de gouvernance Platform supprimée des contrats et du bootstrap.
+
+## 9. Tests à revoir
+
+Les tests existants ne doivent pas être déclarés verts sans exécution.
+
+À corriger/compléter :
+
+- [ ] supprimer les attentes `platform:products:*` ;
+- [ ] tester l'autorité métier globale retenue ;
+- [ ] tester les trois capabilities M-002 et les overrides ;
+- [ ] tester capability + RBAC ensemble ;
+- [ ] tester le pipeline sécurisé temporaire CSV/XLS/XLSX ;
+- [ ] vérifier absence de `File` durable pour import ;
+- [ ] frontend RTL Workspace ;
+- [ ] frontend RTL administration métier globale ;
+- [ ] E2E critiques M-002 ;
+- [ ] isolation cross-tenant / PENDING ;
+- [ ] tests de non-régression M-001/Core applicables.
+
+## 10. Ordre de reprise
+
+```text
+Phase 1 — recadrage technique
+→ vérifier Core v1.1.2 réel
+→ fermer autorisation métier globale
+→ fermer stratégie de téléversement temporaire sécurisé
+→ décider s'il existe un vrai besoin Core générique
+
+Phase 2 — correction backend
+→ retirer Platform Produits
+→ intégrer capabilities M-002
+→ corriger import sécurisé
+→ repositionner gouvernance globale
+→ conserver services métier valides
+
+Phase 3 — tests backend
+→ autorisation
+→ capabilities / overrides
+→ tenancy
+→ import sécurisé
+→ gouvernance
+→ régression
+
+Phase 4 — correction/finalisation frontend Workspace
+→ routes/navigation/dashboard
+→ catalogue/référentiel
+→ contributions/import
+
+Phase 5 — administration métier globale
+→ route/surface hors Platform
+→ référentiel/catégories/contributions
+→ droits globaux métier
+
+Phase 6 — tests frontend + E2E
+→ parcours critiques
+→ plans/capabilities
+→ isolation
+
+Phase 7 — qualité finale
+→ revue taille/architecture fichiers
+→ documentation
+→ lint/tests/build/E2E/release:check réellement exécutés
+→ validation visuelle
+
+Phase 8 — livraison
+→ UNE PR M-002
+→ Core Gate
+→ UNE fusion
+```
+
+## 11. Règle en cas de besoin Core
+
+Si la Phase 1 démontre une primitive réellement générique manquante, ne pas la bricoler dans le produit.
+
+Créer alors un seul lot Core cohérent, le tester/versionner/intégrer, puis reprendre la même branche M-002. Ne pas créer une succession de micro-versions Core pour des corrections de tests isolées.
