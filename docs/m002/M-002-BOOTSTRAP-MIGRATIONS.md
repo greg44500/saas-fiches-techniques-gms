@@ -114,7 +114,7 @@ Aucune ligne fournisseur ne crée automatiquement un Produit canonique.
 
 La taxonomie initiale n'est pas inventée dans le code.
 
-Elle est fournie dans le fichier bootstrap validé ou créée par la gouvernance Platform.
+Elle est fournie dans le fichier bootstrap validé ou créée par la gouvernance métier globale.
 
 Une contribution PENDING peut être non classée ; l'approbation ACTIVE exige une catégorie ACTIVE.
 
@@ -142,6 +142,7 @@ M-002 prévoit également un flux utilisateur CSV / XLS / XLSX distinct du boots
 Ce flux :
 
 - ne persiste pas le fichier source comme ressource métier durable ;
+- réutilise les primitives Core de téléversement temporaire sécurisé au lieu de maintenir un pipeline de sécurité parallèle ;
 - analyse et prévisualise avant toute mutation ;
 - réutilise le moteur de normalisation/déduplication M-002 ;
 - rattache les références existantes au catalogue du Workspace ;
