@@ -66,6 +66,13 @@ test('M-001 owner affecte un membre qui voit et ouvre le Dossier', async ({ page
     workspaceId: context.workspaceId,
   });
 
+  /*
+   * La fixture ajoute directement l'override team_management en base après
+   * que le WorkspaceGuard a déjà chargé son entitlement. Un rechargement
+   * resynchronise volontairement le contexte frontend avant de tester l'UX.
+   */
+  await page.reload();
+
   await openDossierDrawer(page, 'Magasin E2E Affecté');
   await selectDossierDrawerTab(page, 'Accès');
 
@@ -132,6 +139,12 @@ test('M-001 suppression révoque les grants et restauration PAUSED ne les restau
     workspaceId: context.workspaceId,
   });
 
+  /*
+   * Même resynchronisation que dans le parcours d'affectation : l'override
+   * commercial est injecté directement par la fixture hors du navigateur.
+   */
+  await page.reload();
+
   await openDossierDrawer(page, 'Magasin E2E Lifecycle');
   await selectDossierDrawerTab(page, 'Accès');
 
@@ -142,7 +155,7 @@ test('M-001 suppression révoque les grants et restauration PAUSED ne les restau
 
   await selectDossierDrawerTab(page, 'Administration');
 
-  await page.getByRole('button', { name: 'Supprimé' }).click();
+  await page.getByRole('button', { name: 'Supprimer' }).click();
 
   let confirmation = page.getByRole('dialog');
   await confirmation.getByLabel('Raison').fill(
@@ -168,7 +181,7 @@ test('M-001 suppression révoque les grants et restauration PAUSED ne les restau
   await openDossierDrawer(page, 'Magasin E2E Lifecycle');
   await selectDossierDrawerTab(page, 'Administration');
 
-  await page.getByRole('button', { name: 'En pause' }).click();
+  await page.getByRole('button', { name: 'Restaurer' }).click();
 
   confirmation = page.getByRole('dialog');
   await confirmation.getByLabel('Raison').fill(
