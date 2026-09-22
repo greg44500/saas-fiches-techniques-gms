@@ -1780,6 +1780,20 @@ stockage durable de fichiers utilisateur
 
 Le Core conserve ses primitives génériques de téléversement, inspection, antivirus, stockage et rétention, mais le produit GMS n'est pas obligé d'exposer ni de commercialiser un stockage documentaire durable.
 
+Les ressources métier structurées peuvent néanmoins être soumises à des quotas commerciaux de **nombre d'objets** indépendants du stockage fichier. Décision validée pour les Fiches techniques :
+
+```text
+DRAFTS actifs
+→ quota métier par Workspace / plan
+
+Fiches techniques VALIDATED
+→ quota métier distinct par Workspace / plan
+```
+
+Ces quotas utiliseront le moteur générique Core de metrics / limits / entitlements / overrides ; ils ne seront pas calculés à partir de la taille MongoDB ni de `storage_bytes`.
+
+Les valeurs exactes Free/Premium, les clés techniques définitives, le comportement lorsque la limite est atteinte et la règle de comptage des fiches ARCHIVED seront cadrés en M-004.
+
 Un import CSV/XLS/XLSX peut donc utiliser temporairement la chaîne de sécurité File du Core sans consommer un quota commercial de stockage durable. De même, un PDF ou un CSV généré peut exister le temps du téléchargement ou de l'envoi puis être détruit.
 
 Les limites applicables aux temporaires — taille maximale, TTL, concurrence de traitement — sont des garde-fous techniques et non un espace de stockage vendu au Workspace.
