@@ -419,7 +419,7 @@ const commitProductImport = async ({
             workspace: workspaceId,
             actor: actorId,
             status: PRODUCT_IMPORT_STATUS.PREVIEWED,
-            expiresAt: { $gt: new Date() },
+            expiresAt: mongoose.trusted({ $gt: new Date() }),
         },
         {
             $set: {

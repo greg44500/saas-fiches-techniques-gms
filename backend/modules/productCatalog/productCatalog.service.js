@@ -426,7 +426,7 @@ const getWorkspaceProductDetail = async ({
 
     const entries = await WorkspaceProduct.find({
         workspace: workspaceId,
-        productVariant: { $in: variants.map(({ _id }) => _id) },
+        productVariant: mongoose.trusted({ $in: variants.map(({ _id }) => _id) }),
     }).lean();
     const entryByVariantId = new Map(
         entries.map((entry) => [entry.productVariant.toString(), entry]),

@@ -179,7 +179,9 @@ const listPlatformProducts = async ({
     if (q) {
         const normalized = normalizeProductText(q);
         const grams = buildSearchGrams([normalized]);
-        if (grams.length > 0) filter.searchGrams = { $in: grams };
+        if (grams.length > 0) {
+        filter.searchGrams = mongoose.trusted({ $in: grams });
+    }
     }
 
     const [products, total] = await Promise.all([
@@ -591,7 +593,7 @@ const updateVariant = async ({
     const variant = await ProductVariant.findOne({
         _id: variantId,
         canonicalProduct: productId,
-        status: { $ne: PRODUCT_STATUS.REJECTED },
+        status: mongoose.trusted({ $ne: PRODUCT_STATUS.REJECTED }),
     }).session(session);
 
     if (!variant) {
@@ -767,7 +769,7 @@ const updateVariantStatus = async ({
     const variant = await ProductVariant.findOne({
         _id: variantId,
         canonicalProduct: productId,
-        status: { $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED] },
+        status: mongoose.trusted({ $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED] }),
         identityActive: true,
     }).session(session);
 
