@@ -50,7 +50,7 @@ describe('CommercialInvitationForm', () => {
       'Beta Workspace',
     );
     await user.click(screen.getByRole('combobox', { name: 'Offre privée' }));
-    await user.click(screen.getByRole('option', { name: /Découverte privée/ }));
+    await user.click(await screen.findByRole('option', { name: /Découverte privée/ }));
     await user.type(
       screen.getByLabelText('Motif administratif'),
       'Programme bêta',

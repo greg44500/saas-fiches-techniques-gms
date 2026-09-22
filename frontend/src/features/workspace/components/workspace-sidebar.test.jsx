@@ -199,7 +199,7 @@ describe('WorkspaceSidebar', () => {
     const workspaceGroup = screen.getByRole('button', { name: 'Gestion du workspace' });
     await user.click(workspaceGroup);
 
-    expect(screen.getByRole('link', { name: 'Membres' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Membres' })).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
 

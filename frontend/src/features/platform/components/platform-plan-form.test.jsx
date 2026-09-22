@@ -32,7 +32,7 @@ const capabilities = {
 
 async function chooseOption(user, combobox, optionName) {
   await user.click(combobox);
-  await user.click(screen.getByRole('option', { name: optionName }));
+  await user.click(await screen.findByRole('option', { name: optionName }));
 }
 
 describe('PlatformPlanForm', () => {

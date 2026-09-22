@@ -127,7 +127,7 @@ describe('PlatformPlanForm dynamic capabilities', () => {
 
     expect(storageMode).toBeEnabled();
     await user.click(storageMode);
-    await user.click(screen.getByRole('option', { name: 'Plafond' }));
+    await user.click(await screen.findByRole('option', { name: 'Plafond' }));
 
     const storageValue = within(filesGroup).getByLabelText('Valeur (Mo)');
     await user.type(storageValue, '500');
