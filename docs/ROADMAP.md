@@ -184,6 +184,10 @@ Décisions établies :
 - Atelier d'optimisation Premium cadré fonctionnellement ;
 - un DRAFT actif n'est jamais purgé pour simple ancienneté ;
 - un DRAFT explicitement supprimé relève de la corbeille métier du Workspace ;
+- le nombre de DRAFTS actifs est destiné à être limité commercialement par un quota métier de plan ;
+- le nombre de Fiches techniques VALIDATED est destiné à être limité par un quota métier distinct ;
+- ces quotas sont des compteurs de ressources métier et ne réutilisent pas `storage_bytes` ;
+- les seuils Free/Premium, clés finales et règles de comptage des ARCHIVED seront fermés en M-004 ;
 - une version VALIDATED n'est pas purgée automatiquement par âge ;
 - CSV/XLS(X) sont générés à la demande sans conservation durable ;
 - le PDF est généré uniquement comme pièce jointe temporaire lors d'un envoi de document par e-mail et n'est pas persisté.
@@ -242,7 +246,8 @@ Décisions établies :
 - lifecycle Dossier et effets sur les affectations validés ;
 - Core 1.1.0 fournit désormais le point d'extension transactionnel `WorkspaceMember → REMOVED` requis par M-001 ;
 - rattachement commercial exact de l'optimisation avant M-005 ;
-- quotas uniquement lorsqu'un besoin quantitatif est démontré.
+- besoin quantitatif désormais démontré pour les DRAFTS et Fiches techniques VALIDATED : métriques/quota métier à fermer en M-004 ;
+- conserver `storage_bytes` pour les fichiers persistants Core, sans l'utiliser comme mesure des ressources MongoDB métier.
 
 ### 2.7 Paramètres métier
 
