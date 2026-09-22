@@ -3,7 +3,6 @@ import { Archive, ArrowRight, Pause, Play, RotateCcw, Trash2 } from 'lucide-reac
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/shared/toast-provider';
 import { useUpdateDossierStatusMutation } from '@/features/dossiers/api/dossiers-api';
