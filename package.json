@@ -1,6 +1,6 @@
 {
   "name": "saas-core-api",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "description": "API backend modulaire pour une application SaaS",
@@ -30,6 +30,7 @@
     "migration:subscription-term-type": "node backend/migrations/runAddSubscriptionTermTypeMigration.js",
     "migration:subscription-lifecycle-indexes": "node backend/migrations/runAddSubscriptionLifecycleIndexesMigration.js",
     "migration:operational-indexes": "node backend/migrations/runHardenOperationalIndexesMigration.js",
+    "migration:application-global-authorization-indexes": "node backend/migrations/runAddApplicationGlobalAuthorizationIndexesMigration.js",
     "migration:subscription-read-permission": "node backend/migrations/runAddSubscriptionReadPermissionToSystemRolesMigration.js",
     "migration:audit-read-permission": "node backend/migrations/runAddAuditReadPermissionToSystemRolesMigration.js",
     "migration:workspace-member-usage": "node backend/migrations/runBackfillWorkspaceMemberUsageMetricMigration.js",

@@ -911,3 +911,38 @@ docs/DEBT.md
 ```
 
 Le code et les tests actuels restent supérieurs à ce document dans la hiérarchie d'autorité documentaire. Toute évolution de sécurité significative doit mettre à jour cette référence dans le même lot ou au checkpoint documentaire immédiatement suivant.
+
+
+---
+
+## Autorité globale applicative
+
+À partir de Core 1.2.0, une troisième frontière RBAC existe pour les ressources métier globales d’un SaaS dérivé.
+
+    Platform → administration interne du SaaS
+    Application global → gouvernance métier globale du produit
+    Workspace → autorisation tenant
+
+Ces frontières sont indépendantes.
+
+Flux backend :
+
+    authenticate
+    → resolveApplicationGlobalAuthorization()
+    → authorizeApplicationGlobalPermission()
+    → service métier
+
+Le resolver recharge ApplicationGlobalMember et ApplicationGlobalRole depuis MongoDB.
+
+Interdictions :
+
+- ne pas déduire une autorité globale métier depuis User.platformRole ;
+- ne pas donner automatiquement les droits métier aux membres Platform ;
+- ne pas réutiliser req.permissions du Workspace ;
+- ne pas faire confiance au JWT ou au frontend pour les permissions effectives ;
+- ne pas accepter une permission inconnue ou en collision avec un autre scope ;
+- ne pas réactiver implicitement un membership révoqué via le bootstrap.
+
+Un rôle archivé, un membre suspendu ou un historique révoqué donnent zéro permission.
+
+Les mutations de rôles et memberships sont auditées. Les services imposent l’anti-escalade : l’acteur ne peut administrer ou attribuer des permissions qu’il ne possède pas.
