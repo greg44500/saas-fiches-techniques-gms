@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : M-001 CLÔTURÉ TECHNIQUEMENT — PR #10 fusionnée — Core Gate post-merge validée — prochaine étape M-002**
+> **Statut : M-001 clôturé — Core 1.2.0 + commit `1504151` en cours d’intégration produit — reprise M-002 après validation de cette intégration**
 >
 > **Dernière mise à jour : 2026-09-22**
 >
@@ -36,19 +36,21 @@ Produit = métier
 
 Dépôt produit : `greg44500/saas-fiches-techniques-gms`.
 
-État `main` de référence après clôture M-001 :
+État `main` de référence avant le présent raccord Core :
 
 ```text
 main
-8a10a859f567d7f038e5fc5e7b436580d3471b89
-Merge pull request #10 from greg44500/feature/m001-dossiers-access
+d09ed80e8843e0e3418bf2efc9eec51ff846ef26
+Merge pull request #16 from greg44500/core-update/v1.2.0
 ```
 
-Branche de travail de référence :
+Branche d’intégration Core courante :
 
 ```text
-main
+core-update/secure-temporary-upload-1504151
 ```
+
+La branche métier `feature/m002-catalogue-produits` reste le lot fonctionnel actif et devra être réalignée sur `main` après validation puis fusion de cette intégration Core.
 
 Historique M-001 clôturé :
 
@@ -61,14 +63,16 @@ feature/m001-dossiers-access
 → Core Gate post-merge #105 : terminée avec succès selon le résultat signalé par l'utilisateur
 ```
 
-Core intégré :
+Core ciblé par cette intégration :
 
 ```text
 repository : greg44500/saas-core-api
-version    : 1.1.1
-tag        : v1.1.1
-commit     : 3ef3cfc11f67ecad047e11ab2d524e45c729692c
+version    : 1.2.0
+tag        : v1.2.0
+commit     : 150415173c973fe39c90b87e8fb9c0f055cce31f
 ```
+
+Le tag `v1.2.0` reste la dernière release stable. Le commit `1504151…`, postérieur à ce tag, ajoute la primitive générique de téléversement temporaire sécurisé sans nouvelle release ni nouveau tag. Le SHA complet enregistré dans `core-origin.json` est donc l’autorité exacte sur le code Core intégré ; `version` et `tag` décrivent le baseline stable et ne doivent pas être artificiellement incrémentés.
 
 `core-origin.json` est l'autorité de provenance.
 
