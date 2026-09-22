@@ -320,7 +320,7 @@ describe('PlatformTeamMembersSection', () => {
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('combobox', { name: 'Nouveau rôle' }));
-    await user.click(screen.getByRole('option', { name: 'Support client' }));
+    await user.click(await screen.findByRole('option', { name: 'Support client' }));
     await user.click(screen.getByRole('button', { name: 'Confirmer' }));
 
     expect(mocks.updateMemberRole).toHaveBeenCalledWith({

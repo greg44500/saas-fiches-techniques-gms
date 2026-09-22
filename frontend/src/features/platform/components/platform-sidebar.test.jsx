@@ -121,7 +121,7 @@ describe('PlatformSidebar', () => {
     const securityGroup = screen.getByRole('button', { name: 'Sécurité & données' });
     await user.click(securityGroup);
 
-    const retentionLink = screen.getByRole('link', { name: 'Rétention & purge' });
+    const retentionLink = await screen.findByRole('link', { name: 'Rétention & purge' });
     expect(retentionLink).toBeInTheDocument();
 
     await user.click(retentionLink);

@@ -10,6 +10,30 @@ Aucun changement supplémentaire documenté.
 
 ---
 
+## 1.1.2 — 2026-09-22
+
+Patch rétrocompatible stabilisant les tests frontend qui interagissent avec des primitives Base UI rendues de façon asynchrone via Portal.
+
+### Fixed
+
+- les tests Select attendent désormais le montage de la première option avec `findByRole` lorsqu'elle est recherchée immédiatement après l'ouverture du popup ;
+- les tests de sidebars utilisant un Popover Base UI attendent désormais le montage du contenu rendu via Portal avant interaction ;
+- l'audit global des patterns analogues conserve les `getByRole` synchrones uniquement lorsque le contenu est déjà monté ;
+- aucune temporisation artificielle, boucle de retry ou augmentation arbitraire de timeout n'est introduite.
+
+### Impact
+
+- changements limités aux tests frontend ;
+- aucun changement de code de production ;
+- aucune migration MongoDB ;
+- aucune variable d'environnement ;
+- aucune dépendance ajoutée, supprimée ou mise à niveau ;
+- aucun changement de modèle ou d'index MongoDB ;
+- aucun breaking change HTTP ;
+- aucune modification métier spécifique à un SaaS dérivé.
+
+---
+
 ## 1.1.1 — 2026-09-22
 
 Patch rétrocompatible corrigeant une réinitialisation différée de pagination dans la liste des fichiers et stabilisant les tests Select Base UI sous jsdom.
