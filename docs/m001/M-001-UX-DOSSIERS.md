@@ -136,7 +136,7 @@ Actions selon permissions et état :
 - appliquer une transition lifecycle autorisée ;
 - ouvrir le Dossier lorsque ACTIVE.
 
-Le Workspace Owner est affiché comme ayant un accès implicite et n'est jamais matérialisé par un faux `DossierAccessGrant`.
+Le propriétaire du Workspace conserve son accès implicite à tous les Dossiers, mais cet accès n'est pas affiché comme une affectation dans l'interface et n'est jamais matérialisé par un `DossierAccessGrant`. L'onglet Accès ne présente que les membres effectivement affectables ou affectés. Les termes techniques internes comme `Workspace Owner` ou `grant` ne doivent pas apparaître dans les libellés destinés à l'utilisateur.
 
 ---
 
@@ -301,7 +301,7 @@ ConfirmationDialog
 → révocation logique
 ```
 
-M-001 privilégie une gestion individuelle claire et traçable plutôt qu'un batch complexe.
+M-001 privilégie une gestion individuelle claire et traçable plutôt qu'un batch complexe. Dans l'interface utilisateur, le vocabulaire reste métier et français : `Membres affectés`, `Gérer les accès`, `Affecter`, `Retirer l’accès`. Les noms techniques du Core restent réservés au code et à la documentation technique.
 
 ---
 

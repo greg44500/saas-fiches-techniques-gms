@@ -113,7 +113,7 @@ function DossierAccessSection({ dossier, workspaceId }) {
         }).unwrap();
 
         toast({
-          title: 'Accès au dossier révoqué',
+          title: 'Accès au dossier retiré',
           variant: 'success',
         });
         return;
@@ -138,20 +138,13 @@ function DossierAccessSection({ dossier, workspaceId }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-border bg-muted/30 p-3">
-        <p className="text-sm font-medium">Workspace Owner</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Accès implicite à tous les dossiers du workspace. Aucun grant individuel n’est créé.
-        </p>
-      </div>
-
       <div>
         <p className="text-sm font-medium">
-          Affectations actives ({activeGrants.length})
+          Membres affectés ({activeGrants.length})
         </p>
         {activeGrants.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
-            Pas de membres affectés.
+            Aucun membre affecté.
           </p>
         ) : (
           <ul className="mt-2 divide-y divide-border rounded-md border border-border">
@@ -171,7 +164,7 @@ function DossierAccessSection({ dossier, workspaceId }) {
 
       {canManage && (
         <div className="border-t border-border pt-4">
-          <h4 className="text-sm font-semibold">Gérer les affectations</h4>
+          <h4 className="text-sm font-semibold">Gérer les accès</h4>
 
           {!canManageInCurrentState ? (
             <p className="mt-2 text-sm text-muted-foreground">
@@ -179,16 +172,16 @@ function DossierAccessSection({ dossier, workspaceId }) {
             </p>
           ) : !canReadMembers ? (
             <p className="mt-2 text-sm text-muted-foreground">
-              La consultation des membres du workspace est nécessaire pour attribuer un dossier.
+              Vous devez pouvoir consulter les membres de l’espace de travail pour attribuer ce dossier.
             </p>
           ) : !hasTeamManagement ? (
             <p className="mt-2 text-sm text-muted-foreground">
-              La gestion des membres n’est pas disponible pour ce workspace.
+              La gestion des membres n’est pas disponible avec l’offre actuelle.
             </p>
           ) : membersQuery.isError ? (
             <ErrorState
               className="mt-2 p-0"
-              description="Les membres du workspace n’ont pas pu être chargés."
+              description="Les membres de l’espace de travail n’ont pas pu être chargés."
               onRetry={membersQuery.refetch}
               title="Membres indisponibles"
             />
@@ -230,7 +223,7 @@ function DossierAccessSection({ dossier, workspaceId }) {
                         type="button"
                         variant={assigned ? 'outline' : 'default'}
                       >
-                        {assigned ? 'Révoquer' : 'Affecter'}
+                        {assigned ? 'Retirer l’accès' : 'Affecter'}
                       </Button>
                     </div>
                   );
