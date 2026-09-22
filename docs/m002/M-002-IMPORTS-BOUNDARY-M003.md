@@ -36,6 +36,8 @@ L'accès commercial à l'import est porté par la capability métier `product_ca
 
 Le fichier source est un temporaire de traitement : il doit passer par les primitives génériques Core de réception bornée, quarantaine, inspection, checksum, antivirus et nettoyage. Il ne devient pas un document `File` durable pour le seul besoin de l'import.
 
+L'import ne crée donc pas une seconde capacité de stockage. L'occupation temporaire nécessaire au traitement est une ressource d'infrastructure et ne consomme pas un quota commercial de stockage utilisateur.
+
 ### Import catalogue fournisseur — M-003
 
 Objectif : importer une édition de catalogue ou mercuriale commerciale.
