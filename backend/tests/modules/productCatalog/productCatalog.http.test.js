@@ -6,7 +6,25 @@ import {
     describe,
     expect,
     it,
+    vi,
 } from 'vitest';
+
+vi.mock(
+    '../../../services/malwareScan/malwareScan.service.js',
+    () => ({
+        malwareScanService: {
+            scanFile: vi.fn().mockResolvedValue({
+                status: 'clean',
+                provider: 'test-scanner',
+                scannedAt: new Date(
+                    '2026-09-22T18:00:00.000Z',
+                ),
+                threatName: null,
+                errorCode: null,
+            }),
+        },
+    }),
+);
 
 import { app } from '../../../app.js';
 import {
