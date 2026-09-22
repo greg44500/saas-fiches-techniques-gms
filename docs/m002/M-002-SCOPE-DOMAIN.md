@@ -1,6 +1,6 @@
 # M-002 — Catalogue Produits / Produits canoniques
 
-**Statut : PROPOSÉ — validation métier globale requise avant tout modèle Mongoose**
+**Statut : VALIDÉ — périmètre métier M-002 recadré le 2026-09-22 ; autorité globale technique à finaliser avant la PR**
 **Date : 2026-09-22**
 **Branche de travail :** `feature/m002-catalogue-produits`
 
@@ -37,9 +37,9 @@ Selon ses permissions M-002, il peut :
 - rattacher ou retirer une déclinaison du catalogue ;
 - proposer un nouveau Produit ou une nouvelle déclinaison lorsque le référentiel ne couvre pas le besoin.
 
-### Gouvernance Plateforme
+### Gouvernance métier globale
 
-La gouvernance Platform du référentiel partagé peut :
+La gouvernance métier globale du référentiel partagé peut :
 
 - consulter les contributions en attente ;
 - corriger les données génériques partagées ;
@@ -47,7 +47,7 @@ La gouvernance Platform du référentiel partagé peut :
 - approuver ou rejeter une contribution ;
 - archiver ou réactiver un Produit ou une déclinaison globale.
 
-Cette gouvernance ne donne aucun accès implicite aux données commerciales privées d'un espace de travail.
+Cette gouvernance appartient au produit métier, pas à Platform. Une personne de l'équipe Platform peut aussi recevoir ce droit métier, mais aucun rôle Platform ne l'accorde implicitement. Elle ne donne aucun accès implicite aux données commerciales privées d'un espace de travail.
 
 ## 3. Modèle conceptuel proposé
 
@@ -135,7 +135,7 @@ Décisions proposées pour la V1 :
 - une seule catégorie principale par Produit canonique ;
 - taxonomie plate en M-002 ;
 - pas de hiérarchie anticipée ;
-- catégories gérées par la Plateforme ;
+- catégories gérées par la gouvernance métier globale ;
 - une contribution peut être temporairement non classée tant qu'elle est en attente ;
 - un Produit `ACTIVE` doit posséder une catégorie `ACTIVE`.
 
@@ -304,7 +304,9 @@ La fusion physique de deux Produits globaux déjà actifs est volontairement dif
 
 M-002 couvre un import en masse de données Produit au format CSV / XLS / XLSX lorsqu'il sert à alimenter le catalogue d'usage et le référentiel Produit sans introduire de données commerciales fournisseur.
 
-Le pipeline M-002 réutilise obligatoirement les mêmes invariants que la création unitaire :
+Cet import est une fonctionnalité métier commercialisable séparément du stockage documentaire Core. Il est piloté par la capability `product_catalog_import`. La création de nouvelles identités ou déclinaisons pendant l'import exige en plus `product_contribution`.
+
+Le pipeline M-002 réutilise obligatoirement les mêmes invariants que la création unitaire et les primitives génériques Core de sécurité du téléversement temporaire :
 
 ```text
 fichier
