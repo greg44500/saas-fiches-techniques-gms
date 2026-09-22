@@ -152,6 +152,8 @@ Le backend doit :
 - appliquer limites, inspection de type, checksum, antivirus et nettoyage ;
 - lire uniquement la première feuille Excel ;
 - ne pas créer un document `File` durable pour le seul besoin de l'import ;
+- ne pas exiger l'activation commerciale d'un espace de stockage documentaire pour utiliser l'import ;
+- appliquer uniquement les garde-fous techniques nécessaires au traitement temporaire ;
 - persister une session d'import temporaire TTL ;
 - retourner `importId`, en-têtes, nombre de lignes et colonnes hors périmètre M-002.
 
@@ -187,7 +189,7 @@ INVALID
 
 Les colonnes fournisseur / référence / conditionnement / tarif restent M-003.
 
-Après traitement, le fichier source temporaire est supprimable ; les données métier structurées persistent.
+Après traitement, le fichier source temporaire est supprimé selon le cycle prévu ; les données métier structurées persistent. Ce temporaire ne consomme aucun quota commercial de stockage durable du Workspace.
 
 ## 6. Gouvernance globale métier — frontière à finaliser
 
