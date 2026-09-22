@@ -6,7 +6,7 @@ const dossiersDashboardModule = Object.freeze({
     Object.freeze({
       id: 'gms.dossiers-overview',
       label: 'Dossiers',
-      description: 'Accès direct aux dossiers métier du workspace.',
+      description: 'Accès direct aux dossiers métier de l’espace de travail.',
       component: DossiersDashboardWidget,
       slot: 'content',
       order: 50,

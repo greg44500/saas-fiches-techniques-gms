@@ -47,7 +47,7 @@ function DashboardDossiers({
   workspaceId,
 }) {
   const statusLabels = createDossierStatusLabelMap(metadata);
-  const help = 'Dossiers actifs ou en pause auxquels vous avez accès dans ce workspace.';
+  const help = 'Dossiers actifs ou en pause auxquels vous avez accès dans cet espace de travail.';
 
   return (
     <Card>

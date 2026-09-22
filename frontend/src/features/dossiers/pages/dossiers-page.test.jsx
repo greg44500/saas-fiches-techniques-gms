@@ -126,6 +126,7 @@ describe('DossiersPage', () => {
     expect(screen.getByText('44000 Nantes')).toBeInTheDocument();
     expect(screen.getByText('Actif')).toBeInTheDocument();
     expect(screen.getByText('En pause')).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'Dossiers accessibles' })).toBeInTheDocument();
     expect(screen.queryByText('Magasins rattachés à Acme.')).not.toBeInTheDocument();
 
     const dossierRow = screen.getByText('Nantes Centre').closest('tr');

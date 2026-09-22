@@ -136,7 +136,7 @@ Actions selon permissions et état :
 - appliquer une transition lifecycle autorisée ;
 - ouvrir le Dossier lorsque ACTIVE.
 
-Le propriétaire du Workspace conserve son accès implicite à tous les Dossiers, mais cet accès n'est pas affiché comme une affectation dans l'interface et n'est jamais matérialisé par un `DossierAccessGrant`. L'onglet Accès ne présente que les membres effectivement affectables ou affectés. Les termes techniques internes comme `Workspace Owner` ou `grant` ne doivent pas apparaître dans les libellés destinés à l'utilisateur.
+Le propriétaire du Workspace conserve son accès implicite à tous les Dossiers, mais cet accès n'est pas affiché comme une affectation dans l'interface et n'est jamais matérialisé par un `DossierAccessGrant`. L'onglet Accès ne présente que les membres effectivement affectables ou affectés. Les termes techniques internes comme `Workspace Owner` ou `grant` ne doivent pas apparaître dans les libellés destinés à l'utilisateur. Cette règle s’applique également aux infobulles, légendes accessibles et descriptions de widgets : l’interface emploie `espace de travail` plutôt que `workspace`.
 
 ---
 

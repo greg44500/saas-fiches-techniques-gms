@@ -18,6 +18,7 @@ describe('dossiers dashboard composition', () => {
 
     expect(dossierWidget).toEqual(expect.objectContaining({
       label: 'Dossiers',
+      description: 'Accès direct aux dossiers métier de l’espace de travail.',
       slot: 'content',
       configurable: false,
     }));
