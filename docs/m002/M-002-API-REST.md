@@ -1,8 +1,26 @@
-# M-002 — Contrat API REST proposé
+# M-002 — Contrat API REST
 
-**Statut : BACKEND IMPLÉMENTÉ — validation par exécution des tests encore requise**
+**Statut : RECADRÉ — API Workspace conservée ; ancienne frontière Platform à supprimer avant PR**
 
-## 1. Frontière Workspace
+## 1. Règle générale
+
+M-002 expose des routes métier Produit. Une ressource globale Produit n'est pas une ressource Platform.
+
+Les contrôles HTTP doivent distinguer :
+
+```text
+authentification
+→ entitlement / capability commerciale
+→ permission RBAC
+→ tenancy / visibilité métier
+→ validation Zod
+→ controller
+→ service
+```
+
+Les capabilities sont évaluées côté backend via les mécanismes Core. Le frontend n'est jamais une autorité.
+
+## 2. Frontière Workspace
 
 Base :
 
@@ -10,41 +28,23 @@ Base :
 /api/workspaces/:workspaceId/products
 ```
 
-Toutes les routes :
-
-```text
-authenticate
-→ validateRequest
-→ loadWorkspaceContext
-→ authorizePermission M-002
-→ enforceWorkspaceAccessMode pour les mutations
-→ controller
-→ service
-```
-
-Aucune autorisation ne repose sur les données du frontend.
-
-## 2. Métadonnées
-
 ### GET /metadata
 
-Permission : `product:read`
+Permission : `product:read`.
 
-Expose au minimum :
+Expose les vocabulaires backend-driven utiles au frontend : statuts, unités, gammes, motifs de rejet et catégories visibles.
 
-- statuts Produit ;
-- statuts Déclinaison ;
-- statuts WorkspaceProduct ;
-- unités de référence et dimensions ;
-- gammes alimentaires ;
-- motifs de rejet affichables ;
-- catégories ACTIVE.
+### GET /summary
 
-## 3. Recherche
+Permission : `product:read`.
+
+Retourne les indicateurs M-002 nécessaires au Dashboard Workspace.
 
 ### GET /search
 
-Permission : `product:read`
+Permission : `product:read`.
+
+Capability : `product_reference_access` pour la portée `REFERENCE`.
 
 Query :
 
@@ -57,78 +57,33 @@ page?
 limit?
 ```
 
-M-002 retourne uniquement des sources Produit.
-
-Le format de réponse réserve un champ `source` afin que M-003 puisse ultérieurement participer à une recherche unifiée sans casser le contrat :
-
-```json
-{
-  "source": "CANONICAL_PRODUCT",
-  "product": {},
-  "variant": {},
-  "workspaceEntry": null
-}
-```
-
 `WORKSPACE` ne sort jamais du catalogue courant.
 
-`REFERENCE` expose les références globales ACTIVE et les contributions PENDING du Workspace courant.
-
-## 4. Détail
+`REFERENCE` expose les Produits/déclinaisons globaux ACTIVE et les contributions PENDING du Workspace courant uniquement.
 
 ### GET /:productId
 
-Permission : `product:read`
+Permission : `product:read`.
 
-Retourne :
+Retourne Produit, catégorie, déclinaisons visibles et état de rattachement au Workspace.
 
-- Produit ;
-- catégorie ;
-- déclinaisons visibles ;
-- état de rattachement de chaque déclinaison au Workspace.
+Un PENDING d'un autre Workspace est traité comme inexistant.
 
-Un Produit PENDING d'un autre Workspace est traité comme inexistant pour ce contrat.
-
-## 5. Contrôle doublon
+## 3. Contrôle doublon et contribution
 
 ### POST /duplicate-check
 
-Permission : `product:contribute`
+Permission : `product:contribute`.
 
-Body :
-
-```text
-name
-aliases?
-```
-
-Retourne exact match et candidats proches.
+Capability : `product_contribution`.
 
 Aucune écriture.
 
-## 6. Contribution d'un nouveau Produit
-
 ### POST /contributions
 
-Permission : `product:contribute`
+Permission : `product:contribute`.
 
-Body conceptuel :
-
-```json
-{
-  "name": "Carotte",
-  "aliases": ["Carottes"],
-  "reviewedCandidateIds": [],
-  "variant": {
-    "form": "râpée",
-    "processingState": "prête à l'emploi",
-    "preservation": "fraîche",
-    "foodRange": 1,
-    "referenceUnit": "KG",
-    "yieldPercent": 100
-  }
-}
-```
+Capability : `product_contribution`.
 
 Transaction :
 
@@ -137,81 +92,90 @@ contrôle doublon recalculé
 → CanonicalProduct PENDING_REVIEW
 → ProductVariant PENDING_REVIEW
 → WorkspaceProduct ACTIVE
-→ BusinessActivityEvent contribution
+→ BusinessActivityEvent
 ```
 
 La contribution reste non opérationnelle pour les modules aval tant que sa déclinaison n'est pas ACTIVE.
 
-## 7. Contribution d'une déclinaison
-
 ### POST /:productId/variants/contributions
 
-Permission : `product:contribute`
+Permission : `product:contribute`.
 
-Produit parent obligatoire : ACTIVE.
+Capability : `product_contribution`.
 
-Crée une déclinaison PENDING_REVIEW et son WorkspaceProduct.
+Le Produit parent doit être ACTIVE.
 
-## 8. Rattachement catalogue
+## 4. Catalogue Workspace
 
 ### PUT /catalog/:variantId
 
-Permission : `product:catalog:manage`
+Permission : `product:catalog:manage`.
 
-Préconditions :
-
-- variant ACTIVE ;
-- product ACTIVE ;
-- même requête Workspace ;
-- création ou réactivation idempotente de WorkspaceProduct.
+Préconditions : Produit et déclinaison ACTIVE ; création ou réactivation idempotente de `WorkspaceProduct`.
 
 ### DELETE /catalog/:variantId
 
-Permission : `product:catalog:manage`
+Permission : `product:catalog:manage`.
 
-Archive l'entrée WorkspaceProduct.
+Archive l'entrée `WorkspaceProduct`. Aucun delete physique.
 
-Aucun delete physique.
+## 5. Import en masse Produit
 
-## 9. Import en masse de Produits
+L'import est une fonctionnalité métier M-002. Il ne doit pas être confondu avec le stockage documentaire Core.
 
-Permission : `product:contribute`, avec `product:catalog:manage` requise lorsque le commit rattache des références existantes au catalogue.
+Capability principale :
+
+```text
+product_catalog_import
+```
+
+Les actions qui créent une contribution exigent en plus :
+
+```text
+product_contribution
++ permission product:contribute
+```
+
+Le rattachement de références existantes exige :
+
+```text
+permission product:catalog:manage
+```
 
 ### POST /imports/inspect
 
-Reçoit le fichier CSV / XLS / XLSX temporaire dans le champ multipart `file`.
+Reçoit un CSV / XLS / XLSX temporaire.
 
-Le backend :
+Le backend doit :
 
-- valide le format et les limites ;
-- lit uniquement la première feuille Excel ;
-- ne crée aucun File Core ni document métier durable ;
-- persiste une session d'import temporaire TTL ;
-- retourne `importId`, en-têtes, nombre de lignes et colonnes commerciales détectées hors M-002.
+- utiliser un téléversement temporaire sécurisé fondé sur les primitives Core ;
+- appliquer limites, inspection de type, checksum, antivirus et nettoyage ;
+- lire uniquement la première feuille Excel ;
+- ne pas créer un document `File` durable pour le seul besoin de l'import ;
+- persister une session d'import temporaire TTL ;
+- retourner `importId`, en-têtes, nombre de lignes et colonnes hors périmètre M-002.
+
+L'implémentation actuelle `multer.memoryStorage()` du module est à remplacer avant la PR finale.
 
 ### POST /imports/:importId/preview
 
-Reçoit le mapping de colonnes et les valeurs par défaut éventuelles.
+Capability : `product_catalog_import`.
 
-Le backend :
+Aucune mutation Produit.
 
-- valide le format ;
-- lit les lignes sans mutation ;
-- normalise les données ;
-- recherche les Produits/déclinaisons existants ;
-- produit exact matches, candidats proches, nouvelles contributions potentielles, lignes ambiguës et lignes invalides.
-
-Le résultat de prévisualisation est serveur-owned, rattaché à la session d'import temporaire et ne devient pas une ressource documentaire durable.
+Le backend normalise, recherche les correspondances et classe les lignes : exact, proche, nouvelle contribution potentielle, ambiguë ou invalide.
 
 ### POST /imports/:importId/commit
 
-Permissions : `product:contribute` **et** `product:catalog:manage`.
+Capability : `product_catalog_import`.
 
-Le client fournit les décisions utilisateur sur les lignes ambiguës et les candidats proches.
+Le backend revendique atomiquement la session et revalide la preview contre l'état courant. Un état obsolète retourne 409.
 
-Le backend revendique atomiquement la session, revalide la prévisualisation contre l'état courant du référentiel et refuse un commit obsolète avec conflit 409.
+Les décisions qui créent de nouveaux Produits/déclinaisons exigent également `product_contribution` et `product:contribute`.
 
-Résultats possibles par ligne :
+Les décisions qui rattachent des références existantes exigent `product:catalog:manage`.
+
+Résultats possibles :
 
 ```text
 ATTACHED_EXISTING
@@ -221,126 +185,46 @@ SKIPPED
 INVALID
 ```
 
-Aucune création automatique ne contourne la gouvernance `PENDING_REVIEW`.
+Les colonnes fournisseur / référence / conditionnement / tarif restent M-003.
 
-Les colonnes fournisseur / référence / conditionnement / tarif ne sont pas absorbées dans le modèle Produit ; le backend signale qu'elles relèvent de M-003.
+Après traitement, le fichier source temporaire est supprimable ; les données métier structurées persistent.
 
-## 10. Frontière Platform
+## 6. Gouvernance globale métier — frontière à finaliser
 
-Base :
-
-```text
-/api/platform/products
-```
-
-Les routes sont montées par le registre applicatif du produit, sans modifier `platform.routes.js` du Core.
-
-Barrières :
+Les anciennes routes suivantes sont invalidées par le recadrage :
 
 ```text
-authenticate
-→ authorizePlatformPermission
-→ validateRequest
-→ controller
-→ service
+/api/platform/products/*
 ```
 
-## 11. Lecture Platform
-
-### GET /
-
-Permission : `platform:products:read`
-
-Filtres :
-
-- status ;
-- categoryId ;
-- q ;
-- page/limit.
-
-### GET /:productId
-
-Permission : `platform:products:read`
-
-Inclut toutes les déclinaisons et l'historique métier du référentiel.
-
-## 12. Gouvernance des catégories
-
-### GET /categories
-
-Permission : `platform:products:read`
-
-### POST /categories
-
-Permission : `platform:products:manage`
-
-### PATCH /categories/:categoryId
-
-Permission : `platform:products:manage`
-
-### PATCH /categories/:categoryId/status
-
-Permission : `platform:products:manage`
-
-Archivage refusé si des Produits ACTIVE utilisent encore la catégorie.
-
-## 13. Gouvernance Produit
-
-### PATCH /:productId
-
-Permission : `platform:products:manage`
-
-Corrige les données globales autorisées.
-
-Toute modification de nom/alias repasse par les contrôles de clés uniques et de proximité.
-
-### POST /:productId/approve
-
-Permission : `platform:products:manage`
-
-Préconditions :
-
-- PENDING_REVIEW ;
-- catégorie ACTIVE renseignée ;
-- au moins une déclinaison cohérente ;
-- aucun exact duplicate courant.
-
-### POST /:productId/reject
-
-Permission : `platform:products:manage`
-
-Body :
+Ainsi que les permissions :
 
 ```text
-reason
-replacementProductId?
-replacementVariantId?
-comment?
+platform:products:read
+platform:products:manage
 ```
 
-`replacementVariantId` requis pour un rejet DUPLICATE lorsque l'entrée Workspace doit être repointée.
+La gouvernance globale doit rester dans le module Produit mais hors frontière Platform.
 
-### PATCH /:productId/status
+Avant de figer ses routes, la reprise doit fermer le mécanisme d'autorisation globale métier conformément à `M-002-AUTHORIZATION-GOVERNANCE.md`.
 
-Permission : `platform:products:manage`
+Fonctions à conserver fonctionnellement :
 
-Transitions ACTIVE ↔ ARCHIVED.
+- liste/détail du référentiel complet ;
+- file PENDING ;
+- gestion des catégories ;
+- correction Produit/déclinaison ;
+- approve/reject ;
+- archivage/réactivation ;
+- historique `ProductReferenceEvent` ;
+- import global contrôlé si nécessaire.
 
-## 14. Gouvernance Déclinaison
+Le service de gouvernance existant peut être réutilisé après suppression de sa dépendance conceptuelle à Platform.
 
-### PATCH /:productId/variants/:variantId
-### POST /:productId/variants/:variantId/approve
-### POST /:productId/variants/:variantId/reject
-### PATCH /:productId/variants/:variantId/status
+## 7. Anti-énumération
 
-Permission : `platform:products:manage`
+Les références globales ACTIVE autorisées par l'entitlement peuvent être lues avec `product:read`.
 
-Même principe que le Produit racine.
+Les PENDING/REJECTED d'un autre Workspace ne sont jamais révélés par la frontière Workspace.
 
-## 15. Anti-énumération
-
-Les identifiants globaux ACTIVE sont des données de référence autorisées à la lecture avec `product:read`.
-
-Les ressources PENDING/REJECTED d'un autre Workspace ne sont jamais révélées par la frontière Workspace.
-
-Une route Platform reste protégée par l'autorisation Platform effective et ne réutilise pas une permission Workspace.
+La future surface de gouvernance globale possède sa propre autorisation métier et n'accorde aucun accès implicite aux données privées des Workspaces.
