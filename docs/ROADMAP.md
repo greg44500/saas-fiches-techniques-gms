@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 implémenté et validé localement, PR #10 ouverte  
-**Dernière mise à jour :** 2026-09-21
+**Statut :** VALIDÉ — M-001 implémenté et validé techniquement, clôture Git/CI finale avant M-002  
+**Dernière mise à jour :** 2026-09-22
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.1.0` intégré ;
+- Core `v1.1.1` intégré ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;
@@ -418,7 +418,7 @@ Le contrat API REST M-001, le contrat d'ordre des middlewares / frontière middl
 
 ## 5. Phase 4 — Implémentation métier
 
-**Statut : M-001 IMPLÉMENTÉ — gate locale complète validée — PR / Core Gate à finaliser**
+**Statut : M-001 IMPLÉMENTÉ ET VALIDÉ TECHNIQUEMENT — clôture Git/CI finale avant M-002**
 
 Branche fonctionnelle unique :
 
@@ -426,15 +426,17 @@ Branche fonctionnelle unique :
 feature/m001-dossiers-access
 ```
 
-Checkpoint applicatif final validé localement le 2026-09-21 :
+Checkpoint applicatif validé le 2026-09-22 après intégration de Core v1.1.1 et correction E2E des onglets du drawer :
 
 ```text
-1d4c9a2930ebd76d5667bc137b6e110b20c8c71c
+79cfe24579e4b39232835fd156009d6f038d9465
 
-tests backend/frontend demandés → verts
-Playwright                       → 11/11 verts
-npm run release:check            → vert
+npm run release:check → vert
+Playwright            → 11/11 verts
+Core Gate #101        → success
 ```
+
+Toute modification documentaire du head final doit repasser la Core Gate avant fusion.
 
 Le backend, le frontend, l'autocomplétion, la gestion des affectations, le lifecycle, le Dashboard métier et les quatre E2E M-001 sont implémentés.
 
@@ -458,7 +460,7 @@ branche
 → documentation finale
 ```
 
-La validation locale visuelle/fonctionnelle par l'utilisateur est obligatoire avant toute fusion finale, pour le Core comme pour un produit métier.
+La gate automatisée complète et la Core Gate sur le head final sont obligatoires avant fusion. Les ajustements purement visuels ou ergonomiques non bloquants découverts après merge peuvent être traités dans un lot UX M-001 post-merge, sans rouvrir le cadrage fonctionnel ni l'architecture.
 
 ### Granularité Git / PR
 
@@ -519,14 +521,14 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-M-001 a franchi sa gate locale complète. La séquence restante est exclusivement la séquence Git/CI de clôture :
+M-001 a franchi sa validation technique locale et la Core Gate #101 sur le head applicatif. La séquence restante est la clôture Git/CI du head final :
 
 ```text
-1. PR #10 ouverte vers main
-2. attendre la Core Gate de PR
+1. intégrer la documentation de clôture au head final de la PR #10
+2. valider la Core Gate sur ce head exact
 3. fusionner uniquement après gate verte
-4. attendre la Core Gate post-merge sur main
-5. clôturer M-001
+4. valider la Core Gate post-merge sur main
+5. considérer M-001 techniquement clôturé
 6. démarrer le cadrage détaillé M-002 — Produits canoniques
 ```
 
