@@ -46,6 +46,46 @@ const UNIT_ALIASES = Object.freeze({
     u: PRODUCT_REFERENCE_UNIT.UNIT,
 });
 
+const M003_HEADER_RULES = Object.freeze([
+    Object.freeze({
+        kind: 'SUPPLIER',
+        terms: ['fournisseur', 'supplier'],
+    }),
+    Object.freeze({
+        kind: 'SUPPLIER_REFERENCE',
+        terms: [
+            'reference fournisseur',
+            'ref fournisseur',
+            'reference article',
+            'ref article',
+            'code article',
+            'sku',
+        ],
+    }),
+    Object.freeze({
+        kind: 'PACKAGING',
+        terms: [
+            'conditionnement',
+            'colisage',
+            'packaging',
+            'colis',
+        ],
+    }),
+    Object.freeze({
+        kind: 'PRICE',
+        terms: [
+            'prix',
+            'tarif',
+            'price',
+            'cout',
+        ],
+    }),
+    Object.freeze({
+        kind: 'BRAND',
+        terms: ['marque', 'brand'],
+    }),
+]);
+
 const parseAliases = (value) => [
     ...new Set(
         String(value ?? '')
@@ -80,12 +120,30 @@ const parseReferenceUnit = (value) => {
     return normalized ? UNIT_ALIASES[normalized] ?? null : null;
 };
 
+const detectOutOfScopeColumns = (headers) => headers.flatMap(
+    (header, index) => {
+        const normalizedHeader = normalizeProductText(header);
+        const rule = M003_HEADER_RULES.find(({ terms }) =>
+            terms.some((term) => normalizedHeader.includes(term)));
+
+        return rule
+            ? [{
+                index,
+                header,
+                domain: 'M-003',
+                kind: rule.kind,
+            }]
+            : [];
+    },
+);
+
 const inspectProductImport = async ({
     workspaceId,
     actorId,
     file,
 }) => {
     const parsed = parseProductImportFile(file);
+    const outOfScopeColumns = detectOutOfScopeColumns(parsed.headers);
     const expiresAt = new Date(
         Date.now() + IMPORT_TTL_MINUTES * 60 * 1000,
     );
@@ -97,6 +155,7 @@ const inspectProductImport = async ({
         format: parsed.format,
         headers: parsed.headers,
         rows: parsed.rows,
+        outOfScopeColumns,
         expiresAt,
     });
 
@@ -105,6 +164,7 @@ const inspectProductImport = async ({
         format: session.format,
         headers: [...session.headers],
         rowCount: session.rows.length,
+        outOfScopeColumns: [...session.outOfScopeColumns],
         expiresAt: session.expiresAt,
     };
 };
@@ -187,23 +247,12 @@ const mapImportRow = ({
     };
 };
 
-const previewProductImport = async ({
+const buildProductImportPreview = async ({
     workspaceId,
-    actorId,
-    importId,
+    importSession,
     mapping,
     defaults = {},
 }) => {
-    const importSession = await loadImportSession({
-        workspaceId,
-        actorId,
-        importId,
-        allowedStatuses: [
-            PRODUCT_IMPORT_STATUS.INSPECTED,
-            PRODUCT_IMPORT_STATUS.PREVIEWED,
-        ],
-    });
-
     const indexes = Object.values(mapping);
     if (indexes.some((index) => index >= importSession.headers.length)) {
         throw new AppError('Le mapping contient une colonne inexistante.', 400);
@@ -234,10 +283,12 @@ const previewProductImport = async ({
         ),
     ];
 
-    const exactProducts = await CanonicalProduct.find({
-        identityActive: true,
-        searchKeys: mongoose.trusted({ $in: requestedKeys }),
-    }).lean();
+    const exactProducts = requestedKeys.length === 0
+        ? []
+        : await CanonicalProduct.find({
+            identityActive: true,
+            searchKeys: mongoose.trusted({ $in: requestedKeys }),
+        }).lean();
 
     const exactProductByKey = new Map();
     for (const product of exactProducts) {
@@ -246,10 +297,14 @@ const previewProductImport = async ({
         }
     }
 
-    const variants = await ProductVariant.find({
-        canonicalProduct: mongoose.trusted({ $in: exactProducts.map(({ _id }) => _id) }),
-        identityActive: true,
-    }).lean();
+    const variants = exactProducts.length === 0
+        ? []
+        : await ProductVariant.find({
+            canonicalProduct: mongoose.trusted({
+                $in: exactProducts.map(({ _id }) => _id),
+            }),
+            identityActive: true,
+        }).lean();
     const variantBySignature = new Map(
         variants.map((variant) => [
             `${variant.canonicalProduct.toString()}:${variant.normalizedSignature}`,
@@ -297,10 +352,46 @@ const previewProductImport = async ({
                 continue;
             }
 
+            if (exactProduct.status === PRODUCT_STATUS.ARCHIVED) {
+                preview.push({
+                    ...row,
+                    warnings,
+                    errors: [
+                        ...errors,
+                        'Produit global archivé : nouveau rattachement interdit.',
+                    ],
+                    productId: exactProduct._id.toString(),
+                    classification:
+                        PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
+                    candidates: [],
+                });
+                continue;
+            }
+
             const signature = buildVariantSignature(data.variant);
             const existingVariant = variantBySignature.get(
                 `${exactProduct._id.toString()}:${signature}`,
             );
+
+            if (exactProduct.status === PRODUCT_STATUS.PENDING_REVIEW) {
+                preview.push({
+                    ...row,
+                    data: {
+                        ...data,
+                        categoryId: category?._id.toString() ?? null,
+                    },
+                    warnings: [
+                        ...warnings,
+                        'Produit déjà en validation dans ce Workspace.',
+                    ],
+                    productId: exactProduct._id.toString(),
+                    variantId: existingVariant?._id.toString() ?? null,
+                    classification:
+                        PRODUCT_IMPORT_ROW_CLASSIFICATION.EXISTING_PENDING,
+                    candidates: [],
+                });
+                continue;
+            }
 
             if (existingVariant) {
                 if (
@@ -313,6 +404,23 @@ const previewProductImport = async ({
                         warnings,
                         classification:
                             PRODUCT_IMPORT_ROW_CLASSIFICATION.PRIVATE_CONFLICT,
+                        candidates: [],
+                    });
+                    continue;
+                }
+
+                if (existingVariant.status === PRODUCT_STATUS.ARCHIVED) {
+                    preview.push({
+                        ...row,
+                        warnings,
+                        errors: [
+                            ...errors,
+                            'Déclinaison globale archivée : nouveau rattachement interdit.',
+                        ],
+                        productId: exactProduct._id.toString(),
+                        variantId: existingVariant._id.toString(),
+                        classification:
+                            PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
                         candidates: [],
                     });
                     continue;
@@ -372,28 +480,117 @@ const previewProductImport = async ({
         });
     }
 
+    return preview;
+};
+
+const buildPreviewCounts = (preview) => Object.fromEntries(
+    Object.values(PRODUCT_IMPORT_ROW_CLASSIFICATION)
+        .map((classification) => [
+            classification,
+            preview.filter((row) => row.classification === classification)
+                .length,
+        ]),
+);
+
+const previewProductImport = async ({
+    workspaceId,
+    actorId,
+    importId,
+    mapping,
+    defaults = {},
+}) => {
+    const importSession = await loadImportSession({
+        workspaceId,
+        actorId,
+        importId,
+        allowedStatuses: [
+            PRODUCT_IMPORT_STATUS.INSPECTED,
+            PRODUCT_IMPORT_STATUS.PREVIEWED,
+        ],
+    });
+
+    const preview = await buildProductImportPreview({
+        workspaceId,
+        importSession,
+        mapping,
+        defaults,
+    });
+
     importSession.mapping = { mapping, defaults };
     importSession.preview = preview;
     importSession.status = PRODUCT_IMPORT_STATUS.PREVIEWED;
     await importSession.save();
 
-    const counts = Object.fromEntries(
-        Object.values(PRODUCT_IMPORT_ROW_CLASSIFICATION)
-            .map((classification) => [
-                classification,
-                preview.filter((row) => row.classification === classification)
-                    .length,
-            ]),
-    );
-
     return {
         importId: importSession._id.toString(),
         headers: importSession.headers,
         rowCount: preview.length,
-        counts,
+        counts: buildPreviewCounts(preview),
         rows: preview,
+        outOfScopeColumns: [...importSession.outOfScopeColumns],
         expiresAt: importSession.expiresAt,
     };
+};
+
+const previewRowFingerprint = (row) => JSON.stringify({
+    classification: row.classification,
+    productId: row.productId ?? null,
+    variantId: row.variantId ?? null,
+    categoryId: row.data?.categoryId ?? null,
+    candidates: (row.candidates ?? [])
+        .map(({ id }) => id)
+        .sort(),
+    errors: [...(row.errors ?? [])].sort(),
+});
+
+const findStalePreviewRows = ({
+    storedPreview,
+    currentPreview,
+}) => {
+    const currentByRow = new Map(
+        currentPreview.map((row) => [row.rowNumber, row]),
+    );
+
+    return storedPreview.flatMap((storedRow) => {
+        const currentRow = currentByRow.get(storedRow.rowNumber);
+
+        if (
+            !currentRow
+            || previewRowFingerprint(storedRow)
+                !== previewRowFingerprint(currentRow)
+        ) {
+            return [storedRow.rowNumber];
+        }
+
+        return [];
+    });
+};
+
+const assertCandidateVariant = async ({
+    row,
+    variantId,
+}) => {
+    const candidateProductIds = new Set(
+        (row.candidates ?? []).map(({ id }) => id),
+    );
+
+    const variant = await ProductVariant.findOne({
+        _id: variantId,
+        status: PRODUCT_STATUS.ACTIVE,
+        identityActive: true,
+    }).lean();
+
+    if (
+        !variant
+        || !candidateProductIds.has(variant.canonicalProduct.toString())
+    ) {
+        throw new AppError(
+            'La déclinaison choisie ne correspond pas aux candidats revus.',
+            409,
+        );
+    }
+
+    return variant;
 };
 
 const commitProductImport = async ({
@@ -449,141 +646,142 @@ const commitProductImport = async ({
         );
     }
 
-    const decisionByRow = new Map(
-        decisions.map((decision) => [decision.rowNumber, decision]),
-    );
-    const results = [];
+    try {
+        const mappingConfig = importSession.mapping;
 
-    for (const row of importSession.preview) {
-        const decision = decisionByRow.get(row.rowNumber);
+        if (!mappingConfig?.mapping) {
+            throw new AppError(
+                'La prévisualisation de cet import est incomplète.',
+                409,
+            );
+        }
 
-        try {
-            if (
-                row.classification === PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID
-                || row.classification === PRODUCT_IMPORT_ROW_CLASSIFICATION.PRIVATE_CONFLICT
-            ) {
-                results.push({
-                    rowNumber: row.rowNumber,
-                    status: 'SKIPPED',
-                    reason: row.classification,
-                });
-                continue;
-            }
+        const currentPreview = await buildProductImportPreview({
+            workspaceId,
+            importSession,
+            mapping: mappingConfig.mapping,
+            defaults: mappingConfig.defaults ?? {},
+        });
+        const staleRows = findStalePreviewRows({
+            storedPreview: importSession.preview,
+            currentPreview,
+        });
 
-            if (decision?.action === 'SKIP') {
-                results.push({
-                    rowNumber: row.rowNumber,
-                    status: 'SKIPPED',
-                });
-                continue;
-            }
+        if (staleRows.length > 0) {
+            importSession.preview = currentPreview;
+            importSession.status = PRODUCT_IMPORT_STATUS.PREVIEWED;
+            await importSession.save();
 
-            if (
-                row.classification
-                    === PRODUCT_IMPORT_ROW_CLASSIFICATION.ATTACH_EXISTING
-            ) {
-                await attachVariantToWorkspace({
-                    workspaceId,
-                    variantId: row.variantId,
-                    actorId,
-                });
-                results.push({
-                    rowNumber: row.rowNumber,
-                    status: 'ATTACHED_EXISTING',
-                    variantId: row.variantId,
-                });
-                continue;
-            }
+            const error = new AppError(
+                'La prévisualisation est devenue obsolète. Actualisez-la avant de confirmer l’import.',
+                409,
+            );
+            error.code = 'PRODUCT_REVIEW_OUTDATED';
+            error.staleRows = staleRows;
+            throw error;
+        }
 
-            if (
-                row.classification
-                    === PRODUCT_IMPORT_ROW_CLASSIFICATION.EXISTING_PENDING
-            ) {
-                results.push({
-                    rowNumber: row.rowNumber,
-                    status: 'EXISTING_PENDING',
-                    variantId: row.variantId,
-                });
-                continue;
-            }
+        const knownRows = new Set(
+            currentPreview.map(({ rowNumber }) => rowNumber),
+        );
+        const unknownDecision = decisions.find(
+            ({ rowNumber }) => !knownRows.has(rowNumber),
+        );
 
-            if (
-                row.classification
-                    === PRODUCT_IMPORT_ROW_CLASSIFICATION.PROPOSE_VARIANT
-            ) {
-                const created = await createVariantContribution({
-                    workspaceId,
-                    actorId,
-                    productId: row.productId,
-                    variant: row.data.variant,
-                });
-                results.push({
-                    rowNumber: row.rowNumber,
-                    status: 'PROPOSED_VARIANT',
-                    variantId: created.variant.id,
-                });
-                continue;
-            }
+        if (unknownDecision) {
+            throw new AppError(
+                'Une décision d’import cible une ligne inconnue.',
+                400,
+            );
+        }
 
-            if (
-                row.classification
-                    === PRODUCT_IMPORT_ROW_CLASSIFICATION.PROPOSE_PRODUCT
-            ) {
-                const created = await createProductContribution({
-                    workspaceId,
-                    actorId,
-                    name: row.data.name,
-                    aliases: row.data.aliases,
-                    categoryId: row.data.categoryId,
-                    reviewedCandidateIds: [],
-                    variant: row.data.variant,
-                });
-                results.push({
-                    rowNumber: row.rowNumber,
-                    status: 'PROPOSED_PRODUCT',
-                    productId: created.product.id,
-                    variantId: created.variant.id,
-                });
-                continue;
-            }
+        const decisionByRow = new Map(
+            decisions.map((decision) => [decision.rowNumber, decision]),
+        );
+        const results = [];
 
-            if (
-                row.classification
-                    === PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED
-            ) {
-                if (!decision) {
+        for (const row of currentPreview) {
+            const decision = decisionByRow.get(row.rowNumber);
+
+            try {
+                if (
+                    row.classification === PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID
+                    || row.classification === PRODUCT_IMPORT_ROW_CLASSIFICATION.PRIVATE_CONFLICT
+                ) {
                     results.push({
                         rowNumber: row.rowNumber,
                         status: 'SKIPPED',
-                        reason: 'DECISION_REQUIRED',
+                        reason: row.classification,
                     });
                     continue;
                 }
 
-                if (decision.action === 'ATTACH_EXISTING') {
+                if (decision?.action === 'SKIP') {
+                    results.push({
+                        rowNumber: row.rowNumber,
+                        status: 'SKIPPED',
+                    });
+                    continue;
+                }
+
+                if (
+                    row.classification
+                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.ATTACH_EXISTING
+                ) {
                     await attachVariantToWorkspace({
                         workspaceId,
-                        variantId: decision.variantId,
+                        variantId: row.variantId,
                         actorId,
                     });
                     results.push({
                         rowNumber: row.rowNumber,
                         status: 'ATTACHED_EXISTING',
-                        variantId: decision.variantId,
+                        variantId: row.variantId,
                     });
                     continue;
                 }
 
-                if (decision.action === 'CREATE_NEW') {
-                    const reviewedCandidateIds = row.candidates
-                        .map(({ id }) => id);
+                if (
+                    row.classification
+                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.EXISTING_PENDING
+                ) {
+                    results.push({
+                        rowNumber: row.rowNumber,
+                        status: 'EXISTING_PENDING',
+                        variantId: row.variantId ?? null,
+                    });
+                    continue;
+                }
+
+                if (
+                    row.classification
+                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.PROPOSE_VARIANT
+                ) {
+                    const created = await createVariantContribution({
+                        workspaceId,
+                        actorId,
+                        productId: row.productId,
+                        variant: row.data.variant,
+                    });
+                    results.push({
+                        rowNumber: row.rowNumber,
+                        status: 'PROPOSED_VARIANT',
+                        variantId: created.variant.id,
+                    });
+                    continue;
+                }
+
+                if (
+                    row.classification
+                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.PROPOSE_PRODUCT
+                ) {
                     const created = await createProductContribution({
                         workspaceId,
                         actorId,
                         name: row.data.name,
                         aliases: row.data.aliases,
                         categoryId: row.data.categoryId,
-                        reviewedCandidateIds,
+                        reviewedCandidateIds: [],
                         variant: row.data.variant,
                     });
                     results.push({
@@ -594,39 +792,92 @@ const commitProductImport = async ({
                     });
                     continue;
                 }
+
+                if (
+                    row.classification
+                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED
+                ) {
+                    if (!decision) {
+                        results.push({
+                            rowNumber: row.rowNumber,
+                            status: 'SKIPPED',
+                            reason: 'DECISION_REQUIRED',
+                        });
+                        continue;
+                    }
+
+                    if (decision.action === 'ATTACH_EXISTING') {
+                        await assertCandidateVariant({
+                            row,
+                            variantId: decision.variantId,
+                        });
+                        await attachVariantToWorkspace({
+                            workspaceId,
+                            variantId: decision.variantId,
+                            actorId,
+                        });
+                        results.push({
+                            rowNumber: row.rowNumber,
+                            status: 'ATTACHED_EXISTING',
+                            variantId: decision.variantId,
+                        });
+                        continue;
+                    }
+
+                    if (decision.action === 'CREATE_NEW') {
+                        const reviewedCandidateIds = row.candidates
+                            .map(({ id }) => id);
+                        const created = await createProductContribution({
+                            workspaceId,
+                            actorId,
+                            name: row.data.name,
+                            aliases: row.data.aliases,
+                            categoryId: row.data.categoryId,
+                            reviewedCandidateIds,
+                            variant: row.data.variant,
+                        });
+                        results.push({
+                            rowNumber: row.rowNumber,
+                            status: 'PROPOSED_PRODUCT',
+                            productId: created.product.id,
+                            variantId: created.variant.id,
+                        });
+                        continue;
+                    }
+                }
+
+                results.push({
+                    rowNumber: row.rowNumber,
+                    status: 'SKIPPED',
+                    reason: 'UNSUPPORTED_DECISION',
+                });
+            } catch (error) {
+                results.push({
+                    rowNumber: row.rowNumber,
+                    status: 'FAILED',
+                    reason: error.message,
+                });
             }
-
-            results.push({
-                rowNumber: row.rowNumber,
-                status: 'SKIPPED',
-                reason: 'UNSUPPORTED_DECISION',
-            });
-        } catch (error) {
-            results.push({
-                rowNumber: row.rowNumber,
-                status: 'FAILED',
-                reason: error.message,
-            });
         }
-    }
 
-    const committedResult = {
-        importId: importSession._id.toString(),
-        total: results.length,
-        succeeded: results.filter(({ status }) => ![
-            'FAILED',
-            'SKIPPED',
-        ].includes(status)).length,
-        failed: results.filter(({ status }) => status === 'FAILED').length,
-        skipped: results.filter(({ status }) => status === 'SKIPPED').length,
-        results,
-    };
+        const committedResult = {
+            importId: importSession._id.toString(),
+            total: results.length,
+            succeeded: results.filter(({ status }) => ![
+                'FAILED',
+                'SKIPPED',
+            ].includes(status)).length,
+            failed: results.filter(({ status }) => status === 'FAILED').length,
+            skipped: results.filter(({ status }) => status === 'SKIPPED').length,
+            results,
+        };
 
-    try {
         importSession.status = PRODUCT_IMPORT_STATUS.COMMITTED;
         importSession.committedAt = new Date();
         importSession.committedResult = committedResult;
         await importSession.save();
+
+        return committedResult;
     } catch (error) {
         await ProductImportSession.updateOne(
             {
@@ -639,14 +890,15 @@ const commitProductImport = async ({
                 },
             },
         );
+
         throw error;
     }
-
-    return committedResult;
 };
 
 export {
+    buildProductImportPreview,
     commitProductImport,
+    detectOutOfScopeColumns,
     inspectProductImport,
     previewProductImport,
 };

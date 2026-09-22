@@ -140,6 +140,7 @@ const parseWorkbook = (buffer) => {
             cellNF: false,
             cellStyles: false,
             cellDates: true,
+            sheetRows: MAX_IMPORT_ROWS + 2,
         });
     } catch {
         throw new AppError(

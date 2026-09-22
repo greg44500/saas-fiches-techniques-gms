@@ -34,6 +34,11 @@ const productImportSessionSchema = new Schema(
         },
         headers: { type: [String], required: true },
         rows: { type: [Schema.Types.Mixed], required: true },
+        outOfScopeColumns: {
+            type: [Schema.Types.Mixed],
+            default: [],
+            immutable: true,
+        },
         mapping: { type: Schema.Types.Mixed, default: null },
         preview: { type: [Schema.Types.Mixed], default: [] },
         committedResult: { type: Schema.Types.Mixed, default: null },
