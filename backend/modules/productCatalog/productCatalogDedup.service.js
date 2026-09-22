@@ -49,13 +49,13 @@ const findProductDuplicateCandidates = async ({
 }) => {
     const searchKeys = buildSearchKeys(name, aliases);
     const excludeFilter = excludeProductId
-        ? { _id: { $ne: new mongoose.Types.ObjectId(excludeProductId.toString()) } }
+        ? { _id: mongoose.trusted({ $ne: new mongoose.Types.ObjectId(excludeProductId.toString()) }) }
         : {};
 
     let exactQuery = CanonicalProduct.findOne({
         ...excludeFilter,
         identityActive: true,
-        searchKeys: { $in: searchKeys },
+        searchKeys: mongoose.trusted({ $in: searchKeys }),
     })
         .populate('category')
         .lean();
@@ -73,13 +73,13 @@ const findProductDuplicateCandidates = async ({
         let nearQuery = CanonicalProduct.find({
             ...excludeFilter,
             identityActive: true,
-            ...(exact ? { _id: { $nin: [
+            ...(exact ? { _id: mongoose.trusted({ $nin: [
                 ...(excludeProductId
                     ? [new mongoose.Types.ObjectId(excludeProductId.toString())]
                     : []),
                 exact._id,
-            ] } } : {}),
-            searchGrams: { $in: grams },
+            ] }) } : {}),
+            searchGrams: mongoose.trusted({ $in: grams }),
         })
             .populate('category')
             .sort({ updatedAt: -1 })

@@ -252,7 +252,7 @@ const buildProductSearchFilter = ({
         const grams = buildSearchGrams([normalized]);
 
         if (grams.length > 0) {
-            filter.searchGrams = { $in: grams };
+            filter.searchGrams = mongoose.trusted({ $in: grams });
         }
     }
 
@@ -301,7 +301,7 @@ const listProductSearch = async ({
     }
 
     const variantVisibility = {
-        canonicalProduct: { $in: productIds },
+        canonicalProduct: mongoose.trusted({ $in: productIds }),
         identityActive: true,
         $or: [
             { status: PRODUCT_STATUS.ACTIVE },
@@ -318,7 +318,7 @@ const listProductSearch = async ({
 
         const entryFilter = {
             workspace: workspaceId,
-            productVariant: { $in: variantIds },
+            productVariant: mongoose.trusted({ $in: variantIds }),
             ...(status ? { status } : { status: WORKSPACE_PRODUCT_STATUS.ACTIVE }),
         };
         const total = await WorkspaceProduct.countDocuments(entryFilter);
@@ -329,7 +329,7 @@ const listProductSearch = async ({
             .lean();
 
         const variants = await ProductVariant.find({
-            _id: { $in: entries.map(({ productVariant }) => productVariant) },
+            _id: mongoose.trusted({ $in: entries.map(({ productVariant }) => productVariant) }),
         }).lean();
         const variantById = new Map(
             variants.map((variant) => [variant._id.toString(), variant]),
@@ -364,7 +364,7 @@ const listProductSearch = async ({
 
     const entries = await WorkspaceProduct.find({
         workspace: workspaceId,
-        productVariant: { $in: variants.map(({ _id }) => _id) },
+        productVariant: mongoose.trusted({ $in: variants.map(({ _id }) => _id) }),
     }).lean();
     const entryByVariantId = new Map(
         entries.map((entry) => [entry.productVariant.toString(), entry]),

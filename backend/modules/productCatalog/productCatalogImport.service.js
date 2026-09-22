@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
@@ -117,8 +119,8 @@ const loadImportSession = async ({
         _id: importId,
         workspace: workspaceId,
         actor: actorId,
-        status: { $in: allowedStatuses },
-        expiresAt: { $gt: new Date() },
+        status: mongoose.trusted({ $in: allowedStatuses }),
+        expiresAt: mongoose.trusted({ $gt: new Date() }),
     });
 
     if (!session) {
@@ -234,7 +236,7 @@ const previewProductImport = async ({
 
     const exactProducts = await CanonicalProduct.find({
         identityActive: true,
-        searchKeys: { $in: requestedKeys },
+        searchKeys: mongoose.trusted({ $in: requestedKeys }),
     }).lean();
 
     const exactProductByKey = new Map();
@@ -245,7 +247,7 @@ const previewProductImport = async ({
     }
 
     const variants = await ProductVariant.find({
-        canonicalProduct: { $in: exactProducts.map(({ _id }) => _id) },
+        canonicalProduct: mongoose.trusted({ $in: exactProducts.map(({ _id }) => _id) }),
         identityActive: true,
     }).lean();
     const variantBySignature = new Map(

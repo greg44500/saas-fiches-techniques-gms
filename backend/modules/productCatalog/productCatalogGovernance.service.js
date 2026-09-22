@@ -92,7 +92,7 @@ const updateCategory = async ({
     const normalizedKey = normalizeProductText(name);
 
     const duplicate = await ProductCategory.findOne({
-        _id: { $ne: category._id },
+        _id: mongoose.trusted({ $ne: category._id }),
         normalizedKey,
     }).session(session);
 
@@ -251,7 +251,7 @@ const updateProduct = async ({
 }) => mongoose.connection.transaction(async (session) => {
     const product = await CanonicalProduct.findOne({
         _id: productId,
-        status: { $ne: PRODUCT_STATUS.REJECTED },
+        status: mongoose.trusted({ $ne: PRODUCT_STATUS.REJECTED }),
     }).session(session);
 
     if (!product) {
@@ -370,7 +370,7 @@ const approveProduct = async ({
     const variantExists = await ProductVariant.exists({
         canonicalProduct: product._id,
         identityActive: true,
-        status: { $in: [PRODUCT_STATUS.PENDING_REVIEW, PRODUCT_STATUS.ACTIVE] },
+        status: mongoose.trusted({ $in: [PRODUCT_STATUS.PENDING_REVIEW, PRODUCT_STATUS.ACTIVE] }),
     }).session(session);
 
     if (!variantExists) {
@@ -404,7 +404,7 @@ const repointWorkspaceEntries = async ({
     session,
 }) => {
     const sourceEntries = await WorkspaceProduct.find({
-        productVariant: { $in: sourceVariantIds },
+        productVariant: mongoose.trusted({ $in: sourceVariantIds }),
         status: WORKSPACE_PRODUCT_STATUS.ACTIVE,
     }).session(session);
 
@@ -533,7 +533,7 @@ const updateProductStatus = async ({
 }) => mongoose.connection.transaction(async (session) => {
     const product = await CanonicalProduct.findOne({
         _id: productId,
-        status: { $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED] },
+        status: mongoose.trusted({ $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED] }),
         identityActive: true,
     }).session(session);
 
@@ -620,7 +620,7 @@ const updateVariant = async ({
     variant.updatedBy = actorId;
 
     const duplicate = await ProductVariant.findOne({
-        _id: { $ne: variant._id },
+        _id: mongoose.trusted({ $ne: variant._id }),
         canonicalProduct: productId,
         normalizedSignature: variant.normalizedSignature,
         identityActive: true,
