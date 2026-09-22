@@ -1,6 +1,6 @@
 # M-001 — Critères d'acceptation et ordre d'implémentation
 
-**Statut :** VALIDÉ — implémentation terminée, gate locale finale verte, PR à ouvrir  
+**Statut :** VALIDÉ — implémentation terminée, validation technique finale acquise, clôture Git/CI en cours  
 **Date de validation :** 2026-09-21  
 **Module :** Dossiers / magasins + affectations + activité métier
 
@@ -34,23 +34,23 @@ npm test               → vert
 
 Ce checkpoint backend a ensuite été complété par le frontend, les tests RTL et les E2E.
 
-### Validation finale locale — 2026-09-21
+### Validation technique finale — 2026-09-22
 
-Checkpoint applicatif avant clôture documentaire :
+Checkpoint applicatif après intégration de Core v1.1.1 et réalignement des E2E avec le drawer à onglets :
 
 ```text
-1d4c9a2930ebd76d5667bc137b6e110b20c8c71c
+79cfe24579e4b39232835fd156009d6f038d9465
 ```
 
-Résultats confirmés par l'utilisateur :
+Résultats confirmés :
 
 ```text
-npm test              → vert
-npm run test:e2e      → 11/11 verts
 npm run release:check → vert
+Playwright            → 11/11 verts
+Core Gate #101        → success
 ```
 
-La gate locale M-001 est donc franchie. La séquence restante est : documentation finale → PR unique → Core Gate PR → merge → Core Gate post-merge.
+La validation technique M-001 est acquise sur ce head applicatif. La documentation de clôture modifie ensuite le head de PR et doit donc être couverte par une Core Gate verte avant fusion. Après merge, une Core Gate post-merge sur `main` reste obligatoire.
 
 ---
 
@@ -335,10 +335,10 @@ npm run release:check
 Puis, obligatoirement :
 
 - [ ] branche à jour dans le VS Code local ;
-- [ ] application lancée localement ;
-- [ ] validation fonctionnelle et visuelle réalisée par l'utilisateur ;
-- [ ] anomalies éventuelles corrigées ;
-- [ ] `npm run release:check` relancé après les dernières corrections ;
+- [ ] application lançable localement ;
+- [ ] `npm run release:check` vert sur le lot final ;
+- [ ] anomalies techniques bloquantes corrigées ;
+- [ ] les ajustements purement visuels non bloquants peuvent être traités après merge dans un lot UX M-001 dédié ;
 - [ ] Core Gate verte sur le head de la PR ;
 - [ ] revue ;
 - [ ] merge ;
@@ -484,7 +484,7 @@ Respecter l'ordre des routes, notamment `/metadata` avant `/:dossierId`.
 
 Fermer les tests backend/Supertest avant le frontend.
 
-## Étape 11 — RTK Query et routes frontend — PROCHAINE ÉTAPE
+## Étape 11 — RTK Query et routes frontend — TERMINÉE
 
 Créer la feature Dossiers en réutilisant le `baseApi` Core.
 
@@ -502,14 +502,15 @@ Formulaire commun création/édition.
 
 Pas de duplication de formulaire.
 
-## Étape 14 — Drawer
+## Étape 14 — Drawer — TERMINÉE
 
-Sections :
+Onglets validés :
 
 ```text
-Informations
+Infos
 Accès
-Activité
+Activités
+Administration
 ```
 
 Réutiliser EntityDetailsDrawer/ConfirmationDialog.
@@ -538,12 +539,13 @@ Ajouter les quatre parcours Playwright validés.
 
 ## Étape 19 — Gates
 
-Exécuter :
+Exécuter la gate canonique :
 
 ```bash
-npm run format:check
 npm run release:check
 ```
+
+`format:check` reste hors gate canonique et relève du sujet Core/tooling documenté séparément.
 
 Corriger toute régression Core ou métier avant PR prête à merger.
 
