@@ -1,70 +1,133 @@
-# M-002 — Handoff backend vers frontend
+# M-002 — Handoff de reprise après recadrage
 
 **Branche :** `feature/m002-catalogue-produits`  
-**Statut :** backend implémenté, gates backend à exécuter localement avant démarrage frontend.
+**Core intégré :** `v1.1.2` — commit `193e632d62cb048f3988e073665759cce8dd379f`  
+**État Git vérifié le 2026-09-22 :** branche 30 commits devant `main`, 0 derrière avant le commit documentaire de recadrage.  
+**Dernier commit applicatif avant recadrage :** `ca02a1e428e43ec98da4c0ae168585f78d61e5f6`.
 
-## Backend disponible
+## 1. Ce qui reste valide
 
-- références globales : CanonicalProduct, ProductVariant, ProductCategory ;
-- catalogue tenant : WorkspaceProduct ;
-- historique global : ProductReferenceEvent ;
-- import temporaire : ProductImportSession + TTL ;
-- bootstrap versionné : ProductReferenceBootstrapRun ;
-- RBAC Workspace : product:read, product:catalog:manage, product:contribute ;
-- Platform : platform:products:read, platform:products:manage ;
-- API Workspace + API Platform ;
-- import CSV/XLS/XLSX en trois étapes inspect → preview → commit ;
-- détection des colonnes M-003 hors périmètre ;
-- bootstrap versionné et transactionnel, dataset réel non encore activé.
+- `CanonicalProduct`, `ProductVariant`, `ProductCategory` globaux métier ;
+- `WorkspaceProduct` tenant-scoped ;
+- `ProductReferenceEvent` pour l'historique global métier ;
+- `ProductImportSession` temporaire ;
+- normalisation / anti-doublon / proximité ;
+- contributions `PENDING_REVIEW` ;
+- API Workspace M-002 dans son principe ;
+- Mon catalogue / Tout le référentiel ;
+- import inspect → preview → commit dans son principe métier ;
+- frontière M-003 fournisseur/référence/conditionnement/tarifs ;
+- Dashboard M-002 Workspace.
 
-## Contrats frontend
+## 2. Ce qui est explicitement invalide et doit être corrigé
 
-- utiliser RTK Query pour l'état serveur ;
-- ne pas hardcoder statuts, unités ou catégories exposés par metadata ;
-- WORKSPACE = Mon catalogue ;
-- REFERENCE = Tout le référentiel visible ;
-- afficher PENDING_REVIEW en « En validation » ;
-- ne jamais exposer une contribution PENDING d'un autre Workspace ;
-- conserver le contrôle serveur des doublons ;
-- aucun prix, fournisseur ou conditionnement dans M-002 ;
-- import : inspect, mapping/preview, décisions, commit ;
-- un commit d'import obsolète peut retourner 409 et exige une nouvelle preview.
+La branche contient actuellement une fausse frontière Platform :
 
-## Tests backend présents
+```text
+platform:products:read
+platform:products:manage
+/api/platform/products
+/platform/products
+productCatalogPlatform.*
+composants/tests frontend Platform Produits
+```
 
-Normalisation, registries, modèles/indexes, validation Zod, services, rollback, tenancy, RBAC Workspace/Platform, HTTP Workspace/Platform, import CSV/XLS/XLSX, migration, bootstrap et prévisualisation obsolète.
+Le référentiel global est une donnée métier du produit, pas une donnée Platform.
 
-Ils sont présents dans Git mais ne doivent être déclarés verts qu'après exécution locale.
+Les personnes de l'équipe Platform peuvent recevoir une autorité métier Produit, mais celle-ci ne doit pas être accordée implicitement par leur rôle Platform.
 
-## Validation backend avant frontend
+## 3. Capabilities commerciales validées pour le recadrage
 
-```powershell
-git switch feature/m002-catalogue-produits
-git pull --ff-only
-git status --short
-npm ci
+À enregistrer via le point d'extension Core des capabilities :
+
+```text
+product_reference_access
+product_catalog_import
+product_contribution
+```
+
+Le moteur Plans / Entitlements / EntitlementOverrides reste Core.
+
+Exemple commercial initial :
+
+```text
+Free
+→ référentiel global
+
+Premium
+→ référentiel global
+→ import catalogue
+→ contribution Produit/déclinaison
+```
+
+Cette matrice reste configurable par plan.
+
+`file_upload` reste distinct : il concerne le fichier générique/documentaire Core et ne doit pas servir de proxy commercial à l'import Produit.
+
+## 4. Import fichier — anomalie technique actuelle
+
+`backend/modules/productCatalog/productCatalogImport.middleware.js` utilise actuellement :
+
+```text
+multer.memoryStorage()
+```
+
+Ce pipeline contourne les primitives Core de quarantaine / checksum / antivirus / nettoyage.
+
+Le Core v1.1.2 dispose déjà de briques génériques (`createUploadSingleFile`, inspection, malware scan, temporaryFileService), mais son pipeline File durable est configuré pour PDF/JPEG/PNG.
+
+La reprise doit vérifier le moyen professionnel de composer ces briques pour CSV/XLS/XLSX sans dupliquer la sécurité générique. Si une factory configurable manque réellement, le besoin est générique et doit être corrigé dans `saas-core-api` en un seul lot Core, puis intégré au produit.
+
+Le fichier importé reste temporaire ; les Produits et relations créés/mis à jour restent persistants.
+
+## 5. Point d'architecture encore à fermer
+
+Le Core v1.1.2 possède :
+
+- RBAC Workspace ;
+- RBAC Platform ;
+- routes `authenticatedRoutes`, `workspaceRoutes`, `platformRoutes` ;
+- points d'extension applicatifs.
+
+Il ne possède pas de contrat canonique explicitement nommé « RBAC métier global ».
+
+Avant de réécrire la gouvernance globale, déterminer si :
+
+1. les primitives existantes permettent une composition métier propre ; ou
+2. un point d'extension générique minimal est réellement nécessaire dans le Core.
+
+Ne pas inventer un second RBAC dans le produit sans cette vérification.
+
+## 6. Phases de reprise
+
+1. vérifier Git/KB/Core v1.1.2 et les contrats M-002 recadrés ;
+2. fermer autorisation globale + stratégie d'ingestion temporaire ;
+3. corriger backend Platform/capabilities/import ;
+4. corriger tests backend ;
+5. finaliser frontend Workspace existant ;
+6. reconstruire administration métier globale hors Platform ;
+7. corriger tests frontend ;
+8. ajouter E2E critiques ;
+9. exécuter gates applicables ;
+10. validation visuelle ;
+11. documentation finale ;
+12. une seule PR M-002 et une seule fusion.
+
+## 7. Tests / gates
+
+Aucun test ajouté récemment sur cette branche ne doit être déclaré vert par simple présence dans Git.
+
+À la fin du bloc seulement, exécuter les gates réellement prévues par le dépôt, dont au minimum :
+
+```text
 npm run release:verify
 npm run lint
 npm test
+npm --prefix frontend run lint
+npm --prefix frontend run test
+npm --prefix frontend run build
+npm run test:e2e
+npm run release:check
 ```
 
-MONGODB_URI doit viser la base de test suffixée `_test` sur le replica set `rs0`.
-
-## Suite frontend
-
-1. RTK Query M-002 ;
-2. navigation Produits ;
-3. Mon catalogue / Tout le référentiel ;
-4. recherche, filtres, pagination ;
-5. drawer Produit ;
-6. ajout/retrait catalogue ;
-7. contribution et doublons ;
-8. import inspect/preview/commit ;
-9. gouvernance Platform Produits/catégories ;
-10. Dashboard ;
-11. RTL ;
-12. E2E ;
-13. release:check ;
-14. validation visuelle ;
-15. documentation finale ;
-16. une seule PR M-002 et une seule fusion.
+Éviter les micro-validations et PR intermédiaires ; utiliser des tests ciblés pendant le développement uniquement lorsqu'ils apportent un signal utile, puis faire la validation globale en fin de bloc.
