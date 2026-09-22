@@ -8,6 +8,9 @@ import {
     ProductImportSession,
 } from '../modules/productCatalog/productImportSession.model.js';
 import {
+    ProductReferenceBootstrapRun,
+} from '../modules/productCatalog/productReferenceBootstrapRun.model.js';
+import {
     ProductReferenceEvent,
 } from '../modules/productCatalog/productReferenceEvent.model.js';
 import {
@@ -31,6 +34,7 @@ const M002_INDEX_NAMES = Object.freeze([
     'workspace_product_status_updated_at',
     'product_reference_event_entity_created_at',
     'product_reference_event_action_created_at',
+    'product_reference_bootstrap_version_unique',
     'product_import_session_ttl',
     'product_import_session_workspace_actor_created_at',
 ]);
@@ -41,6 +45,7 @@ const M002_MODELS = Object.freeze([
     ProductVariant,
     WorkspaceProduct,
     ProductReferenceEvent,
+    ProductReferenceBootstrapRun,
     ProductImportSession,
 ]);
 

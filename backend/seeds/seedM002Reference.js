@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
 import mongoose from 'mongoose';
 import { z } from 'zod';
@@ -21,7 +21,6 @@ import {
     normalizeProductText,
 } from '../modules/productCatalog/productCatalog.normalization.js';
 import {
-    PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
 } from '../modules/productCatalog/productCatalog.registry.js';
@@ -427,9 +426,7 @@ const runSeedM002Reference = async () => {
 
 const isExecutedDirectly =
     process.argv[1]
-    && import.meta.url === pathToFileURL(
-        fileURLToPath(new URL(import.meta.url)),
-    ).href;
+    && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isExecutedDirectly) {
     runSeedM002Reference().catch((error) => {
