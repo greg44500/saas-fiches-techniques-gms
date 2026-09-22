@@ -12,7 +12,7 @@ KB-START-HERE
 → code / contraintes DB
 → tests réellement exécutés
 → contrats M-002 validés
-→ Core v1.1.2 intégré
+→ Core 1.2.0 + commit 150415173c973fe39c90b87e8fb9c0f055cce31f intégré
 → dette / documentation de reprise
 ```
 
@@ -24,12 +24,16 @@ Ne jamais déclarer un test vert sans exécution réelle.
 
 ```text
 repository : greg44500/saas-core-api
-version    : 1.1.2
-tag        : v1.1.2
-commit     : 193e632d62cb048f3988e073665759cce8dd379f
+version    : 1.2.0
+tag        : v1.2.0
+commit     : 150415173c973fe39c90b87e8fb9c0f055cce31f
 ```
 
-Le Core fournit notamment : Auth / Users / Workspaces, RBAC Workspace, Platform SaaS, Plans / subscriptions, capabilities / quotas, EntitlementOverrides, Files / stockage / rétention, primitives de téléversement sécurisé, AuditLog et points d'extension applicatifs.
+Le tag `v1.2.0` reste la dernière release stable. Le commit `150415173c973fe39c90b87e8fb9c0f055cce31f`, postérieur au tag, a été validé par la Core Gate post-merge #74 et ajoute la primitive générique de téléversement temporaire sécurisé sans nouvelle release ni nouveau tag.
+
+Le SHA complet enregistré dans `core-origin.json` constitue l'autorité exacte de provenance du code Core intégré.
+
+Le Core fournit notamment : Auth / Users / Workspaces, RBAC Workspace, Platform SaaS, autorisation métier globale applicative indépendante de Platform et Workspace, Plans / subscriptions, capabilities / quotas, EntitlementOverrides, Files / stockage / rétention, téléversement durable sécurisé, téléversement temporaire sécurisé configurable, checksum SHA-256, antivirus fail-closed, quarantaine / nettoyage des temporaires, AuditLog et points d'extension applicatifs.
 
 ## 3. État Git de référence
 
@@ -127,7 +131,7 @@ Décision transverse supplémentaire : les futurs DRAFTS de Fiches techniques et
 
 RBAC et capability restent deux contrôles indépendants.
 
-## 7. Import catalogue — décision et anomalie actuelle
+## 7. Import catalogue — décision et adaptation restante
 
 Cycle cible :
 
@@ -146,18 +150,46 @@ Les données Produits persistent ; le fichier source n'a pas vocation à devenir
 
 Le stockage temporaire nécessaire à l'analyse est un coût d'exécution technique, pas un espace invisible de stockage gratuit.
 
-Anomalie actuelle :
+Adaptation produit restante :
 
 ```text
 backend/modules/productCatalog/productCatalogImport.middleware.js
 → multer.memoryStorage()
 ```
 
-Cette implémentation contourne la chaîne générique Core de quarantaine / checksum / antivirus / nettoyage.
+Cette implémentation était provisoire et contourne encore la chaîne Core de quarantaine / checksum / antivirus / nettoyage.
 
-Le Core v1.1.2 possède les primitives basses nécessaires mais son pipeline File durable est configuré pour PDF/JPEG/PNG. La reprise doit d'abord déterminer la composition professionnelle pour CSV/XLS/XLSX.
+Le prérequis Core est désormais résolu. Le produit dispose notamment de :
 
-Si une factory générique configurable manque réellement, ne pas la dupliquer dans M-002 : la traiter dans `saas-core-api` en un seul lot Core cohérent, la versionner, l'intégrer, puis reprendre M-002.
+```text
+createSecureTemporaryUploadService()
+createMulterUpload()
+createUploadedFileTypeInspector()
+politique de types configurable
+contentInspector spécialisé
+```
+
+M-002 doit maintenant remplacer `multer.memoryStorage()` par cette primitive Core.
+
+Le fichier CSV/XLS/XLSX reste un temporaire d'exécution :
+
+```text
+upload
+→ quarantaine temporaire
+→ inspection réelle du contenu
+→ checksum
+→ antivirus
+→ parsing métier
+→ suppression du temporaire
+```
+
+Il ne crée aucun document `File`, ne consomme pas le quota `storage_bytes` et ne nécessite pas la capability générique `file_upload`.
+
+Les règles spécifiques CSV/XLS/XLSX restent dans le produit :
+
+- XLSX : inspection exploitable via signature OOXML ;
+- CSV : inspection métier du contenu obligatoire ;
+- XLS historique : inspection spécialisée nécessaire, la signature CFB/OLE seule n'étant pas suffisamment discriminante.
 
 ## 8. Éléments M-002 existants à conserver sous réserve des tests
 
@@ -201,19 +233,43 @@ attentes de tests platform:products:*
 
 La logique métier utile de gouvernance peut être conservée/recomposée ; seule la frontière Platform est invalide.
 
-## 10. Deux points techniques à fermer en premier
+## 10. Prérequis Core M-002 — RÉSOLUS
 
-### A — Autorité métier globale
+### A — Autorité métier globale — RÉSOLU
 
-Le Core v1.1.2 n'expose pas explicitement un RBAC global métier indépendant de Platform.
+Core 1.2.0 fournit désormais une autorité métier globale indépendante de Platform et Workspace :
 
-Déterminer si les primitives existantes suffisent à composer cette autorité proprement. Sinon, formaliser un besoin Core générique minimal. Ne pas inventer un second RBAC local sans cette vérification.
+```text
+ApplicationGlobalRole
+ApplicationGlobalMember
+resolveApplicationGlobalAuthorization()
+authorizeApplicationGlobalPermission()
+```
 
-### B — Ingestion temporaire sécurisée
+M-002 doit composer ses permissions métier globales dans le registre applicatif du produit et utiliser ces primitives. Aucun second RBAC produit ne doit être créé.
 
-Déterminer comment réutiliser les primitives Core de téléversement/inspection/nettoyage pour CSV/XLS/XLSX sans maintenir un deuxième pipeline Multer métier et sans coupler l'import à une capability commerciale de stockage documentaire durable.
+### B — Ingestion temporaire sécurisée — RÉSOLU
 
-Si le Core doit évoluer, grouper l'évolution en un seul lot Core utile et réutilisable ; aucune micro-version destinée uniquement à réparer un test.
+Le commit Core :
+
+```text
+150415173c973fe39c90b87e8fb9c0f055cce31f
+```
+
+fournit la primitive générique configurable nécessaire.
+
+M-002 doit :
+
+```text
+retirer multer.memoryStorage()
+→ définir sa politique CSV/XLS/XLSX
+→ fournir les contentInspectors métier nécessaires
+→ utiliser createSecureTemporaryUploadService()
+→ parser le contenu inspecté
+→ garantir le nettoyage du temporaire
+```
+
+Aucun deuxième pipeline Multer métier ne doit être maintenu.
 
 ## 11. Phases de reprise M-002
 
@@ -222,8 +278,8 @@ Phase 1 — analyse réelle
 → relire KB
 → vérifier HEAD / main / core-origin
 → relire contrats M-002 recadrés
-→ relire Core v1.1.2 nécessaire
-→ fermer A et B ci-dessus
+→ relire Core 1.2.0 + commit 1504151 nécessaire
+→ appliquer les prérequis A et B désormais résolus
 
 Phase 2 — correction backend cohérente
 → retirer dépendance Platform Produits
@@ -275,7 +331,7 @@ Ne pas créer de micro-PR pour correction Platform, capability, import, test ou 
 
 Tout reste dans le même lot M-002 et la même branche jusqu'à validation finale.
 
-Si une évolution Core générique est réellement nécessaire, elle constitue un seul lot Core indépendant et cohérent ; après intégration de la nouvelle release Core dans le produit, M-002 reprend sur sa branche unique.
+Si une évolution Core générique devient de nouveau nécessaire, elle constitue un seul lot Core indépendant et cohérent. L'intégration peut viser une release stable ou, lorsqu'une décision explicite l'autorise comme pour le commit `1504151`, un SHA Core précis validé sans inventer de nouvelle version. M-002 reprend ensuite sur sa branche unique.
 
 ## 13. Gates finales
 

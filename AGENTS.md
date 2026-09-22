@@ -419,7 +419,7 @@ upstream-core
 → greg44500/saas-core-api
 ```
 
-Les upgrades Core doivent suivre :
+Les upgrades Core suivent par défaut :
 
 ```text
 upstream-core
@@ -436,7 +436,13 @@ upstream-core
 → validation post-merge
 ```
 
-Ne jamais intégrer aveuglément `upstream-core/main`.
+Exception explicite : lorsqu'un lot Core validé est volontairement livré sans nouvelle release ni nouveau tag, le produit peut intégrer le commit exact validé depuis `upstream-core/main`. Dans ce cas :
+
+- le SHA complet du commit devient l'autorité de provenance dans `core-origin.json` ;
+- la `version` et le `tag` existants restent ceux de la dernière release stable et ne sont jamais artificiellement incrémentés ;
+- la branche produit utilise un nom explicite de type `core-update/<objet>-<sha7>` ;
+- le diff entre le commit Core précédemment intégré et le nouveau commit est revu avant intégration ;
+- cette exception ne vaut jamais autorisation d'intégrer aveuglément le dernier `upstream-core/main`.
 
 Les tags Core publiés sont immuables.
 

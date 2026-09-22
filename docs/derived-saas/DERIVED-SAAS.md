@@ -1075,3 +1075,60 @@ L’intégration exige la migration Core des index, la composition des descripto
 Référence canonique :
 
     docs/contracts/APPLICATION-GLOBAL-AUTHORIZATION.md
+
+
+---
+
+## Uploads techniques temporaires d'un SaaS dérivé
+
+Un SaaS dérivé peut avoir besoin de recevoir un fichier uniquement pour le
+parser ou l'importer, sans le conserver comme document utilisateur.
+
+Dans ce cas, il doit utiliser la primitive :
+
+```text
+createSecureTemporaryUploadService({ policy })
+```
+
+et non créer un second pipeline Multer ou utiliser `memoryStorage()` comme
+solution finale.
+
+La politique appartient au produit :
+
+```text
+types autorisés
+MIME autorisés
+extensions autorisées
+taille maximale
+inspecteur de contenu spécialisé si nécessaire
+```
+
+Les mécanismes de sécurité restent fournis par le Core :
+
+```text
+quarantaine
+limites multipart
+inspection
+checksum
+antivirus
+fail-closed
+nettoyage
+```
+
+Le produit ne doit pas créer un document `File` uniquement pour faire
+fonctionner un import temporaire et ne doit pas consommer
+`storage_bytes` pour cet artefact technique.
+
+Les formats que `file-type` ne sait pas reconnaître de manière suffisamment
+précise doivent utiliser un `contentInspector` produit qui analyse réellement
+le contenu.
+
+Contrat :
+
+```text
+docs/contracts/SECURE-TEMPORARY-UPLOAD.md
+```
+
+Lors d'un upgrade Core qui apporte cette primitive sans nouvelle release
+taguée, la provenance produit doit pointer vers le commit Core réellement
+intégré et ne doit pas inventer un nouveau tag ou numéro de version.
