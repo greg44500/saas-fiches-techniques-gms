@@ -64,7 +64,10 @@ Critères :
 - [ ] `EntitlementOverride` continue de fonctionner sur ces features ;
 - [ ] backend contrôle réellement les entitlements ;
 - [ ] RBAC Workspace reste un contrôle distinct ;
-- [ ] `file_upload` n'est pas utilisé comme substitut de `product_catalog_import`.
+- [ ] `product_catalog_import` reste la capability métier vendable ;
+- [ ] l'import ne nécessite pas l'activation d'un stockage documentaire durable ;
+- [ ] un temporaire d'import ne consomme pas un quota commercial de stockage utilisateur ;
+- [ ] les limites de taille/TTL/concurrence restent des garde-fous techniques.
 
 Exemple commercial initial à conserver comme configuration, non comme constante : Free peut accéder au référentiel global ; Premium peut en plus importer et contribuer.
 
@@ -78,6 +81,7 @@ Le pipeline métier inspect → preview → commit est conservé.
 - [ ] réutiliser les primitives Core de téléversement temporaire sécurisé ;
 - [ ] conserver CSV / XLS / XLSX comme politique métier d'import ;
 - [ ] ne pas créer de `File` durable pour le seul import ;
+- [ ] ne pas introduire un second quota/capacité de stockage pour les imports ;
 - [ ] supprimer le temporaire après traitement ;
 - [ ] conserver la session d'import métier et les données Produit résultantes ;
 - [ ] si le Core v1.1.2 ne permet pas cette composition sans duplication de sécurité, traiter une unique évolution générique dans `saas-core-api`, puis l'intégrer au produit.
