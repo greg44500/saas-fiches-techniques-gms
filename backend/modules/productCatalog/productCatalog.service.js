@@ -227,10 +227,14 @@ const buildProductSearchFilter = ({
     workspaceId,
     categoryId,
     q,
+    includeArchived = false,
 }) => {
     const visibility = {
         $or: [
             { status: PRODUCT_STATUS.ACTIVE },
+            ...(includeArchived
+                ? [{ status: PRODUCT_STATUS.ARCHIVED }]
+                : []),
             {
                 status: PRODUCT_STATUS.PENDING_REVIEW,
                 contributedFromWorkspace: asObjectId(workspaceId),
@@ -272,13 +276,13 @@ const listProductSearch = async ({
         workspaceId,
         categoryId,
         q,
+        includeArchived: scope === 'WORKSPACE',
     });
 
     const products = await CanonicalProduct.find(productFilter)
         .select('_id name aliases category status searchKeys createdAt updatedAt')
         .populate('category')
         .sort({ name: 1, _id: 1 })
-        .limit(5000)
         .lean();
 
     const normalizedQuery = q ? normalizeProductText(q) : null;
@@ -305,6 +309,9 @@ const listProductSearch = async ({
         identityActive: true,
         $or: [
             { status: PRODUCT_STATUS.ACTIVE },
+            ...(scope === 'WORKSPACE'
+                ? [{ status: PRODUCT_STATUS.ARCHIVED }]
+                : []),
             {
                 status: PRODUCT_STATUS.PENDING_REVIEW,
                 contributedFromWorkspace: asObjectId(workspaceId),
@@ -397,44 +404,75 @@ const getWorkspaceProductDetail = async ({
     const product = await CanonicalProduct.findOne({
         _id: productId,
         identityActive: true,
-        $or: [
-            { status: PRODUCT_STATUS.ACTIVE },
-            {
-                status: PRODUCT_STATUS.PENDING_REVIEW,
-                contributedFromWorkspace: workspaceId,
-            },
-        ],
+        status: mongoose.trusted({
+            $in: [
+                PRODUCT_STATUS.ACTIVE,
+                PRODUCT_STATUS.ARCHIVED,
+                PRODUCT_STATUS.PENDING_REVIEW,
+            ],
+        }),
     })
         .populate('category')
         .lean();
 
-    if (!product) {
+    if (
+        !product
+        || (
+            product.status === PRODUCT_STATUS.PENDING_REVIEW
+            && product.contributedFromWorkspace?.toString()
+                !== workspaceId.toString()
+        )
+    ) {
         throw new AppError('Produit introuvable.', 404);
     }
 
     const variants = await ProductVariant.find({
         canonicalProduct: product._id,
         identityActive: true,
-        $or: [
-            { status: PRODUCT_STATUS.ACTIVE },
-            {
-                status: PRODUCT_STATUS.PENDING_REVIEW,
-                contributedFromWorkspace: workspaceId,
-            },
-        ],
+        status: mongoose.trusted({
+            $in: [
+                PRODUCT_STATUS.ACTIVE,
+                PRODUCT_STATUS.ARCHIVED,
+                PRODUCT_STATUS.PENDING_REVIEW,
+            ],
+        }),
     }).sort({ createdAt: 1, _id: 1 }).lean();
 
     const entries = await WorkspaceProduct.find({
         workspace: workspaceId,
-        productVariant: mongoose.trusted({ $in: variants.map(({ _id }) => _id) }),
+        productVariant: mongoose.trusted({
+            $in: variants.map(({ _id }) => _id),
+        }),
     }).lean();
     const entryByVariantId = new Map(
         entries.map((entry) => [entry.productVariant.toString(), entry]),
     );
 
+    const visibleVariants = variants.filter((variant) => {
+        if (variant.status === PRODUCT_STATUS.ACTIVE) {
+            return true;
+        }
+
+        if (variant.status === PRODUCT_STATUS.PENDING_REVIEW) {
+            return variant.contributedFromWorkspace?.toString()
+                === workspaceId.toString();
+        }
+
+        return entryByVariantId.has(variant._id.toString());
+    });
+
+    if (
+        product.status === PRODUCT_STATUS.ARCHIVED
+        && visibleVariants.every(
+            (variant) => !entryByVariantId.has(variant._id.toString()),
+        )
+    ) {
+        throw new AppError('Produit introuvable.', 404);
+    }
+
     return {
         product: serializeProduct(product),
-        variants: variants.map((variant) => ({
+        variants: visibleVariants.map((variant) => ({
             ...serializeVariant(variant),
             workspaceEntry: entryByVariantId.get(variant._id.toString())
                 ? {
