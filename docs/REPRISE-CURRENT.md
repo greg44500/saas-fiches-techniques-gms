@@ -117,7 +117,13 @@ Premium
 
 Cette matrice reste configurable dans les Plans et compatible avec `EntitlementOverride`.
 
-`file_upload` reste distinct de `product_catalog_import` : le stockage documentaire durable Core et l'import métier temporaire ne sont pas la même fonctionnalité commerciale.
+Le produit ne doit pas commercialiser deux capacités de stockage.
+
+`product_catalog_import` est la capability métier de l'import. Le CSV/XLS/XLSX est un temporaire d'exécution : il peut utiliser les primitives File du Core sans activer un espace documentaire durable et sans consommer un quota commercial de stockage utilisateur.
+
+La capability générique Core `file_upload` peut rester disponible pour un futur besoin réel de fichiers persistants, mais elle n'est pas une précondition commerciale de M-002.
+
+Décision transverse supplémentaire : les futurs DRAFTS de Fiches techniques et les Fiches techniques VALIDATED seront limitables commercialement par **deux quotas métier de comptage distincts**. Ils utiliseront le moteur Core de metrics / limits / entitlements / overrides et non `storage_bytes`. Valeurs et règles exactes seront cadrées en M-004.
 
 RBAC et capability restent deux contrôles indépendants.
 
@@ -137,6 +143,8 @@ CSV / XLS / XLSX
 ```
 
 Les données Produits persistent ; le fichier source n'a pas vocation à devenir un document durable.
+
+Le stockage temporaire nécessaire à l'analyse est un coût d'exécution technique, pas un espace invisible de stockage gratuit.
 
 Anomalie actuelle :
 
@@ -203,7 +211,7 @@ Déterminer si les primitives existantes suffisent à composer cette autorité p
 
 ### B — Ingestion temporaire sécurisée
 
-Déterminer comment réutiliser les primitives Core de téléversement/inspection/nettoyage pour CSV/XLS/XLSX sans maintenir un deuxième pipeline Multer métier.
+Déterminer comment réutiliser les primitives Core de téléversement/inspection/nettoyage pour CSV/XLS/XLSX sans maintenir un deuxième pipeline Multer métier et sans coupler l'import à une capability commerciale de stockage documentaire durable.
 
 Si le Core doit évoluer, grouper l'évolution en un seul lot Core utile et réutilisable ; aucune micro-version destinée uniquement à réparer un test.
 
