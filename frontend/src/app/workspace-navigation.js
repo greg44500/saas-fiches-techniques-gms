@@ -1,4 +1,5 @@
 import { dossiersWorkspaceNavigation } from '@/features/dossiers/dossiers-navigation';
+import { productsWorkspaceNavigation } from '@/features/products/products-navigation';
 import { coreWorkspaceNavigation } from '@/features/workspace/navigation/core-workspace-navigation';
 
 /**
@@ -52,6 +53,7 @@ function composeWorkspaceNavigation(navigationModules = []) {
  */
 const APPLICATION_WORKSPACE_NAVIGATION_MODULES = Object.freeze([
   dossiersWorkspaceNavigation,
+  productsWorkspaceNavigation,
 ]);
 
 const workspaceNavigation = composeWorkspaceNavigation(
