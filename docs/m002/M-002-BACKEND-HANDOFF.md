@@ -62,7 +62,11 @@ Premium
 
 Cette matrice reste configurable par plan.
 
-`file_upload` reste distinct : il concerne le fichier générique/documentaire Core et ne doit pas servir de proxy commercial à l'import Produit.
+Le produit ne doit pas créer deux capacités de stockage.
+
+`product_catalog_import` est la fonctionnalité métier vendable. Elle utilise un temporaire technique sécurisé, sans activer un espace documentaire durable ni consommer un quota commercial de stockage utilisateur.
+
+La capability générique Core `file_upload`, si elle reste disponible pour d'autres SaaS ou un futur besoin documentaire durable, n'est pas une précondition commerciale de M-002.
 
 ## 4. Import fichier — anomalie technique actuelle
 
@@ -78,7 +82,9 @@ Le Core v1.1.2 dispose déjà de briques génériques (`createUploadSingleFile`,
 
 La reprise doit vérifier le moyen professionnel de composer ces briques pour CSV/XLS/XLSX sans dupliquer la sécurité générique. Si une factory configurable manque réellement, le besoin est générique et doit être corrigé dans `saas-core-api` en un seul lot Core, puis intégré au produit.
 
-Le fichier importé reste temporaire ; les Produits et relations créés/mis à jour restent persistants.
+Le fichier importé reste temporaire ; les Produits et relations créés/mis à jour restent persistants. Taille maximale, TTL et concurrence éventuelle sont des garde-fous techniques, pas une capacité de stockage vendue.
+
+Pour les futurs modules de Fiches techniques, ne pas réutiliser `storage_bytes` pour mesurer les brouillons ou fiches validées : le besoin commercial validé est de limiter leur **nombre** via des métriques/quota métier dédiés déclarés par le produit et évalués par le moteur Core. Les seuils seront fermés en M-004.
 
 ## 5. Point d'architecture encore à fermer
 
