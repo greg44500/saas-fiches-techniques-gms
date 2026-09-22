@@ -1,6 +1,6 @@
 # M-002 — Critères d'acceptation et ordre d'implémentation
 
-**Statut : PROPOSÉ — attente de validation métier globale**
+**Statut : BACKEND IMPLÉMENTÉ — exécution locale des gates backend requise avant handoff frontend**
 **Module : Catalogue Produits / Produits canoniques**
 
 ## 1. Condition de démarrage du code
@@ -25,71 +25,71 @@ Une seule PR fonctionnelle sera créée à la fin du lot.
 
 ## 2. Critères Domaine
 
-- [ ] Produit canonique global sans ownership Workspace ;
-- [ ] Déclinaison séparée de l'identité canonique ;
-- [ ] WorkspaceProduct référence une déclinaison sans copie d'identité ;
-- [ ] catégorie globale mono-catégorie V1 ;
-- [ ] rendement porté par la déclinaison et jamais deviné ;
-- [ ] unité normalisée backend-driven ;
-- [ ] aucun prix/fournisseur/conditionnement M-003 dans le modèle M-002.
+- [x] Produit canonique global sans ownership Workspace ;
+- [x] Déclinaison séparée de l'identité canonique ;
+- [x] WorkspaceProduct référence une déclinaison sans copie d'identité ;
+- [x] catégorie globale mono-catégorie V1 ;
+- [x] rendement porté par la déclinaison et jamais deviné ;
+- [x] unité normalisée backend-driven ;
+- [x] aucun prix/fournisseur/conditionnement M-003 dans le modèle M-002.
 
 ## 3. Critères Gouvernance
 
-- [ ] contribution Workspace PENDING_REVIEW ;
-- [ ] PENDING visible uniquement au Workspace contributeur + Platform ;
-- [ ] validation Platform avant exposition globale ACTIVE ;
-- [ ] correction globale réservée à Platform ;
-- [ ] aucun edit global arbitraire via permission Workspace ;
-- [ ] archive globale non destructive ;
-- [ ] fusion destructive différée tant que le graphe M-003/M-004 n'est pas complet.
+- [x] contribution Workspace PENDING_REVIEW ;
+- [x] PENDING visible uniquement au Workspace contributeur + Platform ;
+- [x] validation Platform avant exposition globale ACTIVE ;
+- [x] correction globale réservée à Platform ;
+- [x] aucun edit global arbitraire via permission Workspace ;
+- [x] archive globale non destructive ;
+- [x] fusion destructive différée tant que le graphe M-003/M-004 n'est pas complet.
 
 ## 4. Critères Doublons
 
-- [ ] normalisation backend unique ;
-- [ ] searchKeys uniques ;
-- [ ] aliases ;
-- [ ] recherche de proximité ;
-- [ ] exact match impossible à recréer ;
-- [ ] near match impose une revue explicite ;
-- [ ] serveur recalcule les candidats lors de la contribution ;
-- [ ] signature de déclinaison unique par Produit.
+- [x] normalisation backend unique ;
+- [x] searchKeys uniques ;
+- [x] aliases ;
+- [x] recherche de proximité ;
+- [x] exact match impossible à recréer ;
+- [x] near match impose une revue explicite ;
+- [x] serveur recalcule les candidats lors de la contribution ;
+- [x] signature de déclinaison unique par Produit.
 
 ## 5. Critères RBAC
 
 Workspace :
 
-- [ ] `product:read` ;
-- [ ] `product:catalog:manage` ;
-- [ ] `product:contribute` ;
-- [ ] owner enrichi via le descriptor produit.
+- [x] `product:read` ;
+- [x] `product:catalog:manage` ;
+- [x] `product:contribute` ;
+- [x] owner enrichi via le descriptor produit.
 
 Platform :
 
-- [ ] `platform:products:read` ;
-- [ ] `platform:products:manage` ;
-- [ ] gestion enregistrée via le point d'extension Platform du Core.
+- [x] `platform:products:read` ;
+- [x] `platform:products:manage` ;
+- [x] gestion enregistrée via le point d'extension Platform du Core.
 
 ## 6. Critères API
 
 Workspace :
 
-- [ ] metadata ;
-- [ ] search ;
-- [ ] detail ;
-- [ ] duplicate-check ;
-- [ ] contribution Produit ;
-- [ ] contribution Déclinaison ;
-- [ ] ajout catalogue ;
-- [ ] retrait catalogue.
+- [x] metadata ;
+- [x] search ;
+- [x] detail ;
+- [x] duplicate-check ;
+- [x] contribution Produit ;
+- [x] contribution Déclinaison ;
+- [x] ajout catalogue ;
+- [x] retrait catalogue.
 
 Platform :
 
-- [ ] list/detail ;
-- [ ] catégories ;
-- [ ] update Produit ;
-- [ ] approve/reject Produit ;
-- [ ] lifecycle Produit ;
-- [ ] update/approve/reject/lifecycle Déclinaison.
+- [x] list/detail ;
+- [x] catégories ;
+- [x] update Produit ;
+- [x] approve/reject Produit ;
+- [x] lifecycle Produit ;
+- [x] update/approve/reject/lifecycle Déclinaison.
 
 ## 7. Critères Frontend
 
@@ -107,40 +107,40 @@ Platform :
 
 ## 8. Critères Bootstrap
 
-- [ ] seed versionné ;
-- [ ] idempotent ;
-- [ ] mêmes invariants que runtime ;
-- [ ] dataset nettoyé/revu ;
-- [ ] aucune donnée M-003 injectée comme attribut Produit ;
-- [ ] migration indexes idempotente ;
-- [ ] manifest migration synchronisé.
+- [x] seed versionné ;
+- [x] idempotent ;
+- [x] mêmes invariants que runtime ;
+- [ ] dataset nettoyé/revu — volontairement différé : `m002-reference.v1.json` reste `ready: false` ;
+- [x] aucune donnée M-003 injectée comme attribut Produit ;
+- [x] migration indexes idempotente ;
+- [x] manifest migration synchronisé.
 
 ## 9. Critères Import
 
-- [ ] CSV / XLS / XLSX Produits pris en charge par un pipeline M-002 ;
-- [ ] mapping de colonnes avant import ;
-- [ ] prévisualisation obligatoire ;
-- [ ] exact duplicates rattachés, jamais recréés ;
-- [ ] near duplicates nécessitent une revue ;
-- [ ] nouvelles identités/déclinaisons passent par PENDING_REVIEW ;
-- [ ] lignes ambiguës non créées automatiquement ;
-- [ ] données fournisseur/prix détectées comme hors périmètre M-002 ;
-- [ ] aucun fichier source durable n'est créé uniquement pour l'import ;
-- [ ] contrat M-003 figé : catalogue fournisseur partagé au Workspace, conditions locales par Dossier sans duplication du catalogue.
+- [x] CSV / XLS / XLSX Produits pris en charge par un pipeline M-002 ;
+- [x] mapping de colonnes avant import ;
+- [x] prévisualisation obligatoire ;
+- [x] exact duplicates rattachés, jamais recréés ;
+- [x] near duplicates nécessitent une revue ;
+- [x] nouvelles identités/déclinaisons passent par PENDING_REVIEW ;
+- [x] lignes ambiguës non créées automatiquement ;
+- [x] données fournisseur/prix détectées comme hors périmètre M-002 ;
+- [x] aucun fichier source durable n'est créé uniquement pour l'import ;
+- [x] contrat M-003 figé : catalogue fournisseur partagé au Workspace, conditions locales par Dossier sans duplication du catalogue.
 
 ## 10. Critères Tests
 
-- [ ] normalisation ;
-- [ ] models/indexes ;
-- [ ] services ;
-- [ ] transaction rollback ;
-- [ ] tenancy ;
-- [ ] Workspace RBAC ;
-- [ ] Platform RBAC ;
-- [ ] API ;
+- [x] normalisation ;
+- [x] models/indexes ;
+- [x] services ;
+- [x] transaction rollback ;
+- [x] tenancy ;
+- [x] Workspace RBAC ;
+- [x] Platform RBAC ;
+- [x] API ;
 - [ ] frontend RTL ;
 - [ ] 4 E2E critiques ;
-- [ ] bootstrap/migration.
+- [x] bootstrap/migration.
 
 ## 11. Ordre d'implémentation après validation
 

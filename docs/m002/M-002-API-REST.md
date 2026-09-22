@@ -1,6 +1,6 @@
 # M-002 — Contrat API REST proposé
 
-**Statut : PROPOSÉ — aucun endpoint à implémenter avant validation globale du cadrage**
+**Statut : BACKEND IMPLÉMENTÉ — validation par exécution des tests encore requise**
 
 ## 1. Frontière Workspace
 
@@ -177,9 +177,21 @@ Aucun delete physique.
 
 Permission : `product:contribute`, avec `product:catalog:manage` requise lorsque le commit rattache des références existantes au catalogue.
 
-### POST /imports/preview
+### POST /imports/inspect
 
-Reçoit un fichier CSV / XLS / XLSX temporaire et un mapping de colonnes.
+Reçoit le fichier CSV / XLS / XLSX temporaire dans le champ multipart `file`.
+
+Le backend :
+
+- valide le format et les limites ;
+- lit uniquement la première feuille Excel ;
+- ne crée aucun File Core ni document métier durable ;
+- persiste une session d'import temporaire TTL ;
+- retourne `importId`, en-têtes, nombre de lignes et colonnes commerciales détectées hors M-002.
+
+### POST /imports/:importId/preview
+
+Reçoit le mapping de colonnes et les valeurs par défaut éventuelles.
 
 Le backend :
 
@@ -189,13 +201,15 @@ Le backend :
 - recherche les Produits/déclinaisons existants ;
 - produit exact matches, candidats proches, nouvelles contributions potentielles, lignes ambiguës et lignes invalides.
 
-Le résultat de prévisualisation est serveur-owned et porte un identifiant court de session d'import ; il ne devient pas une ressource documentaire durable.
+Le résultat de prévisualisation est serveur-owned, rattaché à la session d'import temporaire et ne devient pas une ressource documentaire durable.
 
 ### POST /imports/:importId/commit
 
+Permissions : `product:contribute` **et** `product:catalog:manage`.
+
 Le client fournit les décisions utilisateur sur les lignes ambiguës et les candidats proches.
 
-Le backend revalide la prévisualisation avant mutation.
+Le backend revendique atomiquement la session, revalide la prévisualisation contre l'état courant du référentiel et refuse un commit obsolète avec conflit 409.
 
 Résultats possibles par ligne :
 

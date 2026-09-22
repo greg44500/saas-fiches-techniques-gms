@@ -1,6 +1,6 @@
 # M-002 — Indexes, migration et bootstrap
 
-**Statut : PROPOSÉ — à valider avant implémentation DB**
+**Statut : BACKEND IMPLÉMENTÉ — dataset initial encore non validé**
 
 ## 1. Aucun backfill métier historique
 
@@ -43,7 +43,7 @@ Aucune donnée existante M-001 n'a besoin d'être transformée.
 Script proposé :
 
 ```text
-npm run migration:m002-indexes
+npm run migration:m002-catalog
 ```
 
 Responsabilités :
@@ -78,13 +78,17 @@ products[]
   variants[]
 ```
 
+Le moteur de bootstrap est implémenté et versionné. Le fichier
+`backend/seeds/data/m002-reference.v1.json` reste volontairement avec
+`ready: false` et sans données tant que le premier référentiel bêta n'a pas été nettoyé et validé.
+
 Le bootstrap :
 
 - normalise ;
 - contrôle les doublons ;
 - crée/actualise idempotemment les références prévues ;
 - ne contourne pas les indexes ;
-- trace la version installée ;
+- trace la version installée et le hash du dataset dans ProductReferenceBootstrapRun ;
 - ne contient aucun prix/fournisseur/conditionnement.
 
 ## 5. Source réelle disponible
