@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+
 import mongoose from 'mongoose';
 
 import { AppError } from '../../utils/appError.js';
@@ -28,6 +30,30 @@ import { ProductVariant } from './productVariant.model.js';
 import { parseProductImportFile } from './productCatalogImport.parser.js';
 
 const IMPORT_TTL_MINUTES = 30;
+
+const loadProductImportBuffer = async (file) => {
+    if (Buffer.isBuffer(file?.buffer)) {
+        return file.buffer;
+    }
+
+    if (
+        typeof file?.filePath === 'string'
+        && file.filePath.trim()
+    ) {
+        return readFile(file.filePath);
+    }
+
+    throw new AppError(
+        'Aucun fichier d’import valide reçu.',
+        400,
+    );
+};
+
+const getProductImportOriginalName = (file) => (
+    file?.originalName
+    ?? file?.originalname
+    ?? ''
+);
 
 const UNIT_ALIASES = Object.freeze({
     g: PRODUCT_REFERENCE_UNIT.G,
@@ -142,7 +168,11 @@ const inspectProductImport = async ({
     actorId,
     file,
 }) => {
-    const parsed = parseProductImportFile(file);
+    const buffer = await loadProductImportBuffer(file);
+    const parsed = parseProductImportFile({
+        originalname: getProductImportOriginalName(file),
+        buffer,
+    });
     const outOfScopeColumns = detectOutOfScopeColumns(parsed.headers);
     const expiresAt = new Date(
         Date.now() + IMPORT_TTL_MINUTES * 60 * 1000,

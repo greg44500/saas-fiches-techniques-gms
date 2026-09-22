@@ -22,6 +22,7 @@ import {
     summary,
 } from './productCatalog.controller.js';
 import {
+    cleanupProductImportUploadOnError,
     uploadProductImportFile,
 } from './productCatalogImport.middleware.js';
 import {
@@ -93,6 +94,7 @@ productCatalogRouter.post(
     enforceWorkspaceAccessMode(),
     uploadProductImportFile,
     inspectImport,
+    cleanupProductImportUploadOnError,
 );
 
 productCatalogRouter.post(

@@ -16,6 +16,9 @@ import {
     inspectProductImport,
     previewProductImport,
 } from './productCatalogImport.service.js';
+import {
+    productCatalogImportUploadService,
+} from './productCatalogImportUpload.service.js';
 
 const metadata = async (req, res) => {
     res.status(200).json({
@@ -126,11 +129,19 @@ const archive = async (req, res) => {
 };
 
 const inspectImport = async (req, res) => {
-    const result = await inspectProductImport({
-        workspaceId: req.workspace._id,
-        actorId: req.user._id,
-        file: req.file,
-    });
+    const result =
+        await productCatalogImportUploadService
+            .processTemporaryUpload({
+                file: req.file,
+                consume: (inspectedFile) =>
+                    inspectProductImport({
+                        workspaceId:
+                            req.workspace._id,
+                        actorId:
+                            req.user._id,
+                        file: inspectedFile,
+                    }),
+            });
 
     res.status(201).json({
         status: 'success',

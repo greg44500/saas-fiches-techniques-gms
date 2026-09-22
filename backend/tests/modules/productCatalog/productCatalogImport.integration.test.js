@@ -1,6 +1,14 @@
 import '../../setup.js';
 
 import {
+    mkdtemp,
+    rm,
+    writeFile,
+} from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+import {
     beforeEach,
     describe,
     expect,
@@ -37,6 +45,38 @@ const csvFile = (content) => ({
 });
 
 describe('M-002 product import service', () => {
+    it('inspecte une source sécurisée depuis son chemin temporaire', async () => {
+        const directory = await mkdtemp(
+            path.join(tmpdir(), 'm002-import-'),
+        );
+        const filePath = path.join(directory, 'quarantine-file');
+
+        try {
+            await writeFile(
+                filePath,
+                'Produit;Forme\nPanais;entier',
+                'utf8',
+            );
+
+            const inspected = await inspectProductImport({
+                workspaceId: ownerContext.workspace._id,
+                actorId: ownerContext.owner._id,
+                file: {
+                    filePath,
+                    originalName: 'produits.csv',
+                },
+            });
+
+            expect(inspected.format).toBe('CSV');
+            expect(inspected.rowCount).toBe(1);
+        } finally {
+            await rm(directory, {
+                recursive: true,
+                force: true,
+            });
+        }
+    });
+
     it('prévisualise sans mutation puis crée une contribution au commit', async () => {
         const inspected = await inspectProductImport({
             workspaceId: ownerContext.workspace._id,
