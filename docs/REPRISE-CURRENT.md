@@ -1,12 +1,12 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : M-001 EN PR — PR #10 ouverte — corrections UX post-revue intégrées — validation locale/Core Gate à relancer sur le nouveau head**
+> **Statut : M-001 IMPLÉMENTÉ ET VALIDÉ TECHNIQUEMENT — Core v1.1.1 — lot fonctionnel PR #10 en clôture Git/CI**
 >
-> **Dernière mise à jour : 2026-09-21**
+> **Dernière mise à jour : 2026-09-22**
 >
 > Le code réel, les contraintes DB, les tests/gates réellement exécutés et les contrats canoniques priment sur cette synthèse.
 >
-> **Le backend, le frontend métier M-001 et les quatre parcours Playwright critiques sont implémentés sur `feature/m001-dossiers-access`. Les contrôles locaux complets étaient verts avant la revue visuelle. La PR #10 reste ouverte vers `main` et reçoit maintenant les corrections UX de la liste et du drawer ; ces changements doivent être revalidés localement et par une nouvelle Core Gate sur le nouveau head avant toute fusion.**
+> **Le backend, le frontend métier M-001 et les quatre parcours Playwright critiques sont implémentés sur `feature/m001-dossiers-access`. Après intégration de Core v1.1.1 et réalignement des E2E avec le drawer à quatre onglets, `npm run release:check` est vert localement avec 11/11 Playwright. La Core Gate #101 est `success` sur le head applicatif `79cfe24579e4b39232835fd156009d6f038d9465`. Toute modification documentaire finale du head doit repasser la Core Gate avant fusion ; une Core Gate post-merge sur `main` reste obligatoire. Les éventuels ajustements purement visuels découverts ultérieurement seront traités comme un lot UX post-merge sans rouvrir le cadrage M-001.**
 
 ---
 
@@ -36,12 +36,12 @@ Produit = métier
 
 Dépôt produit : `greg44500/saas-fiches-techniques-gms`.
 
-Base de la branche d'implémentation :
+Base Core/produit synchronisée avant clôture M-001 :
 
 ```text
 main
-08a12982fd80526a32e2620b0a35c3b1fe108cac
-Merge pull request #9 from greg44500/docs/m001-retention-storage-framing
+9b3b469def624e70a9a857b9e3cee8a0fed1bb1a
+Merge pull request #11 from greg44500/core-update/v1.1.1
 ```
 
 Branche active :
@@ -70,9 +70,9 @@ Core intégré :
 
 ```text
 repository : greg44500/saas-core-api
-version    : 1.1.0
-tag        : v1.1.0
-commit     : 8326fb48856dcef151b5ab01495c934951050d6d
+version    : 1.1.1
+tag        : v1.1.1
+commit     : 3ef3cfc11f67ecad047e11ab2d524e45c729692c
 ```
 
 `core-origin.json` est l'autorité de provenance.
@@ -512,7 +512,7 @@ Liste
 → recherche / filtres
 
 Drawer
-→ Informations / Accès / Activité
+→ Infos / Accès / Activités / Administration
 
 Dialog
 → création / modification
@@ -694,7 +694,7 @@ M-001 ne provisionne pas artificiellement les presets métier dépendant de M-00
 
 ---
 
-## 9. Implémentation M-001 — GATE LOCALE FINALE VALIDÉE
+## 9. Implémentation M-001 — VALIDATION TECHNIQUE FINALE ACQUISE
 
 Le cadrage M-001 reste complet et validé. L'implémentation a commencé sur la branche unique :
 
