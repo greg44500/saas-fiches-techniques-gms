@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Politique de versionnement et de release
 
 **Statut :** canonique — D-015 validée  
-**Dernière mise à jour :** 2026-09-18  
+**Dernière mise à jour :** 2026-09-21  
 **Périmètre :** versionnement du Core, release candidate, tags, provenance et notes de version
 
 ---
@@ -130,11 +130,13 @@ stable
 → version SemVer sans suffixe prerelease
 ```
 
-La release stable courante publiée avant la préparation de `v1.1.0` est :
+La release stable courante publiée est :
 
 ```text
-version = 1.0.1
+version = 1.1.0
 channel = stable
+tag = v1.1.0
+commit = 8326fb48856dcef151b5ab01495c934951050d6d
 ```
 
 Une version présente dans `main` n’est considérée comme publiée qu’après création du tag immuable et de la GitHub Release correspondante.

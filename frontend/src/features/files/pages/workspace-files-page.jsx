@@ -51,13 +51,17 @@ function WorkspaceFilesPage({ embedded = false, hideSectionTitle = false }) {
   const [deleteError, setDeleteError] = useState(null);
 
   useEffect(() => {
+    const nextSearch = searchInput.trim();
+
+    if (nextSearch === search) return undefined;
+
     const timeoutId = window.setTimeout(() => {
-      setSearch(searchInput.trim());
+      setSearch(nextSearch);
       setPage(1);
     }, SEARCH_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [searchInput, setPage]);
+  }, [search, searchInput, setPage]);
 
   const filesQuery = useListWorkspaceFilesQuery({
     workspaceId: workspace.id,
