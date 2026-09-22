@@ -97,12 +97,28 @@ const importMappingSchema = z.strictObject({
 
 const importPreviewBodySchema = z.strictObject({
     mapping: importMappingSchema,
+    defaults: z.strictObject({
+        referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
+        foodRange: z.number().int().min(1).max(5).nullable().optional(),
+        yieldPercent: z.number().positive().max(100).nullable().optional(),
+    }).optional().default({}),
 });
 
 const importDecisionSchema = z.strictObject({
     rowNumber: z.number().int().min(2),
     action: z.enum(['ATTACH_EXISTING', 'CREATE_NEW', 'SKIP']),
     variantId: objectIdSchema.optional(),
+}).superRefine((decision, context) => {
+    if (
+        decision.action === 'ATTACH_EXISTING'
+        && !decision.variantId
+    ) {
+        context.addIssue({
+            code: 'custom',
+            path: ['variantId'],
+            message: 'variantId est requis pour rattacher une référence existante.',
+        });
+    }
 });
 
 const importCommitBodySchema = z.strictObject({

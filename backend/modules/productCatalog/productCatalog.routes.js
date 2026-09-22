@@ -106,10 +106,8 @@ productCatalogRouter.post(
         body: importCommitBodySchema,
     }),
     loadWorkspaceContext,
-    authorizePermission(
-        PRODUCT_CATALOG_PERMISSION.CONTRIBUTE,
-        PRODUCT_CATALOG_PERMISSION.CATALOG_MANAGE,
-    ),
+    authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
+    authorizePermission(PRODUCT_CATALOG_PERMISSION.CATALOG_MANAGE),
     enforceWorkspaceAccessMode(),
     commitImport,
 );

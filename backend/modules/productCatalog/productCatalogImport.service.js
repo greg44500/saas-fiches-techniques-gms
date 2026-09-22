@@ -1,5 +1,3 @@
-import mongoose from 'mongoose';
-
 import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
@@ -137,6 +135,7 @@ const mapImportRow = ({
     row,
     rowNumber,
     mapping,
+    defaults,
 }) => {
     const value = (key) => {
         const index = mapping[key];
@@ -145,16 +144,25 @@ const mapImportRow = ({
 
     const name = String(value('name')).trim();
     const aliases = parseAliases(value('aliases'));
-    const foodRange = parseFoodRange(value('foodRange'));
-    const referenceUnit = parseReferenceUnit(value('referenceUnit'));
-    const yieldPercent = parseYield(value('yieldPercent'));
+    const rawFoodRange = value('foodRange');
+    const rawReferenceUnit = value('referenceUnit');
+    const rawYieldPercent = value('yieldPercent');
+    const foodRange = rawFoodRange === ''
+        ? defaults.foodRange ?? null
+        : parseFoodRange(rawFoodRange);
+    const referenceUnit = rawReferenceUnit === ''
+        ? defaults.referenceUnit ?? null
+        : parseReferenceUnit(rawReferenceUnit);
+    const yieldPercent = rawYieldPercent === ''
+        ? defaults.yieldPercent ?? null
+        : parseYield(rawYieldPercent);
 
     const errors = [];
 
     if (!name) errors.push('Nom Produit obligatoire.');
     if (Number.isNaN(foodRange)) errors.push('Gamme invalide.');
-    if (mapping.referenceUnit !== undefined && !referenceUnit) {
-        errors.push('Unité de référence invalide.');
+    if (!referenceUnit) {
+        errors.push('Unité de référence obligatoire ou invalide.');
     }
     if (Number.isNaN(yieldPercent)) errors.push('Rendement invalide.');
 
@@ -182,6 +190,7 @@ const previewProductImport = async ({
     actorId,
     importId,
     mapping,
+    defaults = {},
 }) => {
     const importSession = await loadImportSession({
         workspaceId,
@@ -212,6 +221,7 @@ const previewProductImport = async ({
         row,
         rowNumber: index + 2,
         mapping,
+        defaults,
     }));
 
     const requestedKeys = [
@@ -360,7 +370,7 @@ const previewProductImport = async ({
         });
     }
 
-    importSession.mapping = mapping;
+    importSession.mapping = { mapping, defaults };
     importSession.preview = preview;
     importSession.status = PRODUCT_IMPORT_STATUS.PREVIEWED;
     await importSession.save();
@@ -401,12 +411,41 @@ const commitProductImport = async ({
         return existingCommitted.committedResult;
     }
 
-    const importSession = await loadImportSession({
-        workspaceId,
-        actorId,
-        importId,
-        allowedStatuses: [PRODUCT_IMPORT_STATUS.PREVIEWED],
-    });
+    const importSession = await ProductImportSession.findOneAndUpdate(
+        {
+            _id: importId,
+            workspace: workspaceId,
+            actor: actorId,
+            status: PRODUCT_IMPORT_STATUS.PREVIEWED,
+            expiresAt: { $gt: new Date() },
+        },
+        {
+            $set: {
+                status: PRODUCT_IMPORT_STATUS.COMMITTING,
+            },
+        },
+        {
+            returnDocument: 'after',
+        },
+    );
+
+    if (!importSession) {
+        const committed = await ProductImportSession.findOne({
+            _id: importId,
+            workspace: workspaceId,
+            actor: actorId,
+            status: PRODUCT_IMPORT_STATUS.COMMITTED,
+        }).lean();
+
+        if (committed) {
+            return committed.committedResult;
+        }
+
+        throw new AppError(
+            'Cet import est expiré, invalide ou déjà en cours de traitement.',
+            409,
+        );
+    }
 
     const decisionByRow = new Map(
         decisions.map((decision) => [decision.rowNumber, decision]),
@@ -581,10 +620,25 @@ const commitProductImport = async ({
         results,
     };
 
-    importSession.status = PRODUCT_IMPORT_STATUS.COMMITTED;
-    importSession.committedAt = new Date();
-    importSession.committedResult = committedResult;
-    await importSession.save();
+    try {
+        importSession.status = PRODUCT_IMPORT_STATUS.COMMITTED;
+        importSession.committedAt = new Date();
+        importSession.committedResult = committedResult;
+        await importSession.save();
+    } catch (error) {
+        await ProductImportSession.updateOne(
+            {
+                _id: importSession._id,
+                status: PRODUCT_IMPORT_STATUS.COMMITTING,
+            },
+            {
+                $set: {
+                    status: PRODUCT_IMPORT_STATUS.PREVIEWED,
+                },
+            },
+        );
+        throw error;
+    }
 
     return committedResult;
 };

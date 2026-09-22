@@ -132,6 +132,7 @@ const previewImport = async (req, res) => {
         actorId: req.user._id,
         importId: req.validated.params.importId,
         mapping: req.validated.body.mapping,
+        defaults: req.validated.body.defaults,
     });
 
     res.status(200).json({
