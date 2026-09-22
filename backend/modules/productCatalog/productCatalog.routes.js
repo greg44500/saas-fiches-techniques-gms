@@ -19,6 +19,7 @@ import {
     metadata,
     previewImport,
     search,
+    summary,
 } from './productCatalog.controller.js';
 import {
     uploadProductImportFile,
@@ -48,6 +49,15 @@ productCatalogRouter.get(
     loadWorkspaceContext,
     authorizePermission(PRODUCT_CATALOG_PERMISSION.READ),
     metadata,
+);
+
+productCatalogRouter.get(
+    '/summary',
+    authenticate,
+    validateRequest({ params: workspaceIdParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(PRODUCT_CATALOG_PERMISSION.READ),
+    summary,
 );
 
 productCatalogRouter.get(

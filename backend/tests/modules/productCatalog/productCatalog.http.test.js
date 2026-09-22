@@ -39,6 +39,12 @@ describe('M-002 product catalog HTTP contract', () => {
         expect(
             metadata.body.data.metadata.referenceUnits,
         ).toHaveLength(6);
+        expect(
+            metadata.body.data.metadata.productCategoryStatuses,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({ value: 'ACTIVE', label: 'Active' }),
+            expect.objectContaining({ value: 'ARCHIVED', label: 'Archivée' }),
+        ]));
 
         const contribution = await request(app)
             .post(`${basePath()}/contributions`)
@@ -54,6 +60,16 @@ describe('M-002 product catalog HTTP contract', () => {
         expect(contribution.body.data.product.status).toBe(
             'PENDING_REVIEW',
         );
+
+        const summary = await request(app)
+            .get(`${basePath()}/summary`)
+            .set(headers);
+
+        expect(summary.status).toBe(200);
+        expect(summary.body.data.summary).toEqual({
+            activeCatalogEntries: 0,
+            pendingContributions: 1,
+        });
 
         const search = await request(app)
             .get(`${basePath()}/search?scope=REFERENCE`)

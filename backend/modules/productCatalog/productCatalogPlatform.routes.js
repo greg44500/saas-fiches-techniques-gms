@@ -12,6 +12,7 @@ import {
     createCategoryController,
     detail,
     list,
+    metadata,
     rejectProductController,
     rejectVariantController,
     updateCategoryController,
@@ -42,6 +43,12 @@ import {
 const platformProductCatalogRouter = Router();
 
 platformProductCatalogRouter.use(authenticate);
+
+platformProductCatalogRouter.get(
+    '/metadata',
+    authorizePlatformPermission(PRODUCT_CATALOG_PLATFORM_PERMISSION.READ),
+    metadata,
+);
 
 platformProductCatalogRouter.get(
     '/categories',

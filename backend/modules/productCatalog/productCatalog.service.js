@@ -22,6 +22,7 @@ import {
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CATEGORY_STATUS,
+    PRODUCT_CATEGORY_STATUS_REGISTRY,
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
     PRODUCT_REJECTION_REASON_REGISTRY,
@@ -203,23 +204,64 @@ const attachVariantToWorkspaceInSession = async ({
     return { entry, changed: true };
 };
 
-const getProductMetadata = async () => {
-    const categories = await ProductCategory.find({
-        status: PRODUCT_CATEGORY_STATUS.ACTIVE,
-    })
+const getProductMetadata = async ({
+    includeArchivedCategories = false,
+} = {}) => {
+    const categories = await ProductCategory.find(
+        includeArchivedCategories
+            ? {}
+            : { status: PRODUCT_CATEGORY_STATUS.ACTIVE },
+    )
         .sort({ name: 1, _id: 1 })
         .lean();
 
     return {
         productStatuses: Object.values(PRODUCT_STATUS_REGISTRY),
         workspaceProductStatuses: Object.values(WORKSPACE_PRODUCT_STATUS_REGISTRY),
+        productCategoryStatuses: Object.values(PRODUCT_CATEGORY_STATUS_REGISTRY),
         referenceUnits: Object.values(PRODUCT_REFERENCE_UNIT_REGISTRY),
         foodRanges: [...PRODUCT_FOOD_RANGES],
         rejectionReasons: Object.values(PRODUCT_REJECTION_REASON_REGISTRY),
         categories: categories.map((category) => ({
             id: category._id.toString(),
             name: category.name,
+            status: category.status,
         })),
+    };
+};
+
+const getWorkspaceProductSummary = async ({ workspaceId }) => {
+    const activeProductIds = await CanonicalProduct.find({
+        status: PRODUCT_STATUS.ACTIVE,
+        identityActive: true,
+    }).distinct('_id');
+
+    const activeVariantIds = activeProductIds.length > 0
+        ? await ProductVariant.find({
+            canonicalProduct: mongoose.trusted({ $in: activeProductIds }),
+            status: PRODUCT_STATUS.ACTIVE,
+            identityActive: true,
+        }).distinct('_id')
+        : [];
+
+    const [activeCatalogEntries, pendingContributions] = await Promise.all([
+        activeVariantIds.length > 0
+            ? WorkspaceProduct.countDocuments({
+                workspace: workspaceId,
+                productVariant: mongoose.trusted({ $in: activeVariantIds }),
+                status: WORKSPACE_PRODUCT_STATUS.ACTIVE,
+            })
+            : 0,
+        ProductVariant.countDocuments({
+            contributedFromWorkspace: workspaceId,
+            status: PRODUCT_STATUS.PENDING_REVIEW,
+            identityActive: true,
+        }),
+    ]);
+
+    return {
+        activeCatalogEntries,
+        pendingContributions,
     };
 };
 
@@ -683,6 +725,7 @@ export {
     findProductDuplicateCandidates,
     getProductMetadata,
     getWorkspaceProductDetail,
+    getWorkspaceProductSummary,
     listProductSearch,
     normalizeVariantInput,
 };

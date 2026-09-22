@@ -52,6 +52,26 @@ describe('M-002 Platform product catalog HTTP contract', () => {
         expect(created.status).toBe(201);
         expect(created.body.data.category.name).toBe('Légumes');
 
+        const metadata = await request(app)
+            .get('/api/platform/products/metadata')
+            .set(bearer(superAdminToken));
+
+        expect(metadata.status).toBe(200);
+        expect(metadata.body.data.metadata.productStatuses).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    value: 'PENDING_REVIEW',
+                    label: 'En validation',
+                }),
+            ]),
+        );
+        expect(metadata.body.data.metadata.categories).toEqual([
+            expect.objectContaining({
+                name: 'Légumes',
+                status: 'ACTIVE',
+            }),
+        ]);
+
         const listed = await request(app)
             .get('/api/platform/products/categories')
             .set(bearer(superAdminToken));

@@ -5,6 +5,7 @@ import {
     createVariantContribution,
     getProductMetadata,
     getWorkspaceProductDetail,
+    getWorkspaceProductSummary,
     listProductSearch,
 } from './productCatalog.service.js';
 import {
@@ -20,6 +21,17 @@ const metadata = async (req, res) => {
     res.status(200).json({
         status: 'success',
         data: { metadata: await getProductMetadata() },
+    });
+};
+
+const summary = async (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        data: {
+            summary: await getWorkspaceProductSummary({
+                workspaceId: req.workspace._id,
+            }),
+        },
     });
 };
 
@@ -167,4 +179,5 @@ export {
     metadata,
     previewImport,
     search,
+    summary,
 };

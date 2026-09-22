@@ -1,4 +1,7 @@
 import {
+    getProductMetadata,
+} from './productCatalog.service.js';
+import {
     approveProduct,
     approveVariant,
     createCategory,
@@ -14,6 +17,17 @@ import {
     updateVariant,
     updateVariantStatus,
 } from './productCatalogGovernance.service.js';
+
+const metadata = async (_req, res) => {
+    const productMetadata = await getProductMetadata({
+        includeArchivedCategories: true,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { metadata: productMetadata },
+    });
+};
 
 const list = async (req, res) => {
     const result = await listPlatformProducts(req.validated.query);
@@ -145,6 +159,7 @@ export {
     createCategoryController,
     detail,
     list,
+    metadata,
     rejectProductController,
     rejectVariantController,
     updateCategoryController,
