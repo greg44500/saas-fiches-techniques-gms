@@ -1,6 +1,6 @@
 {
   "name": "saas-core-api",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "description": "API backend modulaire pour une application SaaS",
@@ -50,7 +50,8 @@
     "dev:reset-trial": "node backend/operations/development/runResetTrialDevelopment.js",
     "migration:m001-indexes": "node backend/migrations/runEnsureM001IndexesMigration.js",
     "migration:m002-catalog": "node backend/migrations/runEnsureM002CatalogMigration.js",
-    "seed:m002-reference": "node backend/seeds/seedM002Reference.js"
+    "seed:m002-reference": "node backend/seeds/seedM002Reference.js",
+    "migration:application-global-authorization-indexes": "node backend/migrations/runAddApplicationGlobalAuthorizationIndexesMigration.js"
   },
   "license": "UNLICENSED",
   "dependencies": {

@@ -37,6 +37,14 @@ const AUDIT_STATUS_REGISTRY = freezeRegistry({
 });
 
 const AUDIT_ENTITY_TYPE_REGISTRY = freezeRegistry({
+    APPLICATION_GLOBAL_MEMBER: {
+        value: 'ApplicationGlobalMember',
+        label: 'Membre global de l’application',
+    },
+    APPLICATION_GLOBAL_ROLE: {
+        value: 'ApplicationGlobalRole',
+        label: 'Rôle global de l’application',
+    },
     AUTH_SESSION: {
         value: 'AuthSession',
         label: 'Session',
@@ -100,6 +108,34 @@ const AUDIT_ENTITY_TYPE_REGISTRY = freezeRegistry({
 });
 
 const AUDIT_ACTION_REGISTRY = freezeRegistry({
+    APPLICATION_GLOBAL_ROLE_CREATED: {
+        value: 'APPLICATION_GLOBAL_ROLE_CREATED',
+        label: 'Rôle global applicatif créé',
+    },
+    APPLICATION_GLOBAL_ROLE_UPDATED: {
+        value: 'APPLICATION_GLOBAL_ROLE_UPDATED',
+        label: 'Rôle global applicatif modifié',
+    },
+    APPLICATION_GLOBAL_ROLE_ARCHIVED: {
+        value: 'APPLICATION_GLOBAL_ROLE_ARCHIVED',
+        label: 'Rôle global applicatif archivé',
+    },
+    APPLICATION_GLOBAL_MEMBER_ASSIGNED: {
+        value: 'APPLICATION_GLOBAL_MEMBER_ASSIGNED',
+        label: 'Rôle global applicatif attribué',
+    },
+    APPLICATION_GLOBAL_MEMBER_SUSPENDED: {
+        value: 'APPLICATION_GLOBAL_MEMBER_SUSPENDED',
+        label: 'Membre global applicatif suspendu',
+    },
+    APPLICATION_GLOBAL_MEMBER_REACTIVATED: {
+        value: 'APPLICATION_GLOBAL_MEMBER_REACTIVATED',
+        label: 'Membre global applicatif réactivé',
+    },
+    APPLICATION_GLOBAL_MEMBER_REVOKED: {
+        value: 'APPLICATION_GLOBAL_MEMBER_REVOKED',
+        label: 'Membre global applicatif révoqué',
+    },
     LOGIN_SUCCESS: {
         value: 'LOGIN_SUCCESS',
         label: 'Connexion réussie',

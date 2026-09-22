@@ -10,6 +10,42 @@ Aucun changement supplémentaire documenté.
 
 ---
 
+## 1.2.0 — 2026-09-22
+
+Release mineure rétrocompatible ajoutant une troisième frontière d’autorisation pour les ressources métier globales des SaaS dérivés.
+
+### Added
+
+- registre code-owned `applicationGlobalPermission.registry.js` pour les permissions métier globales déclarées par le dérivé ;
+- modèles persistants `ApplicationGlobalRole` et `ApplicationGlobalMember` ;
+- résolution persistée `resolveApplicationGlobalAuthorization()` indépendante de Platform et des Workspaces ;
+- guard backend `authorizeApplicationGlobalPermission()` ;
+- services génériques de gouvernance des rôles et memberships avec anti-escalade ;
+- primitives de synchronisation des rôles système et de bootstrap explicite ;
+- AuditLogs dédiés ;
+- migration d’index `migration:application-global-authorization-indexes` ;
+- contrat canonique `docs/contracts/APPLICATION-GLOBAL-AUTHORIZATION.md`.
+
+### Security
+
+- aucune autorité métier globale n’est déduite de `PlatformRole`, `PlatformTeamMember`, `Role` ou `WorkspaceMember` ;
+- permissions inconnues et collisions de scope refusées ;
+- namespaces `platform:` et `workspace:` interdits aux permissions globales applicatives ;
+- rôle archivé ou membership suspendu/révoqué : aucun droit ;
+- les mutations ordinaires ne peuvent attribuer que des permissions déjà détenues par l’acteur ;
+- les permissions réservées restent limitées aux rôles système code-owned.
+
+### Impact
+
+- aucune permission métier spécifique n’est ajoutée au Core ;
+- aucune route métier GMS ni surface frontend Core n’est ajoutée ;
+- deux nouvelles collections MongoDB sont introduites ;
+- une migration d’index est requise avant activation en production ;
+- aucune variable d’environnement ni dépendance supplémentaire ;
+- évolution rétrocompatible classée MINOR.
+
+---
+
 ## 1.1.2 — 2026-09-22
 
 Patch rétrocompatible stabilisant les tests frontend qui interagissent avec des primitives Base UI rendues de façon asynchrone via Portal.
