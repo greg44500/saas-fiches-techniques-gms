@@ -73,6 +73,27 @@ describe('M-002 product catalog services', () => {
         );
     });
 
+    it('rollback toute la contribution si la déclinaison échoue', async () => {
+        await expect(createProductContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            name: 'Produit rollback',
+            variant: {
+                referenceUnit: 'INVALID',
+            },
+        })).rejects.toThrow();
+
+        const { CanonicalProduct } = await import(
+            '../../../modules/productCatalog/canonicalProduct.model.js'
+        );
+
+        expect(
+            await CanonicalProduct.countDocuments({
+                name: 'Produit rollback',
+            }),
+        ).toBe(0);
+    });
+
     it('refuse un doublon exact normalisé', async () => {
         await createProductContribution({
             workspaceId: ownerContext.workspace._id,
