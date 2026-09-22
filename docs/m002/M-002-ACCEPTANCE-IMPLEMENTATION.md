@@ -115,7 +115,20 @@ Platform :
 - [ ] migration indexes idempotente ;
 - [ ] manifest migration synchronisé.
 
-## 9. Critères Tests
+## 9. Critères Import
+
+- [ ] CSV / XLS / XLSX Produits pris en charge par un pipeline M-002 ;
+- [ ] mapping de colonnes avant import ;
+- [ ] prévisualisation obligatoire ;
+- [ ] exact duplicates rattachés, jamais recréés ;
+- [ ] near duplicates nécessitent une revue ;
+- [ ] nouvelles identités/déclinaisons passent par PENDING_REVIEW ;
+- [ ] lignes ambiguës non créées automatiquement ;
+- [ ] données fournisseur/prix détectées comme hors périmètre M-002 ;
+- [ ] aucun fichier source durable n'est créé uniquement pour l'import ;
+- [ ] contrat M-003 figé : catalogue fournisseur partagé au Workspace, conditions locales par Dossier sans duplication du catalogue.
+
+## 10. Critères Tests
 
 - [ ] normalisation ;
 - [ ] models/indexes ;
@@ -129,7 +142,7 @@ Platform :
 - [ ] 4 E2E critiques ;
 - [ ] bootstrap/migration.
 
-## 10. Ordre d'implémentation après validation
+## 11. Ordre d'implémentation après validation
 
 ```text
 Étape 1
@@ -174,23 +187,27 @@ Platform :
 → tests frontend
 
 Étape 13
-→ bootstrap initial versionné
+→ import Produits CSV / XLS / XLSX
+→ analyse / mapping / prévisualisation / commit
 
 Étape 14
-→ E2E
+→ bootstrap initial versionné
 
 Étape 15
-→ release:check
+→ E2E
 
 Étape 16
-→ validation visuelle
+→ release:check
 
 Étape 17
+→ validation visuelle
+
+Étape 18
 → documentation finale
 → UNE SEULE PR M-002
 ```
 
-## 11. Règle de lot
+## 12. Règle de lot
 
 Aucune micro-PR.
 

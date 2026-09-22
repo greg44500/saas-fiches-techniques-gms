@@ -146,7 +146,29 @@ Dashboard :
 - contributions en validation ;
 - accessibilité.
 
-## 8. E2E critiques proposés
+## 8. Tests import Produits
+
+Couvrir au minimum :
+
+- CSV valide ;
+- XLS valide ;
+- XLSX valide ;
+- fichier invalide/corrompu ;
+- mapping incomplet ;
+- lignes vides ;
+- exact duplicate ;
+- near duplicate ;
+- déclinaison existante ;
+- nouvelle déclinaison ;
+- nouvelle identité Produit ;
+- colonnes fournisseur/prix détectées hors périmètre ;
+- prévisualisation sans mutation ;
+- commit revalidé côté serveur ;
+- import concurrent ne créant pas de doublon ;
+- rollback transactionnel sur échec ;
+- aucune fuite entre Workspaces.
+
+## 9. E2E critiques proposés
 
 ### E2E 1 — rattacher un Produit existant
 
@@ -203,7 +225,7 @@ Résultat :
 contribution PENDING A absente
 ```
 
-## 9. Gate finale
+## 10. Gate finale
 
 Avant PR :
 

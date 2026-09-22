@@ -300,7 +300,53 @@ Un Produit ou une déclinaison globale archivée :
 
 La fusion physique de deux Produits globaux déjà actifs est volontairement différée : le graphe complet M-003/M-004 n'existe pas encore. M-002 ferme donc la politique en interdisant une fusion destructrice prématurée.
 
-## 11. Hors périmètre M-002
+## 11. Import en masse et frontière avec M-003
+
+M-002 couvre un import en masse de données Produit au format CSV / XLS / XLSX lorsqu'il sert à alimenter le catalogue d'usage et le référentiel Produit sans introduire de données commerciales fournisseur.
+
+Le pipeline M-002 réutilise obligatoirement les mêmes invariants que la création unitaire :
+
+```text
+fichier
+→ mapping des colonnes
+→ normalisation
+→ recherche exact match
+→ recherche de proximité
+→ rattachement à l'existant
+→ proposition de nouvelles identités/déclinaisons uniquement si nécessaire
+→ prévisualisation
+→ confirmation
+```
+
+Aucune ligne d'import ne contourne la gouvernance `PENDING_REVIEW`.
+
+Les colonnes fournisseur, référence article, conditionnement, tarif, marque commerciale ou édition de catalogue ne deviennent jamais des propriétés du Produit canonique.
+
+Le scénario de catalogue fournisseur commun à plusieurs dossiers appartient à M-003 et respecte déjà la frontière métier validée :
+
+```text
+Espace de travail
+→ catalogue fournisseur / édition importée une seule fois
+→ références communes réutilisables par tous les dossiers autorisés
+
+Dossier A
+→ éventuel Tarif négocié A pour tout ou partie des références
+
+Dossier B
+→ éventuel Tarif négocié B pour tout ou partie des références
+
+Dossier C
+→ aucun Tarif négocié local
+→ Tarif fournisseur de référence selon la politique de prix applicable
+```
+
+Le même catalogue fournisseur n'est jamais copié dossier par dossier.
+
+Les prix négociés et futurs Prix facturés restent strictement contextualisés au dossier/magasin et ne peuvent jamais servir de fallback dans un autre dossier.
+
+Contrat détaillé : `docs/m002/M-002-IMPORTS-BOUNDARY-M003.md`.
+
+## 12. Hors périmètre M-002
 
 - Fournisseurs ;
 - Articles fournisseur ;

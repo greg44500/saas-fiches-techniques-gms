@@ -173,7 +173,45 @@ Archive l'entrée WorkspaceProduct.
 
 Aucun delete physique.
 
-## 9. Frontière Platform
+## 9. Import en masse de Produits
+
+Permission : `product:contribute`, avec `product:catalog:manage` requise lorsque le commit rattache des références existantes au catalogue.
+
+### POST /imports/preview
+
+Reçoit un fichier CSV / XLS / XLSX temporaire et un mapping de colonnes.
+
+Le backend :
+
+- valide le format ;
+- lit les lignes sans mutation ;
+- normalise les données ;
+- recherche les Produits/déclinaisons existants ;
+- produit exact matches, candidats proches, nouvelles contributions potentielles, lignes ambiguës et lignes invalides.
+
+Le résultat de prévisualisation est serveur-owned et porte un identifiant court de session d'import ; il ne devient pas une ressource documentaire durable.
+
+### POST /imports/:importId/commit
+
+Le client fournit les décisions utilisateur sur les lignes ambiguës et les candidats proches.
+
+Le backend revalide la prévisualisation avant mutation.
+
+Résultats possibles par ligne :
+
+```text
+ATTACHED_EXISTING
+PROPOSED_PRODUCT
+PROPOSED_VARIANT
+SKIPPED
+INVALID
+```
+
+Aucune création automatique ne contourne la gouvernance `PENDING_REVIEW`.
+
+Les colonnes fournisseur / référence / conditionnement / tarif ne sont pas absorbées dans le modèle Produit ; le backend signale qu'elles relèvent de M-003.
+
+## 10. Frontière Platform
 
 Base :
 
@@ -193,7 +231,7 @@ authenticate
 → service
 ```
 
-## 10. Lecture Platform
+## 11. Lecture Platform
 
 ### GET /
 
@@ -212,7 +250,7 @@ Permission : `platform:products:read`
 
 Inclut toutes les déclinaisons et l'historique métier du référentiel.
 
-## 11. Gouvernance des catégories
+## 12. Gouvernance des catégories
 
 ### GET /categories
 
@@ -232,7 +270,7 @@ Permission : `platform:products:manage`
 
 Archivage refusé si des Produits ACTIVE utilisent encore la catégorie.
 
-## 12. Gouvernance Produit
+## 13. Gouvernance Produit
 
 ### PATCH /:productId
 
@@ -274,7 +312,7 @@ Permission : `platform:products:manage`
 
 Transitions ACTIVE ↔ ARCHIVED.
 
-## 13. Gouvernance Déclinaison
+## 14. Gouvernance Déclinaison
 
 ### PATCH /:productId/variants/:variantId
 ### POST /:productId/variants/:variantId/approve
@@ -285,7 +323,7 @@ Permission : `platform:products:manage`
 
 Même principe que le Produit racine.
 
-## 14. Anti-énumération
+## 15. Anti-énumération
 
 Les identifiants globaux ACTIVE sont des données de référence autorisées à la lecture avec `product:read`.
 

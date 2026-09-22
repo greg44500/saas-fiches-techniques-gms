@@ -129,3 +129,28 @@ saas_fiches_techniques_gms_e2e_test
 ```
 
 Aucun test destructif n'utilise la base de développement.
+
+
+## 8. Import utilisateur de Produits
+
+M-002 prévoit également un flux utilisateur CSV / XLS / XLSX distinct du bootstrap technique.
+
+Ce flux :
+
+- ne persiste pas le fichier source comme ressource métier durable ;
+- analyse et prévisualise avant toute mutation ;
+- réutilise le moteur de normalisation/déduplication M-002 ;
+- rattache les références existantes au catalogue du Workspace ;
+- transforme les nouvelles identités/déclinaisons en contributions `PENDING_REVIEW` ;
+- conserve les lignes ambiguës ou invalides en attente de décision utilisateur ;
+- n'importe jamais silencieusement des données fournisseur dans le modèle Produit.
+
+La logique d'import ne constitue pas un second moteur de création.
+
+## 9. Préparation de M-003
+
+Lorsqu'un fichier contient Fournisseur + référence + conditionnement + tarif, il est classé comme catalogue fournisseur et sera traité par M-003.
+
+M-003 devra importer une édition de catalogue une seule fois au niveau Workspace puis réutiliser ses lignes dans plusieurs Dossiers.
+
+Les conditions commerciales propres à un Dossier seront stockées séparément du catalogue fournisseur de référence.
