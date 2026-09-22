@@ -1,6 +1,6 @@
 # M-002 — Imports Produits et frontière catalogue fournisseur M-003
 
-**Statut : PROPOSÉ — règle métier validée conceptuellement le 2026-09-22**
+**Statut : VALIDÉ — frontière M-002/M-003 et recadrage import du 2026-09-22**
 
 ## 1. Principe
 
@@ -31,6 +31,10 @@ Données admissibles :
 - rendement lorsqu'il est fiable.
 
 Le pipeline applique systématiquement normalisation, déduplication, recherche de proximité et gouvernance.
+
+L'accès commercial à l'import est porté par la capability métier `product_catalog_import`. La création de nouvelles identités/déclinaisons exige en plus `product_contribution` et les permissions Workspace correspondantes.
+
+Le fichier source est un temporaire de traitement : il doit passer par les primitives génériques Core de réception bornée, quarantaine, inspection, checksum, antivirus et nettoyage. Il ne devient pas un document `File` durable pour le seul besoin de l'import.
 
 ### Import catalogue fournisseur — M-003
 
@@ -178,7 +182,7 @@ Dossier C
 Le pipeline d'import fournisseur M-003 devra suivre la même discipline que l'import Produit :
 
 ```text
-upload
+téléversement temporaire sécurisé
 → mapping colonnes
 → prévisualisation
 → normalisation
