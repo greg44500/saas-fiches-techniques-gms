@@ -53,9 +53,26 @@ async function openDossierDrawer(page, dossierName) {
     .getByRole('button', { name: `Voir ${dossierName}` })
     .click();
 
-  await expect(page.getByText('Informations', { exact: true })).toBeVisible();
-  await expect(page.getByText('Accès', { exact: true })).toBeVisible();
-  await expect(page.getByText('Activité', { exact: true })).toBeVisible();
+  const tabNames = [
+    'Infos',
+    'Accès',
+    'Activités',
+    'Administration',
+  ];
+
+  for (const tabName of tabNames) {
+    await expect(
+      page.getByRole('tab', { name: tabName }),
+    ).toBeVisible();
+  }
+}
+
+async function selectDossierDrawerTab(page, tabName) {
+  const tab = page.getByRole('tab', { name: tabName });
+
+  await expect(tab).toBeVisible();
+  await tab.click();
+  await expect(tab).toHaveAttribute('aria-selected', 'true');
 }
 
 async function closeDossierDrawer(page) {
@@ -68,4 +85,5 @@ export {
   getDossiersUrl,
   getWorkspaceIdFromDashboardUrl,
   openDossierDrawer,
+  selectDossierDrawerTab,
 };

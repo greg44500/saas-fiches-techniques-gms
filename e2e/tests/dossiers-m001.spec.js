@@ -8,6 +8,7 @@ import {
   createDossierFromUi,
   getDossiersUrl,
   openDossierDrawer,
+  selectDossierDrawerTab,
 } from '../support/dossier.js';
 import {
   provisionDossierMember,
@@ -38,6 +39,7 @@ test('M-001 owner crée, consulte et ouvre un Dossier', async ({ page }) => {
   );
 
   await openDossierDrawer(page, 'Magasin E2E Owner');
+  await selectDossierDrawerTab(page, 'Accès');
 
   await expect(
     page.getByText('Workspace Owner', { exact: true }),
@@ -65,6 +67,7 @@ test('M-001 owner affecte un membre qui voit et ouvre le Dossier', async ({ page
   });
 
   await openDossierDrawer(page, 'Magasin E2E Affecté');
+  await selectDossierDrawerTab(page, 'Accès');
 
   await expect(
     page.getByText(
@@ -130,10 +133,14 @@ test('M-001 suppression révoque les grants et restauration PAUSED ne les restau
   });
 
   await openDossierDrawer(page, 'Magasin E2E Lifecycle');
+  await selectDossierDrawerTab(page, 'Accès');
+
   await page.getByRole('button', { name: 'Affecter' }).click();
   await expect(
     page.getByRole('button', { name: 'Révoquer' }),
   ).toBeVisible();
+
+  await selectDossierDrawerTab(page, 'Administration');
 
   await page.getByRole('button', { name: 'Supprimé' }).click();
 
@@ -159,6 +166,8 @@ test('M-001 suppression révoque les grants et restauration PAUSED ne les restau
   ).toBeVisible();
 
   await openDossierDrawer(page, 'Magasin E2E Lifecycle');
+  await selectDossierDrawerTab(page, 'Administration');
+
   await page.getByRole('button', { name: 'En pause' }).click();
 
   confirmation = page.getByRole('dialog');
