@@ -1,6 +1,7 @@
 import express from 'express';
 import { env } from './config/env.js';
 import './config/applicationRolePermission.registry.js';
+import './config/applicationGlobalPermission.registry.js';
 import {
     mountApplicationRoutes,
 } from './config/applicationRoutes.registry.js';

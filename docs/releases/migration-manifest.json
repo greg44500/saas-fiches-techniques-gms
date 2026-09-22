@@ -28,6 +28,12 @@
       "dependsOn": []
     },
     {
+      "id": "application-global-authorization-indexes",
+      "script": "migration:application-global-authorization-indexes",
+      "runner": "backend/migrations/runAddApplicationGlobalAuthorizationIndexesMigration.js",
+      "dependsOn": []
+    },
+    {
       "id": "subscription-read-permission",
       "script": "migration:subscription-read-permission",
       "runner": "backend/migrations/runAddSubscriptionReadPermissionToSystemRolesMigration.js",

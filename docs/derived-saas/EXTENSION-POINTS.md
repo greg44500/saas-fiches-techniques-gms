@@ -661,3 +661,36 @@ docs/derived-saas/DERIVED-SAAS.md
 ```
 
 Toute modification de ces points de composition doit vérifier si le présent contrat doit être mis à jour.
+
+
+---
+
+## Application-global authorization
+
+### Point de composition
+
+    backend/config/applicationGlobalPermission.registry.js
+
+Le Core laisse APPLICATION_GLOBAL_PERMISSION_MODULES vide.
+
+Un module dérivé déclare des définitions contenant key, label, category, categoryLabel, description et reserved, puis les compose explicitement dans ce fichier.
+
+### Règles
+
+- aucune découverte automatique de modules ;
+- aucune permission métier ajoutée aux constantes Core ;
+- collision avec Workspace ou Platform refusée ;
+- namespace platform: interdit ;
+- permissions reserved réservées aux rôles système code-owned ;
+- rôles et memberships persistés dans les modèles Core dédiés ;
+- protection HTTP via authorizeApplicationGlobalPermission() après authenticate ;
+- services de gouvernance Core réutilisés plutôt qu’un RBAC parallèle.
+
+### Bootstrap
+
+Le dérivé initialise ses rôles et son premier gouverneur avec :
+
+    syncApplicationGlobalSystemRole()
+    bootstrapApplicationGlobalMember()
+
+Ces primitives sont destinées aux seeds ou migrations du produit et non à des endpoints publics.

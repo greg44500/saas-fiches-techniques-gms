@@ -1047,3 +1047,31 @@ mécanisme.
 
 Ce point d’extension reste volontairement statique, explicite et déterministe.
 Il ne crée ni bus d’événements distribué ni système de plugins dynamiques.
+
+
+---
+
+## Autorisation métier globale à partir de Core 1.2.0
+
+Un produit dérivé peut posséder des ressources globales qui ne sont ni des données Platform ni des données Workspace.
+
+Dans ce cas, il utilise la primitive Application-global authorization au lieu de détourner PlatformRole ou Role.
+
+Point de composition :
+
+    backend/config/applicationGlobalPermission.registry.js
+
+Primitives Core :
+
+    ApplicationGlobalRole
+    ApplicationGlobalMember
+    resolveApplicationGlobalAuthorization()
+    authorizeApplicationGlobalPermission()
+
+Le produit déclare ses propres clés de permission et ses propres rôles système. Le Core reste vide de permissions métier.
+
+L’intégration exige la migration Core des index, la composition des descriptors produit, le seed ou la migration produit des rôles système et le bootstrap explicite du premier membre si nécessaire.
+
+Référence canonique :
+
+    docs/contracts/APPLICATION-GLOBAL-AUTHORIZATION.md
