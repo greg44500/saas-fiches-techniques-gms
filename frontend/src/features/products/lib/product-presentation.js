@@ -110,18 +110,41 @@ function getImportClassificationPresentation(classification) {
     };
 }
 
+const PRODUCT_EVENT_LABELS = Object.freeze({
+  PRODUCT_APPROVED: 'Produit validé',
+  PRODUCT_REJECTED: 'Produit rejeté',
+  PRODUCT_UPDATED: 'Produit corrigé',
+  PRODUCT_ARCHIVED: 'Produit archivé',
+  PRODUCT_REACTIVATED: 'Produit réactivé',
+  VARIANT_APPROVED: 'Déclinaison validée',
+  VARIANT_REJECTED: 'Déclinaison rejetée',
+  VARIANT_UPDATED: 'Déclinaison corrigée',
+  VARIANT_ARCHIVED: 'Déclinaison archivée',
+  VARIANT_REACTIVATED: 'Déclinaison réactivée',
+  CATEGORY_CREATED: 'Catégorie créée',
+  CATEGORY_UPDATED: 'Catégorie renommée',
+  CATEGORY_ARCHIVED: 'Catégorie archivée',
+  CATEGORY_REACTIVATED: 'Catégorie réactivée',
+});
+
+function getProductEventLabel(action) {
+  return PRODUCT_EVENT_LABELS[action] ?? 'Événement Produit';
+}
+
 function getApiErrorMessage(error, fallback = 'Une erreur est survenue.') {
   return error?.data?.message ?? fallback;
 }
 
 export {
   IMPORT_CLASSIFICATION_PRESENTATION,
+  PRODUCT_EVENT_LABELS,
   createValueLabelMap,
   formatYield,
   getApiErrorMessage,
   getCategoryStatusLabel,
   getImportClassificationPresentation,
   getMetadataLabel,
+  getProductEventLabel,
   getProductStatusLabel,
   getProductStatusTone,
   getReferenceUnitLabel,

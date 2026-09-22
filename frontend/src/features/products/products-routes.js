@@ -10,6 +10,17 @@ const productsFrontendRouteModule = Object.freeze({
       },
     }),
   ]),
+  platformRoutes: Object.freeze([
+    Object.freeze({
+      path: 'products',
+      lazy: async () => {
+        const { PlatformProductsRoute } = await import(
+          '@/features/products/components/platform-products-route'
+        );
+        return { Component: PlatformProductsRoute };
+      },
+    }),
+  ]),
 });
 
 export { productsFrontendRouteModule };
