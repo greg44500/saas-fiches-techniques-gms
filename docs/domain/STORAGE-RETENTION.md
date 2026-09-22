@@ -51,6 +51,11 @@ fichiers temporaires techniques
 fichiers durablement conservés
 → aucun besoin produit V1 démontré à ce stade
 → ne seront activés/commercialisés que si un cas d'usage réel l'exige
+
+quotas métier de ressources structurées
+→ distincts du stockage fichier
+→ peuvent limiter le nombre de ressources persistantes selon le plan
+→ moteur Plans / Metrics / EntitlementOverrides du Core
 ```
 
 Les imports et exports temporaires peuvent être soumis à des garde-fous techniques — taille maximale, nombre de traitements concurrents, TTL des temporaires — sans devenir un quota commercial de stockage.
@@ -91,6 +96,21 @@ L'échéance est figée au moment de la suppression. Une modification ultérieur
 
 ## 4. DRAFTS de Fiches techniques
 
+Un DRAFT actif est une ressource métier persistante et peut donc rester présent longtemps dans le Workspace.
+
+Décision commerciale validée :
+
+```text
+nombre de DRAFTS
+→ métrique / quota métier du produit
+→ valeur configurable selon le plan
+→ dérogation possible via les mécanismes Core
+```
+
+Cette limite porte sur le **nombre de brouillons métier**, pas sur des octets de stockage File.
+
+Les clés techniques finales, les seuils Free/Premium et les règles précises de comptage seront fermés dans M-004.
+
 Un DRAFT actif n'est jamais supprimé ou purgé uniquement parce qu'il est ancien.
 
 Une ancienneté importante peut produire un signalement ou une suggestion de nettoyage, mais jamais une destruction silencieuse.
@@ -110,6 +130,19 @@ Le contrat technique détaillé sera implémenté dans le module Fiches techniqu
 ---
 
 ## 5. Versions VALIDATED et archivage
+
+Une Fiche technique validée est une ressource métier durable ayant une valeur commerciale.
+
+Décision commerciale validée :
+
+```text
+nombre de Fiches techniques VALIDATED
+→ métrique / quota métier distinct
+→ valeur configurable selon le plan
+→ dérogation possible via les mécanismes Core
+```
+
+Cette limite ne réutilise pas `storage_bytes`. Les clés techniques, seuils et règles de comptage — notamment le traitement éventuel des fiches ARCHIVED — seront fermés dans M-004.
 
 Une version VALIDATED est une donnée métier historique et immuable.
 
@@ -207,6 +240,11 @@ Les exports ne doivent jamais devenir une seconde source de vérité ni un histo
 
 À implémenter lors de son cadrage :
 
+- métrique/quota métier de DRAFTS ;
+- métrique/quota métier de Fiches techniques VALIDATED ;
+- seuils commerciaux par plan et comportement à la limite ;
+- règles de comptage exactes, notamment vis-à-vis des ARCHIVED ;
+- intégration avec EntitlementOverrides ;
 - corbeille des DRAFTS supprimés ;
 - restauration avant échéance ;
 - purge après échéance ;
@@ -234,6 +272,7 @@ Le détail exact de la capability commerciale reste à rattacher au plan concern
 
 - le produit V1 n'expose pas un espace de stockage de fichiers de type Drive ;
 - les temporaires d'import/export ne consomment pas un quota de stockage utilisateur durable ;
+- les DRAFTS et Fiches techniques VALIDATED peuvent être limités par des quotas métier de comptage distincts de `storage_bytes` ;
 - un DRAFT actif n'est jamais purgé par ancienneté seule ;
 - un DRAFT supprimé peut être purgé après la durée de corbeille ;
 - une version VALIDATED n'est jamais purgée automatiquement par âge ;
