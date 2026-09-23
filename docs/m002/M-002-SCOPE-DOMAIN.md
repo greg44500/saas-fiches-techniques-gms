@@ -1,368 +1,238 @@
 # M-002 — Catalogue Produits / Produits canoniques
 
-**Statut : VALIDÉ — périmètre métier M-002 recadré le 2026-09-22 ; autorité globale technique à finaliser avant la PR**
-**Date : 2026-09-22**
-**Branche de travail :** `feature/m002-catalogue-produits`
+**Statut : RECADRÉ — création sans validation humaine systématique — 2026-09-23**  
+**Branche :** `feature/m002-catalogue-produits`
 
 ## 1. Objectif
 
-M-002 fournit un référentiel Produit partagé à l'échelle du SaaS et un catalogue d'usage propre à chaque espace de travail.
-
-Principe fermé par le cadrage transversal :
+M-002 fournit un référentiel Produit commun à l'échelle du SaaS et un catalogue d'usage propre à chaque Workspace.
 
 ```text
 SaaS
 → référentiel Produit canonique partagé
 
-Espace de travail
+Workspace
 → catalogue d'usage
 → références vers le référentiel partagé
 → aucune copie de l'identité Produit
 
 Dossier
-→ consomme le catalogue de son espace de travail
-→ aucune donnée commerciale locale dans M-002
+→ consomme le catalogue du Workspace
+→ aucune identité Produit propre au Dossier
+→ aucune donnée commerciale M-003 dans M-002
 ```
 
-M-002 ne contient ni fournisseur, ni article fournisseur, ni conditionnement commercial, ni tarif, ni prix magasin.
+Décision structurante : lorsqu'un Workspace crée un Produit absent du référentiel après contrôle anti-doublon, il crée une nouvelle identité globale immédiatement utilisable. Il n'existe pas de second référentiel privé Workspace ou Dossier.
 
 ## 2. Acteurs
 
-### Membre d'un espace de travail
+### Membre Workspace autorisé
 
-Selon ses permissions M-002, il peut :
+Selon ses permissions et capabilities M-002, il peut :
 
-- rechercher les Produits disponibles ;
-- consulter le catalogue de son espace de travail ;
-- rattacher ou retirer une déclinaison du catalogue ;
-- proposer un nouveau Produit ou une nouvelle déclinaison lorsque le référentiel ne couvre pas le besoin.
+- rechercher les Produits existants ;
+- rattacher une déclinaison à son catalogue ;
+- créer un nouveau Produit global lorsque aucun équivalent crédible n'existe ;
+- créer une nouvelle déclinaison globale d'un Produit existant ;
+- importer des données Produit génériques dans les limites de son offre.
 
-### Gouvernance métier globale
+Toute création est précédée par les contrôles serveur d'unicité sémantique.
 
-La gouvernance métier globale du référentiel partagé peut :
+### Autorité métier globale Produit
 
-- consulter les contributions en attente ;
-- corriger les données génériques partagées ;
+L'autorité globale peut :
+
+- alimenter directement le référentiel commun ;
+- créer des Produits et déclinaisons ;
+- importer en masse des données Produit génériques ;
 - gérer les catégories ;
-- approuver ou rejeter une contribution ;
-- archiver ou réactiver un Produit ou une déclinaison globale.
+- corriger les identités partagées ;
+- archiver/réactiver ;
+- traiter ultérieurement les doublons résiduels ;
+- consulter l'historique métier.
 
-Cette gouvernance appartient au produit métier, pas à Platform. Une personne de l'équipe Platform peut aussi recevoir ce droit métier, mais aucun rôle Platform ne l'accorde implicitement. Elle ne donne aucun accès implicite aux données commerciales privées d'un espace de travail.
+Cette autorité utilise le pont Application Global du Core.
 
-## 3. Modèle conceptuel proposé
+Une personne peut appartenir à l'équipe Platform et recevoir explicitement cette autorité métier, mais aucun rôle Platform — y compris Super Admin — ne lui confère automatiquement `product:reference:read` ou `product:reference:manage`.
 
-### 3.1 CanonicalProduct — Produit canonique
+## 3. Modèle métier
 
-Identité générique globale d'une denrée ou d'un composant.
+### CanonicalProduct
 
-Exemples :
-
-```text
-Carotte
-Oignon
-Farine
-Film alimentaire
-```
+Identité générique globale.
 
 Responsabilités :
 
 - nom canonique ;
-- clé normalisée ;
-- alias de recherche ;
-- catégorie globale ;
-- statut de gouvernance ;
-- provenance de contribution et audit ;
-- aucun prix, fournisseur choisi, référence magasin ou donnée tenant confidentielle.
-
-Le Produit canonique n'a pas de champ `workspace` d'ownership.
-
-### 3.2 ProductVariant — Déclinaison Produit
-
-Une déclinaison représente la même identité canonique avec une réalité d'usage structurée différente.
-
-Axes structurés proposés :
-
-```text
-forme
-→ entière / râpée / rondelles / dés / filet / ...
-
-état / transformation
-→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
-
-conservation
-→ fraîche / surgelée / appertisée / sèche / sous vide / ...
-```
-
-Ces valeurs restent des champs structurés distincts mais ne sont pas enfermées dans un enum exhaustif en M-002. Elles sont normalisées afin d'éviter les doublons lexicaux.
-
-Attributs de la déclinaison :
-
-- Produit canonique parent ;
-- forme facultative ;
-- état/transformation facultatif ;
-- conservation facultative ;
-- gamme alimentaire 1 à 5 facultative ;
-- unité de référence ;
-- rendement facultatif lorsqu'une valeur objective est connue ;
+- normalisation ;
+- alias ;
+- clés/grams de recherche ;
+- catégorie ;
 - statut ;
-- audit.
+- provenance et audit ;
+- aucun fournisseur, référence fournisseur, conditionnement ou prix.
 
-La gamme ne détermine jamais automatiquement un rendement.
+`contributedFromWorkspace` reste une provenance technique/audit lorsqu'une création provient d'un Workspace. Ce champ ne constitue jamais l'ownership.
 
-### 3.3 WorkspaceProduct — Entrée du catalogue d'usage
+### ProductVariant
 
-Relation appartenant à l'espace de travail.
+Déclinaison structurée d'un Produit canonique :
+
+- forme ;
+- état/transformation ;
+- conservation ;
+- gamme facultative ;
+- unité de référence ;
+- rendement facultatif.
+
+Une signature normalisée unique empêche deux déclinaisons équivalentes d'un même Produit.
+
+### WorkspaceProduct
+
+Relation d'usage appartenant au Workspace :
 
 ```text
-Espace de travail
+Workspace
 → WorkspaceProduct
 → ProductVariant
 → CanonicalProduct
 ```
 
-Le rattachement est volontairement porté au niveau de la déclinaison réellement utilisable. L'interface regroupe les entrées par Produit canonique.
+Elle ne copie aucune identité globale.
 
-Aucune propriété globale du Produit n'est copiée dans cette relation.
+### ProductCategory
 
-Le retrait du catalogue archive la relation d'usage ; il n'archive jamais le Produit global.
+Taxonomie globale plate en M-002.
 
-### 3.4 ProductCategory — Catégorie
+Un Produit `ACTIVE` doit avoir une catégorie `ACTIVE`.
 
-Référentiel global de classement.
+## 4. Unicité et création
 
-Décisions proposées pour la V1 :
-
-- une seule catégorie principale par Produit canonique ;
-- taxonomie plate en M-002 ;
-- pas de hiérarchie anticipée ;
-- catégories gérées par la gouvernance métier globale ;
-- une contribution peut être temporairement non classée tant qu'elle est en attente ;
-- un Produit `ACTIVE` doit posséder une catégorie `ACTIVE`.
-
-La liste métier initiale des catégories doit provenir du bootstrap validé ; elle ne sera pas inventée dans le code.
-
-## 4. Frontière Produit / Déclinaison
-
-Critère proposé :
+Avant toute création :
 
 ```text
-même composant / même denrée
-+ changement de forme, préparation ou conservation
-+ composition fondamentale inchangée
-→ Déclinaison
-
-formulation ou composition propre
-+ ingrédients supplémentaires
-+ fonction métier réellement distincte
-→ nouveau Produit canonique
+normalisation
+→ recherche exacte
+→ alias
+→ casse / accents
+→ singulier-pluriel lorsque couvert par la normalisation
+→ recherche de proximité
+→ candidats proches
+→ revue explicite des candidats
+→ création seulement si aucun équivalent n'est retenu
 ```
 
-Exemples :
+L'unicité technique MongoDB complète le contrôle métier mais ne le remplace pas.
 
-```text
-Carotte entière
-Carotte râpée
-Carotte pelée prête à l'emploi
-Carotte surgelée en rondelles
-→ déclinaisons de Carotte
+En cas de concurrence, la contrainte technique reste l'autorité finale et retourne un conflit plutôt que de créer un doublon.
 
-Purée 100 % carotte
-→ peut rester une déclinaison si la composition est exclusivement Carotte
+## 5. Lifecycle
 
-Purée de carotte industrielle avec lait, amidon ou assaisonnement
-→ Produit canonique distinct
-```
-
-Un changement de marque, de fournisseur ou de conditionnement ne crée jamais un Produit canonique ni une déclinaison M-002 : ces notions appartiennent à M-003.
-
-## 5. Rendement
-
-Décision proposée :
-
-- le rendement appartient à la déclinaison, pas au Produit canonique racine et pas au Workspace ;
-- il est partagé uniquement lorsqu'il décrit objectivement la déclinaison générique ;
-- il est facultatif si aucune valeur fiable n'est disponible ;
-- le backend ne devine jamais un rendement absent ;
-- une valeur connue est strictement supérieure à 0 et inférieure ou égale à 100 % ;
-- un rendement calculable objectivement à partir de données fournisseur sera calculé en M-003, puis pourra alimenter la donnée applicable selon le contrat qui sera cadré alors.
-
-Exemples :
-
-```text
-Farine — rendement 100 %
-Carotte entière brute — rendement renseigné seulement si une valeur de référence fiable est décidée
-Produit prêt à l'emploi — 100 % seulement lorsque ce fait est explicitement établi
-```
-
-## 6. Unités de référence
-
-Registre backend-driven proposé :
-
-```text
-Masse
-→ g
-→ kg
-
-Volume
-→ ml
-→ cl
-→ l
-
-Nombre
-→ unité
-```
-
-Chaque unité possède une dimension et un facteur de conversion vers l'unité de base de sa dimension.
-
-Les conditionnements commerciaux tels que carton, sac, boîte, seau ou barquette appartiennent à M-003.
-
-## 7. Gamme alimentaire
-
-Valeur facultative :
-
-```text
-1
-2
-3
-4
-5
-null = non applicable / non renseigné
-```
-
-La gamme est un attribut de la déclinaison lorsqu'elle est pertinente. Elle n'est jamais obligatoire pour les Produits non concernés et ne calcule pas le rendement.
-
-## 8. Lifecycle proposé
-
-### Produit canonique
-
-```text
-PENDING_REVIEW
-→ ACTIVE | REJECTED
-
-ACTIVE
-→ ARCHIVED
-
-ARCHIVED
-→ ACTIVE
-
-REJECTED
-→ terminal
-```
-
-### Déclinaison
-
-Même lifecycle :
-
-```text
-PENDING_REVIEW
-→ ACTIVE | REJECTED
-
-ACTIVE
-→ ARCHIVED
-
-ARCHIVED
-→ ACTIVE
-
-REJECTED
-→ terminal
-```
-
-### WorkspaceProduct
+Lifecycle opérationnel V1 :
 
 ```text
 ACTIVE
 ↔ ARCHIVED
 ```
 
-Une entrée peut être réactivée sans créer une nouvelle identité globale.
+Les créations Workspace et les créations de l'autorité globale deviennent `ACTIVE` dans la même transaction que leur création.
 
-## 9. Contribution et visibilité
+Le workflow quotidien `PENDING_REVIEW → approve/reject` est supprimé.
 
-Une contribution Workspace crée :
+Les anciennes valeurs issues du développement précédent sont des données de migration, pas des états métier à conserver dans le parcours V1.
 
-- soit un nouveau Produit `PENDING_REVIEW` et sa première déclinaison ;
-- soit une nouvelle déclinaison `PENDING_REVIEW` d'un Produit `ACTIVE` existant.
+## 6. Création depuis un Workspace
 
-La contribution est visible dans le catalogue du Workspace contributeur avec l'état « En validation ».
-
-Elle n'est pas exposée aux autres Workspaces tant qu'elle n'est pas `ACTIVE`.
-
-Une déclinaison en attente n'est pas considérée comme opérationnelle par les futurs modules M-003/M-004.
-
-## 10. Archivage et remplacement
-
-Un Produit ou une déclinaison globale archivée :
-
-- n'est plus proposée pour de nouveaux rattachements ;
-- reste lisible dans les historiques autorisés ;
-- ne provoque aucune suppression des relations existantes ;
-- peut indiquer un Produit/déclinaison de remplacement.
-
-La fusion physique de deux Produits globaux déjà actifs est volontairement différée : le graphe complet M-003/M-004 n'existe pas encore. M-002 ferme donc la politique en interdisant une fusion destructrice prématurée.
-
-## 11. Import en masse et frontière avec M-003
-
-M-002 couvre un import en masse de données Produit au format CSV / XLS / XLSX lorsqu'il sert à alimenter le catalogue d'usage et le référentiel Produit sans introduire de données commerciales fournisseur.
-
-Cet import est une fonctionnalité métier commercialisable séparément du stockage documentaire Core. Il est piloté par la capability `product_catalog_import`. La création de nouvelles identités ou déclinaisons pendant l'import exige en plus `product_contribution`.
-
-Le pipeline M-002 réutilise obligatoirement les mêmes invariants que la création unitaire et les primitives génériques Core de sécurité du téléversement temporaire :
+Nouveau Produit :
 
 ```text
-fichier
-→ mapping des colonnes
-→ normalisation
-→ recherche exact match
-→ recherche de proximité
-→ rattachement à l'existant
-→ proposition de nouvelles identités/déclinaisons uniquement si nécessaire
-→ prévisualisation
-→ confirmation
+recherche préalable
+→ contrôle anti-doublon serveur
+→ catégorie ACTIVE obligatoire
+→ CanonicalProduct ACTIVE
+→ première ProductVariant ACTIVE
+→ WorkspaceProduct ACTIVE
+→ activité métier
 ```
 
-Aucune ligne d'import ne contourne la gouvernance `PENDING_REVIEW`.
-
-Les colonnes fournisseur, référence article, conditionnement, tarif, marque commerciale ou édition de catalogue ne deviennent jamais des propriétés du Produit canonique.
-
-Le scénario de catalogue fournisseur commun à plusieurs dossiers appartient à M-003 et respecte déjà la frontière métier validée :
+Nouvelle déclinaison :
 
 ```text
-Espace de travail
-→ catalogue fournisseur / édition importée une seule fois
-→ références communes réutilisables par tous les dossiers autorisés
-
-Dossier A
-→ éventuel Tarif négocié A pour tout ou partie des références
-
-Dossier B
-→ éventuel Tarif négocié B pour tout ou partie des références
-
-Dossier C
-→ aucun Tarif négocié local
-→ Tarif fournisseur de référence selon la politique de prix applicable
+Produit parent ACTIVE
+→ signature de déclinaison unique
+→ ProductVariant ACTIVE
+→ WorkspaceProduct ACTIVE
+→ activité métier
 ```
 
-Le même catalogue fournisseur n'est jamais copié dossier par dossier.
+La provenance Workspace est conservée pour l'audit. Les autres Workspaces peuvent ensuite retrouver cette identité globale.
 
-Les prix négociés et futurs Prix facturés restent strictement contextualisés au dossier/magasin et ne peuvent jamais servir de fallback dans un autre dossier.
+Un membre Workspace ne peut pas modifier directement une identité globale déjà partagée ; les corrections du référentiel commun relèvent de l'autorité Application Global.
 
-Contrat détaillé : `docs/m002/M-002-IMPORTS-BOUNDARY-M003.md`.
+## 7. Alimentation par l'autorité globale
 
-## 12. Hors périmètre M-002
+L'autorité `product:reference:manage` peut alimenter le même référentiel :
 
-- Fournisseurs ;
-- Articles fournisseur ;
-- références fournisseur ;
-- conditionnements commerciaux ;
-- tarifs catalogue ;
-- tarifs négociés ;
-- prix facturés ;
-- disponibilité magasin ;
-- OCR/import fournisseur complet ;
-- favoris magasin ;
-- Fiches techniques ;
-- purge physique d'un Produit référencé ;
-- fusion destructive d'identités actives ;
-- stockage de photo globale tant qu'une stratégie média partagée hors tenancy Workspace n'est pas validée.
+- création unitaire ;
+- ajout d'une déclinaison ;
+- import CSV/XLS/XLSX de données Produit génériques.
 
-La photo reste une capacité métier future, mais le Core Files actuel est Workspace-scoped et ne doit pas être détourné pour une ressource globale.
+Une personne de l'équipe Platform peut exercer cette fonction uniquement si un `ApplicationGlobalMember` lui attribue explicitement le rôle/les permissions Produit correspondants.
+
+Le rôle Platform et l'autorité métier globale restent deux dimensions séparées.
+
+## 8. Import M-002
+
+Deux usages existent.
+
+### Import Workspace
+
+```text
+Workspace
+→ capability product_catalog_import
+→ permission product:read
+→ droits de mutation calculés à partir de la preview
+→ rattachement existant ou création globale contrôlée
+```
+
+La clé technique `product_contribution` est conservée pour compatibilité du contrat commercial déjà intégré ; sa sémantique devient « autoriser la création de nouvelles identités/déclinaisons dans le référentiel partagé », sans file de validation humaine.
+
+### Import global
+
+```text
+Application Global product:reference:manage
+→ import de données Produit génériques
+→ mêmes contrôles anti-doublon
+→ aucune dépendance à un Workspace ou à son plan
+→ aucune création de WorkspaceProduct
+```
+
+Le pipeline de sécurité fichier Core reste partagé : temporaire sécurisé, inspection, checksum, antivirus, parsing puis suppression du temporaire.
+
+## 9. Frontière avec M-003
+
+M-002 ne contient jamais :
+
+- fournisseur ;
+- catalogue fournisseur ;
+- édition/version de catalogue fournisseur ;
+- référence fournisseur ;
+- conditionnement commercial ;
+- prix catalogue ;
+- prix négocié ;
+- prix facturé.
+
+Ces données appartiennent à M-003.
+
+Un fichier comportant ces colonnes doit être identifié comme potentiellement fournisseur et ne doit jamais injecter ces valeurs dans `CanonicalProduct`.
+
+## 10. Archivage
+
+Archiver une identité globale :
+
+- empêche les nouveaux rattachements ;
+- conserve les historiques et relations existantes ;
+- ne supprime aucune donnée commerciale aval ;
+- reste réversible par l'autorité globale.
+
+La fusion destructive de Produits déjà référencés reste différée tant que le graphe M-003/M-004 n'est pas complet.

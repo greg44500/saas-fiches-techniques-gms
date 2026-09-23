@@ -1,24 +1,23 @@
 # M-002 — Contrat API REST
 
-**Statut : BACKEND RECADRÉ ET IMPLÉMENTÉ — frontend à aligner ; tests d'autorisation récents à exécuter**
+**Statut : RECADRÉ — cible d'implémentation du workflow sans validation humaine — 2026-09-23**
 
 ## 1. Règle générale
 
-M-002 expose des routes métier Produit. Une ressource globale Produit n'est pas une ressource Platform.
-
-Les contrôles HTTP doivent distinguer :
+M-002 expose des routes métier Produit.
 
 ```text
 authentification
-→ entitlement / capability commerciale
-→ permission RBAC
-→ tenancy / visibilité métier
+→ capability commerciale lorsqu'elle s'applique
+→ permission
+→ tenancy/visibilité
 → validation Zod
 → controller
 → service
+→ contraintes DB
 ```
 
-Les capabilities sont évaluées côté backend via les mécanismes Core. Le frontend n'est jamais une autorité.
+Une ressource Produit globale n'est pas une ressource Platform.
 
 ## 2. Frontière Workspace
 
@@ -32,44 +31,35 @@ Base :
 
 Permission : `product:read`.
 
-Expose les vocabulaires backend-driven utiles au frontend : statuts, unités, gammes, motifs de rejet et catégories visibles.
+Expose catégories, unités, gammes et statuts opérationnels.
 
 ### GET /summary
 
 Permission : `product:read`.
 
-Retourne les indicateurs M-002 nécessaires au Dashboard Workspace.
+Retourne les indicateurs du catalogue Workspace. Aucun compteur de contributions en attente.
 
 ### GET /search
 
 Permission : `product:read`.
 
-Capability : `product_reference_access` pour la portée `REFERENCE`.
-
-Query :
+La portée `REFERENCE` exige `product_reference_access`.
 
 ```text
-q
-scope=WORKSPACE|REFERENCE
-categoryId?
-status?
-page?
-limit?
+scope=WORKSPACE
+→ WorkspaceProduct du Workspace
+
+scope=REFERENCE
+→ Produits/déclinaisons ACTIVE globaux
 ```
-
-`WORKSPACE` ne sort jamais du catalogue courant.
-
-`REFERENCE` expose les Produits/déclinaisons globaux ACTIVE et les contributions PENDING du Workspace courant uniquement.
 
 ### GET /:productId
 
 Permission : `product:read`.
 
-Retourne Produit, catégorie, déclinaisons visibles et état de rattachement au Workspace.
+Retourne le Produit et ses déclinaisons opérationnelles visibles.
 
-Un PENDING d'un autre Workspace est traité comme inexistant.
-
-## 3. Contrôle doublon et contribution
+## 3. Anti-doublon et création Workspace
 
 ### POST /duplicate-check
 
@@ -79,31 +69,32 @@ Capability : `product_contribution`.
 
 Aucune écriture.
 
-### POST /contributions
+### POST /
 
 Permission : `product:contribute`.
 
 Capability : `product_contribution`.
 
-Transaction :
+Crée un nouveau Produit global après revue des candidats :
 
 ```text
-contrôle doublon recalculé
-→ CanonicalProduct PENDING_REVIEW
-→ ProductVariant PENDING_REVIEW
+anti-doublon recalculé
+→ catégorie ACTIVE obligatoire
+→ CanonicalProduct ACTIVE
+→ première ProductVariant ACTIVE
 → WorkspaceProduct ACTIVE
-→ BusinessActivityEvent
+→ activité métier
 ```
 
-La contribution reste non opérationnelle pour les modules aval tant que sa déclinaison n'est pas ACTIVE.
-
-### POST /:productId/variants/contributions
+### POST /:productId/variants
 
 Permission : `product:contribute`.
 
 Capability : `product_contribution`.
 
-Le Produit parent doit être ACTIVE.
+Le Produit parent doit être ACTIVE. La nouvelle déclinaison devient ACTIVE et est rattachée au Workspace.
+
+Les anciennes routes `/contributions` et `/:productId/variants/contributions` sont supprimées.
 
 ## 4. Catalogue Workspace
 
@@ -111,17 +102,15 @@ Le Produit parent doit être ACTIVE.
 
 Permission : `product:catalog:manage`.
 
-Préconditions : Produit et déclinaison ACTIVE ; création ou réactivation idempotente de `WorkspaceProduct`.
+Produit et déclinaison doivent être ACTIVE.
 
 ### DELETE /catalog/:variantId
 
 Permission : `product:catalog:manage`.
 
-Archive l'entrée `WorkspaceProduct`. Aucun delete physique.
+Archive uniquement `WorkspaceProduct`.
 
-## 5. Import en masse Produit
-
-L'import est une fonctionnalité métier M-002. Il ne doit pas être confondu avec le stockage documentaire Core.
+## 5. Import Workspace
 
 Capability principale :
 
@@ -129,123 +118,112 @@ Capability principale :
 product_catalog_import
 ```
 
-Les actions qui créent une contribution exigent en plus :
+Le commit calcule les droits selon les mutations effectives :
 
 ```text
-product_contribution
-+ permission product:contribute
+rattachement existant
+→ product:catalog:manage
+
+création Produit/déclinaison
+→ product:contribute
+→ product_contribution
 ```
 
-Le rattachement de références existantes exige :
+Routes :
 
-```text
-permission product:catalog:manage
-```
+- `POST /imports/inspect`
+- `POST /imports/:importId/preview`
+- `POST /imports/:importId/commit`
 
-### POST /imports/inspect
-
-Permission de base : `product:read`.
-
-Capability : `product_catalog_import`.
-
-Reçoit un CSV / XLS / XLSX temporaire.
-
-Le backend doit :
-
-- utiliser un téléversement temporaire sécurisé fondé sur les primitives Core ;
-- appliquer limites, inspection de type, checksum, antivirus et nettoyage ;
-- lire uniquement la première feuille Excel ;
-- ne pas créer un document `File` durable pour le seul besoin de l'import ;
-- ne pas exiger l'activation commerciale d'un espace de stockage documentaire pour utiliser l'import ;
-- appliquer uniquement les garde-fous techniques nécessaires au traitement temporaire ;
-- persister une session d'import temporaire TTL ;
-- retourner `importId`, en-têtes, nombre de lignes et colonnes hors périmètre M-002.
-
-Le backend utilise désormais le pipeline temporaire sécurisé configurable du Core. Aucun `File` durable n'est créé.
-
-### POST /imports/:importId/preview
-
-Permission de base : `product:read`.
-
-Capability : `product_catalog_import`.
-
-Aucune mutation Produit.
-
-Le backend normalise, recherche les correspondances et classe les lignes : exact, proche, nouvelle contribution potentielle, ambiguë ou invalide.
-
-### POST /imports/:importId/commit
-
-Permission de base : `product:read`.
-
-Capability principale : `product_catalog_import`.
-
-Le backend revendique atomiquement la session et revalide la preview contre l'état courant. Un état obsolète retourne 409.
-
-Le contrôle final est dynamique, à partir de la preview persistée et des décisions de la requête :
-
-- une ligne ignorée n'ajoute aucun droit de mutation ;
-- un rattachement à une référence existante exige `product:catalog:manage` ;
-- une création de Produit/déclinaison exige `product:contribute` et la capability `product_contribution` ;
-- une ligne ambiguë applique les exigences de l'action explicitement choisie.
-
-Le commit n'exige donc plus systématiquement les deux permissions `product:catalog:manage` et `product:contribute`.
-
-Résultats possibles :
+Résultats cibles :
 
 ```text
 ATTACHED_EXISTING
-PROPOSED_PRODUCT
-PROPOSED_VARIANT
+CREATED_PRODUCT
+CREATED_VARIANT
 SKIPPED
 INVALID
 ```
 
-Les colonnes fournisseur / référence / conditionnement / tarif restent M-003.
+Les classifications de preview utilisent `CREATE_PRODUCT` et `CREATE_VARIANT`, pas `PROPOSE_*`.
 
-Après traitement, le fichier source temporaire est supprimé selon le cycle prévu ; les données métier structurées persistent. Ce temporaire ne consomme aucun quota commercial de stockage durable du Workspace.
+## 6. Frontière Application Global
 
-## 6. Gouvernance globale métier
-
-La frontière backend retenue est indépendante de Platform :
+Base :
 
 ```text
 /api/product-reference
 ```
 
-Permissions Application Global :
+Permissions :
 
 ```text
 product:reference:read
 product:reference:manage
 ```
 
-Le guard utilisé est `authorizeApplicationGlobalPermission()`.
+Un rôle Platform n'accorde rien implicitement. Une personne de l'équipe Platform peut utiliser cette API si un `ApplicationGlobalMember` lui attribue explicitement les permissions Produit.
 
-Un rôle Platform, y compris Super Admin, ne confère aucun droit Produit implicite. Un Owner Workspace non plus.
+### Lecture
 
-Routes backend disponibles sous cette frontière :
+- `GET /access`
+- `GET /metadata`
+- `GET /categories`
+- `GET /`
+- `GET /:productId`
 
-- `GET /metadata` ;
-- `GET /categories` ;
-- `POST /categories` ;
-- `PATCH /categories/:categoryId` ;
-- `PATCH /categories/:categoryId/status` ;
-- `GET /` ;
-- `GET /:productId` ;
-- correction Produit/déclinaison ;
-- approve/reject Produit/déclinaison ;
-- archivage/réactivation.
+### Gestion
 
-Les services de gouvernance restent des services métier Produit. Les anciens contrats backend `/api/platform/products/*` et `platform:products:*` ont été retirés.
+- `POST /` — créer un Produit global ;
+- `POST /:productId/variants` — créer une déclinaison globale ;
+- `PATCH /:productId` — corriger ;
+- `PATCH /:productId/status` — archiver/réactiver ;
+- `PATCH /:productId/variants/:variantId` — corriger une déclinaison ;
+- `PATCH /:productId/variants/:variantId/status` — archiver/réactiver ;
+- CRUD/lifecycle catégories.
 
-Le premier gouverneur peut être initialisé explicitement avec `npm run seed:m002-governance`.
+Les routes `approve` et `reject` sont supprimées.
 
-Le frontend d'administration doit encore être déplacé hors `PlatformLayout` et aligné sur cette nouvelle API.
+## 7. Import global Produit
 
-## 7. Anti-énumération
+L'autorité `product:reference:manage` peut alimenter le référentiel sans contexte Workspace.
 
-Les références globales ACTIVE autorisées par l'entitlement peuvent être lues avec `product:read`.
+Routes cibles :
 
-Les PENDING/REJECTED d'un autre Workspace ne sont jamais révélés par la frontière Workspace.
+- `POST /imports/inspect`
+- `POST /imports/:importId/preview`
+- `POST /imports/:importId/commit`
 
-La future surface de gouvernance globale possède sa propre autorisation métier et n'accorde aucun accès implicite aux données privées des Workspaces.
+Caractéristiques :
+
+- même téléversement temporaire sécurisé que l'import Workspace ;
+- aucune capability de plan Workspace ;
+- aucun `WorkspaceProduct` créé ;
+- mêmes contrôles anti-doublon ;
+- création immédiate ACTIVE ;
+- session d'import explicitement marquée GLOBAL.
+
+## 8. États
+
+États opérationnels V1 :
+
+```text
+ACTIVE
+ARCHIVED
+```
+
+`PENDING_REVIEW` n'est plus produit par aucune route.
+
+Une migration/backfill doit convertir les anciennes données de développement en attente avant la finalisation de M-002.
+
+## 9. Frontière M-003
+
+Les colonnes suivantes restent hors M-002 :
+
+- fournisseur ;
+- catalogue fournisseur ;
+- référence fournisseur ;
+- conditionnement ;
+- prix.
+
+Un import fournisseur complet sera traité par M-003 avec une provenance Fournisseur + Catalogue explicite.
