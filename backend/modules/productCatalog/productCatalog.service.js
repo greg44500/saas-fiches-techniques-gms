@@ -344,7 +344,7 @@ const listProductSearch = async ({
         workspaceId,
         categoryId,
         q,
-        includeArchived: scope === 'WORKSPACE',
+        includeArchived: false,
     });
 
     const products = await CanonicalProduct.find(productFilter)
@@ -380,12 +380,7 @@ const listProductSearch = async ({
     const variantVisibility = {
         canonicalProduct: mongoose.trusted({ $in: productIds }),
         identityActive: true,
-        status: mongoose.trusted({
-            $in: [
-                PRODUCT_STATUS.ACTIVE,
-                ...(scope === 'WORKSPACE' ? [PRODUCT_STATUS.ARCHIVED] : []),
-            ],
-        }),
+        status: PRODUCT_STATUS.ACTIVE,
     };
     const variants = await ProductVariant.find(variantVisibility).lean();
     const orderedVariants = variants.sort(

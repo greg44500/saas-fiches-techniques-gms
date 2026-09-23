@@ -217,7 +217,7 @@ describe('M-002 product catalog services', () => {
         expect(restored.status).toBe('ACTIVE');
     });
 
-    it('conserve une référence globale archivée déjà rattachée au Workspace', async () => {
+    it('conserve une référence archivée en historique sans l afficher dans les listes opérationnelles', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,
             name: 'Riz long',
@@ -244,8 +244,7 @@ describe('M-002 product catalog services', () => {
             scope: 'REFERENCE',
         });
 
-        expect(workspaceSearch.results).toHaveLength(1);
-        expect(workspaceSearch.results[0].product.status).toBe('ARCHIVED');
+        expect(workspaceSearch.results).toHaveLength(0);
         expect(referenceSearch.results).toHaveLength(0);
 
         await expect(getWorkspaceProductDetail({

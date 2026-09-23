@@ -98,7 +98,7 @@ Référentiel global | Mon référentiel
 Produit | Présentation | Gamme | Actions
 ```
 
-La colonne Statut n'est pas affichée dans ces vues opérationnelles : elles ne présentent que les références utilisables selon leur scope.
+La colonne Statut n'est pas affichée dans ces vues opérationnelles : elles ne présentent que les Produits et déclinaisons globalement ACTIVE. Une référence globale archivée reste conservée en base et dans l'historique, mais disparaît de Référentiel global et de Mon référentiel.
 
 ## 5. Création depuis un Workspace
 
