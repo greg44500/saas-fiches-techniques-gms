@@ -26,6 +26,11 @@ import {
     uploadProductImportFile,
 } from './productCatalogImport.middleware.js';
 import {
+    enforceProductCatalogImportFeature,
+    enforceProductContributionFeature,
+    enforceProductReferenceSearchFeature,
+} from './productCatalogAccess.middleware.js';
+import {
     PRODUCT_CATALOG_PERMISSION,
 } from './productCatalogPermission.registry.js';
 import {
@@ -70,6 +75,7 @@ productCatalogRouter.get(
     }),
     loadWorkspaceContext,
     authorizePermission(PRODUCT_CATALOG_PERMISSION.READ),
+    enforceProductReferenceSearchFeature,
     search,
 );
 
@@ -82,6 +88,7 @@ productCatalogRouter.post(
     }),
     loadWorkspaceContext,
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
+    enforceProductContributionFeature,
     duplicateCheck,
 );
 
@@ -92,6 +99,7 @@ productCatalogRouter.post(
     loadWorkspaceContext,
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
     enforceWorkspaceAccessMode(),
+    enforceProductCatalogImportFeature,
     uploadProductImportFile,
     inspectImport,
     cleanupProductImportUploadOnError,
@@ -107,6 +115,7 @@ productCatalogRouter.post(
     loadWorkspaceContext,
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
     enforceWorkspaceAccessMode(),
+    enforceProductCatalogImportFeature,
     previewImport,
 );
 
@@ -121,6 +130,7 @@ productCatalogRouter.post(
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CATALOG_MANAGE),
     enforceWorkspaceAccessMode(),
+    enforceProductCatalogImportFeature,
     commitImport,
 );
 
@@ -134,6 +144,7 @@ productCatalogRouter.post(
     loadWorkspaceContext,
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
     enforceWorkspaceAccessMode(),
+    enforceProductContributionFeature,
     contributeProduct,
 );
 
@@ -147,6 +158,7 @@ productCatalogRouter.post(
     loadWorkspaceContext,
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
     enforceWorkspaceAccessMode(),
+    enforceProductContributionFeature,
     contributeVariant,
 );
 

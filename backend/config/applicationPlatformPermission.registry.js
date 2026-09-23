@@ -2,9 +2,6 @@ import {
     PLATFORM_PERMISSION,
     PLATFORM_PERMISSION_SENSITIVITY,
 } from '../constants/platformPermissions.constants.js';
-import {
-    PRODUCT_CATALOG_PLATFORM_PERMISSION_MODULE,
-} from '../modules/productCatalog/productCatalogPlatformPermission.registry.js';
 
 const PLATFORM_PERMISSION_KEY_PATTERN =
     /^platform:[a-z0-9_]+(?::[a-z0-9_]+)+$/;
@@ -503,9 +500,7 @@ const composeApplicationPlatformPermissions = (
     });
 };
 
-const APPLICATION_PLATFORM_PERMISSION_MODULES = Object.freeze([
-    PRODUCT_CATALOG_PLATFORM_PERMISSION_MODULE,
-]);
+const APPLICATION_PLATFORM_PERMISSION_MODULES = Object.freeze([]);
 
 const ACTIVE_PLATFORM_PERMISSION_REGISTRY =
     composeApplicationPlatformPermissions(

@@ -1,7 +1,7 @@
 import { dossierRouter } from '../modules/dossier/dossier.routes.js';
 import {
-    platformProductCatalogRouter,
-} from '../modules/productCatalog/productCatalogPlatform.routes.js';
+    productCatalogGlobalRouter,
+} from '../modules/productCatalog/productCatalogGlobal.routes.js';
 import {
     productCatalogRouter,
 } from '../modules/productCatalog/productCatalog.routes.js';
@@ -132,9 +132,9 @@ const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
         router: productCatalogRouter,
     }),
     Object.freeze({
-        key: 'platform-products',
-        mountPath: '/api/platform/products',
-        router: platformProductCatalogRouter,
+        key: 'product-reference-governance',
+        mountPath: '/api/product-reference',
+        router: productCatalogGlobalRouter,
     }),
 ]);
 

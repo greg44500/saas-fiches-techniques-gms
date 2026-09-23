@@ -5,9 +5,9 @@ import {
     approveProduct,
     approveVariant,
     createCategory,
-    getPlatformProductDetail,
+    getGlobalProductDetail,
     listCategories,
-    listPlatformProducts,
+    listGlobalProducts,
     rejectProduct,
     rejectVariant,
     updateCategory,
@@ -30,7 +30,7 @@ const metadata = async (_req, res) => {
 };
 
 const list = async (req, res) => {
-    const result = await listPlatformProducts(req.validated.query);
+    const result = await listGlobalProducts(req.validated.query);
     res.status(200).json({
         status: 'success',
         data: { products: result.products },
@@ -39,7 +39,7 @@ const list = async (req, res) => {
 };
 
 const detail = async (req, res) => {
-    const result = await getPlatformProductDetail({
+    const result = await getGlobalProductDetail({
         productId: req.validated.params.productId,
     });
     res.status(200).json({ status: 'success', data: result });

@@ -164,7 +164,7 @@ const updateCategoryStatus = async ({
     return serializeCategory(category);
 });
 
-const listPlatformProducts = async ({
+const listGlobalProducts = async ({
     status = null,
     categoryId = null,
     q = null,
@@ -205,7 +205,7 @@ const listPlatformProducts = async ({
     };
 };
 
-const getPlatformProductDetail = async ({ productId }) => {
+const getGlobalProductDetail = async ({ productId }) => {
     const product = await CanonicalProduct.findById(productId)
         .populate('category')
         .lean();
@@ -821,9 +821,9 @@ export {
     approveProduct,
     approveVariant,
     createCategory,
-    getPlatformProductDetail,
+    getGlobalProductDetail,
     listCategories,
-    listPlatformProducts,
+    listGlobalProducts,
     rejectProduct,
     rejectVariant,
     updateCategory,

@@ -125,7 +125,7 @@ const importCommitBodySchema = z.strictObject({
     decisions: z.array(importDecisionSchema).max(5000).optional().default([]),
 });
 
-const platformProductListQuerySchema = z.strictObject({
+const globalProductListQuerySchema = z.strictObject({
     status: z.enum(Object.values(PRODUCT_STATUS)).optional(),
     categoryId: objectIdSchema.optional(),
     q: z.string().trim().min(2).max(120).optional(),
@@ -133,16 +133,16 @@ const platformProductListQuerySchema = z.strictObject({
     limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
-const platformProductIdParamsSchema = z.strictObject({
+const globalProductIdParamsSchema = z.strictObject({
     productId: objectIdSchema,
 });
 
-const platformProductVariantParamsSchema = z.strictObject({
+const globalProductVariantParamsSchema = z.strictObject({
     productId: objectIdSchema,
     variantId: objectIdSchema,
 });
 
-const platformCategoryParamsSchema = z.strictObject({
+const globalCategoryParamsSchema = z.strictObject({
     categoryId: objectIdSchema,
 });
 
@@ -203,10 +203,10 @@ export {
     importIdParamsSchema,
     importPreviewBodySchema,
     objectIdSchema,
-    platformCategoryParamsSchema,
-    platformProductIdParamsSchema,
-    platformProductListQuerySchema,
-    platformProductVariantParamsSchema,
+    globalCategoryParamsSchema,
+    globalProductIdParamsSchema,
+    globalProductListQuerySchema,
+    globalProductVariantParamsSchema,
     productIdParamsSchema,
     productSearchQuerySchema,
     productVariantParamsSchema,

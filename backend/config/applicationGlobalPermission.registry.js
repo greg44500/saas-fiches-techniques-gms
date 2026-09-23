@@ -1,4 +1,7 @@
 import {
+    PRODUCT_CATALOG_GLOBAL_PERMISSION_MODULE,
+} from '../modules/productCatalog/productCatalogGlobalPermission.registry.js';
+import {
     ACTIVE_PLATFORM_PERMISSION_REGISTRY,
 } from './applicationPlatformPermission.registry.js';
 import {
@@ -17,7 +20,9 @@ import {
  * liste. Les permissions restent code-owned et ne sont jamais créées depuis
  * une interface d'administration.
  */
-const APPLICATION_GLOBAL_PERMISSION_MODULES = Object.freeze([]);
+const APPLICATION_GLOBAL_PERMISSION_MODULES = Object.freeze([
+    PRODUCT_CATALOG_GLOBAL_PERMISSION_MODULE,
+]);
 
 const ACTIVE_APPLICATION_GLOBAL_PERMISSION_REGISTRY =
     composeApplicationGlobalPermissions(
