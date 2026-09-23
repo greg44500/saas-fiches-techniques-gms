@@ -8,6 +8,14 @@ import {
     PRODUCT_CATALOG_GLOBAL_PERMISSION,
 } from './productCatalogGlobalPermission.registry.js';
 import {
+    commitProductImport,
+    inspectProductImport,
+    previewProductImport,
+} from './productCatalogImport.service.js';
+import {
+    PRODUCT_IMPORT_SCOPE,
+} from './productCatalog.registry.js';
+import {
     createCategory,
     createGlobalProduct,
     createGlobalVariant,
@@ -80,6 +88,38 @@ const createVariantController = async (req, res) => {
         variant: req.validated.body,
     });
     res.status(201).json({ status: 'success', data: { variant } });
+};
+
+const inspectImport = async (req, res) => {
+    const result = await inspectProductImport({
+        scope: PRODUCT_IMPORT_SCOPE.GLOBAL,
+        actorId: req.user._id,
+        file: req.file,
+    });
+
+    res.status(201).json({ status: 'success', data: result });
+};
+
+const previewImport = async (req, res) => {
+    const result = await previewProductImport({
+        scope: PRODUCT_IMPORT_SCOPE.GLOBAL,
+        actorId: req.user._id,
+        importId: req.validated.params.importId,
+        ...req.validated.body,
+    });
+
+    res.status(200).json({ status: 'success', data: result });
+};
+
+const commitImport = async (req, res) => {
+    const result = await commitProductImport({
+        scope: PRODUCT_IMPORT_SCOPE.GLOBAL,
+        actorId: req.user._id,
+        importId: req.validated.params.importId,
+        decisions: req.validated.body.decisions,
+    });
+
+    res.status(200).json({ status: 'success', data: result });
 };
 
 const categories = async (_req, res) => {
@@ -156,12 +196,15 @@ const updateVariantStatusController = async (req, res) => {
 export {
     access,
     categories,
+    commitImport,
     createCategoryController,
     createProductController,
     createVariantController,
     detail,
+    inspectImport,
     list,
     metadata,
+    previewImport,
     updateCategoryController,
     updateCategoryStatusController,
     updateProductController,

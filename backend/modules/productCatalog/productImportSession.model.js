@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 import {
+    PRODUCT_IMPORT_SCOPE,
     PRODUCT_IMPORT_STATUS,
 } from './productCatalog.registry.js';
 
@@ -8,10 +9,17 @@ const { Schema, model } = mongoose;
 
 const productImportSessionSchema = new Schema(
     {
+        scope: {
+            type: String,
+            enum: Object.values(PRODUCT_IMPORT_SCOPE),
+            default: PRODUCT_IMPORT_SCOPE.WORKSPACE,
+            required: true,
+            immutable: true,
+        },
         workspace: {
             type: Schema.Types.ObjectId,
             ref: 'Workspace',
-            required: true,
+            default: null,
             immutable: true,
         },
         actor: {
@@ -48,13 +56,35 @@ const productImportSessionSchema = new Schema(
     { timestamps: true },
 );
 
+productImportSessionSchema.pre('validate', function validateScopeOwnership() {
+    if (
+        this.scope === PRODUCT_IMPORT_SCOPE.WORKSPACE
+        && !this.workspace
+    ) {
+        this.invalidate(
+            'workspace',
+            'Un import Workspace doit référencer un Workspace.',
+        );
+    }
+
+    if (
+        this.scope === PRODUCT_IMPORT_SCOPE.GLOBAL
+        && this.workspace
+    ) {
+        this.invalidate(
+            'workspace',
+            'Un import global ne doit pas référencer de Workspace.',
+        );
+    }
+});
+
 productImportSessionSchema.index(
     { expiresAt: 1 },
     { name: 'product_import_session_ttl', expireAfterSeconds: 0 },
 );
 productImportSessionSchema.index(
-    { workspace: 1, actor: 1, createdAt: -1 },
-    { name: 'product_import_session_workspace_actor_created_at' },
+    { scope: 1, workspace: 1, actor: 1, createdAt: -1 },
+    { name: 'product_import_session_scope_workspace_actor_created_at' },
 );
 
 const ProductImportSession = model(

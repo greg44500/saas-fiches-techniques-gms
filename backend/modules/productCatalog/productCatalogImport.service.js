@@ -7,12 +7,15 @@ import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
 import {
     attachVariantToWorkspace,
-    createProductContribution,
-    createVariantContribution,
+    createWorkspaceProduct,
+    createWorkspaceVariant,
 } from './productCatalog.service.js';
 import {
+    createGlobalProduct,
+    createGlobalVariant,
+} from './productCatalogGovernance.service.js';
+import {
     findProductDuplicateCandidates,
-    productVisibleToWorkspace,
 } from './productCatalogDedup.service.js';
 import {
     buildVariantSignature,
@@ -21,6 +24,7 @@ import {
 import {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_IMPORT_ROW_CLASSIFICATION,
+    PRODUCT_IMPORT_SCOPE,
     PRODUCT_IMPORT_STATUS,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
@@ -32,21 +36,13 @@ import { parseProductImportFile } from './productCatalogImport.parser.js';
 const IMPORT_TTL_MINUTES = 30;
 
 const loadProductImportBuffer = async (file) => {
-    if (Buffer.isBuffer(file?.buffer)) {
-        return file.buffer;
-    }
+    if (Buffer.isBuffer(file?.buffer)) return file.buffer;
 
-    if (
-        typeof file?.filePath === 'string'
-        && file.filePath.trim()
-    ) {
+    if (typeof file?.filePath === 'string' && file.filePath.trim()) {
         return readFile(file.filePath);
     }
 
-    throw new AppError(
-        'Aucun fichier d’import valide reçu.',
-        400,
-    );
+    throw new AppError('Aucun fichier d’import valide reçu.', 400);
 };
 
 const getProductImportOriginalName = (file) => (
@@ -90,21 +86,11 @@ const M003_HEADER_RULES = Object.freeze([
     }),
     Object.freeze({
         kind: 'PACKAGING',
-        terms: [
-            'conditionnement',
-            'colisage',
-            'packaging',
-            'colis',
-        ],
+        terms: ['conditionnement', 'colisage', 'packaging', 'colis'],
     }),
     Object.freeze({
         kind: 'PRICE',
-        terms: [
-            'prix',
-            'tarif',
-            'price',
-            'cout',
-        ],
+        terms: ['prix', 'tarif', 'price', 'cout'],
     }),
     Object.freeze({
         kind: 'BRAND',
@@ -131,11 +117,14 @@ const parseFoodRange = (value) => {
 
 const parseYield = (value) => {
     if (value === '' || value === null || value === undefined) return null;
-    const normalized = String(value)
-        .replace('%', '')
-        .replace(',', '.')
-        .trim();
-    const number = Number(normalized);
+
+    const number = Number(
+        String(value)
+            .replace('%', '')
+            .replace(',', '.')
+            .trim(),
+    );
+
     return Number.isFinite(number) && number > 0 && number <= 100
         ? number
         : Number.NaN;
@@ -163,11 +152,31 @@ const detectOutOfScopeColumns = (headers) => headers.flatMap(
     },
 );
 
-const inspectProductImport = async ({
+const buildImportScopeFilter = ({
+    scope,
     workspaceId,
+}) => (
+    scope === PRODUCT_IMPORT_SCOPE.GLOBAL
+        ? {
+            scope: PRODUCT_IMPORT_SCOPE.GLOBAL,
+            workspace: null,
+        }
+        : {
+            scope: PRODUCT_IMPORT_SCOPE.WORKSPACE,
+            workspace: workspaceId,
+        }
+);
+
+const inspectProductImport = async ({
+    scope = PRODUCT_IMPORT_SCOPE.WORKSPACE,
+    workspaceId = null,
     actorId,
     file,
 }) => {
+    if (scope === PRODUCT_IMPORT_SCOPE.WORKSPACE && !workspaceId) {
+        throw new AppError('Workspace requis pour cet import.', 400);
+    }
+
     const buffer = await loadProductImportBuffer(file);
     const parsed = parseProductImportFile({
         originalname: getProductImportOriginalName(file),
@@ -179,7 +188,10 @@ const inspectProductImport = async ({
     );
 
     const session = await ProductImportSession.create({
-        workspace: workspaceId,
+        scope,
+        workspace: scope === PRODUCT_IMPORT_SCOPE.WORKSPACE
+            ? workspaceId
+            : null,
         actor: actorId,
         status: PRODUCT_IMPORT_STATUS.INSPECTED,
         format: parsed.format,
@@ -191,6 +203,7 @@ const inspectProductImport = async ({
 
     return {
         importId: session._id.toString(),
+        scope: session.scope,
         format: session.format,
         headers: [...session.headers],
         rowCount: session.rows.length,
@@ -200,6 +213,7 @@ const inspectProductImport = async ({
 };
 
 const loadImportSession = async ({
+    scope,
     workspaceId,
     actorId,
     importId,
@@ -207,7 +221,7 @@ const loadImportSession = async ({
 }) => {
     const session = await ProductImportSession.findOne({
         _id: importId,
-        workspace: workspaceId,
+        ...buildImportScopeFilter({ scope, workspaceId }),
         actor: actorId,
         status: mongoose.trusted({ $in: allowedStatuses }),
         expiresAt: mongoose.trusted({ $gt: new Date() }),
@@ -278,11 +292,14 @@ const mapImportRow = ({
 };
 
 const buildProductImportPreview = async ({
-    workspaceId,
+    scope = PRODUCT_IMPORT_SCOPE.WORKSPACE,
+    workspaceId = null,
     importSession,
     mapping,
     defaults = {},
 }) => {
+    void scope;
+
     const indexes = Object.values(mapping);
     if (indexes.some((index) => index >= importSession.headers.length)) {
         throw new AppError('Le mapping contient une colonne inexistante.', 400);
@@ -297,6 +314,15 @@ const buildProductImportPreview = async ({
             category,
         ]),
     );
+    const defaultCategory = defaults.categoryId
+        ? categories.find(
+            ({ _id }) => _id.toString() === defaults.categoryId.toString(),
+        ) ?? null
+        : null;
+
+    if (defaults.categoryId && !defaultCategory) {
+        throw new AppError('Catégorie par défaut indisponible.', 409);
+    }
 
     const mappedRows = importSession.rows.map((row, index) => mapImportRow({
         row,
@@ -317,6 +343,9 @@ const buildProductImportPreview = async ({
         ? []
         : await CanonicalProduct.find({
             identityActive: true,
+            status: mongoose.trusted({
+                $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+            }),
             searchKeys: mongoose.trusted({ $in: requestedKeys }),
         }).lean();
 
@@ -334,6 +363,9 @@ const buildProductImportPreview = async ({
                 $in: exactProducts.map(({ _id }) => _id),
             }),
             identityActive: true,
+            status: mongoose.trusted({
+                $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+            }),
         }).lean();
     const variantBySignature = new Map(
         variants.map((variant) => [
@@ -356,14 +388,15 @@ const buildProductImportPreview = async ({
             continue;
         }
 
-        const category = data.categoryName
+        const namedCategory = data.categoryName
             ? categoryByKey.get(normalizeProductText(data.categoryName))
             : null;
+        const category = namedCategory ?? defaultCategory;
         const warnings = [];
 
-        if (data.categoryName && !category) {
+        if (data.categoryName && !namedCategory) {
             warnings.push(
-                'Catégorie non reconnue : elle ne sera pas appliquée automatiquement.',
+                'Catégorie non reconnue : la catégorie par défaut sera utilisée si elle est définie.',
             );
         }
 
@@ -371,28 +404,20 @@ const buildProductImportPreview = async ({
         const exactProduct = exactProductByKey.get(normalizedName);
 
         if (exactProduct) {
-            if (!productVisibleToWorkspace(exactProduct, workspaceId)) {
-                preview.push({
-                    ...row,
-                    warnings,
-                    classification:
-                        PRODUCT_IMPORT_ROW_CLASSIFICATION.PRIVATE_CONFLICT,
-                    candidates: [],
-                });
-                continue;
-            }
-
             if (exactProduct.status === PRODUCT_STATUS.ARCHIVED) {
                 preview.push({
                     ...row,
+                    data: {
+                        ...data,
+                        categoryId: category?._id.toString() ?? null,
+                    },
                     warnings,
                     errors: [
                         ...errors,
                         'Produit global archivé : nouveau rattachement interdit.',
                     ],
                     productId: exactProduct._id.toString(),
-                    classification:
-                        PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
+                    classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
                     candidates: [],
                 });
                 continue;
@@ -403,45 +428,14 @@ const buildProductImportPreview = async ({
                 `${exactProduct._id.toString()}:${signature}`,
             );
 
-            if (exactProduct.status === PRODUCT_STATUS.PENDING_REVIEW) {
-                preview.push({
-                    ...row,
-                    data: {
-                        ...data,
-                        categoryId: category?._id.toString() ?? null,
-                    },
-                    warnings: [
-                        ...warnings,
-                        'Produit déjà en validation dans ce Workspace.',
-                    ],
-                    productId: exactProduct._id.toString(),
-                    variantId: existingVariant?._id.toString() ?? null,
-                    classification:
-                        PRODUCT_IMPORT_ROW_CLASSIFICATION.EXISTING_PENDING,
-                    candidates: [],
-                });
-                continue;
-            }
-
             if (existingVariant) {
-                if (
-                    existingVariant.status === PRODUCT_STATUS.PENDING_REVIEW
-                    && existingVariant.contributedFromWorkspace?.toString()
-                        !== workspaceId.toString()
-                ) {
-                    preview.push({
-                        ...row,
-                        warnings,
-                        classification:
-                            PRODUCT_IMPORT_ROW_CLASSIFICATION.PRIVATE_CONFLICT,
-                        candidates: [],
-                    });
-                    continue;
-                }
-
                 if (existingVariant.status === PRODUCT_STATUS.ARCHIVED) {
                     preview.push({
                         ...row,
+                        data: {
+                            ...data,
+                            categoryId: category?._id.toString() ?? null,
+                        },
                         warnings,
                         errors: [
                             ...errors,
@@ -449,8 +443,7 @@ const buildProductImportPreview = async ({
                         ],
                         productId: exactProduct._id.toString(),
                         variantId: existingVariant._id.toString(),
-                        classification:
-                            PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
+                        classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
                         candidates: [],
                     });
                     continue;
@@ -465,9 +458,8 @@ const buildProductImportPreview = async ({
                     warnings,
                     productId: exactProduct._id.toString(),
                     variantId: existingVariant._id.toString(),
-                    classification: existingVariant.status === PRODUCT_STATUS.ACTIVE
-                        ? PRODUCT_IMPORT_ROW_CLASSIFICATION.ATTACH_EXISTING
-                        : PRODUCT_IMPORT_ROW_CLASSIFICATION.EXISTING_PENDING,
+                    classification:
+                        PRODUCT_IMPORT_ROW_CLASSIFICATION.ATTACH_EXISTING,
                     candidates: [],
                 });
                 continue;
@@ -481,8 +473,7 @@ const buildProductImportPreview = async ({
                 },
                 warnings,
                 productId: exactProduct._id.toString(),
-                classification:
-                    PRODUCT_IMPORT_ROW_CLASSIFICATION.PROPOSE_VARIANT,
+                classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.CREATE_VARIANT,
                 candidates: [],
             });
             continue;
@@ -494,19 +485,46 @@ const buildProductImportPreview = async ({
             workspaceId,
         });
 
-        preview.push({
+        const preparedRow = {
             ...row,
             data: {
                 ...data,
                 categoryId: category?._id.toString() ?? null,
             },
             warnings,
-            classification: duplicateCheck.privateConflict
-                ? PRODUCT_IMPORT_ROW_CLASSIFICATION.PRIVATE_CONFLICT
-                : duplicateCheck.candidates.length > 0
-                    ? PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED
-                    : PRODUCT_IMPORT_ROW_CLASSIFICATION.PROPOSE_PRODUCT,
             candidates: duplicateCheck.candidates,
+        };
+
+        if (duplicateCheck.candidates.length > 0) {
+            if (!category) {
+                preparedRow.warnings = [
+                    ...warnings,
+                    'Une catégorie active sera obligatoire si vous choisissez de créer une nouvelle référence.',
+                ];
+            }
+
+            preview.push({
+                ...preparedRow,
+                classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED,
+            });
+            continue;
+        }
+
+        if (!category) {
+            preview.push({
+                ...preparedRow,
+                errors: [
+                    ...errors,
+                    'Une catégorie active est obligatoire pour créer un Produit.',
+                ],
+                classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
+            });
+            continue;
+        }
+
+        preview.push({
+            ...preparedRow,
+            classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.CREATE_PRODUCT,
         });
     }
 
@@ -523,13 +541,15 @@ const buildPreviewCounts = (preview) => Object.fromEntries(
 );
 
 const previewProductImport = async ({
-    workspaceId,
+    scope = PRODUCT_IMPORT_SCOPE.WORKSPACE,
+    workspaceId = null,
     actorId,
     importId,
     mapping,
     defaults = {},
 }) => {
     const importSession = await loadImportSession({
+        scope,
         workspaceId,
         actorId,
         importId,
@@ -540,6 +560,7 @@ const previewProductImport = async ({
     });
 
     const preview = await buildProductImportPreview({
+        scope,
         workspaceId,
         importSession,
         mapping,
@@ -553,6 +574,7 @@ const previewProductImport = async ({
 
     return {
         importId: importSession._id.toString(),
+        scope: importSession.scope,
         headers: importSession.headers,
         rowCount: preview.length,
         counts: buildPreviewCounts(preview),
@@ -584,15 +606,13 @@ const findStalePreviewRows = ({
     return storedPreview.flatMap((storedRow) => {
         const currentRow = currentByRow.get(storedRow.rowNumber);
 
-        if (
+        return (
             !currentRow
             || previewRowFingerprint(storedRow)
                 !== previewRowFingerprint(currentRow)
-        ) {
-            return [storedRow.rowNumber];
-        }
-
-        return [];
+        )
+            ? [storedRow.rowNumber]
+            : [];
     });
 };
 
@@ -623,15 +643,118 @@ const assertCandidateVariant = async ({
     return variant;
 };
 
-const commitProductImport = async ({
+const useExistingVariant = async ({
+    scope,
     workspaceId,
+    actorId,
+    variantId,
+}) => {
+    if (scope === PRODUCT_IMPORT_SCOPE.GLOBAL) {
+        return {
+            status: 'EXISTING_REFERENCE',
+            variantId,
+        };
+    }
+
+    await attachVariantToWorkspace({
+        workspaceId,
+        variantId,
+        actorId,
+    });
+
+    return {
+        status: 'ATTACHED_EXISTING',
+        variantId,
+    };
+};
+
+const createVariantFromImport = async ({
+    scope,
+    workspaceId,
+    actorId,
+    productId,
+    variant,
+}) => {
+    if (scope === PRODUCT_IMPORT_SCOPE.GLOBAL) {
+        const created = await createGlobalVariant({
+            actorId,
+            productId,
+            variant,
+        });
+        return {
+            status: 'CREATED_VARIANT',
+            variantId: created.id,
+        };
+    }
+
+    const created = await createWorkspaceVariant({
+        workspaceId,
+        actorId,
+        productId,
+        variant,
+    });
+
+    return {
+        status: 'CREATED_VARIANT',
+        variantId: created.variant.id,
+    };
+};
+
+const createProductFromImport = async ({
+    scope,
+    workspaceId,
+    actorId,
+    row,
+    reviewedCandidateIds,
+}) => {
+    if (!row.data.categoryId) {
+        throw new AppError(
+            'Une catégorie active est obligatoire pour créer le Produit.',
+            409,
+        );
+    }
+
+    const payload = {
+        actorId,
+        name: row.data.name,
+        aliases: row.data.aliases,
+        categoryId: row.data.categoryId,
+        reviewedCandidateIds,
+        variant: row.data.variant,
+    };
+
+    if (scope === PRODUCT_IMPORT_SCOPE.GLOBAL) {
+        const created = await createGlobalProduct(payload);
+        return {
+            status: 'CREATED_PRODUCT',
+            productId: created.product.id,
+            variantId: created.variant.id,
+        };
+    }
+
+    const created = await createWorkspaceProduct({
+        ...payload,
+        workspaceId,
+    });
+
+    return {
+        status: 'CREATED_PRODUCT',
+        productId: created.product.id,
+        variantId: created.variant.id,
+    };
+};
+
+const commitProductImport = async ({
+    scope = PRODUCT_IMPORT_SCOPE.WORKSPACE,
+    workspaceId = null,
     actorId,
     importId,
     decisions = [],
 }) => {
+    const scopeFilter = buildImportScopeFilter({ scope, workspaceId });
     const existingCommitted = await ProductImportSession.findOne({
         _id: importId,
-        workspace: workspaceId,
+        ...scopeFilter,
         actor: actorId,
         status: PRODUCT_IMPORT_STATUS.COMMITTED,
     }).lean();
@@ -643,32 +766,26 @@ const commitProductImport = async ({
     const importSession = await ProductImportSession.findOneAndUpdate(
         {
             _id: importId,
-            workspace: workspaceId,
+            ...scopeFilter,
             actor: actorId,
             status: PRODUCT_IMPORT_STATUS.PREVIEWED,
             expiresAt: mongoose.trusted({ $gt: new Date() }),
         },
         {
-            $set: {
-                status: PRODUCT_IMPORT_STATUS.COMMITTING,
-            },
+            $set: { status: PRODUCT_IMPORT_STATUS.COMMITTING },
         },
-        {
-            returnDocument: 'after',
-        },
+        { returnDocument: 'after' },
     );
 
     if (!importSession) {
         const committed = await ProductImportSession.findOne({
             _id: importId,
-            workspace: workspaceId,
+            ...scopeFilter,
             actor: actorId,
             status: PRODUCT_IMPORT_STATUS.COMMITTED,
         }).lean();
 
-        if (committed) {
-            return committed.committedResult;
-        }
+        if (committed) return committed.committedResult;
 
         throw new AppError(
             'Cet import est expiré, invalide ou déjà en cours de traitement.',
@@ -687,6 +804,7 @@ const commitProductImport = async ({
         }
 
         const currentPreview = await buildProductImportPreview({
+            scope,
             workspaceId,
             importSession,
             mapping: mappingConfig.mapping,
@@ -734,10 +852,7 @@ const commitProductImport = async ({
             const decision = decisionByRow.get(row.rowNumber);
 
             try {
-                if (
-                    row.classification === PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID
-                    || row.classification === PRODUCT_IMPORT_ROW_CLASSIFICATION.PRIVATE_CONFLICT
-                ) {
+                if (row.classification === PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID) {
                     results.push({
                         rowNumber: row.rowNumber,
                         status: 'SKIPPED',
@@ -756,76 +871,57 @@ const commitProductImport = async ({
 
                 if (
                     row.classification
-                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.ATTACH_EXISTING
+                    === PRODUCT_IMPORT_ROW_CLASSIFICATION.ATTACH_EXISTING
                 ) {
-                    await attachVariantToWorkspace({
-                        workspaceId,
-                        variantId: row.variantId,
-                        actorId,
-                    });
                     results.push({
                         rowNumber: row.rowNumber,
-                        status: 'ATTACHED_EXISTING',
-                        variantId: row.variantId,
+                        ...await useExistingVariant({
+                            scope,
+                            workspaceId,
+                            actorId,
+                            variantId: row.variantId,
+                        }),
                     });
                     continue;
                 }
 
                 if (
                     row.classification
-                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.EXISTING_PENDING
+                    === PRODUCT_IMPORT_ROW_CLASSIFICATION.CREATE_VARIANT
                 ) {
                     results.push({
                         rowNumber: row.rowNumber,
-                        status: 'EXISTING_PENDING',
-                        variantId: row.variantId ?? null,
+                        ...await createVariantFromImport({
+                            scope,
+                            workspaceId,
+                            actorId,
+                            productId: row.productId,
+                            variant: row.data.variant,
+                        }),
                     });
                     continue;
                 }
 
                 if (
                     row.classification
-                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.PROPOSE_VARIANT
+                    === PRODUCT_IMPORT_ROW_CLASSIFICATION.CREATE_PRODUCT
                 ) {
-                    const created = await createVariantContribution({
-                        workspaceId,
-                        actorId,
-                        productId: row.productId,
-                        variant: row.data.variant,
-                    });
                     results.push({
                         rowNumber: row.rowNumber,
-                        status: 'PROPOSED_VARIANT',
-                        variantId: created.variant.id,
+                        ...await createProductFromImport({
+                            scope,
+                            workspaceId,
+                            actorId,
+                            row,
+                            reviewedCandidateIds: [],
+                        }),
                     });
                     continue;
                 }
 
                 if (
                     row.classification
-                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.PROPOSE_PRODUCT
-                ) {
-                    const created = await createProductContribution({
-                        workspaceId,
-                        actorId,
-                        name: row.data.name,
-                        aliases: row.data.aliases,
-                        categoryId: row.data.categoryId,
-                        reviewedCandidateIds: [],
-                        variant: row.data.variant,
-                    });
-                    results.push({
-                        rowNumber: row.rowNumber,
-                        status: 'PROPOSED_PRODUCT',
-                        productId: created.product.id,
-                        variantId: created.variant.id,
-                    });
-                    continue;
-                }
-
-                if (
-                    row.classification
-                        === PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED
+                    === PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED
                 ) {
                     if (!decision) {
                         results.push({
@@ -841,36 +937,29 @@ const commitProductImport = async ({
                             row,
                             variantId: decision.variantId,
                         });
-                        await attachVariantToWorkspace({
-                            workspaceId,
-                            variantId: decision.variantId,
-                            actorId,
-                        });
+
                         results.push({
                             rowNumber: row.rowNumber,
-                            status: 'ATTACHED_EXISTING',
-                            variantId: decision.variantId,
+                            ...await useExistingVariant({
+                                scope,
+                                workspaceId,
+                                actorId,
+                                variantId: decision.variantId,
+                            }),
                         });
                         continue;
                     }
 
                     if (decision.action === 'CREATE_NEW') {
-                        const reviewedCandidateIds = row.candidates
-                            .map(({ id }) => id);
-                        const created = await createProductContribution({
-                            workspaceId,
-                            actorId,
-                            name: row.data.name,
-                            aliases: row.data.aliases,
-                            categoryId: row.data.categoryId,
-                            reviewedCandidateIds,
-                            variant: row.data.variant,
-                        });
                         results.push({
                             rowNumber: row.rowNumber,
-                            status: 'PROPOSED_PRODUCT',
-                            productId: created.product.id,
-                            variantId: created.variant.id,
+                            ...await createProductFromImport({
+                                scope,
+                                workspaceId,
+                                actorId,
+                                row,
+                                reviewedCandidateIds: row.candidates.map(({ id }) => id),
+                            }),
                         });
                         continue;
                     }
@@ -892,6 +981,7 @@ const commitProductImport = async ({
 
         const committedResult = {
             importId: importSession._id.toString(),
+            scope,
             total: results.length,
             succeeded: results.filter(({ status }) => ![
                 'FAILED',
@@ -915,9 +1005,7 @@ const commitProductImport = async ({
                 status: PRODUCT_IMPORT_STATUS.COMMITTING,
             },
             {
-                $set: {
-                    status: PRODUCT_IMPORT_STATUS.PREVIEWED,
-                },
+                $set: { status: PRODUCT_IMPORT_STATUS.PREVIEWED },
             },
         );
 

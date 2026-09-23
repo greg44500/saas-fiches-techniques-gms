@@ -6,14 +6,21 @@ import {
 } from '../../middlewares/authorizeApplicationGlobalPermission.js';
 import { validateRequest } from '../../middlewares/validateRequest.js';
 import {
+    cleanupProductImportUploadOnError,
+    uploadProductImportFile,
+} from './productCatalogImport.middleware.js';
+import {
     access,
     categories,
+    commitImport,
     createCategoryController,
     createProductController,
     createVariantController,
     detail,
+    inspectImport,
     list,
     metadata,
+    previewImport,
     updateCategoryController,
     updateCategoryStatusController,
     updateProductController,
@@ -29,9 +36,12 @@ import {
     createGlobalProductBodySchema,
     createGlobalVariantBodySchema,
     globalCategoryParamsSchema,
+    globalImportIdParamsSchema,
     globalProductIdParamsSchema,
     globalProductListQuerySchema,
     globalProductVariantParamsSchema,
+    importCommitBodySchema,
+    importPreviewBodySchema,
     updateCategoryBodySchema,
     updateCategoryStatusBodySchema,
     updateProductBodySchema,
@@ -83,6 +93,34 @@ productCatalogGlobalRouter.patch(
         body: updateCategoryStatusBodySchema,
     }),
     updateCategoryStatusController,
+);
+
+productCatalogGlobalRouter.post(
+    '/imports/inspect',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    uploadProductImportFile,
+    inspectImport,
+    cleanupProductImportUploadOnError,
+);
+
+productCatalogGlobalRouter.post(
+    '/imports/:importId/preview',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalImportIdParamsSchema,
+        body: importPreviewBodySchema,
+    }),
+    previewImport,
+);
+
+productCatalogGlobalRouter.post(
+    '/imports/:importId/commit',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalImportIdParamsSchema,
+        body: importCommitBodySchema,
+    }),
+    commitImport,
 );
 
 productCatalogGlobalRouter.get(
