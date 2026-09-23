@@ -5,8 +5,8 @@ const productsDashboardModule = Object.freeze({
   widgets: Object.freeze([
     Object.freeze({
       id: 'gms.products-catalog',
-      label: 'Catalogue Produits',
-      description: 'État du catalogue Produit de l’espace de travail.',
+      label: 'Mon référentiel Produits',
+      description: 'État du référentiel Produit de l’espace de travail.',
       component: ProductsDashboardWidget,
       slot: 'content',
       order: 60,

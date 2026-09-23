@@ -147,7 +147,7 @@ describe('ProductCreateDialog', () => {
     await user.type(screen.getByLabelText('Nom du Produit'), 'Carotte nouvelle');
     await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
 
-    expect(screen.queryByRole('button', { name: 'Créer et ajouter au catalogue' }))
+    expect(screen.queryByRole('button', { name: 'Créer et ajouter à mon référentiel' }))
       .not.toBeInTheDocument();
 
     const reviews = await screen.findAllByRole('checkbox', { name: 'Différent' });
@@ -155,7 +155,7 @@ describe('ProductCreateDialog', () => {
     await user.click(reviews[1]);
 
     const createButton = screen.getByRole('button', {
-      name: 'Créer et ajouter au catalogue',
+      name: 'Créer et ajouter à mon référentiel',
     });
     expect(createButton).toBeDisabled();
 

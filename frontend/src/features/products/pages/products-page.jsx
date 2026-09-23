@@ -56,10 +56,13 @@ const ALL_WORKSPACE_STATUSES = '__ALL__';
 
 function ProductsPage() {
   const { can, hasFeature, workspace } = useWorkspaceContext();
+  const canReferenceAccess = hasFeature(PRODUCT_CAPABILITY.REFERENCE_ACCESS);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
-  const [scope, setScope] = useState('WORKSPACE');
+  const [scope, setScope] = useState(
+    () => (canReferenceAccess ? 'REFERENCE' : 'WORKSPACE'),
+  );
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(ALL_CATEGORIES);
@@ -95,7 +98,6 @@ function ProductsPage() {
   const canGovernReference = globalPermissions.has(
     PRODUCT_REFERENCE_PERMISSION.READ,
   );
-  const canReferenceAccess = hasFeature(PRODUCT_CAPABILITY.REFERENCE_ACCESS);
   const canCreate = (
     can(PRODUCT_PERMISSION.CONTRIBUTE)
     && hasFeature(PRODUCT_CAPABILITY.CONTRIBUTION)
@@ -124,7 +126,7 @@ function ProductsPage() {
   ], [metadata?.categories]);
 
   const workspaceStatusItems = useMemo(() => [
-    { value: ALL_WORKSPACE_STATUSES, label: 'Tous les états du catalogue' },
+    { value: ALL_WORKSPACE_STATUSES, label: 'Tous les états de mon référentiel' },
     ...(metadata?.workspaceProductStatuses ?? []),
   ], [metadata?.workspaceProductStatuses]);
 
@@ -168,13 +170,13 @@ function ProductsPage() {
           workspaceId: workspace.id,
           variantId: result.variant.id,
         }).unwrap();
-        toast({ title: 'Référence ajoutée au catalogue', variant: 'success' });
+        toast({ title: 'Référence ajoutée à mon référentiel', variant: 'success' });
       } else {
         await archiveVariant({
           workspaceId: workspace.id,
           variantId: result.variant.id,
         }).unwrap();
-        toast({ title: 'Référence retirée du catalogue', variant: 'success' });
+        toast({ title: 'Référence retirée de mon référentiel', variant: 'success' });
       }
     } catch (error) {
       toast({
@@ -226,7 +228,7 @@ function ProductsPage() {
     },
     {
       id: 'catalog',
-      header: 'Mon catalogue',
+      header: 'Mon référentiel',
       cell: (result) => (
         result.workspaceEntry ? (
           <StatusBadge tone={result.workspaceEntry.status === 'ACTIVE' ? 'success' : 'neutral'}>
@@ -261,18 +263,18 @@ function ProductsPage() {
                 <ActionIconButton
                   Icon={Minus}
                   disabled={mutationPending}
-                  label={'Retirer ' + result.product.name + ' du catalogue'}
+                  label={'Retirer ' + result.product.name + ' de mon référentiel'}
                   onClick={() => changeCatalog(result, false)}
-                  tooltipLabel="Retirer du catalogue"
+                  tooltipLabel="Retirer de mon référentiel"
                   variant="outline"
                 />
               ) : canAttach ? (
                 <ActionIconButton
                   Icon={Plus}
                   disabled={mutationPending}
-                  label={'Ajouter ' + result.product.name + ' au catalogue'}
+                  label={'Ajouter ' + result.product.name + ' à mon référentiel'}
                   onClick={() => changeCatalog(result, true)}
-                  tooltipLabel="Ajouter au catalogue"
+                  tooltipLabel="Ajouter à mon référentiel"
                 />
               ) : null
             )}
@@ -299,7 +301,7 @@ function ProductsPage() {
         <div className="flex items-start gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Produits</h1>
           <InfoTooltip
-            content="Consultez votre catalogue, recherchez le référentiel commun et créez une nouvelle référence seulement lorsqu’aucun équivalent n’existe."
+            content="Consultez les références de votre Workspace, recherchez le référentiel global et créez une nouvelle référence seulement lorsqu’aucun équivalent n’existe."
             label="À propos des Produits"
           />
         </div>
@@ -312,7 +314,7 @@ function ProductsPage() {
               variant="outline"
             >
               <BookOpenCheck aria-hidden="true" className="size-4" />
-              Gérer le référentiel
+              Gérer le référentiel global
             </Button>
           )}
           {canCreate && (
@@ -331,13 +333,13 @@ function ProductsPage() {
       </header>
 
       <Tabs onValueChange={changeScope} value={scope}>
-        <TabsList aria-label="Portée du catalogue" variant="section">
-          <TabsTrigger value="WORKSPACE" variant="section">Mon catalogue</TabsTrigger>
+        <TabsList aria-label="Portée du référentiel Produit" variant="section">
           {canReferenceAccess && (
             <TabsTrigger value="REFERENCE" variant="section">
-              Tout le référentiel
+              Référentiel global
             </TabsTrigger>
           )}
+          <TabsTrigger value="WORKSPACE" variant="section">Mon référentiel</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -391,7 +393,7 @@ function ProductsPage() {
               }}
               value={status}
             >
-              <SelectTrigger aria-label="Filtrer par état du catalogue">
+              <SelectTrigger aria-label="Filtrer par état de mon référentiel">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -404,7 +406,7 @@ function ProductsPage() {
             </Select>
           ) : (
             <div className="flex items-center text-sm text-muted-foreground">
-              Références actives du référentiel commun
+              Références actives du référentiel global
             </div>
           )}
         </div>
@@ -413,14 +415,14 @@ function ProductsPage() {
           <p className="p-5 text-sm text-muted-foreground">Chargement des Produits…</p>
         ) : hasError ? (
           <ErrorState
-            description="Le catalogue Produit ou ses métadonnées n’ont pas pu être chargés."
+            description="Les références Produit ou leurs métadonnées n’ont pas pu être chargées."
             onRetry={retry}
             title="Produits indisponibles"
           />
         ) : (
           <>
             <DataTable
-              caption={scope === 'WORKSPACE' ? 'Mon catalogue Produits' : 'Référentiel Produits'}
+              caption={scope === 'WORKSPACE' ? 'Mon référentiel Produits' : 'Référentiel global Produits'}
               columns={columns}
               data={results}
               emptyContent={(
@@ -430,7 +432,7 @@ function ProductsPage() {
                     search || categoryId !== ALL_CATEGORIES
                       ? 'Modifiez la recherche ou les filtres pour élargir les résultats.'
                       : scope === 'WORKSPACE'
-                        ? 'Recherchez le référentiel ou créez votre premier Produit.'
+                        ? 'Recherchez le référentiel global ou créez votre premier Produit.'
                         : 'Aucune référence n’est disponible avec ces critères.'
                   }
                   title="Aucun Produit à afficher"
@@ -468,7 +470,7 @@ function ProductsPage() {
         onCreated={(result) => {
           setCreateOpen(false);
           toast({
-            title: 'Produit créé et ajouté au catalogue',
+            title: 'Produit créé et ajouté à mon référentiel',
             description: result?.product?.name,
             variant: 'success',
           });

@@ -9,8 +9,8 @@ const PRODUCT_STATUS_REGISTRY = Object.freeze({
 });
 
 const WORKSPACE_PRODUCT_STATUS_REGISTRY = Object.freeze({
-    ACTIVE: Object.freeze({ value: 'ACTIVE', label: 'Dans le catalogue' }),
-    ARCHIVED: Object.freeze({ value: 'ARCHIVED', label: 'Retiré du catalogue' }),
+    ACTIVE: Object.freeze({ value: 'ACTIVE', label: 'Dans mon référentiel' }),
+    ARCHIVED: Object.freeze({ value: 'ARCHIVED', label: 'Retiré de mon référentiel' }),
 });
 
 const WORKSPACE_PRODUCT_STATUS = Object.freeze(

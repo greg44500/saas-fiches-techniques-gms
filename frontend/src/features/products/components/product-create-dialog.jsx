@@ -211,7 +211,7 @@ function ProductCreateDialog({
           <DialogHeader>
             <DialogTitle>Créer un Produit</DialogTitle>
             <DialogDescription>
-              Recherchez d’abord l’existant. La nouvelle identité sera immédiatement partagée dans le référentiel commun.
+              Recherchez d’abord l’existant. La nouvelle identité sera immédiatement partagée dans le référentiel global.
             </DialogDescription>
           </DialogHeader>
 
@@ -282,7 +282,7 @@ function ProductCreateDialog({
                   )}
                   {!isGlobal && duplicateResult.exactMatch.status === 'ARCHIVED' && (
                     <p className="max-w-sm text-sm text-muted-foreground">
-                      Cette référence est archivée dans le référentiel commun. Elle ne peut pas être recréée depuis cet espace de travail.
+                      Cette référence est archivée dans le référentiel global. Elle ne peut pas être recréée depuis cet espace de travail.
                     </p>
                   )}
                 </div>
@@ -326,7 +326,7 @@ function ProductCreateDialog({
                 <div>
                   <h3 className="font-medium">Nouvelle identité</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Elle sera créée active dans le référentiel commun après le dernier contrôle serveur.
+                    Elle sera créée active dans le référentiel global après le dernier contrôle serveur.
                   </p>
                 </div>
 
@@ -390,8 +390,8 @@ function ProductCreateDialog({
                 {(workspaceCreateState.isLoading || globalCreateState.isLoading)
                   ? 'Création…'
                   : isGlobal
-                    ? 'Créer dans le référentiel'
-                    : 'Créer et ajouter au catalogue'}
+                    ? 'Créer dans le référentiel global'
+                    : 'Créer et ajouter à mon référentiel'}
               </Button>
             )}
           </DialogFooter>

@@ -17,7 +17,7 @@ const metadata = {
     { value: 'ARCHIVED', label: 'Archivé' },
   ],
   workspaceProductStatuses: [
-    { value: 'ACTIVE', label: 'Dans le catalogue' },
+    { value: 'ACTIVE', label: 'Dans mon référentiel' },
   ],
   productCategoryStatuses: [
     { value: 'ARCHIVED', label: 'Archivée' },
@@ -30,7 +30,7 @@ const metadata = {
 describe('product presentation', () => {
   it('utilise les libellés fournis par les métadonnées backend', () => {
     expect(getProductStatusLabel(metadata, 'ACTIVE')).toBe('Actif');
-    expect(getWorkspaceProductStatusLabel(metadata, 'ACTIVE')).toBe('Dans le catalogue');
+    expect(getWorkspaceProductStatusLabel(metadata, 'ACTIVE')).toBe('Dans mon référentiel');
     expect(getCategoryStatusLabel(metadata, 'ARCHIVED')).toBe('Archivée');
     expect(getReferenceUnitLabel(metadata, 'KG')).toBe('kg');
   });

@@ -88,8 +88,8 @@ const metadata = {
     { value: 'ARCHIVED', label: 'Archivé' },
   ],
   workspaceProductStatuses: [
-    { value: 'ACTIVE', label: 'Dans le catalogue' },
-    { value: 'ARCHIVED', label: 'Retiré du catalogue' },
+    { value: 'ACTIVE', label: 'Dans mon référentiel' },
+    { value: 'ARCHIVED', label: 'Retiré de mon référentiel' },
   ],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
 };
@@ -163,18 +163,21 @@ describe('ProductsPage', () => {
     });
   });
 
-  it('affiche le catalogue Workspace avec les libellés backend', () => {
+  it('affiche les états de Mon référentiel avec les libellés backend', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByText('Légumes')).toBeInTheDocument();
     expect(screen.getByText('Entière · Fraîche')).toBeInTheDocument();
-    expect(screen.getByText('Dans le catalogue')).toBeInTheDocument();
+    expect(screen.getByText('Dans mon référentiel')).toBeInTheDocument();
   });
 
-  it('recherche côté serveur et bascule vers le référentiel global', async () => {
+  it('recherche côté serveur dans la portée sélectionnée', async () => {
     const user = userEvent.setup();
     renderPage();
+
+    expect(screen.getByRole('tab', { name: 'Référentiel global' }))
+      .toHaveAttribute('aria-selected', 'true');
 
     await user.type(
       screen.getByRole('textbox', { name: 'Rechercher un Produit' }),
@@ -186,31 +189,33 @@ describe('ProductsPage', () => {
       expect.objectContaining({
         workspaceId: 'workspace-1',
         q: 'carotte',
-        scope: 'WORKSPACE',
+        scope: 'REFERENCE',
       }),
     );
 
-    await user.click(screen.getByRole('tab', { name: 'Tout le référentiel' }));
+    await user.click(screen.getByRole('tab', { name: 'Mon référentiel' }));
 
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        scope: 'REFERENCE',
-        status: undefined,
+        scope: 'WORKSPACE',
       }),
     );
-    expect(screen.getByText('Références actives du référentiel commun'))
-      .toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Mon référentiel' }))
+      .toHaveAttribute('aria-selected', 'true');
   });
 
   it('cherche prédictivement dans le référentiel et bascule sur une référence absente du Workspace', async () => {
     const user = userEvent.setup();
     renderPage();
 
+    await user.click(screen.getByRole('tab', { name: 'Mon référentiel' }));
+    expect(screen.getByRole('tab', { name: 'Mon référentiel' }))
+      .toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('predictive-scope')).toHaveTextContent('REFERENCE');
 
     await user.click(screen.getByRole('button', { name: 'Suggestion Carotte' }));
 
-    expect(screen.getByRole('tab', { name: 'Tout le référentiel' }))
+    expect(screen.getByRole('tab', { name: 'Référentiel global' }))
       .toHaveAttribute('aria-selected', 'true');
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -239,7 +244,7 @@ describe('ProductsPage', () => {
     renderPage();
 
     expect(screen.getByRole('button', {
-      name: 'Retirer Carotte du catalogue',
+      name: 'Retirer Carotte de mon référentiel',
     })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Retirer' }))
       .not.toBeInTheDocument();
@@ -263,7 +268,7 @@ describe('ProductsPage', () => {
     renderPage();
 
     expect(screen.getByRole('button', {
-      name: 'Ajouter Carotte au catalogue',
+      name: 'Ajouter Carotte à mon référentiel',
     })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ajouter' }))
       .not.toBeInTheDocument();
@@ -283,7 +288,7 @@ describe('ProductsPage', () => {
     expect(screen.queryByRole('button', { name: 'Importer' }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', {
-      name: 'Retirer Carotte du catalogue',
+      name: 'Retirer Carotte de mon référentiel',
     })).not.toBeInTheDocument();
   });
 
@@ -297,8 +302,8 @@ describe('ProductsPage', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Mon catalogue' })).toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: 'Tout le référentiel' }))
+    expect(screen.getByRole('tab', { name: 'Mon référentiel' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Référentiel global' }))
       .not.toBeInTheDocument();
   });
 });

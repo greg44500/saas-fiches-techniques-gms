@@ -352,8 +352,8 @@ function ProductImportDialog({
             <DialogTitle>Importer des Produits</DialogTitle>
             <DialogDescription>
               {isGlobal
-                ? 'Le fichier alimente le référentiel Produit commun. Les données fournisseur, références commerciales, conditionnements et prix restent hors périmètre M-002.'
-                : 'Le fichier est rapproché du référentiel commun avant rattachement ou création. Les données fournisseur et prix restent hors périmètre M-002.'}
+                ? 'Le fichier alimente le référentiel Produit global. Les données fournisseur, références commerciales, conditionnements et prix restent hors périmètre M-002.'
+                : 'Le fichier est rapproché du référentiel global avant rattachement ou création. Les données fournisseur et prix restent hors périmètre M-002.'}
             </DialogDescription>
           </DialogHeader>
 

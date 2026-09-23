@@ -10,6 +10,7 @@ import {
     PRODUCT_STATUS,
     PRODUCT_STATUS_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
+    WORKSPACE_PRODUCT_STATUS_REGISTRY,
 } from '../../../modules/productCatalog/productCatalog.registry.js';
 import {
     PRODUCT_CATALOG_GLOBAL_PERMISSION,
@@ -30,6 +31,10 @@ describe('M-002 product catalog registries', () => {
             'ACTIVE',
             'ARCHIVED',
         ]);
+        expect(WORKSPACE_PRODUCT_STATUS_REGISTRY.ACTIVE.label)
+            .toBe('Dans mon référentiel');
+        expect(WORKSPACE_PRODUCT_STATUS_REGISTRY.ARCHIVED.label)
+            .toBe('Retiré de mon référentiel');
     });
 
     it('décrit les unités de référence avec leur dimension', () => {

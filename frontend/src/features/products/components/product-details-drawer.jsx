@@ -75,13 +75,13 @@ function ProductDetailsDrawer({
           workspaceId,
           variantId: variant.id,
         }).unwrap();
-        toast({ title: 'Référence ajoutée au catalogue', variant: 'success' });
+        toast({ title: 'Référence ajoutée à mon référentiel', variant: 'success' });
       } else {
         await archiveVariant({
           workspaceId,
           variantId: variant.id,
         }).unwrap();
-        toast({ title: 'Référence retirée du catalogue', variant: 'success' });
+        toast({ title: 'Référence retirée de mon référentiel', variant: 'success' });
       }
     } catch (error) {
       toast({
@@ -95,7 +95,7 @@ function ProductDetailsDrawer({
   return (
     <>
       <EntityDetailsDrawer
-        description="Identité Produit, déclinaisons et présence dans votre catalogue."
+        description="Identité Produit, déclinaisons et présence dans votre référentiel Workspace."
         onClose={onClose}
         open={open}
         title={product?.name ?? 'Produit'}
@@ -114,7 +114,7 @@ function ProductDetailsDrawer({
             <TabsList aria-label="Détails du Produit" variant="section">
               <TabsTrigger value="product" variant="section">Produit</TabsTrigger>
               <TabsTrigger value="variants" variant="section">Déclinaisons</TabsTrigger>
-              <TabsTrigger value="catalog" variant="section">Catalogue</TabsTrigger>
+              <TabsTrigger value="catalog" variant="section">Mon référentiel</TabsTrigger>
             </TabsList>
 
             <TabsContent value="product" variant="section">
@@ -198,7 +198,7 @@ function ProductDetailsDrawer({
                                 metadata,
                                 variant.workspaceEntry.status,
                               )
-                              : 'Absente du catalogue'}
+                              : 'Absente de mon référentiel'}
                           </p>
                         </div>
                         {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
@@ -209,7 +209,7 @@ function ProductDetailsDrawer({
                               type="button"
                               variant="outline"
                             >
-                              Retirer du catalogue
+                              Retirer de mon référentiel
                             </Button>
                           ) : canAttach ? (
                             <Button
@@ -217,7 +217,7 @@ function ProductDetailsDrawer({
                               onClick={() => changeCatalog(variant, true)}
                               type="button"
                             >
-                              Ajouter au catalogue
+                              Ajouter à mon référentiel
                             </Button>
                           ) : null
                         )}

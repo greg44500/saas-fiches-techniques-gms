@@ -27,7 +27,7 @@ describe('ProductsDashboardWidget', () => {
     });
   });
 
-  it('affiche l indicateur du catalogue et le lien d accès', () => {
+  it('affiche l indicateur de Mon référentiel et le lien d accès', () => {
     mocks.summaryQuery.mockReturnValue({
       data: {
         activeCatalogEntries: 12,
@@ -45,6 +45,7 @@ describe('ProductsDashboardWidget', () => {
       </MemoryRouter>,
     );
 
+    expect(screen.getByText('Mon référentiel Produits')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
     expect(screen.getByText('Références actives')).toBeInTheDocument();
     expect(screen.queryByText(/validation/i)).not.toBeInTheDocument();

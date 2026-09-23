@@ -144,7 +144,7 @@ const attachVariantToWorkspaceInSession = async ({
 
     if (!isActive) {
         throw new AppError(
-            'Cette référence Produit ne peut pas être ajoutée au catalogue.',
+            'Cette référence Produit ne peut pas être ajoutée au référentiel Workspace.',
             409,
         );
     }
@@ -678,7 +678,7 @@ const archiveVariantFromWorkspace = async ({
     }).session(session);
 
     if (!entry) {
-        throw new AppError('Référence absente du catalogue.', 404);
+        throw new AppError('Référence absente du référentiel Workspace.', 404);
     }
 
     if (entry.status === WORKSPACE_PRODUCT_STATUS.ARCHIVED) {

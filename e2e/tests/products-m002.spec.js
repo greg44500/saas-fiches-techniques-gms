@@ -12,7 +12,7 @@ import {
   provisionProductOwnerWorkspace,
 } from '../support/product-fixtures.js';
 
-test('M-002 owner crée un Produit actif et le retrouve dans son catalogue', async ({ page }) => {
+test('M-002 owner crée un Produit actif et le retrouve dans Mon référentiel', async ({ page }) => {
   const context = await provisionProductOwnerWorkspace();
 
   await loginWithIdentity(page, context.identity);
@@ -34,12 +34,14 @@ test('M-002 owner crée un Produit actif et le retrouve dans son catalogue', asy
   await page.getByRole('option', { name: context.categoryName }).click();
 
   await dialog
-    .getByRole('button', { name: 'Créer et ajouter au catalogue' })
+    .getByRole('button', { name: 'Créer et ajouter à mon référentiel' })
     .click();
 
   await expect(
-    page.getByText('Produit créé et ajouté au catalogue', { exact: true }),
+    page.getByText('Produit créé et ajouté à mon référentiel', { exact: true }),
   ).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Mon référentiel' }).click();
 
   await expect(
     page.getByText(context.productName, { exact: true }).first(),
@@ -86,7 +88,7 @@ test('M-002 autorité Application Global alimente directement le référentiel',
   await page.getByRole('option', { name: categoryName }).click();
 
   await dialog
-    .getByRole('button', { name: 'Créer dans le référentiel' })
+    .getByRole('button', { name: 'Créer dans le référentiel global' })
     .click();
 
   await expect(
