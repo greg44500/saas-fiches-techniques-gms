@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, FileUp, Plus } from 'lucide-react';
+import { BookOpenCheck, Eye, FileUp, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { DataTable, DataTableActions } from '@/components/data-display/data-table';
@@ -23,6 +24,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { useGetProductReferenceAccessQuery } from '@/features/products/api/product-reference-api';
 import {
   useArchiveProductVariantMutation,
   useAttachProductVariantMutation,
@@ -32,7 +34,11 @@ import {
 import { ProductContributionDialog } from '@/features/products/components/product-contribution-dialog';
 import { ProductDetailsDrawer } from '@/features/products/components/product-details-drawer';
 import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
-import { PRODUCT_PERMISSION } from '@/features/products/constants/product-permissions';
+import {
+  PRODUCT_CAPABILITY,
+  PRODUCT_PERMISSION,
+  PRODUCT_REFERENCE_PERMISSION,
+} from '@/features/products/constants/product-permissions';
 import {
   formatYield,
   getApiErrorMessage,
@@ -49,7 +55,8 @@ const ALL_CATEGORIES = '__ALL__';
 const ALL_WORKSPACE_STATUSES = '__ALL__';
 
 function ProductsPage() {
-  const { can, canAll, workspace } = useWorkspaceContext();
+  const { can, hasFeature, workspace } = useWorkspaceContext();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
   const [scope, setScope] = useState('WORKSPACE');
@@ -61,6 +68,7 @@ function ProductsPage() {
   const [contributionOpen, setContributionOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
+  const productReferenceAccessQuery = useGetProductReferenceAccessQuery();
   const metadataQuery = useGetProductMetadataQuery(workspace.id);
   const productsQuery = useSearchProductsQuery({
     workspaceId: workspace.id,
@@ -86,10 +94,17 @@ function ProductsPage() {
   const metadata = metadataQuery.data;
   const results = productsQuery.data?.results ?? [];
   const mutationPending = attachState.isLoading || archiveState.isLoading;
-  const canImport = canAll([
-    PRODUCT_PERMISSION.CONTRIBUTE,
-    PRODUCT_PERMISSION.CATALOG_MANAGE,
-  ]);
+  const globalPermissions = new Set(
+    productReferenceAccessQuery.data?.permissions ?? [],
+  );
+  const canGovernReference = globalPermissions.has(
+    PRODUCT_REFERENCE_PERMISSION.READ,
+  );
+  const canContribute = (
+    can(PRODUCT_PERMISSION.CONTRIBUTE)
+    && hasFeature(PRODUCT_CAPABILITY.CONTRIBUTION)
+  );
+  const canImport = hasFeature(PRODUCT_CAPABILITY.CATALOG_IMPORT);
 
   const categoryItems = useMemo(() => [
     { value: ALL_CATEGORIES, label: 'Toutes les catégories' },
@@ -262,7 +277,17 @@ function ProductsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {can(PRODUCT_PERMISSION.CONTRIBUTE) && (
+          {canGovernReference && (
+            <Button
+              onClick={() => navigate('/product-reference')}
+              type="button"
+              variant="outline"
+            >
+              <BookOpenCheck aria-hidden="true" className="size-4" />
+              Gérer le référentiel
+            </Button>
+          )}
+          {canContribute && (
             <Button onClick={() => setContributionOpen(true)} type="button">
               <Plus aria-hidden="true" className="size-4" />
               Proposer un Produit

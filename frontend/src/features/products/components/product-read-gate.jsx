@@ -1,12 +1,13 @@
+import { PRODUCT_CAPABILITY, PRODUCT_PERMISSION } from '@/features/products/constants/product-permissions';
+import { WorkspaceFeatureGate } from '@/features/workspace/components/workspace-feature-gate';
 import { WorkspacePermissionGate } from '@/features/workspace/components/workspace-permission-gate';
-import { PRODUCT_PERMISSION } from '@/features/products/constants/product-permissions';
 
-function ProductReadAccessDenied() {
+function ProductReadAccessDenied({ description }) {
   return (
     <section className="space-y-2 rounded-xl border border-border bg-card p-6">
       <h1 className="text-2xl font-semibold">Accès refusé</h1>
       <p className="text-sm text-muted-foreground">
-        Votre rôle ne permet pas de consulter le catalogue Produits de cet espace de travail.
+        {description}
       </p>
     </section>
   );
@@ -14,12 +15,21 @@ function ProductReadAccessDenied() {
 
 function ProductReadGate({ children }) {
   return (
-    <WorkspacePermissionGate
-      fallback={<ProductReadAccessDenied />}
-      permission={PRODUCT_PERMISSION.READ}
+    <WorkspaceFeatureGate
+      fallback={(
+        <ProductReadAccessDenied description="Le référentiel Produits n’est pas disponible avec les fonctionnalités actuellement actives pour cet espace de travail." />
+      )}
+      feature={PRODUCT_CAPABILITY.REFERENCE_ACCESS}
     >
-      {children}
-    </WorkspacePermissionGate>
+      <WorkspacePermissionGate
+        fallback={(
+          <ProductReadAccessDenied description="Votre rôle ne permet pas de consulter le catalogue Produits de cet espace de travail." />
+        )}
+        permission={PRODUCT_PERMISSION.READ}
+      >
+        {children}
+      </WorkspacePermissionGate>
+    </WorkspaceFeatureGate>
   );
 }
 

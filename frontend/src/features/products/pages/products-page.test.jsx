@@ -10,8 +10,13 @@ const mocks = vi.hoisted(() => ({
   metadataQuery: vi.fn(),
   searchQuery: vi.fn(),
   workspaceContext: vi.fn(),
+  productReferenceAccessQuery: vi.fn(),
   attachMutation: vi.fn(),
   archiveMutation: vi.fn(),
+}));
+
+vi.mock('@/features/products/api/product-reference-api', () => ({
+  useGetProductReferenceAccessQuery: mocks.productReferenceAccessQuery,
 }));
 
 vi.mock('@/features/products/api/product-catalog-api', () => ({
@@ -43,7 +48,10 @@ vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: mocks.workspaceContext,
 }));
 
-import { PRODUCT_PERMISSION } from '@/features/products/constants/product-permissions';
+import {
+  PRODUCT_CAPABILITY,
+  PRODUCT_PERMISSION,
+} from '@/features/products/constants/product-permissions';
 import { ProductsPage } from '@/features/products/pages/products-page';
 
 const metadata = {
@@ -102,7 +110,13 @@ describe('ProductsPage', () => {
     mocks.workspaceContext.mockReturnValue({
       workspace: { id: 'workspace-1', name: 'Acme' },
       can: () => true,
-      canAll: () => true,
+      hasFeature: () => true,
+    });
+    mocks.productReferenceAccessQuery.mockReturnValue({
+      data: { permissions: [] },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
     });
     mocks.metadataQuery.mockReturnValue({
       data: metadata,
@@ -173,11 +187,11 @@ describe('ProductsPage', () => {
     expect(screen.getByText('Détail Produit ouvert')).toBeInTheDocument();
   });
 
-  it('masque les actions d’écriture sans permissions M-002', () => {
+  it('masque les actions d’écriture sans permissions ou capabilities M-002', () => {
     mocks.workspaceContext.mockReturnValue({
       workspace: { id: 'workspace-1', name: 'Acme' },
       can: (permission) => permission === PRODUCT_PERMISSION.READ,
-      canAll: () => false,
+      hasFeature: (feature) => feature === PRODUCT_CAPABILITY.REFERENCE_ACCESS,
     });
 
     renderPage();

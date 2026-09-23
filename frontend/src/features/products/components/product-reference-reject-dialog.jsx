@@ -23,18 +23,18 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  useLazyGetPlatformProductDetailQuery,
-  useLazyListPlatformProductsQuery,
-  useRejectPlatformProductMutation,
-  useRejectPlatformProductVariantMutation,
-} from '@/features/products/api/platform-product-catalog-api';
+  useLazyGetProductReferenceDetailQuery,
+  useLazyListProductReferenceProductsQuery,
+  useRejectProductReferenceMutation,
+  useRejectProductReferenceVariantMutation,
+} from '@/features/products/api/product-reference-api';
 import {
   getApiErrorMessage,
   getReferenceUnitLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 
-function PlatformRejectProductDialog({
+function ProductReferenceRejectDialog({
   metadata,
   onClose,
   onRejected,
@@ -52,10 +52,10 @@ function PlatformRejectProductDialog({
   const [replacementVariantId, setReplacementVariantId] = useState('');
   const [formError, setFormError] = useState('');
 
-  const [searchProducts, searchState] = useLazyListPlatformProductsQuery();
-  const [loadProduct, loadState] = useLazyGetPlatformProductDetailQuery();
-  const [rejectProduct, rejectProductState] = useRejectPlatformProductMutation();
-  const [rejectVariant, rejectVariantState] = useRejectPlatformProductVariantMutation();
+  const [searchProducts, searchState] = useLazyListProductReferenceProductsQuery();
+  const [loadProduct, loadState] = useLazyGetProductReferenceDetailQuery();
+  const [rejectProduct, rejectProductState] = useRejectProductReferenceMutation();
+  const [rejectVariant, rejectVariantState] = useRejectProductReferenceVariantMutation();
   const pending = (
     searchState.isFetching
     || loadState.isFetching
@@ -177,7 +177,7 @@ function PlatformRejectProductDialog({
 
           <div className="mt-5 space-y-4">
             <Field>
-              <FieldLabel htmlFor="platform-rejection-reason">Motif</FieldLabel>
+              <FieldLabel htmlFor="product-reference-rejection-reason">Motif</FieldLabel>
               <Select
                 disabled={pending}
                 items={metadata?.rejectionReasons ?? []}
@@ -189,7 +189,7 @@ function PlatformRejectProductDialog({
                 }}
                 value={reason || null}
               >
-                <SelectTrigger id="platform-rejection-reason">
+                <SelectTrigger id="product-reference-rejection-reason">
                   <SelectValue placeholder="Choisir un motif" />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,7 +236,7 @@ function PlatformRejectProductDialog({
 
                 {replacementProduct && (
                   <Field>
-                    <FieldLabel htmlFor="platform-replacement-variant">
+                    <FieldLabel htmlFor="product-reference-replacement-variant">
                       Déclinaison de remplacement — {replacementProduct.name}
                     </FieldLabel>
                     <Select
@@ -249,7 +249,7 @@ function PlatformRejectProductDialog({
                       onValueChange={setReplacementVariantId}
                       value={replacementVariantId || null}
                     >
-                      <SelectTrigger id="platform-replacement-variant">
+                      <SelectTrigger id="product-reference-replacement-variant">
                         <SelectValue placeholder="Choisir une déclinaison active" />
                       </SelectTrigger>
                       <SelectContent>
@@ -268,10 +268,10 @@ function PlatformRejectProductDialog({
             )}
 
             <Field>
-              <FieldLabel htmlFor="platform-rejection-comment">Commentaire</FieldLabel>
+              <FieldLabel htmlFor="product-reference-rejection-comment">Commentaire</FieldLabel>
               <Textarea
                 disabled={pending}
-                id="platform-rejection-comment"
+                id="product-reference-rejection-comment"
                 maxLength={500}
                 onChange={(event) => setComment(event.target.value)}
                 placeholder="Facultatif"
@@ -307,4 +307,4 @@ function PlatformRejectProductDialog({
   );
 }
 
-export { PlatformRejectProductDialog };
+export { ProductReferenceRejectDialog };

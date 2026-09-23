@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FieldError } from '@/components/ui/field';
-import { useUpdatePlatformProductVariantMutation } from '@/features/products/api/platform-product-catalog-api';
+import { useUpdateProductReferenceVariantMutation } from '@/features/products/api/product-reference-api';
 import {
   ProductVariantFields,
   variantDraftToPayload,
@@ -31,7 +31,7 @@ function variantToDraft(variant) {
   };
 }
 
-function PlatformVariantEditDialog({
+function ProductReferenceVariantEditDialog({
   metadata,
   onClose,
   onSaved,
@@ -42,7 +42,7 @@ function PlatformVariantEditDialog({
   const cancelRef = useRef(null);
   const [draft, setDraft] = useState(() => variantToDraft(variant));
   const [formError, setFormError] = useState('');
-  const [updateVariant, updateState] = useUpdatePlatformProductVariantMutation();
+  const [updateVariant, updateState] = useUpdateProductReferenceVariantMutation();
 
   useEffect(() => {
     if (!open) return;
@@ -118,4 +118,4 @@ function PlatformVariantEditDialog({
   );
 }
 
-export { PlatformVariantEditDialog, variantToDraft };
+export { ProductReferenceVariantEditDialog, variantToDraft };

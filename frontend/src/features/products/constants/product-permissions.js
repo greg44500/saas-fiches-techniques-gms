@@ -4,9 +4,19 @@ const PRODUCT_PERMISSION = Object.freeze({
   CONTRIBUTE: 'product:contribute',
 });
 
-const PLATFORM_PRODUCT_PERMISSION = Object.freeze({
-  READ: 'platform:products:read',
-  MANAGE: 'platform:products:manage',
+const PRODUCT_CAPABILITY = Object.freeze({
+  REFERENCE_ACCESS: 'product_reference_access',
+  CATALOG_IMPORT: 'product_catalog_import',
+  CONTRIBUTION: 'product_contribution',
 });
 
-export { PLATFORM_PRODUCT_PERMISSION, PRODUCT_PERMISSION };
+const PRODUCT_REFERENCE_PERMISSION = Object.freeze({
+  READ: 'product:reference:read',
+  MANAGE: 'product:reference:manage',
+});
+
+export {
+  PRODUCT_CAPABILITY,
+  PRODUCT_PERMISSION,
+  PRODUCT_REFERENCE_PERMISSION,
+};

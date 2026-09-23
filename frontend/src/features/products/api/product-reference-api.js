@@ -1,12 +1,12 @@
 import { baseApi } from '@/services/api/base-api';
 
-const PLATFORM_PRODUCT_API_TAG_TYPES = Object.freeze([
-  'PlatformProductCatalog',
-  'PlatformProductDetail',
-  'PlatformProductMetadata',
+const PRODUCT_REFERENCE_API_TAG_TYPES = Object.freeze([
+  'ProductReferenceCatalog',
+  'ProductReferenceDetail',
+  'ProductReferenceMetadata',
 ]);
 
-function compactPlatformProductParams(params) {
+function compactProductReferenceParams(params) {
   return Object.fromEntries(
     Object.entries(params).filter(([, value]) => (
       value !== undefined
@@ -16,18 +16,23 @@ function compactPlatformProductParams(params) {
   );
 }
 
-const platformProductApiBase = baseApi.enhanceEndpoints({
-  addTagTypes: [...PLATFORM_PRODUCT_API_TAG_TYPES],
+const productReferenceApiBase = baseApi.enhanceEndpoints({
+  addTagTypes: [...PRODUCT_REFERENCE_API_TAG_TYPES],
 });
 
-const platformProductCatalogApi = platformProductApiBase.injectEndpoints({
+const productReferenceApi = productReferenceApiBase.injectEndpoints({
   endpoints: (build) => ({
-    getPlatformProductMetadata: build.query({
-      query: () => '/platform/products/metadata',
-      transformResponse: (response) => response?.data?.metadata ?? null,
-      providesTags: [{ type: 'PlatformProductMetadata', id: 'CURRENT' }],
+    getProductReferenceAccess: build.query({
+      query: () => '/product-reference/access',
+      transformResponse: (response) => response?.data?.access ?? { permissions: [] },
+      providesTags: [{ type: 'ProductReferenceMetadata', id: 'ACCESS' }],
     }),
-    listPlatformProducts: build.query({
+    getProductReferenceMetadata: build.query({
+      query: () => '/product-reference/metadata',
+      transformResponse: (response) => response?.data?.metadata ?? null,
+      providesTags: [{ type: 'ProductReferenceMetadata', id: 'CURRENT' }],
+    }),
+    listProductReferenceProducts: build.query({
       query: ({
         status,
         categoryId,
@@ -35,8 +40,8 @@ const platformProductCatalogApi = platformProductApiBase.injectEndpoints({
         page = 1,
         limit = 20,
       } = {}) => ({
-        url: '/platform/products',
-        params: compactPlatformProductParams({
+        url: '/product-reference',
+        params: compactProductReferenceParams({
           status,
           categoryId,
           q,
@@ -49,147 +54,147 @@ const platformProductCatalogApi = platformProductApiBase.injectEndpoints({
         pagination: response?.meta ?? null,
       }),
       providesTags: (result) => [
-        { type: 'PlatformProductCatalog', id: 'LIST' },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
         ...(result?.products ?? []).map((product) => ({
-          type: 'PlatformProductDetail',
+          type: 'ProductReferenceDetail',
           id: product.id,
         })),
       ],
     }),
-    getPlatformProductDetail: build.query({
-      query: (productId) => '/platform/products/' + productId,
+    getProductReferenceDetail: build.query({
+      query: (productId) => '/product-reference/' + productId,
       transformResponse: (response) => response?.data ?? null,
       providesTags: (_result, _error, productId) => [
-        { type: 'PlatformProductDetail', id: productId },
+        { type: 'ProductReferenceDetail', id: productId },
       ],
     }),
-    createPlatformProductCategory: build.mutation({
+    createProductReferenceCategory: build.mutation({
       query: ({ name }) => ({
-        url: '/platform/products/categories',
+        url: '/product-reference/categories',
         method: 'POST',
         body: { name },
       }),
       transformResponse: (response) => response?.data?.category ?? null,
       invalidatesTags: [
-        { type: 'PlatformProductMetadata', id: 'CURRENT' },
+        { type: 'ProductReferenceMetadata', id: 'CURRENT' },
       ],
     }),
-    updatePlatformProductCategory: build.mutation({
+    updateProductReferenceCategory: build.mutation({
       query: ({ categoryId, name }) => ({
-        url: '/platform/products/categories/' + categoryId,
+        url: '/product-reference/categories/' + categoryId,
         method: 'PATCH',
         body: { name },
       }),
       transformResponse: (response) => response?.data?.category ?? null,
       invalidatesTags: [
-        { type: 'PlatformProductMetadata', id: 'CURRENT' },
-        { type: 'PlatformProductCatalog', id: 'LIST' },
+        { type: 'ProductReferenceMetadata', id: 'CURRENT' },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
       ],
     }),
-    updatePlatformProductCategoryStatus: build.mutation({
+    updateProductReferenceCategoryStatus: build.mutation({
       query: ({ categoryId, status }) => ({
-        url: '/platform/products/categories/' + categoryId + '/status',
+        url: '/product-reference/categories/' + categoryId + '/status',
         method: 'PATCH',
         body: { status },
       }),
       transformResponse: (response) => response?.data?.category ?? null,
       invalidatesTags: [
-        { type: 'PlatformProductMetadata', id: 'CURRENT' },
-        { type: 'PlatformProductCatalog', id: 'LIST' },
+        { type: 'ProductReferenceMetadata', id: 'CURRENT' },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
       ],
     }),
-    updatePlatformProduct: build.mutation({
+    updateProductReference: build.mutation({
       query: ({ productId, ...body }) => ({
-        url: '/platform/products/' + productId,
+        url: '/product-reference/' + productId,
         method: 'PATCH',
         body,
       }),
       transformResponse: (response) => response?.data?.product ?? null,
       invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'PlatformProductCatalog', id: 'LIST' },
-        { type: 'PlatformProductDetail', id: productId },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
+        { type: 'ProductReferenceDetail', id: productId },
       ],
     }),
-    approvePlatformProduct: build.mutation({
+    approveProductReference: build.mutation({
       query: (productId) => ({
-        url: '/platform/products/' + productId + '/approve',
+        url: '/product-reference/' + productId + '/approve',
         method: 'POST',
       }),
       transformResponse: (response) => response?.data?.product ?? null,
       invalidatesTags: (_result, _error, productId) => [
-        { type: 'PlatformProductCatalog', id: 'LIST' },
-        { type: 'PlatformProductDetail', id: productId },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
+        { type: 'ProductReferenceDetail', id: productId },
       ],
     }),
-    rejectPlatformProduct: build.mutation({
+    rejectProductReference: build.mutation({
       query: ({ productId, ...body }) => ({
-        url: '/platform/products/' + productId + '/reject',
+        url: '/product-reference/' + productId + '/reject',
         method: 'POST',
         body,
       }),
       transformResponse: (response) => response?.data?.product ?? null,
       invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'PlatformProductCatalog', id: 'LIST' },
-        { type: 'PlatformProductDetail', id: productId },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
+        { type: 'ProductReferenceDetail', id: productId },
       ],
     }),
-    updatePlatformProductStatus: build.mutation({
+    updateProductReferenceStatus: build.mutation({
       query: ({ productId, status }) => ({
-        url: '/platform/products/' + productId + '/status',
+        url: '/product-reference/' + productId + '/status',
         method: 'PATCH',
         body: { status },
       }),
       transformResponse: (response) => response?.data?.product ?? null,
       invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'PlatformProductCatalog', id: 'LIST' },
-        { type: 'PlatformProductDetail', id: productId },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
+        { type: 'ProductReferenceDetail', id: productId },
       ],
     }),
-    updatePlatformProductVariant: build.mutation({
+    updateProductReferenceVariant: build.mutation({
       query: ({ productId, variantId, ...body }) => ({
-        url: '/platform/products/' + productId + '/variants/' + variantId,
+        url: '/product-reference/' + productId + '/variants/' + variantId,
         method: 'PATCH',
         body,
       }),
       transformResponse: (response) => response?.data?.variant ?? null,
       invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'PlatformProductCatalog', id: 'LIST' },
-        { type: 'PlatformProductDetail', id: productId },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
+        { type: 'ProductReferenceDetail', id: productId },
       ],
     }),
-    approvePlatformProductVariant: build.mutation({
+    approveProductReferenceVariant: build.mutation({
       query: ({ productId, variantId }) => ({
-        url: '/platform/products/' + productId + '/variants/' + variantId + '/approve',
+        url: '/product-reference/' + productId + '/variants/' + variantId + '/approve',
         method: 'POST',
       }),
       transformResponse: (response) => response?.data?.variant ?? null,
       invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'PlatformProductCatalog', id: 'LIST' },
-        { type: 'PlatformProductDetail', id: productId },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
+        { type: 'ProductReferenceDetail', id: productId },
       ],
     }),
-    rejectPlatformProductVariant: build.mutation({
+    rejectProductReferenceVariant: build.mutation({
       query: ({ productId, variantId, ...body }) => ({
-        url: '/platform/products/' + productId + '/variants/' + variantId + '/reject',
+        url: '/product-reference/' + productId + '/variants/' + variantId + '/reject',
         method: 'POST',
         body,
       }),
       transformResponse: (response) => response?.data?.variant ?? null,
       invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'PlatformProductCatalog', id: 'LIST' },
-        { type: 'PlatformProductDetail', id: productId },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
+        { type: 'ProductReferenceDetail', id: productId },
       ],
     }),
-    updatePlatformProductVariantStatus: build.mutation({
+    updateProductReferenceVariantStatus: build.mutation({
       query: ({ productId, variantId, status }) => ({
-        url: '/platform/products/' + productId + '/variants/' + variantId + '/status',
+        url: '/product-reference/' + productId + '/variants/' + variantId + '/status',
         method: 'PATCH',
         body: { status },
       }),
       transformResponse: (response) => response?.data?.variant ?? null,
       invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'PlatformProductCatalog', id: 'LIST' },
-        { type: 'PlatformProductDetail', id: productId },
+        { type: 'ProductReferenceCatalog', id: 'LIST' },
+        { type: 'ProductReferenceDetail', id: productId },
       ],
     }),
   }),
@@ -199,9 +204,10 @@ export const {
   useApprovePlatformProductMutation,
   useApprovePlatformProductVariantMutation,
   useCreatePlatformProductCategoryMutation,
-  useGetPlatformProductDetailQuery,
-  useGetPlatformProductMetadataQuery,
-  useLazyGetPlatformProductDetailQuery,
+  useGetProductReferenceDetailQuery,
+  useGetProductReferenceAccessQuery,
+  useGetProductReferenceMetadataQuery,
+  useLazyGetProductReferenceDetailQuery,
   useLazyListPlatformProductsQuery,
   useListPlatformProductsQuery,
   useRejectPlatformProductMutation,
@@ -212,10 +218,10 @@ export const {
   useUpdatePlatformProductStatusMutation,
   useUpdatePlatformProductVariantMutation,
   useUpdatePlatformProductVariantStatusMutation,
-} = platformProductCatalogApi;
+} = productReferenceApi;
 
 export {
-  PLATFORM_PRODUCT_API_TAG_TYPES,
-  compactPlatformProductParams,
-  platformProductCatalogApi,
+  PRODUCT_REFERENCE_API_TAG_TYPES,
+  compactProductReferenceParams,
+  productReferenceApi,
 };

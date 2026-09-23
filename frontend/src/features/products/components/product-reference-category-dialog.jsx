@@ -15,12 +15,12 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
-  useCreatePlatformProductCategoryMutation,
-  useUpdatePlatformProductCategoryMutation,
-} from '@/features/products/api/platform-product-catalog-api';
+  useCreateProductReferenceCategoryMutation,
+  useUpdateProductReferenceCategoryMutation,
+} from '@/features/products/api/product-reference-api';
 import { getApiErrorMessage } from '@/features/products/lib/product-presentation';
 
-function PlatformCategoryDialog({
+function ProductReferenceCategoryDialog({
   category = null,
   onClose,
   onSaved,
@@ -29,8 +29,8 @@ function PlatformCategoryDialog({
   const cancelRef = useRef(null);
   const [name, setName] = useState(category?.name ?? '');
   const [formError, setFormError] = useState('');
-  const [createCategory, createState] = useCreatePlatformProductCategoryMutation();
-  const [updateCategory, updateState] = useUpdatePlatformProductCategoryMutation();
+  const [createCategory, createState] = useCreateProductReferenceCategoryMutation();
+  const [updateCategory, updateState] = useUpdateProductReferenceCategoryMutation();
   const pending = createState.isLoading || updateState.isLoading;
 
   useEffect(() => {
@@ -81,10 +81,10 @@ function PlatformCategoryDialog({
           </DialogHeader>
           <div className="mt-5 space-y-4">
             <Field>
-              <FieldLabel htmlFor="platform-category-name">Nom</FieldLabel>
+              <FieldLabel htmlFor="product-reference-category-name">Nom</FieldLabel>
               <Input
                 disabled={pending}
-                id="platform-category-name"
+                id="product-reference-category-name"
                 maxLength={120}
                 onChange={(event) => setName(event.target.value)}
                 value={name}
@@ -110,4 +110,4 @@ function PlatformCategoryDialog({
   );
 }
 
-export { PlatformCategoryDialog };
+export { ProductReferenceCategoryDialog };

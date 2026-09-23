@@ -25,12 +25,12 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
-  useGetPlatformProductMetadataQuery,
-  useListPlatformProductsQuery,
-  useUpdatePlatformProductCategoryStatusMutation,
-} from '@/features/products/api/platform-product-catalog-api';
-import { PlatformCategoryDialog } from '@/features/products/components/platform-category-dialog';
-import { PlatformProductDetailsDrawer } from '@/features/products/components/platform-product-details-drawer';
+  useGetProductReferenceMetadataQuery,
+  useListProductReferenceProductsQuery,
+  useUpdateProductReferenceCategoryStatusMutation,
+} from '@/features/products/api/product-reference-api';
+import { ProductReferenceCategoryDialog } from '@/features/products/components/product-reference-category-dialog';
+import { ProductReferenceDetailsDrawer } from '@/features/products/components/product-reference-details-drawer';
 import {
   getApiErrorMessage,
   getCategoryStatusLabel,
@@ -39,26 +39,26 @@ import {
 } from '@/features/products/lib/product-presentation';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
-const ALL_PLATFORM_CATEGORIES = '__ALL__';
+const ALL_REFERENCE_CATEGORIES = '__ALL__';
 
-function PlatformProductsPage({ canManage }) {
+function ProductReferencePage({ canManage }) {
   const { toast } = useToast();
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
   const [section, setSection] = useState('pending');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [categoryId, setCategoryId] = useState(ALL_PLATFORM_CATEGORIES);
+  const [categoryId, setCategoryId] = useState(ALL_REFERENCE_CATEGORIES);
   const [referenceStatus, setReferenceStatus] = useState('ACTIVE');
   const [drawerState, setDrawerState] = useState({ open: false, productId: null });
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [categoryLifecycle, setCategoryLifecycle] = useState(null);
 
-  const metadataQuery = useGetPlatformProductMetadataQuery();
+  const metadataQuery = useGetProductReferenceMetadataQuery();
   const metadata = metadataQuery.data;
-  const productsQuery = useListPlatformProductsQuery(
+  const productsQuery = useListProductReferenceProductsQuery(
     {
       status: section === 'pending' ? 'PENDING_REVIEW' : referenceStatus,
-      categoryId: categoryId === ALL_PLATFORM_CATEGORIES ? undefined : categoryId,
+      categoryId: categoryId === ALL_REFERENCE_CATEGORIES ? undefined : categoryId,
       q: search || undefined,
       page,
       limit: pageSize,
@@ -66,7 +66,7 @@ function PlatformProductsPage({ canManage }) {
     { skip: section === 'categories' },
   );
   const [updateCategoryStatus, categoryStatusState] =
-    useUpdatePlatformProductCategoryStatusMutation();
+    useUpdateProductReferenceCategoryStatusMutation();
 
   useEffect(() => {
     const totalPages = productsQuery.data?.pagination?.totalPages;
@@ -74,7 +74,7 @@ function PlatformProductsPage({ canManage }) {
   }, [page, productsQuery.data?.pagination?.totalPages, setPage]);
 
   const categoryItems = useMemo(() => [
-    { value: ALL_PLATFORM_CATEGORIES, label: 'Toutes les catégories' },
+    { value: ALL_REFERENCE_CATEGORIES, label: 'Toutes les catégories' },
     ...(metadata?.categories ?? [])
       .filter((category) => category.status === 'ACTIVE')
       .map((category) => ({
@@ -94,7 +94,7 @@ function PlatformProductsPage({ canManage }) {
     setPage(1);
     setSearch('');
     setSearchInput('');
-    setCategoryId(ALL_PLATFORM_CATEGORIES);
+    setCategoryId(ALL_REFERENCE_CATEGORIES);
     if (nextSection === 'reference') setReferenceStatus('ACTIVE');
   }
 
@@ -402,7 +402,7 @@ function PlatformProductsPage({ canManage }) {
         </section>
       )}
 
-      <PlatformProductDetailsDrawer
+      <ProductReferenceDetailsDrawer
         canManage={canManage}
         metadata={metadata}
         onClose={() => setDrawerState((current) => ({ ...current, open: false }))}
@@ -410,7 +410,7 @@ function PlatformProductsPage({ canManage }) {
         productId={drawerState.productId}
       />
 
-      <PlatformCategoryDialog
+      <ProductReferenceCategoryDialog
         category={categoryDialog.category}
         onClose={() => setCategoryDialog({ open: false, category: null })}
         onSaved={() => {
@@ -444,4 +444,4 @@ function PlatformProductsPage({ canManage }) {
   );
 }
 
-export { ALL_PLATFORM_CATEGORIES, PlatformProductsPage };
+export { ALL_REFERENCE_CATEGORIES, ProductReferencePage };

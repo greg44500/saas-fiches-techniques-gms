@@ -18,7 +18,10 @@ import {
   useGetWorkspaceProductDetailQuery,
 } from '@/features/products/api/product-catalog-api';
 import { ProductVariantContributionDialog } from '@/features/products/components/product-variant-contribution-dialog';
-import { PRODUCT_PERMISSION } from '@/features/products/constants/product-permissions';
+import {
+  PRODUCT_CAPABILITY,
+  PRODUCT_PERMISSION,
+} from '@/features/products/constants/product-permissions';
 import {
   formatYield,
   getApiErrorMessage,
@@ -46,7 +49,7 @@ function ProductDetailsDrawer({
   productId,
   workspaceId,
 }) {
-  const { can } = useWorkspaceContext();
+  const { can, hasFeature } = useWorkspaceContext();
   const { toast } = useToast();
   const retainedRef = useRef(null);
   const [variantDialogOpen, setVariantDialogOpen] = useState(false);
@@ -139,7 +142,9 @@ function ProductDetailsDrawer({
 
             <TabsContent value="variants" variant="section">
               <div className="space-y-4">
-                {can(PRODUCT_PERMISSION.CONTRIBUTE) && product.status === 'ACTIVE' && (
+                {can(PRODUCT_PERMISSION.CONTRIBUTE)
+                  && hasFeature(PRODUCT_CAPABILITY.CONTRIBUTION)
+                  && product.status === 'ACTIVE' && (
                   <div className="flex justify-end">
                     <Button
                       onClick={() => setVariantDialogOpen(true)}

@@ -14,15 +14,15 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
-  useApprovePlatformProductMutation,
-  useApprovePlatformProductVariantMutation,
-  useGetPlatformProductDetailQuery,
-  useUpdatePlatformProductStatusMutation,
-  useUpdatePlatformProductVariantStatusMutation,
-} from '@/features/products/api/platform-product-catalog-api';
-import { PlatformProductEditDialog } from '@/features/products/components/platform-product-edit-dialog';
-import { PlatformRejectProductDialog } from '@/features/products/components/platform-reject-product-dialog';
-import { PlatformVariantEditDialog } from '@/features/products/components/platform-variant-edit-dialog';
+  useApproveProductReferenceMutation,
+  useApproveProductReferenceVariantMutation,
+  useGetProductReferenceDetailQuery,
+  useUpdateProductReferenceStatusMutation,
+  useUpdateProductReferenceVariantStatusMutation,
+} from '@/features/products/api/product-reference-api';
+import { ProductReferenceEditDialog } from '@/features/products/components/product-reference-edit-dialog';
+import { ProductReferenceRejectDialog } from '@/features/products/components/product-reference-reject-dialog';
+import { ProductReferenceVariantEditDialog } from '@/features/products/components/product-reference-variant-edit-dialog';
 import {
   formatYield,
   getApiErrorMessage,
@@ -42,7 +42,7 @@ function AdminDetailRow({ label, value }) {
   );
 }
 
-function PlatformProductDetailsDrawer({
+function ProductReferenceDetailsDrawer({
   canManage,
   metadata,
   onClose,
@@ -55,11 +55,11 @@ function PlatformProductDetailsDrawer({
   const [editVariant, setEditVariant] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
 
-  const query = useGetPlatformProductDetailQuery(productId, { skip: !productId });
-  const [approveProduct, approveProductState] = useApprovePlatformProductMutation();
-  const [approveVariant, approveVariantState] = useApprovePlatformProductVariantMutation();
-  const [updateProductStatus, productStatusState] = useUpdatePlatformProductStatusMutation();
-  const [updateVariantStatus, variantStatusState] = useUpdatePlatformProductVariantStatusMutation();
+  const query = useGetProductReferenceDetailQuery(productId, { skip: !productId });
+  const [approveProduct, approveProductState] = useApproveProductReferenceMutation();
+  const [approveVariant, approveVariantState] = useApproveProductReferenceVariantMutation();
+  const [updateProductStatus, productStatusState] = useUpdateProductReferenceStatusMutation();
+  const [updateVariantStatus, variantStatusState] = useUpdateProductReferenceVariantStatusMutation();
 
   if (query.data) retainedRef.current = query.data;
   const detail = query.data ?? retainedRef.current;
@@ -327,7 +327,7 @@ function PlatformProductDetailsDrawer({
       </EntityDetailsDrawer>
 
       {product && (
-        <PlatformProductEditDialog
+        <ProductReferenceEditDialog
           metadata={metadata}
           onClose={() => setEditProductOpen(false)}
           onSaved={() => {
@@ -340,7 +340,7 @@ function PlatformProductDetailsDrawer({
       )}
 
       {product && editVariant && (
-        <PlatformVariantEditDialog
+        <ProductReferenceVariantEditDialog
           metadata={metadata}
           onClose={() => setEditVariant(null)}
           onSaved={() => {
@@ -354,7 +354,7 @@ function PlatformProductDetailsDrawer({
       )}
 
       {product && rejectTarget && (
-        <PlatformRejectProductDialog
+        <ProductReferenceRejectDialog
           metadata={metadata}
           onClose={() => setRejectTarget(null)}
           onRejected={() => {
@@ -373,4 +373,4 @@ function PlatformProductDetailsDrawer({
   );
 }
 
-export { AdminDetailRow, PlatformProductDetailsDrawer };
+export { AdminDetailRow, ProductReferenceDetailsDrawer };

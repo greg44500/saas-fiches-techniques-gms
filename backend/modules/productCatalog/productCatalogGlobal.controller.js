@@ -1,6 +1,12 @@
 import {
+    resolveApplicationGlobalAuthorization,
+} from '../applicationGlobalAuthorization/applicationGlobalAuthorization.service.js';
+import {
     getProductMetadata,
 } from './productCatalog.service.js';
+import {
+    PRODUCT_CATALOG_GLOBAL_PERMISSION,
+} from './productCatalogGlobalPermission.registry.js';
 import {
     approveProduct,
     approveVariant,
@@ -17,6 +23,28 @@ import {
     updateVariant,
     updateVariantStatus,
 } from './productCatalogGovernance.service.js';
+
+const access = async (req, res) => {
+    const authorization = await resolveApplicationGlobalAuthorization({
+        user: req.user,
+    });
+    const grantedPermissions = new Set(
+        authorization?.permissions ?? [],
+    );
+    const permissions = [
+        PRODUCT_CATALOG_GLOBAL_PERMISSION.READ,
+        PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE,
+    ].filter((permission) => grantedPermissions.has(permission));
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            access: {
+                permissions,
+            },
+        },
+    });
+};
 
 const metadata = async (_req, res) => {
     const productMetadata = await getProductMetadata({
@@ -153,6 +181,7 @@ const updateVariantStatusController = async (req, res) => {
 };
 
 export {
+    access,
     approveProductController,
     approveVariantController,
     categories,

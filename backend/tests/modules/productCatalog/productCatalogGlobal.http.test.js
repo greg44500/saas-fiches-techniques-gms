@@ -85,6 +85,30 @@ beforeEach(async () => {
 });
 
 describe('M-002 global product reference HTTP contract', () => {
+    it('expose uniquement les permissions Produit globales de l’utilisateur courant', async () => {
+        const governorAccess = await request(app)
+            .get('/api/product-reference/access')
+            .set(bearer(governorToken));
+
+        expect(governorAccess.status).toBe(200);
+        expect(governorAccess.body.data.access.permissions).toEqual([
+            PRODUCT_CATALOG_GLOBAL_PERMISSION.READ,
+            PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE,
+        ]);
+
+        const platformAdmin = await createUserToken({
+            email: 'platform-access-only@example.test',
+            platformRole: PLATFORM_ROLE.SUPER_ADMIN,
+        });
+
+        const platformAccess = await request(app)
+            .get('/api/product-reference/access')
+            .set(bearer(platformAdmin.token));
+
+        expect(platformAccess.status).toBe(200);
+        expect(platformAccess.body.data.access.permissions).toEqual([]);
+    });
+
     it('autorise un gouverneur métier explicite à gérer le référentiel', async () => {
         const created = await request(app)
             .post('/api/product-reference/categories')

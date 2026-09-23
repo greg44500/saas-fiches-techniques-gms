@@ -1,4 +1,15 @@
 const productsFrontendRouteModule = Object.freeze({
+  authenticatedRoutes: Object.freeze([
+    Object.freeze({
+      path: 'product-reference',
+      lazy: async () => {
+        const { ProductReferenceRoute } = await import(
+          '@/features/products/components/product-reference-route'
+        );
+        return { Component: ProductReferenceRoute };
+      },
+    }),
+  ]),
   workspaceRoutes: Object.freeze([
     Object.freeze({
       path: 'products',
@@ -7,17 +18,6 @@ const productsFrontendRouteModule = Object.freeze({
           '@/features/products/components/products-route'
         );
         return { Component: ProductsRoute };
-      },
-    }),
-  ]),
-  platformRoutes: Object.freeze([
-    Object.freeze({
-      path: 'products',
-      lazy: async () => {
-        const { PlatformProductsRoute } = await import(
-          '@/features/products/components/platform-products-route'
-        );
-        return { Component: PlatformProductsRoute };
       },
     }),
   ]),

@@ -6,6 +6,7 @@ import {
 } from '../../middlewares/authorizeApplicationGlobalPermission.js';
 import { validateRequest } from '../../middlewares/validateRequest.js';
 import {
+    access,
     approveProductController,
     approveVariantController,
     categories,
@@ -43,6 +44,11 @@ import {
 const productCatalogGlobalRouter = Router();
 
 productCatalogGlobalRouter.use(authenticate);
+
+productCatalogGlobalRouter.get(
+    '/access',
+    access,
+);
 
 productCatalogGlobalRouter.get(
     '/metadata',

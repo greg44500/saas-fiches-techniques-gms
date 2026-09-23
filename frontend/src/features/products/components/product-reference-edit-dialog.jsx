@@ -21,12 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useUpdatePlatformProductMutation } from '@/features/products/api/platform-product-catalog-api';
+import { useUpdateProductReferenceMutation } from '@/features/products/api/product-reference-api';
 import { getApiErrorMessage } from '@/features/products/lib/product-presentation';
 
 const NO_CATEGORY = '__NONE__';
 
-function PlatformProductEditDialog({
+function ProductReferenceEditDialog({
   metadata,
   onClose,
   onSaved,
@@ -38,7 +38,7 @@ function PlatformProductEditDialog({
   const [aliasesText, setAliasesText] = useState(product?.aliases?.join(', ') ?? '');
   const [categoryId, setCategoryId] = useState(product?.category?.id ?? NO_CATEGORY);
   const [formError, setFormError] = useState('');
-  const [updateProduct, updateState] = useUpdatePlatformProductMutation();
+  const [updateProduct, updateState] = useUpdateProductReferenceMutation();
 
   useEffect(() => {
     if (!open || !product) return;
@@ -98,10 +98,10 @@ function PlatformProductEditDialog({
 
           <div className="mt-5 space-y-4">
             <Field>
-              <FieldLabel htmlFor="platform-product-name">Nom</FieldLabel>
+              <FieldLabel htmlFor="product-reference-product-name">Nom</FieldLabel>
               <Input
                 disabled={updateState.isLoading}
-                id="platform-product-name"
+                id="product-reference-product-name"
                 maxLength={120}
                 onChange={(event) => setName(event.target.value)}
                 value={name}
@@ -109,10 +109,10 @@ function PlatformProductEditDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="platform-product-aliases">Alias</FieldLabel>
+              <FieldLabel htmlFor="product-reference-product-aliases">Alias</FieldLabel>
               <Input
                 disabled={updateState.isLoading}
-                id="platform-product-aliases"
+                id="product-reference-product-aliases"
                 onChange={(event) => setAliasesText(event.target.value)}
                 placeholder="Séparés par des virgules"
                 value={aliasesText}
@@ -120,7 +120,7 @@ function PlatformProductEditDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="platform-product-category">Catégorie</FieldLabel>
+              <FieldLabel htmlFor="product-reference-product-category">Catégorie</FieldLabel>
               <Select
                 disabled={updateState.isLoading}
                 items={[
@@ -135,7 +135,7 @@ function PlatformProductEditDialog({
                 onValueChange={setCategoryId}
                 value={categoryId}
               >
-                <SelectTrigger id="platform-product-category">
+                <SelectTrigger id="product-reference-product-category">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -176,4 +176,4 @@ function PlatformProductEditDialog({
   );
 }
 
-export { PlatformProductEditDialog };
+export { ProductReferenceEditDialog };
