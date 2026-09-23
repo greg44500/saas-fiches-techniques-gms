@@ -286,7 +286,7 @@ function ProductContributionDialog({
                 <div>
                   <h3 className="font-medium">Nouvelle identité</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    La proposition restera « En validation » jusqu’à décision de la Plateforme.
+                    La proposition restera « En validation » jusqu’à décision de la gouvernance du référentiel.
                   </p>
                 </div>
 
