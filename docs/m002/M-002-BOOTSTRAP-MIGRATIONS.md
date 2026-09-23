@@ -72,7 +72,7 @@ Responsabilités :
 3. créer/vérifier les indexes M-002 ;
 4. synchroniser les permissions système Workspace enregistrées.
 
-La migration refuse une collision de signatures actives avant toute fusion implicite. Elle ne devine pas une Gamme absente et reste rejouable.
+La migration refuse une collision de signatures actives avant toute fusion implicite. Pour respecter l'index unique historique pendant la réécriture, les seules variantes à migrer passent transactionnellement par une signature temporaire unique avant leur signature finale. Elle ne devine pas une Gamme absente et reste rejouable sans réécriture au second passage.
 
 Le runner sera ajouté au manifest des migrations du produit selon le processus Core de release.
 

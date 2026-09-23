@@ -75,6 +75,64 @@ describe('M-002 variant semantics migration', () => {
         expect(second.modifiedCount).toBe(0);
     });
 
+    it('évite les collisions transitoires avec l index unique historique', async () => {
+        const first = await createActiveProductReference({
+            name: 'Carotte migration',
+            presentation: 'Entière',
+            foodRange: 1,
+        });
+        const actorId = first.variant.createdBy;
+
+        await toLegacyVariant({
+            variantId: first.variant._id,
+            presentation: 'Entière',
+            processingState: 'Brute',
+            preservation: 'Fraîche',
+            signature: 'legacy-first-signature',
+        });
+
+        const secondId = new mongoose.Types.ObjectId();
+        await ProductVariant.collection.insertOne({
+            _id: secondId,
+            canonicalProduct: first.product._id,
+            form: 'Râpée',
+            normalizedForm: 'rapee',
+            processingState: 'Ancien état',
+            normalizedProcessingState: 'ancien etat',
+            preservation: 'Ancienne conservation',
+            normalizedPreservation: 'ancienne conservation',
+            normalizedSignature: 'entiere|1|produit frais',
+            foodRange: 2,
+            referenceUnit: 'KG',
+            yieldPercent: null,
+            status: 'ACTIVE',
+            identityActive: true,
+            contributedFromWorkspace: null,
+            rejectionReason: null,
+            rejectionComment: null,
+            replacementVariant: null,
+            createdBy: actorId,
+            updatedBy: actorId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        await expect(migrateM002VariantSemantics()).resolves.toMatchObject({
+            matchedCount: 2,
+        });
+
+        const migrated = await ProductVariant.collection.find({
+            canonicalProduct: first.product._id,
+        }).sort({ _id: 1 }).toArray();
+
+        expect(
+            migrated.map(({ normalizedSignature }) => normalizedSignature).sort(),
+        ).toEqual([
+            'entiere|1|produit frais',
+            'rapee|2|conserve',
+        ].sort());
+    });
+
     it('refuse une collision avant de fusionner silencieusement deux déclinaisons', async () => {
         const reference = await createActiveProductReference({
             presentation: 'Entière',

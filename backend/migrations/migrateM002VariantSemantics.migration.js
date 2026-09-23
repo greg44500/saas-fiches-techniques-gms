@@ -59,13 +59,48 @@ const migrateM002VariantSemantics = async () => {
         activeSignatures.set(key, variant);
     }
 
-    if (prepared.length === 0) {
+    const variantsToMigrate = prepared.filter((variant) => {
+        const document = documents.find(
+            ({ _id }) => _id.toString() === variant.id.toString(),
+        );
+
+        return (
+            Object.prototype.hasOwnProperty.call(document, 'form')
+            || Object.prototype.hasOwnProperty.call(document, 'normalizedForm')
+            || Object.prototype.hasOwnProperty.call(document, 'preservation')
+            || Object.prototype.hasOwnProperty.call(document, 'normalizedPreservation')
+            || document.presentation !== variant.presentation
+            || document.normalizedPresentation !== variant.normalizedPresentation
+            || document.processingState !== variant.processingState
+            || document.normalizedProcessingState
+                !== variant.normalizedProcessingState
+            || document.normalizedSignature !== variant.normalizedSignature
+        );
+    });
+
+    if (variantsToMigrate.length === 0) {
         return { matchedCount: 0, modifiedCount: 0 };
     }
 
     return mongoose.connection.transaction(async (session) => {
+        await ProductVariant.collection.bulkWrite(
+            variantsToMigrate.map((variant) => ({
+                updateOne: {
+                    filter: { _id: variant.id },
+                    update: {
+                        $set: {
+                            normalizedSignature:
+                                '__m002_variant_semantics__'
+                                + variant.id.toString(),
+                        },
+                    },
+                },
+            })),
+            { session },
+        );
+
         const result = await ProductVariant.collection.bulkWrite(
-            prepared.map((variant) => ({
+            variantsToMigrate.map((variant) => ({
                 updateOne: {
                     filter: { _id: variant.id },
                     update: {
@@ -90,7 +125,7 @@ const migrateM002VariantSemantics = async () => {
         );
 
         return {
-            matchedCount: result.matchedCount,
+            matchedCount: variantsToMigrate.length,
             modifiedCount: result.modifiedCount,
         };
     });
