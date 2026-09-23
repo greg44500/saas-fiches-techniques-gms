@@ -358,7 +358,7 @@ prix de vente retenu
 
 Un produit représente une denrée ou un composant utilisable dans une fiche technique, indépendamment de son fournisseur et de son prix.
 
-### 5.1 Identité canonique, nom et déclinaisons structurées
+### 5.1 Identité canonique et déclinaisons structurées
 
 Le Produit de référence représente d'abord une identité métier canonique, par exemple :
 
@@ -369,11 +369,9 @@ Farine
 Film alimentaire
 ```
 
-Cette identité ne doit pas être recréée sous des variantes lexicales équivalentes telles que `carotte`, `Carottes` ou une faute d'orthographe reconnue comme désignant la même réalité.
+Cette identité ne doit pas être recréée sous des variantes lexicales équivalentes telles que `carotte`, `Carottes` ou une faute reconnue comme désignant la même réalité.
 
-Le libellé affiché reste lisible pour l'utilisateur, mais l'identité ne repose pas uniquement sur une chaîne libre.
-
-Les formes et états qui modifient réellement l'usage, le rendement ou la sélection d'un Article fournisseur doivent être identifiés de manière structurée autour de l'identité canonique.
+La déclinaison décrit ensuite la manière dont ce Produit est présenté et préparé sans transformer chaque variante en nouvelle identité canonique.
 
 Axes structurés retenus par M-002 :
 
@@ -381,81 +379,88 @@ Axes structurés retenus par M-002 :
 Produit canonique
 → Carotte
 
-forme
-→ entière / rondelles / râpée / dés / julienne / purée / ...
+Présentation
+→ entière / râpée / émincée / rondelles / dés / julienne / ...
 
-état ou transformation
-→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
+Gamme
+→ nomenclature métier backend-driven 1..6
 
-conservation lorsque pertinente
-→ fraîche / surgelée / appertisée / ...
+État / transformation
+→ valeur dépendante de la gamme sélectionnée
+→ proposée et validée par le backend
+
+Unité de référence
+→ g / kg / ml / cl / l / unité
+
+Rendement
+→ facultatif, 0 < rendement <= 100
 ```
+
+Le champ historique `Conservation` n'appartient plus au contrat opérationnel M-002 : la dimension qu'il recouvrait est désormais portée par la Gamme et son État / transformation associé.
 
 Exemple :
 
 ```text
 Carotte
-→ forme : râpée
-→ état : prête à l'emploi
-→ conservation : fraîche
+→ Présentation : râpée
+→ Gamme 1 — Frais
+→ État / transformation : Produit frais
+→ Unité : kg
+→ Rendement : 100 %
 ```
 
-L'interface peut composer un libellé lisible comme `Carotte râpée prête à l'emploi`, sans transformer chaque variante orthographique du libellé en nouvelle identité canonique.
-
-Une transformation qui crée réellement un produit composé ou une formulation différente ne doit pas être assimilée automatiquement à une simple forme. Par exemple, une « purée de carottes » industrielle peut contenir d'autres ingrédients. M-002 conserve donc un choix métier explicite : une simple variation d'usage relève d'une `ProductVariant`, tandis qu'une composition réellement différente relève d'un Produit canonique distinct. Cette décision ne repose jamais sur la seule ressemblance textuelle.
+Une transformation qui crée réellement un Produit composé ou une formulation différente ne doit pas être assimilée automatiquement à une simple Présentation. Une « purée de carottes » industrielle contenant d'autres ingrédients peut donc relever d'un Produit canonique distinct.
 
 ### 5.2 Données minimales du produit
 
-Socle conceptuel actuellement retenu :
+Socle conceptuel retenu pour M-002 :
 
 - identité / nom canonique — obligatoire ;
-- clé normalisée et alias — nécessaires au contrôle des doublons et à la recherche ;
-- catégorie — nécessaire au classement, tri, recherche et aux analyses ;
-- forme / état / conservation — structurés lorsqu'ils distinguent réellement l'usage ;
-- gamme alimentaire — uniquement lorsqu'elle est pertinente ;
-- unité de référence — nécessaire aux calculs ;
-- taux de rendement — caractéristique métier de la déclinaison réellement utilisée lorsque le rendement en dépend ;
-- photo — facultative ;
-- notes — facultatives, sans logique métier cachée ;
-- date de création — système ;
-- date de dernière modification — système ;
-- créé par — audit ;
-- modifié par — audit ;
-- historique des modifications significatives — à préserver.
+- clé normalisée et alias — recherche et contrôle des doublons ;
+- catégorie active — obligatoire à la création ;
+- Présentation — facultative, portée par la déclinaison ;
+- Gamme — obligatoire pour une nouvelle déclinaison du contrat M-002 courant ;
+- État / transformation — piloté par la Gamme et validé par le backend ;
+- unité de référence — obligatoire ;
+- rendement — facultatif ;
+- date de création / modification — système ;
+- créé par / modifié par — audit ;
+- historique des modifications significatives — préservé.
+
+Les données Fournisseur, référence commerciale, conditionnement et prix restent strictement hors M-002.
 
 ### 5.3 Catégorie
 
-La catégorie sert à classer et filtrer les produits et pourra alimenter les analyses futures.
+La catégorie sert à classer, filtrer et rechercher les Produits.
 
-La liste canonique des catégories n'est pas encore définie.
+La taxonomie est globale au référentiel Produit. Une nouvelle identité `ACTIVE` exige une catégorie `ACTIVE`. La liste initiale n'est pas inventée dans le frontend : elle provient des données métier backend.
 
-**Point ouvert :** catégorie unique ou possibilité d'appartenance multiple.
+### 5.4 Gamme alimentaire et État / transformation
 
-### 5.4 Gamme alimentaire
+La nomenclature M-002 V1 validée est backend-driven :
 
-La notion de gamme n'est pas obligatoire pour tous les produits.
+| Gamme | Libellé métier | État / transformation initial associé |
+| --- | --- | --- |
+| 1 | Frais | Produit frais |
+| 2 | Conserves | Conserve |
+| 3 | Surgelés | Surgelé |
+| 4 | Sous-vide cru / épluchés | Sous-vide cru / épluché |
+| 5 | Sous-vide cuit | Sous-vide cuit |
+| 6 | PAI / PAE | PAI / PAE |
 
-Lorsqu'elle est pertinente, le référentiel métier doit permettre les gammes 1 à 5 ainsi qu'une valeur « non applicable ».
-
-Exemple validé :
+Le frontend ne contient aucune copie statique de cette liste. Le backend expose pour chaque gamme :
 
 ```text
-Farine
-→ gamme : non applicable
-→ rendement : 100 %
+value
+label
+name
+processingStates[]
+defaultProcessingState
 ```
 
-La gamme aide à comprendre la nature et le niveau de préparation/conservation du produit, mais ne doit jamais imposer à elle seule un rendement universel.
+Le choix d'une Gamme pilote donc les propositions d'État / transformation. Le backend reste l'autorité finale et refuse une combinaison incompatible.
 
-Référence professionnelle de cadrage :
-
-- 1re gamme : frais ;
-- 2e gamme : conserve / appertisé ;
-- 3e gamme : surgelé ;
-- 4e gamme : cru prêt à l'emploi ;
-- 5e gamme : cuit prêt à l'emploi.
-
-Cette classification est un référentiel professionnel ; elle ne doit pas être forcée lorsqu'elle n'est pas pertinente.
+Le rendement n'est jamais déduit automatiquement de la Gamme : il reste une donnée distincte de la déclinaison.
 
 ### 5.5 Unité de référence
 
@@ -2135,8 +2140,8 @@ Le présent document synthétise les éléments métier fournis et validés le 2
 - exemples de tarifs fournisseurs Sysco et SCAL ;
 - référentiels professionnels sur les gammes alimentaires.
 
-Référence officielle consultée pour la terminologie des gammes :
+Référence externe historiquement consultée pour la terminologie des gammes 1 à 5 :
 
 - Direction des Affaires juridiques, Ministère de l'Économie — glossaire d'indexation des prix des denrées alimentaires : https://www.economie.gouv.fr/files/files/directions_services/daj/marches_publics/oeap/concertation/autres_groupes_travail/indexation-prix-denrees-alimentaires.pdf
 
-La source métier utilisateur prime sur les hypothèses lorsqu'une règle spécifique au produit est validée.
+La source externe documente le vocabulaire historique des gammes 1 à 5 ; la nomenclature applicative V1, notamment la Gamme 6 PAI / PAE et les libellés associés, relève du contrat métier explicitement validé pour ce produit. La source métier utilisateur prime sur les hypothèses lorsqu'une règle spécifique au produit est validée.

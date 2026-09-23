@@ -31,7 +31,7 @@ Base :
 
 Permission : `product:read`.
 
-Expose catégories, unités, gammes et statuts opérationnels.
+Expose catégories, unités, statuts et les six Gammes structurées (`value`, `label`, `name`, `processingStates`, `defaultProcessingState`). Le frontend ne définit pas de liste métier parallèle.
 
 ### GET /summary
 
@@ -77,6 +77,8 @@ Capability : `product_contribution`.
 
 Crée un nouveau Produit global après revue des candidats :
 
+Le payload de la première déclinaison utilise `presentation`, `foodRange`, `processingState`, `referenceUnit`, `yieldPercent`. `foodRange` est obligatoire ; le backend dérive/valide `processingState`. Le champ `preservation` n'est plus accepté.
+
 ```text
 anti-doublon recalculé
 → catégorie ACTIVE obligatoire
@@ -96,7 +98,7 @@ Le Produit parent doit être ACTIVE. La nouvelle déclinaison devient ACTIVE et 
 
 Les anciennes routes `/contributions` et `/:productId/variants/contributions` sont supprimées.
 
-## 4. Catalogue Workspace
+## 4. Référentiel Workspace — routes techniques stables
 
 ### PUT /catalog/:variantId
 
@@ -108,7 +110,7 @@ Produit et déclinaison doivent être ACTIVE.
 
 Permission : `product:catalog:manage`.
 
-Archive uniquement `WorkspaceProduct`.
+Archive uniquement `WorkspaceProduct`. Les segments techniques `/catalog` et la permission `product:catalog:manage` restent inchangés pour stabilité contractuelle ; le vocabulaire utilisateur est « Mon référentiel ».
 
 ## 5. Import Workspace
 

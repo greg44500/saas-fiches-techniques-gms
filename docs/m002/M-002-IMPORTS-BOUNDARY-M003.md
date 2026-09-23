@@ -8,7 +8,7 @@ Il existe deux imports différents qui ne doivent pas être confondus.
 
 ### Import Produit — M-002
 
-Objectif : enrichir le référentiel Produit et le catalogue d'usage du Workspace.
+Objectif : enrichir le Référentiel global et Mon référentiel du Workspace.
 
 Formats cibles :
 
@@ -23,12 +23,13 @@ Données admissibles :
 - nom Produit ;
 - alias ;
 - catégorie ;
-- forme ;
-- état / transformation ;
-- conservation ;
-- gamme ;
+- Présentation ;
+- Gamme ;
+- État / transformation compatible avec la Gamme ;
 - unité ;
 - rendement lorsqu'il est fiable.
+
+Le champ historique Conservation n'est plus une dimension M-002 autonome.
 
 Le pipeline applique systématiquement normalisation, déduplication, recherche de proximité et contrôles d'autorisation.
 

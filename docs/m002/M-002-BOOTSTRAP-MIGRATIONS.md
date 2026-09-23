@@ -63,12 +63,16 @@ npm run migration:m002-catalog
 
 Responsabilités :
 
-- normaliser les anciens statuts M-002 vers `ACTIVE/ARCHIVED` ;
-- créer/vérifier les indexes M-002 ;
-- synchroniser les permissions système Workspace enregistrées ;
-- échouer explicitement en cas de conflit de données ;
-- ne supprimer aucune donnée ;
-- pouvoir être rejoué sans effet destructeur.
+1. normaliser les anciens statuts M-002 vers `ACTIVE/ARCHIVED` ;
+2. migrer la sémantique des déclinaisons :
+   - `form → presentation` ;
+   - suppression de `preservation` ;
+   - État / transformation recalculé depuis la Gamme lorsqu'elle existe ;
+   - nouvelle signature `presentation + gamme + état` ;
+3. créer/vérifier les indexes M-002 ;
+4. synchroniser les permissions système Workspace enregistrées.
+
+La migration refuse une collision de signatures actives avant toute fusion implicite. Elle ne devine pas une Gamme absente et reste rejouable.
 
 Le runner sera ajouté au manifest des migrations du produit selon le processus Core de release.
 
@@ -137,7 +141,7 @@ Le bootstrap :
 
 Le jeu de données utilisateur existant pourra servir à produire le premier référentiel bêta après nettoyage.
 
-Il ne doit pas être injecté ligne pour ligne : certaines désignations mélangent Produit, marque, conditionnement, conservation et informations fournisseur.
+Il ne doit pas être injecté ligne pour ligne : certaines désignations mélangent Produit, marque, conditionnement, ancienne information de conservation et informations fournisseur.
 
 La préparation du fichier bootstrap doit donc :
 
@@ -187,7 +191,7 @@ Ce flux :
 - réutilise les primitives Core de téléversement temporaire sécurisé au lieu de maintenir un pipeline de sécurité parallèle ;
 - analyse et prévisualise avant toute mutation ;
 - réutilise le moteur de normalisation/déduplication M-002 ;
-- rattache les références existantes au catalogue du Workspace ;
+- rattache les références existantes au référentiel du Workspace ;
 - crée les nouvelles identités/déclinaisons en `ACTIVE` après contrôle anti-doublon et catégorie valide ;
 - conserve les lignes ambiguës ou invalides en attente de décision utilisateur ;
 - n'importe jamais silencieusement des données fournisseur dans le modèle Produit.

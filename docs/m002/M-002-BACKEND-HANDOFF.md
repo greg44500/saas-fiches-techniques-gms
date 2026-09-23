@@ -10,6 +10,12 @@ CanonicalProduct
 
 ProductVariant
 → déclinaison globale
+→ presentation
+→ foodRange 1..6 backend-driven
+→ processingState résolu/validé depuis foodRange
+→ referenceUnit
+→ yieldPercent
+→ aucun champ preservation opérationnel
 
 WorkspaceProduct
 → usage Workspace
@@ -142,8 +148,9 @@ L'import global :
 `migration:m002-catalog` :
 
 1. backfill lifecycle legacy ;
-2. indexes ;
-3. permissions Workspace système enregistrées.
+2. migration de sémantique ProductVariant (`form → presentation`, suppression Conservation, recalcul état/signature, collision guard) ;
+3. indexes ;
+4. permissions Workspace système enregistrées.
 
 Règles legacy :
 
@@ -159,6 +166,7 @@ Aucune catégorie n'est inventée.
 
 ```text
 backend/modules/productCatalog/productCatalog.service.js
+backend/modules/productCatalog/productVariantSemantics.js
 backend/modules/productCatalog/productCatalogGovernance.service.js
 backend/modules/productCatalog/productCatalogDedup.service.js
 backend/modules/productCatalog/productCatalogImport.service.js
@@ -166,6 +174,7 @@ backend/modules/productCatalog/productCatalogImportAccess.service.js
 backend/modules/productCatalog/productCatalogGlobal.routes.js
 backend/modules/productCatalog/productCatalog.routes.js
 backend/migrations/backfillM002LegacyProductLifecycle.migration.js
+backend/migrations/migrateM002VariantSemantics.migration.js
 backend/migrations/runEnsureM002CatalogMigration.js
 ```
 

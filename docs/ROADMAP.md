@@ -76,7 +76,7 @@ Décisions finales :
 Décisions désormais fermées et implémentées :
 
 - `CanonicalProduct` porte l'identité Produit partagée à l'échelle du SaaS ;
-- `ProductVariant` porte les déclinaisons structurées : forme, état/transformation, conservation, gamme éventuelle, unité de référence et rendement ;
+- `ProductVariant` porte les déclinaisons structurées : Présentation, Gamme 1..6 backend-driven, État/transformation dépendant de la Gamme, unité de référence et rendement ; le champ Conservation est retiré du contrat opérationnel ;
 - `WorkspaceProduct` matérialise le référentiel Produit d'un Workspace en référençant une déclinaison sans recopier l'identité ;
 - aucune donnée Fournisseur, référence commerciale, conditionnement ou prix n'est stockée dans M-002 ;
 - la création vérifie d'abord l'existant par normalisation, alias, clés de recherche, proximité et revue explicite des candidats proches ;
@@ -91,6 +91,9 @@ Décisions désormais fermées et implémentées :
 - l'import Workspace et l'import global réutilisent le même pipeline temporaire sécurisé CSV/XLS/XLSX ;
 - l'import M-002 ignore les dimensions commerciales M-003 au lieu de les injecter dans le Produit ;
 - le bootstrap du référentiel reste versionné ; le dataset bêta réel reste volontairement à préparer/nettoyer.
+- le référentiel Workspace/global est trié alphabétiquement par Produit avant pagination ;
+- la table opérationnelle expose Produit / Présentation / Gamme / Actions et n'affiche plus un statut ACTIVE redondant ;
+- une migration dédiée convertit les anciennes déclinaisons `form/preservation` vers `presentation + gamme + état` et refuse toute collision sémantique au lieu de fusionner silencieusement ;
 
 À fermer avant fusion M-002 :
 

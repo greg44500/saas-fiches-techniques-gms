@@ -1,173 +1,73 @@
 # M-002 — Validation, identité et prévention des doublons
 
-**Statut : VALIDÉ — aligné sur la création ACTIVE contrôlée — 2026-09-23**
+**Statut : ALIGNÉ SUR PRÉSENTATION/GAMME — exécution finale requise**
 
-## 1. Normalisation déterministe
+## 1. Normalisation
 
-Fonction backend unique appliquée au nom, aux alias et aux dimensions textuelles :
+La normalisation backend est déterministe : trim, NFKD, suppression des diacritiques, minuscules, normalisation des séparateurs et espaces.
 
-1. trim ;
-2. Unicode NFKD ;
-3. suppression des diacritiques ;
-4. minuscules ;
-5. apostrophes et tirets transformés en séparateurs ;
-6. suppression des autres ponctuations non significatives ;
-7. espaces multiples réduits ;
-8. trim final.
+Elle s'applique aux noms/alias et aux dimensions textuelles de déclinaison.
 
-Exemples :
+## 2. Identité Produit
 
-```text
-"Carotte"
-" carotte "
-"CAROTTE"
-→ carotte
+`searchKeys` regroupe nom normalisé et alias normalisés. Un exact match interdit la création. Les candidats proches imposent une revue explicite ; aucune fusion automatique n'est réalisée.
 
-"Crème-fraîche"
-"creme fraiche"
-→ creme fraiche
-```
-
-La normalisation ne transforme pas automatiquement un mot français en singulier : une règle linguistique naïve créerait des erreurs. Singulier/pluriel est traité par alias et recherche de proximité.
-
-## 2. searchKeys
-
-Chaque Produit conserve une collection dérivée :
-
-```text
-searchKeys
-→ normalizedName
-→ alias normalisés
-```
-
-Une même clé active ne peut appartenir à deux Produits distincts.
-
-Le service déduplique les clés dans un même document.
-
-## 3. Alias
-
-- alias facultatifs ;
-- maximum proposé : 20 ;
-- 1 à 120 caractères avant normalisation ;
-- un alias ne peut pas entrer en collision avec le nom ou l'alias d'un autre Produit non rejeté ;
-- un alias n'est pas affiché comme identité principale ;
-- les alias servent à la recherche et au contrôle des doublons.
-
-Exemples pertinents :
-
-```text
-Carotte
-→ Carottes
-
-Échalote
-→ Echalotte si la faute est réellement reconnue comme alias
-```
-
-Le SaaS ne fabrique pas automatiquement des fautes.
-
-## 4. Recherche de proximité
-
-Pour éviter la création silencieuse de variantes orthographiques :
-
-- la base conserve des n-grammes de recherche dérivés des `searchKeys` ;
-- la requête construit le même jeu de n-grammes ;
-- MongoDB réduit le pool de candidats via l'index ;
-- le service classe ensuite les candidats avec une distance textuelle déterministe.
-
-Règle proposée pour imposer une revue :
-
-```text
-nom normalisé <= 6 caractères
-→ distance d'édition <= 1
-
-nom normalisé > 6 caractères
-→ distance d'édition <= 2
-
-ou
-→ inclusion/prefixe fort entre deux clés normalisées
-```
-
-Cette règle ne fusionne jamais automatiquement deux Produits.
-
-Elle produit uniquement une liste de candidats à examiner.
-
-## 5. Contrôle avant création
-
-Endpoint dédié :
-
-```text
-POST /duplicate-check
-```
-
-Réponse :
-
-- exactMatch éventuel ;
-- candidats proches triés ;
-- identifiants à confirmer si l'utilisateur estime qu'il s'agit réellement d'un nouveau Produit.
-
-Création :
-
-- un exact match est toujours refusé ;
-- si des candidats proches existent, le client doit fournir `reviewedCandidateIds` ;
-- le serveur recalcule les candidats au moment de la création ;
-- la création est refusée si la liste revue ne couvre pas les candidats actuels ;
-- aucune validation purement frontend ne suffit.
-
-## 6. Déclinaisons
-
-Signature dérivée :
+## 3. Signature de déclinaison
 
 ```text
 canonicalProductId
-+ normalized(form)
++ normalized(presentation)
++ foodRange
 + normalized(processingState)
-+ normalized(preservation)
 ```
 
-Le rendement, la gamme et l'unité de référence ne créent pas une nouvelle identité de déclinaison : ce sont des attributs corrigibles de la même réalité d'usage.
+L'unité de référence et le rendement restent des attributs corrigibles et ne participent pas à la signature.
 
-Une seule déclinaison non rejetée peut posséder une signature donnée pour un Produit.
+Le champ Conservation n'existe plus dans le contrat courant.
 
-La signature vide représente la déclinaison générique sans dimension précisée.
+## 4. Gamme et État / transformation
 
-## 7. Validation Zod proposée
+`foodRange` est validé depuis le registre backend 1..6.
+
+Le backend résout `processingState` :
+
+- valeur absente → `defaultProcessingState` de la Gamme ;
+- valeur fournie → doit correspondre à une valeur autorisée de `processingStates` ;
+- combinaison incompatible → conflit métier.
+
+Le frontend ne peut pas étendre cette nomenclature par une liste locale.
+
+## 5. Zod
 
 ### Produit
 
-- `name` : string trim, 1..120 ;
+- `name` : trim, 1..120 ;
 - `aliases` : array unique, max 20 ;
-- création : corps strict ;
-- champs système interdits depuis le client.
+- `categoryId` obligatoire ;
+- corps strict.
 
-### Déclinaison
+### Déclinaison — création
 
-- `form` : nullable string 1..80 ;
-- `processingState` : nullable string 1..80 ;
-- `preservation` : nullable string 1..80 ;
-- `foodRange` : null ou enum 1..5 ;
-- `referenceUnit` : enum backend-driven ;
-- `yieldPercent` : null ou nombre >0 et <=100.
+- `presentation` : nullable string 1..80 ;
+- `foodRange` : enum métier backend 1..6, obligatoire ;
+- `processingState` : nullable string 1..80 ; résolution métier côté service ;
+- `referenceUnit` : enum backend, obligatoire ;
+- `yieldPercent` : null ou nombre > 0 et <= 100.
 
-### Pagination/recherche
+### Déclinaison — modification
 
-- `page` défaut 1 ;
-- `limit` défaut 20, max 100 ;
-- `q` : trim, 2..120 lorsqu'il est fourni ;
-- `scope` : WORKSPACE | REFERENCE ;
-- statuts filtrés depuis les registries backend.
+Les mêmes dimensions sont modifiables. Un changement de Gamme sans État explicite recalcule l'État par défaut de la nouvelle Gamme.
 
-## 8. Erreurs métier structurées
+## 6. Import
 
-Codes applicatifs proposés :
+Le mapping M-002 expose `presentation`, `foodRange`, `processingState`, `referenceUnit`, `yieldPercent`.
 
-```text
-PRODUCT_EXACT_DUPLICATE
-PRODUCT_DUPLICATE_REVIEW_REQUIRED
-PRODUCT_REVIEW_OUTDATED
-PRODUCT_NOT_ACTIVE
-PRODUCT_CATEGORY_NOT_ACTIVE
-PRODUCT_VARIANT_DUPLICATE
-PRODUCT_WORKSPACE_ENTRY_NOT_FOUND
-```
+Une ligne de création sans Gamme mappée ou Gamme par défaut est invalide.
 
-Le contrat HTTP Core 400/401/403/404/409 reste conservé.
+## 7. Migration
+
+La migration de l'ancien contrat recalcule la nouvelle signature. Elle vérifie toutes les signatures actives **avant écriture** et échoue si deux anciennes variantes convergent vers la même identité.
+
+## 8. Erreurs
+
+Les conflits anti-doublon, catégorie inactive, déclinaison dupliquée ou combinaison Gamme/État invalide conservent le contrat HTTP Core 400/401/403/404/409.

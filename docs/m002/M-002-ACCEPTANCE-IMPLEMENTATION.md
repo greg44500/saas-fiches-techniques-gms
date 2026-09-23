@@ -23,6 +23,12 @@ Aucune micro-PR de réparation ne doit être créée pour les ajustements de ce 
 - [x] catégorie globale obligatoire pour toute nouvelle identité ACTIVE ;
 - [x] rendement porté par la déclinaison et jamais deviné ;
 - [x] unité normalisée backend-driven ;
+- [x] Présentation remplace Forme ;
+- [x] Conservation supprimée du contrat opérationnel ;
+- [x] six Gammes backend-driven avec libellé et État/transformation associé ;
+- [x] combinaison Gamme/État validée côté backend ;
+- [x] tri alphabétique Produit avant pagination ;
+- [x] table Workspace/global Produit / Présentation / Gamme / Actions ;
 - [x] aucun fournisseur/catalogue fournisseur/référence fournisseur/conditionnement/prix M-003 dans M-002 ;
 - [x] anti-doublon exact + proximité + revue explicite ;
 - [x] création Workspace immédiatement ACTIVE après contrôle ;
@@ -181,8 +187,9 @@ npm run migration:m002-catalog
 Elle réalise désormais :
 
 1. backfill des statuts legacy ;
-2. vérification/création des indexes M-002 ;
-3. synchronisation des permissions système Workspace enregistrées.
+2. migration de la sémantique des déclinaisons et garde anti-collision ;
+3. vérification/création des indexes M-002 ;
+4. synchronisation des permissions système Workspace enregistrées.
 
 Backfill :
 
@@ -214,7 +221,10 @@ Le corpus a été réaligné sur le nouveau contrat, mais aucun test n'est décl
 
 ```text
 productCatalog.registry.test.js
+productCatalog.normalization.test.js
+productVariantSemantics.test.js
 productCatalog.validation.test.js
+productCatalog.models.test.js
 productCatalog.integration.test.js
 productCatalog.http.test.js
 productCatalogGovernance.integration.test.js
@@ -222,12 +232,15 @@ productCatalogGlobal.http.test.js
 productCatalogImport.integration.test.js
 productCatalogImportAccess.service.test.js
 m002ProductLifecycleBackfill.migration.test.js
+m002VariantSemantics.migration.test.js
+m002Catalog.migration.test.js
 ```
 
 ### Frontend ciblé
 
 ```text
 product-create-dialog.test.jsx
+product-variant-fields.test.jsx
 product-import-dialog.test.jsx
 products-dashboard-widget.test.jsx
 product-presentation.test.js
@@ -257,6 +270,12 @@ Vérifier au minimum :
 - recherche prédictive depuis les deux vues ;
 - alignement visuel champ de recherche / bouton ;
 - absence de colonne et filtre d'état redondants ;
+- tri alphabétique Produit ;
+- colonne Présentation ;
+- colonne Gamme avec État/transformation ;
+- formulaire sans Conservation ;
+- six Gammes reçues du backend ;
+- sélection de Gamme préremplissant l'État / transformation ;
 - création Workspace ;
 - catégorie obligatoire ;
 - anti-doublon exact et candidats proches ;

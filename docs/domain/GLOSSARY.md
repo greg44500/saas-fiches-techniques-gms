@@ -159,106 +159,79 @@ Il porte conceptuellement :
 
 ## Déclinaison Produit
 
-Description structurée d'une forme réellement différente d'usage d'un Produit canonique lorsque la préparation, l'état ou la conservation modifient son rendement, sa sélection commerciale ou son emploi.
+Description structurée d'une variation d'usage d'un Produit canonique sans créer une nouvelle identité racine.
 
-Axes identifiés :
+Axes M-002 courants :
 
 ```text
-forme
-→ entière / rondelles / râpée / dés / julienne / purée / ...
+Présentation
+→ entière / râpée / émincée / rondelles / dés / ...
 
-état / transformation
-→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
+Gamme
+→ 1..6, nomenclature fournie par le backend
 
-conservation
-→ fraîche / surgelée / appertisée / ...
+État / transformation
+→ dépend de la Gamme
+→ proposé et validé par le backend
+
+Unité de référence
+Rendement
 ```
+
+Le terme **Présentation** remplace l'ancien terme « Forme ». Le champ historique **Conservation** est supprimé du contrat opérationnel : cette information est désormais portée par la Gamme et l'État / transformation qui lui est associé.
 
 Exemple :
 
 ```text
 Produit canonique : Carotte
-forme             : râpée
-état              : prête à l'emploi
-conservation      : fraîche
+Présentation      : Râpée
+Gamme             : Gamme 1 — Frais
+État              : Produit frais
+Unité             : kg
+Rendement         : 100 %
 ```
 
-Une transformation qui crée une formulation/composition réellement différente relève d'un Produit distinct ; une variation structurée d'usage relève d'une `ProductVariant`. La décision métier ne doit pas reposer sur la seule ressemblance du libellé.
+Une formulation ou composition réellement différente relève d'un Produit canonique distinct.
 
 ### Règle de recherche et création
 
-Avant de créer une nouvelle identité canonique, le système recherche les correspondances exactes normalisées, les alias puis les candidats proches.
+Avant de créer une nouvelle identité canonique, le système recherche les correspondances exactes normalisées, les alias puis les candidats proches. La nouvelle identité autorisée devient immédiatement `ACTIVE`.
 
-```text
-carotte
-Carottes
-carote
-```
-
-doivent converger vers `Carotte` lorsqu'ils désignent la même réalité métier.
-
-Le libellé affiché peut intégrer les dimensions structurées, par exemple `Carotte râpée prête à l'emploi`, sans créer une nouvelle identité racine uniquement à cause du texte.
-
-### Création dans le référentiel partagé
-
-Après contrôle de doublon, une création autorisée devient immédiatement `ACTIVE` dans le référentiel commun. Le parcours courant ne crée plus de statut d'attente nécessitant une approbation humaine systématique.
-
-Depuis un Workspace, la création ajoute en plus la première déclinaison au référentiel du Workspace via `WorkspaceProduct`.
+Depuis un Workspace, la première déclinaison est en plus rattachée à **Mon référentiel** via `WorkspaceProduct`.
 
 ### Autorité globale Produit
 
-Autorité métier applicative permettant de consulter ou maintenir le référentiel partagé indépendamment d'un Workspace.
-
-Elle repose sur les permissions Application Global :
+Autorité métier applicative permettant de consulter ou maintenir le Référentiel global indépendamment d'un Workspace. Elle repose sur :
 
 ```text
 product:reference:read
 product:reference:manage
 ```
 
-Un rôle Platform ou Workspace ne confère jamais ces permissions implicitement. Un membre de l'équipe Platform peut donc alimenter le référentiel commun seulement s'il reçoit explicitement un membership Application Global Produit.
-
+Un rôle Platform ou Workspace ne confère jamais ces permissions implicitement.
 
 ---
 
 ## Catégorie
 
-Classification fonctionnelle du produit destinée au classement, à la recherche, aux filtres et aux analyses.
-
-Exemples possibles : légumes, viandes, poissons, fromages, épicerie.
-
-La liste exacte n'est pas encore validée.
+Classification fonctionnelle globale du Produit destinée au classement, à la recherche, aux filtres et aux analyses.
 
 ---
 
 ## Gamme alimentaire
 
-Référentiel professionnel utilisé lorsqu'il est pertinent pour le produit.
+Nomenclature métier M-002 exposée par le backend et jamais recopiée statiquement dans le frontend :
 
-Référentiel de cadrage :
+- Gamme 1 : Frais → `Produit frais` ;
+- Gamme 2 : Conserves → `Conserve` ;
+- Gamme 3 : Surgelés → `Surgelé` ;
+- Gamme 4 : Sous-vide cru / épluchés → `Sous-vide cru / épluché` ;
+- Gamme 5 : Sous-vide cuit → `Sous-vide cuit` ;
+- Gamme 6 : PAI / PAE → `PAI / PAE`.
 
-- 1re gamme : frais ;
-- 2e gamme : conserve / appertisé ;
-- 3e gamme : surgelé ;
-- 4e gamme : cru prêt à l'emploi ;
-- 5e gamme : cuit prêt à l'emploi.
+Chaque définition contient les états/transformations proposés ainsi qu'un état par défaut. Le backend contrôle la compatibilité Gamme ↔ État / transformation.
 
-La gamme n'est pas obligatoire pour tous les produits.
-
-Exemple :
-
-```text
-Farine
-→ gamme : non applicable
-→ rendement : 100 %
-```
-
-La gamme ne fixe pas automatiquement un taux de rendement.
-
-Référence officielle de cadrage :
-https://www.economie.gouv.fr/files/files/directions_services/daj/marches_publics/oeap/concertation/autres_groupes_travail/indexation-prix-denrees-alimentaires.pdf
-
----
+La Gamme ne fixe jamais automatiquement le rendement.
 
 ## Unité de référence
 

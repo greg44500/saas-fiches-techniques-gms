@@ -301,22 +301,23 @@ CanonicalProduct
 
 ProductVariant
 → déclinaison globale d'un CanonicalProduct
-→ forme
-→ état / transformation
-→ conservation
-→ gamme éventuelle
-→ unité de référence
-→ rendement
+→ presentation
+→ foodRange
+→ processingState dérivé/validé depuis foodRange
+→ referenceUnit
+→ yieldPercent
 → ACTIVE | ARCHIVED
 
 WorkspaceProduct
 → ownership Workspace
 → référence une ProductVariant
-→ matérialise le référentiel Produit du Workspace
+→ matérialise Mon référentiel
 → ne copie pas l'identité Produit
 ```
 
-`createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` peut conserver l'origine historique d'une création sans transformer le Produit canonique en donnée privée du Workspace.
+`createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` conserve éventuellement l'origine historique d'une création sans devenir un ownership du Produit.
+
+Les anciens champs `form`, `normalizedForm`, `preservation` et `normalizedPreservation` sont retirés du modèle opérationnel. Une migration les convertit ou les supprime de façon contrôlée.
 
 ### 5.2 Anti-doublon et création
 
@@ -327,60 +328,49 @@ même réalité Produit canonique
 → une seule identité dans le SaaS
 ```
 
-Avant toute création :
+Avant création : normalisation, recherche exacte, alias, proximité, revue explicite des candidats puis création uniquement si aucun équivalent crédible n'est retenu.
+
+Une création Workspace autorisée produit :
 
 ```text
-normalisation déterministe
-→ recherche exacte sur nom/alias
-→ recherche de proximité
-→ affichage des candidats proches
-→ revue explicite des candidats
-→ création seulement si aucun équivalent crédible n'est retenu
-```
-
-L'index d'unicité technique protège la concurrence mais ne remplace pas cette revue sémantique.
-
-Une création Workspace autorisée :
-
-```text
-nouveau CanonicalProduct ACTIVE
-+ première ProductVariant ACTIVE
+CanonicalProduct ACTIVE
++ ProductVariant ACTIVE
 + WorkspaceProduct ACTIVE
 ```
 
-La nouvelle identité est immédiatement visible dans le référentiel commun. Il n'existe plus de file de validation humaine systématique dans le parcours courant.
-
-Une création globale par l'autorité Produit crée le `CanonicalProduct` et sa première `ProductVariant` sans créer de `WorkspaceProduct`.
+Une création globale produit le `CanonicalProduct` et sa première `ProductVariant` sans `WorkspaceProduct`.
 
 ### 5.3 Catégories
 
-`ProductCategory` est globale au référentiel Produit.
-
-Une catégorie `ACTIVE` est obligatoire pour créer ou réactiver un Produit `ACTIVE`.
-
-Une catégorie utilisée par un Produit actif ne peut pas être archivée silencieusement.
+`ProductCategory` est globale. Une catégorie `ACTIVE` est obligatoire pour créer une identité Produit `ACTIVE`.
 
 ### 5.4 Déclinaisons
 
-Les dimensions structurées restent séparées de l'identité canonique lorsqu'elles modifient l'usage, le rendement ou la sélection commerciale :
+Signature métier courante :
 
 ```text
-forme
-état / transformation
-conservation
-gamme éventuelle
-unité de référence
-rendement
+canonicalProduct
++ normalized(presentation)
++ foodRange
++ normalized(processingState)
 ```
 
-Exemple :
+Le backend expose les six gammes et leurs états associés via les métadonnées :
 
 ```text
-CanonicalProduct : Carotte
-ProductVariant    : râpée · prête à l'emploi · fraîche
+1 → Frais → Produit frais
+2 → Conserves → Conserve
+3 → Surgelés → Surgelé
+4 → Sous-vide cru / épluchés → Sous-vide cru / épluché
+5 → Sous-vide cuit → Sous-vide cuit
+6 → PAI / PAE → PAI / PAE
 ```
 
-Une formulation/composition réellement différente doit être modélisée comme un Produit canonique distinct, pas comme une simple variation lexicale.
+Le frontend ne définit aucune liste métier parallèle. Le choix de Gamme alimente l'autocomplétion d'État / transformation ; le backend valide la combinaison.
+
+Le rendement et l'unité restent des attributs de la déclinaison mais ne sont pas déduits de la Gamme.
+
+Les listes Workspace et globales sont ordonnées par Produit alphabétiquement avant pagination.
 
 ### 5.5 Référentiel Produit Workspace
 

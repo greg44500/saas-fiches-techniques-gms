@@ -29,7 +29,10 @@ Couvrir :
 - espaces ;
 - alias ;
 - variantes orthographiques couvertes ;
-- stabilité des signatures de Déclinaison.
+- stabilité des signatures de Déclinaison ;
+- registre des Gammes 1..6 ;
+- résolution Gamme → État / transformation ;
+- refus d'une combinaison incompatible.
 
 ### Validation Zod
 
@@ -39,6 +42,8 @@ Couvrir :
 - champs système refusés ;
 - unités backend-driven ;
 - rendement borné ;
+- Gamme obligatoire sur les nouvelles déclinaisons ;
+- ancien champ Conservation refusé ;
 - mappings import stricts ;
 - décisions import ;
 - ObjectIds.
@@ -75,7 +80,8 @@ Couvrir :
 - candidats proches exigeant une revue ;
 - visibilité immédiate du nouveau Produit dans un autre Workspace via REFERENCE ;
 - création Déclinaison ACTIVE ;
-- ajout/retrait/réactivation catalogue idempotent ;
+- tri alphabétique avant pagination ;
+- ajout/retrait/réactivation de Mon référentiel idempotent ;
 - archive globale non destructive ;
 - catégorie archivée non utilisable ;
 - création globale via autorité métier ;
@@ -128,6 +134,7 @@ Couvrir :
 - recherche serveur ;
 - filtres ;
 - création Produit ;
+- formulaire Présentation/Gamme/État backend-driven sans Conservation ;
 - correspondance exacte ;
 - revue candidats proches ;
 - catégorie obligatoire ;
@@ -181,6 +188,8 @@ Le backfill doit prouver :
 - `identityActive=false` historique préservé ;
 - aucun ancien statut restant ;
 - migration rejouable ;
+- migration `form/preservation → presentation/gamme/état` ;
+- collision de nouvelles signatures refusée avant écriture ;
 - indexes M-002 présents.
 
 ## 10. E2E critiques
@@ -189,9 +198,9 @@ Le backfill doit prouver :
 
 ```text
 Owner Workspace
-→ Tout le référentiel
+→ Référentiel global
 → Ajouter
-→ Mon catalogue
+→ Mon référentiel
 → référence visible
 ```
 
@@ -204,7 +213,7 @@ Owner Workspace
 → catégorie
 → première déclinaison
 → création
-→ Produit visible dans Mon catalogue
+→ Produit visible dans Mon référentiel
 → Produit visible dans le référentiel commun
 ```
 
@@ -228,7 +237,7 @@ fichier Produit
 → preview
 → ambiguïté revue si nécessaire
 → commit
-→ catalogue mis à jour
+→ Mon référentiel mis à jour
 ```
 
 ## 11. Gate finale

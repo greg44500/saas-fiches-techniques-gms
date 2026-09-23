@@ -1,238 +1,150 @@
-# M-002 — Catalogue Produits / Produits canoniques
+# M-002 — Référentiel Produits / Produits canoniques
 
-**Statut : RECADRÉ — création sans validation humaine systématique — 2026-09-23**  
+**Statut : IMPLÉMENTATION RECALÉE SUR LA SÉMANTIQUE PRÉSENTATION/GAMME — gates finales requises**  
 **Branche :** `feature/m002-catalogue-produits`
 
 ## 1. Objectif
 
-M-002 fournit un référentiel Produit commun à l'échelle du SaaS et un catalogue d'usage propre à chaque Workspace.
+M-002 fournit :
 
 ```text
 SaaS
-→ référentiel Produit canonique partagé
+→ Référentiel global de Produits canoniques et déclinaisons
 
 Workspace
-→ catalogue d'usage
-→ références vers le référentiel partagé
-→ aucune copie de l'identité Produit
+→ Mon référentiel
+→ sélection de ProductVariant via WorkspaceProduct
 
 Dossier
-→ consomme le catalogue du Workspace
-→ aucune identité Produit propre au Dossier
-→ aucune donnée commerciale M-003 dans M-002
+→ consomme Mon référentiel
+→ aucune identité Produit Dossier-owned
 ```
 
-Décision structurante : lorsqu'un Workspace crée un Produit absent du référentiel après contrôle anti-doublon, il crée une nouvelle identité globale immédiatement utilisable. Il n'existe pas de second référentiel privé Workspace ou Dossier.
+Le terme **catalogue** est réservé aux catalogues fournisseurs de M-003.
 
-## 2. Acteurs
+## 2. Acteurs et autorisations
 
-### Membre Workspace autorisé
+Un membre Workspace autorisé peut rechercher, rattacher, créer et importer selon RBAC + capabilities.
 
-Selon ses permissions et capabilities M-002, il peut :
+L'autorité globale Produit repose sur Application Global :
 
-- rechercher les Produits existants ;
-- rattacher une déclinaison à son catalogue ;
-- créer un nouveau Produit global lorsque aucun équivalent crédible n'existe ;
-- créer une nouvelle déclinaison globale d'un Produit existant ;
-- importer des données Produit génériques dans les limites de son offre.
+```text
+product:reference:read
+product:reference:manage
+```
 
-Toute création est précédée par les contrôles serveur d'unicité sémantique.
-
-### Autorité métier globale Produit
-
-L'autorité globale peut :
-
-- alimenter directement le référentiel commun ;
-- créer des Produits et déclinaisons ;
-- importer en masse des données Produit génériques ;
-- gérer les catégories ;
-- corriger les identités partagées ;
-- archiver/réactiver ;
-- traiter ultérieurement les doublons résiduels ;
-- consulter l'historique métier.
-
-Cette autorité utilise le pont Application Global du Core.
-
-Une personne peut appartenir à l'équipe Platform et recevoir explicitement cette autorité métier, mais aucun rôle Platform — y compris Super Admin — ne lui confère automatiquement `product:reference:read` ou `product:reference:manage`.
+Un rôle Platform — y compris Super Admin — ne confère jamais implicitement cette autorité.
 
 ## 3. Modèle métier
 
 ### CanonicalProduct
 
-Identité générique globale.
-
-Responsabilités :
-
-- nom canonique ;
-- normalisation ;
-- alias ;
-- clés/grams de recherche ;
-- catégorie ;
-- statut ;
-- provenance et audit ;
-- aucun fournisseur, référence fournisseur, conditionnement ou prix.
-
-`contributedFromWorkspace` reste une provenance technique/audit lorsqu'une création provient d'un Workspace. Ce champ ne constitue jamais l'ownership.
+Identité globale partageable : nom, alias, recherche, catégorie, lifecycle et audit. Aucun Fournisseur, conditionnement ou prix.
 
 ### ProductVariant
 
-Déclinaison structurée d'un Produit canonique :
+Déclinaison globale :
 
-- forme ;
-- état/transformation ;
-- conservation ;
-- gamme facultative ;
-- unité de référence ;
+```text
+presentation
+foodRange
+processingState
+referenceUnit
+yieldPercent
+status
+```
+
+Contrat V1 :
+
+- **Présentation** remplace l'ancien champ Forme ;
+- **Conservation** est supprimée ;
+- **Gamme** est une nomenclature backend-driven 1..6 ;
+- **État / transformation** dépend de la Gamme ;
+- unité obligatoire ;
 - rendement facultatif.
 
-Une signature normalisée unique empêche deux déclinaisons équivalentes d'un même Produit.
+Nomenclature :
+
+| Gamme | Nom | État initial |
+| --- | --- | --- |
+| 1 | Frais | Produit frais |
+| 2 | Conserves | Conserve |
+| 3 | Surgelés | Surgelé |
+| 4 | Sous-vide cru / épluchés | Sous-vide cru / épluché |
+| 5 | Sous-vide cuit | Sous-vide cuit |
+| 6 | PAI / PAE | PAI / PAE |
+
+La signature unique combine Produit + Présentation + Gamme + État / transformation.
 
 ### WorkspaceProduct
 
-Relation d'usage appartenant au Workspace :
-
-```text
-Workspace
-→ WorkspaceProduct
-→ ProductVariant
-→ CanonicalProduct
-```
-
-Elle ne copie aucune identité globale.
+Relation tenant-scoped entre Workspace et ProductVariant. Elle matérialise **Mon référentiel** sans copier l'identité globale.
 
 ### ProductCategory
 
-Taxonomie globale plate en M-002.
+Taxonomie globale plate. Une catégorie ACTIVE est obligatoire à la création d'un Produit ACTIVE.
 
-Un Produit `ACTIVE` doit avoir une catégorie `ACTIVE`.
+## 4. Recherche et affichage
 
-## 4. Unicité et création
+Avant création : normalisation, exact match, alias, proximité, revue explicite des candidats.
 
-Avant toute création :
+Les listes sont triées **alphabétiquement par Produit avant pagination**.
+
+Page Workspace :
 
 ```text
-normalisation
-→ recherche exacte
-→ alias
-→ casse / accents
-→ singulier-pluriel lorsque couvert par la normalisation
-→ recherche de proximité
-→ candidats proches
-→ revue explicite des candidats
-→ création seulement si aucun équivalent n'est retenu
+Référentiel global | Mon référentiel
+
+Produit | Présentation | Gamme | Actions
 ```
 
-L'unicité technique MongoDB complète le contrôle métier mais ne le remplace pas.
+La colonne Statut n'est pas affichée dans ces vues opérationnelles : elles ne présentent que les références utilisables selon leur scope.
 
-En cas de concurrence, la contrainte technique reste l'autorité finale et retourne un conflit plutôt que de créer un doublon.
-
-## 5. Lifecycle
-
-Lifecycle opérationnel V1 :
+## 5. Création depuis un Workspace
 
 ```text
-ACTIVE
-↔ ARCHIVED
-```
-
-Les créations Workspace et les créations de l'autorité globale deviennent `ACTIVE` dans la même transaction que leur création.
-
-Le workflow quotidien `PENDING_REVIEW → approve/reject` est supprimé.
-
-Les anciennes valeurs issues du développement précédent sont des données de migration, pas des états métier à conserver dans le parcours V1.
-
-## 6. Création depuis un Workspace
-
-Nouveau Produit :
-
-```text
-recherche préalable
-→ contrôle anti-doublon serveur
-→ catégorie ACTIVE obligatoire
+recherche anti-doublon
+→ catégorie ACTIVE
+→ Présentation
+→ Gamme
+→ État / transformation proposé par le backend
+→ unité
+→ rendement éventuel
 → CanonicalProduct ACTIVE
-→ première ProductVariant ACTIVE
-→ WorkspaceProduct ACTIVE
-→ activité métier
-```
-
-Nouvelle déclinaison :
-
-```text
-Produit parent ACTIVE
-→ signature de déclinaison unique
 → ProductVariant ACTIVE
 → WorkspaceProduct ACTIVE
-→ activité métier
 ```
 
-La provenance Workspace est conservée pour l'audit. Les autres Workspaces peuvent ensuite retrouver cette identité globale.
-
-Un membre Workspace ne peut pas modifier directement une identité globale déjà partagée ; les corrections du référentiel commun relèvent de l'autorité Application Global.
-
-## 7. Alimentation par l'autorité globale
-
-L'autorité `product:reference:manage` peut alimenter le même référentiel :
-
-- création unitaire ;
-- ajout d'une déclinaison ;
-- import CSV/XLS/XLSX de données Produit génériques.
-
-Une personne de l'équipe Platform peut exercer cette fonction uniquement si un `ApplicationGlobalMember` lui attribue explicitement le rôle/les permissions Produit correspondants.
-
-Le rôle Platform et l'autorité métier globale restent deux dimensions séparées.
-
-## 8. Import M-002
-
-Deux usages existent.
-
-### Import Workspace
+## 6. Lifecycle
 
 ```text
-Workspace
-→ capability product_catalog_import
-→ permission product:read
-→ droits de mutation calculés à partir de la preview
-→ rattachement existant ou création globale contrôlée
+ACTIVE ↔ ARCHIVED
 ```
 
-La clé technique `product_contribution` est conservée pour compatibilité du contrat commercial déjà intégré ; sa sémantique devient « autoriser la création de nouvelles identités/déclinaisons dans le référentiel partagé », sans file de validation humaine.
+Le workflow PENDING_REVIEW / approve / reject n'appartient plus au parcours courant.
 
-### Import global
+## 7. Imports
 
-```text
-Application Global product:reference:manage
-→ import de données Produit génériques
-→ mêmes contrôles anti-doublon
-→ aucune dépendance à un Workspace ou à son plan
-→ aucune création de WorkspaceProduct
-```
+Deux scopes M-002 réutilisent le pipeline temporaire sécurisé Core :
 
-Le pipeline de sécurité fichier Core reste partagé : temporaire sécurisé, inspection, checksum, antivirus, parsing puis suppression du temporaire.
+- WORKSPACE : rattachement ou création contrôlée + WorkspaceProduct ;
+- GLOBAL : alimentation du Référentiel global sans WorkspaceProduct.
 
-## 9. Frontière avec M-003
+L'import M-002 accepte Présentation, Gamme, État/transformation, unité et rendement. Il n'absorbe jamais Fournisseur, référence fournisseur, conditionnement ou prix.
 
-M-002 ne contient jamais :
+## 8. Migration de sémantique
 
-- fournisseur ;
-- catalogue fournisseur ;
-- édition/version de catalogue fournisseur ;
-- référence fournisseur ;
-- conditionnement commercial ;
-- prix catalogue ;
-- prix négocié ;
-- prix facturé.
+`npm run migration:m002-catalog` exécute notamment `migrateM002VariantSemantics` :
 
-Ces données appartiennent à M-003.
+- `form → presentation` ;
+- suppression de `preservation` et des champs normalisés historiques ;
+- recalcul de l'État depuis la Gamme lorsqu'elle existe ;
+- recalcul de la signature ;
+- aucune Gamme inventée pour une ancienne donnée qui n'en possède pas ;
+- arrêt explicite si deux déclinaisons actives deviendraient identiques.
 
-Un fichier comportant ces colonnes doit être identifié comme potentiellement fournisseur et ne doit jamais injecter ces valeurs dans `CanonicalProduct`.
+Aucune fusion silencieuse n'est autorisée.
 
-## 10. Archivage
+## 9. Frontière M-003
 
-Archiver une identité globale :
-
-- empêche les nouveaux rattachements ;
-- conserve les historiques et relations existantes ;
-- ne supprime aucune donnée commerciale aval ;
-- reste réversible par l'autorité globale.
-
-La fusion destructive de Produits déjà référencés reste différée tant que le graphe M-003/M-004 n'est pas complet.
+M-003 porte exclusivement Fournisseur, Catalogue fournisseur, Article, référence, conditionnement et prix. Ces données ne doivent jamais être injectées dans `CanonicalProduct` ou `ProductVariant` M-002.
