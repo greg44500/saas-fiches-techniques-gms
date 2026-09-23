@@ -45,12 +45,29 @@ vi.mock('@/features/products/components/product-import-dialog', () => ({
 }));
 
 vi.mock('@/features/products/components/product-search-autocomplete', () => ({
-  ProductSearchAutocomplete: ({ onValueChange, value }) => (
-    <input
-      aria-label="Rechercher un Produit"
-      onChange={(event) => onValueChange(event.target.value)}
-      value={value}
-    />
+  ProductSearchAutocomplete: ({
+    onSelect,
+    onValueChange,
+    scope,
+    value,
+  }) => (
+    <div>
+      <input
+        aria-label="Rechercher un Produit"
+        onChange={(event) => onValueChange(event.target.value)}
+        value={value}
+      />
+      <span data-testid="predictive-scope">{scope}</span>
+      <button
+        onClick={() => onSelect({
+          ...result,
+          workspaceEntry: null,
+        })}
+        type="button"
+      >
+        Suggestion Carotte
+      </button>
+    </div>
   ),
 }));
 
@@ -183,6 +200,25 @@ describe('ProductsPage', () => {
     );
     expect(screen.getByText('Références actives du référentiel commun'))
       .toBeInTheDocument();
+  });
+
+  it('cherche prédictivement dans le référentiel et bascule sur une référence absente du Workspace', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.getByTestId('predictive-scope')).toHaveTextContent('REFERENCE');
+
+    await user.click(screen.getByRole('button', { name: 'Suggestion Carotte' }));
+
+    expect(screen.getByRole('tab', { name: 'Tout le référentiel' }))
+      .toHaveAttribute('data-selected', '');
+    expect(mocks.searchQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        scope: 'REFERENCE',
+        q: 'Carotte',
+        status: undefined,
+      }),
+    );
   });
 
   it('ouvre création, import et détail selon les droits', async () => {

@@ -27,7 +27,7 @@ const PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT = 6;
 
 function ProductSearchAutocomplete({
   categoryId,
-  onSearch,
+  onSelect,
   onValueChange,
   scope,
   status,
@@ -79,7 +79,7 @@ function ProductSearchAutocomplete({
     const nextSearch = result.product.name;
 
     onValueChange(nextSearch);
-    onSearch(nextSearch);
+    onSelect(result);
   }
 
   const normalizedValue = value.trim();

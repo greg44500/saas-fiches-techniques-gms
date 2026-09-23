@@ -138,6 +138,23 @@ function ProductsPage() {
     runSearch(searchInput);
   }
 
+  function selectPredictiveResult(result) {
+    const nextSearch = result.product.name;
+
+    setSearchInput(nextSearch);
+    setPage(1);
+    setSearch(nextSearch);
+
+    if (
+      canReferenceAccess
+      && scope === 'WORKSPACE'
+      && !result.workspaceEntry
+    ) {
+      setScope('REFERENCE');
+      setStatus(ALL_WORKSPACE_STATUSES);
+    }
+  }
+
   function changeScope(nextScope) {
     setScope(nextScope);
     setPage(1);
@@ -334,15 +351,10 @@ function ProductsPage() {
                     ? undefined
                     : categoryId
                 }
-                onSearch={runSearch}
+                onSelect={selectPredictiveResult}
                 onValueChange={setSearchInput}
-                scope={scope}
-                status={
-                  scope === 'WORKSPACE'
-                  && status !== ALL_WORKSPACE_STATUSES
-                    ? status
-                    : undefined
-                }
+                scope={canReferenceAccess ? 'REFERENCE' : scope}
+                status={undefined}
                 value={searchInput}
                 workspaceId={workspace.id}
               />

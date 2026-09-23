@@ -29,13 +29,13 @@ const result = {
   },
 };
 
-function Harness({ onSearch }) {
+function Harness({ onSelect }) {
   const [value, setValue] = useState('');
 
   return (
     <ProductSearchAutocomplete
       categoryId={undefined}
-      onSearch={onSearch}
+      onSelect={onSelect}
       onValueChange={setValue}
       scope="REFERENCE"
       status={undefined}
@@ -70,9 +70,9 @@ describe('ProductSearchAutocomplete', () => {
 
   it('déclenche une recherche prédictive après trois caractères et applique la suggestion', async () => {
     const user = userEvent.setup();
-    const onSearch = vi.fn();
+    const onSelect = vi.fn();
 
-    render(<Harness onSearch={onSearch} />);
+    render(<Harness onSelect={onSelect} />);
 
     const input = screen.getByRole('combobox', {
       name: 'Rechercher un Produit',
@@ -99,14 +99,14 @@ describe('ProductSearchAutocomplete', () => {
 
     await user.click(suggestion);
 
-    expect(onSearch).toHaveBeenCalledWith('Carotte');
+    expect(onSelect).toHaveBeenCalledWith(result);
     expect(input).toHaveValue('Carotte');
   });
 
   it('n interroge pas le serveur avant le seuil de trois caractères', async () => {
     const user = userEvent.setup();
 
-    render(<Harness onSearch={vi.fn()} />);
+    render(<Harness onSelect={vi.fn()} />);
 
     await user.type(
       screen.getByRole('combobox', {
