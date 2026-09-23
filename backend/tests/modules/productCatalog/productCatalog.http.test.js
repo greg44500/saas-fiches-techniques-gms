@@ -16,9 +16,7 @@ vi.mock(
             scanFile: vi.fn().mockResolvedValue({
                 status: 'clean',
                 provider: 'test-scanner',
-                scannedAt: new Date(
-                    '2026-09-22T18:00:00.000Z',
-                ),
+                scannedAt: new Date('2026-09-22T18:00:00.000Z'),
                 threatName: null,
                 errorCode: null,
             }),
@@ -38,6 +36,9 @@ import {
     PRODUCT_CATALOG_FEATURE,
 } from '../../../modules/productCatalog/productCatalogCapability.registry.js';
 import {
+    createCategory,
+} from '../../../modules/productCatalog/productCatalogGovernance.service.js';
+import {
     PRODUCT_CATALOG_PERMISSION,
 } from '../../../modules/productCatalog/productCatalogPermission.registry.js';
 import {
@@ -50,6 +51,7 @@ import {
 } from '../../helpers/dossierTest.fixtures.js';
 
 let ownerContext;
+let category;
 
 const enableProductFeature = async ({
     context,
@@ -78,6 +80,11 @@ beforeEach(async () => {
             featureKey,
         }),
     ));
+
+    category = await createCategory({
+        actorId: ownerContext.owner._id,
+        name: 'Légumes test',
+    });
 });
 
 const productBasePath = (context = ownerContext) =>
@@ -108,7 +115,10 @@ const inspectAndPreview = async ({
         .set(bearer(token))
         .send({
             mapping: { name: 0 },
-            defaults: { referenceUnit: 'KG' },
+            defaults: {
+                referenceUnit: 'KG',
+                categoryId: category.id,
+            },
         });
 
     expect(preview.status).toBe(200);
@@ -120,7 +130,7 @@ const inspectAndPreview = async ({
 };
 
 describe('M-002 product catalog HTTP contract', () => {
-    it('expose metadata, contribution, recherche et détail au Owner', async () => {
+    it('crée immédiatement un Produit actif et le rattache au catalogue', async () => {
         const headers = bearer(ownerContext.token);
 
         const metadata = await request(app)
@@ -128,30 +138,24 @@ describe('M-002 product catalog HTTP contract', () => {
             .set(headers);
 
         expect(metadata.status).toBe(200);
-        expect(
-            metadata.body.data.metadata.referenceUnits,
-        ).toHaveLength(6);
-        expect(
-            metadata.body.data.metadata.productCategoryStatuses,
-        ).toEqual(expect.arrayContaining([
-            expect.objectContaining({ value: 'ACTIVE', label: 'Active' }),
-            expect.objectContaining({ value: 'ARCHIVED', label: 'Archivée' }),
-        ]));
+        expect(metadata.body.data.metadata.productStatuses).toEqual([
+            expect.objectContaining({ value: 'ACTIVE' }),
+            expect.objectContaining({ value: 'ARCHIVED' }),
+        ]);
 
-        const contribution = await request(app)
-            .post(`${basePath()}/contributions`)
+        const created = await request(app)
+            .post(basePath())
             .set(headers)
             .send({
                 name: 'Lentille verte',
-                variant: {
-                    referenceUnit: 'KG',
-                },
+                categoryId: category.id,
+                variant: { referenceUnit: 'KG' },
             });
 
-        expect(contribution.status).toBe(201);
-        expect(contribution.body.data.product.status).toBe(
-            'PENDING_REVIEW',
-        );
+        expect(created.status).toBe(201);
+        expect(created.body.data.product.status).toBe('ACTIVE');
+        expect(created.body.data.variant.status).toBe('ACTIVE');
+        expect(created.body.data.workspaceEntry.status).toBe('ACTIVE');
 
         const summary = await request(app)
             .get(`${basePath()}/summary`)
@@ -159,8 +163,7 @@ describe('M-002 product catalog HTTP contract', () => {
 
         expect(summary.status).toBe(200);
         expect(summary.body.data.summary).toEqual({
-            activeCatalogEntries: 0,
-            pendingContributions: 1,
+            activeCatalogEntries: 1,
         });
 
         const search = await request(app)
@@ -169,15 +172,6 @@ describe('M-002 product catalog HTTP contract', () => {
 
         expect(search.status).toBe(200);
         expect(search.body.data.results).toHaveLength(1);
-
-        const detail = await request(app)
-            .get(
-                `${basePath()}/${contribution.body.data.product.id}`,
-            )
-            .set(headers);
-
-        expect(detail.status).toBe(200);
-        expect(detail.body.data.product.name).toBe('Lentille verte');
     });
 
     it('applique RBAC et validation des ObjectIds', async () => {
@@ -188,10 +182,11 @@ describe('M-002 product catalog HTTP contract', () => {
         });
 
         const forbidden = await request(app)
-            .post(`${basePath()}/contributions`)
+            .post(basePath())
             .set(bearer(member.token))
             .send({
                 name: 'Interdit',
+                categoryId: category.id,
                 variant: { referenceUnit: 'KG' },
             });
 
@@ -235,36 +230,30 @@ describe('M-002 product catalog HTTP contract', () => {
             ],
         });
 
-        const { importId, preview } =
-            await inspectAndPreview({
-                token: member.token,
-                csv: 'Produit\nFarine de test',
-            });
+        const { importId, preview } = await inspectAndPreview({
+            token: member.token,
+            csv: 'Produit\nFarine de test',
+        });
 
-        expect(
-            preview.body.data.counts.ATTACH_EXISTING,
-        ).toBe(1);
+        expect(preview.body.data.counts.ATTACH_EXISTING).toBe(1);
 
         const committed = await request(app)
-            .post(
-                `${basePath()}/imports/${importId}/commit`,
-            )
+            .post(`${basePath()}/imports/${importId}/commit`)
             .set(bearer(member.token))
             .send({ decisions: [] });
 
         expect(committed.status).toBe(200);
-        expect(
-            committed.body.data.results,
-        ).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                status: 'ATTACHED_EXISTING',
-                variantId:
-                    reference.variant._id.toString(),
-            }),
-        ]));
+        expect(committed.body.data.results).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    status: 'ATTACHED_EXISTING',
+                    variantId: reference.variant._id.toString(),
+                }),
+            ]),
+        );
     });
 
-    it('crée une contribution sans exiger product:catalog:manage', async () => {
+    it('crée une référence importée sans exiger product:catalog:manage', async () => {
         const member = await createWorkspaceMemberFixture({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
@@ -274,51 +263,40 @@ describe('M-002 product catalog HTTP contract', () => {
             ],
         });
 
-        const { importId, preview } =
-            await inspectAndPreview({
-                token: member.token,
-                csv: 'Produit\nTopinambour de test',
-            });
+        const { importId, preview } = await inspectAndPreview({
+            token: member.token,
+            csv: 'Produit\nTopinambour de test',
+        });
 
-        expect(
-            preview.body.data.counts.PROPOSE_PRODUCT,
-        ).toBe(1);
+        expect(preview.body.data.counts.CREATE_PRODUCT).toBe(1);
 
         const committed = await request(app)
-            .post(
-                `${basePath()}/imports/${importId}/commit`,
-            )
+            .post(`${basePath()}/imports/${importId}/commit`)
             .set(bearer(member.token))
             .send({ decisions: [] });
 
         expect(committed.status).toBe(200);
-        expect(
-            committed.body.data.results,
-        ).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                status: 'PROPOSED_PRODUCT',
-            }),
-        ]));
+        expect(committed.body.data.results).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ status: 'CREATED_PRODUCT' }),
+            ]),
+        );
     });
 
     it('refuse une création importée sans product_contribution', async () => {
         const restricted = await createWorkspaceOwnerFixture();
         await enableProductFeature({
             context: restricted,
-            featureKey:
-                PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT,
+            featureKey: PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT,
         });
 
-        const { importId, preview } =
-            await inspectAndPreview({
-                context: restricted,
-                token: restricted.token,
-                csv: 'Produit\nCrosne de test',
-            });
+        const { importId, preview } = await inspectAndPreview({
+            context: restricted,
+            token: restricted.token,
+            csv: 'Produit\nCrosne de test',
+        });
 
-        expect(
-            preview.body.data.counts.PROPOSE_PRODUCT,
-        ).toBe(1);
+        expect(preview.body.data.counts.CREATE_PRODUCT).toBe(1);
 
         const committed = await request(app)
             .post(
@@ -334,8 +312,7 @@ describe('M-002 product catalog HTTP contract', () => {
         const restricted = await createWorkspaceOwnerFixture();
         await enableProductFeature({
             context: restricted,
-            featureKey:
-                PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT,
+            featureKey: PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT,
         });
 
         await createActiveProductReference({
@@ -346,21 +323,16 @@ describe('M-002 product catalog HTTP contract', () => {
         const member = await createWorkspaceMemberFixture({
             workspaceId: restricted.workspace._id,
             actorId: restricted.owner._id,
-            permissions: [
-                PRODUCT_CATALOG_PERMISSION.READ,
-            ],
+            permissions: [PRODUCT_CATALOG_PERMISSION.READ],
         });
 
-        const { importId, preview } =
-            await inspectAndPreview({
-                context: restricted,
-                token: member.token,
-                csv: 'Produit\nPolenta de test',
-            });
+        const { importId, preview } = await inspectAndPreview({
+            context: restricted,
+            token: member.token,
+            csv: 'Produit\nPolenta de test',
+        });
 
-        expect(
-            preview.body.data.counts.ATTACH_EXISTING,
-        ).toBe(1);
+        expect(preview.body.data.counts.ATTACH_EXISTING).toBe(1);
 
         const committed = await request(app)
             .post(
@@ -370,33 +342,5 @@ describe('M-002 product catalog HTTP contract', () => {
             .send({ decisions: [] });
 
         expect(committed.status).toBe(403);
-    });
-
-    it('inspecte et prévisualise un CSV temporaire', async () => {
-        const headers = bearer(ownerContext.token);
-        const inspect = await request(app)
-            .post(`${basePath()}/imports/inspect`)
-            .set(headers)
-            .attach(
-                'file',
-                Buffer.from('Produit\nHaricot blanc', 'utf8'),
-                'produits.csv',
-            );
-
-        expect(inspect.status).toBe(201);
-        expect(inspect.body.data.rowCount).toBe(1);
-
-        const preview = await request(app)
-            .post(
-                `${basePath()}/imports/${inspect.body.data.importId}/preview`,
-            )
-            .set(headers)
-            .send({
-                mapping: { name: 0 },
-                defaults: { referenceUnit: 'KG' },
-            });
-
-        expect(preview.status).toBe(200);
-        expect(preview.body.data.counts.PROPOSE_PRODUCT).toBe(1);
     });
 });

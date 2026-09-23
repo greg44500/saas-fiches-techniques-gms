@@ -34,6 +34,7 @@ import {
 
 let governor;
 let governorToken;
+let governorRole;
 
 const createUserToken = async ({
     email,
@@ -63,7 +64,7 @@ beforeEach(async () => {
     governor = context.user;
     governorToken = context.token;
 
-    const role = await syncApplicationGlobalSystemRole({
+    governorRole = await syncApplicationGlobalSystemRole({
         roleData: {
             key: 'product_reference_governor',
             name: 'Gouvernance référentiel Produits',
@@ -79,7 +80,7 @@ beforeEach(async () => {
 
     await bootstrapApplicationGlobalMember({
         userId: governor._id,
-        roleId: role.id,
+        roleId: governorRole.id,
         actorId: governor._id,
     });
 });
@@ -109,28 +110,44 @@ describe('M-002 global product reference HTTP contract', () => {
         expect(platformAccess.body.data.access.permissions).toEqual([]);
     });
 
-    it('autorise un gouverneur métier explicite à gérer le référentiel', async () => {
-        const created = await request(app)
+    it('permet à un membre Platform explicitement habilité d’abonder le référentiel', async () => {
+        const platformMember = await createUserToken({
+            email: 'platform-product-governor@example.test',
+            platformRole: PLATFORM_ROLE.SUPER_ADMIN,
+        });
+
+        await bootstrapApplicationGlobalMember({
+            userId: platformMember.user._id,
+            roleId: governorRole.id,
+            actorId: governor._id,
+        });
+
+        const category = await request(app)
             .post('/api/product-reference/categories')
-            .set(bearer(governorToken))
+            .set(bearer(platformMember.token))
+            .send({ name: 'Légumes' });
+
+        expect(category.status).toBe(201);
+
+        const duplicateCheck = await request(app)
+            .post('/api/product-reference/duplicate-check')
+            .set(bearer(platformMember.token))
+            .send({ name: 'Carotte', aliases: [] });
+
+        expect(duplicateCheck.status).toBe(200);
+        expect(duplicateCheck.body.data.exactMatch).toBeNull();
+
+        const created = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(platformMember.token))
             .send({
-                name: 'Légumes',
+                name: 'Carotte',
+                categoryId: category.body.data.category.id,
+                variant: { referenceUnit: 'KG' },
             });
 
         expect(created.status).toBe(201);
-        expect(created.body.data.category.name).toBe('Légumes');
-
-        const metadata = await request(app)
-            .get('/api/product-reference/metadata')
-            .set(bearer(governorToken));
-
-        expect(metadata.status).toBe(200);
-        expect(metadata.body.data.metadata.categories).toEqual([
-            expect.objectContaining({
-                name: 'Légumes',
-                status: 'ACTIVE',
-            }),
-        ]);
+        expect(created.body.data.product.status).toBe('ACTIVE');
     });
 
     it('ne donne aucun droit métier global implicite à un Super Admin Platform', async () => {

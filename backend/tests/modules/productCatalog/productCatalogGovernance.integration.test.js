@@ -8,27 +8,16 @@ import {
 } from 'vitest';
 
 import {
-    approveProduct,
-    approveVariant,
     createCategory,
-    rejectProduct,
+    createGlobalProduct,
+    createGlobalVariant,
     updateCategoryStatus,
-    updateProduct,
     updateProductStatus,
 } from '../../../modules/productCatalog/productCatalogGovernance.service.js';
 import {
     attachVariantToWorkspace,
-    createProductContribution,
+    createWorkspaceProduct,
 } from '../../../modules/productCatalog/productCatalog.service.js';
-import {
-    CanonicalProduct,
-} from '../../../modules/productCatalog/canonicalProduct.model.js';
-import {
-    ProductVariant,
-} from '../../../modules/productCatalog/productVariant.model.js';
-import {
-    WorkspaceProduct,
-} from '../../../modules/productCatalog/workspaceProduct.model.js';
 import {
     createWorkspaceOwnerFixture,
 } from '../../helpers/dossierTest.fixtures.js';
@@ -43,17 +32,12 @@ beforeEach(async () => {
 });
 
 describe('M-002 product reference governance', () => {
-    it('exige une catégorie active avant validation globale', async () => {
-        const contribution = await createProductContribution({
-            workspaceId: ownerContext.workspace._id,
+    it('exige une catégorie active pour créer une identité globale', async () => {
+        await expect(createGlobalProduct({
             actorId: ownerContext.owner._id,
             name: 'Courgette',
+            categoryId: ownerContext.workspace._id,
             variant: { referenceUnit: 'KG' },
-        });
-
-        await expect(approveProduct({
-            actorId: ownerContext.owner._id,
-            productId: contribution.product.id,
         })).rejects.toMatchObject({ statusCode: 409 });
 
         const category = await createCategory({
@@ -61,24 +45,15 @@ describe('M-002 product reference governance', () => {
             name: 'Légumes',
         });
 
-        await updateProduct({
+        const created = await createGlobalProduct({
             actorId: ownerContext.owner._id,
-            productId: contribution.product.id,
+            name: 'Courgette',
             categoryId: category.id,
+            variant: { referenceUnit: 'KG' },
         });
 
-        const product = await approveProduct({
-            actorId: ownerContext.owner._id,
-            productId: contribution.product.id,
-        });
-        const variant = await approveVariant({
-            actorId: ownerContext.owner._id,
-            productId: contribution.product.id,
-            variantId: contribution.variant.id,
-        });
-
-        expect(product.status).toBe('ACTIVE');
-        expect(variant.status).toBe('ACTIVE');
+        expect(created.product.status).toBe('ACTIVE');
+        expect(created.variant.status).toBe('ACTIVE');
 
         await expect(updateCategoryStatus({
             actorId: ownerContext.owner._id,
@@ -88,7 +63,7 @@ describe('M-002 product reference governance', () => {
 
         await updateProductStatus({
             actorId: ownerContext.owner._id,
-            productId: product.id,
+            productId: created.product.id,
             status: 'ARCHIVED',
         });
 
@@ -99,48 +74,48 @@ describe('M-002 product reference governance', () => {
         })).resolves.toMatchObject({ status: 'ARCHIVED' });
     });
 
-    it('repoint un rattachement PENDING rejeté comme doublon', async () => {
-        const reference = await createActiveProductReference({
+    it('ajoute directement une déclinaison active au référentiel global', async () => {
+        const category = await createCategory({
             actorId: ownerContext.owner._id,
-            name: 'Carotte',
+            name: 'Épicerie',
         });
-        const pending = await createProductContribution({
-            workspaceId: ownerContext.workspace._id,
+        const created = await createGlobalProduct({
             actorId: ownerContext.owner._id,
-            name: 'Carote',
-            reviewedCandidateIds: [reference.product._id.toString()],
+            name: 'Riz',
+            categoryId: category.id,
             variant: { referenceUnit: 'KG' },
         });
 
-        await rejectProduct({
+        const variant = await createGlobalVariant({
             actorId: ownerContext.owner._id,
-            productId: pending.product.id,
-            reason: 'DUPLICATE',
-            replacementVariantId: reference.variant._id,
+            productId: created.product.id,
+            variant: {
+                processingState: 'cuit',
+                referenceUnit: 'KG',
+            },
         });
 
-        const rejectedProduct = await CanonicalProduct.findById(
-            pending.product.id,
-        ).lean();
-        const rejectedVariant = await ProductVariant.findById(
-            pending.variant.id,
-        ).lean();
+        expect(variant.status).toBe('ACTIVE');
+        expect(variant.processingState).toBe('cuit');
+    });
 
-        expect(rejectedProduct.status).toBe('REJECTED');
-        expect(rejectedProduct.identityActive).toBe(false);
-        expect(rejectedVariant.status).toBe('REJECTED');
+    it('ne conserve aucun ownership Workspace sur une identité créée depuis un Workspace', async () => {
+        const category = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Fruits',
+        });
+        const created = await createWorkspaceProduct({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            name: 'Pomme',
+            categoryId: category.id,
+            variant: { referenceUnit: 'KG' },
+        });
 
-        const replacementEntry = await WorkspaceProduct.findOne({
-            workspace: ownerContext.workspace._id,
-            productVariant: reference.variant._id,
-        }).lean();
-        const sourceEntry = await WorkspaceProduct.findOne({
-            workspace: ownerContext.workspace._id,
-            productVariant: pending.variant.id,
-        }).lean();
-
-        expect(replacementEntry.status).toBe('ACTIVE');
-        expect(sourceEntry.status).toBe('ARCHIVED');
+        expect(created.product.contributedFromWorkspace).toBe(
+            ownerContext.workspace._id.toString(),
+        );
+        expect(created.product.workspace).toBeUndefined();
     });
 
     it('n autorise pas un rattachement global archivé comme nouvelle référence', async () => {

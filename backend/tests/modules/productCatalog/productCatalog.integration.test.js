@@ -14,16 +14,13 @@ import {
     BusinessActivityEvent,
 } from '../../../modules/businessActivity/businessActivity.model.js';
 import {
-    approveProduct,
-    approveVariant,
     createCategory,
-    updateProduct,
     updateProductStatus,
 } from '../../../modules/productCatalog/productCatalogGovernance.service.js';
 import {
     archiveVariantFromWorkspace,
     attachVariantToWorkspace,
-    createProductContribution,
+    createWorkspaceProduct,
     getWorkspaceProductDetail,
     listProductSearch,
 } from '../../../modules/productCatalog/productCatalog.service.js';
@@ -38,18 +35,29 @@ import {
 } from '../../helpers/productCatalogTest.fixtures.js';
 
 let ownerContext;
+let category;
 
 beforeEach(async () => {
     ownerContext = await createWorkspaceOwnerFixture();
+    category = await createCategory({
+        actorId: ownerContext.owner._id,
+        name: 'Légumes',
+    });
+});
+
+const createWorkspaceReference = (overrides = {}) => createWorkspaceProduct({
+    workspaceId: ownerContext.workspace._id,
+    actorId: ownerContext.owner._id,
+    name: 'Carotte',
+    aliases: ['Carottes'],
+    categoryId: category.id,
+    variant: { referenceUnit: 'KG' },
+    ...overrides,
 });
 
 describe('M-002 product catalog services', () => {
-    it('crée atomiquement Produit, Déclinaison et rattachement PENDING', async () => {
-        const contribution = await createProductContribution({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
-            name: 'Carotte',
-            aliases: ['Carottes'],
+    it('crée atomiquement Produit, Déclinaison et rattachement ACTIVE', async () => {
+        const created = await createWorkspaceReference({
             variant: {
                 form: 'râpée',
                 preservation: 'fraîche',
@@ -58,9 +66,9 @@ describe('M-002 product catalog services', () => {
             },
         });
 
-        expect(contribution.product.status).toBe('PENDING_REVIEW');
-        expect(contribution.variant.status).toBe('PENDING_REVIEW');
-        expect(contribution.workspaceEntry.status).toBe('ACTIVE');
+        expect(created.product.status).toBe('ACTIVE');
+        expect(created.variant.status).toBe('ACTIVE');
+        expect(created.workspaceEntry.status).toBe('ACTIVE');
 
         const actions = (
             await BusinessActivityEvent.find({
@@ -69,18 +77,14 @@ describe('M-002 product catalog services', () => {
         ).map(({ action }) => action);
 
         expect(actions).toContain(
-            BUSINESS_ACTIVITY_ACTION.PRODUCT_CONTRIBUTION_SUBMITTED,
+            BUSINESS_ACTIVITY_ACTION.PRODUCT_REFERENCE_CREATED,
         );
     });
 
-    it('rollback toute la contribution si la déclinaison échoue', async () => {
-        await expect(createProductContribution({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
+    it('rollback toute la création si la déclinaison échoue', async () => {
+        await expect(createWorkspaceReference({
             name: 'Produit rollback',
-            variant: {
-                referenceUnit: 'INVALID',
-            },
+            variant: { referenceUnit: 'INVALID' },
         })).rejects.toThrow();
 
         const { CanonicalProduct } = await import(
@@ -95,89 +99,44 @@ describe('M-002 product catalog services', () => {
     });
 
     it('refuse un doublon exact normalisé', async () => {
-        await createProductContribution({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
-            name: 'Carotte',
-            aliases: ['Carottes'],
-            variant: { referenceUnit: 'KG' },
-        });
+        await createWorkspaceReference();
 
-        await expect(createProductContribution({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
+        await expect(createWorkspaceReference({
             name: ' CAROTTE ',
-            variant: { referenceUnit: 'KG' },
+            aliases: [],
         })).rejects.toMatchObject({
             statusCode: 409,
             code: 'PRODUCT_EXACT_DUPLICATE',
         });
     });
 
-    it('exige une revue explicite pour un Produit proche', async () => {
-        const first = await createProductContribution({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
-            name: 'Carotte',
-            variant: { referenceUnit: 'KG' },
-        });
+    it('exige une revue explicite des Produits proches', async () => {
+        const first = await createWorkspaceReference();
 
-        await expect(createProductContribution({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
+        await expect(createWorkspaceReference({
             name: 'Carote',
-            variant: { referenceUnit: 'KG' },
+            aliases: [],
         })).rejects.toMatchObject({
             statusCode: 409,
             code: 'PRODUCT_DUPLICATE_REVIEW_REQUIRED',
         });
 
-        const second = await createProductContribution({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
+        const second = await createWorkspaceReference({
             name: 'Carote',
+            aliases: [],
             reviewedCandidateIds: [first.product.id],
-            variant: { referenceUnit: 'KG' },
         });
 
         expect(second.product.name).toBe('Carote');
+        expect(second.product.status).toBe('ACTIVE');
     });
 
-    it('n expose pas une contribution PENDING à un autre Workspace', async () => {
-        const contribution = await createProductContribution({
-            workspaceId: ownerContext.workspace._id,
-            actorId: ownerContext.owner._id,
+    it('rend immédiatement une nouvelle identité visible aux autres Workspaces', async () => {
+        await createWorkspaceReference({
             name: 'Topinambour',
-            variant: { referenceUnit: 'KG' },
+            aliases: [],
         });
-
         const other = await createWorkspaceOwnerFixture();
-
-        const hidden = await listProductSearch({
-            workspaceId: other.workspace._id,
-            scope: 'REFERENCE',
-        });
-        expect(hidden.results).toHaveLength(0);
-
-        const category = await createCategory({
-            actorId: ownerContext.owner._id,
-            name: 'Légumes',
-        });
-
-        await updateProduct({
-            actorId: ownerContext.owner._id,
-            productId: contribution.product.id,
-            categoryId: category.id,
-        });
-        await approveProduct({
-            actorId: ownerContext.owner._id,
-            productId: contribution.product.id,
-        });
-        await approveVariant({
-            actorId: ownerContext.owner._id,
-            productId: contribution.product.id,
-            variantId: contribution.variant.id,
-        });
 
         const visible = await listProductSearch({
             workspaceId: other.workspace._id,
@@ -263,9 +222,7 @@ describe('M-002 product catalog services', () => {
             workspaceId: ownerContext.workspace._id,
             productId: reference.product._id,
         })).resolves.toMatchObject({
-            product: {
-                status: 'ARCHIVED',
-            },
+            product: { status: 'ARCHIVED' },
         });
 
         const other = await createWorkspaceOwnerFixture();
@@ -273,8 +230,6 @@ describe('M-002 product catalog services', () => {
         await expect(getWorkspaceProductDetail({
             workspaceId: other.workspace._id,
             productId: reference.product._id,
-        })).rejects.toMatchObject({
-            statusCode: 404,
-        });
+        })).rejects.toMatchObject({ statusCode: 404 });
     });
 });

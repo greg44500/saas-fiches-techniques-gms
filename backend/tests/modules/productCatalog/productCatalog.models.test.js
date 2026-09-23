@@ -31,6 +31,11 @@ describe('M-002 product catalog models', () => {
         ).toBe(true);
     });
 
+    it('crée par défaut les identités Produit en ACTIVE', () => {
+        expect(CanonicalProduct.schema.path('status').options.default).toBe('ACTIVE');
+        expect(ProductVariant.schema.path('status').options.default).toBe('ACTIVE');
+    });
+
     it('déclare les contraintes uniques structurantes', () => {
         const productIndex = CanonicalProduct.schema.indexes().find(
             ([fields, options]) => (
@@ -58,7 +63,7 @@ describe('M-002 product catalog models', () => {
         expect(workspaceIndex?.[1].unique).toBe(true);
     });
 
-    it('rend les événements globaux immuables et les imports temporaires', () => {
+    it('rend les événements globaux immuables et les imports temporaires scopés', () => {
         for (const path of [
             'actor',
             'workspace',
@@ -78,8 +83,18 @@ describe('M-002 product catalog models', () => {
                 && options.name === 'product_import_session_ttl'
             ),
         );
+        const scopeIndex = ProductImportSession.schema.indexes().find(
+            ([fields, options]) => (
+                fields.scope === 1
+                && fields.workspace === 1
+                && fields.actor === 1
+                && options.name
+                    === 'product_import_session_scope_workspace_actor_created_at'
+            ),
+        );
 
         expect(ttlIndex?.[1].expireAfterSeconds).toBe(0);
+        expect(scopeIndex).toBeDefined();
     });
 
     it('refuse un rendement supérieur à 100', async () => {

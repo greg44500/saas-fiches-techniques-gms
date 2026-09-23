@@ -16,10 +16,16 @@ import {
 } from 'vitest';
 
 import {
+    createCategory,
+} from '../../../modules/productCatalog/productCatalogGovernance.service.js';
+import {
     commitProductImport,
     inspectProductImport,
     previewProductImport,
 } from '../../../modules/productCatalog/productCatalogImport.service.js';
+import {
+    PRODUCT_IMPORT_SCOPE,
+} from '../../../modules/productCatalog/productCatalog.registry.js';
 import {
     CanonicalProduct,
 } from '../../../modules/productCatalog/canonicalProduct.model.js';
@@ -34,14 +40,24 @@ import {
 } from '../../helpers/productCatalogTest.fixtures.js';
 
 let ownerContext;
+let category;
 
 beforeEach(async () => {
     ownerContext = await createWorkspaceOwnerFixture();
+    category = await createCategory({
+        actorId: ownerContext.owner._id,
+        name: 'Import test',
+    });
 });
 
 const csvFile = (content) => ({
     originalname: 'produits.csv',
     buffer: Buffer.from(content, 'utf8'),
+});
+
+const previewDefaults = () => ({
+    referenceUnit: 'KG',
+    categoryId: category.id,
 });
 
 describe('M-002 product import service', () => {
@@ -67,6 +83,7 @@ describe('M-002 product import service', () => {
                 },
             });
 
+            expect(inspected.scope).toBe(PRODUCT_IMPORT_SCOPE.WORKSPACE);
             expect(inspected.format).toBe('CSV');
             expect(inspected.rowCount).toBe(1);
         } finally {
@@ -77,7 +94,7 @@ describe('M-002 product import service', () => {
         }
     });
 
-    it('prévisualise sans mutation puis crée une contribution au commit', async () => {
+    it('prévisualise sans mutation puis crée un Produit actif au commit', async () => {
         const inspected = await inspectProductImport({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
@@ -89,10 +106,10 @@ describe('M-002 product import service', () => {
             actorId: ownerContext.owner._id,
             importId: inspected.importId,
             mapping: { name: 0, form: 1 },
-            defaults: { referenceUnit: 'KG' },
+            defaults: previewDefaults(),
         });
 
-        expect(preview.counts.PROPOSE_PRODUCT).toBe(1);
+        expect(preview.counts.CREATE_PRODUCT).toBe(1);
         expect(
             await CanonicalProduct.countDocuments({ name: 'Panais' }),
         ).toBe(0);
@@ -103,9 +120,12 @@ describe('M-002 product import service', () => {
             importId: inspected.importId,
         });
 
-        expect(committed.succeeded).toBe(1);
+        expect(committed.results[0].status).toBe('CREATED_PRODUCT');
         expect(
-            await CanonicalProduct.countDocuments({ name: 'Panais' }),
+            await CanonicalProduct.countDocuments({
+                name: 'Panais',
+                status: 'ACTIVE',
+            }),
         ).toBe(1);
     });
 
@@ -125,7 +145,7 @@ describe('M-002 product import service', () => {
             actorId: ownerContext.owner._id,
             importId: inspected.importId,
             mapping: { name: 0 },
-            defaults: { referenceUnit: 'KG' },
+            defaults: previewDefaults(),
         });
 
         expect(preview.counts.ATTACH_EXISTING).toBe(1);
@@ -150,12 +170,39 @@ describe('M-002 product import service', () => {
         });
 
         expect(secondCommit.succeeded).toBe(1);
+    });
+
+    it('alimente globalement le référentiel sans créer de rattachement Workspace', async () => {
+        const inspected = await inspectProductImport({
+            scope: PRODUCT_IMPORT_SCOPE.GLOBAL,
+            actorId: ownerContext.owner._id,
+            file: csvFile('Produit\nPatate douce'),
+        });
+
+        const preview = await previewProductImport({
+            scope: PRODUCT_IMPORT_SCOPE.GLOBAL,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+            mapping: { name: 0 },
+            defaults: previewDefaults(),
+        });
+
+        expect(preview.counts.CREATE_PRODUCT).toBe(1);
+
+        const committed = await commitProductImport({
+            scope: PRODUCT_IMPORT_SCOPE.GLOBAL,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+        });
+
+        expect(committed.results[0].status).toBe('CREATED_PRODUCT');
         expect(
-            await WorkspaceProduct.countDocuments({
-                workspace: ownerContext.workspace._id,
-                productVariant: reference.variant._id,
+            await CanonicalProduct.countDocuments({
+                name: 'Patate douce',
+                status: 'ACTIVE',
             }),
         ).toBe(1);
+        expect(await WorkspaceProduct.countDocuments()).toBe(0);
     });
 
     it('classe comme invalide une ligne sans unité ni valeur par défaut', async () => {
@@ -170,6 +217,7 @@ describe('M-002 product import service', () => {
             actorId: ownerContext.owner._id,
             importId: inspected.importId,
             mapping: { name: 0 },
+            defaults: { categoryId: category.id },
         });
 
         expect(preview.counts.INVALID).toBe(1);
@@ -210,10 +258,10 @@ describe('M-002 product import service', () => {
             actorId: ownerContext.owner._id,
             importId: inspected.importId,
             mapping: { name: 0 },
-            defaults: { referenceUnit: 'KG' },
+            defaults: previewDefaults(),
         });
 
-        expect(preview.counts.PROPOSE_PRODUCT).toBe(1);
+        expect(preview.counts.CREATE_PRODUCT).toBe(1);
 
         await createActiveProductReference({
             actorId: ownerContext.owner._id,
@@ -234,7 +282,7 @@ describe('M-002 product import service', () => {
             actorId: ownerContext.owner._id,
             importId: inspected.importId,
             mapping: { name: 0 },
-            defaults: { referenceUnit: 'KG' },
+            defaults: previewDefaults(),
         });
 
         expect(refreshed.counts.ATTACH_EXISTING).toBe(1);

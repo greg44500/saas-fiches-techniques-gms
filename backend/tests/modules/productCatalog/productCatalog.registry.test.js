@@ -5,33 +5,29 @@ import {
 } from 'vitest';
 
 import {
+    PRODUCT_IMPORT_SCOPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
-    PRODUCT_REJECTION_REASON,
     PRODUCT_STATUS,
+    PRODUCT_STATUS_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
 } from '../../../modules/productCatalog/productCatalog.registry.js';
 import {
+    PRODUCT_CATALOG_GLOBAL_PERMISSION,
+} from '../../../modules/productCatalog/productCatalogGlobalPermission.registry.js';
+import {
     PRODUCT_CATALOG_PERMISSIONS,
 } from '../../../modules/productCatalog/productCatalogPermission.registry.js';
-import {
-    PRODUCT_CATALOG_PLATFORM_PERMISSION,
-} from '../../../modules/productCatalog/productCatalogPlatformPermission.registry.js';
 
 describe('M-002 product catalog registries', () => {
-    it('expose les lifecycles métier attendus', () => {
-        expect(Object.values(PRODUCT_STATUS)).toEqual([
-            'PENDING_REVIEW',
-            'ACTIVE',
-            'ARCHIVED',
-            'REJECTED',
-        ]);
+    it('n expose que ACTIVE et ARCHIVED comme lifecycle opérationnel', () => {
+        expect(Object.values(PRODUCT_STATUS_REGISTRY).map(({ value }) => value))
+            .toEqual(['ACTIVE', 'ARCHIVED']);
+        expect(PRODUCT_STATUS.PENDING_REVIEW).toBe('PENDING_REVIEW');
+        expect(PRODUCT_STATUS.REJECTED).toBe('REJECTED');
         expect(Object.values(WORKSPACE_PRODUCT_STATUS)).toEqual([
             'ACTIVE',
             'ARCHIVED',
         ]);
-        expect(Object.values(PRODUCT_REJECTION_REASON)).toContain(
-            'DUPLICATE',
-        );
     });
 
     it('décrit les unités de référence avec leur dimension', () => {
@@ -50,15 +46,22 @@ describe('M-002 product catalog registries', () => {
         );
     });
 
-    it('déclare les permissions Workspace et Platform du produit', () => {
+    it('sépare les permissions Workspace et Application Global', () => {
         expect(PRODUCT_CATALOG_PERMISSIONS).toEqual([
             'product:read',
             'product:catalog:manage',
             'product:contribute',
         ]);
-        expect(PRODUCT_CATALOG_PLATFORM_PERMISSION).toEqual({
-            READ: 'platform:products:read',
-            MANAGE: 'platform:products:manage',
+        expect(PRODUCT_CATALOG_GLOBAL_PERMISSION).toEqual({
+            READ: 'product:reference:read',
+            MANAGE: 'product:reference:manage',
+        });
+    });
+
+    it('distingue les imports Workspace et globaux', () => {
+        expect(PRODUCT_IMPORT_SCOPE).toEqual({
+            WORKSPACE: 'WORKSPACE',
+            GLOBAL: 'GLOBAL',
         });
     });
 });
