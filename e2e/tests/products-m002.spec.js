@@ -32,6 +32,8 @@ test('M-002 owner crée un Produit actif et le retrouve dans Mon référentiel',
 
   await dialog.getByLabel('Catégorie principale *').click();
   await page.getByRole('option', { name: context.categoryName }).click();
+  await dialog.getByLabel('Gamme *').click();
+  await page.getByRole('option', { name: 'Gamme 1 — Frais' }).click();
 
   await dialog
     .getByRole('button', { name: 'Créer et ajouter à mon référentiel' })
@@ -86,6 +88,8 @@ test('M-002 autorité Application Global alimente directement le référentiel',
 
   await dialog.getByLabel('Catégorie principale *').click();
   await page.getByRole('option', { name: categoryName }).click();
+  await dialog.getByLabel('Gamme *').click();
+  await page.getByRole('option', { name: 'Gamme 1 — Frais' }).click();
 
   await dialog
     .getByRole('button', { name: 'Créer dans le référentiel global' })

@@ -38,7 +38,22 @@ const metadata = {
     { value: 'ARCHIVED', label: 'Archivé' },
   ],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
-  foodRanges: [1, 2, 3, 4, 5],
+  foodRanges: [
+    {
+      value: 1,
+      label: 'Gamme 1',
+      name: 'Frais',
+      processingStates: ['Produit frais'],
+      defaultProcessingState: 'Produit frais',
+    },
+    {
+      value: 6,
+      label: 'Gamme 6',
+      name: 'PAI / PAE',
+      processingStates: ['PAI / PAE'],
+      defaultProcessingState: 'PAI / PAE',
+    },
+  ],
 };
 
 function resolved(value) {
@@ -161,6 +176,8 @@ describe('ProductCreateDialog', () => {
 
     await user.click(screen.getByLabelText('Catégorie principale *'));
     await user.click(screen.getByRole('option', { name: 'Légumes' }));
+    await user.click(screen.getByLabelText('Gamme *'));
+    await user.click(screen.getByRole('option', { name: 'Gamme 1 — Frais' }));
     await user.click(createButton);
 
     await waitFor(() => {
@@ -171,6 +188,8 @@ describe('ProductCreateDialog', () => {
           categoryId: 'category-1',
           reviewedCandidateIds: ['candidate-1', 'candidate-2'],
           variant: expect.objectContaining({
+            foodRange: 1,
+            processingState: 'Produit frais',
             referenceUnit: 'KG',
           }),
         }),

@@ -92,6 +92,22 @@ const metadata = {
     { value: 'ARCHIVED', label: 'Retiré de mon référentiel' },
   ],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
+  foodRanges: [
+    {
+      value: 1,
+      label: 'Gamme 1',
+      name: 'Frais',
+      processingStates: ['Produit frais'],
+      defaultProcessingState: 'Produit frais',
+    },
+    {
+      value: 6,
+      label: 'Gamme 6',
+      name: 'PAI / PAE',
+      processingStates: ['PAI / PAE'],
+      defaultProcessingState: 'PAI / PAE',
+    },
+  ],
 };
 
 const result = {
@@ -105,9 +121,9 @@ const result = {
   },
   variant: {
     id: 'variant-1',
-    form: 'Entière',
-    processingState: null,
-    preservation: 'Fraîche',
+    presentation: 'Entière',
+    processingState: 'Produit frais',
+    foodRange: 1,
     referenceUnit: 'KG',
     yieldPercent: 90,
     status: 'ACTIVE',
@@ -168,7 +184,13 @@ describe('ProductsPage', () => {
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByText('Légumes')).toBeInTheDocument();
-    expect(screen.getByText('Entière · Fraîche')).toBeInTheDocument();
+    expect(screen.getByText('Entière · Produit frais')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Gamme' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Gamme 1')).toBeInTheDocument();
+    expect(screen.getByText('Frais')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Statut' }))
+      .not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Mon référentiel' }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', {

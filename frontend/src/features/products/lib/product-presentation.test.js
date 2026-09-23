@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   formatYield,
   getCategoryStatusLabel,
+  getFoodRangeLabel,
+  getFoodRangeName,
   getImportClassificationPresentation,
   getProductEventLabel,
   getProductStatusLabel,
@@ -25,6 +27,22 @@ const metadata = {
   referenceUnits: [
     { value: 'KG', label: 'kg' },
   ],
+  foodRanges: [
+    {
+      value: 1,
+      label: 'Gamme 1',
+      name: 'Frais',
+      processingStates: ['Produit frais'],
+      defaultProcessingState: 'Produit frais',
+    },
+    {
+      value: 6,
+      label: 'Gamme 6',
+      name: 'PAI / PAE',
+      processingStates: ['PAI / PAE'],
+      defaultProcessingState: 'PAI / PAE',
+    },
+  ],
 };
 
 describe('product presentation', () => {
@@ -37,10 +55,11 @@ describe('product presentation', () => {
 
   it('présente les déclinaisons et rendements sans donnée M-003', () => {
     expect(getVariantLabel({
-      form: 'Râpée',
-      processingState: 'Prête à l’emploi',
-      preservation: 'Fraîche',
-    })).toBe('Râpée · Prête à l’emploi · Fraîche');
+      presentation: 'Râpée',
+      processingState: 'Produit frais',
+    })).toBe('Râpée · Produit frais');
+    expect(getFoodRangeLabel(metadata, 1)).toBe('Gamme 1');
+    expect(getFoodRangeName(metadata, 1)).toBe('Frais');
     expect(formatYield(92.5)).toBe('92.5 %');
   });
 

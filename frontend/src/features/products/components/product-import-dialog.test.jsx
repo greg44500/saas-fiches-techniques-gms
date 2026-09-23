@@ -55,6 +55,22 @@ import {
 const metadata = {
   categories: [{ id: 'category-1', name: 'Légumes', status: 'ACTIVE' }],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
+  foodRanges: [
+    {
+      value: 1,
+      label: 'Gamme 1',
+      name: 'Frais',
+      processingStates: ['Produit frais'],
+      defaultProcessingState: 'Produit frais',
+    },
+    {
+      value: 6,
+      label: 'Gamme 6',
+      name: 'PAI / PAE',
+      processingStates: ['PAI / PAE'],
+      defaultProcessingState: 'PAI / PAE',
+    },
+  ],
 };
 
 function resolved(value) {
@@ -70,10 +86,10 @@ describe('ProductImportDialog', () => {
     expect(buildMappingPayload({
       name: '0',
       aliases: '__NONE__',
-      form: '2',
+      presentation: '2',
     })).toEqual({
       name: 0,
-      form: 2,
+      presentation: 2,
     });
   });
 
@@ -136,7 +152,11 @@ describe('ProductImportDialog', () => {
           name: 'Carotte',
           aliases: [],
           categoryId: 'category-1',
-          variant: { referenceUnit: 'KG' },
+          variant: {
+            foodRange: 1,
+            processingState: 'Produit frais',
+            referenceUnit: 'KG',
+          },
         },
         warnings: [],
         errors: [],
@@ -163,6 +183,8 @@ describe('ProductImportDialog', () => {
     });
     await user.upload(screen.getByLabelText('Fichier'), file);
     await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
+    await user.click(await screen.findByLabelText('Gamme par défaut *'));
+    await user.click(screen.getByRole('option', { name: 'Gamme 1 — Frais' }));
     await user.click(await screen.findByRole('button', { name: 'Prévisualiser' }));
     await user.click(await screen.findByRole('button', { name: 'Confirmer l’import' }));
 
