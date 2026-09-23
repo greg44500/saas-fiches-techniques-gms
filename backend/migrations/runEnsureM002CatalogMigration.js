@@ -9,17 +9,21 @@ import {
 import {
     ensureM002CatalogIndexes,
 } from './ensureM002CatalogIndexes.migration.js';
+import {
+    backfillM002LegacyProductLifecycle,
+} from './backfillM002LegacyProductLifecycle.migration.js';
 
 const run = async () => {
     try {
         await connectDB(env.MONGODB_URI);
 
+        const lifecycle = await backfillM002LegacyProductLifecycle();
         const indexes = await ensureM002CatalogIndexes();
         const permissions = await backfillRegisteredSystemRolePermissions();
 
         console.log(
             'Migration M-002 Catalogue Produits terminée :',
-            { indexes, permissions },
+            { lifecycle, indexes, permissions },
         );
     } catch (error) {
         console.error(

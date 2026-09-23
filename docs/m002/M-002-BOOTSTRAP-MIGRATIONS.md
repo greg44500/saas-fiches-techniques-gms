@@ -1,12 +1,27 @@
 # M-002 — Indexes, migration et bootstrap
 
-**Statut : BACKEND IMPLÉMENTÉ — gouvernance bootstrap ajoutée ; dataset initial encore non validé**
+**Statut : RECADRÉ — lifecycle actif/archivé et backfill legacy intégrés ; dataset initial encore non validé**
 
-## 1. Aucun backfill métier historique
+## 1. Backfill M-002 legacy
 
-M-002 introduit de nouvelles collections.
+M-001 ne nécessite toujours aucune transformation.
 
-Aucune donnée existante M-001 n'a besoin d'être transformée.
+En revanche, les premières itérations de développement M-002 ont pu persister des statuts `PENDING_REVIEW` ou `REJECTED`. Le workflow de validation humaine ayant été supprimé, la migration M-002 les normalise avant finalisation :
+
+```text
+PENDING_REVIEW + catégorie ACTIVE + identité active
+→ ACTIVE
+
+PENDING_REVIEW sans catégorie ACTIVE ou identité désactivée
+→ ARCHIVED
+
+REJECTED
+→ ARCHIVED
+→ identityActive reste inchangé
+→ les références historiquement rejetées restent donc désactivées
+```
+
+Aucune catégorie n'est créée ou devinée par la migration. Aucun document n'est supprimé.
 
 ## 2. Indexes proposés
 
@@ -48,7 +63,9 @@ npm run migration:m002-catalog
 
 Responsabilités :
 
+- normaliser les anciens statuts M-002 vers `ACTIVE/ARCHIVED` ;
 - créer/vérifier les indexes M-002 ;
+- synchroniser les permissions système Workspace enregistrées ;
 - échouer explicitement en cas de conflit de données ;
 - ne supprimer aucune donnée ;
 - pouvoir être rejoué sans effet destructeur.
@@ -141,7 +158,7 @@ La taxonomie initiale n'est pas inventée dans le code.
 
 Elle est fournie dans le fichier bootstrap validé ou créée par la gouvernance métier globale.
 
-Une contribution PENDING peut être non classée ; l'approbation ACTIVE exige une catégorie ACTIVE.
+Une nouvelle identité ACTIVE exige immédiatement une catégorie ACTIVE. Il n'existe plus de contribution PENDING dans le parcours opérationnel.
 
 ## 8. Données de développement et tests
 
@@ -171,7 +188,7 @@ Ce flux :
 - analyse et prévisualise avant toute mutation ;
 - réutilise le moteur de normalisation/déduplication M-002 ;
 - rattache les références existantes au catalogue du Workspace ;
-- transforme les nouvelles identités/déclinaisons en contributions `PENDING_REVIEW` ;
+- crée les nouvelles identités/déclinaisons en `ACTIVE` après contrôle anti-doublon et catégorie valide ;
 - conserve les lignes ambiguës ou invalides en attente de décision utilisateur ;
 - n'importe jamais silencieusement des données fournisseur dans le modèle Produit.
 

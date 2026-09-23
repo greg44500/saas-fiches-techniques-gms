@@ -1,8 +1,6 @@
 const PRODUCT_STATUS = Object.freeze({
     ACTIVE: 'ACTIVE',
     ARCHIVED: 'ARCHIVED',
-    PENDING_REVIEW: 'PENDING_REVIEW',
-    REJECTED: 'REJECTED',
 });
 
 const PRODUCT_STATUS_REGISTRY = Object.freeze({

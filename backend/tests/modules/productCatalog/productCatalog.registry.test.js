@@ -22,8 +22,10 @@ describe('M-002 product catalog registries', () => {
     it('n expose que ACTIVE et ARCHIVED comme lifecycle opérationnel', () => {
         expect(Object.values(PRODUCT_STATUS_REGISTRY).map(({ value }) => value))
             .toEqual(['ACTIVE', 'ARCHIVED']);
-        expect(PRODUCT_STATUS.PENDING_REVIEW).toBe('PENDING_REVIEW');
-        expect(PRODUCT_STATUS.REJECTED).toBe('REJECTED');
+        expect(PRODUCT_STATUS).toEqual({
+            ACTIVE: 'ACTIVE',
+            ARCHIVED: 'ARCHIVED',
+        });
         expect(Object.values(WORKSPACE_PRODUCT_STATUS)).toEqual([
             'ACTIVE',
             'ARCHIVED',
