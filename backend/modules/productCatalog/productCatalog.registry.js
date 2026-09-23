@@ -61,7 +61,54 @@ const PRODUCT_REFERENCE_UNIT = Object.freeze(
     )),
 );
 
-const PRODUCT_FOOD_RANGES = Object.freeze([1, 2, 3, 4, 5]);
+const PRODUCT_FOOD_RANGE_REGISTRY = Object.freeze({
+    1: Object.freeze({
+        value: 1,
+        label: 'Gamme 1',
+        name: 'Frais',
+        processingStates: Object.freeze(['Produit frais']),
+        defaultProcessingState: 'Produit frais',
+    }),
+    2: Object.freeze({
+        value: 2,
+        label: 'Gamme 2',
+        name: 'Conserves',
+        processingStates: Object.freeze(['Conserve']),
+        defaultProcessingState: 'Conserve',
+    }),
+    3: Object.freeze({
+        value: 3,
+        label: 'Gamme 3',
+        name: 'Surgelés',
+        processingStates: Object.freeze(['Surgelé']),
+        defaultProcessingState: 'Surgelé',
+    }),
+    4: Object.freeze({
+        value: 4,
+        label: 'Gamme 4',
+        name: 'Sous-vide cru / épluchés',
+        processingStates: Object.freeze(['Sous-vide cru / épluché']),
+        defaultProcessingState: 'Sous-vide cru / épluché',
+    }),
+    5: Object.freeze({
+        value: 5,
+        label: 'Gamme 5',
+        name: 'Sous-vide cuit',
+        processingStates: Object.freeze(['Sous-vide cuit']),
+        defaultProcessingState: 'Sous-vide cuit',
+    }),
+    6: Object.freeze({
+        value: 6,
+        label: 'Gamme 6',
+        name: 'PAI / PAE',
+        processingStates: Object.freeze(['PAI / PAE']),
+        defaultProcessingState: 'PAI / PAE',
+    }),
+});
+
+const PRODUCT_FOOD_RANGES = Object.freeze(
+    Object.values(PRODUCT_FOOD_RANGE_REGISTRY).map(({ value }) => value),
+);
 
 const PRODUCT_REFERENCE_EVENT_ACTION = Object.freeze({
     PRODUCT_CREATED: 'PRODUCT_CREATED',
@@ -111,6 +158,7 @@ const PRODUCT_IMPORT_ROW_CLASSIFICATION = Object.freeze({
 export {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_CATEGORY_STATUS_REGISTRY,
+    PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
     PRODUCT_IMPORT_ROW_CLASSIFICATION,
     PRODUCT_IMPORT_SCOPE,

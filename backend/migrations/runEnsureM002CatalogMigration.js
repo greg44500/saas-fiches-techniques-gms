@@ -12,18 +12,22 @@ import {
 import {
     backfillM002LegacyProductLifecycle,
 } from './backfillM002LegacyProductLifecycle.migration.js';
+import {
+    migrateM002VariantSemantics,
+} from './migrateM002VariantSemantics.migration.js';
 
 const run = async () => {
     try {
         await connectDB(env.MONGODB_URI);
 
         const lifecycle = await backfillM002LegacyProductLifecycle();
+        const variantSemantics = await migrateM002VariantSemantics();
         const indexes = await ensureM002CatalogIndexes();
         const permissions = await backfillRegisteredSystemRolePermissions();
 
         console.log(
             'Migration M-002 Catalogue Produits terminée :',
-            { lifecycle, indexes, permissions },
+            { lifecycle, variantSemantics, indexes, permissions },
         );
     } catch (error) {
         console.error(

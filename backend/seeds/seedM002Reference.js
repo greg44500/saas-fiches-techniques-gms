@@ -21,12 +21,16 @@ import {
     normalizeProductText,
 } from '../modules/productCatalog/productCatalog.normalization.js';
 import {
+    PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
 } from '../modules/productCatalog/productCatalog.registry.js';
 import {
     ProductReferenceBootstrapRun,
 } from '../modules/productCatalog/productReferenceBootstrapRun.model.js';
+import {
+    resolveProductProcessingState,
+} from '../modules/productCatalog/productVariantSemantics.js';
 import { ProductVariant } from '../modules/productCatalog/productVariant.model.js';
 import {
     PlatformTeamMember,
@@ -36,10 +40,12 @@ import { User } from '../modules/users/user.model.js';
 const nullableText = (max) => z.string().trim().min(1).max(max).nullable();
 
 const seedVariantSchema = z.strictObject({
-    form: nullableText(80).optional().default(null),
+    presentation: nullableText(80).optional().default(null),
     processingState: nullableText(80).optional().default(null),
-    preservation: nullableText(80).optional().default(null),
-    foodRange: z.number().int().min(1).max(5).nullable().optional().default(null),
+    foodRange: z.number().int().refine(
+        (value) => PRODUCT_FOOD_RANGES.includes(value),
+        { message: 'Gamme bootstrap invalide.' },
+    ),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
     yieldPercent: z.number().positive().max(100).nullable().optional().default(null),
 });
@@ -222,9 +228,19 @@ const upsertSeedProduct = async ({
     let variantCount = 0;
 
     for (const variantDefinition of definition.variants) {
-        const normalizedSignature = buildVariantSignature(
-            variantDefinition,
-        );
+        const initialProcessingState = resolveProductProcessingState({
+            foodRange: variantDefinition.foodRange,
+            processingState: variantDefinition.processingState,
+        });
+        if (!initialProcessingState.valid) {
+            throw new Error(
+                'État / transformation bootstrap incompatible avec la gamme.',
+            );
+        }
+        const normalizedSignature = buildVariantSignature({
+            ...variantDefinition,
+            processingState: initialProcessingState.value,
+        });
 
         let variant = await ProductVariant.findOne({
             canonicalProduct: product._id,
@@ -232,18 +248,29 @@ const upsertSeedProduct = async ({
             identityActive: true,
         }).session(session);
 
-        const data = {
-            form: variantDefinition.form,
-            normalizedForm: normalizeProductText(variantDefinition.form),
+        const resolvedProcessingState = resolveProductProcessingState({
+            foodRange: variantDefinition.foodRange,
             processingState: variantDefinition.processingState,
+        });
+        if (!resolvedProcessingState.valid) {
+            throw new Error(
+                'État / transformation bootstrap incompatible avec la gamme.',
+            );
+        }
+
+        const data = {
+            presentation: variantDefinition.presentation,
+            normalizedPresentation: normalizeProductText(
+                variantDefinition.presentation,
+            ),
+            processingState: resolvedProcessingState.value,
             normalizedProcessingState: normalizeProductText(
-                variantDefinition.processingState,
+                resolvedProcessingState.value,
             ),
-            preservation: variantDefinition.preservation,
-            normalizedPreservation: normalizeProductText(
-                variantDefinition.preservation,
-            ),
-            normalizedSignature,
+            normalizedSignature: buildVariantSignature({
+                ...variantDefinition,
+                processingState: resolvedProcessingState.value,
+            }),
             foodRange: variantDefinition.foodRange,
             referenceUnit: variantDefinition.referenceUnit,
             yieldPercent: variantDefinition.yieldPercent,

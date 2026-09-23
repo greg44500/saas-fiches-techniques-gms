@@ -30,6 +30,7 @@ import {
 import { ProductVariant } from './productVariant.model.js';
 import {
     createProductVariantInSession,
+    normalizeVariantInput,
 } from './productCatalog.service.js';
 
 const createCategory = async ({
@@ -190,7 +191,7 @@ const listGlobalProducts = async ({
     const [products, total] = await Promise.all([
         CanonicalProduct.find(filter)
             .populate('category')
-            .sort({ updatedAt: -1, _id: -1 })
+            .sort({ normalizedName: 1, _id: 1 })
             .skip((page - 1) * limit)
             .limit(limit)
             .lean(),
@@ -555,25 +556,33 @@ const updateVariant = async ({
         throw new AppError('Déclinaison modifiable introuvable.', 404);
     }
 
-    for (const field of [
-        'form',
-        'processingState',
-        'preservation',
+    const hasFoodRangeChange = Object.prototype.hasOwnProperty.call(
+        changes,
         'foodRange',
-        'referenceUnit',
-        'yieldPercent',
-    ]) {
-        if (Object.prototype.hasOwnProperty.call(changes, field)) {
-            variant[field] = changes[field];
-        }
-    }
-
-    variant.normalizedForm = normalizeProductText(variant.form);
-    variant.normalizedProcessingState = normalizeProductText(
-        variant.processingState,
     );
-    variant.normalizedPreservation = normalizeProductText(variant.preservation);
-    variant.normalizedSignature = buildVariantSignature(variant);
+    const hasProcessingStateChange = Object.prototype.hasOwnProperty.call(
+        changes,
+        'processingState',
+    );
+    const normalized = normalizeVariantInput({
+        presentation: Object.prototype.hasOwnProperty.call(changes, 'presentation')
+            ? changes.presentation
+            : variant.presentation,
+        foodRange: hasFoodRangeChange ? changes.foodRange : variant.foodRange,
+        processingState: hasProcessingStateChange
+            ? changes.processingState
+            : hasFoodRangeChange
+                ? null
+                : variant.processingState,
+        referenceUnit: Object.prototype.hasOwnProperty.call(changes, 'referenceUnit')
+            ? changes.referenceUnit
+            : variant.referenceUnit,
+        yieldPercent: Object.prototype.hasOwnProperty.call(changes, 'yieldPercent')
+            ? changes.yieldPercent
+            : variant.yieldPercent,
+    });
+
+    Object.assign(variant, normalized);
     variant.updatedBy = actorId;
 
     const duplicate = await ProductVariant.findOne({

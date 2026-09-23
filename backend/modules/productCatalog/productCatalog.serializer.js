@@ -22,9 +22,8 @@ const serializeVariant = (variant) => ({
         variant.canonicalProduct?._id
         ?? variant.canonicalProduct
     ).toString(),
-    form: variant.form ?? null,
+    presentation: variant.presentation ?? null,
     processingState: variant.processingState ?? null,
-    preservation: variant.preservation ?? null,
     foodRange: variant.foodRange ?? null,
     referenceUnit: variant.referenceUnit,
     yieldPercent: variant.yieldPercent ?? null,

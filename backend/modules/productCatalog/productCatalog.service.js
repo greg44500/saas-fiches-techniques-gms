@@ -23,7 +23,7 @@ import {
 import {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_CATEGORY_STATUS_REGISTRY,
-    PRODUCT_FOOD_RANGES,
+    PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
@@ -42,21 +42,42 @@ import {
 } from './productReferenceEvent.service.js';
 import { ProductVariant } from './productVariant.model.js';
 import { WorkspaceProduct } from './workspaceProduct.model.js';
+import {
+    resolveProductProcessingState,
+} from './productVariantSemantics.js';
 
 const asObjectId = (value) => new mongoose.Types.ObjectId(value.toString());
 
-const normalizeVariantInput = (variant) => ({
-    form: variant.form ?? null,
-    normalizedForm: normalizeProductText(variant.form),
-    processingState: variant.processingState ?? null,
-    normalizedProcessingState: normalizeProductText(variant.processingState),
-    preservation: variant.preservation ?? null,
-    normalizedPreservation: normalizeProductText(variant.preservation),
-    normalizedSignature: buildVariantSignature(variant),
-    foodRange: variant.foodRange ?? null,
-    referenceUnit: variant.referenceUnit,
-    yieldPercent: variant.yieldPercent ?? null,
-});
+const normalizeVariantInput = (variant) => {
+    const processingState = resolveProductProcessingState({
+        foodRange: variant.foodRange,
+        processingState: variant.processingState,
+    });
+
+    if (!processingState.valid) {
+        throw new AppError(
+            processingState.reason === 'INVALID_FOOD_RANGE'
+                ? 'Une gamme valide est obligatoire.'
+                : 'L’état / transformation n’est pas compatible avec la gamme sélectionnée.',
+            409,
+        );
+    }
+
+    const normalized = {
+        presentation: variant.presentation ?? null,
+        normalizedPresentation: normalizeProductText(variant.presentation),
+        processingState: processingState.value,
+        normalizedProcessingState: normalizeProductText(processingState.value),
+        foodRange: variant.foodRange,
+        referenceUnit: variant.referenceUnit,
+        yieldPercent: variant.yieldPercent ?? null,
+    };
+
+    return {
+        ...normalized,
+        normalizedSignature: buildVariantSignature(normalized),
+    };
+};
 
 const assertActiveCategory = async ({ categoryId, session = null }) => {
     if (!categoryId) {
@@ -212,7 +233,12 @@ const getProductMetadata = async ({
         workspaceProductStatuses: Object.values(WORKSPACE_PRODUCT_STATUS_REGISTRY),
         productCategoryStatuses: Object.values(PRODUCT_CATEGORY_STATUS_REGISTRY),
         referenceUnits: Object.values(PRODUCT_REFERENCE_UNIT_REGISTRY),
-        foodRanges: [...PRODUCT_FOOD_RANGES],
+        foodRanges: Object.values(PRODUCT_FOOD_RANGE_REGISTRY).map(
+            (definition) => ({
+                ...definition,
+                processingStates: [...definition.processingStates],
+            }),
+        ),
         categories: categories.map((category) => ({
             id: category._id.toString(),
             name: category.name,
@@ -284,6 +310,27 @@ const buildProductSearchFilter = ({
     return filter;
 };
 
+const compareProductVariants = (left, right, productOrder) => {
+    const productDifference = (
+        productOrder.get(left.canonicalProduct.toString())
+        - productOrder.get(right.canonicalProduct.toString())
+    );
+    if (productDifference !== 0) return productDifference;
+
+    return (
+        String(left.normalizedPresentation ?? '').localeCompare(
+            String(right.normalizedPresentation ?? ''),
+            'fr',
+        )
+        || Number(left.foodRange ?? 0) - Number(right.foodRange ?? 0)
+        || String(left.normalizedProcessingState ?? '').localeCompare(
+            String(right.normalizedProcessingState ?? ''),
+            'fr',
+        )
+        || left._id.toString().localeCompare(right._id.toString())
+    );
+};
+
 const listProductSearch = async ({
     workspaceId,
     scope = 'WORKSPACE',
@@ -301,9 +348,11 @@ const listProductSearch = async ({
     });
 
     const products = await CanonicalProduct.find(productFilter)
-        .select('_id name aliases category status searchKeys createdAt updatedAt')
+        .select(
+            '_id name normalizedName aliases category status searchKeys createdAt updatedAt',
+        )
         .populate('category')
-        .sort({ name: 1, _id: 1 })
+        .sort({ normalizedName: 1, _id: 1 })
         .lean();
 
     const normalizedQuery = q ? normalizeProductText(q) : null;
@@ -325,6 +374,9 @@ const listProductSearch = async ({
         };
     }
 
+    const productOrder = new Map(
+        productIds.map((productId, index) => [productId.toString(), index]),
+    );
     const variantVisibility = {
         canonicalProduct: mongoose.trusted({ $in: productIds }),
         identityActive: true,
@@ -335,41 +387,39 @@ const listProductSearch = async ({
             ],
         }),
     };
+    const variants = await ProductVariant.find(variantVisibility).lean();
+    const orderedVariants = variants.sort(
+        (left, right) => compareProductVariants(left, right, productOrder),
+    );
 
     if (scope === 'WORKSPACE') {
-        const variantIds = await ProductVariant.find(variantVisibility)
-            .distinct('_id');
-
-        const entryFilter = {
+        const entries = await WorkspaceProduct.find({
             workspace: workspaceId,
-            productVariant: mongoose.trusted({ $in: variantIds }),
-            ...(status ? { status } : { status: WORKSPACE_PRODUCT_STATUS.ACTIVE }),
-        };
-        const total = await WorkspaceProduct.countDocuments(entryFilter);
-        const entries = await WorkspaceProduct.find(entryFilter)
-            .sort({ updatedAt: -1, _id: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean();
-
-        const variants = await ProductVariant.find({
-            _id: mongoose.trusted({ $in: entries.map(({ productVariant }) => productVariant) }),
+            productVariant: mongoose.trusted({
+                $in: orderedVariants.map(({ _id }) => _id),
+            }),
+            ...(status
+                ? { status }
+                : { status: WORKSPACE_PRODUCT_STATUS.ACTIVE }),
         }).lean();
-        const variantById = new Map(
-            variants.map((variant) => [variant._id.toString(), variant]),
+        const entryByVariantId = new Map(
+            entries.map((entry) => [entry.productVariant.toString(), entry]),
+        );
+        const workspaceVariants = orderedVariants.filter(
+            (variant) => entryByVariantId.has(variant._id.toString()),
+        );
+        const total = workspaceVariants.length;
+        const pagedVariants = workspaceVariants.slice(
+            (page - 1) * limit,
+            page * limit,
         );
 
         return {
-            results: entries.flatMap((entry) => {
-                const variant = variantById.get(entry.productVariant.toString());
-                const product = variant
-                    ? productById.get(variant.canonicalProduct.toString())
-                    : null;
-
-                return product && variant
-                    ? [serializeSearchResult({ product, variant, workspaceEntry: entry })]
-                    : [];
-            }),
+            results: pagedVariants.map((variant) => serializeSearchResult({
+                product: productById.get(variant.canonicalProduct.toString()),
+                variant,
+                workspaceEntry: entryByVariantId.get(variant._id.toString()),
+            })),
             pagination: {
                 page,
                 limit,
@@ -379,32 +429,27 @@ const listProductSearch = async ({
         };
     }
 
-    const total = await ProductVariant.countDocuments(variantVisibility);
-    const variants = await ProductVariant.find(variantVisibility)
-        .sort({ updatedAt: -1, _id: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean();
-
+    const total = orderedVariants.length;
+    const pagedVariants = orderedVariants.slice(
+        (page - 1) * limit,
+        page * limit,
+    );
     const entries = await WorkspaceProduct.find({
         workspace: workspaceId,
-        productVariant: mongoose.trusted({ $in: variants.map(({ _id }) => _id) }),
+        productVariant: mongoose.trusted({
+            $in: pagedVariants.map(({ _id }) => _id),
+        }),
     }).lean();
     const entryByVariantId = new Map(
         entries.map((entry) => [entry.productVariant.toString(), entry]),
     );
 
     return {
-        results: variants.flatMap((variant) => {
-            const product = productById.get(variant.canonicalProduct.toString());
-            return product
-                ? [serializeSearchResult({
-                    product,
-                    variant,
-                    workspaceEntry: entryByVariantId.get(variant._id.toString()) ?? null,
-                })]
-                : [];
-        }),
+        results: pagedVariants.map((variant) => serializeSearchResult({
+            product: productById.get(variant.canonicalProduct.toString()),
+            variant,
+            workspaceEntry: entryByVariantId.get(variant._id.toString()) ?? null,
+        })),
         pagination: {
             page,
             limit,

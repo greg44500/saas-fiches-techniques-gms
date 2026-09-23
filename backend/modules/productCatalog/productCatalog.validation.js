@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
     PRODUCT_CATEGORY_STATUS,
+    PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS,
@@ -49,11 +50,15 @@ const aliasesSchema = z
         message: 'Les alias ne doivent pas contenir de doublons.',
     });
 
+const foodRangeSchema = z.number().int().refine(
+    (value) => PRODUCT_FOOD_RANGES.includes(value),
+    { message: 'Gamme invalide.' },
+);
+
 const variantBodySchema = z.strictObject({
-    form: nullableText(80).optional(),
+    presentation: nullableText(80).optional(),
     processingState: nullableText(80).optional(),
-    preservation: nullableText(80).optional(),
-    foodRange: z.number().int().min(1).max(5).nullable().optional(),
+    foodRange: foodRangeSchema,
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 });
@@ -89,9 +94,8 @@ const importMappingSchema = z.strictObject({
     name: z.number().int().min(0).max(49),
     aliases: z.number().int().min(0).max(49).optional(),
     category: z.number().int().min(0).max(49).optional(),
-    form: z.number().int().min(0).max(49).optional(),
+    presentation: z.number().int().min(0).max(49).optional(),
     processingState: z.number().int().min(0).max(49).optional(),
-    preservation: z.number().int().min(0).max(49).optional(),
     foodRange: z.number().int().min(0).max(49).optional(),
     referenceUnit: z.number().int().min(0).max(49).optional(),
     yieldPercent: z.number().int().min(0).max(49).optional(),
@@ -104,7 +108,7 @@ const importMappingSchema = z.strictObject({
 const importDefaultsSchema = z.strictObject({
     categoryId: objectIdSchema.optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
-    foodRange: z.number().int().min(1).max(5).nullable().optional(),
+    foodRange: foodRangeSchema.optional(),
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 }).optional().default({});
 
@@ -177,10 +181,9 @@ const updateProductStatusBodySchema = z.strictObject({
 });
 
 const updateVariantBodySchema = z.strictObject({
-    form: nullableText(80).optional(),
+    presentation: nullableText(80).optional(),
     processingState: nullableText(80).optional(),
-    preservation: nullableText(80).optional(),
-    foodRange: z.number().int().min(1).max(5).nullable().optional(),
+    foodRange: foodRangeSchema.optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 }).refine(

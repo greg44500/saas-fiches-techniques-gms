@@ -87,13 +87,13 @@ const isNearDuplicateKey = (left, right) => {
 };
 
 const buildVariantSignature = ({
-    form = null,
+    presentation = null,
     processingState = null,
-    preservation = null,
+    foodRange = null,
 } = {}) => [
-    normalizeProductText(form) || '_',
+    normalizeProductText(presentation) || '_',
+    foodRange === null || foodRange === undefined ? '_' : String(foodRange),
     normalizeProductText(processingState) || '_',
-    normalizeProductText(preservation) || '_',
 ].join('|');
 
 export {

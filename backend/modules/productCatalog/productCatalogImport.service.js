@@ -23,6 +23,7 @@ import {
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CATEGORY_STATUS,
+    PRODUCT_FOOD_RANGES,
     PRODUCT_IMPORT_ROW_CLASSIFICATION,
     PRODUCT_IMPORT_SCOPE,
     PRODUCT_IMPORT_STATUS,
@@ -31,6 +32,9 @@ import {
 } from './productCatalog.registry.js';
 import { ProductImportSession } from './productImportSession.model.js';
 import { ProductVariant } from './productVariant.model.js';
+import {
+    resolveProductProcessingState,
+} from './productVariantSemantics.js';
 import { parseProductImportFile } from './productCatalogImport.parser.js';
 
 const IMPORT_TTL_MINUTES = 30;
@@ -110,7 +114,7 @@ const parseAliases = (value) => [
 const parseFoodRange = (value) => {
     if (value === '' || value === null || value === undefined) return null;
     const number = Number(String(value).replace(',', '.'));
-    return Number.isInteger(number) && number >= 1 && number <= 5
+    return Number.isInteger(number) && PRODUCT_FOOD_RANGES.includes(number)
         ? number
         : Number.NaN;
 };
@@ -266,11 +270,32 @@ const mapImportRow = ({
     const errors = [];
 
     if (!name) errors.push('Nom Produit obligatoire.');
-    if (Number.isNaN(foodRange)) errors.push('Gamme invalide.');
+    if (foodRange === null || Number.isNaN(foodRange)) {
+        errors.push('Gamme obligatoire ou invalide.');
+    }
     if (!referenceUnit) {
         errors.push('Unité de référence obligatoire ou invalide.');
     }
     if (Number.isNaN(yieldPercent)) errors.push('Rendement invalide.');
+
+    const presentation = String(value('presentation')).trim() || null;
+    const requestedProcessingState = String(
+        value('processingState'),
+    ).trim() || null;
+    const processingState = (
+        foodRange === null || Number.isNaN(foodRange)
+            ? { valid: false, value: requestedProcessingState }
+            : resolveProductProcessingState({
+                foodRange,
+                processingState: requestedProcessingState,
+            })
+    );
+
+    if (foodRange !== null && !Number.isNaN(foodRange) && !processingState.valid) {
+        errors.push(
+            'État / transformation incompatible avec la gamme sélectionnée.',
+        );
+    }
 
     return {
         rowNumber,
@@ -279,9 +304,8 @@ const mapImportRow = ({
             aliases,
             categoryName: String(value('category')).trim() || null,
             variant: {
-                form: String(value('form')).trim() || null,
-                processingState: String(value('processingState')).trim() || null,
-                preservation: String(value('preservation')).trim() || null,
+                presentation,
+                processingState: processingState.value,
                 foodRange: Number.isNaN(foodRange) ? null : foodRange,
                 referenceUnit,
                 yieldPercent: Number.isNaN(yieldPercent) ? null : yieldPercent,
