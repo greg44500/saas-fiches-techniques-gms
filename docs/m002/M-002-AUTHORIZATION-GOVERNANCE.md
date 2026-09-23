@@ -1,6 +1,6 @@
 # M-002 — Autorisation, ownership, capabilities et gouvernance
 
-**Statut : VALIDÉ — recadrage Core / Produit / commercial du 2026-09-22**
+**Statut : VALIDÉ — backend Application Global / capabilities / import sécurisé implémenté ; frontend à finaliser — 2026-09-23**
 
 ## 1. Ownership
 
@@ -59,40 +59,55 @@ Les rôles personnalisés Workspace pourront recevoir ces permissions selon le b
 
 Le référentiel partagé reste une ressource métier de `saas-fiches-techniques-gms`.
 
-Il ne doit donc plus être administré au travers de :
+Les anciens contrats backend suivants ont été supprimés :
 
 ```text
 /api/platform/products
 platform:products:read
 platform:products:manage
-/platform/products
 ```
 
-Ces contrats présents dans la branche M-002 avant le recadrage sont à supprimer ou repositionner avant la PR finale.
+La frontière backend retenue est :
 
-Les personnes autorisées à administrer le référentiel global peuvent être aussi membres de l'équipe Platform, mais leur droit métier Produit ne découle jamais implicitement de leur rôle Platform.
+```text
+/api/product-reference
+```
 
-La gouvernance métier globale doit pouvoir :
+Permissions Application Global déclarées par M-002 :
+
+```text
+product:reference:read
+product:reference:manage
+```
+
+Le guard utilisé est `authorizeApplicationGlobalPermission()`.
+
+Invariants :
+
+- un Super Admin Platform ne reçoit aucun droit Produit implicite ;
+- un Owner Workspace ne reçoit aucun droit Produit global implicite ;
+- les permissions sont persistées via `ApplicationGlobalRole` et `ApplicationGlobalMember` ;
+- les services Produit restent dans le module `productCatalog` ;
+- aucun second RBAC produit n'est créé.
+
+La gouvernance métier globale peut :
 
 - consulter les contributions en attente ;
 - corriger les données génériques partagées ;
 - gérer les catégories ;
 - approuver ou rejeter une contribution ;
 - archiver ou réactiver un Produit ou une déclinaison globale ;
-- alimenter le référentiel global par bootstrap ou import contrôlé.
+- exploiter l'historique `ProductReferenceEvent`.
 
-### 3.1 Point technique à fermer avant reprise des écritures de gouvernance
+Le premier gouverneur est initialisé explicitement par :
 
-Le Core v1.1.2 expose un RBAC Workspace et un RBAC Platform, mais aucun contrat canonique n'établit encore un RBAC global métier indépendant de Platform.
+```text
+npm run seed:m002-governance
+```
 
-La prochaine phase M-002 doit donc déterminer le mécanisme le plus simple et réutilisable pour porter cette autorité sans :
+Ce seed synchronise le rôle système produit `product_reference_governor` puis crée le membership Application Global du Fondateur actif.
 
-- transformer une donnée métier globale en donnée Platform ;
-- accorder automatiquement la gouvernance Produit à tout administrateur Platform ;
-- créer un second système d'authentification ;
-- inventer une primitive générique Core sans besoin démontré.
-
-Si le besoin révèle une primitive générique réutilisable par d'autres SaaS dérivés, elle doit être traitée dans `saas-core-api` en un seul bloc cohérent avant intégration dans le produit.
+Cette attribution est explicite et persistée : elle ne constitue jamais un héritage automatique du rôle Platform.
 
 ## 4. Contribution Workspace
 
@@ -221,13 +236,23 @@ Le fichier source d'import n'est pas une ressource documentaire durable. Après 
 
 Son occupation disque transitoire relève de l'infrastructure d'exécution et non d'une capacité de stockage vendue au Workspace.
 
-### 7.1 Dette d'implémentation actuelle
+### 7.1 Implémentation sécurisée actuelle
 
-La branche M-002 utilise actuellement un `multer.memoryStorage()` propre au module d'import. Cette implémentation contourne le pipeline générique de quarantaine / inspection / antivirus du Core et doit être corrigée avant la PR M-002.
+Le pipeline parallèle `multer.memoryStorage()` a été supprimé.
 
-Le Core v1.1.2 possède les primitives basses nécessaires mais son pipeline File durable n'accepte actuellement que les formats documentaires configurés par le Core. La reprise doit vérifier si ces primitives peuvent être composées proprement pour un import temporaire CSV/XLS/XLSX sans dupliquer la sécurité générique.
+M-002 utilise désormais `createSecureTemporaryUploadService()` avec une politique Produit dédiée :
 
-Si une factory générique configurable de téléversement temporaire sécurisé manque réellement, ce manque est candidat Core et doit être traité dans `saas-core-api`, puis intégré au produit. M-002 ne doit pas maintenir un second pipeline Multer de sécurité en parallèle.
+- CSV : inspection réelle du contenu texte ;
+- XLS : signature CFB/OLE + validation comme véritable classeur ;
+- XLSX : détection OOXML générique ;
+- checksum SHA-256 et antivirus fail-closed fournis par le Core ;
+- suppression du temporaire après consommation ou erreur.
+
+L'import ne crée aucun document `File`, ne consomme pas `storage_bytes` et n'exige pas `file_upload`.
+
+Le Core intégré jusqu'au commit exact `c428fbec1edfa21a8860fcf8283072e45719832b` inclut également le correctif d'idempotence des politiques de téléversement temporaire.
+
+Les quatre fichiers de tests ciblés du pipeline import sécurisé ont été exécutés localement et confirmés verts le 2026-09-23 avant la poursuite du bloc d'autorisation.
 
 ## 8. Tenancy
 

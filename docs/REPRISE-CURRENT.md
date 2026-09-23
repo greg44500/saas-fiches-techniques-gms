@@ -2,25 +2,24 @@
 
 **Date :** 2026-09-23  
 **Lot actif :** M-002 — Catalogue Produits / Produits canoniques  
-**Branche :** `feature/m002-catalogue-produits`
+**Branche :** `feature/m002-catalogue-produits`  
+**Checkpoint backend/tests avant documentation :** `a0da34a5a4be383dab2f936e16ec252e6a77d8c5`
 
-## 1. Ordre d'autorité à reprendre
+## 1. Autorité de reprise
 
 ```text
 KB-START-HERE
-→ Git réel
+→ GitHub réel
 → code / contraintes DB
 → tests réellement exécutés
-→ contrats M-002 validés
-→ Core 1.2.0 + commit c428fbec1edfa21a8860fcf8283072e45719832b intégré
-→ dette / documentation de reprise
+→ contrats M-002
+→ Core exact intégré
+→ documentation de reprise
 ```
 
 Ne jamais déclarer un test vert sans exécution réelle.
 
 ## 2. Core intégré
-
-`core-origin.json` vérifié :
 
 ```text
 repository : greg44500/saas-core-api
@@ -29,77 +28,47 @@ tag        : v1.2.0
 commit     : c428fbec1edfa21a8860fcf8283072e45719832b
 ```
 
-Le tag `v1.2.0` reste la dernière release stable. Le commit `c428fbec1edfa21a8860fcf8283072e45719832b`, postérieur au tag, inclut la primitive générique de téléversement temporaire sécurisé ainsi que le correctif d'idempotence de sa politique de types, validé par la PR Core #40 / Core Gate #75, sans nouvelle release ni nouveau tag.
+Ce SHA post-tag fournit Application Global authorization, le téléversement temporaire sécurisé configurable et le correctif d'idempotence `contentInspector: null`.
 
-Le SHA complet enregistré dans `core-origin.json` constitue l'autorité exacte de provenance du code Core intégré.
+Aucune nouvelle release Core n'a été créée pour ces commits post-tag.
 
-Le Core fournit notamment : Auth / Users / Workspaces, RBAC Workspace, Platform SaaS, autorisation métier globale applicative indépendante de Platform et Workspace, Plans / subscriptions, capabilities / quotas, EntitlementOverrides, Files / stockage / rétention, téléversement durable sécurisé, téléversement temporaire sécurisé configurable, checksum SHA-256, antivirus fail-closed, quarantaine / nettoyage des temporaires, AuditLog et points d'extension applicatifs.
+## 3. État Git
 
-## 3. État Git de référence
-
-Avant le recadrage documentaire, la branche `feature/m002-catalogue-produits` était :
+Avant le commit documentaire de ce checkpoint :
 
 ```text
-30 commits devant main
-0 derrière
+feature/m002-catalogue-produits
+→ 60 commits devant main
+→ 0 derrière
 ```
 
-Dernier commit applicatif avant recadrage :
+Ne pas repartir de `main`, ne pas recréer M-002 et ne pas créer de micro-PR.
+
+## 4. Backend M-002 courant
+
+### Modèle métier
+
+Conservé : `CanonicalProduct`, `ProductVariant`, `ProductCategory`, `WorkspaceProduct`, `ProductReferenceEvent`, `ProductImportSession`, normalisation/anti-doublon/matching, contributions `PENDING_REVIEW` et séparation M-003.
+
+### Import sécurisé
 
 ```text
-ca02a1e428e43ec98da4c0ae168585f78d61e5f6
+CSV / XLS / XLSX
+→ secure temporary upload Core
+→ inspection réelle
+→ checksum
+→ antivirus
+→ parsing
+→ preview
+→ commit
+→ cleanup
 ```
 
-Les commits suivants du même lot ne font que réaligner la documentation M-002. Aucune PR M-002 ne doit être créée avant finalisation complète.
+Le flux ne crée pas de `File`, ne consomme pas `storage_bytes` et n'exige pas `file_upload`.
 
-## 4. Décision structurante du recadrage
+Les quatre fichiers ciblés import sécurisé ont été confirmés verts localement avant les derniers travaux d'autorisation.
 
-L'implémentation M-002 avait introduit :
-
-```text
-platform:products:read
-platform:products:manage
-/api/platform/products
-/platform/products
-```
-
-Cette architecture est invalidée.
-
-Décision : **global métier ne signifie pas Platform**.
-
-`CanonicalProduct`, `ProductVariant` et `ProductCategory` sont des données métier globales au produit. Platform reste l'administration générique du SaaS : utilisateurs, clients/workspaces, plans, abonnements, équipe Platform, sécurité et exploitation.
-
-Une personne appartenant à l'équipe Platform peut également recevoir une autorité métier Produit, mais ce droit ne découle jamais implicitement de son rôle Platform.
-
-## 5. Frontière Core / Produit validée
-
-```text
-CORE
-→ identité / authentification
-→ Workspace / membres / équipe
-→ RBAC générique
-→ Plans / Entitlements / Overrides
-→ quotas
-→ Files / stockage / sécurité fichier
-→ AuditLog générique
-
-PRODUIT M-002
-→ Produits canoniques
-→ déclinaisons
-→ catégories
-→ catalogue Workspace
-→ contribution
-→ import catalogue
-→ déduplication
-→ gouvernance du référentiel global
-→ activité métier
-```
-
-Les fonctionnalités Core ne sont pas réimplémentées dans le produit ; le produit les compose.
-
-## 6. Capabilities commerciales M-002
-
-À déclarer via le registre applicatif Core :
+### Capabilities
 
 ```text
 product_reference_access
@@ -107,245 +76,136 @@ product_catalog_import
 product_contribution
 ```
 
-Exemple commercial initial :
+### Workspace RBAC
 
 ```text
-Free
-→ accès référentiel global
-
-Premium
-→ accès référentiel global
-→ import catalogue
-→ contribution Produits/déclinaisons
+product:read
+product:catalog:manage
+product:contribute
 ```
 
-Cette matrice reste configurable dans les Plans et compatible avec `EntitlementOverride`.
+Inspect/preview exigent `product:read + product_catalog_import`.
 
-Le produit ne doit pas commercialiser deux capacités de stockage.
-
-`product_catalog_import` est la capability métier de l'import. Le CSV/XLS/XLSX est un temporaire d'exécution : il peut utiliser les primitives File du Core sans activer un espace documentaire durable et sans consommer un quota commercial de stockage utilisateur.
-
-La capability générique Core `file_upload` peut rester disponible pour un futur besoin réel de fichiers persistants, mais elle n'est pas une précondition commerciale de M-002.
-
-Décision transverse supplémentaire : les futurs DRAFTS de Fiches techniques et les Fiches techniques VALIDATED seront limitables commercialement par **deux quotas métier de comptage distincts**. Ils utiliseront le moteur Core de metrics / limits / entitlements / overrides et non `storage_bytes`. Valeurs et règles exactes seront cadrées en M-004.
-
-RBAC et capability restent deux contrôles indépendants.
-
-## 7. Import catalogue — décision et adaptation restante
-
-Cycle cible :
+Le commit calcule dynamiquement :
 
 ```text
-CSV / XLS / XLSX
-→ téléversement temporaire sécurisé
-→ mapping
-→ normalisation / matching
-→ preview
-→ décisions
-→ commit Produits / WorkspaceProduct
-→ suppression du fichier source
+rattachement existant
+→ product:catalog:manage
+
+nouvelle contribution
+→ product:contribute
+→ product_contribution
 ```
 
-Les données Produits persistent ; le fichier source n'a pas vocation à devenir un document durable.
+### Gouvernance globale
 
-Le stockage temporaire nécessaire à l'analyse est un coût d'exécution technique, pas un espace invisible de stockage gratuit.
-
-Adaptation produit restante :
+Ancienne frontière backend Platform supprimée.
 
 ```text
-backend/modules/productCatalog/productCatalogImport.middleware.js
-→ multer.memoryStorage()
+API         : /api/product-reference
+permissions : product:reference:read
+              product:reference:manage
 ```
 
-Cette implémentation était provisoire et contourne encore la chaîne Core de quarantaine / checksum / antivirus / nettoyage.
+Autorité Core : `ApplicationGlobalRole`, `ApplicationGlobalMember`, `authorizeApplicationGlobalPermission()`.
 
-Le prérequis Core est désormais résolu. Le produit dispose notamment de :
+Ni Super Admin Platform ni Owner Workspace n'héritent de cette autorité.
+
+### Bootstrap gouvernance
 
 ```text
-createSecureTemporaryUploadService()
-createMulterUpload()
-createUploadedFileTypeInspector()
-politique de types configurable
-contentInspector spécialisé
+npm run seed:m002-governance
 ```
 
-M-002 doit maintenant remplacer `multer.memoryStorage()` par cette primitive Core.
+Le seed synchronise `product_reference_governor` et crée explicitement le membership Application Global du Fondateur actif.
 
-Le fichier CSV/XLS/XLSX reste un temporaire d'exécution :
+## 5. Tests : vérité actuelle
+
+Confirmé vert par l'utilisateur avant les derniers commits :
 
 ```text
-upload
-→ quarantaine temporaire
-→ inspection réelle du contenu
-→ checksum
-→ antivirus
-→ parsing métier
-→ suppression du temporaire
+productCatalogImportUpload.service.test.js
+productCatalogImport.integration.test.js
+productCatalogImport.parser.test.js
+productCatalog.http.test.js
 ```
 
-Il ne crée aucun document `File`, ne consomme pas le quota `storage_bytes` et ne nécessite pas la capability générique `file_upload`.
+Ces exécutions validaient le pipeline sécurisé avant les changements ultérieurs de capabilities/autorisation.
 
-Les règles spécifiques CSV/XLS/XLSX restent dans le produit :
+Nouveaux tests ajoutés depuis : NON ENCORE EXÉCUTÉS dans cette conversation après les derniers commits.
 
-- XLSX : inspection exploitable via signature OOXML ;
-- CSV : inspection métier du contenu obligatoire ;
-- XLS historique : inspection spécialisée nécessaire, la signature CFB/OLE seule n'étant pas suffisamment discriminante.
-
-## 8. Éléments M-002 existants à conserver sous réserve des tests
-
-Backend :
-
-- modèles Produit / Variante / Catégorie / WorkspaceProduct ;
-- normalisation et anti-doublon ;
-- services contribution/catalogue ;
-- `ProductReferenceEvent` ;
-- import inspect/preview/commit dans son principe ;
-- migration indexes ;
-- bootstrap versionné ;
-- API Workspace M-002 ;
-- summary Dashboard.
-
-Frontend Workspace déjà présent :
-
-- routes/navigation ;
-- page Produits ;
-- Mon catalogue / Tout le référentiel ;
-- détail Produit ;
-- contribution Produit / déclinaison ;
-- import ;
-- widget Dashboard ;
-- tests RTL partiels.
-
-Ces éléments doivent être revus après recadrage et ne sont pas déclarés verts.
-
-## 9. Éléments à supprimer ou repositionner
+À lancer en premier :
 
 ```text
-backend/modules/productCatalog/productCatalogPlatform.controller.js
-backend/modules/productCatalog/productCatalogPlatform.routes.js
-backend/modules/productCatalog/productCatalogPlatformPermission.registry.js
-
-frontend Platform Produits
-platform-product-catalog-api
-platform-products-route/page/dialogs
-attentes de tests platform:products:*
+npx vitest run backend/tests/plans/applicationCapability.registry.test.js backend/tests/config/applicationGlobalPermission.registry.test.js backend/tests/config/applicationPlatformPermission.registry.test.js backend/tests/config/applicationRoutes.registry.test.js backend/tests/modules/productCatalog/productCatalogGlobal.http.test.js backend/tests/modules/productCatalog/productCatalog.http.test.js backend/tests/modules/productCatalog/productCatalogImportAccess.service.test.js backend/tests/modules/productCatalog/productCatalogGovernanceBootstrap.test.js
 ```
 
-La logique métier utile de gouvernance peut être conservée/recomposée ; seule la frontière Platform est invalide.
-
-## 10. Prérequis Core M-002 — RÉSOLUS
-
-### A — Autorité métier globale — RÉSOLU
-
-Core 1.2.0 fournit désormais une autorité métier globale indépendante de Platform et Workspace :
+Si verts, lancer une seule fois :
 
 ```text
-ApplicationGlobalRole
-ApplicationGlobalMember
-resolveApplicationGlobalAuthorization()
-authorizeApplicationGlobalPermission()
+npm test
 ```
 
-M-002 doit composer ses permissions métier globales dans le registre applicatif du produit et utiliser ces primitives. Aucun second RBAC produit ne doit être créé.
+pour fermer le checkpoint backend avant frontend.
 
-### B — Ingestion temporaire sécurisée — RÉSOLU
+## 6. Frontend restant
 
-Le commit Core :
+Le frontend contient encore les anciennes surfaces Platform Produits :
 
 ```text
-c428fbec1edfa21a8860fcf8283072e45719832b
+platform-product-catalog-api.js
+platform-products-route/page
+platform-category-dialog
+platform-product-details-drawer
+platform-product-edit-dialog
+platform-reject-product-dialog
+platform-variant-edit-dialog
+tests associés
 ```
 
-fournit la primitive générique configurable nécessaire.
-
-M-002 doit :
+Prochaine phase :
 
 ```text
-retirer multer.memoryStorage()
-→ définir sa politique CSV/XLS/XLSX
-→ fournir les contentInspectors métier nécessaires
-→ utiliser createSecureTemporaryUploadService()
-→ parser le contenu inspecté
-→ garantir le nettoyage du temporaire
+frontend Workspace
+→ vérifier capabilities/guards
+→ import/contribution/catalogue
+
+frontend gouvernance globale
+→ retirer /platform/products
+→ surface métier hors PlatformLayout
+→ API /api/product-reference
+→ autorisation Application Global
 ```
 
-Aucun deuxième pipeline Multer métier ne doit être maintenu.
+Ne pas implémenter de sécurité uniquement frontend.
 
-## 11. Phases de reprise M-002
+## 7. Documentation canonique M-002
 
 ```text
-Phase 1 — analyse réelle
-→ relire KB
-→ vérifier HEAD / main / core-origin
-→ relire contrats M-002 recadrés
-→ relire Core 1.2.0 + commit c428fbe nécessaire
-→ appliquer les prérequis A et B désormais résolus
+docs/m002/M-002-AUTHORIZATION-GOVERNANCE.md
+docs/m002/M-002-API-REST.md
+docs/m002/M-002-ACCEPTANCE-IMPLEMENTATION.md
+docs/m002/M-002-BOOTSTRAP-MIGRATIONS.md
+docs/m002/M-002-BACKEND-HANDOFF.md
+docs/contracts/SECURE-TEMPORARY-UPLOAD.md
+```
 
-Phase 2 — correction backend cohérente
-→ retirer dépendance Platform Produits
-→ intégrer capabilities produit
-→ corriger import sécurisé
-→ repositionner gouvernance globale
-→ préserver invariants métier existants
+## 8. Finalisation M-002
 
-Phase 3 — tests backend ciblés puis globaux
-→ RBAC
-→ entitlements / overrides
-→ tenancy
-→ doublons
-→ gouvernance
-→ import sécurisé
+Après frontend :
 
-Phase 4 — frontend Workspace
-→ corriger/finaliser l'existant
-→ entitlements visibles sans sécurité frontend-only
-→ import/contribution cohérents
-
-Phase 5 — administration métier globale
-→ surface hors Platform
-→ référentiel / contributions / catégories
-→ autorisation globale retenue
-
-Phase 6 — tests frontend + E2E
-→ parcours Free/Premium pertinents
-→ import
-→ contribution
-→ approbation
-→ isolation PENDING
-
-Phase 7 — finalisation
-→ revue architecture / taille des fichiers
-→ documentation finale
-→ lint / tests / build / E2E / release:check
-→ validation visuelle
-
-Phase 8 — livraison
+```text
+tests RTL ciblés
+→ E2E critiques
+→ npm run release:verify
+→ npm run lint
+→ npm test
+→ frontend lint/test/build
+→ npm run test:e2e
+→ npm run release:check
+→ validation visuelle utilisateur
 → UNE PR M-002
-→ gate
 → UNE fusion
 ```
 
-## 12. Discipline Git / PR
-
-Ne pas créer de micro-PR pour correction Platform, capability, import, test ou documentation intermédiaire.
-
-Tout reste dans le même lot M-002 et la même branche jusqu'à validation finale.
-
-Si une évolution Core générique devient de nouveau nécessaire, elle constitue un seul lot Core indépendant et cohérent. L'intégration peut viser une release stable ou, lorsqu'une décision explicite l'autorise comme pour le commit `1504151`, un SHA Core précis validé sans inventer de nouvelle version. M-002 reprend ensuite sur sa branche unique.
-
-## 13. Gates finales
-
-À exécuter sur l'état final cohérent du lot, en plus des tests ciblés utiles pendant le développement :
-
-```text
-npm run release:verify
-npm run lint
-npm test
-npm --prefix frontend run lint
-npm --prefix frontend run test
-npm --prefix frontend run build
-npm run test:e2e
-npm run release:check
-```
-
-Ne pas annoncer la PR prête avant validation réelle de ces gates et de l'UX.
+Ne pas créer de PR intermédiaire pour ce checkpoint.

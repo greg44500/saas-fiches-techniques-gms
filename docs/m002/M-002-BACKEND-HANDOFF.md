@@ -1,44 +1,51 @@
-# M-002 — Handoff de reprise après recadrage
+# M-002 — Handoff backend courant
 
+**Date :** 2026-09-23  
 **Branche :** `feature/m002-catalogue-produits`  
-**Core intégré :** `v1.1.2` — commit `193e632d62cb048f3988e073665759cce8dd379f`  
-**État Git vérifié le 2026-09-22 :** branche 30 commits devant `main`, 0 derrière avant le commit documentaire de recadrage.  
-**Dernier commit applicatif avant recadrage :** `ca02a1e428e43ec98da4c0ae168585f78d61e5f6`.
+**Dernier commit backend/tests avant documentation :** `a0da34a5a4be383dab2f936e16ec252e6a77d8c5`  
+**État Git avant le commit documentaire :** 60 commits devant `main`, 0 derrière.
 
-## 1. Ce qui reste valide
+## 1. Core intégré
 
-- `CanonicalProduct`, `ProductVariant`, `ProductCategory` globaux métier ;
-- `WorkspaceProduct` tenant-scoped ;
-- `ProductReferenceEvent` pour l'historique global métier ;
-- `ProductImportSession` temporaire ;
-- normalisation / anti-doublon / proximité ;
-- contributions `PENDING_REVIEW` ;
-- API Workspace M-002 dans son principe ;
-- Mon catalogue / Tout le référentiel ;
-- import inspect → preview → commit dans son principe métier ;
-- frontière M-003 fournisseur/référence/conditionnement/tarifs ;
-- Dashboard M-002 Workspace.
-
-## 2. Ce qui est explicitement invalide et doit être corrigé
-
-La branche contient actuellement une fausse frontière Platform :
+`core-origin.json` :
 
 ```text
-platform:products:read
-platform:products:manage
-/api/platform/products
-/platform/products
-productCatalogPlatform.*
-composants/tests frontend Platform Produits
+repository : greg44500/saas-core-api
+version    : 1.2.0
+tag        : v1.2.0
+commit     : c428fbec1edfa21a8860fcf8283072e45719832b
 ```
 
-Le référentiel global est une donnée métier du produit, pas une donnée Platform.
+Le SHA Core est postérieur au tag `v1.2.0` et a été intégré volontairement sans nouvelle release.
 
-Les personnes de l'équipe Platform peuvent recevoir une autorité métier Produit, mais celle-ci ne doit pas être accordée implicitement par leur rôle Platform.
+Les deux prérequis génériques M-002 sont disponibles :
 
-## 3. Capabilities commerciales validées pour le recadrage
+```text
+Application Global authorization
+Secure configurable temporary upload
+```
 
-À enregistrer via le point d'extension Core des capabilities :
+## 2. Import sécurisé M-002
+
+Le pipeline `multer.memoryStorage()` a été supprimé.
+
+```text
+CSV / XLS / XLSX
+→ quarantaine Core
+→ inspection réelle
+→ checksum SHA-256
+→ antivirus fail-closed
+→ parsing métier
+→ ProductImportSession
+→ preview / décisions / commit
+→ suppression du temporaire
+```
+
+Aucun document `File`, aucun `storage_bytes`, aucune capability `file_upload`.
+
+Les quatre fichiers ciblés du pipeline import sécurisé ont été exécutés localement et confirmés verts avant le bloc d'autorisation.
+
+## 3. Capabilities M-002
 
 ```text
 product_reference_access
@@ -46,94 +53,145 @@ product_catalog_import
 product_contribution
 ```
 
-Le moteur Plans / Entitlements / EntitlementOverrides reste Core.
+Elles sont composées dans `backend/config/applicationCapability.registry.js`.
 
-Exemple commercial initial :
+La matrice Free/Premium n'est pas codée dans le métier. Plans / Entitlements / EntitlementOverrides Core restent l'autorité commerciale.
+
+## 4. RBAC Workspace et import
+
+Permissions :
 
 ```text
-Free
-→ référentiel global
-
-Premium
-→ référentiel global
-→ import catalogue
-→ contribution Produit/déclinaison
+product:read
+product:catalog:manage
+product:contribute
 ```
 
-Cette matrice reste configurable par plan.
-
-Le produit ne doit pas créer deux capacités de stockage.
-
-`product_catalog_import` est la fonctionnalité métier vendable. Elle utilise un temporaire technique sécurisé, sans activer un espace documentaire durable ni consommer un quota commercial de stockage utilisateur.
-
-La capability générique Core `file_upload`, si elle reste disponible pour d'autres SaaS ou un futur besoin documentaire durable, n'est pas une précondition commerciale de M-002.
-
-## 4. Import fichier — anomalie technique actuelle
-
-`backend/modules/productCatalog/productCatalogImport.middleware.js` utilise actuellement :
+Import :
 
 ```text
-multer.memoryStorage()
+inspect / preview
+→ product:read
+→ product_catalog_import
+
+commit
+→ product:read
+→ product_catalog_import
+→ exigences dynamiques selon les mutations
 ```
 
-Ce pipeline contourne les primitives Core de quarantaine / checksum / antivirus / nettoyage.
+```text
+ATTACH_EXISTING
+→ product:catalog:manage
 
-Le Core v1.1.2 dispose déjà de briques génériques (`createUploadSingleFile`, inspection, malware scan, temporaryFileService), mais son pipeline File durable est configuré pour PDF/JPEG/PNG.
+PROPOSE_PRODUCT / PROPOSE_VARIANT
+→ product:contribute
+→ product_contribution
+```
 
-La reprise doit vérifier le moyen professionnel de composer ces briques pour CSV/XLS/XLSX sans dupliquer la sécurité générique. Si une factory configurable manque réellement, le besoin est générique et doit être corrigé dans `saas-core-api` en un seul lot Core, puis intégré au produit.
+Le précédent AND systématique `product:catalog:manage + product:contribute` a été supprimé.
 
-Le fichier importé reste temporaire ; les Produits et relations créés/mis à jour restent persistants. Taille maximale, TTL et concurrence éventuelle sont des garde-fous techniques, pas une capacité de stockage vendue.
-
-Pour les futurs modules de Fiches techniques, ne pas réutiliser `storage_bytes` pour mesurer les brouillons ou fiches validées : le besoin commercial validé est de limiter leur **nombre** via des métriques/quota métier dédiés déclarés par le produit et évalués par le moteur Core. Les seuils seront fermés en M-004.
-
-## 5. Point d'architecture encore à fermer
-
-Le Core v1.1.2 possède :
-
-- RBAC Workspace ;
-- RBAC Platform ;
-- routes `authenticatedRoutes`, `workspaceRoutes`, `platformRoutes` ;
-- points d'extension applicatifs.
-
-Il ne possède pas de contrat canonique explicitement nommé « RBAC métier global ».
-
-Avant de réécrire la gouvernance globale, déterminer si :
-
-1. les primitives existantes permettent une composition métier propre ; ou
-2. un point d'extension générique minimal est réellement nécessaire dans le Core.
-
-Ne pas inventer un second RBAC dans le produit sans cette vérification.
-
-## 6. Phases de reprise
-
-1. vérifier Git/KB/Core v1.1.2 et les contrats M-002 recadrés ;
-2. fermer autorisation globale + stratégie d'ingestion temporaire ;
-3. corriger backend Platform/capabilities/import ;
-4. corriger tests backend ;
-5. finaliser frontend Workspace existant ;
-6. reconstruire administration métier globale hors Platform ;
-7. corriger tests frontend ;
-8. ajouter E2E critiques ;
-9. exécuter gates applicables ;
-10. validation visuelle ;
-11. documentation finale ;
-12. une seule PR M-002 et une seule fusion.
-
-## 7. Tests / gates
-
-Aucun test ajouté récemment sur cette branche ne doit être déclaré vert par simple présence dans Git.
-
-À la fin du bloc seulement, exécuter les gates réellement prévues par le dépôt, dont au minimum :
+Fichiers principaux :
 
 ```text
-npm run release:verify
-npm run lint
+backend/modules/productCatalog/productCatalogImportAccess.service.js
+backend/modules/productCatalog/productCatalogAccess.middleware.js
+backend/modules/productCatalog/productCatalog.routes.js
+```
+
+## 5. Gouvernance globale Produit
+
+Ancienne frontière backend supprimée :
+
+```text
+/api/platform/products
+platform:products:read
+platform:products:manage
+productCatalogPlatform.routes/controller/permission
+```
+
+Nouvelle frontière :
+
+```text
+/api/product-reference
+product:reference:read
+product:reference:manage
+```
+
+Autorité :
+
+```text
+ApplicationGlobalRole
+ApplicationGlobalMember
+authorizeApplicationGlobalPermission()
+```
+
+Un Super Admin Platform ou un Owner Workspace ne reçoit aucun droit global Produit implicitement.
+
+## 6. Bootstrap du premier gouverneur
+
+```text
+npm run seed:m002-governance
+```
+
+Le seed synchronise `product_reference_governor` avec `product:reference:read` et `product:reference:manage`, puis crée explicitement le membership Application Global du Fondateur actif.
+
+Le rôle Platform sert uniquement à identifier le compte initial dans le runner ; il n'accorde jamais l'autorisation métier au runtime.
+
+## 7. Tests ajoutés mais non encore exécutés après les derniers commits
+
+```text
+backend/tests/plans/applicationCapability.registry.test.js
+backend/tests/config/applicationGlobalPermission.registry.test.js
+backend/tests/config/applicationPlatformPermission.registry.test.js
+backend/tests/config/applicationRoutes.registry.test.js
+backend/tests/modules/productCatalog/productCatalogGlobal.http.test.js
+backend/tests/modules/productCatalog/productCatalog.http.test.js
+backend/tests/modules/productCatalog/productCatalogImportAccess.service.test.js
+backend/tests/modules/productCatalog/productCatalogGovernanceBootstrap.test.js
+```
+
+Ces tests couvrent la séparation Platform/Application Global, les capabilities, les overrides, le contrôle dynamique du commit import et l'idempotence du bootstrap.
+
+Aucune CI n'a été déclenchée automatiquement sur le dernier HEAD. Ne pas les déclarer verts avant exécution locale.
+
+## 8. Frontend restant à traiter
+
+Le frontend contient encore l'ancienne surface Platform Produit, notamment :
+
+```text
+frontend/src/features/products/api/platform-product-catalog-api.js
+frontend/src/features/products/components/platform-*.jsx
+frontend/src/features/products/pages/platform-products-page.jsx
+frontend/src/features/products/products-routes.js
+frontend/src/features/products/products-composition.test.js
+```
+
+La prochaine phase doit :
+
+1. finaliser le frontend Workspace avec les capabilities effectives ;
+2. retirer/recomposer les anciennes attentes Platform Produits ;
+3. créer une administration métier globale hors `PlatformLayout` ;
+4. appeler `/api/product-reference` ;
+5. déterminer l'accès frontend depuis l'autorisation Application Global, jamais depuis le seul rôle Platform ;
+6. corriger RTL puis E2E.
+
+## 9. Validation backend à faire au prochain démarrage
+
+D'abord les tests ciblés du §7.
+
+S'ils sont verts :
+
+```text
 npm test
-npm --prefix frontend run lint
-npm --prefix frontend run test
-npm --prefix frontend run build
-npm run test:e2e
-npm run release:check
 ```
 
-Éviter les micro-validations et PR intermédiaires ; utiliser des tests ciblés pendant le développement uniquement lorsqu'ils apportent un signal utile, puis faire la validation globale en fin de bloc.
+une seule fois pour le checkpoint backend cohérent avant d'engager la phase frontend.
+
+Ne pas lancer les gates frontend/E2E tant que le frontend n'a pas été repositionné.
+
+## 10. Git / livraison
+
+Tout reste dans `feature/m002-catalogue-produits`.
+
+Pas de micro-PR. M-002 sera livré avec une seule PR après frontend, tests, E2E, gates et validation visuelle.

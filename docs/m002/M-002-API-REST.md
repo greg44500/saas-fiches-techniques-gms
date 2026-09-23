@@ -1,6 +1,6 @@
 # M-002 — Contrat API REST
 
-**Statut : RECADRÉ — API Workspace conservée ; ancienne frontière Platform à supprimer avant PR**
+**Statut : BACKEND RECADRÉ ET IMPLÉMENTÉ — frontend à aligner ; tests d'autorisation récents à exécuter**
 
 ## 1. Règle générale
 
@@ -144,6 +144,10 @@ permission product:catalog:manage
 
 ### POST /imports/inspect
 
+Permission de base : `product:read`.
+
+Capability : `product_catalog_import`.
+
 Reçoit un CSV / XLS / XLSX temporaire.
 
 Le backend doit :
@@ -157,9 +161,11 @@ Le backend doit :
 - persister une session d'import temporaire TTL ;
 - retourner `importId`, en-têtes, nombre de lignes et colonnes hors périmètre M-002.
 
-L'implémentation actuelle `multer.memoryStorage()` du module est à remplacer avant la PR finale.
+Le backend utilise désormais le pipeline temporaire sécurisé configurable du Core. Aucun `File` durable n'est créé.
 
 ### POST /imports/:importId/preview
+
+Permission de base : `product:read`.
 
 Capability : `product_catalog_import`.
 
@@ -169,13 +175,20 @@ Le backend normalise, recherche les correspondances et classe les lignes : exact
 
 ### POST /imports/:importId/commit
 
-Capability : `product_catalog_import`.
+Permission de base : `product:read`.
+
+Capability principale : `product_catalog_import`.
 
 Le backend revendique atomiquement la session et revalide la preview contre l'état courant. Un état obsolète retourne 409.
 
-Les décisions qui créent de nouveaux Produits/déclinaisons exigent également `product_contribution` et `product:contribute`.
+Le contrôle final est dynamique, à partir de la preview persistée et des décisions de la requête :
 
-Les décisions qui rattachent des références existantes exigent `product:catalog:manage`.
+- une ligne ignorée n'ajoute aucun droit de mutation ;
+- un rattachement à une référence existante exige `product:catalog:manage` ;
+- une création de Produit/déclinaison exige `product:contribute` et la capability `product_contribution` ;
+- une ligne ambiguë applique les exigences de l'action explicitement choisie.
+
+Le commit n'exige donc plus systématiquement les deux permissions `product:catalog:manage` et `product:contribute`.
 
 Résultats possibles :
 
@@ -191,37 +204,43 @@ Les colonnes fournisseur / référence / conditionnement / tarif restent M-003.
 
 Après traitement, le fichier source temporaire est supprimé selon le cycle prévu ; les données métier structurées persistent. Ce temporaire ne consomme aucun quota commercial de stockage durable du Workspace.
 
-## 6. Gouvernance globale métier — frontière à finaliser
+## 6. Gouvernance globale métier
 
-Les anciennes routes suivantes sont invalidées par le recadrage :
-
-```text
-/api/platform/products/*
-```
-
-Ainsi que les permissions :
+La frontière backend retenue est indépendante de Platform :
 
 ```text
-platform:products:read
-platform:products:manage
+/api/product-reference
 ```
 
-La gouvernance globale doit rester dans le module Produit mais hors frontière Platform.
+Permissions Application Global :
 
-Avant de figer ses routes, la reprise doit fermer le mécanisme d'autorisation globale métier conformément à `M-002-AUTHORIZATION-GOVERNANCE.md`.
+```text
+product:reference:read
+product:reference:manage
+```
 
-Fonctions à conserver fonctionnellement :
+Le guard utilisé est `authorizeApplicationGlobalPermission()`.
 
-- liste/détail du référentiel complet ;
-- file PENDING ;
-- gestion des catégories ;
+Un rôle Platform, y compris Super Admin, ne confère aucun droit Produit implicite. Un Owner Workspace non plus.
+
+Routes backend disponibles sous cette frontière :
+
+- `GET /metadata` ;
+- `GET /categories` ;
+- `POST /categories` ;
+- `PATCH /categories/:categoryId` ;
+- `PATCH /categories/:categoryId/status` ;
+- `GET /` ;
+- `GET /:productId` ;
 - correction Produit/déclinaison ;
-- approve/reject ;
-- archivage/réactivation ;
-- historique `ProductReferenceEvent` ;
-- import global contrôlé si nécessaire.
+- approve/reject Produit/déclinaison ;
+- archivage/réactivation.
 
-Le service de gouvernance existant peut être réutilisé après suppression de sa dépendance conceptuelle à Platform.
+Les services de gouvernance restent des services métier Produit. Les anciens contrats backend `/api/platform/products/*` et `platform:products:*` ont été retirés.
+
+Le premier gouverneur peut être initialisé explicitement avec `npm run seed:m002-governance`.
+
+Le frontend d'administration doit encore être déplacé hors `PlatformLayout` et aligné sur cette nouvelle API.
 
 ## 7. Anti-énumération
 

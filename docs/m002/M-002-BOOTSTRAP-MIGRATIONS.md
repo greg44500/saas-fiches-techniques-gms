@@ -1,6 +1,6 @@
 # M-002 — Indexes, migration et bootstrap
 
-**Statut : BACKEND IMPLÉMENTÉ — dataset initial encore non validé**
+**Statut : BACKEND IMPLÉMENTÉ — gouvernance bootstrap ajoutée ; dataset initial encore non validé**
 
 ## 1. Aucun backfill métier historique
 
@@ -55,7 +55,32 @@ Responsabilités :
 
 Le runner sera ajouté au manifest des migrations du produit selon le processus Core de release.
 
-## 4. Bootstrap Produit
+## 4. Bootstrap de la gouvernance Produit
+
+La gouvernance globale utilise `ApplicationGlobalRole` / `ApplicationGlobalMember`.
+
+Commande produit :
+
+```text
+npm run seed:m002-governance
+```
+
+Précondition : le Fondateur Platform actif doit déjà exister et les indexes Application Global doivent être disponibles.
+
+Le seed :
+
+- résout le Fondateur Platform actif uniquement comme identité de bootstrap ;
+- synchronise le rôle système produit `product_reference_governor` ;
+- attribue `product:reference:read` et `product:reference:manage` ;
+- crée explicitement le membership Application Global correspondant ;
+- est idempotent lorsque le même membership actif existe déjà ;
+- conserve les garde-fous Core face à un historique global incompatible.
+
+Invariant : le Fondateur n'obtient pas ces permissions parce qu'il est Super Admin Platform. Le seed matérialise une autorité métier globale distincte et persistée.
+
+Ce bootstrap est un seed produit, pas une migration de schéma ; il ne rejoint donc pas `migration-manifest.json`.
+
+## 5. Bootstrap Produit
 
 Le bootstrap M-002 utilise les mêmes services/invariants que les flux normaux.
 
@@ -91,7 +116,7 @@ Le bootstrap :
 - trace la version installée et le hash du dataset dans ProductReferenceBootstrapRun ;
 - ne contient aucun prix/fournisseur/conditionnement.
 
-## 5. Source réelle disponible
+## 6. Source réelle disponible
 
 Le jeu de données utilisateur existant pourra servir à produire le premier référentiel bêta après nettoyage.
 
@@ -110,7 +135,7 @@ extraire les identités candidates
 
 Aucune ligne fournisseur ne crée automatiquement un Produit canonique.
 
-## 6. Catégories
+## 7. Catégories
 
 La taxonomie initiale n'est pas inventée dans le code.
 
@@ -118,7 +143,7 @@ Elle est fournie dans le fichier bootstrap validé ou créée par la gouvernance
 
 Une contribution PENDING peut être non classée ; l'approbation ACTIVE exige une catégorie ACTIVE.
 
-## 7. Données de développement et tests
+## 8. Données de développement et tests
 
 Vitest/Supertest :
 
@@ -135,7 +160,7 @@ saas_fiches_techniques_gms_e2e_test
 Aucun test destructif n'utilise la base de développement.
 
 
-## 8. Import utilisateur de Produits
+## 9. Import utilisateur de Produits
 
 M-002 prévoit également un flux utilisateur CSV / XLS / XLSX distinct du bootstrap technique.
 
@@ -152,7 +177,7 @@ Ce flux :
 
 La logique d'import ne constitue pas un second moteur de création.
 
-## 9. Préparation de M-003
+## 10. Préparation de M-003
 
 Lorsqu'un fichier contient Fournisseur + référence + conditionnement + tarif, il est classé comme catalogue fournisseur et sera traité par M-003.
 
