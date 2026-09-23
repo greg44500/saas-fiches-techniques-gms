@@ -235,6 +235,30 @@ describe('ProductsPage', () => {
     expect(screen.getByText('Détail Produit ouvert')).toBeInTheDocument();
   });
 
+  it('affiche une action compacte pour ajouter une référence au catalogue', () => {
+    mocks.searchQuery.mockReturnValue({
+      data: {
+        results: [{
+          ...result,
+          workspaceEntry: null,
+        }],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByRole('button', {
+      name: 'Ajouter Carotte au catalogue',
+    })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ajouter' }))
+      .not.toBeInTheDocument();
+  });
+
   it('masque les actions d’écriture sans permissions ou capabilities M-002', () => {
     mocks.workspaceContext.mockReturnValue({
       workspace: { id: 'workspace-1', name: 'Acme' },

@@ -267,13 +267,13 @@ function ProductsPage() {
                   Retirer
                 </Button>
               ) : canAttach ? (
-                <Button
+                <ActionIconButton
+                  Icon={Plus}
                   disabled={mutationPending}
+                  label={'Ajouter ' + result.product.name + ' au catalogue'}
                   onClick={() => changeCatalog(result, true)}
-                  type="button"
-                >
-                  Ajouter
-                </Button>
+                  tooltipLabel="Ajouter au catalogue"
+                />
               ) : null
             )}
           </DataTableActions>
