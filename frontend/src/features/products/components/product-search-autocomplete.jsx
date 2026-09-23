@@ -128,18 +128,16 @@ function ProductSearchAutocomplete({
                 : suggestions.length + ' résultat(s) proposé(s)'}
             </AutocompleteStatus>
 
-            {suggestionsQuery.isFetching && (
-              <p className="px-3 py-3 text-sm text-muted-foreground" role="status">
-                Recherche des Produits…
-              </p>
-            )}
-
             <AutocompleteEmpty>
-              {waitingForMinimum
-                ? 'Saisissez au moins 3 caractères.'
-                : normalizedValue.length === 0
-                  ? 'Commencez à saisir un nom ou un alias.'
-                  : 'Aucun Produit ne correspond à cette recherche.'}
+              {suggestionsQuery.isFetching
+                ? 'Recherche des Produits…'
+                : suggestionsQuery.isError
+                  ? 'La recherche prédictive est temporairement indisponible.'
+                  : waitingForMinimum
+                    ? 'Saisissez au moins 3 caractères.'
+                    : normalizedValue.length === 0
+                      ? 'Commencez à saisir un nom ou un alias.'
+                      : 'Aucun Produit ne correspond à cette recherche.'}
             </AutocompleteEmpty>
 
             <AutocompleteList>
