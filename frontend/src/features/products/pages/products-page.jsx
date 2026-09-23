@@ -44,7 +44,6 @@ import {
   getFoodRangeLabel,
   getFoodRangeName,
   getReferenceUnitLabel,
-  getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
@@ -188,11 +187,11 @@ function ProductsPage() {
       ),
     },
     {
-      id: 'variant',
-      header: 'Déclinaison',
+      id: 'presentation',
+      header: 'Présentation',
       cell: (result) => (
         <div>
-          <p>{getVariantLabel(result.variant)}</p>
+          <p>{result.variant.presentation || 'Standard'}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {getReferenceUnitLabel(metadata, result.variant.referenceUnit)}
             {' · '}Rendement {formatYield(result.variant.yieldPercent)}
@@ -208,9 +207,11 @@ function ProductsPage() {
           <p className="font-medium">
             {getFoodRangeLabel(metadata, result.variant.foodRange)}
           </p>
-          {getFoodRangeName(metadata, result.variant.foodRange) && (
+          {(result.variant.processingState
+            || getFoodRangeName(metadata, result.variant.foodRange)) && (
             <p className="mt-1 text-xs text-muted-foreground">
-              {getFoodRangeName(metadata, result.variant.foodRange)}
+              {result.variant.processingState
+                || getFoodRangeName(metadata, result.variant.foodRange)}
             </p>
           )}
         </div>

@@ -184,11 +184,13 @@ describe('ProductsPage', () => {
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByText('Légumes')).toBeInTheDocument();
-    expect(screen.getByText('Entière · Produit frais')).toBeInTheDocument();
+    expect(screen.getByText('Entière')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Présentation' }))
+      .toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Gamme' }))
       .toBeInTheDocument();
     expect(screen.getByText('Gamme 1')).toBeInTheDocument();
-    expect(screen.getByText('Frais')).toBeInTheDocument();
+    expect(screen.getByText('Produit frais')).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Statut' }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Mon référentiel' }))
