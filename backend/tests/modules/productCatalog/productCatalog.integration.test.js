@@ -150,6 +150,33 @@ describe('M-002 product catalog services', () => {
         expect(visible.results[0].product.name).toBe('Topinambour');
     });
 
+    it('trie le référentiel alphabétiquement avant pagination', async () => {
+        await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Poire',
+        });
+        await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Carotte jaune',
+        });
+
+        const firstPage = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'REFERENCE',
+            page: 1,
+            limit: 1,
+        });
+        const secondPage = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'REFERENCE',
+            page: 2,
+            limit: 1,
+        });
+
+        expect(firstPage.results[0].product.name).toBe('Carotte jaune');
+        expect(secondPage.results[0].product.name).toBe('Poire');
+    });
+
     it('rend ajout, retrait et réactivation du catalogue idempotents', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,

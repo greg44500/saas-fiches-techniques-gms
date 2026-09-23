@@ -46,6 +46,12 @@ describe('M-002 product request validation', () => {
         expect(createWorkspaceProductBodySchema.safeParse({
             name: 'Carotte',
             categoryId,
+            variant: { referenceUnit: 'KG' },
+        }).success).toBe(false);
+
+        expect(createWorkspaceProductBodySchema.safeParse({
+            name: 'Carotte',
+            categoryId,
             status: 'ACTIVE',
             variant: { foodRange: 1, referenceUnit: 'KG' },
         }).success).toBe(false);
