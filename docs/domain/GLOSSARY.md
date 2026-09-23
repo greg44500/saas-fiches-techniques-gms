@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 
 **Statut :** VALIDÉ — vocabulaire transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-21
+**Dernière mise à jour :** 2026-09-23
 
 > Ce glossaire fixe le vocabulaire déjà stabilisé pendant le cadrage.  
 > Les termes marqués comme ouverts ne doivent pas être transformés en contrats techniques définitifs.
@@ -135,7 +135,7 @@ Sélection des Produits canoniques réellement utilisés par un Workspace.
 
 Le catalogue Workspace référence le référentiel partagé ; il ne copie pas l'identité du Produit. Les Dossiers du Workspace puisent dans cette sélection.
 
-Une relation conceptuelle de type `WorkspaceProduct` peut porter ce rattachement ; son schéma final relève de M-002.
+`WorkspaceProduct` matérialise ce rattachement dans M-002. Il appartient au Workspace et référence une `ProductVariant` globale sans copier l'identité canonique.
 
 ---
 
@@ -183,7 +183,7 @@ forme             : râpée
 conservation      : fraîche
 ```
 
-Une transformation qui crée une formulation/composition différente peut relever d'un Produit distinct plutôt que d'une simple déclinaison ; cette frontière est à fermer dans M-002.
+Une transformation qui crée une formulation/composition réellement différente relève d'un Produit distinct ; une variation structurée d'usage relève d'une `ProductVariant`. La décision métier ne doit pas reposer sur la seule ressemblance du libellé.
 
 ### Règle de recherche et création
 
@@ -198,6 +198,25 @@ carote
 doivent converger vers `Carotte` lorsqu'ils désignent la même réalité métier.
 
 Le libellé affiché peut intégrer les dimensions structurées, par exemple `Carotte râpée prête à l'emploi`, sans créer une nouvelle identité racine uniquement à cause du texte.
+
+### Création dans le référentiel partagé
+
+Après contrôle de doublon, une création autorisée devient immédiatement `ACTIVE` dans le référentiel commun. Le parcours courant ne crée plus de statut d'attente nécessitant une approbation humaine systématique.
+
+Depuis un Workspace, la création ajoute en plus la première déclinaison au catalogue du Workspace via `WorkspaceProduct`.
+
+### Autorité globale Produit
+
+Autorité métier applicative permettant de consulter ou maintenir le référentiel partagé indépendamment d'un Workspace.
+
+Elle repose sur les permissions Application Global :
+
+```text
+product:reference:read
+product:reference:manage
+```
+
+Un rôle Platform ou Workspace ne confère jamais ces permissions implicitement. Un membre de l'équipe Platform peut donc alimenter le référentiel commun seulement s'il reçoit explicitement un membership Application Global Produit.
 
 
 ---

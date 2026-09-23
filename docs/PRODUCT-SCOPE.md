@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
 
 **Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
-**Dernière mise à jour :** 2026-09-21  
+**Dernière mise à jour :** 2026-09-23  
 **Périmètre :** définition du problème métier, des principes produit et des invariants à préserver avant tout module métier
 
 > Ce document formalise les fondations transversales validées du produit.  
@@ -215,11 +215,11 @@ Dossier
 → contextualise les données magasin
 ```
 
-La relation d'usage du Workspace pourra être matérialisée ultérieurement par un concept de type `WorkspaceProduct`, sans préjuger du schéma Mongoose final de M-002.
+La relation d'usage du Workspace est matérialisée par `WorkspaceProduct`, qui référence une `ProductVariant` sans recopier l'identité canonique.
 
-Les données partagées au niveau SaaS doivent rester strictement génériques. Elles ne contiennent jamais de tarif négocié, prix facturé, historique commercial local, fournisseur choisi par un magasin ou autre donnée confidentielle d'un tenant.
+Les données partagées au niveau SaaS restent strictement génériques. Elles ne contiennent jamais de tarif négocié, prix facturé, historique commercial local, fournisseur choisi par un magasin ou autre donnée confidentielle d'un tenant.
 
-Les utilisateurs autorisés doivent pouvoir rechercher un Produit du référentiel commun puis l'ajouter à leur catalogue Workspace. Si le Produit n'existe réellement pas, le parcours M-002 devra permettre de proposer/créer une nouvelle identité canonique après contrôle de doublon.
+Les utilisateurs autorisés recherchent d'abord le référentiel commun puis ajoutent une référence existante à leur catalogue Workspace. Si aucun équivalent crédible n'existe, ils peuvent créer une nouvelle identité canonique après contrôle anti-doublon et sélection d'une catégorie active. Cette nouvelle identité est immédiatement `ACTIVE` et partagée dans le référentiel commun ; elle n'attend pas une validation humaine systématique.
 
 Invariant :
 
@@ -230,7 +230,7 @@ même réalité Produit canonique
 
 Les variantes de casse, espaces, accents, singulier/pluriel et fautes d'orthographe courantes ne doivent pas créer silencieusement des Produits concurrents. Le contrôle doit combiner normalisation, alias et recherche de proximité avant toute création. L'index d'unicité technique seul ne suffit pas à garantir l'unicité sémantique.
 
-La politique exacte de contribution/modération d'un nouveau Produit global reste à fermer dans M-002 ; elle ne doit pas être inventée pendant M-001.
+La politique M-002 est désormais fermée : le parcours courant ne possède pas de file de modération systématique. L'administration globale Produit sert à alimenter et maintenir la qualité du référentiel commun — création/import global, catégories, corrections, archivage/réactivation et maintenance — au moyen d'une autorité Application Global explicite, distincte des rôles Platform et Workspace.
 
 ---
 
@@ -375,7 +375,7 @@ Le libellé affiché reste lisible pour l'utilisateur, mais l'identité ne repos
 
 Les formes et états qui modifient réellement l'usage, le rendement ou la sélection d'un Article fournisseur doivent être identifiés de manière structurée autour de l'identité canonique.
 
-Axes conceptuels à cadrer précisément dans M-002 :
+Axes structurés retenus par M-002 :
 
 ```text
 Produit canonique
@@ -402,7 +402,7 @@ Carotte
 
 L'interface peut composer un libellé lisible comme `Carotte râpée prête à l'emploi`, sans transformer chaque variante orthographique du libellé en nouvelle identité canonique.
 
-Une transformation qui crée réellement un produit composé ou une formulation différente ne doit pas être assimilée automatiquement à une simple forme. Par exemple, une « purée de carottes » industrielle peut contenir d'autres ingrédients. La frontière entre déclinaison et Produit distinct doit être cadrée dans M-002 à partir de critères métier, jamais par simple comparaison de texte.
+Une transformation qui crée réellement un produit composé ou une formulation différente ne doit pas être assimilée automatiquement à une simple forme. Par exemple, une « purée de carottes » industrielle peut contenir d'autres ingrédients. M-002 conserve donc un choix métier explicite : une simple variation d'usage relève d'une `ProductVariant`, tandis qu'une composition réellement différente relève d'un Produit canonique distinct. Cette décision ne repose jamais sur la seule ressemblance textuelle.
 
 ### 5.2 Données minimales du produit
 
@@ -2121,7 +2121,7 @@ Décisions finales fermées le 2026-09-20 :
 - contraintes réglementaires structurantes de M-001 vérifiées : les éventuelles coordonnées nominatives sont des données personnelles à minimiser et protéger, mais aucune obligation démontrée n'impose un champ métier obligatoire supplémentaire au Dossier ;
 - conformité globale et rétention restent suivies par D-003 / D-006 avant production.
 
-Les questions restantes sont désormais rattachées au module concerné : catégories/unités Produit avant M-002 ; Fournisseur/Article/prix avant M-003 ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge avant implémentation.
+Les questions restantes sont désormais rattachées au module concerné : M-002 a fermé catégories, unités, lifecycle et gouvernance Produit ; Fournisseur/Article/catalogues/prix restent à fermer en M-003 ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge avant implémentation.
 
 La validation globale n'autorise pas encore l'implémentation de M-001 : son contrat détaillé doit d'abord être cadré et validé.
 

@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
 
 **Statut :** VALIDÉ — modèle conceptuel transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-21  
+**Dernière mise à jour :** 2026-09-23  
 **Important :** ce document décrit des concepts métier et leurs relations. Il ne constitue pas un schéma Mongoose.
 
 ---
@@ -288,162 +288,198 @@ La lecture respecte à la fois les permissions Workspace et le scope Dossier ; u
 
 ## 5. Produit
 
-Le Produit canonique est une donnée de référence générique partagée à l'échelle du SaaS. Il est indépendant d'un Workspace, d'un Fournisseur et d'un prix.
+Le référentiel Produit M-002 est une donnée de référence globale du SaaS. Les identités génériques sont partagées entre Workspaces ; les données commerciales restent hors de ce périmètre.
 
-Invariant principal :
+### 5.1 Modèle M-002 confirmé
+
+```text
+CanonicalProduct
+→ identité racine globale
+→ nom / alias / clés de recherche
+→ catégorie
+→ ACTIVE | ARCHIVED
+
+ProductVariant
+→ déclinaison globale d'un CanonicalProduct
+→ forme
+→ état / transformation
+→ conservation
+→ gamme éventuelle
+→ unité de référence
+→ rendement
+→ ACTIVE | ARCHIVED
+
+WorkspaceProduct
+→ ownership Workspace
+→ référence une ProductVariant
+→ matérialise le catalogue d'usage du Workspace
+→ ne copie pas l'identité Produit
+```
+
+`createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` peut conserver l'origine historique d'une création sans transformer le Produit canonique en donnée privée du Workspace.
+
+### 5.2 Anti-doublon et création
+
+Invariant :
 
 ```text
 même réalité Produit canonique
 → une seule identité dans le SaaS
 ```
 
-Un Workspace qui utilise `Carotte` référence cette identité ; il ne crée pas une copie de `Carotte`.
-
-### 5.1 Identité canonique et contrôle des doublons
-
-Conceptuellement :
-
-```text
-Produit canonique
-├── nom canonique
-├── clé normalisée
-├── alias de recherche
-├── catégorie
-├── unité de référence
-├── photo facultative
-├── notes génériques facultatives
-├── statut
-├── createdAt
-├── updatedAt
-├── createdBy
-└── updatedBy
-```
-
-Le détail technique de persistance reste à définir en M-002.
-
-Les variantes de casse, espaces, accents, singulier/pluriel et fautes d'orthographe reconnues comme équivalentes ne doivent pas produire plusieurs identités concurrentes.
-
-Le contrôle de création doit combiner au minimum :
+Avant toute création :
 
 ```text
 normalisation déterministe
-→ correspondance exacte normalisée
-→ alias connus
-→ recherche de proximité / suggestion
-→ création seulement si aucun équivalent crédible n'est identifié
+→ recherche exacte sur nom/alias
+→ recherche de proximité
+→ affichage des candidats proches
+→ revue explicite des candidats
+→ création seulement si aucun équivalent crédible n'est retenu
 ```
 
-Un index unique protège une clé normalisée mais ne suffit pas, à lui seul, à résoudre l'unicité sémantique.
+L'index d'unicité technique protège la concurrence mais ne remplace pas cette revue sémantique.
 
-### 5.2 Catalogue d'usage du Workspace
-
-Le Workspace possède une sélection des Produits qu'il utilise, sans dupliquer leur identité canonique.
-
-Conceptuellement :
+Une création Workspace autorisée :
 
 ```text
-Workspace
-→ relation d'usage
-→ Produit canonique
+nouveau CanonicalProduct ACTIVE
++ première ProductVariant ACTIVE
++ WorkspaceProduct ACTIVE
 ```
 
-Cette relation pourra être matérialisée par un concept de type `WorkspaceProduct`, à confirmer en M-002.
+La nouvelle identité est immédiatement visible dans le référentiel commun. Il n'existe plus de file de validation humaine systématique dans le parcours courant.
 
-Elle peut porter ultérieurement des métadonnées propres à l'usage du Workspace si un besoin est démontré, mais ne doit pas copier les propriétés de référence sans nécessité.
+Une création globale par l'autorité Produit crée le `CanonicalProduct` et sa première `ProductVariant` sans créer de `WorkspaceProduct`.
 
-### 5.3 Forme, état et conservation
+### 5.3 Catégories
 
-La forme de préparation ne doit pas être encodée uniquement dans un libellé libre lorsqu'elle modifie l'usage, le rendement ou la sélection d'un Article fournisseur.
+`ProductCategory` est globale au référentiel Produit.
 
-Axes conceptuels :
+Une catégorie `ACTIVE` est obligatoire pour créer ou réactiver un Produit `ACTIVE`.
+
+Une catégorie utilisée par un Produit actif ne peut pas être archivée silencieusement.
+
+### 5.4 Déclinaisons
+
+Les dimensions structurées restent séparées de l'identité canonique lorsqu'elles modifient l'usage, le rendement ou la sélection commerciale :
 
 ```text
-Produit canonique
-→ Carotte
-
 forme
-→ entière / rondelles / râpée / dés / julienne / purée / ...
-
 état / transformation
-→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
-
 conservation
-→ fraîche / surgelée / appertisée / ...
+gamme éventuelle
+unité de référence
+rendement
 ```
-
-Ces dimensions forment des déclinaisons structurées autour de l'identité canonique plutôt que des copies lexicales du Produit.
-
-Une transformation peut toutefois créer un Produit réellement différent lorsqu'elle introduit une formulation/composition propre. Cette frontière sera décidée en M-002 à partir de critères métier et non d'une simple ressemblance de nom.
-
-### 5.4 Catégorie et gamme
-
-La catégorie est indépendante de la gamme.
-
-```text
-Catégorie
-→ axe fonctionnel de classement
-
-Gamme
-→ axe professionnel de préparation / conservation lorsqu'applicable
-```
-
-La gamme est facultative lorsqu'elle n'est pas pertinente.
-
-Le modèle doit permettre :
-
-```text
-1
-2
-3
-4
-5
-non applicable
-```
-
-La gamme ne doit pas remplacer les dimensions structurées de forme, état ou conservation lorsqu'elles sont nécessaires au calcul ou à l'usage.
-
-### 5.5 Rendement
-
-Le rendement doit correspondre à la réalité effectivement utilisée dans la fiche. Il peut donc dépendre d'une déclinaison structurée plutôt que de la seule identité racine.
 
 Exemple :
 
 ```text
-Carotte entière brute
-→ rendement < 100 % possible
+CanonicalProduct : Carotte
+ProductVariant    : râpée · prête à l'emploi · fraîche
+```
 
-Carotte râpée prête à l'emploi
-→ rendement 100 % possible
+Une formulation/composition réellement différente doit être modélisée comme un Produit canonique distinct, pas comme une simple variation lexicale.
+
+### 5.5 Catalogue d'usage Workspace
+
+`WorkspaceProduct` est la relation tenant-scoped entre un Workspace et une `ProductVariant`.
+
+```text
+Workspace
+1
+→ plusieurs WorkspaceProduct
+→ chacun référence une ProductVariant globale
+```
+
+Le retrait du catalogue archive la relation d'usage sans supprimer le Produit global.
+
+Un Dossier utilise le catalogue de son Workspace ; M-002 ne crée pas de Produit Dossier-owned.
+
+### 5.6 Lifecycle et historique
+
+Lifecycle opérationnel :
+
+```text
+ACTIVE ↔ ARCHIVED
+```
+
+Les anciennes valeurs de développement `PENDING_REVIEW` et `REJECTED` sont traitées par la migration M-002 de compatibilité. Elles ne font plus partie du registre opérationnel courant.
+
+`ProductReferenceEvent` conserve l'historique métier des créations, corrections, archives/réactivations et opérations de gouvernance nécessaires.
+
+### 5.7 Autorité globale du référentiel
+
+Le référentiel global n'appartient pas à l'administration Platform.
+
+Autorité :
+
+```text
+ApplicationGlobalRole
+ApplicationGlobalMember
+product:reference:read
+product:reference:manage
 ```
 
 Invariant :
 
 ```text
-fiche technique
-→ hérite du rendement de référence applicable
-→ ne demande pas une ressaisie libre ordinaire
+Super Admin Platform
+≠ gouverneur Produit automatique
+
+Owner Workspace
+≠ gouverneur Produit automatique
 ```
 
-Lorsque le rendement est mathématiquement déductible de données fiables, il doit être calculé.
+Un membre Platform peut alimenter le référentiel commun uniquement si un membership Application Global Produit lui attribue explicitement cette autorité.
 
-Exemple :
+### 5.8 Import Produit
+
+M-002 possède deux usages du même pipeline Produit sécurisé :
 
 ```text
-poids net égoutté / poids net
-→ rendement conserve
+Workspace
+→ import Produit générique
+→ rattachement existant ou création contrôlée
+→ nouvelles créations ajoutées au catalogue Workspace
+
+Application Global
+→ import Produit générique
+→ alimentation directe du référentiel
+→ aucun WorkspaceProduct créé
 ```
 
-Le modèle doit préserver une possibilité future d'exception documentée et historisée sans imposer son développement en V1.
+Les fichiers CSV/XLS/XLSX sont temporaires de traitement. Ils ne deviennent pas des documents métier persistants pour le seul import.
 
-### 5.6 Contribution au référentiel partagé
+Les colonnes commerciales détectées — Fournisseur, référence fournisseur, conditionnement, prix — restent hors M-002 et préparent M-003.
 
-Un utilisateur autorisé peut rechercher le référentiel global depuis son Workspace et rattacher un Produit existant à son catalogue.
+### 5.9 Frontière M-003
 
-Si aucun équivalent crédible n'existe, M-002 doit permettre la création/proposition d'une nouvelle identité canonique après les contrôles de doublon.
+M-002 ne porte jamais :
 
-La politique exacte de modération, fusion et correction des Produits globaux reste à fermer en M-002. Elle ne doit pas compromettre l'isolation tenant : aucune donnée commerciale du Workspace ou du Dossier ne remonte dans le Produit canonique.
+- Fournisseur ;
+- identité/édition de catalogue fournisseur ;
+- Article fournisseur ;
+- référence fournisseur ;
+- conditionnement commercial ;
+- prix catalogue ;
+- prix négocié ;
+- prix facturé.
 
----
+M-003 devra conserver explicitement l'origine commerciale d'un Article :
+
+```text
+Fournisseur
+→ Catalogue / édition identifié
+→ Article fournisseur
+→ référence + désignation + conditionnement
+→ rattachement à ProductVariant
+→ tarifs
+```
+
+L'interface devra permettre de filtrer par Fournisseur puis de sélectionner un catalogue/une édition identifiée. Un import SYSCO, par exemple, doit conserver SYSCO comme Fournisseur du catalogue et ne doit jamais perdre cette provenance lors du rapprochement Produit.
+
 
 ## 6. Fournisseur
 
@@ -1456,8 +1492,8 @@ Les rôles personnalisés combinent les permissions lorsque plusieurs responsabi
 
 ### À cadrer avant les modules concernés
 
-- catégories, unités et lifecycle Produit avant M-002 ;
-- données minimales Fournisseur et lifecycle Article avant M-003 ;
+- M-002 : cadrage Produit fermé ; validation finale du lot en cours ;
+- données minimales Fournisseur, identité Catalogue et lifecycle Article avant M-003 ;
 - convention technique de fraîcheur Prix facturé et revues tarifaires avant M-003/M-004 ;
 - types/motifs finaux de versions avant M-004 ;
 - marge semi-nette lorsqu'une définition métier fiable sera disponible ;

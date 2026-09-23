@@ -215,7 +215,9 @@ Contrat détaillé :
 docs/m001/M-001-TEST-STRATEGY.md
 ```
 
-Checkpoint M-001 validé : les quatre parcours métier sont intégrés au corpus Playwright, l'exécution locale finale compte 11/11 tests verts et la Core Gate #101 est `success` sur le head applicatif `79cfe24579e4b39232835fd156009d6f038d9465`. D-012 reste à poursuivre pour chaque nouveau module métier : la validation M-001 ne remplace pas les futurs E2E M-002+.
+Checkpoint M-001 validé : les quatre parcours métier sont intégrés au corpus Playwright, l'exécution locale finale compte 11/11 tests verts et la Core Gate #101 est `success` sur le head applicatif `79cfe24579e4b39232835fd156009d6f038d9465`.
+
+M-002 ajoute désormais deux parcours Playwright critiques sur la branche `feature/m002-catalogue-produits` : création Workspace immédiate d'un Produit actif et alimentation globale par un utilisateur explicitement habilité via Application Global. Ils sont intégrés au code mais ne sont pas déclarés verts tant que `npm run test:e2e` n'a pas été réellement exécuté après les derniers commits. D-012 reste donc ouverte pour la validation M-002.
 
 ### D-013 — Configuration et déploiement de production
 

@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé techniquement — M-002 devient le prochain lot métier  
-**Dernière mise à jour :** 2026-09-22
+**Statut :** VALIDÉ — M-001 clôturé — M-002 implémenté sur branche, validation finale en cours  
+**Dernière mise à jour :** 2026-09-23
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -71,42 +71,34 @@ Décisions finales :
 
 ### 2.2 Catalogue Produit
 
-**État : fondation révisée et validée — cadrage détaillé M-002 à poursuivre après M-001**
+**État : implémentation M-002 alignée sur le contrat recadré — tests/gates et validation visuelle finale à exécuter**
 
-Décisions établies :
+Décisions désormais fermées et implémentées :
 
-- l'identité Produit canonique est partagée à l'échelle du SaaS et n'est pas dupliquée par Workspace ;
-- un Workspace construit son catalogue d'usage en référençant les Produits canoniques dont il a besoin ;
-- les Dossiers utilisent le catalogue de leur Workspace sans copier l'identité Produit ;
-- aucune donnée commerciale ou confidentielle tenant ne peut être stockée dans le Produit canonique ;
-- les utilisateurs autorisés peuvent rechercher le référentiel partagé et rattacher un Produit existant au Workspace ;
-- si aucun équivalent crédible n'existe, M-002 doit permettre de contribuer/créer une nouvelle identité canonique après contrôle de doublon ;
-- la prévention des doublons ne repose pas uniquement sur la casse : normalisation, alias, singulier/pluriel et recherche de proximité doivent participer au contrôle ;
-- forme, état/transformation et conservation sont des dimensions structurées lorsqu'elles changent réellement l'usage, le rendement ou la sélection d'un Article fournisseur ;
-- une simple faute ou variante orthographique ne crée jamais volontairement un nouveau Produit ;
-- une transformation qui crée une formulation réellement différente peut devenir un Produit distinct : la frontière métier sera fermée en M-002 ;
-- la recherche Produit est unifiée avec filtres de portée `Mon Workspace / Tout le référentiel autorisé` et de source `Toutes / Produits canoniques / Catalogues fournisseurs / Références-Articles fournisseur` ;
-- l'élargissement au référentiel global permet de rattacher une donnée existante au Workspace sans la recréer.
+- `CanonicalProduct` porte l'identité Produit partagée à l'échelle du SaaS ;
+- `ProductVariant` porte les déclinaisons structurées : forme, état/transformation, conservation, gamme éventuelle, unité de référence et rendement ;
+- `WorkspaceProduct` matérialise le catalogue d'usage d'un Workspace en référençant une déclinaison sans recopier l'identité ;
+- aucune donnée Fournisseur, référence commerciale, conditionnement ou prix n'est stockée dans M-002 ;
+- la création vérifie d'abord l'existant par normalisation, alias, clés de recherche, proximité et revue explicite des candidats proches ;
+- un doublon exact est refusé ;
+- si aucun équivalent crédible n'existe, l'utilisateur Workspace autorisé peut créer un Produit immédiatement `ACTIVE` dans le référentiel commun et l'ajouter à son catalogue ;
+- une catégorie `ACTIVE` est obligatoire pour toute nouvelle identité Produit ;
+- le lifecycle opérationnel courant est `ACTIVE ↔ ARCHIVED` ;
+- la file quotidienne `PENDING_REVIEW → approve/reject` est supprimée du parcours courant ;
+- l'administration globale du référentiel est indépendante de Platform et repose sur Application Global avec `product:reference:read/manage` ;
+- un membre de l'équipe Platform peut alimenter le référentiel commun uniquement s'il reçoit explicitement cette autorité Application Global ;
+- l'administration globale permet création, import Produit générique, catégories, correction, archivage/réactivation et maintenance qualité ;
+- l'import Workspace et l'import global réutilisent le même pipeline temporaire sécurisé CSV/XLS/XLSX ;
+- l'import M-002 ignore les dimensions commerciales M-003 au lieu de les injecter dans le Produit ;
+- le bootstrap du référentiel reste versionné ; le dataset bêta réel reste volontairement à préparer/nettoyer.
 
-À préserver :
+À fermer avant fusion M-002 :
 
-- catégorie ;
-- gamme lorsque pertinente ;
-- unité de référence ;
-- rendement applicable à la déclinaison réellement utilisée ;
-- photo facultative ;
-- traçabilité de création / modification ;
-- historique des modifications significatives.
-
-**À terminer dans M-002 :**
-
-- schéma conceptuel final entre Produit canonique, déclinaison et relation d'usage Workspace ;
-- gouvernance des catégories ;
-- unités supportées ;
-- règles exactes d'identité sémantique et d'alias ;
-- politique de contribution/modération/fusion d'un Produit partagé ;
-- critères exacts séparant déclinaison et Produit distinct ;
-- lifecycle / archivage du référentiel et du rattachement Workspace.
+- exécuter les tests backend/frontend après les derniers commits ;
+- exécuter les E2E M-002 ajoutés ;
+- exécuter lint/build/gates applicables ;
+- validation visuelle utilisateur ;
+- une seule PR M-002 puis une seule fusion.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
@@ -141,6 +133,9 @@ Décisions établies :
 - les mappings Fournisseur + référence Article déjà validés sont réutilisés dans les éditions suivantes ;
 - une ligne peut rester non rapprochée tant qu'aucune correspondance Produit fiable n'est validée ;
 - l'identité Fournisseur associée aux catalogues globaux doit être réutilisable ; le modèle exact global/Workspace des Fournisseurs reste à fermer en M-003 ;
+- chaque édition/catalogue importé doit être rattaché explicitement à un Fournisseur identifié et conserver sa propre identité/version ;
+- l'interface M-003 doit permettre de filtrer par Fournisseur et de sélectionner un catalogue/une édition précise, sans déduire l'origine d'un Produit à partir de son seul libellé ;
+- un import de type SYSCO doit donc être identifiable comme catalogue SYSCO avant que ses Articles/références puissent être proposés dans les sélecteurs ;
 - IA/OCR uniquement comme assistance future sous contrôle métier.
 
 À finaliser :
@@ -525,17 +520,25 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-M-001 est techniquement clôturé. La prochaine étape de roadmap est :
+M-002 est implémenté sur `feature/m002-catalogue-produits`. La priorité n'est plus de recadrer son modèle mais de prouver le lot :
 
 ```text
-M-002 — Catalogue Produits / Produits canoniques
-→ reprendre le cadrage détaillé déjà amorcé
-→ fermer le modèle conceptuel Produit canonique / déclinaisons / usage Workspace
-→ définir gouvernance, identité sémantique, alias, lifecycle et bootstrap
-→ seulement après validation : implémentation sur une branche dédiée
+pull du HEAD M-002
+→ migration M-002 sur la base de développement
+→ tests backend ciblés
+→ tests backend globaux en tenant compte du problème connu de parallélisme
+→ tests frontend
+→ lint/build
+→ E2E M-002
+→ validation visuelle utilisateur
+→ documentation finale si un écart est démontré
+→ UNE PR M-002
+→ UNE fusion
 ```
 
-Ne pas rouvrir M-001 sauf régression démontrée. Les éventuels ajustements purement visuels du module Dossiers pourront être traités dans un lot UX post-merge distinct.
-`npm run format:check` reste actuellement non conforme sur des fichiers Core inchangés et n'appartient pas à la Core Gate canonique. Ce sujet doit être traité séparément comme besoin générique Core/tooling, sans correction silencieuse dans le produit.
+Après fermeture de M-002, le cadrage suivant est M-003. Le premier point à verrouiller sera l'identité Fournisseur/Catalogue : un Produit sélectionné depuis un catalogue doit conserver une origine Fournisseur et une édition/catalogue explicites, avec filtres et liste de catalogues identifiés.
 
-La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour M-001.
+Ne pas rouvrir M-001 sauf régression démontrée. Les ajustements visuels Dossier déjà identifiés restent un lot UX séparé après la priorité M-002.
+`npm run format:check` reste un sujet Core/tooling séparé s'il est toujours non conforme sur des fichiers Core inchangés.
+
+La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés selon leur module.

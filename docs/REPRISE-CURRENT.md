@@ -3,7 +3,7 @@
 **Date :** 2026-09-23  
 **Lot actif :** M-002 — Catalogue Produits / Produits canoniques  
 **Branche :** `feature/m002-catalogue-produits`  
-**Checkpoint backend/tests avant documentation :** `a0da34a5a4be383dab2f936e16ec252e6a77d8c5`
+**Checkpoint code avant synchronisation documentaire :** `14a5f791a436bcabb8c6ce82a1f0d0a578f873c9`
 
 ## 1. Autorité de reprise
 
@@ -28,184 +28,325 @@ tag        : v1.2.0
 commit     : c428fbec1edfa21a8860fcf8283072e45719832b
 ```
 
-Ce SHA post-tag fournit Application Global authorization, le téléversement temporaire sécurisé configurable et le correctif d'idempotence `contentInspector: null`.
+Ce SHA contient notamment Application Global authorization et le téléversement temporaire sécurisé configurable utilisés par M-002.
 
-Aucune nouvelle release Core n'a été créée pour ces commits post-tag.
+Aucun besoin Core supplémentaire n'a été démontré par le recadrage actuel.
 
-## 3. État Git
+## 3. Contrat M-002 courant
 
-Avant le commit documentaire de ce checkpoint :
+Le workflow historique de validation humaine systématique est supprimé.
 
 ```text
-feature/m002-catalogue-produits
-→ 60 commits devant main
-→ 0 derrière
+recherche anti-doublon
+→ exact match : utiliser/refuser la duplication
+→ candidats proches : revue explicite
+→ aucun équivalent crédible : création immédiate ACTIVE
 ```
 
-Ne pas repartir de `main`, ne pas recréer M-002 et ne pas créer de micro-PR.
-
-## 4. Backend M-002 courant
-
-### Modèle métier
-
-Conservé : `CanonicalProduct`, `ProductVariant`, `ProductCategory`, `WorkspaceProduct`, `ProductReferenceEvent`, `ProductImportSession`, normalisation/anti-doublon/matching, contributions `PENDING_REVIEW` et séparation M-003.
-
-### Import sécurisé
+Modèle :
 
 ```text
-CSV / XLS / XLSX
-→ secure temporary upload Core
-→ inspection réelle
-→ checksum
-→ antivirus
-→ parsing
-→ preview
-→ commit
-→ cleanup
+CanonicalProduct
+→ global SaaS
+
+ProductVariant
+→ global SaaS
+
+WorkspaceProduct
+→ ownership Workspace
+→ catalogue d'usage
+
+ProductCategory
+→ global SaaS
+
+ProductReferenceEvent
+→ historique métier
+
+ProductImportSession
+→ session temporaire WORKSPACE ou GLOBAL
 ```
 
-Le flux ne crée pas de `File`, ne consomme pas `storage_bytes` et n'exige pas `file_upload`.
-
-Les quatre fichiers ciblés import sécurisé ont été confirmés verts localement avant les derniers travaux d'autorisation.
-
-### Capabilities
+Lifecycle courant :
 
 ```text
-product_reference_access
-product_catalog_import
-product_contribution
+ACTIVE ↔ ARCHIVED
 ```
 
-### Workspace RBAC
+Les anciens `PENDING_REVIEW/REJECTED` ne font plus partie du registre opérationnel.
+
+## 4. Création Workspace
+
+Une création depuis un Workspace autorisé :
+
+1. contrôle l'existant ;
+2. exige la revue des candidats proches ;
+3. exige une catégorie active ;
+4. crée `CanonicalProduct ACTIVE` ;
+5. crée la première `ProductVariant ACTIVE` ;
+6. crée `WorkspaceProduct ACTIVE`.
+
+La nouvelle identité est immédiatement partagée dans le référentiel commun.
+
+Aucun Produit n'est Dossier-owned en M-002.
+
+## 5. Autorité globale Produit
+
+API :
 
 ```text
-product:read
-product:catalog:manage
-product:contribute
+/api/product-reference
 ```
 
-Inspect/preview exigent `product:read + product_catalog_import`.
-
-Le commit calcule dynamiquement :
+Permissions :
 
 ```text
-rattachement existant
-→ product:catalog:manage
-
-nouvelle contribution
-→ product:contribute
-→ product_contribution
+product:reference:read
+product:reference:manage
 ```
 
-### Gouvernance globale
-
-Ancienne frontière backend Platform supprimée.
+Autorité :
 
 ```text
-API         : /api/product-reference
-permissions : product:reference:read
-              product:reference:manage
+ApplicationGlobalRole
+ApplicationGlobalMember
 ```
 
-Autorité Core : `ApplicationGlobalRole`, `ApplicationGlobalMember`, `authorizeApplicationGlobalPermission()`.
-
-Ni Super Admin Platform ni Owner Workspace n'héritent de cette autorité.
-
-### Bootstrap gouvernance
+Invariant :
 
 ```text
+Super Admin Platform
+≠ gouverneur Produit automatique
+
+Owner Workspace
+≠ gouverneur Produit automatique
+```
+
+Un membre Platform dédié peut donc alimenter le référentiel commun, mais uniquement avec un membership Application Global Produit explicite.
+
+Le Fondateur E2E reçoit cette autorité via le seed M-002 ; son rôle Platform n'est jamais utilisé comme preuve d'autorisation Produit.
+
+## 6. Import
+
+M-002 réutilise le même pipeline sécurisé CSV/XLS/XLSX pour deux scopes :
+
+```text
+WORKSPACE
+→ rattacher l'existant
+→ créer Produit/Déclinaison si autorisé
+→ alimenter le catalogue Workspace
+
+GLOBAL
+→ alimenter directement le référentiel commun
+→ aucun WorkspaceProduct
+```
+
+Classifications :
+
+```text
+ATTACH_EXISTING
+CREATE_PRODUCT
+CREATE_VARIANT
+REVIEW_REQUIRED
+INVALID
+```
+
+Les dimensions Fournisseur/référence/conditionnement/prix restent hors M-002.
+
+## 7. Migration M-002
+
+Commande :
+
+```text
+npm run migration:m002-catalog
+```
+
+Elle réalise :
+
+1. backfill lifecycle legacy ;
+2. création/vérification des indexes M-002 ;
+3. synchronisation des permissions Workspace système enregistrées.
+
+Backfill :
+
+```text
+ancien PENDING_REVIEW complet
+→ ACTIVE
+
+ancien PENDING_REVIEW incomplet
+→ ARCHIVED
+
+ancien REJECTED
+→ ARCHIVED
+→ identityActive historique conservé
+```
+
+Aucune catégorie n'est inventée et aucun document n'est supprimé.
+
+## 8. Frontend courant
+
+Workspace :
+
+```text
+/workspaces/:workspaceId/products
+```
+
+- Mon catalogue ;
+- Tout le référentiel selon capability ;
+- Créer un Produit ;
+- Importer ;
+- détail Produit ;
+- création de déclinaison ;
+- ajout/retrait du catalogue ;
+- Dashboard M-002.
+
+Global :
+
+```text
+/product-reference
+```
+
+- hors PlatformLayout ;
+- Référentiel ;
+- Catégories ;
+- création Produit ;
+- import global ;
+- détail/correction ;
+- archive/réactivation ;
+- aucune file « À valider ».
+
+Les clients RTK Query M-002 étendent désormais `baseApi` selon le pattern Core et déclarent les tags `ProductCatalog/ProductReference`.
+
+## 9. E2E ajoutés
+
+Deux scénarios critiques sont présents :
+
+```text
+1. Owner Workspace
+   → crée un Produit
+   → Produit ACTIVE
+   → visible dans Mon catalogue
+
+2. Fondateur E2E explicitement bootstrapé Application Global Produit
+   → /product-reference
+   → crée catégorie
+   → crée Produit global
+   → Produit visible sans file de validation
+```
+
+Ils ne sont PAS encore déclarés verts après les derniers commits.
+
+## 10. Vérité des tests
+
+Confirmé antérieurement par l'utilisateur, avant le dernier recadrage complet :
+
+- suites backend M-002 ciblées vertes en exécution séquentielle ;
+- frontend ciblé vert ;
+- lint frontend vert ;
+- build frontend vert.
+
+Depuis les commits de refonte création ACTIVE, migration legacy, RTK Query et E2E, ces résultats ne suffisent plus comme preuve finale.
+
+Aucun status CI automatique n'est attaché au HEAD de branche au moment de cette reprise.
+
+Le problème connu de tests backend parallèles reste séparé : `backend/tests/setup.js` vide les collections avant chaque test et peut créer des interférences entre fichiers Vitest. Ne pas modifier silencieusement cette stratégie dans le produit.
+
+## 11. Validation locale à faire maintenant
+
+Après pull du HEAD de la branche :
+
+```powershell
+git switch feature/m002-catalogue-produits
+git pull --ff-only
+```
+
+Puis appliquer sur la base de développement :
+
+```powershell
+npm run migration:m002-catalog
 npm run seed:m002-governance
 ```
 
-Le seed synchronise `product_reference_governor` et crée explicitement le membership Application Global du Fondateur actif.
+Tests backend M-002 ciblés, séquentiels :
 
-## 5. Tests : vérité actuelle
-
-Confirmé vert par l'utilisateur avant les derniers commits :
-
-```text
-productCatalogImportUpload.service.test.js
-productCatalogImport.integration.test.js
-productCatalogImport.parser.test.js
-productCatalog.http.test.js
+```powershell
+npx vitest run backend/tests/modules/productCatalog/productCatalog.registry.test.js backend/tests/modules/productCatalog/productCatalog.validation.test.js backend/tests/modules/productCatalog/productCatalog.integration.test.js backend/tests/modules/productCatalog/productCatalog.http.test.js backend/tests/modules/productCatalog/productCatalogGovernance.integration.test.js backend/tests/modules/productCatalog/productCatalogGlobal.http.test.js backend/tests/modules/productCatalog/productCatalogImport.integration.test.js backend/tests/modules/productCatalog/productCatalogImportAccess.service.test.js backend/tests/migrations/m002ProductLifecycleBackfill.migration.test.js --no-file-parallelism
 ```
 
-Ces exécutions validaient le pipeline sécurisé avant les changements ultérieurs de capabilities/autorisation.
+Frontend ciblé :
 
-Nouveaux tests ajoutés depuis : NON ENCORE EXÉCUTÉS dans cette conversation après les derniers commits.
-
-À lancer en premier :
-
-```text
-npx vitest run backend/tests/plans/applicationCapability.registry.test.js backend/tests/config/applicationGlobalPermission.registry.test.js backend/tests/config/applicationPlatformPermission.registry.test.js backend/tests/config/applicationRoutes.registry.test.js backend/tests/modules/productCatalog/productCatalogGlobal.http.test.js backend/tests/modules/productCatalog/productCatalog.http.test.js backend/tests/modules/productCatalog/productCatalogImportAccess.service.test.js backend/tests/modules/productCatalog/productCatalogGovernanceBootstrap.test.js
+```powershell
+npm --prefix frontend run test -- src/features/products
 ```
 
-Si verts, lancer une seule fois :
+Puis gates :
 
-```text
-npm test
+```powershell
+npm run lint
+npm test -- --no-file-parallelism
+npm --prefix frontend run lint
+npm --prefix frontend run test
+npm --prefix frontend run build
+npm run test:e2e
+npm run release:verify
 ```
 
-pour fermer le checkpoint backend avant frontend.
+Ne lancer `npm run release:check` qu'après compréhension de l'interaction avec le parallélisme backend connu ; ne pas considérer un échec de parallélisme comme une régression métier sans l'isoler.
 
-## 6. Frontend restant
+## 12. Validation visuelle après tests ciblés
 
-Le frontend contient encore les anciennes surfaces Platform Produits :
+Démarrer l'application locale et vérifier :
+
+- page Produits visible avec les capabilities M-002 ;
+- création Produit avec recherche anti-doublon ;
+- catégorie obligatoire ;
+- Produit créé immédiatement actif ;
+- première déclinaison ;
+- Produit ajouté au catalogue Workspace ;
+- référentiel commun ;
+- absence de « Proposer », « Envoyer en validation », « En validation » ;
+- accès global `/product-reference` uniquement avec Application Global ;
+- création et import globaux ;
+- catégories ;
+- archive/réactivation ;
+- Dashboard Produit.
+
+L'erreur historique du fichier `Tarif_SCAL_avril_2026.csv` n'est pas à traiter comme import Produit M-002 sans inspecter son contenu : un fichier tarifaire fournisseur relève probablement du prochain module s'il contient Fournisseur/référence/conditionnement/prix.
+
+## 13. Point M-003 déjà identifié
+
+À traiter après fermeture M-002 :
 
 ```text
-platform-product-catalog-api.js
-platform-products-route/page
-platform-category-dialog
-platform-product-details-drawer
-platform-product-edit-dialog
-platform-reject-product-dialog
-platform-variant-edit-dialog
-tests associés
+Fournisseur
+→ Catalogue / édition identifié
+→ Article fournisseur
+→ référence
+→ conditionnement
+→ prix
+→ rattachement ProductVariant
 ```
 
-Prochaine phase :
+Exigence UX déjà validée :
+
+- un catalogue SYSCO doit être identifié comme SYSCO ;
+- les produits/articles issus d'un catalogue doivent conserver cette provenance ;
+- l'utilisateur doit pouvoir filtrer par Fournisseur ;
+- l'utilisateur doit disposer d'une liste de catalogues/éditions identifiés et sélectionner un catalogue précis ;
+- plusieurs catalogues d'un même Fournisseur doivent rester distinguables.
+
+Ne pas injecter ces concepts dans `CanonicalProduct`.
+
+## 14. Discipline Git
 
 ```text
-frontend Workspace
-→ vérifier capabilities/guards
-→ import/contribution/catalogue
-
-frontend gouvernance globale
-→ retirer /platform/products
-→ surface métier hors PlatformLayout
-→ API /api/product-reference
-→ autorisation Application Global
-```
-
-Ne pas implémenter de sécurité uniquement frontend.
-
-## 7. Documentation canonique M-002
-
-```text
-docs/m002/M-002-AUTHORIZATION-GOVERNANCE.md
-docs/m002/M-002-API-REST.md
-docs/m002/M-002-ACCEPTANCE-IMPLEMENTATION.md
-docs/m002/M-002-BOOTSTRAP-MIGRATIONS.md
-docs/m002/M-002-BACKEND-HANDOFF.md
-docs/contracts/SECURE-TEMPORARY-UPLOAD.md
-```
-
-## 8. Finalisation M-002
-
-Après frontend :
-
-```text
-tests RTL ciblés
-→ E2E critiques
-→ npm run release:verify
-→ npm run lint
-→ npm test
-→ frontend lint/test/build
-→ npm run test:e2e
-→ npm run release:check
-→ validation visuelle utilisateur
+feature/m002-catalogue-produits
+→ tests locaux
+→ QA visuelle
+→ corrections démontrées uniquement
+→ documentation finale si nécessaire
 → UNE PR M-002
+→ gate
 → UNE fusion
 ```
 
-Ne pas créer de PR intermédiaire pour ce checkpoint.
+Ne pas créer de micro-PR.
