@@ -36,7 +36,7 @@ const M002_INDEX_NAMES = Object.freeze([
     'product_reference_event_action_created_at',
     'product_reference_bootstrap_version_unique',
     'product_import_session_ttl',
-    'product_import_session_workspace_actor_created_at',
+    'product_import_session_scope_workspace_actor_created_at',
 ]);
 
 const M002_MODELS = Object.freeze([

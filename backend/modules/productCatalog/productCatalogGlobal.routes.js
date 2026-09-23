@@ -17,6 +17,7 @@ import {
     createProductController,
     createVariantController,
     detail,
+    duplicateCheck,
     inspectImport,
     list,
     metadata,
@@ -35,6 +36,7 @@ import {
     createCategoryBodySchema,
     createGlobalProductBodySchema,
     createGlobalVariantBodySchema,
+    duplicateCheckBodySchema,
     globalCategoryParamsSchema,
     globalImportIdParamsSchema,
     globalProductIdParamsSchema,
@@ -93,6 +95,13 @@ productCatalogGlobalRouter.patch(
         body: updateCategoryStatusBodySchema,
     }),
     updateCategoryStatusController,
+);
+
+productCatalogGlobalRouter.post(
+    '/duplicate-check',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({ body: duplicateCheckBodySchema }),
+    duplicateCheck,
 );
 
 productCatalogGlobalRouter.post(

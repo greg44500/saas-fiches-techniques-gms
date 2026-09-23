@@ -5,6 +5,9 @@ import {
     getProductMetadata,
 } from './productCatalog.service.js';
 import {
+    findProductDuplicateCandidates,
+} from './productCatalogDedup.service.js';
+import {
     PRODUCT_CATALOG_GLOBAL_PERMISSION,
 } from './productCatalogGlobalPermission.registry.js';
 import {
@@ -70,6 +73,15 @@ const detail = async (req, res) => {
     const result = await getGlobalProductDetail({
         productId: req.validated.params.productId,
     });
+    res.status(200).json({ status: 'success', data: result });
+};
+
+const duplicateCheck = async (req, res) => {
+    const result = await findProductDuplicateCandidates({
+        workspaceId: null,
+        ...req.validated.body,
+    });
+
     res.status(200).json({ status: 'success', data: result });
 };
 
@@ -201,6 +213,7 @@ export {
     createProductController,
     createVariantController,
     detail,
+    duplicateCheck,
     inspectImport,
     list,
     metadata,
