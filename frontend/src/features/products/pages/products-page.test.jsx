@@ -44,6 +44,16 @@ vi.mock('@/features/products/components/product-import-dialog', () => ({
   ),
 }));
 
+vi.mock('@/features/products/components/product-search-autocomplete', () => ({
+  ProductSearchAutocomplete: ({ onValueChange, value }) => (
+    <input
+      aria-label="Rechercher un Produit"
+      onChange={(event) => onValueChange(event.target.value)}
+      value={value}
+    />
+  ),
+}));
+
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: mocks.workspaceContext,
 }));

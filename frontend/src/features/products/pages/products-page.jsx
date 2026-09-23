@@ -11,7 +11,6 @@ import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -34,6 +33,7 @@ import {
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
 import { ProductDetailsDrawer } from '@/features/products/components/product-details-drawer';
 import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
+import { ProductSearchAutocomplete } from '@/features/products/components/product-search-autocomplete';
 import {
   PRODUCT_CAPABILITY,
   PRODUCT_PERMISSION,
@@ -128,10 +128,14 @@ function ProductsPage() {
     ...(metadata?.workspaceProductStatuses ?? []),
   ], [metadata?.workspaceProductStatuses]);
 
+  function runSearch(nextSearch) {
+    setPage(1);
+    setSearch(nextSearch.trim());
+  }
+
   function applySearch(event) {
     event.preventDefault();
-    setPage(1);
-    setSearch(searchInput.trim());
+    runSearch(searchInput);
   }
 
   function changeScope(nextScope) {
@@ -322,14 +326,27 @@ function ProductsPage() {
 
       <section className="rounded-xl border border-border bg-card">
         <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(260px,1fr)_240px_240px]">
-          <form className="flex gap-2" onSubmit={applySearch}>
-            <Input
-              aria-label="Rechercher un Produit"
-              maxLength={120}
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Nom ou alias"
-              value={searchInput}
-            />
+          <form className="flex min-w-0 gap-2" onSubmit={applySearch}>
+            <div className="min-w-0 flex-1">
+              <ProductSearchAutocomplete
+                categoryId={
+                  categoryId === ALL_CATEGORIES
+                    ? undefined
+                    : categoryId
+                }
+                onSearch={runSearch}
+                onValueChange={setSearchInput}
+                scope={scope}
+                status={
+                  scope === 'WORKSPACE'
+                  && status !== ALL_WORKSPACE_STATUSES
+                    ? status
+                    : undefined
+                }
+                value={searchInput}
+                workspaceId={workspace.id}
+              />
+            </div>
             <Button type="submit" variant="outline">Rechercher</Button>
           </form>
 
