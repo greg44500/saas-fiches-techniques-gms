@@ -28,6 +28,7 @@ import {
 import {
     enforceProductCatalogImportFeature,
     enforceProductContributionFeature,
+    enforceProductImportCommitAccess,
     enforceProductReferenceSearchFeature,
 } from './productCatalogAccess.middleware.js';
 import {
@@ -97,7 +98,7 @@ productCatalogRouter.post(
     authenticate,
     validateRequest({ params: workspaceIdParamsSchema }),
     loadWorkspaceContext,
-    authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
+    authorizePermission(PRODUCT_CATALOG_PERMISSION.READ),
     enforceWorkspaceAccessMode(),
     enforceProductCatalogImportFeature,
     uploadProductImportFile,
@@ -113,7 +114,7 @@ productCatalogRouter.post(
         body: importPreviewBodySchema,
     }),
     loadWorkspaceContext,
-    authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
+    authorizePermission(PRODUCT_CATALOG_PERMISSION.READ),
     enforceWorkspaceAccessMode(),
     enforceProductCatalogImportFeature,
     previewImport,
@@ -127,10 +128,10 @@ productCatalogRouter.post(
         body: importCommitBodySchema,
     }),
     loadWorkspaceContext,
-    authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
-    authorizePermission(PRODUCT_CATALOG_PERMISSION.CATALOG_MANAGE),
+    authorizePermission(PRODUCT_CATALOG_PERMISSION.READ),
     enforceWorkspaceAccessMode(),
     enforceProductCatalogImportFeature,
+    enforceProductImportCommitAccess,
     commitImport,
 );
 
