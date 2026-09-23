@@ -235,6 +235,16 @@ describe('ProductsPage', () => {
     expect(screen.getByText('Détail Produit ouvert')).toBeInTheDocument();
   });
 
+  it('affiche une action compacte pour retirer une référence du catalogue', () => {
+    renderPage();
+
+    expect(screen.getByRole('button', {
+      name: 'Retirer Carotte du catalogue',
+    })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retirer' }))
+      .not.toBeInTheDocument();
+  });
+
   it('affiche une action compacte pour ajouter une référence au catalogue', () => {
     mocks.searchQuery.mockReturnValue({
       data: {
@@ -272,8 +282,9 @@ describe('ProductsPage', () => {
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Importer' }))
       .not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Retirer' }))
-      .not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Retirer Carotte du catalogue',
+    })).not.toBeInTheDocument();
   });
 
   it('conserve Mon catalogue mais masque le référentiel global sans product_reference_access', () => {

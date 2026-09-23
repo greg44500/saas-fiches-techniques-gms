@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenCheck, Eye, FileUp, Plus } from 'lucide-react';
+import { BookOpenCheck, Eye, FileUp, Minus, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
@@ -258,14 +258,14 @@ function ProductsPage() {
             />
             {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
               inCatalog ? (
-                <Button
+                <ActionIconButton
+                  Icon={Minus}
                   disabled={mutationPending}
+                  label={'Retirer ' + result.product.name + ' du catalogue'}
                   onClick={() => changeCatalog(result, false)}
-                  type="button"
+                  tooltipLabel="Retirer du catalogue"
                   variant="outline"
-                >
-                  Retirer
-                </Button>
+                />
               ) : canAttach ? (
                 <ActionIconButton
                   Icon={Plus}
