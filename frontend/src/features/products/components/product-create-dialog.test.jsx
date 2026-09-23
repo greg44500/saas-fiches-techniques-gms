@@ -176,6 +176,8 @@ describe('ProductCreateDialog', () => {
 
     await user.click(screen.getByLabelText('Catégorie principale *'));
     await user.click(screen.getByRole('option', { name: 'Légumes' }));
+    expect(createButton).toBeDisabled();
+
     await user.click(screen.getByLabelText('Gamme *'));
     await user.click(screen.getByRole('option', { name: 'Gamme 1 — Frais' }));
     await user.click(createButton);

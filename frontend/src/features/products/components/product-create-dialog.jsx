@@ -104,7 +104,10 @@ function ProductCreateDialog({
     duplicateResult
     && !duplicateResult.exactMatch
     && everyCandidateReviewed
-    && categoryId !== NO_CATEGORY,
+    && categoryId !== NO_CATEGORY
+    && variant.foodRange
+    && variant.processingState
+    && variant.referenceUnit,
   );
   const pending = (
     workspaceDuplicateState.isLoading
