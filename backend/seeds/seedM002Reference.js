@@ -187,15 +187,6 @@ const upsertSeedProduct = async ({
         searchKeys: mongoose.trusted({ $in: searchKeys }),
     }).session(session);
 
-    if (
-        product?.status === PRODUCT_STATUS.PENDING_REVIEW
-        && product.contributedFromWorkspace
-    ) {
-        throw new Error(
-            `Le Produit bootstrap "${definition.name}" entre en conflit avec une contribution Workspace en attente.`,
-        );
-    }
-
     if (!product) {
         [product] = await CanonicalProduct.create([
             {
@@ -241,15 +232,6 @@ const upsertSeedProduct = async ({
             identityActive: true,
         }).session(session);
 
-        if (
-            variant?.status === PRODUCT_STATUS.PENDING_REVIEW
-            && variant.contributedFromWorkspace
-        ) {
-            throw new Error(
-                `Une déclinaison bootstrap de "${definition.name}" entre en conflit avec une contribution Workspace en attente.`,
-            );
-        }
-
         const data = {
             form: variantDefinition.form,
             normalizedForm: normalizeProductText(variantDefinition.form),
@@ -274,7 +256,7 @@ const upsertSeedProduct = async ({
         };
 
         if (!variant) {
-            [variant] = await ProductVariant.create([
+            await ProductVariant.create([
                 {
                     canonicalProduct: product._id,
                     ...data,
