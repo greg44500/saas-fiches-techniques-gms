@@ -211,7 +211,7 @@ describe('ProductsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Suggestion Carotte' }));
 
     expect(screen.getByRole('tab', { name: 'Tout le référentiel' }))
-      .toHaveAttribute('data-selected', '');
+      .toHaveAttribute('aria-selected', 'true');
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({
         scope: 'REFERENCE',
