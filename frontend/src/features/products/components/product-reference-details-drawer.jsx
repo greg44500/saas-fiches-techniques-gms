@@ -24,6 +24,8 @@ import { ProductVariantCreateDialog } from '@/features/products/components/produ
 import {
   formatYield,
   getApiErrorMessage,
+  getFoodRangeLabel,
+  getFoodRangeName,
   getProductEventLabel,
   getProductStatusLabel,
   getProductStatusTone,
@@ -199,7 +201,12 @@ function ProductReferenceDetailsDrawer({
                           <p className="mt-1 text-sm text-muted-foreground">
                             Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
                             {' · '}Rendement : {formatYield(variant.yieldPercent)}
-                            {variant.foodRange ? ' · Gamme ' + variant.foodRange : ''}
+                            {variant.foodRange
+                              ? ' · ' + getFoodRangeLabel(metadata, variant.foodRange)
+                              : ''}
+                            {getFoodRangeName(metadata, variant.foodRange)
+                              ? ' · ' + getFoodRangeName(metadata, variant.foodRange)
+                              : ''}
                           </p>
                         </div>
                         <StatusBadge tone={getProductStatusTone(variant.status)}>

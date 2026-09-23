@@ -55,6 +55,14 @@ function ProductVariantCreateDialog({
   }, [metadata, open]);
 
   async function submit() {
+    if (!variant.foodRange) {
+      setFormError('Sélectionnez une gamme.');
+      return;
+    }
+    if (!variant.processingState) {
+      setFormError('Sélectionnez un état / transformation.');
+      return;
+    }
     if (!variant.referenceUnit) {
       setFormError('Sélectionnez une unité de référence.');
       return;

@@ -25,6 +25,8 @@ import {
 import {
   formatYield,
   getApiErrorMessage,
+  getFoodRangeLabel,
+  getFoodRangeName,
   getProductStatusLabel,
   getProductStatusTone,
   getReferenceUnitLabel,
@@ -164,7 +166,12 @@ function ProductDetailsDrawer({
                           <p className="mt-1 text-sm text-muted-foreground">
                             Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
                             {' · '}Rendement : {formatYield(variant.yieldPercent)}
-                            {variant.foodRange ? ' · Gamme ' + variant.foodRange : ''}
+                            {variant.foodRange
+                              ? ' · ' + getFoodRangeLabel(metadata, variant.foodRange)
+                              : ''}
+                            {getFoodRangeName(metadata, variant.foodRange)
+                              ? ' · ' + getFoodRangeName(metadata, variant.foodRange)
+                              : ''}
                           </p>
                         </div>
                         <StatusBadge tone={getProductStatusTone(variant.status)}>

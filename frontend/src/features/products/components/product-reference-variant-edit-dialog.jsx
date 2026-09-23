@@ -22,9 +22,8 @@ import { getApiErrorMessage } from '@/features/products/lib/product-presentation
 
 function variantToDraft(variant) {
   return {
-    form: variant?.form ?? '',
+    presentation: variant?.presentation ?? '',
     processingState: variant?.processingState ?? '',
-    preservation: variant?.preservation ?? '',
     foodRange: variant?.foodRange ? String(variant.foodRange) : '',
     referenceUnit: variant?.referenceUnit ?? '',
     yieldPercent: variant?.yieldPercent ? String(variant.yieldPercent) : '',
@@ -51,6 +50,14 @@ function ProductReferenceVariantEditDialog({
   }, [open, variant]);
 
   async function submit() {
+    if (!draft.foodRange) {
+      setFormError('Sélectionnez une gamme.');
+      return;
+    }
+    if (!draft.processingState) {
+      setFormError('Sélectionnez un état / transformation.');
+      return;
+    }
     if (!draft.referenceUnit) {
       setFormError('Sélectionnez une unité de référence.');
       return;

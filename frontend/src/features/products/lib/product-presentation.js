@@ -39,11 +39,25 @@ function getProductStatusTone(status) {
   return 'neutral';
 }
 
+function getFoodRangeDefinition(metadata, foodRange) {
+  return (metadata?.foodRanges ?? []).find(
+    ({ value }) => Number(value) === Number(foodRange),
+  ) ?? null;
+}
+
+function getFoodRangeLabel(metadata, foodRange) {
+  return getFoodRangeDefinition(metadata, foodRange)?.label
+    ?? (foodRange ? 'Gamme ' + foodRange : 'Gamme non renseignée');
+}
+
+function getFoodRangeName(metadata, foodRange) {
+  return getFoodRangeDefinition(metadata, foodRange)?.name ?? null;
+}
+
 function getVariantLabel(variant) {
   const parts = [
-    variant?.form,
+    variant?.presentation,
     variant?.processingState,
-    variant?.preservation,
   ].filter(Boolean);
 
   return parts.join(' · ') || 'Déclinaison standard';
@@ -124,6 +138,9 @@ export {
   formatYield,
   getApiErrorMessage,
   getCategoryStatusLabel,
+  getFoodRangeDefinition,
+  getFoodRangeLabel,
+  getFoodRangeName,
   getImportClassificationPresentation,
   getMetadataLabel,
   getProductEventLabel,

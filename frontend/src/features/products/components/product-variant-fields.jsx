@@ -1,3 +1,15 @@
+import {
+  Autocomplete,
+  AutocompleteEmpty,
+  AutocompleteInput,
+  AutocompleteInputGroup,
+  AutocompleteItem,
+  AutocompleteList,
+  AutocompletePopup,
+  AutocompletePortal,
+  AutocompletePositioner,
+  AutocompleteStatus,
+} from '@/components/ui/autocomplete';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,9 +24,8 @@ const EMPTY_OPTION = '__NONE__';
 
 function createEmptyVariantDraft(metadata) {
   return {
-    form: '',
+    presentation: '',
     processingState: '',
-    preservation: '',
     foodRange: '',
     referenceUnit: metadata?.referenceUnits?.[0]?.value ?? '',
     yieldPercent: '',
@@ -28,10 +39,9 @@ function optionalText(value) {
 
 function variantDraftToPayload(draft) {
   return {
-    form: optionalText(draft.form),
+    presentation: optionalText(draft.presentation),
     processingState: optionalText(draft.processingState),
-    preservation: optionalText(draft.preservation),
-    foodRange: draft.foodRange ? Number(draft.foodRange) : null,
+    foodRange: Number(draft.foodRange),
     referenceUnit: draft.referenceUnit,
     yieldPercent: draft.yieldPercent ? Number(draft.yieldPercent) : null,
   };
@@ -44,13 +54,18 @@ function ProductVariantFields({
   value,
 }) {
   const unitItems = metadata?.referenceUnits ?? [];
+  const foodRanges = metadata?.foodRanges ?? [];
   const foodRangeItems = [
-    { value: EMPTY_OPTION, label: 'Non renseignée' },
-    ...(metadata?.foodRanges ?? []).map((range) => ({
-      value: String(range),
-      label: 'Gamme ' + range,
+    { value: EMPTY_OPTION, label: 'Sélectionner une gamme' },
+    ...foodRanges.map((range) => ({
+      value: String(range.value),
+      label: range.label + ' — ' + range.name,
     })),
   ];
+  const selectedFoodRange = foodRanges.find(
+    (range) => String(range.value) === String(value.foodRange),
+  );
+  const processingStateItems = selectedFoodRange?.processingStates ?? [];
 
   function change(field, nextValue) {
     onChange({
@@ -59,53 +74,47 @@ function ProductVariantFields({
     });
   }
 
+  function changeFoodRange(nextValue) {
+    if (nextValue === EMPTY_OPTION) {
+      onChange({
+        ...value,
+        foodRange: '',
+        processingState: '',
+      });
+      return;
+    }
+
+    const definition = foodRanges.find(
+      (range) => String(range.value) === String(nextValue),
+    );
+
+    onChange({
+      ...value,
+      foodRange: nextValue,
+      processingState: definition?.defaultProcessingState ?? '',
+    });
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <Field>
-        <FieldLabel htmlFor="product-variant-form">Forme</FieldLabel>
+        <FieldLabel htmlFor="product-variant-presentation">Présentation</FieldLabel>
         <Input
           disabled={disabled}
-          id="product-variant-form"
+          id="product-variant-presentation"
           maxLength={80}
-          onChange={(event) => change('form', event.target.value)}
-          placeholder="Ex. râpée, entière"
-          value={value.form}
+          onChange={(event) => change('presentation', event.target.value)}
+          placeholder="Ex. entière, râpée, émincée"
+          value={value.presentation}
         />
       </Field>
 
       <Field>
-        <FieldLabel htmlFor="product-variant-processing">État / transformation</FieldLabel>
-        <Input
-          disabled={disabled}
-          id="product-variant-processing"
-          maxLength={80}
-          onChange={(event) => change('processingState', event.target.value)}
-          placeholder="Ex. prête à l’emploi"
-          value={value.processingState}
-        />
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="product-variant-preservation">Conservation</FieldLabel>
-        <Input
-          disabled={disabled}
-          id="product-variant-preservation"
-          maxLength={80}
-          onChange={(event) => change('preservation', event.target.value)}
-          placeholder="Ex. fraîche, surgelée"
-          value={value.preservation}
-        />
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="product-variant-food-range">Gamme</FieldLabel>
+        <FieldLabel htmlFor="product-variant-food-range">Gamme *</FieldLabel>
         <Select
           disabled={disabled}
           items={foodRangeItems}
-          onValueChange={(nextValue) => change(
-            'foodRange',
-            nextValue === EMPTY_OPTION ? '' : nextValue,
-          )}
+          onValueChange={changeFoodRange}
           value={value.foodRange || EMPTY_OPTION}
         >
           <SelectTrigger id="product-variant-food-range">
@@ -119,6 +128,56 @@ function ProductVariantFields({
             ))}
           </SelectContent>
         </Select>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="product-variant-processing">
+          État / transformation *
+        </FieldLabel>
+        <Autocomplete
+          filter={null}
+          items={processingStateItems}
+          itemToStringValue={(item) => item}
+          onValueChange={(nextValue) => change('processingState', nextValue)}
+          value={value.processingState}
+        >
+          <AutocompleteInputGroup>
+            <AutocompleteInput
+              aria-label="État / transformation"
+              disabled={disabled || !selectedFoodRange}
+              id="product-variant-processing"
+              maxLength={80}
+              placeholder={
+                selectedFoodRange
+                  ? 'État lié à la gamme'
+                  : 'Sélectionnez d’abord une gamme'
+              }
+            />
+          </AutocompleteInputGroup>
+          <AutocompletePortal>
+            <AutocompletePositioner>
+              <AutocompletePopup>
+                <AutocompleteStatus>
+                  {processingStateItems.length} état(s) proposé(s)
+                </AutocompleteStatus>
+                <AutocompleteEmpty>
+                  Aucun état n’est défini pour cette gamme.
+                </AutocompleteEmpty>
+                <AutocompleteList>
+                  {(item, index) => (
+                    <AutocompleteItem
+                      index={index}
+                      key={item}
+                      value={item}
+                    >
+                      {item}
+                    </AutocompleteItem>
+                  )}
+                </AutocompleteList>
+              </AutocompletePopup>
+            </AutocompletePositioner>
+          </AutocompletePortal>
+        </Autocomplete>
       </Field>
 
       <Field>

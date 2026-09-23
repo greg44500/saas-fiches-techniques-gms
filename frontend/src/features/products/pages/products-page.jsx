@@ -8,7 +8,6 @@ import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
-import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,8 +41,8 @@ import {
 import {
   formatYield,
   getApiErrorMessage,
-  getProductStatusLabel,
-  getProductStatusTone,
+  getFoodRangeLabel,
+  getFoodRangeName,
   getReferenceUnitLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
@@ -202,12 +201,19 @@ function ProductsPage() {
       ),
     },
     {
-      id: 'status',
-      header: 'Statut',
+      id: 'foodRange',
+      header: 'Gamme',
       cell: (result) => (
-        <StatusBadge tone={getProductStatusTone(result.variant.status)}>
-          {getProductStatusLabel(metadata, result.variant.status)}
-        </StatusBadge>
+        <div>
+          <p className="font-medium">
+            {getFoodRangeLabel(metadata, result.variant.foodRange)}
+          </p>
+          {getFoodRangeName(metadata, result.variant.foodRange) && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {getFoodRangeName(metadata, result.variant.foodRange)}
+            </p>
+          )}
+        </div>
       ),
     },
     {
