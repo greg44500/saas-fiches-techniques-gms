@@ -545,7 +545,10 @@ const updateVariant = async ({
     const variant = await ProductVariant.findOne({
         _id: variantId,
         canonicalProduct: productId,
-        status: mongoose.trusted({ $ne: PRODUCT_STATUS.REJECTED }),
+        identityActive: true,
+        status: mongoose.trusted({
+            $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+        }),
     }).session(session);
 
     if (!variant) {
