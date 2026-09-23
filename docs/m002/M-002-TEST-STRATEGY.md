@@ -82,7 +82,7 @@ Couvrir :
 - création Déclinaison ACTIVE ;
 - tri alphabétique avant pagination ;
 - ajout/retrait/réactivation de Mon référentiel idempotent ;
-- archive globale non destructive ;
+- archive globale non destructive et masquée des listes opérationnelles ;
 - catégorie archivée non utilisable ;
 - création globale via autorité métier ;
 - import global sans `WorkspaceProduct`.
@@ -189,7 +189,8 @@ Le backfill doit prouver :
 - aucun ancien statut restant ;
 - migration rejouable ;
 - migration `form/preservation → presentation/gamme/état` ;
-- collision de nouvelles signatures refusée avant écriture ;
+- collision finale de nouvelles signatures refusée avant écriture ;
+- absence de collision transitoire avec l'ancien index unique grâce aux signatures temporaires ;
 - indexes M-002 présents.
 
 ## 10. E2E critiques
@@ -211,6 +212,8 @@ Owner Workspace
 → Créer un Produit
 → recherche anti-doublon
 → catégorie
+→ Gamme
+→ État / transformation prérempli
 → première déclinaison
 → création
 → Produit visible dans Mon référentiel

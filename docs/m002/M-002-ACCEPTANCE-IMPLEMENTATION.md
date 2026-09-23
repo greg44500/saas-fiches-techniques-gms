@@ -35,7 +35,7 @@ Aucune micro-PR de réparation ne doit être créée pour les ajustements de ce 
 - [x] création globale immédiatement ACTIVE après contrôle ;
 - [x] suppression du workflow quotidien de validation humaine ;
 - [x] lifecycle opérationnel `ACTIVE ↔ ARCHIVED` ;
-- [x] archive globale non destructive ;
+- [x] archive globale non destructive et masquée des listes opérationnelles ;
 - [x] fusion destructive différée.
 
 ## 3. Autorisation et frontière globale
@@ -207,6 +207,8 @@ ancien REJECTED
 
 - [x] aucune catégorie inventée ;
 - [x] aucune suppression de document ;
+- [x] réécriture des signatures protégée contre les collisions transitoires de l'index unique ;
+- [x] migration idempotente : aucune réécriture au second passage ;
 - [x] seed de gouvernance Application Global ;
 - [x] seed référentiel versionné ;
 - [ ] dataset bêta réel nettoyé/revu — différé volontairement.
@@ -270,6 +272,7 @@ Vérifier au minimum :
 - recherche prédictive depuis les deux vues ;
 - alignement visuel champ de recherche / bouton ;
 - absence de colonne et filtre d'état redondants ;
+- références globales archivées absentes des deux listes opérationnelles ;
 - tri alphabétique Produit ;
 - colonne Présentation ;
 - colonne Gamme avec État/transformation ;

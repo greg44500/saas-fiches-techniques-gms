@@ -26,10 +26,12 @@ SaaS
 ├── Référentiel Produit canonique partagé
 │   ├── identité Produit unique
 │   ├── alias / normalisation de recherche
-│   └── déclinaisons structurées lorsque pertinentes
-│       ├── forme
-│       ├── état / transformation
-│       └── conservation
+│   └── déclinaisons structurées
+│       ├── Présentation
+│       ├── Gamme 1..6
+│       ├── État / transformation dépendant de la Gamme
+│       ├── unité de référence
+│       └── rendement
 │
 └── Workspace
     │
