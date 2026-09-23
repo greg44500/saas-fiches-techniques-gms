@@ -7,15 +7,13 @@ import {
 import { validateRequest } from '../../middlewares/validateRequest.js';
 import {
     access,
-    approveProductController,
-    approveVariantController,
     categories,
     createCategoryController,
+    createProductController,
+    createVariantController,
     detail,
     list,
     metadata,
-    rejectProductController,
-    rejectVariantController,
     updateCategoryController,
     updateCategoryStatusController,
     updateProductController,
@@ -28,11 +26,12 @@ import {
 } from './productCatalogGlobalPermission.registry.js';
 import {
     createCategoryBodySchema,
+    createGlobalProductBodySchema,
+    createGlobalVariantBodySchema,
     globalCategoryParamsSchema,
     globalProductIdParamsSchema,
     globalProductListQuerySchema,
     globalProductVariantParamsSchema,
-    rejectProductBodySchema,
     updateCategoryBodySchema,
     updateCategoryStatusBodySchema,
     updateProductBodySchema,
@@ -45,10 +44,7 @@ const productCatalogGlobalRouter = Router();
 
 productCatalogGlobalRouter.use(authenticate);
 
-productCatalogGlobalRouter.get(
-    '/access',
-    access,
-);
+productCatalogGlobalRouter.get('/access', access);
 
 productCatalogGlobalRouter.get(
     '/metadata',
@@ -96,6 +92,13 @@ productCatalogGlobalRouter.get(
     list,
 );
 
+productCatalogGlobalRouter.post(
+    '/',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({ body: createGlobalProductBodySchema }),
+    createProductController,
+);
+
 productCatalogGlobalRouter.get(
     '/:productId',
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.READ),
@@ -113,23 +116,6 @@ productCatalogGlobalRouter.patch(
     updateProductController,
 );
 
-productCatalogGlobalRouter.post(
-    '/:productId/approve',
-    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
-    validateRequest({ params: globalProductIdParamsSchema }),
-    approveProductController,
-);
-
-productCatalogGlobalRouter.post(
-    '/:productId/reject',
-    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
-    validateRequest({
-        params: globalProductIdParamsSchema,
-        body: rejectProductBodySchema,
-    }),
-    rejectProductController,
-);
-
 productCatalogGlobalRouter.patch(
     '/:productId/status',
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
@@ -140,6 +126,16 @@ productCatalogGlobalRouter.patch(
     updateProductStatusController,
 );
 
+productCatalogGlobalRouter.post(
+    '/:productId/variants',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductIdParamsSchema,
+        body: createGlobalVariantBodySchema,
+    }),
+    createVariantController,
+);
+
 productCatalogGlobalRouter.patch(
     '/:productId/variants/:variantId',
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
@@ -148,23 +144,6 @@ productCatalogGlobalRouter.patch(
         body: updateVariantBodySchema,
     }),
     updateVariantController,
-);
-
-productCatalogGlobalRouter.post(
-    '/:productId/variants/:variantId/approve',
-    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
-    validateRequest({ params: globalProductVariantParamsSchema }),
-    approveVariantController,
-);
-
-productCatalogGlobalRouter.post(
-    '/:productId/variants/:variantId/reject',
-    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
-    validateRequest({
-        params: globalProductVariantParamsSchema,
-        body: rejectProductBodySchema,
-    }),
-    rejectVariantController,
 );
 
 productCatalogGlobalRouter.patch(

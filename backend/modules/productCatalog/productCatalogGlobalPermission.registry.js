@@ -11,7 +11,7 @@ const PRODUCT_CATALOG_GLOBAL_PERMISSION_MODULE = Object.freeze({
             category: 'products',
             categoryLabel: 'Produits',
             description:
-                'Consulter les Produits, déclinaisons, catégories, contributions et événements du référentiel partagé.',
+                'Consulter les Produits, déclinaisons, catégories et événements du référentiel partagé.',
             reserved: false,
         }),
         Object.freeze({
@@ -20,7 +20,7 @@ const PRODUCT_CATALOG_GLOBAL_PERMISSION_MODULE = Object.freeze({
             category: 'products',
             categoryLabel: 'Produits',
             description:
-                'Valider, corriger, archiver et administrer le référentiel Produit partagé.',
+                'Créer, importer, corriger, archiver et administrer le référentiel Produit partagé.',
             reserved: false,
         }),
     ]),

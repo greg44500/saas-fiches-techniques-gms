@@ -14,13 +14,8 @@ const queryWithSession = (query, session) => (
     session ? query.session(session) : query
 );
 
-const productVisibleToWorkspace = (product, workspaceId) => (
+const productVisibleInReference = (product) => (
     [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED].includes(product.status)
-    || (
-        product.status === PRODUCT_STATUS.PENDING_REVIEW
-        && product.contributedFromWorkspace?.toString()
-            === workspaceId?.toString()
-    )
 );
 
 const scoreNearCandidate = (requestedKeys, candidateKeys) => {
@@ -28,12 +23,8 @@ const scoreNearCandidate = (requestedKeys, candidateKeys) => {
 
     for (const requested of requestedKeys) {
         for (const candidate of candidateKeys) {
-            if (!isNearDuplicateKey(requested, candidate)) {
-                continue;
-            }
-
-            const lengthDelta = Math.abs(requested.length - candidate.length);
-            score = Math.min(score, lengthDelta);
+            if (!isNearDuplicateKey(requested, candidate)) continue;
+            score = Math.min(score, Math.abs(requested.length - candidate.length));
         }
     }
 
@@ -47,6 +38,8 @@ const findProductDuplicateCandidates = async ({
     excludeProductId = null,
     session = null,
 }) => {
+    void workspaceId;
+
     const searchKeys = buildSearchKeys(name, aliases);
     const excludeFilter = excludeProductId
         ? { _id: mongoose.trusted({ $ne: new mongoose.Types.ObjectId(excludeProductId.toString()) }) }
@@ -55,6 +48,9 @@ const findProductDuplicateCandidates = async ({
     let exactQuery = CanonicalProduct.findOne({
         ...excludeFilter,
         identityActive: true,
+        status: mongoose.trusted({
+            $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+        }),
         searchKeys: mongoose.trusted({ $in: searchKeys }),
     })
         .populate('category')
@@ -63,9 +59,6 @@ const findProductDuplicateCandidates = async ({
     exactQuery = queryWithSession(exactQuery, session);
     const exact = await exactQuery;
 
-    const exactVisible = exact && productVisibleToWorkspace(exact, workspaceId);
-    const privateConflict = Boolean(exact && !exactVisible);
-
     const grams = buildSearchGrams(searchKeys);
     let nearProducts = [];
 
@@ -73,12 +66,10 @@ const findProductDuplicateCandidates = async ({
         let nearQuery = CanonicalProduct.find({
             ...excludeFilter,
             identityActive: true,
-            ...(exact ? { _id: mongoose.trusted({ $nin: [
-                ...(excludeProductId
-                    ? [new mongoose.Types.ObjectId(excludeProductId.toString())]
-                    : []),
-                exact._id,
-            ] }) } : {}),
+            status: mongoose.trusted({
+                $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+            }),
+            ...(exact ? { _id: mongoose.trusted({ $ne: exact._id }) } : {}),
             searchGrams: mongoose.trusted({ $in: grams }),
         })
             .populate('category')
@@ -91,7 +82,7 @@ const findProductDuplicateCandidates = async ({
     }
 
     const candidates = nearProducts
-        .filter((product) => productVisibleToWorkspace(product, workspaceId))
+        .filter(productVisibleInReference)
         .map((product) => ({
             product,
             score: scoreNearCandidate(searchKeys, product.searchKeys ?? []),
@@ -106,8 +97,9 @@ const findProductDuplicateCandidates = async ({
 
     return {
         normalizedKeys: searchKeys,
-        exactMatch: exactVisible ? serializeProduct(exact) : null,
-        privateConflict,
+        exactMatch: exact && productVisibleInReference(exact)
+            ? serializeProduct(exact)
+            : null,
         candidates,
     };
 };
@@ -128,7 +120,7 @@ const assertProductCreationReviewed = async ({
         session,
     });
 
-    if (duplicateCheck.exactMatch || duplicateCheck.privateConflict) {
+    if (duplicateCheck.exactMatch) {
         const error = new AppError('Un Produit équivalent existe déjà.', 409);
         error.code = 'PRODUCT_EXACT_DUPLICATE';
         error.duplicateCheck = duplicateCheck;
@@ -156,5 +148,5 @@ const assertProductCreationReviewed = async ({
 export {
     assertProductCreationReviewed,
     findProductDuplicateCandidates,
-    productVisibleToWorkspace,
+    productVisibleInReference,
 };

@@ -8,14 +8,12 @@ import {
     PRODUCT_CATALOG_GLOBAL_PERMISSION,
 } from './productCatalogGlobalPermission.registry.js';
 import {
-    approveProduct,
-    approveVariant,
     createCategory,
+    createGlobalProduct,
+    createGlobalVariant,
     getGlobalProductDetail,
     listCategories,
     listGlobalProducts,
-    rejectProduct,
-    rejectVariant,
     updateCategory,
     updateCategoryStatus,
     updateProduct,
@@ -28,9 +26,7 @@ const access = async (req, res) => {
     const authorization = await resolveApplicationGlobalAuthorization({
         user: req.user,
     });
-    const grantedPermissions = new Set(
-        authorization?.permissions ?? [],
-    );
+    const grantedPermissions = new Set(authorization?.permissions ?? []);
     const permissions = [
         PRODUCT_CATALOG_GLOBAL_PERMISSION.READ,
         PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE,
@@ -38,11 +34,7 @@ const access = async (req, res) => {
 
     res.status(200).json({
         status: 'success',
-        data: {
-            access: {
-                permissions,
-            },
-        },
+        data: { access: { permissions } },
     });
 };
 
@@ -73,7 +65,24 @@ const detail = async (req, res) => {
     res.status(200).json({ status: 'success', data: result });
 };
 
-const categories = async (req, res) => {
+const createProductController = async (req, res) => {
+    const result = await createGlobalProduct({
+        actorId: req.user._id,
+        ...req.validated.body,
+    });
+    res.status(201).json({ status: 'success', data: result });
+};
+
+const createVariantController = async (req, res) => {
+    const variant = await createGlobalVariant({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        variant: req.validated.body,
+    });
+    res.status(201).json({ status: 'success', data: { variant } });
+};
+
+const categories = async (_req, res) => {
     res.status(200).json({
         status: 'success',
         data: { categories: await listCategories() },
@@ -115,23 +124,6 @@ const updateProductController = async (req, res) => {
     res.status(200).json({ status: 'success', data: { product } });
 };
 
-const approveProductController = async (req, res) => {
-    const product = await approveProduct({
-        actorId: req.user._id,
-        productId: req.validated.params.productId,
-    });
-    res.status(200).json({ status: 'success', data: { product } });
-};
-
-const rejectProductController = async (req, res) => {
-    const product = await rejectProduct({
-        actorId: req.user._id,
-        productId: req.validated.params.productId,
-        ...req.validated.body,
-    });
-    res.status(200).json({ status: 'success', data: { product } });
-};
-
 const updateProductStatusController = async (req, res) => {
     const product = await updateProductStatus({
         actorId: req.user._id,
@@ -151,25 +143,6 @@ const updateVariantController = async (req, res) => {
     res.status(200).json({ status: 'success', data: { variant } });
 };
 
-const approveVariantController = async (req, res) => {
-    const variant = await approveVariant({
-        actorId: req.user._id,
-        productId: req.validated.params.productId,
-        variantId: req.validated.params.variantId,
-    });
-    res.status(200).json({ status: 'success', data: { variant } });
-};
-
-const rejectVariantController = async (req, res) => {
-    const variant = await rejectVariant({
-        actorId: req.user._id,
-        productId: req.validated.params.productId,
-        variantId: req.validated.params.variantId,
-        ...req.validated.body,
-    });
-    res.status(200).json({ status: 'success', data: { variant } });
-};
-
 const updateVariantStatusController = async (req, res) => {
     const variant = await updateVariantStatus({
         actorId: req.user._id,
@@ -182,15 +155,13 @@ const updateVariantStatusController = async (req, res) => {
 
 export {
     access,
-    approveProductController,
-    approveVariantController,
     categories,
     createCategoryController,
+    createProductController,
+    createVariantController,
     detail,
     list,
     metadata,
-    rejectProductController,
-    rejectVariantController,
     updateCategoryController,
     updateCategoryStatusController,
     updateProductController,

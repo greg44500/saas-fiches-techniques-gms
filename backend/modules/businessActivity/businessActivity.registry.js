@@ -31,9 +31,13 @@ const BUSINESS_ACTIVITY_ACTION_REGISTRY = Object.freeze({
         value: 'PRODUCT_CATALOG_REACTIVATED',
         label: 'Produit réactivé dans le catalogue',
     }),
-    PRODUCT_CONTRIBUTION_SUBMITTED: Object.freeze({
-        value: 'PRODUCT_CONTRIBUTION_SUBMITTED',
-        label: 'Contribution Produit envoyée',
+    PRODUCT_REFERENCE_CREATED: Object.freeze({
+        value: 'PRODUCT_REFERENCE_CREATED',
+        label: 'Produit créé dans le référentiel',
+    }),
+    PRODUCT_VARIANT_CREATED: Object.freeze({
+        value: 'PRODUCT_VARIANT_CREATED',
+        label: 'Déclinaison Produit créée',
     }),
 });
 
@@ -45,7 +49,6 @@ const BUSINESS_ACTIVITY_ACTION = Object.freeze(
     ),
 );
 
-
 const BUSINESS_ACTIVITY_ENTITY_TYPE = Object.freeze({
     DOSSIER: 'DOSSIER',
     DOSSIER_ACCESS_GRANT: 'DOSSIER_ACCESS_GRANT',
@@ -53,7 +56,6 @@ const BUSINESS_ACTIVITY_ENTITY_TYPE = Object.freeze({
     PRODUCT_VARIANT: 'PRODUCT_VARIANT',
     WORKSPACE_PRODUCT: 'WORKSPACE_PRODUCT',
 });
-
 
 export {
     BUSINESS_ACTIVITY_ACTION,

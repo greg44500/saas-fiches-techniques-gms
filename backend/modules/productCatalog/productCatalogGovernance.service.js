@@ -16,9 +16,7 @@ import {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
-    PRODUCT_REJECTION_REASON,
     PRODUCT_STATUS,
-    WORKSPACE_PRODUCT_STATUS,
 } from './productCatalog.registry.js';
 import {
     serializeCategory,
@@ -30,7 +28,9 @@ import {
     listProductReferenceEvents,
 } from './productReferenceEvent.service.js';
 import { ProductVariant } from './productVariant.model.js';
-import { WorkspaceProduct } from './workspaceProduct.model.js';
+import {
+    createProductVariantInSession,
+} from './productCatalog.service.js';
 
 const createCategory = async ({
     actorId,
@@ -171,9 +171,12 @@ const listGlobalProducts = async ({
     page = 1,
     limit = 20,
 }) => {
-    const filter = {};
-
-    if (status) filter.status = status;
+    const filter = {
+        identityActive: true,
+        status: status ?? mongoose.trusted({
+            $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+        }),
+    };
     if (categoryId) filter.category = categoryId;
 
     if (q) {
@@ -206,7 +209,13 @@ const listGlobalProducts = async ({
 };
 
 const getGlobalProductDetail = async ({ productId }) => {
-    const product = await CanonicalProduct.findById(productId)
+    const product = await CanonicalProduct.findOne({
+        _id: productId,
+        identityActive: true,
+        status: mongoose.trusted({
+            $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+        }),
+    })
         .populate('category')
         .lean();
 
@@ -217,6 +226,10 @@ const getGlobalProductDetail = async ({ productId }) => {
     const [variants, events] = await Promise.all([
         ProductVariant.find({
             canonicalProduct: product._id,
+            identityActive: true,
+            status: mongoose.trusted({
+                $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+            }),
         }).sort({ createdAt: 1, _id: 1 }).lean(),
         listProductReferenceEvents({
             entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
@@ -243,6 +256,127 @@ const getGlobalProductDetail = async ({ productId }) => {
     };
 };
 
+const createGlobalProduct = async ({
+    actorId,
+    name,
+    aliases = [],
+    categoryId,
+    reviewedCandidateIds = [],
+    variant,
+}) => mongoose.connection.transaction(async (session) => {
+    await assertProductCreationReviewed({
+        name,
+        aliases,
+        workspaceId: null,
+        reviewedCandidateIds,
+        session,
+    });
+
+    const category = await ProductCategory.findOne({
+        _id: categoryId,
+        status: PRODUCT_CATEGORY_STATUS.ACTIVE,
+    }).session(session);
+
+    if (!category) {
+        throw new AppError('Catégorie Produit indisponible.', 409);
+    }
+
+    const searchKeys = buildSearchKeys(name, aliases);
+
+    let product;
+    try {
+        [product] = await CanonicalProduct.create([
+            {
+                name,
+                normalizedName: normalizeProductText(name),
+                aliases,
+                searchKeys,
+                searchGrams: buildSearchGrams(searchKeys),
+                category: category._id,
+                status: PRODUCT_STATUS.ACTIVE,
+                contributedFromWorkspace: null,
+                createdBy: actorId,
+                updatedBy: actorId,
+            },
+        ], { session });
+    } catch (error) {
+        if (error?.code === 11000) {
+            throw new AppError('Un Produit équivalent existe déjà.', 409);
+        }
+        throw error;
+    }
+
+    const createdVariant = await createProductVariantInSession({
+        canonicalProductId: product._id,
+        workspaceId: null,
+        actorId,
+        variant,
+        status: PRODUCT_STATUS.ACTIVE,
+        session,
+    });
+
+    await createProductReferenceEvent({
+        actorId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_CREATED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+        entityId: product._id,
+        metadata: { variantId: createdVariant._id.toString(), source: 'GLOBAL' },
+        session,
+    });
+
+    await createProductReferenceEvent({
+        actorId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
+        entityId: createdVariant._id,
+        metadata: { productId: product._id.toString(), source: 'GLOBAL' },
+        session,
+    });
+
+    await product.populate('category');
+
+    return {
+        product: serializeProduct(product),
+        variant: serializeVariant(createdVariant),
+    };
+});
+
+const createGlobalVariant = async ({
+    actorId,
+    productId,
+    variant,
+}) => mongoose.connection.transaction(async (session) => {
+    const product = await CanonicalProduct.findOne({
+        _id: productId,
+        status: PRODUCT_STATUS.ACTIVE,
+        identityActive: true,
+    }).session(session);
+
+    if (!product) {
+        throw new AppError('Produit actif introuvable.', 404);
+    }
+
+    const createdVariant = await createProductVariantInSession({
+        canonicalProductId: product._id,
+        workspaceId: null,
+        actorId,
+        variant,
+        status: PRODUCT_STATUS.ACTIVE,
+        session,
+    });
+
+    await createProductReferenceEvent({
+        actorId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
+        entityId: createdVariant._id,
+        metadata: { productId: product._id.toString(), source: 'GLOBAL' },
+        session,
+    });
+
+    return serializeVariant(createdVariant);
+});
+
 const updateProduct = async ({
     actorId,
     productId,
@@ -253,7 +387,10 @@ const updateProduct = async ({
 }) => mongoose.connection.transaction(async (session) => {
     const product = await CanonicalProduct.findOne({
         _id: productId,
-        status: mongoose.trusted({ $ne: PRODUCT_STATUS.REJECTED }),
+        status: mongoose.trusted({
+            $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+        }),
+        identityActive: true,
     }).session(session);
 
     if (!product) {
@@ -340,191 +477,6 @@ const updateProduct = async ({
     });
 
     await product.populate('category');
-    return serializeProduct(product);
-});
-
-const approveProduct = async ({
-    actorId,
-    productId,
-}) => mongoose.connection.transaction(async (session) => {
-    const product = await CanonicalProduct.findOne({
-        _id: productId,
-        status: PRODUCT_STATUS.PENDING_REVIEW,
-        identityActive: true,
-    }).session(session);
-
-    if (!product) {
-        throw new AppError('Contribution Produit non validable.', 409);
-    }
-
-    const category = await ProductCategory.findOne({
-        _id: product.category,
-        status: PRODUCT_CATEGORY_STATUS.ACTIVE,
-    }).session(session);
-
-    if (!category) {
-        throw new AppError(
-            'Une catégorie active est obligatoire avant validation.',
-            409,
-        );
-    }
-
-    const variantExists = await ProductVariant.exists({
-        canonicalProduct: product._id,
-        identityActive: true,
-        status: mongoose.trusted({ $in: [PRODUCT_STATUS.PENDING_REVIEW, PRODUCT_STATUS.ACTIVE] }),
-    }).session(session);
-
-    if (!variantExists) {
-        throw new AppError(
-            'Le Produit doit posséder au moins une déclinaison valide.',
-            409,
-        );
-    }
-
-    product.status = PRODUCT_STATUS.ACTIVE;
-    product.updatedBy = actorId;
-    await product.save({ session });
-
-    await createProductReferenceEvent({
-        actorId,
-        workspaceId: product.contributedFromWorkspace,
-        action: PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_APPROVED,
-        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
-        entityId: product._id,
-        session,
-    });
-
-    await product.populate('category');
-    return serializeProduct(product);
-});
-
-const repointWorkspaceEntries = async ({
-    sourceVariantIds,
-    replacementVariantId,
-    actorId,
-    session,
-}) => {
-    const sourceEntries = await WorkspaceProduct.find({
-        productVariant: mongoose.trusted({ $in: sourceVariantIds }),
-        status: WORKSPACE_PRODUCT_STATUS.ACTIVE,
-    }).session(session);
-
-    for (const sourceEntry of sourceEntries) {
-        const existing = await WorkspaceProduct.findOne({
-            workspace: sourceEntry.workspace,
-            productVariant: replacementVariantId,
-        }).session(session);
-
-        if (existing) {
-            if (existing.status !== WORKSPACE_PRODUCT_STATUS.ACTIVE) {
-                existing.status = WORKSPACE_PRODUCT_STATUS.ACTIVE;
-                existing.updatedBy = actorId;
-                await existing.save({ session });
-            }
-        } else {
-            await WorkspaceProduct.create([
-                {
-                    workspace: sourceEntry.workspace,
-                    productVariant: replacementVariantId,
-                    createdBy: sourceEntry.createdBy,
-                    updatedBy: actorId,
-                },
-            ], { session });
-        }
-
-        sourceEntry.status = WORKSPACE_PRODUCT_STATUS.ARCHIVED;
-        sourceEntry.updatedBy = actorId;
-        await sourceEntry.save({ session });
-    }
-};
-
-const rejectProduct = async ({
-    actorId,
-    productId,
-    reason,
-    replacementProductId = null,
-    replacementVariantId = null,
-    comment = null,
-}) => mongoose.connection.transaction(async (session) => {
-    const product = await CanonicalProduct.findOne({
-        _id: productId,
-        status: PRODUCT_STATUS.PENDING_REVIEW,
-        identityActive: true,
-    }).session(session);
-
-    if (!product) {
-        throw new AppError('Contribution Produit non rejetable.', 409);
-    }
-
-    if (reason === PRODUCT_REJECTION_REASON.DUPLICATE && !replacementVariantId) {
-        throw new AppError(
-            'Une déclinaison de remplacement est requise pour un doublon.',
-            400,
-        );
-    }
-
-    if (replacementVariantId) {
-        const replacement = await ProductVariant.findOne({
-            _id: replacementVariantId,
-            status: PRODUCT_STATUS.ACTIVE,
-            identityActive: true,
-        }).session(session);
-
-        if (!replacement) {
-            throw new AppError('Déclinaison de remplacement indisponible.', 409);
-        }
-
-        replacementProductId = replacement.canonicalProduct;
-    }
-
-    const variants = await ProductVariant.find({
-        canonicalProduct: product._id,
-        identityActive: true,
-    }).session(session);
-
-    if (replacementVariantId) {
-        await repointWorkspaceEntries({
-            sourceVariantIds: variants.map(({ _id }) => _id),
-            replacementVariantId,
-            actorId,
-            session,
-        });
-    }
-
-    for (const variant of variants) {
-        variant.status = PRODUCT_STATUS.REJECTED;
-        variant.identityActive = false;
-        variant.rejectionReason = reason;
-        variant.rejectionComment = comment;
-        variant.replacementVariant = replacementVariantId;
-        variant.updatedBy = actorId;
-        await variant.save({ session });
-    }
-
-    product.status = PRODUCT_STATUS.REJECTED;
-    product.identityActive = false;
-    product.rejectionReason = reason;
-    product.rejectionComment = comment;
-    product.replacementProduct = replacementProductId;
-    product.replacementVariant = replacementVariantId;
-    product.updatedBy = actorId;
-    await product.save({ session });
-
-    await createProductReferenceEvent({
-        actorId,
-        workspaceId: product.contributedFromWorkspace,
-        action: PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_REJECTED,
-        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
-        entityId: product._id,
-        metadata: {
-            reason,
-            replacementProductId: replacementProductId?.toString() ?? null,
-            replacementVariantId: replacementVariantId?.toString() ?? null,
-        },
-        session,
-    });
-
     return serializeProduct(product);
 });
 
@@ -646,120 +598,6 @@ const updateVariant = async ({
     return serializeVariant(variant);
 });
 
-const approveVariant = async ({
-    actorId,
-    productId,
-    variantId,
-}) => mongoose.connection.transaction(async (session) => {
-    const product = await CanonicalProduct.findOne({
-        _id: productId,
-        status: PRODUCT_STATUS.ACTIVE,
-        identityActive: true,
-    }).session(session);
-
-    if (!product) {
-        throw new AppError(
-            'Le Produit doit être actif avant de valider une déclinaison.',
-            409,
-        );
-    }
-
-    const variant = await ProductVariant.findOne({
-        _id: variantId,
-        canonicalProduct: productId,
-        status: PRODUCT_STATUS.PENDING_REVIEW,
-        identityActive: true,
-    }).session(session);
-
-    if (!variant) {
-        throw new AppError('Déclinaison non validable.', 409);
-    }
-
-    variant.status = PRODUCT_STATUS.ACTIVE;
-    variant.updatedBy = actorId;
-    await variant.save({ session });
-
-    await createProductReferenceEvent({
-        actorId,
-        workspaceId: variant.contributedFromWorkspace,
-        action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_APPROVED,
-        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
-        entityId: variant._id,
-        session,
-    });
-
-    return serializeVariant(variant);
-});
-
-const rejectVariant = async ({
-    actorId,
-    productId,
-    variantId,
-    reason,
-    replacementVariantId = null,
-    comment = null,
-}) => mongoose.connection.transaction(async (session) => {
-    const variant = await ProductVariant.findOne({
-        _id: variantId,
-        canonicalProduct: productId,
-        status: PRODUCT_STATUS.PENDING_REVIEW,
-        identityActive: true,
-    }).session(session);
-
-    if (!variant) {
-        throw new AppError('Déclinaison non rejetable.', 409);
-    }
-
-    if (reason === PRODUCT_REJECTION_REASON.DUPLICATE && !replacementVariantId) {
-        throw new AppError(
-            'Une déclinaison de remplacement est requise pour un doublon.',
-            400,
-        );
-    }
-
-    if (replacementVariantId) {
-        const replacement = await ProductVariant.findOne({
-            _id: replacementVariantId,
-            status: PRODUCT_STATUS.ACTIVE,
-            identityActive: true,
-        }).session(session);
-
-        if (!replacement) {
-            throw new AppError('Déclinaison de remplacement indisponible.', 409);
-        }
-
-        await repointWorkspaceEntries({
-            sourceVariantIds: [variant._id],
-            replacementVariantId,
-            actorId,
-            session,
-        });
-    }
-
-    variant.status = PRODUCT_STATUS.REJECTED;
-    variant.identityActive = false;
-    variant.rejectionReason = reason;
-    variant.rejectionComment = comment;
-    variant.replacementVariant = replacementVariantId;
-    variant.updatedBy = actorId;
-    await variant.save({ session });
-
-    await createProductReferenceEvent({
-        actorId,
-        workspaceId: variant.contributedFromWorkspace,
-        action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_REJECTED,
-        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
-        entityId: variant._id,
-        metadata: {
-            reason,
-            replacementVariantId: replacementVariantId?.toString() ?? null,
-        },
-        session,
-    });
-
-    return serializeVariant(variant);
-});
-
 const updateVariantStatus = async ({
     actorId,
     productId,
@@ -818,14 +656,12 @@ const updateVariantStatus = async ({
 });
 
 export {
-    approveProduct,
-    approveVariant,
     createCategory,
+    createGlobalProduct,
+    createGlobalVariant,
     getGlobalProductDetail,
     listCategories,
     listGlobalProducts,
-    rejectProduct,
-    rejectVariant,
     updateCategory,
     updateCategoryStatus,
     updateProduct,

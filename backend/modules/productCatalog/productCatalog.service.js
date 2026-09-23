@@ -24,8 +24,9 @@ import {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_CATEGORY_STATUS_REGISTRY,
     PRODUCT_FOOD_RANGES,
+    PRODUCT_REFERENCE_EVENT_ACTION,
+    PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
-    PRODUCT_REJECTION_REASON_REGISTRY,
     PRODUCT_STATUS,
     PRODUCT_STATUS_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
@@ -36,6 +37,9 @@ import {
     serializeSearchResult,
     serializeVariant,
 } from './productCatalog.serializer.js';
+import {
+    createProductReferenceEvent,
+} from './productReferenceEvent.service.js';
 import { ProductVariant } from './productVariant.model.js';
 import { WorkspaceProduct } from './workspaceProduct.model.js';
 
@@ -56,7 +60,7 @@ const normalizeVariantInput = (variant) => ({
 
 const assertActiveCategory = async ({ categoryId, session = null }) => {
     if (!categoryId) {
-        return null;
+        throw new AppError('Une catégorie active est obligatoire.', 409);
     }
 
     const query = ProductCategory.findOne({
@@ -80,7 +84,7 @@ const createProductVariantInSession = async ({
     workspaceId,
     actorId,
     variant,
-    status = PRODUCT_STATUS.PENDING_REVIEW,
+    status = PRODUCT_STATUS.ACTIVE,
     session,
 }) => {
     const normalized = normalizeVariantInput(variant);
@@ -114,7 +118,6 @@ const attachVariantToWorkspaceInSession = async ({
     variantId,
     actorId,
     session,
-    allowPendingOwnContribution = false,
 }) => {
     const variant = await ProductVariant.findOne({
         _id: variantId,
@@ -139,18 +142,7 @@ const attachVariantToWorkspaceInSession = async ({
         && product.status === PRODUCT_STATUS.ACTIVE
     );
 
-    const isOwnPending = allowPendingOwnContribution
-        && variant.status === PRODUCT_STATUS.PENDING_REVIEW
-        && variant.contributedFromWorkspace?.toString() === workspaceId.toString()
-        && (
-            product.status === PRODUCT_STATUS.ACTIVE
-            || (
-                product.status === PRODUCT_STATUS.PENDING_REVIEW
-                && product.contributedFromWorkspace?.toString() === workspaceId.toString()
-            )
-        );
-
-    if (!isActive && !isOwnPending) {
+    if (!isActive) {
         throw new AppError(
             'Cette référence Produit ne peut pas être ajoutée au catalogue.',
             409,
@@ -221,7 +213,6 @@ const getProductMetadata = async ({
         productCategoryStatuses: Object.values(PRODUCT_CATEGORY_STATUS_REGISTRY),
         referenceUnits: Object.values(PRODUCT_REFERENCE_UNIT_REGISTRY),
         foodRanges: [...PRODUCT_FOOD_RANGES],
-        rejectionReasons: Object.values(PRODUCT_REJECTION_REASON_REGISTRY),
         categories: categories.map((category) => ({
             id: category._id.toString(),
             name: category.name,
@@ -244,25 +235,15 @@ const getWorkspaceProductSummary = async ({ workspaceId }) => {
         }).distinct('_id')
         : [];
 
-    const [activeCatalogEntries, pendingContributions] = await Promise.all([
-        activeVariantIds.length > 0
-            ? WorkspaceProduct.countDocuments({
-                workspace: workspaceId,
-                productVariant: mongoose.trusted({ $in: activeVariantIds }),
-                status: WORKSPACE_PRODUCT_STATUS.ACTIVE,
-            })
-            : 0,
-        ProductVariant.countDocuments({
-            contributedFromWorkspace: workspaceId,
-            status: PRODUCT_STATUS.PENDING_REVIEW,
-            identityActive: true,
-        }),
-    ]);
+    const activeCatalogEntries = activeVariantIds.length > 0
+        ? await WorkspaceProduct.countDocuments({
+            workspace: workspaceId,
+            productVariant: mongoose.trusted({ $in: activeVariantIds }),
+            status: WORKSPACE_PRODUCT_STATUS.ACTIVE,
+        })
+        : 0;
 
-    return {
-        activeCatalogEntries,
-        pendingContributions,
-    };
+    return { activeCatalogEntries };
 };
 
 const buildProductSearchFilter = ({
@@ -271,17 +252,15 @@ const buildProductSearchFilter = ({
     q,
     includeArchived = false,
 }) => {
+    void workspaceId;
+
     const visibility = {
-        $or: [
-            { status: PRODUCT_STATUS.ACTIVE },
-            ...(includeArchived
-                ? [{ status: PRODUCT_STATUS.ARCHIVED }]
-                : []),
-            {
-                status: PRODUCT_STATUS.PENDING_REVIEW,
-                contributedFromWorkspace: asObjectId(workspaceId),
-            },
-        ],
+        status: mongoose.trusted({
+            $in: [
+                PRODUCT_STATUS.ACTIVE,
+                ...(includeArchived ? [PRODUCT_STATUS.ARCHIVED] : []),
+            ],
+        }),
     };
 
     const filter = {
@@ -349,16 +328,12 @@ const listProductSearch = async ({
     const variantVisibility = {
         canonicalProduct: mongoose.trusted({ $in: productIds }),
         identityActive: true,
-        $or: [
-            { status: PRODUCT_STATUS.ACTIVE },
-            ...(scope === 'WORKSPACE'
-                ? [{ status: PRODUCT_STATUS.ARCHIVED }]
-                : []),
-            {
-                status: PRODUCT_STATUS.PENDING_REVIEW,
-                contributedFromWorkspace: asObjectId(workspaceId),
-            },
-        ],
+        status: mongoose.trusted({
+            $in: [
+                PRODUCT_STATUS.ACTIVE,
+                ...(scope === 'WORKSPACE' ? [PRODUCT_STATUS.ARCHIVED] : []),
+            ],
+        }),
     };
 
     if (scope === 'WORKSPACE') {
@@ -450,21 +425,13 @@ const getWorkspaceProductDetail = async ({
             $in: [
                 PRODUCT_STATUS.ACTIVE,
                 PRODUCT_STATUS.ARCHIVED,
-                PRODUCT_STATUS.PENDING_REVIEW,
             ],
         }),
     })
         .populate('category')
         .lean();
 
-    if (
-        !product
-        || (
-            product.status === PRODUCT_STATUS.PENDING_REVIEW
-            && product.contributedFromWorkspace?.toString()
-                !== workspaceId.toString()
-        )
-    ) {
+    if (!product) {
         throw new AppError('Produit introuvable.', 404);
     }
 
@@ -475,7 +442,6 @@ const getWorkspaceProductDetail = async ({
             $in: [
                 PRODUCT_STATUS.ACTIVE,
                 PRODUCT_STATUS.ARCHIVED,
-                PRODUCT_STATUS.PENDING_REVIEW,
             ],
         }),
     }).sort({ createdAt: 1, _id: 1 }).lean();
@@ -490,18 +456,10 @@ const getWorkspaceProductDetail = async ({
         entries.map((entry) => [entry.productVariant.toString(), entry]),
     );
 
-    const visibleVariants = variants.filter((variant) => {
-        if (variant.status === PRODUCT_STATUS.ACTIVE) {
-            return true;
-        }
-
-        if (variant.status === PRODUCT_STATUS.PENDING_REVIEW) {
-            return variant.contributedFromWorkspace?.toString()
-                === workspaceId.toString();
-        }
-
-        return entryByVariantId.has(variant._id.toString());
-    });
+    const visibleVariants = variants.filter((variant) => (
+        variant.status === PRODUCT_STATUS.ACTIVE
+        || entryByVariantId.has(variant._id.toString())
+    ));
 
     if (
         product.status === PRODUCT_STATUS.ARCHIVED
@@ -526,12 +484,12 @@ const getWorkspaceProductDetail = async ({
     };
 };
 
-const createProductContribution = async ({
+const createWorkspaceProduct = async ({
     workspaceId,
     actorId,
     name,
     aliases = [],
-    categoryId = null,
+    categoryId,
     reviewedCandidateIds = [],
     variant,
 }) => mongoose.connection.transaction(async (session) => {
@@ -558,7 +516,7 @@ const createProductContribution = async ({
                 searchKeys,
                 searchGrams: buildSearchGrams(searchKeys),
                 category: categoryId,
-                status: PRODUCT_STATUS.PENDING_REVIEW,
+                status: PRODUCT_STATUS.ACTIVE,
                 contributedFromWorkspace: workspaceId,
                 createdBy: actorId,
                 updatedBy: actorId,
@@ -584,13 +542,32 @@ const createProductContribution = async ({
         variantId: createdVariant._id,
         actorId,
         session,
-        allowPendingOwnContribution: true,
+    });
+
+    await createProductReferenceEvent({
+        actorId,
+        workspaceId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_CREATED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+        entityId: product._id,
+        metadata: { variantId: createdVariant._id.toString() },
+        session,
+    });
+
+    await createProductReferenceEvent({
+        actorId,
+        workspaceId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
+        entityId: createdVariant._id,
+        metadata: { productId: product._id.toString() },
+        session,
     });
 
     await createBusinessActivityEvent({
         workspaceId,
         actorId,
-        action: BUSINESS_ACTIVITY_ACTION.PRODUCT_CONTRIBUTION_SUBMITTED,
+        action: BUSINESS_ACTIVITY_ACTION.PRODUCT_REFERENCE_CREATED,
         entityType: BUSINESS_ACTIVITY_ENTITY_TYPE.CANONICAL_PRODUCT,
         entityId: product._id,
         metadata: {
@@ -609,7 +586,7 @@ const createProductContribution = async ({
     };
 });
 
-const createVariantContribution = async ({
+const createWorkspaceVariant = async ({
     workspaceId,
     actorId,
     productId,
@@ -638,13 +615,22 @@ const createVariantContribution = async ({
         variantId: createdVariant._id,
         actorId,
         session,
-        allowPendingOwnContribution: true,
+    });
+
+    await createProductReferenceEvent({
+        actorId,
+        workspaceId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
+        entityId: createdVariant._id,
+        metadata: { productId: product._id.toString() },
+        session,
     });
 
     await createBusinessActivityEvent({
         workspaceId,
         actorId,
-        action: BUSINESS_ACTIVITY_ACTION.PRODUCT_CONTRIBUTION_SUBMITTED,
+        action: BUSINESS_ACTIVITY_ACTION.PRODUCT_VARIANT_CREATED,
         entityType: BUSINESS_ACTIVITY_ENTITY_TYPE.PRODUCT_VARIANT,
         entityId: createdVariant._id,
         metadata: {
@@ -719,9 +705,9 @@ export {
     archiveVariantFromWorkspace,
     attachVariantToWorkspace,
     attachVariantToWorkspaceInSession,
-    createProductContribution,
     createProductVariantInSession,
-    createVariantContribution,
+    createWorkspaceProduct,
+    createWorkspaceVariant,
     findProductDuplicateCandidates,
     getProductMetadata,
     getWorkspaceProductDetail,

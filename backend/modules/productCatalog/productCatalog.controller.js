@@ -1,8 +1,8 @@
 import {
     archiveVariantFromWorkspace,
     attachVariantToWorkspace,
-    createProductContribution,
-    createVariantContribution,
+    createWorkspaceProduct,
+    createWorkspaceVariant,
     getProductMetadata,
     getWorkspaceProductDetail,
     getWorkspaceProductSummary,
@@ -16,11 +16,8 @@ import {
     inspectProductImport,
     previewProductImport,
 } from './productCatalogImport.service.js';
-import {
-    productCatalogImportUploadService,
-} from './productCatalogImportUpload.service.js';
 
-const metadata = async (req, res) => {
+const metadata = async (_req, res) => {
     res.status(200).json({
         status: 'success',
         data: { metadata: await getProductMetadata() },
@@ -39,15 +36,15 @@ const summary = async (req, res) => {
 };
 
 const search = async (req, res) => {
-    const { results, pagination } = await listProductSearch({
+    const result = await listProductSearch({
         workspaceId: req.workspace._id,
         ...req.validated.query,
     });
 
     res.status(200).json({
         status: 'success',
-        data: { results },
-        meta: pagination,
+        data: { results: result.results },
+        meta: result.pagination,
     });
 };
 
@@ -65,8 +62,8 @@ const detail = async (req, res) => {
 
 const duplicateCheck = async (req, res) => {
     const result = await findProductDuplicateCandidates({
-        ...req.validated.body,
         workspaceId: req.workspace._id,
+        ...req.validated.body,
     });
 
     res.status(200).json({
@@ -75,8 +72,8 @@ const duplicateCheck = async (req, res) => {
     });
 };
 
-const contributeProduct = async (req, res) => {
-    const result = await createProductContribution({
+const createProduct = async (req, res) => {
+    const result = await createWorkspaceProduct({
         workspaceId: req.workspace._id,
         actorId: req.user._id,
         ...req.validated.body,
@@ -88,8 +85,8 @@ const contributeProduct = async (req, res) => {
     });
 };
 
-const contributeVariant = async (req, res) => {
-    const result = await createVariantContribution({
+const createVariant = async (req, res) => {
+    const result = await createWorkspaceVariant({
         workspaceId: req.workspace._id,
         actorId: req.user._id,
         productId: req.validated.params.productId,
@@ -105,8 +102,8 @@ const contributeVariant = async (req, res) => {
 const attach = async (req, res) => {
     const workspaceEntry = await attachVariantToWorkspace({
         workspaceId: req.workspace._id,
-        actorId: req.user._id,
         variantId: req.validated.params.variantId,
+        actorId: req.user._id,
     });
 
     res.status(200).json({
@@ -118,8 +115,8 @@ const attach = async (req, res) => {
 const archive = async (req, res) => {
     const workspaceEntry = await archiveVariantFromWorkspace({
         workspaceId: req.workspace._id,
-        actorId: req.user._id,
         variantId: req.validated.params.variantId,
+        actorId: req.user._id,
     });
 
     res.status(200).json({
@@ -129,19 +126,11 @@ const archive = async (req, res) => {
 };
 
 const inspectImport = async (req, res) => {
-    const result =
-        await productCatalogImportUploadService
-            .processTemporaryUpload({
-                file: req.file,
-                consume: (inspectedFile) =>
-                    inspectProductImport({
-                        workspaceId:
-                            req.workspace._id,
-                        actorId:
-                            req.user._id,
-                        file: inspectedFile,
-                    }),
-            });
+    const result = await inspectProductImport({
+        workspaceId: req.workspace._id,
+        actorId: req.user._id,
+        file: req.file,
+    });
 
     res.status(201).json({
         status: 'success',
@@ -154,8 +143,7 @@ const previewImport = async (req, res) => {
         workspaceId: req.workspace._id,
         actorId: req.user._id,
         importId: req.validated.params.importId,
-        mapping: req.validated.body.mapping,
-        defaults: req.validated.body.defaults,
+        ...req.validated.body,
     });
 
     res.status(200).json({
@@ -182,8 +170,8 @@ export {
     archive,
     attach,
     commitImport,
-    contributeProduct,
-    contributeVariant,
+    createProduct,
+    createVariant,
     detail,
     duplicateCheck,
     inspectImport,

@@ -21,18 +21,18 @@ const PRODUCT_CATALOG_CAPABILITY_MODULE = Object.freeze({
             tags: Object.freeze([]),
         }),
         [PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT]: Object.freeze({
-            label: 'Import de catalogue Produits',
+            label: 'Import de données Produits',
             description:
-                'Permet d’importer un catalogue CSV, XLS ou XLSX dans un workspace.',
+                'Permet d’importer des données Produit CSV, XLS ou XLSX dans un Workspace.',
             category: 'products',
             categoryLabel: 'Produits',
             displayOrder: 110,
             tags: Object.freeze([]),
         }),
         [PRODUCT_CATALOG_FEATURE.CONTRIBUTION]: Object.freeze({
-            label: 'Contribution au référentiel Produits',
+            label: 'Création dans le référentiel Produits',
             description:
-                'Permet de proposer de nouveaux Produits ou déclinaisons au référentiel partagé.',
+                'Permet de créer de nouveaux Produits ou déclinaisons dans le référentiel partagé après contrôle anti-doublon.',
             category: 'products',
             categoryLabel: 'Produits',
             displayOrder: 120,

@@ -1,15 +1,14 @@
-const PRODUCT_STATUS_REGISTRY = Object.freeze({
-    PENDING_REVIEW: Object.freeze({ value: 'PENDING_REVIEW', label: 'En validation' }),
-    ACTIVE: Object.freeze({ value: 'ACTIVE', label: 'Actif' }),
-    ARCHIVED: Object.freeze({ value: 'ARCHIVED', label: 'Archivé' }),
-    REJECTED: Object.freeze({ value: 'REJECTED', label: 'Rejeté' }),
+const PRODUCT_STATUS = Object.freeze({
+    ACTIVE: 'ACTIVE',
+    ARCHIVED: 'ARCHIVED',
+    PENDING_REVIEW: 'PENDING_REVIEW',
+    REJECTED: 'REJECTED',
 });
 
-const PRODUCT_STATUS = Object.freeze(
-    Object.fromEntries(Object.entries(PRODUCT_STATUS_REGISTRY).map(
-        ([key, definition]) => [key, definition.value],
-    )),
-);
+const PRODUCT_STATUS_REGISTRY = Object.freeze({
+    ACTIVE: Object.freeze({ value: PRODUCT_STATUS.ACTIVE, label: 'Actif' }),
+    ARCHIVED: Object.freeze({ value: PRODUCT_STATUS.ARCHIVED, label: 'Archivé' }),
+});
 
 const WORKSPACE_PRODUCT_STATUS_REGISTRY = Object.freeze({
     ACTIVE: Object.freeze({ value: 'ACTIVE', label: 'Dans le catalogue' }),
@@ -67,11 +66,13 @@ const PRODUCT_REFERENCE_UNIT = Object.freeze(
 const PRODUCT_FOOD_RANGES = Object.freeze([1, 2, 3, 4, 5]);
 
 const PRODUCT_REFERENCE_EVENT_ACTION = Object.freeze({
+    PRODUCT_CREATED: 'PRODUCT_CREATED',
     PRODUCT_APPROVED: 'PRODUCT_APPROVED',
     PRODUCT_REJECTED: 'PRODUCT_REJECTED',
     PRODUCT_UPDATED: 'PRODUCT_UPDATED',
     PRODUCT_ARCHIVED: 'PRODUCT_ARCHIVED',
     PRODUCT_REACTIVATED: 'PRODUCT_REACTIVATED',
+    VARIANT_CREATED: 'VARIANT_CREATED',
     VARIANT_APPROVED: 'VARIANT_APPROVED',
     VARIANT_REJECTED: 'VARIANT_REJECTED',
     VARIANT_UPDATED: 'VARIANT_UPDATED',
@@ -98,11 +99,9 @@ const PRODUCT_IMPORT_STATUS = Object.freeze({
 
 const PRODUCT_IMPORT_ROW_CLASSIFICATION = Object.freeze({
     ATTACH_EXISTING: 'ATTACH_EXISTING',
-    EXISTING_PENDING: 'EXISTING_PENDING',
-    PROPOSE_PRODUCT: 'PROPOSE_PRODUCT',
-    PROPOSE_VARIANT: 'PROPOSE_VARIANT',
+    CREATE_PRODUCT: 'CREATE_PRODUCT',
+    CREATE_VARIANT: 'CREATE_VARIANT',
     REVIEW_REQUIRED: 'REVIEW_REQUIRED',
-    PRIVATE_CONFLICT: 'PRIVATE_CONFLICT',
     INVALID: 'INVALID',
 });
 

@@ -27,7 +27,7 @@ const canonicalProductSchema = new Schema(
         status: {
             type: String,
             enum: Object.values(PRODUCT_STATUS),
-            default: PRODUCT_STATUS.PENDING_REVIEW,
+            default: PRODUCT_STATUS.ACTIVE,
             required: true,
         },
         identityActive: { type: Boolean, default: true, required: true },

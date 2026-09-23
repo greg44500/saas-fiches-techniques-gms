@@ -3,7 +3,6 @@ import { z } from 'zod';
 import {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_REFERENCE_UNIT,
-    PRODUCT_REJECTION_REASON,
     PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS,
 } from './productCatalog.registry.js';
@@ -39,6 +38,10 @@ const importIdParamsSchema = z.strictObject({
     importId: objectIdSchema,
 });
 
+const globalImportIdParamsSchema = z.strictObject({
+    importId: objectIdSchema,
+});
+
 const aliasesSchema = z
     .array(z.string().trim().min(1).max(120))
     .max(20)
@@ -60,15 +63,18 @@ const duplicateCheckBodySchema = z.strictObject({
     aliases: aliasesSchema.optional().default([]),
 });
 
-const createProductContributionBodySchema = z.strictObject({
+const createProductBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
     aliases: aliasesSchema.optional().default([]),
-    categoryId: objectIdSchema.nullable().optional().default(null),
+    categoryId: objectIdSchema,
     reviewedCandidateIds: z.array(objectIdSchema).max(20).optional().default([]),
     variant: variantBodySchema,
 });
 
-const createVariantContributionBodySchema = variantBodySchema;
+const createWorkspaceProductBodySchema = createProductBodySchema;
+const createGlobalProductBodySchema = createProductBodySchema;
+const createWorkspaceVariantBodySchema = variantBodySchema;
+const createGlobalVariantBodySchema = variantBodySchema;
 
 const productSearchQuerySchema = z.strictObject({
     q: z.string().trim().min(2).max(120).optional(),
@@ -95,13 +101,16 @@ const importMappingSchema = z.strictObject({
     { message: 'Une colonne ne peut pas être associée à plusieurs champs.' },
 );
 
+const importDefaultsSchema = z.strictObject({
+    categoryId: objectIdSchema.optional(),
+    referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
+    foodRange: z.number().int().min(1).max(5).nullable().optional(),
+    yieldPercent: z.number().positive().max(100).nullable().optional(),
+}).optional().default({});
+
 const importPreviewBodySchema = z.strictObject({
     mapping: importMappingSchema,
-    defaults: z.strictObject({
-        referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
-        foodRange: z.number().int().min(1).max(5).nullable().optional(),
-        yieldPercent: z.number().positive().max(100).nullable().optional(),
-    }).optional().default({}),
+    defaults: importDefaultsSchema,
 });
 
 const importDecisionSchema = z.strictObject({
@@ -109,10 +118,7 @@ const importDecisionSchema = z.strictObject({
     action: z.enum(['ATTACH_EXISTING', 'CREATE_NEW', 'SKIP']),
     variantId: objectIdSchema.optional(),
 }).superRefine((decision, context) => {
-    if (
-        decision.action === 'ATTACH_EXISTING'
-        && !decision.variantId
-    ) {
+    if (decision.action === 'ATTACH_EXISTING' && !decision.variantId) {
         context.addIssue({
             code: 'custom',
             path: ['variantId'],
@@ -126,7 +132,7 @@ const importCommitBodySchema = z.strictObject({
 });
 
 const globalProductListQuerySchema = z.strictObject({
-    status: z.enum(Object.values(PRODUCT_STATUS)).optional(),
+    status: z.enum([PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED]).optional(),
     categoryId: objectIdSchema.optional(),
     q: z.string().trim().min(2).max(120).optional(),
     page: z.coerce.number().int().min(1).default(1),
@@ -159,25 +165,15 @@ const updateCategoryStatusBodySchema = z.strictObject({
 const updateProductBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120).optional(),
     aliases: aliasesSchema.optional(),
-    categoryId: objectIdSchema.nullable().optional(),
+    categoryId: objectIdSchema.optional(),
     reviewedCandidateIds: z.array(objectIdSchema).max(20).optional().default([]),
 }).refine(
     (body) => Object.keys(body).some((key) => key !== 'reviewedCandidateIds'),
     { message: 'Au moins un champ Produit doit être modifié.' },
 );
 
-const rejectProductBodySchema = z.strictObject({
-    reason: z.enum(Object.values(PRODUCT_REJECTION_REASON)),
-    replacementProductId: objectIdSchema.nullable().optional(),
-    replacementVariantId: objectIdSchema.nullable().optional(),
-    comment: z.string().trim().min(1).max(500).nullable().optional(),
-});
-
 const updateProductStatusBodySchema = z.strictObject({
-    status: z.enum([
-        PRODUCT_STATUS.ACTIVE,
-        PRODUCT_STATUS.ARCHIVED,
-    ]),
+    status: z.enum([PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED]),
 });
 
 const updateVariantBodySchema = z.strictObject({
@@ -196,21 +192,23 @@ const updateVariantStatusBodySchema = updateProductStatusBodySchema;
 
 export {
     createCategoryBodySchema,
-    createProductContributionBodySchema,
-    createVariantContributionBodySchema,
+    createGlobalProductBodySchema,
+    createGlobalVariantBodySchema,
+    createWorkspaceProductBodySchema,
+    createWorkspaceVariantBodySchema,
     duplicateCheckBodySchema,
+    globalCategoryParamsSchema,
+    globalImportIdParamsSchema,
+    globalProductIdParamsSchema,
+    globalProductListQuerySchema,
+    globalProductVariantParamsSchema,
     importCommitBodySchema,
     importIdParamsSchema,
     importPreviewBodySchema,
     objectIdSchema,
-    globalCategoryParamsSchema,
-    globalProductIdParamsSchema,
-    globalProductListQuerySchema,
-    globalProductVariantParamsSchema,
     productIdParamsSchema,
     productSearchQuerySchema,
     productVariantParamsSchema,
-    rejectProductBodySchema,
     updateCategoryBodySchema,
     updateCategoryStatusBodySchema,
     updateProductBodySchema,

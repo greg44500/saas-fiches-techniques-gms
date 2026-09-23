@@ -11,8 +11,8 @@ import {
     archive,
     attach,
     commitImport,
-    contributeProduct,
-    contributeVariant,
+    createProduct,
+    createVariant,
     detail,
     duplicateCheck,
     inspectImport,
@@ -35,8 +35,8 @@ import {
     PRODUCT_CATALOG_PERMISSION,
 } from './productCatalogPermission.registry.js';
 import {
-    createProductContributionBodySchema,
-    createVariantContributionBodySchema,
+    createWorkspaceProductBodySchema,
+    createWorkspaceVariantBodySchema,
     duplicateCheckBodySchema,
     importCommitBodySchema,
     importIdParamsSchema,
@@ -136,31 +136,31 @@ productCatalogRouter.post(
 );
 
 productCatalogRouter.post(
-    '/contributions',
+    '/',
     authenticate,
     validateRequest({
         params: workspaceIdParamsSchema,
-        body: createProductContributionBodySchema,
+        body: createWorkspaceProductBodySchema,
     }),
     loadWorkspaceContext,
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
     enforceWorkspaceAccessMode(),
     enforceProductContributionFeature,
-    contributeProduct,
+    createProduct,
 );
 
 productCatalogRouter.post(
-    '/:productId/variants/contributions',
+    '/:productId/variants',
     authenticate,
     validateRequest({
         params: productIdParamsSchema,
-        body: createVariantContributionBodySchema,
+        body: createWorkspaceVariantBodySchema,
     }),
     loadWorkspaceContext,
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
     enforceWorkspaceAccessMode(),
     enforceProductContributionFeature,
-    contributeVariant,
+    createVariant,
 );
 
 productCatalogRouter.put(
