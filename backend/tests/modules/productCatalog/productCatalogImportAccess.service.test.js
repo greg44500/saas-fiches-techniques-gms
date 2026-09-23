@@ -1,3 +1,6 @@
+import '../../setup.js';
+
+import mongoose from 'mongoose';
 import {
     describe,
     expect,
@@ -6,6 +9,7 @@ import {
 
 import {
     collectProductImportCommitRequirements,
+    resolveProductImportCommitRequirements,
 } from '../../../modules/productCatalog/productCatalogImportAccess.service.js';
 import {
     PRODUCT_CATALOG_FEATURE,
@@ -15,9 +19,49 @@ import {
 } from '../../../modules/productCatalog/productCatalogPermission.registry.js';
 import {
     PRODUCT_IMPORT_ROW_CLASSIFICATION,
+    PRODUCT_IMPORT_STATUS,
 } from '../../../modules/productCatalog/productCatalog.registry.js';
+import {
+    ProductImportSession,
+} from '../../../modules/productCatalog/productImportSession.model.js';
 
 describe('M-002 import commit access requirements', () => {
+    it('résout une session PREVIEWED avec sanitizeFilter activé', async () => {
+        const workspaceId = new mongoose.Types.ObjectId();
+        const actorId = new mongoose.Types.ObjectId();
+
+        const importSession = await ProductImportSession.create({
+            workspace: workspaceId,
+            actor: actorId,
+            status: PRODUCT_IMPORT_STATUS.PREVIEWED,
+            format: 'CSV',
+            headers: ['Produit'],
+            rows: [['Carotte']],
+            preview: [{
+                rowNumber: 2,
+                classification:
+                    PRODUCT_IMPORT_ROW_CLASSIFICATION.PROPOSE_PRODUCT,
+            }],
+            expiresAt: new Date(Date.now() + 60_000),
+        });
+
+        await expect(
+            resolveProductImportCommitRequirements({
+                workspaceId,
+                actorId,
+                importId: importSession._id,
+                decisions: [],
+            }),
+        ).resolves.toEqual({
+            permissions: [
+                PRODUCT_CATALOG_PERMISSION.CONTRIBUTE,
+            ],
+            features: [
+                PRODUCT_CATALOG_FEATURE.CONTRIBUTION,
+            ],
+        });
+    });
+
     it('n exige que la gestion du catalogue pour un rattachement existant', () => {
         expect(
             collectProductImportCommitRequirements({

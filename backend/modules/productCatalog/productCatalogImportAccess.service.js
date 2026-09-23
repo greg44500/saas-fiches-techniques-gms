@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 import { AppError } from '../../utils/appError.js';
 import {
     PRODUCT_CATALOG_FEATURE,
@@ -173,12 +175,12 @@ const resolveProductImportCommitRequirements = async ({
                         PRODUCT_IMPORT_STATUS.COMMITTED,
                 },
                 {
-                    status: {
+                    status: mongoose.trusted({
                         $in: COMMITTABLE_IMPORT_STATUSES,
-                    },
-                    expiresAt: {
+                    }),
+                    expiresAt: mongoose.trusted({
                         $gt: now,
-                    },
+                    }),
                 },
             ],
         }).lean();
