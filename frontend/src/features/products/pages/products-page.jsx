@@ -86,19 +86,6 @@ function ProductsPage() {
   const [attachVariant, attachState] = useAttachProductVariantMutation();
   const [archiveVariant, archiveState] = useArchiveProductVariantMutation();
 
-  useEffect(() => {
-    const totalPages = productsQuery.data?.pagination?.totalPages;
-    if (totalPages && page > totalPages) setPage(totalPages);
-  }, [page, productsQuery.data?.pagination?.totalPages, setPage]);
-
-  useEffect(() => {
-    if (!canReferenceAccess && scope === 'REFERENCE') {
-      setScope('WORKSPACE');
-      setPage(1);
-      setStatus(ALL_WORKSPACE_STATUSES);
-    }
-  }, [canReferenceAccess, scope, setPage]);
-
   const metadata = metadataQuery.data;
   const results = productsQuery.data?.results ?? [];
   const mutationPending = attachState.isLoading || archiveState.isLoading;
@@ -114,6 +101,19 @@ function ProductsPage() {
     && hasFeature(PRODUCT_CAPABILITY.CONTRIBUTION)
   );
   const canImport = hasFeature(PRODUCT_CAPABILITY.CATALOG_IMPORT);
+
+  useEffect(() => {
+    const totalPages = productsQuery.data?.pagination?.totalPages;
+    if (totalPages && page > totalPages) setPage(totalPages);
+  }, [page, productsQuery.data?.pagination?.totalPages, setPage]);
+
+  useEffect(() => {
+    if (!canReferenceAccess && scope === 'REFERENCE') {
+      setScope('WORKSPACE');
+      setPage(1);
+      setStatus(ALL_WORKSPACE_STATUSES);
+    }
+  }, [canReferenceAccess, scope, setPage]);
 
   const categoryItems = useMemo(() => [
     { value: ALL_CATEGORIES, label: 'Toutes les catégories' },
