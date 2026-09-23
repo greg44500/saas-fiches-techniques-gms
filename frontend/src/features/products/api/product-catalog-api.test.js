@@ -56,12 +56,20 @@ describe('productCatalogApi', () => {
       captured.endpointDefinitions.createVariant.query({
         workspaceId: 'workspace-1',
         productId: 'product-1',
+        presentation: 'Râpée',
+        foodRange: 1,
+        processingState: 'Produit frais',
         referenceUnit: 'KG',
       }),
     ).toEqual({
       url: '/workspaces/workspace-1/products/product-1/variants',
       method: 'POST',
-      body: { referenceUnit: 'KG' },
+      body: {
+        presentation: 'Râpée',
+        foodRange: 1,
+        processingState: 'Produit frais',
+        referenceUnit: 'KG',
+      },
     });
 
     expect(

@@ -59,10 +59,11 @@ const migrateM002VariantSemantics = async () => {
         activeSignatures.set(key, variant);
     }
 
+    const documentById = new Map(
+        documents.map((document) => [document._id.toString(), document]),
+    );
     const variantsToMigrate = prepared.filter((variant) => {
-        const document = documents.find(
-            ({ _id }) => _id.toString() === variant.id.toString(),
-        );
+        const document = documentById.get(variant.id.toString());
 
         return (
             Object.prototype.hasOwnProperty.call(document, 'form')
