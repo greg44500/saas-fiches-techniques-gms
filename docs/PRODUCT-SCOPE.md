@@ -2101,7 +2101,7 @@ Sont explicitement différés et non bloquants pour M-001 :
 - marge semi-nette ;
 - Fiche process ;
 - mathématiques fines de l'Atelier d'optimisation ;
-- catalogue complet des stratégies d'arrondi personnalisées ;
+- ensemble complet des stratégies d'arrondi personnalisées ;
 - OCR / IA ;
 - imports avancés ;
 - purge physique définitive ;

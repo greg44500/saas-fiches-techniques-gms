@@ -81,7 +81,7 @@ Décisions désormais fermées et implémentées :
 - aucune donnée Fournisseur, référence commerciale, conditionnement ou prix n'est stockée dans M-002 ;
 - la création vérifie d'abord l'existant par normalisation, alias, clés de recherche, proximité et revue explicite des candidats proches ;
 - un doublon exact est refusé ;
-- si aucun équivalent crédible n'existe, l'utilisateur Workspace autorisé peut créer un Produit immédiatement `ACTIVE` dans le référentiel commun et l'ajouter à son catalogue ;
+- si aucun équivalent crédible n'existe, l'utilisateur Workspace autorisé peut créer un Produit immédiatement `ACTIVE` dans le référentiel global et l'ajouter à son référentiel Workspace ;
 - une catégorie `ACTIVE` est obligatoire pour toute nouvelle identité Produit ;
 - le lifecycle opérationnel courant est `ACTIVE ↔ ARCHIVED` ;
 - la file quotidienne `PENDING_REVIEW → approve/reject` est supprimée du parcours courant ;
@@ -192,7 +192,7 @@ Décisions établies :
 - types/motifs exacts de versions avant M-004 ;
 - définition de la marge semi-nette lorsqu'elle sera disponible ;
 - paramètres mathématiques fins et garde-fous de l'optimiseur avant M-005 ;
-- catalogue complet des stratégies d'arrondi ;
+- ensemble complet des stratégies d'arrondi ;
 - contrat technique de corbeille/restauration/purge des DRAFTS avant M-004 ;
 - éventuelle suppression définitive des VALIDATED et contraintes réglementaires avant implémentation.
 
@@ -246,7 +246,7 @@ Décisions établies :
 
 ### 2.7 Paramètres métier
 
-**État : architecture fonctionnelle validée — catalogue de paramètres à poursuivre**
+**État : architecture fonctionnelle validée — ensemble de paramètres à poursuivre**
 
 Décisions établies :
 
