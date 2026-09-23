@@ -201,23 +201,23 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
 });
 
 export const {
-  useApprovePlatformProductMutation,
-  useApprovePlatformProductVariantMutation,
-  useCreatePlatformProductCategoryMutation,
+  useApproveProductReferenceMutation,
+  useApproveProductReferenceVariantMutation,
+  useCreateProductReferenceCategoryMutation,
   useGetProductReferenceDetailQuery,
   useGetProductReferenceAccessQuery,
   useGetProductReferenceMetadataQuery,
   useLazyGetProductReferenceDetailQuery,
-  useLazyListPlatformProductsQuery,
-  useListPlatformProductsQuery,
-  useRejectPlatformProductMutation,
-  useRejectPlatformProductVariantMutation,
-  useUpdatePlatformProductCategoryMutation,
-  useUpdatePlatformProductCategoryStatusMutation,
-  useUpdatePlatformProductMutation,
-  useUpdatePlatformProductStatusMutation,
-  useUpdatePlatformProductVariantMutation,
-  useUpdatePlatformProductVariantStatusMutation,
+  useLazyListProductReferenceProductsQuery,
+  useListProductReferenceProductsQuery,
+  useRejectProductReferenceMutation,
+  useRejectProductReferenceVariantMutation,
+  useUpdateProductReferenceCategoryMutation,
+  useUpdateProductReferenceCategoryStatusMutation,
+  useUpdateProductReferenceMutation,
+  useUpdateProductReferenceStatusMutation,
+  useUpdateProductReferenceVariantMutation,
+  useUpdateProductReferenceVariantStatusMutation,
 } = productReferenceApi;
 
 export {
