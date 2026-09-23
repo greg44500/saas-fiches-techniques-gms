@@ -163,13 +163,17 @@ describe('ProductsPage', () => {
     });
   });
 
-  it('affiche les états de Mon référentiel avec les libellés backend', () => {
+  it('affiche les données Produit sans colonne redondante de rattachement', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByText('Légumes')).toBeInTheDocument();
     expect(screen.getByText('Entière · Fraîche')).toBeInTheDocument();
-    expect(screen.getByText('Dans mon référentiel')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Mon référentiel' }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', {
+      name: 'Filtrer par état de mon référentiel',
+    })).not.toBeInTheDocument();
   });
 
   it('recherche côté serveur dans la portée sélectionnée', async () => {
@@ -221,7 +225,6 @@ describe('ProductsPage', () => {
       expect.objectContaining({
         scope: 'REFERENCE',
         q: 'Carotte',
-        status: undefined,
       }),
     );
   });
@@ -292,7 +295,7 @@ describe('ProductsPage', () => {
     })).not.toBeInTheDocument();
   });
 
-  it('conserve Mon catalogue mais masque le référentiel global sans product_reference_access', () => {
+  it('conserve Mon référentiel mais masque le référentiel global sans product_reference_access', () => {
     mocks.workspaceContext.mockReturnValue({
       workspace: { id: 'workspace-1', name: 'Acme' },
       can: () => true,

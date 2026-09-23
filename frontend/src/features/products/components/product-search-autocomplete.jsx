@@ -98,13 +98,14 @@ function ProductSearchAutocomplete({
       onValueChange={onValueChange}
       value={value}
     >
-      <AutocompleteInputGroup>
+      <AutocompleteInputGroup className="h-10 min-h-10">
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
         />
         <AutocompleteInput
           aria-label="Rechercher un Produit"
+          className="h-10"
           maxLength={120}
           placeholder="Nom ou alias"
         />

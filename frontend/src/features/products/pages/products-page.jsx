@@ -46,13 +46,11 @@ import {
   getProductStatusTone,
   getReferenceUnitLabel,
   getVariantLabel,
-  getWorkspaceProductStatusLabel,
 } from '@/features/products/lib/product-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
 const ALL_CATEGORIES = '__ALL__';
-const ALL_WORKSPACE_STATUSES = '__ALL__';
 
 function ProductsPage() {
   const { can, hasFeature, workspace } = useWorkspaceContext();
@@ -66,7 +64,6 @@ function ProductsPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(ALL_CATEGORIES);
-  const [status, setStatus] = useState(ALL_WORKSPACE_STATUSES);
   const [drawerState, setDrawerState] = useState({ open: false, productId: null });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -78,11 +75,6 @@ function ProductsPage() {
     scope,
     q: search || undefined,
     categoryId: categoryId === ALL_CATEGORIES ? undefined : categoryId,
-    status: (
-      scope === 'WORKSPACE' && status !== ALL_WORKSPACE_STATUSES
-        ? status
-        : undefined
-    ),
     page,
     limit: pageSize,
   });
@@ -113,7 +105,6 @@ function ProductsPage() {
     if (!canReferenceAccess && scope === 'REFERENCE') {
       setScope('WORKSPACE');
       setPage(1);
-      setStatus(ALL_WORKSPACE_STATUSES);
     }
   }, [canReferenceAccess, scope, setPage]);
 
@@ -124,11 +115,6 @@ function ProductsPage() {
       label: category.name,
     })),
   ], [metadata?.categories]);
-
-  const workspaceStatusItems = useMemo(() => [
-    { value: ALL_WORKSPACE_STATUSES, label: 'Tous les états de mon référentiel' },
-    ...(metadata?.workspaceProductStatuses ?? []),
-  ], [metadata?.workspaceProductStatuses]);
 
   function runSearch(nextSearch) {
     setPage(1);
@@ -153,14 +139,12 @@ function ProductsPage() {
       && !result.workspaceEntry
     ) {
       setScope('REFERENCE');
-      setStatus(ALL_WORKSPACE_STATUSES);
     }
   }
 
   function changeScope(nextScope) {
     setScope(nextScope);
     setPage(1);
-    setStatus(ALL_WORKSPACE_STATUSES);
   }
 
   async function changeCatalog(result, shouldAttach) {
@@ -224,19 +208,6 @@ function ProductsPage() {
         <StatusBadge tone={getProductStatusTone(result.variant.status)}>
           {getProductStatusLabel(metadata, result.variant.status)}
         </StatusBadge>
-      ),
-    },
-    {
-      id: 'catalog',
-      header: 'Mon référentiel',
-      cell: (result) => (
-        result.workspaceEntry ? (
-          <StatusBadge tone={result.workspaceEntry.status === 'ACTIVE' ? 'success' : 'neutral'}>
-            {getWorkspaceProductStatusLabel(metadata, result.workspaceEntry.status)}
-          </StatusBadge>
-        ) : (
-          <span className="text-sm text-muted-foreground">Non ajoutée</span>
-        )
       ),
     },
     {
@@ -344,7 +315,7 @@ function ProductsPage() {
       </Tabs>
 
       <section className="rounded-xl border border-border bg-card">
-        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(260px,1fr)_240px_240px]">
+        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(260px,1fr)_240px]">
           <form className="flex min-w-0 gap-2" onSubmit={applySearch}>
             <div className="min-w-0 flex-1">
               <ProductSearchAutocomplete
@@ -384,31 +355,6 @@ function ProductsPage() {
             </SelectContent>
           </Select>
 
-          {scope === 'WORKSPACE' ? (
-            <Select
-              items={workspaceStatusItems}
-              onValueChange={(value) => {
-                setStatus(value);
-                setPage(1);
-              }}
-              value={status}
-            >
-              <SelectTrigger aria-label="Filtrer par état de mon référentiel">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {workspaceStatusItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <div className="flex items-center text-sm text-muted-foreground">
-              Références actives du référentiel global
-            </div>
-          )}
         </div>
 
         {initialLoading ? (
@@ -503,6 +449,5 @@ function ProductsPage() {
 
 export {
   ALL_CATEGORIES,
-  ALL_WORKSPACE_STATUSES,
   ProductsPage,
 };
