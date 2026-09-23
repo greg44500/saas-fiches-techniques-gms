@@ -1,55 +1,61 @@
-# M-002 — Critères d'acceptation et ordre de reprise
+# M-002 — Critères d'acceptation et ordre de finalisation
 
-**Statut : BACKEND RECADRÉ/IMPLÉMENTÉ — validation ciblée des derniers commits puis frontend/E2E à poursuivre**  
-**Module : Catalogue Produits / Produits canoniques**
+**Statut : IMPLÉMENTATION ALIGNÉE SUR LE CONTRAT RECADRÉ — gates et validation visuelle encore à exécuter**  
+**Module : Catalogue Produits / Produits canoniques**  
+**Branche :** `feature/m002-catalogue-produits`
 
 ## 1. Discipline du lot
 
-Branche unique :
-
-```text
-feature/m002-catalogue-produits
-```
-
-Règle :
-
 ```text
 un bloc fonctionnel M-002
-→ plusieurs commits cohérents si nécessaire
-→ aucune micro-PR
+→ plusieurs commits cohérents
 → une seule PR M-002
 → une seule fusion après validation complète
 ```
 
-Aucune PR de réparation séparée ne doit être créée pour les corrections décrites ici.
+Aucune micro-PR de réparation ne doit être créée pour les ajustements de ce lot.
 
-## 2. Fondations déjà conservées
+## 2. Contrat fonctionnel désormais implémenté
 
 - [x] Produit canonique global sans ownership Workspace ;
 - [x] Déclinaison séparée de l'identité canonique ;
-- [x] `WorkspaceProduct` référence une déclinaison sans copie d'identité ;
-- [x] catégorie globale ;
+- [x] `WorkspaceProduct` référence une déclinaison sans copie ;
+- [x] catégorie globale obligatoire pour toute nouvelle identité ACTIVE ;
 - [x] rendement porté par la déclinaison et jamais deviné ;
 - [x] unité normalisée backend-driven ;
-- [x] aucun prix/fournisseur/conditionnement M-003 dans le modèle M-002 ;
-- [x] contribution Workspace `PENDING_REVIEW` ;
-- [x] anti-doublon, proximité et revue explicite ;
+- [x] aucun fournisseur/catalogue fournisseur/référence fournisseur/conditionnement/prix M-003 dans M-002 ;
+- [x] anti-doublon exact + proximité + revue explicite ;
+- [x] création Workspace immédiatement ACTIVE après contrôle ;
+- [x] création globale immédiatement ACTIVE après contrôle ;
+- [x] suppression du workflow quotidien de validation humaine ;
+- [x] lifecycle opérationnel `ACTIVE ↔ ARCHIVED` ;
 - [x] archive globale non destructive ;
 - [x] fusion destructive différée.
 
-## 3. Corrections d'architecture obligatoires
+## 3. Autorisation et frontière globale
 
-- [x] supprimer `platform:products:read` et `platform:products:manage` côté backend ;
-- [x] retirer le module Produit du registre de permissions Platform ;
-- [x] remplacer `/api/platform/products` par `/api/product-reference` ;
-- [ ] supprimer/repositionner `/platform/products` côté frontend ;
-- [x] conserver les services de gouvernance utiles mais les rendre indépendants de Platform ;
-- [x] utiliser Application Global avec `product:reference:read/manage` ;
-- [x] primitive Application Global fournie par Core 1.2.0 et intégrée ; aucun second RBAC produit.
+- [x] aucune permission métier Produit dérivée implicitement d'un rôle Platform ;
+- [x] `/api/product-reference` utilise Application Global ;
+- [x] permissions :
+  - `product:reference:read` ;
+  - `product:reference:manage` ;
+- [x] un membre Platform peut recevoir explicitement ces droits via `ApplicationGlobalMember` ;
+- [x] un Super Admin Platform sans membership Application Global Produit reste refusé ;
+- [x] un Owner Workspace n'obtient pas ces droits globaux ;
+- [x] frontend global hors `PlatformLayout` sur `/product-reference` ;
+- [x] bootstrap initial explicite du gouverneur Produit.
 
-## 4. Capabilities commerciales à intégrer
+## 4. RBAC Workspace et capabilities
 
-Le produit déclare ses features via le registre de capabilities applicatives du Core :
+Permissions Workspace :
+
+```text
+product:read
+product:catalog:manage
+product:contribute
+```
+
+Capabilities commerciales :
 
 ```text
 product_reference_access
@@ -57,163 +63,216 @@ product_catalog_import
 product_contribution
 ```
 
+Les clés `product:contribute` et `product_contribution` sont conservées pour stabilité contractuelle. Leur sémantique actuelle est la création de nouvelles identités/déclinaisons dans le référentiel partagé après contrôle anti-doublon ; elles ne correspondent plus à une file d'approbation.
+
 Critères :
 
-- [x] features enregistrées dans le produit sans modifier les constantes Core ;
-- [x] registre Core Plans/Entitlements capable de les activer/désactiver ;
-- [x] `EntitlementOverride` reste le mécanisme d'override utilisé par M-002 ;
-- [x] backend contrôle réellement les entitlements ;
-- [x] RBAC Workspace reste un contrôle distinct ;
-- [x] `product_catalog_import` reste la capability métier vendable ;
-- [x] l'import ne nécessite pas l'activation d'un stockage documentaire durable ;
-- [x] un temporaire d'import ne consomme pas un quota commercial de stockage utilisateur ;
-- [x] les limites de taille/TTL restent des garde-fous techniques.
+- [x] RBAC, capability et quota restent distincts ;
+- [x] `product_catalog_import` contrôle l'accès commercial à l'import Workspace ;
+- [x] `product_contribution` contrôle les créations nouvelles depuis un Workspace ;
+- [x] l'autorité Application Global ne dépend d'aucun plan Workspace ;
+- [x] aucun stockage documentaire durable n'est requis pour le fichier source d'import.
 
-Exemple commercial initial à conserver comme configuration, non comme constante : Free peut accéder au référentiel global ; Premium peut en plus importer et contribuer.
+## 5. Import Workspace
 
-## 5. Import — correction obligatoire
+Pipeline :
 
-Le pipeline métier `inspect → preview → commit` est conservé.
+```text
+inspect
+→ mapping
+→ preview
+→ revue des ambiguïtés
+→ commit
+```
 
-- [x] supprimer le pipeline parallèle `multer.memoryStorage()` M-002 ;
-- [x] réutiliser `createSecureTemporaryUploadService()` ;
-- [x] conserver CSV / XLS / XLSX comme politique métier d'import ;
-- [x] ne pas créer de `File` durable pour le seul import ;
-- [x] ne pas introduire un second quota/capacité de stockage pour les imports ;
-- [x] supprimer le temporaire après traitement ou erreur ;
-- [x] conserver la session d'import métier et les données Produit résultantes ;
-- [x] évolution Core générique réalisée et intégrée jusqu'au SHA `c428fbec...` sans nouvelle release ;
-- [x] contrôle fin du commit : rattachement existant ≠ contribution nouvelle.
+Classifications cibles :
 
-Le commit calcule les exigences réelles :
+```text
+ATTACH_EXISTING
+CREATE_PRODUCT
+CREATE_VARIANT
+REVIEW_REQUIRED
+INVALID
+```
+
+Droits calculés au commit :
 
 ```text
 ATTACH_EXISTING
 → product:catalog:manage
 
-PROPOSE_PRODUCT / PROPOSE_VARIANT
+CREATE_PRODUCT / CREATE_VARIANT
 → product:contribute
 → product_contribution
 ```
 
-## 6. Workspace M-002
+Critères :
 
-À conserver et vérifier :
+- [x] chaîne de téléversement temporaire sécurisé Core réutilisée ;
+- [x] CSV/XLS/XLSX ;
+- [x] aucun `File` durable créé pour le seul import ;
+- [x] aucune seconde capacité de stockage commerciale ;
+- [x] preview revalidée au commit ;
+- [x] catégorie active requise pour une création ;
+- [x] colonnes M-003 signalées mais non absorbées.
 
-- [ ] metadata ;
-- [ ] summary Dashboard ;
-- [ ] search WORKSPACE / REFERENCE ;
-- [ ] detail ;
-- [ ] duplicate-check ;
-- [ ] contribution Produit ;
-- [ ] contribution Déclinaison ;
-- [ ] ajout/retrait catalogue ;
-- [ ] import inspect/preview/commit ;
-- [ ] navigation Produits ;
-- [ ] Mon catalogue / Tout le référentiel ;
-- [ ] recherche, filtres, pagination ;
-- [ ] drawer Produit ;
-- [ ] flow contribution ;
-- [ ] état En validation ;
-- [ ] widget Dashboard.
+## 6. Import global Produit
 
-Le frontend déjà présent sur la branche est un travail à vérifier, pas un résultat déclaré vert.
+- [x] `POST /api/product-reference/imports/inspect` ;
+- [x] `POST /api/product-reference/imports/:importId/preview` ;
+- [x] `POST /api/product-reference/imports/:importId/commit` ;
+- [x] protection par `product:reference:manage` ;
+- [x] aucune capability Workspace ;
+- [x] aucune création de `WorkspaceProduct` ;
+- [x] même déduplication que le flux Workspace ;
+- [x] même chaîne de sécurité fichier ;
+- [x] session explicitement scopée `GLOBAL`.
 
-## 7. Gouvernance métier globale
+## 7. Workspace M-002
 
-- [x] liste/détail complet du référentiel côté backend ;
-- [x] file de contributions portée par le service global côté backend ;
-- [x] catégories côté backend global ;
-- [x] approve/reject Produit côté backend ;
-- [x] approve/reject Déclinaison côté backend ;
-- [x] correction Produit/déclinaison côté backend ;
-- [x] archivage/réactivation côté backend ;
-- [x] historique métier `ProductReferenceEvent` conservé ;
-- [ ] surface frontend d'administration métier globale hors `PlatformLayout` ;
-- [x] contrôles Application Global backend + bootstrap explicite du premier gouverneur.
+Implémenté :
 
-## 8. Bootstrap / migrations
+- [x] metadata ;
+- [x] summary Dashboard ;
+- [x] search WORKSPACE / REFERENCE ;
+- [x] detail ;
+- [x] duplicate-check ;
+- [x] création Produit ;
+- [x] création Déclinaison ;
+- [x] ajout/retrait catalogue ;
+- [x] import inspect/preview/commit ;
+- [x] navigation Produits ;
+- [x] Mon catalogue / Tout le référentiel ;
+- [x] recherche, filtres, pagination ;
+- [x] drawer Produit ;
+- [x] widget Dashboard sans compteur de validation.
 
-- [x] seed versionné du référentiel ;
-- [x] moteur idempotent présent ;
-- [ ] dataset réel nettoyé/revu — différé, `m002-reference.v1.json` reste `ready: false` ;
-- [x] aucune donnée M-003 injectée comme attribut Produit ;
-- [x] migration indexes présente ;
-- [x] manifest migration synchronisé ;
-- [x] bootstrap de gouvernance Application Global ajouté (`seed:m002-governance`) ;
-- [ ] anciennes surfaces/mentions frontend Platform Produits à retirer lors de la phase frontend.
+Ces éléments restent à confirmer par exécution des tests et QA visuelle.
 
-## 9. Tests à revoir
+## 8. Administration globale
 
-Les tests existants ne doivent pas être déclarés verts sans exécution.
+Implémenté :
 
-État :
+- [x] liste/détail du référentiel ;
+- [x] création Produit ;
+- [x] duplicate-check ;
+- [x] création Déclinaison ;
+- [x] import global ;
+- [x] correction Produit/Déclinaison ;
+- [x] archivage/réactivation ;
+- [x] gestion des catégories ;
+- [x] historique `ProductReferenceEvent` ;
+- [x] surface frontend `/product-reference` ;
+- [x] aucune file « À valider » ;
+- [x] aucune action Valider/Rejeter dans le parcours courant.
 
-- [x] pipeline sécurisé CSV/XLS/XLSX : quatre fichiers ciblés confirmés verts localement avant le bloc d'autorisation ;
-- [x] attentes backend `platform:products:*` retirées/remplacées par Application Global ;
-- [x] tests Application Global ajoutés — exécution locale des derniers commits encore requise ;
-- [x] tests capabilities/overrides ajoutés — exécution locale des derniers commits encore requise ;
-- [x] tests capability + RBAC du commit import ajoutés — exécution locale requise ;
-- [x] architecture import distincte de `File` durable ;
-- [ ] frontend RTL Workspace ;
-- [ ] frontend RTL administration métier globale ;
-- [ ] E2E critiques M-002 ;
-- [ ] isolation cross-tenant / PENDING à revalider dans le corpus final ;
-- [ ] tests de non-régression M-001/Core applicables.
+## 9. Migration et bootstrap
 
-Première campagne à exécuter au prochain démarrage :
+Commande :
 
 ```text
-applicationCapability.registry.test.js
-applicationGlobalPermission.registry.test.js
-applicationPlatformPermission.registry.test.js
-applicationRoutes.registry.test.js
-productCatalogGlobal.http.test.js
+npm run migration:m002-catalog
+```
+
+Elle réalise désormais :
+
+1. backfill des statuts legacy ;
+2. vérification/création des indexes M-002 ;
+3. synchronisation des permissions système Workspace enregistrées.
+
+Backfill :
+
+```text
+ancien PENDING_REVIEW complet
+→ ACTIVE
+
+ancien PENDING_REVIEW incomplet
+→ ARCHIVED
+
+ancien REJECTED
+→ ARCHIVED
+→ identityActive historique conservé
+```
+
+- [x] aucune catégorie inventée ;
+- [x] aucune suppression de document ;
+- [x] seed de gouvernance Application Global ;
+- [x] seed référentiel versionné ;
+- [ ] dataset bêta réel nettoyé/revu — différé volontairement.
+
+## 10. Tests
+
+Le corpus a été réaligné sur le nouveau contrat, mais aucun test n'est déclaré vert tant qu'il n'a pas été exécuté après ces commits.
+
+À exécuter :
+
+### Backend ciblé
+
+```text
+productCatalog.registry.test.js
+productCatalog.validation.test.js
+productCatalog.integration.test.js
 productCatalog.http.test.js
+productCatalogGovernance.integration.test.js
+productCatalogGlobal.http.test.js
+productCatalogImport.integration.test.js
 productCatalogImportAccess.service.test.js
-productCatalogGovernanceBootstrap.test.js
+m002ProductLifecycleBackfill.migration.test.js
 ```
 
-## 10. Ordre de reprise
+### Frontend ciblé
 
 ```text
-Phase 1 — validation backend du checkpoint courant
-→ pull du HEAD réel
-→ tests ciblés autorisation/capabilities/gouvernance/import
-→ corriger uniquement de vrais échecs démontrés
-→ une seule exécution backend globale npm test lorsque les ciblés sont verts
-
-Phase 2 — frontend Workspace
-→ aligner affichage/guards sur capabilities effectives
-→ vérifier catalogue/référentiel/contribution/import
-→ conserver sécurité backend comme autorité
-
-Phase 3 — administration métier globale frontend
-→ supprimer l'ancienne surface /platform/products
-→ créer une surface métier hors PlatformLayout
-→ appeler /api/product-reference
-→ ne jamais déduire le droit global du rôle Platform
-
-Phase 4 — tests frontend + E2E
-→ RTL Workspace
-→ RTL gouvernance globale
-→ parcours import/contribution/approbation
-→ isolation PENDING / cross-tenant
-
-Phase 5 — qualité finale
-→ revue architecture/taille des fichiers
-→ documentation finale
-→ lint/tests/build/E2E/release:check
-→ validation visuelle
-
-Phase 6 — livraison
-→ UNE PR M-002
-→ gate
-→ UNE fusion
+product-create-dialog.test.jsx
+product-import-dialog.test.jsx
+products-dashboard-widget.test.jsx
+product-presentation.test.js
+products-page.test.jsx
+product-reference-page.test.jsx
+product-reference-route.test.jsx
 ```
 
-## 11. Règle en cas de besoin Core
+### Gates globales
 
-Si la Phase 1 démontre une primitive réellement générique manquante, ne pas la bricoler dans le produit.
+```text
+npm run lint
+npm test
+npm --prefix frontend run lint
+npm --prefix frontend run test
+npm --prefix frontend run build
+npm run test:e2e
+npm run release:verify
+```
 
-Créer alors un seul lot Core cohérent, le tester/versionner/intégrer, puis reprendre la même branche M-002. Ne pas créer une succession de micro-versions Core pour des corrections de tests isolées.
+## 11. QA visuelle avant PR
+
+Vérifier au minimum :
+
+- création Workspace ;
+- catégorie obligatoire ;
+- anti-doublon exact et candidats proches ;
+- ajout automatique au catalogue ;
+- création d'une déclinaison ;
+- import Workspace ;
+- détection colonnes M-003 ;
+- accès `/product-reference` selon Application Global ;
+- création/import global ;
+- absence de toute file de validation ;
+- catégories ;
+- archive/réactivation ;
+- Dashboard.
+
+## 12. Étape suivante après fermeture M-002
+
+Une fois M-002 validé et fusionné, cadrer M-003 :
+
+```text
+Fournisseur
+→ Catalogue fournisseur identifié/versionné
+→ Article fournisseur
+→ référence / conditionnement / prix
+→ rattachement ProductVariant
+→ filtres Fournisseur / Catalogue
+```
+
+Aucun de ces concepts ne doit être ajouté au modèle `CanonicalProduct`.

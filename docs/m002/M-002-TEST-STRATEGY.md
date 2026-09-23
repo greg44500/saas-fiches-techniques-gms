@@ -1,237 +1,237 @@
 # M-002 — Stratégie de tests
 
-**Statut : RECADRÉ — stratégie à adapter avant exécution finale**
+**Statut : ALIGNÉE SUR LE WORKFLOW DE CRÉATION ACTIVE — exécution finale requise**
 
-## 1. Risques principaux
+## 1. Risques prioritaires
 
-M-002 est globalement partagé. Les risques prioritaires sont :
+M-002 partage un référentiel global entre Workspaces. Les risques majeurs sont :
 
-- pollution du référentiel commun ;
-- doublons sémantiques ;
-- fuite d'une contribution PENDING entre Workspaces ;
-- modification globale par une permission Workspace ;
+- doublon sémantique global ;
+- création globale sans catégorie valide ;
+- mutation globale autorisée par erreur via un rôle Workspace ou Platform ;
+- fuite de données Workspace ;
 - collision de rattachements ;
-- archivage global cassant des usages existants ;
-- bootstrap non idempotent ;
-- règles de normalisation divergentes frontend/backend.
+- import Workspace ou global contournant la déduplication ;
+- confusion entre import temporaire et stockage durable ;
+- régression du lifecycle après suppression de l'ancienne validation humaine ;
+- backfill legacy destructif ;
+- divergence frontend/backend des règles de normalisation.
 
 ## 2. Tests unitaires
 
 ### Normalisation
 
+Couvrir :
+
 - accents ;
 - casse ;
+- apostrophes/tirets ;
 - espaces ;
-- tirets/apostrophes ;
-- ponctuation ;
-- n-grammes ;
-- distance de proximité ;
-- aliases.
+- alias ;
+- variantes orthographiques couvertes ;
+- stabilité des signatures de Déclinaison.
+
+### Validation Zod
+
+Couvrir :
+
+- catégorie obligatoire à la création ;
+- champs système refusés ;
+- unités backend-driven ;
+- rendement borné ;
+- mappings import stricts ;
+- décisions import ;
+- ObjectIds.
 
 ### Registries
 
-- statuts ;
-- unités ;
-- gammes ;
-- motifs de rejet ;
+Couvrir :
+
+- statuts opérationnels `ACTIVE/ARCHIVED` ;
 - permissions Workspace ;
-- capabilities M-002 ;
-- autorité métier globale retenue.
+- permissions Application Global ;
+- scopes import `WORKSPACE/GLOBAL` ;
+- capabilities commerciales.
 
-### Sérialisation
+## 3. Tests modèles et indexes
 
-- aucune donnée interne sensible ;
-- aucune provenance Workspace exposée aux autres tenants.
+Vérifier :
 
-## 3. Tests modèles
+- aucune ownership Workspace sur `CanonicalProduct`, `ProductVariant`, `ProductCategory` ;
+- ownership Workspace uniquement sur `WorkspaceProduct` ;
+- unicité `searchKeys` ;
+- unicité signature Déclinaison ;
+- unicité `workspace + productVariant` ;
+- TTL des sessions import ;
+- index `scope + workspace + actor`.
 
-### CanonicalProduct
+## 4. Tests services/intégration
 
-- searchKeys ;
-- unicité ;
-- statut ;
-- catégorie ;
-- champs globaux uniquement.
+Couvrir :
 
-### ProductVariant
-
-- signature unique ;
-- valeurs structurées ;
-- rendement ;
-- unité.
-
-### WorkspaceProduct
-
-- ownership Workspace ;
-- unicité workspace+variant ;
-- lifecycle ACTIVE/ARCHIVED.
-
-### ProductCategory
-
-- clé unique ;
-- lifecycle.
-
-### ProductReferenceEvent
-
-- immutabilité.
-
-## 4. Tests services
-
-- exact duplicate refusé ;
-- near duplicate exige revue ;
-- revue obsolète refusée ;
-- création PENDING transactionnelle ;
-- création variant PENDING ;
-- ajout catalogue idempotent ;
-- retrait/réactivation ;
-- approbation ;
-- rejet DUPLICATE et repoint du WorkspaceProduct ;
-- archive global sans suppression d'usage historique ;
+- création Produit ACTIVE transactionnelle ;
+- rollback si la Déclinaison échoue ;
+- doublon exact refusé ;
+- candidats proches exigeant une revue ;
+- visibilité immédiate du nouveau Produit dans un autre Workspace via REFERENCE ;
+- création Déclinaison ACTIVE ;
+- ajout/retrait/réactivation catalogue idempotent ;
+- archive globale non destructive ;
 - catégorie archivée non utilisable ;
-- recherche WORKSPACE strictement tenant-scoped ;
-- recherche REFERENCE sans fuite PENDING cross-tenant.
+- création globale via autorité métier ;
+- import global sans `WorkspaceProduct`.
 
-## 5. Tests RBAC
+## 5. Tests autorisation
 
-Workspace :
+### Workspace
 
-- read ;
-- catalog manage ;
-- contribute.
+- `product:read` ;
+- `product:catalog:manage` ;
+- `product:contribute` ;
+- capabilities correspondantes ;
+- séparation rattachement existant / création nouvelle au commit import.
 
-Gouvernance métier globale :
+### Application Global
 
-- utilisateur non autorisé refusé ;
-- rôle Platform seul insuffisant ;
-- autorité métier globale n'accorde pas automatiquement l'accès à un catalogue Workspace ;
-- aucun `platform:products:*` dans le contrat final.
+- utilisateur sans permission refusé ;
+- Super Admin Platform seul refusé ;
+- Owner Workspace seul refusé ;
+- membre Platform explicitement inscrit comme `ApplicationGlobalMember` Produit autorisé ;
+- autorité globale Produit sans accès implicite aux données privées d'un Workspace.
 
 ## 6. Tests HTTP Supertest
 
-Couvrir l'ensemble des endpoints M-002 :
+Couvrir :
 
-- validation Zod stricte ;
-- ObjectId invalides ;
-- pagination ;
-- filtres ;
-- 401/403/404/409 ;
-- anti-énumération des PENDING ;
-- mutations transactionnelles.
+- metadata ;
+- summary ;
+- search WORKSPACE / REFERENCE ;
+- detail ;
+- duplicate-check ;
+- création Produit ;
+- création Déclinaison ;
+- catalogue ;
+- imports Workspace ;
+- accès global ;
+- catégories ;
+- création/correction/archive globales ;
+- imports globaux ;
+- 400/401/403/404/409 ;
+- pagination/filtres.
 
 ## 7. Tests frontend RTL
 
-Workspace :
+### Workspace
 
-- Mon catalogue ;
-- Référentiel ;
-- recherche ;
-- pagination ;
+- catalogue ;
+- référentiel ;
+- recherche serveur ;
 - filtres ;
-- rattachement/retrait ;
-- états loading/error/empty ;
-- exact duplicate ;
-- near duplicate et confirmation ;
-- contribution PENDING ;
-- drawer Produit.
+- création Produit ;
+- correspondance exacte ;
+- revue candidats proches ;
+- catégorie obligatoire ;
+- création Déclinaison ;
+- import ;
+- drawer Produit ;
+- Dashboard ;
+- absence de vocabulaire « validation ».
 
-Administration métier globale :
+### Référentiel global
 
-- file d'approbation ;
-- approbation/rejet ;
-- catégories ;
-- autorisation métier globale ;
-- absence de dépendance à `PlatformLayout`.
+- accès via `product:reference:read` ;
+- actions mutation seulement avec `product:reference:manage` ;
+- Référentiel / Catégories ;
+- création Produit ;
+- import global ;
+- détail ;
+- correction ;
+- archive/réactivation ;
+- aucune file « À valider ».
 
-Dashboard :
+## 8. Tests import
 
-- compteur catalogue ;
-- contributions en validation ;
-- accessibilité.
+Couvrir :
 
-## 8. Tests import Produits
+- CSV ;
+- XLS ;
+- XLSX ;
+- fichier corrompu ;
+- antivirus indisponible ;
+- nettoyage temporaire ;
+- mapping invalide ;
+- catégorie par défaut ;
+- `ATTACH_EXISTING` ;
+- `CREATE_PRODUCT` ;
+- `CREATE_VARIANT` ;
+- `REVIEW_REQUIRED` ;
+- preview devenue obsolète ;
+- commit idempotent ;
+- droits calculés selon mutations ;
+- détection fournisseur/référence/conditionnement/prix M-003 ;
+- aucun document `File` durable créé.
 
-Couvrir au minimum :
+## 9. Tests migration
 
-- CSV valide ;
-- XLS valide ;
-- XLSX valide ;
-- fichier invalide/corrompu ;
-- mapping incomplet ;
-- lignes vides ;
-- exact duplicate ;
-- near duplicate ;
-- déclinaison existante ;
-- nouvelle déclinaison ;
-- nouvelle identité Produit ;
-- colonnes fournisseur/prix détectées hors périmètre ;
-- prévisualisation sans mutation ;
-- commit revalidé côté serveur ;
-- import concurrent ne créant pas de doublon ;
-- rollback transactionnel sur échec ;
-- aucune fuite entre Workspaces ;
-- capability `product_catalog_import` réellement contrôlée ;
-- création de contribution refusée sans `product_contribution` ;
-- téléversement temporaire utilisant la chaîne de sécurité Core ;
-- absence de document `File` durable créé pour le seul import.
+Le backfill doit prouver :
 
-## 9. E2E critiques proposés
+- PENDING legacy + catégorie active → ACTIVE ;
+- PENDING legacy incomplet → ARCHIVED ;
+- REJECTED legacy → ARCHIVED ;
+- `identityActive=false` historique préservé ;
+- aucun ancien statut restant ;
+- migration rejouable ;
+- indexes M-002 présents.
+
+## 10. E2E critiques
 
 ### E2E 1 — rattacher un Produit existant
 
-Owner :
-
 ```text
-Produits
+Owner Workspace
 → Tout le référentiel
-→ ajouter une déclinaison ACTIVE
-→ visible dans Mon catalogue
+→ Ajouter
+→ Mon catalogue
+→ référence visible
 ```
 
-### E2E 2 — contrôle doublon
-
-Owner :
+### E2E 2 — créer un Produit
 
 ```text
-proposer un nom proche
-→ candidats affichés
-→ création silencieuse impossible
+Owner Workspace
+→ Créer un Produit
+→ recherche anti-doublon
+→ catégorie
+→ première déclinaison
+→ création
+→ Produit visible dans Mon catalogue
+→ Produit visible dans le référentiel commun
 ```
 
-### E2E 3 — contribution et gouvernance
-
-Workspace Owner :
+### E2E 3 — administration globale explicite
 
 ```text
-contribution
-→ En validation
+Utilisateur avec membership Application Global Produit
+→ /product-reference
+→ création ou import
+→ Produit visible globalement
 ```
 
-Utilisateur autorisé par la gouvernance métier globale :
+Le scénario doit rester distinct d'un simple rôle Platform.
+
+### E2E 4 — import Workspace
 
 ```text
-approuve
-→ produit ACTIVE
+fichier Produit
+→ inspect
+→ mapping
+→ preview
+→ ambiguïté revue si nécessaire
+→ commit
+→ catalogue mis à jour
 ```
 
-Workspace :
-
-```text
-référence désormais active
-```
-
-### E2E 4 — isolation PENDING
-
-Workspace A contribue.
-
-Workspace B recherche le référentiel.
-
-Résultat :
-
-```text
-contribution PENDING A absente
-```
-
-## 10. Gate finale
+## 11. Gate finale
 
 Avant PR :
 
@@ -243,7 +243,6 @@ npm --prefix frontend run lint
 npm --prefix frontend run test
 npm --prefix frontend run build
 npm run test:e2e
-npm run release:check
 ```
 
-Ne jamais annoncer un résultat vert sans exécution réelle.
+Aucun résultat n'est déclaré vert sans preuve d'exécution.

@@ -1,6 +1,6 @@
 # M-002 — Validation, identité et prévention des doublons
 
-**Statut : PROPOSÉ — à valider avec le cadrage M-002**
+**Statut : VALIDÉ — aligné sur la création ACTIVE contrôlée — 2026-09-23**
 
 ## 1. Normalisation déterministe
 
@@ -105,12 +105,12 @@ Réponse :
 - candidats proches triés ;
 - identifiants à confirmer si l'utilisateur estime qu'il s'agit réellement d'un nouveau Produit.
 
-Création/contribution :
+Création :
 
 - un exact match est toujours refusé ;
 - si des candidats proches existent, le client doit fournir `reviewedCandidateIds` ;
 - le serveur recalcule les candidats au moment de la création ;
-- la contribution est refusée si la liste revue ne couvre pas les candidats actuels ;
+- la création est refusée si la liste revue ne couvre pas les candidats actuels ;
 - aucune validation purement frontend ne suffit.
 
 ## 6. Déclinaisons
@@ -136,7 +136,7 @@ La signature vide représente la déclinaison générique sans dimension précis
 
 - `name` : string trim, 1..120 ;
 - `aliases` : array unique, max 20 ;
-- contribution : corps strict ;
+- création : corps strict ;
 - champs système interdits depuis le client.
 
 ### Déclinaison
@@ -167,7 +167,6 @@ PRODUCT_REVIEW_OUTDATED
 PRODUCT_NOT_ACTIVE
 PRODUCT_CATEGORY_NOT_ACTIVE
 PRODUCT_VARIANT_DUPLICATE
-PRODUCT_CONTRIBUTION_NOT_REVIEWABLE
 PRODUCT_WORKSPACE_ENTRY_NOT_FOUND
 ```
 

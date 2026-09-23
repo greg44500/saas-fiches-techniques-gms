@@ -30,7 +30,7 @@ Données admissibles :
 - unité ;
 - rendement lorsqu'il est fiable.
 
-Le pipeline applique systématiquement normalisation, déduplication, recherche de proximité et gouvernance.
+Le pipeline applique systématiquement normalisation, déduplication, recherche de proximité et contrôles d'autorisation.
 
 L'accès commercial à l'import est porté par la capability métier `product_catalog_import`. La création de nouvelles identités/déclinaisons exige en plus `product_contribution` et les permissions Workspace correspondantes.
 
@@ -86,7 +86,7 @@ ligne fournisseur
    → non : rechercher Produit / Déclinaison
 → exact match : rattacher
 → candidat proche : revue
-→ aucun candidat fiable : contribution Produit/déclinaison via moteur M-002
+→ aucun candidat fiable : création Produit/déclinaison via moteur M-002
 ```
 
 Un nouveau millésime du même catalogue réutilise les mappings Fournisseur + référence Article déjà validés.
@@ -204,7 +204,7 @@ M-002 implémente maintenant :
 - le moteur Produit et Déclinaison ;
 - la déduplication ;
 - le rattachement Workspace ;
-- la contribution/gouvernance ;
+- la création contrôlée et l'administration globale ;
 - l'import en masse de données Produit CSV/XLS/XLSX.
 
 M-002 n'implémente pas encore :
