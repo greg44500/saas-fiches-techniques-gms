@@ -59,6 +59,7 @@ const normalizeFileTypeDefinition = (
 
     if (
         definition.contentInspector !== undefined
+        && definition.contentInspector !== null
         && typeof definition.contentInspector !== "function"
     ) {
         throw new TypeError(

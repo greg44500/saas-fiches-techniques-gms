@@ -1,6 +1,6 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-22  
+**Date :** 2026-09-23  
 **Lot actif :** M-002 — Catalogue Produits / Produits canoniques  
 **Branche :** `feature/m002-catalogue-produits`
 
@@ -12,7 +12,7 @@ KB-START-HERE
 → code / contraintes DB
 → tests réellement exécutés
 → contrats M-002 validés
-→ Core 1.2.0 + commit 150415173c973fe39c90b87e8fb9c0f055cce31f intégré
+→ Core 1.2.0 + commit c428fbec1edfa21a8860fcf8283072e45719832b intégré
 → dette / documentation de reprise
 ```
 
@@ -26,10 +26,10 @@ Ne jamais déclarer un test vert sans exécution réelle.
 repository : greg44500/saas-core-api
 version    : 1.2.0
 tag        : v1.2.0
-commit     : 150415173c973fe39c90b87e8fb9c0f055cce31f
+commit     : c428fbec1edfa21a8860fcf8283072e45719832b
 ```
 
-Le tag `v1.2.0` reste la dernière release stable. Le commit `150415173c973fe39c90b87e8fb9c0f055cce31f`, postérieur au tag, a été validé par la Core Gate post-merge #74 et ajoute la primitive générique de téléversement temporaire sécurisé sans nouvelle release ni nouveau tag.
+Le tag `v1.2.0` reste la dernière release stable. Le commit `c428fbec1edfa21a8860fcf8283072e45719832b`, postérieur au tag, inclut la primitive générique de téléversement temporaire sécurisé ainsi que le correctif d'idempotence de sa politique de types, validé par la PR Core #40 / Core Gate #75, sans nouvelle release ni nouveau tag.
 
 Le SHA complet enregistré dans `core-origin.json` constitue l'autorité exacte de provenance du code Core intégré.
 
@@ -253,7 +253,7 @@ M-002 doit composer ses permissions métier globales dans le registre applicatif
 Le commit Core :
 
 ```text
-150415173c973fe39c90b87e8fb9c0f055cce31f
+c428fbec1edfa21a8860fcf8283072e45719832b
 ```
 
 fournit la primitive générique configurable nécessaire.
@@ -278,7 +278,7 @@ Phase 1 — analyse réelle
 → relire KB
 → vérifier HEAD / main / core-origin
 → relire contrats M-002 recadrés
-→ relire Core 1.2.0 + commit 1504151 nécessaire
+→ relire Core 1.2.0 + commit c428fbe nécessaire
 → appliquer les prérequis A et B désormais résolus
 
 Phase 2 — correction backend cohérente
