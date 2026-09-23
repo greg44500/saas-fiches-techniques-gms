@@ -58,6 +58,7 @@ const csvFile = (content) => ({
 const previewDefaults = () => ({
     referenceUnit: 'KG',
     categoryId: category.id,
+    foodRange: 1,
 });
 
 describe('M-002 product import service', () => {
@@ -70,7 +71,7 @@ describe('M-002 product import service', () => {
         try {
             await writeFile(
                 filePath,
-                'Produit;Forme\nPanais;entier',
+                'Produit;Présentation\nPanais;entier',
                 'utf8',
             );
 
@@ -98,14 +99,14 @@ describe('M-002 product import service', () => {
         const inspected = await inspectProductImport({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
-            file: csvFile('Produit;Forme\nPanais;entier'),
+            file: csvFile('Produit;Présentation\nPanais;entier'),
         });
 
         const preview = await previewProductImport({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
             importId: inspected.importId,
-            mapping: { name: 0, form: 1 },
+            mapping: { name: 0, presentation: 1 },
             defaults: previewDefaults(),
         });
 

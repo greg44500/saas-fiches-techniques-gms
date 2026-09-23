@@ -10,6 +10,9 @@ import {
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
 } from '../../modules/productCatalog/productCatalog.registry.js';
+import {
+    resolveProductProcessingState,
+} from '../../modules/productCatalog/productVariantSemantics.js';
 import { CanonicalProduct } from '../../modules/productCatalog/canonicalProduct.model.js';
 import { ProductCategory } from '../../modules/productCatalog/productCategory.model.js';
 import { ProductVariant } from '../../modules/productCatalog/productVariant.model.js';
@@ -18,10 +21,9 @@ const createActiveProductReference = async ({
     actorId = new mongoose.Types.ObjectId(),
     name = 'Carotte',
     aliases = [],
-    form = null,
+    presentation = null,
     processingState = null,
-    preservation = null,
-    foodRange = null,
+    foodRange = 1,
     referenceUnit = PRODUCT_REFERENCE_UNIT.KG,
     yieldPercent = null,
     categoryName = 'Légumes',
@@ -58,15 +60,27 @@ const createActiveProductReference = async ({
         updatedBy: actorId,
     });
 
-    const variantInput = { form, processingState, preservation };
+    const resolvedProcessingState = resolveProductProcessingState({
+        foodRange,
+        processingState,
+    });
+    if (!resolvedProcessingState.valid) {
+        throw new Error('Fixture Produit invalide : gamme/état incompatibles.');
+    }
+
+    const variantInput = {
+        presentation,
+        processingState: resolvedProcessingState.value,
+        foodRange,
+    };
     const variant = await ProductVariant.create({
         canonicalProduct: product._id,
-        form,
-        normalizedForm: normalizeProductText(form),
-        processingState,
-        normalizedProcessingState: normalizeProductText(processingState),
-        preservation,
-        normalizedPreservation: normalizeProductText(preservation),
+        presentation,
+        normalizedPresentation: normalizeProductText(presentation),
+        processingState: resolvedProcessingState.value,
+        normalizedProcessingState: normalizeProductText(
+            resolvedProcessingState.value,
+        ),
         normalizedSignature: buildVariantSignature(variantInput),
         foodRange,
         referenceUnit,

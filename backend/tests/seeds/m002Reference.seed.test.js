@@ -49,9 +49,8 @@ const buildDataset = ({
             categoryKey: 'legumes',
             variants: [
                 {
-                    form: null,
+                    presentation: 'Entière',
                     processingState: null,
-                    preservation: 'fraîche',
                     foodRange: 1,
                     referenceUnit: 'KG',
                     yieldPercent: 85,
@@ -119,6 +118,13 @@ describe('M-002 reference bootstrap', () => {
 
         expect(product.status).toBe('ACTIVE');
         expect(product.contributedFromWorkspace).toBeNull();
+
+        const variant = await ProductVariant.findOne({
+            canonicalProduct: product._id,
+        }).lean();
+        expect(variant.presentation).toBe('Entière');
+        expect(variant.processingState).toBe('Produit frais');
+        expect(variant.foodRange).toBe(1);
     });
 
     it('interdit de modifier silencieusement une version déjà installée', async () => {

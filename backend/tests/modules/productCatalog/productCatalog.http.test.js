@@ -118,6 +118,7 @@ const inspectAndPreview = async ({
             defaults: {
                 referenceUnit: 'KG',
                 categoryId: category.id,
+                foodRange: 1,
             },
         });
 
@@ -142,6 +143,21 @@ describe('M-002 product catalog HTTP contract', () => {
             expect.objectContaining({ value: 'ACTIVE' }),
             expect.objectContaining({ value: 'ARCHIVED' }),
         ]);
+        expect(metadata.body.data.metadata.foodRanges).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    value: 1,
+                    label: 'Gamme 1',
+                    name: 'Frais',
+                    defaultProcessingState: 'Produit frais',
+                }),
+                expect.objectContaining({
+                    value: 6,
+                    label: 'Gamme 6',
+                    name: 'PAI / PAE',
+                }),
+            ]),
+        );
 
         const created = await request(app)
             .post(basePath())
@@ -149,7 +165,7 @@ describe('M-002 product catalog HTTP contract', () => {
             .send({
                 name: 'Lentille verte',
                 categoryId: category.id,
-                variant: { referenceUnit: 'KG' },
+                variant: { foodRange: 1, referenceUnit: 'KG' },
             });
 
         expect(created.status).toBe(201);
@@ -187,7 +203,7 @@ describe('M-002 product catalog HTTP contract', () => {
             .send({
                 name: 'Interdit',
                 categoryId: category.id,
-                variant: { referenceUnit: 'KG' },
+                variant: { foodRange: 1, referenceUnit: 'KG' },
             });
 
         expect(forbidden.status).toBe(403);

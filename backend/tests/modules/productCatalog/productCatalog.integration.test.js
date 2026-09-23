@@ -51,7 +51,7 @@ const createWorkspaceReference = (overrides = {}) => createWorkspaceProduct({
     name: 'Carotte',
     aliases: ['Carottes'],
     categoryId: category.id,
-    variant: { referenceUnit: 'KG' },
+    variant: { foodRange: 1, referenceUnit: 'KG' },
     ...overrides,
 });
 
@@ -59,8 +59,8 @@ describe('M-002 product catalog services', () => {
     it('crée atomiquement Produit, Déclinaison et rattachement ACTIVE', async () => {
         const created = await createWorkspaceReference({
             variant: {
-                form: 'râpée',
-                preservation: 'fraîche',
+                presentation: 'râpée',
+                foodRange: 1,
                 referenceUnit: 'KG',
                 yieldPercent: 100,
             },
@@ -68,6 +68,9 @@ describe('M-002 product catalog services', () => {
 
         expect(created.product.status).toBe('ACTIVE');
         expect(created.variant.status).toBe('ACTIVE');
+        expect(created.variant.presentation).toBe('râpée');
+        expect(created.variant.processingState).toBe('Produit frais');
+        expect(created.variant.foodRange).toBe(1);
         expect(created.workspaceEntry.status).toBe('ACTIVE');
 
         const actions = (

@@ -9,7 +9,6 @@ import {
 import {
     buildSearchGrams,
     buildSearchKeys,
-    buildVariantSignature,
     normalizeProductText,
 } from './productCatalog.normalization.js';
 import {

@@ -47,9 +47,9 @@ describe('M-002 product normalization', () => {
 
     it('construit la signature de déclinaison structurée', () => {
         expect(buildVariantSignature({
-            form: 'Râpée',
-            processingState: "Prête à l'emploi",
-            preservation: 'Fraîche',
-        })).toBe('rapee|prete a l emploi|fraiche');
+            presentation: 'Râpée',
+            foodRange: 6,
+            processingState: 'PAI / PAE',
+        })).toBe('rapee|6|pai pae');
     });
 });

@@ -22,6 +22,7 @@ describe('M-002 product request validation', () => {
             aliases: ['Carottes'],
             categoryId,
             variant: {
+                foodRange: 6,
                 referenceUnit: 'KG',
                 yieldPercent: 100,
             },
@@ -31,6 +32,7 @@ describe('M-002 product request validation', () => {
             categoryId,
             reviewedCandidateIds: [],
             variant: {
+                foodRange: 6,
                 referenceUnit: 'KG',
                 yieldPercent: 100,
             },
@@ -38,14 +40,20 @@ describe('M-002 product request validation', () => {
 
         expect(createWorkspaceProductBodySchema.safeParse({
             name: 'Carotte',
-            variant: { referenceUnit: 'KG' },
+            variant: { foodRange: 1, referenceUnit: 'KG' },
         }).success).toBe(false);
 
         expect(createWorkspaceProductBodySchema.safeParse({
             name: 'Carotte',
             categoryId,
             status: 'ACTIVE',
-            variant: { referenceUnit: 'KG' },
+            variant: { foodRange: 1, referenceUnit: 'KG' },
+        }).success).toBe(false);
+
+        expect(createWorkspaceProductBodySchema.safeParse({
+            name: 'Carotte',
+            categoryId,
+            variant: { foodRange: 7, referenceUnit: 'KG' },
         }).success).toBe(false);
     });
 
@@ -64,16 +72,16 @@ describe('M-002 product request validation', () => {
 
     it('valide mapping et valeurs par défaut d import', () => {
         expect(importPreviewBodySchema.parse({
-            mapping: { name: 0, form: 1 },
-            defaults: { referenceUnit: 'KG', categoryId },
+            mapping: { name: 0, presentation: 1 },
+            defaults: { referenceUnit: 'KG', categoryId, foodRange: 1 },
         })).toEqual({
-            mapping: { name: 0, form: 1 },
-            defaults: { referenceUnit: 'KG', categoryId },
+            mapping: { name: 0, presentation: 1 },
+            defaults: { referenceUnit: 'KG', categoryId, foodRange: 1 },
         });
 
         expect(importPreviewBodySchema.safeParse({
-            mapping: { name: 0, form: 0 },
-            defaults: { referenceUnit: 'KG' },
+            mapping: { name: 0, presentation: 0 },
+            defaults: { referenceUnit: 'KG', foodRange: 1 },
         }).success).toBe(false);
     });
 

@@ -40,7 +40,7 @@ describe('M-002 product reference governance', () => {
             actorId: ownerContext.owner._id,
             name: 'Courgette',
             categoryId: ownerContext.workspace._id,
-            variant: { referenceUnit: 'KG' },
+            variant: { foodRange: 1, referenceUnit: 'KG' },
         })).rejects.toMatchObject({ statusCode: 409 });
 
         const category = await createCategory({
@@ -52,7 +52,7 @@ describe('M-002 product reference governance', () => {
             actorId: ownerContext.owner._id,
             name: 'Courgette',
             categoryId: category.id,
-            variant: { referenceUnit: 'KG' },
+            variant: { foodRange: 1, referenceUnit: 'KG' },
         });
 
         expect(created.product.status).toBe('ACTIVE');
@@ -86,20 +86,21 @@ describe('M-002 product reference governance', () => {
             actorId: ownerContext.owner._id,
             name: 'Riz',
             categoryId: category.id,
-            variant: { referenceUnit: 'KG' },
+            variant: { foodRange: 1, referenceUnit: 'KG' },
         });
 
         const variant = await createGlobalVariant({
             actorId: ownerContext.owner._id,
             productId: created.product.id,
             variant: {
-                processingState: 'cuit',
+                foodRange: 5,
                 referenceUnit: 'KG',
             },
         });
 
         expect(variant.status).toBe('ACTIVE');
-        expect(variant.processingState).toBe('cuit');
+        expect(variant.processingState).toBe('Sous-vide cuit');
+        expect(variant.foodRange).toBe(5);
     });
 
     it('conserve l origine Workspace sans en faire un ownership du Produit', async () => {
@@ -112,7 +113,7 @@ describe('M-002 product reference governance', () => {
             actorId: ownerContext.owner._id,
             name: 'Pomme',
             categoryId: category.id,
-            variant: { referenceUnit: 'KG' },
+            variant: { foodRange: 1, referenceUnit: 'KG' },
         });
 
         const persisted = await CanonicalProduct

@@ -159,7 +159,7 @@ describe('M-002 global product reference HTTP contract', () => {
             .send({
                 name: 'Carotte',
                 categoryId: category.body.data.category.id,
-                variant: { referenceUnit: 'KG' },
+                variant: { foodRange: 1, referenceUnit: 'KG' },
             });
 
         expect(created.status).toBe(201);
@@ -198,6 +198,7 @@ describe('M-002 global product reference HTTP contract', () => {
                 defaults: {
                     referenceUnit: 'KG',
                     categoryId: category.body.data.category.id,
+                    foodRange: 1,
                 },
             });
 

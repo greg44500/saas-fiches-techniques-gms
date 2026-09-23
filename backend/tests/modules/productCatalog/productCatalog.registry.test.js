@@ -5,6 +5,8 @@ import {
 } from 'vitest';
 
 import {
+    PRODUCT_FOOD_RANGE_REGISTRY,
+    PRODUCT_FOOD_RANGES,
     PRODUCT_IMPORT_SCOPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
     PRODUCT_STATUS,
@@ -49,6 +51,24 @@ describe('M-002 product catalog registries', () => {
             expect.objectContaining({
                 dimension: 'VOLUME',
                 factorToBase: 1000,
+            }),
+        );
+    });
+
+    it('décrit les six gammes et leur état métier backend-driven', () => {
+        expect(PRODUCT_FOOD_RANGES).toEqual([1, 2, 3, 4, 5, 6]);
+        expect(PRODUCT_FOOD_RANGE_REGISTRY[1]).toEqual(
+            expect.objectContaining({
+                label: 'Gamme 1',
+                name: 'Frais',
+                defaultProcessingState: 'Produit frais',
+            }),
+        );
+        expect(PRODUCT_FOOD_RANGE_REGISTRY[6]).toEqual(
+            expect.objectContaining({
+                label: 'Gamme 6',
+                name: 'PAI / PAE',
+                defaultProcessingState: 'PAI / PAE',
             }),
         );
     });
