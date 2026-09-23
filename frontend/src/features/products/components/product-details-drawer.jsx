@@ -17,7 +17,7 @@ import {
   useAttachProductVariantMutation,
   useGetWorkspaceProductDetailQuery,
 } from '@/features/products/api/product-catalog-api';
-import { ProductVariantContributionDialog } from '@/features/products/components/product-variant-contribution-dialog';
+import { ProductVariantCreateDialog } from '@/features/products/components/product-variant-create-dialog';
 import {
   PRODUCT_CAPABILITY,
   PRODUCT_PERMISSION,
@@ -73,14 +73,12 @@ function ProductDetailsDrawer({
       if (shouldAttach) {
         await attachVariant({
           workspaceId,
-          productId: product.id,
           variantId: variant.id,
         }).unwrap();
         toast({ title: 'Référence ajoutée au catalogue', variant: 'success' });
       } else {
         await archiveVariant({
           workspaceId,
-          productId: product.id,
           variantId: variant.id,
         }).unwrap();
         toast({ title: 'Référence retirée du catalogue', variant: 'success' });
@@ -152,7 +150,7 @@ function ProductDetailsDrawer({
                       variant="outline"
                     >
                       <Plus aria-hidden="true" className="size-4" />
-                      Proposer une déclinaison
+                      Créer une déclinaison
                     </Button>
                   </div>
                 )}
@@ -234,14 +232,14 @@ function ProductDetailsDrawer({
       </EntityDetailsDrawer>
 
       {product && (
-        <ProductVariantContributionDialog
+        <ProductVariantCreateDialog
           existingVariants={variants}
           metadata={metadata}
           onClose={() => setVariantDialogOpen(false)}
           onCreated={() => {
             setVariantDialogOpen(false);
             toast({
-              title: 'Déclinaison envoyée en validation',
+              title: 'Déclinaison créée',
               variant: 'success',
             });
           }}

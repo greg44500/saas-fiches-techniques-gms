@@ -1,217 +1,186 @@
-import { baseApi } from '@/services/api/base-api';
+import { api } from '@/services/api';
 
-const PRODUCT_REFERENCE_API_TAG_TYPES = Object.freeze([
-  'ProductReferenceCatalog',
-  'ProductReferenceDetail',
-  'ProductReferenceMetadata',
-]);
-
-function compactProductReferenceParams(params) {
-  return Object.fromEntries(
-    Object.entries(params).filter(([, value]) => (
-      value !== undefined
-      && value !== null
-      && value !== ''
-    )),
-  );
-}
-
-const productReferenceApiBase = baseApi.enhanceEndpoints({
-  addTagTypes: [...PRODUCT_REFERENCE_API_TAG_TYPES],
-});
-
-const productReferenceApi = productReferenceApiBase.injectEndpoints({
-  endpoints: (build) => ({
-    getProductReferenceAccess: build.query({
-      query: () => '/product-reference/access',
-      transformResponse: (response) => response?.data?.access ?? { permissions: [] },
-      providesTags: [{ type: 'ProductReferenceMetadata', id: 'ACCESS' }],
+const productReferenceApi = api.injectEndpoints({
+  endpoints: (builder) => ({
+    getProductReferenceAccess: builder.query({
+      query: () => ({
+        url: '/product-reference/access',
+      }),
+      transformResponse: (response) => response.data.access,
+      providesTags: ['ProductReference'],
     }),
-    getProductReferenceMetadata: build.query({
-      query: () => '/product-reference/metadata',
-      transformResponse: (response) => response?.data?.metadata ?? null,
-      providesTags: [{ type: 'ProductReferenceMetadata', id: 'CURRENT' }],
+    getProductReferenceMetadata: builder.query({
+      query: () => ({
+        url: '/product-reference/metadata',
+      }),
+      transformResponse: (response) => response.data.metadata,
+      providesTags: ['ProductReference'],
     }),
-    listProductReferenceProducts: build.query({
+    listProductReferenceProducts: builder.query({
       query: ({
         status,
         categoryId,
         q,
         page = 1,
         limit = 20,
-      } = {}) => ({
+      }) => ({
         url: '/product-reference',
-        params: compactProductReferenceParams({
+        params: {
           status,
           categoryId,
           q,
           page,
           limit,
-        }),
+        },
       }),
       transformResponse: (response) => ({
-        products: response?.data?.products ?? [],
-        pagination: response?.meta ?? null,
+        products: response.data.products,
+        pagination: response.meta,
       }),
-      providesTags: (result) => [
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-        ...(result?.products ?? []).map((product) => ({
-          type: 'ProductReferenceDetail',
-          id: product.id,
-        })),
-      ],
+      providesTags: ['ProductReference'],
     }),
-    getProductReferenceDetail: build.query({
-      query: (productId) => '/product-reference/' + productId,
-      transformResponse: (response) => response?.data ?? null,
-      providesTags: (_result, _error, productId) => [
-        { type: 'ProductReferenceDetail', id: productId },
-      ],
+    getProductReferenceDetail: builder.query({
+      query: (productId) => ({
+        url: '/product-reference/' + productId,
+      }),
+      transformResponse: (response) => response.data,
+      providesTags: ['ProductReference'],
     }),
-    createProductReferenceCategory: build.mutation({
-      query: ({ name }) => ({
+    duplicateCheckProductReference: builder.mutation({
+      query: ({ name, aliases }) => ({
+        url: '/product-reference/duplicate-check',
+        method: 'POST',
+        body: { name, aliases },
+      }),
+      transformResponse: (response) => response.data,
+    }),
+    createProductReference: builder.mutation({
+      query: (body) => ({
+        url: '/product-reference',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    createProductReferenceVariant: builder.mutation({
+      query: ({ productId, ...body }) => ({
+        url: '/product-reference/' + productId + '/variants',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    createProductReferenceCategory: builder.mutation({
+      query: (body) => ({
         url: '/product-reference/categories',
         method: 'POST',
-        body: { name },
+        body,
       }),
-      transformResponse: (response) => response?.data?.category ?? null,
-      invalidatesTags: [
-        { type: 'ProductReferenceMetadata', id: 'CURRENT' },
-      ],
+      transformResponse: (response) => response.data.category,
+      invalidatesTags: ['ProductReference'],
     }),
-    updateProductReferenceCategory: build.mutation({
-      query: ({ categoryId, name }) => ({
+    updateProductReferenceCategory: builder.mutation({
+      query: ({ categoryId, ...body }) => ({
         url: '/product-reference/categories/' + categoryId,
         method: 'PATCH',
-        body: { name },
+        body,
       }),
-      transformResponse: (response) => response?.data?.category ?? null,
-      invalidatesTags: [
-        { type: 'ProductReferenceMetadata', id: 'CURRENT' },
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-      ],
+      transformResponse: (response) => response.data.category,
+      invalidatesTags: ['ProductReference'],
     }),
-    updateProductReferenceCategoryStatus: build.mutation({
+    updateProductReferenceCategoryStatus: builder.mutation({
       query: ({ categoryId, status }) => ({
         url: '/product-reference/categories/' + categoryId + '/status',
         method: 'PATCH',
         body: { status },
       }),
-      transformResponse: (response) => response?.data?.category ?? null,
-      invalidatesTags: [
-        { type: 'ProductReferenceMetadata', id: 'CURRENT' },
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-      ],
+      transformResponse: (response) => response.data.category,
+      invalidatesTags: ['ProductReference'],
     }),
-    updateProductReference: build.mutation({
+    updateProductReference: builder.mutation({
       query: ({ productId, ...body }) => ({
         url: '/product-reference/' + productId,
         method: 'PATCH',
         body,
       }),
-      transformResponse: (response) => response?.data?.product ?? null,
-      invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-        { type: 'ProductReferenceDetail', id: productId },
-      ],
+      transformResponse: (response) => response.data.product,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
-    approveProductReference: build.mutation({
-      query: (productId) => ({
-        url: '/product-reference/' + productId + '/approve',
-        method: 'POST',
-      }),
-      transformResponse: (response) => response?.data?.product ?? null,
-      invalidatesTags: (_result, _error, productId) => [
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-        { type: 'ProductReferenceDetail', id: productId },
-      ],
-    }),
-    rejectProductReference: build.mutation({
-      query: ({ productId, ...body }) => ({
-        url: '/product-reference/' + productId + '/reject',
-        method: 'POST',
-        body,
-      }),
-      transformResponse: (response) => response?.data?.product ?? null,
-      invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-        { type: 'ProductReferenceDetail', id: productId },
-      ],
-    }),
-    updateProductReferenceStatus: build.mutation({
+    updateProductReferenceStatus: builder.mutation({
       query: ({ productId, status }) => ({
         url: '/product-reference/' + productId + '/status',
         method: 'PATCH',
         body: { status },
       }),
-      transformResponse: (response) => response?.data?.product ?? null,
-      invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-        { type: 'ProductReferenceDetail', id: productId },
-      ],
+      transformResponse: (response) => response.data.product,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
-    updateProductReferenceVariant: build.mutation({
+    updateProductReferenceVariant: builder.mutation({
       query: ({ productId, variantId, ...body }) => ({
         url: '/product-reference/' + productId + '/variants/' + variantId,
         method: 'PATCH',
         body,
       }),
-      transformResponse: (response) => response?.data?.variant ?? null,
-      invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-        { type: 'ProductReferenceDetail', id: productId },
-      ],
+      transformResponse: (response) => response.data.variant,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
-    approveProductReferenceVariant: build.mutation({
-      query: ({ productId, variantId }) => ({
-        url: '/product-reference/' + productId + '/variants/' + variantId + '/approve',
-        method: 'POST',
-      }),
-      transformResponse: (response) => response?.data?.variant ?? null,
-      invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-        { type: 'ProductReferenceDetail', id: productId },
-      ],
-    }),
-    rejectProductReferenceVariant: build.mutation({
-      query: ({ productId, variantId, ...body }) => ({
-        url: '/product-reference/' + productId + '/variants/' + variantId + '/reject',
-        method: 'POST',
-        body,
-      }),
-      transformResponse: (response) => response?.data?.variant ?? null,
-      invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-        { type: 'ProductReferenceDetail', id: productId },
-      ],
-    }),
-    updateProductReferenceVariantStatus: build.mutation({
+    updateProductReferenceVariantStatus: builder.mutation({
       query: ({ productId, variantId, status }) => ({
         url: '/product-reference/' + productId + '/variants/' + variantId + '/status',
         method: 'PATCH',
         body: { status },
       }),
-      transformResponse: (response) => response?.data?.variant ?? null,
-      invalidatesTags: (_result, _error, { productId }) => [
-        { type: 'ProductReferenceCatalog', id: 'LIST' },
-        { type: 'ProductReferenceDetail', id: productId },
-      ],
+      transformResponse: (response) => response.data.variant,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    inspectProductReferenceImport: builder.mutation({
+      query: ({ file }) => {
+        const body = new FormData();
+        body.append('file', file);
+
+        return {
+          url: '/product-reference/imports/inspect',
+          method: 'POST',
+          body,
+        };
+      },
+      transformResponse: (response) => response.data,
+    }),
+    previewProductReferenceImport: builder.mutation({
+      query: ({ importId, mapping, defaults }) => ({
+        url: '/product-reference/imports/' + importId + '/preview',
+        method: 'POST',
+        body: { mapping, defaults },
+      }),
+      transformResponse: (response) => response.data,
+    }),
+    commitProductReferenceImport: builder.mutation({
+      query: ({ importId, decisions }) => ({
+        url: '/product-reference/imports/' + importId + '/commit',
+        method: 'POST',
+        body: { decisions },
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
   }),
 });
 
 export const {
-  useApproveProductReferenceMutation,
-  useApproveProductReferenceVariantMutation,
+  useCommitProductReferenceImportMutation,
   useCreateProductReferenceCategoryMutation,
-  useGetProductReferenceDetailQuery,
+  useCreateProductReferenceMutation,
+  useCreateProductReferenceVariantMutation,
+  useDuplicateCheckProductReferenceMutation,
   useGetProductReferenceAccessQuery,
+  useGetProductReferenceDetailQuery,
   useGetProductReferenceMetadataQuery,
+  useInspectProductReferenceImportMutation,
   useLazyGetProductReferenceDetailQuery,
-  useLazyListProductReferenceProductsQuery,
   useListProductReferenceProductsQuery,
-  useRejectProductReferenceMutation,
-  useRejectProductReferenceVariantMutation,
+  usePreviewProductReferenceImportMutation,
   useUpdateProductReferenceCategoryMutation,
   useUpdateProductReferenceCategoryStatusMutation,
   useUpdateProductReferenceMutation,
@@ -220,8 +189,4 @@ export const {
   useUpdateProductReferenceVariantStatusMutation,
 } = productReferenceApi;
 
-export {
-  PRODUCT_REFERENCE_API_TAG_TYPES,
-  compactProductReferenceParams,
-  productReferenceApi,
-};
+export { productReferenceApi };

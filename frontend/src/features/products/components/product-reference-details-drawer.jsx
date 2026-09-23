@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { Pencil, Plus } from 'lucide-react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EntityDetailsDrawer } from '@/components/shared/entity-details-drawer';
@@ -14,15 +14,13 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
-  useApproveProductReferenceMutation,
-  useApproveProductReferenceVariantMutation,
   useGetProductReferenceDetailQuery,
   useUpdateProductReferenceStatusMutation,
   useUpdateProductReferenceVariantStatusMutation,
 } from '@/features/products/api/product-reference-api';
 import { ProductReferenceEditDialog } from '@/features/products/components/product-reference-edit-dialog';
-import { ProductReferenceRejectDialog } from '@/features/products/components/product-reference-reject-dialog';
 import { ProductReferenceVariantEditDialog } from '@/features/products/components/product-reference-variant-edit-dialog';
+import { ProductVariantCreateDialog } from '@/features/products/components/product-variant-create-dialog';
 import {
   formatYield,
   getApiErrorMessage,
@@ -53,11 +51,9 @@ function ProductReferenceDetailsDrawer({
   const retainedRef = useRef(null);
   const [editProductOpen, setEditProductOpen] = useState(false);
   const [editVariant, setEditVariant] = useState(null);
-  const [rejectTarget, setRejectTarget] = useState(null);
+  const [createVariantOpen, setCreateVariantOpen] = useState(false);
 
   const query = useGetProductReferenceDetailQuery(productId, { skip: !productId });
-  const [approveProduct, approveProductState] = useApproveProductReferenceMutation();
-  const [approveVariant, approveVariantState] = useApproveProductReferenceVariantMutation();
   const [updateProductStatus, productStatusState] = useUpdateProductReferenceStatusMutation();
   const [updateVariantStatus, variantStatusState] = useUpdateProductReferenceVariantStatusMutation();
 
@@ -66,12 +62,7 @@ function ProductReferenceDetailsDrawer({
   const product = detail?.product;
   const variants = detail?.variants ?? [];
   const events = detail?.events ?? [];
-  const pending = (
-    approveProductState.isLoading
-    || approveVariantState.isLoading
-    || productStatusState.isLoading
-    || variantStatusState.isLoading
-  );
+  const pending = productStatusState.isLoading || variantStatusState.isLoading;
 
   if (!detail && !open) return null;
 
@@ -88,27 +79,10 @@ function ProductReferenceDetailsDrawer({
     }
   }
 
-  function approveCurrentProduct() {
-    run(
-      () => approveProduct(product.id).unwrap(),
-      'Produit validé',
-    );
-  }
-
   function changeProductStatus(status) {
     run(
       () => updateProductStatus({ productId: product.id, status }).unwrap(),
       status === 'ARCHIVED' ? 'Produit archivé' : 'Produit réactivé',
-    );
-  }
-
-  function approveCurrentVariant(variant) {
-    run(
-      () => approveVariant({
-        productId: product.id,
-        variantId: variant.id,
-      }).unwrap(),
-      'Déclinaison validée',
     );
   }
 
@@ -126,7 +100,7 @@ function ProductReferenceDetailsDrawer({
   return (
     <>
       <EntityDetailsDrawer
-        description="Gouvernance globale du Produit, de ses déclinaisons et de leur historique."
+        description="Administration métier du Produit partagé et de son historique."
         onClose={onClose}
         open={open}
         title={product?.name ?? 'Produit'}
@@ -158,25 +132,6 @@ function ProductReferenceDetailsDrawer({
                       onClick={() => setEditProductOpen(true)}
                       variant="outline"
                     />
-                    {product.status === 'PENDING_REVIEW' && (
-                      <>
-                        <Button
-                          disabled={pending}
-                          onClick={approveCurrentProduct}
-                          type="button"
-                        >
-                          Valider le Produit
-                        </Button>
-                        <Button
-                          disabled={pending}
-                          onClick={() => setRejectTarget({ variant: null })}
-                          type="button"
-                          variant="destructive"
-                        >
-                          Rejeter
-                        </Button>
-                      </>
-                    )}
                     {product.status === 'ACTIVE' && (
                       <Button
                         disabled={pending}
@@ -221,26 +176,39 @@ function ProductReferenceDetailsDrawer({
             </TabsContent>
 
             <TabsContent value="variants" variant="section">
-              <ul className="space-y-3">
-                {variants.map((variant) => (
-                  <li className="rounded-lg border border-border p-4" key={variant.id}>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium">{getVariantLabel(variant)}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
-                          {' · '}Rendement : {formatYield(variant.yieldPercent)}
-                          {variant.foodRange ? ' · Gamme ' + variant.foodRange : ''}
-                        </p>
-                      </div>
-                      <StatusBadge tone={getProductStatusTone(variant.status)}>
-                        {getProductStatusLabel(metadata, variant.status)}
-                      </StatusBadge>
-                    </div>
+              <div className="space-y-4">
+                {canManage && product.status === 'ACTIVE' && (
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={() => setCreateVariantOpen(true)}
+                      type="button"
+                      variant="outline"
+                    >
+                      <Plus aria-hidden="true" className="size-4" />
+                      Créer une déclinaison
+                    </Button>
+                  </div>
+                )}
 
-                    {canManage && (
-                      <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-                        {variant.status !== 'REJECTED' && (
+                <ul className="space-y-3">
+                  {variants.map((variant) => (
+                    <li className="rounded-lg border border-border p-4" key={variant.id}>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium">{getVariantLabel(variant)}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
+                            {' · '}Rendement : {formatYield(variant.yieldPercent)}
+                            {variant.foodRange ? ' · Gamme ' + variant.foodRange : ''}
+                          </p>
+                        </div>
+                        <StatusBadge tone={getProductStatusTone(variant.status)}>
+                          {getProductStatusLabel(metadata, variant.status)}
+                        </StatusBadge>
+                      </div>
+
+                      {canManage && (
+                        <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
                           <Button
                             disabled={pending}
                             onClick={() => setEditVariant(variant)}
@@ -250,60 +218,39 @@ function ProductReferenceDetailsDrawer({
                           >
                             Corriger
                           </Button>
-                        )}
-                        {variant.status === 'PENDING_REVIEW' && product.status === 'ACTIVE' && (
-                          <Button
-                            disabled={pending}
-                            onClick={() => approveCurrentVariant(variant)}
-                            size="sm"
-                            type="button"
-                          >
-                            Valider
-                          </Button>
-                        )}
-                        {variant.status === 'PENDING_REVIEW' && (
-                          <Button
-                            disabled={pending}
-                            onClick={() => setRejectTarget({ variant })}
-                            size="sm"
-                            type="button"
-                            variant="destructive"
-                          >
-                            Rejeter
-                          </Button>
-                        )}
-                        {variant.status === 'ACTIVE' && (
-                          <Button
-                            disabled={pending}
-                            onClick={() => changeVariantStatus(variant, 'ARCHIVED')}
-                            size="sm"
-                            type="button"
-                            variant="outline"
-                          >
-                            Archiver
-                          </Button>
-                        )}
-                        {variant.status === 'ARCHIVED' && product.status === 'ACTIVE' && (
-                          <Button
-                            disabled={pending}
-                            onClick={() => changeVariantStatus(variant, 'ACTIVE')}
-                            size="sm"
-                            type="button"
-                          >
-                            Réactiver
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
+                          {variant.status === 'ACTIVE' && (
+                            <Button
+                              disabled={pending}
+                              onClick={() => changeVariantStatus(variant, 'ARCHIVED')}
+                              size="sm"
+                              type="button"
+                              variant="outline"
+                            >
+                              Archiver
+                            </Button>
+                          )}
+                          {variant.status === 'ARCHIVED' && product.status === 'ACTIVE' && (
+                            <Button
+                              disabled={pending}
+                              onClick={() => changeVariantStatus(variant, 'ACTIVE')}
+                              size="sm"
+                              type="button"
+                            >
+                              Réactiver
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </TabsContent>
 
             <TabsContent value="history" variant="section">
               {events.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Aucun événement de gouvernance enregistré.
+                  Aucun événement Produit enregistré.
                 </p>
               ) : (
                 <ol className="space-y-3">
@@ -353,20 +300,18 @@ function ProductReferenceDetailsDrawer({
         />
       )}
 
-      {product && rejectTarget && (
-        <ProductReferenceRejectDialog
+      {product && (
+        <ProductVariantCreateDialog
+          existingVariants={variants}
           metadata={metadata}
-          onClose={() => setRejectTarget(null)}
-          onRejected={() => {
-            setRejectTarget(null);
-            toast({
-              title: rejectTarget.variant ? 'Déclinaison rejetée' : 'Produit rejeté',
-              variant: 'success',
-            });
+          mode="global"
+          onClose={() => setCreateVariantOpen(false)}
+          onCreated={() => {
+            setCreateVariantOpen(false);
+            toast({ title: 'Déclinaison créée', variant: 'success' });
           }}
-          open={Boolean(rejectTarget)}
+          open={createVariantOpen}
           product={product}
-          variant={rejectTarget.variant}
         />
       )}
     </>

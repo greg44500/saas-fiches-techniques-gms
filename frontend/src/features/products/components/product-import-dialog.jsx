@@ -29,6 +29,12 @@ import {
   usePreviewProductImportMutation,
 } from '@/features/products/api/product-catalog-api';
 import {
+  useCommitProductReferenceImportMutation,
+  useInspectProductReferenceImportMutation,
+  useLazyGetProductReferenceDetailQuery,
+  usePreviewProductReferenceImportMutation,
+} from '@/features/products/api/product-reference-api';
+import {
   EMPTY_OPTION,
 } from '@/features/products/components/product-variant-fields';
 import {
@@ -60,12 +66,14 @@ function buildMappingPayload(mapping) {
 
 function ProductImportDialog({
   metadata,
+  mode = 'workspace',
   onClose,
   onCommitted,
   open,
   workspaceId,
 }) {
   const cancelRef = useRef(null);
+  const isGlobal = mode === 'global';
   const [step, setStep] = useState('upload');
   const [file, setFile] = useState(null);
   const [inspection, setInspection] = useState(null);
@@ -73,6 +81,7 @@ function ProductImportDialog({
   const [defaultUnit, setDefaultUnit] = useState(
     metadata?.referenceUnits?.[0]?.value ?? '',
   );
+  const [defaultCategoryId, setDefaultCategoryId] = useState(EMPTY_OPTION);
   const [preview, setPreview] = useState(null);
   const [decisions, setDecisions] = useState({});
   const [candidateVariants, setCandidateVariants] = useState({});
@@ -80,10 +89,16 @@ function ProductImportDialog({
   const [formError, setFormError] = useState('');
   const [stalePreview, setStalePreview] = useState(false);
 
-  const [inspectImport, inspectState] = useInspectProductImportMutation();
-  const [previewImport, previewState] = usePreviewProductImportMutation();
-  const [commitImport, commitState] = useCommitProductImportMutation();
-  const [loadProductDetail, candidateState] = useLazyGetWorkspaceProductDetailQuery();
+  const [inspectWorkspaceImport, inspectWorkspaceState] = useInspectProductImportMutation();
+  const [previewWorkspaceImport, previewWorkspaceState] = usePreviewProductImportMutation();
+  const [commitWorkspaceImport, commitWorkspaceState] = useCommitProductImportMutation();
+  const [inspectGlobalImport, inspectGlobalState] = useInspectProductReferenceImportMutation();
+  const [previewGlobalImport, previewGlobalState] = usePreviewProductReferenceImportMutation();
+  const [commitGlobalImport, commitGlobalState] = useCommitProductReferenceImportMutation();
+  const [loadWorkspaceProductDetail, workspaceCandidateState] =
+    useLazyGetWorkspaceProductDetailQuery();
+  const [loadGlobalProductDetail, globalCandidateState] =
+    useLazyGetProductReferenceDetailQuery();
 
   useEffect(() => {
     if (!open) return;
@@ -92,6 +107,7 @@ function ProductImportDialog({
     setInspection(null);
     setMapping({});
     setDefaultUnit(metadata?.referenceUnits?.[0]?.value ?? '');
+    setDefaultCategoryId(EMPTY_OPTION);
     setPreview(null);
     setDecisions({});
     setCandidateVariants({});
@@ -101,12 +117,20 @@ function ProductImportDialog({
   }, [metadata, open]);
 
   const pending = (
-    inspectState.isLoading
-    || previewState.isLoading
-    || commitState.isLoading
-    || candidateState.isFetching
+    inspectWorkspaceState.isLoading
+    || previewWorkspaceState.isLoading
+    || commitWorkspaceState.isLoading
+    || inspectGlobalState.isLoading
+    || previewGlobalState.isLoading
+    || commitGlobalState.isLoading
+    || workspaceCandidateState.isFetching
+    || globalCandidateState.isFetching
   );
 
+  const activeCategories = useMemo(
+    () => (metadata?.categories ?? []).filter((category) => category.status === 'ACTIVE'),
+    [metadata?.categories],
+  );
   const headerItems = useMemo(
     () => [
       { value: EMPTY_OPTION, label: 'Non associée' },
@@ -126,7 +150,9 @@ function ProductImportDialog({
 
     setFormError('');
     try {
-      const data = await inspectImport({ workspaceId, file }).unwrap();
+      const data = isGlobal
+        ? await inspectGlobalImport({ file }).unwrap()
+        : await inspectWorkspaceImport({ workspaceId, file }).unwrap();
       setInspection(data);
       setMapping({
         name: data.headers.length > 0 ? '0' : EMPTY_OPTION,
@@ -139,14 +165,31 @@ function ProductImportDialog({
 
   function getPreviewRequest() {
     const mappingPayload = buildMappingPayload(mapping);
-    const defaults = defaultUnit ? { referenceUnit: defaultUnit } : {};
-
-    return {
-      workspaceId,
-      importId: inspection.importId,
-      mapping: mappingPayload,
-      defaults,
+    const defaults = {
+      ...(defaultUnit ? { referenceUnit: defaultUnit } : {}),
+      ...(defaultCategoryId !== EMPTY_OPTION
+        ? { categoryId: defaultCategoryId }
+        : {}),
     };
+
+    return isGlobal
+      ? {
+        importId: inspection.importId,
+        mapping: mappingPayload,
+        defaults,
+      }
+      : {
+        workspaceId,
+        importId: inspection.importId,
+        mapping: mappingPayload,
+        defaults,
+      };
+  }
+
+  async function runPreview() {
+    return isGlobal
+      ? previewGlobalImport(getPreviewRequest()).unwrap()
+      : previewWorkspaceImport(getPreviewRequest()).unwrap();
   }
 
   async function generatePreview() {
@@ -169,7 +212,7 @@ function ProductImportDialog({
 
     setFormError('');
     try {
-      const data = await previewImport(getPreviewRequest()).unwrap();
+      const data = await runPreview();
       setPreview(data);
       setDecisions({});
       setCandidateVariants({});
@@ -201,10 +244,12 @@ function ProductImportDialog({
   async function chooseCandidate(row, candidate) {
     setFormError('');
     try {
-      const detail = await loadProductDetail({
-        workspaceId,
-        productId: candidate.id,
-      }).unwrap();
+      const detail = isGlobal
+        ? await loadGlobalProductDetail(candidate.id).unwrap()
+        : await loadWorkspaceProductDetail({
+          workspaceId,
+          productId: candidate.id,
+        }).unwrap();
       const variants = (detail?.variants ?? []).filter(
         (variant) => variant.status === 'ACTIVE',
       );
@@ -237,12 +282,21 @@ function ProductImportDialog({
   async function commit() {
     setFormError('');
     setStalePreview(false);
-    try {
-      const data = await commitImport({
+    const request = isGlobal
+      ? {
+        importId: inspection.importId,
+        decisions: Object.values(decisions),
+      }
+      : {
         workspaceId,
         importId: inspection.importId,
         decisions: Object.values(decisions),
-      }).unwrap();
+      };
+
+    try {
+      const data = isGlobal
+        ? await commitGlobalImport(request).unwrap()
+        : await commitWorkspaceImport(request).unwrap();
       setResult(data);
       setStep('done');
       onCommitted(data);
@@ -261,7 +315,7 @@ function ProductImportDialog({
   async function refreshPreview() {
     setFormError('');
     try {
-      const data = await previewImport(getPreviewRequest()).unwrap();
+      const data = await runPreview();
       setPreview(data);
       setDecisions({});
       setCandidateVariants({});
@@ -288,7 +342,9 @@ function ProductImportDialog({
           <DialogHeader>
             <DialogTitle>Importer des Produits</DialogTitle>
             <DialogDescription>
-              Le fichier est analysé temporairement puis les références sont revues avant confirmation. Les données fournisseur et prix restent hors périmètre.
+              {isGlobal
+                ? 'Le fichier alimente le référentiel Produit commun. Les données fournisseur, références commerciales, conditionnements et prix restent hors périmètre M-002.'
+                : 'Le fichier est rapproché du référentiel commun avant rattachement ou création. Les données fournisseur et prix restent hors périmètre M-002.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -338,9 +394,9 @@ function ProductImportDialog({
 
                 {inspection.outOfScopeColumns?.length > 0 && (
                   <div className="rounded-lg border border-warning/30 bg-warning/5 p-4">
-                    <p className="font-medium">Colonnes hors périmètre M-002</p>
+                    <p className="font-medium">Colonnes commerciales détectées</p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Ces colonnes semblent concerner les fournisseurs, références commerciales ou prix. Elles ne seront pas importées ici.
+                      Ces colonnes relèvent de M-003 et ne seront pas importées dans l’identité Produit.
                     </p>
                     <ul className="mt-2 list-disc pl-5 text-sm">
                       {inspection.outOfScopeColumns.map((column) => (
@@ -408,6 +464,41 @@ function ProductImportDialog({
                         ))}
                       </SelectContent>
                     </Select>
+                  </Field>
+                )}
+
+                {(mapping.category === EMPTY_OPTION || mapping.category === undefined) && (
+                  <Field>
+                    <FieldLabel htmlFor="import-default-category">
+                      Catégorie par défaut pour les nouvelles références
+                    </FieldLabel>
+                    <Select
+                      disabled={pending}
+                      items={[
+                        { value: EMPTY_OPTION, label: 'Aucune catégorie par défaut' },
+                        ...activeCategories.map((category) => ({
+                          value: category.id,
+                          label: category.name,
+                        })),
+                      ]}
+                      onValueChange={setDefaultCategoryId}
+                      value={defaultCategoryId}
+                    >
+                      <SelectTrigger id="import-default-category">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={EMPTY_OPTION}>Aucune catégorie par défaut</SelectItem>
+                        {activeCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      Les lignes créant un nouveau Produit seront invalides si aucune catégorie active ne peut être déterminée.
+                    </p>
                   </Field>
                 )}
               </>
@@ -505,7 +596,7 @@ function ProductImportDialog({
                             {candidateChoice?.variants?.length > 1 && (
                               <Field>
                                 <FieldLabel htmlFor={'candidate-variant-' + row.rowNumber}>
-                                  Déclinaison à rattacher
+                                  Déclinaison existante
                                 </FieldLabel>
                                 <Select
                                   items={candidateChoice.variants.map((variant) => ({
@@ -539,7 +630,7 @@ function ProductImportDialog({
 
                             {candidateChoice?.variants?.length === 0 && (
                               <p className="text-sm text-muted-foreground">
-                                Aucune déclinaison active de ce candidat ne peut être rattachée.
+                                Aucune déclinaison active de ce candidat ne peut être utilisée.
                               </p>
                             )}
 
@@ -557,7 +648,7 @@ function ProductImportDialog({
                           </div>
                         )}
 
-                        {!['INVALID', 'PRIVATE_CONFLICT', 'REVIEW_REQUIRED'].includes(row.classification) && (
+                        {!['INVALID', 'REVIEW_REQUIRED'].includes(row.classification) && (
                           <div className="mt-3 flex justify-end">
                             {decision?.action === 'SKIP' ? (
                               <Button
@@ -629,17 +720,23 @@ function ProductImportDialog({
 
             {step === 'upload' && (
               <Button disabled={pending || !file} onClick={inspect} type="button">
-                {inspectState.isLoading ? 'Analyse…' : 'Analyser le fichier'}
+                {(inspectWorkspaceState.isLoading || inspectGlobalState.isLoading)
+                  ? 'Analyse…'
+                  : 'Analyser le fichier'}
               </Button>
             )}
             {step === 'mapping' && (
               <Button disabled={pending} onClick={generatePreview} type="button">
-                {previewState.isLoading ? 'Préparation…' : 'Prévisualiser'}
+                {(previewWorkspaceState.isLoading || previewGlobalState.isLoading)
+                  ? 'Préparation…'
+                  : 'Prévisualiser'}
               </Button>
             )}
             {step === 'preview' && (
               <Button disabled={pending || stalePreview} onClick={commit} type="button">
-                {commitState.isLoading ? 'Confirmation…' : 'Confirmer l’import'}
+                {(commitWorkspaceState.isLoading || commitGlobalState.isLoading)
+                  ? 'Confirmation…'
+                  : 'Confirmer l’import'}
               </Button>
             )}
           </DialogFooter>

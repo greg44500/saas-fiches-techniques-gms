@@ -31,7 +31,7 @@ import {
   useGetProductMetadataQuery,
   useSearchProductsQuery,
 } from '@/features/products/api/product-catalog-api';
-import { ProductContributionDialog } from '@/features/products/components/product-contribution-dialog';
+import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
 import { ProductDetailsDrawer } from '@/features/products/components/product-details-drawer';
 import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
 import {
@@ -65,7 +65,7 @@ function ProductsPage() {
   const [categoryId, setCategoryId] = useState(ALL_CATEGORIES);
   const [status, setStatus] = useState(ALL_WORKSPACE_STATUSES);
   const [drawerState, setDrawerState] = useState({ open: false, productId: null });
-  const [contributionOpen, setContributionOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
   const productReferenceAccessQuery = useGetProductReferenceAccessQuery();
@@ -96,7 +96,7 @@ function ProductsPage() {
     PRODUCT_REFERENCE_PERMISSION.READ,
   );
   const canReferenceAccess = hasFeature(PRODUCT_CAPABILITY.REFERENCE_ACCESS);
-  const canContribute = (
+  const canCreate = (
     can(PRODUCT_PERMISSION.CONTRIBUTE)
     && hasFeature(PRODUCT_CAPABILITY.CONTRIBUTION)
   );
@@ -145,14 +145,12 @@ function ProductsPage() {
       if (shouldAttach) {
         await attachVariant({
           workspaceId: workspace.id,
-          productId: result.product.id,
           variantId: result.variant.id,
         }).unwrap();
         toast({ title: 'Référence ajoutée au catalogue', variant: 'success' });
       } else {
         await archiveVariant({
           workspaceId: workspace.id,
-          productId: result.product.id,
           variantId: result.variant.id,
         }).unwrap();
         toast({ title: 'Référence retirée du catalogue', variant: 'success' });
@@ -178,7 +176,7 @@ function ProductsPage() {
         <div>
           <p className="font-medium">{result.product.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {result.product.category?.name ?? 'Sans catégorie'}
+            {result.product.category?.name ?? 'Catégorie non renseignée'}
           </p>
         </div>
       ),
@@ -280,7 +278,7 @@ function ProductsPage() {
         <div className="flex items-start gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Produits</h1>
           <InfoTooltip
-            content="Consultez votre catalogue, recherchez le référentiel commun et proposez de nouvelles références sans dupliquer les identités existantes."
+            content="Consultez votre catalogue, recherchez le référentiel commun et créez une nouvelle référence seulement lorsqu’aucun équivalent n’existe."
             label="À propos des Produits"
           />
         </div>
@@ -296,10 +294,10 @@ function ProductsPage() {
               Gérer le référentiel
             </Button>
           )}
-          {canContribute && (
-            <Button onClick={() => setContributionOpen(true)} type="button">
+          {canCreate && (
+            <Button onClick={() => setCreateOpen(true)} type="button">
               <Plus aria-hidden="true" className="size-4" />
-              Proposer un Produit
+              Créer un Produit
             </Button>
           )}
           {canImport && (
@@ -377,7 +375,7 @@ function ProductsPage() {
             </Select>
           ) : (
             <div className="flex items-center text-sm text-muted-foreground">
-              Références actives et contributions de votre espace en validation
+              Références actives du référentiel commun
             </div>
           )}
         </div>
@@ -403,7 +401,7 @@ function ProductsPage() {
                     search || categoryId !== ALL_CATEGORIES
                       ? 'Modifiez la recherche ou les filtres pour élargir les résultats.'
                       : scope === 'WORKSPACE'
-                        ? 'Ajoutez une référence depuis le référentiel ou proposez un Produit.'
+                        ? 'Recherchez le référentiel ou créez votre premier Produit.'
                         : 'Aucune référence n’est disponible avec ces critères.'
                   }
                   title="Aucun Produit à afficher"
@@ -435,23 +433,23 @@ function ProductsPage() {
         workspaceId={workspace.id}
       />
 
-      <ProductContributionDialog
+      <ProductCreateDialog
         metadata={metadata}
-        onClose={() => setContributionOpen(false)}
+        onClose={() => setCreateOpen(false)}
         onCreated={(result) => {
-          setContributionOpen(false);
+          setCreateOpen(false);
           toast({
-            title: 'Produit envoyé en validation',
+            title: 'Produit créé et ajouté au catalogue',
             description: result?.product?.name,
             variant: 'success',
           });
           if (result?.product?.id) openProduct(result.product.id);
         }}
         onUseExisting={(productId) => {
-          setContributionOpen(false);
+          setCreateOpen(false);
           openProduct(productId);
         }}
-        open={contributionOpen}
+        open={createOpen}
         workspaceId={workspace.id}
       />
 

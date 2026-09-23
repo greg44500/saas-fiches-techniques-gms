@@ -34,18 +34,8 @@ function getReferenceUnitLabel(metadata, unit) {
   return getMetadataLabel(metadata?.referenceUnits, unit, unit ?? 'Non renseignée');
 }
 
-function getRejectionReasonLabel(metadata, reason) {
-  return getMetadataLabel(
-    metadata?.rejectionReasons,
-    reason,
-    reason ?? 'Non renseigné',
-  );
-}
-
 function getProductStatusTone(status) {
   if (status === 'ACTIVE') return 'success';
-  if (status === 'PENDING_REVIEW') return 'warning';
-  if (status === 'REJECTED') return 'destructive';
   return 'neutral';
 }
 
@@ -66,33 +56,23 @@ function formatYield(value) {
 const IMPORT_CLASSIFICATION_PRESENTATION = Object.freeze({
   ATTACH_EXISTING: Object.freeze({
     label: 'Référence existante',
-    description: 'La déclinaison peut être ajoutée au catalogue.',
+    description: 'La déclinaison existe déjà dans le référentiel.',
     tone: 'success',
   }),
-  EXISTING_PENDING: Object.freeze({
-    label: 'Déjà en validation',
-    description: 'Une contribution identique est déjà en cours de validation.',
+  CREATE_PRODUCT: Object.freeze({
+    label: 'Nouveau Produit',
+    description: 'Une nouvelle identité Produit sera créée après confirmation.',
     tone: 'warning',
   }),
-  PROPOSE_PRODUCT: Object.freeze({
-    label: 'Nouveau produit',
-    description: 'Une nouvelle identité Produit sera proposée à validation.',
-    tone: 'warning',
-  }),
-  PROPOSE_VARIANT: Object.freeze({
+  CREATE_VARIANT: Object.freeze({
     label: 'Nouvelle déclinaison',
-    description: 'Une nouvelle déclinaison sera proposée à validation.',
+    description: 'Une nouvelle déclinaison sera créée après confirmation.',
     tone: 'warning',
   }),
   REVIEW_REQUIRED: Object.freeze({
     label: 'Décision requise',
-    description: 'Des produits proches doivent être examinés avant confirmation.',
+    description: 'Des Produits proches doivent être examinés avant confirmation.',
     tone: 'warning',
-  }),
-  PRIVATE_CONFLICT: Object.freeze({
-    label: 'Conflit non accessible',
-    description: 'Une référence équivalente existe mais ne peut pas être exposée.',
-    tone: 'destructive',
   }),
   INVALID: Object.freeze({
     label: 'Ligne invalide',
@@ -111,13 +91,15 @@ function getImportClassificationPresentation(classification) {
 }
 
 const PRODUCT_EVENT_LABELS = Object.freeze({
-  PRODUCT_APPROVED: 'Produit validé',
-  PRODUCT_REJECTED: 'Produit rejeté',
+  PRODUCT_CREATED: 'Produit créé',
+  PRODUCT_APPROVED: 'Produit activé (historique)',
+  PRODUCT_REJECTED: 'Produit rejeté (historique)',
   PRODUCT_UPDATED: 'Produit corrigé',
   PRODUCT_ARCHIVED: 'Produit archivé',
   PRODUCT_REACTIVATED: 'Produit réactivé',
-  VARIANT_APPROVED: 'Déclinaison validée',
-  VARIANT_REJECTED: 'Déclinaison rejetée',
+  VARIANT_CREATED: 'Déclinaison créée',
+  VARIANT_APPROVED: 'Déclinaison activée (historique)',
+  VARIANT_REJECTED: 'Déclinaison rejetée (historique)',
   VARIANT_UPDATED: 'Déclinaison corrigée',
   VARIANT_ARCHIVED: 'Déclinaison archivée',
   VARIANT_REACTIVATED: 'Déclinaison réactivée',
@@ -148,7 +130,6 @@ export {
   getProductStatusLabel,
   getProductStatusTone,
   getReferenceUnitLabel,
-  getRejectionReasonLabel,
   getVariantLabel,
   getWorkspaceProductStatusLabel,
 };

@@ -1,155 +1,97 @@
-import { baseApi } from '@/services/api/base-api';
+import { api } from '@/services/api';
 
-const PRODUCT_API_TAG_TYPES = Object.freeze([
-  'ProductCatalog',
-  'ProductDetail',
-  'ProductMetadata',
-  'ProductSummary',
-  'ProductImport',
-]);
-
-function compactProductQueryParams(params) {
-  return Object.fromEntries(
-    Object.entries(params).filter(([, value]) => (
-      value !== undefined
-      && value !== null
-      && value !== ''
-    )),
-  );
-}
-
-function productScopeId(workspaceId, productId) {
-  return workspaceId + ':' + productId;
-}
-
-const productApiBase = baseApi.enhanceEndpoints({
-  addTagTypes: [...PRODUCT_API_TAG_TYPES],
-});
-
-const productCatalogApi = productApiBase.injectEndpoints({
-  endpoints: (build) => ({
-    getProductMetadata: build.query({
+const productCatalogApi = api.injectEndpoints({
+  endpoints: (builder) => ({
+    getProductMetadata: builder.query({
       query: (workspaceId) => ({
         url: '/workspaces/' + workspaceId + '/products/metadata',
       }),
-      transformResponse: (response) => response?.data?.metadata ?? null,
-      providesTags: (_result, _error, workspaceId) => [
-        { type: 'ProductMetadata', id: workspaceId },
-      ],
+      transformResponse: (response) => response.data.metadata,
+      providesTags: ['ProductCatalog'],
     }),
-    getProductSummary: build.query({
+    getProductSummary: builder.query({
       query: (workspaceId) => ({
         url: '/workspaces/' + workspaceId + '/products/summary',
       }),
-      transformResponse: (response) => response?.data?.summary ?? null,
-      providesTags: (_result, _error, workspaceId) => [
-        { type: 'ProductSummary', id: workspaceId },
-      ],
+      transformResponse: (response) => response.data.summary,
+      providesTags: ['ProductCatalog'],
     }),
-    searchProducts: build.query({
+    searchProducts: builder.query({
       query: ({
         workspaceId,
-        q,
         scope = 'WORKSPACE',
+        q,
         categoryId,
         status,
         page = 1,
         limit = 20,
       }) => ({
         url: '/workspaces/' + workspaceId + '/products/search',
-        params: compactProductQueryParams({
-          q,
+        params: {
           scope,
+          q,
           categoryId,
           status,
           page,
           limit,
-        }),
+        },
       }),
       transformResponse: (response) => ({
-        results: response?.data?.results ?? [],
-        pagination: response?.meta ?? null,
+        results: response.data.results,
+        pagination: response.meta,
       }),
-      providesTags: (result, _error, { workspaceId }) => [
-        { type: 'ProductCatalog', id: workspaceId },
-        ...(result?.results ?? []).map(({ product }) => ({
-          type: 'ProductDetail',
-          id: productScopeId(workspaceId, product.id),
-        })),
-      ],
+      providesTags: ['ProductCatalog'],
     }),
-    getWorkspaceProductDetail: build.query({
+    getWorkspaceProductDetail: builder.query({
       query: ({ workspaceId, productId }) => ({
         url: '/workspaces/' + workspaceId + '/products/' + productId,
       }),
-      transformResponse: (response) => response?.data ?? null,
-      providesTags: (_result, _error, { workspaceId, productId }) => [
-        { type: 'ProductDetail', id: productScopeId(workspaceId, productId) },
-      ],
+      transformResponse: (response) => response.data,
+      providesTags: ['ProductCatalog'],
     }),
-    duplicateCheckProduct: build.mutation({
-      query: ({ workspaceId, name, aliases = [] }) => ({
+    duplicateCheckProduct: builder.mutation({
+      query: ({ workspaceId, name, aliases }) => ({
         url: '/workspaces/' + workspaceId + '/products/duplicate-check',
         method: 'POST',
         body: { name, aliases },
       }),
-      transformResponse: (response) => response?.data ?? null,
+      transformResponse: (response) => response.data,
     }),
-    contributeProduct: build.mutation({
+    createProduct: builder.mutation({
       query: ({ workspaceId, ...body }) => ({
-        url: '/workspaces/' + workspaceId + '/products/contributions',
+        url: '/workspaces/' + workspaceId + '/products',
         method: 'POST',
         body,
       }),
-      transformResponse: (response) => response?.data ?? null,
-      invalidatesTags: (_result, _error, { workspaceId }) => [
-        { type: 'ProductCatalog', id: workspaceId },
-        { type: 'ProductSummary', id: workspaceId },
-      ],
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductCatalog', 'ProductReference'],
     }),
-    contributeVariant: build.mutation({
+    createVariant: builder.mutation({
       query: ({ workspaceId, productId, ...body }) => ({
-        url: '/workspaces/' + workspaceId + '/products/' + productId + '/variants/contributions',
+        url: '/workspaces/' + workspaceId + '/products/' + productId + '/variants',
         method: 'POST',
         body,
       }),
-      transformResponse: (response) => response?.data ?? null,
-      invalidatesTags: (_result, _error, { workspaceId, productId }) => [
-        { type: 'ProductCatalog', id: workspaceId },
-        { type: 'ProductSummary', id: workspaceId },
-        { type: 'ProductDetail', id: productScopeId(workspaceId, productId) },
-      ],
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductCatalog', 'ProductReference'],
     }),
-    attachProductVariant: build.mutation({
+    attachProductVariant: builder.mutation({
       query: ({ workspaceId, variantId }) => ({
         url: '/workspaces/' + workspaceId + '/products/catalog/' + variantId,
         method: 'PUT',
-        body: {},
       }),
-      transformResponse: (response) => response?.data?.workspaceEntry ?? null,
-      invalidatesTags: (_result, _error, { workspaceId, productId }) => [
-        { type: 'ProductCatalog', id: workspaceId },
-        { type: 'ProductSummary', id: workspaceId },
-        ...(productId
-          ? [{ type: 'ProductDetail', id: productScopeId(workspaceId, productId) }]
-          : []),
-      ],
+      transformResponse: (response) => response.data.workspaceEntry,
+      invalidatesTags: ['ProductCatalog'],
     }),
-    archiveProductVariant: build.mutation({
+    archiveProductVariant: builder.mutation({
       query: ({ workspaceId, variantId }) => ({
         url: '/workspaces/' + workspaceId + '/products/catalog/' + variantId,
         method: 'DELETE',
       }),
-      transformResponse: (response) => response?.data?.workspaceEntry ?? null,
-      invalidatesTags: (_result, _error, { workspaceId, productId }) => [
-        { type: 'ProductCatalog', id: workspaceId },
-        { type: 'ProductSummary', id: workspaceId },
-        ...(productId
-          ? [{ type: 'ProductDetail', id: productScopeId(workspaceId, productId) }]
-          : []),
-      ],
+      transformResponse: (response) => response.data.workspaceEntry,
+      invalidatesTags: ['ProductCatalog'],
     }),
-    inspectProductImport: build.mutation({
+    inspectProductImport: builder.mutation({
       query: ({ workspaceId, file }) => {
         const body = new FormData();
         body.append('file', file);
@@ -160,27 +102,24 @@ const productCatalogApi = productApiBase.injectEndpoints({
           body,
         };
       },
-      transformResponse: (response) => response?.data ?? null,
+      transformResponse: (response) => response.data,
     }),
-    previewProductImport: build.mutation({
-      query: ({ workspaceId, importId, mapping, defaults = {} }) => ({
+    previewProductImport: builder.mutation({
+      query: ({ workspaceId, importId, mapping, defaults }) => ({
         url: '/workspaces/' + workspaceId + '/products/imports/' + importId + '/preview',
         method: 'POST',
         body: { mapping, defaults },
       }),
-      transformResponse: (response) => response?.data ?? null,
+      transformResponse: (response) => response.data,
     }),
-    commitProductImport: build.mutation({
-      query: ({ workspaceId, importId, decisions = [] }) => ({
+    commitProductImport: builder.mutation({
+      query: ({ workspaceId, importId, decisions }) => ({
         url: '/workspaces/' + workspaceId + '/products/imports/' + importId + '/commit',
         method: 'POST',
         body: { decisions },
       }),
-      transformResponse: (response) => response?.data ?? null,
-      invalidatesTags: (_result, _error, { workspaceId }) => [
-        { type: 'ProductCatalog', id: workspaceId },
-        { type: 'ProductSummary', id: workspaceId },
-      ],
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductCatalog', 'ProductReference'],
     }),
   }),
 });
@@ -189,8 +128,8 @@ export const {
   useArchiveProductVariantMutation,
   useAttachProductVariantMutation,
   useCommitProductImportMutation,
-  useContributeProductMutation,
-  useContributeVariantMutation,
+  useCreateProductMutation,
+  useCreateVariantMutation,
   useDuplicateCheckProductMutation,
   useGetProductMetadataQuery,
   useGetProductSummaryQuery,
@@ -201,9 +140,4 @@ export const {
   useSearchProductsQuery,
 } = productCatalogApi;
 
-export {
-  PRODUCT_API_TAG_TYPES,
-  compactProductQueryParams,
-  productCatalogApi,
-  productScopeId,
-};
+export { productCatalogApi };

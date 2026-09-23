@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, Pencil, Plus } from 'lucide-react';
+import { Eye, FileUp, Pencil, Plus } from 'lucide-react';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { DataTable, DataTableActions } from '@/components/data-display/data-table';
@@ -29,6 +29,8 @@ import {
   useListProductReferenceProductsQuery,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
+import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
+import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
 import { ProductReferenceCategoryDialog } from '@/features/products/components/product-reference-category-dialog';
 import { ProductReferenceDetailsDrawer } from '@/features/products/components/product-reference-details-drawer';
 import {
@@ -44,12 +46,14 @@ const ALL_REFERENCE_CATEGORIES = '__ALL__';
 function ProductReferencePage({ canManage }) {
   const { toast } = useToast();
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
-  const [section, setSection] = useState('pending');
+  const [section, setSection] = useState('reference');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(ALL_REFERENCE_CATEGORIES);
   const [referenceStatus, setReferenceStatus] = useState('ACTIVE');
   const [drawerState, setDrawerState] = useState({ open: false, productId: null });
+  const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [categoryLifecycle, setCategoryLifecycle] = useState(null);
 
@@ -57,7 +61,7 @@ function ProductReferencePage({ canManage }) {
   const metadata = metadataQuery.data;
   const productsQuery = useListProductReferenceProductsQuery(
     {
-      status: section === 'pending' ? 'PENDING_REVIEW' : referenceStatus,
+      status: referenceStatus,
       categoryId: categoryId === ALL_REFERENCE_CATEGORIES ? undefined : categoryId,
       q: search || undefined,
       page,
@@ -95,7 +99,7 @@ function ProductReferencePage({ canManage }) {
     setSearch('');
     setSearchInput('');
     setCategoryId(ALL_REFERENCE_CATEGORIES);
-    if (nextSection === 'reference') setReferenceStatus('ACTIVE');
+    setReferenceStatus('ACTIVE');
   }
 
   function applySearch(event) {
@@ -150,7 +154,7 @@ function ProductReferencePage({ canManage }) {
     {
       id: 'category',
       header: 'Catégorie',
-      cell: (product) => product.category?.name ?? 'Sans catégorie',
+      cell: (product) => product.category?.name ?? 'Catégorie non renseignée',
     },
     {
       id: 'status',
@@ -242,33 +246,52 @@ function ProductReferencePage({ canManage }) {
     <div className="space-y-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Produits</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Référentiel Produits</h1>
           <InfoTooltip
-            content="Gouvernez les contributions, le référentiel global et les catégories Produit."
-            label="À propos de la gouvernance Produits"
+            content="Alimentez et maintenez le référentiel Produit commun. Cette autorité métier est indépendante des rôles Platform."
+            label="À propos du référentiel Produits"
           />
         </div>
 
-        {canManage && section === 'categories' && (
-          <Button
-            onClick={() => setCategoryDialog({ open: true, category: null })}
-            type="button"
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            Créer une catégorie
-          </Button>
+        {canManage && (
+          <div className="flex flex-wrap gap-2">
+            {section === 'reference' && (
+              <>
+                <Button onClick={() => setCreateOpen(true)} type="button">
+                  <Plus aria-hidden="true" className="size-4" />
+                  Créer un Produit
+                </Button>
+                <Button
+                  onClick={() => setImportOpen(true)}
+                  type="button"
+                  variant="outline"
+                >
+                  <FileUp aria-hidden="true" className="size-4" />
+                  Importer
+                </Button>
+              </>
+            )}
+            {section === 'categories' && (
+              <Button
+                onClick={() => setCategoryDialog({ open: true, category: null })}
+                type="button"
+              >
+                <Plus aria-hidden="true" className="size-4" />
+                Créer une catégorie
+              </Button>
+            )}
+          </div>
         )}
       </header>
 
       <Tabs onValueChange={changeSection} value={section}>
-        <TabsList aria-label="Gouvernance Produits" variant="section">
-          <TabsTrigger value="pending" variant="section">À valider</TabsTrigger>
+        <TabsList aria-label="Administration du référentiel Produits" variant="section">
           <TabsTrigger value="reference" variant="section">Référentiel</TabsTrigger>
           <TabsTrigger value="categories" variant="section">Catégories</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      {section !== 'categories' && (
+      {section === 'reference' && (
         <section className="rounded-xl border border-border bg-card">
           <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(260px,1fr)_240px_220px]">
             <form className="flex gap-2" onSubmit={applySearch}>
@@ -302,56 +325,46 @@ function ProductReferencePage({ canManage }) {
               </SelectContent>
             </Select>
 
-            {section === 'reference' ? (
-              <Select
-                items={referenceStatusItems}
-                onValueChange={(value) => {
-                  setReferenceStatus(value);
-                  setPage(1);
-                }}
-                value={referenceStatus}
-              >
-                <SelectTrigger aria-label="Filtrer par statut du référentiel">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {referenceStatusItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <div className="flex items-center text-sm text-muted-foreground">
-                Contributions en attente de décision
-              </div>
-            )}
+            <Select
+              items={referenceStatusItems}
+              onValueChange={(value) => {
+                setReferenceStatus(value);
+                setPage(1);
+              }}
+              value={referenceStatus}
+            >
+              <SelectTrigger aria-label="Filtrer par statut du référentiel">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {referenceStatusItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {initialLoading ? (
             <p className="p-5 text-sm text-muted-foreground">Chargement du référentiel…</p>
           ) : hasError ? (
             <ErrorState
-              description="La gouvernance Produits n’a pas pu être chargée."
+              description="Le référentiel Produits n’a pas pu être chargé."
               onRetry={retry}
               title="Produits indisponibles"
             />
           ) : (
             <>
               <DataTable
-                caption={section === 'pending' ? 'Produits à valider' : 'Référentiel global'}
+                caption="Référentiel global"
                 columns={productColumns}
                 data={productsQuery.data?.products ?? []}
                 emptyContent={(
                   <EmptyState
                     className="p-0"
-                    description={
-                      section === 'pending'
-                        ? 'Les nouvelles contributions apparaîtront ici.'
-                        : 'Aucun Produit ne correspond aux critères.'
-                    }
-                    title={section === 'pending' ? 'Aucune contribution à valider' : 'Aucun Produit'}
+                    description="Aucun Produit ne correspond aux critères."
+                    title="Aucun Produit"
                   />
                 )}
                 getRowKey={(product) => product.id}
@@ -359,7 +372,7 @@ function ProductReferencePage({ canManage }) {
               />
               <div className="px-5 pb-5">
                 <DataPagination
-                  ariaLabel="Pagination de la gouvernance Produits"
+                  ariaLabel="Pagination du référentiel Produits"
                   disabled={productsQuery.isFetching}
                   onPageChange={setPage}
                   onPageSizeChange={setPageSize}
@@ -391,7 +404,7 @@ function ProductReferencePage({ canManage }) {
               emptyContent={(
                 <EmptyState
                   className="p-0"
-                  description="Créez la première catégorie avant de valider des Produits."
+                  description="Créez la première catégorie du référentiel Produit."
                   title="Aucune catégorie"
                 />
               )}
@@ -408,6 +421,40 @@ function ProductReferencePage({ canManage }) {
         onClose={() => setDrawerState((current) => ({ ...current, open: false }))}
         open={drawerState.open}
         productId={drawerState.productId}
+      />
+
+      <ProductCreateDialog
+        metadata={metadata}
+        mode="global"
+        onClose={() => setCreateOpen(false)}
+        onCreated={(result) => {
+          setCreateOpen(false);
+          toast({
+            title: 'Produit créé dans le référentiel',
+            description: result?.product?.name,
+            variant: 'success',
+          });
+          if (result?.product?.id) openProduct(result.product.id);
+        }}
+        onUseExisting={(productId) => {
+          setCreateOpen(false);
+          openProduct(productId);
+        }}
+        open={createOpen}
+      />
+
+      <ProductImportDialog
+        metadata={metadata}
+        mode="global"
+        onClose={() => setImportOpen(false)}
+        onCommitted={(result) => {
+          toast({
+            title: 'Import du référentiel terminé',
+            description: String(result?.succeeded ?? 0) + ' ligne(s) traitée(s).',
+            variant: 'success',
+          });
+        }}
+        open={importOpen}
       />
 
       <ProductReferenceCategoryDialog

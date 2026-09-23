@@ -20,7 +20,7 @@ function ProductsDashboardWidget() {
             <div className="flex items-start gap-2">
               <h2 className="text-lg font-semibold">Catalogue Produits</h2>
               <InfoTooltip
-                content="Références actives et contributions Produit encore en validation."
+                content="Références actives actuellement rattachées à votre espace de travail."
                 label="À propos du catalogue Produits"
               />
             </div>
@@ -59,23 +59,13 @@ function ProductsDashboardWidget() {
             title="Catalogue indisponible"
           />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-border p-4">
-              <p className="text-2xl font-semibold">
-                {summary?.activeCatalogEntries ?? 0}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Références actives
-              </p>
-            </div>
-            <div className="rounded-lg border border-border p-4">
-              <p className="text-2xl font-semibold">
-                {summary?.pendingContributions ?? 0}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Contributions en validation
-              </p>
-            </div>
+          <div className="rounded-lg border border-border p-4">
+            <p className="text-2xl font-semibold">
+              {summary?.activeCatalogEntries ?? 0}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Références actives
+            </p>
           </div>
         )}
       </CardContent>
