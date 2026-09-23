@@ -1,7 +1,7 @@
 # M-002 — Critères d'acceptation et ordre de finalisation
 
 **Statut : IMPLÉMENTATION ALIGNÉE SUR LE CONTRAT RECADRÉ — gates et validation visuelle encore à exécuter**  
-**Module : Catalogue Produits / Produits canoniques**  
+**Module : Référentiel Produits / Produits canoniques**  
 **Branche :** `feature/m002-catalogue-produits`
 
 ## 1. Discipline du lot
@@ -139,11 +139,15 @@ Implémenté :
 - [x] duplicate-check ;
 - [x] création Produit ;
 - [x] création Déclinaison ;
-- [x] ajout/retrait catalogue ;
+- [x] ajout/retrait de Mon référentiel ;
 - [x] import inspect/preview/commit ;
 - [x] navigation Produits ;
-- [x] Mon catalogue / Tout le référentiel ;
-- [x] recherche, filtres, pagination ;
+- [x] Référentiel global / Mon référentiel ;
+- [x] recherche prédictive et explicite ;
+- [x] filtre par catégorie ;
+- [x] pagination ;
+- [x] aucune colonne redondante d'appartenance au Workspace ;
+- [x] aucun filtre d'état redondant dans Mon référentiel ;
 - [x] drawer Produit ;
 - [x] widget Dashboard sans compteur de validation.
 
@@ -248,10 +252,15 @@ npm run release:verify
 
 Vérifier au minimum :
 
+- Référentiel global proposé en premier lorsque la capability le permet ;
+- Mon référentiel en second onglet ;
+- recherche prédictive depuis les deux vues ;
+- alignement visuel champ de recherche / bouton ;
+- absence de colonne et filtre d'état redondants ;
 - création Workspace ;
 - catégorie obligatoire ;
 - anti-doublon exact et candidats proches ;
-- ajout automatique au catalogue ;
+- ajout automatique à Mon référentiel ;
 - création d'une déclinaison ;
 - import Workspace ;
 - détection colonnes M-003 ;
