@@ -16,6 +16,9 @@ import {
     previewProductImport,
 } from './productCatalogImport.service.js';
 import {
+    productCatalogImportUploadService,
+} from './productCatalogImportUpload.service.js';
+import {
     PRODUCT_IMPORT_SCOPE,
 } from './productCatalog.registry.js';
 import {
@@ -103,11 +106,16 @@ const createVariantController = async (req, res) => {
 };
 
 const inspectImport = async (req, res) => {
-    const result = await inspectProductImport({
-        scope: PRODUCT_IMPORT_SCOPE.GLOBAL,
-        actorId: req.user._id,
-        file: req.file,
-    });
+    const result = await productCatalogImportUploadService
+        .processTemporaryUpload({
+            file: req.file,
+            consume: (inspectedFile) =>
+                inspectProductImport({
+                    scope: PRODUCT_IMPORT_SCOPE.GLOBAL,
+                    actorId: req.user._id,
+                    file: inspectedFile,
+                }),
+        });
 
     res.status(201).json({ status: 'success', data: result });
 };

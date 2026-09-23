@@ -6,7 +6,23 @@ import {
     describe,
     expect,
     it,
+    vi,
 } from 'vitest';
+
+vi.mock(
+    '../../../services/malwareScan/malwareScan.service.js',
+    () => ({
+        malwareScanService: {
+            scanFile: vi.fn().mockResolvedValue({
+                status: 'clean',
+                provider: 'test-scanner',
+                scannedAt: new Date('2026-09-23T12:00:00.000Z'),
+                threatName: null,
+                errorCode: null,
+            }),
+        },
+    }),
+);
 
 import { app } from '../../../app.js';
 import {
@@ -148,6 +164,45 @@ describe('M-002 global product reference HTTP contract', () => {
 
         expect(created.status).toBe(201);
         expect(created.body.data.product.status).toBe('ACTIVE');
+    });
+
+    it('inspecte et prévisualise un import global via le pipeline sécurisé', async () => {
+        const category = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Import global' });
+
+        expect(category.status).toBe(201);
+
+        const inspect = await request(app)
+            .post('/api/product-reference/imports/inspect')
+            .set(bearer(governorToken))
+            .attach(
+                'file',
+                Buffer.from('Produit\nPanais global', 'utf8'),
+                'produits.csv',
+            );
+
+        expect(inspect.status).toBe(201);
+        expect(inspect.body.data.scope).toBe('GLOBAL');
+
+        const preview = await request(app)
+            .post(
+                '/api/product-reference/imports/'
+                + inspect.body.data.importId
+                + '/preview',
+            )
+            .set(bearer(governorToken))
+            .send({
+                mapping: { name: 0 },
+                defaults: {
+                    referenceUnit: 'KG',
+                    categoryId: category.body.data.category.id,
+                },
+            });
+
+        expect(preview.status).toBe(200);
+        expect(preview.body.data.counts.CREATE_PRODUCT).toBe(1);
     });
 
     it('ne donne aucun droit métier global implicite à un Super Admin Platform', async () => {

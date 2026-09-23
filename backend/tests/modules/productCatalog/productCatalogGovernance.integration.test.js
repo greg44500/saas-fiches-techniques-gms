@@ -8,6 +8,9 @@ import {
 } from 'vitest';
 
 import {
+    CanonicalProduct,
+} from '../../../modules/productCatalog/canonicalProduct.model.js';
+import {
     createCategory,
     createGlobalProduct,
     createGlobalVariant,
@@ -99,7 +102,7 @@ describe('M-002 product reference governance', () => {
         expect(variant.processingState).toBe('cuit');
     });
 
-    it('ne conserve aucun ownership Workspace sur une identité créée depuis un Workspace', async () => {
+    it('conserve l origine Workspace sans en faire un ownership du Produit', async () => {
         const category = await createCategory({
             actorId: ownerContext.owner._id,
             name: 'Fruits',
@@ -112,9 +115,17 @@ describe('M-002 product reference governance', () => {
             variant: { referenceUnit: 'KG' },
         });
 
-        expect(created.product.contributedFromWorkspace).toBe(
-            ownerContext.workspace._id.toString(),
-        );
+        const persisted = await CanonicalProduct
+            .findById(created.product.id)
+            .lean();
+
+        expect(
+            persisted.contributedFromWorkspace.toString(),
+        ).toBe(ownerContext.workspace._id.toString());
+        expect(CanonicalProduct.schema.path('workspace')).toBeUndefined();
+
+        // L'origine de création reste une donnée interne d'audit.
+        expect(created.product.contributedFromWorkspace).toBeUndefined();
         expect(created.product.workspace).toBeUndefined();
     });
 
