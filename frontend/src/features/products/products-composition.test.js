@@ -3,10 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { applicationDashboardWidgets } from '@/app/application-dashboard';
 import { APPLICATION_FRONTEND_ROUTES } from '@/app/application-routes';
 import { workspaceNavigation } from '@/app/workspace-navigation';
-import {
-  PRODUCT_CAPABILITY,
-  PRODUCT_PERMISSION,
-} from '@/features/products/constants/product-permissions';
+import { PRODUCT_PERMISSION } from '@/features/products/constants/product-permissions';
 import { filterWorkspaceNavigation } from '@/features/workspace/components/workspace-sidebar';
 
 function hasProductsNavigation(navigation) {
@@ -42,33 +39,23 @@ describe('products frontend composition', () => {
     ))).toBe(false);
   });
 
-  it('affiche la navigation Workspace avec product:read', () => {
-    expect(hasProductsNavigation(filterWorkspaceNavigation(
-      workspaceNavigation,
-      {
-        can: (permission) => permission === PRODUCT_PERMISSION.READ,
-        hasFeature: (feature) => feature === PRODUCT_CAPABILITY.REFERENCE_ACCESS,
-      },
-    ))).toBe(true);
-  });
-
-  it('masque la navigation Workspace sans product_reference_access', () => {
+  it('affiche la navigation Workspace avec product:read indépendamment des capabilities du référentiel', () => {
     expect(hasProductsNavigation(filterWorkspaceNavigation(
       workspaceNavigation,
       {
         can: (permission) => permission === PRODUCT_PERMISSION.READ,
         hasFeature: () => false,
       },
-    ))).toBe(false);
+    ))).toBe(true);
   });
 
-  it('compose le widget Dashboard Produits avec product:read et product_reference_access', () => {
+  it('compose le widget Dashboard Produits avec product:read', () => {
     expect(applicationDashboardWidgets).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: 'gms.products-catalog',
           access: expect.objectContaining({
-            features: [PRODUCT_CAPABILITY.REFERENCE_ACCESS],
+            features: [],
             permissions: [PRODUCT_PERMISSION.READ],
           }),
         }),

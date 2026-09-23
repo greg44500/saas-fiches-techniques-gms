@@ -1,11 +1,9 @@
-import { PRODUCT_CAPABILITY } from '@/features/products/constants/product-permissions';
 import { WORKSPACE_FEATURE } from '@/features/workspace/constants/workspace-features';
 
 const WORKSPACE_ROUTE_FEATURE_REQUIREMENTS = Object.freeze({
   activity: WORKSPACE_FEATURE.AUDIT_LOGS,
   members: WORKSPACE_FEATURE.TEAM_MANAGEMENT,
   roles: WORKSPACE_FEATURE.TEAM_MANAGEMENT,
-  products: PRODUCT_CAPABILITY.REFERENCE_ACCESS,
 });
 
 /**

@@ -91,6 +91,14 @@ function ProductsPage() {
     if (totalPages && page > totalPages) setPage(totalPages);
   }, [page, productsQuery.data?.pagination?.totalPages, setPage]);
 
+  useEffect(() => {
+    if (!canReferenceAccess && scope === 'REFERENCE') {
+      setScope('WORKSPACE');
+      setPage(1);
+      setStatus(ALL_WORKSPACE_STATUSES);
+    }
+  }, [canReferenceAccess, scope, setPage]);
+
   const metadata = metadataQuery.data;
   const results = productsQuery.data?.results ?? [];
   const mutationPending = attachState.isLoading || archiveState.isLoading;
@@ -100,6 +108,7 @@ function ProductsPage() {
   const canGovernReference = globalPermissions.has(
     PRODUCT_REFERENCE_PERMISSION.READ,
   );
+  const canReferenceAccess = hasFeature(PRODUCT_CAPABILITY.REFERENCE_ACCESS);
   const canContribute = (
     can(PRODUCT_PERMISSION.CONTRIBUTE)
     && hasFeature(PRODUCT_CAPABILITY.CONTRIBUTION)
@@ -305,7 +314,11 @@ function ProductsPage() {
       <Tabs onValueChange={changeScope} value={scope}>
         <TabsList aria-label="Portée du catalogue" variant="section">
           <TabsTrigger value="WORKSPACE" variant="section">Mon catalogue</TabsTrigger>
-          <TabsTrigger value="REFERENCE" variant="section">Tout le référentiel</TabsTrigger>
+          {canReferenceAccess && (
+            <TabsTrigger value="REFERENCE" variant="section">
+              Tout le référentiel
+            </TabsTrigger>
+          )}
         </TabsList>
       </Tabs>
 

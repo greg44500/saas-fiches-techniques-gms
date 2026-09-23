@@ -203,4 +203,19 @@ describe('ProductsPage', () => {
     expect(screen.queryByRole('button', { name: 'Retirer' }))
       .not.toBeInTheDocument();
   });
+
+  it('conserve Mon catalogue mais masque le référentiel global sans product_reference_access', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: { id: 'workspace-1', name: 'Acme' },
+      can: () => true,
+      hasFeature: () => false,
+    });
+
+    renderPage();
+
+    expect(screen.getByText('Carotte')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Mon catalogue' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Tout le référentiel' }))
+      .not.toBeInTheDocument();
+  });
 });
