@@ -41,6 +41,9 @@ import {
     PRODUCT_CATALOG_PERMISSION,
 } from '../../../modules/productCatalog/productCatalogPermission.registry.js';
 import {
+    createActiveProductReference,
+} from '../../helpers/productCatalogTest.fixtures.js';
+import {
     bearer,
     createWorkspaceMemberFixture,
     createWorkspaceOwnerFixture,
@@ -77,8 +80,44 @@ beforeEach(async () => {
     ));
 });
 
-const basePath = () =>
-    `/api/workspaces/${ownerContext.workspace._id.toString()}/products`;
+const productBasePath = (context = ownerContext) =>
+    `/api/workspaces/${context.workspace._id.toString()}/products`;
+
+const basePath = () => productBasePath();
+
+const inspectAndPreview = async ({
+    context = ownerContext,
+    token,
+    csv,
+}) => {
+    const inspect = await request(app)
+        .post(`${productBasePath(context)}/imports/inspect`)
+        .set(bearer(token))
+        .attach(
+            'file',
+            Buffer.from(csv, 'utf8'),
+            'produits.csv',
+        );
+
+    expect(inspect.status).toBe(201);
+
+    const preview = await request(app)
+        .post(
+            `${productBasePath(context)}/imports/${inspect.body.data.importId}/preview`,
+        )
+        .set(bearer(token))
+        .send({
+            mapping: { name: 0 },
+            defaults: { referenceUnit: 'KG' },
+        });
+
+    expect(preview.status).toBe(200);
+
+    return {
+        importId: inspect.body.data.importId,
+        preview,
+    };
+};
 
 describe('M-002 product catalog HTTP contract', () => {
     it('expose metadata, contribution, recherche et détail au Owner', async () => {
@@ -180,6 +219,157 @@ describe('M-002 product catalog HTTP contract', () => {
             );
 
         expect(response.status).toBe(403);
+    });
+
+    it('rattache une référence existante sans exiger product:contribute', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Farine de test',
+        });
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            permissions: [
+                PRODUCT_CATALOG_PERMISSION.READ,
+                PRODUCT_CATALOG_PERMISSION.CATALOG_MANAGE,
+            ],
+        });
+
+        const { importId, preview } =
+            await inspectAndPreview({
+                token: member.token,
+                csv: 'Produit\nFarine de test',
+            });
+
+        expect(
+            preview.body.data.counts.ATTACH_EXISTING,
+        ).toBe(1);
+
+        const committed = await request(app)
+            .post(
+                `${basePath()}/imports/${importId}/commit`,
+            )
+            .set(bearer(member.token))
+            .send({ decisions: [] });
+
+        expect(committed.status).toBe(200);
+        expect(
+            committed.body.data.results,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                status: 'ATTACHED_EXISTING',
+                variantId:
+                    reference.variant._id.toString(),
+            }),
+        ]));
+    });
+
+    it('crée une contribution sans exiger product:catalog:manage', async () => {
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            permissions: [
+                PRODUCT_CATALOG_PERMISSION.READ,
+                PRODUCT_CATALOG_PERMISSION.CONTRIBUTE,
+            ],
+        });
+
+        const { importId, preview } =
+            await inspectAndPreview({
+                token: member.token,
+                csv: 'Produit\nTopinambour de test',
+            });
+
+        expect(
+            preview.body.data.counts.PROPOSE_PRODUCT,
+        ).toBe(1);
+
+        const committed = await request(app)
+            .post(
+                `${basePath()}/imports/${importId}/commit`,
+            )
+            .set(bearer(member.token))
+            .send({ decisions: [] });
+
+        expect(committed.status).toBe(200);
+        expect(
+            committed.body.data.results,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                status: 'PROPOSED_PRODUCT',
+            }),
+        ]));
+    });
+
+    it('refuse une création importée sans product_contribution', async () => {
+        const restricted = await createWorkspaceOwnerFixture();
+        await enableProductFeature({
+            context: restricted,
+            featureKey:
+                PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT,
+        });
+
+        const { importId, preview } =
+            await inspectAndPreview({
+                context: restricted,
+                token: restricted.token,
+                csv: 'Produit\nCrosne de test',
+            });
+
+        expect(
+            preview.body.data.counts.PROPOSE_PRODUCT,
+        ).toBe(1);
+
+        const committed = await request(app)
+            .post(
+                `${productBasePath(restricted)}/imports/${importId}/commit`,
+            )
+            .set(bearer(restricted.token))
+            .send({ decisions: [] });
+
+        expect(committed.status).toBe(403);
+    });
+
+    it('refuse un rattachement importé sans product:catalog:manage', async () => {
+        const restricted = await createWorkspaceOwnerFixture();
+        await enableProductFeature({
+            context: restricted,
+            featureKey:
+                PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT,
+        });
+
+        await createActiveProductReference({
+            actorId: restricted.owner._id,
+            name: 'Polenta de test',
+        });
+
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: restricted.workspace._id,
+            actorId: restricted.owner._id,
+            permissions: [
+                PRODUCT_CATALOG_PERMISSION.READ,
+            ],
+        });
+
+        const { importId, preview } =
+            await inspectAndPreview({
+                context: restricted,
+                token: member.token,
+                csv: 'Produit\nPolenta de test',
+            });
+
+        expect(
+            preview.body.data.counts.ATTACH_EXISTING,
+        ).toBe(1);
+
+        const committed = await request(app)
+            .post(
+                `${productBasePath(restricted)}/imports/${importId}/commit`,
+            )
+            .set(bearer(member.token))
+            .send({ decisions: [] });
+
+        expect(committed.status).toBe(403);
     });
 
     it('inspecte et prévisualise un CSV temporaire', async () => {
