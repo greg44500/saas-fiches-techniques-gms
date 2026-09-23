@@ -20,6 +20,12 @@ async function prepareE2eEnvironment() {
   const { seedSuperAdmin } = await import(
     '../../backend/seeds/seedSuperAdmin.js'
   );
+  const {
+    resolveM002GovernanceFounderId,
+    seedM002ProductGovernance,
+  } = await import(
+    '../../backend/seeds/seedM002ProductGovernance.js'
+  );
 
   await connectDB(process.env.MONGODB_URI);
 
@@ -33,6 +39,11 @@ async function prepareE2eEnvironment() {
     await seedPlans();
     await seedPlatformRoles();
     await seedSuperAdmin(E2E_FOUNDER);
+
+    const founderId = await resolveM002GovernanceFounderId();
+    await seedM002ProductGovernance({
+      userId: founderId,
+    });
   } finally {
     await mongoose.disconnect();
   }
