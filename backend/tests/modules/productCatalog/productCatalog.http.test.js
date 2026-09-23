@@ -28,6 +28,16 @@ vi.mock(
 
 import { app } from '../../../app.js';
 import {
+    ENTITLEMENT_OVERRIDE_SOURCE,
+    ENTITLEMENT_OVERRIDE_TARGET,
+} from '../../../constants/entitlementOverride.constants.js';
+import {
+    EntitlementOverride,
+} from '../../../modules/entitlementOverride/entitlementOverride.model.js';
+import {
+    PRODUCT_CATALOG_FEATURE,
+} from '../../../modules/productCatalog/productCatalogCapability.registry.js';
+import {
     PRODUCT_CATALOG_PERMISSION,
 } from '../../../modules/productCatalog/productCatalogPermission.registry.js';
 import {
@@ -38,8 +48,33 @@ import {
 
 let ownerContext;
 
+const enableProductFeature = async ({
+    context,
+    featureKey,
+}) => EntitlementOverride.create({
+    workspace: context.workspace._id,
+    targetType: ENTITLEMENT_OVERRIDE_TARGET.FEATURE,
+    featureKey,
+    featureEnabled: true,
+    source: ENTITLEMENT_OVERRIDE_SOURCE.ADMINISTRATIVE,
+    startsAt: new Date(Date.now() - 1_000),
+    reason: 'Activation test M-002',
+    grantedBy: context.owner._id,
+});
+
 beforeEach(async () => {
     ownerContext = await createWorkspaceOwnerFixture();
+
+    await Promise.all([
+        PRODUCT_CATALOG_FEATURE.REFERENCE_ACCESS,
+        PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT,
+        PRODUCT_CATALOG_FEATURE.CONTRIBUTION,
+    ].map((featureKey) =>
+        enableProductFeature({
+            context: ownerContext,
+            featureKey,
+        }),
+    ));
 });
 
 const basePath = () =>
@@ -128,6 +163,23 @@ describe('M-002 product catalog HTTP contract', () => {
             .set(bearer(ownerContext.token));
 
         expect(invalid.status).toBe(400);
+    });
+
+    it('refuse l’import lorsque la capability commerciale est absente', async () => {
+        const restricted = await createWorkspaceOwnerFixture();
+
+        const response = await request(app)
+            .post(
+                `/api/workspaces/${restricted.workspace._id.toString()}/products/imports/inspect`,
+            )
+            .set(bearer(restricted.token))
+            .attach(
+                'file',
+                Buffer.from('Produit\nHaricot blanc', 'utf8'),
+                'produits.csv',
+            );
+
+        expect(response.status).toBe(403);
     });
 
     it('inspecte et prévisualise un CSV temporaire', async () => {

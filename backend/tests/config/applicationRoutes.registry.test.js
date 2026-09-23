@@ -26,8 +26,8 @@ describe('application backend route composition', () => {
                     router: expect.any(Function),
                 }),
                 expect.objectContaining({
-                    key: 'platform-products',
-                    mountPath: '/api/platform/products',
+                    key: 'product-reference-governance',
+                    mountPath: '/api/product-reference',
                     router: expect.any(Function),
                 }),
             ]),

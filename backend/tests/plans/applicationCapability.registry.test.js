@@ -11,6 +11,9 @@ import {
     composePlanCapabilityExtensions,
     createPlanCapabilityRegistry,
 } from '../../modules/plan/planCapability.registry.js';
+import {
+    PRODUCT_CATALOG_FEATURE,
+} from '../../modules/productCatalog/productCatalogCapability.registry.js';
 
 
 describe('Application plan capability registry', () => {
@@ -21,6 +24,33 @@ describe('Application plan capability registry', () => {
         expect(
             ACTIVE_PLAN_CAPABILITY_REGISTRY.metrics.has('members'),
         ).toBe(true);
+    });
+
+    it('compose les capabilities M-002 dans le registre applicatif actif', () => {
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.features.has(
+                PRODUCT_CATALOG_FEATURE.REFERENCE_ACCESS,
+            ),
+        ).toBe(true);
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.features.has(
+                PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT,
+            ),
+        ).toBe(true);
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.features.has(
+                PRODUCT_CATALOG_FEATURE.CONTRIBUTION,
+            ),
+        ).toBe(true);
+
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.getFeatureDefinition(
+                PRODUCT_CATALOG_FEATURE.CATALOG_IMPORT,
+            ),
+        ).toEqual(expect.objectContaining({
+            category: 'products',
+            categoryLabel: 'Produits',
+        }));
     });
 
     it('compose des modules métier avec leurs métadonnées de présentation', () => {
