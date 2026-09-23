@@ -27,11 +27,10 @@ describe('ProductsDashboardWidget', () => {
     });
   });
 
-  it('affiche les deux indicateurs M-002 et le lien d’accès', () => {
+  it('affiche l indicateur du catalogue et le lien d accès', () => {
     mocks.summaryQuery.mockReturnValue({
       data: {
         activeCatalogEntries: 12,
-        pendingContributions: 3,
       },
       isError: false,
       isLoading: false,
@@ -48,8 +47,7 @@ describe('ProductsDashboardWidget', () => {
 
     expect(screen.getByText('12')).toBeInTheDocument();
     expect(screen.getByText('Références actives')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('Contributions en validation')).toBeInTheDocument();
+    expect(screen.queryByText(/validation/i)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ouvrir les Produits' }))
       .toHaveAttribute('href', '/workspaces/workspace-1/products');
   });

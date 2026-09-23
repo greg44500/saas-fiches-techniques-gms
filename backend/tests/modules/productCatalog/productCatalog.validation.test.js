@@ -5,7 +5,7 @@ import {
 } from 'vitest';
 
 import {
-    createProductContributionBodySchema,
+    createWorkspaceProductBodySchema,
     importCommitBodySchema,
     importPreviewBodySchema,
     productSearchQuerySchema,
@@ -13,11 +13,14 @@ import {
     updateVariantBodySchema,
 } from '../../../modules/productCatalog/productCatalog.validation.js';
 
+const categoryId = '507f1f77bcf86cd799439011';
+
 describe('M-002 product request validation', () => {
-    it('valide une contribution Produit stricte', () => {
-        expect(createProductContributionBodySchema.parse({
+    it('valide une création Produit stricte avec catégorie obligatoire', () => {
+        expect(createWorkspaceProductBodySchema.parse({
             name: 'Carotte',
             aliases: ['Carottes'],
+            categoryId,
             variant: {
                 referenceUnit: 'KG',
                 yieldPercent: 100,
@@ -25,7 +28,7 @@ describe('M-002 product request validation', () => {
         })).toEqual({
             name: 'Carotte',
             aliases: ['Carottes'],
-            categoryId: null,
+            categoryId,
             reviewedCandidateIds: [],
             variant: {
                 referenceUnit: 'KG',
@@ -33,8 +36,14 @@ describe('M-002 product request validation', () => {
             },
         });
 
-        expect(createProductContributionBodySchema.safeParse({
+        expect(createWorkspaceProductBodySchema.safeParse({
             name: 'Carotte',
+            variant: { referenceUnit: 'KG' },
+        }).success).toBe(false);
+
+        expect(createWorkspaceProductBodySchema.safeParse({
+            name: 'Carotte',
+            categoryId,
             status: 'ACTIVE',
             variant: { referenceUnit: 'KG' },
         }).success).toBe(false);
@@ -56,10 +65,10 @@ describe('M-002 product request validation', () => {
     it('valide mapping et valeurs par défaut d import', () => {
         expect(importPreviewBodySchema.parse({
             mapping: { name: 0, form: 1 },
-            defaults: { referenceUnit: 'KG' },
+            defaults: { referenceUnit: 'KG', categoryId },
         })).toEqual({
             mapping: { name: 0, form: 1 },
-            defaults: { referenceUnit: 'KG' },
+            defaults: { referenceUnit: 'KG', categoryId },
         });
 
         expect(importPreviewBodySchema.safeParse({

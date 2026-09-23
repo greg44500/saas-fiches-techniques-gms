@@ -14,7 +14,7 @@ import {
 const metadata = {
   productStatuses: [
     { value: 'ACTIVE', label: 'Actif' },
-    { value: 'PENDING_REVIEW', label: 'En validation' },
+    { value: 'ARCHIVED', label: 'Archivé' },
   ],
   workspaceProductStatuses: [
     { value: 'ACTIVE', label: 'Dans le catalogue' },
@@ -29,7 +29,7 @@ const metadata = {
 
 describe('product presentation', () => {
   it('utilise les libellés fournis par les métadonnées backend', () => {
-    expect(getProductStatusLabel(metadata, 'PENDING_REVIEW')).toBe('En validation');
+    expect(getProductStatusLabel(metadata, 'ACTIVE')).toBe('Actif');
     expect(getWorkspaceProductStatusLabel(metadata, 'ACTIVE')).toBe('Dans le catalogue');
     expect(getCategoryStatusLabel(metadata, 'ARCHIVED')).toBe('Archivée');
     expect(getReferenceUnitLabel(metadata, 'KG')).toBe('kg');
@@ -51,16 +51,23 @@ describe('product presentation', () => {
         tone: 'warning',
       }),
     );
-    expect(getImportClassificationPresentation('PRIVATE_CONFLICT')).toEqual(
+    expect(getImportClassificationPresentation('CREATE_PRODUCT')).toEqual(
       expect.objectContaining({
-        label: 'Conflit non accessible',
-        tone: 'destructive',
+        label: 'Nouveau Produit',
+        tone: 'warning',
+      }),
+    );
+    expect(getImportClassificationPresentation('CREATE_VARIANT')).toEqual(
+      expect.objectContaining({
+        label: 'Nouvelle déclinaison',
+        tone: 'warning',
       }),
     );
   });
 
-  it('traduit les événements de gouvernance sans exposer les constantes', () => {
-    expect(getProductEventLabel('PRODUCT_APPROVED')).toBe('Produit validé');
-    expect(getProductEventLabel('VARIANT_REJECTED')).toBe('Déclinaison rejetée');
+  it('traduit les créations et maintient la lecture des événements legacy', () => {
+    expect(getProductEventLabel('PRODUCT_CREATED')).toBe('Produit créé');
+    expect(getProductEventLabel('VARIANT_CREATED')).toBe('Déclinaison créée');
+    expect(getProductEventLabel('PRODUCT_APPROVED')).toBe('Produit activé (historique)');
   });
 });

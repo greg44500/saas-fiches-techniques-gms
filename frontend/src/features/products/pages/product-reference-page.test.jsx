@@ -32,13 +32,24 @@ vi.mock('@/features/products/components/product-reference-category-dialog', () =
   ),
 }));
 
+vi.mock('@/features/products/components/product-create-dialog', () => ({
+  ProductCreateDialog: ({ open }) => (
+    open ? <div>Création globale ouverte</div> : null
+  ),
+}));
+
+vi.mock('@/features/products/components/product-import-dialog', () => ({
+  ProductImportDialog: ({ open }) => (
+    open ? <div>Import global ouvert</div> : null
+  ),
+}));
+
 import { ProductReferencePage } from '@/features/products/pages/product-reference-page';
 
 const metadata = {
   categories: [{ id: 'category-1', name: 'Légumes', status: 'ACTIVE' }],
   productStatuses: [
     { value: 'ACTIVE', label: 'Actif' },
-    { value: 'PENDING_REVIEW', label: 'En validation' },
     { value: 'ARCHIVED', label: 'Archivé' },
   ],
 };
@@ -48,7 +59,7 @@ const product = {
   name: 'Carotte',
   aliases: ['Carottes'],
   category: { id: 'category-1', name: 'Légumes', status: 'ACTIVE' },
-  status: 'PENDING_REVIEW',
+  status: 'ACTIVE',
   updatedAt: '2026-09-23T08:00:00.000Z',
 };
 
@@ -87,29 +98,16 @@ describe('ProductReferencePage', () => {
     });
   });
 
-  it('ouvre par défaut la file des contributions en attente', () => {
+  it('ouvre directement le référentiel actif sans file de validation', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
-    expect(screen.getByText('Contributions en attente de décision')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'À valider' }))
+      .not.toBeInTheDocument();
     expect(mocks.productsQuery).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: 'PENDING_REVIEW',
-        page: 1,
-      }),
-      { skip: false },
-    );
-  });
-
-  it('bascule vers le référentiel actif', async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(screen.getByRole('tab', { name: 'Référentiel' }));
-
-    expect(mocks.productsQuery).toHaveBeenLastCalledWith(
-      expect.objectContaining({
         status: 'ACTIVE',
+        page: 1,
       }),
       { skip: false },
     );
@@ -130,17 +128,23 @@ describe('ProductReferencePage', () => {
       .not.toBeInTheDocument();
   });
 
-  it('active les actions de catégories avec product:reference:manage', async () => {
+  it('expose création et import avec product:reference:manage', async () => {
     const user = userEvent.setup();
     renderPage({ canManage: true });
 
-    await user.click(screen.getByRole('tab', { name: 'Catégories' }));
+    expect(screen.getByRole('button', { name: 'Créer un Produit' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Importer' }))
+      .toBeInTheDocument();
 
+    await user.click(screen.getByRole('button', { name: 'Créer un Produit' }));
+    expect(screen.getByText('Création globale ouverte')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Importer' }));
+    expect(screen.getByText('Import global ouvert')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Catégories' }));
     expect(screen.getByRole('button', { name: 'Créer une catégorie' }))
-      .toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Renommer Légumes' }))
-      .toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Archiver' }))
       .toBeInTheDocument();
   });
 

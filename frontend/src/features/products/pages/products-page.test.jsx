@@ -26,9 +26,9 @@ vi.mock('@/features/products/api/product-catalog-api', () => ({
   useSearchProductsQuery: mocks.searchQuery,
 }));
 
-vi.mock('@/features/products/components/product-contribution-dialog', () => ({
-  ProductContributionDialog: ({ open }) => (
-    open ? <div>Contribution Produit ouverte</div> : null
+vi.mock('@/features/products/components/product-create-dialog', () => ({
+  ProductCreateDialog: ({ open }) => (
+    open ? <div>Création Produit ouverte</div> : null
   ),
 }));
 
@@ -58,7 +58,7 @@ const metadata = {
   categories: [{ id: 'category-1', name: 'Légumes', status: 'ACTIVE' }],
   productStatuses: [
     { value: 'ACTIVE', label: 'Actif' },
-    { value: 'PENDING_REVIEW', label: 'En validation' },
+    { value: 'ARCHIVED', label: 'Archivé' },
   ],
   workspaceProductStatuses: [
     { value: 'ACTIVE', label: 'Dans le catalogue' },
@@ -171,14 +171,16 @@ describe('ProductsPage', () => {
         status: undefined,
       }),
     );
+    expect(screen.getByText('Références actives du référentiel commun'))
+      .toBeInTheDocument();
   });
 
-  it('ouvre les workflows de contribution, import et détail selon les permissions', async () => {
+  it('ouvre création, import et détail selon les droits', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Proposer un Produit' }));
-    expect(screen.getByText('Contribution Produit ouverte')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Créer un Produit' }));
+    expect(screen.getByText('Création Produit ouverte')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Importer' }));
     expect(screen.getByText('Import Produits ouvert')).toBeInTheDocument();
@@ -196,7 +198,7 @@ describe('ProductsPage', () => {
 
     renderPage();
 
-    expect(screen.queryByRole('button', { name: 'Proposer un Produit' }))
+    expect(screen.queryByRole('button', { name: 'Créer un Produit' }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Importer' }))
       .not.toBeInTheDocument();

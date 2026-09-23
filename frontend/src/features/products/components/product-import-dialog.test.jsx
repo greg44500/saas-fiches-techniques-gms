@@ -28,12 +28,32 @@ vi.mock('@/features/products/api/product-catalog-api', () => ({
   ],
 }));
 
+vi.mock('@/features/products/api/product-reference-api', () => ({
+  useCommitProductReferenceImportMutation: () => [
+    vi.fn(),
+    { isLoading: false },
+  ],
+  useInspectProductReferenceImportMutation: () => [
+    vi.fn(),
+    { isLoading: false },
+  ],
+  useLazyGetProductReferenceDetailQuery: () => [
+    vi.fn(),
+    { isFetching: false },
+  ],
+  usePreviewProductReferenceImportMutation: () => [
+    vi.fn(),
+    { isLoading: false },
+  ],
+}));
+
 import {
   ProductImportDialog,
   buildMappingPayload,
 } from '@/features/products/components/product-import-dialog';
 
 const metadata = {
+  categories: [{ id: 'category-1', name: 'Légumes', status: 'ACTIVE' }],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
 };
 
@@ -57,7 +77,7 @@ describe('ProductImportDialog', () => {
     });
   });
 
-  it('inspecte le fichier et rend visibles les colonnes M-003 hors périmètre', async () => {
+  it('inspecte le fichier et rend visibles les colonnes commerciales M-003', async () => {
     const user = userEvent.setup();
 
     mocks.inspectImport.mockReturnValue(resolved({
@@ -87,7 +107,8 @@ describe('ProductImportDialog', () => {
     await user.upload(screen.getByLabelText('Fichier'), file);
     await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
 
-    expect(await screen.findByText('Colonnes hors périmètre M-002')).toBeInTheDocument();
+    expect(await screen.findByText('Colonnes commerciales détectées'))
+      .toBeInTheDocument();
     expect(screen.getByText('Prix HT')).toBeInTheDocument();
     expect(mocks.inspectImport).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
@@ -107,14 +128,14 @@ describe('ProductImportDialog', () => {
     }));
     mocks.previewImport.mockReturnValue(resolved({
       importId: 'import-1',
-      counts: { PROPOSE_PRODUCT: 1 },
+      counts: { CREATE_PRODUCT: 1 },
       rows: [{
         rowNumber: 2,
-        classification: 'PROPOSE_PRODUCT',
+        classification: 'CREATE_PRODUCT',
         data: {
           name: 'Carotte',
           aliases: [],
-          categoryId: null,
+          categoryId: 'category-1',
           variant: { referenceUnit: 'KG' },
         },
         warnings: [],
