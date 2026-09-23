@@ -1,6 +1,11 @@
-import { api } from '@/services/api';
+import { baseApi } from '@/services/api/base-api';
+import { PRODUCT_API_TAG_TYPES } from '@/features/products/api/product-api-tags';
 
-const productReferenceApi = api.injectEndpoints({
+const productReferenceApiBase = baseApi.enhanceEndpoints({
+  addTagTypes: [...PRODUCT_API_TAG_TYPES],
+});
+
+const productReferenceApi = productReferenceApiBase.injectEndpoints({
   endpoints: (builder) => ({
     getProductReferenceAccess: builder.query({
       query: () => ({

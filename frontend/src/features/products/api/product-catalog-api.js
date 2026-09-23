@@ -1,6 +1,11 @@
-import { api } from '@/services/api';
+import { baseApi } from '@/services/api/base-api';
+import { PRODUCT_API_TAG_TYPES } from '@/features/products/api/product-api-tags';
 
-const productCatalogApi = api.injectEndpoints({
+const productCatalogApiBase = baseApi.enhanceEndpoints({
+  addTagTypes: [...PRODUCT_API_TAG_TYPES],
+});
+
+const productCatalogApi = productCatalogApiBase.injectEndpoints({
   endpoints: (builder) => ({
     getProductMetadata: builder.query({
       query: (workspaceId) => ({

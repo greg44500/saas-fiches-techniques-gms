@@ -243,6 +243,15 @@ function ProductImportDialog({
 
   async function chooseCandidate(row, candidate) {
     setFormError('');
+
+    if (candidate.status !== 'ACTIVE') {
+      setFormError(
+        'Cette référence candidate est archivée et ne peut pas être utilisée pour cet import.',
+      );
+      clearDecision(row.rowNumber);
+      return;
+    }
+
     try {
       const detail = isGlobal
         ? await loadGlobalProductDetail(candidate.id).unwrap()
@@ -557,14 +566,16 @@ function ProductImportDialog({
                             <div className="flex flex-wrap gap-2">
                               {(row.candidates ?? []).map((candidate) => (
                                 <Button
-                                  disabled={pending}
+                                  disabled={pending || candidate.status !== 'ACTIVE'}
                                   key={candidate.id}
                                   onClick={() => chooseCandidate(row, candidate)}
                                   size="sm"
                                   type="button"
                                   variant="outline"
                                 >
-                                  Utiliser {candidate.name}
+                                  {candidate.status === 'ACTIVE'
+                                    ? 'Utiliser ' + candidate.name
+                                    : candidate.name + ' · archivé'}
                                 </Button>
                               ))}
                               <Button

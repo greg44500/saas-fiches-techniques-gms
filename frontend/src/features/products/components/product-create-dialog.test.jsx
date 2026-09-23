@@ -84,6 +84,39 @@ describe('ProductCreateDialog', () => {
     expect(mocks.createProduct).not.toHaveBeenCalled();
   });
 
+  it('signale une correspondance exacte archivée sans proposer de l ouvrir côté Workspace', async () => {
+    const user = userEvent.setup();
+
+    mocks.duplicateCheck.mockReturnValue(resolved({
+      exactMatch: {
+        id: 'product-archived',
+        name: 'Carotte ancienne',
+        aliases: [],
+        category: { id: 'category-1', name: 'Légumes' },
+        status: 'ARCHIVED',
+      },
+      candidates: [],
+    }));
+
+    render(
+      <ProductCreateDialog
+        metadata={metadata}
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        onUseExisting={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Nom du Produit'), 'Carotte ancienne');
+    await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
+
+    expect(await screen.findByText(/référence est archivée/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ouvrir cette référence' }))
+      .not.toBeInTheDocument();
+  });
+
   it('exige la revue de tous les candidats et une catégorie active avant création', async () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();

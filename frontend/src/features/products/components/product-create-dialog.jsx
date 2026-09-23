@@ -270,7 +270,8 @@ function ProductCreateDialog({
                       {getProductStatusLabel(metadata, duplicateResult.exactMatch.status)}
                     </StatusBadge>
                   </div>
-                  {onUseExisting && (
+                  {onUseExisting
+                    && (isGlobal || duplicateResult.exactMatch.status === 'ACTIVE') && (
                     <Button
                       onClick={() => onUseExisting(duplicateResult.exactMatch.id)}
                       type="button"
@@ -278,6 +279,11 @@ function ProductCreateDialog({
                     >
                       Ouvrir cette référence
                     </Button>
+                  )}
+                  {!isGlobal && duplicateResult.exactMatch.status === 'ARCHIVED' && (
+                    <p className="max-w-sm text-sm text-muted-foreground">
+                      Cette référence est archivée dans le référentiel commun. Elle ne peut pas être recréée depuis cet espace de travail.
+                    </p>
                   )}
                 </div>
               </div>
