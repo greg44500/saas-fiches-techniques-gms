@@ -183,7 +183,7 @@ Le contrôle doit être garanti par le backend et non par l'interface seule.
 
 Le Workspace Owner peut accéder à tous les magasins, et un collaborateur peut recevoir un périmètre multi-magasins, mais tous travaillent toujours dans un contexte magasin actif lorsqu'ils créent, modifient ou valorisent une fiche.
 
-### 3.4 Référentiel Produit commun au SaaS et catalogue d'usage du Workspace
+### 3.4 Référentiel Produit global et référentiel Produit du Workspace
 
 L'identité canonique d'un Produit de référence n'est pas recréée dans chaque Workspace.
 
@@ -198,7 +198,7 @@ Référentiel SaaS
 → ...
 ```
 
-Un Workspace possède ensuite son **catalogue d'usage**, qui référence les Produits canoniques dont il a besoin sans copier leur identité.
+Un Workspace possède ensuite son **référentiel Produit**, affiché comme **Mon référentiel** dans l'interface. Il référence les Produits canoniques dont il a besoin sans copier leur identité.
 
 Conceptuellement :
 
@@ -219,7 +219,7 @@ La relation d'usage du Workspace est matérialisée par `WorkspaceProduct`, qui 
 
 Les données partagées au niveau SaaS restent strictement génériques. Elles ne contiennent jamais de tarif négocié, prix facturé, historique commercial local, fournisseur choisi par un magasin ou autre donnée confidentielle d'un tenant.
 
-Les utilisateurs autorisés recherchent d'abord le référentiel commun puis ajoutent une référence existante à leur catalogue Workspace. Si aucun équivalent crédible n'existe, ils peuvent créer une nouvelle identité canonique après contrôle anti-doublon et sélection d'une catégorie active. Cette nouvelle identité est immédiatement `ACTIVE` et partagée dans le référentiel commun ; elle n'attend pas une validation humaine systématique.
+Les utilisateurs autorisés recherchent d'abord le référentiel global puis ajoutent une référence existante à leur référentiel Workspace. Si aucun équivalent crédible n'existe, ils peuvent créer une nouvelle identité canonique après contrôle anti-doublon et sélection d'une catégorie active. Cette nouvelle identité est immédiatement `ACTIVE` et partagée dans le référentiel commun ; elle n'attend pas une validation humaine systématique.
 
 Invariant :
 
@@ -292,7 +292,7 @@ référentiel partagé SaaS
 → identités Produit canoniques
 
 ressources globales Workspace
-→ catalogue d'usage Produit, Fournisseurs, Articles, catalogues fournisseur, administration...
+→ référentiel Produit Workspace, Fournisseurs, Articles, catalogues fournisseur, administration...
 
 ressources contextualisées dossier
 → Fiches, références magasin, prix locaux, process...
@@ -717,7 +717,7 @@ Produit
 × date de valorisation
 ~~~
 
-Un Produit peut être non valorisable dans un magasin et valorisable dans un autre. Il peut également exister dans le catalogue sans Prix applicable courant.
+Un Produit peut être non valorisable dans un magasin et valorisable dans un autre. Il peut également exister dans le référentiel Workspace sans Prix applicable courant.
 
 ### 6.9 Temporalité des différentes sources tarifaires
 
@@ -910,7 +910,7 @@ Portée :
 
 ~~~text
 Mon Workspace
-Tout le référentiel autorisé
+Référentiel global autorisé
 ~~~
 
 Source :
@@ -940,7 +940,7 @@ Références fournisseur
 
 Le résultat peut agréger plusieurs types de ressources, mais chaque résultat conserve sa nature exacte et son lien vers le Produit canonique lorsqu'il est connu.
 
-Une recherche `Mon Workspace` priorise les ressources déjà utilisées/activées par le Workspace. L'utilisateur peut élargir à `Tout le référentiel` pour rattacher une ressource existante sans la recréer.
+Une recherche `Mon Workspace` priorise les ressources déjà utilisées/activées par le Workspace. L'utilisateur peut élargir au `Référentiel global` pour rattacher une ressource existante sans la recréer.
 
 La recherche globale ne doit jamais exposer :
 
@@ -1015,7 +1015,7 @@ Chaque Produit et Article proposé à la sélection doit disposer d'une **carte 
 
 ### 6.13 Détail d'un Produit dans un magasin
 
-Le détail d'un Produit doit disposer d'une vue contextualisée par magasin, distincte de son identité globale dans le catalogue Workspace.
+Le détail d'un Produit doit disposer d'une vue contextualisée par magasin, distincte de son identité globale dans le référentiel Workspace.
 
 Cette vue de pilotage rapide doit présenter au minimum :
 
@@ -2089,7 +2089,7 @@ Ordre recommandé :
 
 ```text
 M-001 → Dossiers / Magasins + affectations
-M-002 → Catalogue Produits
+M-002 → Référentiel Produits
 M-003 → Fournisseurs + Articles + prix/catalogues
 M-004 → Fiches techniques + valorisation
 M-005 → Atelier d'optimisation Premium

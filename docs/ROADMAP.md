@@ -44,7 +44,7 @@ Décisions établies :
 - suppression logique avant éventuelle purge physique ;
 - suppression logique = coupure immédiate des accès métier et des ressources du dossier dans les flux normaux sans destruction automatique de l'historique ;
 - restauration contrôlée vers un état non opérationnel, par défaut `PAUSED` ;
-- référentiel Produit canonique partagé à l'échelle du SaaS, avec catalogue d'usage par Workspace sans duplication de l'identité Produit ;
+- référentiel Produit canonique partagé à l'échelle du SaaS, avec référentiel d'usage par Workspace sans duplication de l'identité Produit ;
 - prix et conditions contextualisés par magasin ;
 - accès multi-magasins = changement de contexte, jamais partage ou mélange des données locales ;
 - invitation Workspace puis affectation séparée des magasins après acceptation ;
@@ -69,7 +69,7 @@ Décisions finales :
 - un Dossier `DELETED` n'est pas purgé automatiquement dans M-001 ; sa purge physique reste différée ;
 - la politique métier de corbeille est validée transversalement pour les futures ressources purgeables : 30 jours par défaut, configurable de 7 à 90 jours lorsque la personnalisation est autorisée.
 
-### 2.2 Catalogue Produit
+### 2.2 Référentiel Produit
 
 **État : implémentation M-002 alignée sur le contrat recadré — tests/gates et validation visuelle finale à exécuter**
 
@@ -77,7 +77,7 @@ Décisions désormais fermées et implémentées :
 
 - `CanonicalProduct` porte l'identité Produit partagée à l'échelle du SaaS ;
 - `ProductVariant` porte les déclinaisons structurées : forme, état/transformation, conservation, gamme éventuelle, unité de référence et rendement ;
-- `WorkspaceProduct` matérialise le catalogue d'usage d'un Workspace en référençant une déclinaison sans recopier l'identité ;
+- `WorkspaceProduct` matérialise le référentiel Produit d'un Workspace en référençant une déclinaison sans recopier l'identité ;
 - aucune donnée Fournisseur, référence commerciale, conditionnement ou prix n'est stockée dans M-002 ;
 - la création vérifie d'abord l'existant par normalisation, alias, clés de recherche, proximité et revue explicite des candidats proches ;
 - un doublon exact est refusé ;
@@ -304,7 +304,7 @@ Ordre initial recommandé :
 
 ```text
 M-001 Dossiers / Magasins + affectations
-M-002 Catalogue Produits
+M-002 Référentiel Produits
 M-003 Fournisseurs + Articles + prix/catalogues
 M-004 Fiches techniques + valorisation
 M-005 Atelier d'optimisation Premium

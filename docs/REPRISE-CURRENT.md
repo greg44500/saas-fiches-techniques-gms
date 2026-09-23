@@ -1,7 +1,7 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-09-23  
-**Lot actif :** M-002 — Catalogue Produits / Produits canoniques  
+**Lot actif :** M-002 — Référentiel Produits / Produits canoniques  
 **Branche :** `feature/m002-catalogue-produits`  
 **Checkpoint code avant synchronisation documentaire :** `14a5f791a436bcabb8c6ce82a1f0d0a578f873c9`
 
@@ -54,7 +54,7 @@ ProductVariant
 
 WorkspaceProduct
 → ownership Workspace
-→ catalogue d'usage
+→ référentiel Produit Workspace
 
 ProductCategory
 → global SaaS
@@ -133,7 +133,7 @@ M-002 réutilise le même pipeline sécurisé CSV/XLS/XLSX pour deux scopes :
 WORKSPACE
 → rattacher l'existant
 → créer Produit/Déclinaison si autorisé
-→ alimenter le catalogue Workspace
+→ alimenter le référentiel Workspace
 
 GLOBAL
 → alimenter directement le référentiel commun
@@ -190,13 +190,13 @@ Workspace :
 /workspaces/:workspaceId/products
 ```
 
-- Mon catalogue ;
-- Tout le référentiel selon capability ;
+- Référentiel global en premier onglet ;
+- Mon référentiel en second onglet ;
 - Créer un Produit ;
 - Importer ;
 - détail Produit ;
 - création de déclinaison ;
-- ajout/retrait du catalogue ;
+- ajout/retrait de Mon référentiel ;
 - Dashboard M-002.
 
 Global :
@@ -224,7 +224,7 @@ Deux scénarios critiques sont présents :
 1. Owner Workspace
    → crée un Produit
    → Produit ACTIVE
-   → visible dans Mon catalogue
+   → visible dans Mon référentiel
 
 2. Fondateur E2E explicitement bootstrapé Application Global Produit
    → /product-reference
@@ -301,7 +301,7 @@ Démarrer l'application locale et vérifier :
 - catégorie obligatoire ;
 - Produit créé immédiatement actif ;
 - première déclinaison ;
-- Produit ajouté au catalogue Workspace ;
+- Produit ajouté au référentiel Workspace ;
 - référentiel commun ;
 - absence de « Proposer », « Envoyer en validation », « En validation » ;
 - accès global `/product-reference` uniquement avec Application Global ;

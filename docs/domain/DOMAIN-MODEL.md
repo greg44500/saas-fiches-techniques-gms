@@ -33,7 +33,7 @@ SaaS
 │
 └── Workspace
     │
-    ├── Catalogue d'usage Produit
+    ├── Référentiel Produit Workspace
     │   └── références vers les Produits canoniques utilisés
     │
     ├── Fournisseurs
@@ -80,7 +80,7 @@ donnée de référence canonique partagée
 
 Les ressources métier appartenant au Workspace doivent utiliser l'ownership explicite prévu par le Core.
 
-Le référentiel Produit canonique constitue une donnée de référence commune au SaaS et non la propriété d'un Workspace. Un Workspace ne copie pas le Produit : il référence les identités canoniques qu'il utilise via son catalogue d'usage.
+Le référentiel Produit canonique constitue une donnée de référence commune au SaaS et non la propriété d'un Workspace. Un Workspace ne copie pas le Produit : il référence les identités canoniques qu'il utilise via son référentiel Produit Workspace.
 
 `createdBy` / `updatedBy` servent à l'audit et ne remplacent jamais l'ownership ou la portée explicite de la ressource.
 
@@ -312,7 +312,7 @@ ProductVariant
 WorkspaceProduct
 → ownership Workspace
 → référence une ProductVariant
-→ matérialise le catalogue d'usage du Workspace
+→ matérialise le référentiel Produit du Workspace
 → ne copie pas l'identité Produit
 ```
 
@@ -382,7 +382,7 @@ ProductVariant    : râpée · prête à l'emploi · fraîche
 
 Une formulation/composition réellement différente doit être modélisée comme un Produit canonique distinct, pas comme une simple variation lexicale.
 
-### 5.5 Catalogue d'usage Workspace
+### 5.5 Référentiel Produit Workspace
 
 `WorkspaceProduct` est la relation tenant-scoped entre un Workspace et une `ProductVariant`.
 
@@ -393,9 +393,9 @@ Workspace
 → chacun référence une ProductVariant globale
 ```
 
-Le retrait du catalogue archive la relation d'usage sans supprimer le Produit global.
+Le retrait de Mon référentiel archive la relation d'usage sans supprimer le Produit global.
 
-Un Dossier utilise le catalogue de son Workspace ; M-002 ne crée pas de Produit Dossier-owned.
+Un Dossier utilise le référentiel Produit de son Workspace ; M-002 ne crée pas de Produit Dossier-owned.
 
 ### 5.6 Lifecycle et historique
 
@@ -442,7 +442,7 @@ M-002 possède deux usages du même pipeline Produit sécurisé :
 Workspace
 → import Produit générique
 → rattachement existant ou création contrôlée
-→ nouvelles créations ajoutées au catalogue Workspace
+→ nouvelles créations ajoutées au référentiel Workspace
 
 Application Global
 → import Produit générique
@@ -819,7 +819,7 @@ Portée :
 
 ```text
 Mon Workspace
-Tout le référentiel autorisé
+Référentiel global autorisé
 ```
 
 Source :

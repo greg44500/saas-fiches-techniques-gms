@@ -129,11 +129,11 @@ Les variantes lexicales équivalentes — casse, singulier/pluriel, accents, esp
 
 ---
 
-## Catalogue Produit du Workspace
+## Référentiel Produit du Workspace
 
 Sélection des Produits canoniques réellement utilisés par un Workspace.
 
-Le catalogue Workspace référence le référentiel partagé ; il ne copie pas l'identité du Produit. Les Dossiers du Workspace puisent dans cette sélection.
+Le référentiel Produit du Workspace référence le référentiel global ; il ne copie pas l'identité du Produit. Dans l'interface, il est présenté comme **Mon référentiel**. Les Dossiers du Workspace puisent dans cette sélection.
 
 `WorkspaceProduct` matérialise ce rattachement dans M-002. Il appartient au Workspace et référence une `ProductVariant` globale sans copier l'identité canonique.
 
@@ -203,7 +203,7 @@ Le libellé affiché peut intégrer les dimensions structurées, par exemple `Ca
 
 Après contrôle de doublon, une création autorisée devient immédiatement `ACTIVE` dans le référentiel commun. Le parcours courant ne crée plus de statut d'attente nécessitant une approbation humaine systématique.
 
-Depuis un Workspace, la création ajoute en plus la première déclinaison au catalogue du Workspace via `WorkspaceProduct`.
+Depuis un Workspace, la création ajoute en plus la première déclinaison au référentiel du Workspace via `WorkspaceProduct`.
 
 ### Autorité globale Produit
 
@@ -332,7 +332,7 @@ Elle est distincte du taux de rendement.
 
 ## Fournisseur
 
-Acteur qui commercialise un ou plusieurs articles correspondant aux produits du catalogue.
+Acteur qui commercialise un ou plusieurs articles correspondant aux Produits du référentiel.
 
 Les fournisseurs doivent pouvoir être créés par le client dans son contexte de travail.
 
@@ -440,7 +440,7 @@ Portées prévues :
 
 ```text
 Mon Workspace
-Tout le référentiel autorisé
+Référentiel global autorisé
 ```
 
 Sources prévues :
