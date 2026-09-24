@@ -1,5 +1,7 @@
 # M-002 — Validation, identité et prévention des doublons
 
+> **CONTRAT FINAL 2026-09-24** — La source de vérité actuelle est `docs/m002/M-002-FINAL-CONTRACT.md`. Toute section historique de ce document qui décrit `Gamme 1..5 + usageType PAI/PAE`, un nom de référence calculé, une catégorie obligatoire ou « Mon référentiel » est obsolète lorsqu'elle contredit ce contrat final.
+
 > **RECARDAGE QA 2026-09-24** — `docs/m002/M-002-RECARDAGE-QA.md` est désormais prioritaire pour `CUT`, CanonicalProduct sans variante, Gammes 1..5, PAI/PAE séparé, seed v3, liste groupée et dépendance Core de navigation Platform. Les contrats techniques ci-dessous doivent être réalignés pendant le prochain bloc d'implémentation avant d'être considérés définitifs.
 
 **Statut : ALIGNÉ SUR PRODUCTVARIETY + PRODUCTCHARACTERISTIC — implémenté, validation finale requise**

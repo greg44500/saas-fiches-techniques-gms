@@ -1,5 +1,7 @@
 # M-002 — Référentiel Produits / Produits canoniques
 
+> **CONTRAT FINAL 2026-09-24** — La source de vérité actuelle est `docs/m002/M-002-FINAL-CONTRACT.md`. Toute section historique de ce document qui décrit `Gamme 1..5 + usageType PAI/PAE`, un nom de référence calculé, une catégorie obligatoire ou « Mon référentiel » est obsolète lorsqu'elle contredit ce contrat final.
+
 **Statut : RECADRAGE QA VALIDÉ — adaptation du code requise avant validation finale**  
 **Branche :** `feature/m002-catalogue-produits`  
 **Contrat complémentaire canonique :** `docs/m002/M-002-RECARDAGE-QA.md`
