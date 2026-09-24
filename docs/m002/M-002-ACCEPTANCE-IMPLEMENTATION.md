@@ -47,8 +47,10 @@ Un seul lot M-002, puis une seule PR finale. Pas de micro-PR de réparation.
 - [x] v6 sans collision de nom détectée ;
 - [x] v6 : 264 Références, aucune reprise automatique d'une Référence v1-v5 absente du PDF ;
 - [x] migration de réconciliation des anciens seeds et archivage des Favoris obsolètes ;
-- [ ] exécution réelle de `npm run migration:m002-catalog` sur la base locale ;
-- [ ] exécution réelle de `npm run seed:m002-reference` sur la base locale.
+- [x] reset M-002 local sécurisé disponible pour les bases de développement pré-release ;
+- [ ] reset M-002 local exécuté sur la base de développement actuelle ;
+- [ ] exécution réelle de `npm run migration:m002-catalog` après reset ;
+- [ ] exécution réelle de `npm run seed:m002-reference` après migration.
 
 ## 5. Backend
 
@@ -87,6 +89,8 @@ Un seul lot M-002, puis une seule PR finale. Pas de micro-PR de réparation.
 Aucun statut vert final ne doit être annoncé avant exécution réelle de :
 
 ```bash
+$env:ALLOW_DEVELOPMENT_DATA_RESET="true"
+npm run dev:reset-m002-catalog -- --confirm-m002-reset
 npm run migration:m002-catalog
 npm run seed:m002-reference
 

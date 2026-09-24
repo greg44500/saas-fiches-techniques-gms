@@ -213,19 +213,11 @@ L'import M-002 reste temporaire et sécurisé ; il ne constitue pas un stockage 
 
 ## 11. Seed
 
-Les datasets historiques restent immuables :
+Les datasets v1 à v5 sont historiques et restent immuables.
+
+Le dataset actif est :
 
 ```text
-m002-reference-v1
-m002-reference-v2
-m002-reference-v3
-```
-
-Le contrat final utilise :
-
-```text
-m002-reference-v4
-m002-reference-v5
 m002-reference-v6
 ```
 
@@ -233,9 +225,21 @@ Les v1 à v5 sont historiques. Le v6 est le dataset actif et sa source unique es
 
 Le PDF fourni sert de source unique au bootstrap v6. Les imports fournisseur complets et les données commerciales restent traités séparément selon la frontière M-002 / M-003.
 
-## 12. Migration
+## 12. Migration et remise à zéro locale pré-release
 
 Les migrations historiques ne sont jamais réécrites.
+
+M-002 n'étant pas encore livré, les bases locales ayant servi aux itérations v1 à v5 ne constituent pas des données de production à préserver. Lorsqu'elles contiennent des références expérimentales impossibles à migrer sans inventer une règle métier, la stratégie locale officielle est :
+
+```text
+reset M-002 local sécurisé
+→ migration M-002 sur catalogue vide
+→ seed m002-reference-v6
+```
+
+Le reset est strictement limité à `NODE_ENV=development`, à MongoDB local, à une base terminant par `-dev`, à `ALLOW_DEVELOPMENT_DATA_RESET=true` et à une confirmation explicite. Il ne touche qu'aux collections M-002.
+
+
 
 Une migration additionnelle convertit le contrat actuel vers :
 

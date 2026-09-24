@@ -145,19 +145,31 @@ m002-reference-v6
 Contrôle effectué sur le v6 :
 
 ```text
-Catégories             = 14
-Produits                = 220
-Références exploitables = 302
-Produits sans référence = 0
+Catégories              = 14
+Produits                 = 264
+Références exploitables  = 264
+Produits sans référence  = 0
 collisions de nom       = 0
 non-alimentaire         = 0
 ```
 
 Le v6 utilise le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf` comme source unique du bootstrap. Les pages « Non Alimentaire » sont exclues. Les références des seeds v1 à v5 absentes du PDF sont archivées par migration. Marques, références fournisseur, conditionnements et prix restent hors M-002.
 
-## 7. Migration
+## 7. Migration et base locale de développement
 
-Une migration additionnelle M-002 convertit le contrat actuel vers :
+La base locale actuelle a accumulé plusieurs contrats M-002 pré-release incompatibles. Il ne faut plus tenter de convertir ces artefacts un par un.
+
+Stratégie locale officielle :
+
+```text
+dev:reset-m002-catalog
+→ migration:m002-catalog
+→ seed:m002-reference (v6)
+```
+
+Le reset ne touche qu'aux collections M-002 et refuse production, MongoDB distant et toute base ne terminant pas par `-dev`.
+
+Une migration additionnelle M-002 convertit, pour les environnements qui en ont encore besoin, le contrat actuel vers :
 
 - `name` / `normalizedName` persistants sur la Référence ;
 - `conservationType` ;
@@ -217,6 +229,8 @@ Le code et les tests ont été réalignés, mais aucune campagne locale finale s
 Gates à exécuter :
 
 ```bash
+$env:ALLOW_DEVELOPMENT_DATA_RESET="true"
+npm run dev:reset-m002-catalog -- --confirm-m002-reset
 npm run migration:m002-catalog
 npm run seed:m002-reference
 
@@ -256,13 +270,15 @@ Vérifier notamment :
 
 ```text
 pull local de feature/m002-catalogue-produits
+→ reset M-002 local sécurisé
 → migration M-002
 → seed v6
+→ tests ciblés
+→ gates backend/frontend
+→ E2E
 → npm run dev
 → QA visuelle utilisateur
 → corrections si nécessaire dans le même lot
-→ gates ciblés/globaux
-→ E2E
 → documentation finale éventuelle
 → une seule PR M-002
 ```
