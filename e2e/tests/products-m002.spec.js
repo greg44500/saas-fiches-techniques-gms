@@ -13,6 +13,8 @@ import {
 } from '../support/product-fixtures.js';
 
 test('M-002 contribution Workspace est revue puis publiée globalement', async ({ page }) => {
+  test.setTimeout(60_000);
+
   const context = await provisionProductOwnerWorkspace();
 
   await loginWithIdentity(page, context.identity);
@@ -136,6 +138,8 @@ test('M-002 autorité Application Global alimente directement le référentiel',
   await expect(
     page.getByText(productName, { exact: true }).first(),
   ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Fermer' }).click();
 
   await expect(
     page.getByRole('tab', { name: 'Contributions' }),

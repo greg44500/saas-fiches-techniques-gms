@@ -1,13 +1,20 @@
 import { expect, test } from '@playwright/test';
 
-import { registerAndLogin } from '../support/auth.js';
-import { createFirstWorkspaceAndOpenDashboard } from '../support/workspace.js';
+import { loginWithIdentity } from '../support/auth.js';
+import { provisionDossierOwnerWorkspace } from '../support/dossier-fixtures.js';
 
 test('owner renomme son workspace et la modification persiste après rechargement', async ({ page }) => {
-  await registerAndLogin(page);
-  const { dashboardUrl, workspaceName } = await createFirstWorkspaceAndOpenDashboard(page);
-  const updatedWorkspaceName = `${workspaceName} Renommé`;
-  const settingsUrl = dashboardUrl.replace(/\/dashboard$/, '/settings');
+  /*
+   * Ce scénario teste les paramètres Workspace, pas l'inscription publique.
+   * Le provisioning direct évite de consommer le rate limit /auth/register,
+   * déjà couvert par les scénarios d'authentification et d'onboarding.
+   */
+  const context = await provisionDossierOwnerWorkspace();
+
+  await loginWithIdentity(page, context.identity);
+
+  const settingsUrl = `/workspaces/${context.workspaceId}/settings`;
+  const updatedWorkspaceName = `${context.workspaceName} Renommé`;
 
   await page.goto(settingsUrl);
 
