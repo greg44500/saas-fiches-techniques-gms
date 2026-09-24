@@ -149,6 +149,17 @@ const m002ReferenceDatasetSchema = z.strictObject({
         'Version de bootstrap M-002 invalide.',
     ),
     ready: z.boolean(),
+    sources: z.array(z.strictObject({
+        name: z.string().trim().min(1).max(200),
+        type: z.string().trim().min(1).max(120),
+        scope: z.string().trim().min(1).max(200),
+        pages: z.string().trim().min(1).max(120),
+        excludedPages: z.string().trim().min(1).max(200).optional(),
+        rules: z.array(z.string().trim().min(1).max(240))
+            .max(20)
+            .optional()
+            .default([]),
+    })).max(20).optional().default([]),
     categories: z.array(seedCategorySchema),
     products: z.array(seedProductSchema),
 }).superRefine((dataset, context) => {
@@ -162,6 +173,7 @@ const m002ReferenceDatasetSchema = z.strictObject({
         });
     }
 
+    const categoryKeySet = new Set(categoryKeys);
     const productKeys = dataset.products.map(({ name }) =>
         normalizeProductText(name));
     if (new Set(productKeys).size !== productKeys.length) {
@@ -169,6 +181,40 @@ const m002ReferenceDatasetSchema = z.strictObject({
             code: 'custom',
             path: ['products'],
             message: 'Les noms de Produits bootstrap doivent être uniques.',
+        });
+    }
+
+    const referenceNames = [];
+    dataset.products.forEach((product, productIndex) => {
+        if (!categoryKeySet.has(normalizeProductText(product.categoryKey))) {
+            context.addIssue({
+                code: 'custom',
+                path: ['products', productIndex, 'categoryKey'],
+                message: 'La catégorie du Produit bootstrap est inconnue.',
+            });
+        }
+
+        if (
+            dataset.version === 'm002-reference-v5'
+            && product.variants.length === 0
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['products', productIndex, 'variants'],
+                message: 'Le bootstrap v5 refuse les Produits sans Référence exploitable.',
+            });
+        }
+
+        for (const variant of product.variants) {
+            referenceNames.push(normalizeProductText(variant.name));
+        }
+    });
+
+    if (new Set(referenceNames).size !== referenceNames.length) {
+        context.addIssue({
+            code: 'custom',
+            path: ['products'],
+            message: 'Les noms de Références bootstrap doivent être uniques globalement.',
         });
     }
 });
@@ -567,7 +613,7 @@ const seedM002Reference = async ({ dataset, actorId }) => {
 };
 
 const loadDefaultDataset = async () => {
-    const datasetUrl = new URL('./data/m002-reference.v4.json', import.meta.url);
+    const datasetUrl = new URL('./data/m002-reference.v5.json', import.meta.url);
     return JSON.parse(await readFile(datasetUrl, 'utf8'));
 };
 
