@@ -43,7 +43,9 @@ import {
   getApiErrorMessage,
   getFoodRangeLabel,
   getFoodRangeName,
+  getProductVariantSearchLabel,
   getReferenceUnitLabel,
+  getUsageTypeLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
@@ -126,7 +128,10 @@ function ProductsPage() {
   }
 
   function selectPredictiveResult(result) {
-    const nextSearch = result.product.name;
+    const nextSearch = getProductVariantSearchLabel(
+      result.product,
+      result.variant,
+    );
 
     setSearchInput(nextSearch);
     setPage(1);
@@ -146,20 +151,28 @@ function ProductsPage() {
     setPage(1);
   }
 
-  async function changeCatalog(result, shouldAttach) {
+  async function changeCatalog(product, entry, shouldAttach) {
     try {
       if (shouldAttach) {
         await attachVariant({
           workspaceId: workspace.id,
-          variantId: result.variant.id,
+          variantId: entry.variant.id,
         }).unwrap();
-        toast({ title: 'Référence ajoutée à mon référentiel', variant: 'success' });
+        toast({
+          title: 'Référence ajoutée à mon référentiel',
+          description: product.name,
+          variant: 'success',
+        });
       } else {
         await archiveVariant({
           workspaceId: workspace.id,
-          variantId: result.variant.id,
+          variantId: entry.variant.id,
         }).unwrap();
-        toast({ title: 'Référence retirée de mon référentiel', variant: 'success' });
+        toast({
+          title: 'Référence retirée de mon référentiel',
+          description: product.name,
+          variant: 'success',
+        });
       }
     } catch (error) {
       toast({
@@ -178,88 +191,101 @@ function ProductsPage() {
     {
       id: 'product',
       header: 'Produit',
-      cell: (result) => (
+      cell: (group) => (
         <div>
-          <p className="font-medium">{result.product.name}</p>
+          <p className="font-medium">{group.product.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {result.product.category?.name ?? 'Catégorie non renseignée'}
+            {group.product.category?.name ?? 'Catégorie non renseignée'}
           </p>
         </div>
       ),
     },
     {
-      id: 'variant',
-      header: 'Déclinaison',
-      cell: (result) => (
-        <div>
-          <p>{getVariantLabel(result.variant)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {getReferenceUnitLabel(metadata, result.variant.referenceUnit)}
-            {' · '}Rendement {formatYield(result.variant.yieldPercent)}
-          </p>
-        </div>
-      ),
-    },
-    {
-      id: 'foodRange',
-      header: 'Gamme',
-      cell: (result) => (
-        <div>
-          <p className="font-medium">
-            {getFoodRangeLabel(metadata, result.variant.foodRange)}
-          </p>
-          {(result.variant.processingState
-            || getFoodRangeName(metadata, result.variant.foodRange)) && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {result.variant.processingState
-                || getFoodRangeName(metadata, result.variant.foodRange)}
+      id: 'variants',
+      header: 'Déclinaisons',
+      cell: (group) => {
+        if (!group.variants?.length) {
+          return (
+            <p className="text-sm text-muted-foreground">
+              Aucune déclinaison exploitable
             </p>
-          )}
-        </div>
-      ),
+          );
+        }
+
+        return (
+          <div className="space-y-2">
+            {group.variants.map((entry) => {
+              const inCatalog = entry.workspaceEntry?.status === 'ACTIVE';
+              const canAttach = (
+                group.product.status === 'ACTIVE'
+                && entry.variant.status === 'ACTIVE'
+              );
+              const usageLabel = entry.variant.usageType
+                ? 'Usage ' + getUsageTypeLabel(metadata, entry.variant.usageType)
+                : null;
+
+              return (
+                <div
+                  className="flex flex-col gap-2 rounded-md border border-border/70 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  key={entry.variant.id}
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium">{getVariantLabel(entry.variant)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {[
+                        getFoodRangeLabel(metadata, entry.variant.foodRange),
+                        getFoodRangeName(metadata, entry.variant.foodRange),
+                        usageLabel,
+                        getReferenceUnitLabel(metadata, entry.variant.referenceUnit)
+                          + ' · Rendement '
+                          + formatYield(entry.variant.yieldPercent),
+                      ].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+
+                  {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
+                    <DataTableActions>
+                      {inCatalog ? (
+                        <ActionIconButton
+                          Icon={Minus}
+                          disabled={mutationPending}
+                          label={'Retirer ' + group.product.name + ' de mon référentiel'}
+                          onClick={() => changeCatalog(group.product, entry, false)}
+                          tooltipLabel="Retirer de mon référentiel"
+                          variant="outline"
+                        />
+                      ) : canAttach ? (
+                        <ActionIconButton
+                          Icon={Plus}
+                          disabled={mutationPending}
+                          label={'Ajouter ' + group.product.name + ' à mon référentiel'}
+                          onClick={() => changeCatalog(group.product, entry, true)}
+                          tooltipLabel="Ajouter à mon référentiel"
+                        />
+                      ) : null}
+                    </DataTableActions>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      },
     },
     {
       id: 'actions',
       header: 'Actions',
-      cell: (result) => {
-        const inCatalog = result.workspaceEntry?.status === 'ACTIVE';
-        const canAttach = (
-          result.product.status === 'ACTIVE'
-          && result.variant.status === 'ACTIVE'
-        );
-
-        return (
-          <DataTableActions>
-            <ActionIconButton
-              Icon={Eye}
-              label={'Voir ' + result.product.name}
-              onClick={() => openProduct(result.product.id)}
-              tooltipLabel="Voir"
-              variant="outline"
-            />
-            {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
-              inCatalog ? (
-                <ActionIconButton
-                  Icon={Minus}
-                  disabled={mutationPending}
-                  label={'Retirer ' + result.product.name + ' de mon référentiel'}
-                  onClick={() => changeCatalog(result, false)}
-                  tooltipLabel="Retirer de mon référentiel"
-                  variant="outline"
-                />
-              ) : canAttach ? (
-                <ActionIconButton
-                  Icon={Plus}
-                  disabled={mutationPending}
-                  label={'Ajouter ' + result.product.name + ' à mon référentiel'}
-                  onClick={() => changeCatalog(result, true)}
-                  tooltipLabel="Ajouter à mon référentiel"
-                />
-              ) : null
-            )}
-          </DataTableActions>
-        );
-      },
+      cell: (group) => (
+        <DataTableActions>
+          <ActionIconButton
+            Icon={Eye}
+            label={'Voir ' + group.product.name}
+            onClick={() => openProduct(group.product.id)}
+            tooltipLabel="Voir"
+            variant="outline"
+          />
+        </DataTableActions>
+      ),
     },
   ];
 
@@ -392,7 +418,7 @@ function ProductsPage() {
                   title="Aucun Produit à afficher"
                 />
               )}
-              getRowKey={(result) => result.variant.id}
+              getRowKey={(group) => group.product.id}
               rowClassName="transition-colors hover:bg-muted/50"
             />
             <div className="px-5 pb-5">

@@ -60,7 +60,8 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
       <span data-testid="predictive-scope">{scope}</span>
       <button
         onClick={() => onSelect({
-          ...result,
+          product: result.product,
+          variant: result.variants[0].variant,
           workspaceEntry: null,
         })}
         type="button"
@@ -100,13 +101,10 @@ const metadata = {
       processingStates: ['Produit frais'],
       defaultProcessingState: 'Produit frais',
     },
-    {
-      value: 6,
-      label: 'Gamme 6',
-      name: 'PAI / PAE',
-      processingStates: ['PAI / PAE'],
-      defaultProcessingState: 'PAI / PAE',
-    },
+  ],
+  usageTypes: [
+    { value: 'PAI', label: 'PAI' },
+    { value: 'PAE', label: 'PAE' },
   ],
 };
 
@@ -119,27 +117,30 @@ const result = {
     category: { id: 'category-1', name: 'Légumes', status: 'ACTIVE' },
     status: 'ACTIVE',
   },
-  variant: {
-    id: 'variant-1',
-    variety: null,
-    characteristics: [{
-      id: 'presentation-whole',
-      kind: 'PRESENTATION',
-      name: 'Entière',
-      aliases: [],
+  variants: [{
+    variant: {
+      id: 'variant-1',
+      variety: null,
+      characteristics: [{
+        id: 'presentation-whole',
+        kind: 'PRESENTATION',
+        name: 'Entière',
+        aliases: [],
+        status: 'ACTIVE',
+      }],
+      presentation: 'Entière',
+      processingState: 'Produit frais',
+      foodRange: 1,
+      usageType: null,
+      referenceUnit: 'KG',
+      yieldPercent: 90,
       status: 'ACTIVE',
-    }],
-    presentation: 'Entière',
-    processingState: 'Produit frais',
-    foodRange: 1,
-    referenceUnit: 'KG',
-    yieldPercent: 90,
-    status: 'ACTIVE',
-  },
-  workspaceEntry: {
-    id: 'entry-1',
-    status: 'ACTIVE',
-  },
+    },
+    workspaceEntry: {
+      id: 'entry-1',
+      status: 'ACTIVE',
+    },
+  }],
 };
 
 function renderPage() {
@@ -193,9 +194,7 @@ describe('ProductsPage', () => {
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByText('Légumes')).toBeInTheDocument();
     expect(screen.getByText('Entière · Produit frais')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Déclinaison' }))
-      .toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Gamme' }))
+    expect(screen.getByRole('columnheader', { name: 'Déclinaisons' }))
       .toBeInTheDocument();
     expect(screen.getByText('Gamme 1')).toBeInTheDocument();
     expect(screen.getByText('Produit frais')).toBeInTheDocument();
@@ -290,7 +289,10 @@ describe('ProductsPage', () => {
       data: {
         results: [{
           ...result,
-          workspaceEntry: null,
+          variants: result.variants.map((entry) => ({
+            ...entry,
+            workspaceEntry: null,
+          })),
         }],
         pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
       },
@@ -307,6 +309,29 @@ describe('ProductsPage', () => {
     })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ajouter' }))
       .not.toBeInTheDocument();
+  });
+
+  it('affiche explicitement un Produit global sans déclinaison exploitable', () => {
+    mocks.searchQuery.mockReturnValue({
+      data: {
+        results: [{
+          ...result,
+          product: { ...result.product, name: 'Bœuf' },
+          variants: [],
+        }],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByText('Bœuf')).toBeInTheDocument();
+    expect(screen.getByText('Aucune déclinaison exploitable'))
+      .toBeInTheDocument();
   });
 
   it('masque les actions d’écriture sans permissions ou capabilities M-002', () => {

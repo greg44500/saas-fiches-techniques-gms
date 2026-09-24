@@ -54,7 +54,17 @@ function getFoodRangeName(metadata, foodRange) {
   return getFoodRangeDefinition(metadata, foodRange)?.name ?? null;
 }
 
+function getUsageTypeLabel(metadata, usageType) {
+  return getMetadataLabel(
+    metadata?.usageTypes,
+    usageType,
+    usageType ?? 'Non renseigné',
+  );
+}
+
 function getVariantLabel(variant) {
+  if (!variant) return 'Aucune déclinaison exploitable';
+
   const characteristicNames = (variant?.characteristics ?? [])
     .map(({ name }) => name)
     .filter(Boolean);
@@ -64,7 +74,18 @@ function getVariantLabel(variant) {
     variant?.processingState,
   ].filter(Boolean);
 
-  return parts.join(' · ') || 'Déclinaison standard';
+  return parts.join(' · ') || 'Déclinaison à préciser';
+}
+
+function getProductVariantSearchLabel(product, variant) {
+  if (!variant) return product?.name ?? '';
+
+  const dimensions = [
+    variant.variety?.name,
+    ...(variant.characteristics ?? []).map(({ name }) => name),
+  ].filter(Boolean);
+
+  return [product?.name, ...dimensions].filter(Boolean).join(' ');
 }
 
 function formatYield(value) {
@@ -161,7 +182,9 @@ export {
   getProductEventLabel,
   getProductStatusLabel,
   getProductStatusTone,
+  getProductVariantSearchLabel,
   getReferenceUnitLabel,
+  getUsageTypeLabel,
   getVariantLabel,
   getWorkspaceProductStatusLabel,
 };

@@ -8,7 +8,9 @@ import {
   getImportClassificationPresentation,
   getProductEventLabel,
   getProductStatusLabel,
+  getProductVariantSearchLabel,
   getReferenceUnitLabel,
+  getUsageTypeLabel,
   getVariantLabel,
   getWorkspaceProductStatusLabel,
 } from '@/features/products/lib/product-presentation';
@@ -35,13 +37,10 @@ const metadata = {
       processingStates: ['Produit frais'],
       defaultProcessingState: 'Produit frais',
     },
-    {
-      value: 6,
-      label: 'Gamme 6',
-      name: 'PAI / PAE',
-      processingStates: ['PAI / PAE'],
-      defaultProcessingState: 'PAI / PAE',
-    },
+  ],
+  usageTypes: [
+    { value: 'PAI', label: 'PAI' },
+    { value: 'PAE', label: 'PAE' },
   ],
 };
 
@@ -64,6 +63,15 @@ describe('product presentation', () => {
     })).toBe('Gala · Râpée · Mini · Produit frais');
     expect(getFoodRangeLabel(metadata, 1)).toBe('Gamme 1');
     expect(getFoodRangeName(metadata, 1)).toBe('Frais');
+    expect(getUsageTypeLabel(metadata, 'PAI')).toBe('PAI');
+    expect(getProductVariantSearchLabel(
+      { name: 'Bœuf' },
+      {
+        variety: null,
+        characteristics: [{ kind: 'CUT', name: 'Paleron' }],
+      },
+    )).toBe('Bœuf Paleron');
+    expect(getVariantLabel(null)).toBe('Aucune déclinaison exploitable');
     expect(formatYield(92.5)).toBe('92.5 %');
   });
 

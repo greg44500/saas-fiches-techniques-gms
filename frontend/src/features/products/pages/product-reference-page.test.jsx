@@ -66,6 +66,18 @@ const metadata = {
     { value: 'CANONICAL_PRODUCT', label: 'Produit' },
     { value: 'CHARACTERISTIC', label: 'Caractéristique' },
   ],
+  referenceUnits: [{ value: 'KG', label: 'kg' }],
+  foodRanges: [{
+    value: 1,
+    label: 'Gamme 1',
+    name: 'Frais',
+    processingStates: ['Produit frais'],
+    defaultProcessingState: 'Produit frais',
+  }],
+  usageTypes: [
+    { value: 'PAI', label: 'PAI' },
+    { value: 'PAE', label: 'PAE' },
+  ],
   productContributionStatuses: [
     { value: 'PENDING_REVIEW', label: 'À examiner' },
     { value: 'APPROVED', label: 'Approuvée' },
@@ -80,6 +92,23 @@ const product = {
   category: { id: 'category-1', name: 'Légumes', status: 'ACTIVE' },
   status: 'ACTIVE',
   updatedAt: '2026-09-23T08:00:00.000Z',
+  variants: [{
+    id: 'variant-1',
+    variety: null,
+    characteristics: [{
+      id: 'presentation-whole',
+      kind: 'PRESENTATION',
+      name: 'Entière',
+      aliases: [],
+      status: 'ACTIVE',
+    }],
+    processingState: 'Produit frais',
+    foodRange: 1,
+    usageType: null,
+    referenceUnit: 'KG',
+    yieldPercent: null,
+    status: 'ACTIVE',
+  }],
 };
 
 function renderPage({ canManage = false } = {}) {
@@ -134,6 +163,9 @@ describe('ProductReferencePage', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
+    expect(screen.getByText('Entière · Produit frais')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Déclinaisons' }))
+      .toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: 'À valider' }))
       .not.toBeInTheDocument();
     expect(mocks.productsQuery).toHaveBeenCalledWith(
@@ -143,6 +175,31 @@ describe('ProductReferencePage', () => {
       }),
       { skip: false },
     );
+  });
+
+  it('garde visible un Produit global sans déclinaison artificielle', () => {
+    mocks.productsQuery.mockReturnValue({
+      data: {
+        products: [{
+          ...product,
+          name: 'Bœuf',
+          variants: [],
+        }],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByText('Bœuf')).toBeInTheDocument();
+    expect(screen.getByText('Aucune déclinaison exploitable'))
+      .toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Rechercher un produit…'))
+      .toBeInTheDocument();
   });
 
   it('conserve la gestion des catégories en lecture seule sans product:reference:manage', async () => {

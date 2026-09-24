@@ -55,7 +55,14 @@ describe('ProductSearchAutocomplete', () => {
         && args?.q === 'car'
       )
         ? {
-            results: [result],
+            results: [{
+            source: 'CANONICAL_PRODUCT',
+            product: result.product,
+            variants: [{
+              variant: result.variant,
+              workspaceEntry: null,
+            }],
+          }],
             pagination: {
               page: 1,
               limit: 6,
@@ -101,6 +108,7 @@ describe('ProductSearchAutocomplete', () => {
 
     expect(onSelect).toHaveBeenCalledWith(result);
     expect(input).toHaveValue('Carotte');
+    expect(input).toHaveAttribute('placeholder', 'Rechercher un produit…');
   });
 
   it('n interroge pas le serveur avant le seuil de trois caractères', async () => {

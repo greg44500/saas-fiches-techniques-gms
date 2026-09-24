@@ -38,8 +38,12 @@ import { ProductReferenceDetailsDrawer } from '@/features/products/components/pr
 import {
   getApiErrorMessage,
   getCategoryStatusLabel,
+  getFoodRangeLabel,
+  getFoodRangeName,
   getProductStatusLabel,
   getProductStatusTone,
+  getUsageTypeLabel,
+  getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
@@ -210,9 +214,40 @@ function ProductReferencePage({ canManage }) {
       ),
     },
     {
-      id: 'updated',
-      header: 'Dernière évolution',
-      cell: (product) => new Date(product.updatedAt).toLocaleDateString('fr-FR'),
+      id: 'variants',
+      header: 'Déclinaisons',
+      cell: (product) => {
+        if (!product.variants?.length) {
+          return (
+            <p className="text-sm text-muted-foreground">
+              Aucune déclinaison exploitable
+            </p>
+          );
+        }
+
+        return (
+          <div className="space-y-2">
+            {product.variants.map((variant) => (
+              <div
+                className="rounded-md border border-border/70 p-3"
+                key={variant.id}
+              >
+                <p className="font-medium">{getVariantLabel(variant)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {[
+                    getFoodRangeLabel(metadata, variant.foodRange),
+                    getFoodRangeName(metadata, variant.foodRange),
+                    variant.usageType
+                      ? 'Usage ' + getUsageTypeLabel(metadata, variant.usageType)
+                      : null,
+                    variant.status === 'ARCHIVED' ? 'Archivée' : null,
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+            ))}
+          </div>
+        );
+      },
     },
     {
       id: 'actions',
@@ -451,7 +486,7 @@ function ProductReferencePage({ canManage }) {
                 aria-label="Rechercher un Produit global"
                 maxLength={120}
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Nom ou synonymes métier"
+                placeholder="Rechercher un produit…"
                 value={searchInput}
               />
               <Button type="submit" variant="outline">Rechercher</Button>

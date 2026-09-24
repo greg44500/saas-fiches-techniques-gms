@@ -18,6 +18,7 @@ import {
   useSearchProductsQuery,
 } from '@/features/products/api/product-catalog-api';
 import {
+  getProductVariantSearchLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 
@@ -66,17 +67,33 @@ function ProductSearchAutocomplete({
     },
   );
 
-  const suggestions = useMemo(
-    () => (
-      debouncedQuery.length >= PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH
-        ? suggestionsQuery.data?.results ?? []
-        : []
-    ),
-    [debouncedQuery.length, suggestionsQuery.data?.results],
-  );
+  const suggestions = useMemo(() => {
+    if (debouncedQuery.length < PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH) {
+      return [];
+    }
+
+    return (suggestionsQuery.data?.results ?? [])
+      .flatMap((group) => (
+        group.variants?.length
+          ? group.variants.map((entry) => ({
+              product: group.product,
+              variant: entry.variant,
+              workspaceEntry: entry.workspaceEntry,
+            }))
+          : [{
+              product: group.product,
+              variant: null,
+              workspaceEntry: null,
+            }]
+      ))
+      .slice(0, PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT);
+  }, [debouncedQuery.length, suggestionsQuery.data?.results]);
 
   function selectSuggestion(result) {
-    const nextSearch = result.product.name;
+    const nextSearch = getProductVariantSearchLabel(
+      result.product,
+      result.variant,
+    );
 
     onValueChange(nextSearch);
     onSelect(result);
@@ -93,7 +110,10 @@ function ProductSearchAutocomplete({
       autoHighlight
       filter={null}
       items={suggestions}
-      itemToStringValue={(result) => result.product.name}
+      itemToStringValue={(result) => getProductVariantSearchLabel(
+        result.product,
+        result.variant,
+      )}
       limit={PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT}
       onValueChange={onValueChange}
       value={value}
@@ -107,7 +127,7 @@ function ProductSearchAutocomplete({
           aria-label="Rechercher un Produit"
           className="h-10"
           maxLength={120}
-          placeholder="Nom ou alias"
+          placeholder="Rechercher un produit…"
         />
         <AutocompleteClear aria-label="Effacer la recherche">
           <X aria-hidden="true" className="size-4" />
@@ -137,7 +157,7 @@ function ProductSearchAutocomplete({
                   : waitingForMinimum
                     ? 'Saisissez au moins 3 caractères.'
                     : normalizedValue.length === 0
-                      ? 'Commencez à saisir un nom ou un alias.'
+                      ? 'Commencez à saisir un produit.'
                       : 'Aucun Produit ne correspond à cette recherche.'}
             </AutocompleteEmpty>
 
@@ -151,7 +171,7 @@ function ProductSearchAutocomplete({
                   ].filter(Boolean).join('. ')}
                   className="border-b border-border/50 last:border-b-0 data-highlighted:bg-accent/70"
                   index={index}
-                  key={result.variant.id}
+                  key={result.variant?.id ?? result.product.id}
                   onClick={() => selectSuggestion(result)}
                   value={result}
                 >
