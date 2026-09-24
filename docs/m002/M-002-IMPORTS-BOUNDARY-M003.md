@@ -21,17 +21,23 @@ XLSX
 Données admissibles :
 
 - nom Produit ;
-- alias ;
 - catégorie ;
+- Variété ;
 - Présentation ;
+- Type commercial ;
+- Calibre / format ;
+- Couleur ;
+- Désignation de qualité ;
 - Gamme ;
 - État / transformation compatible avec la Gamme ;
 - unité ;
 - rendement lorsqu'il est fiable.
 
+Les synonymes métier ne sont pas librement importables depuis un Workspace. Ils restent gouvernés globalement.
+
 Le champ historique Conservation n'est plus une dimension M-002 autonome.
 
-Le pipeline applique systématiquement normalisation, déduplication, recherche de proximité et contrôles d'autorisation.
+Le pipeline applique systématiquement normalisation, résolution des Variétés/Caractéristiques existantes (nom ou synonymes métier), déduplication, recherche de proximité, classification de contribution et contrôles d'autorisation.
 
 L'accès commercial à l'import est porté par la capability métier `product_catalog_import`. La création de nouvelles identités/déclinaisons exige en plus `product_contribution` et les permissions Workspace correspondantes.
 

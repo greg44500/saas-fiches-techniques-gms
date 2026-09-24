@@ -1,6 +1,6 @@
 # M-002 — Référentiel Produits / Produits canoniques
 
-**Statut : CHECKPOINT CARACTÉRISTIQUES VALIDÉ — implémentation en cours**  
+**Statut : CONTRAT STRUCTURÉ IMPLÉMENTÉ — validation finale/tests/QA requis**  
 **Branche :** `feature/m002-catalogue-produits`
 
 ## 1. Objectif
@@ -313,6 +313,6 @@ Garde-fous :
 
 ## 15. Seed
 
-`backend/seeds/data/m002-reference.v1.json` reste `ready:false` tant que Variété, Caractéristiques, recherche, contribution, imports et frontend ne sont pas finalisés.
+`backend/seeds/data/m002-reference.v1.json` est désormais `ready:true` pour la bêta M-002. Il contient 39 Produits sous la catégorie **Fruits et légumes**, avec les Variétés/Caractéristiques nécessaires aux scénarios de validation (notamment Pomme, Carotte, Tomate et Pomme de terre).
 
-Aucun rendement n'est inventé.
+Aucun rendement n'est inventé : toutes les valeurs non validées restent `null`. Le dataset ne contient aucune donnée fournisseur, prix ou conditionnement commercial.

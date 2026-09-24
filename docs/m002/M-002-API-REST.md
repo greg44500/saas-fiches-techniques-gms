@@ -59,7 +59,7 @@ Permission : `product:read`.
 
 Retourne le Produit et ses déclinaisons opérationnelles visibles.
 
-## 3. Anti-doublon et création Workspace
+## 3. Anti-doublon, contribution et création Workspace
 
 ### POST /duplicate-check
 
@@ -75,18 +75,43 @@ Permission : `product:contribute`.
 
 Capability : `product_contribution`.
 
-Crée un nouveau Produit global après revue des candidats :
+Soumet une nouvelle identité racine au moteur de contribution. Le payload Workspace n'accepte pas de synonymes métier ni de `reviewedCandidateIds`.
 
-Le payload de la première déclinaison utilise `presentation`, `foodRange`, `processingState`, `referenceUnit`, `yieldPercent`. `foodRange` est obligatoire ; le backend dérive/valide `processingState`. Le champ `preservation` n'est plus accepté.
+La première déclinaison peut fournir `presentation`, `foodRange`, `processingState`, `referenceUnit`, `yieldPercent`. `presentation` est une commodité de saisie pour la future `ProductCharacteristic(PRESENTATION)`, pas un champ persistant de `ProductVariant`.
+
+Flux :
 
 ```text
 anti-doublon recalculé
-→ catégorie ACTIVE obligatoire
-→ CanonicalProduct ACTIVE
-→ première ProductVariant ACTIVE
-→ WorkspaceProduct ACTIVE
-→ activité métier
+→ catégorie ACTIVE
+→ classification contribution
+→ nouveau CanonicalProduct : REVIEW_REQUIRED par défaut
+→ ReferenceContribution PENDING_REVIEW
+→ aucune référence publiée avant décision globale
 ```
+
+Si un Produit équivalent existe déjà, la réponse peut être `EXISTING` sans créer de contribution.
+
+### POST /contributions
+
+Permission : `product:contribute`.
+
+Capability : `product_contribution`.
+
+Soumet une Variété ou une Caractéristique sous un Produit existant. Réponse déterministe :
+
+```text
+EXISTING
+AUTO_PUBLISHABLE
+REVIEW_REQUIRED
+INVALID
+```
+
+### GET /:productId/dimensions
+
+Permission : `product:read`.
+
+Retourne les Variétés et Caractéristiques actives nécessaires aux sélecteurs Workspace.
 
 ### POST /:productId/variants
 
@@ -94,9 +119,18 @@ Permission : `product:contribute`.
 
 Capability : `product_contribution`.
 
-Le Produit parent doit être ACTIVE. La nouvelle déclinaison devient ACTIVE et est rattachée au Workspace.
+Le Produit parent doit être ACTIVE. Le payload utilise des identifiants structurés :
 
-Les anciennes routes `/contributions` et `/:productId/variants/contributions` sont supprimées.
+```text
+varietyId nullable
+characteristicIds[]
+foodRange
+processingState
+referenceUnit
+yieldPercent
+```
+
+La déclinaison est créée ACTIVE uniquement à partir de dimensions déjà gouvernées puis rattachée au Workspace créateur.
 
 ## 4. Référentiel Workspace — routes techniques stables
 
@@ -164,7 +198,7 @@ product:reference:read
 product:reference:manage
 ```
 
-Un rôle Platform n'accorde rien implicitement. Une personne de l'équipe Platform peut utiliser cette API si un `ApplicationGlobalMember` lui attribue explicitement les permissions Produit.
+Un rôle Platform n'accorde rien implicitement. Une personne de l'équipe Platform peut utiliser cette API uniquement via un `ApplicationGlobalMember` explicite.
 
 ### Lecture
 
@@ -173,18 +207,27 @@ Un rôle Platform n'accorde rien implicitement. Une personne de l'équipe Platfo
 - `GET /categories`
 - `GET /`
 - `GET /:productId`
+- `GET /:productId/dimensions`
+- `GET /contributions`
 
 ### Gestion
 
-- `POST /` — créer un Produit global ;
-- `POST /:productId/variants` — créer une déclinaison globale ;
-- `PATCH /:productId` — corriger ;
+- `POST /` — créer directement un Produit global ;
+- `POST /:productId/variants` — créer une déclinaison globale structurée ;
+- `POST /:productId/varieties` — créer une Variété ;
+- `PATCH /:productId/varieties/:varietyId` — corriger une Variété/ses synonymes ;
+- `PATCH /:productId/varieties/:varietyId/status` — archiver/réactiver ;
+- `POST /:productId/characteristics` — créer une Caractéristique ;
+- `PATCH /:productId/characteristics/:characteristicId` — corriger une Caractéristique/ses synonymes ;
+- `PATCH /:productId/characteristics/:characteristicId/status` — archiver/réactiver ;
+- `POST /contributions/:contributionId/decision` — `APPROVE` ou `REJECT` après revalidation ;
+- `PATCH /:productId` — corriger le Produit ;
 - `PATCH /:productId/status` — archiver/réactiver ;
 - `PATCH /:productId/variants/:variantId` — corriger une déclinaison ;
 - `PATCH /:productId/variants/:variantId/status` — archiver/réactiver ;
 - CRUD/lifecycle catégories.
 
-Les routes `approve` et `reject` sont supprimées.
+L'approbation d'une contribution est atomique : revalidation, éventuelle publication/réutilisation de l'existant, statut `APPROVED` et événement sont dans la même transaction.
 
 ## 7. Import global Produit
 
@@ -207,16 +250,24 @@ Caractéristiques :
 
 ## 8. États
 
-États opérationnels V1 :
+Références réelles :
 
 ```text
 ACTIVE
 ARCHIVED
 ```
 
-`PENDING_REVIEW` n'est plus produit par aucune route.
+Contributions :
 
-Une migration/backfill doit convertir les anciennes données de développement en attente avant la finalisation de M-002.
+```text
+PENDING_REVIEW
+APPROVED
+REJECTED
+```
+
+`PENDING_REVIEW` n'est jamais un statut de `CanonicalProduct`, `ProductVariant`, `ProductVariety` ou `ProductCharacteristic`. Il appartient uniquement à `ReferenceContribution`.
+
+Le backfill historique conserve la normalisation des anciens statuts de référence issus des premières itérations de développement.
 
 ## 9. Frontière M-003
 

@@ -1,6 +1,6 @@
 # M-002 — Validation, identité et prévention des doublons
 
-**Statut : ALIGNÉ SUR PRODUCTVARIETY + PRODUCTCHARACTERISTIC — implémentation en cours**
+**Statut : ALIGNÉ SUR PRODUCTVARIETY + PRODUCTCHARACTERISTIC — implémenté, validation finale requise**
 
 ## 1. Normalisation
 
@@ -137,9 +137,9 @@ Aucun score opaque de confiance n'est autorisé.
 
 ## 10. Zod
 
-Les payloads ordinaires Workspace ne saisissent pas d'alias métier.
+Les payloads ordinaires Workspace ne saisissent pas de synonymes métier. Le payload initial d'un nouveau Produit peut fournir une Présentation textuelle de commodité ; elle est convertie en `ProductCharacteristic(PRESENTATION)` lors de la publication.
 
-Une déclinaison accepte à terme :
+Une déclinaison d'un Produit existant accepte :
 
 - `varietyId` nullable ;
 - `characteristicIds[]` ;

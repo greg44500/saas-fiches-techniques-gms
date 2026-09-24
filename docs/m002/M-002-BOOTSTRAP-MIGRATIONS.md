@@ -64,13 +64,10 @@ npm run migration:m002-catalog
 Responsabilités :
 
 1. normaliser les anciens statuts M-002 vers `ACTIVE/ARCHIVED` ;
-2. migrer la sémantique des déclinaisons :
-   - `form → presentation` ;
-   - suppression de `preservation` ;
-   - État / transformation recalculé depuis la Gamme lorsqu'elle existe ;
-   - nouvelle signature `presentation + gamme + état` ;
-3. créer/vérifier les indexes M-002 ;
-4. synchroniser les permissions système Workspace enregistrées.
+2. migrer la sémantique des anciennes déclinaisons (`form/preservation`, Gamme et État) ;
+3. convertir la Présentation historique en `ProductCharacteristic(PRESENTATION)`, renseigner `characteristics[]`, conserver `variety=null` et recalculer la signature structurée ;
+4. créer/vérifier les indexes M-002 ;
+5. synchroniser les permissions système Workspace enregistrées.
 
 La migration refuse une collision de signatures actives avant toute fusion implicite. Pour respecter l'index unique historique pendant la réécriture, les seules variantes à migrer passent transactionnellement par une signature temporaire unique avant leur signature finale. Elle ne devine pas une Gamme absente et reste rejouable sans réécriture au second passage.
 
@@ -103,39 +100,62 @@ Ce bootstrap est un seed produit, pas une migration de schéma ; il ne rejoint d
 
 ## 5. Bootstrap Produit
 
-Le bootstrap M-002 utilise les mêmes services/invariants que les flux normaux.
+Le bootstrap M-002 est versionné et idempotent.
 
-Structure versionnée proposée :
+Fichiers :
 
 ```text
 backend/seeds/data/m002-reference.v1.json
 backend/seeds/seedM002Reference.js
 ```
 
-Contenu conceptuel :
+Structure :
 
 ```text
 version
+ready
 categories[]
 products[]
   name
-  aliases
+  aliases métier éventuels
   categoryKey
+  varieties[]
+    key
+    name
+    aliases métier éventuels
+  characteristics[]
+    key
+    kind
+    name
+    aliases métier éventuels
   variants[]
+    varietyKey nullable
+    characteristicKeys[]
+    foodRange
+    processingState
+    referenceUnit
+    yieldPercent
 ```
 
-Le moteur de bootstrap est implémenté et versionné. Le fichier
-`backend/seeds/data/m002-reference.v1.json` reste volontairement avec
-`ready: false` et sans données tant que le premier référentiel bêta n'a pas été nettoyé et validé.
+Le dataset `m002-reference-v1` est désormais `ready:true`.
 
-Le bootstrap :
+Baseline bêta :
 
-- normalise ;
-- contrôle les doublons ;
-- crée/actualise idempotemment les références prévues ;
-- ne contourne pas les indexes ;
-- trace la version installée et le hash du dataset dans ProductReferenceBootstrapRun ;
-- ne contient aucun prix/fournisseur/conditionnement.
+- 1 catégorie : **Fruits et légumes** ;
+- 39 Produits ;
+- Pomme avec Golden, Gala et Granny Smith ;
+- Carotte avec Nantaise, En botte avec fanes, Mini, Râpée et Carottes des sables ;
+- Tomate et Pomme de terre avec dimensions structurantes ;
+- aucun rendement inventé : valeurs non validées à `null` ;
+- aucun fournisseur, prix ou conditionnement commercial.
+
+Commande :
+
+```text
+npm run seed:m002-reference
+```
+
+Le bootstrap valide le dataset par Zod, construit Produits/Variétés/Caractéristiques/Déclinaisons, trace version/hash/compteurs dans `ProductReferenceBootstrapRun`, est idempotent et refuse une même version avec un contenu différent.
 
 ## 6. Source réelle disponible
 
@@ -162,7 +182,7 @@ La taxonomie initiale n'est pas inventée dans le code.
 
 Elle est fournie dans le fichier bootstrap validé ou créée par la gouvernance métier globale.
 
-Une nouvelle identité ACTIVE exige immédiatement une catégorie ACTIVE. Il n'existe plus de contribution PENDING dans le parcours opérationnel.
+Une nouvelle identité ACTIVE exige une catégorie ACTIVE. Une proposition Workspace de nouvelle identité racine peut rester `PENDING_REVIEW` dans `ReferenceContribution` jusqu'à décision ; ce statut n'appartient jamais à la référence elle-même.
 
 ## 8. Données de développement et tests
 
