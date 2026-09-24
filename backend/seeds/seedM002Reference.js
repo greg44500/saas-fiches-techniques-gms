@@ -55,7 +55,7 @@ const seedVariantSchema = z.strictObject({
     ).nullable().optional().default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
     yieldPercent: z.number().positive().max(100).nullable().optional().default(null),
-})
+});
 
 const seedCategorySchema = z.strictObject({
     key: z.string().trim().min(1).max(120),

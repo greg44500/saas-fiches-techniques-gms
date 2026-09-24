@@ -97,8 +97,8 @@ describe('M-002 reference bootstrap', () => {
         const parsed = m002ReferenceDatasetSchema.parse(dataset);
 
         expect(parsed.ready).toBe(true);
-        expect(parsed.version).toBe('m002-reference-v4');
-        expect(parsed.categories).toHaveLength(12);
+        expect(parsed.version).toBe('m002-reference-v5');
+        expect(parsed.categories).toHaveLength(14);
         expect(parsed.categories).toEqual(expect.arrayContaining([
             { key: 'fruits-legumes', name: 'Fruits et légumes' },
             { key: 'viandes-volailles', name: 'Viandes et volailles' },
@@ -127,8 +127,26 @@ describe('M-002 reference bootstrap', () => {
                 key: 'epicerie-sucree-patisserie',
                 name: 'Épicerie sucrée et pâtisserie',
             },
+            { key: 'boissons', name: 'Boissons' },
+            {
+                key: 'plats-prepares-alternatives',
+                name: 'Plats préparés et alternatives végétales',
+            },
         ]));
-        expect(parsed.products).toHaveLength(135);
+        expect(parsed.products).toHaveLength(220);
+        expect(
+            parsed.products.reduce(
+                (total, product) => total + product.variants.length,
+                0,
+            ),
+        ).toBe(302);
+        expect(parsed.sources).toEqual([
+            expect.objectContaining({
+                name: 'SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf',
+                scope: 'Denrées alimentaires uniquement',
+                excludedPages: '35-37 (Non Alimentaire)',
+            }),
+        ]);
 
         const carotte = parsed.products.find(({ name }) => name === 'Carotte');
         const pomme = parsed.products.find(({ name }) => name === 'Pomme');
@@ -172,11 +190,31 @@ describe('M-002 reference bootstrap', () => {
         expect(poulet.characteristics).toEqual(expect.arrayContaining([
             expect.objectContaining({ kind: 'CUT', name: 'Cuisse' }),
         ]));
-        expect(boeuf.variants).toEqual([]);
-        expect(agneau.variants).toEqual([]);
-        expect(poulet.variants).toEqual([]);
+        expect(boeuf.variants.map(({ name }) => name)).toEqual(
+            expect.arrayContaining([
+                'Rôti de bœuf',
+                'Sauté de bœuf',
+                'Boulette de bœuf',
+                'Rognons de bœuf',
+                'Paleron de bœuf',
+                'Faux-filet de bœuf',
+            ]),
+        );
+        expect(agneau.variants.map(({ name }) => name)).toEqual(
+            expect.arrayContaining([
+                "Gigot d'agneau",
+                "Sauté d'agneau",
+            ]),
+        );
+        expect(poulet.variants.map(({ name }) => name)).toEqual(
+            expect.arrayContaining([
+                'Filet de poulet',
+                'Sauté de poulet',
+            ]),
+        );
         expect(jambonBlanc.categoryKey).toBe('charcuteries');
-        expect(jambonBlanc.variants).toEqual([]);
+        expect(jambonBlanc.variants.map(({ name }) => name))
+            .toContain('Jambon cuit');
 
         expect(parsed.products).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -220,7 +258,9 @@ describe('M-002 reference bootstrap', () => {
             expect(representedCategoryKeys.has(category.key)).toBe(true);
         }
 
+        const normalizedReferenceNames = new Set();
         for (const product of parsed.products) {
+            expect(product.variants.length).toBeGreaterThan(0);
             expect(product).not.toHaveProperty('supplier');
             expect(product).not.toHaveProperty('price');
             expect(product).not.toHaveProperty('packaging');
@@ -233,8 +273,40 @@ describe('M-002 reference bootstrap', () => {
                     expect(variant.foodRange).toBeLessThanOrEqual(6);
                 }
                 expect(variant).not.toHaveProperty('usageType');
+
+                const normalized = variant.name
+                    .normalize('NFKD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase();
+                expect(normalizedReferenceNames.has(normalized)).toBe(false);
+                normalizedReferenceNames.add(normalized);
             }
         }
+
+        const referenceNames = [...normalizedReferenceNames];
+        for (const forbidden of [
+            'gobelet',
+            'assiette ronde',
+            'serviette ouate',
+            'tourtiere alu',
+            'barquette alu',
+            'sac poubelle',
+            'lavette',
+            'papier hygienique',
+            'film alimentaire',
+        ]) {
+            expect(referenceNames.some((name) => name.includes(forbidden)))
+                .toBe(false);
+        }
+
+        expect(referenceNames).toEqual(expect.arrayContaining([
+            'carottes rapees',
+            'bouillon de legumes en granules',
+            'quinoa gourmand',
+            'creme dessert chocolat',
+            "gigot d'agneau",
+            'jus d\'orange',
+        ]));
     });
 
     it('refuse explicitement un dataset non validé', async () => {
