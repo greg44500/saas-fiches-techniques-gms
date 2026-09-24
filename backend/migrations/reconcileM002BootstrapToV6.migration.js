@@ -13,6 +13,9 @@ import {
     WORKSPACE_PRODUCT_STATUS,
 } from '../modules/productCatalog/productCatalog.registry.js';
 import { ProductVariant } from '../modules/productCatalog/productVariant.model.js';
+import {
+    ProductReferenceBootstrapRun,
+} from '../modules/productCatalog/productReferenceBootstrapRun.model.js';
 import { WorkspaceProduct } from '../modules/productCatalog/workspaceProduct.model.js';
 
 const HISTORICAL_DATASET_URLS = Object.freeze([
@@ -108,6 +111,30 @@ const reconcileM002BootstrapToV6 = async () => {
     const contract = await loadBootstrapReconciliationContract();
 
     return mongoose.connection.transaction(async (session) => {
+        const historicalRuns = await ProductReferenceBootstrapRun.find({
+            version: mongoose.trusted({
+                $in: [
+                    'm002-reference-v1',
+                    'm002-reference-v2',
+                    'm002-reference-v3',
+                    'm002-reference-v4',
+                    'm002-reference-v5',
+                ],
+            }),
+        })
+            .select('actor installedAt')
+            .session(session)
+            .lean();
+        const historicalActorIds = new Set(
+            historicalRuns.map(({ actor }) => actor.toString()),
+        );
+        const latestHistoricalInstalledAt = historicalRuns.reduce(
+            (latest, { installedAt }) => (
+                !latest || installedAt > latest ? installedAt : latest
+            ),
+            null,
+        );
+
         const variants = await ProductVariant.find({
             identityActive: true,
             status: mongoose.trusted({
@@ -135,6 +162,18 @@ const reconcileM002BootstrapToV6 = async () => {
                 || !String(variant.normalizedName ?? '').trim()
                 || !String(variant.conservationType ?? '').trim()
             );
+            const createdAt = variant.createdAt
+                ?? variant._id?.getTimestamp?.()
+                ?? null;
+            const historicalActorReference = (
+                incompleteReference
+                && !variant.contributedFromWorkspace
+                && variant.createdBy
+                && historicalActorIds.has(variant.createdBy.toString())
+                && latestHistoricalInstalledAt
+                && createdAt
+                && createdAt <= latestHistoricalInstalledAt
+            );
             const bootstrapOwned = (
                 contract.historicalReferenceNames.has(
                     normalizedReferenceName,
@@ -146,6 +185,7 @@ const reconcileM002BootstrapToV6 = async () => {
                         normalizedProductName,
                     )
                 )
+                || historicalActorReference
             );
 
             if (!bootstrapOwned) continue;
