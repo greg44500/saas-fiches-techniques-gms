@@ -34,6 +34,18 @@ const productReferenceBootstrapRunSchema = new Schema(
             required: true,
             immutable: true,
         },
+        varietyCount: {
+            type: Number,
+            min: 0,
+            default: 0,
+            immutable: true,
+        },
+        characteristicCount: {
+            type: Number,
+            min: 0,
+            default: 0,
+            immutable: true,
+        },
         variantCount: {
             type: Number,
             min: 0,
