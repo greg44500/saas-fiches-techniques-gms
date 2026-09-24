@@ -297,154 +297,120 @@ Le référentiel Produit M-002 est une donnée de référence globale du SaaS. L
 ```text
 CanonicalProduct
 → identité racine globale
-→ nom / alias / clés de recherche
-→ catégorie
-→ ACTIVE | ARCHIVED
+
+ProductVariety
+→ véritable variété/cultivar facultatif
+→ rattachée à un CanonicalProduct
+
+ProductCharacteristic
+→ caractéristique contrôlée rattachée à un CanonicalProduct
+→ PRESENTATION | COMMERCIAL_TYPE | SIZE_FORMAT | COLOR | QUALITY_DESIGNATION
 
 ProductVariant
-→ déclinaison globale d'un CanonicalProduct
-→ presentation
-→ foodRange
-→ processingState dérivé/validé depuis foodRange
-→ referenceUnit
-→ yieldPercent
-→ ACTIVE | ARCHIVED
+→ CanonicalProduct
+→ ProductVariety éventuelle
+→ ProductCharacteristic[] structurées
+→ Gamme + État/transformation
+→ unité + rendement
 
 WorkspaceProduct
 → ownership Workspace
 → référence une ProductVariant
 → matérialise Mon référentiel
-→ ne copie pas l'identité Produit
 ```
 
-`createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` conserve éventuellement l'origine historique d'une création sans devenir un ownership du Produit.
+`createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` conserve une provenance sans devenir un ownership.
 
-Les anciens champs `form`, `normalizedForm`, `preservation` et `normalizedPreservation` sont retirés du modèle opérationnel. Une migration les convertit ou les supprime de façon contrôlée.
-
-### 5.2 Anti-doublon et création
-
-Invariant :
+### 5.2 Classification validée
 
 ```text
-même réalité Produit canonique
-→ une seule identité dans le SaaS
+Carotte Nantaise          → COMMERCIAL_TYPE:Nantaise
+Carotte en botte/fanes    → PRESENTATION:En botte avec fanes
+Carotte des sables        → QUALITY_DESIGNATION gouvernée
+Carotte de couleur        → COLOR ; valeur ambiguë à revoir
+Mini carotte              → SIZE_FORMAT:Mini
+Carotte râpée             → PRESENTATION:Râpée
+Carotte surgelée          → Gamme 3 / Surgelé
+Pomme Golden              → ProductVariety:Golden
+Tomate cerise             → COMMERCIAL_TYPE:Cerise
+Tomate grappe             → PRESENTATION:En grappe
+Tomate cœur de bœuf       → COMMERCIAL_TYPE:Cœur de bœuf
+Pomme de terre grenaille  → SIZE_FORMAT:Grenaille
+Pomme de terre Charlotte  → ProductVariety:Charlotte
 ```
 
-Avant création : normalisation, recherche exacte, alias, proximité, revue explicite des candidats puis création uniquement si aucun équivalent crédible n'est retenu.
+Une désignation complexe ne devient jamais automatiquement un nouveau `CanonicalProduct` si son parent est identifiable.
 
-Une création Workspace autorisée produit :
+### 5.3 Identité et signature
 
-```text
-CanonicalProduct ACTIVE
-+ ProductVariant ACTIVE
-+ WorkspaceProduct ACTIVE
-```
-
-Une création globale produit le `CanonicalProduct` et sa première `ProductVariant` sans `WorkspaceProduct`.
-
-### 5.3 Catégories
-
-`ProductCategory` est globale. Une catégorie `ACTIVE` est obligatoire pour créer une identité Produit `ACTIVE`.
-
-### 5.4 Déclinaisons
-
-Signature métier courante :
+La signature de `ProductVariant` utilise les identifiants stables :
 
 ```text
 canonicalProduct
-+ normalized(presentation)
++ varietyId ou _
++ characteristicIds ordonnés par kind
 + foodRange
 + normalized(processingState)
 ```
 
-Le backend expose les six gammes et leurs états associés via les métadonnées :
+L'unité et le rendement restent hors signature.
+
+Un renommage d'une Variété ou d'une Caractéristique ne modifie pas artificiellement l'identité des variantes.
+
+### 5.4 Catégories, Gammes et États
+
+`ProductCategory` est globale. Une catégorie `ACTIVE` est obligatoire pour créer une identité Produit `ACTIVE`.
+
+Le backend reste l'autorité des six Gammes et de leurs États/transformation associés. Le frontend ne définit aucune liste parallèle.
+
+### 5.5 Recherche et synonymes
+
+Les alias persistés sont uniquement de vrais synonymes métier validés.
+
+Casse, accents, apostrophes, tirets, ligatures, pluriels raisonnables et fautes relèvent du moteur de recherche, pas des alias.
+
+La recherche décompose les saisies complexes :
 
 ```text
-1 → Frais → Produit frais
-2 → Conserves → Conserve
-3 → Surgelés → Surgelé
-4 → Sous-vide cru / épluchés → Sous-vide cru / épluché
-5 → Sous-vide cuit → Sous-vide cuit
-6 → PAI / PAE → PAI / PAE
+carotte botte      → Carotte + PRESENTATION
+carotte nantaise   → Carotte + COMMERCIAL_TYPE
+mini carotte       → Carotte + SIZE_FORMAT
+carotte surgelée   → Carotte + Gamme 3
 ```
 
-Le frontend ne définit aucune liste métier parallèle. Le choix de Gamme alimente l'autocomplétion d'État / transformation ; le backend valide la combinaison.
+### 5.6 Contribution semi-automatique
 
-Le rendement et l'unité restent des attributs de la déclinaison mais ne sont pas déduits de la Gamme.
+Un Workspace habilité peut contribuer sans disposer d'un droit d'écriture globale aveugle.
 
-Les listes Workspace et globales sont ordonnées par Produit alphabétiquement avant pagination.
-
-### 5.5 Référentiel Produit Workspace
-
-`WorkspaceProduct` est la relation tenant-scoped entre un Workspace et une `ProductVariant`.
+Classification :
 
 ```text
-Workspace
-1
-→ plusieurs WorkspaceProduct
-→ chacun référence une ProductVariant globale
+EXISTING
+AUTO_PUBLISHABLE
+REVIEW_REQUIRED
+INVALID
 ```
 
-Le retrait de Mon référentiel archive la relation d'usage sans supprimer le Produit global.
+Une nouvelle identité racine est `REVIEW_REQUIRED` par défaut pendant la bêta.
 
-Un Dossier utilise le référentiel Produit de son Workspace ; M-002 ne crée pas de Produit Dossier-owned.
+Une proposition nécessitant revue est portée par `ReferenceContribution`, ressource distincte. Les références réelles restent `ACTIVE ↔ ARCHIVED`.
 
-### 5.6 Lifecycle et historique
+### 5.7 Référentiel Produit Workspace
 
-Lifecycle opérationnel :
+`WorkspaceProduct` est la relation tenant-scoped entre un Workspace et une `ProductVariant`. Le retrait archive la relation d'usage sans supprimer la référence globale.
 
-```text
-ACTIVE ↔ ARCHIVED
-```
+### 5.8 Autorité globale et imports
 
-Les anciennes valeurs de développement `PENDING_REVIEW` et `REJECTED` sont traitées par la migration M-002 de compatibilité. Elles ne font plus partie du registre opérationnel courant.
-
-`ProductReferenceEvent` conserve l'historique métier des créations, corrections, archives/réactivations et opérations de gouvernance nécessaires.
-
-### 5.7 Autorité globale du référentiel
-
-Le référentiel global n'appartient pas à l'administration Platform.
-
-Autorité :
+L'autorité globale reste Application Global :
 
 ```text
-ApplicationGlobalRole
-ApplicationGlobalMember
 product:reference:read
 product:reference:manage
 ```
 
-Invariant :
+`Super Admin Platform` et `Workspace Owner` ne deviennent jamais implicitement gouverneur Produit.
 
-```text
-Super Admin Platform
-≠ gouverneur Produit automatique
-
-Owner Workspace
-≠ gouverneur Produit automatique
-```
-
-Un membre Platform peut alimenter le référentiel commun uniquement si un membership Application Global Produit lui attribue explicitement cette autorité.
-
-### 5.8 Import Produit
-
-M-002 possède deux usages du même pipeline Produit sécurisé :
-
-```text
-Workspace
-→ import Produit générique
-→ rattachement existant ou création contrôlée
-→ nouvelles créations ajoutées au référentiel Workspace
-
-Application Global
-→ import Produit générique
-→ alimentation directe du référentiel
-→ aucun WorkspaceProduct créé
-```
-
-Les fichiers CSV/XLS/XLSX sont temporaires de traitement. Ils ne deviennent pas des documents métier persistants pour le seul import.
-
-Les colonnes commerciales détectées — Fournisseur, référence fournisseur, conditionnement, prix — restent hors M-002 et préparent M-003.
+Les imports M-002 réutilisent le même moteur de normalisation, décomposition, contribution et déduplication que les formulaires. Les dimensions commerciales restent M-003.
 
 ### 5.9 Frontière M-003
 

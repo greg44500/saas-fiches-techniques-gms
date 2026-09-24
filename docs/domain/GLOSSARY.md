@@ -218,6 +218,41 @@ Classification fonctionnelle globale du Produit destinée au classement, à la r
 
 ---
 
+## Variété Produit
+
+Véritable variété ou cultivar d'un Produit canonique, représenté par `ProductVariety`.
+
+Exemples : Golden, Gala et Granny Smith pour Pomme ; Charlotte pour Pomme de terre.
+
+Une Variété est facultative dans une Déclinaison. `Nantaise` appliqué à la carotte relève du type commercial, pas de cette notion.
+
+## Caractéristique Produit
+
+Dimension structurée globale rattachée à un Produit canonique et représentée par `ProductCharacteristic`.
+
+Types V1 :
+
+- `PRESENTATION` ;
+- `COMMERCIAL_TYPE` ;
+- `SIZE_FORMAT` ;
+- `COLOR` ;
+- `QUALITY_DESIGNATION`.
+
+Une caractéristique n'est pas un texte libre générique. Son type appartient au registre backend et une Déclinaison ne porte au maximum qu'une caractéristique de chaque type.
+
+## Contribution au Référentiel
+
+Proposition issue d'un Workspace habilité et analysée par un moteur déterministe.
+
+Résultats :
+
+- `EXISTING` ;
+- `AUTO_PUBLISHABLE` ;
+- `REVIEW_REQUIRED` ;
+- `INVALID`.
+
+Une contribution nécessitant revue est portée par `ReferenceContribution`. Elle n'ajoute jamais `PENDING_REVIEW` au lifecycle des références réelles.
+
 ## Gamme alimentaire
 
 Nomenclature métier M-002 exposée par le backend et jamais recopiée statiquement dans le frontend :
