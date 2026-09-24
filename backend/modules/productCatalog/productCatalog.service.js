@@ -15,6 +15,7 @@ import {
     findProductDuplicateCandidates,
 } from './productCatalogDedup.service.js';
 import {
+    buildSearchGrams,
     buildSearchKeys,
     buildVariantSignature,
     normalizeProductText,
