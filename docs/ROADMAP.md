@@ -93,7 +93,7 @@ Décisions finales :
 - dimensions avancées facultatives ;
 - `WorkspaceProduct` présenté comme Favori ;
 - liste Workspace `Produit | Conservation | Actions` ;
-- seed actif `m002-reference-v4` ;
+- seed actif `m002-reference-v5`, alimentaire uniquement, 302 Références exploitables ;
 - migration additionnelle fail-closed ;
 - import dédupliqué par nom exact de Référence ;
 - frontière stricte M-002 / M-003 maintenue.
