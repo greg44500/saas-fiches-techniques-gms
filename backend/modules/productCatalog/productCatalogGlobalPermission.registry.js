@@ -11,7 +11,7 @@ const PRODUCT_CATALOG_GLOBAL_PERMISSION_MODULE = Object.freeze({
             category: 'products',
             categoryLabel: 'Produits',
             description:
-                'Consulter les Produits, déclinaisons, catégories et événements du référentiel partagé.',
+                'Consulter les Produits, références, catégories et événements du référentiel partagé.',
             reserved: false,
         }),
         Object.freeze({

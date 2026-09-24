@@ -658,7 +658,7 @@ const updateVariant = async ({
     }).session(session);
 
     if (!variant) {
-        throw new AppError('Déclinaison modifiable introuvable.', 404);
+        throw new AppError('Référence modifiable introuvable.', 404);
     }
 
     const normalized = await normalizeVariantInput({
@@ -747,11 +747,11 @@ const updateVariantStatus = async ({
     }).session(session);
 
     if (!variant) {
-        throw new AppError('Déclinaison non administrable.', 409);
+        throw new AppError('Référence non administrable.', 409);
     }
 
     if (![PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED].includes(status)) {
-        throw new AppError('Transition de statut Déclinaison invalide.', 400);
+        throw new AppError('Transition de statut Référence invalide.', 400);
     }
 
     if (variant.status === status) {
@@ -767,7 +767,7 @@ const updateVariantStatus = async ({
 
         if (!product) {
             throw new AppError(
-                'Le Produit parent doit être actif pour réactiver la déclinaison.',
+                'Le Produit parent doit être actif pour réactiver la référence.',
                 409,
             );
         }

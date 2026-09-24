@@ -299,7 +299,7 @@ const attachVariantToWorkspaceInSession = async ({
     }).session(session);
 
     if (!variant) {
-        throw new AppError('Déclinaison Produit introuvable.', 404);
+        throw new AppError('Référence Produit introuvable.', 404);
     }
 
     const product = await CanonicalProduct.findOne({

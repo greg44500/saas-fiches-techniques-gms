@@ -116,7 +116,7 @@ const seedProductSchema = z.strictObject({
             context.addIssue({
                 code: 'custom',
                 path: ['variants', index, 'varietyKey'],
-                message: 'La Variété de la déclinaison est inconnue.',
+                message: 'La Variété de la référence est inconnue.',
             });
         }
 
@@ -127,7 +127,7 @@ const seedProductSchema = z.strictObject({
             context.addIssue({
                 code: 'custom',
                 path: ['variants', index, 'characteristicKeys'],
-                message: 'Une Caractéristique de la déclinaison est inconnue.',
+                message: 'Une Caractéristique de la référence est inconnue.',
             });
             return;
         }
@@ -137,7 +137,7 @@ const seedProductSchema = z.strictObject({
             context.addIssue({
                 code: 'custom',
                 path: ['variants', index, 'characteristicKeys'],
-                message: 'Une déclinaison ne peut avoir deux Caractéristiques du même type.',
+                message: 'Une référence ne peut avoir deux Caractéristiques du même type.',
             });
         }
     });

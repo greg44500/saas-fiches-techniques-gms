@@ -42,7 +42,7 @@ const productVariantSchema = new Schema(
                     return new Set(value.map((entry) => entry.toString())).size
                         === value.length;
                 },
-                message: 'Une déclinaison contient des caractéristiques invalides ou dupliquées.',
+                message: 'Une référence contient des caractéristiques invalides ou dupliquées.',
             },
         },
         processingState: { type: String, trim: true, maxlength: 80, default: null },

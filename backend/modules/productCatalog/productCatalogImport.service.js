@@ -943,7 +943,7 @@ const assertCandidateVariant = async ({
         || !candidateProductIds.has(variant.canonicalProduct.toString())
     ) {
         throw new AppError(
-            'La déclinaison choisie ne correspond pas aux candidats revus.',
+            'La référence choisie ne correspond pas aux candidats revus.',
             409,
         );
     }
@@ -1027,7 +1027,7 @@ const resolveMissingImportDimensions = async ({
         ) {
             if (result.existingReference?.status !== PRODUCT_STATUS.ACTIVE) {
                 throw new AppError(
-                    'Une dimension existante de la déclinaison est archivée.',
+                    'Une dimension existante de la référence est archivée.',
                     409,
                 );
             }

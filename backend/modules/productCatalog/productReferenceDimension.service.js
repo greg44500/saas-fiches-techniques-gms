@@ -401,7 +401,7 @@ const updateProductVarietyStatus = async ({
         }).session(session);
         if (used) {
             throw new AppError(
-                'Cette Variété est utilisée par une déclinaison active.',
+                'Cette Variété est utilisée par une référence active.',
                 409,
             );
         }
@@ -469,7 +469,7 @@ const updateProductCharacteristicStatus = async ({
         }).session(session);
         if (used) {
             throw new AppError(
-                'Cette Caractéristique est utilisée par une déclinaison active.',
+                'Cette Caractéristique est utilisée par une référence active.',
                 409,
             );
         }

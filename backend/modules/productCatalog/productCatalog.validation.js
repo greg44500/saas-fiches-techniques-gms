@@ -218,7 +218,7 @@ const createReferenceContributionBodySchema = z.strictObject({
             context.addIssue({
                 code: 'custom',
                 path: ['variant'],
-                message: 'Une première déclinaison est requise pour proposer un nouveau Produit.',
+                message: 'Une première référence est requise pour proposer un nouveau Produit.',
             });
         }
         if (
@@ -339,7 +339,7 @@ const updateVariantBodySchema = z.strictObject({
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 }).refine(
     (body) => Object.keys(body).length > 0,
-    { message: 'Au moins un champ Déclinaison doit être modifié.' },
+    { message: 'Au moins un champ Référence doit être modifié.' },
 );
 
 const updateVariantStatusBodySchema = updateProductStatusBodySchema;
