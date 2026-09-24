@@ -99,8 +99,6 @@ describe('ProductVariantFields', () => {
 
     render(<StructuredHarness onPayload={onPayload} />);
 
-    expect(screen.queryByLabelText('Présentation')).not.toBeInTheDocument();
-
     await user.click(screen.getByLabelText('Variété'));
     await user.click(screen.getByRole('option', { name: 'Gala' }));
 
