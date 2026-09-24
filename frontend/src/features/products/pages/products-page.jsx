@@ -40,16 +40,14 @@ import {
 } from '@/features/products/constants/product-permissions';
 import {
   getApiErrorMessage,
-  getFoodRangeLabel,
-  getFoodRangeName,
+  getConservationTypeLabel,
   getReferenceLabel,
-  getReferenceUnitLabel,
-  getUsageTypeLabel,
 } from '@/features/products/lib/product-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
 const ALL_CATEGORIES = '__ALL__';
+const ALL_CONSERVATION_TYPES = '__ALL_CONSERVATION_TYPES__';
 const ALL_FOOD_RANGES = '__ALL_RANGES__';
 const PRODUCT_SORT_NAME = 'NAME';
 const PRODUCT_SORT_FOOD_RANGE = 'FOOD_RANGE';
@@ -66,6 +64,7 @@ function ProductsPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(ALL_CATEGORIES);
+  const [conservationType, setConservationType] = useState(ALL_CONSERVATION_TYPES);
   const [foodRange, setFoodRange] = useState(ALL_FOOD_RANGES);
   const [sort, setSort] = useState(PRODUCT_SORT_NAME);
   const [drawerState, setDrawerState] = useState({ open: false, productId: null });
@@ -79,6 +78,9 @@ function ProductsPage() {
     scope,
     q: search || undefined,
     categoryId: categoryId === ALL_CATEGORIES ? undefined : categoryId,
+    conservationType: conservationType === ALL_CONSERVATION_TYPES
+      ? undefined
+      : conservationType,
     foodRange: foodRange === ALL_FOOD_RANGES ? undefined : foodRange,
     sort,
     page,
@@ -122,6 +124,14 @@ function ProductsPage() {
     })),
   ], [metadata?.categories]);
 
+  const conservationItems = useMemo(() => [
+    { value: ALL_CONSERVATION_TYPES, label: 'Toutes les conservations' },
+    ...(metadata?.conservationTypes ?? []).map((item) => ({
+      value: item.value,
+      label: item.label,
+    })),
+  ], [metadata?.conservationTypes]);
+
   const foodRangeItems = useMemo(() => [
     { value: ALL_FOOD_RANGES, label: 'Toutes les gammes' },
     ...(metadata?.foodRanges ?? []).map((range) => ({
@@ -132,7 +142,7 @@ function ProductsPage() {
 
   const sortItems = [
     { value: PRODUCT_SORT_NAME, label: 'Nom A → Z' },
-    { value: PRODUCT_SORT_FOOD_RANGE, label: 'Gamme 1 → 5' },
+    { value: PRODUCT_SORT_FOOD_RANGE, label: 'Gamme 1 → 6' },
   ];
 
   function runSearch(nextSearch) {
@@ -186,7 +196,7 @@ function ProductsPage() {
           variantId: result.variant.id,
         }).unwrap();
         toast({
-          title: 'Référence ajoutée à mon référentiel',
+          title: 'Référence ajoutée aux favoris',
           description: referenceLabel,
           variant: 'success',
         });
@@ -196,7 +206,7 @@ function ProductsPage() {
           variantId: result.variant.id,
         }).unwrap();
         toast({
-          title: 'Référence retirée de mon référentiel',
+          title: 'Référence retirée des favoris',
           description: referenceLabel,
           variant: 'success',
         });
@@ -216,50 +226,20 @@ function ProductsPage() {
 
   const columns = [
     {
-      id: 'reference',
-      header: 'Référence',
+      id: 'product',
+      header: 'Produit',
       cell: (result) => (
-        <div>
-          <p className="font-medium">
-            {getReferenceLabel(metadata, result.product, result.variant)}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {result.product.category?.name ?? 'Catégorie non renseignée'}
-          </p>
-        </div>
+        <p className="font-medium">
+          {getReferenceLabel(metadata, result.product, result.variant)}
+        </p>
       ),
     },
     {
-      id: 'foodRange',
-      header: 'Gamme',
-      cell: (result) => (
-        result.variant ? (
-          <span>
-            {[
-              getFoodRangeLabel(metadata, result.variant.foodRange),
-              getFoodRangeName(metadata, result.variant.foodRange),
-            ].filter(Boolean).join(' — ')}
-          </span>
-        ) : (
-          <span className="text-sm text-muted-foreground">À enrichir</span>
-        )
-      ),
-    },
-    {
-      id: 'unit',
-      header: 'Unité',
+      id: 'conservation',
+      header: 'Conservation',
       cell: (result) => (
         result.variant
-          ? getReferenceUnitLabel(metadata, result.variant.referenceUnit)
-          : '—'
-      ),
-    },
-    {
-      id: 'usage',
-      header: 'Usage',
-      cell: (result) => (
-        result.variant?.usageType
-          ? getUsageTypeLabel(metadata, result.variant.usageType)
+          ? getConservationTypeLabel(metadata, result.variant.conservationType)
           : '—'
       ),
     },
@@ -272,7 +252,7 @@ function ProductsPage() {
           result.product,
           result.variant,
         );
-        const inCatalog = result.workspaceEntry?.status === 'ACTIVE';
+        const inFavorites = result.workspaceEntry?.status === 'ACTIVE';
         const canAttach = (
           result.variant
           && result.product.status === 'ACTIVE'
@@ -282,22 +262,22 @@ function ProductsPage() {
         return (
           <DataTableActions>
             {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && result.variant && (
-              inCatalog ? (
+              inFavorites ? (
                 <ActionIconButton
                   Icon={Minus}
                   disabled={mutationPending}
-                  label={'Retirer ' + referenceLabel + ' de mon référentiel'}
+                  label={'Retirer ' + referenceLabel + ' des favoris'}
                   onClick={() => changeCatalog(result, false)}
-                  tooltipLabel="Retirer de mon référentiel"
+                  tooltipLabel="Retirer des favoris"
                   variant="outline"
                 />
               ) : canAttach ? (
                 <ActionIconButton
                   Icon={Plus}
                   disabled={mutationPending}
-                  label={'Ajouter ' + referenceLabel + ' à mon référentiel'}
+                  label={'Ajouter ' + referenceLabel + ' aux favoris'}
                   onClick={() => changeCatalog(result, true)}
-                  tooltipLabel="Ajouter à mon référentiel"
+                  tooltipLabel="Ajouter aux favoris"
                 />
               ) : null
             )}
@@ -366,15 +346,15 @@ function ProductsPage() {
         <TabsList aria-label="Portée du référentiel Produit" variant="section">
           {canReferenceAccess && (
             <TabsTrigger value="REFERENCE" variant="section">
-              Référentiel global
+              Tous les produits
             </TabsTrigger>
           )}
-          <TabsTrigger value="WORKSPACE" variant="section">Mon référentiel</TabsTrigger>
+          <TabsTrigger value="WORKSPACE" variant="section">Favoris</TabsTrigger>
         </TabsList>
       </Tabs>
 
       <section className="rounded-xl border border-border bg-card">
-        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(300px,1fr)_220px_220px_200px]">
+        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(300px,1fr)_210px_200px_200px_180px]">
           <form className="flex min-w-0 gap-2" onSubmit={applySearch}>
             <div className="min-w-0 flex-1">
               <ProductSearchAutocomplete
@@ -413,6 +393,26 @@ function ProductsPage() {
             </SelectTrigger>
             <SelectContent>
               {categoryItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            items={conservationItems}
+            onValueChange={(value) => {
+              setConservationType(value);
+              setPage(1);
+            }}
+            value={conservationType}
+          >
+            <SelectTrigger aria-label="Filtrer par conservation">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {conservationItems.map((item) => (
                 <SelectItem key={item.value} value={item.value}>
                   {item.label}
                 </SelectItem>
@@ -472,7 +472,7 @@ function ProductsPage() {
         ) : (
           <>
             <DataTable
-              caption={scope === 'WORKSPACE' ? 'Mon référentiel Produits' : 'Référentiel global Produits'}
+              caption={scope === 'WORKSPACE' ? 'Favoris Produits' : 'Tous les Produits'}
               columns={columns}
               data={results}
               emptyContent={(
@@ -481,10 +481,11 @@ function ProductsPage() {
                   description={
                     search
                     || categoryId !== ALL_CATEGORIES
+                    || conservationType !== ALL_CONSERVATION_TYPES
                     || foodRange !== ALL_FOOD_RANGES
                       ? 'Modifiez la recherche ou les filtres pour élargir les résultats.'
                       : scope === 'WORKSPACE'
-                        ? 'Recherchez le référentiel global ou créez votre premier Produit.'
+                        ? 'Ajoutez des Produits depuis l’onglet Tous les produits.'
                         : 'Aucune référence n’est disponible avec ces critères.'
                   }
                   title="Aucune référence à afficher"

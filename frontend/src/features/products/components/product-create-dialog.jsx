@@ -92,9 +92,7 @@ function ProductCreateDialog({
     duplicateResult
     && !duplicateResult.exactMatch
     && everyCandidateReviewed
-    && categoryId !== NO_CATEGORY
-    && variant.foodRange
-    && variant.processingState
+    && variant.conservationType
     && variant.referenceUnit,
   );
   const pending = (
@@ -153,24 +151,21 @@ function ProductCreateDialog({
       setFormError('Examinez les références proches avant de créer un nouveau Produit.');
       return;
     }
-    if (categoryId === NO_CATEGORY) {
-      setFormError('Sélectionnez une catégorie active.');
-      return;
-    }
-    if (!variant.foodRange) {
-      setFormError('Sélectionnez une gamme.');
-      return;
-    }
-    if (!variant.processingState) {
-      setFormError('Sélectionnez un état / transformation.');
-      return;
-    }
     if (!variant.referenceUnit) {
       setFormError('Sélectionnez une unité de référence.');
       return;
     }
 
-    const variantPayload = variantDraftToPayload(variant);
+    if (!variant.conservationType) {
+      setFormError('Sélectionnez une conservation.');
+      return;
+    }
+
+    const variantPayload = variantDraftToPayload({
+      ...variant,
+      name: name.trim(),
+    });
+    const selectedCategoryId = categoryId === NO_CATEGORY ? null : categoryId;
 
     setFormError('');
     try {
@@ -178,14 +173,14 @@ function ProductCreateDialog({
         ? await createGlobalProduct({
           name: name.trim(),
           aliases: [],
-          categoryId,
+          categoryId: selectedCategoryId,
           reviewedCandidateIds: candidates.map(({ id }) => id),
           variant: variantPayload,
         }).unwrap()
         : await createWorkspaceProduct({
           workspaceId,
           name: name.trim(),
-          categoryId,
+          categoryId: selectedCategoryId,
           variant: variantPayload,
         }).unwrap();
 
@@ -321,11 +316,11 @@ function ProductCreateDialog({
                 </div>
 
                 <Field>
-                  <FieldLabel htmlFor="product-create-category">Catégorie principale *</FieldLabel>
+                  <FieldLabel htmlFor="product-create-category">Catégorie</FieldLabel>
                   <Select
                     disabled={pending}
                     items={[
-                      { value: NO_CATEGORY, label: 'Sélectionner une catégorie' },
+                      { value: NO_CATEGORY, label: 'Sans catégorie' },
                       ...activeCategories.map((category) => ({
                         value: category.id,
                         label: category.name,
@@ -338,7 +333,7 @@ function ProductCreateDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NO_CATEGORY}>Sélectionner une catégorie</SelectItem>
+                      <SelectItem value={NO_CATEGORY}>Sans catégorie</SelectItem>
                       {activeCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
@@ -349,11 +344,12 @@ function ProductCreateDialog({
                 </Field>
 
                 <div>
-                  <h4 className="mb-3 text-sm font-medium">Première déclinaison</h4>
+                  <h4 className="mb-3 text-sm font-medium">Référence Produit</h4>
                   <ProductVariantFields
                     disabled={pending}
                     metadata={metadata}
                     onChange={setVariant}
+                    showName={false}
                     value={variant}
                   />
                 </div>

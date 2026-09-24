@@ -54,107 +54,20 @@ function getFoodRangeName(metadata, foodRange) {
   return getFoodRangeDefinition(metadata, foodRange)?.name ?? null;
 }
 
-function getUsageTypeLabel(metadata, usageType) {
+function getConservationTypeLabel(metadata, conservationType) {
   return getMetadataLabel(
-    metadata?.usageTypes,
-    usageType,
-    usageType ?? 'Non renseigné',
+    metadata?.conservationTypes,
+    conservationType,
+    conservationType ?? '—',
   );
 }
 
 function getVariantLabel(variant) {
-  if (!variant) return 'Aucune déclinaison exploitable';
-
-  const characteristicNames = (variant?.characteristics ?? [])
-    .map(({ name }) => name)
-    .filter(Boolean);
-  const parts = [
-    variant?.variety?.name,
-    ...characteristicNames,
-    variant?.processingState,
-  ].filter(Boolean);
-
-  return parts.join(' · ') || 'Déclinaison à préciser';
+  return variant?.name ?? 'Aucune référence exploitable';
 }
 
-function normalizeDisplayToken(value) {
-  return String(value ?? '')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .trim()
-    .toLocaleLowerCase('fr');
-}
-
-function lowerFirst(value) {
-  const text = String(value ?? '').trim();
-  if (!text) return '';
-  return text.charAt(0).toLocaleLowerCase('fr') + text.slice(1);
-}
-
-function getReferenceLabel(metadata, product, variant) {
-  let label = product?.name ?? 'Produit';
-  if (!variant) return label;
-
-  const characteristics = variant.characteristics ?? [];
-  const cut = characteristics.find(({ kind }) => kind === 'CUT') ?? null;
-  const presentation = characteristics.find(
-    ({ kind }) => kind === 'PRESENTATION',
-  ) ?? null;
-  const otherCharacteristics = characteristics.filter(
-    ({ kind }) => kind !== 'CUT' && kind !== 'PRESENTATION',
-  );
-
-  if (variant.variety?.name) {
-    label += ' ' + variant.variety.name;
-  }
-
-  if (cut?.name) {
-    label += ' (' + lowerFirst(cut.name) + ')';
-  }
-
-  const presentationToken = normalizeDisplayToken(presentation?.name);
-  if (
-    presentation?.name
-    && !['entier', 'entiere'].includes(presentationToken)
-  ) {
-    label += ' ' + lowerFirst(presentation.name);
-  }
-
-  for (const characteristic of otherCharacteristics) {
-    if (characteristic.name) {
-      label += ' ' + lowerFirst(characteristic.name);
-    }
-  }
-
-  const defaultProcessingState = getFoodRangeDefinition(
-    metadata,
-    variant.foodRange,
-  )?.defaultProcessingState;
-  const processingStateToken = normalizeDisplayToken(variant.processingState);
-  const defaultStateToken = normalizeDisplayToken(defaultProcessingState);
-  const representedTokens = [
-    variant.variety?.name,
-    ...characteristics.map(({ name }) => name),
-  ].map(normalizeDisplayToken);
-
-  if (
-    processingStateToken
-    && processingStateToken !== defaultStateToken
-    && !representedTokens.includes(processingStateToken)
-  ) {
-    if (
-      !variant.variety?.name
-      && !cut?.name
-      && !presentation?.name
-      && otherCharacteristics.length === 0
-    ) {
-      label += ' ' + lowerFirst(variant.processingState);
-    } else {
-      label += ' · ' + variant.processingState;
-    }
-  }
-
-  return label.trim();
+function getReferenceLabel(_metadata, product, variant) {
+  return variant?.name ?? product?.name ?? 'Produit';
 }
 
 function getProductVariantSearchLabel(product, variant, metadata) {
@@ -247,6 +160,7 @@ export {
   formatYield,
   getApiErrorMessage,
   getCategoryStatusLabel,
+  getConservationTypeLabel,
   getFoodRangeDefinition,
   getFoodRangeLabel,
   getFoodRangeName,
@@ -258,7 +172,6 @@ export {
   getProductStatusTone,
   getProductVariantSearchLabel,
   getReferenceUnitLabel,
-  getUsageTypeLabel,
   getVariantLabel,
   getWorkspaceProductStatusLabel,
 };

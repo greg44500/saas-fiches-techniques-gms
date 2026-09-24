@@ -1,15 +1,3 @@
-import {
-  Autocomplete,
-  AutocompleteEmpty,
-  AutocompleteInput,
-  AutocompleteInputGroup,
-  AutocompleteItem,
-  AutocompleteList,
-  AutocompletePopup,
-  AutocompletePortal,
-  AutocompletePositioner,
-  AutocompleteStatus,
-} from '@/components/ui/autocomplete';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,10 +12,12 @@ const EMPTY_OPTION = '__NONE__';
 
 function createEmptyVariantDraft(metadata, { structured = false } = {}) {
   return {
+    name: '',
     presentation: '',
     varietyId: '',
     characteristicIdsByKind: {},
     processingState: '',
+    conservationType: metadata?.conservationTypes?.[0]?.value ?? '',
     foodRange: '',
     referenceUnit: metadata?.referenceUnits?.[0]?.value ?? '',
     yieldPercent: '',
@@ -36,14 +26,16 @@ function createEmptyVariantDraft(metadata, { structured = false } = {}) {
 }
 
 function optionalText(value) {
-  const trimmed = value.trim();
+  const trimmed = String(value ?? '').trim();
   return trimmed.length > 0 ? trimmed : null;
 }
 
 function variantDraftToPayload(draft, { structured = draft.structured } = {}) {
   const common = {
+    name: String(draft.name ?? '').trim(),
     processingState: optionalText(draft.processingState),
-    foodRange: Number(draft.foodRange),
+    conservationType: draft.conservationType,
+    foodRange: draft.foodRange ? Number(draft.foodRange) : null,
     referenceUnit: draft.referenceUnit,
     yieldPercent: draft.yieldPercent ? Number(draft.yieldPercent) : null,
   };
@@ -69,22 +61,20 @@ function ProductVariantFields({
   disabled = false,
   metadata,
   onChange,
+  showName = true,
   structured = false,
   value,
 }) {
   const unitItems = metadata?.referenceUnits ?? [];
+  const conservationItems = metadata?.conservationTypes ?? [];
   const foodRanges = metadata?.foodRanges ?? [];
   const foodRangeItems = [
-    { value: EMPTY_OPTION, label: 'Sélectionner une gamme' },
+    { value: EMPTY_OPTION, label: 'Aucune gamme' },
     ...foodRanges.map((range) => ({
       value: String(range.value),
-      label: range.label,
+      label: range.label + (range.name ? ' — ' + range.name : ''),
     })),
   ];
-  const selectedFoodRange = foodRanges.find(
-    (range) => String(range.value) === String(value.foodRange),
-  );
-  const processingStateItems = selectedFoodRange?.processingStates ?? [];
   const varieties = (dimensions?.varieties ?? []).filter(
     (variety) => variety.status === 'ACTIVE',
   );
@@ -100,29 +90,22 @@ function ProductVariantFields({
     });
   }
 
-  function changeFoodRange(nextValue) {
-    if (nextValue === EMPTY_OPTION) {
-      onChange({
-        ...value,
-        foodRange: '',
-        processingState: '',
-      });
-      return;
-    }
-
-    const definition = foodRanges.find(
-      (range) => String(range.value) === String(nextValue),
-    );
-
-    onChange({
-      ...value,
-      foodRange: nextValue,
-      processingState: definition?.defaultProcessingState ?? '',
-    });
-  }
-
   return (
     <div className="grid gap-4 sm:grid-cols-2">
+      {showName && (
+        <Field className="sm:col-span-2">
+          <FieldLabel htmlFor="product-variant-name">Nom de la référence *</FieldLabel>
+          <Input
+            disabled={disabled}
+            id="product-variant-name"
+            maxLength={160}
+            onChange={(event) => change('name', event.target.value)}
+            placeholder="Ex. Carotte râpée"
+            value={value.name ?? ''}
+          />
+        </Field>
+      )}
+
       {structured ? (
         <>
           <Field>
@@ -210,25 +193,25 @@ function ProductVariantFields({
             id="product-variant-presentation"
             maxLength={120}
             onChange={(event) => change('presentation', event.target.value)}
-            placeholder="Ex. entière, râpée, émincée"
+            placeholder="Facultatif"
             value={value.presentation}
           />
         </Field>
       )}
 
       <Field>
-        <FieldLabel htmlFor="product-variant-food-range">Gamme *</FieldLabel>
+        <FieldLabel htmlFor="product-variant-conservation">Conservation *</FieldLabel>
         <Select
           disabled={disabled}
-          items={foodRangeItems}
-          onValueChange={changeFoodRange}
-          value={value.foodRange || EMPTY_OPTION}
+          items={conservationItems}
+          onValueChange={(nextValue) => change('conservationType', nextValue)}
+          value={value.conservationType || null}
         >
-          <SelectTrigger id="product-variant-food-range">
-            <SelectValue />
+          <SelectTrigger id="product-variant-conservation">
+            <SelectValue placeholder="Sélectionner une conservation" />
           </SelectTrigger>
           <SelectContent>
-            {foodRangeItems.map((item) => (
+            {conservationItems.map((item) => (
               <SelectItem key={item.value} value={item.value}>
                 {item.label}
               </SelectItem>
@@ -238,57 +221,7 @@ function ProductVariantFields({
       </Field>
 
       <Field>
-        <FieldLabel htmlFor="product-variant-processing">
-          État / transformation *
-        </FieldLabel>
-        <Autocomplete
-          filter={null}
-          items={processingStateItems}
-          itemToStringValue={(item) => item}
-          onValueChange={(nextValue) => change('processingState', nextValue)}
-          value={value.processingState}
-        >
-          <AutocompleteInputGroup>
-            <AutocompleteInput
-              aria-label="État / transformation"
-              disabled={disabled || !selectedFoodRange}
-              id="product-variant-processing"
-              maxLength={80}
-              placeholder={
-                selectedFoodRange
-                  ? 'État lié à la gamme'
-                  : 'Sélectionnez d’abord une gamme'
-              }
-            />
-          </AutocompleteInputGroup>
-          <AutocompletePortal>
-            <AutocompletePositioner>
-              <AutocompletePopup>
-                <AutocompleteStatus>
-                  {processingStateItems.length} état(s) proposé(s)
-                </AutocompleteStatus>
-                <AutocompleteEmpty>
-                  Aucun état n’est défini pour cette gamme.
-                </AutocompleteEmpty>
-                <AutocompleteList>
-                  {(item, index) => (
-                    <AutocompleteItem
-                      index={index}
-                      key={item}
-                      value={item}
-                    >
-                      {item}
-                    </AutocompleteItem>
-                  )}
-                </AutocompleteList>
-              </AutocompletePopup>
-            </AutocompletePositioner>
-          </AutocompletePortal>
-        </Autocomplete>
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="product-variant-unit">Unité de référence</FieldLabel>
+        <FieldLabel htmlFor="product-variant-unit">Unité de référence *</FieldLabel>
         <Select
           disabled={disabled}
           items={unitItems}
@@ -306,6 +239,44 @@ function ProductVariantFields({
             ))}
           </SelectContent>
         </Select>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="product-variant-food-range">Gamme</FieldLabel>
+        <Select
+          disabled={disabled}
+          items={foodRangeItems}
+          onValueChange={(nextValue) => change(
+            'foodRange',
+            nextValue === EMPTY_OPTION ? '' : nextValue,
+          )}
+          value={value.foodRange || EMPTY_OPTION}
+        >
+          <SelectTrigger id="product-variant-food-range">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {foodRangeItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="product-variant-processing">
+          État / transformation
+        </FieldLabel>
+        <Input
+          disabled={disabled}
+          id="product-variant-processing"
+          maxLength={80}
+          onChange={(event) => change('processingState', event.target.value)}
+          placeholder="Facultatif"
+          value={value.processingState}
+        />
       </Field>
 
       <Field>
