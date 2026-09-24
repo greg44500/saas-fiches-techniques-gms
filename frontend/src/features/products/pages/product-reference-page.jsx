@@ -26,7 +26,9 @@ import {
 } from '@/components/ui/tabs';
 import {
   useGetProductReferenceMetadataQuery,
+  useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
+  useReviewProductReferenceContributionMutation,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
@@ -51,6 +53,8 @@ function ProductReferencePage({ canManage }) {
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(ALL_REFERENCE_CATEGORIES);
   const [referenceStatus, setReferenceStatus] = useState('ACTIVE');
+  const [contributionStatus, setContributionStatus] =
+    useState('PENDING_REVIEW');
   const [drawerState, setDrawerState] = useState({ open: false, productId: null });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -67,15 +71,33 @@ function ProductReferencePage({ canManage }) {
       page,
       limit: pageSize,
     },
-    { skip: section === 'categories' },
+    { skip: section !== 'reference' },
   );
+  const contributionsQuery = useListProductReferenceContributionsQuery(
+    {
+      status: contributionStatus,
+      page,
+      limit: pageSize,
+    },
+    { skip: section !== 'contributions' },
+  );
+  const [reviewContribution, reviewContributionState] =
+    useReviewProductReferenceContributionMutation();
   const [updateCategoryStatus, categoryStatusState] =
     useUpdateProductReferenceCategoryStatusMutation();
 
   useEffect(() => {
-    const totalPages = productsQuery.data?.pagination?.totalPages;
+    const totalPages = section === 'contributions'
+      ? contributionsQuery.data?.pagination?.totalPages
+      : productsQuery.data?.pagination?.totalPages;
     if (totalPages && page > totalPages) setPage(totalPages);
-  }, [page, productsQuery.data?.pagination?.totalPages, setPage]);
+  }, [
+    contributionsQuery.data?.pagination?.totalPages,
+    page,
+    productsQuery.data?.pagination?.totalPages,
+    section,
+    setPage,
+  ]);
 
   const categoryItems = useMemo(() => [
     { value: ALL_REFERENCE_CATEGORIES, label: 'Toutes les catégories' },
@@ -100,6 +122,7 @@ function ProductReferencePage({ canManage }) {
     setSearchInput('');
     setCategoryId(ALL_REFERENCE_CATEGORIES);
     setReferenceStatus('ACTIVE');
+    setContributionStatus('PENDING_REVIEW');
   }
 
   function applySearch(event) {
@@ -110,6 +133,27 @@ function ProductReferencePage({ canManage }) {
 
   function openProduct(productId) {
     setDrawerState({ open: true, productId });
+  }
+
+  async function decideContribution(contribution, decision) {
+    try {
+      await reviewContribution({
+        contributionId: contribution.id,
+        decision,
+      }).unwrap();
+      toast({
+        title: decision === 'APPROVE'
+          ? 'Contribution approuvée'
+          : 'Contribution refusée',
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Décision impossible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    }
   }
 
   async function confirmCategoryLifecycle() {
@@ -187,6 +231,104 @@ function ProductReferencePage({ canManage }) {
     },
   ];
 
+  const contributionTypeLabel = (type) => (
+    (metadata?.productContributionTypes ?? [])
+      .find(({ value }) => value === type)?.label
+    ?? type
+  );
+  const contributionStatusLabel = (status) => (
+    (metadata?.productContributionStatuses ?? [])
+      .find(({ value }) => value === status)?.label
+    ?? status
+  );
+  const characteristicKindLabel = (kind) => (
+    (metadata?.productCharacteristicKinds ?? [])
+      .find(({ value }) => value === kind)?.label
+    ?? kind
+  );
+
+  const contributionColumns = [
+    {
+      id: 'value',
+      header: 'Proposition',
+      cell: (contribution) => (
+        <div>
+          <p className="font-medium">{contribution.proposedValue}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {contributionTypeLabel(contribution.type)}
+            {contribution.characteristicKind
+              ? ' · ' + characteristicKindLabel(contribution.characteristicKind)
+              : ''}
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: 'origin',
+      header: 'Origine',
+      cell: (contribution) => (
+        <div>
+          <p>{contribution.workspace?.name ?? 'Workspace'}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {[
+              contribution.author?.firstName,
+              contribution.author?.lastName,
+            ].filter(Boolean).join(' ')
+              || contribution.author?.email
+              || 'Auteur non disponible'}
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Statut',
+      cell: (contribution) => (
+        <StatusBadge
+          tone={contribution.status === 'PENDING_REVIEW' ? 'warning' : 'neutral'}
+        >
+          {contributionStatusLabel(contribution.status)}
+        </StatusBadge>
+      ),
+    },
+    {
+      id: 'reason',
+      header: 'Motif',
+      cell: (contribution) => (
+        <span className="text-sm text-muted-foreground">
+          {contribution.reasons?.[0]?.message ?? 'Aucun motif'}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (contribution) => (
+        contribution.status === 'PENDING_REVIEW' && canManage ? (
+          <DataTableActions>
+            <Button
+              disabled={reviewContributionState.isLoading}
+              onClick={() => decideContribution(contribution, 'APPROVE')}
+              size="sm"
+              type="button"
+            >
+              Approuver
+            </Button>
+            <Button
+              disabled={reviewContributionState.isLoading}
+              onClick={() => decideContribution(contribution, 'REJECT')}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              Refuser
+            </Button>
+          </DataTableActions>
+        ) : null
+      ),
+    },
+  ];
+
   const categoryColumns = [
     {
       id: 'name',
@@ -230,16 +372,25 @@ function ProductReferencePage({ canManage }) {
 
   const initialLoading = (
     metadataQuery.isLoading
-    || (section !== 'categories'
+    || (
+      section === 'reference'
       && productsQuery.isLoading
-      && productsQuery.data === undefined)
+      && productsQuery.data === undefined
+    )
+    || (
+      section === 'contributions'
+      && contributionsQuery.isLoading
+      && contributionsQuery.data === undefined
+    )
   );
   const hasError = metadataQuery.isError
-    || (section !== 'categories' && productsQuery.isError);
+    || (section === 'reference' && productsQuery.isError)
+    || (section === 'contributions' && contributionsQuery.isError);
 
   function retry() {
     metadataQuery.refetch();
-    if (section !== 'categories') productsQuery.refetch();
+    if (section === 'reference') productsQuery.refetch();
+    if (section === 'contributions') contributionsQuery.refetch();
   }
 
   return (
@@ -271,7 +422,79 @@ function ProductReferencePage({ canManage }) {
                 </Button>
               </>
             )}
-            {section === 'categories' && (
+            {section === 'contributions' && (
+        <section className="rounded-xl border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
+            <div>
+              <h2 className="font-semibold">Contributions au référentiel</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Examinez les propositions qui ne peuvent pas être publiées automatiquement.
+              </p>
+            </div>
+            <Select
+              items={metadata?.productContributionStatuses ?? []}
+              onValueChange={(value) => {
+                setContributionStatus(value);
+                setPage(1);
+              }}
+              value={contributionStatus}
+            >
+              <SelectTrigger aria-label="Filtrer les contributions par statut">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(metadata?.productContributionStatuses ?? []).map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {initialLoading ? (
+            <p className="p-5 text-sm text-muted-foreground">
+              Chargement des contributions…
+            </p>
+          ) : hasError ? (
+            <ErrorState
+              description="Les contributions n’ont pas pu être chargées."
+              onRetry={retry}
+              title="Contributions indisponibles"
+            />
+          ) : (
+            <>
+              <DataTable
+                caption="Contributions au référentiel Produits"
+                columns={contributionColumns}
+                data={contributionsQuery.data?.contributions ?? []}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Aucune contribution ne correspond à ce statut."
+                    title="Aucune contribution"
+                  />
+                )}
+                getRowKey={(contribution) => contribution.id}
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+              <div className="px-5 pb-5">
+                <DataPagination
+                  ariaLabel="Pagination des contributions"
+                  disabled={contributionsQuery.isFetching}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                  page={page}
+                  pageSize={pageSize}
+                  pagination={contributionsQuery.data?.pagination}
+                />
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {section === 'categories' && (
               <Button
                 onClick={() => setCategoryDialog({ open: true, category: null })}
                 type="button"
@@ -287,6 +510,7 @@ function ProductReferencePage({ canManage }) {
       <Tabs onValueChange={changeSection} value={section}>
         <TabsList aria-label="Administration du référentiel Produits" variant="section">
           <TabsTrigger value="reference" variant="section">Référentiel</TabsTrigger>
+          <TabsTrigger value="contributions" variant="section">Contributions</TabsTrigger>
           <TabsTrigger value="categories" variant="section">Catégories</TabsTrigger>
         </TabsList>
       </Tabs>
