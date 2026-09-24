@@ -121,7 +121,7 @@ Cette autorité ne donne aucun accès implicite aux données privées d'un Works
 
 `AUTO_PUBLISHABLE` n'est autorisé que pour des cas explicitement codés et testés.
 
-Le moteur doit revalider exact match, proximité et invariants dans la transaction de publication.
+Le moteur revalide exact match, proximité et invariants dans la même transaction que la publication/réutilisation de l'existant et la décision `APPROVED`.
 
 Une nouvelle identité racine `CanonicalProduct` n'est pas auto-publiée par défaut pendant la bêta.
 
@@ -140,4 +140,4 @@ Global :
 - revue de contributions ;
 - import global.
 
-`ProductReferenceEvent` conserve l'historique métier publié. `AuditLog` Core conserve les faits génériques de sécurité/administration.
+`ProductReferenceEvent` conserve l'historique métier publié et la provenance `WORKSPACE_CONTRIBUTION` lorsqu'une identité racine est approuvée depuis un Workspace. `AuditLog` Core conserve les faits génériques de sécurité/administration.

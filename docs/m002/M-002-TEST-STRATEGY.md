@@ -1,247 +1,254 @@
 # M-002 — Stratégie de tests
 
-**Statut : ALIGNÉE SUR LE WORKFLOW DE CRÉATION ACTIVE — exécution finale requise**
+**Statut : ALIGNÉE SUR DIMENSIONS STRUCTURÉES + CONTRIBUTION SEMI-AUTOMATIQUE — exécution finale requise**
 
 ## 1. Risques prioritaires
 
-M-002 partage un référentiel global entre Workspaces. Les risques majeurs sont :
-
 - doublon sémantique global ;
-- création globale sans catégorie valide ;
-- mutation globale autorisée par erreur via un rôle Workspace ou Platform ;
-- fuite de données Workspace ;
-- collision de rattachements ;
-- import Workspace ou global contournant la déduplication ;
-- confusion entre import temporaire et stockage durable ;
-- régression du lifecycle après suppression de l'ancienne validation humaine ;
-- backfill legacy destructif ;
-- divergence frontend/backend des règles de normalisation.
+- confusion entre identité racine, Variété, Présentation, Gamme et autres Caractéristiques ;
+- double Caractéristique du même type dans une déclinaison ;
+- mutation globale via une autorité Workspace/Platform non habilitée ;
+- confusion entre lifecycle `ACTIVE/ARCHIVED` des références et `PENDING_REVIEW/APPROVED/REJECTED` des contributions ;
+- approbation non atomique ;
+- perte de provenance Workspace ;
+- import contournant la déduplication/contribution ;
+- confusion import temporaire / stockage durable ;
+- migration destructive ou collision silencieuse ;
+- divergence frontend/backend des registres métier.
 
-## 2. Tests unitaires
+## 2. Unitaires / validation
 
-### Normalisation
-
-Couvrir :
-
-- accents ;
-- casse ;
-- apostrophes/tirets ;
-- espaces ;
-- alias ;
-- variantes orthographiques couvertes ;
-- stabilité des signatures de Déclinaison ;
-- registre des Gammes 1..6 ;
-- résolution Gamme → État / transformation ;
-- refus d'une combinaison incompatible.
-
-### Validation Zod
+### Normalisation et recherche
 
 Couvrir :
 
-- catégorie obligatoire à la création ;
-- champs système refusés ;
-- unités backend-driven ;
+- casse, accents, apostrophes, tirets ;
+- singulier/pluriel raisonnable ;
+- fautes en fallback ;
+- synonymes métier gouvernés ;
+- mots composés ;
+- recherche complexe : carotte botte, mini carotte, carotte nantaise, carotte surgelée ;
+- signatures basées sur IDs.
+
+### Zod
+
+Couvrir :
+
+- nouvelle identité Workspace sans alias utilisateur ;
+- catégorie obligatoire ;
+- déclinaison existante avec `varietyId` / `characteristicIds[]` ;
+- refus de doublons d'IDs ;
+- Gamme / État ;
 - rendement borné ;
-- Gamme obligatoire sur les nouvelles déclinaisons ;
-- ancien champ Conservation refusé ;
-- mappings import stricts ;
+- mappings import structurés ;
 - décisions import ;
-- ObjectIds.
+- ObjectIds ;
+- champs système refusés.
 
 ### Registries
 
 Couvrir :
 
-- statuts opérationnels `ACTIVE/ARCHIVED` ;
+- `ACTIVE/ARCHIVED` ;
+- kinds de Caractéristiques ;
+- classifications/status/types de contribution ;
+- Gammes ;
+- unités ;
 - permissions Workspace ;
 - permissions Application Global ;
-- scopes import `WORKSPACE/GLOBAL` ;
-- capabilities commerciales.
+- capabilities.
 
-## 3. Tests modèles et indexes
+## 3. Modèles / indexes
 
 Vérifier :
 
-- aucune ownership Workspace sur `CanonicalProduct`, `ProductVariant`, `ProductCategory` ;
-- ownership Workspace uniquement sur `WorkspaceProduct` ;
-- unicité `searchKeys` ;
-- unicité signature Déclinaison ;
+- aucune ownership Workspace sur les références globales ;
+- provenance `contributedFromWorkspace` distincte de l'ownership ;
+- `ProductVariety` rattaché au Produit ;
+- `ProductCharacteristic` rattaché au Produit + kind fermé ;
+- absence de `ProductVariant.presentation` persistant ;
+- unicité ProductVariant par signature structurée ;
 - unicité `workspace + productVariant` ;
-- TTL des sessions import ;
-- index `scope + workspace + actor`.
+- contraintes des contributions ;
+- TTL/import session ;
+- indexes M-002.
 
-## 4. Tests services/intégration
+## 4. Services / intégration
 
 Couvrir :
 
-- création Produit ACTIVE transactionnelle ;
-- rollback si la Déclinaison échoue ;
-- doublon exact refusé ;
-- candidats proches exigeant une revue ;
-- visibilité immédiate du nouveau Produit dans un autre Workspace via REFERENCE ;
-- création Déclinaison ACTIVE ;
-- tri alphabétique avant pagination ;
-- ajout/retrait/réactivation de Mon référentiel idempotent ;
-- archive globale non destructive et masquée des listes opérationnelles ;
-- catégorie archivée non utilisable ;
-- création globale via autorité métier ;
-- import global sans `WorkspaceProduct`.
+- création directe globale transactionnelle ;
+- nouveau CanonicalProduct Workspace → `REVIEW_REQUIRED` sans publication ;
+- rejet → aucune référence publiée ;
+- approbation atomique → publication/réutilisation + `APPROVED` dans la même transaction ;
+- revalidation lorsque le référentiel change entre soumission et décision ;
+- rollback si le contexte devient invalide ;
+- provenance `WORKSPACE_CONTRIBUTION` ;
+- faute de Variété → `EXISTING` ;
+- nouvelle Variété non conflictuelle → `AUTO_PUBLISHABLE` ;
+- Présentation/format auto-publiable selon politique ;
+- Caractéristique gouvernée → `REVIEW_REQUIRED` ;
+- lifecycle Variétés/Caractéristiques ;
+- refus d'archiver une dimension utilisée par une déclinaison active ;
+- création Déclinaison avec IDs structurés ;
+- tri avant pagination ;
+- rattachement/retrait Workspace idempotent ;
+- archive globale non destructive ;
+- import global sans `WorkspaceProduct` ;
+- import Workspace utilisant le moteur de contribution.
 
-## 5. Tests autorisation
+## 5. Autorisation
 
 ### Workspace
 
 - `product:read` ;
 - `product:catalog:manage` ;
 - `product:contribute` ;
-- capabilities correspondantes ;
-- séparation rattachement existant / création nouvelle au commit import.
+- `product_reference_access` ;
+- `product_catalog_import` ;
+- `product_contribution`.
 
 ### Application Global
 
-- utilisateur sans permission refusé ;
-- Super Admin Platform seul refusé ;
-- Owner Workspace seul refusé ;
-- membre Platform explicitement inscrit comme `ApplicationGlobalMember` Produit autorisé ;
-- autorité globale Produit sans accès implicite aux données privées d'un Workspace.
+- sans permission → refus ;
+- Super Admin Platform seul → refus ;
+- Owner Workspace seul → refus ;
+- `ApplicationGlobalMember` Produit → autorisé ;
+- aucune fuite implicite vers des données privées Workspace.
 
-## 6. Tests HTTP Supertest
+## 6. HTTP Supertest
 
 Couvrir :
 
-- metadata ;
-- summary ;
+- metadata / summary ;
 - search WORKSPACE / REFERENCE ;
-- detail ;
+- detail / dimensions ;
 - duplicate-check ;
-- création Produit ;
-- création Déclinaison ;
-- catalogue ;
+- création root Workspace ;
+- contributions Workspace ;
+- création Déclinaison structurée ;
+- rattachement/retrait ;
 - imports Workspace ;
 - accès global ;
+- list/review contributions ;
 - catégories ;
-- création/correction/archive globales ;
+- Produits/Variétés/Caractéristiques/Déclinaisons globales ;
 - imports globaux ;
 - 400/401/403/404/409 ;
 - pagination/filtres.
 
-## 7. Tests frontend RTL
+## 7. Frontend RTL
 
 ### Workspace
 
-- catalogue ;
-- référentiel ;
-- recherche serveur ;
-- filtres ;
-- création Produit ;
-- formulaire Présentation/Gamme/État backend-driven sans Conservation ;
-- correspondance exacte ;
-- revue candidats proches ;
-- catégorie obligatoire ;
-- création Déclinaison ;
-- import ;
+- aucune saisie Alias utilisateur ;
+- création Produit → Soumettre la proposition ;
+- exact match / candidats proches ;
+- Variété/Caractéristiques sélectionnées par IDs ;
+- Gamme/État backend-driven ;
+- ajout dimension via moteur de contribution ;
+- cas `AUTO_PUBLISHABLE`, `EXISTING`, `REVIEW_REQUIRED`, `INVALID` ;
+- import structuré ;
+- tableau Produit / Déclinaison / Gamme / Actions ;
 - drawer Produit ;
-- Dashboard ;
-- absence de vocabulaire « validation ».
+- Dashboard.
 
-### Référentiel global
+### Global
 
-- accès via `product:reference:read` ;
-- actions mutation seulement avec `product:reference:manage` ;
-- Référentiel / Catégories ;
+- route protégée ;
+- Référentiel / Contributions / Catégories ;
 - création Produit ;
-- import global ;
-- détail ;
-- correction ;
-- archive/réactivation ;
-- aucune file « À valider ».
+- gestion Variétés/Caractéristiques ;
+- correction des synonymes métier ;
+- approbation/refus contributions ;
+- correction/lifecycle ;
+- import global.
 
-## 8. Tests import
+Tests dédiés ajoutés notamment :
+
+```text
+product-dimension-contribution-dialog.test.jsx
+product-dimension-edit-dialog.test.jsx
+product-reference-page.test.jsx
+product-variant-fields.test.jsx
+product-import-dialog.test.jsx
+```
+
+## 8. Import
 
 Couvrir :
 
-- CSV ;
-- XLS ;
-- XLSX ;
+- CSV/XLS/XLSX ;
 - fichier corrompu ;
 - antivirus indisponible ;
 - nettoyage temporaire ;
-- mapping invalide ;
-- catégorie par défaut ;
+- mapping Produit + Variété + cinq kinds ;
+- résolution par synonymes métier existants ;
+- catégorie/Gamme/unité par défaut ;
 - `ATTACH_EXISTING` ;
-- `CREATE_PRODUCT` ;
-- `CREATE_VARIANT` ;
-- `REVIEW_REQUIRED` ;
-- preview devenue obsolète ;
+- création globale structurée ;
+- `REVIEW_REQUIRED` gouvernance ;
+- preview obsolète ;
 - commit idempotent ;
-- droits calculés selon mutations ;
-- détection fournisseur/référence/conditionnement/prix M-003 ;
-- aucun document `File` durable créé.
+- droits calculés ;
+- détection M-003 ;
+- aucun `File` durable pour le fichier source.
 
-## 9. Tests migration
+## 9. Migration / seed
 
-Le backfill doit prouver :
+Migration :
 
-- PENDING legacy + catégorie active → ACTIVE ;
-- PENDING legacy incomplet → ARCHIVED ;
-- REJECTED legacy → ARCHIVED ;
-- `identityActive=false` historique préservé ;
-- aucun ancien statut restant ;
-- migration rejouable ;
-- migration `form/preservation → presentation/gamme/état` ;
-- collision finale de nouvelles signatures refusée avant écriture ;
-- absence de collision transitoire avec l'ancien index unique grâce aux signatures temporaires ;
-- indexes M-002 présents.
+- lifecycle legacy ;
+- sémantique `form/preservation` ;
+- Présentation historique → `ProductCharacteristic(PRESENTATION)` ;
+- `variety=null` par défaut historique ;
+- recalcul signature structurée ;
+- collision détectée avant écriture finale ;
+- transaction ;
+- idempotence ;
+- indexes.
+
+Seed :
+
+- dataset réel `ready:true` ;
+- catégorie Fruits et légumes ;
+- au moins 30 Produits ;
+- Pomme avec Golden/Gala/Granny Smith ;
+- Carotte avec dimensions structurées ;
+- aucun prix/fournisseur/conditionnement ;
+- aucun rendement inventé ;
+- version/hash/idempotence.
 
 ## 10. E2E critiques
 
-### E2E 1 — rattacher un Produit existant
-
-```text
-Owner Workspace
-→ Référentiel global
-→ Ajouter
-→ Mon référentiel
-→ référence visible
-```
-
-### E2E 2 — créer un Produit
+### E2E 1 — contribution Workspace
 
 ```text
 Owner Workspace
 → Créer un Produit
-→ recherche anti-doublon
-→ catégorie
-→ Gamme
-→ État / transformation prérempli
-→ première déclinaison
-→ création
-→ Produit visible dans Mon référentiel
-→ Produit visible dans le référentiel commun
-```
-
-### E2E 3 — administration globale explicite
-
-```text
-Utilisateur avec membership Application Global Produit
-→ /product-reference
-→ création ou import
+→ vérifier l'existant
+→ catégorie + première déclinaison
+→ Soumettre la proposition
+→ PENDING_REVIEW
+→ gouverneur Application Global
+→ Contributions
+→ Approuver
 → Produit visible globalement
+→ Owner Workspace
+→ Ajouter à Mon référentiel
+→ référence visible
 ```
 
-Le scénario doit rester distinct d'un simple rôle Platform.
-
-### E2E 4 — import Workspace
+### E2E 2 — création directe globale
 
 ```text
-fichier Produit
-→ inspect
-→ mapping
-→ preview
-→ ambiguïté revue si nécessaire
-→ commit
-→ Mon référentiel mis à jour
+gouverneur Application Global
+→ créer catégorie
+→ créer Produit
+→ Produit ACTIVE visible globalement
 ```
+
+Ces scénarios existent dans le code mais ne sont pas déclarés verts avant exécution réelle.
 
 ## 11. Gate finale
 
@@ -250,7 +257,7 @@ Avant PR :
 ```text
 npm run release:verify
 npm run lint
-npm test
+npm test -- --no-file-parallelism
 npm --prefix frontend run lint
 npm --prefix frontend run test
 npm --prefix frontend run build

@@ -1,6 +1,6 @@
 # M-002 — Critères d'acceptation et ordre de finalisation
 
-**Statut : IMPLÉMENTATION ALIGNÉE SUR LE CONTRAT RECADRÉ — gates et validation visuelle encore à exécuter**  
+**Statut : IMPLÉMENTATION STRUCTURÉE — tests/gates et validation visuelle encore à exécuter**  
 **Module : Référentiel Produits / Produits canoniques**  
 **Branche :** `feature/m002-catalogue-produits`
 
@@ -9,217 +9,122 @@
 ```text
 un bloc fonctionnel M-002
 → plusieurs commits cohérents
+→ tests + QA
 → une seule PR M-002
-→ une seule fusion après validation complète
+→ une seule fusion
 ```
 
-Aucune micro-PR de réparation ne doit être créée pour les ajustements de ce lot.
+Aucune micro-PR de réparation.
 
-## 2. Contrat fonctionnel désormais implémenté
+## 2. Contrat fonctionnel implémenté
 
-- [x] Produit canonique global sans ownership Workspace ;
-- [x] Déclinaison séparée de l'identité canonique ;
-- [x] `WorkspaceProduct` référence une déclinaison sans copie ;
-- [x] catégorie globale obligatoire pour toute nouvelle identité ACTIVE ;
-- [x] rendement porté par la déclinaison et jamais deviné ;
-- [x] unité normalisée backend-driven ;
-- [x] Présentation remplace Forme ;
-- [x] Conservation supprimée du contrat opérationnel ;
-- [x] six Gammes backend-driven avec libellé et État/transformation associé ;
-- [x] combinaison Gamme/État validée côté backend ;
-- [x] tri alphabétique Produit avant pagination ;
-- [x] table Workspace/global Produit / Présentation / Gamme / Actions ;
-- [x] aucun fournisseur/catalogue fournisseur/référence fournisseur/conditionnement/prix M-003 dans M-002 ;
-- [x] anti-doublon exact + proximité + revue explicite ;
-- [x] création Workspace immédiatement ACTIVE après contrôle ;
-- [x] création globale immédiatement ACTIVE après contrôle ;
-- [x] suppression du workflow quotidien de validation humaine ;
-- [x] lifecycle opérationnel `ACTIVE ↔ ARCHIVED` ;
-- [x] archive globale non destructive et masquée des listes opérationnelles ;
-- [x] fusion destructive différée.
+- [x] `CanonicalProduct` global sans ownership Workspace ;
+- [x] `ProductVariety` pour les vraies variétés/cultivars ;
+- [x] `ProductCharacteristic` contrôlé par registre ;
+- [x] `ProductVariant` structuré par IDs de Variété/Caractéristiques ;
+- [x] Présentation persistée comme `ProductCharacteristic(PRESENTATION)`, pas comme texte de variante ;
+- [x] `WorkspaceProduct` distinct de l'identité globale ;
+- [x] six Gammes backend-driven + État/transformation ;
+- [x] unité backend-driven ;
+- [x] rendement facultatif et jamais inventé ;
+- [x] signatures stables indépendantes des libellés ;
+- [x] synonymes métier gouvernés, formes de recherche générées ;
+- [x] recherche complexe et proximité ;
+- [x] aucun concept M-003 dans l'identité M-002 ;
+- [x] lifecycle des références `ACTIVE ↔ ARCHIVED` ;
+- [x] lifecycle des contributions séparé.
 
-## 3. Autorisation et frontière globale
+## 3. Contribution Workspace
 
-- [x] aucune permission métier Produit dérivée implicitement d'un rôle Platform ;
-- [x] `/api/product-reference` utilise Application Global ;
-- [x] permissions :
-  - `product:reference:read` ;
-  - `product:reference:manage` ;
-- [x] un membre Platform peut recevoir explicitement ces droits via `ApplicationGlobalMember` ;
-- [x] un Super Admin Platform sans membership Application Global Produit reste refusé ;
-- [x] un Owner Workspace n'obtient pas ces droits globaux ;
-- [x] frontend global hors `PlatformLayout` sur `/product-reference` ;
-- [x] bootstrap initial explicite du gouverneur Produit.
+- [x] `product:contribute` + `product_contribution` requis ;
+- [x] moteur `EXISTING / AUTO_PUBLISHABLE / REVIEW_REQUIRED / INVALID` ;
+- [x] nouveau CanonicalProduct Workspace → `REVIEW_REQUIRED` par défaut ;
+- [x] aucune publication immédiate de cette identité ;
+- [x] `ReferenceContribution` distincte ;
+- [x] approbation/refus Application Global ;
+- [x] revalidation atomique avant publication ;
+- [x] provenance Workspace conservée sans ownership ;
+- [x] rattachement à Mon référentiel explicite après publication.
 
-## 4. RBAC Workspace et capabilities
+## 4. Autorité globale
 
-Permissions Workspace :
+- [x] `product:reference:read` ;
+- [x] `product:reference:manage` ;
+- [x] `ApplicationGlobalRole` / `ApplicationGlobalMember` ;
+- [x] Super Admin Platform seul ≠ gouverneur Produit ;
+- [x] Owner Workspace seul ≠ gouverneur Produit ;
+- [x] rôle bootstrap `product_reference_governor` ;
+- [x] route frontend `/product-reference` hors PlatformLayout ;
+- [x] Référentiel / Contributions / Catégories ;
+- [x] gestion Produits ;
+- [x] gestion Variétés/Caractéristiques/synonymes ;
+- [x] gestion Déclinaisons ;
+- [x] revue Contributions ;
+- [x] historique métier.
 
-```text
-product:read
-product:catalog:manage
-product:contribute
-```
-
-Capabilities commerciales :
-
-```text
-product_reference_access
-product_catalog_import
-product_contribution
-```
-
-Les clés `product:contribute` et `product_contribution` sont conservées pour stabilité contractuelle. Leur sémantique actuelle est la création de nouvelles identités/déclinaisons dans le référentiel partagé après contrôle anti-doublon ; elles ne correspondent plus à une file d'approbation.
-
-Critères :
-
-- [x] RBAC, capability et quota restent distincts ;
-- [x] `product_catalog_import` contrôle l'accès commercial à l'import Workspace ;
-- [x] `product_contribution` contrôle les créations nouvelles depuis un Workspace ;
-- [x] l'autorité Application Global ne dépend d'aucun plan Workspace ;
-- [x] aucun stockage documentaire durable n'est requis pour le fichier source d'import.
-
-## 5. Import Workspace
-
-Pipeline :
-
-```text
-inspect
-→ mapping
-→ preview
-→ revue des ambiguïtés
-→ commit
-```
-
-Classifications cibles :
-
-```text
-ATTACH_EXISTING
-CREATE_PRODUCT
-CREATE_VARIANT
-REVIEW_REQUIRED
-INVALID
-```
-
-Droits calculés au commit :
-
-```text
-ATTACH_EXISTING
-→ product:catalog:manage
-
-CREATE_PRODUCT / CREATE_VARIANT
-→ product:contribute
-→ product_contribution
-```
-
-Critères :
-
-- [x] chaîne de téléversement temporaire sécurisé Core réutilisée ;
-- [x] CSV/XLS/XLSX ;
-- [x] aucun `File` durable créé pour le seul import ;
-- [x] aucune seconde capacité de stockage commerciale ;
-- [x] preview revalidée au commit ;
-- [x] catégorie active requise pour une création ;
-- [x] colonnes M-003 signalées mais non absorbées.
-
-## 6. Import global Produit
-
-- [x] `POST /api/product-reference/imports/inspect` ;
-- [x] `POST /api/product-reference/imports/:importId/preview` ;
-- [x] `POST /api/product-reference/imports/:importId/commit` ;
-- [x] protection par `product:reference:manage` ;
-- [x] aucune capability Workspace ;
-- [x] aucune création de `WorkspaceProduct` ;
-- [x] même déduplication que le flux Workspace ;
-- [x] même chaîne de sécurité fichier ;
-- [x] session explicitement scopée `GLOBAL`.
-
-## 7. Workspace M-002
-
-Implémenté :
+## 5. Workspace
 
 - [x] metadata ;
 - [x] summary Dashboard ;
 - [x] search WORKSPACE / REFERENCE ;
-- [x] detail ;
+- [x] detail + dimensions ;
 - [x] duplicate-check ;
-- [x] création Produit ;
-- [x] création Déclinaison ;
+- [x] soumission nouveau Produit ;
+- [x] contribution dimension ;
+- [x] création Déclinaison structurée ;
 - [x] ajout/retrait de Mon référentiel ;
 - [x] import inspect/preview/commit ;
-- [x] navigation Produits ;
 - [x] Référentiel global / Mon référentiel ;
-- [x] recherche prédictive et explicite ;
-- [x] filtre par catégorie ;
-- [x] pagination ;
-- [x] aucune colonne redondante d'appartenance au Workspace ;
-- [x] aucun filtre d'état redondant dans Mon référentiel ;
-- [x] drawer Produit ;
-- [x] widget Dashboard sans compteur de validation.
+- [x] recherche prédictive ;
+- [x] pagination/filtres ;
+- [x] tableau Produit / Déclinaison / Gamme / Actions ;
+- [x] aucun champ Alias ordinaire ;
+- [x] aucun filtre d'appartenance redondant.
 
-Ces éléments restent à confirmer par exécution des tests et QA visuelle.
+## 6. Imports
 
-## 8. Administration globale
+- [x] chaîne temporaire sécurisée Core ;
+- [x] CSV/XLS/XLSX ;
+- [x] aucun `File` durable pour la source ;
+- [x] mapping Variété + Caractéristiques contrôlées ;
+- [x] synonymes Workspace non librement créés ;
+- [x] réutilisation du moteur de contribution ;
+- [x] preview revalidée au commit ;
+- [x] import global protégé par `product:reference:manage` ;
+- [x] aucun `WorkspaceProduct` lors d'un import global ;
+- [x] colonnes M-003 signalées et non absorbées.
 
-Implémenté :
+## 7. Migration et bootstrap
 
-- [x] liste/détail du référentiel ;
-- [x] création Produit ;
-- [x] duplicate-check ;
-- [x] création Déclinaison ;
-- [x] import global ;
-- [x] correction Produit/Déclinaison ;
-- [x] archivage/réactivation ;
-- [x] gestion des catégories ;
-- [x] historique `ProductReferenceEvent` ;
-- [x] surface frontend `/product-reference` ;
-- [x] aucune file « À valider » ;
-- [x] aucune action Valider/Rejeter dans le parcours courant.
-
-## 9. Migration et bootstrap
-
-Commande :
+Commande migration :
 
 ```text
 npm run migration:m002-catalog
 ```
 
-Elle réalise désormais :
+Elle couvre :
 
-1. backfill des statuts legacy ;
-2. migration de la sémantique des déclinaisons et garde anti-collision ;
-3. vérification/création des indexes M-002 ;
-4. synchronisation des permissions système Workspace enregistrées.
+1. lifecycle legacy ;
+2. sémantique historique ;
+3. Présentation → `ProductCharacteristic(PRESENTATION)` ;
+4. signatures structurées ;
+5. indexes ;
+6. permissions système Workspace.
 
-Backfill :
-
-```text
-ancien PENDING_REVIEW complet
-→ ACTIVE
-
-ancien PENDING_REVIEW incomplet
-→ ARCHIVED
-
-ancien REJECTED
-→ ARCHIVED
-→ identityActive historique conservé
-```
-
-- [x] aucune catégorie inventée ;
-- [x] aucune suppression de document ;
-- [x] réécriture des signatures protégée contre les collisions transitoires de l'index unique ;
-- [x] migration idempotente : aucune réécriture au second passage ;
-- [x] seed de gouvernance Application Global ;
+- [x] aucune fusion silencieuse ;
+- [x] transaction ;
+- [x] idempotence ;
+- [x] seed gouvernance ;
 - [x] seed référentiel versionné ;
-- [ ] dataset bêta réel nettoyé/revu — différé volontairement.
+- [x] dataset `m002-reference-v1` `ready:true` ;
+- [x] 39 Produits, catégorie Fruits et légumes ;
+- [x] Pomme/Carotte/Tomate/Pomme de terre structurées ;
+- [x] aucun rendement inventé ;
+- [x] aucune donnée M-003.
 
-## 10. Tests
+## 8. Tests présents dans le corpus
 
-Le corpus a été réaligné sur le nouveau contrat, mais aucun test n'est déclaré vert tant qu'il n'a pas été exécuté après ces commits.
-
-À exécuter :
-
-### Backend ciblé
+Backend notamment :
 
 ```text
 productCatalog.registry.test.js
@@ -233,17 +138,23 @@ productCatalogGovernance.integration.test.js
 productCatalogGlobal.http.test.js
 productCatalogImport.integration.test.js
 productCatalogImportAccess.service.test.js
+productReferenceContribution.integration.test.js
+productReferenceDimension.integration.test.js
 m002ProductLifecycleBackfill.migration.test.js
 m002VariantSemantics.migration.test.js
+m002VariantCharacteristics.migration.test.js
 m002Catalog.migration.test.js
+m002Reference.seed.test.js
 ```
 
-### Frontend ciblé
+Frontend notamment :
 
 ```text
 product-create-dialog.test.jsx
 product-variant-fields.test.jsx
 product-import-dialog.test.jsx
+product-dimension-contribution-dialog.test.jsx
+product-dimension-edit-dialog.test.jsx
 products-dashboard-widget.test.jsx
 product-presentation.test.js
 products-page.test.jsx
@@ -251,59 +162,77 @@ product-reference-page.test.jsx
 product-reference-route.test.jsx
 ```
 
-### Gates globales
+**Aucune suite n'est déclarée verte sur le HEAD final tant qu'elle n'a pas été réellement exécutée.**
+
+## 9. Gates à exécuter
+
+### Migration / seeds
+
+```text
+npm run migration:m002-catalog
+npm run seed:m002-governance
+npm run seed:m002-reference
+```
+
+### Backend ciblé
+
+Utiliser la commande détaillée de `docs/REPRISE-CURRENT.md` avec `--no-file-parallelism`.
+
+### Frontend ciblé
+
+```text
+npm --prefix frontend run test -- src/features/products
+npm --prefix frontend run lint
+npm --prefix frontend run build
+```
+
+### Global
 
 ```text
 npm run lint
-npm test
-npm --prefix frontend run lint
+npm test -- --no-file-parallelism
 npm --prefix frontend run test
-npm --prefix frontend run build
 npm run test:e2e
 npm run release:verify
 ```
 
-## 11. QA visuelle avant PR
+## 10. QA visuelle avant PR
 
-Vérifier au minimum :
+Valider explicitement :
 
-- Référentiel global proposé en premier lorsque la capability le permet ;
-- Mon référentiel en second onglet ;
-- recherche prédictive depuis les deux vues ;
-- alignement visuel champ de recherche / bouton ;
-- absence de colonne et filtre d'état redondants ;
-- références globales archivées absentes des deux listes opérationnelles ;
-- tri alphabétique Produit ;
-- colonne Présentation ;
-- colonne Gamme avec État/transformation ;
-- formulaire sans Conservation ;
-- six Gammes reçues du backend ;
-- sélection de Gamme préremplissant l'État / transformation ;
-- création Workspace ;
-- catégorie obligatoire ;
-- anti-doublon exact et candidats proches ;
-- ajout automatique à Mon référentiel ;
-- création d'une déclinaison ;
-- import Workspace ;
-- détection colonnes M-003 ;
-- accès `/product-reference` selon Application Global ;
-- création/import global ;
-- absence de toute file de validation ;
-- catégories ;
-- archive/réactivation ;
-- Dashboard.
+- Référentiel global / Mon référentiel ;
+- recherche complexe ;
+- Produit / Déclinaison / Gamme / Actions ;
+- création Workspace → Soumettre la proposition ;
+- absence du Produit avant approbation ;
+- Contributions globales ;
+- approbation/refus ;
+- ajout explicite à Mon référentiel ;
+- Pomme Golden/Gala/Granny Smith ;
+- Carotte structurée ;
+- ajout Reinette / recherche Reinnette ;
+- lifecycle dimensions ;
+- import structuré ;
+- seed visible ;
+- responsive.
 
-## 12. Étape suivante après fermeture M-002
+## 11. Clôture
 
-Une fois M-002 validé et fusionné, cadrer M-003 :
+Seulement après :
 
 ```text
-Fournisseur
-→ Catalogue fournisseur identifié/versionné
-→ Article fournisseur
-→ référence / conditionnement / prix
-→ rattachement ProductVariant
-→ filtres Fournisseur / Catalogue
+migration + seeds OK
+→ backend ciblé vert
+→ frontend ciblé vert
+→ lint/build verts
+→ suites globales vertes
+→ E2E verts
+→ release verify vert
+→ QA visuelle utilisateur validée
+→ une seule PR M-002
+→ gate PR
+→ une seule fusion
+→ gate post-merge
 ```
 
-Aucun de ces concepts ne doit être ajouté au modèle `CanonicalProduct`.
+Puis seulement cadrer M-003.
