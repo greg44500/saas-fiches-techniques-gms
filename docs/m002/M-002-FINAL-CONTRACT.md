@@ -237,7 +237,7 @@ reset M-002 local sécurisé
 → seed m002-reference-v6
 ```
 
-Le reset est strictement limité à `NODE_ENV=development`, à MongoDB local, à une base terminant par `-dev`, à `ALLOW_DEVELOPMENT_DATA_RESET=true` et à une confirmation explicite. Il ne touche qu'aux collections M-002.
+Le reset est strictement limité à `NODE_ENV=development`, à MongoDB local, à une base terminant par `_dev`, à `ALLOW_DEVELOPMENT_DATA_RESET=true` et à une confirmation explicite. Il ne touche qu'aux collections M-002.
 
 
 

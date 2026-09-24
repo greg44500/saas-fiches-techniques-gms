@@ -12,10 +12,10 @@ import {
 describe('resetM002CatalogDevelopment', () => {
     it('analyse la cible Mongo locale attendue', () => {
         expect(parseMongoTarget(
-            'mongodb://127.0.0.1:27017/saas-fiches-techniques-gms-dev?replicaSet=rs0',
+            'mongodb://127.0.0.1:27017/saas_fiches_techniques_gms_dev?replicaSet=rs0',
         )).toEqual({
             host: '127.0.0.1',
-            databaseName: 'saas-fiches-techniques-gms-dev',
+            databaseName: 'saas_fiches_techniques_gms_dev',
         });
     });
 
@@ -25,7 +25,7 @@ describe('resetM002CatalogDevelopment', () => {
             resetEnabled: true,
             confirmed: true,
             mongodbUri:
-                'mongodb://127.0.0.1:27017/saas-fiches-techniques-gms-dev',
+                'mongodb://127.0.0.1:27017/saas_fiches_techniques_gms_dev',
         })).toThrow(
             'Le reset M-002 est autorisé uniquement avec NODE_ENV=development.',
         );
@@ -37,7 +37,7 @@ describe('resetM002CatalogDevelopment', () => {
             resetEnabled: false,
             confirmed: true,
             mongodbUri:
-                'mongodb://127.0.0.1:27017/saas-fiches-techniques-gms-dev',
+                'mongodb://127.0.0.1:27017/saas_fiches_techniques_gms_dev',
         })).toThrow(
             'Activez ALLOW_DEVELOPMENT_DATA_RESET=true',
         );
@@ -49,7 +49,7 @@ describe('resetM002CatalogDevelopment', () => {
             resetEnabled: true,
             confirmed: false,
             mongodbUri:
-                'mongodb://127.0.0.1:27017/saas-fiches-techniques-gms-dev',
+                'mongodb://127.0.0.1:27017/saas_fiches_techniques_gms_dev',
         })).toThrow(
             'Le reset M-002 exige --confirm-m002-reset.',
         );
@@ -61,13 +61,13 @@ describe('resetM002CatalogDevelopment', () => {
             resetEnabled: true,
             confirmed: true,
             mongodbUri:
-                'mongodb://mongo.example.com:27017/saas-fiches-techniques-gms-dev',
+                'mongodb://mongo.example.com:27017/saas_fiches_techniques_gms_dev',
         })).toThrow(
             'Le reset M-002 refuse toute base MongoDB non locale.',
         );
     });
 
-    it('refuse une base locale qui ne se termine pas par -dev', () => {
+    it('refuse une base locale qui ne se termine pas par _dev', () => {
         expect(() => assertM002DevelopmentResetAllowed({
             nodeEnv: 'development',
             resetEnabled: true,
@@ -75,17 +75,17 @@ describe('resetM002CatalogDevelopment', () => {
             mongodbUri:
                 'mongodb://127.0.0.1:27017/saas-fiches-techniques-gms',
         })).toThrow(
-            'Le reset M-002 exige une base MongoDB locale se terminant par -dev.',
+            'Le reset M-002 exige une base MongoDB locale se terminant par _dev.',
         );
     });
 
-    it('accepte uniquement development + capability + confirmation + base locale -dev', () => {
+    it('accepte uniquement development + capability + confirmation + base locale _dev', () => {
         expect(() => assertM002DevelopmentResetAllowed({
             nodeEnv: 'development',
             resetEnabled: true,
             confirmed: true,
             mongodbUri:
-                'mongodb://localhost:27017/saas-fiches-techniques-gms-dev?replicaSet=rs0',
+                'mongodb://localhost:27017/saas_fiches_techniques_gms_dev?replicaSet=rs0',
         })).not.toThrow();
     });
 });

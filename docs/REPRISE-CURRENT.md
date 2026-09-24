@@ -167,7 +167,7 @@ dev:reset-m002-catalog
 → seed:m002-reference (v6)
 ```
 
-Le reset ne touche qu'aux collections M-002 et refuse production, MongoDB distant et toute base ne terminant pas par `-dev`.
+Le reset ne touche qu'aux collections M-002 et refuse production, MongoDB distant et toute base ne terminant pas par `_dev`.
 
 Une migration additionnelle M-002 convertit, pour les environnements qui en ont encore besoin, le contrat actuel vers :
 

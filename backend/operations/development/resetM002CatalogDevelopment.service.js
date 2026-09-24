@@ -89,9 +89,9 @@ const assertM002DevelopmentResetAllowed = ({
         );
     }
 
-    if (!databaseName.endsWith('-dev')) {
+    if (!databaseName.endsWith('_dev')) {
         throw new Error(
-            'Le reset M-002 exige une base MongoDB locale se terminant par -dev.',
+            'Le reset M-002 exige une base MongoDB locale se terminant par _dev.',
         );
     }
 };
