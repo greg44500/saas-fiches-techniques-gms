@@ -10,19 +10,14 @@ import {
 } from '../../../modules/productCatalog/productVariantSemantics.js';
 
 describe('M-002 product variant semantics', () => {
-    it('résout les six gammes depuis le registre backend', () => {
+    it('résout uniquement les cinq gammes physiques depuis le registre backend', () => {
         expect(getProductFoodRangeDefinition(1)).toEqual(
             expect.objectContaining({
                 label: 'Gamme 1',
                 name: 'Frais',
             }),
         );
-        expect(getProductFoodRangeDefinition(6)).toEqual(
-            expect.objectContaining({
-                label: 'Gamme 6',
-                name: 'PAI / PAE',
-            }),
-        );
+        expect(getProductFoodRangeDefinition(6)).toBeNull();
     });
 
     it('déduit l état par défaut et canonise une valeur compatible', () => {

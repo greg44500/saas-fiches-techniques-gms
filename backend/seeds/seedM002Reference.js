@@ -26,6 +26,7 @@ import {
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
+    PRODUCT_USAGE_TYPE,
 } from '../modules/productCatalog/productCatalog.registry.js';
 import {
     ProductReferenceBootstrapRun,
@@ -53,6 +54,10 @@ const seedVariantSchema = z.strictObject({
         (value) => PRODUCT_FOOD_RANGES.includes(value),
         { message: 'Gamme bootstrap invalide.' },
     ),
+    usageType: z.enum(Object.values(PRODUCT_USAGE_TYPE))
+        .nullable()
+        .optional()
+        .default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
     yieldPercent: z.number().positive().max(100).nullable().optional().default(null),
 });
@@ -84,7 +89,7 @@ const seedProductSchema = z.strictObject({
     categoryKey: z.string().trim().min(1).max(120),
     varieties: z.array(seedDimensionSchema).optional().default([]),
     characteristics: z.array(seedCharacteristicSchema).optional().default([]),
-    variants: z.array(seedVariantSchema).min(1),
+    variants: z.array(seedVariantSchema).optional().default([]),
 }).superRefine((product, context) => {
     const varietyKeys = product.varieties.map(({ key }) => normalizeProductText(key));
     if (new Set(varietyKeys).size !== varietyKeys.length) {
@@ -421,6 +426,7 @@ const upsertSeedProduct = async ({
             characteristics,
             foodRange: variantDefinition.foodRange,
             processingState: resolvedProcessingState.value,
+            usageType: variantDefinition.usageType,
         });
 
         let variant = await ProductVariant.findOne({
@@ -438,6 +444,7 @@ const upsertSeedProduct = async ({
             ),
             normalizedSignature,
             foodRange: variantDefinition.foodRange,
+            usageType: variantDefinition.usageType,
             referenceUnit: variantDefinition.referenceUnit,
             yieldPercent: variantDefinition.yieldPercent,
             status: PRODUCT_STATUS.ACTIVE,
@@ -570,7 +577,7 @@ const seedM002Reference = async ({ dataset, actorId }) => {
 };
 
 const loadDefaultDataset = async () => {
-    const datasetUrl = new URL('./data/m002-reference.v2.json', import.meta.url);
+    const datasetUrl = new URL('./data/m002-reference.v3.json', import.meta.url);
     return JSON.parse(await readFile(datasetUrl, 'utf8'));
 };
 

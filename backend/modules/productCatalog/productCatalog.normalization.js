@@ -193,6 +193,7 @@ const buildVariantSignature = (input = {}) => {
             ? '_'
             : String(input.foodRange)}`,
         `s:${normalizeProductText(input.processingState) || '_'}`,
+        `u:${normalizeProductText(input.usageType) || '_'}`,
     ].join('|');
 };
 

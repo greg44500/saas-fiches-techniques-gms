@@ -5,6 +5,7 @@ import {
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_REJECTION_REASON,
     PRODUCT_STATUS,
+    PRODUCT_USAGE_TYPE,
 } from './productCatalog.registry.js';
 
 const { Schema, model } = mongoose;
@@ -30,7 +31,7 @@ const productVariantSchema = new Schema(
             default: [],
             validate: {
                 validator(value) {
-                    if (!Array.isArray(value) || value.length > 5) return false;
+                    if (!Array.isArray(value) || value.length > 6) return false;
                     return new Set(value.map((entry) => entry.toString())).size
                         === value.length;
                 },
@@ -43,6 +44,11 @@ const productVariantSchema = new Schema(
         foodRange: {
             type: Number,
             enum: PRODUCT_FOOD_RANGES,
+            default: null,
+        },
+        usageType: {
+            type: String,
+            enum: Object.values(PRODUCT_USAGE_TYPE),
             default: null,
         },
         referenceUnit: {

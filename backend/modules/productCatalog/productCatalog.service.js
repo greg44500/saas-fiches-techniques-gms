@@ -35,6 +35,8 @@ import {
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
     PRODUCT_STATUS,
+    PRODUCT_USAGE_TYPE,
+    PRODUCT_USAGE_TYPE_REGISTRY,
     PRODUCT_STATUS_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS_REGISTRY,
@@ -214,12 +216,21 @@ const normalizeVariantInput = async ({
         ),
     );
 
+    const usageType = variant.usageType ?? null;
+    if (
+        usageType !== null
+        && !Object.values(PRODUCT_USAGE_TYPE).includes(usageType)
+    ) {
+        throw new AppError('Classification PAI / PAE invalide.', 409);
+    }
+
     const normalized = {
         variety: variety?._id ?? null,
         characteristics: orderedCharacteristics.map(({ _id }) => _id),
         processingState: processingState.value,
         normalizedProcessingState: normalizeProductText(processingState.value),
         foodRange: variant.foodRange,
+        usageType,
         referenceUnit: variant.referenceUnit,
         yieldPercent: variant.yieldPercent ?? null,
     };
@@ -231,6 +242,7 @@ const normalizeVariantInput = async ({
             characteristics: orderedCharacteristics,
             foodRange: normalized.foodRange,
             processingState: normalized.processingState,
+            usageType: normalized.usageType,
         }),
     };
 };
@@ -385,6 +397,7 @@ const getProductMetadata = async ({
             PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
         ),
         referenceUnits: Object.values(PRODUCT_REFERENCE_UNIT_REGISTRY),
+        usageTypes: Object.values(PRODUCT_USAGE_TYPE_REGISTRY),
         foodRanges: Object.values(PRODUCT_FOOD_RANGE_REGISTRY).map(
             (definition) => ({
                 ...definition,
@@ -566,6 +579,7 @@ const listProductSearch = async ({
                 foodRangeDefinition?.defaultProcessingState,
                 ...(foodRangeDefinition?.processingStates ?? []),
                 variant.processingState,
+                variant.usageType,
             ].filter(Boolean);
 
             return matchesProductSearchValues(q, values);

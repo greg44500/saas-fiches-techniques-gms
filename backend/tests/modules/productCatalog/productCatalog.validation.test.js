@@ -5,6 +5,7 @@ import {
 } from 'vitest';
 
 import {
+    createGlobalProductBodySchema,
     createReferenceContributionBodySchema,
     createWorkspaceProductBodySchema,
     createWorkspaceVariantBodySchema,
@@ -24,7 +25,8 @@ describe('M-002 product request validation', () => {
             categoryId,
             variant: {
                 presentation: 'Râpée',
-                foodRange: 6,
+                foodRange: 1,
+                usageType: 'PAI',
                 referenceUnit: 'KG',
                 yieldPercent: 100,
             },
@@ -33,7 +35,8 @@ describe('M-002 product request validation', () => {
             categoryId,
             variant: {
                 presentation: 'Râpée',
-                foodRange: 6,
+                foodRange: 1,
+                usageType: 'PAI',
                 referenceUnit: 'KG',
                 yieldPercent: 100,
             },
@@ -67,8 +70,25 @@ describe('M-002 product request validation', () => {
         expect(createWorkspaceProductBodySchema.safeParse({
             name: 'Carotte',
             categoryId,
-            variant: { foodRange: 7, referenceUnit: 'KG' },
+            variant: { foodRange: 6, referenceUnit: 'KG' },
         }).success).toBe(false);
+
+        expect(createWorkspaceProductBodySchema.safeParse({
+            name: 'Carotte',
+            categoryId,
+            variant: {
+                foodRange: 1,
+                usageType: 'INVALID',
+                referenceUnit: 'KG',
+            },
+        }).success).toBe(false);
+    });
+
+    it('autorise un Produit global sans déclinaison initiale', () => {
+        expect(createGlobalProductBodySchema.safeParse({
+            name: 'Bœuf',
+            categoryId,
+        }).success).toBe(true);
     });
 
     it('valide les références structurées d une déclinaison existante', () => {
@@ -79,6 +99,7 @@ describe('M-002 product request validation', () => {
                 '507f1f77bcf86cd799439014',
             ],
             foodRange: 1,
+            usageType: 'PAE',
             referenceUnit: 'KG',
         }).success).toBe(true);
 
@@ -146,7 +167,9 @@ describe('M-002 product request validation', () => {
                 name: 0,
                 variety: 1,
                 presentation: 2,
-                qualityDesignation: 3,
+                cut: 3,
+                qualityDesignation: 4,
+                usageType: 5,
             },
             defaults: { referenceUnit: 'KG', categoryId, foodRange: 1 },
         })).toEqual({
@@ -154,7 +177,9 @@ describe('M-002 product request validation', () => {
                 name: 0,
                 variety: 1,
                 presentation: 2,
-                qualityDesignation: 3,
+                cut: 3,
+                qualityDesignation: 4,
+                usageType: 5,
             },
             defaults: { referenceUnit: 'KG', categoryId, foodRange: 1 },
         });

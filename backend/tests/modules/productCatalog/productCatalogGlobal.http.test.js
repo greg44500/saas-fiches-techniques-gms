@@ -179,6 +179,25 @@ describe('M-002 global product reference HTTP contract', () => {
         );
     });
 
+    it('crée une identité Produit globale sans variante artificielle', async () => {
+        const category = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Viandes racines' });
+
+        const created = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({
+                name: 'Bœuf racine',
+                categoryId: category.body.data.category.id,
+            });
+
+        expect(created.status).toBe(201);
+        expect(created.body.data.product.name).toBe('Bœuf racine');
+        expect(created.body.data.variant).toBeNull();
+    });
+
     it('inspecte et prévisualise un import global via le pipeline sécurisé', async () => {
         const category = await request(app)
             .post('/api/product-reference/categories')

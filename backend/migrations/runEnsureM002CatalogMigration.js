@@ -18,6 +18,9 @@ import {
 import {
     migrateM002VariantCharacteristics,
 } from './migrateM002VariantCharacteristics.migration.js';
+import {
+    migrateM002FoodRangeUsageType,
+} from './migrateM002FoodRangeUsageType.migration.js';
 
 const run = async () => {
     try {
@@ -26,12 +29,20 @@ const run = async () => {
         const lifecycle = await backfillM002LegacyProductLifecycle();
         const variantSemantics = await migrateM002VariantSemantics();
         const variantCharacteristics = await migrateM002VariantCharacteristics();
+        const foodRangeUsageType = await migrateM002FoodRangeUsageType();
         const indexes = await ensureM002CatalogIndexes();
         const permissions = await backfillRegisteredSystemRolePermissions();
 
         console.log(
             'Migration M-002 Catalogue Produits terminée :',
-            { lifecycle, variantSemantics, variantCharacteristics, indexes, permissions },
+            {
+                lifecycle,
+                variantSemantics,
+                variantCharacteristics,
+                foodRangeUsageType,
+                indexes,
+                permissions,
+            },
         );
     } catch (error) {
         console.error(

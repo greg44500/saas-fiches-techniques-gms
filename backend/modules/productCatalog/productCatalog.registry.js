@@ -51,6 +51,10 @@ const PRODUCT_CHARACTERISTIC_KIND_REGISTRY = Object.freeze({
         value: 'PRESENTATION',
         label: 'Présentation',
     }),
+    CUT: Object.freeze({
+        value: 'CUT',
+        label: 'Pièce / découpe',
+    }),
     COMMERCIAL_TYPE: Object.freeze({
         value: 'COMMERCIAL_TYPE',
         label: 'Type commercial',
@@ -201,17 +205,21 @@ const PRODUCT_FOOD_RANGE_REGISTRY = Object.freeze({
         processingStates: Object.freeze(['Sous-vide cuit']),
         defaultProcessingState: 'Sous-vide cuit',
     }),
-    6: Object.freeze({
-        value: 6,
-        label: 'Gamme 6',
-        name: 'PAI / PAE',
-        processingStates: Object.freeze(['PAI / PAE']),
-        defaultProcessingState: 'PAI / PAE',
-    }),
 });
 
 const PRODUCT_FOOD_RANGES = Object.freeze(
     Object.values(PRODUCT_FOOD_RANGE_REGISTRY).map(({ value }) => value),
+);
+
+const PRODUCT_USAGE_TYPE_REGISTRY = Object.freeze({
+    PAI: Object.freeze({ value: 'PAI', label: 'PAI' }),
+    PAE: Object.freeze({ value: 'PAE', label: 'PAE' }),
+});
+
+const PRODUCT_USAGE_TYPE = Object.freeze(
+    Object.fromEntries(Object.entries(PRODUCT_USAGE_TYPE_REGISTRY).map(
+        ([key, definition]) => [key, definition.value],
+    )),
 );
 
 const PRODUCT_REFERENCE_EVENT_ACTION = Object.freeze({
@@ -297,6 +305,8 @@ export {
     PRODUCT_REJECTION_REASON_REGISTRY,
     PRODUCT_STATUS,
     PRODUCT_STATUS_REGISTRY,
+    PRODUCT_USAGE_TYPE,
+    PRODUCT_USAGE_TYPE_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS_REGISTRY,
 };

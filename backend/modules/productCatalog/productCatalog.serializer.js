@@ -60,6 +60,7 @@ const serializeVariant = (variant) => {
         presentation,
         processingState: variant.processingState ?? null,
         foodRange: variant.foodRange ?? null,
+        usageType: variant.usageType ?? null,
         referenceUnit: variant.referenceUnit,
         yieldPercent: variant.yieldPercent ?? null,
         status: variant.status,

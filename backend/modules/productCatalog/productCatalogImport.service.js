@@ -31,6 +31,7 @@ import {
     PRODUCT_IMPORT_STATUS,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
+    PRODUCT_USAGE_TYPE,
 } from './productCatalog.registry.js';
 import { ProductCharacteristic } from './productCharacteristic.model.js';
 import { ProductImportSession } from './productImportSession.model.js';
@@ -128,6 +129,14 @@ const parseFoodRange = (value) => {
     return Number.isInteger(number) && PRODUCT_FOOD_RANGES.includes(number)
         ? number
         : Number.NaN;
+};
+
+const parseUsageType = (value) => {
+    if (value === '' || value === null || value === undefined) return null;
+    const normalized = String(value).trim().toUpperCase();
+    return Object.values(PRODUCT_USAGE_TYPE).includes(normalized)
+        ? normalized
+        : undefined;
 };
 
 const parseYield = (value) => {
@@ -267,6 +276,7 @@ const mapImportRow = ({
     const aliases = parseAliases(value('aliases'));
     const rawFoodRange = value('foodRange');
     const rawReferenceUnit = value('referenceUnit');
+    const rawUsageType = value('usageType');
     const rawYieldPercent = value('yieldPercent');
     const foodRange = rawFoodRange === ''
         ? defaults.foodRange ?? null
@@ -274,6 +284,9 @@ const mapImportRow = ({
     const referenceUnit = rawReferenceUnit === ''
         ? defaults.referenceUnit ?? null
         : parseReferenceUnit(rawReferenceUnit);
+    const usageType = rawUsageType === ''
+        ? defaults.usageType ?? null
+        : parseUsageType(rawUsageType);
     const yieldPercent = rawYieldPercent === ''
         ? defaults.yieldPercent ?? null
         : parseYield(rawYieldPercent);
@@ -287,11 +300,15 @@ const mapImportRow = ({
     if (!referenceUnit) {
         errors.push('Unité de référence obligatoire ou invalide.');
     }
+    if (usageType === undefined) {
+        errors.push('Classification PAI / PAE invalide.');
+    }
     if (Number.isNaN(yieldPercent)) errors.push('Rendement invalide.');
 
     const variety = String(value('variety')).trim() || null;
     const characteristicValues = [
         [PRODUCT_CHARACTERISTIC_KIND.PRESENTATION, value('presentation')],
+        [PRODUCT_CHARACTERISTIC_KIND.CUT, value('cut')],
         [PRODUCT_CHARACTERISTIC_KIND.COMMERCIAL_TYPE, value('commercialType')],
         [PRODUCT_CHARACTERISTIC_KIND.SIZE_FORMAT, value('sizeFormat')],
         [PRODUCT_CHARACTERISTIC_KIND.COLOR, value('color')],
@@ -336,6 +353,7 @@ const mapImportRow = ({
             variant: {
                 processingState: processingState.value,
                 foodRange: Number.isNaN(foodRange) ? null : foodRange,
+                usageType: usageType === undefined ? null : usageType,
                 referenceUnit,
                 yieldPercent: Number.isNaN(yieldPercent) ? null : yieldPercent,
             },
@@ -655,6 +673,7 @@ const buildProductImportPreview = async ({
                     characteristics: dimensionResolution.characteristics,
                     foodRange: data.variant.foodRange,
                     processingState: data.variant.processingState,
+                    usageType: data.variant.usageType,
                 })
                 : null;
             const existingVariant = signature

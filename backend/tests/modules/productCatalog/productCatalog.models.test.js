@@ -38,6 +38,7 @@ describe('M-002 product catalog models', () => {
             ProductCharacteristic.schema.path('kind').options.enum,
         ).toEqual([
             'PRESENTATION',
+            'CUT',
             'COMMERCIAL_TYPE',
             'SIZE_FORMAT',
             'COLOR',
@@ -61,6 +62,10 @@ describe('M-002 product catalog models', () => {
         expect(ProductVariant.schema.path('normalizedPresentation')).toBeUndefined();
         expect(ProductVariant.schema.path('form')).toBeUndefined();
         expect(ProductVariant.schema.path('preservation')).toBeUndefined();
+        expect(ProductVariant.schema.path('usageType').options.enum)
+            .toEqual(['PAI', 'PAE']);
+        expect(ProductVariant.schema.path('usageType').options.default)
+            .toBeNull();
     });
 
     it('crée par défaut les identités Produit en ACTIVE', () => {

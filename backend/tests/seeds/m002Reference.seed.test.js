@@ -95,7 +95,7 @@ describe('M-002 reference bootstrap', () => {
         const parsed = m002ReferenceDatasetSchema.parse(dataset);
 
         expect(parsed.ready).toBe(true);
-        expect(parsed.version).toBe('m002-reference-v2');
+        expect(parsed.version).toBe('m002-reference-v3');
         expect(parsed.categories).toHaveLength(12);
         expect(parsed.categories).toEqual(expect.arrayContaining([
             { key: 'fruits-legumes', name: 'Fruits et légumes' },
@@ -130,6 +130,12 @@ describe('M-002 reference bootstrap', () => {
 
         const carotte = parsed.products.find(({ name }) => name === 'Carotte');
         const pomme = parsed.products.find(({ name }) => name === 'Pomme');
+        const boeuf = parsed.products.find(({ name }) => name === 'Bœuf');
+        const agneau = parsed.products.find(({ name }) => name === 'Agneau');
+        const poulet = parsed.products.find(({ name }) => name === 'Poulet');
+        const jambonBlanc = parsed.products.find(
+            ({ name }) => name === 'Jambon blanc',
+        );
 
         expect(carotte.characteristics).toEqual(
             expect.arrayContaining([
@@ -154,6 +160,21 @@ describe('M-002 reference bootstrap', () => {
         expect(pomme.varieties.map(({ name }) => name)).toEqual(
             expect.arrayContaining(['Golden', 'Gala', 'Granny Smith']),
         );
+        expect(boeuf.characteristics).toEqual(expect.arrayContaining([
+            expect.objectContaining({ kind: 'CUT', name: 'Paleron' }),
+            expect.objectContaining({ kind: 'CUT', name: 'Faux-filet' }),
+        ]));
+        expect(agneau.characteristics).toEqual(expect.arrayContaining([
+            expect.objectContaining({ kind: 'CUT', name: 'Gigot' }),
+        ]));
+        expect(poulet.characteristics).toEqual(expect.arrayContaining([
+            expect.objectContaining({ kind: 'CUT', name: 'Cuisse' }),
+        ]));
+        expect(boeuf.variants).toEqual([]);
+        expect(agneau.variants).toEqual([]);
+        expect(poulet.variants).toEqual([]);
+        expect(jambonBlanc.categoryKey).toBe('charcuteries');
+        expect(jambonBlanc.variants).toEqual([]);
 
         expect(parsed.products).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -203,6 +224,9 @@ describe('M-002 reference bootstrap', () => {
             expect(product).not.toHaveProperty('packaging');
             for (const variant of product.variants) {
                 expect(variant.yieldPercent).toBeNull();
+                expect(variant.foodRange).toBeGreaterThanOrEqual(1);
+                expect(variant.foodRange).toBeLessThanOrEqual(5);
+                expect([null, 'PAI', 'PAE']).toContain(variant.usageType);
             }
         }
     });
@@ -311,7 +335,7 @@ describe('M-002 reference bootstrap', () => {
                         {
                             characteristicKeys: [],
                             processingState: null,
-                            foodRange: 6,
+                            foodRange: 2,
                             referenceUnit: 'KG',
                             yieldPercent: null,
                         },
@@ -341,6 +365,20 @@ describe('M-002 reference bootstrap', () => {
         expect(await CanonicalProduct.countDocuments()).toBe(2);
         expect(await CanonicalProduct.countDocuments({ name: 'Carotte' })).toBe(1);
         expect(await CanonicalProduct.countDocuments({ name: 'Riz' })).toBe(1);
+    });
+
+    it('autorise un Produit canonique bootstrap sans variante artificielle', async () => {
+        const dataset = buildDataset({ version: 'm002-reference-v3' });
+        dataset.products[0].variants = [];
+
+        const result = await seedM002Reference({
+            dataset,
+            actorId: actor._id,
+        });
+
+        expect(result.variantCount).toBe(0);
+        expect(await CanonicalProduct.countDocuments()).toBe(1);
+        expect(await ProductVariant.countDocuments()).toBe(0);
     });
 
     it('interdit de modifier silencieusement une version déjà installée', async () => {

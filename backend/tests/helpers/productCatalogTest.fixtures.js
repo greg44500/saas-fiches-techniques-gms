@@ -26,6 +26,7 @@ const createActiveProductReference = async ({
     presentation = null,
     processingState = null,
     foodRange = 1,
+    usageType = null,
     referenceUnit = PRODUCT_REFERENCE_UNIT.KG,
     yieldPercent = null,
     categoryName = 'Légumes',
@@ -93,6 +94,7 @@ const createActiveProductReference = async ({
         characteristics,
         processingState: resolvedProcessingState.value,
         foodRange,
+        usageType,
     };
     const variant = await ProductVariant.create({
         canonicalProduct: product._id,
@@ -104,6 +106,7 @@ const createActiveProductReference = async ({
         ),
         normalizedSignature: buildVariantSignature(variantInput),
         foodRange,
+        usageType,
         referenceUnit,
         yieldPercent,
         status: PRODUCT_STATUS.ACTIVE,

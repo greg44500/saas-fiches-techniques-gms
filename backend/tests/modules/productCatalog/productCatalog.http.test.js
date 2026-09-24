@@ -154,13 +154,13 @@ describe('M-002 product catalog HTTP contract', () => {
                     name: 'Frais',
                     defaultProcessingState: 'Produit frais',
                 }),
-                expect.objectContaining({
-                    value: 6,
-                    label: 'Gamme 6',
-                    name: 'PAI / PAE',
-                }),
             ]),
         );
+        expect(metadata.body.data.metadata.foodRanges).toHaveLength(5);
+        expect(metadata.body.data.metadata.usageTypes).toEqual([
+            { value: 'PAI', label: 'PAI' },
+            { value: 'PAE', label: 'PAE' },
+        ]);
 
         const created = await request(app)
             .post(basePath())

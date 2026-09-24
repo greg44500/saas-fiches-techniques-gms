@@ -16,6 +16,8 @@ import {
     PRODUCT_REFERENCE_UNIT_REGISTRY,
     PRODUCT_STATUS,
     PRODUCT_STATUS_REGISTRY,
+    PRODUCT_USAGE_TYPE,
+    PRODUCT_USAGE_TYPE_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS_REGISTRY,
 } from '../../../modules/productCatalog/productCatalog.registry.js';
@@ -47,6 +49,7 @@ describe('M-002 product catalog registries', () => {
     it('ferme le registre des caractéristiques Produit V1', () => {
         expect(PRODUCT_CHARACTERISTIC_KIND).toEqual({
             PRESENTATION: 'PRESENTATION',
+            CUT: 'CUT',
             COMMERCIAL_TYPE: 'COMMERCIAL_TYPE',
             SIZE_FORMAT: 'SIZE_FORMAT',
             COLOR: 'COLOR',
@@ -56,6 +59,8 @@ describe('M-002 product catalog registries', () => {
             .toBe('Présentation');
         expect(PRODUCT_CHARACTERISTIC_KIND_REGISTRY.COMMERCIAL_TYPE.label)
             .toBe('Type commercial');
+        expect(PRODUCT_CHARACTERISTIC_KIND_REGISTRY.CUT.label)
+            .toBe('Pièce / découpe');
     });
 
     it('décrit les unités de référence avec leur dimension', () => {
@@ -74,8 +79,8 @@ describe('M-002 product catalog registries', () => {
         );
     });
 
-    it('décrit les six gammes et leur état métier backend-driven', () => {
-        expect(PRODUCT_FOOD_RANGES).toEqual([1, 2, 3, 4, 5, 6]);
+    it('décrit les cinq gammes physiques et sépare PAI / PAE', () => {
+        expect(PRODUCT_FOOD_RANGES).toEqual([1, 2, 3, 4, 5]);
         expect(PRODUCT_FOOD_RANGE_REGISTRY[1]).toEqual(
             expect.objectContaining({
                 label: 'Gamme 1',
@@ -83,13 +88,15 @@ describe('M-002 product catalog registries', () => {
                 defaultProcessingState: 'Produit frais',
             }),
         );
-        expect(PRODUCT_FOOD_RANGE_REGISTRY[6]).toEqual(
-            expect.objectContaining({
-                label: 'Gamme 6',
-                name: 'PAI / PAE',
-                defaultProcessingState: 'PAI / PAE',
-            }),
-        );
+        expect(PRODUCT_FOOD_RANGE_REGISTRY[6]).toBeUndefined();
+        expect(PRODUCT_USAGE_TYPE).toEqual({
+            PAI: 'PAI',
+            PAE: 'PAE',
+        });
+        expect(Object.values(PRODUCT_USAGE_TYPE_REGISTRY)).toEqual([
+            { value: 'PAI', label: 'PAI' },
+            { value: 'PAE', label: 'PAE' },
+        ]);
     });
 
     it('sépare les permissions Workspace et Application Global', () => {

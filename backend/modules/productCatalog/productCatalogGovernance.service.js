@@ -349,18 +349,20 @@ const createGlobalProductInSession = async ({
 
     const source = workspaceId ? 'WORKSPACE_CONTRIBUTION' : 'GLOBAL';
 
-    const createdVariant = await createProductVariantInSession({
-        canonicalProductId: product._id,
-        workspaceId,
-        actorId,
-        variant: {
-            ...variant,
-            ...(varietyId ? { varietyId } : {}),
-            characteristicIds,
-        },
-        status: PRODUCT_STATUS.ACTIVE,
-        session,
-    });
+    const createdVariant = variant
+        ? await createProductVariantInSession({
+            canonicalProductId: product._id,
+            workspaceId,
+            actorId,
+            variant: {
+                ...variant,
+                ...(varietyId ? { varietyId } : {}),
+                characteristicIds,
+            },
+            status: PRODUCT_STATUS.ACTIVE,
+            session,
+        })
+        : null;
 
     await createProductReferenceEvent({
         actorId,
@@ -369,30 +371,34 @@ const createGlobalProductInSession = async ({
         entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
         entityId: product._id,
         metadata: {
-            variantId: createdVariant._id.toString(),
+            ...(createdVariant
+                ? { variantId: createdVariant._id.toString() }
+                : {}),
             source,
         },
         session,
     });
 
-    await createProductReferenceEvent({
-        actorId,
-        workspaceId,
-        action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
-        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
-        entityId: createdVariant._id,
-        metadata: {
-            productId: product._id.toString(),
-            source,
-        },
-        session,
-    });
+    if (createdVariant) {
+        await createProductReferenceEvent({
+            actorId,
+            workspaceId,
+            action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
+            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
+            entityId: createdVariant._id,
+            metadata: {
+                productId: product._id.toString(),
+                source,
+            },
+            session,
+        });
+    }
 
     await product.populate('category');
 
     return {
         product: serializeProduct(product),
-        variant: serializeVariant(createdVariant),
+        variant: createdVariant ? serializeVariant(createdVariant) : null,
     };
 };
 
@@ -646,6 +652,9 @@ const updateVariant = async ({
                 ? changes.presentation
                 : undefined,
             foodRange: hasFoodRangeChange ? changes.foodRange : variant.foodRange,
+            usageType: Object.prototype.hasOwnProperty.call(changes, 'usageType')
+                ? changes.usageType
+                : variant.usageType ?? null,
             processingState: hasProcessingStateChange
                 ? changes.processingState
                 : hasFoodRangeChange

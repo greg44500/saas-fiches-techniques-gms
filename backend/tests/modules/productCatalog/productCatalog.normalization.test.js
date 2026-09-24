@@ -99,11 +99,12 @@ describe('M-002 product normalization', () => {
             ],
             foodRange: 1,
             processingState: 'Produit frais',
+            usageType: 'PAI',
         })).toBe(
             'v:507f1f77bcf86cd799439011'
             + '|c:PRESENTATION:507f191e810c19729de860ea,'
             + 'SIZE_FORMAT:507f191e810c19729de860eb'
-            + '|r:1|s:produit frais',
+            + '|r:1|s:produit frais|u:pai',
         );
     });
 });
