@@ -337,12 +337,14 @@ const createGlobalProductInSession = async ({
         session,
     });
 
-    const category = await ProductCategory.findOne({
-        _id: categoryId,
-        status: PRODUCT_CATEGORY_STATUS.ACTIVE,
-    }).session(session);
+    const category = categoryId
+        ? await ProductCategory.findOne({
+            _id: categoryId,
+            status: PRODUCT_CATEGORY_STATUS.ACTIVE,
+        }).session(session)
+        : null;
 
-    if (!category) {
+    if (categoryId && !category) {
         throw new AppError('Catégorie Produit indisponible.', 409);
     }
 
@@ -357,7 +359,7 @@ const createGlobalProductInSession = async ({
                 aliases,
                 searchKeys,
                 searchGrams: buildSearchGrams(searchKeys),
-                category: category._id,
+                category: category?._id ?? null,
                 status: PRODUCT_STATUS.ACTIVE,
                 contributedFromWorkspace: workspaceId,
                 createdBy: actorId,
@@ -559,12 +561,6 @@ const updateProduct = async ({
 
     if (categoryId !== undefined) {
         if (categoryId === null) {
-            if (product.status === PRODUCT_STATUS.ACTIVE) {
-                throw new AppError(
-                    'Un Produit actif doit conserver une catégorie.',
-                    409,
-                );
-            }
             product.category = null;
         } else {
             const category = await ProductCategory.findOne({
@@ -628,20 +624,6 @@ const updateProductStatus = async ({
         return serializeProduct(product);
     }
 
-    if (status === PRODUCT_STATUS.ACTIVE) {
-        const category = await ProductCategory.findOne({
-            _id: product.category,
-            status: PRODUCT_CATEGORY_STATUS.ACTIVE,
-        }).session(session);
-
-        if (!category) {
-            throw new AppError(
-                'Une catégorie active est obligatoire pour réactiver le Produit.',
-                409,
-            );
-        }
-    }
-
     product.status = status;
     product.updatedBy = actorId;
     await product.save({ session });
@@ -679,20 +661,15 @@ const updateVariant = async ({
         throw new AppError('Déclinaison modifiable introuvable.', 404);
     }
 
-    const hasFoodRangeChange = Object.prototype.hasOwnProperty.call(
-        changes,
-        'foodRange',
-    );
-    const hasProcessingStateChange = Object.prototype.hasOwnProperty.call(
-        changes,
-        'processingState',
-    );
     const normalized = await normalizeVariantInput({
         canonicalProductId: productId,
         workspaceId: variant.contributedFromWorkspace,
         actorId,
         session,
         variant: {
+            name: Object.prototype.hasOwnProperty.call(changes, 'name')
+                ? changes.name
+                : variant.name,
             varietyId: Object.prototype.hasOwnProperty.call(changes, 'varietyId')
                 ? changes.varietyId
                 : variant.variety,
@@ -705,15 +682,21 @@ const updateVariant = async ({
             presentation: Object.prototype.hasOwnProperty.call(changes, 'presentation')
                 ? changes.presentation
                 : undefined,
-            foodRange: hasFoodRangeChange ? changes.foodRange : variant.foodRange,
-            usageType: Object.prototype.hasOwnProperty.call(changes, 'usageType')
-                ? changes.usageType
-                : variant.usageType ?? null,
-            processingState: hasProcessingStateChange
+            conservationType: Object.prototype.hasOwnProperty.call(
+                changes,
+                'conservationType',
+            )
+                ? changes.conservationType
+                : variant.conservationType,
+            foodRange: Object.prototype.hasOwnProperty.call(changes, 'foodRange')
+                ? changes.foodRange
+                : variant.foodRange,
+            processingState: Object.prototype.hasOwnProperty.call(
+                changes,
+                'processingState',
+            )
                 ? changes.processingState
-                : hasFoodRangeChange
-                    ? null
-                    : variant.processingState,
+                : variant.processingState,
             referenceUnit: Object.prototype.hasOwnProperty.call(changes, 'referenceUnit')
                 ? changes.referenceUnit
                 : variant.referenceUnit,
@@ -728,13 +711,12 @@ const updateVariant = async ({
 
     const duplicate = await ProductVariant.findOne({
         _id: mongoose.trusted({ $ne: variant._id }),
-        canonicalProduct: productId,
-        normalizedSignature: variant.normalizedSignature,
+        normalizedName: variant.normalizedName,
         identityActive: true,
     }).session(session);
 
     if (duplicate) {
-        throw new AppError('Cette déclinaison existe déjà.', 409);
+        throw new AppError('Cette référence Produit existe déjà.', 409);
     }
 
     await variant.save({ session });

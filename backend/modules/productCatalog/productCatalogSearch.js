@@ -24,6 +24,8 @@ const productVariantSearchValues = ({
         : null;
 
     return [
+        variant.name,
+        variant.normalizedName,
         ...(product?.searchKeys ?? []),
         ...(variant.variety?.searchKeys ?? []),
         variant.variety?.name,
@@ -38,7 +40,7 @@ const productVariantSearchValues = ({
         foodRangeDefinition?.defaultProcessingState,
         ...(foodRangeDefinition?.processingStates ?? []),
         variant.processingState,
-        variant.usageType,
+        variant.conservationType,
     ].filter(Boolean);
 };
 
@@ -55,23 +57,13 @@ const productVariantMatchesSearch = ({
     );
 };
 
-const compareProductVariants = (left, right) => {
-    const presentationOf = (variant) => (
-        variant.characteristics?.find(
-            ({ kind }) => kind === PRODUCT_CHARACTERISTIC_KIND.PRESENTATION,
-        )?.name ?? ''
-    );
-
-    return (
-        presentationOf(left).localeCompare(presentationOf(right), 'fr')
-        || Number(left.foodRange ?? 0) - Number(right.foodRange ?? 0)
-        || String(left.normalizedProcessingState ?? '').localeCompare(
-            String(right.normalizedProcessingState ?? ''),
-            'fr',
-        )
-        || left._id.toString().localeCompare(right._id.toString())
-    );
-};
+const compareProductVariants = (left, right) => (
+    String(left.normalizedName ?? left.name ?? '').localeCompare(
+        String(right.normalizedName ?? right.name ?? ''),
+        'fr',
+    )
+    || left._id.toString().localeCompare(right._id.toString())
+)
 
 export {
     canonicalProductMatchesSearch,

@@ -4,11 +4,11 @@ import {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_CONTRIBUTION_STATUS,
+    PRODUCT_CONSERVATION_TYPE,
     PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
-    PRODUCT_USAGE_TYPE,
     WORKSPACE_PRODUCT_STATUS,
 } from './productCatalog.registry.js';
 
@@ -67,25 +67,27 @@ const characteristicIdsSchema = z
         { message: 'Les Caractéristiques ne doivent pas contenir de doublons.' },
     );
 
-const usageTypeSchema = z.enum(
-    Object.values(PRODUCT_USAGE_TYPE),
-).nullable();
+const conservationTypeSchema = z.enum(
+    Object.values(PRODUCT_CONSERVATION_TYPE),
+);
 
 const structuredVariantBodySchema = z.strictObject({
+    name: z.string().trim().min(1).max(160),
     varietyId: objectIdSchema.nullable().optional(),
     characteristicIds: characteristicIdsSchema.optional().default([]),
     processingState: nullableText(80).optional(),
-    foodRange: foodRangeSchema,
-    usageType: usageTypeSchema.optional().default(null),
+    conservationType: conservationTypeSchema,
+    foodRange: foodRangeSchema.nullable().optional().default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 });
 
 const newProductVariantBodySchema = z.strictObject({
+    name: z.string().trim().min(1).max(160),
     presentation: nullableText(120).optional(),
     processingState: nullableText(80).optional(),
-    foodRange: foodRangeSchema,
-    usageType: usageTypeSchema.optional().default(null),
+    conservationType: conservationTypeSchema,
+    foodRange: foodRangeSchema.nullable().optional().default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 });
@@ -97,14 +99,14 @@ const duplicateCheckBodySchema = z.strictObject({
 
 const createWorkspaceProductBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
-    categoryId: objectIdSchema,
+    categoryId: objectIdSchema.nullable().optional().default(null),
     variant: newProductVariantBodySchema,
 });
 
 const createGlobalProductBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
     aliases: aliasesSchema.optional().default([]),
-    categoryId: objectIdSchema,
+    categoryId: objectIdSchema.nullable().optional().default(null),
     reviewedCandidateIds: z.array(objectIdSchema).max(20).optional().default([]),
     variant: newProductVariantBodySchema.optional(),
 });
@@ -117,6 +119,7 @@ const productSearchQuerySchema = z.strictObject({
     scope: z.enum(['WORKSPACE', 'REFERENCE']).default('WORKSPACE'),
     categoryId: objectIdSchema.optional(),
     status: z.enum(Object.values(WORKSPACE_PRODUCT_STATUS)).optional(),
+    conservationType: conservationTypeSchema.optional(),
     foodRange: z.coerce.number().int().refine(
         (value) => PRODUCT_FOOD_RANGES.includes(value),
         { message: 'Gamme invalide.' },
@@ -138,8 +141,8 @@ const importMappingSchema = z.strictObject({
     color: z.number().int().min(0).max(49).optional(),
     qualityDesignation: z.number().int().min(0).max(49).optional(),
     processingState: z.number().int().min(0).max(49).optional(),
+    conservationType: z.number().int().min(0).max(49).optional(),
     foodRange: z.number().int().min(0).max(49).optional(),
-    usageType: z.number().int().min(0).max(49).optional(),
     referenceUnit: z.number().int().min(0).max(49).optional(),
     yieldPercent: z.number().int().min(0).max(49).optional(),
 }).refine(
@@ -150,9 +153,9 @@ const importMappingSchema = z.strictObject({
 
 const importDefaultsSchema = z.strictObject({
     categoryId: objectIdSchema.optional(),
+    conservationType: conservationTypeSchema.optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
-    foodRange: foodRangeSchema.optional(),
-    usageType: usageTypeSchema.optional(),
+    foodRange: foodRangeSchema.nullable().optional(),
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 }).optional().default({});
 
@@ -211,13 +214,6 @@ const createReferenceContributionBodySchema = z.strictObject({
     variant: newProductVariantBodySchema.optional(),
 }).superRefine((body, context) => {
     if (body.type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT) {
-        if (!body.categoryId) {
-            context.addIssue({
-                code: 'custom',
-                path: ['categoryId'],
-                message: 'categoryId est requis pour proposer un nouveau Produit.',
-            });
-        }
         if (!body.variant) {
             context.addIssue({
                 code: 'custom',
@@ -321,7 +317,7 @@ const updateCategoryStatusBodySchema = z.strictObject({
 const updateProductBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120).optional(),
     aliases: aliasesSchema.optional(),
-    categoryId: objectIdSchema.optional(),
+    categoryId: objectIdSchema.nullable().optional(),
     reviewedCandidateIds: z.array(objectIdSchema).max(20).optional().default([]),
 }).refine(
     (body) => Object.keys(body).some((key) => key !== 'reviewedCandidateIds'),
@@ -333,11 +329,12 @@ const updateProductStatusBodySchema = z.strictObject({
 });
 
 const updateVariantBodySchema = z.strictObject({
+    name: z.string().trim().min(1).max(160).optional(),
     varietyId: objectIdSchema.nullable().optional(),
     characteristicIds: characteristicIdsSchema.optional(),
     processingState: nullableText(80).optional(),
-    foodRange: foodRangeSchema.optional(),
-    usageType: usageTypeSchema.optional(),
+    conservationType: conservationTypeSchema.optional(),
+    foodRange: foodRangeSchema.nullable().optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
     yieldPercent: z.number().positive().max(100).nullable().optional(),
 }).refine(

@@ -27,14 +27,15 @@ import {
     PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
     PRODUCT_CONTRIBUTION_CLASSIFICATION_REGISTRY,
     PRODUCT_CONTRIBUTION_STATUS_REGISTRY,
+    PRODUCT_CONSERVATION_TYPE,
+    PRODUCT_CONSERVATION_TYPE_REGISTRY,
     PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
+    PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
     PRODUCT_STATUS,
-    PRODUCT_USAGE_TYPE,
-    PRODUCT_USAGE_TYPE_REGISTRY,
     PRODUCT_STATUS_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS_REGISTRY,
@@ -55,10 +56,6 @@ import {
     compareProductVariants,
     productVariantMatchesSearch,
 } from './productCatalogSearch.js';
-import {
-    resolveProductProcessingState,
-} from './productVariantSemantics.js';
-
 const asObjectId = (value) => new mongoose.Types.ObjectId(value.toString());
 
 const createOrResolvePresentationCharacteristic = async ({
@@ -120,18 +117,25 @@ const normalizeVariantInput = async ({
     variant,
     session,
 }) => {
-    const processingState = resolveProductProcessingState({
-        foodRange: variant.foodRange,
-        processingState: variant.processingState,
-    });
+    const name = String(variant.name ?? '').trim();
+    const normalizedName = normalizeProductText(name);
 
-    if (!processingState.valid) {
-        throw new AppError(
-            processingState.reason === 'INVALID_FOOD_RANGE'
-                ? 'Une gamme valide est obligatoire.'
-                : 'L’état / transformation n’est pas compatible avec la gamme sélectionnée.',
-            409,
-        );
+    if (!name || !normalizedName) {
+        throw new AppError('Le nom de la référence Produit est obligatoire.', 409);
+    }
+
+    if (!Object.values(PRODUCT_CONSERVATION_TYPE).includes(
+        variant.conservationType,
+    )) {
+        throw new AppError('Conservation Produit invalide.', 409);
+    }
+
+    const foodRange = variant.foodRange ?? null;
+    if (
+        foodRange !== null
+        && !PRODUCT_FOOD_RANGES.includes(Number(foodRange))
+    ) {
+        throw new AppError('Gamme Produit invalide.', 409);
     }
 
     let variety = null;
@@ -183,7 +187,7 @@ const normalizeVariantInput = async ({
             && existingPresentation._id.toString() !== presentation._id.toString()
         ) {
             throw new AppError(
-                'Une déclinaison ne peut contenir qu’une Présentation.',
+                'Une référence ne peut contenir qu’une Présentation.',
                 409,
             );
         }
@@ -205,7 +209,7 @@ const normalizeVariantInput = async ({
             && previous._id.toString() !== characteristic._id.toString()
         ) {
             throw new AppError(
-                'Une déclinaison ne peut contenir plusieurs Caractéristiques du même type.',
+                'Une référence ne peut contenir plusieurs Caractéristiques du même type.',
                 409,
             );
         }
@@ -218,22 +222,17 @@ const normalizeVariantInput = async ({
             || left._id.toString().localeCompare(right._id.toString())
         ),
     );
-
-    const usageType = variant.usageType ?? null;
-    if (
-        usageType !== null
-        && !Object.values(PRODUCT_USAGE_TYPE).includes(usageType)
-    ) {
-        throw new AppError('Classification PAI / PAE invalide.', 409);
-    }
+    const processingState = variant.processingState ?? null;
 
     const normalized = {
+        name,
+        normalizedName,
         variety: variety?._id ?? null,
         characteristics: orderedCharacteristics.map(({ _id }) => _id),
-        processingState: processingState.value,
-        normalizedProcessingState: normalizeProductText(processingState.value),
-        foodRange: variant.foodRange,
-        usageType,
+        processingState,
+        normalizedProcessingState: normalizeProductText(processingState),
+        conservationType: variant.conservationType,
+        foodRange,
         referenceUnit: variant.referenceUnit,
         yieldPercent: variant.yieldPercent ?? null,
     };
@@ -241,11 +240,9 @@ const normalizeVariantInput = async ({
     return {
         ...normalized,
         normalizedSignature: buildVariantSignature({
+            name: normalized.name,
             varietyId: normalized.variety,
             characteristics: orderedCharacteristics,
-            foodRange: normalized.foodRange,
-            processingState: normalized.processingState,
-            usageType: normalized.usageType,
         }),
     };
 };
@@ -267,13 +264,12 @@ const createProductVariantInSession = async ({
     });
 
     const existing = await ProductVariant.findOne({
-        canonicalProduct: canonicalProductId,
-        normalizedSignature: normalized.normalizedSignature,
+        normalizedName: normalized.normalizedName,
         identityActive: true,
     }).session(session);
 
     if (existing) {
-        throw new AppError('Cette déclinaison existe déjà.', 409);
+        throw new AppError('Cette référence Produit existe déjà.', 409);
     }
 
     const [created] = await ProductVariant.create([
@@ -400,7 +396,7 @@ const getProductMetadata = async ({
             PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
         ),
         referenceUnits: Object.values(PRODUCT_REFERENCE_UNIT_REGISTRY),
-        usageTypes: Object.values(PRODUCT_USAGE_TYPE_REGISTRY),
+        conservationTypes: Object.values(PRODUCT_CONSERVATION_TYPE_REGISTRY),
         foodRanges: Object.values(PRODUCT_FOOD_RANGE_REGISTRY).map(
             (definition) => ({
                 ...definition,
@@ -472,13 +468,15 @@ const compareProductSearchReferences = (
         if (leftRange !== rightRange) return leftRange - rightRange;
     }
 
-    const leftName = left.product.normalizedName
-        ?? normalizeProductText(left.product.name);
-    const rightName = right.product.normalizedName
-        ?? normalizeProductText(right.product.name);
-    const productComparison = leftName.localeCompare(rightName, 'fr');
+    const leftName = left.variant?.normalizedName
+        ?? left.product.normalizedName
+        ?? normalizeProductText(left.variant?.name ?? left.product.name);
+    const rightName = right.variant?.normalizedName
+        ?? right.product.normalizedName
+        ?? normalizeProductText(right.variant?.name ?? right.product.name);
+    const referenceComparison = leftName.localeCompare(rightName, 'fr');
 
-    if (productComparison !== 0) return productComparison;
+    if (referenceComparison !== 0) return referenceComparison;
 
     if (!left.variant && !right.variant) {
         return left.product._id.toString().localeCompare(
@@ -534,6 +532,7 @@ const listProductSearch = async ({
     q = null,
     categoryId = null,
     status = null,
+    conservationType = null,
     foodRange = null,
     sort = 'NAME',
     page = 1,
@@ -575,6 +574,11 @@ const listProductSearch = async ({
 
     const matchingVariants = variants.filter((variant) => (
         (
+            conservationType === null
+            || conservationType === undefined
+            || variant.conservationType === conservationType
+        )
+        && (
             foodRange === null
             || foodRange === undefined
             || Number(variant.foodRange) === Number(foodRange)
