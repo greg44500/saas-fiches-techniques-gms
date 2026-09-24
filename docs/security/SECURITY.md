@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Sécurité du Core
 
 **Statut :** référence canonique de sécurité du Core  
-**Dernière mise à jour :** 2026-09-05  
+**Dernière mise à jour :** 2026-09-24  
 **Périmètre :** backend, frontend, frontières Workspace / Platform et futurs SaaS dérivés
 
 ## 1. Objet
@@ -729,9 +729,26 @@ Une nouvelle origine ne doit pas être ajoutée sans décision explicite.
 
 ### Rate limiting
 
-L'API possède une limite globale.
+L'API possède une limite globale et plusieurs endpoints sensibles possèdent des limiteurs dédiés.
 
-`forgot-password` possède des protections supplémentaires :
+Le runtime réel conserve toujours ces protections. Les seuils ne sont pas relâchés pour le développement, la production ou les tests Vitest ordinaires.
+
+Les parcours Playwright E2E disposent d'un bypass explicite uniquement pour empêcher qu'une suite fonctionnelle riche consomme artificiellement les quotas anti-abus depuis une même IP locale. Le mécanisme reste fermé par défaut :
+
+```text
+E2E_BYPASS_RATE_LIMITS=false
+```
+
+Une activation à `true` est refusée par la validation d'environnement sauf si les deux gardes sont simultanément vraies :
+
+```text
+NODE_ENV=test
+MONGODB_URI → base se terminant par _e2e_test
+```
+
+Même dans ce contexte, les middlewares `express-rate-limit` restent montés. Un predicate `skip` partagé les bypass uniquement lorsque le flag validé est actif. Les factories restent injectables afin que les tests backend dédiés puissent continuer à exercer les vrais compteurs avec des seuils faibles.
+
+`forgot-password` conserve notamment ses protections supplémentaires :
 
 - limite par IP ;
 - limite par adresse email canonique ;

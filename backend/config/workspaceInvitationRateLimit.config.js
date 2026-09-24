@@ -3,6 +3,8 @@ import {
     rateLimit,
 } from 'express-rate-limit';
 
+import { runtimeRateLimitSkip } from './rateLimitRuntime.config.js';
+
 
 const WORKSPACE_INVITATION_ACCEPT_WINDOW_MS = 15 * 60 * 1000;
 const WORKSPACE_INVITATION_ACCEPT_IP_MAX_REQUESTS = 10;
@@ -22,9 +24,11 @@ const WORKSPACE_INVITATION_RATE_LIMIT_MESSAGE = {
 const createWorkspaceInvitationAcceptRateLimiter = ({
     windowMs = WORKSPACE_INVITATION_ACCEPT_WINDOW_MS,
     limit = WORKSPACE_INVITATION_ACCEPT_IP_MAX_REQUESTS,
+    skip = runtimeRateLimitSkip,
 } = {}) => rateLimit({
     windowMs,
     limit,
+    skip,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     keyGenerator: (req) => ipKeyGenerator(req.ip),

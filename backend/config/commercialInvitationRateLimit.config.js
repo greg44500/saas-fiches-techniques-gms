@@ -3,6 +3,8 @@ import {
     rateLimit,
 } from 'express-rate-limit';
 
+import { runtimeRateLimitSkip } from './rateLimitRuntime.config.js';
+
 const COMMERCIAL_INVITATION_WINDOW_MS = 15 * 60 * 1000;
 const COMMERCIAL_INVITATION_IP_MAX_REQUESTS = 20;
 
@@ -20,9 +22,11 @@ const COMMERCIAL_INVITATION_RATE_LIMIT_MESSAGE = {
 const createCommercialInvitationRateLimiter = ({
     windowMs = COMMERCIAL_INVITATION_WINDOW_MS,
     limit = COMMERCIAL_INVITATION_IP_MAX_REQUESTS,
+    skip = runtimeRateLimitSkip,
 } = {}) => rateLimit({
     windowMs,
     limit,
+    skip,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     keyGenerator: (req) => ipKeyGenerator(req.ip),

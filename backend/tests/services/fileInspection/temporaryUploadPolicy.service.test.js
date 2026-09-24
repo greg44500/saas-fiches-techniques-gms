@@ -118,4 +118,46 @@ describe("Temporary upload policy", () => {
             "doit déclarer au moins un MIME et une extension",
         );
     });
+
+    it("peut renormaliser une politique déjà normalisée sans inspecteur spécialisé", () => {
+        const policy =
+            normalizeTemporaryUploadPolicy({
+                allowedFileTypes: {
+                    PDF: {
+                        mimeType:
+                            "application/pdf",
+                        extensions: ["pdf"],
+                    },
+                },
+                maxFileSizeBytes: 2_048,
+            });
+
+        expect(
+            policy.allowedFileTypes[0]
+                .contentInspector,
+        ).toBeNull();
+
+        expect(() =>
+            normalizeAllowedFileTypes(
+                policy.allowedFileTypes,
+            ),
+        ).not.toThrow();
+    });
+
+
+    it("refuse un inspecteur de contenu réellement invalide", () => {
+        expect(() =>
+            normalizeAllowedFileTypes([
+                {
+                    mimeType:
+                        "application/x-test",
+                    extensions: ["test"],
+                    contentInspector: "invalid",
+                },
+            ]),
+        ).toThrow(
+            "L'inspecteur de contenu du type de fichier #1 est invalide.",
+        );
+    });
+
 });
