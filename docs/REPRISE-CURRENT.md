@@ -2,8 +2,8 @@
 
 **Date :** 2026-09-24  
 **Lot actif :** M-002 — Référentiel Produits / Produits canoniques  
-**Branche métier à préserver :** `feature/m002-catalogue-produits`  
-**Checkpoint code avant ce recadrage documentaire :** `c4c7e570e6d7cf09053d643081390d35e968280d`
+**Branche métier :** `feature/m002-catalogue-produits`  
+**HEAD après réalignement Core :** `5958ed6264ae90524d0b9b94bd5bed15705b47a0`
 
 ## 1. Ordre d'autorité
 
@@ -20,28 +20,72 @@ KB-START-HERE
 
 En cas de contradiction, Git/code/tests priment.
 
-## 2. État Git réel vérifié avant le commit documentaire
+## 2. État Git et Core réellement validé
 
 Produit : `greg44500/saas-fiches-techniques-gms`
 
+État `main` validé après intégration Core :
+
 ```text
 main
-→ 2fb8273311fc91e81153c0537d28279d234f9229
-
-feature/m002-catalogue-produits
-→ c4c7e570e6d7cf09053d643081390d35e968280d
+→ fc422ac500c2005b5e6b38090c92cef712f69768
+→ Merge pull request #19 from greg44500/core-update/platform-navigation-db55f83
 ```
 
-Le `main` produit contient Core v1.2.1. La branche M-002 a déjà été synchronisée avec ce main via le merge `93fd6f0021d7b6f19c77e742dd9fa735b974c33b`.
-
-Core public réel au moment du recadrage :
+Branche métier après réalignement :
 
 ```text
-greg44500/saas-core-api
-main = ec6714035b76b6b78910a3763c2d94446cf2238c
-version stable = 1.2.1
-tag = v1.2.1
+feature/m002-catalogue-produits
+→ 5958ed6264ae90524d0b9b94bd5bed15705b47a0
+→ chore(m002): resync with validated Core db55f83
 ```
+
+État comparé à `main` après le push :
+
+```text
+ahead  = 190
+behind = 0
+merge-base = fc422ac500c2005b5e6b38090c92cef712f69768
+```
+
+Le Core réellement intégré est :
+
+```text
+repository = greg44500/saas-core-api
+version    = 1.2.1
+tag        = v1.2.1
+commit     = db55f8342837d7fe3d333fd962bdc7939a8c4603
+```
+
+`db55f834…` est un commit compatible postérieur au tag stable `v1.2.1`. Aucun tag ni numéro `1.2.2` n'a été inventé.
+
+L'historique Git Core est réellement conservé dans le produit.
+
+Séquence de validation terminée :
+
+```text
+Core Gate #122
+→ PR #19
+→ verte
+
+finalisation core-origin.json + reprise
+→ HEAD 590dd4d46b8381a61c4c754a3962853f1ce8455d
+
+Core Gate #124
+→ PR #19
+→ verte
+
+merge PR #19
+→ fc422ac500c2005b5e6b38090c92cef712f69768
+
+Core Gate #125
+→ main / fc422ac
+→ verte
+```
+
+`core-origin.json` est désormais l'autorité de provenance du Core intégré.
+
+La branche M-002 a été réalignée sur ce `main` validé sans recréation de branche et sans perte d'historique.
 
 ## 3. Travail déjà présent sur la branche M-002
 
@@ -73,6 +117,8 @@ Une suite E2E complète exécutée avant cette dernière correction avait donné
 **La suite E2E complète postérieure à cette correction n'a pas été explicitement confirmée dans la conversation.**
 
 Après les changements Gamme simplifiée + seed v2, aucune nouvelle campagne globale complète n'est considérée verte tant qu'elle n'est pas rejouée.
+
+Le réalignement Core sur `5958ed62…` n'a pas encore de preuve de gate M-002 complète. Les tests M-002 doivent donc être rejoués après l'implémentation du recadrage ci-dessous.
 
 ## 5. Recadrage métier validé pendant la QA
 
@@ -122,61 +168,82 @@ Un Produit apparaît une seule fois ; ses déclinaisons sont affichées dessous.
 
 Le Fondateur garde une autorisation explicite via `product_reference_governor`; le statut Super Admin ne donne pas implicitement les permissions métier.
 
-Le besoin de faire apparaître `Référentiel Produits` dans la navigation Platform démontre un point d'extension générique manquant dans le Core.
+Le besoin de faire apparaître `Référentiel Produits` dans la navigation Platform est désormais couvert par le point d'extension Core validé au commit `db55f834…`.
 
-## 6. Dépendance Core — À TRAITER AVANT M-002
+## 6. Dépendance Core — RÉSOLUE
 
-Le Core actuel possède une extension des routes Platform mais pas de composition générique de la navigation Platform.
+Le besoin générique de composition de la navigation Platform a été traité dans `greg44500/saas-core-api`, puis intégré et validé dans le produit.
 
-Cette évolution est générique. Elle doit être réalisée dans `greg44500/saas-core-api`, pas directement dans le produit.
-
-### Règle de livraison décidée
+Le Core fournit désormais :
 
 ```text
-PAS de version Core
-PAS de tag
-PAS de GitHub Release
-PAS de mini-version
-
-1 branche Core cohérente
-→ 1 PR Core
-→ 1 merge
-→ relever le SHA exact
+frontend/src/app/application-platform-navigation.js
 ```
 
-Le lot Core doit :
+avec une composition explicite de la navigation Platform Core + application.
 
-1. introduire un point d'extension générique de navigation Platform, analogue dans l'esprit aux autres points de composition ;
-2. ne connaître aucune permission Produit ;
-3. permettre à un module dérivé de contrôler la visibilité de son entrée sans affaiblir les guards/routes ;
-4. ajouter les tests Core ;
-5. mettre à jour `docs/derived-saas/EXTENSION-POINTS.md` et les docs Core réellement concernées ;
-6. clarifier la provenance d'un dérivé intégrant un commit compatible post-tag sans inventer un nouveau tag/version.
-
-Le Core `core-release.json`, les versions package et `v1.2.1` ne doivent pas changer pour ce lot.
-
-## 7. Intégration du commit Core dans le produit
-
-Après merge Core, utiliser **le SHA exact du commit fusionné**.
-
-Dans le produit :
+Le contexte Platform expose séparément :
 
 ```text
-main produit
-→ branche dédiée : core-update/platform-navigation-extension
-→ fetch upstream-core
-→ merge du SHA Core exact
-→ adaptations produit strictement nécessaires
-→ tests/gates
-→ une seule PR d'intégration Core
-→ merge main
+permissions
+→ permissions Platform Core
+
+applicationGlobalPermissions
+→ permissions globales applicatives du produit
 ```
 
-Ne pas intégrer le Core directement dans `feature/m002-catalogue-produits`.
+Invariant conservé :
 
-`core-release.json` reste à la version stable 1.2.1. La mise à jour de `core-origin.json` doit tracer le commit exact et suivre le contrat de provenance post-tag clarifié par la PR Core ; aucun nouveau numéro ou tag ne doit être inventé.
+```text
+Super Admin Platform
+≠
+autorisation globale Produit implicite
+```
 
-Après fusion de cette intégration dans `main`, synchroniser la branche M-002 avec le nouveau main sans perdre son historique.
+La visibilité de l'entrée `Référentiel Produits` devra dépendre de :
+
+```text
+applicationGlobalPermissions.has('product:reference:read')
+```
+
+Cette visibilité ne remplace jamais l'autorisation backend.
+
+La route métier globale `/product-reference` conserve son propre contrôle Application Global et ne doit pas être placée aveuglément sous `PlatformGuard`.
+
+Aucune nouvelle évolution Core n'est nécessaire pour reprendre le bloc M-002 actuellement cadré.
+
+## 7. Réalignement M-002 sur le Core validé — TERMINÉ
+
+Le merge effectué est :
+
+```text
+main validé
+fc422ac500c2005b5e6b38090c92cef712f69768
+
+→ merge dans
+
+feature/m002-catalogue-produits
+
+→ 5958ed6264ae90524d0b9b94bd5bed15705b47a0
+```
+
+La branche M-002 existante a été conservée.
+
+Le contrôle local :
+
+```text
+git merge-base --is-ancestor fc422ac500c2005b5e6b38090c92cef712f69768 HEAD
+→ 0
+```
+
+est confirmé côté GitHub par :
+
+```text
+merge-base = fc422ac500c2005b5e6b38090c92cef712f69768
+behind = 0
+```
+
+Le seul conflit lors du merge concernait `docs/REPRISE-CURRENT.md`. Aucun fichier de code métier M-002 n'a été en conflit avec le lot Core.
 
 ## 8. Bloc d'implémentation M-002 après Core
 
@@ -240,8 +307,29 @@ Travailler d'un seul bloc cohérent :
 - backend autorité des registres ;
 - aucune PR finale M-002 avant gates + QA visuelle.
 
-## 10. Prochaine conversation
+## 10. Suite immédiate
 
-La prochaine conversation de travail doit commencer dans le projet **saas-core-api**.
+La dépendance Core est résolue, fusionnée et validée. La branche M-002 est réalignée.
 
-Objectif immédiat : construire et fusionner en une seule PR le point d'extension générique de navigation Platform, sans version/tag/release, puis revenir dans `saas-fiches-techniques-gms` pour intégrer le SHA exact et reprendre M-002 en un seul bloc.
+La prochaine étape est donc la reprise du recadrage M-002, en un seul lot cohérent :
+
+```text
+vérifier l'état réel des modèles / migrations / seeds / API / frontend existants
+→ implémenter CUT
+→ limiter foodRange à 1..5
+→ séparer usageType PAI/PAE
+→ autoriser CanonicalProduct sans variante
+→ migration fail-closed
+→ seed m002-reference-v3
+→ recherche et pagination groupées par Produit
+→ UX Produit + variantes
+→ navigation Platform Référentiel Produits
+→ imports / contribution / déduplication
+→ tests ciblés puis globaux
+→ E2E
+→ QA visuelle
+→ documentation finale
+→ une seule PR M-002
+```
+
+Ne pas rouvrir le chantier Core sauf si une nouvelle lacune générique est démontrée par le code ou les tests.
