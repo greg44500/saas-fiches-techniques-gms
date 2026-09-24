@@ -92,7 +92,7 @@ function ProductReferenceEditDialog({
           <DialogHeader>
             <DialogTitle>Corriger le Produit</DialogTitle>
             <DialogDescription>
-              Corrigez l’identité avant validation. Les contrôles de doublons restent appliqués par le backend.
+              Corrigez l’identité globale et ses synonymes métier. Les contrôles de doublons restent appliqués par le backend.
             </DialogDescription>
           </DialogHeader>
 
@@ -109,7 +109,7 @@ function ProductReferenceEditDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="product-reference-product-aliases">Alias</FieldLabel>
+              <FieldLabel htmlFor="product-reference-product-aliases">Synonymes métier</FieldLabel>
               <Input
                 disabled={updateState.isLoading}
                 id="product-reference-product-aliases"

@@ -208,7 +208,7 @@ function ProductReferenceDetailsDrawer({
                   <dl>
                     <AdminDetailRow label="Nom" value={product.name} />
                     <AdminDetailRow
-                      label="Alias"
+                      label="Synonymes métier"
                       value={product.aliases?.length ? product.aliases.join(', ') : null}
                     />
                     <AdminDetailRow label="Catégorie" value={product.category?.name} />
@@ -280,19 +280,36 @@ function ProductReferenceDetailsDrawer({
                               >
                                 Corriger
                               </Button>
-                              <Button
-                                disabled={pending}
-                                onClick={() => changeDimensionStatus(
-                                  'VARIETY',
-                                  variety,
-                                  variety.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE',
-                                )}
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                {variety.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
-                              </Button>
+                              {variety.status === 'ACTIVE' && (
+                                <Button
+                                  disabled={pending}
+                                  onClick={() => changeDimensionStatus(
+                                    'VARIETY',
+                                    variety,
+                                    'ARCHIVED',
+                                  )}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  Archiver
+                                </Button>
+                              )}
+                              {variety.status === 'ARCHIVED'
+                                && product.status === 'ACTIVE' && (
+                                <Button
+                                  disabled={pending}
+                                  onClick={() => changeDimensionStatus(
+                                    'VARIETY',
+                                    variety,
+                                    'ACTIVE',
+                                  )}
+                                  size="sm"
+                                  type="button"
+                                >
+                                  Réactiver
+                                </Button>
+                              )}
                             </div>
                           )}
                         </li>
@@ -343,23 +360,36 @@ function ProductReferenceDetailsDrawer({
                               >
                                 Corriger
                               </Button>
-                              <Button
-                                disabled={pending}
-                                onClick={() => changeDimensionStatus(
-                                  'CHARACTERISTIC',
-                                  characteristic,
-                                  characteristic.status === 'ACTIVE'
-                                    ? 'ARCHIVED'
-                                    : 'ACTIVE',
-                                )}
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                {characteristic.status === 'ACTIVE'
-                                  ? 'Archiver'
-                                  : 'Réactiver'}
-                              </Button>
+                              {characteristic.status === 'ACTIVE' && (
+                                <Button
+                                  disabled={pending}
+                                  onClick={() => changeDimensionStatus(
+                                    'CHARACTERISTIC',
+                                    characteristic,
+                                    'ARCHIVED',
+                                  )}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  Archiver
+                                </Button>
+                              )}
+                              {characteristic.status === 'ARCHIVED'
+                                && product.status === 'ACTIVE' && (
+                                <Button
+                                  disabled={pending}
+                                  onClick={() => changeDimensionStatus(
+                                    'CHARACTERISTIC',
+                                    characteristic,
+                                    'ACTIVE',
+                                  )}
+                                  size="sm"
+                                  type="button"
+                                >
+                                  Réactiver
+                                </Button>
+                              )}
                             </div>
                           )}
                         </li>
