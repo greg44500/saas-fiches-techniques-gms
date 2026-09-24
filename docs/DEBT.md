@@ -217,7 +217,7 @@ docs/m001/M-001-TEST-STRATEGY.md
 
 Checkpoint M-001 validé : les quatre parcours métier sont intégrés au corpus Playwright, l'exécution locale finale compte 11/11 tests verts et la Core Gate #101 est `success` sur le head applicatif `79cfe24579e4b39232835fd156009d6f038d9465`.
 
-M-002 ajoute deux parcours Playwright critiques sur la branche `feature/m002-catalogue-produits` : création Workspace immédiate d'un Produit actif avec choix de Gamme backend-driven, et alimentation globale par un utilisateur explicitement habilité via Application Global. Ils sont intégrés au code mais ne sont pas déclarés verts tant que `npm run test:e2e` n'a pas été réellement exécuté après le sous-lot Présentation/Gammes. D-012 reste donc ouverte pour la validation M-002.
+M-002 ajoute deux parcours Playwright critiques sur la branche `feature/m002-catalogue-produits` : (1) soumission d'un nouveau Produit depuis un Workspace, revue/approbation par l'autorité Application Global puis rattachement à Mon référentiel ; (2) création directe d'une catégorie et d'un Produit par un utilisateur explicitement habilité Application Global. Ils sont intégrés au code mais ne sont pas déclarés verts tant que `npm run test:e2e` n'a pas été réellement exécuté sur le HEAD final. D-012 reste donc ouverte pour la validation M-002.
 
 ### D-013 — Configuration et déploiement de production
 

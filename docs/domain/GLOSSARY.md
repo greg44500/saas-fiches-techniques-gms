@@ -143,72 +143,59 @@ Le référentiel Produit du Workspace référence le référentiel global ; il n
 
 Denrée, composant ou consommable de référence identifiable indépendamment d'un Workspace, d'un Fournisseur et d'un prix.
 
-Le Produit canonique porte uniquement des données génériques partageables et ne contient jamais de tarif négocié, prix facturé, fournisseur local choisi, historique commercial tenant ou autre donnée confidentielle.
-
 Il porte conceptuellement :
 
 - un nom canonique ;
-- une clé normalisée et des alias de recherche ;
+- des synonymes métier gouvernés éventuels ;
+- des clés/formes de recherche générées automatiquement ;
 - une catégorie ;
-- une unité de référence ;
-- une photo facultative ;
-- des métadonnées de création et modification ;
-- les liens vers ses déclinaisons structurées lorsque nécessaires.
+- des métadonnées d'audit/provenance ;
+- les liens vers ses Variétés, Caractéristiques et Déclinaisons.
+
+Il ne contient jamais de prix, fournisseur local, conditionnement commercial ou autre donnée confidentielle tenant.
 
 ---
 
 ## Déclinaison Produit
 
-Description structurée d'une variation d'usage d'un Produit canonique sans créer une nouvelle identité racine.
+Variation d'usage structurée d'un Produit canonique sans nouvelle identité racine.
 
-Axes M-002 courants :
+Axes M-002 :
 
 ```text
-Présentation
-→ entière / râpée / émincée / rondelles / dés / ...
-
-Gamme
-→ 1..6, nomenclature fournie par le backend
-
+Variété éventuelle
+Caractéristiques contrôlées
+→ Présentation
+→ Type commercial
+→ Calibre / format
+→ Couleur
+→ Désignation de qualité
+Gamme 1..6
 État / transformation
-→ dépend de la Gamme
-→ proposé et validé par le backend
-
 Unité de référence
 Rendement
 ```
 
-Le terme **Présentation** remplace l'ancien terme « Forme ». Le champ historique **Conservation** est supprimé du contrat opérationnel : cette information est désormais portée par la Gamme et l'État / transformation qui lui est associé.
+La Présentation n'est plus un champ texte persistant de `ProductVariant` : elle est une `ProductCharacteristic(kind=PRESENTATION)`.
 
-Exemple :
+Avant de créer une identité, le système recherche nom, synonymes métier, formes dérivées et proximité.
 
-```text
-Produit canonique : Carotte
-Présentation      : Râpée
-Gamme             : Gamme 1 — Frais
-État              : Produit frais
-Unité             : kg
-Rendement         : 100 %
-```
+Depuis un Workspace :
 
-Une formulation ou composition réellement différente relève d'un Produit canonique distinct.
+- nouvelle identité racine → `ReferenceContribution(REVIEW_REQUIRED)` par défaut ;
+- nouvelle Variété/Caractéristique → `EXISTING / AUTO_PUBLISHABLE / REVIEW_REQUIRED / INVALID` ;
+- l'approbation ne crée jamais un ownership Workspace sur la référence globale.
 
-### Règle de recherche et création
-
-Avant de créer une nouvelle identité canonique, le système recherche les correspondances exactes normalisées, les alias puis les candidats proches. La nouvelle identité autorisée devient immédiatement `ACTIVE`.
-
-Depuis un Workspace, la première déclinaison est en plus rattachée à **Mon référentiel** via `WorkspaceProduct`.
+La création directe d'une référence globale est réservée à l'autorité Application Global Produit.
 
 ### Autorité globale Produit
-
-Autorité métier applicative permettant de consulter ou maintenir le Référentiel global indépendamment d'un Workspace. Elle repose sur :
 
 ```text
 product:reference:read
 product:reference:manage
 ```
 
-Un rôle Platform ou Workspace ne confère jamais ces permissions implicitement.
+Elle permet aussi d'examiner les `ReferenceContribution`. Aucun rôle Platform ou Workspace ne confère ces permissions implicitement.
 
 ---
 

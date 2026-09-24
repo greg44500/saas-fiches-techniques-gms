@@ -71,37 +71,34 @@ Décisions finales :
 
 ### 2.2 Référentiel Produit
 
-**État : implémentation M-002 alignée sur le contrat recadré — tests/gates et validation visuelle finale à exécuter**
+**État : implémentation M-002 structurée — tests/gates et validation visuelle finale à exécuter**
 
-Décisions désormais fermées et implémentées :
+Décisions fermées et implémentées :
 
-- `CanonicalProduct` porte l'identité Produit partagée à l'échelle du SaaS ;
-- `ProductVariant` porte les déclinaisons structurées : Présentation, Gamme 1..6 backend-driven, État/transformation dépendant de la Gamme, unité de référence et rendement ; le champ Conservation est retiré du contrat opérationnel ;
-- `WorkspaceProduct` matérialise le référentiel Produit d'un Workspace en référençant une déclinaison sans recopier l'identité ;
-- aucune donnée Fournisseur, référence commerciale, conditionnement ou prix n'est stockée dans M-002 ;
-- la création vérifie d'abord l'existant par normalisation, alias, clés de recherche, proximité et revue explicite des candidats proches ;
-- un doublon exact est refusé ;
-- si aucun équivalent crédible n'existe, l'utilisateur Workspace autorisé peut créer un Produit immédiatement `ACTIVE` dans le référentiel global et l'ajouter à son référentiel Workspace ;
-- une catégorie `ACTIVE` est obligatoire pour toute nouvelle identité Produit ;
-- le lifecycle opérationnel courant est `ACTIVE ↔ ARCHIVED` ;
-- la file quotidienne `PENDING_REVIEW → approve/reject` est supprimée du parcours courant ;
-- l'administration globale du référentiel est indépendante de Platform et repose sur Application Global avec `product:reference:read/manage` ;
-- un membre de l'équipe Platform peut alimenter le référentiel commun uniquement s'il reçoit explicitement cette autorité Application Global ;
-- l'administration globale permet création, import Produit générique, catégories, correction, archivage/réactivation et maintenance qualité ;
-- l'import Workspace et l'import global réutilisent le même pipeline temporaire sécurisé CSV/XLS/XLSX ;
-- l'import M-002 ignore les dimensions commerciales M-003 au lieu de les injecter dans le Produit ;
-- le bootstrap du référentiel reste versionné ; le dataset bêta réel reste volontairement à préparer/nettoyer.
-- le référentiel Workspace/global est trié alphabétiquement par Produit avant pagination ;
-- la table opérationnelle expose Produit / Présentation / Gamme / Actions et n'affiche plus un statut ACTIVE redondant ;
-- une migration dédiée convertit les anciennes déclinaisons `form/preservation` vers `presentation + gamme + état` et refuse toute collision sémantique au lieu de fusionner silencieusement ;
+- `CanonicalProduct` porte l'identité Produit partagée ;
+- `ProductVariety` porte les véritables variétés/cultivars ;
+- `ProductCharacteristic` porte les dimensions contrôlées `PRESENTATION / COMMERCIAL_TYPE / SIZE_FORMAT / COLOR / QUALITY_DESIGNATION` ;
+- `ProductVariant` référence les IDs stables de Variété/Caractéristiques avec Gamme, État/transformation, unité et rendement ;
+- `WorkspaceProduct` matérialise Mon référentiel ;
+- les synonymes persistés sont gouvernés ; casse, pluriels, fautes et variantes techniques restent des formes de recherche ;
+- aucune donnée fournisseur/conditionnement/prix n'est stockée dans M-002 ;
+- une nouvelle Variété non conflictuelle et certaines Caractéristiques simples peuvent être `AUTO_PUBLISHABLE` ;
+- un nouveau `CanonicalProduct` Workspace est `REVIEW_REQUIRED` par défaut et crée une `ReferenceContribution` ;
+- l'autorité Application Global examine les contributions et revalide atomiquement avant publication/refus ;
+- les références restent `ACTIVE ↔ ARCHIVED` ; `PENDING_REVIEW / APPROVED / REJECTED` appartient uniquement à `ReferenceContribution` ;
+- l'import M-002 résout les dimensions structurées et signale les colonnes M-003 ;
+- le bootstrap `m002-reference-v1` est `ready:true` avec 39 Produits **Fruits et légumes** et aucun rendement inventé ;
+- la table expose `Produit / Déclinaison / Gamme / Actions` ;
+- les migrations convertissent l'historique vers les Caractéristiques structurées avec garde anti-collision.
 
 À fermer avant fusion M-002 :
 
-- exécuter les tests backend/frontend après les derniers commits ;
-- exécuter les E2E M-002 ajoutés ;
-- exécuter lint/build/gates applicables ;
+- migration + seeds locaux ;
+- tests backend/frontend ;
+- lint/build/gates ;
+- E2E ;
 - validation visuelle utilisateur ;
-- une seule PR M-002 puis une seule fusion.
+- une seule PR puis une seule fusion.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 

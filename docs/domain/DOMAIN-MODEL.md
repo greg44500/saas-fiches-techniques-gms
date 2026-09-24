@@ -317,6 +317,11 @@ WorkspaceProduct
 → ownership Workspace
 → référence une ProductVariant
 → matérialise Mon référentiel
+
+ReferenceContribution
+→ proposition issue d'un Workspace
+→ PENDING_REVIEW | APPROVED | REJECTED
+→ distincte du lifecycle ACTIVE | ARCHIVED des références
 ```
 
 `createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` conserve une provenance sans devenir un ownership.
@@ -393,11 +398,11 @@ INVALID
 
 Une nouvelle identité racine est `REVIEW_REQUIRED` par défaut pendant la bêta.
 
-Une proposition nécessitant revue est portée par `ReferenceContribution`, ressource distincte. Les références réelles restent `ACTIVE ↔ ARCHIVED`.
+Une proposition nécessitant revue est portée par `ReferenceContribution`, ressource distincte. L'approbation revalide doublons et invariants dans la même transaction que la publication et la décision finale. Les références réelles restent `ACTIVE ↔ ARCHIVED`.
 
 ### 5.7 Référentiel Produit Workspace
 
-`WorkspaceProduct` est la relation tenant-scoped entre un Workspace et une `ProductVariant`. Le retrait archive la relation d'usage sans supprimer la référence globale.
+`WorkspaceProduct` est la relation tenant-scoped entre un Workspace et une `ProductVariant`. Le retrait archive la relation d'usage sans supprimer la référence globale. L'approbation d'une contribution racine ne rattache pas implicitement la nouvelle référence au Workspace.
 
 ### 5.8 Autorité globale et imports
 

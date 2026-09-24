@@ -1,10 +1,10 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-23  
+**Date :** 2026-09-24  
 **Lot actif :** M-002 — Référentiel Produits / Produits canoniques  
 **Branche à conserver :** `feature/m002-catalogue-produits`  
-**Checkpoint code avant cette synchronisation documentaire :** `b904d8d8a818f461a49e060bd45758c63b11bea7`  
-**Écart avec main à ce checkpoint :** 105 commits en avance, 0 en retard.
+**Checkpoint code avant cette synchronisation documentaire :** `38882f309747d234fada83108638c99692544e51`  
+**Écart avec main à ce checkpoint :** 167 commits en avance, 0 en retard.
 
 ## 1. Autorité de reprise
 
@@ -57,8 +57,15 @@ Le référentiel partagé reste global au SaaS :
 CanonicalProduct
 → identité Produit globale
 
+ProductVariety
+→ variété/cultivar global rattaché à un Produit
+
+ProductCharacteristic
+→ caractéristique globale contrôlée
+→ PRESENTATION | COMMERCIAL_TYPE | SIZE_FORMAT | COLOR | QUALITY_DESIGNATION
+
 ProductVariant
-→ déclinaison globale
+→ déclinaison globale structurée par IDs de Variété/Caractéristiques
 
 WorkspaceProduct
 → ownership Workspace
@@ -66,27 +73,44 @@ WorkspaceProduct
 
 ProductCategory
 → catégorie globale
+
+ReferenceContribution
+→ proposition Workspace nécessitant éventuellement une revue globale
+→ ressource distincte des références réelles
 ```
 
-Lifecycle global :
+Lifecycle des références réelles :
 
 ```text
 ACTIVE ↔ ARCHIVED
 ```
 
-Le workflow PENDING_REVIEW / approve / reject n'appartient plus au parcours courant.
+Lifecycle d'une contribution humaine :
 
-Une création Workspace autorisée :
+```text
+PENDING_REVIEW
+→ APPROVED
+ou
+→ REJECTED
+```
+
+Un nouveau `CanonicalProduct` proposé depuis un Workspace suit désormais :
 
 ```text
 recherche anti-doublon
-→ catégorie ACTIVE
-→ CanonicalProduct ACTIVE
-→ ProductVariant ACTIVE
-→ WorkspaceProduct ACTIVE
+→ validation Zod
+→ product:contribute + product_contribution
+→ classification REVIEW_REQUIRED par défaut
+→ ReferenceContribution PENDING_REVIEW
+→ gouverneur Application Global
+→ revalidation transactionnelle
+→ APPROVED : CanonicalProduct + première ProductVariant ACTIVE
+→ REJECTED : aucune référence publiée
 ```
 
-La nouvelle identité est immédiatement visible dans le Référentiel global.
+L'approbation ne crée pas d'ownership Workspace sur la référence globale. Après publication, le Workspace peut rattacher la déclinaison à **Mon référentiel** via `WorkspaceProduct`.
+
+Pour un Produit existant, une nouvelle Variété ou Caractéristique passe par le même moteur : `EXISTING / AUTO_PUBLISHABLE / REVIEW_REQUIRED / INVALID`.
 
 ## 5. Vocabulaire UX désormais validé
 
@@ -98,9 +122,14 @@ Dans M-002 :
 Référentiel global
 Mon référentiel
 Produit
+Variété
+Caractéristique
+Déclinaison
 Présentation
 Gamme
 État / transformation
+Contribution
+Synonymes métier
 ```
 
 Sur la page Workspace Produits :
@@ -108,14 +137,15 @@ Sur la page Workspace Produits :
 ```text
 Référentiel global | Mon référentiel
 
-Produit | Présentation | Gamme | Actions
+Produit | Déclinaison | Gamme | Actions
 ```
 
 Il n'y a plus :
 
 - colonne « Mon référentiel » redondante ;
 - filtre Dans/Retiré redondant ;
-- colonne Statut ACTIVE redondante.
+- colonne Statut ACTIVE redondante ;
+- champ Alias dans les formulaires Workspace ordinaires.
 
 Les actions compactes restent `+` / `−` avec infobulles Ajouter/Retirer de Mon référentiel.
 
@@ -140,33 +170,31 @@ Une référence globale ARCHIVED :
 
 ## 7. Nouveau contrat ProductVariant
 
-Les anciens champs opérationnels :
+`ProductVariant` ne persiste plus une Présentation textuelle comme identité.
+
+Contrat persistant courant :
 
 ```text
-form
-preservation
-```
-
-sont remplacés par :
-
-```text
-presentation
-foodRange
+variety                 → ObjectId ProductVariety nullable
+characteristics[]       → ObjectId ProductCharacteristic
 processingState
+foodRange
 referenceUnit
 yieldPercent
 ```
 
 Règles :
 
-- **Présentation** remplace « Forme » ;
-- le champ **Conservation** est supprimé ;
-- la **Gamme** est obligatoire pour toute nouvelle déclinaison créée via les API courantes ;
-- **État / transformation** dépend de la Gamme ;
+- une Variété est facultative ;
+- une déclinaison porte au maximum une Caractéristique de chaque `kind` ;
+- la Présentation historique est représentée par `ProductCharacteristic(kind=PRESENTATION)` ;
+- la Gamme est obligatoire pour toute nouvelle déclinaison courante ;
+- État / transformation dépend de la Gamme ;
 - le backend reste l'autorité de la nomenclature ;
-- le frontend ne contient aucune liste de Gammes statique ;
 - l'unité de référence reste obligatoire ;
-- le rendement reste facultatif et n'est jamais déduit de la Gamme.
+- le rendement reste facultatif et n'est jamais inventé.
+
+Le payload de création d'un nouveau Produit peut encore accepter une `presentation` initiale comme commodité de saisie ; elle est convertie en Caractéristique structurée dans la transaction de publication et n'est pas persistée dans `ProductVariant.presentation`.
 
 ## 8. Nomenclature backend-driven
 
@@ -203,16 +231,19 @@ Le backend canonise/refuse la combinaison. Aucune liste métier parallèle n'est
 
 ## 9. Signature de déclinaison
 
-Nouvelle identité de déclinaison :
+Identité d'une déclinaison :
 
 ```text
 canonicalProduct
-+ normalized(presentation)
++ varietyId ou _
++ characteristicIds ordonnés par kind
 + foodRange
 + normalized(processingState)
 ```
 
-L'unité et le rendement ne participent pas à la signature.
+La signature repose sur les identifiants stables des Variétés/Caractéristiques. Un renommage n'altère donc pas artificiellement l'identité d'une déclinaison.
+
+`referenceUnit` et `yieldPercent` ne participent pas à la signature.
 
 ## 10. Migration M-002
 
@@ -225,61 +256,41 @@ npm run migration:m002-catalog
 Le runner exécute dans cet ordre :
 
 1. backfill lifecycle legacy ;
-2. migration de sémantique des ProductVariant ;
-3. vérification/création des indexes ;
-4. synchronisation des permissions Workspace système enregistrées.
-
-Migration de sémantique :
-
-```text
-form → presentation
-suppression normalizedForm
-suppression preservation / normalizedPreservation
-foodRange existant conservé
-processingState recalculé depuis la Gamme lorsqu'elle existe
-normalizedSignature recalculée
-```
+2. migration de sémantique des anciennes déclinaisons ;
+3. migration de la Présentation historique vers `ProductCharacteristic(PRESENTATION)` et recalcul des signatures structurées ;
+4. vérification/création des indexes ;
+5. synchronisation des permissions Workspace système enregistrées.
 
 Garde-fous :
 
-- aucune Gamme absente n'est inventée pour une ancienne donnée ;
-- les signatures finales sont vérifiées avant écriture ;
-- deux variantes actives qui deviendraient identiques font échouer la migration ;
-- les variantes à migrer passent transactionnellement par une signature temporaire unique afin d'éviter une collision transitoire avec l'ancien index unique ;
-- second passage idempotent : aucune réécriture attendue.
-
-Si la migration échoue avec deux IDs de variantes en collision, **ne pas contourner l'erreur** : conserver les IDs et reprendre l'analyse métier de ces deux déclinaisons.
+- aucune Gamme absente n'est inventée ;
+- aucune Variété n'est inventée pour l'historique ;
+- les signatures finales sont contrôlées avant écriture ;
+- aucune collision n'est fusionnée silencieusement ;
+- la migration est transactionnelle et idempotente.
 
 ## 11. Imports M-002 / frontière M-003
 
-Import M-002 accepte :
+Import M-002 peut mapper :
 
 ```text
 Produit
-Alias
 Catégorie
+Variété
 Présentation
+Type commercial
+Calibre / format
+Couleur
+Désignation de qualité
 Gamme
 État / transformation
 Unité
 Rendement
 ```
 
-La Gamme est requise pour une ligne qui crée une nouvelle déclinaison, soit via mapping, soit via valeur par défaut.
+Les imports Workspace ne créent pas librement de synonymes métier. La preview résout les dimensions existantes et utilise le moteur de contribution pour distinguer existant, auto-publication autorisée, revue globale et invalidité.
 
-Restent strictement M-003 :
-
-```text
-Fournisseur
-Catalogue / édition fournisseur
-Référence Article fournisseur
-Conditionnement commercial
-Prix catalogue
-Prix négocié
-Prix facturé
-```
-
-Le cas SYSCO/SCAL doit donc rester traité en M-003 si le fichier porte ces dimensions commerciales.
+Restent strictement M-003 : Fournisseur, catalogue/édition fournisseur, référence Article fournisseur, conditionnement commercial et prix.
 
 ## 12. Autorité globale Produit
 
@@ -324,28 +335,15 @@ npm run seed:m002-governance
 
 ## 13. Vérité des tests au checkpoint
 
-Des suites ont été déclarées vertes par l'utilisateur plus tôt dans le développement M-002, avant le présent sous-lot Présentation/Gammes.
+Le corpus de tests a été réaligné sur le nouveau contrat structuré : modèles Variété/Caractéristique, contributions, revalidation atomique, import structuré, seed réel, frontend dimensions et E2E Workspace → revue globale → publication.
 
-**Aucune de ces exécutions antérieures ne prouve le HEAD courant.**
+**Aucun test, lint, build, E2E ou gate n'est déclaré vert sur le HEAD courant.**
 
-Depuis ces résultats ont été modifiés notamment :
+Le HEAD `38882f309747d234fada83108638c99692544e51` ne possède ni statut CI GitHub ni workflow associé.
 
-- modèle ProductVariant ;
-- validation Zod ;
-- normalisation/signature ;
-- migration M-002 ;
-- import ;
-- seed ;
-- metadata ;
-- formulaires frontend ;
-- tableaux Produits ;
-- E2E.
+Pour les tests backend ciblés, conserver `--no-file-parallelism` afin d'éviter le risque historique lié au nettoyage partagé de la base `_test`.
 
-Le HEAD courant doit donc être entièrement revalidé.
-
-Le risque historique de parallélisme backend reste connu : les fichiers de tests partagent une base `_test` et le setup vide les collections. Pour la campagne M-002 ciblée, conserver `--no-file-parallelism`.
-
-## 14. Ordre de validation à reprendre dans la prochaine conversation
+## 14. Ordre de validation à reprendre
 
 ### Étape A — récupérer le HEAD
 
@@ -355,21 +353,20 @@ git pull --ff-only
 git rev-parse HEAD
 ```
 
-Le SHA attendu après la synchronisation documentaire sera communiqué dans la conversation qui suit le commit de ce document.
-
-### Étape B — migrer la base de développement
+### Étape B — migrer et initialiser la base
 
 ```powershell
 npm run migration:m002-catalog
 npm run seed:m002-governance
+npm run seed:m002-reference
 ```
 
-Ne pas lancer `seed:m002-reference` : le dataset bêta reste volontairement `ready: false`.
+Le dataset `m002-reference-v1` est `ready:true` avec 39 Produits de la catégorie **Fruits et légumes**, Variétés/Caractéristiques structurées et aucun rendement inventé.
 
 ### Étape C — backend M-002 ciblé
 
 ```powershell
-npx vitest run backend/tests/modules/productCatalog/productCatalog.registry.test.js backend/tests/modules/productCatalog/productCatalog.normalization.test.js backend/tests/modules/productCatalog/productVariantSemantics.test.js backend/tests/modules/productCatalog/productCatalog.validation.test.js backend/tests/modules/productCatalog/productCatalog.models.test.js backend/tests/modules/productCatalog/productCatalog.integration.test.js backend/tests/modules/productCatalog/productCatalog.http.test.js backend/tests/modules/productCatalog/productCatalogGovernance.integration.test.js backend/tests/modules/productCatalog/productCatalogGlobal.http.test.js backend/tests/modules/productCatalog/productCatalogImport.integration.test.js backend/tests/modules/productCatalog/productCatalogImportAccess.service.test.js backend/tests/migrations/m002ProductLifecycleBackfill.migration.test.js backend/tests/migrations/m002VariantSemantics.migration.test.js backend/tests/migrations/m002Catalog.migration.test.js --no-file-parallelism
+npx vitest run backend/tests/modules/productCatalog/productCatalog.registry.test.js backend/tests/modules/productCatalog/productCatalog.normalization.test.js backend/tests/modules/productCatalog/productVariantSemantics.test.js backend/tests/modules/productCatalog/productCatalog.validation.test.js backend/tests/modules/productCatalog/productCatalog.models.test.js backend/tests/modules/productCatalog/productCatalog.integration.test.js backend/tests/modules/productCatalog/productCatalog.http.test.js backend/tests/modules/productCatalog/productCatalogGovernance.integration.test.js backend/tests/modules/productCatalog/productCatalogGlobal.http.test.js backend/tests/modules/productCatalog/productCatalogImport.integration.test.js backend/tests/modules/productCatalog/productCatalogImportAccess.service.test.js backend/tests/modules/productCatalog/productReferenceContribution.integration.test.js backend/tests/modules/productCatalog/productReferenceDimension.integration.test.js backend/tests/migrations/m002ProductLifecycleBackfill.migration.test.js backend/tests/migrations/m002VariantSemantics.migration.test.js backend/tests/migrations/m002VariantCharacteristics.migration.test.js backend/tests/migrations/m002Catalog.migration.test.js backend/tests/seeds/m002Reference.seed.test.js --no-file-parallelism
 ```
 
 ### Étape D — frontend ciblé
@@ -382,8 +379,6 @@ npm --prefix frontend run build
 
 ### Étape E — gates plus larges
 
-Après les campagnes ciblées vertes :
-
 ```powershell
 npm run lint
 npm test -- --no-file-parallelism
@@ -392,54 +387,43 @@ npm run test:e2e
 npm run release:verify
 ```
 
-Ne pas déclarer `release:check` vert sans l'exécuter. Si le seul échec vient du parallélisme backend connu, l'isoler avant toute décision de modification.
+Ne jamais déclarer une commande verte sans l'avoir exécutée.
 
 ## 15. QA visuelle obligatoire avant PR
 
-Lancer :
+Lancer séparément :
 
 ```powershell
 npm run dev
+npm --prefix frontend run dev
 ```
 
 Vérifier au minimum :
 
-- Référentiel global en premier onglet ;
-- Mon référentiel en second ;
-- recherche prédictive ;
-- champ recherche et bouton alignés ;
-- ordre alphabétique Produit ;
-- aucune colonne Statut ;
-- aucune colonne Mon référentiel ;
-- aucun filtre d'état Workspace ;
-- colonnes Produit / Présentation / Gamme / Actions ;
-- Gamme 1 à 6 reçues du backend ;
-- choix Gamme 1 → État « Produit frais » ;
-- choix Gamme 2 → « Conserve » ;
-- choix Gamme 3 → « Surgelé » ;
-- choix Gamme 4 → « Sous-vide cru / épluché » ;
-- choix Gamme 5 → « Sous-vide cuit » ;
-- choix Gamme 6 → « PAI / PAE » ;
-- champ Conservation absent ;
-- Présentation saisissable : entière, râpée, émincée, etc. ;
-- création impossible sans catégorie + Gamme + unité ;
-- création immédiate ACTIVE ;
-- ajout/retrait `+` / `−` de Mon référentiel ;
-- référence globale archivée absente des deux tableaux opérationnels ;
-- `/product-reference` accessible uniquement avec Application Global Produit ;
-- catégories globales ;
-- création/correction de déclinaison avec le même contrat ;
-- import Workspace/global avec Gamme ;
-- absence de tout vocabulaire de validation humaine.
+- Référentiel global / Mon référentiel ;
+- recherche complexe : carotte, carottes, carote, carotte botte, mini carotte, carotte nantaise, carotte surgelée ;
+- tableau `Produit | Déclinaison | Gamme | Actions` ;
+- aucun champ Alias Workspace ;
+- nouveau Produit Workspace → **Soumettre la proposition** ;
+- toast **Proposition envoyée en revue** ;
+- onglet global **Contributions** et décisions Approuver/Refuser ;
+- Pomme : Golden / Gala / Granny Smith ;
+- Carotte : Nantaise, En botte avec fanes, Mini, Râpée, Carottes des sables ;
+- ajout Reinette et résolution de la faute Reinnette ;
+- lifecycle Variétés/Caractéristiques ;
+- six Gammes backend-driven ;
+- import structuré et frontière M-003 ;
+- seed réel ;
+- responsive dialogs/drawers/tableaux.
 
 ## 16. E2E courants
 
-Deux scénarios Playwright sont présents :
+Deux scénarios Playwright critiques sont présents :
 
-1. Owner Workspace crée un Produit ACTIVE, choisit une Gamme et le retrouve dans Mon référentiel ;
-2. utilisateur explicitement habilité Application Global crée catégorie + Produit dans le Référentiel global.
+1. Owner Workspace soumet un nouveau Produit → gouverneur Application Global l'approuve → le Produit devient visible globalement → le Workspace le rattache à Mon référentiel ;
+2. utilisateur explicitement habilité Application Global crée directement catégorie + Produit dans le Référentiel global.
 
-Ils ne sont pas considérés verts sur ce nouveau HEAD tant que `npm run test:e2e` n'a pas été réellement exécuté.
+Ils ne sont pas considérés verts tant que `npm run test:e2e` n'a pas été exécuté sur le HEAD final.
 
 ## 17. Prochaine étape produit après clôture M-002
 
