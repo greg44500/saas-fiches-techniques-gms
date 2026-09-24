@@ -3,6 +3,8 @@ import { z } from 'zod';
 import {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_CONTRIBUTION_STATUS,
+    PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
@@ -167,6 +169,77 @@ const globalCategoryParamsSchema = z.strictObject({
     categoryId: objectIdSchema,
 });
 
+const createReferenceContributionBodySchema = z.strictObject({
+    type: z.enum(Object.values(PRODUCT_CONTRIBUTION_TYPE)),
+    productId: objectIdSchema.optional(),
+    characteristicKind: z.enum(
+        Object.values(PRODUCT_CHARACTERISTIC_KIND),
+    ).optional(),
+    value: z.string().trim().min(1).max(120),
+    categoryId: objectIdSchema.optional(),
+    variant: variantBodySchema.optional(),
+}).superRefine((body, context) => {
+    if (body.type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT) {
+        if (!body.categoryId) {
+            context.addIssue({
+                code: 'custom',
+                path: ['categoryId'],
+                message: 'categoryId est requis pour proposer un nouveau Produit.',
+            });
+        }
+        if (!body.variant) {
+            context.addIssue({
+                code: 'custom',
+                path: ['variant'],
+                message: 'Une première déclinaison est requise pour proposer un nouveau Produit.',
+            });
+        }
+        if (
+            body.variant?.varietyId
+            || (body.variant?.characteristicIds ?? []).length > 0
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['variant'],
+                message: 'Un nouveau Produit ne peut pas référencer des dimensions d’un autre Produit.',
+            });
+        }
+    } else if (!body.productId) {
+        context.addIssue({
+            code: 'custom',
+            path: ['productId'],
+            message: 'productId est requis pour cette contribution.',
+        });
+    }
+
+    if (
+        body.type === PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC
+        && !body.characteristicKind
+    ) {
+        context.addIssue({
+            code: 'custom',
+            path: ['characteristicKind'],
+            message: 'characteristicKind est requis pour une Caractéristique.',
+        });
+    }
+});
+
+const referenceContributionListQuerySchema = z.strictObject({
+    status: z.enum(Object.values(PRODUCT_CONTRIBUTION_STATUS))
+        .optional()
+        .default(PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+const referenceContributionParamsSchema = z.strictObject({
+    contributionId: objectIdSchema,
+});
+
+const referenceContributionDecisionBodySchema = z.strictObject({
+    decision: z.enum(['APPROVE', 'REJECT']),
+});
+
 const globalProductVarietyParamsSchema = z.strictObject({
     productId: objectIdSchema,
     varietyId: objectIdSchema,
@@ -249,6 +322,7 @@ export {
     createVarietyBodySchema,
     createGlobalProductBodySchema,
     createGlobalVariantBodySchema,
+    createReferenceContributionBodySchema,
     createWorkspaceProductBodySchema,
     createWorkspaceVariantBodySchema,
     duplicateCheckBodySchema,
@@ -266,6 +340,9 @@ export {
     productIdParamsSchema,
     productSearchQuerySchema,
     productVariantParamsSchema,
+    referenceContributionDecisionBodySchema,
+    referenceContributionListQuerySchema,
+    referenceContributionParamsSchema,
     updateCategoryBodySchema,
     updateCharacteristicBodySchema,
     updateCategoryStatusBodySchema,

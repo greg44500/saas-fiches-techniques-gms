@@ -30,9 +30,9 @@ const PRODUCT_CATALOG_CAPABILITY_MODULE = Object.freeze({
             tags: Object.freeze([]),
         }),
         [PRODUCT_CATALOG_FEATURE.CONTRIBUTION]: Object.freeze({
-            label: 'Création dans le référentiel Produits',
+            label: 'Contribution au référentiel Produits',
             description:
-                'Permet de créer de nouveaux Produits ou déclinaisons dans le référentiel partagé après contrôle anti-doublon.',
+                'Permet de proposer ou auto-publier des enrichissements Produit selon la politique de contribution du référentiel.',
             category: 'products',
             categoryLabel: 'Produits',
             displayOrder: 120,

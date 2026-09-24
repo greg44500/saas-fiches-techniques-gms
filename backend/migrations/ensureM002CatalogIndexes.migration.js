@@ -25,6 +25,9 @@ import {
 import {
     WorkspaceProduct,
 } from '../modules/productCatalog/workspaceProduct.model.js';
+import {
+    ReferenceContribution,
+} from '../modules/productCatalog/referenceContribution.model.js';
 
 const M002_INDEX_NAMES = Object.freeze([
     'product_category_normalized_unique',
@@ -39,6 +42,9 @@ const M002_INDEX_NAMES = Object.freeze([
     'product_characteristic_product_kind_name_unique',
     'product_characteristic_product_kind_status_name',
     'product_characteristic_search_grams_status',
+    'reference_contribution_status_created_at',
+    'reference_contribution_workspace_status_created_at',
+    'reference_contribution_product_type_status_created_at',
     'product_variant_identity_unique',
     'product_variant_product_status_updated_at',
     'product_variant_workspace_status_created_at',
@@ -56,6 +62,7 @@ const M002_MODELS = Object.freeze([
     CanonicalProduct,
     ProductVariety,
     ProductCharacteristic,
+    ReferenceContribution,
     ProductVariant,
     WorkspaceProduct,
     ProductReferenceEvent,
