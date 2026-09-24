@@ -901,13 +901,133 @@ const useExistingVariant = async ({
     };
 };
 
+const resolveMissingImportDimensions = async ({
+    scope,
+    workspaceId,
+    actorId,
+    productId,
+    row,
+}) => {
+    let varietyId = row.resolvedDimensions?.varietyId ?? null;
+    const characteristicIds = [
+        ...(row.resolvedDimensions?.characteristicIds ?? []),
+    ];
+    const pendingContributionIds = [];
+
+    for (const proposal of row.missingDimensions ?? []) {
+        if (scope === PRODUCT_IMPORT_SCOPE.GLOBAL) {
+            if (proposal.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY) {
+                const created = await createProductVariety({
+                    actorId,
+                    productId,
+                    name: proposal.value,
+                    aliases: [],
+                });
+                varietyId = created.id;
+            } else {
+                const created = await createProductCharacteristic({
+                    actorId,
+                    productId,
+                    kind: proposal.kind,
+                    name: proposal.value,
+                    aliases: [],
+                });
+                characteristicIds.push(created.id);
+            }
+            continue;
+        }
+
+        const result = await submitReferenceContribution({
+            workspaceId,
+            actorId,
+            type: proposal.type,
+            productId,
+            characteristicKind: proposal.kind ?? null,
+            value: proposal.value,
+        });
+
+        if (
+            result.classification
+            === PRODUCT_CONTRIBUTION_CLASSIFICATION.EXISTING
+        ) {
+            if (result.existingReference?.status !== PRODUCT_STATUS.ACTIVE) {
+                throw new AppError(
+                    'Une dimension existante de la déclinaison est archivée.',
+                    409,
+                );
+            }
+            if (proposal.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY) {
+                varietyId = result.existingReference.id;
+            } else {
+                characteristicIds.push(result.existingReference.id);
+            }
+            continue;
+        }
+
+        if (
+            result.classification
+            === PRODUCT_CONTRIBUTION_CLASSIFICATION.AUTO_PUBLISHABLE
+        ) {
+            if (proposal.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY) {
+                varietyId = result.publishedReference.id;
+            } else {
+                characteristicIds.push(result.publishedReference.id);
+            }
+            continue;
+        }
+
+        if (
+            result.classification
+            === PRODUCT_CONTRIBUTION_CLASSIFICATION.REVIEW_REQUIRED
+        ) {
+            if (result.contribution?.id) {
+                pendingContributionIds.push(result.contribution.id);
+            }
+            continue;
+        }
+
+        throw new AppError(
+            'Une dimension importée ne peut pas être publiée.',
+            409,
+        );
+    }
+
+    return {
+        varietyId,
+        characteristicIds: [...new Set(characteristicIds)],
+        pendingContributionIds,
+    };
+};
+
 const createVariantFromImport = async ({
     scope,
     workspaceId,
     actorId,
     productId,
-    variant,
+    row,
 }) => {
+    const dimensions = await resolveMissingImportDimensions({
+        scope,
+        workspaceId,
+        actorId,
+        productId,
+        row,
+    });
+
+    if (dimensions.pendingContributionIds.length > 0) {
+        return {
+            status: 'PENDING_REVIEW',
+            productId,
+            contributionIds: dimensions.pendingContributionIds,
+        };
+    }
+
+    const variant = {
+        ...row.data.variant,
+        varietyId: dimensions.varietyId,
+        characteristicIds: dimensions.characteristicIds,
+    };
+
     if (scope === PRODUCT_IMPORT_SCOPE.GLOBAL) {
         const created = await createGlobalVariant({
             actorId,
@@ -933,6 +1053,71 @@ const createVariantFromImport = async ({
     };
 };
 
+const splitNewProductDimensions = (row) => {
+    const presentation = (row.data.dimensions?.characteristics ?? [])
+        .find(({ kind }) => (
+            kind === PRODUCT_CHARACTERISTIC_KIND.PRESENTATION
+        ))?.value ?? null;
+
+    return {
+        baseVariant: {
+            ...row.data.variant,
+            ...(presentation ? { presentation } : {}),
+        },
+        dimensionProposals: {
+            variety: row.data.dimensions?.variety ?? null,
+            characteristics: (row.data.dimensions?.characteristics ?? [])
+                .filter(({ kind }) => (
+                    kind !== PRODUCT_CHARACTERISTIC_KIND.PRESENTATION
+                )),
+        },
+    };
+};
+
+const enrichCreatedGlobalProductDimensions = async ({
+    actorId,
+    created,
+    dimensionProposals,
+}) => {
+    let varietyId = null;
+    const characteristicIds = (
+        created.variant.characteristics ?? []
+    ).map(({ id }) => id);
+
+    if (dimensionProposals.variety) {
+        const variety = await createProductVariety({
+            actorId,
+            productId: created.product.id,
+            name: dimensionProposals.variety,
+            aliases: [],
+        });
+        varietyId = variety.id;
+    }
+
+    for (const proposal of dimensionProposals.characteristics ?? []) {
+        const characteristic = await createProductCharacteristic({
+            actorId,
+            productId: created.product.id,
+            kind: proposal.kind,
+            name: proposal.value,
+            aliases: [],
+        });
+        characteristicIds.push(characteristic.id);
+    }
+
+    if (varietyId || characteristicIds.length > 0) {
+        await updateVariant({
+            actorId,
+            productId: created.product.id,
+            variantId: created.variant.id,
+            changes: {
+                ...(varietyId ? { varietyId } : {}),
+                characteristicIds: [...new Set(characteristicIds)],
+            },
+        });
+    }
+};
+
 const createProductFromImport = async ({
     scope,
     workspaceId,
@@ -947,17 +1132,27 @@ const createProductFromImport = async ({
         );
     }
 
-    const payload = {
-        actorId,
-        name: row.data.name,
-        aliases: row.data.aliases,
-        categoryId: row.data.categoryId,
-        reviewedCandidateIds,
-        variant: row.data.variant,
-    };
+    const {
+        baseVariant,
+        dimensionProposals,
+    } = splitNewProductDimensions(row);
 
     if (scope === PRODUCT_IMPORT_SCOPE.GLOBAL) {
-        const created = await createGlobalProduct(payload);
+        const created = await createGlobalProduct({
+            actorId,
+            name: row.data.name,
+            aliases: row.data.aliases,
+            categoryId: row.data.categoryId,
+            reviewedCandidateIds,
+            variant: baseVariant,
+        });
+
+        await enrichCreatedGlobalProductDimensions({
+            actorId,
+            created,
+            dimensionProposals,
+        });
+
         return {
             status: 'CREATED_PRODUCT',
             productId: created.product.id,
@@ -965,16 +1160,40 @@ const createProductFromImport = async ({
         };
     }
 
-    const created = await createWorkspaceProduct({
-        ...payload,
+    const result = await submitReferenceContribution({
         workspaceId,
+        actorId,
+        type: PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT,
+        value: row.data.name,
+        categoryId: row.data.categoryId,
+        variant: baseVariant,
+        dimensionProposals,
     });
 
-    return {
-        status: 'CREATED_PRODUCT',
-        productId: created.product.id,
-        variantId: created.variant.id,
-    };
+    if (
+        result.classification
+        === PRODUCT_CONTRIBUTION_CLASSIFICATION.REVIEW_REQUIRED
+    ) {
+        return {
+            status: 'PENDING_REVIEW',
+            contributionId: result.contribution?.id ?? null,
+        };
+    }
+
+    if (
+        result.classification
+        === PRODUCT_CONTRIBUTION_CLASSIFICATION.EXISTING
+    ) {
+        return {
+            status: 'EXISTING_REFERENCE',
+            productId: result.existingReference?.id ?? null,
+        };
+    }
+
+    throw new AppError(
+        'La création importée du Produit n’a pas produit une décision exploitable.',
+        409,
+    );
 };
 
 const commitProductImport = async ({
@@ -1129,7 +1348,7 @@ const commitProductImport = async ({
                             workspaceId,
                             actorId,
                             productId: row.productId,
-                            variant: row.data.variant,
+                            row,
                         }),
                     });
                     continue;
@@ -1156,6 +1375,20 @@ const commitProductImport = async ({
                     row.classification
                     === PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED
                 ) {
+                    if (row.reviewMode === 'REFERENCE_GOVERNANCE') {
+                        results.push({
+                            rowNumber: row.rowNumber,
+                            ...await createProductFromImport({
+                                scope,
+                                workspaceId,
+                                actorId,
+                                row,
+                                reviewedCandidateIds: [],
+                            }),
+                        });
+                        continue;
+                    }
+
                     if (!decision) {
                         results.push({
                             rowNumber: row.rowNumber,
