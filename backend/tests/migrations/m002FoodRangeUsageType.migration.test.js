@@ -106,9 +106,9 @@ describe('M-002 food range / usage type migration', () => {
             status: 'ARCHIVED',
             identityActive: false,
             foodRange: null,
-            usageType: null,
             processingState: null,
         });
+        expect(migrated.usageType).toBeUndefined();
         expect(migrated.normalizedSignature)
             .toContain('__m002_retired_range6__');
 

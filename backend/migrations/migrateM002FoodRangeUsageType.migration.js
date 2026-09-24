@@ -410,9 +410,11 @@ const migrateM002FoodRangeUsageType = async () => (
                                 foodRange: null,
                                 processingState: null,
                                 normalizedProcessingState: '',
-                                usageType: null,
                                 normalizedSignature:
                                     variant.normalizedSignature,
+                            },
+                            $unset: {
+                                usageType: '',
                             },
                         }
                         : {
