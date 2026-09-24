@@ -22,13 +22,16 @@ import {
 
 const EMPTY_OPTION = '__NONE__';
 
-function createEmptyVariantDraft(metadata) {
+function createEmptyVariantDraft(metadata, { structured = false } = {}) {
   return {
     presentation: '',
+    varietyId: '',
+    characteristicIdsByKind: {},
     processingState: '',
     foodRange: '',
     referenceUnit: metadata?.referenceUnits?.[0]?.value ?? '',
     yieldPercent: '',
+    structured,
   };
 }
 
@@ -37,20 +40,36 @@ function optionalText(value) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function variantDraftToPayload(draft) {
-  return {
-    presentation: optionalText(draft.presentation),
+function variantDraftToPayload(draft, { structured = draft.structured } = {}) {
+  const common = {
     processingState: optionalText(draft.processingState),
     foodRange: Number(draft.foodRange),
     referenceUnit: draft.referenceUnit,
     yieldPercent: draft.yieldPercent ? Number(draft.yieldPercent) : null,
   };
+
+  if (!structured) {
+    return {
+      presentation: optionalText(draft.presentation),
+      ...common,
+    };
+  }
+
+  return {
+    varietyId: draft.varietyId || null,
+    characteristicIds: Object.values(
+      draft.characteristicIdsByKind ?? {},
+    ).filter(Boolean),
+    ...common,
+  };
 }
 
 function ProductVariantFields({
+  dimensions = null,
   disabled = false,
   metadata,
   onChange,
+  structured = false,
   value,
 }) {
   const unitItems = metadata?.referenceUnits ?? [];
@@ -66,6 +85,13 @@ function ProductVariantFields({
     (range) => String(range.value) === String(value.foodRange),
   );
   const processingStateItems = selectedFoodRange?.processingStates ?? [];
+  const varieties = (dimensions?.varieties ?? []).filter(
+    (variety) => variety.status === 'ACTIVE',
+  );
+  const characteristics = (dimensions?.characteristics ?? []).filter(
+    (characteristic) => characteristic.status === 'ACTIVE',
+  );
+  const characteristicKinds = metadata?.productCharacteristicKinds ?? [];
 
   function change(field, nextValue) {
     onChange({
@@ -97,17 +123,98 @@ function ProductVariantFields({
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <Field>
-        <FieldLabel htmlFor="product-variant-presentation">Présentation</FieldLabel>
-        <Input
-          disabled={disabled}
-          id="product-variant-presentation"
-          maxLength={80}
-          onChange={(event) => change('presentation', event.target.value)}
-          placeholder="Ex. entière, râpée, émincée"
-          value={value.presentation}
-        />
-      </Field>
+      {structured ? (
+        <>
+          <Field>
+            <FieldLabel htmlFor="product-variant-variety">Variété</FieldLabel>
+            <Select
+              disabled={disabled}
+              items={[
+                { value: EMPTY_OPTION, label: 'Aucune variété' },
+                ...varieties.map((variety) => ({
+                  value: variety.id,
+                  label: variety.name,
+                })),
+              ]}
+              onValueChange={(nextValue) => change(
+                'varietyId',
+                nextValue === EMPTY_OPTION ? '' : nextValue,
+              )}
+              value={value.varietyId || EMPTY_OPTION}
+            >
+              <SelectTrigger id="product-variant-variety">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={EMPTY_OPTION}>Aucune variété</SelectItem>
+                {varieties.map((variety) => (
+                  <SelectItem key={variety.id} value={variety.id}>
+                    {variety.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          {characteristicKinds.map((kind) => {
+            const options = characteristics.filter(
+              (characteristic) => characteristic.kind === kind.value,
+            );
+            const fieldId = 'product-variant-characteristic-' + kind.value;
+            const selected = value.characteristicIdsByKind?.[kind.value]
+              ?? EMPTY_OPTION;
+
+            return (
+              <Field key={kind.value}>
+                <FieldLabel htmlFor={fieldId}>{kind.label}</FieldLabel>
+                <Select
+                  disabled={disabled}
+                  items={[
+                    { value: EMPTY_OPTION, label: 'Non renseigné' },
+                    ...options.map((option) => ({
+                      value: option.id,
+                      label: option.name,
+                    })),
+                  ]}
+                  onValueChange={(nextValue) => onChange({
+                    ...value,
+                    characteristicIdsByKind: {
+                      ...(value.characteristicIdsByKind ?? {}),
+                      [kind.value]:
+                        nextValue === EMPTY_OPTION ? '' : nextValue,
+                    },
+                  })}
+                  value={selected}
+                >
+                  <SelectTrigger id={fieldId}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={EMPTY_OPTION}>Non renseigné</SelectItem>
+                    {options.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            );
+          })}
+        </>
+      ) : (
+        <Field>
+          <FieldLabel htmlFor="product-variant-presentation">Présentation</FieldLabel>
+          <Input
+            disabled={disabled}
+            id="product-variant-presentation"
+            maxLength={120}
+            onChange={(event) => change('presentation', event.target.value)}
+            placeholder="Ex. entière, râpée, émincée"
+            value={value.presentation}
+          />
+        </Field>
+      )}
 
       <Field>
         <FieldLabel htmlFor="product-variant-food-range">Gamme *</FieldLabel>
