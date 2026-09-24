@@ -52,7 +52,6 @@ import { ProductVariant } from './productVariant.model.js';
 import { ProductVariety } from './productVariety.model.js';
 import { WorkspaceProduct } from './workspaceProduct.model.js';
 import {
-    canonicalProductMatchesSearch,
     compareProductVariants,
     productVariantMatchesSearch,
 } from './productCatalogSearch.js';
@@ -636,22 +635,14 @@ const listProductSearch = async ({
         };
     }
 
-    const variantProductIds = new Set(
-        variants.map(({ canonicalProduct }) => canonicalProduct.toString()),
-    );
+    // La liste Workspace expose uniquement des Références Produit
+    // exploitables. Les CanonicalProduct sans ProductVariant actif restent
+    // administrables dans la gouvernance globale, mais ne sont jamais
+    // sélectionnables depuis « Tous les produits ».
     const references = matchingVariants.map((variant) => ({
         product: productById.get(variant.canonicalProduct.toString()),
         variant,
     }));
-
-    if (foodRange === null || foodRange === undefined) {
-        for (const product of products) {
-            if (variantProductIds.has(product._id.toString())) continue;
-            if (q && !canonicalProductMatchesSearch(q, product)) continue;
-
-            references.push({ product, variant: null });
-        }
-    }
 
     references.sort((left, right) => (
         compareProductSearchReferences(left, right, sort)

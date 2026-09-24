@@ -24,6 +24,7 @@ import {
 import {
     createActiveProductReference,
 } from '../../helpers/productCatalogTest.fixtures.js';
+import { ProductVariant } from '../../../modules/productCatalog/productVariant.model.js';
 
 let ownerContext;
 
@@ -185,6 +186,23 @@ describe('M-002 recherche structurée Produit', () => {
             .toBe(reference.product._id.toString());
         expect(result.results[0].variant.foodRange).toBe(6);
         expect(result.results[0].variant).not.toHaveProperty('usageType');
+    });
+
+    it('n expose jamais un CanonicalProduct sans Référence exploitable dans la liste Workspace', async () => {
+        const orphan = await createActiveProductReference({
+            name: 'Agneau racine sans référence',
+        });
+        await ProductVariant.deleteOne({ _id: orphan.variant._id });
+
+        const result = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'REFERENCE',
+            page: 1,
+            limit: 20,
+        });
+
+        expect(result.results).toEqual([]);
+        expect(result.pagination.total).toBe(0);
     });
 
     it('pagine la liste opérationnelle par référence exploitable', async () => {

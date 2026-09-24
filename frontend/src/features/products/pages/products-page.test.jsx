@@ -304,31 +304,6 @@ describe('ProductsPage', () => {
     })).toBeInTheDocument();
   });
 
-  it('affiche un Produit global sans référence exploitable sans action favori', () => {
-    mocks.searchQuery.mockReturnValue({
-      data: {
-        results: [{
-          source: 'CANONICAL_PRODUCT',
-          product: { ...result.product, name: 'Bœuf' },
-          variant: null,
-          workspaceEntry: null,
-        }],
-        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
-      },
-      isError: false,
-      isFetching: false,
-      isLoading: false,
-      refetch: vi.fn(),
-    });
-
-    renderPage();
-
-    expect(screen.getByText('Bœuf')).toBeInTheDocument();
-    expect(screen.getByText('—')).toBeInTheDocument();
-    expect(screen.queryByRole('button', {
-      name: /Ajouter Bœuf aux favoris/,
-    })).not.toBeInTheDocument();
-  });
 
   it('masque les actions d’écriture sans permissions ou capabilities M-002', () => {
     mocks.workspaceContext.mockReturnValue({
