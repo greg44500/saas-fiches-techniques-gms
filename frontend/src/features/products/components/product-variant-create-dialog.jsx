@@ -85,12 +85,12 @@ function ProductVariantCreateDialog({
   }, [metadata, open]);
 
   async function submit() {
-    if (!variant.foodRange) {
-      setFormError('Sélectionnez une gamme.');
+    if (!variant.name.trim()) {
+      setFormError('Renseignez le nom de la référence.');
       return;
     }
-    if (!variant.processingState) {
-      setFormError('Sélectionnez un état / transformation.');
+    if (!variant.conservationType) {
+      setFormError('Sélectionnez une conservation.');
       return;
     }
     if (!variant.referenceUnit) {
@@ -116,7 +116,7 @@ function ProductVariantCreateDialog({
     } catch (error) {
       setFormError(getApiErrorMessage(
         error,
-        'La déclinaison n’a pas pu être créée.',
+        'La référence n’a pas pu être créée.',
       ));
     }
   }
@@ -134,16 +134,16 @@ function ProductVariantCreateDialog({
         <DialogOverlay />
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-2xl overflow-y-auto" initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>Créer une déclinaison</DialogTitle>
+            <DialogTitle>Créer une référence Produit</DialogTitle>
             <DialogDescription>
-              Vérifiez les déclinaisons existantes de {product?.name} avant d’en créer une nouvelle.
+              Vérifiez les références existantes de {product?.name} avant d’en créer une nouvelle.
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-5 space-y-5">
             {existingVariants.length > 0 && (
               <section className="rounded-lg border border-border p-4">
-                <h3 className="text-sm font-medium">Déclinaisons existantes</h3>
+                <h3 className="text-sm font-medium">Références existantes</h3>
                 <ul className="mt-3 space-y-2 text-sm">
                   {existingVariants.map((existing) => (
                     <li className="flex flex-wrap justify-between gap-2" key={existing.id}>
@@ -201,7 +201,7 @@ function ProductVariantCreateDialog({
               onClick={submit}
               type="button"
             >
-              {pending ? 'Création…' : 'Créer la déclinaison'}
+              {pending ? 'Création…' : 'Créer la référence'}
             </Button>
           </DialogFooter>
         </DialogContent>

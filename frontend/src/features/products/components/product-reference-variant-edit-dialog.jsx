@@ -26,6 +26,7 @@ import { getApiErrorMessage } from '@/features/products/lib/product-presentation
 
 function variantToDraft(variant) {
   return {
+    name: variant?.name ?? '',
     presentation: '',
     varietyId: variant?.variety?.id ?? '',
     characteristicIdsByKind: Object.fromEntries(
@@ -34,6 +35,7 @@ function variantToDraft(variant) {
         .map(({ kind, id }) => [kind, id]),
     ),
     processingState: variant?.processingState ?? '',
+    conservationType: variant?.conservationType ?? '',
     foodRange: variant?.foodRange ? String(variant.foodRange) : '',
     referenceUnit: variant?.referenceUnit ?? '',
     yieldPercent: variant?.yieldPercent ? String(variant.yieldPercent) : '',
@@ -70,12 +72,12 @@ function ProductReferenceVariantEditDialog({
   }, [open, variant]);
 
   async function submit() {
-    if (!draft.foodRange) {
-      setFormError('Sélectionnez une gamme.');
+    if (!draft.name.trim()) {
+      setFormError('Renseignez le nom de la référence.');
       return;
     }
-    if (!draft.processingState) {
-      setFormError('Sélectionnez un état / transformation.');
+    if (!draft.conservationType) {
+      setFormError('Sélectionnez une conservation.');
       return;
     }
     if (!draft.referenceUnit) {
@@ -94,7 +96,7 @@ function ProductReferenceVariantEditDialog({
     } catch (error) {
       setFormError(getApiErrorMessage(
         error,
-        'La déclinaison n’a pas pu être corrigée.',
+        'La référence n’a pas pu être corrigée.',
       ));
     }
   }
@@ -112,9 +114,9 @@ function ProductReferenceVariantEditDialog({
         <DialogOverlay />
         <DialogContent className="max-w-2xl" initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>Corriger la déclinaison</DialogTitle>
+            <DialogTitle>Corriger la référence Produit</DialogTitle>
             <DialogDescription>
-              Modifiez uniquement les dimensions Produit. Les données fournisseur et prix ne font pas partie de M-002.
+              Modifiez l’identité et les enrichissements Produit. Les données fournisseur et prix ne font pas partie de M-002.
             </DialogDescription>
           </DialogHeader>
 

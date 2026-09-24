@@ -29,6 +29,7 @@ const PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT = 6;
 
 function ProductSearchAutocomplete({
   categoryId,
+  conservationType,
   foodRange,
   metadata,
   onSelect,
@@ -62,6 +63,7 @@ function ProductSearchAutocomplete({
       q: debouncedQuery || undefined,
       categoryId,
       status,
+      conservationType,
       foodRange,
       sort: 'NAME',
       page: 1,
