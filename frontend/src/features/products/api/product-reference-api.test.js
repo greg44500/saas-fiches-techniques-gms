@@ -63,6 +63,36 @@ describe('productReferenceApi', () => {
     });
 
     expect(
+      captured.endpointDefinitions.getProductReferenceDimensions.query(
+        'product-1',
+      ),
+    ).toEqual({
+      url: '/product-reference/product-1/dimensions',
+    });
+
+    expect(
+      captured.endpointDefinitions.createProductReferenceVariety.query({
+        productId: 'product-1',
+        name: 'Gala',
+      }),
+    ).toEqual({
+      url: '/product-reference/product-1/varieties',
+      method: 'POST',
+      body: { name: 'Gala' },
+    });
+
+    expect(
+      captured.endpointDefinitions.reviewProductReferenceContribution.query({
+        contributionId: 'contribution-1',
+        decision: 'APPROVE',
+      }),
+    ).toEqual({
+      url: '/product-reference/contributions/contribution-1/decision',
+      method: 'POST',
+      body: { decision: 'APPROVE' },
+    });
+
+    expect(
       captured.endpointDefinitions.commitProductReferenceImport.query({
         importId: 'import-1',
         decisions: [],

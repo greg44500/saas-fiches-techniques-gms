@@ -56,7 +56,8 @@ describe('productCatalogApi', () => {
       captured.endpointDefinitions.createVariant.query({
         workspaceId: 'workspace-1',
         productId: 'product-1',
-        presentation: 'Râpée',
+        varietyId: 'variety-1',
+        characteristicIds: ['characteristic-1'],
         foodRange: 1,
         processingState: 'Produit frais',
         referenceUnit: 'KG',
@@ -65,10 +66,37 @@ describe('productCatalogApi', () => {
       url: '/workspaces/workspace-1/products/product-1/variants',
       method: 'POST',
       body: {
-        presentation: 'Râpée',
+        varietyId: 'variety-1',
+        characteristicIds: ['characteristic-1'],
         foodRange: 1,
         processingState: 'Produit frais',
         referenceUnit: 'KG',
+      },
+    });
+
+    expect(
+      captured.endpointDefinitions.getProductDimensions.query({
+        workspaceId: 'workspace-1',
+        productId: 'product-1',
+      }),
+    ).toEqual({
+      url: '/workspaces/workspace-1/products/product-1/dimensions',
+    });
+
+    expect(
+      captured.endpointDefinitions.contributeProductReference.query({
+        workspaceId: 'workspace-1',
+        type: 'VARIETY',
+        productId: 'product-1',
+        value: 'Gala',
+      }),
+    ).toEqual({
+      url: '/workspaces/workspace-1/products/contributions',
+      method: 'POST',
+      body: {
+        type: 'VARIETY',
+        productId: 'product-1',
+        value: 'Gala',
       },
     });
 
