@@ -108,7 +108,22 @@ const isRetiredLegacyRange6 = (document) => (
 const migrateM002FoodRangeUsageType = async () => (
     mongoose.connection.transaction(async (session) => {
         const documents = await ProductVariant.collection
-            .find({}, { session })
+            .find({
+                $or: [
+                    { usageType: { $exists: true } },
+                    {
+                        foodRange: 6,
+                        $or: [
+                            { name: { $exists: false } },
+                            { name: null },
+                            { name: '' },
+                            { conservationType: { $exists: false } },
+                            { conservationType: null },
+                            { conservationType: '' },
+                        ],
+                    },
+                ],
+            }, { session })
             .toArray();
 
         if (documents.length === 0) {
@@ -116,6 +131,7 @@ const migrateM002FoodRangeUsageType = async () => (
                 matchedCount: 0,
                 modifiedCount: 0,
                 retiredLegacyRange6: 0,
+                archivedWorkspaceFavorites: 0,
             };
         }
 
@@ -182,7 +198,16 @@ const migrateM002FoodRangeUsageType = async () => (
         ));
 
         const range6Documents = activeDocuments.filter(
-            ({ foodRange }) => foodRange === 6,
+            ({ foodRange, name, conservationType }) => (
+                foodRange === 6
+                && (
+                    !String(name ?? '').trim()
+                    || !String(conservationType ?? '').trim()
+                )
+            ),
+        );
+        const legacyRange6Ids = new Set(
+            range6Documents.map(({ _id }) => _id.toString()),
         );
         let v2Fingerprints = null;
 
@@ -201,23 +226,9 @@ const migrateM002FoodRangeUsageType = async () => (
             v2Fingerprints = await loadV2Range6Fingerprints();
         }
 
-        const workspaceReferences = range6Documents.length > 0
-            ? await WorkspaceProduct.find({
-                productVariant: mongoose.trusted({
-                    $in: range6Documents.map(({ _id }) => _id),
-                }),
-            })
-                .select('productVariant')
-                .session(session)
-                .lean()
-            : [];
-        const referencedRange6Ids = new Set(
-            workspaceReferences.map(({ productVariant }) =>
-                productVariant.toString()),
-        );
-
         const prepared = [];
         let retiredLegacyRange6 = 0;
+        let archivedWorkspaceFavorites = 0;
 
         for (const document of activeDocuments) {
             const product = productById.get(
@@ -245,15 +256,7 @@ const migrateM002FoodRangeUsageType = async () => (
                 );
             }
 
-            if (document.foodRange === 6) {
-                if (referencedRange6Ids.has(document._id.toString())) {
-                    throw new Error(
-                        'Migration M-002 bloquée : une déclinaison Gamme 6 '
-                        + 'est déjà utilisée par un Workspace. Revue explicite '
-                        + `requise pour ${document._id.toString()}.`,
-                    );
-                }
-
+            if (legacyRange6Ids.has(document._id.toString())) {
                 const fingerprint = legacyRange6Fingerprint({
                     productName: product.name,
                     varietyName: document.variety
@@ -273,6 +276,20 @@ const migrateM002FoodRangeUsageType = async () => (
                         + `Revue explicite requise pour ${document._id.toString()}.`,
                     );
                 }
+
+                const favoriteResult = await WorkspaceProduct.updateMany(
+                    {
+                        productVariant: document._id,
+                        status: 'ACTIVE',
+                    },
+                    {
+                        $set: {
+                            status: 'ARCHIVED',
+                        },
+                    },
+                    { session },
+                );
+                archivedWorkspaceFavorites += favoriteResult.modifiedCount;
 
                 prepared.push({
                     id: document._id,
@@ -361,6 +378,7 @@ const migrateM002FoodRangeUsageType = async () => (
                 matchedCount: 0,
                 modifiedCount: 0,
                 retiredLegacyRange6: 0,
+                archivedWorkspaceFavorites: 0,
             };
         }
 
@@ -413,6 +431,7 @@ const migrateM002FoodRangeUsageType = async () => (
             matchedCount: variantsToMigrate.length,
             modifiedCount: result.modifiedCount,
             retiredLegacyRange6,
+            archivedWorkspaceFavorites,
         };
     })
 );

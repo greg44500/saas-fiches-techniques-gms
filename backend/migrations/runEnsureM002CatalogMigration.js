@@ -85,7 +85,11 @@ const run = async () => {
                             foodRange: 6,
                             $or: [
                                 { name: { $exists: false } },
+                                { name: null },
+                                { name: '' },
                                 { conservationType: { $exists: false } },
+                                { conservationType: null },
+                                { conservationType: '' },
                             ],
                         },
                     ],
@@ -99,6 +103,7 @@ const run = async () => {
                 matchedCount: 0,
                 modifiedCount: 0,
                 retiredLegacyRange6: 0,
+                archivedWorkspaceFavorites: 0,
                 skipped: true,
             };
         const legacyReferenceDuplicates =

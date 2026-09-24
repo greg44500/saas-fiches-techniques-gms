@@ -120,7 +120,7 @@ describe('M-002 food range / usage type migration', () => {
         });
     });
 
-    it('refuse une Gamme 6 déjà utilisée par un Workspace', async () => {
+    it('retire une Gamme 6 v2 utilisée et archive le Favori Workspace', async () => {
         const reference = await createActiveProductReference({
             name: 'Jambon blanc',
             categoryName: 'Charcuteries',
@@ -129,7 +129,7 @@ describe('M-002 food range / usage type migration', () => {
         await markV2Installed(reference.variant.createdBy);
         await toLegacyRange6(reference.variant._id);
 
-        await WorkspaceProduct.create({
+        const favorite = await WorkspaceProduct.create({
             workspace: new mongoose.Types.ObjectId(),
             productVariant: reference.variant._id,
             status: 'ACTIVE',
@@ -137,15 +137,55 @@ describe('M-002 food range / usage type migration', () => {
             updatedBy: reference.variant.updatedBy,
         });
 
-        await expect(migrateM002FoodRangeUsageType()).rejects.toThrow(
-            /déjà utilisée par un Workspace/,
-        );
+        const result = await migrateM002FoodRangeUsageType();
 
-        const untouched = await ProductVariant.collection.findOne({
+        expect(result).toMatchObject({
+            retiredLegacyRange6: 1,
+            archivedWorkspaceFavorites: 1,
+        });
+
+        const retired = await ProductVariant.collection.findOne({
             _id: reference.variant._id,
         });
-        expect(untouched.foodRange).toBe(6);
-        expect(untouched.identityActive).toBe(true);
+        expect(retired.foodRange).toBeNull();
+        expect(retired.identityActive).toBe(false);
+        expect(retired.status).toBe('ARCHIVED');
+
+        expect((await WorkspaceProduct.findById(favorite._id)).status)
+            .toBe('ARCHIVED');
+    });
+
+    it('ignore une Gamme 6 moderne complète même si une migration legacy est nécessaire ailleurs', async () => {
+        const modern = await createActiveProductReference({
+            name: 'Référence PAI moderne',
+            conservationType: 'REFRIGERE',
+            foodRange: 6,
+        });
+        const legacy = await createActiveProductReference({
+            name: 'Carotte usage legacy',
+            foodRange: 1,
+        });
+
+        await ProductVariant.collection.updateOne(
+            { _id: legacy.variant._id },
+            {
+                $set: { usageType: null },
+            },
+        );
+
+        const before = await ProductVariant.collection.findOne({
+            _id: modern.variant._id,
+        });
+
+        await migrateM002FoodRangeUsageType();
+
+        const after = await ProductVariant.collection.findOne({
+            _id: modern.variant._id,
+        });
+        expect(after.foodRange).toBe(6);
+        expect(after.name).toBe(before.name);
+        expect(after.conservationType).toBe(before.conservationType);
+        expect(after.normalizedSignature).toBe(before.normalizedSignature);
     });
 
     it('refuse une Gamme 6 qui ne correspond pas au bootstrap v2', async () => {
