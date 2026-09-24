@@ -1,6 +1,6 @@
 import { PLATFORM_PERMISSION } from '@/features/platform/constants/platform-permissions';
 
-const platformNavigationSections = Object.freeze([
+const corePlatformNavigationSections = Object.freeze([
   Object.freeze({
     type: 'item',
     id: 'overview',
@@ -95,36 +95,118 @@ const platformNavigationSections = Object.freeze([
   }),
 ]);
 
-const platformNavigationItems = Object.freeze(
-  platformNavigationSections.flatMap((entry) => (
+function getPlatformNavigationItems(navigationSections) {
+  return navigationSections.flatMap((entry) => (
     entry.type === 'group' ? entry.items : [entry]
-  )),
+  ));
+}
+
+const corePlatformNavigationItems = Object.freeze(
+  getPlatformNavigationItems(corePlatformNavigationSections),
 );
 
-function canDisplayPlatformNavigationItem(item, permissionSet) {
+/**
+ * Construit le contexte générique utilisé uniquement pour la visibilité de la
+ * navigation. Les permissions Platform et Application Global restent deux
+ * autorités distinctes.
+ */
+function createPlatformNavigationVisibilityContext(platformAccessOrPermissions) {
+  if (Array.isArray(platformAccessOrPermissions)) {
+    return {
+      platformAccess: null,
+      platformPermissions: new Set(platformAccessOrPermissions),
+      applicationGlobalPermissions: new Set(),
+    };
+  }
+
+  const platformAccess = (
+    platformAccessOrPermissions
+    && typeof platformAccessOrPermissions === 'object'
+  )
+    ? platformAccessOrPermissions
+    : null;
+
+  return {
+    platformAccess,
+    platformPermissions: new Set(
+      platformAccess?.platformPermissions
+      ?? platformAccess?.permissions
+      ?? [],
+    ),
+    applicationGlobalPermissions: new Set(
+      platformAccess?.applicationGlobalPermissions ?? [],
+    ),
+  };
+}
+
+function hasPlatformNavigationVisibilityRule(item) {
+  return Boolean(
+    item.permission
+    || Array.isArray(item.anyPermission)
+    || typeof item.isVisible === 'function'
+  );
+}
+
+function canDisplayPlatformNavigationItem(item, visibilityContextInput) {
+  const visibilityContext =
+    createPlatformNavigationVisibilityContext(
+      visibilityContextInput,
+    );
+
+  let hasRule = false;
+  let isVisible = true;
+
   if (item.permission) {
-    return permissionSet.has(item.permission);
+    hasRule = true;
+    isVisible = isVisible
+      && visibilityContext.platformPermissions.has(item.permission);
   }
 
   if (Array.isArray(item.anyPermission)) {
-    return item.anyPermission.some((permission) => permissionSet.has(permission));
+    hasRule = true;
+    isVisible = isVisible
+      && item.anyPermission.some((permission) => (
+        visibilityContext.platformPermissions.has(permission)
+      ));
   }
 
-  return false;
+  if (typeof item.isVisible === 'function') {
+    hasRule = true;
+    isVisible = isVisible && item.isVisible(visibilityContext) === true;
+  }
+
+  return hasRule && isVisible;
 }
 
-function getVisiblePlatformNavigationSections(permissions) {
-  const permissionSet = new Set(permissions ?? []);
-
-  return platformNavigationSections.flatMap((entry) => {
+function getVisiblePlatformNavigationSections(
+  visibilityContextInput,
+  navigationSections = corePlatformNavigationSections,
+) {
+  return navigationSections.flatMap((entry) => {
     if (entry.type !== 'group') {
-      return canDisplayPlatformNavigationItem(entry, permissionSet)
+      return canDisplayPlatformNavigationItem(
+        entry,
+        visibilityContextInput,
+      )
         ? [entry]
         : [];
     }
 
+    if (
+      hasPlatformNavigationVisibilityRule(entry)
+      && !canDisplayPlatformNavigationItem(
+        entry,
+        visibilityContextInput,
+      )
+    ) {
+      return [];
+    }
+
     const items = entry.items.filter((item) => (
-      canDisplayPlatformNavigationItem(item, permissionSet)
+      canDisplayPlatformNavigationItem(
+        item,
+        visibilityContextInput,
+      )
     ));
 
     return items.length > 0 ? [{ ...entry, items }] : [];
@@ -137,13 +219,17 @@ function hasActivePlatformAccess(platformAccess) {
     && platformAccess.permissions.length > 0;
 }
 
-function getFirstPlatformDestination(platformAccess) {
+function getFirstPlatformDestination(
+  platformAccess,
+  navigationSections = corePlatformNavigationSections,
+) {
   if (!hasActivePlatformAccess(platformAccess)) {
     return null;
   }
 
   const entries = getVisiblePlatformNavigationSections(
-    platformAccess.permissions,
+    platformAccess,
+    navigationSections,
   );
   const firstEntry = entries[0];
 
@@ -152,7 +238,10 @@ function getFirstPlatformDestination(platformAccess) {
     : firstEntry?.to ?? null;
 }
 
-function getPlatformNavigationItemForPath(pathname) {
+function getPlatformNavigationItemForPath(
+  pathname,
+  navigationSections = corePlatformNavigationSections,
+) {
   if (typeof pathname !== 'string' || pathname.length === 0) {
     return null;
   }
@@ -161,14 +250,17 @@ function getPlatformNavigationItemForPath(pathname) {
     ? pathname.replace(/\/+$/, '')
     : pathname;
 
-  return platformNavigationItems.find(({ to }) => (
+  return getPlatformNavigationItems(navigationSections).find(({ to }) => (
     normalizedPathname === to
     || normalizedPathname.startsWith(`${to}/`)
   )) ?? null;
 }
 
 function getActivePlatformNavigationGroupId(navigation, pathname) {
-  const activeItem = getPlatformNavigationItemForPath(pathname);
+  const activeItem = getPlatformNavigationItemForPath(
+    pathname,
+    navigation,
+  );
   if (!activeItem) return null;
 
   return navigation.find((entry) => (
@@ -177,30 +269,44 @@ function getActivePlatformNavigationGroupId(navigation, pathname) {
   ))?.id ?? null;
 }
 
-function canAccessPlatformPath(pathname, platformAccess) {
+function canAccessPlatformPath(
+  pathname,
+  platformAccess,
+  navigationSections = corePlatformNavigationSections,
+) {
   if (!hasActivePlatformAccess(platformAccess)) {
     return false;
   }
 
-  const navigationItem = getPlatformNavigationItemForPath(pathname);
+  const navigationItem = getPlatformNavigationItemForPath(
+    pathname,
+    navigationSections,
+  );
 
   if (!navigationItem) {
-    // Les routes Platform ajoutées par une application dérivée ne sont pas
-    // connues du registre de navigation Core. Leur autorisation fine reste à
-    // la charge du module d'extension, tandis que ce guard impose au minimum
-    // une appartenance Platform active.
+    // Une route Platform qui n'est volontairement pas déclarée dans la
+    // navigation conserve son propre guard. Ce guard impose au minimum une
+    // appartenance Platform active sans prétendre remplacer l'autorisation de
+    // la route métier.
     return true;
   }
 
   return canDisplayPlatformNavigationItem(
     navigationItem,
-    new Set(platformAccess.permissions),
+    platformAccess,
   );
 }
+
+// Alias conservés pour les consommateurs Core existants.
+const platformNavigationSections = corePlatformNavigationSections;
+const platformNavigationItems = corePlatformNavigationItems;
 
 export {
   canAccessPlatformPath,
   canDisplayPlatformNavigationItem,
+  corePlatformNavigationItems,
+  corePlatformNavigationSections,
+  createPlatformNavigationVisibilityContext,
   getActivePlatformNavigationGroupId,
   getFirstPlatformDestination,
   getPlatformNavigationItemForPath,

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  composeApplicationPlatformNavigation,
+} from '@/app/application-platform-navigation';
 import { PLATFORM_PERMISSION } from '@/features/platform/constants/platform-permissions';
 import {
   canAccessPlatformPath,
@@ -10,8 +13,14 @@ import {
   hasActivePlatformAccess,
 } from '@/features/platform/lib/platform-navigation';
 
-function visibleDestinations(permissions) {
-  return getVisiblePlatformNavigationSections(permissions).flatMap((entry) => (
+function visibleDestinations(
+  visibilityContext,
+  navigationSections,
+) {
+  return getVisiblePlatformNavigationSections(
+    visibilityContext,
+    navigationSections,
+  ).flatMap((entry) => (
     entry.type === 'group'
       ? entry.items.map((item) => item.to)
       : [entry.to]
@@ -49,6 +58,88 @@ describe('platform navigation policy', () => {
       status: 'active',
       permissions: [PLATFORM_PERMISSION.PLANS_READ],
     })).toBe(false);
+  });
+
+  it('compose une entrée applicative visible uniquement avec son autorisation globale explicite', () => {
+    const applicationNavigation = composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'item',
+            id: 'derived-reference',
+            label: 'Référentiel applicatif',
+            to: '/derived-reference',
+            isVisible: ({ applicationGlobalPermissions }) => (
+              applicationGlobalPermissions.has(
+                'derived:reference:read',
+              )
+            ),
+          },
+        ],
+      },
+    ]);
+
+    const platformAccess = {
+      status: 'active',
+      permissions: [PLATFORM_PERMISSION.OVERVIEW_READ],
+      applicationGlobalPermissions: [
+        'derived:reference:read',
+      ],
+    };
+
+    expect(visibleDestinations(
+      platformAccess,
+      applicationNavigation,
+    )).toContain('/derived-reference');
+    expect(canAccessPlatformPath(
+      '/derived-reference',
+      platformAccess,
+      applicationNavigation,
+    )).toBe(true);
+
+    const withoutApplicationPermission = {
+      ...platformAccess,
+      applicationGlobalPermissions: [],
+    };
+
+    expect(visibleDestinations(
+      withoutApplicationPermission,
+      applicationNavigation,
+    )).not.toContain('/derived-reference');
+    expect(canAccessPlatformPath(
+      '/derived-reference',
+      withoutApplicationPermission,
+      applicationNavigation,
+    )).toBe(false);
+  });
+
+  it('ne transforme jamais les permissions Platform en autorisation Application Global', () => {
+    const applicationNavigation = composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'item',
+            id: 'derived-reference',
+            label: 'Référentiel applicatif',
+            to: '/derived-reference',
+            isVisible: ({ applicationGlobalPermissions }) => (
+              applicationGlobalPermissions.has(
+                'derived:reference:read',
+              )
+            ),
+          },
+        ],
+      },
+    ]);
+
+    expect(visibleDestinations(
+      {
+        status: 'active',
+        permissions: Object.values(PLATFORM_PERMISSION),
+        applicationGlobalPermissions: [],
+      },
+      applicationNavigation,
+    )).not.toContain('/derived-reference');
   });
 
   it('choisit la première destination réellement autorisée', () => {
@@ -91,6 +182,35 @@ describe('platform navigation policy', () => {
     ).toBe('security-data');
   });
 
+  it('résout aussi le groupe actif d’une navigation applicative composée', () => {
+    const navigation = composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'group',
+            id: 'derived-governance',
+            label: 'Gouvernance applicative',
+            items: [
+              {
+                id: 'derived-reference',
+                label: 'Référentiel applicatif',
+                to: '/derived-reference',
+                isVisible: () => true,
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(
+      getActivePlatformNavigationGroupId(
+        navigation,
+        '/derived-reference',
+      ),
+    ).toBe('derived-governance');
+  });
+
   it('refuse la rétention lorsque la permission read a été retirée', () => {
     const platformAccess = {
       status: 'active',
@@ -105,7 +225,7 @@ describe('platform navigation policy', () => {
     ).toBe(false);
   });
 
-  it('préserve le point d’extension des routes Platform dérivées', () => {
+  it('préserve le point d’extension des routes Platform non déclarées dans la navigation', () => {
     expect(canAccessPlatformPath('/platform/catalog', {
       status: 'active',
       permissions: [PLATFORM_PERMISSION.USERS_READ],

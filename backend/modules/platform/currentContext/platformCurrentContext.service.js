@@ -1,5 +1,8 @@
 import { AppError } from '../../../utils/appError.js';
 import {
+    resolveApplicationGlobalAuthorization,
+} from '../../applicationGlobalAuthorization/applicationGlobalAuthorization.service.js';
+import {
     SYSTEM_PLATFORM_ROLE_PRESETS,
 } from '../../platformRole/platformRole.presets.js';
 import { PlatformRole } from '../../platformRole/platformRole.model.js';
@@ -83,12 +86,14 @@ const resolvePlatformContextRole = async (authorization) => {
  * Retourne la projection Platform du User authentifié.
  *
  * Cette projection ne crée aucune nouvelle règle d'autorisation : elle repose
- * exclusivement sur resolvePlatformAuthorization(), déjà autoritaire pour A4.
- * User.platformRole n'est donc jamais interprété directement ici.
+ * sur resolvePlatformAuthorization() pour les droits Platform et expose
+ * séparément les permissions Application Global résolues depuis leur propre
+ * autorité persistée. Aucun droit Platform n'est converti en droit métier
+ * global, y compris pour le Fondateur ou un Super Admin.
  *
  * Un utilisateur sans appartenance Platform courante reçoit null. Un membre
  * suspendu conserve son identité de membre et son rôle pour l'UX, mais ses
- * permissions effectives restent vides.
+ * permissions Platform effectives restent vides.
  */
 const getCurrentPlatformContext = async ({ user }) => {
     const authorization = await resolvePlatformAuthorization({
@@ -102,15 +107,26 @@ const getCurrentPlatformContext = async ({ user }) => {
         return null;
     }
 
-    const role = await resolvePlatformContextRole(
-        authorization,
-    );
+    const [
+        role,
+        applicationGlobalAuthorization,
+    ] = await Promise.all([
+        resolvePlatformContextRole(
+            authorization,
+        ),
+        resolveApplicationGlobalAuthorization({
+            user,
+        }),
+    ]);
 
     return {
         isFounder: authorization.isFounder === true,
         status: authorization.status,
         role,
         permissions: [...authorization.permissions],
+        applicationGlobalPermissions: [
+            ...applicationGlobalAuthorization.permissions,
+        ],
     };
 };
 

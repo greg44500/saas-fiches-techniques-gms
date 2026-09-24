@@ -1,8 +1,8 @@
 # SAAS-CORE-API — Points d’extension des SaaS dérivés
 
 **Statut :** canonique — actif  
-**Dernière mise à jour :** 2026-09-10  
-**Périmètre :** RBAC, capabilities, routing, navigation, widgets Dashboard et lifecycle transactionnel WorkspaceMember
+**Dernière mise à jour :** 2026-09-24  
+**Périmètre :** RBAC, capabilities, routing, navigations Workspace/Platform, widgets Dashboard, autorisation Application Global et lifecycle transactionnel WorkspaceMember
 
 ---
 
@@ -540,6 +540,7 @@ backend/config/applicationRoutes.registry.js
 backend/config/applicationWorkspaceMemberLifecycle.registry.js
 frontend/src/app/application-routes.js
 frontend/src/app/workspace-navigation.js
+frontend/src/app/application-platform-navigation.js
 frontend/src/app/application-dashboard.js
 ```
 
@@ -590,8 +591,15 @@ frontend routing
 → route injectée dans la bonne surface
 → guard attendu conservé
 
-navigation
+navigation Workspace
 → entrée présente seulement lorsque l’utilisateur peut réellement l’utiliser
+
+navigation Platform
+→ descriptor explicitement composé
+→ collisions de clés/destinations refusées
+→ visibilité fondée sur le contexte autorisé
+→ aucune permission Application Global héritée de Platform
+→ route protégée indépendamment de la navigation
 
 dashboard
 → widget composé dans le registre attendu
@@ -628,6 +636,7 @@ Les tests démontrent que les points de composition permettent à un module mét
 - monter ses routes backend ;
 - ajouter ses routes frontend ;
 - composer sa navigation Workspace ;
+- composer sa navigation Platform sans importer le métier dans le Core ;
 - déclarer des widgets Dashboard filtrés par capability/permission puis par préférence personnelle ;
 - exécuter ses tests ;
 
@@ -653,6 +662,7 @@ backend/constants/role.constants.js
 frontend/src/app/application-routes.js
 frontend/src/app/router.jsx
 frontend/src/app/workspace-navigation.js
+frontend/src/app/application-platform-navigation.js
 frontend/src/app/application-dashboard.js
 frontend/src/features/workspace/dashboard/core-dashboard-widgets.js
 frontend/src/components/shared/dashboard-display-preferences.jsx
@@ -755,3 +765,91 @@ Référence canonique :
 ```text
 docs/contracts/SECURE-TEMPORARY-UPLOAD.md
 ```
+
+
+---
+
+## Navigation Platform applicative
+
+Un SaaS dérivé peut ajouter des entrées à la navigation d'administration
+Platform sans modifier la liste Core ni importer son métier dans le Core.
+
+Point de composition frontend :
+
+```text
+frontend/src/app/application-platform-navigation.js
+```
+
+Collection :
+
+```text
+APPLICATION_PLATFORM_NAVIGATION_MODULES
+```
+
+Le Core fournit :
+
+```text
+corePlatformNavigationSections
+```
+
+La navigation finale est composée explicitement :
+
+```text
+navigation Platform Core
++
+sections déclarées par les modules applicatifs
+→ APPLICATION_PLATFORM_NAVIGATION
+```
+
+Un module applicatif fournit un tableau `sections`. Une entrée peut être un
+item direct ou un groupe. Les identifiants et destinations sont contrôlés sur
+l'ensemble Core + application : une collision est refusée au moment de la
+composition.
+
+Exemple générique :
+
+```js
+{
+  sections: [
+    {
+      type: 'item',
+      id: 'derived-reference',
+      label: 'Référentiel applicatif',
+      to: '/derived-reference',
+      icon: ReferenceIcon,
+      isVisible: ({ applicationGlobalPermissions }) => (
+        applicationGlobalPermissions.has('derived:reference:read')
+      ),
+    },
+  ],
+}
+```
+
+Le callback `isVisible(context)` reçoit un contexte générique contenant :
+
+```text
+platformAccess
+platformPermissions
+applicationGlobalPermissions
+```
+
+Les deux jeux de permissions restent strictement séparés. L'endpoint
+`GET /api/platform/me` expose `applicationGlobalPermissions` séparément des
+permissions Platform, à partir de `resolveApplicationGlobalAuthorization()`.
+Un Fondateur ou Super Admin Platform ne reçoit donc aucune permission
+Application Global implicite.
+
+Cette projection sert uniquement à l'UX et à la navigation. Elle ne remplace
+jamais la sécurité de la route. Une route métier globale reste protégée par
+`authenticate` puis `authorizeApplicationGlobalPermission()`, ou par le
+guard métier équivalent défini par le produit.
+
+Une entrée de navigation Platform peut pointer vers une route authentifiée qui
+n'est pas enfant de `PlatformGuard` lorsque l'autorité métier globale doit
+rester indépendante de l'autorité Platform. Le fait de rendre cette route
+visible depuis l'administration ne justifie pas de déplacer sa frontière
+d'autorisation.
+
+Le composant `PlatformSidebar` accepte l'icône portée par le descriptor. Les
+icônes Core restent gérées par le registre Core existant.
+

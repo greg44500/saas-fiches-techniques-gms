@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Politique de versionnement et de release
 
 **Statut :** canonique — D-015 validée  
-**Dernière mise à jour :** 2026-09-21  
+**Dernière mise à jour :** 2026-09-24  
 **Périmètre :** versionnement du Core, release candidate, tags, provenance et notes de version
 
 ---
@@ -133,10 +133,10 @@ stable
 La release stable courante publiée est :
 
 ```text
-version = 1.1.0
+version = 1.2.1
 channel = stable
-tag = v1.1.0
-commit = 8326fb48856dcef151b5ab01495c934951050d6d
+tag = v1.2.1
+commit = ec6714035b76b6b78910a3763c2d94446cf2238c
 ```
 
 Une version présente dans `main` n’est considérée comme publiée qu’après création du tag immuable et de la GitHub Release correspondante.
@@ -230,14 +230,39 @@ Contrat cible :
 {
   "schemaVersion": 1,
   "repository": "greg44500/saas-core-api",
-  "version": "1.0.0-rc.1",
-  "tag": "v1.0.0-rc.1",
-  "commit": "<sha du tag Core intégré>",
+  "version": "1.2.1",
+  "tag": "v1.2.1",
+  "commit": "<sha exact du Core réellement intégré>",
   "integratedAt": "<date ISO>"
 }
 ```
 
-Le SaaS dérivé met à jour ce fichier après intégration validée d’une nouvelle version du Core.
+`version` et `tag` identifient la release stable servant de base de
+provenance. `commit` identifie toujours le SHA exact réellement présent dans
+le produit.
+
+Cas normal d'une intégration de release :
+
+```text
+commit
+= SHA ciblé par tag
+```
+
+Cas explicitement autorisé d'une intégration post-tag compatible :
+
+```text
+version = release stable de base
+tag     = tag stable de base
+commit  = descendant exact postérieur au tag
+```
+
+Dans ce second cas, le produit doit vérifier que le commit intégré descend bien
+du tag déclaré. Il ne doit jamais prétendre que le tag stable a été déplacé ou
+qu'il cible le SHA postérieur. Aucun nouveau numéro de version ou tag ne doit
+être inventé uniquement pour enregistrer cette provenance.
+
+Le SaaS dérivé met à jour ce fichier après intégration validée du Core, qu'il
+s'agisse du SHA du tag ou d'un SHA post-tag explicitement décidé.
 
 La version applicative du produit dérivé reste indépendante de la version du Core. Cette identité est déclarée dans :
 
