@@ -17,8 +17,14 @@ import {
     ProductReferenceBootstrapRun,
 } from '../../modules/productCatalog/productReferenceBootstrapRun.model.js';
 import {
+    ProductCharacteristic,
+} from '../../modules/productCatalog/productCharacteristic.model.js';
+import {
     ProductVariant,
 } from '../../modules/productCatalog/productVariant.model.js';
+import {
+    ProductVariety,
+} from '../../modules/productCatalog/productVariety.model.js';
 import {
     createTestUser,
 } from '../helpers/dossierTest.fixtures.js';
@@ -45,15 +51,31 @@ const buildDataset = ({
     products: [
         {
             name,
-            aliases: ['Carottes'],
+            aliases: [],
             categoryKey: 'legumes',
+            varieties: [
+                {
+                    key: 'nantaise',
+                    name: 'Nantaise',
+                    aliases: [],
+                },
+            ],
+            characteristics: [
+                {
+                    key: 'entiere',
+                    kind: 'PRESENTATION',
+                    name: 'Entière',
+                    aliases: [],
+                },
+            ],
             variants: [
                 {
-                    presentation: 'Entière',
+                    varietyKey: 'nantaise',
+                    characteristicKeys: ['entiere'],
                     processingState: null,
                     foodRange: 1,
                     referenceUnit: 'KG',
-                    yieldPercent: 85,
+                    yieldPercent: null,
                 },
             ],
         },
@@ -107,6 +129,8 @@ describe('M-002 reference bootstrap', () => {
 
         expect(await ProductCategory.countDocuments()).toBe(1);
         expect(await CanonicalProduct.countDocuments()).toBe(1);
+        expect(await ProductVariety.countDocuments()).toBe(1);
+        expect(await ProductCharacteristic.countDocuments()).toBe(1);
         expect(await ProductVariant.countDocuments()).toBe(1);
         expect(
             await ProductReferenceBootstrapRun.countDocuments(),
@@ -119,12 +143,30 @@ describe('M-002 reference bootstrap', () => {
         expect(product.status).toBe('ACTIVE');
         expect(product.contributedFromWorkspace).toBeNull();
 
+        const variety = await ProductVariety.findOne({
+            canonicalProduct: product._id,
+        }).lean();
+        const characteristic = await ProductCharacteristic.findOne({
+            canonicalProduct: product._id,
+        }).lean();
         const variant = await ProductVariant.findOne({
             canonicalProduct: product._id,
         }).lean();
-        expect(variant.presentation).toBe('Entière');
+
+        expect(variety.name).toBe('Nantaise');
+        expect(characteristic).toMatchObject({
+            kind: 'PRESENTATION',
+            name: 'Entière',
+        });
+        expect(variant.presentation).toBeUndefined();
+        expect(variant.variety.toString()).toBe(variety._id.toString());
+        expect(variant.characteristics.map(String))
+            .toEqual([characteristic._id.toString()]);
         expect(variant.processingState).toBe('Produit frais');
         expect(variant.foodRange).toBe(1);
+        expect(variant.yieldPercent).toBeNull();
+        expect(first.varietyCount).toBe(1);
+        expect(first.characteristicCount).toBe(1);
     });
 
     it('interdit de modifier silencieusement une version déjà installée', async () => {
