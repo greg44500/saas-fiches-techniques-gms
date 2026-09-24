@@ -11,8 +11,14 @@ import {
     CanonicalProduct,
 } from '../../../modules/productCatalog/canonicalProduct.model.js';
 import {
+    ProductCharacteristic,
+} from '../../../modules/productCatalog/productCharacteristic.model.js';
+import {
     ProductReferenceEvent,
 } from '../../../modules/productCatalog/productReferenceEvent.model.js';
+import {
+    ProductVariant,
+} from '../../../modules/productCatalog/productVariant.model.js';
 import {
     createCategory,
     createGlobalProduct,
@@ -81,6 +87,42 @@ describe('M-002 product reference governance', () => {
             categoryId: category.id,
             status: 'ARCHIVED',
         })).resolves.toMatchObject({ status: 'ARCHIVED' });
+    });
+
+    it('convertit la Présentation initiale en Caractéristique structurée', async () => {
+        const category = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Légumes structurés',
+        });
+
+        const created = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Carotte structurée',
+            categoryId: category.id,
+            variant: {
+                presentation: 'Râpée',
+                foodRange: 1,
+                referenceUnit: 'KG',
+            },
+        });
+
+        const [presentation, persistedVariant] = await Promise.all([
+            ProductCharacteristic.findOne({
+                canonicalProduct: created.product.id,
+                kind: 'PRESENTATION',
+                normalizedName: 'rapee',
+                identityActive: true,
+            }).lean(),
+            ProductVariant.findById(created.variant.id).lean(),
+        ]);
+
+        expect(presentation).not.toBeNull();
+        expect(presentation.name).toBe('Râpée');
+        expect(
+            persistedVariant.characteristics.map((value) => value.toString()),
+        ).toContain(presentation._id.toString());
+        expect(ProductVariant.schema.path('presentation')).toBeUndefined();
+        expect(persistedVariant.presentation).toBeUndefined();
     });
 
     it('ajoute directement une déclinaison active au référentiel global', async () => {
