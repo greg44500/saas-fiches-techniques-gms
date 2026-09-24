@@ -7,6 +7,7 @@ import {
 import {
     createReferenceContributionBodySchema,
     createWorkspaceProductBodySchema,
+    createWorkspaceVariantBodySchema,
     importCommitBodySchema,
     importPreviewBodySchema,
     productSearchQuerySchema,
@@ -17,28 +18,33 @@ import {
 const categoryId = '507f1f77bcf86cd799439011';
 
 describe('M-002 product request validation', () => {
-    it('valide une création Produit stricte avec catégorie obligatoire', () => {
+    it('valide une proposition Produit Workspace minimale sans alias utilisateur', () => {
         expect(createWorkspaceProductBodySchema.parse({
             name: 'Carotte',
-            aliases: ['Carottes'],
             categoryId,
             variant: {
+                presentation: 'Râpée',
                 foodRange: 6,
                 referenceUnit: 'KG',
                 yieldPercent: 100,
             },
         })).toEqual({
             name: 'Carotte',
-            aliases: ['Carottes'],
             categoryId,
-            reviewedCandidateIds: [],
             variant: {
-                characteristicIds: [],
+                presentation: 'Râpée',
                 foodRange: 6,
                 referenceUnit: 'KG',
                 yieldPercent: 100,
             },
         });
+
+        expect(createWorkspaceProductBodySchema.safeParse({
+            name: 'Carotte',
+            aliases: ['Carottes'],
+            categoryId,
+            variant: { foodRange: 1, referenceUnit: 'KG' },
+        }).success).toBe(false);
 
         expect(createWorkspaceProductBodySchema.safeParse({
             name: 'Carotte',
@@ -65,32 +71,30 @@ describe('M-002 product request validation', () => {
         }).success).toBe(false);
     });
 
-    it('valide les références structurées d une déclinaison', () => {
-        expect(createWorkspaceProductBodySchema.safeParse({
-            name: 'Pomme',
-            categoryId,
-            variant: {
-                varietyId: '507f1f77bcf86cd799439012',
-                characteristicIds: [
-                    '507f1f77bcf86cd799439013',
-                    '507f1f77bcf86cd799439014',
-                ],
-                foodRange: 1,
-                referenceUnit: 'KG',
-            },
+    it('valide les références structurées d une déclinaison existante', () => {
+        expect(createWorkspaceVariantBodySchema.safeParse({
+            varietyId: '507f1f77bcf86cd799439012',
+            characteristicIds: [
+                '507f1f77bcf86cd799439013',
+                '507f1f77bcf86cd799439014',
+            ],
+            foodRange: 1,
+            referenceUnit: 'KG',
         }).success).toBe(true);
 
-        expect(createWorkspaceProductBodySchema.safeParse({
-            name: 'Pomme',
-            categoryId,
-            variant: {
-                characteristicIds: [
-                    '507f1f77bcf86cd799439013',
-                    '507f1f77bcf86cd799439013',
-                ],
-                foodRange: 1,
-                referenceUnit: 'KG',
-            },
+        expect(createWorkspaceVariantBodySchema.safeParse({
+            characteristicIds: [
+                '507f1f77bcf86cd799439013',
+                '507f1f77bcf86cd799439013',
+            ],
+            foodRange: 1,
+            referenceUnit: 'KG',
+        }).success).toBe(false);
+
+        expect(createWorkspaceVariantBodySchema.safeParse({
+            presentation: 'Râpée',
+            foodRange: 1,
+            referenceUnit: 'KG',
         }).success).toBe(false);
     });
 
@@ -138,10 +142,20 @@ describe('M-002 product request validation', () => {
 
     it('valide mapping et valeurs par défaut d import', () => {
         expect(importPreviewBodySchema.parse({
-            mapping: { name: 0, presentation: 1 },
+            mapping: {
+                name: 0,
+                variety: 1,
+                presentation: 2,
+                qualityDesignation: 3,
+            },
             defaults: { referenceUnit: 'KG', categoryId, foodRange: 1 },
         })).toEqual({
-            mapping: { name: 0, presentation: 1 },
+            mapping: {
+                name: 0,
+                variety: 1,
+                presentation: 2,
+                qualityDesignation: 3,
+            },
             defaults: { referenceUnit: 'KG', categoryId, foodRange: 1 },
         });
 
