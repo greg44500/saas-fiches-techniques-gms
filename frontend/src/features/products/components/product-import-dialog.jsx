@@ -56,7 +56,6 @@ const IMPORT_FIELDS = Object.freeze([
   { key: 'qualityDesignation', label: 'Désignation de qualité' },
   { key: 'processingState', label: 'État / transformation' },
   { key: 'conservationType', label: 'Conservation' },
-  { key: 'foodRange', label: 'Gamme' },
   { key: 'referenceUnit', label: 'Unité de référence' },
   { key: 'yieldPercent', label: 'Rendement (%)' },
 ]);
@@ -90,7 +89,6 @@ function ProductImportDialog({
   const [defaultConservationType, setDefaultConservationType] = useState(
     metadata?.conservationTypes?.[0]?.value ?? '',
   );
-  const [defaultFoodRange, setDefaultFoodRange] = useState(EMPTY_OPTION);
   const [preview, setPreview] = useState(null);
   const [decisions, setDecisions] = useState({});
   const [candidateVariants, setCandidateVariants] = useState({});
@@ -118,7 +116,6 @@ function ProductImportDialog({
     setDefaultUnit(metadata?.referenceUnits?.[0]?.value ?? '');
     setDefaultCategoryId(EMPTY_OPTION);
     setDefaultConservationType(metadata?.conservationTypes?.[0]?.value ?? '');
-    setDefaultFoodRange(EMPTY_OPTION);
     setPreview(null);
     setDecisions({});
     setCandidateVariants({});
@@ -195,9 +192,6 @@ function ProductImportDialog({
         : {}),
       ...(defaultConservationType
         ? { conservationType: defaultConservationType }
-        : {}),
-      ...(defaultFoodRange !== EMPTY_OPTION
-        ? { foodRange: Number(defaultFoodRange) }
         : {}),
     };
 
@@ -570,37 +564,6 @@ function ProductImportDialog({
                   </Field>
                 )}
 
-                {(mapping.foodRange === EMPTY_OPTION || mapping.foodRange === undefined) && (
-                  <Field>
-                    <FieldLabel htmlFor="import-default-food-range">
-                      Gamme par défaut
-                    </FieldLabel>
-                    <Select
-                      disabled={pending}
-                      items={[
-                        { value: EMPTY_OPTION, label: 'Aucune gamme par défaut' },
-                        ...(metadata?.foodRanges ?? []).map((range) => ({
-                          value: String(range.value),
-                          label: range.label + ' — ' + range.name,
-                        })),
-                      ]}
-                      onValueChange={setDefaultFoodRange}
-                      value={defaultFoodRange}
-                    >
-                      <SelectTrigger id="import-default-food-range">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={EMPTY_OPTION}>Aucune gamme par défaut</SelectItem>
-                        {(metadata?.foodRanges ?? []).map((range) => (
-                          <SelectItem key={range.value} value={String(range.value)}>
-                            {range.label} — {range.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
               </>
             )}
 

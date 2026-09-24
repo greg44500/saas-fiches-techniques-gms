@@ -40,15 +40,14 @@ describe('productCatalogApi', () => {
     expect(productCatalogApi.endpoints).toBe(captured.endpointDefinitions);
   });
 
-  it('transmet les filtres et le tri du catalogue opérationnel', () => {
+  it('transmet les filtres actifs et le tri alphabétique du catalogue opérationnel', () => {
     expect(
       captured.endpointDefinitions.searchProducts.query({
         workspaceId: 'workspace-1',
         scope: 'REFERENCE',
         q: 'carotte',
         categoryId: 'category-1',
-        foodRange: 3,
-        sort: 'FOOD_RANGE',
+        conservationType: 'FRAIS',
         page: 2,
         limit: 20,
       }),
@@ -59,8 +58,8 @@ describe('productCatalogApi', () => {
         q: 'carotte',
         categoryId: 'category-1',
         status: undefined,
-        foodRange: 3,
-        sort: 'FOOD_RANGE',
+        conservationType: 'FRAIS',
+        sort: 'NAME',
         page: 2,
         limit: 20,
       },
@@ -85,7 +84,6 @@ describe('productCatalogApi', () => {
         productId: 'product-1',
         varietyId: 'variety-1',
         characteristicIds: ['characteristic-1'],
-        foodRange: 1,
         processingState: 'Produit frais',
         referenceUnit: 'KG',
       }),
@@ -95,7 +93,6 @@ describe('productCatalogApi', () => {
       body: {
         varietyId: 'variety-1',
         characteristicIds: ['characteristic-1'],
-        foodRange: 1,
         processingState: 'Produit frais',
         referenceUnit: 'KG',
       },

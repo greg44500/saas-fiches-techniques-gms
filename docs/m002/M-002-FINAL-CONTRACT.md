@@ -90,11 +90,12 @@ SEC         → Sec
 
 Aucune conservation n'est inventée pendant une migration si elle ne peut pas être déterminée de façon fiable.
 
-## 5. Gammes
+## 5. Gammes — compatibilité backend
 
-La Gamme est facultative.
+La Gamme reste une donnée backend facultative conservée pour compatibilité et évolution future.
+Elle n'est plus utilisée par le frontend actif M-002 : aucun affichage, filtre, champ de saisie ou mapping d'import ne doit dépendre de `foodRange`.
 
-Valeurs actives :
+Valeurs backend conservées :
 
 ```text
 1 → Gamme 1
@@ -158,7 +159,7 @@ Règles UX :
 
 - la liste est ordonnée alphabétiquement par nom de Référence Produit par défaut ;
 - aucun contrôle de tri alphabétique n'est affiché dans cette toolbar ;
-- la Gamme reste une donnée métier facultative, mais n'est pas proposée comme filtre dans cette liste ;
+- la Gamme n'est ni affichée ni éditée dans le frontend actif ;
 - la recherche principale occupe l'espace prioritaire de la toolbar ;
 - une ligne = une Référence Produit exploitable ;
 - pas de catégorie répétée sous chaque nom ;
@@ -175,7 +176,6 @@ Nom Produit
 Conservation
 Unité
 Catégorie facultative
-Gamme facultative
 ```
 
 Les dimensions avancées sont des enrichissements facultatifs.
@@ -192,14 +192,15 @@ Un import ou une création rencontrant exactement le même nom de Référence do
 
 ## 10. Import et frontière M-003
 
-L'import M-002 peut lire :
+L'import M-002 exposé dans le frontend peut mapper :
 
 - nom de Référence Produit ;
 - catégorie ;
 - conservation ;
 - unité ;
-- Gamme ;
 - dimensions M-002 facultatives.
+
+Le backend conserve la compatibilité `foodRange`, mais le frontend ne propose plus de colonne ni de valeur par défaut « Gamme ».
 
 Colonnes commerciales détectées mais non absorbées par M-002 :
 

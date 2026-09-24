@@ -39,21 +39,6 @@ function getProductStatusTone(status) {
   return 'neutral';
 }
 
-function getFoodRangeDefinition(metadata, foodRange) {
-  return (metadata?.foodRanges ?? []).find(
-    ({ value }) => Number(value) === Number(foodRange),
-  ) ?? null;
-}
-
-function getFoodRangeLabel(metadata, foodRange) {
-  return getFoodRangeDefinition(metadata, foodRange)?.label
-    ?? (foodRange ? 'Gamme ' + foodRange : 'Gamme non renseignée');
-}
-
-function getFoodRangeName(metadata, foodRange) {
-  return getFoodRangeDefinition(metadata, foodRange)?.name ?? null;
-}
-
 function getConservationTypeLabel(metadata, conservationType) {
   return getMetadataLabel(
     metadata?.conservationTypes,
@@ -161,9 +146,6 @@ export {
   getApiErrorMessage,
   getCategoryStatusLabel,
   getConservationTypeLabel,
-  getFoodRangeDefinition,
-  getFoodRangeLabel,
-  getFoodRangeName,
   getImportClassificationPresentation,
   getMetadataLabel,
   getProductEventLabel,

@@ -94,27 +94,22 @@ describe('ProductVariantFields', () => {
       conservationType: 'FRAIS',
       varietyId: 'variety-gala',
       characteristicIds: ['presentation-quartiers'],
-      foodRange: null,
       processingState: null,
       referenceUnit: 'KG',
     }));
   });
 
-  it('rend la gamme facultative et ne pilote plus l état depuis la gamme', async () => {
+  it('n expose plus la gamme et ne l envoie pas dans le payload frontend', async () => {
     const user = userEvent.setup();
     const onPayload = vi.fn();
 
     render(<StructuredHarness onPayload={onPayload} />);
 
     expect(screen.getByLabelText('Conservation *')).toBeInTheDocument();
-    expect(screen.getByLabelText('État / transformation')).toHaveValue('');
-
-    await user.click(screen.getByLabelText('Gamme'));
-    await user.click(screen.getByRole('option', { name: 'Gamme 6 — PAI / PAE' }));
-
-    expect(screen.getByLabelText('État / transformation')).toHaveValue('');
+    expect(screen.queryByLabelText('Gamme')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Exporter' }));
-    expect(onPayload.mock.calls[0][0].foodRange).toBe(6);
+
+    expect(onPayload.mock.calls[0][0]).not.toHaveProperty('foodRange');
   });
 });

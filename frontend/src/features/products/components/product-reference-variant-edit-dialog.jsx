@@ -36,7 +36,6 @@ function variantToDraft(variant) {
     ),
     processingState: variant?.processingState ?? '',
     conservationType: variant?.conservationType ?? '',
-    foodRange: variant?.foodRange ? String(variant.foodRange) : '',
     referenceUnit: variant?.referenceUnit ?? '',
     yieldPercent: variant?.yieldPercent ? String(variant.yieldPercent) : '',
     structured: true,

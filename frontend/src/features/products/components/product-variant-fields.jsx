@@ -18,7 +18,6 @@ function createEmptyVariantDraft(metadata, { structured = false } = {}) {
     characteristicIdsByKind: {},
     processingState: '',
     conservationType: metadata?.conservationTypes?.[0]?.value ?? '',
-    foodRange: '',
     referenceUnit: metadata?.referenceUnits?.[0]?.value ?? '',
     yieldPercent: '',
     structured,
@@ -35,7 +34,6 @@ function variantDraftToPayload(draft, { structured = draft.structured } = {}) {
     name: String(draft.name ?? '').trim(),
     processingState: optionalText(draft.processingState),
     conservationType: draft.conservationType,
-    foodRange: draft.foodRange ? Number(draft.foodRange) : null,
     referenceUnit: draft.referenceUnit,
     yieldPercent: draft.yieldPercent ? Number(draft.yieldPercent) : null,
   };
@@ -67,14 +65,6 @@ function ProductVariantFields({
 }) {
   const unitItems = metadata?.referenceUnits ?? [];
   const conservationItems = metadata?.conservationTypes ?? [];
-  const foodRanges = metadata?.foodRanges ?? [];
-  const foodRangeItems = [
-    { value: EMPTY_OPTION, label: 'Aucune gamme' },
-    ...foodRanges.map((range) => ({
-      value: String(range.value),
-      label: range.label + (range.name ? ' — ' + range.name : ''),
-    })),
-  ];
   const varieties = (dimensions?.varieties ?? []).filter(
     (variety) => variety.status === 'ACTIVE',
   );
@@ -233,30 +223,6 @@ function ProductVariantFields({
           </SelectTrigger>
           <SelectContent>
             {unitItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="product-variant-food-range">Gamme</FieldLabel>
-        <Select
-          disabled={disabled}
-          items={foodRangeItems}
-          onValueChange={(nextValue) => change(
-            'foodRange',
-            nextValue === EMPTY_OPTION ? '' : nextValue,
-          )}
-          value={value.foodRange || EMPTY_OPTION}
-        >
-          <SelectTrigger id="product-variant-food-range">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {foodRangeItems.map((item) => (
               <SelectItem key={item.value} value={item.value}>
                 {item.label}
               </SelectItem>

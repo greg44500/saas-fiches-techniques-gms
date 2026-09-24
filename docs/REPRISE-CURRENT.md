@@ -57,8 +57,9 @@ ProductVariant
 → dimensions facultatives
 
 foodRange
-→ Gammes 1..6
+→ Gammes 1..6 conservées côté backend
 → Gamme 6 = PAI / PAE
+→ non utilisé ni affiché par le frontend actif
 
 usageType
 → retiré du contrat actif
@@ -97,7 +98,12 @@ filtres
 ordre
 → alphabétique par défaut
 → aucun contrôle de tri visible
-→ aucun filtre Gamme dans la liste Workspace
+
+Gamme
+→ aucun affichage frontend
+→ aucun champ de saisie
+→ aucun filtre
+→ aucun mapping d'import
 ```
 
 La recherche est visuellement prioritaire et dispose d'une largeur supérieure aux filtres secondaires.
@@ -112,7 +118,7 @@ M-002 :
 - catégorie ;
 - conservation ;
 - unité ;
-- gamme ;
+- gamme conservée côté backend pour compatibilité/évolution future ;
 - dimensions métier facultatives ;
 - recherche/déduplication ;
 - favoris Workspace ;

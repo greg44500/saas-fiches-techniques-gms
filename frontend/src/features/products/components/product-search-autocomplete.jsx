@@ -18,8 +18,6 @@ import {
   useSearchProductsQuery,
 } from '@/features/products/api/product-catalog-api';
 import {
-  getFoodRangeLabel,
-  getFoodRangeName,
   getReferenceLabel,
 } from '@/features/products/lib/product-presentation';
 
@@ -30,7 +28,6 @@ const PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT = 6;
 function ProductSearchAutocomplete({
   categoryId,
   conservationType,
-  foodRange,
   metadata,
   onSelect,
   onValueChange,
@@ -64,7 +61,6 @@ function ProductSearchAutocomplete({
       categoryId,
       status,
       conservationType,
-      foodRange,
       sort: 'NAME',
       page: 1,
       limit: PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT,
@@ -163,12 +159,7 @@ function ProductSearchAutocomplete({
                   aria-label={[
                     getReferenceLabel(metadata, result.product, result.variant),
                     result.product.category?.name,
-                    result.variant
-                      ? [
-                          getFoodRangeLabel(metadata, result.variant.foodRange),
-                          getFoodRangeName(metadata, result.variant.foodRange),
-                        ].filter(Boolean).join(' ')
-                      : 'À enrichir',
+                    result.variant ? 'Référence Produit' : 'À enrichir',
                   ].filter(Boolean).join('. ')}
                   className="border-b border-border/50 last:border-b-0 data-highlighted:bg-accent/70"
                   index={index}
@@ -182,12 +173,7 @@ function ProductSearchAutocomplete({
                   <span className="text-xs text-muted-foreground">
                     {[
                       result.product.category?.name,
-                      result.variant
-                        ? [
-                            getFoodRangeLabel(metadata, result.variant.foodRange),
-                            getFoodRangeName(metadata, result.variant.foodRange),
-                          ].filter(Boolean).join(' · ')
-                        : 'Référence à enrichir',
+                      result.variant ? null : 'Référence à enrichir',
                     ].filter(Boolean).join(' · ')}
                   </span>
                 </AutocompleteItem>

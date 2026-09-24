@@ -54,7 +54,6 @@ function Harness({ onSelect }) {
   return (
     <ProductSearchAutocomplete
       categoryId={undefined}
-      foodRange={undefined}
       metadata={metadata}
       onSelect={onSelect}
       onValueChange={setValue}
@@ -116,8 +115,9 @@ describe('ProductSearchAutocomplete', () => {
     });
 
     const suggestion = await screen.findByRole('option', {
-      name: /Carotte râpée.*Légumes.*Gamme 1/i,
+      name: /Carotte râpée.*Légumes.*Référence Produit/i,
     });
+    expect(suggestion).not.toHaveTextContent(/Gamme/i);
 
     await user.click(suggestion);
 

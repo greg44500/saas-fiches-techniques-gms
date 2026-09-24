@@ -140,6 +140,8 @@ describe('ProductImportDialog', () => {
     expect(screen.getByLabelText('Calibre / format')).toBeInTheDocument();
     expect(screen.getByLabelText('Couleur')).toBeInTheDocument();
     expect(screen.getByLabelText('Désignation de qualité')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Gamme')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Gamme par défaut')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Synonymes métier')).not.toBeInTheDocument();
     expect(mocks.inspectImport).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',

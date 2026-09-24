@@ -134,7 +134,7 @@ describe('ProductCreateDialog', () => {
       .not.toBeInTheDocument();
   });
 
-  it('exige la revue des candidats mais autorise une catégorie et une gamme absentes', async () => {
+  it('exige la revue des candidats mais autorise une catégorie absente', async () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();
 
@@ -187,7 +187,6 @@ describe('ProductCreateDialog', () => {
           variant: expect.objectContaining({
             name: 'Carotte nouvelle',
             conservationType: 'FRAIS',
-            foodRange: null,
             processingState: null,
             referenceUnit: 'KG',
           }),

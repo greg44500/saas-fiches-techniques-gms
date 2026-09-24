@@ -161,7 +161,8 @@ describe('ProductReferencePage', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
-    expect(screen.getByText('Frais · Gamme 1 · Frais')).toBeInTheDocument();
+    expect(screen.getByText('Frais')).toBeInTheDocument();
+    expect(screen.queryByText(/Gamme 1/i)).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Références' }))
       .toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: 'À valider' }))

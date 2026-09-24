@@ -4,8 +4,6 @@ import {
   formatYield,
   getCategoryStatusLabel,
   getConservationTypeLabel,
-  getFoodRangeLabel,
-  getFoodRangeName,
   getImportClassificationPresentation,
   getProductEventLabel,
   getProductStatusLabel,
@@ -79,19 +77,6 @@ describe('product presentation', () => {
     expect(formatYield(92.5)).toBe('92.5 %');
   });
 
-  it('présente la gamme sans fabriquer le nom de référence', () => {
-    expect(getFoodRangeLabel(metadata, 1)).toBe('Gamme 1');
-    expect(getFoodRangeName(metadata, 1)).toBe('Frais');
-
-    expect(getReferenceLabel(
-      metadata,
-      { name: 'Canard' },
-      {
-        name: 'Cuisse de canard confite',
-        characteristics: [{ kind: 'CUT', name: 'Cuisse' }],
-      },
-    )).toBe('Cuisse de canard confite');
-  });
 
   it('présente les classifications d’import M-002', () => {
     expect(getImportClassificationPresentation('REVIEW_REQUIRED')).toEqual(

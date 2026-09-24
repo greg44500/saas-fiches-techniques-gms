@@ -30,8 +30,6 @@ import {
   formatYield,
   getApiErrorMessage,
   getConservationTypeLabel,
-  getFoodRangeLabel,
-  getFoodRangeName,
   getProductEventLabel,
   getProductStatusLabel,
   getProductStatusTone,
@@ -430,12 +428,6 @@ function ProductReferenceDetailsDrawer({
                             {' · '}Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
                             {variant.yieldPercent
                               ? ' · Rendement : ' + formatYield(variant.yieldPercent)
-                              : ''}
-                            {variant.foodRange
-                              ? ' · ' + getFoodRangeLabel(metadata, variant.foodRange)
-                              : ''}
-                            {getFoodRangeName(metadata, variant.foodRange)
-                              ? ' · ' + getFoodRangeName(metadata, variant.foodRange)
                               : ''}
                           </p>
                         </div>

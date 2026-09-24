@@ -39,8 +39,6 @@ import {
   getApiErrorMessage,
   getCategoryStatusLabel,
   getConservationTypeLabel,
-  getFoodRangeLabel,
-  getFoodRangeName,
   getProductStatusLabel,
   getProductStatusTone,
   getVariantLabel,
@@ -237,12 +235,6 @@ function ProductReferencePage({ canManage }) {
                   {[
                     variant.conservationType
                       ? getConservationTypeLabel(metadata, variant.conservationType)
-                      : null,
-                    variant.foodRange
-                      ? getFoodRangeLabel(metadata, variant.foodRange)
-                      : null,
-                    variant.foodRange
-                      ? getFoodRangeName(metadata, variant.foodRange)
                       : null,
                     variant.status === 'ARCHIVED' ? 'Archivée' : null,
                   ].filter(Boolean).join(' · ')}
