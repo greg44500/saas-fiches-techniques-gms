@@ -45,6 +45,7 @@ const collectCommittedResultRequirements = (committedResult) => {
         if (
             result.status === 'CREATED_PRODUCT'
             || result.status === 'CREATED_VARIANT'
+            || result.status === 'PENDING_REVIEW'
         ) {
             addCreationRequirement({ permissions, features });
         }
@@ -96,6 +97,11 @@ const collectProductImportCommitRequirements = ({
             row.classification
             !== PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED
         ) {
+            continue;
+        }
+
+        if (row.reviewMode === 'REFERENCE_GOVERNANCE') {
+            addCreationRequirement({ permissions, features });
             continue;
         }
 

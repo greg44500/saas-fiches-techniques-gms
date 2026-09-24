@@ -42,6 +42,9 @@ import {
     PRODUCT_CATALOG_PERMISSION,
 } from '../../../modules/productCatalog/productCatalogPermission.registry.js';
 import {
+    ReferenceContribution,
+} from '../../../modules/productCatalog/referenceContribution.model.js';
+import {
     createActiveProductReference,
 } from '../../helpers/productCatalogTest.fixtures.js';
 import {
@@ -131,7 +134,7 @@ const inspectAndPreview = async ({
 };
 
 describe('M-002 product catalog HTTP contract', () => {
-    it('crée immédiatement un Produit actif et le rattache au catalogue', async () => {
+    it('soumet un nouveau Produit Workspace en revue sans le publier', async () => {
         const headers = bearer(ownerContext.token);
 
         const metadata = await request(app)
@@ -169,9 +172,18 @@ describe('M-002 product catalog HTTP contract', () => {
             });
 
         expect(created.status).toBe(201);
-        expect(created.body.data.product.status).toBe('ACTIVE');
-        expect(created.body.data.variant.status).toBe('ACTIVE');
-        expect(created.body.data.workspaceEntry.status).toBe('ACTIVE');
+        expect(created.body.data).toMatchObject({
+            classification: 'REVIEW_REQUIRED',
+            contribution: {
+                status: 'PENDING_REVIEW',
+                proposedValue: 'Lentille verte',
+            },
+        });
+        expect(await ReferenceContribution.countDocuments({
+            workspace: ownerContext.workspace._id,
+            proposedValue: 'Lentille verte',
+            status: 'PENDING_REVIEW',
+        })).toBe(1);
 
         const summary = await request(app)
             .get(`${basePath()}/summary`)
@@ -179,7 +191,7 @@ describe('M-002 product catalog HTTP contract', () => {
 
         expect(summary.status).toBe(200);
         expect(summary.body.data.summary).toEqual({
-            activeCatalogEntries: 1,
+            activeCatalogEntries: 0,
         });
 
         const search = await request(app)
@@ -187,7 +199,7 @@ describe('M-002 product catalog HTTP contract', () => {
             .set(headers);
 
         expect(search.status).toBe(200);
-        expect(search.body.data.results).toHaveLength(1);
+        expect(search.body.data.results).toHaveLength(0);
     });
 
     it('applique RBAC et validation des ObjectIds', async () => {
@@ -269,7 +281,7 @@ describe('M-002 product catalog HTTP contract', () => {
         );
     });
 
-    it('crée une référence importée sans exiger product:catalog:manage', async () => {
+    it('soumet une référence importée en revue sans exiger product:catalog:manage', async () => {
         const member = await createWorkspaceMemberFixture({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
@@ -284,7 +296,15 @@ describe('M-002 product catalog HTTP contract', () => {
             csv: 'Produit\nTopinambour de test',
         });
 
-        expect(preview.body.data.counts.CREATE_PRODUCT).toBe(1);
+        expect(preview.body.data.counts.REVIEW_REQUIRED).toBe(1);
+        expect(preview.body.data.rows).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    classification: 'REVIEW_REQUIRED',
+                    reviewMode: 'REFERENCE_GOVERNANCE',
+                }),
+            ]),
+        );
 
         const committed = await request(app)
             .post(`${basePath()}/imports/${importId}/commit`)
@@ -294,7 +314,10 @@ describe('M-002 product catalog HTTP contract', () => {
         expect(committed.status).toBe(200);
         expect(committed.body.data.results).toEqual(
             expect.arrayContaining([
-                expect.objectContaining({ status: 'CREATED_PRODUCT' }),
+                expect.objectContaining({
+                    status: 'PENDING_REVIEW',
+                    contributionId: expect.any(String),
+                }),
             ]),
         );
     });
@@ -312,7 +335,15 @@ describe('M-002 product catalog HTTP contract', () => {
             csv: 'Produit\nCrosne de test',
         });
 
-        expect(preview.body.data.counts.CREATE_PRODUCT).toBe(1);
+        expect(preview.body.data.counts.REVIEW_REQUIRED).toBe(1);
+        expect(preview.body.data.rows).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    classification: 'REVIEW_REQUIRED',
+                    reviewMode: 'REFERENCE_GOVERNANCE',
+                }),
+            ]),
+        );
 
         const committed = await request(app)
             .post(

@@ -87,6 +87,38 @@ describe('M-002 import commit access requirements', () => {
         });
     });
 
+    it('exige contribution et capability pour une revue de gouvernance automatique', () => {
+        expect(
+            collectProductImportCommitRequirements({
+                preview: [{
+                    rowNumber: 2,
+                    classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED,
+                    reviewMode: 'REFERENCE_GOVERNANCE',
+                }],
+            }),
+        ).toEqual({
+            permissions: [PRODUCT_CATALOG_PERMISSION.CONTRIBUTE],
+            features: [PRODUCT_CATALOG_FEATURE.CONTRIBUTION],
+        });
+    });
+
+    it('conserve les exigences de contribution après un commit PENDING_REVIEW', () => {
+        expect(
+            collectProductImportCommitRequirements({
+                committedResult: {
+                    results: [{
+                        rowNumber: 2,
+                        status: 'PENDING_REVIEW',
+                        contributionId: '507f1f77bcf86cd799439011',
+                    }],
+                },
+            }),
+        ).toEqual({
+            permissions: [PRODUCT_CATALOG_PERMISSION.CONTRIBUTE],
+            features: [PRODUCT_CATALOG_FEATURE.CONTRIBUTION],
+        });
+    });
+
     it('respecte la décision explicite sur une ligne ambiguë', () => {
         const preview = [{
             rowNumber: 2,
