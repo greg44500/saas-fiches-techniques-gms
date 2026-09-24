@@ -383,7 +383,7 @@ const createGlobalProductInSession = async ({
         entityId: createdVariant._id,
         metadata: {
             productId: product._id.toString(),
-            source: 'GLOBAL',
+            source,
         },
         session,
     });

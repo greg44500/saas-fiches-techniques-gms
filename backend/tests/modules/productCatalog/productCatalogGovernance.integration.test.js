@@ -140,16 +140,27 @@ describe('M-002 product reference governance', () => {
         expect(CanonicalProduct.schema.path('workspace')).toBeUndefined();
         expect(persisted.workspace).toBeUndefined();
 
-        const event = await ProductReferenceEvent.findOne({
-            entityType: 'PRODUCT',
-            entityId: persisted._id,
-            action: 'PRODUCT_CREATED',
-        }).lean();
+        const [productEvent, variantEvent] = await Promise.all([
+            ProductReferenceEvent.findOne({
+                entityType: 'PRODUCT',
+                entityId: persisted._id,
+                action: 'PRODUCT_CREATED',
+            }).lean(),
+            ProductReferenceEvent.findOne({
+                entityType: 'VARIANT',
+                action: 'VARIANT_CREATED',
+                'metadata.productId': persisted._id.toString(),
+            }).lean(),
+        ]);
 
-        expect(event.workspace.toString()).toBe(
+        expect(productEvent.workspace.toString()).toBe(
             ownerContext.workspace._id.toString(),
         );
-        expect(event.metadata.source).toBe('WORKSPACE_CONTRIBUTION');
+        expect(productEvent.metadata.source).toBe('WORKSPACE_CONTRIBUTION');
+        expect(variantEvent.workspace.toString()).toBe(
+            ownerContext.workspace._id.toString(),
+        );
+        expect(variantEvent.metadata.source).toBe('WORKSPACE_CONTRIBUTION');
     });
 
     it('n autorise pas un rattachement global archivé comme nouvelle référence', async () => {
