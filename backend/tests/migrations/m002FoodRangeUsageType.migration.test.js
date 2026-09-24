@@ -46,13 +46,18 @@ const toLegacyRange6 = async (variantId) => {
                 normalizedProcessingState: 'pai pae',
                 normalizedSignature: 'v:_|c:_|r:6|s:pai pae',
             },
-            $unset: { usageType: '' },
+            $unset: {
+                name: '',
+                normalizedName: '',
+                conservationType: '',
+                usageType: '',
+            },
         },
     );
 };
 
 describe('M-002 food range / usage type migration', () => {
-    it('ajoute usageType à la signature et reste idempotente', async () => {
+    it('migre un document legacy portant encore usageType et reste idempotente', async () => {
         const reference = await createActiveProductReference({
             name: 'Carotte usage',
             foodRange: 1,
@@ -62,10 +67,15 @@ describe('M-002 food range / usage type migration', () => {
             { _id: reference.variant._id },
             {
                 $set: {
+                    usageType: null,
                     normalizedSignature:
                         'v:_|c:_|r:1|s:produit frais',
                 },
-                $unset: { usageType: '' },
+                $unset: {
+                    name: '',
+                    normalizedName: '',
+                    conservationType: '',
+                },
             },
         );
 

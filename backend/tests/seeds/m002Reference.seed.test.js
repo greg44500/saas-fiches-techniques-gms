@@ -14,6 +14,9 @@ import {
     ProductCategory,
 } from '../../modules/productCatalog/productCategory.model.js';
 import {
+    normalizeProductText,
+} from '../../modules/productCatalog/productCatalog.normalization.js';
+import {
     ProductReferenceBootstrapRun,
 } from '../../modules/productCatalog/productReferenceBootstrapRun.model.js';
 import {

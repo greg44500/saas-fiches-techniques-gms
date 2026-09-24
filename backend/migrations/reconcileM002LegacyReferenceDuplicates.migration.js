@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
 
+import '../modules/productCatalog/canonicalProduct.model.js';
+import '../modules/productCatalog/productCharacteristic.model.js';
+import '../modules/productCatalog/productVariety.model.js';
+
 import {
     normalizeProductText,
 } from '../modules/productCatalog/productCatalog.normalization.js';
