@@ -3,8 +3,8 @@
 **Date :** 2026-09-24  
 **Lot actif :** M-002 — Référentiel Produits / Produits canoniques  
 **Branche à conserver :** `feature/m002-catalogue-produits`  
-**Checkpoint code avant cette synchronisation documentaire :** `38882f309747d234fada83108638c99692544e51`  
-**Écart avec main à ce checkpoint :** 167 commits en avance, 0 en retard.
+**Checkpoint code avant la validation locale finale :** `d063380b39dbae0fb36424bf70fe55fe7b3b3463`  
+**Écart avec main à ce checkpoint :** 171 commits en avance, 0 en retard.
 
 ## 1. Autorité de reprise
 
@@ -339,7 +339,7 @@ Le corpus de tests a été réaligné sur le nouveau contrat structuré : modèl
 
 **Aucun test, lint, build, E2E ou gate n'est déclaré vert sur le HEAD courant.**
 
-Le HEAD `38882f309747d234fada83108638c99692544e51` ne possède ni statut CI GitHub ni workflow associé.
+Le HEAD `d063380b39dbae0fb36424bf70fe55fe7b3b3463` ne possède ni statut CI GitHub ni workflow associé.
 
 Pour les tests backend ciblés, conserver `--no-file-parallelism` afin d'éviter le risque historique lié au nettoyage partagé de la base `_test`.
 
