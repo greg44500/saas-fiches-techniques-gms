@@ -19,8 +19,11 @@ import {
 } from '../../../modules/productCatalog/productCatalogGovernance.service.js';
 import {
     attachVariantToWorkspace,
-    createWorkspaceProduct,
 } from '../../../modules/productCatalog/productCatalog.service.js';
+import {
+    reviewReferenceContribution,
+    submitReferenceContribution,
+} from '../../../modules/productCatalog/productReferenceContribution.service.js';
 import {
     createWorkspaceOwnerFixture,
 } from '../../helpers/dossierTest.fixtures.js';
@@ -103,31 +106,36 @@ describe('M-002 product reference governance', () => {
         expect(variant.foodRange).toBe(5);
     });
 
-    it('conserve l origine Workspace sans en faire un ownership du Produit', async () => {
+    it('conserve l origine Workspace après approbation sans en faire un ownership', async () => {
         const category = await createCategory({
             actorId: ownerContext.owner._id,
             name: 'Fruits',
         });
-        const created = await createWorkspaceProduct({
+        const submitted = await submitReferenceContribution({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
-            name: 'Pomme',
+            type: 'CANONICAL_PRODUCT',
+            value: 'Pomme',
             categoryId: category.id,
             variant: { foodRange: 1, referenceUnit: 'KG' },
         });
 
+        expect(submitted.classification).toBe('REVIEW_REQUIRED');
+
+        const approved = await reviewReferenceContribution({
+            contributionId: submitted.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
         const persisted = await CanonicalProduct
-            .findById(created.product.id)
+            .findById(approved.resolutionEntityId)
             .lean();
 
         expect(
             persisted.contributedFromWorkspace.toString(),
         ).toBe(ownerContext.workspace._id.toString());
         expect(CanonicalProduct.schema.path('workspace')).toBeUndefined();
-
-        // L'origine de création reste une donnée interne d'audit.
-        expect(created.product.contributedFromWorkspace).toBeUndefined();
-        expect(created.product.workspace).toBeUndefined();
+        expect(persisted.workspace).toBeUndefined();
     });
 
     it('n autorise pas un rattachement global archivé comme nouvelle référence', async () => {
