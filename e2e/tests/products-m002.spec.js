@@ -83,7 +83,7 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
     name: `Ajouter ${context.productName} aux favoris`,
   }).click();
 
-  await page.getByRole('tab', { name: 'Mon référentiel' }).click();
+  await page.getByRole('tab', { name: 'Favoris' }).click();
   await expect(
     page.getByText(context.productName, { exact: true }).first(),
   ).toBeVisible();

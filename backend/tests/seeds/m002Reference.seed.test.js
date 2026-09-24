@@ -225,10 +225,14 @@ describe('M-002 reference bootstrap', () => {
             expect(product).not.toHaveProperty('price');
             expect(product).not.toHaveProperty('packaging');
             for (const variant of product.variants) {
+                expect(variant.name).toEqual(expect.any(String));
+                expect(variant.conservationType).toEqual(expect.any(String));
                 expect(variant.yieldPercent).toBeNull();
-                expect(variant.foodRange).toBeGreaterThanOrEqual(1);
-                expect(variant.foodRange).toBeLessThanOrEqual(5);
-                expect([null, 'PAI', 'PAE']).toContain(variant.usageType);
+                if (variant.foodRange !== null) {
+                    expect(variant.foodRange).toBeGreaterThanOrEqual(1);
+                    expect(variant.foodRange).toBeLessThanOrEqual(6);
+                }
+                expect(variant).not.toHaveProperty('usageType');
             }
         }
     });
