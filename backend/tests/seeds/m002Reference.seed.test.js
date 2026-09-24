@@ -29,6 +29,7 @@ import {
     createTestUser,
 } from '../helpers/dossierTest.fixtures.js';
 import {
+    loadDefaultDataset,
     m002ReferenceDatasetSchema,
     seedM002Reference,
 } from '../../seeds/seedM002Reference.js';
@@ -89,6 +90,53 @@ beforeEach(async () => {
 });
 
 describe('M-002 reference bootstrap', () => {
+    it('valide le dataset bêta réel et ses frontières M-002', async () => {
+        const dataset = await loadDefaultDataset();
+        const parsed = m002ReferenceDatasetSchema.parse(dataset);
+
+        expect(parsed.ready).toBe(true);
+        expect(parsed.categories).toEqual([
+            { key: 'fruits-legumes', name: 'Fruits et légumes' },
+        ]);
+        expect(parsed.products.length).toBeGreaterThanOrEqual(30);
+
+        const carotte = parsed.products.find(({ name }) => name === 'Carotte');
+        const pomme = parsed.products.find(({ name }) => name === 'Pomme');
+
+        expect(carotte.characteristics).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    kind: 'COMMERCIAL_TYPE',
+                    name: 'Nantaise',
+                }),
+                expect.objectContaining({
+                    kind: 'PRESENTATION',
+                    name: 'En botte avec fanes',
+                }),
+                expect.objectContaining({
+                    kind: 'SIZE_FORMAT',
+                    name: 'Mini',
+                }),
+                expect.objectContaining({
+                    kind: 'QUALITY_DESIGNATION',
+                    name: 'Carottes des sables',
+                }),
+            ]),
+        );
+        expect(pomme.varieties.map(({ name }) => name)).toEqual(
+            expect.arrayContaining(['Golden', 'Gala', 'Granny Smith']),
+        );
+
+        for (const product of parsed.products) {
+            expect(product).not.toHaveProperty('supplier');
+            expect(product).not.toHaveProperty('price');
+            expect(product).not.toHaveProperty('packaging');
+            for (const variant of product.variants) {
+                expect(variant.yieldPercent).toBeNull();
+            }
+        }
+    });
+
     it('refuse explicitement un dataset non validé', async () => {
         await expect(seedM002Reference({
             dataset: buildDataset({ ready: false }),
