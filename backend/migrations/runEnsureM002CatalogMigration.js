@@ -109,10 +109,14 @@ const run = async () => {
                 archivedWorkspaceFavorites: 0,
                 skipped: true,
             };
+        // Nettoyer d'abord les données bootstrap historiques.
+        // Cela évite de forcer une migration sémantique sur des références
+        // v1-v5 qui ne font plus partie du référentiel PDF v6.
+        const bootstrapV6 = await reconcileM002BootstrapToV6();
         const legacyReferenceDuplicates =
             await reconcileM002LegacyReferenceDuplicates();
-        const productReferenceContract = await migrateM002ProductReferenceContract();
-        const bootstrapV6 = await reconcileM002BootstrapToV6();
+        const productReferenceContract =
+            await migrateM002ProductReferenceContract();
         const indexes = await ensureM002CatalogIndexes();
         const permissions = await backfillRegisteredSystemRolePermissions();
 

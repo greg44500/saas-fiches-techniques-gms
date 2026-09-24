@@ -130,8 +130,22 @@ const reconcileM002BootstrapToV6 = async () => {
                 variant.name ?? '',
             );
 
-            const bootstrapOwned = contract.historicalReferenceNames.has(
-                normalizedReferenceName,
+            const incompleteReference = (
+                !String(variant.name ?? '').trim()
+                || !String(variant.normalizedName ?? '').trim()
+                || !String(variant.conservationType ?? '').trim()
+            );
+            const bootstrapOwned = (
+                contract.historicalReferenceNames.has(
+                    normalizedReferenceName,
+                )
+                || (
+                    incompleteReference
+                    && !variant.contributedFromWorkspace
+                    && contract.historicalProductNames.has(
+                        normalizedProductName,
+                    )
+                )
             );
 
             if (!bootstrapOwned) continue;

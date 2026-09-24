@@ -51,6 +51,62 @@ describe('M-002 bootstrap v6 reconciliation', () => {
         expect(archivedProduct.status).toBe('ARCHIVED');
     });
 
+    it('archive une ancienne référence incomplète Gamme 4 avant la migration du contrat', async () => {
+        const legacy = await createActiveProductReference({
+            name: 'Moule',
+            conservationType: 'FRAIS',
+        });
+
+        await legacy.variant.constructor.collection.updateOne(
+            { _id: legacy.variant._id },
+            {
+                $unset: {
+                    name: '',
+                    normalizedName: '',
+                    conservationType: '',
+                },
+                $set: {
+                    foodRange: 4,
+                },
+            },
+        );
+
+        const result = await reconcileM002BootstrapToV6();
+
+        expect(result.archivedVariants).toBeGreaterThanOrEqual(1);
+
+        const archived = await legacy.variant.constructor.collection.findOne({
+            _id: legacy.variant._id,
+        });
+        expect(archived.identityActive).toBe(false);
+        expect(archived.status).toBe('ARCHIVED');
+    });
+
+    it('archive Blé entier précuit lorsqu il appartient encore à l ancienne racine Blé', async () => {
+        const legacy = await createActiveProductReference({
+            name: 'Blé',
+            referenceName: 'Blé entier précuit',
+            conservationType: 'SEC',
+            foodRange: null,
+        });
+
+        const result = await reconcileM002BootstrapToV6();
+
+        expect(result.archivedVariants).toBeGreaterThanOrEqual(1);
+
+        const archivedVariant = await legacy.variant.constructor
+            .findById(legacy.variant._id)
+            .lean();
+        expect(archivedVariant.identityActive).toBe(false);
+        expect(archivedVariant.status).toBe('ARCHIVED');
+
+        const archivedProduct = await CanonicalProduct.findById(
+            legacy.product._id,
+        ).lean();
+        expect(archivedProduct.identityActive).toBe(false);
+        expect(archivedProduct.status).toBe('ARCHIVED');
+    });
+
     it('conserve une référence v6 lorsque sa racine correspond au dataset cible', async () => {
         const kept = await createActiveProductReference({
             name: 'Cumin moulu',
