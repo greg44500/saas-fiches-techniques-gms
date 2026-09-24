@@ -292,36 +292,33 @@ La lecture respecte à la fois les permissions Workspace et le scope Dossier ; u
 
 Le référentiel Produit M-002 est une donnée de référence globale du SaaS. Les identités génériques sont partagées entre Workspaces ; les données commerciales restent hors de ce périmètre.
 
-### 5.1 Modèle M-002 confirmé
+### 5.1 Modèle M-002 recadré
 
 ```text
 CanonicalProduct
 → identité racine globale
+→ peut exister sans variante opérationnelle
 
 ProductVariety
 → véritable variété/cultivar facultatif
-→ rattachée à un CanonicalProduct
 
 ProductCharacteristic
-→ caractéristique contrôlée rattachée à un CanonicalProduct
-→ PRESENTATION | COMMERCIAL_TYPE | SIZE_FORMAT | COLOR | QUALITY_DESIGNATION
+→ PRESENTATION | COMMERCIAL_TYPE | SIZE_FORMAT | COLOR | QUALITY_DESIGNATION | CUT
 
 ProductVariant
 → CanonicalProduct
 → ProductVariety éventuelle
 → ProductCharacteristic[] structurées
-→ Gamme + État/transformation
+→ Gamme 1..5 + État/transformation
+→ usageType éventuel PAI / PAE
 → unité + rendement
 
 WorkspaceProduct
 → ownership Workspace
-→ référence une ProductVariant
-→ matérialise Mon référentiel
+→ référence obligatoirement une ProductVariant
 
 ReferenceContribution
-→ proposition issue d'un Workspace
-→ PENDING_REVIEW | APPROVED | REJECTED
-→ distincte du lifecycle ACTIVE | ARCHIVED des références
+→ proposition Workspace gouvernée
 ```
 
 `createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` conserve une provenance sans devenir un ownership.
@@ -329,82 +326,47 @@ ReferenceContribution
 ### 5.2 Classification validée
 
 ```text
-Carotte Nantaise          → COMMERCIAL_TYPE:Nantaise
-Carotte en botte/fanes    → PRESENTATION:En botte avec fanes
-Carotte des sables        → QUALITY_DESIGNATION gouvernée
-Carotte de couleur        → COLOR ; valeur ambiguë à revoir
-Mini carotte              → SIZE_FORMAT:Mini
 Carotte râpée             → PRESENTATION:Râpée
 Carotte surgelée          → Gamme 3 / Surgelé
-Pomme Golden              → ProductVariety:Golden
-Tomate cerise             → COMMERCIAL_TYPE:Cerise
-Tomate grappe             → PRESENTATION:En grappe
-Tomate cœur de bœuf       → COMMERCIAL_TYPE:Cœur de bœuf
-Pomme de terre grenaille  → SIZE_FORMAT:Grenaille
-Pomme de terre Charlotte  → ProductVariety:Charlotte
+Bœuf paleron en cubes     → CUT:Paleron + PRESENTATION:Cubes
+Agneau gigot tranché      → CUT:Gigot + PRESENTATION:Tranché
+Flan prétranché surgelé  → Gamme 3 + PAE + PRESENTATION
+Fond brun en poudre       → PAI + PRESENTATION:Poudre
+Jambon blanc / Bacon      → catégorie Charcuteries, sans classification PAI/PAE automatique
 ```
 
-Une désignation complexe ne devient jamais automatiquement un nouveau `CanonicalProduct` si son parent est identifiable.
+Une désignation complexe ne devient pas automatiquement un nouveau `CanonicalProduct` si son parent est identifiable.
 
 ### 5.3 Identité et signature
-
-La signature de `ProductVariant` utilise les identifiants stables :
 
 ```text
 canonicalProduct
 + varietyId ou _
 + characteristicIds ordonnés par kind
-+ foodRange
++ foodRange 1..5
 + normalized(processingState)
++ usageType ou _
 ```
 
-L'unité et le rendement restent hors signature.
+`referenceUnit` et `yieldPercent` restent hors signature.
 
-Un renommage d'une Variété ou d'une Caractéristique ne modifie pas artificiellement l'identité des variantes.
+### 5.4 Catégories, Gammes et usage
 
-### 5.4 Catégories, Gammes et États
+`ProductCategory` classe la nature/famille métier du Produit. Elle ne représente ni la Gamme ni le statut PAI/PAE.
 
-`ProductCategory` est globale. Une catégorie `ACTIVE` est obligatoire pour créer une identité Produit `ACTIVE`.
+Le backend reste l'autorité des Gammes 1 à 5, de leurs États/transformation et de la classification PAI/PAE séparée.
 
-Le backend reste l'autorité des six Gammes et de leurs États/transformation associés. Le frontend ne définit aucune liste parallèle.
+### 5.5 Recherche et présentation
 
-### 5.5 Recherche et synonymes
+Les vrais synonymes métier restent gouvernés. Les formes techniques de recherche restent générées.
 
-Les alias persistés sont uniquement de vrais synonymes métier validés.
+La liste principale est groupée par `CanonicalProduct` et paginée par Produit. Les variantes sont présentées sous le groupe afin d'éviter la répétition visuelle du même nom.
 
-Casse, accents, apostrophes, tirets, ligatures, pluriels raisonnables et fautes relèvent du moteur de recherche, pas des alias.
+Une recherche précise peut réduire/ouvrir le groupe sur les variantes pertinentes. Le référentiel global peut exposer un Produit sans variante opérationnelle pour permettre son enrichissement.
 
-La recherche décompose les saisies complexes :
+### 5.6 Contribution et gouvernance
 
-```text
-carotte botte      → Carotte + PRESENTATION
-carotte nantaise   → Carotte + COMMERCIAL_TYPE
-mini carotte       → Carotte + SIZE_FORMAT
-carotte surgelée   → Carotte + Gamme 3
-```
-
-### 5.6 Contribution semi-automatique
-
-Un Workspace habilité peut contribuer sans disposer d'un droit d'écriture globale aveugle.
-
-Classification :
-
-```text
-EXISTING
-AUTO_PUBLISHABLE
-REVIEW_REQUIRED
-INVALID
-```
-
-Une nouvelle identité racine est `REVIEW_REQUIRED` par défaut pendant la bêta.
-
-Une proposition nécessitant revue est portée par `ReferenceContribution`, ressource distincte. L'approbation revalide doublons et invariants dans la même transaction que la publication et la décision finale. Les références réelles restent `ACTIVE ↔ ARCHIVED`.
-
-### 5.7 Référentiel Produit Workspace
-
-`WorkspaceProduct` est la relation tenant-scoped entre un Workspace et une `ProductVariant`. Le retrait archive la relation d'usage sans supprimer la référence globale. L'approbation d'une contribution racine ne rattache pas implicitement la nouvelle référence au Workspace.
-
-### 5.8 Autorité globale et imports
+Classification : `EXISTING / AUTO_PUBLISHABLE / REVIEW_REQUIRED / INVALID`.
 
 L'autorité globale reste Application Global :
 
@@ -413,36 +375,21 @@ product:reference:read
 product:reference:manage
 ```
 
-`Super Admin Platform` et `Workspace Owner` ne deviennent jamais implicitement gouverneur Produit.
+`Super Admin Platform` et `Workspace Owner` ne deviennent jamais implicitement gouverneur Produit. Le Fondateur reçoit explicitement `product_reference_governor` via le bootstrap produit.
 
-Les imports M-002 réutilisent le même moteur de normalisation, décomposition, contribution et déduplication que les formulaires. Les dimensions commerciales restent M-003.
+### 5.7 Dépendance Core navigation Platform
+
+L'accès métier global doit être visible depuis la navigation Platform pour un membre Platform également gouverneur Produit. Le Core doit fournir un point d'extension générique de navigation Platform sans importer le module Produit.
+
+### 5.8 Seed et migration
+
+`m002-reference-v1` et `v2` restent immuables. `m002-reference-v3` porte la taxonomie recadrée, permet des Produits sans variante et ne crée aucune donnée artificielle.
+
+Toute migration de `foodRange=6` est explicite et fail-closed si la conversion ne peut pas être déterminée sans invention.
 
 ### 5.9 Frontière M-003
 
-M-002 ne porte jamais :
-
-- Fournisseur ;
-- identité/édition de catalogue fournisseur ;
-- Article fournisseur ;
-- référence fournisseur ;
-- conditionnement commercial ;
-- prix catalogue ;
-- prix négocié ;
-- prix facturé.
-
-M-003 devra conserver explicitement l'origine commerciale d'un Article :
-
-```text
-Fournisseur
-→ Catalogue / édition identifié
-→ Article fournisseur
-→ référence + désignation + conditionnement
-→ rattachement à ProductVariant
-→ tarifs
-```
-
-L'interface devra permettre de filtrer par Fournisseur puis de sélectionner un catalogue/une édition identifiée. Un import SYSCO, par exemple, doit conserver SYSCO comme Fournisseur du catalogue et ne doit jamais perdre cette provenance lors du rapprochement Produit.
-
+M-002 ne porte jamais Fournisseur, catalogue/édition fournisseur, Article fournisseur, référence fournisseur, conditionnement commercial ou prix.
 
 ## 6. Fournisseur
 

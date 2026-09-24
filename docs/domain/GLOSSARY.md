@@ -170,23 +170,17 @@ Caractéristiques contrôlées
 → Calibre / format
 → Couleur
 → Désignation de qualité
-Gamme 1..6
+→ Pièce / découpe
+Gamme 1..5
 État / transformation
+Classification d'usage éventuelle PAI / PAE
 Unité de référence
 Rendement
 ```
 
-La Présentation n'est plus un champ texte persistant de `ProductVariant` : elle est une `ProductCharacteristic(kind=PRESENTATION)`.
+Un `CanonicalProduct` peut exister sans Déclinaison lorsqu'aucune variante suffisamment précise n'est validée. `WorkspaceProduct` référence toujours une Déclinaison réelle.
 
-Avant de créer une identité, le système recherche nom, synonymes métier, formes dérivées et proximité.
-
-Depuis un Workspace :
-
-- nouvelle identité racine → `ReferenceContribution(REVIEW_REQUIRED)` par défaut ;
-- nouvelle Variété/Caractéristique → `EXISTING / AUTO_PUBLISHABLE / REVIEW_REQUIRED / INVALID` ;
-- l'approbation ne crée jamais un ownership Workspace sur la référence globale.
-
-La création directe d'une référence globale est réservée à l'autorité Application Global Produit.
+La Présentation n'est pas un champ texte persistant de `ProductVariant` : elle est une `ProductCharacteristic(kind=PRESENTATION)`.
 
 ### Autorité globale Produit
 
@@ -217,15 +211,18 @@ Une Variété est facultative dans une Déclinaison. `Nantaise` appliqué à la 
 
 Dimension structurée globale rattachée à un Produit canonique et représentée par `ProductCharacteristic`.
 
-Types V1 :
+Types M-002 :
 
 - `PRESENTATION` ;
 - `COMMERCIAL_TYPE` ;
 - `SIZE_FORMAT` ;
 - `COLOR` ;
-- `QUALITY_DESIGNATION`.
+- `QUALITY_DESIGNATION` ;
+- `CUT` — Pièce / découpe.
 
-Une caractéristique n'est pas un texte libre générique. Son type appartient au registre backend et une Déclinaison ne porte au maximum qu'une caractéristique de chaque type.
+`CUT` décrit notamment une pièce ou découpe nécessaire pour rendre une viande/volaille/poisson exploitable sans créer une nouvelle identité racine. `PRESENTATION` décrit ensuite la forme de mise en œuvre : entier, tranché, cubes, haché, etc.
+
+Une Déclinaison porte au maximum une caractéristique de chaque type.
 
 ## Contribution au Référentiel
 
@@ -242,18 +239,26 @@ Une contribution nécessitant revue est portée par `ReferenceContribution`. Ell
 
 ## Gamme alimentaire
 
-Nomenclature métier M-002 exposée par le backend et jamais recopiée statiquement dans le frontend :
+Nomenclature métier M-002 backend-driven décrivant l'état physique/technique principal :
 
 - Gamme 1 : Frais → `Produit frais` ;
 - Gamme 2 : Conserves → `Conserve` ;
 - Gamme 3 : Surgelés → `Surgelé` ;
 - Gamme 4 : Sous-vide cru / épluchés → `Sous-vide cru / épluché` ;
-- Gamme 5 : Sous-vide cuit → `Sous-vide cuit` ;
-- Gamme 6 : PAI / PAE → `PAI / PAE`.
+- Gamme 5 : Sous-vide cuit → `Sous-vide cuit`.
 
-Chaque définition contient les états/transformations proposés ainsi qu'un état par défaut. Le backend contrôle la compatibilité Gamme ↔ État / transformation.
+PAI / PAE n'est pas une Gamme.
 
-La Gamme ne fixe jamais automatiquement le rendement.
+## Classification d'usage PAI / PAE
+
+Classification facultative d'une Déclinaison, indépendante de sa Gamme :
+
+```text
+PAI → Produit alimentaire intermédiaire
+PAE → Prêt à l'emploi
+```
+
+Elle peut être combinée avec une Gamme physique, par exemple un produit surgelé PAE. Un produit transformé ou tranché n'est pas automatiquement PAI/PAE.
 
 ## Unité de référence
 

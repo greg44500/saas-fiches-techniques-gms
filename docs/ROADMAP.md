@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé — M-002 implémenté sur branche, validation finale en cours  
+**Statut :** VALIDÉ — M-001 clôturé — M-002 recadré après QA, implémentation d'ajustement à reprendre  
 **Dernière mise à jour :** 2026-09-23
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -71,34 +71,28 @@ Décisions finales :
 
 ### 2.2 Référentiel Produit
 
-**État : implémentation M-002 structurée — tests/gates et validation visuelle finale à exécuter**
+**État : recadrage QA validé — adaptation du modèle/UX/seed à implémenter avant fusion M-002**
 
-Décisions fermées et implémentées :
+Le socle déjà développé reste conservé : `CanonicalProduct`, `ProductVariety`, `ProductCharacteristic`, `ProductVariant`, `WorkspaceProduct`, contributions gouvernées, recherche/déduplication, imports et autorisation Application Global.
 
-- `CanonicalProduct` porte l'identité Produit partagée ;
-- `ProductVariety` porte les véritables variétés/cultivars ;
-- `ProductCharacteristic` porte les dimensions contrôlées `PRESENTATION / COMMERCIAL_TYPE / SIZE_FORMAT / COLOR / QUALITY_DESIGNATION` ;
-- `ProductVariant` référence les IDs stables de Variété/Caractéristiques avec Gamme, État/transformation, unité et rendement ;
-- `WorkspaceProduct` matérialise Mon référentiel ;
-- les synonymes persistés sont gouvernés ; casse, pluriels, fautes et variantes techniques restent des formes de recherche ;
-- aucune donnée fournisseur/conditionnement/prix n'est stockée dans M-002 ;
-- une nouvelle Variété non conflictuelle et certaines Caractéristiques simples peuvent être `AUTO_PUBLISHABLE` ;
-- un nouveau `CanonicalProduct` Workspace est `REVIEW_REQUIRED` par défaut et crée une `ReferenceContribution` ;
-- l'autorité Application Global examine les contributions et revalide atomiquement avant publication/refus ;
-- les références restent `ACTIVE ↔ ARCHIVED` ; `PENDING_REVIEW / APPROVED / REJECTED` appartient uniquement à `ReferenceContribution` ;
-- l'import M-002 résout les dimensions structurées et signale les colonnes M-003 ;
-- le bootstrap `m002-reference-v1` est `ready:true` avec 39 Produits **Fruits et légumes** et aucun rendement inventé ;
-- la table expose `Produit / Déclinaison / Gamme / Actions` ;
-- les migrations convertissent l'historique vers les Caractéristiques structurées avec garde anti-collision.
+Le recadrage QA du 2026-09-24 ajoute/rectifie :
 
-À fermer avant fusion M-002 :
+- `CUT` comme Caractéristique `Pièce / découpe` ;
+- possibilité pour un `CanonicalProduct` d'exister sans variante artificielle ;
+- Gammes limitées à 1..5 ;
+- PAI/PAE séparé de la Gamme via une classification d'usage de variante ;
+- signature de variante enrichie par cette classification ;
+- seed `m002-reference-v3` à créer, v1/v2 restant immuables ;
+- migration explicite/fail-closed des anciennes variantes Gamme 6 ;
+- recherche utilisateur sans vocabulaire `alias` ;
+- liste principale groupée par Produit avec pagination par Produit ;
+- accès visible à la gouvernance globale depuis la navigation Platform pour les gouverneurs explicitement habilités.
 
-- migration + seeds locaux ;
-- tests backend/frontend ;
-- lint/build/gates ;
-- E2E ;
-- validation visuelle utilisateur ;
-- une seule PR puis une seule fusion.
+Dépendance générique Core démontrée : point d'extension de navigation Platform. Ce lot doit être traité dans `saas-core-api` en une seule PR, sans version/tag/release, puis intégré au produit par SHA exact.
+
+Contrat canonique : `docs/m002/M-002-RECARDAGE-QA.md`.
+
+À fermer avant fusion M-002 : intégration du commit Core, modèle/migration/seed v3, backend/frontend, tests, E2E, QA visuelle, documentation finale, une seule PR M-002.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 

@@ -1,5 +1,7 @@
 # M-002 — Contrat API REST
 
+> **RECARDAGE QA 2026-09-24** — `docs/m002/M-002-RECARDAGE-QA.md` est désormais prioritaire pour `CUT`, CanonicalProduct sans variante, Gammes 1..5, PAI/PAE séparé, seed v3, liste groupée et dépendance Core de navigation Platform. Les contrats techniques ci-dessous doivent être réalignés pendant le prochain bloc d'implémentation avant d'être considérés définitifs.
+
 **Statut : RECADRÉ — cible d'implémentation du workflow sans validation humaine — 2026-09-23**
 
 ## 1. Règle générale

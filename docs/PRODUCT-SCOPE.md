@@ -418,9 +418,11 @@ Socle conceptuel retenu pour M-002 :
 - identité / nom canonique — obligatoire ;
 - clé normalisée et alias — recherche et contrôle des doublons ;
 - catégorie active — obligatoire à la création ;
-- Présentation — facultative, portée par la déclinaison ;
-- Gamme — obligatoire pour une nouvelle déclinaison du contrat M-002 courant ;
+- Variété — facultative ;
+- Caractéristiques structurées — Présentation, Type commercial, Calibre / format, Couleur, Désignation de qualité et Pièce / découpe (`CUT`) ;
+- Gamme 1 à 5 — obligatoire lorsqu'une déclinaison opérationnelle est créée ;
 - État / transformation — piloté par la Gamme et validé par le backend ;
+- classification d'usage PAI/PAE — facultative et indépendante de la Gamme ;
 - unité de référence — obligatoire ;
 - rendement — facultatif ;
 - date de création / modification — système ;
@@ -435,9 +437,11 @@ La catégorie sert à classer, filtrer et rechercher les Produits.
 
 La taxonomie est globale au référentiel Produit. Une nouvelle identité `ACTIVE` exige une catégorie `ACTIVE`. La liste initiale n'est pas inventée dans le frontend : elle provient des données métier backend.
 
-### 5.4 Gamme alimentaire et État / transformation
+### 5.4 Gamme alimentaire, État / transformation et PAI/PAE
 
-La nomenclature M-002 V1 validée est backend-driven :
+La QA M-002 du 2026-09-24 a supprimé la pseudo-Gamme 6.
+
+La nomenclature cible est backend-driven :
 
 | Gamme | Libellé métier | État / transformation initial associé |
 | --- | --- | --- |
@@ -446,21 +450,12 @@ La nomenclature M-002 V1 validée est backend-driven :
 | 3 | Surgelés | Surgelé |
 | 4 | Sous-vide cru / épluchés | Sous-vide cru / épluché |
 | 5 | Sous-vide cuit | Sous-vide cuit |
-| 6 | PAI / PAE | PAI / PAE |
 
-Le frontend ne contient aucune copie statique de cette liste. Le backend expose pour chaque gamme :
+`PAI` et `PAE` sont une classification d'usage indépendante de l'état physique. Une déclinaison peut donc être par exemple `Gamme 3 / Surgelé + PAE`.
 
-```text
-value
-label
-name
-processingStates[]
-defaultProcessingState
-```
+Le frontend ne contient aucune copie statique de ces registres. Le backend reste l'autorité finale et refuse les combinaisons incompatibles.
 
-Le choix d'une Gamme pilote donc les propositions d'État / transformation. Le backend reste l'autorité finale et refuse une combinaison incompatible.
-
-Le rendement n'est jamais déduit automatiquement de la Gamme : il reste une donnée distincte de la déclinaison.
+Le rendement n'est jamais déduit automatiquement de la Gamme ou du statut PAI/PAE.
 
 ### 5.5 Unité de référence
 
@@ -2144,4 +2139,4 @@ Référence externe historiquement consultée pour la terminologie des gammes 1 
 
 - Direction des Affaires juridiques, Ministère de l'Économie — glossaire d'indexation des prix des denrées alimentaires : https://www.economie.gouv.fr/files/files/directions_services/daj/marches_publics/oeap/concertation/autres_groupes_travail/indexation-prix-denrees-alimentaires.pdf
 
-La source externe documente le vocabulaire historique des gammes 1 à 5 ; la nomenclature applicative V1, notamment la Gamme 6 PAI / PAE et les libellés associés, relève du contrat métier explicitement validé pour ce produit. La source métier utilisateur prime sur les hypothèses lorsqu'une règle spécifique au produit est validée.
+La source externe documente le vocabulaire historique des gammes 1 à 5. La QA métier du 2026-09-24 a confirmé que PAI / PAE ne doit pas être modélisé comme une sixième Gamme : cette classification est désormais indépendante de l'état physique. La source métier utilisateur prime sur les hypothèses lorsqu'une règle spécifique au produit est validée.
