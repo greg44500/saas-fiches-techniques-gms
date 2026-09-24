@@ -47,11 +47,9 @@ const loadBootstrapReconciliationContract = async () => {
         for (const product of dataset.products ?? []) {
             historicalProductNames.add(normalizeProductText(product.name));
             for (const variant of product.variants ?? []) {
-                if (variant.name) {
-                    historicalReferenceNames.add(
-                        normalizeProductText(variant.name),
-                    );
-                }
+                historicalReferenceNames.add(
+                    normalizeProductText(variant.name ?? product.name),
+                );
             }
         }
     }
@@ -132,11 +130,8 @@ const reconcileM002BootstrapToV6 = async () => {
                 variant.name ?? '',
             );
 
-            const bootstrapOwned = (
-                contract.historicalProductNames.has(normalizedProductName)
-                || contract.historicalReferenceNames.has(
-                    normalizedReferenceName,
-                )
+            const bootstrapOwned = contract.historicalReferenceNames.has(
+                normalizedReferenceName,
             );
 
             if (!bootstrapOwned) continue;
