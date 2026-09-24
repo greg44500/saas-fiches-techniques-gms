@@ -46,9 +46,14 @@ import {
 
 const IMPORT_FIELDS = Object.freeze([
   { key: 'name', label: 'Nom du Produit', required: true },
-  { key: 'aliases', label: 'Alias' },
+  { key: 'aliases', label: 'Synonymes métier', globalOnly: true },
   { key: 'category', label: 'Catégorie' },
+  { key: 'variety', label: 'Variété' },
   { key: 'presentation', label: 'Présentation' },
+  { key: 'commercialType', label: 'Type commercial' },
+  { key: 'sizeFormat', label: 'Calibre / format' },
+  { key: 'color', label: 'Couleur' },
+  { key: 'qualityDesignation', label: 'Désignation de qualité' },
   { key: 'processingState', label: 'État / transformation' },
   { key: 'foodRange', label: 'Gamme' },
   { key: 'referenceUnit', label: 'Unité de référence' },
@@ -131,6 +136,18 @@ function ProductImportDialog({
   const activeCategories = useMemo(
     () => (metadata?.categories ?? []).filter((category) => category.status === 'ACTIVE'),
     [metadata?.categories],
+  );
+  const visibleImportFields = useMemo(
+    () => IMPORT_FIELDS.filter((field) => isGlobal || !field.globalOnly),
+    [isGlobal],
+  );
+  const characteristicKindLabels = useMemo(
+    () => new Map(
+      (metadata?.productCharacteristicKinds ?? []).map(
+        ({ value, label }) => [value, label],
+      ),
+    ),
+    [metadata?.productCharacteristicKinds],
   );
   const headerItems = useMemo(
     () => [
@@ -428,7 +445,7 @@ function ProductImportDialog({
                 )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {IMPORT_FIELDS.map((field) => {
+                  {visibleImportFields.map((field) => {
                     const items = field.required
                       ? headerItems.filter((item) => item.value !== EMPTY_OPTION)
                       : headerItems;
@@ -604,103 +621,165 @@ function ProductImportDialog({
                           </ul>
                         )}
 
+                        {row.missingDimensions?.length > 0 && (
+                          <div className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-sm">
+                            <p className="font-medium">Dimensions à enrichir</p>
+                            <ul className="mt-2 list-disc pl-5 text-muted-foreground">
+                              {row.missingDimensions.map((dimension, index) => (
+                                <li key={
+                                  dimension.type
+                                  + ':'
+                                  + (dimension.kind ?? '')
+                                  + ':'
+                                  + dimension.value
+                                  + ':'
+                                  + index
+                                }>
+                                  {dimension.type === 'VARIETY'
+                                    ? 'Variété'
+                                    : characteristicKindLabels.get(dimension.kind)
+                                      ?? 'Caractéristique'}
+                                  {' : '}
+                                  {dimension.value}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
                         {row.classification === 'REVIEW_REQUIRED' && (
-                          <div className="mt-4 space-y-3 border-t border-border pt-3">
-                            <p className="text-sm font-medium">Produits proches</p>
-                            <div className="flex flex-wrap gap-2">
-                              {(row.candidates ?? []).map((candidate) => (
+                          row.reviewMode === 'REFERENCE_GOVERNANCE' ? (
+                            <div className="mt-4 space-y-3 border-t border-border pt-3">
+                              <p className="text-sm font-medium">
+                                Revue du référentiel global
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Cette nouvelle identité sera soumise à la gouvernance.
+                                Elle ne sera pas publiée automatiquement par cet import Workspace.
+                              </p>
+                              {decision?.action === 'SKIP' ? (
                                 <Button
-                                  disabled={pending || candidate.status !== 'ACTIVE'}
-                                  key={candidate.id}
-                                  onClick={() => chooseCandidate(row, candidate)}
+                                  disabled={pending}
+                                  onClick={() => clearDecision(row.rowNumber)}
                                   size="sm"
                                   type="button"
                                   variant="outline"
                                 >
-                                  {candidate.status === 'ACTIVE'
-                                    ? 'Utiliser ' + candidate.name
-                                    : candidate.name + ' · archivé'}
+                                  Inclure à nouveau
                                 </Button>
-                              ))}
-                              <Button
-                                disabled={pending}
-                                onClick={() => setDecision(row.rowNumber, {
-                                  rowNumber: row.rowNumber,
-                                  action: 'CREATE_NEW',
-                                })}
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                Créer une nouvelle référence
-                              </Button>
-                              <Button
-                                disabled={pending}
-                                onClick={() => setDecision(row.rowNumber, {
-                                  rowNumber: row.rowNumber,
-                                  action: 'SKIP',
-                                })}
-                                size="sm"
-                                type="button"
-                                variant="ghost"
-                              >
-                                Ignorer
-                              </Button>
-                            </div>
-
-                            {candidateChoice?.variants?.length > 1 && (
-                              <Field>
-                                <FieldLabel htmlFor={'candidate-variant-' + row.rowNumber}>
-                                  Déclinaison existante
-                                </FieldLabel>
-                                <Select
-                                  items={candidateChoice.variants.map((variant) => ({
-                                    value: variant.id,
-                                    label: getVariantLabel(variant)
-                                      + ' · '
-                                      + getReferenceUnitLabel(metadata, variant.referenceUnit),
-                                  }))}
-                                  onValueChange={(variantId) => setDecision(row.rowNumber, {
+                              ) : (
+                                <Button
+                                  disabled={pending}
+                                  onClick={() => setDecision(row.rowNumber, {
                                     rowNumber: row.rowNumber,
-                                    action: 'ATTACH_EXISTING',
-                                    variantId,
+                                    action: 'SKIP',
                                   })}
-                                  value={decision?.variantId ?? null}
+                                  size="sm"
+                                  type="button"
+                                  variant="ghost"
                                 >
-                                  <SelectTrigger id={'candidate-variant-' + row.rowNumber}>
-                                    <SelectValue placeholder="Choisir une déclinaison" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {candidateChoice.variants.map((variant) => (
-                                      <SelectItem key={variant.id} value={variant.id}>
-                                        {getVariantLabel(variant)}
-                                        {' · '}
-                                        {getReferenceUnitLabel(metadata, variant.referenceUnit)}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </Field>
-                            )}
+                                  Ignorer cette proposition
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="mt-4 space-y-3 border-t border-border pt-3">
+                              <p className="text-sm font-medium">Produits proches</p>
+                              <div className="flex flex-wrap gap-2">
+                                {(row.candidates ?? []).map((candidate) => (
+                                  <Button
+                                    disabled={pending || candidate.status !== 'ACTIVE'}
+                                    key={candidate.id}
+                                    onClick={() => chooseCandidate(row, candidate)}
+                                    size="sm"
+                                    type="button"
+                                    variant="outline"
+                                  >
+                                    {candidate.status === 'ACTIVE'
+                                      ? 'Utiliser ' + candidate.name
+                                      : candidate.name + ' · archivé'}
+                                  </Button>
+                                ))}
+                                <Button
+                                  disabled={pending}
+                                  onClick={() => setDecision(row.rowNumber, {
+                                    rowNumber: row.rowNumber,
+                                    action: 'CREATE_NEW',
+                                  })}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  Soumettre comme nouvelle référence
+                                </Button>
+                                <Button
+                                  disabled={pending}
+                                  onClick={() => setDecision(row.rowNumber, {
+                                    rowNumber: row.rowNumber,
+                                    action: 'SKIP',
+                                  })}
+                                  size="sm"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  Ignorer
+                                </Button>
+                              </div>
 
-                            {candidateChoice?.variants?.length === 0 && (
-                              <p className="text-sm text-muted-foreground">
-                                Aucune déclinaison active de ce candidat ne peut être utilisée.
-                              </p>
-                            )}
+                              {candidateChoice?.variants?.length > 1 && (
+                                <Field>
+                                  <FieldLabel htmlFor={'candidate-variant-' + row.rowNumber}>
+                                    Déclinaison existante
+                                  </FieldLabel>
+                                  <Select
+                                    items={candidateChoice.variants.map((variant) => ({
+                                      value: variant.id,
+                                      label: getVariantLabel(variant)
+                                        + ' · '
+                                        + getReferenceUnitLabel(metadata, variant.referenceUnit),
+                                    }))}
+                                    onValueChange={(variantId) => setDecision(row.rowNumber, {
+                                      rowNumber: row.rowNumber,
+                                      action: 'ATTACH_EXISTING',
+                                      variantId,
+                                    })}
+                                    value={decision?.variantId ?? null}
+                                  >
+                                    <SelectTrigger id={'candidate-variant-' + row.rowNumber}>
+                                      <SelectValue placeholder="Choisir une déclinaison" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {candidateChoice.variants.map((variant) => (
+                                        <SelectItem key={variant.id} value={variant.id}>
+                                          {getVariantLabel(variant)}
+                                          {' · '}
+                                          {getReferenceUnitLabel(metadata, variant.referenceUnit)}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </Field>
+                              )}
 
-                            {decision && (
-                              <p className="text-sm font-medium">
-                                Décision enregistrée : {
-                                  decision.action === 'ATTACH_EXISTING'
-                                    ? 'utiliser l’existant'
-                                    : decision.action === 'CREATE_NEW'
-                                      ? 'créer une nouvelle référence'
-                                      : 'ignorer'
-                                }.
-                              </p>
-                            )}
-                          </div>
+                              {candidateChoice?.variants?.length === 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                  Aucune déclinaison active de ce candidat ne peut être utilisée.
+                                </p>
+                              )}
+
+                              {decision && (
+                                <p className="text-sm font-medium">
+                                  Décision enregistrée : {
+                                    decision.action === 'ATTACH_EXISTING'
+                                      ? 'utiliser l’existant'
+                                      : decision.action === 'CREATE_NEW'
+                                        ? 'soumettre une nouvelle référence'
+                                        : 'ignorer'
+                                  }.
+                                </p>
+                              )}
+                            </div>
+                          )
                         )}
 
                         {!['INVALID', 'REVIEW_REQUIRED'].includes(row.classification) && (
