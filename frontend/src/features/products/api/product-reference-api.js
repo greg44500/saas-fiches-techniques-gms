@@ -44,6 +44,24 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       }),
       providesTags: ['ProductReference'],
     }),
+    getProductReferenceDimensions: builder.query({
+      query: (productId) => ({
+        url: '/product-reference/' + productId + '/dimensions',
+      }),
+      transformResponse: (response) => response.data,
+      providesTags: ['ProductReference'],
+    }),
+    listProductReferenceContributions: builder.query({
+      query: ({ status = 'PENDING_REVIEW', page = 1, limit = 20 } = {}) => ({
+        url: '/product-reference/contributions',
+        params: { status, page, limit },
+      }),
+      transformResponse: (response) => ({
+        contributions: response.data.contributions,
+        pagination: response.meta,
+      }),
+      providesTags: ['ProductReference'],
+    }),
     getProductReferenceDetail: builder.query({
       query: (productId) => ({
         url: '/product-reference/' + productId,
@@ -66,6 +84,33 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
         body,
       }),
       transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    createProductReferenceVariety: builder.mutation({
+      query: ({ productId, ...body }) => ({
+        url: '/product-reference/' + productId + '/varieties',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data.variety,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    createProductReferenceCharacteristic: builder.mutation({
+      query: ({ productId, ...body }) => ({
+        url: '/product-reference/' + productId + '/characteristics',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data.characteristic,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    reviewProductReferenceContribution: builder.mutation({
+      query: ({ contributionId, decision }) => ({
+        url: '/product-reference/contributions/' + contributionId + '/decision',
+        method: 'POST',
+        body: { decision },
+      }),
+      transformResponse: (response) => response.data.contribution,
       invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
     createProductReferenceVariant: builder.mutation({
@@ -122,6 +167,42 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data.product,
       invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
+    updateProductReferenceVariety: builder.mutation({
+      query: ({ productId, varietyId, ...body }) => ({
+        url: '/product-reference/' + productId + '/varieties/' + varietyId,
+        method: 'PATCH',
+        body,
+      }),
+      transformResponse: (response) => response.data.variety,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    updateProductReferenceVarietyStatus: builder.mutation({
+      query: ({ productId, varietyId, status }) => ({
+        url: '/product-reference/' + productId + '/varieties/' + varietyId + '/status',
+        method: 'PATCH',
+        body: { status },
+      }),
+      transformResponse: (response) => response.data.variety,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    updateProductReferenceCharacteristic: builder.mutation({
+      query: ({ productId, characteristicId, ...body }) => ({
+        url: '/product-reference/' + productId + '/characteristics/' + characteristicId,
+        method: 'PATCH',
+        body,
+      }),
+      transformResponse: (response) => response.data.characteristic,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    updateProductReferenceCharacteristicStatus: builder.mutation({
+      query: ({ productId, characteristicId, status }) => ({
+        url: '/product-reference/' + productId + '/characteristics/' + characteristicId + '/status',
+        method: 'PATCH',
+        body: { status },
+      }),
+      transformResponse: (response) => response.data.characteristic,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
     updateProductReferenceVariant: builder.mutation({
       query: ({ productId, variantId, ...body }) => ({
         url: '/product-reference/' + productId + '/variants/' + variantId,
@@ -175,22 +256,31 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
 
 export const {
   useCommitProductReferenceImportMutation,
+  useCreateProductReferenceCharacteristicMutation,
   useCreateProductReferenceCategoryMutation,
   useCreateProductReferenceMutation,
+  useCreateProductReferenceVarietyMutation,
   useCreateProductReferenceVariantMutation,
   useDuplicateCheckProductReferenceMutation,
   useGetProductReferenceAccessQuery,
+  useGetProductReferenceDimensionsQuery,
   useGetProductReferenceDetailQuery,
   useGetProductReferenceMetadataQuery,
   useInspectProductReferenceImportMutation,
   useLazyGetProductReferenceDetailQuery,
+  useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
   usePreviewProductReferenceImportMutation,
+  useReviewProductReferenceContributionMutation,
   useUpdateProductReferenceCategoryMutation,
+  useUpdateProductReferenceCharacteristicMutation,
+  useUpdateProductReferenceCharacteristicStatusMutation,
   useUpdateProductReferenceCategoryStatusMutation,
   useUpdateProductReferenceMutation,
   useUpdateProductReferenceStatusMutation,
   useUpdateProductReferenceVariantMutation,
+  useUpdateProductReferenceVarietyMutation,
+  useUpdateProductReferenceVarietyStatusMutation,
   useUpdateProductReferenceVariantStatusMutation,
 } = productReferenceApi;
 

@@ -47,6 +47,13 @@ const productCatalogApi = productCatalogApiBase.injectEndpoints({
       }),
       providesTags: ['ProductCatalog'],
     }),
+    getProductDimensions: builder.query({
+      query: ({ workspaceId, productId }) => ({
+        url: '/workspaces/' + workspaceId + '/products/' + productId + '/dimensions',
+      }),
+      transformResponse: (response) => response.data,
+      providesTags: ['ProductCatalog', 'ProductReference'],
+    }),
     getWorkspaceProductDetail: builder.query({
       query: ({ workspaceId, productId }) => ({
         url: '/workspaces/' + workspaceId + '/products/' + productId,
@@ -65,6 +72,15 @@ const productCatalogApi = productCatalogApiBase.injectEndpoints({
     createProduct: builder.mutation({
       query: ({ workspaceId, ...body }) => ({
         url: '/workspaces/' + workspaceId + '/products',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductCatalog', 'ProductReference'],
+    }),
+    contributeProductReference: builder.mutation({
+      query: ({ workspaceId, ...body }) => ({
+        url: '/workspaces/' + workspaceId + '/products/contributions',
         method: 'POST',
         body,
       }),
@@ -133,9 +149,11 @@ export const {
   useArchiveProductVariantMutation,
   useAttachProductVariantMutation,
   useCommitProductImportMutation,
+  useContributeProductReferenceMutation,
   useCreateProductMutation,
   useCreateVariantMutation,
   useDuplicateCheckProductMutation,
+  useGetProductDimensionsQuery,
   useGetProductMetadataQuery,
   useGetProductSummaryQuery,
   useGetWorkspaceProductDetailQuery,
