@@ -3,19 +3,15 @@
   "ready": true,
   "categories": [
     {
-      "key": "legumes",
-      "name": "Légumes"
-    },
-    {
-      "key": "fruits",
-      "name": "Fruits"
+      "key": "fruits-legumes",
+      "name": "Fruits et légumes"
     }
   ],
   "products": [
     {
       "name": "Carotte",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [
         {
@@ -117,7 +113,7 @@
     {
       "name": "Tomate",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [
         {
@@ -179,7 +175,7 @@
     {
       "name": "Pomme de terre",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [
         {
           "key": "charlotte",
@@ -225,7 +221,7 @@
     {
       "name": "Courgette",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -241,7 +237,7 @@
     {
       "name": "Aubergine",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -257,7 +253,7 @@
     {
       "name": "Poivron",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -273,7 +269,7 @@
     {
       "name": "Oignon",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -289,7 +285,7 @@
     {
       "name": "Ail",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -305,7 +301,7 @@
     {
       "name": "Poireau",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -321,7 +317,7 @@
     {
       "name": "Concombre",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -337,7 +333,7 @@
     {
       "name": "Betterave",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -353,7 +349,7 @@
     {
       "name": "Navet",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -369,7 +365,7 @@
     {
       "name": "Céleri-rave",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -385,7 +381,7 @@
     {
       "name": "Chou-fleur",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -401,7 +397,7 @@
     {
       "name": "Brocoli",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -417,7 +413,7 @@
     {
       "name": "Épinard",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -433,7 +429,7 @@
     {
       "name": "Haricot vert",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -449,7 +445,7 @@
     {
       "name": "Petit pois",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -465,7 +461,7 @@
     {
       "name": "Champignon de Paris",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -481,7 +477,7 @@
     {
       "name": "Laitue",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -497,7 +493,7 @@
     {
       "name": "Endive",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -513,7 +509,7 @@
     {
       "name": "Radis",
       "aliases": [],
-      "categoryKey": "legumes",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -529,7 +525,7 @@
     {
       "name": "Pomme",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [
         {
           "key": "golden",
@@ -585,7 +581,7 @@
     {
       "name": "Poire",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -601,7 +597,7 @@
     {
       "name": "Banane",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -617,7 +613,7 @@
     {
       "name": "Orange",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -633,7 +629,7 @@
     {
       "name": "Citron",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -649,7 +645,7 @@
     {
       "name": "Kiwi",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -665,7 +661,7 @@
     {
       "name": "Fraise",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -681,7 +677,7 @@
     {
       "name": "Framboise",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -697,7 +693,7 @@
     {
       "name": "Raisin",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -713,7 +709,7 @@
     {
       "name": "Pêche",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -729,7 +725,7 @@
     {
       "name": "Nectarine",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -745,7 +741,7 @@
     {
       "name": "Abricot",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -761,7 +757,7 @@
     {
       "name": "Melon",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -777,7 +773,7 @@
     {
       "name": "Pastèque",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -793,7 +789,7 @@
     {
       "name": "Ananas",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -809,7 +805,7 @@
     {
       "name": "Mangue",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
@@ -825,7 +821,7 @@
     {
       "name": "Clémentine",
       "aliases": [],
-      "categoryKey": "fruits",
+      "categoryKey": "fruits-legumes",
       "varieties": [],
       "characteristics": [],
       "variants": [
