@@ -159,11 +159,24 @@ describe('M-002 global product reference HTTP contract', () => {
             .send({
                 name: 'Carotte',
                 categoryId: category.body.data.category.id,
-                variant: { foodRange: 1, referenceUnit: 'KG' },
+                variant: {
+                    presentation: 'Râpée',
+                    foodRange: 1,
+                    referenceUnit: 'KG',
+                },
             });
 
         expect(created.status).toBe(201);
         expect(created.body.data.product.status).toBe('ACTIVE');
+        expect(created.body.data.variant.presentation).toBe('Râpée');
+        expect(created.body.data.variant.characteristics).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    kind: 'PRESENTATION',
+                    name: 'Râpée',
+                }),
+            ]),
+        );
     });
 
     it('inspecte et prévisualise un import global via le pipeline sécurisé', async () => {
