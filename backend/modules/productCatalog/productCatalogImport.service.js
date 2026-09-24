@@ -23,6 +23,7 @@ import {
 import {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_CONSERVATION_TYPE,
     PRODUCT_CONTRIBUTION_CLASSIFICATION,
     PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_FOOD_RANGES,
@@ -31,15 +32,11 @@ import {
     PRODUCT_IMPORT_STATUS,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
-    PRODUCT_USAGE_TYPE,
 } from './productCatalog.registry.js';
 import { ProductCharacteristic } from './productCharacteristic.model.js';
 import { ProductImportSession } from './productImportSession.model.js';
 import { ProductVariety } from './productVariety.model.js';
 import { ProductVariant } from './productVariant.model.js';
-import {
-    resolveProductProcessingState,
-} from './productVariantSemantics.js';
 import { parseProductImportFile } from './productCatalogImport.parser.js';
 import {
     submitReferenceContribution,
@@ -131,12 +128,19 @@ const parseFoodRange = (value) => {
         : Number.NaN;
 };
 
-const parseUsageType = (value) => {
-    if (value === '' || value === null || value === undefined) return null;
-    const normalized = String(value).trim().toUpperCase();
-    return Object.values(PRODUCT_USAGE_TYPE).includes(normalized)
-        ? normalized
-        : undefined;
+const CONSERVATION_ALIASES = Object.freeze({
+    frais: PRODUCT_CONSERVATION_TYPE.FRAIS,
+    refrigere: PRODUCT_CONSERVATION_TYPE.REFRIGERE,
+    refrigeré: PRODUCT_CONSERVATION_TYPE.REFRIGERE,
+    surgele: PRODUCT_CONSERVATION_TYPE.SURGELE,
+    surgélé: PRODUCT_CONSERVATION_TYPE.SURGELE,
+    conserve: PRODUCT_CONSERVATION_TYPE.CONSERVE,
+    sec: PRODUCT_CONSERVATION_TYPE.SEC,
+});
+
+const parseConservationType = (value) => {
+    const normalized = normalizeProductText(value);
+    return normalized ? CONSERVATION_ALIASES[normalized] ?? null : null;
 };
 
 const parseYield = (value) => {
@@ -274,19 +278,19 @@ const mapImportRow = ({
 
     const name = String(value('name')).trim();
     const aliases = parseAliases(value('aliases'));
+    const rawConservationType = value('conservationType');
     const rawFoodRange = value('foodRange');
     const rawReferenceUnit = value('referenceUnit');
-    const rawUsageType = value('usageType');
     const rawYieldPercent = value('yieldPercent');
     const foodRange = rawFoodRange === ''
         ? defaults.foodRange ?? null
         : parseFoodRange(rawFoodRange);
+    const conservationType = rawConservationType === ''
+        ? defaults.conservationType ?? null
+        : parseConservationType(rawConservationType);
     const referenceUnit = rawReferenceUnit === ''
         ? defaults.referenceUnit ?? null
         : parseReferenceUnit(rawReferenceUnit);
-    const usageType = rawUsageType === ''
-        ? defaults.usageType ?? null
-        : parseUsageType(rawUsageType);
     const yieldPercent = rawYieldPercent === ''
         ? defaults.yieldPercent ?? null
         : parseYield(rawYieldPercent);
@@ -294,14 +298,14 @@ const mapImportRow = ({
     const errors = [];
 
     if (!name) errors.push('Nom Produit obligatoire.');
-    if (foodRange === null || Number.isNaN(foodRange)) {
-        errors.push('Gamme obligatoire ou invalide.');
+    if (!conservationType) {
+        errors.push('Conservation obligatoire ou invalide.');
+    }
+    if (Number.isNaN(foodRange)) {
+        errors.push('Gamme invalide.');
     }
     if (!referenceUnit) {
         errors.push('Unité de référence obligatoire ou invalide.');
-    }
-    if (usageType === undefined) {
-        errors.push('Classification PAI / PAE invalide.');
     }
     if (Number.isNaN(yieldPercent)) errors.push('Rendement invalide.');
 
@@ -322,23 +326,9 @@ const mapImportRow = ({
             value: String(rawValue).trim(),
         }))
         .filter(({ value: mappedValue }) => Boolean(mappedValue));
-    const requestedProcessingState = String(
+    const processingState = String(
         value('processingState'),
     ).trim() || null;
-    const processingState = (
-        foodRange === null || Number.isNaN(foodRange)
-            ? { valid: false, value: requestedProcessingState }
-            : resolveProductProcessingState({
-                foodRange,
-                processingState: requestedProcessingState,
-            })
-    );
-
-    if (foodRange !== null && !Number.isNaN(foodRange) && !processingState.valid) {
-        errors.push(
-            'État / transformation incompatible avec la gamme sélectionnée.',
-        );
-    }
 
     return {
         rowNumber,
@@ -351,9 +341,10 @@ const mapImportRow = ({
                 characteristics: characteristicValues,
             },
             variant: {
-                processingState: processingState.value,
+                name,
+                processingState,
+                conservationType,
                 foodRange: Number.isNaN(foodRange) ? null : foodRange,
-                usageType: usageType === undefined ? null : usageType,
                 referenceUnit,
                 yieldPercent: Number.isNaN(yieldPercent) ? null : yieldPercent,
             },
@@ -669,11 +660,9 @@ const buildProductImportPreview = async ({
 
             const signature = dimensionResolution.missing.length === 0
                 ? buildVariantSignature({
+                    name: data.variant.name,
                     varietyId: dimensionResolution.variety?._id ?? null,
                     characteristics: dimensionResolution.characteristics,
-                    foodRange: data.variant.foodRange,
-                    processingState: data.variant.processingState,
-                    usageType: data.variant.usageType,
                 })
                 : null;
             const existingVariant = signature
@@ -754,29 +743,10 @@ const buildProductImportPreview = async ({
         };
 
         if (duplicateCheck.candidates.length > 0) {
-            if (!category) {
-                preparedRow.warnings = [
-                    ...warnings,
-                    'Une catégorie active sera obligatoire si vous choisissez de créer une nouvelle référence.',
-                ];
-            }
-
             preview.push({
                 ...preparedRow,
                 classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED,
                 reviewMode: 'DUPLICATE_CANDIDATE',
-            });
-            continue;
-        }
-
-        if (!category) {
-            preview.push({
-                ...preparedRow,
-                errors: [
-                    ...errors,
-                    'Une catégorie active est obligatoire pour créer un Produit.',
-                ],
-                classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
             });
             continue;
         }
@@ -1115,13 +1085,6 @@ const createProductFromImport = async ({
     row,
     reviewedCandidateIds,
 }) => {
-    if (!row.data.categoryId) {
-        throw new AppError(
-            'Une catégorie active est obligatoire pour créer le Produit.',
-            409,
-        );
-    }
-
     const {
         baseVariant,
         dimensionProposals,

@@ -23,18 +23,15 @@ import {
 } from '../modules/productCatalog/productCatalog.normalization.js';
 import {
     PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_CONSERVATION_TYPE,
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
-    PRODUCT_USAGE_TYPE,
 } from '../modules/productCatalog/productCatalog.registry.js';
 import {
     ProductReferenceBootstrapRun,
 } from '../modules/productCatalog/productReferenceBootstrapRun.model.js';
 import { ProductVariant } from '../modules/productCatalog/productVariant.model.js';
-import {
-    resolveProductProcessingState,
-} from '../modules/productCatalog/productVariantSemantics.js';
 import { ProductVariety } from '../modules/productCatalog/productVariety.model.js';
 import {
     PlatformTeamMember,
@@ -44,23 +41,21 @@ import { User } from '../modules/users/user.model.js';
 const nullableText = (max) => z.string().trim().min(1).max(max).nullable();
 
 const seedVariantSchema = z.strictObject({
+    name: z.string().trim().min(1).max(160),
     varietyKey: z.string().trim().min(1).max(120).nullable().optional().default(null),
     characteristicKeys: z.array(z.string().trim().min(1).max(120))
         .max(5)
         .optional()
         .default([]),
     processingState: nullableText(80).optional().default(null),
+    conservationType: z.enum(Object.values(PRODUCT_CONSERVATION_TYPE)),
     foodRange: z.number().int().refine(
         (value) => PRODUCT_FOOD_RANGES.includes(value),
         { message: 'Gamme bootstrap invalide.' },
-    ),
-    usageType: z.enum(Object.values(PRODUCT_USAGE_TYPE))
-        .nullable()
-        .optional()
-        .default(null),
+    ).nullable().optional().default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
     yieldPercent: z.number().positive().max(100).nullable().optional().default(null),
-});
+})
 
 const seedCategorySchema = z.strictObject({
     key: z.string().trim().min(1).max(120),
@@ -401,16 +396,6 @@ const upsertSeedProduct = async ({
 
     let variantCount = 0;
     for (const variantDefinition of definition.variants) {
-        const resolvedProcessingState = resolveProductProcessingState({
-            foodRange: variantDefinition.foodRange,
-            processingState: variantDefinition.processingState,
-        });
-        if (!resolvedProcessingState.valid) {
-            throw new Error(
-                'État / transformation bootstrap incompatible avec la gamme.',
-            );
-        }
-
         const variety = variantDefinition.varietyKey
             ? varietyByKey.get(normalizeProductText(variantDefinition.varietyKey))
             : null;
@@ -421,30 +406,30 @@ const upsertSeedProduct = async ({
                 || left._id.toString().localeCompare(right._id.toString())
             ));
 
+        const normalizedName = normalizeProductText(variantDefinition.name);
         const normalizedSignature = buildVariantSignature({
+            name: variantDefinition.name,
             varietyId: variety?._id ?? null,
             characteristics,
-            foodRange: variantDefinition.foodRange,
-            processingState: resolvedProcessingState.value,
-            usageType: variantDefinition.usageType,
         });
 
         let variant = await ProductVariant.findOne({
-            canonicalProduct: product._id,
-            normalizedSignature,
+            normalizedName,
             identityActive: true,
         }).session(session);
 
         const data = {
+            name: variantDefinition.name,
+            normalizedName,
             variety: variety?._id ?? null,
             characteristics: characteristics.map(({ _id }) => _id),
-            processingState: resolvedProcessingState.value,
+            processingState: variantDefinition.processingState,
             normalizedProcessingState: normalizeProductText(
-                resolvedProcessingState.value,
+                variantDefinition.processingState,
             ),
+            conservationType: variantDefinition.conservationType,
             normalizedSignature,
             foodRange: variantDefinition.foodRange,
-            usageType: variantDefinition.usageType,
             referenceUnit: variantDefinition.referenceUnit,
             yieldPercent: variantDefinition.yieldPercent,
             status: PRODUCT_STATUS.ACTIVE,
@@ -462,6 +447,11 @@ const upsertSeedProduct = async ({
                 createdBy: actorId,
             }], { session });
         } else {
+            if (variant.canonicalProduct.toString() !== product._id.toString()) {
+                throw new Error(
+                    `La référence ${variantDefinition.name} appartient déjà à un autre Produit.`,
+                );
+            }
             Object.assign(variant, data);
             await variant.save({ session });
         }
@@ -577,7 +567,7 @@ const seedM002Reference = async ({ dataset, actorId }) => {
 };
 
 const loadDefaultDataset = async () => {
-    const datasetUrl = new URL('./data/m002-reference.v3.json', import.meta.url);
+    const datasetUrl = new URL('./data/m002-reference.v4.json', import.meta.url);
     return JSON.parse(await readFile(datasetUrl, 'utf8'));
 };
 
