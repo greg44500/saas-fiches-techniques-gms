@@ -17,6 +17,7 @@ import {
     createCharacteristicController,
     createProductController,
     createVarietyController,
+    contributions,
     createVariantController,
     detail,
     dimensions,
@@ -25,6 +26,7 @@ import {
     list,
     metadata,
     previewImport,
+    reviewContribution,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,
@@ -55,6 +57,9 @@ import {
     globalProductVariantParamsSchema,
     importCommitBodySchema,
     importPreviewBodySchema,
+    referenceContributionDecisionBodySchema,
+    referenceContributionListQuerySchema,
+    referenceContributionParamsSchema,
     updateCategoryBodySchema,
     updateCharacteristicBodySchema,
     updateCategoryStatusBodySchema,
@@ -143,6 +148,23 @@ productCatalogGlobalRouter.post(
         body: importCommitBodySchema,
     }),
     commitImport,
+);
+
+productCatalogGlobalRouter.get(
+    '/contributions',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.READ),
+    validateRequest({ query: referenceContributionListQuerySchema }),
+    contributions,
+);
+
+productCatalogGlobalRouter.post(
+    '/contributions/:contributionId/decision',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: referenceContributionParamsSchema,
+        body: referenceContributionDecisionBodySchema,
+    }),
+    reviewContribution,
 );
 
 productCatalogGlobalRouter.get(

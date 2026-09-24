@@ -44,6 +44,10 @@ import {
     updateProductVariety,
     updateProductVarietyStatus,
 } from './productReferenceDimension.service.js';
+import {
+    listReferenceContributions,
+    reviewReferenceContribution,
+} from './productReferenceContribution.service.js';
 
 const access = async (req, res) => {
     const authorization = await resolveApplicationGlobalAuthorization({
@@ -112,6 +116,27 @@ const createVariantController = async (req, res) => {
         variant: req.validated.body,
     });
     res.status(201).json({ status: 'success', data: { variant } });
+};
+
+const contributions = async (req, res) => {
+    const result = await listReferenceContributions(req.validated.query);
+    res.status(200).json({
+        status: 'success',
+        data: { contributions: result.contributions },
+        meta: result.pagination,
+    });
+};
+
+const reviewContribution = async (req, res) => {
+    const contribution = await reviewReferenceContribution({
+        contributionId: req.validated.params.contributionId,
+        actorId: req.user._id,
+        decision: req.validated.body.decision,
+    });
+    res.status(200).json({
+        status: 'success',
+        data: { contribution },
+    });
 };
 
 const dimensions = async (req, res) => {
@@ -305,6 +330,7 @@ export {
     createCharacteristicController,
     createProductController,
     createVarietyController,
+    contributions,
     createVariantController,
     detail,
     dimensions,
@@ -313,6 +339,7 @@ export {
     list,
     metadata,
     previewImport,
+    reviewContribution,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,
