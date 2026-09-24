@@ -209,7 +209,8 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('tab', { name: 'Contributions' }));
 
     expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
-    expect(screen.getByText('Désignation de qualité')).toBeInTheDocument();
+    expect(screen.getByText('Caractéristique · Désignation de qualité'))
+      .toBeInTheDocument();
     expect(screen.getByText('Atelier pilote')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Approuver' }));

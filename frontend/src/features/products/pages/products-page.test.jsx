@@ -192,7 +192,7 @@ describe('ProductsPage', () => {
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByText('Légumes')).toBeInTheDocument();
-    expect(screen.getByText('Entière')).toBeInTheDocument();
+    expect(screen.getByText('Entière · Produit frais')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Déclinaison' }))
       .toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Gamme' }))
