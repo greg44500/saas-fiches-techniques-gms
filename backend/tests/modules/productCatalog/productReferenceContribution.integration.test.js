@@ -11,14 +11,23 @@ import {
     CanonicalProduct,
 } from '../../../modules/productCatalog/canonicalProduct.model.js';
 import {
+    reviewReferenceContribution,
     submitReferenceContribution,
 } from '../../../modules/productCatalog/productReferenceContribution.service.js';
 import {
+    createProductCharacteristic,
     createProductVariety,
 } from '../../../modules/productCatalog/productReferenceDimension.service.js';
 import {
+    createCategory,
+    updateCategoryStatus,
+} from '../../../modules/productCatalog/productCatalogGovernance.service.js';
+import {
     ProductVariety,
 } from '../../../modules/productCatalog/productVariety.model.js';
+import {
+    ProductCharacteristic,
+} from '../../../modules/productCatalog/productCharacteristic.model.js';
 import {
     ReferenceContribution,
 } from '../../../modules/productCatalog/referenceContribution.model.js';
@@ -127,4 +136,80 @@ describe('M-002 contribution semi-automatique', () => {
         expect(result.contribution.status).toBe('PENDING_REVIEW');
         expect(await CanonicalProduct.countDocuments()).toBe(before);
     });
+    it('revalide une contribution avant approbation et réutilise l existant', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Carotte contribution concurrence',
+        });
+        const submitted = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: 'QUALITY_DESIGNATION',
+            value: 'Carottes des sables',
+        });
+
+        const existing = await createProductCharacteristic({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            kind: 'QUALITY_DESIGNATION',
+            name: 'Carottes des sables',
+        });
+
+        const approved = await reviewReferenceContribution({
+            contributionId: submitted.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+
+        expect(approved).toMatchObject({
+            status: 'APPROVED',
+            resolutionEntityType: 'CHARACTERISTIC',
+            resolutionEntityId: existing.id,
+        });
+        expect(await ProductCharacteristic.countDocuments({
+            canonicalProduct: reference.product._id,
+            kind: 'QUALITY_DESIGNATION',
+        })).toBe(1);
+    });
+
+    it('rollback l approbation si le contexte devient invalide', async () => {
+        const category = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Catégorie contribution invalidée',
+        });
+        const submitted = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CANONICAL_PRODUCT',
+            value: 'Produit à revalider',
+            categoryId: category.id,
+            variant: {
+                foodRange: 1,
+                referenceUnit: 'KG',
+            },
+        });
+
+        await updateCategoryStatus({
+            actorId: ownerContext.owner._id,
+            categoryId: category.id,
+            status: 'ARCHIVED',
+        });
+
+        await expect(reviewReferenceContribution({
+            contributionId: submitted.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        })).rejects.toMatchObject({ statusCode: 409 });
+
+        const contribution = await ReferenceContribution.findById(
+            submitted.contribution.id,
+        ).lean();
+
+        expect(contribution.status).toBe('PENDING_REVIEW');
+        expect(await CanonicalProduct.exists({
+            name: 'Produit à revalider',
+        })).toBeNull();
+    });
+
 });
