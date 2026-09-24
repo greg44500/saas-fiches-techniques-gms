@@ -16,10 +16,20 @@ import {
 import {
     getCurrentPlatformContext,
 } from '../../modules/platform/currentContext/platformCurrentContext.service.js';
+import {
+    resolveApplicationGlobalAuthorization,
+} from '../../modules/applicationGlobalAuthorization/applicationGlobalAuthorization.service.js';
 import { PlatformRole } from '../../modules/platformRole/platformRole.model.js';
 import {
     resolvePlatformAuthorization,
 } from '../../modules/platformTeam/platformAuthorization.service.js';
+
+vi.mock(
+    '../../modules/applicationGlobalAuthorization/applicationGlobalAuthorization.service.js',
+    () => ({
+        resolveApplicationGlobalAuthorization: vi.fn(),
+    }),
+);
 
 vi.mock('../../modules/platformRole/platformRole.model.js', () => ({
     PlatformRole: {
@@ -39,6 +49,11 @@ const user = {
 describe('getCurrentPlatformContext', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        resolveApplicationGlobalAuthorization.mockResolvedValue({
+            source: 'none',
+            permissions: [],
+            status: null,
+        });
     });
 
     it('expose explicitement la qualité de Fondateur et le rôle effectif', async () => {
@@ -69,6 +84,9 @@ describe('getCurrentPlatformContext', () => {
         expect(resolvePlatformAuthorization).toHaveBeenCalledWith({
             user,
         });
+        expect(resolveApplicationGlobalAuthorization).toHaveBeenCalledWith({
+            user,
+        });
         expect(context).toEqual({
             isFounder: true,
             status: PLATFORM_TEAM_MEMBER_STATUS.ACTIVE,
@@ -83,8 +101,75 @@ describe('getCurrentPlatformContext', () => {
                 PLATFORM_PERMISSION.USERS_READ,
                 PLATFORM_PERMISSION.SUPER_ADMINS_MANAGE,
             ],
+            applicationGlobalPermissions: [],
         });
         expect(PlatformRole.findById).not.toHaveBeenCalled();
+    });
+
+    it('expose séparément les permissions Application Global explicitement attribuées', async () => {
+        resolvePlatformAuthorization.mockResolvedValue({
+            source: 'team_member',
+            membership: {
+                _id: 'member-id',
+                role: 'role-id',
+            },
+            role: {
+                _id: 'role-id',
+                key: PLATFORM_TEAM_ROLE_KEY.TECHNICAL_SUPPORT,
+                name: 'Support technique',
+                description: 'Support technique.',
+                isSystem: true,
+            },
+            roleKey: PLATFORM_TEAM_ROLE_KEY.TECHNICAL_SUPPORT,
+            permissions: [
+                PLATFORM_PERMISSION.OVERVIEW_READ,
+            ],
+            isFounder: false,
+            status: PLATFORM_TEAM_MEMBER_STATUS.ACTIVE,
+        });
+        resolveApplicationGlobalAuthorization.mockResolvedValue({
+            source: 'application_global_member',
+            permissions: [
+                'derived:reference:read',
+                'derived:reference:manage',
+            ],
+            status: 'active',
+        });
+
+        const context = await getCurrentPlatformContext({ user });
+
+        expect(context.permissions).toEqual([
+            PLATFORM_PERMISSION.OVERVIEW_READ,
+        ]);
+        expect(context.applicationGlobalPermissions).toEqual([
+            'derived:reference:read',
+            'derived:reference:manage',
+        ]);
+    });
+
+    it('n’accorde aucun droit Application Global implicite au Super Admin Platform', async () => {
+        resolvePlatformAuthorization.mockResolvedValue({
+            source: 'team_member',
+            membership: {
+                _id: 'member-id',
+                role: 'role-id',
+            },
+            role: {
+                _id: 'role-id',
+                key: PLATFORM_TEAM_ROLE_KEY.SUPER_ADMIN,
+                name: 'Super administrateur',
+                description: 'Autorité administrative maximale.',
+                isSystem: true,
+            },
+            roleKey: PLATFORM_TEAM_ROLE_KEY.SUPER_ADMIN,
+            permissions: Object.values(PLATFORM_PERMISSION),
+            isFounder: true,
+            status: PLATFORM_TEAM_MEMBER_STATUS.ACTIVE,
+        });
+
+        const context = await getCurrentPlatformContext({ user });
+
+        expect(context.applicationGlobalPermissions).toEqual([]);
     });
 
     it('conserve le rôle visible d’un membre suspendu sans lui rendre ses permissions', async () => {
@@ -122,6 +207,7 @@ describe('getCurrentPlatformContext', () => {
                 isSystem: true,
             },
             permissions: [],
+            applicationGlobalPermissions: [],
         });
     });
 
@@ -139,6 +225,9 @@ describe('getCurrentPlatformContext', () => {
         await expect(
             getCurrentPlatformContext({ user }),
         ).resolves.toBeNull();
+        expect(
+            resolveApplicationGlobalAuthorization,
+        ).not.toHaveBeenCalled();
     });
 
     it('ne réexpose pas un ancien membre révoqué comme accès Platform courant', async () => {
@@ -155,6 +244,9 @@ describe('getCurrentPlatformContext', () => {
         await expect(
             getCurrentPlatformContext({ user }),
         ).resolves.toBeNull();
+        expect(
+            resolveApplicationGlobalAuthorization,
+        ).not.toHaveBeenCalled();
     });
 
     it('préserve le contexte du super-admin legacy pendant la transition sans le marquer Fondateur', async () => {
@@ -182,5 +274,6 @@ describe('getCurrentPlatformContext', () => {
         expect(context.permissions).toEqual([
             PLATFORM_PERMISSION.SUPER_ADMINS_MANAGE,
         ]);
+        expect(context.applicationGlobalPermissions).toEqual([]);
     });
 });

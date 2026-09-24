@@ -37,6 +37,7 @@ describe('platformCurrentContextApi', () => {
         name: 'Super administrateur',
       },
       permissions: ['platform:overview:read'],
+      applicationGlobalPermissions: ['derived:reference:read'],
     };
 
     expect(captured.queryConfig.transformResponse({

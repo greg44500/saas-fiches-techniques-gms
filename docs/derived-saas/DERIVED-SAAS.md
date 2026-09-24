@@ -473,14 +473,14 @@ Contrat cible :
 {
   "schemaVersion": 1,
   "repository": "greg44500/saas-core-api",
-  "version": "1.0.0-rc.1",
-  "tag": "v1.0.0-rc.1",
-  "commit": "<sha du tag Core intégré>",
+  "version": "1.2.1",
+  "tag": "v1.2.1",
+  "commit": "<sha exact du Core réellement intégré>",
   "integratedAt": "<date ISO>"
 }
 ```
 
-La version, le tag et le commit doivent identifier exactement la version du Core intégrée. Le produit met à jour ce fichier seulement après intégration validée d’une nouvelle version Core.
+`version` et `tag` identifient la release stable de base. `commit` identifie le SHA exact réellement intégré. Lors d’une intégration normale, ce SHA est celui du tag. Lorsqu’une évolution post-tag compatible est explicitement retenue, `commit` peut être un descendant du tag sans déplacer ni réécrire ce tag. Le produit met à jour ce fichier seulement après intégration validée du Core.
 
 La version applicative du SaaS dérivé reste indépendante de la version du Core.
 
@@ -815,12 +815,13 @@ L’ancien `core-deferred-work-for-derived-saas.md` est désormais absorbé sur 
 
 ---
 
-## 22. État des points d’extension au 2026-09-17
+## 22. État des points d’extension au 2026-09-24
 
 | Zone | État | Commentaire |
 |---|---|---|
 | Capability Registry | prêt | point de composition explicite disponible, métadonnées et relations feature → métriques supportées |
 | Navigation Workspace | prêt | composition au niveau `app/workspace-navigation.js` |
+| Navigation Platform | prêt | composition au niveau `app/application-platform-navigation.js`, visibilité générique et autorité backend séparée |
 | Composants frontend partagés | prêt | réutilisation par composition |
 | Permissions métier / rôles système | prêt | registre applicatif `applicationRolePermission.registry.js`, composition et tests locaux validés |
 | Routes backend métier | prêt | composition dans `applicationRoutes.registry.js`, tests locaux validés |
@@ -898,6 +899,7 @@ Avant de commencer le métier :
 - [ ] composer les routes backend et frontend dans les points applicatifs prévus ;
 - [ ] composer le lifecycle WorkspaceMember lorsqu’un module possède des relations métier à invalider sur REMOVED ;
 - [ ] composer la navigation Workspace ;
+- [ ] composer la navigation Platform lorsque le produit expose une gouvernance globale depuis l’administration ;
 - [ ] configurer le catalogue commercial du produit ;
 - [ ] réévaluer toutes les dettes applicables ;
 - [ ] ajouter les tests métier et E2E critiques ;
@@ -971,6 +973,7 @@ stratégie Git de dérivation
 RBAC extensible
 Capability Registry
 routing dérivé
+navigation Platform dérivée
 lifecycle transactionnel WorkspaceMember
 migrations
 core-origin.json ou son remplacement
@@ -1132,3 +1135,44 @@ docs/contracts/SECURE-TEMPORARY-UPLOAD.md
 Lors d'un upgrade Core qui apporte cette primitive sans nouvelle release
 taguée, la provenance produit doit pointer vers le commit Core réellement
 intégré et ne doit pas inventer un nouveau tag ou numéro de version.
+
+
+---
+
+## Navigation Platform d'un SaaS dérivé
+
+Lorsqu'un produit possède une gouvernance globale qui doit être accessible
+depuis l'administration Platform, il compose sa navigation dans :
+
+```text
+frontend/src/app/application-platform-navigation.js
+```
+
+Le produit déclare le libellé, la destination, l'icône éventuelle et une règle
+`isVisible(context)`. Pour une autorité Application Global, cette règle lit
+`applicationGlobalPermissions` et non les permissions Platform.
+
+Invariants :
+
+```text
+Super Admin Platform
+≠
+autorisation métier globale implicite
+
+navigation visible
+≠
+autorisation backend
+
+route métier globale
+→ conserve son propre guard Application Global
+```
+
+Les collisions d'identifiants ou de destinations avec la navigation Core sont
+refusées. La composition reste explicite et sans autodécouverte.
+
+Une évolution postérieure à un tag stable peut être intégrée par SHA exact
+lorsqu'elle a été explicitement décidée comme telle. Dans ce cas
+`core-origin.json` conserve la release stable de base dans `version` et
+`tag`, tandis que `commit` référence le SHA exact réellement intégré. Le
+champ `tag` ne doit jamais être présenté comme pointant vers ce SHA
+postérieur.

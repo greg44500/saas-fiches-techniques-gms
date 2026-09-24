@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   PLATFORM_NAVIGATION_ICONS,
   PlatformSidebar,
+  getPlatformNavigationIcon,
 } from '@/features/platform/components/platform-sidebar';
 import { PLATFORM_PERMISSION } from '@/features/platform/constants/platform-permissions';
 
@@ -64,6 +65,15 @@ describe('PlatformSidebar', () => {
     const icons = Object.values(PLATFORM_NAVIGATION_ICONS);
 
     expect(new Set(icons).size).toBe(icons.length);
+  });
+
+  it('utilise l’icône déclarée par une entrée applicative', () => {
+    const DerivedIcon = () => null;
+
+    expect(getPlatformNavigationIcon({
+      id: 'derived-reference',
+      icon: DerivedIcon,
+    })).toBe(DerivedIcon);
   });
 
   it('ouvre le groupe de la route active et ne garde qu’un groupe ouvert', async () => {

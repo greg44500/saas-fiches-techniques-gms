@@ -1,12 +1,10 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante
 
-> **Statut : M-001 clôturé — Core 1.2.0 + commit `1504151` en cours d’intégration produit — reprise M-002 après validation de cette intégration**
+> **Statut : upgrade Core post-tag 1.2.1 en finalisation dans la PR #19. Première Core Gate #122 verte. M-002 reste suspendu jusqu'au merge et à la Core Gate post-merge.**
 >
-> **Dernière mise à jour : 2026-09-22**
+> **Dernière mise à jour : 2026-09-24**
 >
 > Le code réel, les contraintes DB, les tests/gates réellement exécutés et les contrats canoniques priment sur cette synthèse.
->
-> **M-001 est fusionné dans `main` via la PR #10. Le head final de PR `91bab9f80bce3b4095f5c806bc45e166729f33b8` a passé la Core Gate #104 avec succès, puis le commit de merge `8a10a859f567d7f038e5fc5e7b436580d3471b89` a passé la Core Gate post-merge #105 selon le résultat signalé par l'utilisateur. Le socle technique M-001 est donc clôturé. Les éventuels ajustements purement visuels découverts ultérieurement seront traités comme un lot UX M-001 post-merge sans rouvrir le cadrage fonctionnel ni l'architecture.**
 
 ---
 
@@ -32,802 +30,273 @@ Produit = métier
 
 ---
 
-## 2. État Git / Core de référence
+## 2. État Git et provenance Core
 
-Dépôt produit : `greg44500/saas-fiches-techniques-gms`.
-
-État `main` de référence avant le présent raccord Core :
+Dépôt produit :
 
 ```text
-main
-d09ed80e8843e0e3418bf2efc9eec51ff846ef26
-Merge pull request #16 from greg44500/core-update/v1.2.0
+greg44500/saas-fiches-techniques-gms
 ```
 
-Branche d’intégration Core courante :
+`main` de référence avant la PR #19 :
 
 ```text
-core-update/secure-temporary-upload-1504151
+2fb8273311fc91e81153c0537d28279d234f9229
+Merge pull request #18 from greg44500/core-update/v1.2.1
 ```
 
-La branche métier `feature/m002-catalogue-produits` reste le lot fonctionnel actif et devra être réalignée sur `main` après validation puis fusion de cette intégration Core.
-
-Historique M-001 clôturé :
+Branche d'upgrade :
 
 ```text
-feature/m001-dossiers-access
-→ PR #10
-→ head final : 91bab9f80bce3b4095f5c806bc45e166729f33b8
-→ Core Gate #104 : success
-→ merge : 8a10a859f567d7f038e5fc5e7b436580d3471b89
-→ Core Gate post-merge #105 : terminée avec succès selon le résultat signalé par l'utilisateur
+core-update/platform-navigation-db55f83
 ```
 
-Core ciblé par cette intégration :
+PR :
+
+```text
+#19 — chore(core): integrate Platform navigation extension
+```
+
+Provenance Core finalisée dans la PR :
 
 ```text
 repository : greg44500/saas-core-api
-version    : 1.2.0
-tag        : v1.2.0
-commit     : 150415173c973fe39c90b87e8fb9c0f055cce31f
+version    : 1.2.1
+tag        : v1.2.1
+commit     : db55f8342837d7fe3d333fd962bdc7939a8c4603
 ```
 
-Le tag `v1.2.0` reste la dernière release stable. Le commit `1504151…`, postérieur à ce tag, ajoute la primitive générique de téléversement temporaire sécurisé sans nouvelle release ni nouveau tag. Le SHA complet enregistré dans `core-origin.json` est donc l’autorité exacte sur le code Core intégré ; `version` et `tag` décrivent le baseline stable et ne doivent pas être artificiellement incrémentés.
+Le commit `db55f834…` est un descendant du tag stable `v1.2.1`. Aucune version ou tag `1.2.2` n'est inventé.
+
+L'historique Git du Core est conservé : la branche produit contient un vrai merge de `db55f834…`, et ce commit est un ancêtre du HEAD de la branche d'upgrade.
 
 `core-origin.json` est l'autorité de provenance.
 
-Le détail de l'upgrade, des merges et des gates est conservé dans `docs/m001/M-001-REPRISE-APRES-CORE-1.1.0.md` et dans Git.
+---
+
+## 3. Lot Core intégré
+
+Le lot apporte notamment :
+
+- l'exposition séparée de `applicationGlobalPermissions` dans le contexte Platform ;
+- le point d'extension frontend `frontend/src/app/application-platform-navigation.js` ;
+- la composition de la navigation Platform Core + produit ;
+- le filtrage des entrées de navigation selon les autorisations ;
+- les adaptations de `PlatformGuard` et de la sidebar ;
+- les tests et contrats Core associés ;
+- la documentation Core dérivée correspondante.
+
+Invariant d'autorisation :
+
+```text
+permissions
+→ permissions Platform Core
+
+applicationGlobalPermissions
+→ permissions globales applicatives du produit
+```
+
+Un Platform Super Admin ne devient pas implicitement gouverneur global du référentiel Produit.
 
 ---
 
-## 3. Prérequis Core M-001 — RÉSOLU
+## 4. Validation de l'upgrade Core
 
-Core 1.1.0 fournit le point d'extension transactionnel `onMemberRemoved` via :
+État confirmé :
 
 ```text
-backend/config/applicationWorkspaceMemberLifecycle.registry.js
+merge réel upstream-core db55f834… dans la branche produit
+→ OK
+
+git merge-base --is-ancestor db55f834… HEAD
+→ 0
+
+diff initial Core
+→ 14 fichiers
+→ 891 ajouts
+→ 55 suppressions
+
+Core Gate #122 sur PR #19
+→ success
 ```
 
-Le produit peut donc révoquer ses relations métier liées à un `WorkspaceMember` dans la même transaction MongoDB que le passage à `REMOVED`, en utilisant la session transmise par Core.
+Après cette première gate, `core-origin.json` et la présente reprise ont été finalisés dans la même PR.
 
-Pour M-001 :
-
-```text
-WorkspaceMember SUSPENDED
-→ grants conservés ACTIVE
-→ accès inopérant car membership non ACTIVE
-
-WorkspaceMember REMOVED
-→ grants ACTIVE révoqués dans la transaction Core
-
-REMOVED puis réinvité
-→ anciens grants restent REVOKED
-→ nouvelle affectation explicite requise
-```
-
-Aucun modèle `Dossier` ou `DossierAccessGrant` ne doit être ajouté au Core.
-
----
-
-## 4. Contrats M-001 déjà validés
-
-### 4.1 Organisation
+Reste obligatoire avant reprise fonctionnelle de M-002 :
 
 ```text
-Workspace
-→ plusieurs Dossiers
-→ 1 Dossier = exactement 1 magasin en V1
-```
-
-Seul le nom du Dossier est obligatoire à la création.
-
-Enseigne, localisation/adresse, e-mail documents, téléphone et responsable/interlocuteur sont facultatifs.
-
-L'autocomplétion d'adresse fait partie de l'UX M-001 mais reste facultative, non bloquante et compatible avec une saisie manuelle.
-
-### 4.2 Invitation et affectation
-
-```text
-invitation Core
-→ email + roleId
-→ acceptation
-→ WorkspaceMember
-→ affectation Dossier explicite ensuite
-```
-
-Aucun magasin n'est préparé dans l'invitation.
-
-Un membre ACTIVE peut temporairement avoir zéro Dossier.
-
-### 4.3 Role et périmètre
-
-Frontière validée :
-
-```text
-Core
-→ rôles système génériques
-→ moteur Role / Permission générique
-
-Produit GMS
-→ permissions métier
-→ profils/presets Acheteur, Économe, Responsable FT, Contributeur FT, Lecteur
-```
-
-Aucun profil métier n'est ajouté aux rôles système du Core. Les profils métier sont des rôles personnalisés définis/provisionnés par le produit en utilisant la primitive générique Core.
-
-Le Workspace Owner reste le rôle système générique `owner`. Le produit déclare ses permissions métier via le point d'extension RBAC applicatif et les compose dans `owner` sans modifier les constantes ou rôles système du dépôt Core. Les profils métier nommés restent exclusivement dans le produit.
-
-
-
-```text
-Role
-→ QUOI le membre peut faire
-
-DossierAccessGrant
-→ OÙ il peut le faire
-```
-
-Le Workspace Owner possède implicitement tous les Dossiers de son Workspace et ne nécessite pas de grant individuel.
-
-Un PlatformRole ne donne aucun accès implicite aux données métier d'un Workspace.
-
-### 4.4 Permissions M-001 VALIDÉES
-
-```text
-dossier:read
-dossier:create
-dossier:update
-dossier:lifecycle:update
-dossier:access:read
-dossier:access:manage
-```
-
-Administration du Dossier et des affectations reste Owner-only par défaut dans les profils métier nommés. La possibilité de délégation via rôle personnalisé reste ouverte si un besoin métier réel est démontré.
-
-### 4.5 Matrice technique d'autorisation VALIDÉE
-
-Non-owner :
-
-```text
-authenticate
-→ Workspace courant valide
-→ WorkspaceMember ACTIVE
-→ permission métier issue du Role générique Core
-→ Dossier du même Workspace
-→ DossierAccessGrant ACTIVE
-→ statut Dossier compatible
-→ capability éventuelle
-→ invariants métier
-```
-
-Owner :
-
-```text
-authenticate
-→ Workspace courant valide
-→ WorkspaceMember ACTIVE
-→ permission métier issue du descriptor produit composé dans le rôle owner
-→ aucun grant Dossier individuel
-→ statut Dossier compatible
-→ capability éventuelle
-→ invariants métier
-```
-
-Aucun profil métier n'est ajouté au Core. Le rôle `owner` conserve son identité système générique ; seules les permissions applicatives du produit sont composées par le dérivé via le point d'extension prévu.
-
-Invariants :
-
-- cross-workspace toujours refusé ;
-- grant REVOKED jamais autorisant ;
-- frontend `activeDossierId` = UX uniquement, jamais preuve de sécurité ;
-- un non-owner disposant explicitement de `dossier:create` reçoit atomiquement un grant ACTIVE sur le Dossier qu'il crée.
-
-### 4.6 Statut du Dossier dans l'autorisation
-
-```text
-ACTIVE
-→ travail métier possible
-
-PAUSED
-→ consultation / administration selon permissions
-→ pas de contexte de travail métier
-
-ARCHIVED
-→ consultation historique contrôlée
-→ pas de travail ni édition courante
-
-DELETED
-→ absent des flux normaux
-→ restauration contrôlée uniquement
-```
-
-La matrice lifecycle est validée : `ACTIVE → PAUSED|ARCHIVED|DELETED`, `PAUSED → ACTIVE|ARCHIVED|DELETED`, `ARCHIVED → PAUSED|DELETED`, `DELETED → PAUSED`. Une transition vers `DELETED` révoque atomiquement tous les grants ACTIVE ; une restauration ne les réactive jamais.
-
----
-
-## 5. Isolation stricte des magasins
-
-Un accès à plusieurs Dossiers permet de changer de contexte, jamais de mélanger les données.
-
-Les futurs prix négociés, prix facturés, références magasin, historiques et valorisations restent strictement contextualisés.
-
-Une copie future de Fiche technique A → B pourra copier la composition mais jamais les prix ni l'historique économique du magasin source.
-
----
-
-## 6. Stockage, corbeille et exports — VALIDÉ
-
-Contrat canonique : `docs/domain/STORAGE-RETENTION.md`.
-
-### 6.1 Portée du stockage
-
-```text
-Workspace
-→ capacité / quota de stockage
-
-Dossier
-→ consomme la capacité du Workspace
-→ aucun quota dur individuel en V1
-```
-
-Tant que le Workspace dispose de la capacité et des droits applicables, ses Dossiers peuvent créer leurs ressources métier.
-
-Une ventilation de consommation par Dossier peut servir au pilotage, sans devenir une limite bloquante.
-
-### 6.2 Corbeille métier
-
-```text
-standard : 30 jours
-minimum  : 7 jours
-maximum  : 90 jours
-```
-
-La personnalisation éventuelle reste bornée par le backend. L'échéance de purge d'une ressource est figée lors de sa suppression et n'est pas recalculée rétroactivement après un changement de configuration.
-
-### 6.3 Fiches techniques futures
-
-- DRAFT actif : jamais purgé par simple ancienneté ;
-- DRAFT supprimé : corbeille puis purge à l'échéance ;
-- VALIDATED : conservation historique, aucune purge automatique liée à l'âge ;
-- archivage = mécanisme normal de sortie de l'usage courant pour une fiche validée.
-
-### 6.4 Dossiers
-
-Dans M-001, un Dossier `DELETED` reste une suppression logique restaurable et n'est pas purgé automatiquement.
-
-Sa purge physique reste différée jusqu'au cadrage du graphe complet de ses descendants métier.
-
-### 6.5 Exports générés
-
-Les exports reproductibles ne sont pas persistés :
-
-- CSV / XLS(X) : génération à la demande puis destruction du temporaire ;
-- PDF : génération uniquement comme pièce jointe temporaire lors de l'envoi d'un document par e-mail, puis destruction après traitement.
-
-La Fiche technique/version structurée reste la source de vérité.
-
----
-
-## 7. API REST et autorisation M-001 — VALIDÉS
-
-Contrats canoniques :
-
-```text
-docs/m001/M-001-API-REST.md
-docs/m001/M-001-MIDDLEWARES-AUTHORIZATION.md
-```
-
-Les 10 endpoints M-001, leur sémantique, les filtres/pagination, les réponses, les règles de grants, l'absence de suppression physique et l'absence d'endpoint backend d'activation du contexte sont fermés.
-
-L'ordre des middlewares et la frontière middleware/controller/service sont également fermés.
-
-Principes structurants :
-
-```text
-authenticate
-→ validateRequest
-→ loadWorkspaceContext
-→ authorizePermission
-→ contrôles commerciaux Core applicables aux mutations
-→ scope Dossier produit
-→ compatibilité statique du statut si nécessaire
-→ controller
-→ service
-```
-
-`loadAuthorizedDossierContext` centralise la résolution tenant-safe du Dossier et le contrôle Owner/grant sans créer un second RBAC. Les transitions lifecycle, transactions, mutations, audit métier et contrôles race-safe restent dans les services.
-
-Ces décisions ne doivent pas être rouvertes sans contradiction démontrée.
-
-### 7.1 Validation Zod et métadonnées métier — VALIDÉES
-
-Contrat canonique :
-
-```text
-docs/m001/M-001-VALIDATION-METADATA.md
-```
-
-Principes fermés :
-
-- `z.strictObject()` pour params/query/body ;
-- ObjectId syntaxiquement invalides rejetés avant Mongoose ;
-- pagination `page=1`, `limit=20`, maximum 100 ;
-- body Dossier limité aux champs métier autorisés ;
-- PATCH vide refusé ;
-- champ facultatif absent = inchangé, `null` = effacement explicite ;
-- statut initial Dossier imposé par le backend ;
-- statut lifecycle validé depuis les constantes backend ;
-- body de grant vide, champs système jamais acceptés depuis le client ;
-- contrat d'erreur HTTP Core conservé.
-
-Les statuts Dossier et DossierAccessGrant sont définis par registries/constants backend et exposés via :
-
-```text
-GET /api/workspaces/:workspaceId/dossiers/metadata
-```
-
-Le frontend consomme ces métadonnées via RTK Query et ne maintient aucune liste statique de statuts.
-
----
-
-## 8. Correction transversale du modèle Produit — VALIDÉE
-
-Le cadrage historique « catalogue Produit propre au Workspace » a été corrigé avant toute implémentation de M-002.
-
-Fondation retenue :
-
-```text
-SaaS
-→ référentiel Produit canonique partagé
-
-Workspace
-→ catalogue d'usage
-→ références vers les Produits canoniques
-→ aucune copie de l'identité Produit
-
-Dossier
-→ utilise le catalogue du Workspace
-→ contextualise références commerciales, prix et historiques locaux
-```
-
-Même réalité Produit canonique = une seule identité de référence dans le SaaS.
-
-Les variantes de casse, singulier/pluriel et fautes reconnues ne doivent pas créer de doublons. M-002 devra combiner normalisation, alias et recherche de proximité avant création.
-
-Les formes/états/conservations qui modifient réellement l'usage ou le rendement doivent être structurés autour du Produit canonique, par exemple `Carotte → râpée → prête à l'emploi → fraîche`.
-
-Aucune donnée commerciale ou confidentielle tenant ne doit être stockée dans le Produit canonique partagé.
-
-Le schéma Mongoose final, la politique de contribution/modération/fusion et la frontière exacte entre déclinaison et Produit réellement distinct restent à fermer dans M-002.
-
-### 8.1 Catalogues fournisseur partagés et recherche unifiée — VALIDÉS conceptuellement
-
-Les éditions de catalogue fournisseur peuvent être :
-
-```text
-GLOBAL_SHARED
-→ référence partageable et non confidentielle
-
-WORKSPACE_PRIVATE
-→ import privé à un Workspace
-```
-
-Un import Workspace reste privé par défaut.
-
-Une ligne de catalogue n'est jamais transformée automatiquement en Produit canonique. Les mappings déjà validés `Fournisseur + référence Article → Produit/déclinaison` sont réutilisés dans les éditions suivantes.
-
-Un catalogue global peut être référencé par plusieurs Workspaces sans copie de ses milliers de lignes.
-
-La recherche métier est unifiée :
-
-```text
-portée
-→ Mon Workspace
-→ Tout le référentiel autorisé
-
-source
-→ Toutes
-→ Produits canoniques
-→ Catalogues fournisseurs
-→ Références / Articles fournisseur
-```
-
-Les données privées d'un autre Workspace, les tarifs négociés, prix facturés et historiques locaux n'entrent jamais dans la recherche globale.
-
----
-
-## 8.2 Activité métier et lifecycle Dossier — VALIDÉS
-
-Contrats canoniques :
-
-```text
-docs/m001/M-001-BUSINESS-ACTIVITY.md
-docs/m001/M-001-DOSSIER-LIFECYCLE.md
-```
-
-La séparation est désormais explicite :
-
-```text
-AuditLog Core
-→ sécurité / administration générique
-
-BusinessActivityEvent produit
-→ faits métier GMS
-```
-
-Actions M-001 :
-
-```text
-DOSSIER_CREATED
-DOSSIER_UPDATED
-DOSSIER_STATUS_CHANGED
-DOSSIER_ACCESS_GRANTED
-DOSSIER_ACCESS_REVOKED
-```
-
-Les événements métier sont immuables, backend-driven, permission-scoped et transactionnels avec les mutations correspondantes.
-
-API ajoutée :
-
-```text
-GET /api/workspaces/:workspaceId/dossiers/:dossierId/activity
-```
-
-Le lifecycle est fermé :
-
-```text
-ACTIVE   → PAUSED | ARCHIVED | DELETED
-PAUSED   → ACTIVE | ARCHIVED | DELETED
-ARCHIVED → PAUSED | DELETED
-DELETED  → PAUSED
-```
-
-`DELETED` révoque tous les grants ACTIVE dans la même transaction. Les anciens grants restent REVOKED après restauration.
-
-Raisons de révocation M-001 :
-
-```text
-MANUAL
-WORKSPACE_MEMBER_REMOVED
-DOSSIER_DELETED
-```
-
-Aucune extension du registre Audit Core n'est requise pour ces événements métier.
-
----
-
-## 8.3 UX Dossier — VALIDÉE
-
-Contrat canonique :
-
-```text
-docs/m001/M-001-UX-DOSSIERS.md
-```
-
-Surfaces retenues :
-
-```text
-Liste
-→ recherche / filtres
-
-Drawer
-→ Infos / Accès / Activités / Administration
-
-Dialog
-→ création / modification
-
-Page Dossier
-→ véritable espace de travail métier
-```
-
-Seul un Dossier ACTIVE peut être ouvert comme contexte de travail.
-
-La route `/workspaces/:workspaceId/dossiers/:dossierId` porte le contexte UX. Aucun `activeDossierId` persistant frontend ni endpoint backend `currentDossier` n'est source d'autorité.
-
-Le formulaire Dossier est réutilisable entre création et édition et s'appuie sur les primitives Dialog Base UI/shadcn déjà présentes dans le Core.
-
----
-
-## 8.4 Autocomplétion d'adresse — VALIDÉE
-
-Contrat canonique :
-
-```text
-docs/m001/M-001-ADDRESS-AUTOCOMPLETE.md
-```
-
-Décisions :
-
-```text
-Géoplateforme / IGN
-→ fournisseur initial
-
-3 caractères minimum
-→ debounce ~300 ms
-→ StreetAddress
-→ max 8 suggestions
-
-fallback manuel
-→ permanent
-→ jamais bloquant
-```
-
-Le formulaire passe par un adapter frontend et ne dépend pas du payload brut du fournisseur.
-
-M-001 persiste uniquement :
-
-```text
-address
-postalCode
-city
-```
-
-Aucun identifiant BAN/Géoplateforme, coordonnées ou payload complet n'est stocké.
-
-Aucun seed BAN, table de villes ou proxy backend anticipé n'est créé.
-
----
-
-## 8.5 Bootstrap métier et profils de rôles — VALIDÉS
-
-Contrat canonique :
-
-```text
-docs/domain/INITIAL-DATA-BOOTSTRAP.md
-```
-
-Frontière figée :
-
-```text
-Core
-→ rôles système génériques
-→ moteur Role / Permission
-→ points d'extension
-
-Produit GMS
-→ permissions métier
-→ profils/presets métier
-→ données de référence
-→ bootstrap métier
-```
-
-Les rôles métier ne sont jamais ajoutés comme rôles système Core.
-
-Le produit compose ses permissions dans le RBAC actif via le point d'extension applicatif ; le rôle système `owner` conserve son identité Core générique tout en recevant, dans le dérivé, les permissions métier nécessaires.
-
-Les presets Acheteur, Économe, Responsable FT, Contributeur FT et Lecteur métier seront provisionnés progressivement lorsque leurs matrices de permissions seront suffisamment complètes. M-001 ne fige pas artificiellement des permissions futures.
-
-Pour les données initiales :
-
-```text
-M-001
-→ aucune migration historique
-→ aucun seed Dossier
-
-M-002
-→ bootstrap Produits canoniques
-
-M-003
-→ bootstrap Fournisseurs / Articles / catalogues partageables
-```
-
-Le premier bêta M-001 peut être exercé intégralement par un Workspace Owner.
-
----
-
-## 8.6 Stratégie de tests M-001 — VALIDÉE
-
-Contrat canonique :
-
-```text
-docs/m001/M-001-TEST-STRATEGY.md
-```
-
-Couverture obligatoire :
-
-```text
-backend Vitest / Supertest
-→ registries
-→ Zod
-→ modèles
-→ services
-→ transactions
-→ tenancy
-→ permissions
-→ lifecycle
-→ hook WorkspaceMember REMOVED
-→ BusinessActivityEvent
-→ 10 endpoints HTTP
-
-frontend Vitest + RTL
-→ RTK Query
-→ liste
-→ Dialog
-→ Drawer
-→ page Dossier
-→ metadata backend-driven
-→ autocomplétion mockée
-
-Playwright
-→ 4 parcours métier critiques
-```
-
-Les tests automatisés ne dépendent jamais du réseau Géoplateforme réel.
-
-La branche d'implémentation doit d'abord remplacer les noms de bases tests hérités du Core par :
-
-```text
-saas_fiches_techniques_gms_test
-saas_fiches_techniques_gms_e2e_test
-```
-
-La garde `_e2e_test` est conservée.
-
----
-
-## 8.7 Critères d'acceptation et ordre d'implémentation — VALIDÉS
-
-Contrat canonique :
-
-```text
-docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md
-```
-
-Le lot d'implémentation est unique :
-
-```text
-feature/m001-dossiers-access
-→ backend
-→ tests backend
-→ frontend
-→ tests frontend
-→ E2E métier
-→ gates
-→ documentation
-→ une PR fonctionnelle M-001
-```
-
-Aucune migration historique M-001 et aucun seed Dossier ne sont requis.
-
-M-001 ne provisionne pas artificiellement les presets métier dépendant de M-002/M-003/M-004.
-
----
-
-## 9. Implémentation M-001 — VALIDATION TECHNIQUE FINALE ACQUISE
-
-Le cadrage M-001 reste complet et validé. L'implémentation a commencé sur la branche unique :
-
-```text
-feature/m001-dossiers-access
-```
-
-M-001 implémente désormais notamment :
-
-- isolation des bases de tests produit ;
-- permissions et registries métier ;
-- `Dossier` ;
-- `DossierAccessGrant` ;
-- `BusinessActivityEvent` ;
-- validation Zod ;
-- metadata backend-driven ;
-- autorisation tenant-safe / anti-énumération ;
-- services Dossier, lifecycle et grants ;
-- hook transactionnel `WorkspaceMember → REMOVED` ;
-- 10 endpoints REST M-001 ;
-- migration idempotente des indexes M-001.
-
-Le checkpoint backend intermédiaire `c8e8f676dfaeebd69180cae6030d1304627ee088` avait déjà validé localement `release:verify`, le lint et les tests backend.
-
-Validation finale communiquée par l'utilisateur le 2026-09-21 après correction de l'environnement de test local :
-
-```text
-npm test
-→ vert
-
-npm run test:e2e
-→ 11/11 parcours Playwright verts
-→ 7 parcours Core hérités + 4 parcours métier M-001
-
-npm run release:check
-→ vert
-```
-
-La base Vitest/Supertest locale utilise `saas_fiches_techniques_gms_test` via un `.env.test` local ignoré par Git. Playwright conserve sa base isolée `saas_fiches_techniques_gms_e2e_test`.
-
-Les tests backend incluent les tests Core hérités et les tests métier M-001. Les E2E M-001 ne consomment pas le quota d'inscription publique : leurs fixtures provisionnent les identités/workspaces dans la base E2E puis établissent une session via l'API d'authentification, tandis que les parcours Core conservent la couverture réelle de l'inscription.
-
-### 9.1 Point tooling Prettier découvert
-
-`npm run format:check` échoue également sur des fichiers Core inchangés, notamment `backend/app.js`.
-
-Les vérifications locales ont montré que :
-
-- le problème n'est pas spécifique aux fichiers M-001 ;
-- forcer `--end-of-line lf` ou `--end-of-line crlf` ne rend pas le fichier Core conforme ;
-- `format:check` ne fait actuellement pas partie de `release:check` ni de la Core Gate canonique.
-
-Ce point est donc un candidat de dette générique Core/tooling à traiter séparément dans `saas-core-api`. Il ne doit pas être corrigé silencieusement dans le produit ni servir à masquer une régression M-001.
-
-### 9.2 Suite immédiate
-
-```text
-PR #10 ouverte
-→ Core Gate de PR
-→ merge uniquement après gate verte
+nouvelle Core Gate sur le HEAD final de PR #19
+→ merge PR #19 dans main
 → Core Gate post-merge sur main
-→ clôture M-001
-→ démarrage du cadrage détaillé M-002
+→ seulement ensuite réaligner feature/m002-catalogue-produits
 ```
-
-Ne pas commencer M-002 sur la branche M-001 avant la fusion et la validation post-merge.
----
-
-## 10. Cadrage M-001 — COMPLET ET VALIDÉ
-
-Le cadrage détaillé M-001 est désormais fermé.
-
-Ont été validés :
-
-```text
-périmètre / ownership / tenancy
-RBAC et permissions
-DossierAccessGrant
-contrat REST
-middlewares / services
-validation Zod
-metadata backend-driven
-BusinessActivityEvent
-lifecycle Dossier
-effets lifecycle sur les grants
-stockage / rétention applicable
-UX liste / Drawer / Dialog / page de travail
-autocomplétion Géoplateforme
-bootstrap métier
-stratégie de tests
-critères d'acceptation
-ordre d'implémentation
-```
-
-Les préconditions d'implémentation ont été franchies :
-
-```text
-PR documentaire #9 fusionnée
-+
-Core Gate post-merge verte sur main
-+
-feature/m001-dossiers-access créée
-+
-backend M-001 implémenté et testé localement
-```
-
-La suite suit `docs/m001/M-001-ACCEPTANCE-IMPLEMENTATION.md` à partir du frontend.
-
----
-## 11. Points différés non bloquants
-
-- marge semi-nette ;
-- Fiches process ;
-- OCR / IA ;
-- imports avancés ;
-- optimiseur détaillé ;
-- purge physique des Dossiers et de leur graphe métier ;
-- historique administratif complet des invitations Core ;
-- modules Produits / Fournisseurs / Tarifs / Fiches techniques tant que M-001 n'est pas clôturé et fusionné.
 
 ---
 
-## 12. Règle de reprise
+## 5. Branche M-002 à préserver
 
-À la prochaine conversation :
+La branche métier existante doit être conservée :
 
 ```text
-KB-START-HERE
-→ Git réel du produit
-→ core-origin.json
-→ présente reprise
-→ état réel de la PR M-001 / Core Gate
-→ si PR fusionnée et gate post-merge verte : clôturer M-001 puis cadrer M-002
-→ sinon : terminer uniquement la séquence PR / gate / merge M-001
+feature/m002-catalogue-produits
 ```
 
-Ne pas reprendre l'implémentation frontend historique de M-001 sauf régression démontrée par Git, la CI ou un test réel.
+Dernier HEAD connu avant réalignement Core :
+
+```text
+f7b9ec4c06bfaaa59a683aee75dfbddcf95fe8a5
+```
+
+Ne pas recréer cette branche et ne pas intégrer le Core directement dedans.
+
+Après validation post-merge de la PR #19 :
+
+```text
+main à jour
+→ merge main dans feature/m002-catalogue-produits
+→ résolution éventuelle des conflits
+→ gates
+→ reprise M-002
+```
+
+---
+
+## 6. Recadrage M-002 validé à conserver
+
+### 6.1 Produit canonique et variantes
+
+- un `CanonicalProduct` peut avoir zéro `ProductVariant` ;
+- aucune variante générique artificielle ne doit être créée ;
+- les produits sans variante restent visibles avec un état explicite du type « Aucune déclinaison exploitable » ;
+- le seed M-002 suivant est `m002-reference-v3` ;
+- les seeds v1/v2 restent immuables.
+
+### 6.2 Caractéristiques et usages
+
+Ajouter le type de caractéristique :
+
+```text
+CUT
+→ Pièce / découpe
+```
+
+Il est distinct de `PRESENTATION`.
+
+Ajouter :
+
+```text
+usageType = null | PAI | PAE
+```
+
+`usageType` participe à la signature d'une `ProductVariant`.
+
+Ne pas reclasser automatiquement les charcuteries comme `Jambon blanc` ou `Bacon` en PAI/PAE.
+
+### 6.3 Gammes alimentaires
+
+Les gammes restent strictement limitées à :
+
+1. Frais ;
+2. Conserves ;
+3. Surgelés ;
+4. Sous-vide cru / épluchés ;
+5. Sous-vide cuit.
+
+La gamme 6 est supprimée.
+
+Toute migration doit être déterministe et refuser les cas ambigus plutôt que d'inventer une correspondance.
+
+### 6.4 Recherche et UX
+
+Recherche attendue notamment sur des expressions comme :
+
+```text
+carotte râpée
+bœuf paleron
+agneau gigot tranché
+```
+
+UX retenue :
+
+```text
+Produit canonique
+→ variantes groupées
+
+pagination
+→ par CanonicalProduct
+
+actions + / -
+→ au niveau variante
+```
+
+Placeholder Workspace :
+
+```text
+Rechercher un produit…
+```
+
+Ne pas exposer le terme technique « alias » dans l'interface utilisateur.
+
+---
+
+## 7. Autorisation globale Produit à reprendre après upgrade
+
+Permissions applicatives prévues :
+
+```text
+product:reference:read
+product:reference:manage
+```
+
+Rôle système produit prévu :
+
+```text
+product_reference_governor
+```
+
+La future entrée Platform :
+
+```text
+Référentiel Produits
+```
+
+doit être déclarée par le produit via le nouveau point d'extension de navigation et sa visibilité doit dépendre de `applicationGlobalPermissions`.
+
+La route métier globale `/product-reference` reste protégée par l'autorisation Application Global du produit. Elle ne doit pas être placée aveuglément sous `PlatformGuard`.
+
+---
+
+## 8. Tests M-002 à reprendre
+
+Après réalignement de la branche M-002 :
+
+- vérifier les tests backend M-002 ;
+- vérifier les tests frontend M-002 ;
+- vérifier tenancy / RBAC / Application Global auth ;
+- vérifier seeds et migrations ;
+- exécuter les E2E critiques ;
+- exécuter la gate canonique complète.
+
+Le dernier recadrage M-002 n'a pas encore de preuve explicite d'une exécution globale E2E finale ; ne pas annoncer cette validation sans nouvelle preuve.
+
+---
+
+## 9. Règle de reprise immédiate
+
+Tant que la PR #19 n'est pas fusionnée avec une Core Gate post-merge verte :
+
+```text
+ne pas développer M-002
+```
+
+Une fois la séquence Core terminée :
+
+```text
+vérifier main réel
+→ vérifier core-origin.json
+→ réaligner feature/m002-catalogue-produits sur main
+→ exécuter les gates applicables
+→ reprendre le lot M-002 recadré
+→ QA visuelle
+→ une PR M-002 cohérente
+```
