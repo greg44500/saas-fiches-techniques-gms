@@ -139,19 +139,21 @@ m002-reference-v3
 Dataset actif :
 
 ```text
-m002-reference-v4
+m002-reference-v5
 ```
 
-Contrôle effectué sur le v4 :
+Contrôle effectué sur le v5 :
 
 ```text
-Produits              = 135
-Références nommées    = 81
-collisions de nom     = 0
-conservation manquante = 0
+Catégories             = 14
+Produits                = 220
+Références exploitables = 302
+Produits sans référence = 0
+collisions de nom       = 0
+non-alimentaire         = 0
 ```
 
-Aucune donnée Gamme 6 n'est inventée dans le bootstrap actuel.
+Le v5 utilise le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf` comme échantillon métier. Les pages 35 à 37 « Non Alimentaire » sont explicitement exclues. Marques, références fournisseur, conditionnements et prix restent hors M-002.
 
 ## 7. Migration
 
@@ -196,7 +198,7 @@ Depuis le HEAD historique `7f432e00...`, le lot a notamment :
 - découplé `processingState` de la Gamme ;
 - ajouté l'index unique de nom normalisé ;
 - ajouté la migration de contrat Référence Produit ;
-- créé le seed `m002-reference-v4` ;
+- créé le seed `m002-reference-v5` à partir d'un échantillon métier réel, alimentaire uniquement ;
 - adapté le pipeline d'import ;
 - dédupliqué sur le nom exact de Référence ;
 - refondu la liste Workspace en `Produit | Conservation | Actions` ;

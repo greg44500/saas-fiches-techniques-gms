@@ -224,7 +224,7 @@ m002-reference-v3
 Le contrat final utilise :
 
 ```text
-m002-reference-v4
+m002-reference-v5
 ```
 
 Le v4 introduit des noms persistants de références et `conservationType`, retire `usageType` du dataset actif et accepte Gamme 1..6 facultative.
