@@ -37,6 +37,7 @@ const metadata = {
     { value: 'ACTIVE', label: 'Actif' },
     { value: 'ARCHIVED', label: 'Archivé' },
   ],
+  conservationTypes: [{ value: 'FRAIS', label: 'Frais' }],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
   foodRanges: [
     {
@@ -133,7 +134,7 @@ describe('ProductCreateDialog', () => {
       .not.toBeInTheDocument();
   });
 
-  it('exige la revue de tous les candidats et une catégorie active avant création', async () => {
+  it('exige la revue des candidats mais autorise une catégorie et une gamme absentes', async () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();
 
@@ -166,9 +167,6 @@ describe('ProductCreateDialog', () => {
     await user.type(screen.getByLabelText('Nom du Produit'), 'Carotte nouvelle');
     await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
 
-    expect(screen.queryByRole('button', { name: 'Soumettre la proposition' }))
-      .not.toBeInTheDocument();
-
     const reviews = await screen.findAllByRole('checkbox', { name: 'Différent' });
     await user.click(reviews[0]);
     await user.click(reviews[1]);
@@ -176,14 +174,8 @@ describe('ProductCreateDialog', () => {
     const createButton = screen.getByRole('button', {
       name: 'Soumettre la proposition',
     });
-    expect(createButton).toBeDisabled();
+    expect(createButton).toBeEnabled();
 
-    await user.click(screen.getByLabelText('Catégorie principale *'));
-    await user.click(screen.getByRole('option', { name: 'Légumes' }));
-    expect(createButton).toBeDisabled();
-
-    await user.click(screen.getByLabelText('Gamme *'));
-    await user.click(screen.getByRole('option', { name: 'Gamme 1 — Frais' }));
     await user.click(createButton);
 
     await waitFor(() => {
@@ -191,10 +183,12 @@ describe('ProductCreateDialog', () => {
         expect.objectContaining({
           workspaceId: 'workspace-1',
           name: 'Carotte nouvelle',
-          categoryId: 'category-1',
+          categoryId: null,
           variant: expect.objectContaining({
-            foodRange: 1,
-            processingState: 'Produit frais',
+            name: 'Carotte nouvelle',
+            conservationType: 'FRAIS',
+            foodRange: null,
+            processingState: null,
             referenceUnit: 'KG',
           }),
         }),
@@ -202,4 +196,5 @@ describe('ProductCreateDialog', () => {
     });
     expect(onCreated).toHaveBeenCalled();
   });
+
 });

@@ -88,8 +88,12 @@ const metadata = {
     { value: 'ARCHIVED', label: 'Archivé' },
   ],
   workspaceProductStatuses: [
-    { value: 'ACTIVE', label: 'Dans mon référentiel' },
-    { value: 'ARCHIVED', label: 'Retiré de mon référentiel' },
+    { value: 'ACTIVE', label: 'Favori' },
+    { value: 'ARCHIVED', label: 'Retiré des favoris' },
+  ],
+  conservationTypes: [
+    { value: 'FRAIS', label: 'Frais' },
+    { value: 'SURGELE', label: 'Surgelé' },
   ],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
   foodRanges: [
@@ -100,10 +104,6 @@ const metadata = {
       processingStates: ['Produit frais'],
       defaultProcessingState: 'Produit frais',
     },
-  ],
-  usageTypes: [
-    { value: 'PAI', label: 'PAI' },
-    { value: 'PAE', label: 'PAE' },
   ],
 };
 
@@ -118,6 +118,7 @@ const result = {
   },
   variant: {
     id: 'variant-1',
+    name: 'Carotte',
     variety: null,
     characteristics: [{
       id: 'presentation-whole',
@@ -127,9 +128,9 @@ const result = {
       status: 'ACTIVE',
     }],
     presentation: 'Entière',
-    processingState: 'Produit frais',
+    processingState: null,
+    conservationType: 'FRAIS',
     foodRange: 1,
-    usageType: null,
     referenceUnit: 'KG',
     yieldPercent: 90,
     status: 'ACTIVE',
@@ -185,24 +186,23 @@ describe('ProductsPage', () => {
     });
   });
 
-  it('affiche une ligne par référence exploitable avec seulement les repères utiles', () => {
+  it('affiche Produit, Conservation et Actions sans bruit secondaire', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
-    expect(screen.getByText('Légumes')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Référence' }))
+    expect(screen.getByRole('columnheader', { name: 'Produit' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Gamme' }))
+    expect(screen.getByRole('columnheader', { name: 'Conservation' }))
       .toBeInTheDocument();
-    expect(screen.getByText('Gamme 1 — Frais')).toBeInTheDocument();
-    expect(screen.getByText('kg')).toBeInTheDocument();
-    expect(screen.queryByText('Produit frais')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Rendement/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: 'Déclinaisons' }))
+    expect(screen.getByRole('columnheader', { name: 'Actions' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Frais')).toBeInTheDocument();
+    expect(screen.queryByText('Légumes')).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Gamme' }))
       .not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Filtrer par gamme' }))
+    expect(screen.getByRole('combobox', { name: 'Filtrer par conservation' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Trier les références' }))
+    expect(screen.getByRole('combobox', { name: 'Filtrer par gamme' }))
       .toBeInTheDocument();
   });
 
@@ -210,7 +210,7 @@ describe('ProductsPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    expect(screen.getByRole('tab', { name: 'Référentiel global' }))
+    expect(screen.getByRole('tab', { name: 'Tous les produits' }))
       .toHaveAttribute('aria-selected', 'true');
 
     await user.type(
@@ -228,14 +228,14 @@ describe('ProductsPage', () => {
       }),
     );
 
-    await user.click(screen.getByRole('tab', { name: 'Mon référentiel' }));
+    await user.click(screen.getByRole('tab', { name: 'Favoris' }));
 
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({
         scope: 'WORKSPACE',
       }),
     );
-    expect(screen.getByRole('tab', { name: 'Mon référentiel' }))
+    expect(screen.getByRole('tab', { name: 'Favoris' }))
       .toHaveAttribute('aria-selected', 'true');
   });
 
@@ -243,14 +243,14 @@ describe('ProductsPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('tab', { name: 'Mon référentiel' }));
-    expect(screen.getByRole('tab', { name: 'Mon référentiel' }))
+    await user.click(screen.getByRole('tab', { name: 'Favoris' }));
+    expect(screen.getByRole('tab', { name: 'Favoris' }))
       .toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('predictive-scope')).toHaveTextContent('REFERENCE');
 
     await user.click(screen.getByRole('button', { name: 'Suggestion Carotte' }));
 
-    expect(screen.getByRole('tab', { name: 'Référentiel global' }))
+    expect(screen.getByRole('tab', { name: 'Tous les produits' }))
       .toHaveAttribute('aria-selected', 'true');
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -278,7 +278,7 @@ describe('ProductsPage', () => {
     renderPage();
 
     expect(screen.getByRole('button', {
-      name: 'Retirer Carotte de mon référentiel',
+      name: 'Retirer Carotte des favoris',
     })).toBeInTheDocument();
   });
 
@@ -300,11 +300,11 @@ describe('ProductsPage', () => {
     renderPage();
 
     expect(screen.getByRole('button', {
-      name: 'Ajouter Carotte à mon référentiel',
+      name: 'Ajouter Carotte aux favoris',
     })).toBeInTheDocument();
   });
 
-  it('affiche un Produit global sans déclinaison comme référence à enrichir', () => {
+  it('affiche un Produit global sans référence exploitable sans action favori', () => {
     mocks.searchQuery.mockReturnValue({
       data: {
         results: [{
@@ -324,9 +324,9 @@ describe('ProductsPage', () => {
     renderPage();
 
     expect(screen.getByText('Bœuf')).toBeInTheDocument();
-    expect(screen.getByText('À enrichir')).toBeInTheDocument();
+    expect(screen.getByText('—')).toBeInTheDocument();
     expect(screen.queryByRole('button', {
-      name: /Ajouter Bœuf à mon référentiel/,
+      name: /Ajouter Bœuf aux favoris/,
     })).not.toBeInTheDocument();
   });
 
@@ -344,13 +344,13 @@ describe('ProductsPage', () => {
     expect(screen.queryByRole('button', { name: 'Importer' }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', {
-      name: 'Retirer Carotte de mon référentiel',
+      name: 'Retirer Carotte des favoris',
     })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Voir Carotte' }))
       .toBeInTheDocument();
   });
 
-  it('conserve Mon référentiel mais masque le référentiel global sans product_reference_access', () => {
+  it('conserve Favoris mais masque Tous les produits sans product_reference_access', () => {
     mocks.workspaceContext.mockReturnValue({
       workspace: { id: 'workspace-1', name: 'Acme' },
       can: () => true,
@@ -360,8 +360,8 @@ describe('ProductsPage', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Mon référentiel' })).toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: 'Référentiel global' }))
+    expect(screen.getByRole('tab', { name: 'Favoris' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Tous les produits' }))
       .not.toBeInTheDocument();
   });
 });
