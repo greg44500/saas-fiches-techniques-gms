@@ -23,10 +23,11 @@ const result = {
   },
   variant: {
     id: 'variant-1',
-    form: 'Entière',
+    variety: null,
+    characteristics: [],
     processingState: 'Brute',
-    preservation: 'Fraîche',
   },
+  workspaceEntry: null,
 };
 
 function Harness({ onSelect }) {
@@ -60,7 +61,7 @@ describe('ProductSearchAutocomplete', () => {
             product: result.product,
             variants: [{
               variant: result.variant,
-              workspaceEntry: null,
+              workspaceEntry: result.workspaceEntry,
             }],
           }],
             pagination: {

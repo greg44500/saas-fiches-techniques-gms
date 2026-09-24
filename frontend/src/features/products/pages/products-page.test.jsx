@@ -196,8 +196,7 @@ describe('ProductsPage', () => {
     expect(screen.getByText('Entière · Produit frais')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Déclinaisons' }))
       .toBeInTheDocument();
-    expect(screen.getByText('Gamme 1')).toBeInTheDocument();
-    expect(screen.getByText('Produit frais')).toBeInTheDocument();
+    expect(screen.getByText(/Gamme 1 · Frais/)).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Statut' }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Mon référentiel' }))
@@ -255,7 +254,7 @@ describe('ProductsPage', () => {
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({
         scope: 'REFERENCE',
-        q: 'Carotte',
+        q: 'Carotte Entière',
       }),
     );
   });

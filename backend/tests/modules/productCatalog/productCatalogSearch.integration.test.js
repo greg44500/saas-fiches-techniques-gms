@@ -156,8 +156,10 @@ describe('M-002 recherche structurée Produit', () => {
         });
 
         const result = await referenceSearch('paleron');
+        const combined = await referenceSearch('bœuf recherche paleron');
 
         expect(result.results).toHaveLength(1);
+        expect(combined.results).toHaveLength(1);
         expect(result.results[0].product.name).toBe('Bœuf recherche');
         expect(
             result.results[0].variants[0].variant.characteristics,
@@ -167,6 +169,21 @@ describe('M-002 recherche structurée Produit', () => {
                 name: 'Paleron',
             }),
         ]));
+    });
+
+    it('retrouve la classification d usage PAI sans la confondre avec une Gamme', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Purée recherche',
+            usageType: 'PAI',
+        });
+
+        const result = await referenceSearch('pai');
+
+        expect(result.results).toHaveLength(1);
+        expect(result.results[0].product.id)
+            .toBe(reference.product._id.toString());
+        expect(result.results[0].variants[0].variant.usageType).toBe('PAI');
+        expect(result.results[0].variants[0].variant.foodRange).toBe(1);
     });
 
     it('pagine le référentiel principal par Produit et non par déclinaison', async () => {
