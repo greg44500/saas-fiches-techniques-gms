@@ -19,6 +19,9 @@ import {
 import {
     productCatalogImportUploadService,
 } from './productCatalogImportUpload.service.js';
+import {
+    submitReferenceContribution,
+} from './productReferenceContribution.service.js';
 
 const metadata = async (_req, res) => {
     res.status(200).json({
@@ -128,6 +131,21 @@ const archive = async (req, res) => {
     });
 };
 
+const contribute = async (req, res) => {
+    const result = await submitReferenceContribution({
+        workspaceId: req.workspace._id,
+        actorId: req.user._id,
+        ...req.validated.body,
+    });
+
+    res.status(
+        result.contribution || result.publishedReference ? 201 : 200,
+    ).json({
+        status: 'success',
+        data: result,
+    });
+};
+
 const inspectImport = async (req, res) => {
     const result = await productCatalogImportUploadService
         .processTemporaryUpload({
@@ -178,6 +196,7 @@ export {
     archive,
     attach,
     commitImport,
+    contribute,
     createProduct,
     createVariant,
     detail,
