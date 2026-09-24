@@ -962,4 +962,16 @@ Interdictions :
 
 Un rôle archivé, un membre suspendu ou un historique révoqué donnent zéro permission.
 
+Pour la composition de navigation Platform, `GET /api/platform/me` peut
+projeter séparément les permissions Application Global effectives dans
+`applicationGlobalPermissions`. Cette projection est uniquement une aide UX :
+elle ne transforme jamais une permission Platform en permission métier et ne
+constitue pas une preuve d'autorisation pour une requête ultérieure.
+
+Toute route métier globale protégée doit continuer à exécuter
+`resolveApplicationGlobalAuthorization()` /
+`authorizeApplicationGlobalPermission()` côté backend au moment de la
+requête. Une modification de rôle ou de membership doit donc prendre effet
+sans dépendre du cache frontend.
+
 Les mutations de rôles et memberships sont auditées. Les services imposent l’anti-escalade : l’acteur ne peut administrer ou attribuer des permissions qu’il ne possède pas.

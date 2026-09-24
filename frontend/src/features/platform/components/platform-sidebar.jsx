@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import { useLocation } from 'react-router';
 
+import {
+  APPLICATION_PLATFORM_NAVIGATION,
+} from '@/app/application-platform-navigation';
 import { AppSidebar } from '@/components/shared/app-sidebar';
 import { useGetCurrentPlatformContextQuery } from '@/features/platform/api/platform-current-context-api';
 import {
@@ -47,6 +50,10 @@ const PLATFORM_NAVIGATION_ICONS = Object.freeze({
   retention: Database,
 });
 
+function getPlatformNavigationIcon(entry) {
+  return entry.icon ?? PLATFORM_NAVIGATION_ICONS[entry.id];
+}
+
 function isPlatformItemActive(item, pathname) {
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
@@ -55,13 +62,14 @@ function PlatformSidebar() {
   const location = useLocation();
   const { data: platformAccess } = useGetCurrentPlatformContextQuery();
   const visibleNavigation = getVisiblePlatformNavigationSections(
-    platformAccess?.permissions,
+    platformAccess,
+    APPLICATION_PLATFORM_NAVIGATION,
   );
 
   return (
     <AppSidebar
       getHref={(item) => item.to}
-      getIcon={(entry) => PLATFORM_NAVIGATION_ICONS[entry.id]}
+      getIcon={getPlatformNavigationIcon}
       isItemActive={(item) => isPlatformItemActive(item, location.pathname)}
       navigation={visibleNavigation}
       navigationLabel="Navigation de la plateforme"
@@ -77,6 +85,7 @@ export {
   PlatformSidebar,
   canDisplayPlatformNavigationItem,
   getActivePlatformNavigationGroupId,
+  getPlatformNavigationIcon,
   getVisiblePlatformNavigationSections,
   isPlatformItemActive,
   platformNavigationItems,
