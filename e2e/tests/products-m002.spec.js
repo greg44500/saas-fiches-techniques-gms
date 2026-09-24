@@ -12,7 +12,7 @@ import {
   provisionProductOwnerWorkspace,
 } from '../support/product-fixtures.js';
 
-test('M-002 owner crée un Produit actif et le retrouve dans Mon référentiel', async ({ page }) => {
+test('M-002 contribution Workspace est revue puis publiée globalement', async ({ page }) => {
   const context = await provisionProductOwnerWorkspace();
 
   await loginWithIdentity(page, context.identity);
@@ -24,7 +24,7 @@ test('M-002 owner crée un Produit actif et le retrouve dans Mon référentiel',
 
   await page.getByRole('button', { name: 'Créer un Produit' }).click();
 
-  const dialog = page.getByRole('dialog');
+  let dialog = page.getByRole('dialog');
   await dialog.getByLabel('Nom du Produit').fill(context.productName);
   await dialog
     .getByRole('button', { name: 'Rechercher l’existant' })
@@ -36,22 +36,56 @@ test('M-002 owner crée un Produit actif et le retrouve dans Mon référentiel',
   await page.getByRole('option', { name: 'Gamme 1 — Frais' }).click();
 
   await dialog
-    .getByRole('button', { name: 'Créer et ajouter à mon référentiel' })
+    .getByRole('button', { name: 'Soumettre la proposition' })
     .click();
 
   await expect(
-    page.getByText('Produit créé et ajouté à mon référentiel', { exact: true }),
+    page.getByText('Proposition envoyée en revue', { exact: true }),
   ).toBeVisible();
 
   await page.getByRole('tab', { name: 'Mon référentiel' }).click();
+  await expect(
+    page.getByText(context.productName, { exact: true }),
+  ).toHaveCount(0);
 
+  await loginWithIdentity(page, E2E_FOUNDER);
+  await page.goto('/product-reference');
+  await page.getByRole('tab', { name: 'Contributions' }).click();
+
+  const contributionRow = page.getByRole('row').filter({
+    hasText: context.productName,
+  });
+  await expect(contributionRow).toBeVisible();
+  await contributionRow.getByRole('button', { name: 'Approuver' }).click();
+
+  await expect(
+    page.getByText('Contribution approuvée', { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Référentiel' }).click();
+  const globalSearch = page.getByRole('textbox', {
+    name: 'Rechercher dans le référentiel',
+  });
+  await globalSearch.fill(context.productName);
+  await page.getByRole('button', { name: 'Rechercher' }).click();
   await expect(
     page.getByText(context.productName, { exact: true }).first(),
   ).toBeVisible();
 
+  await loginWithIdentity(page, context.identity);
+  await page.goto(context.productsUrl);
+
+  await page.getByRole('textbox', { name: 'Rechercher un Produit' })
+    .fill(context.productName);
+  await page.getByRole('button', { name: 'Rechercher' }).click();
+  await page.getByRole('button', {
+    name: `Ajouter ${context.productName} à mon référentiel`,
+  }).click();
+
+  await page.getByRole('tab', { name: 'Mon référentiel' }).click();
   await expect(
-    page.getByText('En validation', { exact: true }),
-  ).toHaveCount(0);
+    page.getByText(context.productName, { exact: true }).first(),
+  ).toBeVisible();
 });
 
 test('M-002 autorité Application Global alimente directement le référentiel', async ({ page }) => {
@@ -104,6 +138,6 @@ test('M-002 autorité Application Global alimente directement le référentiel',
   ).toBeVisible();
 
   await expect(
-    page.getByRole('tab', { name: 'À valider' }),
-  ).toHaveCount(0);
+    page.getByRole('tab', { name: 'Contributions' }),
+  ).toBeVisible();
 });
