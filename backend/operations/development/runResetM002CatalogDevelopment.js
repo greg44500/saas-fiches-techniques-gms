@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { connectDB } from '../../config/db.js';
 import { env } from '../../config/env.js';
 import {
+    assertM002DevelopmentResetAllowed,
     resetM002CatalogDevelopment,
 } from './resetM002CatalogDevelopment.service.js';
 
@@ -10,6 +11,10 @@ const hasFlag = (name) => process.argv.includes(`--${name}`);
 
 const run = async () => {
     const confirmed = hasFlag('confirm-m002-reset');
+
+    assertM002DevelopmentResetAllowed({
+        confirmed,
+    });
 
     await connectDB(env.MONGODB_URI);
 
