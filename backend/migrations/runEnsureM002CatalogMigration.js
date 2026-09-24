@@ -10,6 +10,9 @@ import {
     ensureM002CatalogIndexes,
 } from './ensureM002CatalogIndexes.migration.js';
 import {
+    ProductVariant,
+} from '../modules/productCatalog/productVariant.model.js';
+import {
     backfillM002LegacyProductLifecycle,
 } from './backfillM002LegacyProductLifecycle.migration.js';
 import {
@@ -33,9 +36,71 @@ const run = async () => {
         await connectDB(env.MONGODB_URI);
 
         const lifecycle = await backfillM002LegacyProductLifecycle();
-        const variantSemantics = await migrateM002VariantSemantics();
-        const variantCharacteristics = await migrateM002VariantCharacteristics();
-        const foodRangeUsageType = await migrateM002FoodRangeUsageType();
+
+        const hasLegacyVariantSemantics = Boolean(
+            await ProductVariant.collection.findOne(
+                {
+                    $or: [
+                        { form: { $exists: true } },
+                        { normalizedForm: { $exists: true } },
+                        { preservation: { $exists: true } },
+                        { normalizedPreservation: { $exists: true } },
+                    ],
+                },
+                { projection: { _id: 1 } },
+            ),
+        );
+        const variantSemantics = hasLegacyVariantSemantics
+            ? await migrateM002VariantSemantics()
+            : { matchedCount: 0, modifiedCount: 0, skipped: true };
+
+        const hasLegacyPresentation = Boolean(
+            await ProductVariant.collection.findOne(
+                {
+                    $or: [
+                        { presentation: { $exists: true } },
+                        { normalizedPresentation: { $exists: true } },
+                        { form: { $exists: true } },
+                        { normalizedForm: { $exists: true } },
+                    ],
+                },
+                { projection: { _id: 1 } },
+            ),
+        );
+        const variantCharacteristics = hasLegacyPresentation
+            ? await migrateM002VariantCharacteristics()
+            : {
+                matchedCount: 0,
+                modifiedCount: 0,
+                createdCharacteristics: 0,
+                skipped: true,
+            };
+
+        const hasLegacyUsageType = Boolean(
+            await ProductVariant.collection.findOne(
+                {
+                    $or: [
+                        { usageType: { $exists: true } },
+                        {
+                            foodRange: 6,
+                            $or: [
+                                { name: { $exists: false } },
+                                { conservationType: { $exists: false } },
+                            ],
+                        },
+                    ],
+                },
+                { projection: { _id: 1 } },
+            ),
+        );
+        const foodRangeUsageType = hasLegacyUsageType
+            ? await migrateM002FoodRangeUsageType()
+            : {
+                matchedCount: 0,
+                modifiedCount: 0,
+                retiredLegacyRange6: 0,
+                skipped: true,
+            };
         const legacyReferenceDuplicates =
             await reconcileM002LegacyReferenceDuplicates();
         const productReferenceContract = await migrateM002ProductReferenceContract();
