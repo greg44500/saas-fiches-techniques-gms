@@ -28,6 +28,10 @@ import {
 } from './productReferenceEvent.service.js';
 import { ProductVariant } from './productVariant.model.js';
 import {
+    createProductCharacteristicInSession,
+    createProductVarietyInSession,
+} from './productReferenceDimension.service.js';
+import {
     createProductVariantInSession,
     normalizeVariantInput,
 } from './productCatalog.service.js';
@@ -230,7 +234,11 @@ const getGlobalProductDetail = async ({ productId }) => {
             status: mongoose.trusted({
                 $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
             }),
-        }).sort({ createdAt: 1, _id: 1 }).lean(),
+        })
+            .populate('variety')
+            .populate('characteristics')
+            .sort({ createdAt: 1, _id: 1 })
+            .lean(),
         listProductReferenceEvents({
             entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
             entityId: product._id,
@@ -256,14 +264,16 @@ const getGlobalProductDetail = async ({ productId }) => {
     };
 };
 
-const createGlobalProduct = async ({
+const createGlobalProductInSession = async ({
     actorId,
     name,
     aliases = [],
     categoryId,
     reviewedCandidateIds = [],
     variant,
-}) => mongoose.connection.transaction(async (session) => {
+    dimensionProposals = null,
+    session,
+}) => {
     await assertProductCreationReviewed({
         name,
         aliases,
@@ -306,11 +316,45 @@ const createGlobalProduct = async ({
         throw error;
     }
 
+    let varietyId = null;
+    const characteristicIds = [
+        ...(variant?.characteristicIds ?? []),
+    ];
+
+    if (dimensionProposals?.variety) {
+        const variety = await createProductVarietyInSession({
+            actorId,
+            productId: product._id,
+            name: dimensionProposals.variety,
+            aliases: [],
+            workspaceId: null,
+            session,
+        });
+        varietyId = variety._id;
+    }
+
+    for (const proposal of dimensionProposals?.characteristics ?? []) {
+        const characteristic = await createProductCharacteristicInSession({
+            actorId,
+            productId: product._id,
+            kind: proposal.kind,
+            name: proposal.value,
+            aliases: [],
+            workspaceId: null,
+            session,
+        });
+        characteristicIds.push(characteristic._id);
+    }
+
     const createdVariant = await createProductVariantInSession({
         canonicalProductId: product._id,
         workspaceId: null,
         actorId,
-        variant,
+        variant: {
+            ...variant,
+            ...(varietyId ? { varietyId } : {}),
+            characteristicIds,
+        },
         status: PRODUCT_STATUS.ACTIVE,
         session,
     });
@@ -320,7 +364,10 @@ const createGlobalProduct = async ({
         action: PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_CREATED,
         entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
         entityId: product._id,
-        metadata: { variantId: createdVariant._id.toString(), source: 'GLOBAL' },
+        metadata: {
+            variantId: createdVariant._id.toString(),
+            source: 'GLOBAL',
+        },
         session,
     });
 
@@ -329,7 +376,10 @@ const createGlobalProduct = async ({
         action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
         entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
         entityId: createdVariant._id,
-        metadata: { productId: product._id.toString(), source: 'GLOBAL' },
+        metadata: {
+            productId: product._id.toString(),
+            source: 'GLOBAL',
+        },
         session,
     });
 
@@ -339,7 +389,16 @@ const createGlobalProduct = async ({
         product: serializeProduct(product),
         variant: serializeVariant(createdVariant),
     };
-});
+};
+
+const createGlobalProduct = async (payload) => (
+    mongoose.connection.transaction(async (session) => (
+        createGlobalProductInSession({
+            ...payload,
+            session,
+        })
+    ))
+);
 
 const createGlobalVariant = async ({
     actorId,
@@ -684,6 +743,7 @@ const updateVariantStatus = async ({
 export {
     createCategory,
     createGlobalProduct,
+    createGlobalProductInSession,
     createGlobalVariant,
     getGlobalProductDetail,
     listCategories,
