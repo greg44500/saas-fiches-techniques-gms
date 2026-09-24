@@ -157,6 +157,39 @@ const buildVariantSignature = (input = {}) => {
         || Object.prototype.hasOwnProperty.call(input, 'characteristics')
     );
 
+    const referenceName = (
+        input.normalizedName
+        || normalizeProductText(input.name ?? input.referenceName)
+    );
+
+    if (referenceName) {
+        const varietyId = input.varietyId?._id
+            ?? input.varietyId
+            ?? null;
+        const characteristicParts = [...(input.characteristics ?? [])]
+            .map((characteristic) => ({
+                kind: characteristic.kind ?? '_',
+                id: (
+                    characteristic.id
+                    ?? characteristic._id
+                    ?? characteristic.characteristicId
+                    ?? characteristic
+                ).toString(),
+            }))
+            .sort((left, right) => (
+                left.kind.localeCompare(right.kind)
+                || left.id.localeCompare(right.id)
+            ))
+            .map(({ kind, id }) => `${kind}:${id}`);
+
+        return [
+            `n:${referenceName}`,
+            `v:${varietyId ? varietyId.toString() : '_'}`,
+            `c:${characteristicParts.length > 0 ? characteristicParts.join(',') : '_'}`,
+        ].join('|');
+    }
+
+    // Format historique conservé pour les migrations M-002 déjà versionnées.
     if (!usesStructuredIdentity) {
         return [
             normalizeProductText(input.presentation) || '_',
@@ -195,7 +228,7 @@ const buildVariantSignature = (input = {}) => {
         `s:${normalizeProductText(input.processingState) || '_'}`,
         `u:${normalizeProductText(input.usageType) || '_'}`,
     ].join('|');
-};
+}
 
 export {
     buildSearchGrams,

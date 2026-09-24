@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 
 import {
+    PRODUCT_CONSERVATION_TYPE,
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_REJECTION_REASON,
     PRODUCT_STATUS,
-    PRODUCT_USAGE_TYPE,
 } from './productCatalog.registry.js';
 
 const { Schema, model } = mongoose;
@@ -17,6 +17,13 @@ const productVariantSchema = new Schema(
             ref: 'CanonicalProduct',
             required: true,
             immutable: true,
+        },
+        name: { type: String, required: true, trim: true, maxlength: 160 },
+        normalizedName: {
+            type: String,
+            required: true,
+            trim: true,
+            maxlength: 180,
         },
         variety: {
             type: Schema.Types.ObjectId,
@@ -41,14 +48,14 @@ const productVariantSchema = new Schema(
         processingState: { type: String, trim: true, maxlength: 80, default: null },
         normalizedProcessingState: { type: String, trim: true, maxlength: 80, default: '' },
         normalizedSignature: { type: String, required: true, maxlength: 700 },
+        conservationType: {
+            type: String,
+            enum: Object.values(PRODUCT_CONSERVATION_TYPE),
+            required: true,
+        },
         foodRange: {
             type: Number,
             enum: PRODUCT_FOOD_RANGES,
-            default: null,
-        },
-        usageType: {
-            type: String,
-            enum: Object.values(PRODUCT_USAGE_TYPE),
             default: null,
         },
         referenceUnit: {
@@ -83,6 +90,14 @@ const productVariantSchema = new Schema(
     { timestamps: true },
 );
 
+productVariantSchema.index(
+    { normalizedName: 1 },
+    {
+        name: 'product_variant_normalized_name_unique',
+        unique: true,
+        partialFilterExpression: { identityActive: true },
+    },
+);
 productVariantSchema.index(
     { canonicalProduct: 1, normalizedSignature: 1 },
     {

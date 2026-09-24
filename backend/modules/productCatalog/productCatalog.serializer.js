@@ -55,12 +55,13 @@ const serializeVariant = (variant) => {
             variant.canonicalProduct?._id
             ?? variant.canonicalProduct
         ).toString(),
+        name: variant.name,
         variety: serializeVariety(variant.variety),
         characteristics,
         presentation,
         processingState: variant.processingState ?? null,
+        conservationType: variant.conservationType,
         foodRange: variant.foodRange ?? null,
-        usageType: variant.usageType ?? null,
         referenceUnit: variant.referenceUnit,
         yieldPercent: variant.yieldPercent ?? null,
         status: variant.status,

@@ -9,8 +9,8 @@ const PRODUCT_STATUS_REGISTRY = Object.freeze({
 });
 
 const WORKSPACE_PRODUCT_STATUS_REGISTRY = Object.freeze({
-    ACTIVE: Object.freeze({ value: 'ACTIVE', label: 'Dans mon référentiel' }),
-    ARCHIVED: Object.freeze({ value: 'ARCHIVED', label: 'Retiré de mon référentiel' }),
+    ACTIVE: Object.freeze({ value: 'ACTIVE', label: 'Favori' }),
+    ARCHIVED: Object.freeze({ value: 'ARCHIVED', label: 'Retiré des favoris' }),
 });
 
 const WORKSPACE_PRODUCT_STATUS = Object.freeze(
@@ -169,6 +169,20 @@ const PRODUCT_REFERENCE_UNIT = Object.freeze(
     )),
 );
 
+const PRODUCT_CONSERVATION_TYPE_REGISTRY = Object.freeze({
+    FRAIS: Object.freeze({ value: 'FRAIS', label: 'Frais' }),
+    REFRIGERE: Object.freeze({ value: 'REFRIGERE', label: 'Réfrigéré' }),
+    SURGELE: Object.freeze({ value: 'SURGELE', label: 'Surgelé' }),
+    CONSERVE: Object.freeze({ value: 'CONSERVE', label: 'Conserve' }),
+    SEC: Object.freeze({ value: 'SEC', label: 'Sec' }),
+});
+
+const PRODUCT_CONSERVATION_TYPE = Object.freeze(
+    Object.fromEntries(Object.entries(PRODUCT_CONSERVATION_TYPE_REGISTRY).map(
+        ([key, definition]) => [key, definition.value],
+    )),
+);
+
 const PRODUCT_FOOD_RANGE_REGISTRY = Object.freeze({
     1: Object.freeze({
         value: 1,
@@ -205,12 +219,21 @@ const PRODUCT_FOOD_RANGE_REGISTRY = Object.freeze({
         processingStates: Object.freeze(['Sous-vide cuit']),
         defaultProcessingState: 'Sous-vide cuit',
     }),
+    6: Object.freeze({
+        value: 6,
+        label: 'Gamme 6',
+        name: 'PAI / PAE',
+        processingStates: Object.freeze([]),
+        defaultProcessingState: null,
+    }),
 });
 
 const PRODUCT_FOOD_RANGES = Object.freeze(
     Object.values(PRODUCT_FOOD_RANGE_REGISTRY).map(({ value }) => value),
 );
 
+// Compatibilité migrations historiques uniquement. Le contrat actif M-002
+// n'expose plus usageType : PAI / PAE est porté par la Gamme 6.
 const PRODUCT_USAGE_TYPE_REGISTRY = Object.freeze({
     PAI: Object.freeze({ value: 'PAI', label: 'PAI' }),
     PAE: Object.freeze({ value: 'PAE', label: 'PAE' }),
@@ -292,6 +315,8 @@ export {
     PRODUCT_CONTRIBUTION_STATUS_REGISTRY,
     PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
+    PRODUCT_CONSERVATION_TYPE,
+    PRODUCT_CONSERVATION_TYPE_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
     PRODUCT_IMPORT_ROW_CLASSIFICATION,
