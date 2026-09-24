@@ -86,10 +86,14 @@ describe('ProductImportDialog', () => {
     expect(buildMappingPayload({
       name: '0',
       aliases: '__NONE__',
+      variety: '1',
       presentation: '2',
+      qualityDesignation: '3',
     })).toEqual({
       name: 0,
+      variety: 1,
       presentation: 2,
+      qualityDesignation: 3,
     });
   });
 
@@ -126,6 +130,13 @@ describe('ProductImportDialog', () => {
     expect(await screen.findByText('Colonnes commerciales détectées'))
       .toBeInTheDocument();
     expect(screen.getByText('Prix HT')).toBeInTheDocument();
+    expect(screen.getByLabelText('Variété')).toBeInTheDocument();
+    expect(screen.getByLabelText('Présentation')).toBeInTheDocument();
+    expect(screen.getByLabelText('Type commercial')).toBeInTheDocument();
+    expect(screen.getByLabelText('Calibre / format')).toBeInTheDocument();
+    expect(screen.getByLabelText('Couleur')).toBeInTheDocument();
+    expect(screen.getByLabelText('Désignation de qualité')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Synonymes métier')).not.toBeInTheDocument();
     expect(mocks.inspectImport).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
       file,
@@ -144,10 +155,11 @@ describe('ProductImportDialog', () => {
     }));
     mocks.previewImport.mockReturnValue(resolved({
       importId: 'import-1',
-      counts: { CREATE_PRODUCT: 1 },
+      counts: { REVIEW_REQUIRED: 1 },
       rows: [{
         rowNumber: 2,
-        classification: 'CREATE_PRODUCT',
+        classification: 'REVIEW_REQUIRED',
+        reviewMode: 'REFERENCE_GOVERNANCE',
         data: {
           name: 'Carotte',
           aliases: [],
