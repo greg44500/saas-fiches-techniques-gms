@@ -28,6 +28,9 @@ import {
     PRODUCT_CATEGORY_STATUS_REGISTRY,
     PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
+    PRODUCT_CONTRIBUTION_CLASSIFICATION_REGISTRY,
+    PRODUCT_CONTRIBUTION_STATUS_REGISTRY,
+    PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
@@ -394,6 +397,15 @@ const getProductMetadata = async ({
         workspaceProductStatuses: Object.values(WORKSPACE_PRODUCT_STATUS_REGISTRY),
         productCategoryStatuses: Object.values(PRODUCT_CATEGORY_STATUS_REGISTRY),
         productCharacteristicKinds: Object.values(PRODUCT_CHARACTERISTIC_KIND_REGISTRY),
+        productContributionClassifications: Object.values(
+            PRODUCT_CONTRIBUTION_CLASSIFICATION_REGISTRY,
+        ),
+        productContributionStatuses: Object.values(
+            PRODUCT_CONTRIBUTION_STATUS_REGISTRY,
+        ),
+        productContributionTypes: Object.values(
+            PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
+        ),
         referenceUnits: Object.values(PRODUCT_REFERENCE_UNIT_REGISTRY),
         foodRanges: Object.values(PRODUCT_FOOD_RANGE_REGISTRY).map(
             (definition) => ({

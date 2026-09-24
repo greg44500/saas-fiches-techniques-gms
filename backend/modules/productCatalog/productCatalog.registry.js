@@ -77,24 +77,78 @@ const PRODUCT_CHARACTERISTIC_KIND = Object.freeze(
     ),
 );
 
-const PRODUCT_CONTRIBUTION_CLASSIFICATION = Object.freeze({
-    EXISTING: 'EXISTING',
-    AUTO_PUBLISHABLE: 'AUTO_PUBLISHABLE',
-    REVIEW_REQUIRED: 'REVIEW_REQUIRED',
-    INVALID: 'INVALID',
+const PRODUCT_CONTRIBUTION_CLASSIFICATION_REGISTRY = Object.freeze({
+    EXISTING: Object.freeze({
+        value: 'EXISTING',
+        label: 'Référence existante',
+    }),
+    AUTO_PUBLISHABLE: Object.freeze({
+        value: 'AUTO_PUBLISHABLE',
+        label: 'Publication automatique autorisée',
+    }),
+    REVIEW_REQUIRED: Object.freeze({
+        value: 'REVIEW_REQUIRED',
+        label: 'Revue requise',
+    }),
+    INVALID: Object.freeze({
+        value: 'INVALID',
+        label: 'Contribution invalide',
+    }),
 });
 
-const PRODUCT_CONTRIBUTION_TYPE = Object.freeze({
-    CANONICAL_PRODUCT: 'CANONICAL_PRODUCT',
-    VARIETY: 'VARIETY',
-    CHARACTERISTIC: 'CHARACTERISTIC',
+const PRODUCT_CONTRIBUTION_CLASSIFICATION = Object.freeze(
+    Object.fromEntries(
+        Object.entries(PRODUCT_CONTRIBUTION_CLASSIFICATION_REGISTRY).map(
+            ([key, definition]) => [key, definition.value],
+        ),
+    ),
+);
+
+const PRODUCT_CONTRIBUTION_TYPE_REGISTRY = Object.freeze({
+    CANONICAL_PRODUCT: Object.freeze({
+        value: 'CANONICAL_PRODUCT',
+        label: 'Produit',
+    }),
+    VARIETY: Object.freeze({
+        value: 'VARIETY',
+        label: 'Variété',
+    }),
+    CHARACTERISTIC: Object.freeze({
+        value: 'CHARACTERISTIC',
+        label: 'Caractéristique',
+    }),
 });
 
-const PRODUCT_CONTRIBUTION_STATUS = Object.freeze({
-    PENDING_REVIEW: 'PENDING_REVIEW',
-    APPROVED: 'APPROVED',
-    REJECTED: 'REJECTED',
+const PRODUCT_CONTRIBUTION_TYPE = Object.freeze(
+    Object.fromEntries(
+        Object.entries(PRODUCT_CONTRIBUTION_TYPE_REGISTRY).map(
+            ([key, definition]) => [key, definition.value],
+        ),
+    ),
+);
+
+const PRODUCT_CONTRIBUTION_STATUS_REGISTRY = Object.freeze({
+    PENDING_REVIEW: Object.freeze({
+        value: 'PENDING_REVIEW',
+        label: 'À examiner',
+    }),
+    APPROVED: Object.freeze({
+        value: 'APPROVED',
+        label: 'Approuvée',
+    }),
+    REJECTED: Object.freeze({
+        value: 'REJECTED',
+        label: 'Refusée',
+    }),
 });
+
+const PRODUCT_CONTRIBUTION_STATUS = Object.freeze(
+    Object.fromEntries(
+        Object.entries(PRODUCT_CONTRIBUTION_STATUS_REGISTRY).map(
+            ([key, definition]) => [key, definition.value],
+        ),
+    ),
+);
 
 const PRODUCT_REFERENCE_UNIT_REGISTRY = Object.freeze({
     G: Object.freeze({ value: 'G', label: 'g', dimension: 'MASS', factorToBase: 1 }),
@@ -225,8 +279,11 @@ export {
     PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
     PRODUCT_CONTRIBUTION_CLASSIFICATION,
+    PRODUCT_CONTRIBUTION_CLASSIFICATION_REGISTRY,
     PRODUCT_CONTRIBUTION_STATUS,
+    PRODUCT_CONTRIBUTION_STATUS_REGISTRY,
     PRODUCT_CONTRIBUTION_TYPE,
+    PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
     PRODUCT_IMPORT_ROW_CLASSIFICATION,
