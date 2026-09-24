@@ -5,6 +5,9 @@ import {
     ProductCategory,
 } from '../modules/productCatalog/productCategory.model.js';
 import {
+    ProductCharacteristic,
+} from '../modules/productCatalog/productCharacteristic.model.js';
+import {
     ProductImportSession,
 } from '../modules/productCatalog/productImportSession.model.js';
 import {
@@ -17,6 +20,9 @@ import {
     ProductVariant,
 } from '../modules/productCatalog/productVariant.model.js';
 import {
+    ProductVariety,
+} from '../modules/productCatalog/productVariety.model.js';
+import {
     WorkspaceProduct,
 } from '../modules/productCatalog/workspaceProduct.model.js';
 
@@ -27,6 +33,12 @@ const M002_INDEX_NAMES = Object.freeze([
     'canonical_product_search_grams_status',
     'canonical_product_status_category_updated_at',
     'canonical_product_workspace_status_created_at',
+    'product_variety_product_name_unique',
+    'product_variety_product_status_name',
+    'product_variety_search_grams_status',
+    'product_characteristic_product_kind_name_unique',
+    'product_characteristic_product_kind_status_name',
+    'product_characteristic_search_grams_status',
     'product_variant_identity_unique',
     'product_variant_product_status_updated_at',
     'product_variant_workspace_status_created_at',
@@ -42,6 +54,8 @@ const M002_INDEX_NAMES = Object.freeze([
 const M002_MODELS = Object.freeze([
     ProductCategory,
     CanonicalProduct,
+    ProductVariety,
+    ProductCharacteristic,
     ProductVariant,
     WorkspaceProduct,
     ProductReferenceEvent,

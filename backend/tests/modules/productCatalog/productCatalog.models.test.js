@@ -7,9 +7,11 @@ import {
 
 import { CanonicalProduct } from '../../../modules/productCatalog/canonicalProduct.model.js';
 import { ProductCategory } from '../../../modules/productCatalog/productCategory.model.js';
+import { ProductCharacteristic } from '../../../modules/productCatalog/productCharacteristic.model.js';
 import { ProductImportSession } from '../../../modules/productCatalog/productImportSession.model.js';
 import { ProductReferenceEvent } from '../../../modules/productCatalog/productReferenceEvent.model.js';
 import { ProductVariant } from '../../../modules/productCatalog/productVariant.model.js';
+import { ProductVariety } from '../../../modules/productCatalog/productVariety.model.js';
 import { WorkspaceProduct } from '../../../modules/productCatalog/workspaceProduct.model.js';
 
 describe('M-002 product catalog models', () => {
@@ -17,9 +19,29 @@ describe('M-002 product catalog models', () => {
         expect(CanonicalProduct.schema.path('workspace')).toBeUndefined();
         expect(ProductVariant.schema.path('workspace')).toBeUndefined();
         expect(ProductCategory.schema.path('workspace')).toBeUndefined();
+        expect(ProductVariety.schema.path('workspace')).toBeUndefined();
+        expect(ProductCharacteristic.schema.path('workspace')).toBeUndefined();
         expect(
             CanonicalProduct.schema.path('contributedFromWorkspace'),
         ).toBeDefined();
+    });
+
+    it('structure Variétés et Caractéristiques sous le Produit parent', () => {
+        expect(
+            ProductVariety.schema.path('canonicalProduct').options.required,
+        ).toBe(true);
+        expect(
+            ProductCharacteristic.schema.path('canonicalProduct').options.required,
+        ).toBe(true);
+        expect(
+            ProductCharacteristic.schema.path('kind').options.enum,
+        ).toEqual([
+            'PRESENTATION',
+            'COMMERCIAL_TYPE',
+            'SIZE_FORMAT',
+            'COLOR',
+            'QUALITY_DESIGNATION',
+        ]);
     });
 
     it('porte l ownership Workspace uniquement sur WorkspaceProduct', () => {

@@ -46,6 +46,37 @@ const PRODUCT_REJECTION_REASON = Object.freeze(
     )),
 );
 
+const PRODUCT_CHARACTERISTIC_KIND_REGISTRY = Object.freeze({
+    PRESENTATION: Object.freeze({
+        value: 'PRESENTATION',
+        label: 'Présentation',
+    }),
+    COMMERCIAL_TYPE: Object.freeze({
+        value: 'COMMERCIAL_TYPE',
+        label: 'Type commercial',
+    }),
+    SIZE_FORMAT: Object.freeze({
+        value: 'SIZE_FORMAT',
+        label: 'Calibre / format',
+    }),
+    COLOR: Object.freeze({
+        value: 'COLOR',
+        label: 'Couleur',
+    }),
+    QUALITY_DESIGNATION: Object.freeze({
+        value: 'QUALITY_DESIGNATION',
+        label: 'Désignation de qualité',
+    }),
+});
+
+const PRODUCT_CHARACTERISTIC_KIND = Object.freeze(
+    Object.fromEntries(
+        Object.entries(PRODUCT_CHARACTERISTIC_KIND_REGISTRY).map(
+            ([key, definition]) => [key, definition.value],
+        ),
+    ),
+);
+
 const PRODUCT_REFERENCE_UNIT_REGISTRY = Object.freeze({
     G: Object.freeze({ value: 'G', label: 'g', dimension: 'MASS', factorToBase: 1 }),
     KG: Object.freeze({ value: 'KG', label: 'kg', dimension: 'MASS', factorToBase: 1000 }),
@@ -158,6 +189,8 @@ const PRODUCT_IMPORT_ROW_CLASSIFICATION = Object.freeze({
 export {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_CATEGORY_STATUS_REGISTRY,
+    PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
     PRODUCT_IMPORT_ROW_CLASSIFICATION,

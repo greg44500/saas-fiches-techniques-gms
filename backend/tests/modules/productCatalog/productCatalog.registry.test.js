@@ -5,6 +5,8 @@ import {
 } from 'vitest';
 
 import {
+    PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
     PRODUCT_IMPORT_SCOPE,
@@ -37,6 +39,20 @@ describe('M-002 product catalog registries', () => {
             .toBe('Dans mon référentiel');
         expect(WORKSPACE_PRODUCT_STATUS_REGISTRY.ARCHIVED.label)
             .toBe('Retiré de mon référentiel');
+    });
+
+    it('ferme le registre des caractéristiques Produit V1', () => {
+        expect(PRODUCT_CHARACTERISTIC_KIND).toEqual({
+            PRESENTATION: 'PRESENTATION',
+            COMMERCIAL_TYPE: 'COMMERCIAL_TYPE',
+            SIZE_FORMAT: 'SIZE_FORMAT',
+            COLOR: 'COLOR',
+            QUALITY_DESIGNATION: 'QUALITY_DESIGNATION',
+        });
+        expect(PRODUCT_CHARACTERISTIC_KIND_REGISTRY.PRESENTATION.label)
+            .toBe('Présentation');
+        expect(PRODUCT_CHARACTERISTIC_KIND_REGISTRY.COMMERCIAL_TYPE.label)
+            .toBe('Type commercial');
     });
 
     it('décrit les unités de référence avec leur dimension', () => {
