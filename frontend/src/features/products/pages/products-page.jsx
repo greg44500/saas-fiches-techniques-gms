@@ -48,9 +48,6 @@ import { useDataPagination } from '@/hooks/use-data-pagination';
 
 const ALL_CATEGORIES = '__ALL__';
 const ALL_CONSERVATION_TYPES = '__ALL_CONSERVATION_TYPES__';
-const ALL_FOOD_RANGES = '__ALL_RANGES__';
-const PRODUCT_SORT_NAME = 'NAME';
-const PRODUCT_SORT_FOOD_RANGE = 'FOOD_RANGE';
 
 function ProductsPage() {
   const { can, hasFeature, workspace } = useWorkspaceContext();
@@ -65,8 +62,6 @@ function ProductsPage() {
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(ALL_CATEGORIES);
   const [conservationType, setConservationType] = useState(ALL_CONSERVATION_TYPES);
-  const [foodRange, setFoodRange] = useState(ALL_FOOD_RANGES);
-  const [sort, setSort] = useState(PRODUCT_SORT_NAME);
   const [drawerState, setDrawerState] = useState({ open: false, productId: null });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -81,8 +76,6 @@ function ProductsPage() {
     conservationType: conservationType === ALL_CONSERVATION_TYPES
       ? undefined
       : conservationType,
-    foodRange: foodRange === ALL_FOOD_RANGES ? undefined : foodRange,
-    sort,
     page,
     limit: pageSize,
   });
@@ -132,18 +125,6 @@ function ProductsPage() {
     })),
   ], [metadata?.conservationTypes]);
 
-  const foodRangeItems = useMemo(() => [
-    { value: ALL_FOOD_RANGES, label: 'Toutes les gammes' },
-    ...(metadata?.foodRanges ?? []).map((range) => ({
-      value: String(range.value),
-      label: range.label + (range.name ? ' — ' + range.name : ''),
-    })),
-  ], [metadata?.foodRanges]);
-
-  const sortItems = [
-    { value: PRODUCT_SORT_NAME, label: 'Nom A → Z' },
-    { value: PRODUCT_SORT_FOOD_RANGE, label: 'Gamme 1 → 6' },
-  ];
 
   function runSearch(nextSearch) {
     setPage(1);
@@ -354,7 +335,7 @@ function ProductsPage() {
       </Tabs>
 
       <section className="rounded-xl border border-border bg-card">
-        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(300px,1fr)_210px_200px_200px_180px]">
+        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(480px,1fr)_220px_240px]">
           <form className="flex min-w-0 gap-2" onSubmit={applySearch}>
             <div className="min-w-0 flex-1">
               <ProductSearchAutocomplete
@@ -367,11 +348,6 @@ function ProductsPage() {
                   conservationType === ALL_CONSERVATION_TYPES
                     ? undefined
                     : conservationType
-                }
-                foodRange={
-                  foodRange === ALL_FOOD_RANGES
-                    ? undefined
-                    : foodRange
                 }
                 metadata={metadata}
                 onSelect={selectPredictiveResult}
@@ -425,45 +401,6 @@ function ProductsPage() {
             </SelectContent>
           </Select>
 
-          <Select
-            items={foodRangeItems}
-            onValueChange={(value) => {
-              setFoodRange(value);
-              setPage(1);
-            }}
-            value={foodRange}
-          >
-            <SelectTrigger aria-label="Filtrer par gamme">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {foodRangeItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            items={sortItems}
-            onValueChange={(value) => {
-              setSort(value);
-              setPage(1);
-            }}
-            value={sort}
-          >
-            <SelectTrigger aria-label="Trier les références">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {sortItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {initialLoading ? (
@@ -487,7 +424,6 @@ function ProductsPage() {
                     search
                     || categoryId !== ALL_CATEGORIES
                     || conservationType !== ALL_CONSERVATION_TYPES
-                    || foodRange !== ALL_FOOD_RANGES
                       ? 'Modifiez la recherche ou les filtres pour élargir les résultats.'
                       : scope === 'WORKSPACE'
                         ? 'Ajoutez des Produits depuis l’onglet Tous les produits.'

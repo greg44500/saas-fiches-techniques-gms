@@ -148,16 +148,18 @@ Liste opérationnelle :
 Produit | Conservation | Actions
 ```
 
-Filtres disponibles :
+Filtres disponibles dans la liste Workspace :
 
 - Recherche ;
 - Catégorie ;
-- Conservation ;
-- Gamme ;
-- Tri.
+- Conservation.
 
 Règles UX :
 
+- la liste est ordonnée alphabétiquement par nom de Référence Produit par défaut ;
+- aucun contrôle de tri alphabétique n'est affiché dans cette toolbar ;
+- la Gamme reste une donnée métier facultative, mais n'est pas proposée comme filtre dans cette liste ;
+- la recherche principale occupe l'espace prioritaire de la toolbar ;
 - une ligne = une Référence Produit exploitable ;
 - pas de catégorie répétée sous chaque nom ;
 - pas de nom généré depuis les dimensions ;

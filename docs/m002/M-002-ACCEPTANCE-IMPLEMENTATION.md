@@ -68,8 +68,10 @@ Un seul lot M-002, puis une seule PR finale. Pas de micro-PR de réparation.
 
 - [x] onglets `Tous les produits | Favoris` ;
 - [x] liste `Produit | Conservation | Actions` ;
-- [x] filtre Conservation ;
-- [x] Gamme facultative ;
+- [x] filtres de liste limités à Recherche, Catégorie et Conservation ;
+- [x] ordre alphabétique par défaut sans contrôle de tri visible ;
+- [x] champ de recherche prioritaire et élargi dans la toolbar ;
+- [x] Gamme facultative dans le modèle et les formulaires, sans filtre dédié dans la liste ;
 - [x] formulaire simplifié ;
 - [x] nom Référence persistant ;
 - [x] vocabulaire utilisateur « Référence » ;

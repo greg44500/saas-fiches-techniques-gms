@@ -93,9 +93,14 @@ filtres
 → Recherche
 → Catégorie
 → Conservation
-→ Gamme
-→ Tri
+
+ordre
+→ alphabétique par défaut
+→ aucun contrôle de tri visible
+→ aucun filtre Gamme dans la liste Workspace
 ```
+
+La recherche est visuellement prioritaire et dispose d'une largeur supérieure aux filtres secondaires.
 
 Le drawer et les écrans d'administration utilisent le vocabulaire « Référence Produit », pas « Déclinaison ».
 

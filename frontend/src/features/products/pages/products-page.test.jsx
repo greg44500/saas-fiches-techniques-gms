@@ -200,10 +200,14 @@ describe('ProductsPage', () => {
     expect(screen.queryByText('Légumes')).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Gamme' }))
       .not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Filtrer par catégorie' }))
+      .toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Filtrer par conservation' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Filtrer par gamme' }))
-      .toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Filtrer par gamme' }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Trier les références' }))
+      .not.toBeInTheDocument();
   });
 
   it('recherche côté serveur dans la portée sélectionnée', async () => {
@@ -224,7 +228,6 @@ describe('ProductsPage', () => {
         workspaceId: 'workspace-1',
         q: 'carotte',
         scope: 'REFERENCE',
-        sort: 'NAME',
       }),
     );
 
