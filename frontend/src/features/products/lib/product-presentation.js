@@ -55,8 +55,12 @@ function getFoodRangeName(metadata, foodRange) {
 }
 
 function getVariantLabel(variant) {
+  const characteristicNames = (variant?.characteristics ?? [])
+    .map(({ name }) => name)
+    .filter(Boolean);
   const parts = [
-    variant?.presentation,
+    variant?.variety?.name,
+    ...characteristicNames,
     variant?.processingState,
   ].filter(Boolean);
 
@@ -84,8 +88,8 @@ const IMPORT_CLASSIFICATION_PRESENTATION = Object.freeze({
     tone: 'warning',
   }),
   REVIEW_REQUIRED: Object.freeze({
-    label: 'Décision requise',
-    description: 'Des Produits proches doivent être examinés avant confirmation.',
+    label: 'Revue requise',
+    description: 'La ligne nécessite une décision ou une revue du référentiel avant publication.',
     tone: 'warning',
   }),
   INVALID: Object.freeze({
@@ -117,6 +121,17 @@ const PRODUCT_EVENT_LABELS = Object.freeze({
   VARIANT_UPDATED: 'Déclinaison corrigée',
   VARIANT_ARCHIVED: 'Déclinaison archivée',
   VARIANT_REACTIVATED: 'Déclinaison réactivée',
+  VARIETY_CREATED: 'Variété créée',
+  VARIETY_UPDATED: 'Variété corrigée',
+  VARIETY_ARCHIVED: 'Variété archivée',
+  VARIETY_REACTIVATED: 'Variété réactivée',
+  CHARACTERISTIC_CREATED: 'Caractéristique créée',
+  CHARACTERISTIC_UPDATED: 'Caractéristique corrigée',
+  CHARACTERISTIC_ARCHIVED: 'Caractéristique archivée',
+  CHARACTERISTIC_REACTIVATED: 'Caractéristique réactivée',
+  CONTRIBUTION_SUBMITTED: 'Contribution soumise',
+  CONTRIBUTION_APPROVED: 'Contribution approuvée',
+  CONTRIBUTION_REJECTED: 'Contribution refusée',
   CATEGORY_CREATED: 'Catégorie créée',
   CATEGORY_UPDATED: 'Catégorie renommée',
   CATEGORY_ARCHIVED: 'Catégorie archivée',

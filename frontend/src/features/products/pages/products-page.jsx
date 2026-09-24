@@ -44,6 +44,7 @@ import {
   getFoodRangeLabel,
   getFoodRangeName,
   getReferenceUnitLabel,
+  getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
@@ -187,11 +188,11 @@ function ProductsPage() {
       ),
     },
     {
-      id: 'presentation',
-      header: 'Présentation',
+      id: 'variant',
+      header: 'Déclinaison',
       cell: (result) => (
         <div>
-          <p>{result.variant.presentation || 'Standard'}</p>
+          <p>{getVariantLabel(result.variant)}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {getReferenceUnitLabel(metadata, result.variant.referenceUnit)}
             {' · '}Rendement {formatYield(result.variant.yieldPercent)}
@@ -422,12 +423,30 @@ function ProductsPage() {
         onClose={() => setCreateOpen(false)}
         onCreated={(result) => {
           setCreateOpen(false);
+          if (result?.classification === 'REVIEW_REQUIRED') {
+            toast({
+              title: 'Proposition envoyée en revue',
+              description:
+                'Le Produit sera disponible après validation du référentiel global.',
+              variant: 'success',
+            });
+            return;
+          }
+          if (result?.classification === 'EXISTING') {
+            toast({
+              title: 'Une référence existante a été retrouvée',
+              description: result?.existingReference?.name,
+            });
+            if (result?.existingReference?.id) {
+              openProduct(result.existingReference.id);
+            }
+            return;
+          }
           toast({
-            title: 'Produit créé et ajouté à mon référentiel',
-            description: result?.product?.name,
+            title: 'Contribution traitée',
+            description: result?.publishedReference?.name,
             variant: 'success',
           });
-          if (result?.product?.id) openProduct(result.product.id);
         }}
         onUseExisting={(productId) => {
           setCreateOpen(false);
