@@ -55,6 +55,7 @@ const IMPORT_FIELDS = Object.freeze([
   { key: 'color', label: 'Couleur' },
   { key: 'qualityDesignation', label: 'Désignation de qualité' },
   { key: 'processingState', label: 'État / transformation' },
+  { key: 'conservationType', label: 'Conservation' },
   { key: 'foodRange', label: 'Gamme' },
   { key: 'referenceUnit', label: 'Unité de référence' },
   { key: 'yieldPercent', label: 'Rendement (%)' },
@@ -86,6 +87,9 @@ function ProductImportDialog({
     metadata?.referenceUnits?.[0]?.value ?? '',
   );
   const [defaultCategoryId, setDefaultCategoryId] = useState(EMPTY_OPTION);
+  const [defaultConservationType, setDefaultConservationType] = useState(
+    metadata?.conservationTypes?.[0]?.value ?? '',
+  );
   const [defaultFoodRange, setDefaultFoodRange] = useState(EMPTY_OPTION);
   const [preview, setPreview] = useState(null);
   const [decisions, setDecisions] = useState({});
@@ -113,6 +117,7 @@ function ProductImportDialog({
     setMapping({});
     setDefaultUnit(metadata?.referenceUnits?.[0]?.value ?? '');
     setDefaultCategoryId(EMPTY_OPTION);
+    setDefaultConservationType(metadata?.conservationTypes?.[0]?.value ?? '');
     setDefaultFoodRange(EMPTY_OPTION);
     setPreview(null);
     setDecisions({});
@@ -188,6 +193,9 @@ function ProductImportDialog({
       ...(defaultCategoryId !== EMPTY_OPTION
         ? { categoryId: defaultCategoryId }
         : {}),
+      ...(defaultConservationType
+        ? { conservationType: defaultConservationType }
+        : {}),
       ...(defaultFoodRange !== EMPTY_OPTION
         ? { foodRange: Number(defaultFoodRange) }
         : {}),
@@ -232,10 +240,10 @@ function ProductImportDialog({
     }
 
     if (
-      !Number.isInteger(mappingPayload.foodRange)
-      && defaultFoodRange === EMPTY_OPTION
+      !Number.isInteger(mappingPayload.conservationType)
+      && !defaultConservationType
     ) {
-      setFormError('Associez une gamme ou choisissez une gamme par défaut.');
+      setFormError('Associez une conservation ou choisissez une conservation par défaut.');
       return;
     }
 
@@ -534,21 +542,43 @@ function ProductImportDialog({
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-sm text-muted-foreground">
-                      Les lignes créant un nouveau Produit seront invalides si aucune catégorie active ne peut être déterminée.
-                    </p>
+                  </Field>
+                )}
+
+                {(mapping.conservationType === EMPTY_OPTION || mapping.conservationType === undefined) && (
+                  <Field>
+                    <FieldLabel htmlFor="import-default-conservation">
+                      Conservation par défaut *
+                    </FieldLabel>
+                    <Select
+                      disabled={pending}
+                      items={metadata?.conservationTypes ?? []}
+                      onValueChange={setDefaultConservationType}
+                      value={defaultConservationType || null}
+                    >
+                      <SelectTrigger id="import-default-conservation">
+                        <SelectValue placeholder="Sélectionner une conservation" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(metadata?.conservationTypes ?? []).map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </Field>
                 )}
 
                 {(mapping.foodRange === EMPTY_OPTION || mapping.foodRange === undefined) && (
                   <Field>
                     <FieldLabel htmlFor="import-default-food-range">
-                      Gamme par défaut *
+                      Gamme par défaut
                     </FieldLabel>
                     <Select
                       disabled={pending}
                       items={[
-                        { value: EMPTY_OPTION, label: 'Sélectionner une gamme' },
+                        { value: EMPTY_OPTION, label: 'Aucune gamme par défaut' },
                         ...(metadata?.foodRanges ?? []).map((range) => ({
                           value: String(range.value),
                           label: range.label + ' — ' + range.name,
@@ -561,7 +591,7 @@ function ProductImportDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={EMPTY_OPTION}>Sélectionner une gamme</SelectItem>
+                        <SelectItem value={EMPTY_OPTION}>Aucune gamme par défaut</SelectItem>
                         {(metadata?.foodRanges ?? []).map((range) => (
                           <SelectItem key={range.value} value={String(range.value)}>
                             {range.label} — {range.name}

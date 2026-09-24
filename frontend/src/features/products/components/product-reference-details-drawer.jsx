@@ -29,6 +29,7 @@ import { ProductVariantCreateDialog } from '@/features/products/components/produ
 import {
   formatYield,
   getApiErrorMessage,
+  getConservationTypeLabel,
   getFoodRangeLabel,
   getFoodRangeName,
   getProductEventLabel,
@@ -410,7 +411,7 @@ function ProductReferenceDetailsDrawer({
                       variant="outline"
                     >
                       <Plus aria-hidden="true" className="size-4" />
-                      Créer une déclinaison
+                      Créer une référence
                     </Button>
                   </div>
                 )}
@@ -422,8 +423,14 @@ function ProductReferenceDetailsDrawer({
                         <div>
                           <p className="font-medium">{getVariantLabel(variant)}</p>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
-                            {' · '}Rendement : {formatYield(variant.yieldPercent)}
+                            Conservation : {getConservationTypeLabel(
+                              metadata,
+                              variant.conservationType,
+                            )}
+                            {' · '}Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
+                            {variant.yieldPercent
+                              ? ' · Rendement : ' + formatYield(variant.yieldPercent)
+                              : ''}
                             {variant.foodRange
                               ? ' · ' + getFoodRangeLabel(metadata, variant.foodRange)
                               : ''}

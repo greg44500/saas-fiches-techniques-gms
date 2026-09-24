@@ -25,6 +25,7 @@ import {
 import {
   formatYield,
   getApiErrorMessage,
+  getConservationTypeLabel,
   getFoodRangeLabel,
   getFoodRangeName,
   getProductStatusLabel,
@@ -77,13 +78,13 @@ function ProductDetailsDrawer({
           workspaceId,
           variantId: variant.id,
         }).unwrap();
-        toast({ title: 'Référence ajoutée à mon référentiel', variant: 'success' });
+        toast({ title: 'Référence ajoutée aux favoris', variant: 'success' });
       } else {
         await archiveVariant({
           workspaceId,
           variantId: variant.id,
         }).unwrap();
-        toast({ title: 'Référence retirée de mon référentiel', variant: 'success' });
+        toast({ title: 'Référence retirée des favoris', variant: 'success' });
       }
     } catch (error) {
       toast({
@@ -97,7 +98,7 @@ function ProductDetailsDrawer({
   return (
     <>
       <EntityDetailsDrawer
-        description="Identité Produit, déclinaisons et présence dans votre référentiel Workspace."
+        description="Identité Produit, références exploitables et favoris du Workspace."
         onClose={onClose}
         open={open}
         title={product?.name ?? 'Produit'}
@@ -115,8 +116,8 @@ function ProductDetailsDrawer({
           <Tabs defaultValue="product">
             <TabsList aria-label="Détails du Produit" variant="section">
               <TabsTrigger value="product" variant="section">Produit</TabsTrigger>
-              <TabsTrigger value="variants" variant="section">Déclinaisons</TabsTrigger>
-              <TabsTrigger value="catalog" variant="section">Mon référentiel</TabsTrigger>
+              <TabsTrigger value="variants" variant="section">Références</TabsTrigger>
+              <TabsTrigger value="catalog" variant="section">Favoris</TabsTrigger>
             </TabsList>
 
             <TabsContent value="product" variant="section">
@@ -152,7 +153,7 @@ function ProductDetailsDrawer({
                       variant="outline"
                     >
                       <Plus aria-hidden="true" className="size-4" />
-                      Créer une déclinaison
+                      Créer une référence
                     </Button>
                   </div>
                 )}
@@ -164,8 +165,14 @@ function ProductDetailsDrawer({
                         <div>
                           <p className="font-medium">{getVariantLabel(variant)}</p>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
-                            {' · '}Rendement : {formatYield(variant.yieldPercent)}
+                            Conservation : {getConservationTypeLabel(
+                              metadata,
+                              variant.conservationType,
+                            )}
+                            {' · '}Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
+                            {variant.yieldPercent
+                              ? ' · Rendement : ' + formatYield(variant.yieldPercent)
+                              : ''}
                             {variant.foodRange
                               ? ' · ' + getFoodRangeLabel(metadata, variant.foodRange)
                               : ''}
@@ -205,7 +212,7 @@ function ProductDetailsDrawer({
                                 metadata,
                                 variant.workspaceEntry.status,
                               )
-                              : 'Absente de mon référentiel'}
+                              : 'Absente des favoris'}
                           </p>
                         </div>
                         {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
@@ -216,7 +223,7 @@ function ProductDetailsDrawer({
                               type="button"
                               variant="outline"
                             >
-                              Retirer de mon référentiel
+                              Retirer des favoris
                             </Button>
                           ) : canAttach ? (
                             <Button
@@ -224,7 +231,7 @@ function ProductDetailsDrawer({
                               onClick={() => changeCatalog(variant, true)}
                               type="button"
                             >
-                              Ajouter à mon référentiel
+                              Ajouter aux favoris
                             </Button>
                           ) : null
                         )}
@@ -246,7 +253,7 @@ function ProductDetailsDrawer({
           onCreated={() => {
             setVariantDialogOpen(false);
             toast({
-              title: 'Déclinaison créée',
+              title: 'Référence créée',
               variant: 'success',
             });
           }}

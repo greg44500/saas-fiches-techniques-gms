@@ -363,6 +363,11 @@ function ProductsPage() {
                     ? undefined
                     : categoryId
                 }
+                conservationType={
+                  conservationType === ALL_CONSERVATION_TYPES
+                    ? undefined
+                    : conservationType
+                }
                 foodRange={
                   foodRange === ALL_FOOD_RANGES
                     ? undefined
