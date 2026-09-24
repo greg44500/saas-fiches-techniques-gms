@@ -30,6 +30,18 @@ import {
     CanonicalProduct,
 } from '../../../modules/productCatalog/canonicalProduct.model.js';
 import {
+    ProductCharacteristic,
+} from '../../../modules/productCatalog/productCharacteristic.model.js';
+import {
+    ProductVariant,
+} from '../../../modules/productCatalog/productVariant.model.js';
+import {
+    ProductVariety,
+} from '../../../modules/productCatalog/productVariety.model.js';
+import {
+    ReferenceContribution,
+} from '../../../modules/productCatalog/referenceContribution.model.js';
+import {
     WorkspaceProduct,
 } from '../../../modules/productCatalog/workspaceProduct.model.js';
 import {
@@ -95,7 +107,7 @@ describe('M-002 product import service', () => {
         }
     });
 
-    it('prévisualise sans mutation puis crée un Produit actif au commit', async () => {
+    it('prévisualise sans mutation puis envoie un nouveau Produit Workspace en revue', async () => {
         const inspected = await inspectProductImport({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
@@ -110,7 +122,8 @@ describe('M-002 product import service', () => {
             defaults: previewDefaults(),
         });
 
-        expect(preview.counts.CREATE_PRODUCT).toBe(1);
+        expect(preview.counts.REVIEW_REQUIRED).toBe(1);
+        expect(preview.rows[0].reviewMode).toBe('REFERENCE_GOVERNANCE');
         expect(
             await CanonicalProduct.countDocuments({ name: 'Panais' }),
         ).toBe(0);
@@ -121,11 +134,15 @@ describe('M-002 product import service', () => {
             importId: inspected.importId,
         });
 
-        expect(committed.results[0].status).toBe('CREATED_PRODUCT');
+        expect(committed.results[0].status).toBe('PENDING_REVIEW');
         expect(
-            await CanonicalProduct.countDocuments({
-                name: 'Panais',
-                status: 'ACTIVE',
+            await CanonicalProduct.countDocuments({ name: 'Panais' }),
+        ).toBe(0);
+        expect(
+            await ReferenceContribution.countDocuments({
+                workspace: ownerContext.workspace._id,
+                proposedValue: 'Panais',
+                status: 'PENDING_REVIEW',
             }),
         ).toBe(1);
     });
@@ -171,6 +188,138 @@ describe('M-002 product import service', () => {
         });
 
         expect(secondCommit.succeeded).toBe(1);
+    });
+
+    it('reconnaît une Présentation structurée existante sans recréer la déclinaison', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Carotte import présentation',
+            presentation: 'Râpée',
+        });
+        const inspected = await inspectProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            file: csvFile(
+                'Produit;Présentation\n'
+                + 'Carotte import présentation;Râpée',
+            ),
+        });
+
+        const preview = await previewProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+            mapping: { name: 0, presentation: 1 },
+            defaults: previewDefaults(),
+        });
+
+        expect(preview.counts.ATTACH_EXISTING).toBe(1);
+        expect(preview.rows[0].variantId)
+            .toBe(reference.variant._id.toString());
+    });
+
+    it('auto-publie une Présentation et une Variété nouvelles sous un Produit existant', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Pomme import dimensions',
+        });
+        const inspected = await inspectProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            file: csvFile(
+                'Produit;Variété;Présentation\n'
+                + 'Pomme import dimensions;Gala;En quartiers',
+            ),
+        });
+
+        const preview = await previewProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+            mapping: {
+                name: 0,
+                variety: 1,
+                presentation: 2,
+            },
+            defaults: previewDefaults(),
+        });
+
+        expect(preview.counts.CREATE_VARIANT).toBe(1);
+        expect(preview.rows[0].missingDimensions).toHaveLength(2);
+
+        const committed = await commitProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+        });
+
+        expect(committed.results[0].status).toBe('CREATED_VARIANT');
+        expect(
+            await ProductVariety.countDocuments({
+                canonicalProduct: reference.product._id,
+                normalizedName: 'gala',
+            }),
+        ).toBe(1);
+        expect(
+            await ProductCharacteristic.countDocuments({
+                canonicalProduct: reference.product._id,
+                kind: 'PRESENTATION',
+                normalizedName: 'en quartiers',
+            }),
+        ).toBe(1);
+        expect(
+            await ProductVariant.countDocuments({
+                canonicalProduct: reference.product._id,
+            }),
+        ).toBe(2);
+    });
+
+    it('envoie une caractéristique sensible importée en revue sans créer la variante', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Carotte import qualité',
+        });
+        const inspected = await inspectProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            file: csvFile(
+                'Produit;Désignation qualité\n'
+                + 'Carotte import qualité;Carottes des sables',
+            ),
+        });
+
+        const preview = await previewProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+            mapping: {
+                name: 0,
+                qualityDesignation: 1,
+            },
+            defaults: previewDefaults(),
+        });
+
+        expect(preview.counts.CREATE_VARIANT).toBe(1);
+
+        const committed = await commitProductImport({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            importId: inspected.importId,
+        });
+
+        expect(committed.results[0].status).toBe('PENDING_REVIEW');
+        expect(
+            await ReferenceContribution.countDocuments({
+                canonicalProduct: reference.product._id,
+                characteristicKind: 'QUALITY_DESIGNATION',
+                status: 'PENDING_REVIEW',
+            }),
+        ).toBe(1);
+        expect(
+            await ProductVariant.countDocuments({
+                canonicalProduct: reference.product._id,
+            }),
+        ).toBe(1);
     });
 
     it('alimente globalement le référentiel sans créer de rattachement Workspace', async () => {
@@ -262,7 +411,7 @@ describe('M-002 product import service', () => {
             defaults: previewDefaults(),
         });
 
-        expect(preview.counts.CREATE_PRODUCT).toBe(1);
+        expect(preview.counts.REVIEW_REQUIRED).toBe(1);
 
         await createActiveProductReference({
             actorId: ownerContext.owner._id,
