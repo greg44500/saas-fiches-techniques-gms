@@ -71,28 +71,36 @@ Décisions finales :
 
 ### 2.2 Référentiel Produit
 
-**État : recadrage QA validé — adaptation du modèle/UX/seed à implémenter avant fusion M-002**
+**État : contrat final validé — implémentation réalignée, QA visuelle et gates finaux à exécuter**
 
-Le socle déjà développé reste conservé : `CanonicalProduct`, `ProductVariety`, `ProductCharacteristic`, `ProductVariant`, `WorkspaceProduct`, contributions gouvernées, recherche/déduplication, imports et autorisation Application Global.
+Contrat canonique :
 
-Le recadrage QA du 2026-09-24 ajoute/rectifie :
+```text
+docs/m002/M-002-FINAL-CONTRACT.md
+```
 
-- `CUT` comme Caractéristique `Pièce / découpe` ;
-- possibilité pour un `CanonicalProduct` d'exister sans variante artificielle ;
-- Gammes limitées à 1..5 ;
-- PAI/PAE séparé de la Gamme via une classification d'usage de variante ;
-- signature de variante enrichie par cette classification ;
-- seed `m002-reference-v3` à créer, v1/v2 restant immuables ;
-- migration explicite/fail-closed des anciennes variantes Gamme 6 ;
-- recherche utilisateur sans vocabulaire `alias` ;
-- liste principale groupée par Produit avec pagination par Produit ;
-- accès visible à la gouvernance globale depuis la navigation Platform pour les gouverneurs explicitement habilités.
+Décisions finales :
 
-Dépendance générique Core démontrée : point d'extension de navigation Platform. Ce lot doit être traité dans `saas-core-api` en une seule PR, sans version/tag/release, puis intégré au produit par SHA exact.
+- `ProductVariant` conserve son nom technique mais joue le rôle métier de Référence Produit exploitable ;
+- nom métier persistant et unique par normalisation ;
+- Conservation obligatoire ;
+- unité de référence obligatoire ;
+- Catégorie facultative ;
+- Gamme facultative 1..6 ;
+- Gamme 6 = PAI / PAE ;
+- suppression de `usageType` du contrat actif ;
+- état/transformation facultatif et indépendant de la Gamme ;
+- dimensions avancées facultatives ;
+- `WorkspaceProduct` présenté comme Favori ;
+- liste Workspace `Produit | Conservation | Actions` ;
+- seed actif `m002-reference-v4` ;
+- migration additionnelle fail-closed ;
+- import dédupliqué par nom exact de Référence ;
+- frontière stricte M-002 / M-003 maintenue.
 
-Contrat canonique : `docs/m002/M-002-RECARDAGE-QA.md`.
+La dépendance générique Core de navigation Platform est déjà résolue et intégrée.
 
-À fermer avant fusion M-002 : intégration du commit Core, modèle/migration/seed v3, backend/frontend, tests, E2E, QA visuelle, documentation finale, une seule PR M-002.
+À fermer avant fusion M-002 : migration/seed local, QA visuelle, tests backend/frontend, lint/build, E2E, `release:verify`, documentation de clôture éventuelle et une seule PR M-002.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 

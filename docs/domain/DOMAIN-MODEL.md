@@ -290,32 +290,36 @@ La lecture respecte à la fois les permissions Workspace et le scope Dossier ; u
 
 ## 5. Produit
 
-Le référentiel Produit M-002 est une donnée de référence globale du SaaS. Les identités génériques sont partagées entre Workspaces ; les données commerciales restent hors de ce périmètre.
+Le référentiel Produit M-002 est une donnée de référence globale du SaaS. Les données commerciales restent hors de ce périmètre.
 
-### 5.1 Modèle M-002 recadré
+### 5.1 Modèle M-002 final
 
 ```text
 CanonicalProduct
-→ identité racine globale
-→ peut exister sans variante opérationnelle
+→ racine / concept Produit global
+→ catégorie facultative
+→ peut exister sans Référence exploitable
 
 ProductVariety
-→ véritable variété/cultivar facultatif
+→ variété/cultivar facultatif
 
 ProductCharacteristic
 → PRESENTATION | COMMERCIAL_TYPE | SIZE_FORMAT | COLOR | QUALITY_DESIGNATION | CUT
 
 ProductVariant
-→ CanonicalProduct
-→ ProductVariety éventuelle
-→ ProductCharacteristic[] structurées
-→ Gamme 1..5 + État/transformation
-→ usageType éventuel PAI / PAE
-→ unité + rendement
+→ rôle métier = Référence Produit
+→ name persistant
+→ normalizedName unique pour une référence active
+→ conservationType obligatoire
+→ referenceUnit obligatoire
+→ foodRange 1..6 facultatif
+→ processingState facultatif
+→ dimensions facultatives
+→ rendement facultatif
 
 WorkspaceProduct
 → ownership Workspace
-→ référence obligatoirement une ProductVariant
+→ lien de Favori vers une Référence Produit globale
 
 ReferenceContribution
 → proposition Workspace gouvernée
@@ -323,50 +327,79 @@ ReferenceContribution
 
 `createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` conserve une provenance sans devenir un ownership.
 
-### 5.2 Classification validée
+### 5.2 Identité et présentation
+
+L'utilisateur sélectionne une Référence Produit par son nom métier persistant.
 
 ```text
-Carotte râpée             → PRESENTATION:Râpée
-Carotte surgelée          → Gamme 3 / Surgelé
-Bœuf paleron en cubes     → CUT:Paleron + PRESENTATION:Cubes
-Agneau gigot tranché      → CUT:Gigot + PRESENTATION:Tranché
-Flan prétranché surgelé  → Gamme 3 + PAE + PRESENTATION
-Fond brun en poudre       → PAI + PRESENTATION:Poudre
-Jambon blanc / Bacon      → catégorie Charcuteries, sans classification PAI/PAE automatique
+Carotte
+Carotte râpée
+Carotte en rondelles
+Carotte surgelée
+Farine de blé
+Paleron de bœuf
 ```
 
-Une désignation complexe ne devient pas automatiquement un nouveau `CanonicalProduct` si son parent est identifiable.
+Variété et Caractéristiques servent à enrichir, filtrer et rechercher. Elles ne construisent jamais automatiquement le nom visible.
 
-### 5.3 Identité et signature
+L'unicité exacte porte sur `ProductVariant.normalizedName` pour les identités actives.
+
+### 5.3 Conservation et Gamme
+
+`conservationType` est obligatoire :
 
 ```text
-canonicalProduct
-+ varietyId ou _
-+ characteristicIds ordonnés par kind
-+ foodRange 1..5
-+ normalized(processingState)
-+ usageType ou _
+FRAIS
+REFRIGERE
+SURGELE
+CONSERVE
+SEC
 ```
 
-`referenceUnit` et `yieldPercent` restent hors signature.
+La Gamme est facultative :
 
-### 5.4 Catégories, Gammes et usage
+```text
+1
+2
+3
+4
+5
+6 → PAI / PAE
+```
 
-`ProductCategory` classe la nature/famille métier du Produit. Elle ne représente ni la Gamme ni le statut PAI/PAE.
+Le champ `usageType` est retiré du contrat actif.
 
-Le backend reste l'autorité des Gammes 1 à 5, de leurs États/transformation et de la classification PAI/PAE séparée.
+`processingState` est facultatif et n'est plus déduit automatiquement de la Gamme.
 
-### 5.5 Recherche et présentation
+### 5.4 Recherche et Favoris
 
-Les vrais synonymes métier restent gouvernés. Les formes techniques de recherche restent générées.
+La liste Workspace expose une ligne par Référence Produit :
 
-La liste principale est groupée par `CanonicalProduct` et paginée par Produit. Les variantes sont présentées sous le groupe afin d'éviter la répétition visuelle du même nom.
+```text
+Produit | Conservation | Actions
+```
 
-Une recherche précise peut réduire/ouvrir le groupe sur les variantes pertinentes. Le référentiel global peut exposer un Produit sans variante opérationnelle pour permettre son enrichissement.
+Vues :
 
-### 5.6 Contribution et gouvernance
+```text
+Tous les produits
+Favoris
+```
 
-Classification : `EXISTING / AUTO_PUBLISHABLE / REVIEW_REQUIRED / INVALID`.
+`WorkspaceProduct` représente uniquement ce lien de Favori et ne copie jamais les données globales.
+
+La recherche utilise d'abord le nom persistant de Référence, puis les dimensions comme termes secondaires.
+
+### 5.5 Contribution et gouvernance
+
+Classification :
+
+```text
+EXISTING
+AUTO_PUBLISHABLE
+REVIEW_REQUIRED
+INVALID
+```
 
 L'autorité globale reste Application Global :
 
@@ -375,21 +408,31 @@ product:reference:read
 product:reference:manage
 ```
 
-`Super Admin Platform` et `Workspace Owner` ne deviennent jamais implicitement gouverneur Produit. Le Fondateur reçoit explicitement `product_reference_governor` via le bootstrap produit.
+`Super Admin Platform` et `Workspace Owner` ne deviennent jamais implicitement gouverneur Produit.
 
-### 5.7 Dépendance Core navigation Platform
+### 5.6 Seed et migration
 
-L'accès métier global doit être visible depuis la navigation Platform pour un membre Platform également gouverneur Produit. Le Core doit fournir un point d'extension générique de navigation Platform sans importer le module Produit.
+Datasets historiques immuables :
 
-### 5.8 Seed et migration
+```text
+m002-reference-v1
+m002-reference-v2
+m002-reference-v3
+```
 
-`m002-reference-v1` et `v2` restent immuables. `m002-reference-v3` porte la taxonomie recadrée, permet des Produits sans variante et ne crée aucune donnée artificielle.
+Dataset actif :
 
-Toute migration de `foodRange=6` est explicite et fail-closed si la conversion ne peut pas être déterminée sans invention.
+```text
+m002-reference-v4
+```
 
-### 5.9 Frontière M-003
+La migration du contrat Référence Produit est fail-closed lorsqu'un nom ou une conservation ne peut pas être déterminé sans invention.
+
+### 5.7 Frontière M-003
 
 M-002 ne porte jamais Fournisseur, catalogue/édition fournisseur, Article fournisseur, référence fournisseur, conditionnement commercial ou prix.
+
+M-003 portera le contexte économique par Dossier et pourra associer plusieurs offres fournisseurs à une même Référence Produit.
 
 ## 6. Fournisseur
 

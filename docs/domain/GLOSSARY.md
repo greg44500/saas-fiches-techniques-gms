@@ -129,58 +129,68 @@ Les variantes lexicales équivalentes — casse, singulier/pluriel, accents, esp
 
 ---
 
-## Référentiel Produit du Workspace
+## Favoris Produits du Workspace
 
-Sélection des Produits canoniques réellement utilisés par un Workspace.
+Sélection des Références Produit globales que le Workspace souhaite retrouver rapidement.
 
-Le référentiel Produit du Workspace référence le référentiel global ; il ne copie pas l'identité du Produit. Dans l'interface, il est présenté comme **Mon référentiel**. Les Dossiers du Workspace puisent dans cette sélection.
+`WorkspaceProduct` matérialise ce lien. Il appartient au Workspace et référence une `ProductVariant` globale sans copier son identité.
 
-`WorkspaceProduct` matérialise ce rattachement dans M-002. Il appartient au Workspace et référence une `ProductVariant` globale sans copier l'identité canonique.
+Dans l'interface, ce sous-ensemble est présenté comme **Favoris**. Il ne constitue pas un second catalogue Produit.
 
 ---
 
 ## Produit canonique
 
-Denrée, composant ou consommable de référence identifiable indépendamment d'un Workspace, d'un Fournisseur et d'un prix.
+Racine ou concept Produit global identifiable indépendamment d'un Workspace, d'un Fournisseur et d'un prix.
 
 Il porte conceptuellement :
 
 - un nom canonique ;
 - des synonymes métier gouvernés éventuels ;
-- des clés/formes de recherche générées automatiquement ;
-- une catégorie ;
+- des clés/formes de recherche ;
+- une catégorie facultative ;
 - des métadonnées d'audit/provenance ;
-- les liens vers ses Variétés, Caractéristiques et Déclinaisons.
+- les liens vers ses Variétés, Caractéristiques et Références Produit.
 
 Il ne contient jamais de prix, fournisseur local, conditionnement commercial ou autre donnée confidentielle tenant.
 
+Un `CanonicalProduct` peut exister sans Référence Produit exploitable.
+
 ---
 
-## Déclinaison Produit
+## Référence Produit
 
-Variation d'usage structurée d'un Produit canonique sans nouvelle identité racine.
+Référence métier globale directement sélectionnable dans les futurs modules métier.
 
-Axes M-002 :
+Le rôle technique est porté par `ProductVariant`, conservé pour compatibilité de migration.
+
+Champs structurants :
 
 ```text
-Variété éventuelle
-Caractéristiques contrôlées
-→ Présentation
-→ Type commercial
-→ Calibre / format
-→ Couleur
-→ Désignation de qualité
-→ Pièce / découpe
-Gamme 1..5
-État / transformation
-Classification d'usage éventuelle PAI / PAE
-Unité de référence
-Rendement
+name persistant
+normalizedName unique pour une référence active
+conservationType obligatoire
+referenceUnit obligatoire
+foodRange facultatif
+processingState facultatif
+Variété facultative
+Caractéristiques facultatives
+yieldPercent facultatif
 ```
 
-Un `CanonicalProduct` peut exister sans Déclinaison lorsqu'aucune variante suffisamment précise n'est validée. `WorkspaceProduct` référence toujours une Déclinaison réelle.
+Le nom visible n'est jamais fabriqué à partir des dimensions.
 
-La Présentation n'est pas un champ texte persistant de `ProductVariant` : elle est une `ProductCharacteristic(kind=PRESENTATION)`.
+Exemples :
+
+```text
+Carotte
+Carotte râpée
+Carotte surgelée
+Farine de blé
+Paleron de bœuf
+```
+
+`WorkspaceProduct` référence toujours une Référence Produit réelle.
 
 ### Autorité globale Produit
 
@@ -189,13 +199,15 @@ product:reference:read
 product:reference:manage
 ```
 
-Elle permet aussi d'examiner les `ReferenceContribution`. Aucun rôle Platform ou Workspace ne confère ces permissions implicitement.
+Aucun rôle Platform ou Workspace ne confère ces permissions implicitement.
 
 ---
 
 ## Catégorie
 
 Classification fonctionnelle globale du Produit destinée au classement, à la recherche, aux filtres et aux analyses.
+
+Elle est facultative pour une Référence Produit.
 
 ---
 
@@ -205,7 +217,7 @@ Véritable variété ou cultivar d'un Produit canonique, représenté par `Produ
 
 Exemples : Golden, Gala et Granny Smith pour Pomme ; Charlotte pour Pomme de terre.
 
-Une Variété est facultative dans une Déclinaison. `Nantaise` appliqué à la carotte relève du type commercial, pas de cette notion.
+Une Variété est facultative dans une Référence Produit.
 
 ## Caractéristique Produit
 
@@ -220,9 +232,35 @@ Types M-002 :
 - `QUALITY_DESIGNATION` ;
 - `CUT` — Pièce / découpe.
 
-`CUT` décrit notamment une pièce ou découpe nécessaire pour rendre une viande/volaille/poisson exploitable sans créer une nouvelle identité racine. `PRESENTATION` décrit ensuite la forme de mise en œuvre : entier, tranché, cubes, haché, etc.
+Une Référence Produit porte au maximum une caractéristique de chaque type.
 
-Une Déclinaison porte au maximum une caractéristique de chaque type.
+Les dimensions enrichissent la Référence mais ne fabriquent jamais son nom.
+
+## Conservation Produit
+
+Information obligatoire et indépendante de la Gamme.
+
+Valeurs M-002 :
+
+- `FRAIS` — Frais ;
+- `REFRIGERE` — Réfrigéré ;
+- `SURGELE` — Surgelé ;
+- `CONSERVE` — Conserve ;
+- `SEC` — Sec.
+
+## Gamme alimentaire
+
+Classification métier facultative backend-driven :
+
+- Gamme 1 ;
+- Gamme 2 ;
+- Gamme 3 ;
+- Gamme 4 ;
+- Gamme 5 ;
+- Gamme 6 — PAI / PAE.
+
+`usageType` n'appartient plus au contrat actif M-002. Les constantes historiques éventuelles servent uniquement aux migrations déjà versionnées.
+
 
 ## Contribution au Référentiel
 
