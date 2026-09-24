@@ -120,6 +120,7 @@ const inspectAndPreview = async ({
             mapping: { name: 0 },
             defaults: {
                 referenceUnit: 'KG',
+                conservationType: 'FRAIS',
                 categoryId: category.id,
                 foodRange: 1,
             },
@@ -156,11 +157,15 @@ describe('M-002 product catalog HTTP contract', () => {
                 }),
             ]),
         );
-        expect(metadata.body.data.metadata.foodRanges).toHaveLength(5);
-        expect(metadata.body.data.metadata.usageTypes).toEqual([
-            { value: 'PAI', label: 'PAI' },
-            { value: 'PAE', label: 'PAE' },
+        expect(metadata.body.data.metadata.foodRanges).toHaveLength(6);
+        expect(metadata.body.data.metadata.conservationTypes).toEqual([
+            { value: 'FRAIS', label: 'Frais' },
+            { value: 'REFRIGERE', label: 'Réfrigéré' },
+            { value: 'SURGELE', label: 'Surgelé' },
+            { value: 'CONSERVE', label: 'Conserve' },
+            { value: 'SEC', label: 'Sec' },
         ]);
+        expect(metadata.body.data.metadata).not.toHaveProperty('usageTypes');
 
         const created = await request(app)
             .post(basePath())
@@ -168,7 +173,11 @@ describe('M-002 product catalog HTTP contract', () => {
             .send({
                 name: 'Lentille verte',
                 categoryId: category.id,
-                variant: { foodRange: 1, referenceUnit: 'KG' },
+                variant: {
+                    name: 'Lentille verte',
+                    conservationType: 'SEC',
+                    referenceUnit: 'KG',
+                },
             });
 
         expect(created.status).toBe(201);
@@ -215,7 +224,11 @@ describe('M-002 product catalog HTTP contract', () => {
             .send({
                 name: 'Interdit',
                 categoryId: category.id,
-                variant: { foodRange: 1, referenceUnit: 'KG' },
+                variant: {
+                    name: 'Interdit',
+                    conservationType: 'FRAIS',
+                    referenceUnit: 'KG',
+                },
             });
 
         expect(forbidden.status).toBe(403);

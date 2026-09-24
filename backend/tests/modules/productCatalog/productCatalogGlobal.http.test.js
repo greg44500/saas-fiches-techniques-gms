@@ -160,7 +160,9 @@ describe('M-002 global product reference HTTP contract', () => {
                 name: 'Carotte',
                 categoryId: category.body.data.category.id,
                 variant: {
+                    name: 'Carotte râpée',
                     presentation: 'Râpée',
+                    conservationType: 'FRAIS',
                     foodRange: 1,
                     referenceUnit: 'KG',
                 },
@@ -245,7 +247,9 @@ describe('M-002 global product reference HTTP contract', () => {
             )
             .set(bearer(governorToken))
             .send({
+                name: 'Paleron de bœuf',
                 characteristicIds: [cut.body.data.characteristic.id],
+                conservationType: 'FRAIS',
                 foodRange: 1,
                 referenceUnit: 'KG',
             })
@@ -300,6 +304,7 @@ describe('M-002 global product reference HTTP contract', () => {
                 mapping: { name: 0 },
                 defaults: {
                     referenceUnit: 'KG',
+                    conservationType: 'FRAIS',
                     categoryId: category.body.data.category.id,
                     foodRange: 1,
                 },

@@ -69,6 +69,7 @@ const csvFile = (content) => ({
 
 const previewDefaults = () => ({
     referenceUnit: 'KG',
+    conservationType: 'FRAIS',
     categoryId: category.id,
     foodRange: 1,
 });
@@ -147,15 +148,16 @@ describe('M-002 product import service', () => {
         ).toBe(1);
     });
 
-    it('rattache une déclinaison ACTIVE existante sans doublon', async () => {
+    it('rattache une référence ACTIVE existante par son nom persistant', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,
-            name: 'Farine',
+            name: 'Farine racine',
+            referenceName: 'Farine de blé',
         });
         const inspected = await inspectProductImport({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
-            file: csvFile('Produit\nFarine'),
+            file: csvFile('Produit\nFarine de blé'),
         });
 
         const preview = await previewProductImport({
@@ -218,7 +220,7 @@ describe('M-002 product import service', () => {
             .toBe(reference.variant._id.toString());
     });
 
-    it('auto-publie une Présentation et une Variété nouvelles sous un Produit existant', async () => {
+    it('ne recrée pas une référence existante lorsque des dimensions sont importées', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,
             name: 'Pomme import dimensions',
@@ -244,37 +246,32 @@ describe('M-002 product import service', () => {
             defaults: previewDefaults(),
         });
 
-        expect(preview.counts.CREATE_VARIANT).toBe(1);
-        expect(preview.rows[0].missingDimensions).toHaveLength(2);
+        expect(preview.counts.ATTACH_EXISTING).toBe(1);
+        expect(preview.rows[0].variantId)
+            .toBe(reference.variant._id.toString());
+        expect(preview.rows[0].warnings).toContain(
+            'La référence existe déjà : les dimensions importées ne modifient pas son identité.',
+        );
 
-        const committed = await commitProductImport({
+        await commitProductImport({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
             importId: inspected.importId,
         });
 
-        expect(committed.results[0].status).toBe('CREATED_VARIANT');
-        expect(
-            await ProductVariety.countDocuments({
-                canonicalProduct: reference.product._id,
-                normalizedName: 'gala',
-            }),
-        ).toBe(1);
-        expect(
-            await ProductCharacteristic.countDocuments({
-                canonicalProduct: reference.product._id,
-                kind: 'PRESENTATION',
-                normalizedName: 'en quartiers',
-            }),
-        ).toBe(1);
         expect(
             await ProductVariant.countDocuments({
                 canonicalProduct: reference.product._id,
             }),
-        ).toBe(2);
+        ).toBe(1);
+        expect(
+            await ProductVariety.countDocuments({
+                canonicalProduct: reference.product._id,
+            }),
+        ).toBe(0);
     });
 
-    it('envoie une caractéristique sensible importée en revue sans créer la variante', async () => {
+    it('ne crée pas de contribution dimensionnelle quand le nom de référence existe déjà', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,
             name: 'Carotte import qualité',
@@ -299,22 +296,21 @@ describe('M-002 product import service', () => {
             defaults: previewDefaults(),
         });
 
-        expect(preview.counts.CREATE_VARIANT).toBe(1);
+        expect(preview.counts.ATTACH_EXISTING).toBe(1);
+        expect(preview.rows[0].variantId)
+            .toBe(reference.variant._id.toString());
 
-        const committed = await commitProductImport({
+        await commitProductImport({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
             importId: inspected.importId,
         });
 
-        expect(committed.results[0].status).toBe('PENDING_REVIEW');
         expect(
             await ReferenceContribution.countDocuments({
                 canonicalProduct: reference.product._id,
-                characteristicKind: 'QUALITY_DESIGNATION',
-                status: 'PENDING_REVIEW',
             }),
-        ).toBe(1);
+        ).toBe(0);
         expect(
             await ProductVariant.countDocuments({
                 canonicalProduct: reference.product._id,

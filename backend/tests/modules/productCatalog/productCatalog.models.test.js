@@ -55,17 +55,17 @@ describe('M-002 product catalog models', () => {
         ).toBe(true);
     });
 
-    it('porte Variété et Caractéristiques structurées sans Présentation textuelle persistée', () => {
+    it('porte une identité de référence persistée et des dimensions facultatives', () => {
+        expect(ProductVariant.schema.path('name').options.required).toBe(true);
+        expect(ProductVariant.schema.path('normalizedName').options.required)
+            .toBe(true);
+        expect(ProductVariant.schema.path('conservationType').options.required)
+            .toBe(true);
         expect(ProductVariant.schema.path('variety')).toBeDefined();
         expect(ProductVariant.schema.path('characteristics')).toBeDefined();
         expect(ProductVariant.schema.path('presentation')).toBeUndefined();
         expect(ProductVariant.schema.path('normalizedPresentation')).toBeUndefined();
-        expect(ProductVariant.schema.path('form')).toBeUndefined();
-        expect(ProductVariant.schema.path('preservation')).toBeUndefined();
-        expect(ProductVariant.schema.path('usageType').options.enum)
-            .toEqual(['PAI', 'PAE']);
-        expect(ProductVariant.schema.path('usageType').options.default)
-            .toBeNull();
+        expect(ProductVariant.schema.path('usageType')).toBeUndefined();
     });
 
     it('crée par défaut les identités Produit en ACTIVE', () => {
@@ -78,6 +78,12 @@ describe('M-002 product catalog models', () => {
             ([fields, options]) => (
                 fields.searchKeys === 1
                 && options.name === 'canonical_product_search_keys_unique'
+            ),
+        );
+        const variantNameIndex = ProductVariant.schema.indexes().find(
+            ([fields, options]) => (
+                fields.normalizedName === 1
+                && options.name === 'product_variant_normalized_name_unique'
             ),
         );
         const variantIndex = ProductVariant.schema.indexes().find(
@@ -96,6 +102,7 @@ describe('M-002 product catalog models', () => {
         );
 
         expect(productIndex?.[1].unique).toBe(true);
+        expect(variantNameIndex?.[1].unique).toBe(true);
         expect(variantIndex?.[1].unique).toBe(true);
         expect(workspaceIndex?.[1].unique).toBe(true);
     });
@@ -162,7 +169,10 @@ describe('M-002 product catalog models', () => {
         const actorId = new mongoose.Types.ObjectId();
         const variant = new ProductVariant({
             canonicalProduct: new mongoose.Types.ObjectId(),
-            normalizedSignature: '_|_|_',
+            name: 'Test rendement',
+            normalizedName: 'test rendement',
+            normalizedSignature: 'n:test rendement|v:_|c:_',
+            conservationType: 'FRAIS',
             referenceUnit: 'KG',
             yieldPercent: 101,
             createdBy: actorId,

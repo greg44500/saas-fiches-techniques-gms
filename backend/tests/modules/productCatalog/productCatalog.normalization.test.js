@@ -84,8 +84,9 @@ describe('M-002 product normalization', () => {
         ).toBe(true);
     });
 
-    it('construit la signature cible avec des identifiants stables', () => {
+    it('construit la signature cible à partir du nom persistant et des dimensions', () => {
         expect(buildVariantSignature({
+            name: 'Carotte râpée',
             varietyId: '507f1f77bcf86cd799439011',
             characteristics: [
                 {
@@ -99,12 +100,11 @@ describe('M-002 product normalization', () => {
             ],
             foodRange: 1,
             processingState: 'Produit frais',
-            usageType: 'PAI',
         })).toBe(
-            'v:507f1f77bcf86cd799439011'
+            'n:carotte rapee'
+            + '|v:507f1f77bcf86cd799439011'
             + '|c:PRESENTATION:507f191e810c19729de860ea,'
-            + 'SIZE_FORMAT:507f191e810c19729de860eb'
-            + '|r:1|s:produit frais|u:pai',
+            + 'SIZE_FORMAT:507f191e810c19729de860eb',
         );
     });
 });

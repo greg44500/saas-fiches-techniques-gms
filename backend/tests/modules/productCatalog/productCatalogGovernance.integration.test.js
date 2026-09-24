@@ -47,12 +47,16 @@ beforeEach(async () => {
 });
 
 describe('M-002 product reference governance', () => {
-    it('exige une catégorie active pour créer une identité globale', async () => {
+    it('autorise une catégorie facultative mais refuse une catégorie fournie invalide', async () => {
         await expect(createGlobalProduct({
             actorId: ownerContext.owner._id,
             name: 'Courgette',
             categoryId: ownerContext.workspace._id,
-            variant: { foodRange: 1, referenceUnit: 'KG' },
+            variant: {
+                name: 'Courgette',
+                conservationType: 'FRAIS',
+                referenceUnit: 'KG',
+            },
         })).rejects.toMatchObject({ statusCode: 409 });
 
         const category = await createCategory({
@@ -64,7 +68,11 @@ describe('M-002 product reference governance', () => {
             actorId: ownerContext.owner._id,
             name: 'Courgette',
             categoryId: category.id,
-            variant: { foodRange: 1, referenceUnit: 'KG' },
+            variant: {
+                name: 'Courgette',
+                conservationType: 'FRAIS',
+                referenceUnit: 'KG',
+            },
         });
 
         expect(created.product.status).toBe('ACTIVE');
@@ -100,7 +108,9 @@ describe('M-002 product reference governance', () => {
             name: 'Carotte structurée',
             categoryId: category.id,
             variant: {
+                name: 'Carotte structurée râpée',
                 presentation: 'Râpée',
+                conservationType: 'FRAIS',
                 foodRange: 1,
                 referenceUnit: 'KG',
             },
@@ -125,7 +135,7 @@ describe('M-002 product reference governance', () => {
         expect(persistedVariant.presentation).toBeUndefined();
     });
 
-    it('ajoute directement une déclinaison active au référentiel global', async () => {
+    it('ajoute directement une référence active au référentiel global', async () => {
         const category = await createCategory({
             actorId: ownerContext.owner._id,
             name: 'Épicerie',
@@ -134,14 +144,21 @@ describe('M-002 product reference governance', () => {
             actorId: ownerContext.owner._id,
             name: 'Riz',
             categoryId: category.id,
-            variant: { foodRange: 1, referenceUnit: 'KG' },
+            variant: {
+                name: 'Riz',
+                conservationType: 'SEC',
+                referenceUnit: 'KG',
+            },
         });
 
         const variant = await createGlobalVariant({
             actorId: ownerContext.owner._id,
             productId: created.product.id,
             variant: {
+                name: 'Riz sous-vide cuit',
+                conservationType: 'REFRIGERE',
                 foodRange: 5,
+                processingState: 'Sous-vide cuit',
                 referenceUnit: 'KG',
             },
         });
@@ -162,7 +179,11 @@ describe('M-002 product reference governance', () => {
             type: 'CANONICAL_PRODUCT',
             value: 'Pomme',
             categoryId: category.id,
-            variant: { foodRange: 1, referenceUnit: 'KG' },
+            variant: {
+                name: 'Pomme',
+                conservationType: 'FRAIS',
+                referenceUnit: 'KG',
+            },
         });
 
         expect(submitted.classification).toBe('REVIEW_REQUIRED');

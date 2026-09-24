@@ -127,6 +127,7 @@ describe('M-002 recherche structurée Produit', () => {
 
         const carotte = await createActiveProductReference({
             name: 'Carotte surgelée recherche',
+            conservationType: 'SURGELE',
             foodRange: 3,
         });
         const frozenResult = await referenceSearch(
@@ -171,10 +172,10 @@ describe('M-002 recherche structurée Produit', () => {
         ]));
     });
 
-    it('retrouve la classification d usage PAI sans la confondre avec une Gamme', async () => {
+    it('retrouve PAI / PAE via la Gamme 6 sans usageType séparé', async () => {
         const reference = await createActiveProductReference({
             name: 'Purée recherche',
-            usageType: 'PAI',
+            foodRange: 6,
         });
 
         const result = await referenceSearch('pai');
@@ -182,8 +183,8 @@ describe('M-002 recherche structurée Produit', () => {
         expect(result.results).toHaveLength(1);
         expect(result.results[0].product.id)
             .toBe(reference.product._id.toString());
-        expect(result.results[0].variant.usageType).toBe('PAI');
-        expect(result.results[0].variant.foodRange).toBe(1);
+        expect(result.results[0].variant.foodRange).toBe(6);
+        expect(result.results[0].variant).not.toHaveProperty('usageType');
     });
 
     it('pagine la liste opérationnelle par référence exploitable', async () => {
@@ -202,7 +203,9 @@ describe('M-002 recherche structurée Produit', () => {
             actorId: ownerContext.owner._id,
             productId: aubergine.product._id,
             variant: {
+                name: 'Aubergine tranchée pagination',
                 characteristicIds: [sliced.id],
+                conservationType: 'FRAIS',
                 foodRange: 1,
                 referenceUnit: 'KG',
             },
@@ -241,6 +244,7 @@ describe('M-002 recherche structurée Produit', () => {
     it('filtre et trie les références par Gamme', async () => {
         await createActiveProductReference({
             name: 'Courgette gamme trois',
+            conservationType: 'SURGELE',
             foodRange: 3,
         });
         await createActiveProductReference({
@@ -269,5 +273,16 @@ describe('M-002 recherche structurée Produit', () => {
         expect(filtered.results[0].product.name)
             .toBe('Courgette gamme trois');
         expect(filtered.results[0].variant.foodRange).toBe(3);
+
+        const conservationFiltered = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'REFERENCE',
+            conservationType: 'SURGELE',
+            page: 1,
+            limit: 20,
+        });
+        expect(conservationFiltered.results).toHaveLength(1);
+        expect(conservationFiltered.results[0].variant.conservationType)
+            .toBe('SURGELE');
     });
 });
