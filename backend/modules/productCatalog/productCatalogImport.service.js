@@ -369,22 +369,38 @@ const buildImportDimensionIndexes = async (productIds) => {
         }).lean(),
     ]);
 
-    return {
-        varietyByKey: new Map(varieties.map((variety) => [
-            [
+    const varietyByKey = new Map();
+    for (const variety of varieties) {
+        const keys = new Set([
+            variety.normalizedName,
+            ...(variety.searchKeys ?? []),
+        ]);
+        for (const key of keys) {
+            varietyByKey.set([
                 variety.canonicalProduct.toString(),
-                variety.normalizedName,
-            ].join(':'),
-            variety,
-        ])),
-        characteristicByKey: new Map(characteristics.map((characteristic) => [
-            [
+                key,
+            ].join(':'), variety);
+        }
+    }
+
+    const characteristicByKey = new Map();
+    for (const characteristic of characteristics) {
+        const keys = new Set([
+            characteristic.normalizedName,
+            ...(characteristic.searchKeys ?? []),
+        ]);
+        for (const key of keys) {
+            characteristicByKey.set([
                 characteristic.canonicalProduct.toString(),
                 characteristic.kind,
-                characteristic.normalizedName,
-            ].join(':'),
-            characteristic,
-        ])),
+                key,
+            ].join(':'), characteristic);
+        }
+    }
+
+    return {
+        varietyByKey,
+        characteristicByKey,
     };
 };
 
