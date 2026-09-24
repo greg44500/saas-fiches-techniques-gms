@@ -43,15 +43,6 @@ import {
 
 const NO_CATEGORY = '__NONE__';
 
-function parseAliases(value) {
-  return [...new Set(
-    value
-      .split(',')
-      .map((alias) => alias.trim())
-      .filter(Boolean),
-  )];
-}
-
 function ProductCreateDialog({
   metadata,
   mode = 'workspace',
@@ -64,7 +55,6 @@ function ProductCreateDialog({
   const cancelRef = useRef(null);
   const isGlobal = mode === 'global';
   const [name, setName] = useState('');
-  const [aliasesText, setAliasesText] = useState('');
   const [categoryId, setCategoryId] = useState(NO_CATEGORY);
   const [duplicateResult, setDuplicateResult] = useState(null);
   const [reviewedCandidateIds, setReviewedCandidateIds] = useState([]);
@@ -84,7 +74,6 @@ function ProductCreateDialog({
     if (!open) return;
 
     setName('');
-    setAliasesText('');
     setCategoryId(NO_CATEGORY);
     setDuplicateResult(null);
     setReviewedCandidateIds([]);
@@ -92,7 +81,6 @@ function ProductCreateDialog({
     setFormError('');
   }, [metadata, open]);
 
-  const aliases = useMemo(() => parseAliases(aliasesText), [aliasesText]);
   const activeCategories = useMemo(
     () => (metadata?.categories ?? []).filter((category) => category.status === 'ACTIVE'),
     [metadata?.categories],
@@ -134,12 +122,12 @@ function ProductCreateDialog({
       const result = isGlobal
         ? await globalDuplicateCheck({
           name: normalizedName,
-          aliases,
+          aliases: [],
         }).unwrap()
         : await workspaceDuplicateCheck({
           workspaceId,
           name: normalizedName,
-          aliases,
+          aliases: [],
         }).unwrap();
 
       setDuplicateResult(result);
@@ -182,28 +170,32 @@ function ProductCreateDialog({
       return;
     }
 
-    const payload = {
-      name: name.trim(),
-      aliases,
-      categoryId,
-      reviewedCandidateIds: candidates.map(({ id }) => id),
-      variant: variantDraftToPayload(variant),
-    };
+    const variantPayload = variantDraftToPayload(variant);
 
     setFormError('');
     try {
       const result = isGlobal
-        ? await createGlobalProduct(payload).unwrap()
+        ? await createGlobalProduct({
+          name: name.trim(),
+          aliases: [],
+          categoryId,
+          reviewedCandidateIds: candidates.map(({ id }) => id),
+          variant: variantPayload,
+        }).unwrap()
         : await createWorkspaceProduct({
           workspaceId,
-          ...payload,
+          name: name.trim(),
+          categoryId,
+          variant: variantPayload,
         }).unwrap();
 
       onCreated(result);
     } catch (error) {
       setFormError(getApiErrorMessage(
         error,
-        'Le Produit n’a pas pu être créé.',
+        isGlobal
+          ? 'Le Produit n’a pas pu être créé.'
+          : 'La proposition n’a pas pu être soumise.',
       ));
     }
   }
@@ -222,42 +214,27 @@ function ProductCreateDialog({
           <DialogHeader>
             <DialogTitle>Créer un Produit</DialogTitle>
             <DialogDescription>
-              Recherchez d’abord l’existant. La nouvelle identité sera immédiatement partagée dans le référentiel global.
+              {isGlobal
+                ? 'Recherchez d’abord l’existant avant de publier une nouvelle identité globale.'
+                : 'Recherchez d’abord l’existant. Une nouvelle identité sera soumise au référentiel global pour revue.'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-5 space-y-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="product-create-name">Nom du Produit</FieldLabel>
-                <Input
-                  disabled={pending}
-                  id="product-create-name"
-                  maxLength={120}
-                  onChange={(event) => {
-                    setName(event.target.value);
-                    invalidateDuplicateReview();
-                  }}
-                  placeholder="Ex. Carotte"
-                  value={name}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="product-create-aliases">Alias</FieldLabel>
-                <Input
-                  disabled={pending}
-                  id="product-create-aliases"
-                  maxLength={500}
-                  onChange={(event) => {
-                    setAliasesText(event.target.value);
-                    invalidateDuplicateReview();
-                  }}
-                  placeholder="Séparés par des virgules"
-                  value={aliasesText}
-                />
-              </Field>
-            </div>
+            <Field>
+              <FieldLabel htmlFor="product-create-name">Nom du Produit</FieldLabel>
+              <Input
+                disabled={pending}
+                id="product-create-name"
+                maxLength={120}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  invalidateDuplicateReview();
+                }}
+                placeholder="Ex. Carotte"
+                value={name}
+              />
+            </Field>
 
             <div className="flex justify-end">
               <Button
@@ -337,7 +314,9 @@ function ProductCreateDialog({
                 <div>
                   <h3 className="font-medium">Nouvelle identité</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Elle sera créée active dans le référentiel global après le dernier contrôle serveur.
+                    {isGlobal
+                      ? 'Elle sera publiée dans le référentiel global après le dernier contrôle serveur.'
+                      : 'Elle sera soumise au référentiel global. Aucun Produit n’est publié avant la décision de gouvernance.'}
                   </p>
                 </div>
 
@@ -402,7 +381,7 @@ function ProductCreateDialog({
                   ? 'Création…'
                   : isGlobal
                     ? 'Créer dans le référentiel global'
-                    : 'Créer et ajouter à mon référentiel'}
+                    : 'Soumettre la proposition'}
               </Button>
             )}
           </DialogFooter>
@@ -412,4 +391,4 @@ function ProductCreateDialog({
   );
 }
 
-export { NO_CATEGORY, ProductCreateDialog, parseAliases };
+export { NO_CATEGORY, ProductCreateDialog };
