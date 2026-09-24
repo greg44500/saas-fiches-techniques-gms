@@ -33,7 +33,7 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
   await dialog.getByLabel('Catégorie principale *').click();
   await page.getByRole('option', { name: context.categoryName }).click();
   await dialog.getByLabel('Gamme *').click();
-  await page.getByRole('option', { name: 'Gamme 1 — Frais' }).click();
+  await page.getByRole('option', { name: 'Gamme 1' }).click();
 
   await dialog
     .getByRole('button', { name: 'Soumettre la proposition' })
@@ -129,7 +129,7 @@ test('M-002 autorité Application Global alimente directement le référentiel',
   await dialog.getByLabel('Catégorie principale *').click();
   await page.getByRole('option', { name: categoryName }).click();
   await dialog.getByLabel('Gamme *').click();
-  await page.getByRole('option', { name: 'Gamme 1 — Frais' }).click();
+  await page.getByRole('option', { name: 'Gamme 1' }).click();
 
   await dialog
     .getByRole('button', { name: 'Créer dans le référentiel global' })
