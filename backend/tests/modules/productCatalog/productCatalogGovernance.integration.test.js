@@ -11,6 +11,9 @@ import {
     CanonicalProduct,
 } from '../../../modules/productCatalog/canonicalProduct.model.js';
 import {
+    ProductReferenceEvent,
+} from '../../../modules/productCatalog/productReferenceEvent.model.js';
+import {
     createCategory,
     createGlobalProduct,
     createGlobalVariant,
@@ -136,6 +139,17 @@ describe('M-002 product reference governance', () => {
         ).toBe(ownerContext.workspace._id.toString());
         expect(CanonicalProduct.schema.path('workspace')).toBeUndefined();
         expect(persisted.workspace).toBeUndefined();
+
+        const event = await ProductReferenceEvent.findOne({
+            entityType: 'PRODUCT',
+            entityId: persisted._id,
+            action: 'PRODUCT_CREATED',
+        }).lean();
+
+        expect(event.workspace.toString()).toBe(
+            ownerContext.workspace._id.toString(),
+        );
+        expect(event.metadata.source).toBe('WORKSPACE_CONTRIBUTION');
     });
 
     it('n autorise pas un rattachement global archivé comme nouvelle référence', async () => {

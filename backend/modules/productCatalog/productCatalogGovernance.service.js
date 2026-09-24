@@ -347,6 +347,8 @@ const createGlobalProductInSession = async ({
         characteristicIds.push(characteristic._id);
     }
 
+    const source = workspaceId ? 'WORKSPACE_CONTRIBUTION' : 'GLOBAL';
+
     const createdVariant = await createProductVariantInSession({
         canonicalProductId: product._id,
         workspaceId,
@@ -368,7 +370,7 @@ const createGlobalProductInSession = async ({
         entityId: product._id,
         metadata: {
             variantId: createdVariant._id.toString(),
-            source: 'GLOBAL',
+            source,
         },
         session,
     });
