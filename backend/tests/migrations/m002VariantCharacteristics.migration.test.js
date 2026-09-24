@@ -75,6 +75,9 @@ describe('M-002 variant characteristics migration', () => {
         });
         const second = await ProductVariant.create({
             canonicalProduct: first.product._id,
+            name: 'Carotte collision caractéristiques seconde',
+            normalizedName: 'carotte collision caracteristiques seconde',
+            conservationType: 'CONSERVE',
             variety: null,
             characteristics: [],
             processingState: 'Conserve',

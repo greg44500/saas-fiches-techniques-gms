@@ -91,6 +91,9 @@ describe('M-002 legacy product lifecycle migration', () => {
         await ProductVariant.collection.insertMany([
             {
                 canonicalProduct: activePendingId,
+                name: 'Carotte migration historique',
+                normalizedName: 'carotte migration historique',
+                conservationType: 'FRAIS',
                 normalizedForm: '',
                 normalizedProcessingState: '',
                 normalizedPreservation: '',
@@ -108,6 +111,9 @@ describe('M-002 legacy product lifecycle migration', () => {
             },
             {
                 canonicalProduct: incompletePendingId,
+                name: 'Produit sans catégorie historique',
+                normalizedName: 'produit sans categorie historique',
+                conservationType: 'FRAIS',
                 normalizedForm: '',
                 normalizedProcessingState: '',
                 normalizedPreservation: '',
@@ -125,6 +131,9 @@ describe('M-002 legacy product lifecycle migration', () => {
             },
             {
                 canonicalProduct: rejectedId,
+                name: 'Ancien doublon historique',
+                normalizedName: 'ancien doublon historique',
+                conservationType: 'FRAIS',
                 normalizedForm: '',
                 normalizedProcessingState: '',
                 normalizedPreservation: '',
