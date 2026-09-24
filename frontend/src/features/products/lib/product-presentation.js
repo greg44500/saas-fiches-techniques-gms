@@ -77,15 +77,88 @@ function getVariantLabel(variant) {
   return parts.join(' · ') || 'Déclinaison à préciser';
 }
 
-function getProductVariantSearchLabel(product, variant) {
-  if (!variant) return product?.name ?? '';
+function normalizeDisplayToken(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .trim()
+    .toLocaleLowerCase('fr');
+}
 
-  const dimensions = [
+function lowerFirst(value) {
+  const text = String(value ?? '').trim();
+  if (!text) return '';
+  return text.charAt(0).toLocaleLowerCase('fr') + text.slice(1);
+}
+
+function getReferenceLabel(metadata, product, variant) {
+  let label = product?.name ?? 'Produit';
+  if (!variant) return label;
+
+  const characteristics = variant.characteristics ?? [];
+  const cut = characteristics.find(({ kind }) => kind === 'CUT') ?? null;
+  const presentation = characteristics.find(
+    ({ kind }) => kind === 'PRESENTATION',
+  ) ?? null;
+  const otherCharacteristics = characteristics.filter(
+    ({ kind }) => kind !== 'CUT' && kind !== 'PRESENTATION',
+  );
+
+  if (variant.variety?.name) {
+    label += ' ' + variant.variety.name;
+  }
+
+  if (cut?.name) {
+    label += ' (' + lowerFirst(cut.name) + ')';
+  }
+
+  const presentationToken = normalizeDisplayToken(presentation?.name);
+  if (
+    presentation?.name
+    && !['entier', 'entiere'].includes(presentationToken)
+  ) {
+    label += ' ' + lowerFirst(presentation.name);
+  }
+
+  for (const characteristic of otherCharacteristics) {
+    if (characteristic.name) {
+      label += ' ' + lowerFirst(characteristic.name);
+    }
+  }
+
+  const defaultProcessingState = getFoodRangeDefinition(
+    metadata,
+    variant.foodRange,
+  )?.defaultProcessingState;
+  const processingStateToken = normalizeDisplayToken(variant.processingState);
+  const defaultStateToken = normalizeDisplayToken(defaultProcessingState);
+  const representedTokens = [
     variant.variety?.name,
-    ...(variant.characteristics ?? []).map(({ name }) => name),
-  ].filter(Boolean);
+    ...characteristics.map(({ name }) => name),
+  ].map(normalizeDisplayToken);
 
-  return [product?.name, ...dimensions].filter(Boolean).join(' ');
+  if (
+    processingStateToken
+    && processingStateToken !== defaultStateToken
+    && !representedTokens.includes(processingStateToken)
+  ) {
+    if (
+      !variant.variety?.name
+      && !cut?.name
+      && !presentation?.name
+      && otherCharacteristics.length === 0
+    ) {
+      label += ' ' + lowerFirst(variant.processingState);
+    } else {
+      label += ' · ' + variant.processingState;
+    }
+  }
+
+  return label.trim();
+}
+
+function getProductVariantSearchLabel(product, variant, metadata) {
+  return getReferenceLabel(metadata, product, variant);
 }
 
 function formatYield(value) {
@@ -181,6 +254,7 @@ export {
   getMetadataLabel,
   getProductEventLabel,
   getProductStatusLabel,
+  getReferenceLabel,
   getProductStatusTone,
   getProductVariantSearchLabel,
   getReferenceUnitLabel,

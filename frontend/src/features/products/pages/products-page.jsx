@@ -39,19 +39,20 @@ import {
   PRODUCT_REFERENCE_PERMISSION,
 } from '@/features/products/constants/product-permissions';
 import {
-  formatYield,
   getApiErrorMessage,
   getFoodRangeLabel,
   getFoodRangeName,
-  getProductVariantSearchLabel,
+  getReferenceLabel,
   getReferenceUnitLabel,
   getUsageTypeLabel,
-  getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
 const ALL_CATEGORIES = '__ALL__';
+const ALL_FOOD_RANGES = '__ALL_RANGES__';
+const PRODUCT_SORT_NAME = 'NAME';
+const PRODUCT_SORT_FOOD_RANGE = 'FOOD_RANGE';
 
 function ProductsPage() {
   const { can, hasFeature, workspace } = useWorkspaceContext();
@@ -65,6 +66,8 @@ function ProductsPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(ALL_CATEGORIES);
+  const [foodRange, setFoodRange] = useState(ALL_FOOD_RANGES);
+  const [sort, setSort] = useState(PRODUCT_SORT_NAME);
   const [drawerState, setDrawerState] = useState({ open: false, productId: null });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -76,6 +79,8 @@ function ProductsPage() {
     scope,
     q: search || undefined,
     categoryId: categoryId === ALL_CATEGORIES ? undefined : categoryId,
+    foodRange: foodRange === ALL_FOOD_RANGES ? undefined : foodRange,
+    sort,
     page,
     limit: pageSize,
   });
@@ -117,6 +122,19 @@ function ProductsPage() {
     })),
   ], [metadata?.categories]);
 
+  const foodRangeItems = useMemo(() => [
+    { value: ALL_FOOD_RANGES, label: 'Toutes les gammes' },
+    ...(metadata?.foodRanges ?? []).map((range) => ({
+      value: String(range.value),
+      label: range.label + (range.name ? ' — ' + range.name : ''),
+    })),
+  ], [metadata?.foodRanges]);
+
+  const sortItems = [
+    { value: PRODUCT_SORT_NAME, label: 'Nom A → Z' },
+    { value: PRODUCT_SORT_FOOD_RANGE, label: 'Gamme 1 → 5' },
+  ];
+
   function runSearch(nextSearch) {
     setPage(1);
     setSearch(nextSearch.trim());
@@ -128,7 +146,8 @@ function ProductsPage() {
   }
 
   function selectPredictiveResult(result) {
-    const nextSearch = getProductVariantSearchLabel(
+    const nextSearch = getReferenceLabel(
+      metadata,
       result.product,
       result.variant,
     );
@@ -151,26 +170,34 @@ function ProductsPage() {
     setPage(1);
   }
 
-  async function changeCatalog(product, entry, shouldAttach) {
+  async function changeCatalog(result, shouldAttach) {
+    if (!result.variant) return;
+
+    const referenceLabel = getReferenceLabel(
+      metadata,
+      result.product,
+      result.variant,
+    );
+
     try {
       if (shouldAttach) {
         await attachVariant({
           workspaceId: workspace.id,
-          variantId: entry.variant.id,
+          variantId: result.variant.id,
         }).unwrap();
         toast({
           title: 'Référence ajoutée à mon référentiel',
-          description: product.name,
+          description: referenceLabel,
           variant: 'success',
         });
       } else {
         await archiveVariant({
           workspaceId: workspace.id,
-          variantId: entry.variant.id,
+          variantId: result.variant.id,
         }).unwrap();
         toast({
           title: 'Référence retirée de mon référentiel',
-          description: product.name,
+          description: referenceLabel,
           variant: 'success',
         });
       }
@@ -189,103 +216,101 @@ function ProductsPage() {
 
   const columns = [
     {
-      id: 'product',
-      header: 'Produit',
-      cell: (group) => (
+      id: 'reference',
+      header: 'Référence',
+      cell: (result) => (
         <div>
-          <p className="font-medium">{group.product.name}</p>
+          <p className="font-medium">
+            {getReferenceLabel(metadata, result.product, result.variant)}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {group.product.category?.name ?? 'Catégorie non renseignée'}
+            {result.product.category?.name ?? 'Catégorie non renseignée'}
           </p>
         </div>
       ),
     },
     {
-      id: 'variants',
-      header: 'Déclinaisons',
-      cell: (group) => {
-        if (!group.variants?.length) {
-          return (
-            <p className="text-sm text-muted-foreground">
-              Aucune déclinaison exploitable
-            </p>
-          );
-        }
-
-        return (
-          <div className="space-y-2">
-            {group.variants.map((entry) => {
-              const inCatalog = entry.workspaceEntry?.status === 'ACTIVE';
-              const canAttach = (
-                group.product.status === 'ACTIVE'
-                && entry.variant.status === 'ACTIVE'
-              );
-              const usageLabel = entry.variant.usageType
-                ? 'Usage ' + getUsageTypeLabel(metadata, entry.variant.usageType)
-                : null;
-
-              return (
-                <div
-                  className="flex flex-col gap-2 rounded-md border border-border/70 p-3 sm:flex-row sm:items-center sm:justify-between"
-                  key={entry.variant.id}
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium">{getVariantLabel(entry.variant)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {[
-                        getFoodRangeLabel(metadata, entry.variant.foodRange),
-                        getFoodRangeName(metadata, entry.variant.foodRange),
-                        usageLabel,
-                        getReferenceUnitLabel(metadata, entry.variant.referenceUnit)
-                          + ' · Rendement '
-                          + formatYield(entry.variant.yieldPercent),
-                      ].filter(Boolean).join(' · ')}
-                    </p>
-                  </div>
-
-                  {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
-                    <DataTableActions>
-                      {inCatalog ? (
-                        <ActionIconButton
-                          Icon={Minus}
-                          disabled={mutationPending}
-                          label={'Retirer ' + group.product.name + ' de mon référentiel'}
-                          onClick={() => changeCatalog(group.product, entry, false)}
-                          tooltipLabel="Retirer de mon référentiel"
-                          variant="outline"
-                        />
-                      ) : canAttach ? (
-                        <ActionIconButton
-                          Icon={Plus}
-                          disabled={mutationPending}
-                          label={'Ajouter ' + group.product.name + ' à mon référentiel'}
-                          onClick={() => changeCatalog(group.product, entry, true)}
-                          tooltipLabel="Ajouter à mon référentiel"
-                        />
-                      ) : null}
-                    </DataTableActions>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        );
-      },
+      id: 'foodRange',
+      header: 'Gamme',
+      cell: (result) => (
+        result.variant ? (
+          <span>
+            {[
+              getFoodRangeLabel(metadata, result.variant.foodRange),
+              getFoodRangeName(metadata, result.variant.foodRange),
+            ].filter(Boolean).join(' — ')}
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">À enrichir</span>
+        )
+      ),
+    },
+    {
+      id: 'unit',
+      header: 'Unité',
+      cell: (result) => (
+        result.variant
+          ? getReferenceUnitLabel(metadata, result.variant.referenceUnit)
+          : '—'
+      ),
+    },
+    {
+      id: 'usage',
+      header: 'Usage',
+      cell: (result) => (
+        result.variant?.usageType
+          ? getUsageTypeLabel(metadata, result.variant.usageType)
+          : '—'
+      ),
     },
     {
       id: 'actions',
       header: 'Actions',
-      cell: (group) => (
-        <DataTableActions>
-          <ActionIconButton
-            Icon={Eye}
-            label={'Voir ' + group.product.name}
-            onClick={() => openProduct(group.product.id)}
-            tooltipLabel="Voir"
-            variant="outline"
-          />
-        </DataTableActions>
-      ),
+      cell: (result) => {
+        const referenceLabel = getReferenceLabel(
+          metadata,
+          result.product,
+          result.variant,
+        );
+        const inCatalog = result.workspaceEntry?.status === 'ACTIVE';
+        const canAttach = (
+          result.variant
+          && result.product.status === 'ACTIVE'
+          && result.variant.status === 'ACTIVE'
+        );
+
+        return (
+          <DataTableActions>
+            {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && result.variant && (
+              inCatalog ? (
+                <ActionIconButton
+                  Icon={Minus}
+                  disabled={mutationPending}
+                  label={'Retirer ' + referenceLabel + ' de mon référentiel'}
+                  onClick={() => changeCatalog(result, false)}
+                  tooltipLabel="Retirer de mon référentiel"
+                  variant="outline"
+                />
+              ) : canAttach ? (
+                <ActionIconButton
+                  Icon={Plus}
+                  disabled={mutationPending}
+                  label={'Ajouter ' + referenceLabel + ' à mon référentiel'}
+                  onClick={() => changeCatalog(result, true)}
+                  tooltipLabel="Ajouter à mon référentiel"
+                />
+              ) : null
+            )}
+            <ActionIconButton
+              Icon={Eye}
+              label={'Voir ' + referenceLabel}
+              onClick={() => openProduct(result.product.id)}
+              tooltipLabel="Voir"
+              variant="outline"
+            />
+          </DataTableActions>
+        );
+      },
     },
   ];
 
@@ -349,7 +374,7 @@ function ProductsPage() {
       </Tabs>
 
       <section className="rounded-xl border border-border bg-card">
-        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(260px,1fr)_240px]">
+        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(300px,1fr)_220px_220px_200px]">
           <form className="flex min-w-0 gap-2" onSubmit={applySearch}>
             <div className="min-w-0 flex-1">
               <ProductSearchAutocomplete
@@ -358,6 +383,12 @@ function ProductsPage() {
                     ? undefined
                     : categoryId
                 }
+                foodRange={
+                  foodRange === ALL_FOOD_RANGES
+                    ? undefined
+                    : foodRange
+                }
+                metadata={metadata}
                 onSelect={selectPredictiveResult}
                 onValueChange={setSearchInput}
                 scope={canReferenceAccess ? 'REFERENCE' : scope}
@@ -389,6 +420,45 @@ function ProductsPage() {
             </SelectContent>
           </Select>
 
+          <Select
+            items={foodRangeItems}
+            onValueChange={(value) => {
+              setFoodRange(value);
+              setPage(1);
+            }}
+            value={foodRange}
+          >
+            <SelectTrigger aria-label="Filtrer par gamme">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {foodRangeItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            items={sortItems}
+            onValueChange={(value) => {
+              setSort(value);
+              setPage(1);
+            }}
+            value={sort}
+          >
+            <SelectTrigger aria-label="Trier les références">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sortItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {initialLoading ? (
@@ -409,16 +479,18 @@ function ProductsPage() {
                 <EmptyState
                   className="p-0"
                   description={
-                    search || categoryId !== ALL_CATEGORIES
+                    search
+                    || categoryId !== ALL_CATEGORIES
+                    || foodRange !== ALL_FOOD_RANGES
                       ? 'Modifiez la recherche ou les filtres pour élargir les résultats.'
                       : scope === 'WORKSPACE'
                         ? 'Recherchez le référentiel global ou créez votre premier Produit.'
                         : 'Aucune référence n’est disponible avec ces critères.'
                   }
-                  title="Aucun Produit à afficher"
+                  title="Aucune référence à afficher"
                 />
               )}
-              getRowKey={(group) => group.product.id}
+              getRowKey={(result) => result.variant?.id ?? result.product.id + '-root'}
               rowClassName="transition-colors hover:bg-muted/50"
             />
             <div className="px-5 pb-5">

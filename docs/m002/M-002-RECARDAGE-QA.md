@@ -151,7 +151,7 @@ Une base ayant déjà reçu la v2 doit pouvoir migrer vers la v3 sans doublons n
 
 Les anciennes variantes `foodRange = 6` doivent être traitées explicitement. La migration ne doit jamais deviner leur état physique. Les cas déterministes issus du bootstrap peuvent être corrigés de manière contrôlée ; tout cas non déterministe doit faire échouer la migration ou être placé dans un flux explicite de revue plutôt que recevoir une valeur inventée.
 
-## 7. D/E — Recherche et présentation groupée
+## 7. D/E — Recherche et présentation opérationnelle
 
 Le champ de recherche Workspace utilise le placeholder :
 
@@ -161,28 +161,102 @@ Rechercher un produit…
 
 Le terme `alias` reste interne à la gouvernance et n'est jamais exposé dans ce placeholder.
 
-La liste opérationnelle n'affiche plus une ligne complète répétant le Produit pour chaque variante.
+### 7.1 Séparation administration / usage métier
 
-Contrat UX cible :
+Le modèle normalisé reste :
 
 ```text
-Produit / catégorie
-  ├─ Déclinaison 1 | Gamme | État | Usage éventuel | Actions
-  ├─ Déclinaison 2 | Gamme | État | Usage éventuel | Actions
-  └─ Déclinaison 3 | Gamme | État | Usage éventuel | Actions
+CanonicalProduct
+→ ProductVariant[]
 ```
 
-Règles :
+mais il ne dicte plus l'unité d'affichage des écrans métier.
 
-- un `CanonicalProduct` apparaît une seule fois comme groupe ;
-- les variantes sont affichées dessous ;
-- les actions `+ / −` restent au niveau de la variante ;
-- le détail Produit reste accessible au niveau du groupe ;
-- une recherche précise comme `carotte râpée` ouvre/filtre le groupe Carotte sur la déclinaison pertinente ;
-- la pagination de la liste principale doit être cohérente au niveau Produit afin qu'un groupe ne soit pas coupé artificiellement entre deux pages ;
-- le référentiel global peut afficher un Produit sans variante avec un état explicite du type « Aucune déclinaison exploitable » et une action d'enrichissement si l'utilisateur y est autorisé.
+Contrat UX validé :
 
-La recherche prédictive peut rester variante-aware, mais sa présentation doit permettre de distinguer immédiatement le Produit de la déclinaison proposée.
+```text
+Administration globale
+→ regroupement par CanonicalProduct conservé
+→ gestion des variantes sous l'identité racine
+
+Catalogue Workspace / recherche opérationnelle
+→ une ligne = une référence exploitable
+→ pagination par référence, jamais par groupe Produit
+```
+
+Une identité possédant de nombreuses variantes ne doit donc jamais produire un bloc visuel contenant des dizaines ou centaines de sous-lignes.
+
+### 7.2 Libellé métier calculé
+
+Le nom visible d'une référence est calculé à partir du Produit et de ses dimensions structurées.
+
+Exemples attendus :
+
+```text
+Carotte + PRESENTATION:Entière
+→ Carotte
+
+Carotte + PRESENTATION:Râpée
+→ Carotte râpée
+
+Carotte + PRESENTATION:Rondelles
+→ Carotte rondelles
+
+Canard + CUT:Cuisse
+→ Canard (cuisse)
+
+Canard + CUT:Magret
+→ Canard (magret)
+
+Canard + caractéristique distinctive:Confit
+→ Canard confit
+```
+
+Le libellé métier n'est pas une nouvelle identité persistée et ne remplace pas les dimensions structurées.
+
+L'état/transformation porté implicitement par la Gamme n'est pas répété dans le libellé ou la liste. Une transformation réellement distinctive peut apparaître lorsqu'elle apporte une information métier supplémentaire.
+
+### 7.3 Colonnes et informations utiles
+
+La liste opérationnelle privilégie :
+
+```text
+Référence
+Gamme
+Unité
+Usage PAI/PAE éventuel
+Actions
+```
+
+Le rendement n'est pas affiché dans la liste principale. Une valeur absente n'est jamais rendue sous forme de « non renseigné » dans cette liste.
+
+La Gamme est le repère physique synthétique principal. Le couple « Gamme + état par défaut de la Gamme » ne doit pas être affiché deux fois.
+
+### 7.4 Recherche, filtres et tri
+
+La recherche reste variante-aware :
+
+```text
+carotte
+→ références Carotte pertinentes
+
+carotte râpée
+→ Carotte râpée
+
+paleron
+→ Bœuf (paleron)
+```
+
+La liste opérationnelle propose au minimum :
+
+- filtre Catégorie ;
+- filtre Gamme ;
+- tri alphabétique ;
+- tri par Gamme.
+
+Le backend reste l'autorité des valeurs de Gamme et des métadonnées affichées.
+
+Un `CanonicalProduct` sans variante peut rester visible dans le référentiel global comme « à enrichir », mais il n'est pas rattachable au Workspace tant qu'aucune `ProductVariant` exploitable n'existe.
 
 ## 8. F — Gouvernance globale visible depuis Platform
 

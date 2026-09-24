@@ -15,7 +15,17 @@ import {
   ProductSearchAutocomplete,
 } from '@/features/products/components/product-search-autocomplete';
 
+const metadata = {
+  foodRanges: [{
+    value: 1,
+    label: 'Gamme 1',
+    name: 'Frais',
+    defaultProcessingState: 'Produit frais',
+  }],
+};
+
 const result = {
+  source: 'PRODUCT_VARIANT',
   product: {
     id: 'product-1',
     name: 'Carotte',
@@ -24,8 +34,13 @@ const result = {
   variant: {
     id: 'variant-1',
     variety: null,
-    characteristics: [],
-    processingState: 'Brute',
+    characteristics: [{
+      id: 'presentation-rapee',
+      kind: 'PRESENTATION',
+      name: 'Râpée',
+    }],
+    processingState: 'Produit frais',
+    foodRange: 1,
   },
   workspaceEntry: null,
 };
@@ -36,6 +51,8 @@ function Harness({ onSelect }) {
   return (
     <ProductSearchAutocomplete
       categoryId={undefined}
+      foodRange={undefined}
+      metadata={metadata}
       onSelect={onSelect}
       onValueChange={setValue}
       scope="REFERENCE"
@@ -56,14 +73,7 @@ describe('ProductSearchAutocomplete', () => {
         && args?.q === 'car'
       )
         ? {
-            results: [{
-            source: 'CANONICAL_PRODUCT',
-            product: result.product,
-            variants: [{
-              variant: result.variant,
-              workspaceEntry: result.workspaceEntry,
-            }],
-          }],
+            results: [result],
             pagination: {
               page: 1,
               limit: 6,
@@ -76,7 +86,7 @@ describe('ProductSearchAutocomplete', () => {
     }));
   });
 
-  it('déclenche une recherche prédictive après trois caractères et applique la suggestion', async () => {
+  it('déclenche une recherche prédictive après trois caractères et applique la référence métier', async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
 
@@ -94,6 +104,7 @@ describe('ProductSearchAutocomplete', () => {
           workspaceId: 'workspace-1',
           scope: 'REFERENCE',
           q: 'car',
+          sort: 'NAME',
           page: 1,
           limit: 6,
         }),
@@ -102,13 +113,13 @@ describe('ProductSearchAutocomplete', () => {
     });
 
     const suggestion = await screen.findByRole('option', {
-      name: /Carotte.*Légumes/i,
+      name: /Carotte râpée.*Légumes.*Gamme 1/i,
     });
 
     await user.click(suggestion);
 
     expect(onSelect).toHaveBeenCalledWith(result);
-    expect(input).toHaveValue('Carotte');
+    expect(input).toHaveValue('Carotte râpée');
     expect(input).toHaveAttribute('placeholder', 'Rechercher un produit…');
   });
 

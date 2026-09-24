@@ -117,6 +117,11 @@ const productSearchQuerySchema = z.strictObject({
     scope: z.enum(['WORKSPACE', 'REFERENCE']).default('WORKSPACE'),
     categoryId: objectIdSchema.optional(),
     status: z.enum(Object.values(WORKSPACE_PRODUCT_STATUS)).optional(),
+    foodRange: z.coerce.number().int().refine(
+        (value) => PRODUCT_FOOD_RANGES.includes(value),
+        { message: 'Gamme invalide.' },
+    ).optional(),
+    sort: z.enum(['NAME', 'FOOD_RANGE']).default('NAME'),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
 });

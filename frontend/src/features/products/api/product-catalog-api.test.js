@@ -40,6 +40,33 @@ describe('productCatalogApi', () => {
     expect(productCatalogApi.endpoints).toBe(captured.endpointDefinitions);
   });
 
+  it('transmet les filtres et le tri du catalogue opérationnel', () => {
+    expect(
+      captured.endpointDefinitions.searchProducts.query({
+        workspaceId: 'workspace-1',
+        scope: 'REFERENCE',
+        q: 'carotte',
+        categoryId: 'category-1',
+        foodRange: 3,
+        sort: 'FOOD_RANGE',
+        page: 2,
+        limit: 20,
+      }),
+    ).toEqual({
+      url: '/workspaces/workspace-1/products/search',
+      params: {
+        scope: 'REFERENCE',
+        q: 'carotte',
+        categoryId: 'category-1',
+        status: undefined,
+        foodRange: 3,
+        sort: 'FOOD_RANGE',
+        page: 2,
+        limit: 20,
+      },
+    });
+  });
+
   it('utilise les routes Workspace de création et import recadrées', () => {
     expect(
       captured.endpointDefinitions.createProduct.query({

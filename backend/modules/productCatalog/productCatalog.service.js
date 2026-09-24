@@ -461,22 +461,72 @@ const buildProductSearchFilter = ({
     return filter;
 };
 
-const groupVariantsByProduct = (variants) => {
-    const variantsByProductId = new Map();
-
-    for (const variant of variants) {
-        const productId = variant.canonicalProduct.toString();
-        const productVariants = variantsByProductId.get(productId) ?? [];
-        productVariants.push(variant);
-        variantsByProductId.set(productId, productVariants);
+const compareProductSearchReferences = (
+    left,
+    right,
+    sort = 'NAME',
+) => {
+    if (sort === 'FOOD_RANGE') {
+        const leftRange = left.variant?.foodRange ?? Number.POSITIVE_INFINITY;
+        const rightRange = right.variant?.foodRange ?? Number.POSITIVE_INFINITY;
+        if (leftRange !== rightRange) return leftRange - rightRange;
     }
 
-    for (const productVariants of variantsByProductId.values()) {
-        productVariants.sort(compareProductVariants);
-    }
+    const leftName = left.product.normalizedName
+        ?? normalizeProductText(left.product.name);
+    const rightName = right.product.normalizedName
+        ?? normalizeProductText(right.product.name);
+    const productComparison = leftName.localeCompare(rightName, 'fr');
 
-    return variantsByProductId;
+    if (productComparison !== 0) return productComparison;
+
+    if (!left.variant && !right.variant) {
+        return left.product._id.toString().localeCompare(
+            right.product._id.toString(),
+        );
+    }
+    if (!left.variant) return -1;
+    if (!right.variant) return 1;
+
+    return compareProductVariants(left.variant, right.variant);
 };
+
+const paginateProductSearchReferences = ({
+    references,
+    page,
+    limit,
+}) => {
+    const total = references.length;
+
+    return {
+        pageReferences: references.slice(
+            (page - 1) * limit,
+            page * limit,
+        ),
+        pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
+};
+
+const serializeProductSearchReference = ({
+    reference,
+    entryByVariantId = new Map(),
+}) => ({
+    source: reference.variant ? 'PRODUCT_VARIANT' : 'CANONICAL_PRODUCT',
+    product: serializeProduct(reference.product),
+    variant: reference.variant
+        ? serializeVariant(reference.variant)
+        : null,
+    workspaceEntry: reference.variant
+        ? serializeWorkspaceProduct(
+            entryByVariantId.get(reference.variant._id.toString()) ?? null,
+        )
+        : null,
+});
 
 const listProductSearch = async ({
     workspaceId,
@@ -484,6 +534,8 @@ const listProductSearch = async ({
     q = null,
     categoryId = null,
     status = null,
+    foodRange = null,
+    sort = 'NAME',
     page = 1,
     limit = 20,
 }) => {
@@ -522,22 +574,24 @@ const listProductSearch = async ({
         .lean();
 
     const matchingVariants = variants.filter((variant) => (
-        productVariantMatchesSearch({
+        (
+            foodRange === null
+            || foodRange === undefined
+            || Number(variant.foodRange) === Number(foodRange)
+        )
+        && productVariantMatchesSearch({
             query: q,
             product: productById.get(variant.canonicalProduct.toString()),
             variant,
         })
     ));
-    const matchingVariantsByProductId = groupVariantsByProduct(
-        matchingVariants,
-    );
 
     if (scope === 'WORKSPACE') {
-        const entries = variants.length > 0
+        const entries = matchingVariants.length > 0
             ? await WorkspaceProduct.find({
                 workspace: workspaceId,
                 productVariant: mongoose.trusted({
-                    $in: variants.map(({ _id }) => _id),
+                    $in: matchingVariants.map(({ _id }) => _id),
                 }),
                 ...(status
                     ? { status }
@@ -548,75 +602,68 @@ const listProductSearch = async ({
             entries.map((entry) => [entry.productVariant.toString(), entry]),
         );
 
-        const groups = products
-            .map((product) => {
-                const productVariants = (
-                    matchingVariantsByProductId.get(product._id.toString())
-                    ?? []
-                ).filter((variant) => (
-                    entryByVariantId.has(variant._id.toString())
-                ));
+        const references = matchingVariants
+            .filter((variant) => entryByVariantId.has(variant._id.toString()))
+            .map((variant) => ({
+                product: productById.get(variant.canonicalProduct.toString()),
+                variant,
+            }))
+            .sort((left, right) => (
+                compareProductSearchReferences(left, right, sort)
+            ));
 
-                if (productVariants.length === 0) return null;
-
-                return {
-                    source: 'CANONICAL_PRODUCT',
-                    product: serializeProduct(product),
-                    variants: productVariants.map((variant) => ({
-                        variant: serializeVariant(variant),
-                        workspaceEntry: serializeWorkspaceProduct(
-                            entryByVariantId.get(variant._id.toString()),
-                        ),
-                    })),
-                };
-            })
-            .filter(Boolean);
-
-        const total = groups.length;
-        const pagedGroups = groups.slice(
-            (page - 1) * limit,
-            page * limit,
-        );
+        const {
+            pageReferences,
+            pagination,
+        } = paginateProductSearchReferences({
+            references,
+            page,
+            limit,
+        });
 
         return {
-            results: pagedGroups,
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit),
-            },
+            results: pageReferences.map((reference) => (
+                serializeProductSearchReference({
+                    reference,
+                    entryByVariantId,
+                })
+            )),
+            pagination,
         };
     }
 
-    const groups = products
-        .map((product) => {
-            const directProductMatch = canonicalProductMatchesSearch(
-                q,
-                product,
-            );
-            const productVariants = matchingVariantsByProductId.get(
-                product._id.toString(),
-            ) ?? [];
-
-            if (q && !directProductMatch && productVariants.length === 0) {
-                return null;
-            }
-
-            return {
-                product,
-                variants: productVariants,
-            };
-        })
-        .filter(Boolean);
-
-    const total = groups.length;
-    const pagedGroups = groups.slice(
-        (page - 1) * limit,
-        page * limit,
+    const variantProductIds = new Set(
+        variants.map(({ canonicalProduct }) => canonicalProduct.toString()),
     );
-    const pagedVariantIds = pagedGroups.flatMap(({ variants: groupVariants }) =>
-        groupVariants.map(({ _id }) => _id));
+    const references = matchingVariants.map((variant) => ({
+        product: productById.get(variant.canonicalProduct.toString()),
+        variant,
+    }));
+
+    if (foodRange === null || foodRange === undefined) {
+        for (const product of products) {
+            if (variantProductIds.has(product._id.toString())) continue;
+            if (q && !canonicalProductMatchesSearch(q, product)) continue;
+
+            references.push({ product, variant: null });
+        }
+    }
+
+    references.sort((left, right) => (
+        compareProductSearchReferences(left, right, sort)
+    ));
+
+    const {
+        pageReferences,
+        pagination,
+    } = paginateProductSearchReferences({
+        references,
+        page,
+        limit,
+    });
+    const pagedVariantIds = pageReferences
+        .filter(({ variant }) => Boolean(variant))
+        .map(({ variant }) => variant._id);
 
     const entries = pagedVariantIds.length > 0
         ? await WorkspaceProduct.find({
@@ -631,22 +678,13 @@ const listProductSearch = async ({
     );
 
     return {
-        results: pagedGroups.map(({ product, variants: groupVariants }) => ({
-            source: 'CANONICAL_PRODUCT',
-            product: serializeProduct(product),
-            variants: groupVariants.map((variant) => ({
-                variant: serializeVariant(variant),
-                workspaceEntry: serializeWorkspaceProduct(
-                    entryByVariantId.get(variant._id.toString()) ?? null,
-                ),
-            })),
-        })),
-        pagination: {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit),
-        },
+        results: pageReferences.map((reference) => (
+            serializeProductSearchReference({
+                reference,
+                entryByVariantId,
+            })
+        )),
+        pagination,
     };
 };
 

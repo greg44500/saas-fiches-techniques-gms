@@ -60,8 +60,7 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
       <span data-testid="predictive-scope">{scope}</span>
       <button
         onClick={() => onSelect({
-          product: result.product,
-          variant: result.variants[0].variant,
+          ...result,
           workspaceEntry: null,
         })}
         type="button"
@@ -109,7 +108,7 @@ const metadata = {
 };
 
 const result = {
-  source: 'CANONICAL_PRODUCT',
+  source: 'PRODUCT_VARIANT',
   product: {
     id: 'product-1',
     name: 'Carotte',
@@ -117,30 +116,28 @@ const result = {
     category: { id: 'category-1', name: 'Légumes', status: 'ACTIVE' },
     status: 'ACTIVE',
   },
-  variants: [{
-    variant: {
-      id: 'variant-1',
-      variety: null,
-      characteristics: [{
-        id: 'presentation-whole',
-        kind: 'PRESENTATION',
-        name: 'Entière',
-        aliases: [],
-        status: 'ACTIVE',
-      }],
-      presentation: 'Entière',
-      processingState: 'Produit frais',
-      foodRange: 1,
-      usageType: null,
-      referenceUnit: 'KG',
-      yieldPercent: 90,
+  variant: {
+    id: 'variant-1',
+    variety: null,
+    characteristics: [{
+      id: 'presentation-whole',
+      kind: 'PRESENTATION',
+      name: 'Entière',
+      aliases: [],
       status: 'ACTIVE',
-    },
-    workspaceEntry: {
-      id: 'entry-1',
-      status: 'ACTIVE',
-    },
-  }],
+    }],
+    presentation: 'Entière',
+    processingState: 'Produit frais',
+    foodRange: 1,
+    usageType: null,
+    referenceUnit: 'KG',
+    yieldPercent: 90,
+    status: 'ACTIVE',
+  },
+  workspaceEntry: {
+    id: 'entry-1',
+    status: 'ACTIVE',
+  },
 };
 
 function renderPage() {
@@ -188,22 +185,25 @@ describe('ProductsPage', () => {
     });
   });
 
-  it('affiche les données Produit sans colonne redondante de rattachement', () => {
+  it('affiche une ligne par référence exploitable avec seulement les repères utiles', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByText('Légumes')).toBeInTheDocument();
-    expect(screen.getByText('Entière · Produit frais')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Déclinaisons' }))
+    expect(screen.getByRole('columnheader', { name: 'Référence' }))
       .toBeInTheDocument();
-    expect(screen.getByText(/Gamme 1 · Frais/)).toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: 'Statut' }))
+    expect(screen.getByRole('columnheader', { name: 'Gamme' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Gamme 1 — Frais')).toBeInTheDocument();
+    expect(screen.getByText('kg')).toBeInTheDocument();
+    expect(screen.queryByText('Produit frais')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Rendement/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Déclinaisons' }))
       .not.toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: 'Mon référentiel' }))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole('combobox', {
-      name: 'Filtrer par état de mon référentiel',
-    })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Filtrer par gamme' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Trier les références' }))
+      .toBeInTheDocument();
   });
 
   it('recherche côté serveur dans la portée sélectionnée', async () => {
@@ -224,6 +224,7 @@ describe('ProductsPage', () => {
         workspaceId: 'workspace-1',
         q: 'carotte',
         scope: 'REFERENCE',
+        sort: 'NAME',
       }),
     );
 
@@ -254,7 +255,7 @@ describe('ProductsPage', () => {
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({
         scope: 'REFERENCE',
-        q: 'Carotte Entière',
+        q: 'Carotte',
       }),
     );
   });
@@ -273,25 +274,20 @@ describe('ProductsPage', () => {
     expect(screen.getByText('Détail Produit ouvert')).toBeInTheDocument();
   });
 
-  it('affiche une action compacte pour retirer une référence du catalogue', () => {
+  it('affiche une action compacte pour retirer une référence précise du catalogue', () => {
     renderPage();
 
     expect(screen.getByRole('button', {
       name: 'Retirer Carotte de mon référentiel',
     })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Retirer' }))
-      .not.toBeInTheDocument();
   });
 
-  it('affiche une action compacte pour ajouter une référence au catalogue', () => {
+  it('affiche une action compacte pour ajouter une référence précise au catalogue', () => {
     mocks.searchQuery.mockReturnValue({
       data: {
         results: [{
           ...result,
-          variants: result.variants.map((entry) => ({
-            ...entry,
-            workspaceEntry: null,
-          })),
+          workspaceEntry: null,
         }],
         pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
       },
@@ -306,17 +302,16 @@ describe('ProductsPage', () => {
     expect(screen.getByRole('button', {
       name: 'Ajouter Carotte à mon référentiel',
     })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ajouter' }))
-      .not.toBeInTheDocument();
   });
 
-  it('affiche explicitement un Produit global sans déclinaison exploitable', () => {
+  it('affiche un Produit global sans déclinaison comme référence à enrichir', () => {
     mocks.searchQuery.mockReturnValue({
       data: {
         results: [{
-          ...result,
+          source: 'CANONICAL_PRODUCT',
           product: { ...result.product, name: 'Bœuf' },
-          variants: [],
+          variant: null,
+          workspaceEntry: null,
         }],
         pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
       },
@@ -329,8 +324,10 @@ describe('ProductsPage', () => {
     renderPage();
 
     expect(screen.getByText('Bœuf')).toBeInTheDocument();
-    expect(screen.getByText('Aucune déclinaison exploitable'))
-      .toBeInTheDocument();
+    expect(screen.getByText('À enrichir')).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: /Ajouter Bœuf à mon référentiel/,
+    })).not.toBeInTheDocument();
   });
 
   it('masque les actions d’écriture sans permissions ou capabilities M-002', () => {
@@ -349,6 +346,8 @@ describe('ProductsPage', () => {
     expect(screen.queryByRole('button', {
       name: 'Retirer Carotte de mon référentiel',
     })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Voir Carotte' }))
+      .toBeInTheDocument();
   });
 
   it('conserve Mon référentiel mais masque le référentiel global sans product_reference_access', () => {

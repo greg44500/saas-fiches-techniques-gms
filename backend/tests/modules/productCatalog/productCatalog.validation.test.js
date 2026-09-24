@@ -148,12 +148,28 @@ describe('M-002 product request validation', () => {
         }).success).toBe(false);
     });
 
-    it('applique la pagination et la portée par défaut', () => {
+    it('applique la pagination, le tri et la portée par défaut', () => {
         expect(productSearchQuerySchema.parse({})).toEqual({
             scope: 'WORKSPACE',
+            sort: 'NAME',
             page: 1,
             limit: 20,
         });
+
+        expect(productSearchQuerySchema.parse({
+            foodRange: '3',
+            sort: 'FOOD_RANGE',
+        })).toEqual({
+            scope: 'WORKSPACE',
+            foodRange: 3,
+            sort: 'FOOD_RANGE',
+            page: 1,
+            limit: 20,
+        });
+
+        expect(productSearchQuerySchema.safeParse({
+            foodRange: 6,
+        }).success).toBe(false);
     });
 
     it('refuse les PATCH vides', () => {

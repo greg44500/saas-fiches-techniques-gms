@@ -55,7 +55,7 @@ describe('M-002 recherche structurée Produit', () => {
         expect(typo.results.some(
             ({ product }) => product.name === 'Carotte',
         )).toBe(true);
-        expect(plural.results[0].variants).toHaveLength(1);
+        expect(plural.results[0].variant).toBeTruthy();
     });
 
     it('décompose carotte botte et mini carotte via les Caractéristiques', async () => {
@@ -92,7 +92,7 @@ describe('M-002 recherche structurée Produit', () => {
         expect(botteResult.results).toHaveLength(1);
         expect(miniResult.results).toHaveLength(1);
         expect(
-            botteResult.results[0].variants[0].variant.characteristics.map(
+            botteResult.results[0].variant.characteristics.map(
                 ({ kind }) => kind,
             ),
         ).toEqual(expect.arrayContaining([
@@ -162,7 +162,7 @@ describe('M-002 recherche structurée Produit', () => {
         expect(combined.results).toHaveLength(1);
         expect(result.results[0].product.name).toBe('Bœuf recherche');
         expect(
-            result.results[0].variants[0].variant.characteristics,
+            result.results[0].variant.characteristics,
         ).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 kind: 'CUT',
@@ -182,11 +182,11 @@ describe('M-002 recherche structurée Produit', () => {
         expect(result.results).toHaveLength(1);
         expect(result.results[0].product.id)
             .toBe(reference.product._id.toString());
-        expect(result.results[0].variants[0].variant.usageType).toBe('PAI');
-        expect(result.results[0].variants[0].variant.foodRange).toBe(1);
+        expect(result.results[0].variant.usageType).toBe('PAI');
+        expect(result.results[0].variant.foodRange).toBe(1);
     });
 
-    it('pagine le référentiel principal par Produit et non par déclinaison', async () => {
+    it('pagine la liste opérationnelle par référence exploitable', async () => {
         const aubergine = await createActiveProductReference({
             name: 'Aubergine pagination',
         });
@@ -217,15 +217,57 @@ describe('M-002 recherche structurée Produit', () => {
             page: 1,
             limit: 1,
         });
+        const secondPage = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'REFERENCE',
+            page: 2,
+            limit: 1,
+        });
 
         expect(firstPage.pagination).toEqual({
             page: 1,
             limit: 1,
-            total: 2,
-            totalPages: 2,
+            total: 3,
+            totalPages: 3,
         });
         expect(firstPage.results).toHaveLength(1);
+        expect(secondPage.results).toHaveLength(1);
         expect(firstPage.results[0].product.name).toBe('Aubergine pagination');
-        expect(firstPage.results[0].variants).toHaveLength(2);
+        expect(secondPage.results[0].product.name).toBe('Aubergine pagination');
+        expect(firstPage.results[0].variant.id)
+            .not.toBe(secondPage.results[0].variant.id);
+    });
+
+    it('filtre et trie les références par Gamme', async () => {
+        await createActiveProductReference({
+            name: 'Courgette gamme trois',
+            foodRange: 3,
+        });
+        await createActiveProductReference({
+            name: 'Navet gamme un',
+            foodRange: 1,
+        });
+
+        const sorted = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'REFERENCE',
+            sort: 'FOOD_RANGE',
+            page: 1,
+            limit: 20,
+        });
+        const filtered = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'REFERENCE',
+            foodRange: 3,
+            page: 1,
+            limit: 20,
+        });
+
+        expect(sorted.results.map(({ variant }) => variant.foodRange))
+            .toEqual([1, 3]);
+        expect(filtered.results).toHaveLength(1);
+        expect(filtered.results[0].product.name)
+            .toBe('Courgette gamme trois');
+        expect(filtered.results[0].variant.foodRange).toBe(3);
     });
 });

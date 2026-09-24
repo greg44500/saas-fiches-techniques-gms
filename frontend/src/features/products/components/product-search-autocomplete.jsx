@@ -18,8 +18,9 @@ import {
   useSearchProductsQuery,
 } from '@/features/products/api/product-catalog-api';
 import {
-  getProductVariantSearchLabel,
-  getVariantLabel,
+  getFoodRangeLabel,
+  getFoodRangeName,
+  getReferenceLabel,
 } from '@/features/products/lib/product-presentation';
 
 const PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH = 3;
@@ -28,6 +29,8 @@ const PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT = 6;
 
 function ProductSearchAutocomplete({
   categoryId,
+  foodRange,
+  metadata,
   onSelect,
   onValueChange,
   scope,
@@ -59,6 +62,8 @@ function ProductSearchAutocomplete({
       q: debouncedQuery || undefined,
       categoryId,
       status,
+      foodRange,
+      sort: 'NAME',
       page: 1,
       limit: PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT,
     },
@@ -73,24 +78,12 @@ function ProductSearchAutocomplete({
     }
 
     return (suggestionsQuery.data?.results ?? [])
-      .flatMap((group) => (
-        group.variants?.length
-          ? group.variants.map((entry) => ({
-              product: group.product,
-              variant: entry.variant,
-              workspaceEntry: entry.workspaceEntry,
-            }))
-          : [{
-              product: group.product,
-              variant: null,
-              workspaceEntry: null,
-            }]
-      ))
       .slice(0, PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT);
   }, [debouncedQuery.length, suggestionsQuery.data?.results]);
 
   function selectSuggestion(result) {
-    const nextSearch = getProductVariantSearchLabel(
+    const nextSearch = getReferenceLabel(
+      metadata,
       result.product,
       result.variant,
     );
@@ -110,7 +103,8 @@ function ProductSearchAutocomplete({
       autoHighlight
       filter={null}
       items={suggestions}
-      itemToStringValue={(result) => getProductVariantSearchLabel(
+      itemToStringValue={(result) => getReferenceLabel(
+        metadata,
         result.product,
         result.variant,
       )}
@@ -165,9 +159,14 @@ function ProductSearchAutocomplete({
               {(result, index) => (
                 <AutocompleteItem
                   aria-label={[
-                    result.product.name,
-                    getVariantLabel(result.variant),
+                    getReferenceLabel(metadata, result.product, result.variant),
                     result.product.category?.name,
+                    result.variant
+                      ? [
+                          getFoodRangeLabel(metadata, result.variant.foodRange),
+                          getFoodRangeName(metadata, result.variant.foodRange),
+                        ].filter(Boolean).join(' ')
+                      : 'À enrichir',
                   ].filter(Boolean).join('. ')}
                   className="border-b border-border/50 last:border-b-0 data-highlighted:bg-accent/70"
                   index={index}
@@ -175,11 +174,18 @@ function ProductSearchAutocomplete({
                   onClick={() => selectSuggestion(result)}
                   value={result}
                 >
-                  <span className="font-medium">{result.product.name}</span>
+                  <span className="font-medium">
+                    {getReferenceLabel(metadata, result.product, result.variant)}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {[
                       result.product.category?.name,
-                      getVariantLabel(result.variant),
+                      result.variant
+                        ? [
+                            getFoodRangeLabel(metadata, result.variant.foodRange),
+                            getFoodRangeName(metadata, result.variant.foodRange),
+                          ].filter(Boolean).join(' · ')
+                        : 'Référence à enrichir',
                     ].filter(Boolean).join(' · ')}
                   </span>
                 </AutocompleteItem>

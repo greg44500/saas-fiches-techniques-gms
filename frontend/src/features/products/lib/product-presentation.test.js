@@ -8,6 +8,7 @@ import {
   getImportClassificationPresentation,
   getProductEventLabel,
   getProductStatusLabel,
+  getReferenceLabel,
   getProductVariantSearchLabel,
   getReferenceUnitLabel,
   getUsageTypeLabel,
@@ -70,9 +71,56 @@ describe('product presentation', () => {
         variety: null,
         characteristics: [{ kind: 'CUT', name: 'Paleron' }],
       },
-    )).toBe('Bœuf Paleron');
+      metadata,
+    )).toBe('Bœuf (paleron)');
     expect(getVariantLabel(null)).toBe('Aucune déclinaison exploitable');
     expect(formatYield(92.5)).toBe('92.5 %');
+  });
+
+  it('construit un libellé métier compact sans répéter l état porté par la Gamme', () => {
+    expect(getReferenceLabel(
+      metadata,
+      { name: 'Carotte' },
+      {
+        variety: null,
+        characteristics: [{ kind: 'PRESENTATION', name: 'Entière' }],
+        processingState: 'Produit frais',
+        foodRange: 1,
+      },
+    )).toBe('Carotte');
+
+    expect(getReferenceLabel(
+      metadata,
+      { name: 'Carotte' },
+      {
+        variety: null,
+        characteristics: [{ kind: 'PRESENTATION', name: 'Râpée' }],
+        processingState: 'Produit frais',
+        foodRange: 1,
+      },
+    )).toBe('Carotte râpée');
+
+    expect(getReferenceLabel(
+      metadata,
+      { name: 'Canard' },
+      {
+        variety: null,
+        characteristics: [{ kind: 'CUT', name: 'Cuisse' }],
+        processingState: 'Produit frais',
+        foodRange: 1,
+      },
+    )).toBe('Canard (cuisse)');
+
+    expect(getReferenceLabel(
+      metadata,
+      { name: 'Canard' },
+      {
+        variety: null,
+        characteristics: [{ kind: 'COMMERCIAL_TYPE', name: 'Confit' }],
+        processingState: 'Produit frais',
+        foodRange: 1,
+      },
+    )).toBe('Canard confit');
   });
 
   it('présente les classifications d’import M-002', () => {

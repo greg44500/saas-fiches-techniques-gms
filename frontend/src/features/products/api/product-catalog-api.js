@@ -28,6 +28,8 @@ const productCatalogApi = productCatalogApiBase.injectEndpoints({
         q,
         categoryId,
         status,
+        foodRange,
+        sort = 'NAME',
         page = 1,
         limit = 20,
       }) => ({
@@ -37,6 +39,8 @@ const productCatalogApi = productCatalogApiBase.injectEndpoints({
           q,
           categoryId,
           status,
+          foodRange,
+          sort,
           page,
           limit,
         },
