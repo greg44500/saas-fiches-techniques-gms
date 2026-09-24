@@ -1,5 +1,7 @@
 # M-002 — Critères d'acceptation et ordre de finalisation
 
+> **CONTRAT FINAL 2026-09-24** — La source de vérité actuelle est `docs/m002/M-002-FINAL-CONTRACT.md`. Toute section historique de ce document qui décrit `Gamme 1..5 + usageType PAI/PAE`, un nom de référence calculé, une catégorie obligatoire, un seed v3 final ou « Mon référentiel » est obsolète lorsqu'elle contredit ce contrat final.
+
 **Statut : RECADRAGE QA VALIDÉ — ancien bloc largement implémenté, adaptations A→F encore à réaliser**
 
 ## 1. Discipline
