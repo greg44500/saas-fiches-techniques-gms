@@ -8,12 +8,10 @@ import {
 } from '../../modules/productCatalog/productCatalog.normalization.js';
 import {
     PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_CONSERVATION_TYPE,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
 } from '../../modules/productCatalog/productCatalog.registry.js';
-import {
-    resolveProductProcessingState,
-} from '../../modules/productCatalog/productVariantSemantics.js';
 import { CanonicalProduct } from '../../modules/productCatalog/canonicalProduct.model.js';
 import { ProductCategory } from '../../modules/productCatalog/productCategory.model.js';
 import { ProductCharacteristic } from '../../modules/productCatalog/productCharacteristic.model.js';
@@ -22,11 +20,12 @@ import { ProductVariant } from '../../modules/productCatalog/productVariant.mode
 const createActiveProductReference = async ({
     actorId = new mongoose.Types.ObjectId(),
     name = 'Carotte',
+    referenceName = name,
     aliases = [],
     presentation = null,
     processingState = null,
+    conservationType = PRODUCT_CONSERVATION_TYPE.FRAIS,
     foodRange = 1,
-    usageType = null,
     referenceUnit = PRODUCT_REFERENCE_UNIT.KG,
     yieldPercent = null,
     categoryName = 'Légumes',
@@ -63,14 +62,6 @@ const createActiveProductReference = async ({
         updatedBy: actorId,
     });
 
-    const resolvedProcessingState = resolveProductProcessingState({
-        foodRange,
-        processingState,
-    });
-    if (!resolvedProcessingState.valid) {
-        throw new Error('Fixture Produit invalide : gamme/état incompatibles.');
-    }
-
     const characteristics = [];
     if (presentation) {
         const characteristicSearchKeys = buildSearchKeys(presentation, []);
@@ -89,24 +80,22 @@ const createActiveProductReference = async ({
         characteristics.push(characteristic);
     }
 
-    const variantInput = {
-        varietyId: null,
-        characteristics,
-        processingState: resolvedProcessingState.value,
-        foodRange,
-        usageType,
-    };
+    const normalizedReferenceName = normalizeProductText(referenceName);
     const variant = await ProductVariant.create({
         canonicalProduct: product._id,
+        name: referenceName,
+        normalizedName: normalizedReferenceName,
         variety: null,
         characteristics: characteristics.map(({ _id }) => _id),
-        processingState: resolvedProcessingState.value,
-        normalizedProcessingState: normalizeProductText(
-            resolvedProcessingState.value,
-        ),
-        normalizedSignature: buildVariantSignature(variantInput),
+        processingState,
+        normalizedProcessingState: normalizeProductText(processingState),
+        normalizedSignature: buildVariantSignature({
+            name: referenceName,
+            varietyId: null,
+            characteristics,
+        }),
+        conservationType,
         foodRange,
-        usageType,
         referenceUnit,
         yieldPercent,
         status: PRODUCT_STATUS.ACTIVE,

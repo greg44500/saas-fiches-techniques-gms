@@ -9,6 +9,8 @@ import {
     PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
     PRODUCT_CONTRIBUTION_CLASSIFICATION,
     PRODUCT_CONTRIBUTION_STATUS,
+    PRODUCT_CONSERVATION_TYPE,
+    PRODUCT_CONSERVATION_TYPE_REGISTRY,
     PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
@@ -16,8 +18,6 @@ import {
     PRODUCT_REFERENCE_UNIT_REGISTRY,
     PRODUCT_STATUS,
     PRODUCT_STATUS_REGISTRY,
-    PRODUCT_USAGE_TYPE,
-    PRODUCT_USAGE_TYPE_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS_REGISTRY,
 } from '../../../modules/productCatalog/productCatalog.registry.js';
@@ -41,9 +41,9 @@ describe('M-002 product catalog registries', () => {
             'ARCHIVED',
         ]);
         expect(WORKSPACE_PRODUCT_STATUS_REGISTRY.ACTIVE.label)
-            .toBe('Dans mon référentiel');
+            .toBe('Favori');
         expect(WORKSPACE_PRODUCT_STATUS_REGISTRY.ARCHIVED.label)
-            .toBe('Retiré de mon référentiel');
+            .toBe('Retiré des favoris');
     });
 
     it('ferme le registre des caractéristiques Produit V1', () => {
@@ -79,24 +79,31 @@ describe('M-002 product catalog registries', () => {
         );
     });
 
-    it('décrit les cinq gammes physiques et sépare PAI / PAE', () => {
-        expect(PRODUCT_FOOD_RANGES).toEqual([1, 2, 3, 4, 5]);
+    it('décrit les conservations et les six gammes du contrat actif', () => {
+        expect(PRODUCT_CONSERVATION_TYPE).toEqual({
+            FRAIS: 'FRAIS',
+            REFRIGERE: 'REFRIGERE',
+            SURGELE: 'SURGELE',
+            CONSERVE: 'CONSERVE',
+            SEC: 'SEC',
+        });
+        expect(PRODUCT_CONSERVATION_TYPE_REGISTRY.SURGELE.label)
+            .toBe('Surgelé');
+
+        expect(PRODUCT_FOOD_RANGES).toEqual([1, 2, 3, 4, 5, 6]);
         expect(PRODUCT_FOOD_RANGE_REGISTRY[1]).toEqual(
             expect.objectContaining({
                 label: 'Gamme 1',
                 name: 'Frais',
-                defaultProcessingState: 'Produit frais',
             }),
         );
-        expect(PRODUCT_FOOD_RANGE_REGISTRY[6]).toBeUndefined();
-        expect(PRODUCT_USAGE_TYPE).toEqual({
-            PAI: 'PAI',
-            PAE: 'PAE',
-        });
-        expect(Object.values(PRODUCT_USAGE_TYPE_REGISTRY)).toEqual([
-            { value: 'PAI', label: 'PAI' },
-            { value: 'PAE', label: 'PAE' },
-        ]);
+        expect(PRODUCT_FOOD_RANGE_REGISTRY[6]).toEqual(
+            expect.objectContaining({
+                label: 'Gamme 6',
+                name: 'PAI / PAE',
+                defaultProcessingState: null,
+            }),
+        );
     });
 
     it('sépare les permissions Workspace et Application Global', () => {

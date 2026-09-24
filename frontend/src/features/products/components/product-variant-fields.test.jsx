@@ -14,36 +14,16 @@ const metadata = {
     { value: 'PRESENTATION', label: 'Présentation' },
     { value: 'SIZE_FORMAT', label: 'Calibre / format' },
   ],
+  conservationTypes: [
+    { value: 'FRAIS', label: 'Frais' },
+    { value: 'SEC', label: 'Sec' },
+  ],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
   foodRanges: [
-    {
-      value: 1,
-      label: 'Gamme 1',
-      name: 'Frais',
-      processingStates: ['Produit frais'],
-      defaultProcessingState: 'Produit frais',
-    },
-    {
-      value: 6,
-      label: 'Gamme 6',
-      name: 'PAI / PAE',
-      processingStates: ['PAI / PAE'],
-      defaultProcessingState: 'PAI / PAE',
-    },
+    { value: 1, label: 'Gamme 1', name: 'Frais' },
+    { value: 6, label: 'Gamme 6', name: 'PAI / PAE' },
   ],
 };
-
-function Harness() {
-  const [value, setValue] = useState(() => createEmptyVariantDraft(metadata));
-
-  return (
-    <ProductVariantFields
-      metadata={metadata}
-      onChange={setValue}
-      value={value}
-    />
-  );
-}
 
 const dimensions = {
   varieties: [
@@ -93,11 +73,13 @@ function StructuredHarness({ onPayload }) {
 }
 
 describe('ProductVariantFields', () => {
-  it('sélectionne Variété et Caractéristiques par identifiants stables', async () => {
+  it('porte un nom métier persistant et des dimensions facultatives', async () => {
     const user = userEvent.setup();
     const onPayload = vi.fn();
 
     render(<StructuredHarness onPayload={onPayload} />);
+
+    await user.type(screen.getByLabelText('Nom de la référence *'), 'Pomme en quartiers');
 
     await user.click(screen.getByLabelText('Variété'));
     await user.click(screen.getByRole('option', { name: 'Gala' }));
@@ -105,39 +87,34 @@ describe('ProductVariantFields', () => {
     await user.click(screen.getByLabelText('Présentation'));
     await user.click(screen.getByRole('option', { name: 'En quartiers' }));
 
-    await user.click(screen.getByLabelText('Calibre / format'));
-    await user.click(screen.getByRole('option', { name: 'Mini' }));
-
-    await user.click(screen.getByLabelText('Gamme *'));
-    await user.click(screen.getByRole('option', { name: 'Gamme 1' }));
-
     await user.click(screen.getByRole('button', { name: 'Exporter' }));
 
     expect(onPayload).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'Pomme en quartiers',
+      conservationType: 'FRAIS',
       varietyId: 'variety-gala',
-      characteristicIds: expect.arrayContaining([
-        'presentation-quartiers',
-        'size-mini',
-      ]),
-      foodRange: 1,
-      processingState: 'Produit frais',
+      characteristicIds: ['presentation-quartiers'],
+      foodRange: null,
+      processingState: null,
       referenceUnit: 'KG',
     }));
-    expect(onPayload.mock.calls[0][0]).not.toHaveProperty('presentation');
   });
 
-  it('pilote État / transformation depuis la gamme backend-driven', async () => {
+  it('rend la gamme facultative et ne pilote plus l état depuis la gamme', async () => {
     const user = userEvent.setup();
+    const onPayload = vi.fn();
 
-    render(<Harness />);
+    render(<StructuredHarness onPayload={onPayload} />);
 
-    expect(screen.getByLabelText('Présentation')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Conservation')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Conservation *')).toBeInTheDocument();
+    expect(screen.getByLabelText('État / transformation')).toHaveValue('');
 
-    await user.click(screen.getByLabelText('Gamme *'));
-    await user.click(screen.getByRole('option', { name: 'Gamme 6' }));
+    await user.click(screen.getByLabelText('Gamme'));
+    await user.click(screen.getByRole('option', { name: 'Gamme 6 — PAI / PAE' }));
 
-    expect(screen.getByLabelText('État / transformation'))
-      .toHaveValue('PAI / PAE');
+    expect(screen.getByLabelText('État / transformation')).toHaveValue('');
+
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
+    expect(onPayload.mock.calls[0][0].foodRange).toBe(6);
   });
 });

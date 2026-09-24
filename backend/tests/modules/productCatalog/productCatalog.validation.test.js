@@ -18,127 +18,110 @@ import {
 
 const categoryId = '507f1f77bcf86cd799439011';
 
+const minimalReference = {
+    name: 'Carotte râpée',
+    conservationType: 'FRAIS',
+    referenceUnit: 'KG',
+};
+
 describe('M-002 product request validation', () => {
-    it('valide une proposition Produit Workspace minimale sans alias utilisateur', () => {
+    it('valide une proposition Workspace avec conservation obligatoire et catégorie facultative', () => {
         expect(createWorkspaceProductBodySchema.parse({
             name: 'Carotte',
-            categoryId,
-            variant: {
-                presentation: 'Râpée',
-                foodRange: 1,
-                usageType: 'PAI',
-                referenceUnit: 'KG',
-                yieldPercent: 100,
-            },
+            variant: minimalReference,
         })).toEqual({
             name: 'Carotte',
-            categoryId,
+            categoryId: null,
             variant: {
-                presentation: 'Râpée',
-                foodRange: 1,
-                usageType: 'PAI',
-                referenceUnit: 'KG',
-                yieldPercent: 100,
+                ...minimalReference,
+                foodRange: null,
             },
         });
 
         expect(createWorkspaceProductBodySchema.safeParse({
             name: 'Carotte',
             aliases: ['Carottes'],
-            categoryId,
-            variant: { foodRange: 1, referenceUnit: 'KG' },
+            variant: minimalReference,
         }).success).toBe(false);
 
         expect(createWorkspaceProductBodySchema.safeParse({
             name: 'Carotte',
-            variant: { foodRange: 1, referenceUnit: 'KG' },
+            variant: {
+                name: 'Carotte',
+                referenceUnit: 'KG',
+            },
         }).success).toBe(false);
 
         expect(createWorkspaceProductBodySchema.safeParse({
             name: 'Carotte',
-            categoryId,
-            variant: { referenceUnit: 'KG' },
-        }).success).toBe(false);
-
-        expect(createWorkspaceProductBodySchema.safeParse({
-            name: 'Carotte',
-            categoryId,
             status: 'ACTIVE',
-            variant: { foodRange: 1, referenceUnit: 'KG' },
+            variant: minimalReference,
         }).success).toBe(false);
+    });
 
+    it('accepte les Gammes 1 à 6, facultatives, et refuse usageType', () => {
         expect(createWorkspaceProductBodySchema.safeParse({
-            name: 'Carotte',
-            categoryId,
-            variant: { foodRange: 6, referenceUnit: 'KG' },
-        }).success).toBe(false);
-
-        expect(createWorkspaceProductBodySchema.safeParse({
-            name: 'Carotte',
+            name: 'Farine de blé',
             categoryId,
             variant: {
-                foodRange: 1,
-                usageType: 'INVALID',
-                referenceUnit: 'KG',
+                ...minimalReference,
+                name: 'Farine de blé',
+                conservationType: 'SEC',
+                foodRange: null,
+            },
+        }).success).toBe(true);
+
+        expect(createWorkspaceProductBodySchema.safeParse({
+            name: 'Sauce cuisinée',
+            variant: {
+                ...minimalReference,
+                name: 'Sauce cuisinée',
+                foodRange: 6,
+            },
+        }).success).toBe(true);
+
+        expect(createWorkspaceProductBodySchema.safeParse({
+            name: 'Sauce cuisinée',
+            variant: {
+                ...minimalReference,
+                usageType: 'PAI',
             },
         }).success).toBe(false);
     });
 
-    it('autorise un Produit global sans déclinaison initiale', () => {
+    it('autorise un Produit global sans référence initiale ni catégorie', () => {
         expect(createGlobalProductBodySchema.safeParse({
             name: 'Bœuf',
-            categoryId,
         }).success).toBe(true);
     });
 
-    it('valide les références structurées d une déclinaison existante', () => {
+    it('valide une référence structurée avec dimensions facultatives', () => {
         expect(createWorkspaceVariantBodySchema.safeParse({
+            ...minimalReference,
             varietyId: '507f1f77bcf86cd799439012',
             characteristicIds: [
                 '507f1f77bcf86cd799439013',
                 '507f1f77bcf86cd799439014',
             ],
             foodRange: 1,
-            usageType: 'PAE',
-            referenceUnit: 'KG',
         }).success).toBe(true);
 
         expect(createWorkspaceVariantBodySchema.safeParse({
+            ...minimalReference,
             characteristicIds: [
                 '507f1f77bcf86cd799439013',
                 '507f1f77bcf86cd799439013',
             ],
-            foodRange: 1,
-            referenceUnit: 'KG',
-        }).success).toBe(false);
-
-        expect(createWorkspaceVariantBodySchema.safeParse({
-            presentation: 'Râpée',
-            foodRange: 1,
-            referenceUnit: 'KG',
         }).success).toBe(false);
     });
 
-    it('valide la granularité des contributions', () => {
-        expect(createReferenceContributionBodySchema.safeParse({
-            type: 'VARIETY',
-            productId: '507f1f77bcf86cd799439012',
-            value: 'Reinette',
-        }).success).toBe(true);
-
-        expect(createReferenceContributionBodySchema.safeParse({
-            type: 'CHARACTERISTIC',
-            productId: '507f1f77bcf86cd799439012',
-            value: 'En botte',
-        }).success).toBe(false);
-
+    it('valide les contributions Produit sans rendre la catégorie obligatoire', () => {
         expect(createReferenceContributionBodySchema.safeParse({
             type: 'CANONICAL_PRODUCT',
             value: 'Betterave',
-            categoryId,
             variant: {
-                foodRange: 1,
-                referenceUnit: 'KG',
+                ...minimalReference,
+                name: 'Betterave',
             },
         }).success).toBe(true);
 
@@ -148,7 +131,7 @@ describe('M-002 product request validation', () => {
         }).success).toBe(false);
     });
 
-    it('applique la pagination, le tri et la portée par défaut', () => {
+    it('applique pagination, tri et filtres du nouveau contrat', () => {
         expect(productSearchQuerySchema.parse({})).toEqual({
             scope: 'WORKSPACE',
             sort: 'NAME',
@@ -157,19 +140,17 @@ describe('M-002 product request validation', () => {
         });
 
         expect(productSearchQuerySchema.parse({
-            foodRange: '3',
+            conservationType: 'SURGELE',
+            foodRange: '6',
             sort: 'FOOD_RANGE',
         })).toEqual({
             scope: 'WORKSPACE',
-            foodRange: 3,
+            conservationType: 'SURGELE',
+            foodRange: 6,
             sort: 'FOOD_RANGE',
             page: 1,
             limit: 20,
         });
-
-        expect(productSearchQuerySchema.safeParse({
-            foodRange: 6,
-        }).success).toBe(false);
     });
 
     it('refuse les PATCH vides', () => {
@@ -181,28 +162,22 @@ describe('M-002 product request validation', () => {
         expect(importPreviewBodySchema.parse({
             mapping: {
                 name: 0,
-                variety: 1,
-                presentation: 2,
-                cut: 3,
-                qualityDesignation: 4,
-                usageType: 5,
+                conservationType: 1,
+                referenceUnit: 2,
             },
-            defaults: { referenceUnit: 'KG', categoryId, foodRange: 1 },
+            defaults: { categoryId },
         })).toEqual({
             mapping: {
                 name: 0,
-                variety: 1,
-                presentation: 2,
-                cut: 3,
-                qualityDesignation: 4,
-                usageType: 5,
+                conservationType: 1,
+                referenceUnit: 2,
             },
-            defaults: { referenceUnit: 'KG', categoryId, foodRange: 1 },
+            defaults: { categoryId },
         });
 
         expect(importPreviewBodySchema.safeParse({
-            mapping: { name: 0, presentation: 0 },
-            defaults: { referenceUnit: 'KG', foodRange: 1 },
+            mapping: { name: 0, conservationType: 0 },
+            defaults: { referenceUnit: 'KG' },
         }).success).toBe(false);
     });
 
