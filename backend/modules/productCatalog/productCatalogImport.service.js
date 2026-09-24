@@ -7,12 +7,12 @@ import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
 import {
     attachVariantToWorkspace,
-    createWorkspaceProduct,
     createWorkspaceVariant,
 } from './productCatalog.service.js';
 import {
     createGlobalProduct,
     createGlobalVariant,
+    updateVariant,
 } from './productCatalogGovernance.service.js';
 import {
     findProductDuplicateCandidates,
@@ -23,6 +23,9 @@ import {
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CATEGORY_STATUS,
+    PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_CONTRIBUTION_CLASSIFICATION,
+    PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_FOOD_RANGES,
     PRODUCT_IMPORT_ROW_CLASSIFICATION,
     PRODUCT_IMPORT_SCOPE,
@@ -30,12 +33,21 @@ import {
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
+import { ProductCharacteristic } from './productCharacteristic.model.js';
 import { ProductImportSession } from './productImportSession.model.js';
+import { ProductVariety } from './productVariety.model.js';
 import { ProductVariant } from './productVariant.model.js';
 import {
     resolveProductProcessingState,
 } from './productVariantSemantics.js';
 import { parseProductImportFile } from './productCatalogImport.parser.js';
+import {
+    submitReferenceContribution,
+} from './productReferenceContribution.service.js';
+import {
+    createProductCharacteristic,
+    createProductVariety,
+} from './productReferenceDimension.service.js';
 
 const IMPORT_TTL_MINUTES = 30;
 
@@ -278,7 +290,22 @@ const mapImportRow = ({
     }
     if (Number.isNaN(yieldPercent)) errors.push('Rendement invalide.');
 
-    const presentation = String(value('presentation')).trim() || null;
+    const variety = String(value('variety')).trim() || null;
+    const characteristicValues = [
+        [PRODUCT_CHARACTERISTIC_KIND.PRESENTATION, value('presentation')],
+        [PRODUCT_CHARACTERISTIC_KIND.COMMERCIAL_TYPE, value('commercialType')],
+        [PRODUCT_CHARACTERISTIC_KIND.SIZE_FORMAT, value('sizeFormat')],
+        [PRODUCT_CHARACTERISTIC_KIND.COLOR, value('color')],
+        [
+            PRODUCT_CHARACTERISTIC_KIND.QUALITY_DESIGNATION,
+            value('qualityDesignation'),
+        ],
+    ]
+        .map(([kind, rawValue]) => ({
+            kind,
+            value: String(rawValue).trim(),
+        }))
+        .filter(({ value: mappedValue }) => Boolean(mappedValue));
     const requestedProcessingState = String(
         value('processingState'),
     ).trim() || null;
@@ -303,8 +330,11 @@ const mapImportRow = ({
             name,
             aliases,
             categoryName: String(value('category')).trim() || null,
+            dimensions: {
+                variety,
+                characteristics: characteristicValues,
+            },
             variant: {
-                presentation,
                 processingState: processingState.value,
                 foodRange: Number.isNaN(foodRange) ? null : foodRange,
                 referenceUnit,
@@ -315,6 +345,122 @@ const mapImportRow = ({
     };
 };
 
+const buildImportDimensionIndexes = async (productIds) => {
+    if (productIds.length === 0) {
+        return {
+            varietyByKey: new Map(),
+            characteristicByKey: new Map(),
+        };
+    }
+
+    const [varieties, characteristics] = await Promise.all([
+        ProductVariety.find({
+            canonicalProduct: mongoose.trusted({ $in: productIds }),
+            identityActive: true,
+            status: mongoose.trusted({
+                $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+            }),
+        }).lean(),
+        ProductCharacteristic.find({
+            canonicalProduct: mongoose.trusted({ $in: productIds }),
+            identityActive: true,
+            status: mongoose.trusted({
+                $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+            }),
+        }).lean(),
+    ]);
+
+    return {
+        varietyByKey: new Map(varieties.map((variety) => [
+            [
+                variety.canonicalProduct.toString(),
+                variety.normalizedName,
+            ].join(':'),
+            variety,
+        ])),
+        characteristicByKey: new Map(characteristics.map((characteristic) => [
+            [
+                characteristic.canonicalProduct.toString(),
+                characteristic.kind,
+                characteristic.normalizedName,
+            ].join(':'),
+            characteristic,
+        ])),
+    };
+};
+
+const resolveImportDimensions = ({
+    productId,
+    dimensions,
+    varietyByKey,
+    characteristicByKey,
+}) => {
+    const missing = [];
+    const archived = [];
+    let variety = null;
+
+    if (dimensions.variety) {
+        variety = varietyByKey.get([
+            productId.toString(),
+            normalizeProductText(dimensions.variety),
+        ].join(':')) ?? null;
+
+        if (!variety) {
+            missing.push({
+                type: PRODUCT_CONTRIBUTION_TYPE.VARIETY,
+                value: dimensions.variety,
+            });
+        } else if (variety.status !== PRODUCT_STATUS.ACTIVE) {
+            archived.push({
+                type: PRODUCT_CONTRIBUTION_TYPE.VARIETY,
+                id: variety._id.toString(),
+                value: variety.name,
+            });
+        }
+    }
+
+    const characteristics = [];
+    for (const proposal of dimensions.characteristics ?? []) {
+        const characteristic = characteristicByKey.get([
+            productId.toString(),
+            proposal.kind,
+            normalizeProductText(proposal.value),
+        ].join(':')) ?? null;
+
+        if (!characteristic) {
+            missing.push({
+                type: PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC,
+                kind: proposal.kind,
+                value: proposal.value,
+            });
+            continue;
+        }
+
+        if (characteristic.status !== PRODUCT_STATUS.ACTIVE) {
+            archived.push({
+                type: PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC,
+                id: characteristic._id.toString(),
+                kind: characteristic.kind,
+                value: characteristic.name,
+            });
+            continue;
+        }
+
+        characteristics.push(characteristic);
+    }
+
+    return {
+        variety,
+        characteristics,
+        missing,
+        archived,
+        resolved: {
+            varietyId: variety?._id.toString() ?? null,
+            characteristicIds: characteristics.map(({ _id }) => _id.toString()),
+        },
+    };
+};
+
 const buildProductImportPreview = async ({
     scope = PRODUCT_IMPORT_SCOPE.WORKSPACE,
     workspaceId = null,
@@ -322,8 +468,6 @@ const buildProductImportPreview = async ({
     mapping,
     defaults = {},
 }) => {
-    void scope;
-
     const indexes = Object.values(mapping);
     if (indexes.some((index) => index >= importSession.headers.length)) {
         throw new AppError('Le mapping contient une colonne inexistante.', 400);
@@ -391,6 +535,12 @@ const buildProductImportPreview = async ({
                 $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
             }),
         }).lean();
+    const {
+        varietyByKey,
+        characteristicByKey,
+    } = await buildImportDimensionIndexes(
+        exactProducts.map(({ _id }) => _id),
+    );
     const variantBySignature = new Map(
         variants.map((variant) => [
             `${variant.canonicalProduct.toString()}:${variant.normalizedSignature}`,
@@ -417,6 +567,15 @@ const buildProductImportPreview = async ({
             : null;
         const category = namedCategory ?? defaultCategory;
         const warnings = [];
+
+        if (
+            scope === PRODUCT_IMPORT_SCOPE.WORKSPACE
+            && data.aliases.length > 0
+        ) {
+            warnings.push(
+                'Les alias importés ne sont pas publiés depuis un Workspace.',
+            );
+        }
 
         if (data.categoryName && !namedCategory) {
             warnings.push(
@@ -447,10 +606,47 @@ const buildProductImportPreview = async ({
                 continue;
             }
 
-            const signature = buildVariantSignature(data.variant);
-            const existingVariant = variantBySignature.get(
-                `${exactProduct._id.toString()}:${signature}`,
-            );
+            const dimensionResolution = resolveImportDimensions({
+                productId: exactProduct._id,
+                dimensions: data.dimensions,
+                varietyByKey,
+                characteristicByKey,
+            });
+
+            if (dimensionResolution.archived.length > 0) {
+                preview.push({
+                    ...row,
+                    data: {
+                        ...data,
+                        categoryId: category?._id.toString() ?? null,
+                    },
+                    warnings,
+                    errors: [
+                        ...errors,
+                        'Une Variété ou Caractéristique demandée est archivée.',
+                    ],
+                    productId: exactProduct._id.toString(),
+                    classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
+                    candidates: [],
+                    resolvedDimensions: dimensionResolution.resolved,
+                    missingDimensions: dimensionResolution.missing,
+                });
+                continue;
+            }
+
+            const signature = dimensionResolution.missing.length === 0
+                ? buildVariantSignature({
+                    varietyId: dimensionResolution.variety?._id ?? null,
+                    characteristics: dimensionResolution.characteristics,
+                    foodRange: data.variant.foodRange,
+                    processingState: data.variant.processingState,
+                })
+                : null;
+            const existingVariant = signature
+                ? variantBySignature.get(
+                    `${exactProduct._id.toString()}:${signature}`,
+                )
+                : null;
 
             if (existingVariant) {
                 if (existingVariant.status === PRODUCT_STATUS.ARCHIVED) {
@@ -485,6 +681,8 @@ const buildProductImportPreview = async ({
                     classification:
                         PRODUCT_IMPORT_ROW_CLASSIFICATION.ATTACH_EXISTING,
                     candidates: [],
+                    resolvedDimensions: dimensionResolution.resolved,
+                    missingDimensions: [],
                 });
                 continue;
             }
@@ -499,6 +697,8 @@ const buildProductImportPreview = async ({
                 productId: exactProduct._id.toString(),
                 classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.CREATE_VARIANT,
                 candidates: [],
+                resolvedDimensions: dimensionResolution.resolved,
+                missingDimensions: dimensionResolution.missing,
             });
             continue;
         }
@@ -530,6 +730,7 @@ const buildProductImportPreview = async ({
             preview.push({
                 ...preparedRow,
                 classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED,
+                reviewMode: 'DUPLICATE_CANDIDATE',
             });
             continue;
         }
@@ -548,7 +749,12 @@ const buildProductImportPreview = async ({
 
         preview.push({
             ...preparedRow,
-            classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.CREATE_PRODUCT,
+            classification: scope === PRODUCT_IMPORT_SCOPE.WORKSPACE
+                ? PRODUCT_IMPORT_ROW_CLASSIFICATION.REVIEW_REQUIRED
+                : PRODUCT_IMPORT_ROW_CLASSIFICATION.CREATE_PRODUCT,
+            reviewMode: scope === PRODUCT_IMPORT_SCOPE.WORKSPACE
+                ? 'REFERENCE_GOVERNANCE'
+                : null,
         });
     }
 
@@ -613,6 +819,9 @@ const previewRowFingerprint = (row) => JSON.stringify({
     productId: row.productId ?? null,
     variantId: row.variantId ?? null,
     categoryId: row.data?.categoryId ?? null,
+    reviewMode: row.reviewMode ?? null,
+    resolvedDimensions: row.resolvedDimensions ?? null,
+    missingDimensions: row.missingDimensions ?? [],
     candidates: (row.candidates ?? [])
         .map(({ id }) => id)
         .sort(),
