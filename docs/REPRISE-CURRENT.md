@@ -3,7 +3,7 @@
 **Date :** 2026-09-24  
 **Lot actif :** M-002 — Référentiel Produits  
 **Branche :** `feature/m002-catalogue-produits`  
-**HEAD de cette reprise :** `fe4fcfb837781b8831ef6ec2b260d93715e87fbf`
+**HEAD :** à vérifier sur GitHub au moment de la reprise ; ne pas utiliser un SHA documentaire figé comme autorité.
 
 ## 1. Ordre d'autorité
 
