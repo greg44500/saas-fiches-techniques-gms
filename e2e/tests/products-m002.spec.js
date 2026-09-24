@@ -77,7 +77,13 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
 
   await page.getByRole('combobox', { name: 'Rechercher un Produit' })
     .fill(context.productName);
-  await page.getByRole('button', { name: 'Rechercher' }).click();
+
+  const predictiveResult = page.getByRole('option').filter({
+    hasText: context.productName,
+  }).first();
+  await expect(predictiveResult).toBeVisible();
+  await predictiveResult.click();
+
   await page.getByRole('button', {
     name: `Ajouter ${context.productName} à mon référentiel`,
   }).click();
