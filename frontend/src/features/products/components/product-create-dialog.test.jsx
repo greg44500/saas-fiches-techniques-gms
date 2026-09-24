@@ -97,6 +97,7 @@ describe('ProductCreateDialog', () => {
 
     expect(onUseExisting).toHaveBeenCalledWith('product-existing');
     expect(mocks.createProduct).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('Alias')).not.toBeInTheDocument();
   });
 
   it('signale une correspondance exacte archivée sans proposer de l ouvrir côté Workspace', async () => {
@@ -144,8 +145,11 @@ describe('ProductCreateDialog', () => {
       ],
     }));
     mocks.createProduct.mockReturnValue(resolved({
-      product: { id: 'product-new', name: 'Carotte nouvelle', status: 'ACTIVE' },
-      variant: { id: 'variant-new', status: 'ACTIVE' },
+      classification: 'REVIEW_REQUIRED',
+      contribution: {
+        id: 'contribution-1',
+        status: 'PENDING_REVIEW',
+      },
     }));
 
     render(
@@ -162,7 +166,7 @@ describe('ProductCreateDialog', () => {
     await user.type(screen.getByLabelText('Nom du Produit'), 'Carotte nouvelle');
     await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
 
-    expect(screen.queryByRole('button', { name: 'Créer et ajouter à mon référentiel' }))
+    expect(screen.queryByRole('button', { name: 'Soumettre la proposition' }))
       .not.toBeInTheDocument();
 
     const reviews = await screen.findAllByRole('checkbox', { name: 'Différent' });
@@ -170,7 +174,7 @@ describe('ProductCreateDialog', () => {
     await user.click(reviews[1]);
 
     const createButton = screen.getByRole('button', {
-      name: 'Créer et ajouter à mon référentiel',
+      name: 'Soumettre la proposition',
     });
     expect(createButton).toBeDisabled();
 
@@ -188,7 +192,6 @@ describe('ProductCreateDialog', () => {
           workspaceId: 'workspace-1',
           name: 'Carotte nouvelle',
           categoryId: 'category-1',
-          reviewedCandidateIds: ['candidate-1', 'candidate-2'],
           variant: expect.objectContaining({
             foodRange: 1,
             processingState: 'Produit frais',
