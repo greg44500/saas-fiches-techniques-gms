@@ -759,7 +759,7 @@ function ProductImportDialog({
                               {candidateChoice?.variants?.length > 1 && (
                                 <Field>
                                   <FieldLabel htmlFor={'candidate-variant-' + row.rowNumber}>
-                                    Déclinaison existante
+                                    Référence existante
                                   </FieldLabel>
                                   <Select
                                     items={candidateChoice.variants.map((variant) => ({
@@ -776,7 +776,7 @@ function ProductImportDialog({
                                     value={decision?.variantId ?? null}
                                   >
                                     <SelectTrigger id={'candidate-variant-' + row.rowNumber}>
-                                      <SelectValue placeholder="Choisir une déclinaison" />
+                                      <SelectValue placeholder="Choisir une référence" />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {candidateChoice.variants.map((variant) => (
@@ -793,7 +793,7 @@ function ProductImportDialog({
 
                               {candidateChoice?.variants?.length === 0 && (
                                 <p className="text-sm text-muted-foreground">
-                                  Aucune déclinaison active de ce candidat ne peut être utilisée.
+                                  Aucune référence active de ce candidat ne peut être utilisée.
                                 </p>
                               )}
 

@@ -18,10 +18,10 @@ function ProductsDashboardWidget() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-start gap-2">
-              <h2 className="text-lg font-semibold">Mon référentiel Produits</h2>
+              <h2 className="text-lg font-semibold">Favoris Produits</h2>
               <InfoTooltip
-                content="Références actives actuellement rattachées à votre espace de travail."
-                label="À propos de mon référentiel Produits"
+                content="Références Produit favorites de votre espace de travail."
+                label="À propos des favoris Produits"
               />
             </div>
             {!summaryQuery.isLoading && !summaryQuery.isError && (
@@ -47,14 +47,14 @@ function ProductsDashboardWidget() {
       <CardContent>
         {summaryQuery.isLoading ? (
           <div aria-live="polite" className="space-y-3" role="status">
-            <span className="sr-only">Chargement de mon référentiel Produits…</span>
+            <span className="sr-only">Chargement des favoris Produits…</span>
             <Skeleton className="h-5 w-44" />
             <Skeleton className="h-4 w-56" />
           </div>
         ) : summaryQuery.isError ? (
           <ErrorState
             className="p-0"
-            description="Les indicateurs de mon référentiel Produits n’ont pas pu être chargés."
+            description="Les indicateurs des favoris Produits n’ont pas pu être chargés."
             onRetry={summaryQuery.refetch}
             title="Référentiel indisponible"
           />

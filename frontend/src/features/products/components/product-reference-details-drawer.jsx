@@ -122,7 +122,7 @@ function ProductReferenceDetailsDrawer({
         variantId: variant.id,
         status,
       }).unwrap(),
-      status === 'ARCHIVED' ? 'Déclinaison archivée' : 'Déclinaison réactivée',
+      status === 'ARCHIVED' ? 'Référence archivée' : 'Référence réactivée',
     );
   }
 
@@ -169,7 +169,7 @@ function ProductReferenceDetailsDrawer({
             <TabsList aria-label="Administration du Produit" variant="section">
               <TabsTrigger value="product" variant="section">Produit</TabsTrigger>
               <TabsTrigger value="dimensions" variant="section">Dimensions</TabsTrigger>
-              <TabsTrigger value="variants" variant="section">Déclinaisons</TabsTrigger>
+              <TabsTrigger value="variants" variant="section">Références</TabsTrigger>
               <TabsTrigger value="history" variant="section">Historique</TabsTrigger>
             </TabsList>
 
@@ -554,7 +554,7 @@ function ProductReferenceDetailsDrawer({
           onClose={() => setEditVariant(null)}
           onSaved={() => {
             setEditVariant(null);
-            toast({ title: 'Déclinaison corrigée', variant: 'success' });
+            toast({ title: 'Référence corrigée', variant: 'success' });
           }}
           open={Boolean(editVariant)}
           productId={product.id}
@@ -570,7 +570,7 @@ function ProductReferenceDetailsDrawer({
           onClose={() => setCreateVariantOpen(false)}
           onCreated={() => {
             setCreateVariantOpen(false);
-            toast({ title: 'Déclinaison créée', variant: 'success' });
+            toast({ title: 'Référence créée', variant: 'success' });
           }}
           open={createVariantOpen}
           product={product}

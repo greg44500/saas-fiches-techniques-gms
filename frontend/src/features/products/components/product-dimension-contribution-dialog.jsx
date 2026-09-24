@@ -123,7 +123,7 @@ function ProductDimensionContributionDialog({
       if (result.classification === 'REVIEW_REQUIRED') {
         setReviewMessage(
           'La proposition nécessite une revue du référentiel global. '
-          + 'Elle ne sera disponible dans une déclinaison qu’après validation.',
+          + 'Elle ne sera disponible dans une référence Produit qu’après validation.',
         );
         onResolved?.(result);
         return;

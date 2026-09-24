@@ -38,11 +38,11 @@ import { ProductReferenceDetailsDrawer } from '@/features/products/components/pr
 import {
   getApiErrorMessage,
   getCategoryStatusLabel,
+  getConservationTypeLabel,
   getFoodRangeLabel,
   getFoodRangeName,
   getProductStatusLabel,
   getProductStatusTone,
-  getUsageTypeLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 import { useDataPagination } from '@/hooks/use-data-pagination';
@@ -215,12 +215,12 @@ function ProductReferencePage({ canManage }) {
     },
     {
       id: 'variants',
-      header: 'Déclinaisons',
+      header: 'Références',
       cell: (product) => {
         if (!product.variants?.length) {
           return (
             <p className="text-sm text-muted-foreground">
-              Aucune déclinaison exploitable
+              Aucune référence exploitable
             </p>
           );
         }
@@ -235,10 +235,14 @@ function ProductReferencePage({ canManage }) {
                 <p className="font-medium">{getVariantLabel(variant)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {[
-                    getFoodRangeLabel(metadata, variant.foodRange),
-                    getFoodRangeName(metadata, variant.foodRange),
-                    variant.usageType
-                      ? 'Usage ' + getUsageTypeLabel(metadata, variant.usageType)
+                    variant.conservationType
+                      ? getConservationTypeLabel(metadata, variant.conservationType)
+                      : null,
+                    variant.foodRange
+                      ? getFoodRangeLabel(metadata, variant.foodRange)
+                      : null,
+                    variant.foodRange
+                      ? getFoodRangeName(metadata, variant.foodRange)
                       : null,
                     variant.status === 'ARCHIVED' ? 'Archivée' : null,
                   ].filter(Boolean).join(' · ')}
@@ -544,7 +548,7 @@ function ProductReferencePage({ canManage }) {
           ) : (
             <>
               <DataTable
-                caption="Référentiel global"
+                caption="Référentiel Produits global"
                 columns={productColumns}
                 data={productsQuery.data?.products ?? []}
                 emptyContent={(
