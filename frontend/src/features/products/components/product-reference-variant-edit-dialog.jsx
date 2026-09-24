@@ -13,7 +13,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FieldError } from '@/components/ui/field';
-import { useUpdateProductReferenceVariantMutation } from '@/features/products/api/product-reference-api';
+import {
+  useGetProductReferenceDimensionsQuery,
+  useUpdateProductReferenceVariantMutation,
+} from '@/features/products/api/product-reference-api';
+import { ProductDimensionContributionDialog } from '@/features/products/components/product-dimension-contribution-dialog';
 import {
   ProductVariantFields,
   variantDraftToPayload,
@@ -22,11 +26,18 @@ import { getApiErrorMessage } from '@/features/products/lib/product-presentation
 
 function variantToDraft(variant) {
   return {
-    presentation: variant?.presentation ?? '',
+    presentation: '',
+    varietyId: variant?.variety?.id ?? '',
+    characteristicIdsByKind: Object.fromEntries(
+      (variant?.characteristics ?? [])
+        .filter(({ kind, id }) => kind && id)
+        .map(({ kind, id }) => [kind, id]),
+    ),
     processingState: variant?.processingState ?? '',
     foodRange: variant?.foodRange ? String(variant.foodRange) : '',
     referenceUnit: variant?.referenceUnit ?? '',
     yieldPercent: variant?.yieldPercent ? String(variant.yieldPercent) : '',
+    structured: true,
   };
 }
 
@@ -40,12 +51,21 @@ function ProductReferenceVariantEditDialog({
 }) {
   const cancelRef = useRef(null);
   const [draft, setDraft] = useState(() => variantToDraft(variant));
+  const [dimensionDialogOpen, setDimensionDialogOpen] = useState(false);
   const [formError, setFormError] = useState('');
   const [updateVariant, updateState] = useUpdateProductReferenceVariantMutation();
+  const dimensionsQuery = useGetProductReferenceDimensionsQuery(productId, {
+    skip: !open || !productId,
+  });
+  const dimensions = dimensionsQuery.data ?? {
+    varieties: [],
+    characteristics: [],
+  };
 
   useEffect(() => {
     if (!open) return;
     setDraft(variantToDraft(variant));
+    setDimensionDialogOpen(false);
     setFormError('');
   }, [open, variant]);
 
@@ -68,7 +88,7 @@ function ProductReferenceVariantEditDialog({
       const saved = await updateVariant({
         productId,
         variantId: variant.id,
-        ...variantDraftToPayload(draft),
+        ...variantDraftToPayload(draft, { structured: true }),
       }).unwrap();
       onSaved(saved);
     } catch (error) {
@@ -80,6 +100,7 @@ function ProductReferenceVariantEditDialog({
   }
 
   return (
+    <>
     <DialogRoot
       disablePointerDismissal
       onOpenChange={(nextOpen) => {
@@ -98,10 +119,26 @@ function ProductReferenceVariantEditDialog({
           </DialogHeader>
 
           <div className="mt-5 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                Les dimensions sont des références globales structurées.
+              </p>
+              <Button
+                disabled={updateState.isLoading}
+                onClick={() => setDimensionDialogOpen(true)}
+                type="button"
+                variant="outline"
+              >
+                Enrichir le référentiel
+              </Button>
+            </div>
+
             <ProductVariantFields
+              dimensions={dimensions}
               disabled={updateState.isLoading}
               metadata={metadata}
               onChange={setDraft}
+              structured
               value={draft}
             />
             <FieldError>{formError}</FieldError>
@@ -122,6 +159,16 @@ function ProductReferenceVariantEditDialog({
         </DialogContent>
       </DialogPortal>
     </DialogRoot>
+
+    <ProductDimensionContributionDialog
+      metadata={metadata}
+      mode="global"
+      onClose={() => setDimensionDialogOpen(false)}
+      onResolved={() => dimensionsQuery.refetch?.()}
+      open={dimensionDialogOpen}
+      product={{ id: productId, name: 'ce Produit' }}
+    />
+  </>
   );
 }
 
