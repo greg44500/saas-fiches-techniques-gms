@@ -78,7 +78,7 @@ function ProductVariantFields({
     { value: EMPTY_OPTION, label: 'Sélectionner une gamme' },
     ...foodRanges.map((range) => ({
       value: String(range.value),
-      label: range.label + ' — ' + range.name,
+      label: range.label,
     })),
   ];
   const selectedFoodRange = foodRanges.find(
