@@ -71,17 +71,18 @@ describe('M-002 variant characteristics migration', () => {
         const first = await createActiveProductReference({
             name: 'Carotte collision caractéristiques',
             presentation: null,
+            processingState: 'Produit frais',
             foodRange: 1,
         });
         const second = await ProductVariant.create({
             canonicalProduct: first.product._id,
             name: 'Carotte collision caractéristiques seconde',
             normalizedName: 'carotte collision caracteristiques seconde',
-            conservationType: 'CONSERVE',
+            conservationType: 'FRAIS',
             variety: null,
             characteristics: [],
-            processingState: 'Conserve',
-            normalizedProcessingState: 'conserve',
+            processingState: 'Produit frais',
+            normalizedProcessingState: 'produit frais',
             normalizedSignature: 'legacy-second',
             foodRange: 1,
             referenceUnit: 'KG',
@@ -107,20 +108,58 @@ describe('M-002 variant characteristics migration', () => {
                 $set: {
                     presentation: 'Entière',
                     normalizedPresentation: 'entiere',
-                    processingState: 'Produit frais',
-                    normalizedProcessingState: 'produit frais',
                 },
                 $unset: { characteristics: '' },
             },
         );
 
+        const [firstBefore, secondBefore] = await Promise.all([
+            ProductVariant.collection.findOne({
+                _id: first.variant._id,
+            }),
+            ProductVariant.collection.findOne({
+                _id: second._id,
+            }),
+        ]);
+
+        expect(firstBefore).toEqual(expect.objectContaining({
+            presentation: 'Entière',
+            normalizedPresentation: 'entiere',
+            foodRange: 1,
+            processingState: 'Produit frais',
+            normalizedProcessingState: 'produit frais',
+        }));
+        expect(secondBefore).toEqual(expect.objectContaining({
+            presentation: 'Entière',
+            normalizedPresentation: 'entiere',
+            foodRange: 1,
+            processingState: 'Produit frais',
+            normalizedProcessingState: 'produit frais',
+        }));
+
         await expect(migrateM002VariantCharacteristics()).rejects.toThrow(
             /deux déclinaisons actives deviennent identiques/,
         );
 
-        const untouched = await ProductVariant.collection.findOne({
-            _id: first.variant._id,
-        });
-        expect(untouched.presentation).toBe('Entière');
+        const [firstAfter, secondAfter, migratedPresentationCount] =
+            await Promise.all([
+                ProductVariant.collection.findOne({
+                    _id: first.variant._id,
+                }),
+                ProductVariant.collection.findOne({
+                    _id: second._id,
+                }),
+                ProductCharacteristic.countDocuments({
+                    canonicalProduct: first.product._id,
+                    kind: 'PRESENTATION',
+                    normalizedName: 'entiere',
+                }),
+            ]);
+
+        expect(firstAfter.presentation).toBe('Entière');
+        expect(secondAfter.presentation).toBe('Entière');
+        expect(firstAfter.normalizedSignature).toBe('legacy-first');
+        expect(secondAfter.normalizedSignature).toBe('legacy-second');
+        expect(migratedPresentationCount).toBe(0);
     });
 });
