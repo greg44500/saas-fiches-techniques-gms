@@ -10,14 +10,20 @@ import {
 } from '../../../modules/productCatalog/productVariantSemantics.js';
 
 describe('M-002 product variant semantics', () => {
-    it('résout uniquement les cinq gammes physiques depuis le registre backend', () => {
+    it('expose les six gammes du registre pour la compatibilité historique', () => {
         expect(getProductFoodRangeDefinition(1)).toEqual(
             expect.objectContaining({
                 label: 'Gamme 1',
                 name: 'Frais',
             }),
         );
-        expect(getProductFoodRangeDefinition(6)).toBeNull();
+        expect(getProductFoodRangeDefinition(6)).toEqual(
+            expect.objectContaining({
+                label: 'Gamme 6',
+                name: 'PAI / PAE',
+                defaultProcessingState: null,
+            }),
+        );
     });
 
     it('déduit l état par défaut et canonise une valeur compatible', () => {
@@ -37,6 +43,15 @@ describe('M-002 product variant semantics', () => {
             expect.objectContaining({
                 valid: true,
                 value: 'Sous-vide cuit',
+            }),
+        );
+
+        expect(resolveProductProcessingState({
+            foodRange: 6,
+        })).toEqual(
+            expect.objectContaining({
+                valid: true,
+                value: null,
             }),
         );
     });

@@ -16,6 +16,7 @@ import {
 } from '@/features/products/components/product-search-autocomplete';
 
 const metadata = {
+  conservationTypes: [{ value: 'FRAIS', label: 'Frais' }],
   foodRanges: [{
     value: 1,
     label: 'Gamme 1',
@@ -33,6 +34,8 @@ const result = {
   },
   variant: {
     id: 'variant-1',
+    name: 'Carotte râpée',
+    conservationType: 'FRAIS',
     variety: null,
     characteristics: [{
       id: 'presentation-rapee',

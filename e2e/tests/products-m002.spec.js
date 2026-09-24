@@ -30,11 +30,6 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
     .getByRole('button', { name: 'Rechercher l’existant' })
     .click();
 
-  await dialog.getByLabel('Catégorie principale *').click();
-  await page.getByRole('option', { name: context.categoryName }).click();
-  await dialog.getByLabel('Gamme *').click();
-  await page.getByRole('option', { name: 'Gamme 1' }).click();
-
   await dialog
     .getByRole('button', { name: 'Soumettre la proposition' })
     .click();
@@ -43,7 +38,7 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
     page.getByText('Proposition envoyée en revue', { exact: true }),
   ).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Mon référentiel' }).click();
+  await page.getByRole('tab', { name: 'Favoris' }).click();
   await expect(
     page.getByText(context.productName, { exact: true }),
   ).toHaveCount(0);
@@ -85,7 +80,7 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
   await predictiveResult.click();
 
   await page.getByRole('button', {
-    name: `Ajouter ${context.productName} à mon référentiel`,
+    name: `Ajouter ${context.productName} aux favoris`,
   }).click();
 
   await page.getByRole('tab', { name: 'Mon référentiel' }).click();
@@ -125,11 +120,6 @@ test('M-002 autorité Application Global alimente directement le référentiel',
   await dialog
     .getByRole('button', { name: 'Rechercher l’existant' })
     .click();
-
-  await dialog.getByLabel('Catégorie principale *').click();
-  await page.getByRole('option', { name: categoryName }).click();
-  await dialog.getByLabel('Gamme *').click();
-  await page.getByRole('option', { name: 'Gamme 1' }).click();
 
   await dialog
     .getByRole('button', { name: 'Créer dans le référentiel global' })

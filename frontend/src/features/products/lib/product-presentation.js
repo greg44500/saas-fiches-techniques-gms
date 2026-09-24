@@ -81,7 +81,7 @@ function formatYield(value) {
 const IMPORT_CLASSIFICATION_PRESENTATION = Object.freeze({
   ATTACH_EXISTING: Object.freeze({
     label: 'Référence existante',
-    description: 'La déclinaison existe déjà dans le référentiel.',
+    description: 'La référence existe déjà dans le référentiel.',
     tone: 'success',
   }),
   CREATE_PRODUCT: Object.freeze({
@@ -90,8 +90,8 @@ const IMPORT_CLASSIFICATION_PRESENTATION = Object.freeze({
     tone: 'warning',
   }),
   CREATE_VARIANT: Object.freeze({
-    label: 'Nouvelle déclinaison',
-    description: 'Une nouvelle déclinaison sera créée après confirmation.',
+    label: 'Nouvelle référence',
+    description: 'Une nouvelle référence sera créée après confirmation.',
     tone: 'warning',
   }),
   REVIEW_REQUIRED: Object.freeze({
@@ -122,12 +122,12 @@ const PRODUCT_EVENT_LABELS = Object.freeze({
   PRODUCT_UPDATED: 'Produit corrigé',
   PRODUCT_ARCHIVED: 'Produit archivé',
   PRODUCT_REACTIVATED: 'Produit réactivé',
-  VARIANT_CREATED: 'Déclinaison créée',
-  VARIANT_APPROVED: 'Déclinaison activée (historique)',
-  VARIANT_REJECTED: 'Déclinaison rejetée (historique)',
-  VARIANT_UPDATED: 'Déclinaison corrigée',
-  VARIANT_ARCHIVED: 'Déclinaison archivée',
-  VARIANT_REACTIVATED: 'Déclinaison réactivée',
+  VARIANT_CREATED: 'Référence créée',
+  VARIANT_APPROVED: 'Référence activée (historique)',
+  VARIANT_REJECTED: 'Référence rejetée (historique)',
+  VARIANT_UPDATED: 'Référence corrigée',
+  VARIANT_ARCHIVED: 'Référence archivée',
+  VARIANT_REACTIVATED: 'Référence réactivée',
   VARIETY_CREATED: 'Variété créée',
   VARIETY_UPDATED: 'Variété corrigée',
   VARIETY_ARCHIVED: 'Variété archivée',

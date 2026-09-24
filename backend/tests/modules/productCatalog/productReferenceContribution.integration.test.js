@@ -127,6 +127,8 @@ describe('M-002 contribution semi-automatique', () => {
             value: 'Betterave Chioggia',
             categoryId: reference.category._id,
             variant: {
+                name: 'Betterave Chioggia',
+                conservationType: 'FRAIS',
                 foodRange: 1,
                 referenceUnit: 'KG',
             },
@@ -185,6 +187,8 @@ describe('M-002 contribution semi-automatique', () => {
             value: 'Produit à revalider',
             categoryId: category.id,
             variant: {
+                name: 'Produit à revalider',
+                conservationType: 'FRAIS',
                 foodRange: 1,
                 referenceUnit: 'KG',
             },

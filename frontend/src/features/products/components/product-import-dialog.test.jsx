@@ -54,6 +54,10 @@ import {
 
 const metadata = {
   categories: [{ id: 'category-1', name: 'Légumes', status: 'ACTIVE' }],
+  conservationTypes: [
+    { value: 'FRAIS', label: 'Frais' },
+    { value: 'SURGELE', label: 'Surgelé' },
+  ],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
   foodRanges: [
     {
@@ -165,8 +169,10 @@ describe('ProductImportDialog', () => {
           aliases: [],
           categoryId: 'category-1',
           variant: {
-            foodRange: 1,
-            processingState: 'Produit frais',
+            name: 'Carotte',
+            conservationType: 'FRAIS',
+            foodRange: null,
+            processingState: null,
             referenceUnit: 'KG',
           },
         },
@@ -195,8 +201,6 @@ describe('ProductImportDialog', () => {
     });
     await user.upload(screen.getByLabelText('Fichier'), file);
     await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
-    await user.click(await screen.findByLabelText('Gamme par défaut *'));
-    await user.click(screen.getByRole('option', { name: 'Gamme 1 — Frais' }));
     await user.click(await screen.findByRole('button', { name: 'Prévisualiser' }));
     await user.click(await screen.findByRole('button', { name: 'Confirmer l’import' }));
 

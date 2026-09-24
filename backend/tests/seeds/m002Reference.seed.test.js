@@ -71,9 +71,11 @@ const buildDataset = ({
             ],
             variants: [
                 {
+                    name: `${name} nantaise entière`,
                     varietyKey: 'nantaise',
                     characteristicKeys: ['entiere'],
                     processingState: null,
+                    conservationType: 'FRAIS',
                     foodRange: 1,
                     referenceUnit: 'KG',
                     yieldPercent: null,
@@ -95,7 +97,7 @@ describe('M-002 reference bootstrap', () => {
         const parsed = m002ReferenceDatasetSchema.parse(dataset);
 
         expect(parsed.ready).toBe(true);
-        expect(parsed.version).toBe('m002-reference-v3');
+        expect(parsed.version).toBe('m002-reference-v4');
         expect(parsed.categories).toHaveLength(12);
         expect(parsed.categories).toEqual(expect.arrayContaining([
             { key: 'fruits-legumes', name: 'Fruits et légumes' },
@@ -304,7 +306,9 @@ describe('M-002 reference bootstrap', () => {
         expect(variant.variety.toString()).toBe(variety._id.toString());
         expect(variant.characteristics.map(String))
             .toEqual([characteristic._id.toString()]);
-        expect(variant.processingState).toBe('Produit frais');
+        expect(variant.name).toBe('Carotte nantaise entière');
+        expect(variant.processingState).toBeNull();
+        expect(variant.conservationType).toBe('FRAIS');
         expect(variant.foodRange).toBe(1);
         expect(variant.yieldPercent).toBeNull();
         expect(first.varietyCount).toBe(1);
@@ -333,8 +337,10 @@ describe('M-002 reference bootstrap', () => {
                     characteristics: [],
                     variants: [
                         {
+                            name: 'Riz',
                             characteristicKeys: [],
                             processingState: null,
+                            conservationType: 'CONSERVE',
                             foodRange: 2,
                             referenceUnit: 'KG',
                             yieldPercent: null,
