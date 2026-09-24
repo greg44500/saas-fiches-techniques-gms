@@ -1,5 +1,4 @@
 import {
-    PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_FOOD_RANGE_REGISTRY,
 } from './productCatalog.registry.js';
 import {
