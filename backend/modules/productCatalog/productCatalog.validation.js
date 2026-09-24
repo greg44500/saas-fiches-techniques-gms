@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
     PRODUCT_CATEGORY_STATUS,
+    PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
@@ -166,6 +167,43 @@ const globalCategoryParamsSchema = z.strictObject({
     categoryId: objectIdSchema,
 });
 
+const globalProductVarietyParamsSchema = z.strictObject({
+    productId: objectIdSchema,
+    varietyId: objectIdSchema,
+});
+
+const globalProductCharacteristicParamsSchema = z.strictObject({
+    productId: objectIdSchema,
+    characteristicId: objectIdSchema,
+});
+
+const createVarietyBodySchema = z.strictObject({
+    name: z.string().trim().min(1).max(120),
+    aliases: aliasesSchema.optional().default([]),
+});
+
+const updateVarietyBodySchema = z.strictObject({
+    name: z.string().trim().min(1).max(120).optional(),
+    aliases: aliasesSchema.optional(),
+}).refine(
+    (body) => Object.keys(body).length > 0,
+    { message: 'Au moins un champ Variété doit être modifié.' },
+);
+
+const createCharacteristicBodySchema = z.strictObject({
+    kind: z.enum(Object.values(PRODUCT_CHARACTERISTIC_KIND)),
+    name: z.string().trim().min(1).max(120),
+    aliases: aliasesSchema.optional().default([]),
+});
+
+const updateCharacteristicBodySchema = z.strictObject({
+    name: z.string().trim().min(1).max(120).optional(),
+    aliases: aliasesSchema.optional(),
+}).refine(
+    (body) => Object.keys(body).length > 0,
+    { message: 'Au moins un champ Caractéristique doit être modifié.' },
+);
+
 const createCategoryBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
 });
@@ -207,14 +245,18 @@ const updateVariantStatusBodySchema = updateProductStatusBodySchema;
 
 export {
     createCategoryBodySchema,
+    createCharacteristicBodySchema,
+    createVarietyBodySchema,
     createGlobalProductBodySchema,
     createGlobalVariantBodySchema,
     createWorkspaceProductBodySchema,
     createWorkspaceVariantBodySchema,
     duplicateCheckBodySchema,
     globalCategoryParamsSchema,
+    globalProductCharacteristicParamsSchema,
     globalImportIdParamsSchema,
     globalProductIdParamsSchema,
+    globalProductVarietyParamsSchema,
     globalProductListQuerySchema,
     globalProductVariantParamsSchema,
     importCommitBodySchema,
@@ -225,10 +267,12 @@ export {
     productSearchQuerySchema,
     productVariantParamsSchema,
     updateCategoryBodySchema,
+    updateCharacteristicBodySchema,
     updateCategoryStatusBodySchema,
     updateProductBodySchema,
     updateProductStatusBodySchema,
     updateVariantBodySchema,
+    updateVarietyBodySchema,
     updateVariantStatusBodySchema,
     variantIdParamsSchema,
     workspaceIdParamsSchema,

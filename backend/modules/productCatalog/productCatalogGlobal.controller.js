@@ -35,6 +35,15 @@ import {
     updateVariant,
     updateVariantStatus,
 } from './productCatalogGovernance.service.js';
+import {
+    createProductCharacteristic,
+    createProductVariety,
+    listProductDimensions,
+    updateProductCharacteristic,
+    updateProductCharacteristicStatus,
+    updateProductVariety,
+    updateProductVarietyStatus,
+} from './productReferenceDimension.service.js';
 
 const access = async (req, res) => {
     const authorization = await resolveApplicationGlobalAuthorization({
@@ -103,6 +112,81 @@ const createVariantController = async (req, res) => {
         variant: req.validated.body,
     });
     res.status(201).json({ status: 'success', data: { variant } });
+};
+
+const dimensions = async (req, res) => {
+    const result = await listProductDimensions({
+        productId: req.validated.params.productId,
+        includeArchived: true,
+    });
+    res.status(200).json({ status: 'success', data: result });
+};
+
+const createVarietyController = async (req, res) => {
+    const variety = await createProductVariety({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        ...req.validated.body,
+    });
+    res.status(201).json({ status: 'success', data: { variety } });
+};
+
+const updateVarietyController = async (req, res) => {
+    const variety = await updateProductVariety({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        varietyId: req.validated.params.varietyId,
+        ...req.validated.body,
+    });
+    res.status(200).json({ status: 'success', data: { variety } });
+};
+
+const updateVarietyStatusController = async (req, res) => {
+    const variety = await updateProductVarietyStatus({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        varietyId: req.validated.params.varietyId,
+        status: req.validated.body.status,
+    });
+    res.status(200).json({ status: 'success', data: { variety } });
+};
+
+const createCharacteristicController = async (req, res) => {
+    const characteristic = await createProductCharacteristic({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        ...req.validated.body,
+    });
+    res.status(201).json({
+        status: 'success',
+        data: { characteristic },
+    });
+};
+
+const updateCharacteristicController = async (req, res) => {
+    const characteristic = await updateProductCharacteristic({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        characteristicId: req.validated.params.characteristicId,
+        ...req.validated.body,
+    });
+    res.status(200).json({
+        status: 'success',
+        data: { characteristic },
+    });
+};
+
+const updateCharacteristicStatusController = async (req, res) => {
+    const characteristic = await updateProductCharacteristicStatus({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        characteristicId: req.validated.params.characteristicId,
+        status: req.validated.body.status,
+    });
+    res.status(200).json({
+        status: 'success',
+        data: { characteristic },
+    });
 };
 
 const inspectImport = async (req, res) => {
@@ -218,18 +302,25 @@ export {
     categories,
     commitImport,
     createCategoryController,
+    createCharacteristicController,
     createProductController,
+    createVarietyController,
     createVariantController,
     detail,
+    dimensions,
     duplicateCheck,
     inspectImport,
     list,
     metadata,
     previewImport,
     updateCategoryController,
+    updateCharacteristicController,
+    updateCharacteristicStatusController,
     updateCategoryStatusController,
     updateProductController,
     updateProductStatusController,
     updateVariantController,
+    updateVarietyController,
+    updateVarietyStatusController,
     updateVariantStatusController,
 };

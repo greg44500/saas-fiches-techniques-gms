@@ -14,19 +14,26 @@ import {
     categories,
     commitImport,
     createCategoryController,
+    createCharacteristicController,
     createProductController,
+    createVarietyController,
     createVariantController,
     detail,
+    dimensions,
     duplicateCheck,
     inspectImport,
     list,
     metadata,
     previewImport,
     updateCategoryController,
+    updateCharacteristicController,
+    updateCharacteristicStatusController,
     updateCategoryStatusController,
     updateProductController,
     updateProductStatusController,
     updateVariantController,
+    updateVarietyController,
+    updateVarietyStatusController,
     updateVariantStatusController,
 } from './productCatalogGlobal.controller.js';
 import {
@@ -34,21 +41,27 @@ import {
 } from './productCatalogGlobalPermission.registry.js';
 import {
     createCategoryBodySchema,
+    createCharacteristicBodySchema,
     createGlobalProductBodySchema,
+    createVarietyBodySchema,
     createGlobalVariantBodySchema,
     duplicateCheckBodySchema,
     globalCategoryParamsSchema,
     globalImportIdParamsSchema,
+    globalProductCharacteristicParamsSchema,
     globalProductIdParamsSchema,
+    globalProductVarietyParamsSchema,
     globalProductListQuerySchema,
     globalProductVariantParamsSchema,
     importCommitBodySchema,
     importPreviewBodySchema,
     updateCategoryBodySchema,
+    updateCharacteristicBodySchema,
     updateCategoryStatusBodySchema,
     updateProductBodySchema,
     updateProductStatusBodySchema,
     updateVariantBodySchema,
+    updateVarietyBodySchema,
     updateVariantStatusBodySchema,
 } from './productCatalog.validation.js';
 
@@ -171,6 +184,73 @@ productCatalogGlobalRouter.patch(
         body: updateProductStatusBodySchema,
     }),
     updateProductStatusController,
+);
+
+productCatalogGlobalRouter.get(
+    '/:productId/dimensions',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.READ),
+    validateRequest({ params: globalProductIdParamsSchema }),
+    dimensions,
+);
+
+productCatalogGlobalRouter.post(
+    '/:productId/varieties',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductIdParamsSchema,
+        body: createVarietyBodySchema,
+    }),
+    createVarietyController,
+);
+
+productCatalogGlobalRouter.patch(
+    '/:productId/varieties/:varietyId',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductVarietyParamsSchema,
+        body: updateVarietyBodySchema,
+    }),
+    updateVarietyController,
+);
+
+productCatalogGlobalRouter.patch(
+    '/:productId/varieties/:varietyId/status',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductVarietyParamsSchema,
+        body: updateProductStatusBodySchema,
+    }),
+    updateVarietyStatusController,
+);
+
+productCatalogGlobalRouter.post(
+    '/:productId/characteristics',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductIdParamsSchema,
+        body: createCharacteristicBodySchema,
+    }),
+    createCharacteristicController,
+);
+
+productCatalogGlobalRouter.patch(
+    '/:productId/characteristics/:characteristicId',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductCharacteristicParamsSchema,
+        body: updateCharacteristicBodySchema,
+    }),
+    updateCharacteristicController,
+);
+
+productCatalogGlobalRouter.patch(
+    '/:productId/characteristics/:characteristicId/status',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductCharacteristicParamsSchema,
+        body: updateProductStatusBodySchema,
+    }),
+    updateCharacteristicStatusController,
 );
 
 productCatalogGlobalRouter.post(
