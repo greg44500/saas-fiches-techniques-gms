@@ -139,10 +139,10 @@ m002-reference-v3
 Dataset actif :
 
 ```text
-m002-reference-v5
+m002-reference-v6
 ```
 
-Contrôle effectué sur le v5 :
+Contrôle effectué sur le v6 :
 
 ```text
 Catégories             = 14
@@ -153,7 +153,7 @@ collisions de nom       = 0
 non-alimentaire         = 0
 ```
 
-Le v5 utilise le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf` comme échantillon métier. Les pages 35 à 37 « Non Alimentaire » sont explicitement exclues. Marques, références fournisseur, conditionnements et prix restent hors M-002.
+Le v6 utilise le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf` comme source unique du bootstrap. Les pages « Non Alimentaire » sont exclues. Les références des seeds v1 à v5 absentes du PDF sont archivées par migration. Marques, références fournisseur, conditionnements et prix restent hors M-002.
 
 ## 7. Migration
 
@@ -198,7 +198,7 @@ Depuis le HEAD historique `7f432e00...`, le lot a notamment :
 - découplé `processingState` de la Gamme ;
 - ajouté l'index unique de nom normalisé ;
 - ajouté la migration de contrat Référence Produit ;
-- créé le seed `m002-reference-v5` à partir d'un échantillon métier réel, alimentaire uniquement ;
+- créé le seed `m002-reference-v6` uniquement depuis le PDF alimentaire et ajouté la réconciliation des anciens seeds ;
 - adapté le pipeline d'import ;
 - dédupliqué sur le nom exact de Référence ;
 - refondu la liste Workspace en `Produit | Conservation | Actions` ;
@@ -257,7 +257,7 @@ Vérifier notamment :
 ```text
 pull local de feature/m002-catalogue-produits
 → migration M-002
-→ seed v5
+→ seed v6
 → npm run dev
 → QA visuelle utilisateur
 → corrections si nécessaire dans le même lot

@@ -224,10 +224,10 @@ m002-reference-v3
 Le contrat final utilise :
 
 ```text
-m002-reference-v5
+m002-reference-v5\nm002-reference-v6
 ```
 
-Le v4 reste historique. Le v5 est le dataset actif : alimentaire uniquement, noms persistants, `conservationType`, aucune donnée fournisseur, aucune racine bootstrap sans Référence exploitable.
+Les v1 à v5 sont historiques. Le v6 est le dataset actif et sa source unique est le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf`. Il ne contient que des denrées alimentaires présentes dans ce document ; aucune Référence des anciens seeds n'est conservée si elle n'est pas présente dans le PDF. Marques, références fournisseur, prix et colisages restent hors M-002.
 
 Les catalogues PDF fournisseur serviront ultérieurement de source réelle d'enrichissement ; ils ne doivent pas être injectés avant validation finale M-002.
 
@@ -264,7 +264,7 @@ Le lot final doit prouver au minimum :
 - recherche par nom et dimensions ;
 - import sans doublon ;
 - migration fail-closed ;
-- seed v5 idempotent ;
+- seed v6 idempotent et réconciliation des anciens seeds ;
 - permissions Workspace et Application Global ;
 - E2E création/contribution/favoris.
 
@@ -296,7 +296,7 @@ Aucune nouvelle primitive Core n'est requise pour :
 - Conservation ;
 - Gamme 6 ;
 - Favoris Produit ;
-- seed v5 ;
+- seed v6 ;
 - déduplication Produit.
 
 Toute évolution générique découverte ultérieurement doit continuer à être traitée dans `saas-core-api` puis intégrée par une branche `core-update/*`.

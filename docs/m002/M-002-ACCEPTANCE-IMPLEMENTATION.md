@@ -42,10 +42,10 @@ Un seul lot M-002, puis une seule PR finale. Pas de micro-PR de réparation.
 - [x] migrations historiques conservées ;
 - [x] migration additionnelle du contrat Référence Produit ;
 - [x] stratégie fail-closed sur les données ambiguës ;
-- [x] seed `m002-reference-v5` alimentaire ;
+- [x] seed `m002-reference-v6` construit uniquement depuis le PDF alimentaire ;
 - [x] v1/v2/v3 immuables ;
-- [x] v5 sans collision de nom détectée ;
-- [x] v5 sans Produit orphelin et sans non-alimentaire ;
+- [x] v6 sans collision de nom détectée ;
+- [x] v6 : 264 Références, aucune reprise automatique d'une Référence v1-v5 absente du PDF ;\n- [x] migration de réconciliation des anciens seeds et archivage des Favoris obsolètes ;
 - [ ] exécution réelle de `npm run migration:m002-catalog` sur la base locale ;
 - [ ] exécution réelle de `npm run seed:m002-reference` sur la base locale.
 
