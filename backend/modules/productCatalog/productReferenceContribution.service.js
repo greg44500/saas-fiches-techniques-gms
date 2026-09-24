@@ -21,6 +21,7 @@ import {
 } from './productCatalog.registry.js';
 import {
     createGlobalProduct,
+    updateVariant,
 } from './productCatalogGovernance.service.js';
 import {
     createProductCharacteristic,
@@ -155,6 +156,7 @@ const classifyReferenceContributionInSession = async ({
     value,
     categoryId = null,
     variant = null,
+    dimensionProposals = null,
     session,
 }) => {
     const normalizedValue = normalizeProductText(value);
@@ -206,7 +208,11 @@ const classifyReferenceContributionInSession = async ({
             normalizedValue,
             existingReference: null,
             candidates: duplicateCheck.candidates,
-            payload: { categoryId, variant },
+            payload: {
+                categoryId,
+                variant,
+                dimensionProposals,
+            },
         };
     }
 
@@ -347,6 +353,7 @@ const submitReferenceContribution = async ({
     value,
     categoryId = null,
     variant = null,
+    dimensionProposals = null,
 }) => mongoose.connection.transaction(async (session) => {
     const decision = await classifyReferenceContributionInSession({
         workspaceId,
@@ -356,6 +363,7 @@ const submitReferenceContribution = async ({
         value,
         categoryId,
         variant,
+        dimensionProposals,
         session,
     });
 
@@ -553,6 +561,54 @@ const reviewReferenceContribution = async ({
                 ).map(({ id }) => id),
                 variant: contribution.payload?.variant,
             });
+
+            const dimensionProposals = (
+                contribution.payload?.dimensionProposals ?? {}
+            );
+            let varietyId = null;
+            const characteristicIds = (
+                created.variant.characteristics ?? []
+            ).map(({ id }) => id);
+
+            if (dimensionProposals.variety) {
+                const variety = await createProductVariety({
+                    actorId,
+                    productId: created.product.id,
+                    name: dimensionProposals.variety,
+                    aliases: [],
+                });
+                varietyId = variety.id;
+            }
+
+            for (const proposal of (
+                dimensionProposals.characteristics ?? []
+            )) {
+                const characteristic = await createProductCharacteristic({
+                    actorId,
+                    productId: created.product.id,
+                    kind: proposal.kind,
+                    name: proposal.value,
+                    aliases: [],
+                });
+                characteristicIds.push(characteristic.id);
+            }
+
+            if (
+                varietyId
+                || characteristicIds.length
+                    !== (created.variant.characteristics ?? []).length
+            ) {
+                await updateVariant({
+                    actorId,
+                    productId: created.product.id,
+                    variantId: created.variant.id,
+                    changes: {
+                        ...(varietyId ? { varietyId } : {}),
+                        characteristicIds,
+                    },
+                });
+            }
+
             resolutionEntityType = PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT;
             resolutionEntityId = created.product.id;
         }
