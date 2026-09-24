@@ -95,10 +95,38 @@ describe('M-002 reference bootstrap', () => {
         const parsed = m002ReferenceDatasetSchema.parse(dataset);
 
         expect(parsed.ready).toBe(true);
-        expect(parsed.categories).toEqual([
+        expect(parsed.version).toBe('m002-reference-v2');
+        expect(parsed.categories).toHaveLength(12);
+        expect(parsed.categories).toEqual(expect.arrayContaining([
             { key: 'fruits-legumes', name: 'Fruits et légumes' },
-        ]);
-        expect(parsed.products.length).toBeGreaterThanOrEqual(30);
+            { key: 'viandes-volailles', name: 'Viandes et volailles' },
+            {
+                key: 'poissons-produits-mer',
+                name: 'Poissons et produits de la mer',
+            },
+            { key: 'charcuteries', name: 'Charcuteries' },
+            { key: 'produits-laitiers', name: 'Produits laitiers' },
+            { key: 'oeufs-ovoproduits', name: 'Œufs et ovoproduits' },
+            {
+                key: 'cereales-feculents-legumineuses',
+                name: 'Céréales, féculents et légumineuses',
+            },
+            {
+                key: 'pains-boulangerie',
+                name: 'Pains et produits de boulangerie',
+            },
+            { key: 'matieres-grasses', name: 'Matières grasses' },
+            {
+                key: 'condiments-sauces-aides-culinaires',
+                name: 'Condiments, sauces et aides culinaires',
+            },
+            { key: 'epicerie-salee', name: 'Épicerie salée' },
+            {
+                key: 'epicerie-sucree-patisserie',
+                name: 'Épicerie sucrée et pâtisserie',
+            },
+        ]));
+        expect(parsed.products).toHaveLength(135);
 
         const carotte = parsed.products.find(({ name }) => name === 'Carotte');
         const pomme = parsed.products.find(({ name }) => name === 'Pomme');
@@ -126,6 +154,48 @@ describe('M-002 reference bootstrap', () => {
         expect(pomme.varieties.map(({ name }) => name)).toEqual(
             expect.arrayContaining(['Golden', 'Gala', 'Granny Smith']),
         );
+
+        expect(parsed.products).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                name: 'Poulet',
+                categoryKey: 'viandes-volailles',
+            }),
+            expect.objectContaining({
+                name: 'Saumon',
+                categoryKey: 'poissons-produits-mer',
+            }),
+            expect.objectContaining({
+                name: 'Lait',
+                categoryKey: 'produits-laitiers',
+            }),
+            expect.objectContaining({
+                name: 'Œuf',
+                categoryKey: 'oeufs-ovoproduits',
+            }),
+            expect.objectContaining({
+                name: 'Riz',
+                categoryKey: 'cereales-feculents-legumineuses',
+            }),
+            expect.objectContaining({
+                name: 'Huile d\'olive',
+                categoryKey: 'matieres-grasses',
+            }),
+            expect.objectContaining({
+                name: 'Moutarde',
+                categoryKey: 'condiments-sauces-aides-culinaires',
+            }),
+            expect.objectContaining({
+                name: 'Chocolat',
+                categoryKey: 'epicerie-sucree-patisserie',
+            }),
+        ]));
+
+        const representedCategoryKeys = new Set(
+            parsed.products.map(({ categoryKey }) => categoryKey),
+        );
+        for (const category of parsed.categories) {
+            expect(representedCategoryKeys.has(category.key)).toBe(true);
+        }
 
         for (const product of parsed.products) {
             expect(product).not.toHaveProperty('supplier');
@@ -215,6 +285,62 @@ describe('M-002 reference bootstrap', () => {
         expect(variant.yieldPercent).toBeNull();
         expect(first.varietyCount).toBe(1);
         expect(first.characteristicCount).toBe(1);
+    });
+
+    it('permet à une v2 d enrichir une base ayant déjà reçu la v1', async () => {
+        const v1 = buildDataset({ version: 'm002-reference-v1' });
+        const v2 = {
+            version: 'm002-reference-v2',
+            ready: true,
+            categories: [
+                ...v1.categories,
+                {
+                    key: 'epicerie',
+                    name: 'Épicerie',
+                },
+            ],
+            products: [
+                ...v1.products,
+                {
+                    name: 'Riz',
+                    aliases: [],
+                    categoryKey: 'epicerie',
+                    varieties: [],
+                    characteristics: [],
+                    variants: [
+                        {
+                            characteristicKeys: [],
+                            processingState: null,
+                            foodRange: 6,
+                            referenceUnit: 'KG',
+                            yieldPercent: null,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        const first = await seedM002Reference({
+            dataset: v1,
+            actorId: actor._id,
+        });
+        const second = await seedM002Reference({
+            dataset: v2,
+            actorId: actor._id,
+        });
+        const replay = await seedM002Reference({
+            dataset: v2,
+            actorId: actor._id,
+        });
+
+        expect(first.skipped).toBe(false);
+        expect(second.skipped).toBe(false);
+        expect(replay.skipped).toBe(true);
+        expect(await ProductReferenceBootstrapRun.countDocuments()).toBe(2);
+        expect(await ProductCategory.countDocuments()).toBe(2);
+        expect(await CanonicalProduct.countDocuments()).toBe(2);
+        expect(await CanonicalProduct.countDocuments({ name: 'Carotte' })).toBe(1);
+        expect(await CanonicalProduct.countDocuments({ name: 'Riz' })).toBe(1);
     });
 
     it('interdit de modifier silencieusement une version déjà installée', async () => {
