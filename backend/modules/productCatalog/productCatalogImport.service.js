@@ -531,6 +531,24 @@ const buildProductImportPreview = async ({
         ),
     ];
 
+    const exactVariants = requestedKeys.length === 0
+        ? []
+        : await ProductVariant.find({
+            normalizedName: mongoose.trusted({ $in: requestedKeys }),
+            identityActive: true,
+            status: mongoose.trusted({
+                $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+            }),
+        })
+            .populate('canonicalProduct')
+            .lean();
+    const exactVariantByName = new Map(
+        exactVariants.map((variant) => [
+            variant.normalizedName,
+            variant,
+        ]),
+    );
+
     const exactProducts = requestedKeys.length === 0
         ? []
         : await CanonicalProduct.find({
@@ -608,7 +626,60 @@ const buildProductImportPreview = async ({
         }
 
         const normalizedName = normalizeProductText(data.name);
+        const exactReference = exactVariantByName.get(normalizedName);
         const exactProduct = exactProductByKey.get(normalizedName);
+
+        if (exactReference) {
+            const parentProduct = exactReference.canonicalProduct;
+            if (
+                exactReference.status === PRODUCT_STATUS.ARCHIVED
+                || parentProduct?.status !== PRODUCT_STATUS.ACTIVE
+            ) {
+                preview.push({
+                    ...row,
+                    data: {
+                        ...data,
+                        categoryId: category?._id.toString() ?? null,
+                    },
+                    warnings,
+                    errors: [
+                        ...errors,
+                        'Référence globale archivée : nouveau rattachement interdit.',
+                    ],
+                    productId: parentProduct?._id?.toString() ?? null,
+                    variantId: exactReference._id.toString(),
+                    classification: PRODUCT_IMPORT_ROW_CLASSIFICATION.INVALID,
+                    candidates: [],
+                });
+                continue;
+            }
+
+            if (
+                data.dimensions?.variety
+                || (data.dimensions?.characteristics ?? []).length > 0
+            ) {
+                warnings.push(
+                    'La référence existe déjà : les dimensions importées ne modifient pas son identité.',
+                );
+            }
+
+            preview.push({
+                ...row,
+                data: {
+                    ...data,
+                    categoryId: category?._id.toString() ?? null,
+                },
+                warnings,
+                productId: parentProduct._id.toString(),
+                variantId: exactReference._id.toString(),
+                classification:
+                    PRODUCT_IMPORT_ROW_CLASSIFICATION.ATTACH_EXISTING,
+                candidates: [],
+                resolvedDimensions: null,
+                missingDimensions: [],
+            });
+            continue;
+        }
 
         if (exactProduct) {
             if (exactProduct.status === PRODUCT_STATUS.ARCHIVED) {
@@ -682,7 +753,7 @@ const buildProductImportPreview = async ({
                         warnings,
                         errors: [
                             ...errors,
-                            'Déclinaison globale archivée : nouveau rattachement interdit.',
+                            'Référence globale archivée : nouveau rattachement interdit.',
                         ],
                         productId: exactProduct._id.toString(),
                         variantId: existingVariant._id.toString(),

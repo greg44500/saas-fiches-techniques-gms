@@ -2,10 +2,12 @@ import mongoose from 'mongoose';
 
 import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
+import { ProductVariant } from './productVariant.model.js';
 import {
     buildSearchGrams,
     buildSearchKeys,
     isNearDuplicateKey,
+    productSearchValueContainedInQuery,
 } from './productCatalog.normalization.js';
 import { PRODUCT_STATUS } from './productCatalog.registry.js';
 import { serializeProduct } from './productCatalog.serializer.js';
@@ -23,12 +25,37 @@ const scoreNearCandidate = (requestedKeys, candidateKeys) => {
 
     for (const requested of requestedKeys) {
         for (const candidate of candidateKeys) {
-            if (!isNearDuplicateKey(requested, candidate)) continue;
-            score = Math.min(score, Math.abs(requested.length - candidate.length));
+            if (isNearDuplicateKey(requested, candidate)) {
+                score = Math.min(
+                    score,
+                    Math.abs(requested.length - candidate.length),
+                );
+                continue;
+            }
+
+            if (
+                productSearchValueContainedInQuery(requested, candidate)
+                || productSearchValueContainedInQuery(candidate, requested)
+            ) {
+                score = Math.min(score, 0.5);
+            }
         }
     }
 
     return score;
+};
+
+const serializeVariantDuplicate = (variant) => {
+    const serializedProduct = serializeProduct(variant.canonicalProduct);
+
+    return {
+        ...serializedProduct,
+        name: variant.name,
+        status: variant.status,
+        variantId: variant._id.toString(),
+        rootName: variant.canonicalProduct.name,
+        source: 'PRODUCT_VARIANT',
+    };
 };
 
 const findProductDuplicateCandidates = async ({
@@ -44,6 +71,32 @@ const findProductDuplicateCandidates = async ({
     const excludeFilter = excludeProductId
         ? { _id: mongoose.trusted({ $ne: new mongoose.Types.ObjectId(excludeProductId.toString()) }) }
         : {};
+
+    let exactVariantQuery = ProductVariant.findOne({
+        identityActive: true,
+        status: mongoose.trusted({
+            $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+        }),
+        normalizedName: mongoose.trusted({ $in: searchKeys }),
+    })
+        .populate({
+            path: 'canonicalProduct',
+            populate: { path: 'category' },
+        })
+        .lean();
+    exactVariantQuery = queryWithSession(exactVariantQuery, session);
+    const exactVariant = await exactVariantQuery;
+    const exactVariantVisible = (
+        exactVariant?.canonicalProduct
+        && productVisibleInReference(exactVariant.canonicalProduct)
+        && (
+            !excludeProductId
+            || exactVariant.canonicalProduct._id.toString()
+                !== excludeProductId.toString()
+        )
+    )
+        ? exactVariant
+        : null;
 
     let exactQuery = CanonicalProduct.findOne({
         ...excludeFilter,
@@ -69,7 +122,14 @@ const findProductDuplicateCandidates = async ({
             status: mongoose.trusted({
                 $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
             }),
-            ...(exact ? { _id: mongoose.trusted({ $ne: exact._id }) } : {}),
+            ...(exact || exactVariantVisible
+                ? {
+                    _id: mongoose.trusted({
+                        $ne: exact?._id
+                            ?? exactVariantVisible.canonicalProduct._id,
+                    }),
+                }
+                : {}),
             searchGrams: mongoose.trusted({ $in: grams }),
         })
             .populate('category')
@@ -97,9 +157,11 @@ const findProductDuplicateCandidates = async ({
 
     return {
         normalizedKeys: searchKeys,
-        exactMatch: exact && productVisibleInReference(exact)
-            ? serializeProduct(exact)
-            : null,
+        exactMatch: exactVariantVisible
+            ? serializeVariantDuplicate(exactVariantVisible)
+            : exact && productVisibleInReference(exact)
+                ? serializeProduct(exact)
+                : null,
         candidates,
     };
 };
@@ -121,7 +183,7 @@ const assertProductCreationReviewed = async ({
     });
 
     if (duplicateCheck.exactMatch) {
-        const error = new AppError('Un Produit équivalent existe déjà.', 409);
+        const error = new AppError('Une référence Produit équivalente existe déjà.', 409);
         error.code = 'PRODUCT_EXACT_DUPLICATE';
         error.duplicateCheck = duplicateCheck;
         throw error;
