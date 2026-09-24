@@ -195,7 +195,7 @@ const m002ReferenceDatasetSchema = z.strictObject({
         }
 
         if (
-            dataset.version === 'm002-reference-v5'
+            ['m002-reference-v5', 'm002-reference-v6'].includes(dataset.version)
             && product.variants.length === 0
         ) {
             context.addIssue({
@@ -613,7 +613,7 @@ const seedM002Reference = async ({ dataset, actorId }) => {
 };
 
 const loadDefaultDataset = async () => {
-    const datasetUrl = new URL('./data/m002-reference.v5.json', import.meta.url);
+    const datasetUrl = new URL('./data/m002-reference.v6.json', import.meta.url);
     return JSON.parse(await readFile(datasetUrl, 'utf8'));
 };
 
