@@ -224,7 +224,9 @@ m002-reference-v3
 Le contrat final utilise :
 
 ```text
-m002-reference-v4\nm002-reference-v5\nm002-reference-v6
+m002-reference-v4
+m002-reference-v5
+m002-reference-v6
 ```
 
 Les v1 à v5 sont historiques. Le v6 est le dataset actif et sa source unique est le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf`. Il ne contient que des denrées alimentaires présentes dans ce document ; aucune Référence des anciens seeds n'est conservée si elle n'est pas présente dans le PDF. Marques, références fournisseur, prix et colisages restent hors M-002.
