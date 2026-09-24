@@ -9,8 +9,11 @@ import {
     buildSearchKeys,
     buildVariantSignature,
     isNearDuplicateKey,
+    matchesProductSearchValues,
     levenshteinDistance,
     normalizeProductText,
+    productSearchValueContainedInQuery,
+    tokenizeProductSearch,
 } from '../../../modules/productCatalog/productCatalog.normalization.js';
 
 describe('M-002 product normalization', () => {
@@ -51,6 +54,34 @@ describe('M-002 product normalization', () => {
             foodRange: 6,
             processingState: 'PAI / PAE',
         })).toBe('rapee|6|pai pae');
+    });
+
+    it('gère pluriel simple, mots composés et faute mineure dans la recherche', () => {
+        expect(tokenizeProductSearch('Carottes')).toEqual(['carotte']);
+        expect(
+            productSearchValueContainedInQuery(
+                'mini carotte',
+                'Carotte',
+            ),
+        ).toBe(true);
+        expect(
+            productSearchValueContainedInQuery(
+                'pommes de terre grenaille',
+                'Pomme de terre',
+            ),
+        ).toBe(true);
+        expect(
+            matchesProductSearchValues(
+                'carote botte',
+                ['Carotte', 'En botte avec fanes'],
+            ),
+        ).toBe(true);
+        expect(
+            matchesProductSearchValues(
+                'carotte surgelée',
+                ['Carotte', 'Surgelé'],
+            ),
+        ).toBe(true);
     });
 
     it('construit la signature cible avec des identifiants stables', () => {

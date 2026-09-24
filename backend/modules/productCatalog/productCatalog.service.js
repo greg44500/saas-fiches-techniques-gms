@@ -19,7 +19,9 @@ import {
     buildSearchGrams,
     buildSearchKeys,
     buildVariantSignature,
+    matchesProductSearchValues,
     normalizeProductText,
+    productSearchValueContainedInQuery,
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CATEGORY_STATUS,
@@ -522,7 +524,7 @@ const listProductSearch = async ({
     const filteredProducts = normalizedQuery
         ? products.filter((product) => (
             product.searchKeys ?? []
-        ).some((key) => key.includes(normalizedQuery)))
+        ).some((key) => productSearchValueContainedInQuery(q, key)))
         : products;
 
     const productById = new Map(
@@ -549,9 +551,42 @@ const listProductSearch = async ({
         .populate('variety')
         .populate('characteristics')
         .lean();
-    const orderedVariants = variants.sort(
-        (left, right) => compareProductVariants(left, right, productOrder),
-    );
+    const orderedVariants = variants
+        .filter((variant) => {
+            if (!q) return true;
+
+            const product = productById.get(
+                variant.canonicalProduct.toString(),
+            );
+            const foodRangeDefinition = variant.foodRange
+                ? PRODUCT_FOOD_RANGE_REGISTRY[variant.foodRange]
+                : null;
+            const values = [
+                ...(product?.searchKeys ?? []),
+                ...(variant.variety?.searchKeys ?? []),
+                variant.variety?.name,
+                ...(variant.characteristics ?? []).flatMap(
+                    (characteristic) => [
+                        ...(characteristic.searchKeys ?? []),
+                        characteristic.name,
+                    ],
+                ),
+                foodRangeDefinition?.label,
+                foodRangeDefinition?.name,
+                foodRangeDefinition?.defaultProcessingState,
+                ...(foodRangeDefinition?.processingStates ?? []),
+                variant.processingState,
+            ].filter(Boolean);
+
+            return matchesProductSearchValues(q, values);
+        })
+        .sort(
+            (left, right) => compareProductVariants(
+                left,
+                right,
+                productOrder,
+            ),
+        );
 
     if (scope === 'WORKSPACE') {
         const entries = await WorkspaceProduct.find({

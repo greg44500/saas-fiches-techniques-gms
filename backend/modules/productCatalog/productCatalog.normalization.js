@@ -86,6 +86,71 @@ const isNearDuplicateKey = (left, right) => {
     return shortest >= 4 && (a.includes(b) || b.includes(a));
 };
 
+const normalizeProductSearchToken = (token) => {
+    const normalized = normalizeProductText(token);
+    if (normalized.length <= 3) return normalized;
+    if (normalized.endsWith('eaux')) return normalized.slice(0, -1);
+    if (normalized.endsWith('aux') && normalized.length > 4) {
+        return `${normalized.slice(0, -3)}al`;
+    }
+    if (
+        normalized.endsWith('s')
+        && !normalized.endsWith('ss')
+        && normalized.length > 4
+    ) {
+        return normalized.slice(0, -1);
+    }
+    return normalized;
+};
+
+const tokenizeProductSearch = (value) => normalizeProductText(value)
+    .split(' ')
+    .map(normalizeProductSearchToken)
+    .filter(Boolean);
+
+const productSearchTokenMatches = (requested, candidate) => {
+    if (requested === candidate) return true;
+    if (requested.length < 4 || candidate.length < 4) return false;
+    const shortest = Math.min(requested.length, candidate.length);
+    const threshold = shortest <= 6 ? 1 : 2;
+    return levenshteinDistance(requested, candidate) <= threshold;
+};
+
+const productSearchValueContainedInQuery = (query, value) => {
+    const requestedTokens = tokenizeProductSearch(query);
+    const valueTokens = tokenizeProductSearch(value);
+    if (requestedTokens.length === 0 || valueTokens.length === 0) {
+        return false;
+    }
+
+    return valueTokens.every((valueToken) => requestedTokens.some(
+        (requestedToken) => productSearchTokenMatches(
+            requestedToken,
+            valueToken,
+        ),
+    ));
+};
+
+const matchesProductSearchValues = (query, values = []) => {
+    const requestedTokens = tokenizeProductSearch(query);
+    const candidateTokens = [
+        ...new Set(
+            values.flatMap(tokenizeProductSearch),
+        ),
+    ];
+
+    if (requestedTokens.length === 0 || candidateTokens.length === 0) {
+        return false;
+    }
+
+    return requestedTokens.every((requestedToken) => candidateTokens.some(
+        (candidateToken) => productSearchTokenMatches(
+            requestedToken,
+            candidateToken,
+        ),
+    ));
+};
+
 const buildVariantSignature = (input = {}) => {
     const usesStructuredIdentity = (
         Object.prototype.hasOwnProperty.call(input, 'varietyId')
@@ -137,5 +202,9 @@ export {
     buildVariantSignature,
     isNearDuplicateKey,
     levenshteinDistance,
+    matchesProductSearchValues,
+    normalizeProductSearchToken,
     normalizeProductText,
+    productSearchValueContainedInQuery,
+    tokenizeProductSearch,
 };
