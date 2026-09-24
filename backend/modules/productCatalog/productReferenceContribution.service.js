@@ -20,13 +20,10 @@ import {
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
 import {
-    createGlobalProduct,
-    updateVariant,
+    createGlobalProductInSession,
 } from './productCatalogGovernance.service.js';
 import {
-    createProductCharacteristic,
     createProductCharacteristicInSession,
-    createProductVariety,
     createProductVarietyInSession,
 } from './productReferenceDimension.service.js';
 import {
@@ -506,167 +503,149 @@ const reviewReferenceContribution = async ({
     contributionId,
     actorId,
     decision,
-}) => {
-    const contribution = await ReferenceContribution.findOne({
+}) => mongoose.connection.transaction(async (session) => {
+    const current = await ReferenceContribution.findOne({
         _id: contributionId,
         status: PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
-    });
+    }).session(session);
 
-    if (!contribution) {
+    if (!current) {
         throw new AppError('Contribution à examiner introuvable.', 404);
     }
 
     if (decision === 'REJECT') {
-        return mongoose.connection.transaction(async (session) => {
-            const current = await ReferenceContribution.findOne({
-                _id: contributionId,
-                status: PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
-            }).session(session);
-            if (!current) throw new AppError('Contribution déjà traitée.', 409);
+        current.status = PRODUCT_CONTRIBUTION_STATUS.REJECTED;
+        current.reviewer = actorId;
+        current.reviewedAt = new Date();
+        await current.save({ session });
 
-            current.status = PRODUCT_CONTRIBUTION_STATUS.REJECTED;
-            current.reviewer = actorId;
-            current.reviewedAt = new Date();
-            await current.save({ session });
-            await createProductReferenceEvent({
-                actorId,
-                workspaceId: current.workspace,
-                action: PRODUCT_REFERENCE_EVENT_ACTION.CONTRIBUTION_REJECTED,
-                entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CONTRIBUTION,
-                entityId: current._id,
-                session,
-            });
-            return serializeReferenceContribution(current);
+        await createProductReferenceEvent({
+            actorId,
+            workspaceId: current.workspace,
+            action: PRODUCT_REFERENCE_EVENT_ACTION.CONTRIBUTION_REJECTED,
+            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CONTRIBUTION,
+            entityId: current._id,
+            session,
         });
+
+        return serializeReferenceContribution(current);
+    }
+
+    if (decision !== 'APPROVE') {
+        throw new AppError('Décision de contribution invalide.', 400);
     }
 
     let resolutionEntityType;
     let resolutionEntityId;
 
-    if (contribution.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY) {
-        const published = await createProductVariety({
-            actorId,
-            productId: contribution.canonicalProduct,
-            name: contribution.proposedValue,
-            aliases: [],
-        });
-        resolutionEntityType = PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY;
-        resolutionEntityId = published.id;
-    } else if (
-        contribution.type === PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC
+    if (
+        current.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
+        || current.type === PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC
     ) {
-        const published = await createProductCharacteristic({
-            actorId,
-            productId: contribution.canonicalProduct,
-            kind: contribution.characteristicKind,
-            name: contribution.proposedValue,
-            aliases: [],
+        const revalidated = await classifyReferenceContributionInSession({
+            workspaceId: current.workspace,
+            type: current.type,
+            productId: current.canonicalProduct,
+            characteristicKind: current.characteristicKind,
+            value: current.proposedValue,
+            session,
         });
-        resolutionEntityType = PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC;
-        resolutionEntityId = published.id;
+
+        if (
+            revalidated.classification
+            === PRODUCT_CONTRIBUTION_CLASSIFICATION.INVALID
+        ) {
+            throw new AppError(
+                revalidated.reasons?.[0]?.message
+                    ?? 'La contribution n’est plus valide.',
+                409,
+            );
+        }
+
+        if (
+            revalidated.classification
+            === PRODUCT_CONTRIBUTION_CLASSIFICATION.EXISTING
+        ) {
+            resolutionEntityId = revalidated.existingReference.id;
+        } else if (current.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY) {
+            const published = await createProductVarietyInSession({
+                actorId,
+                productId: current.canonicalProduct,
+                name: current.proposedValue,
+                aliases: [],
+                workspaceId: current.workspace,
+                session,
+            });
+            resolutionEntityId = published._id;
+        } else {
+            const published = await createProductCharacteristicInSession({
+                actorId,
+                productId: current.canonicalProduct,
+                kind: current.characteristicKind,
+                name: current.proposedValue,
+                aliases: [],
+                workspaceId: current.workspace,
+                session,
+            });
+            resolutionEntityId = published._id;
+        }
+
+        resolutionEntityType = current.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
+            ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY
+            : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC;
     } else {
         const duplicateCheck = await findProductDuplicateCandidates({
-            name: contribution.proposedValue,
+            name: current.proposedValue,
             aliases: [],
-            workspaceId: contribution.workspace,
+            workspaceId: current.workspace,
+            session,
         });
 
         if (duplicateCheck.exactMatch) {
             resolutionEntityType = PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT;
             resolutionEntityId = duplicateCheck.exactMatch.id;
         } else {
-            const created = await createGlobalProduct({
+            const created = await createGlobalProductInSession({
                 actorId,
-                name: contribution.proposedValue,
+                name: current.proposedValue,
                 aliases: [],
-                categoryId: contribution.payload?.categoryId,
+                categoryId: current.payload?.categoryId,
                 reviewedCandidateIds: (
                     duplicateCheck.candidates ?? []
                 ).map(({ id }) => id),
-                variant: contribution.payload?.variant,
+                variant: current.payload?.variant,
+                dimensionProposals:
+                    current.payload?.dimensionProposals ?? null,
+                session,
             });
-
-            const dimensionProposals = (
-                contribution.payload?.dimensionProposals ?? {}
-            );
-            let varietyId = null;
-            const characteristicIds = (
-                created.variant.characteristics ?? []
-            ).map(({ id }) => id);
-
-            if (dimensionProposals.variety) {
-                const variety = await createProductVariety({
-                    actorId,
-                    productId: created.product.id,
-                    name: dimensionProposals.variety,
-                    aliases: [],
-                });
-                varietyId = variety.id;
-            }
-
-            for (const proposal of (
-                dimensionProposals.characteristics ?? []
-            )) {
-                const characteristic = await createProductCharacteristic({
-                    actorId,
-                    productId: created.product.id,
-                    kind: proposal.kind,
-                    name: proposal.value,
-                    aliases: [],
-                });
-                characteristicIds.push(characteristic.id);
-            }
-
-            if (
-                varietyId
-                || characteristicIds.length
-                    !== (created.variant.characteristics ?? []).length
-            ) {
-                await updateVariant({
-                    actorId,
-                    productId: created.product.id,
-                    variantId: created.variant.id,
-                    changes: {
-                        ...(varietyId ? { varietyId } : {}),
-                        characteristicIds,
-                    },
-                });
-            }
 
             resolutionEntityType = PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT;
             resolutionEntityId = created.product.id;
         }
     }
 
-    return mongoose.connection.transaction(async (session) => {
-        const current = await ReferenceContribution.findOne({
-            _id: contributionId,
-            status: PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
-        }).session(session);
-        if (!current) throw new AppError('Contribution déjà traitée.', 409);
+    current.status = PRODUCT_CONTRIBUTION_STATUS.APPROVED;
+    current.reviewer = actorId;
+    current.reviewedAt = new Date();
+    current.resolutionEntityType = resolutionEntityType;
+    current.resolutionEntityId = resolutionEntityId;
+    await current.save({ session });
 
-        current.status = PRODUCT_CONTRIBUTION_STATUS.APPROVED;
-        current.reviewer = actorId;
-        current.reviewedAt = new Date();
-        current.resolutionEntityType = resolutionEntityType;
-        current.resolutionEntityId = resolutionEntityId;
-        await current.save({ session });
-        await createProductReferenceEvent({
-            actorId,
-            workspaceId: current.workspace,
-            action: PRODUCT_REFERENCE_EVENT_ACTION.CONTRIBUTION_APPROVED,
-            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CONTRIBUTION,
-            entityId: current._id,
-            metadata: {
-                resolutionEntityType,
-                resolutionEntityId: resolutionEntityId.toString(),
-            },
-            session,
-        });
-
-        return serializeReferenceContribution(current);
+    await createProductReferenceEvent({
+        actorId,
+        workspaceId: current.workspace,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.CONTRIBUTION_APPROVED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CONTRIBUTION,
+        entityId: current._id,
+        metadata: {
+            resolutionEntityType,
+            resolutionEntityId: resolutionEntityId.toString(),
+        },
+        session,
     });
-};
+
+    return serializeReferenceContribution(current);
+});
 
 export {
     classifyReferenceContributionInSession,
