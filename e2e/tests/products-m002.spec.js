@@ -13,8 +13,6 @@ import {
 } from '../support/product-fixtures.js';
 
 test('M-002 contribution Workspace est revue puis publiée globalement', async ({ page }) => {
-  test.setTimeout(60_000);
-
   const context = await provisionProductOwnerWorkspace();
 
   await loginWithIdentity(page, context.identity);
@@ -77,7 +75,7 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
   await loginWithIdentity(page, context.identity);
   await page.goto(context.productsUrl);
 
-  await page.getByRole('textbox', { name: 'Rechercher un Produit' })
+  await page.getByRole('combobox', { name: 'Rechercher un Produit' })
     .fill(context.productName);
   await page.getByRole('button', { name: 'Rechercher' }).click();
   await page.getByRole('button', {
