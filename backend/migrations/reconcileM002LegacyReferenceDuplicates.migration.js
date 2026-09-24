@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
 import {
-    buildVariantSignature,
     normalizeProductText,
 } from '../modules/productCatalog/productCatalog.normalization.js';
 import {
@@ -26,6 +25,20 @@ const sameNumberNullable = (left, right) => (
     === (right === null || right === undefined ? null : Number(right))
 );
 
+const sameObjectId = (left, right) => (
+    (left?._id ?? left ?? null)?.toString?.() ?? null
+) === (
+    (right?._id ?? right ?? null)?.toString?.() ?? null
+);
+
+const sameObjectIdSet = (left = [], right = []) => {
+    const a = left.map((value) => (value?._id ?? value).toString()).sort();
+    const b = right.map((value) => (value?._id ?? value).toString()).sort();
+
+    return a.length === b.length
+        && a.every((value, index) => value === b[index]);
+};
+
 const isIncompleteReferenceContract = (document) => (
     !String(document.name ?? '').trim()
     || !String(document.normalizedName ?? '').trim()
@@ -38,7 +51,6 @@ const assertEquivalentReference = ({
     expectedName,
     expectedConservationType,
     expectedFoodRange,
-    expectedSignature,
 }) => {
     if (legacy.canonicalProduct._id.toString()
         !== target.canonicalProduct.toString()) {
@@ -49,7 +61,8 @@ const assertEquivalentReference = ({
     }
 
     if (
-        target.normalizedSignature !== expectedSignature
+        !sameObjectId(target.variety, legacy.variety)
+        || !sameObjectIdSet(target.characteristics, legacy.characteristics)
         || target.conservationType !== expectedConservationType
         || target.referenceUnit !== legacy.referenceUnit
         || !sameNumberNullable(target.foodRange, expectedFoodRange)
@@ -143,12 +156,6 @@ const reconcileM002LegacyReferenceDuplicates = async () => (
             const expectedFoodRange = legacy.usageType
                 ? 6
                 : (legacy.foodRange ?? null);
-            const expectedSignature = buildVariantSignature({
-                name: expectedName,
-                varietyId: legacy.variety?._id ?? null,
-                characteristics: legacy.characteristics ?? [],
-            });
-
             const target = await ProductVariant.findOne({
                 _id: mongoose.trusted({ $ne: legacy._id }),
                 normalizedName,
@@ -163,7 +170,6 @@ const reconcileM002LegacyReferenceDuplicates = async () => (
                 expectedName,
                 expectedConservationType,
                 expectedFoodRange,
-                expectedSignature,
             });
 
             const favorites = await reconcileWorkspaceFavorites({
