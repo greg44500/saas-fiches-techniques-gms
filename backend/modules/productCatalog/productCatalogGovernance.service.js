@@ -7,6 +7,7 @@ import {
     assertProductCreationReviewed,
 } from './productCatalogDedup.service.js';
 import {
+    buildSearchGrams,
     buildSearchKeys,
     normalizeProductText,
 } from './productCatalog.normalization.js';
