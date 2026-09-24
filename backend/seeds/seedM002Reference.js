@@ -570,7 +570,7 @@ const seedM002Reference = async ({ dataset, actorId }) => {
 };
 
 const loadDefaultDataset = async () => {
-    const datasetUrl = new URL('./data/m002-reference.v1.json', import.meta.url);
+    const datasetUrl = new URL('./data/m002-reference.v2.json', import.meta.url);
     return JSON.parse(await readFile(datasetUrl, 'utf8'));
 };
 
