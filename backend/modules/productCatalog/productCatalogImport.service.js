@@ -12,7 +12,6 @@ import {
 import {
     createGlobalProduct,
     createGlobalVariant,
-    updateVariant,
 } from './productCatalogGovernance.service.js';
 import {
     findProductDuplicateCandidates,
@@ -1074,50 +1073,6 @@ const splitNewProductDimensions = (row) => {
     };
 };
 
-const enrichCreatedGlobalProductDimensions = async ({
-    actorId,
-    created,
-    dimensionProposals,
-}) => {
-    let varietyId = null;
-    const characteristicIds = (
-        created.variant.characteristics ?? []
-    ).map(({ id }) => id);
-
-    if (dimensionProposals.variety) {
-        const variety = await createProductVariety({
-            actorId,
-            productId: created.product.id,
-            name: dimensionProposals.variety,
-            aliases: [],
-        });
-        varietyId = variety.id;
-    }
-
-    for (const proposal of dimensionProposals.characteristics ?? []) {
-        const characteristic = await createProductCharacteristic({
-            actorId,
-            productId: created.product.id,
-            kind: proposal.kind,
-            name: proposal.value,
-            aliases: [],
-        });
-        characteristicIds.push(characteristic.id);
-    }
-
-    if (varietyId || characteristicIds.length > 0) {
-        await updateVariant({
-            actorId,
-            productId: created.product.id,
-            variantId: created.variant.id,
-            changes: {
-                ...(varietyId ? { varietyId } : {}),
-                characteristicIds: [...new Set(characteristicIds)],
-            },
-        });
-    }
-};
-
 const createProductFromImport = async ({
     scope,
     workspaceId,
@@ -1145,11 +1100,6 @@ const createProductFromImport = async ({
             categoryId: row.data.categoryId,
             reviewedCandidateIds,
             variant: baseVariant,
-        });
-
-        await enrichCreatedGlobalProductDimensions({
-            actorId,
-            created,
             dimensionProposals,
         });
 
