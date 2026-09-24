@@ -201,7 +201,7 @@ const m002ReferenceDatasetSchema = z.strictObject({
             context.addIssue({
                 code: 'custom',
                 path: ['products', productIndex, 'variants'],
-                message: 'Le bootstrap v5 refuse les Produits sans Référence exploitable.',
+                message: 'Le bootstrap courant refuse les Produits sans Référence exploitable.',
             });
         }
 

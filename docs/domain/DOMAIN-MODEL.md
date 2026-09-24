@@ -423,7 +423,7 @@ m002-reference-v3
 Dataset actif :
 
 ```text
-m002-reference-v5\nm002-reference-v6
+m002-reference-v6
 ```
 
 La migration du contrat Référence Produit est fail-closed lorsqu'un nom ou une conservation ne peut pas être déterminé sans invention.

@@ -1,6 +1,6 @@
 # M-002 — Source et règles du seed alimentaire v5
 
-**Statut : VALIDÉ POUR QA M-002**  
+**Statut : HISTORIQUE — remplacé par `M-002-SEED-V6-SOURCE.md`**  
 **Source :** `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf`  
 **Date source :** septembre 2026
 
