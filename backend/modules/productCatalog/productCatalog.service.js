@@ -12,7 +12,6 @@ import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
 import { ProductCharacteristic } from './productCharacteristic.model.js';
 import {
-    assertProductCreationReviewed,
     findProductDuplicateCandidates,
 } from './productCatalogDedup.service.js';
 import {
@@ -234,27 +233,6 @@ const normalizeVariantInput = async ({
             processingState: normalized.processingState,
         }),
     };
-};
-
-const assertActiveCategory = async ({ categoryId, session = null }) => {
-    if (!categoryId) {
-        throw new AppError('Une catégorie active est obligatoire.', 409);
-    }
-
-    const query = ProductCategory.findOne({
-        _id: categoryId,
-        status: PRODUCT_CATEGORY_STATUS.ACTIVE,
-    });
-
-    if (session) query.session(session);
-
-    const category = await query;
-
-    if (!category) {
-        throw new AppError('Catégorie Produit indisponible.', 409);
-    }
-
-    return category;
 };
 
 const createProductVariantInSession = async ({
@@ -741,108 +719,6 @@ const getWorkspaceProductDetail = async ({
     };
 };
 
-const createWorkspaceProduct = async ({
-    workspaceId,
-    actorId,
-    name,
-    aliases = [],
-    categoryId,
-    reviewedCandidateIds = [],
-    variant,
-}) => mongoose.connection.transaction(async (session) => {
-    await assertProductCreationReviewed({
-        name,
-        aliases,
-        workspaceId,
-        reviewedCandidateIds,
-        session,
-    });
-
-    await assertActiveCategory({ categoryId, session });
-
-    const searchKeys = buildSearchKeys(name, aliases);
-    const normalizedName = normalizeProductText(name);
-
-    let product;
-    try {
-        [product] = await CanonicalProduct.create([
-            {
-                name,
-                normalizedName,
-                aliases,
-                searchKeys,
-                searchGrams: buildSearchGrams(searchKeys),
-                category: categoryId,
-                status: PRODUCT_STATUS.ACTIVE,
-                contributedFromWorkspace: workspaceId,
-                createdBy: actorId,
-                updatedBy: actorId,
-            },
-        ], { session });
-    } catch (error) {
-        if (error?.code === 11000) {
-            throw new AppError('Un Produit équivalent existe déjà.', 409);
-        }
-        throw error;
-    }
-
-    const createdVariant = await createProductVariantInSession({
-        canonicalProductId: product._id,
-        workspaceId,
-        actorId,
-        variant,
-        session,
-    });
-
-    const { entry } = await attachVariantToWorkspaceInSession({
-        workspaceId,
-        variantId: createdVariant._id,
-        actorId,
-        session,
-    });
-
-    await createProductReferenceEvent({
-        actorId,
-        workspaceId,
-        action: PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_CREATED,
-        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
-        entityId: product._id,
-        metadata: { variantId: createdVariant._id.toString() },
-        session,
-    });
-
-    await createProductReferenceEvent({
-        actorId,
-        workspaceId,
-        action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
-        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
-        entityId: createdVariant._id,
-        metadata: { productId: product._id.toString() },
-        session,
-    });
-
-    await createBusinessActivityEvent({
-        workspaceId,
-        actorId,
-        action: BUSINESS_ACTIVITY_ACTION.PRODUCT_REFERENCE_CREATED,
-        entityType: BUSINESS_ACTIVITY_ENTITY_TYPE.CANONICAL_PRODUCT,
-        entityId: product._id,
-        metadata: {
-            variantId: createdVariant._id.toString(),
-            workspaceProductId: entry._id.toString(),
-        },
-    }, { session });
-
-    return {
-        product: serializeProduct(product),
-        variant: serializeVariant(createdVariant),
-        workspaceEntry: {
-            id: entry._id.toString(),
-            status: entry.status,
-        },
-    };
-});
-
 const createWorkspaceVariant = async ({
     workspaceId,
     actorId,
@@ -963,7 +839,6 @@ export {
     attachVariantToWorkspace,
     attachVariantToWorkspaceInSession,
     createProductVariantInSession,
-    createWorkspaceProduct,
     createWorkspaceVariant,
     findProductDuplicateCandidates,
     getProductMetadata,
