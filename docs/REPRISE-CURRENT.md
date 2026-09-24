@@ -257,7 +257,7 @@ Vérifier notamment :
 ```text
 pull local de feature/m002-catalogue-produits
 → migration M-002
-→ seed v4
+→ seed v5
 → npm run dev
 → QA visuelle utilisateur
 → corrections si nécessaire dans le même lot
