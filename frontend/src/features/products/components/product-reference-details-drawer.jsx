@@ -15,9 +15,14 @@ import {
 } from '@/components/ui/tabs';
 import {
   useGetProductReferenceDetailQuery,
+  useGetProductReferenceDimensionsQuery,
+  useUpdateProductReferenceCharacteristicStatusMutation,
   useUpdateProductReferenceStatusMutation,
+  useUpdateProductReferenceVarietyStatusMutation,
   useUpdateProductReferenceVariantStatusMutation,
 } from '@/features/products/api/product-reference-api';
+import { ProductDimensionContributionDialog } from '@/features/products/components/product-dimension-contribution-dialog';
+import { ProductDimensionEditDialog } from '@/features/products/components/product-dimension-edit-dialog';
 import { ProductReferenceEditDialog } from '@/features/products/components/product-reference-edit-dialog';
 import { ProductReferenceVariantEditDialog } from '@/features/products/components/product-reference-variant-edit-dialog';
 import { ProductVariantCreateDialog } from '@/features/products/components/product-variant-create-dialog';
@@ -53,18 +58,39 @@ function ProductReferenceDetailsDrawer({
   const retainedRef = useRef(null);
   const [editProductOpen, setEditProductOpen] = useState(false);
   const [editVariant, setEditVariant] = useState(null);
+  const [editDimension, setEditDimension] = useState(null);
   const [createVariantOpen, setCreateVariantOpen] = useState(false);
+  const [createDimensionOpen, setCreateDimensionOpen] = useState(false);
 
   const query = useGetProductReferenceDetailQuery(productId, { skip: !productId });
+  const dimensionsQuery = useGetProductReferenceDimensionsQuery(productId, {
+    skip: !productId,
+  });
   const [updateProductStatus, productStatusState] = useUpdateProductReferenceStatusMutation();
   const [updateVariantStatus, variantStatusState] = useUpdateProductReferenceVariantStatusMutation();
+  const [updateVarietyStatus, varietyStatusState] =
+    useUpdateProductReferenceVarietyStatusMutation();
+  const [updateCharacteristicStatus, characteristicStatusState] =
+    useUpdateProductReferenceCharacteristicStatusMutation();
 
   if (query.data) retainedRef.current = query.data;
   const detail = query.data ?? retainedRef.current;
   const product = detail?.product;
   const variants = detail?.variants ?? [];
   const events = detail?.events ?? [];
-  const pending = productStatusState.isLoading || variantStatusState.isLoading;
+  const varieties = dimensionsQuery.data?.varieties ?? [];
+  const characteristics = dimensionsQuery.data?.characteristics ?? [];
+  const characteristicKindLabels = new Map(
+    (metadata?.productCharacteristicKinds ?? []).map(
+      ({ value, label }) => [value, label],
+    ),
+  );
+  const pending = (
+    productStatusState.isLoading
+    || variantStatusState.isLoading
+    || varietyStatusState.isLoading
+    || characteristicStatusState.isLoading
+  );
 
   if (!detail && !open) return null;
 
@@ -99,6 +125,27 @@ function ProductReferenceDetailsDrawer({
     );
   }
 
+  function changeDimensionStatus(type, dimension, status) {
+    const action = type === 'VARIETY'
+      ? () => updateVarietyStatus({
+        productId: product.id,
+        varietyId: dimension.id,
+        status,
+      }).unwrap()
+      : () => updateCharacteristicStatus({
+        productId: product.id,
+        characteristicId: dimension.id,
+        status,
+      }).unwrap();
+
+    run(
+      action,
+      status === 'ARCHIVED'
+        ? 'Dimension archivée'
+        : 'Dimension réactivée',
+    );
+  }
+
   return (
     <>
       <EntityDetailsDrawer
@@ -120,6 +167,7 @@ function ProductReferenceDetailsDrawer({
           <Tabs defaultValue="product">
             <TabsList aria-label="Administration du Produit" variant="section">
               <TabsTrigger value="product" variant="section">Produit</TabsTrigger>
+              <TabsTrigger value="dimensions" variant="section">Dimensions</TabsTrigger>
               <TabsTrigger value="variants" variant="section">Déclinaisons</TabsTrigger>
               <TabsTrigger value="history" variant="section">Historique</TabsTrigger>
             </TabsList>
@@ -174,6 +222,151 @@ function ProductReferenceDetailsDrawer({
                     </div>
                   </dl>
                 </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="dimensions" variant="section">
+              <div className="space-y-5">
+                {canManage && product.status === 'ACTIVE' && (
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={() => setCreateDimensionOpen(true)}
+                      type="button"
+                      variant="outline"
+                    >
+                      <Plus aria-hidden="true" className="size-4" />
+                      Enrichir le référentiel
+                    </Button>
+                  </div>
+                )}
+
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold">Variétés</h3>
+                  {varieties.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Aucune variété n’est définie pour ce Produit.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {varieties.map((variety) => (
+                        <li
+                          className="rounded-lg border border-border p-3"
+                          key={variety.id}
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="font-medium">{variety.name}</p>
+                              {variety.aliases?.length > 0 && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  Synonymes : {variety.aliases.join(', ')}
+                                </p>
+                              )}
+                            </div>
+                            <StatusBadge tone={getProductStatusTone(variety.status)}>
+                              {getProductStatusLabel(metadata, variety.status)}
+                            </StatusBadge>
+                          </div>
+                          {canManage && (
+                            <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
+                              <Button
+                                disabled={pending}
+                                onClick={() => setEditDimension({
+                                  type: 'VARIETY',
+                                  dimension: variety,
+                                })}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                Corriger
+                              </Button>
+                              <Button
+                                disabled={pending}
+                                onClick={() => changeDimensionStatus(
+                                  'VARIETY',
+                                  variety,
+                                  variety.status === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE',
+                                )}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                {variety.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
+                              </Button>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold">Caractéristiques</h3>
+                  {characteristics.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Aucune caractéristique n’est définie pour ce Produit.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {characteristics.map((characteristic) => (
+                        <li
+                          className="rounded-lg border border-border p-3"
+                          key={characteristic.id}
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="font-medium">{characteristic.name}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {characteristicKindLabels.get(characteristic.kind)
+                                  ?? characteristic.kind}
+                                {characteristic.aliases?.length
+                                  ? ' · Synonymes : ' + characteristic.aliases.join(', ')
+                                  : ''}
+                              </p>
+                            </div>
+                            <StatusBadge tone={getProductStatusTone(characteristic.status)}>
+                              {getProductStatusLabel(metadata, characteristic.status)}
+                            </StatusBadge>
+                          </div>
+                          {canManage && (
+                            <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
+                              <Button
+                                disabled={pending}
+                                onClick={() => setEditDimension({
+                                  type: 'CHARACTERISTIC',
+                                  dimension: characteristic,
+                                })}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                Corriger
+                              </Button>
+                              <Button
+                                disabled={pending}
+                                onClick={() => changeDimensionStatus(
+                                  'CHARACTERISTIC',
+                                  characteristic,
+                                  characteristic.status === 'ACTIVE'
+                                    ? 'ARCHIVED'
+                                    : 'ACTIVE',
+                                )}
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                {characteristic.status === 'ACTIVE'
+                                  ? 'Archiver'
+                                  : 'Réactiver'}
+                              </Button>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
               </div>
             </TabsContent>
 
@@ -290,6 +483,31 @@ function ProductReferenceDetailsDrawer({
           }}
           open={editProductOpen}
           product={product}
+        />
+      )}
+
+      {product && (
+        <ProductDimensionContributionDialog
+          metadata={metadata}
+          mode="global"
+          onClose={() => setCreateDimensionOpen(false)}
+          onResolved={() => dimensionsQuery.refetch?.()}
+          open={createDimensionOpen}
+          product={product}
+        />
+      )}
+
+      {product && editDimension && (
+        <ProductDimensionEditDialog
+          dimension={editDimension.dimension}
+          onClose={() => setEditDimension(null)}
+          onSaved={() => {
+            dimensionsQuery.refetch?.();
+            toast({ title: 'Dimension corrigée', variant: 'success' });
+          }}
+          open={Boolean(editDimension)}
+          productId={product.id}
+          type={editDimension.type}
         />
       )}
 
