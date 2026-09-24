@@ -15,10 +15,13 @@ import {
 import { FieldError } from '@/components/ui/field';
 import {
   useCreateVariantMutation,
+  useGetProductDimensionsQuery,
 } from '@/features/products/api/product-catalog-api';
 import {
   useCreateProductReferenceVariantMutation,
+  useGetProductReferenceDimensionsQuery,
 } from '@/features/products/api/product-reference-api';
+import { ProductDimensionContributionDialog } from '@/features/products/components/product-dimension-contribution-dialog';
 import {
   ProductVariantFields,
   createEmptyVariantDraft,
@@ -42,15 +45,42 @@ function ProductVariantCreateDialog({
 }) {
   const cancelRef = useRef(null);
   const isGlobal = mode === 'global';
-  const [variant, setVariant] = useState(() => createEmptyVariantDraft(metadata));
+  const [variant, setVariant] = useState(() => createEmptyVariantDraft(
+    metadata,
+    { structured: true },
+  ));
+  const [dimensionDialogOpen, setDimensionDialogOpen] = useState(false);
   const [formError, setFormError] = useState('');
   const [createWorkspaceVariant, workspaceState] = useCreateVariantMutation();
   const [createGlobalVariant, globalState] = useCreateProductReferenceVariantMutation();
+  const workspaceDimensionsQuery = useGetProductDimensionsQuery(
+    {
+      workspaceId,
+      productId: product?.id,
+    },
+    {
+      skip: !open || isGlobal || !workspaceId || !product?.id,
+    },
+  );
+  const globalDimensionsQuery = useGetProductReferenceDimensionsQuery(
+    product?.id,
+    {
+      skip: !open || !isGlobal || !product?.id,
+    },
+  );
+  const dimensionsQuery = isGlobal
+    ? globalDimensionsQuery
+    : workspaceDimensionsQuery;
+  const dimensions = dimensionsQuery.data ?? {
+    varieties: [],
+    characteristics: [],
+  };
   const pending = workspaceState.isLoading || globalState.isLoading;
 
   useEffect(() => {
     if (!open) return;
-    setVariant(createEmptyVariantDraft(metadata));
+    setVariant(createEmptyVariantDraft(metadata, { structured: true }));
+    setDimensionDialogOpen(false);
     setFormError('');
   }, [metadata, open]);
 
@@ -70,7 +100,7 @@ function ProductVariantCreateDialog({
 
     const payload = {
       productId: product.id,
-      ...variantDraftToPayload(variant),
+      ...variantDraftToPayload(variant, { structured: true }),
     };
 
     setFormError('');
@@ -92,6 +122,7 @@ function ProductVariantCreateDialog({
   }
 
   return (
+    <>
     <DialogRoot
       disablePointerDismissal
       onOpenChange={(nextOpen) => {
@@ -126,10 +157,31 @@ function ProductVariantCreateDialog({
               </section>
             )}
 
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">
+                  Variété et caractéristiques
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Sélectionnez des dimensions existantes ou enrichissez le référentiel.
+                </p>
+              </div>
+              <Button
+                disabled={pending}
+                onClick={() => setDimensionDialogOpen(true)}
+                type="button"
+                variant="outline"
+              >
+                Enrichir le référentiel
+              </Button>
+            </div>
+
             <ProductVariantFields
+              dimensions={dimensions}
               disabled={pending}
               metadata={metadata}
               onChange={setVariant}
+              structured
               value={variant}
             />
 
@@ -155,6 +207,19 @@ function ProductVariantCreateDialog({
         </DialogContent>
       </DialogPortal>
     </DialogRoot>
+
+    <ProductDimensionContributionDialog
+      metadata={metadata}
+      mode={mode}
+      onClose={() => setDimensionDialogOpen(false)}
+      onResolved={() => {
+        dimensionsQuery.refetch?.();
+      }}
+      open={dimensionDialogOpen}
+      product={product}
+      workspaceId={workspaceId}
+    />
+  </>
   );
 }
 
