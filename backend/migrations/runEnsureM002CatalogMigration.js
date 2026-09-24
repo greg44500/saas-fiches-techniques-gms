@@ -30,6 +30,9 @@ import {
 import {
     reconcileM002LegacyReferenceDuplicates,
 } from './reconcileM002LegacyReferenceDuplicates.migration.js';
+import {
+    reconcileM002BootstrapToV6,
+} from './reconcileM002BootstrapToV6.migration.js';
 
 const run = async () => {
     try {
@@ -109,6 +112,7 @@ const run = async () => {
         const legacyReferenceDuplicates =
             await reconcileM002LegacyReferenceDuplicates();
         const productReferenceContract = await migrateM002ProductReferenceContract();
+        const bootstrapV6 = await reconcileM002BootstrapToV6();
         const indexes = await ensureM002CatalogIndexes();
         const permissions = await backfillRegisteredSystemRolePermissions();
 
@@ -121,6 +125,7 @@ const run = async () => {
                 foodRangeUsageType,
                 legacyReferenceDuplicates,
                 productReferenceContract,
+                bootstrapV6,
                 indexes,
                 permissions,
             },
