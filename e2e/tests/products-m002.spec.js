@@ -64,7 +64,7 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
 
   await page.getByRole('tab', { name: 'Référentiel' }).click();
   const globalSearch = page.getByRole('textbox', {
-    name: 'Rechercher dans le référentiel',
+    name: 'Rechercher un Produit global',
   });
   await globalSearch.fill(context.productName);
   await page.getByRole('button', { name: 'Rechercher' }).click();
