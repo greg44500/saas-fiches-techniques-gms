@@ -52,7 +52,8 @@
     "migration:m002-catalog": "node backend/migrations/runEnsureM002CatalogMigration.js",
     "seed:m002-reference": "node backend/seeds/seedM002Reference.js",
     "migration:application-global-authorization-indexes": "node backend/migrations/runAddApplicationGlobalAuthorizationIndexesMigration.js",
-    "seed:m002-governance": "node backend/seeds/seedM002ProductGovernance.js"
+    "seed:m002-governance": "node backend/seeds/seedM002ProductGovernance.js",
+    "dev:reset-m002-catalog": "node backend/operations/development/runResetM002CatalogDevelopment.js"
   },
   "license": "UNLICENSED",
   "dependencies": {
