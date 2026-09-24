@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Guide canonique d’exploitation
 
 **Statut :** document canonique d’opérations  
-**Dernière mise à jour :** 2026-09-17  
+**Dernière mise à jour :** 2026-09-24  
 **Périmètre :** installation, configuration, démarrage, seeds, migrations, jobs, stockage, antivirus, health checks, déploiement et rollback
 
 ---
@@ -62,6 +62,10 @@ e2e/
 ```
 
 La gate actuelle utilise Chromium.
+
+Le backend Playwright est démarré avec un environnement E2E dédié. Celui-ci active explicitement `E2E_BYPASS_RATE_LIMITS=true` afin que les scénarios fonctionnels ne saturent pas les quotas anti-abus du runtime réel depuis l'IP locale.
+
+Cette capacité est verrouillée par `backend/config/env.js` : elle est refusée si `NODE_ENV` n'est pas `test` ou si la base MongoDB ne se termine pas par `_e2e_test`. Elle ne doit pas être ajoutée à un environnement de développement ordinaire ou de production.
 
 Le backend, le frontend et le package E2E doivent être installés séparément.
 

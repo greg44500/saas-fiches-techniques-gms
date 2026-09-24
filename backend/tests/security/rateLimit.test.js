@@ -6,13 +6,17 @@ import {
     createApiRateLimiter,
     createForgotPasswordIpRateLimiter,
 } from '../../config/rateLimit.config.js';
+import {
+    createRateLimitSkipPredicate,
+} from '../../config/rateLimitRuntime.config.js';
 
-const createTestApp = () => {
+const createTestApp = ({ skip } = {}) => {
     const app = express();
 
     const testRateLimiter = createApiRateLimiter({
         windowMs: 60 * 1000,
         limit: 2,
+        skip,
     });
 
     app.use('/api', testRateLimiter);
@@ -93,6 +97,18 @@ describe('Rate limiter global', () => {
             message: 'Trop de requêtes. Veuillez réessayer plus tard.',
         });
         expect(response.headers['retry-after']).toBeDefined();
+    });
+
+    it('bypasse le quota lorsque le contexte E2E autorisé est injecté', async () => {
+        const app = createTestApp({
+            skip: createRateLimitSkipPredicate({
+                E2E_BYPASS_RATE_LIMITS: true,
+            }),
+        });
+
+        expect((await request(app).get('/api/test')).status).toBe(200);
+        expect((await request(app).get('/api/test')).status).toBe(200);
+        expect((await request(app).get('/api/test')).status).toBe(200);
     });
 
     it('ne limite pas les routes situées hors de /api', async () => {

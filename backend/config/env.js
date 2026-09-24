@@ -14,6 +14,18 @@ const isKnownPlaceholder = (value) => (
     && PRODUCTION_PLACEHOLDER_VALUES.has(value.trim())
 );
 
+const getMongoDatabaseName = (mongodbUri) => {
+    try {
+        const parsedUri = new URL(mongodbUri);
+
+        return decodeURIComponent(
+            parsedUri.pathname.replace(/^\//, ''),
+        );
+    } catch {
+        return '';
+    }
+};
+
 // Schema de validation pour les variables d'environnement.
 const envSchema = z.object({
     NODE_ENV: z
@@ -176,6 +188,16 @@ const envSchema = z.object({
         ),
 
     /*
+     * Le bypass des rate limits est réservé aux parcours Playwright E2E.
+     * Il reste désactivé par défaut et son activation est validée ci-dessous
+     * contre NODE_ENV et le nom de la base MongoDB.
+     */
+    E2E_BYPASS_RATE_LIMITS: z
+        .enum(['true', 'false'])
+        .default('false')
+        .transform((value) => value === 'true'),
+
+    /*
      * Les outils qui détruisent volontairement des données de développement
      * restent désactivés par défaut, même lorsque NODE_ENV=development.
      */
@@ -184,6 +206,26 @@ const envSchema = z.object({
         .default('false')
         .transform((value) => value === 'true'),
 }).superRefine((config, context) => {
+    if (config.E2E_BYPASS_RATE_LIMITS) {
+        if (config.NODE_ENV !== 'test') {
+            context.addIssue({
+                code: 'custom',
+                path: ['E2E_BYPASS_RATE_LIMITS'],
+                message:
+                    'E2E_BYPASS_RATE_LIMITS ne peut être activé que lorsque NODE_ENV=test',
+            });
+        }
+
+        if (!getMongoDatabaseName(config.MONGODB_URI).endsWith('_e2e_test')) {
+            context.addIssue({
+                code: 'custom',
+                path: ['E2E_BYPASS_RATE_LIMITS'],
+                message:
+                    'E2E_BYPASS_RATE_LIMITS exige une base MongoDB se terminant par _e2e_test',
+            });
+        }
+    }
+
     if (config.NODE_ENV !== 'production') {
         return;
     }

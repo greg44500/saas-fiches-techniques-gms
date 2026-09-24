@@ -71,6 +71,7 @@ function getE2eBackendEnvironment() {
     CLAMAV_SCAN_TIMEOUT_MS: '30000',
     UPLOAD_TEMP_FILE_MAX_AGE_MINUTES: '60',
     TRIAL_IDENTITY_SECRET: 'e2e_test_trial_identity_secret_0123456789abcdef',
+    E2E_BYPASS_RATE_LIMITS: 'true',
     ALLOW_DEVELOPMENT_DATA_RESET: 'false',
   };
 }
