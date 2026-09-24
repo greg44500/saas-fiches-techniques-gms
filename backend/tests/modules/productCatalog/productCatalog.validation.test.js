@@ -5,6 +5,7 @@ import {
 } from 'vitest';
 
 import {
+    createReferenceContributionBodySchema,
     createWorkspaceProductBodySchema,
     importCommitBodySchema,
     importPreviewBodySchema,
@@ -90,6 +91,35 @@ describe('M-002 product request validation', () => {
                 foodRange: 1,
                 referenceUnit: 'KG',
             },
+        }).success).toBe(false);
+    });
+
+    it('valide la granularité des contributions', () => {
+        expect(createReferenceContributionBodySchema.safeParse({
+            type: 'VARIETY',
+            productId: '507f1f77bcf86cd799439012',
+            value: 'Reinette',
+        }).success).toBe(true);
+
+        expect(createReferenceContributionBodySchema.safeParse({
+            type: 'CHARACTERISTIC',
+            productId: '507f1f77bcf86cd799439012',
+            value: 'En botte',
+        }).success).toBe(false);
+
+        expect(createReferenceContributionBodySchema.safeParse({
+            type: 'CANONICAL_PRODUCT',
+            value: 'Betterave',
+            categoryId,
+            variant: {
+                foodRange: 1,
+                referenceUnit: 'KG',
+            },
+        }).success).toBe(true);
+
+        expect(createReferenceContributionBodySchema.safeParse({
+            type: 'CANONICAL_PRODUCT',
+            value: 'Betterave',
         }).success).toBe(false);
     });
 

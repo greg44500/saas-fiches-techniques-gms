@@ -7,6 +7,9 @@ import {
 import {
     PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
+    PRODUCT_CONTRIBUTION_CLASSIFICATION,
+    PRODUCT_CONTRIBUTION_STATUS,
+    PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
     PRODUCT_IMPORT_SCOPE,
@@ -98,6 +101,25 @@ describe('M-002 product catalog registries', () => {
         expect(PRODUCT_CATALOG_GLOBAL_PERMISSION).toEqual({
             READ: 'product:reference:read',
             MANAGE: 'product:reference:manage',
+        });
+    });
+
+    it('fige les classifications et statuts de contribution', () => {
+        expect(PRODUCT_CONTRIBUTION_CLASSIFICATION).toEqual({
+            EXISTING: 'EXISTING',
+            AUTO_PUBLISHABLE: 'AUTO_PUBLISHABLE',
+            REVIEW_REQUIRED: 'REVIEW_REQUIRED',
+            INVALID: 'INVALID',
+        });
+        expect(PRODUCT_CONTRIBUTION_TYPE).toEqual({
+            CANONICAL_PRODUCT: 'CANONICAL_PRODUCT',
+            VARIETY: 'VARIETY',
+            CHARACTERISTIC: 'CHARACTERISTIC',
+        });
+        expect(PRODUCT_CONTRIBUTION_STATUS).toEqual({
+            PENDING_REVIEW: 'PENDING_REVIEW',
+            APPROVED: 'APPROVED',
+            REJECTED: 'REJECTED',
         });
     });
 

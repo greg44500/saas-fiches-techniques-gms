@@ -10,6 +10,7 @@ import { ProductCategory } from '../../../modules/productCatalog/productCategory
 import { ProductCharacteristic } from '../../../modules/productCatalog/productCharacteristic.model.js';
 import { ProductImportSession } from '../../../modules/productCatalog/productImportSession.model.js';
 import { ProductReferenceEvent } from '../../../modules/productCatalog/productReferenceEvent.model.js';
+import { ReferenceContribution } from '../../../modules/productCatalog/referenceContribution.model.js';
 import { ProductVariant } from '../../../modules/productCatalog/productVariant.model.js';
 import { ProductVariety } from '../../../modules/productCatalog/productVariety.model.js';
 import { WorkspaceProduct } from '../../../modules/productCatalog/workspaceProduct.model.js';
@@ -92,6 +93,30 @@ describe('M-002 product catalog models', () => {
         expect(productIndex?.[1].unique).toBe(true);
         expect(variantIndex?.[1].unique).toBe(true);
         expect(workspaceIndex?.[1].unique).toBe(true);
+    });
+
+    it('sépare la revue des contributions du lifecycle des références', () => {
+        expect(
+            ReferenceContribution.schema.path('workspace').options.required,
+        ).toBe(true);
+        expect(
+            ReferenceContribution.schema.path('classification').options.enum,
+        ).toEqual([
+            'EXISTING',
+            'AUTO_PUBLISHABLE',
+            'REVIEW_REQUIRED',
+            'INVALID',
+        ]);
+        expect(
+            ReferenceContribution.schema.path('status').options.enum,
+        ).toEqual([
+            'PENDING_REVIEW',
+            'APPROVED',
+            'REJECTED',
+        ]);
+        expect(
+            CanonicalProduct.schema.path('status').options.enum,
+        ).toEqual(['ACTIVE', 'ARCHIVED']);
     });
 
     it('rend les événements globaux immuables et les imports temporaires scopés', () => {
