@@ -449,7 +449,7 @@ const upsertSeedProduct = async ({
         };
 
         if (!variant) {
-            [variant] = await ProductVariant.create([{
+            await ProductVariant.create([{
                 canonicalProduct: product._id,
                 ...data,
                 createdBy: actorId,
