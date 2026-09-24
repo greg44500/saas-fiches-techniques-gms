@@ -19,6 +19,9 @@ import {
     productCatalogImportUploadService,
 } from './productCatalogImportUpload.service.js';
 import {
+    listProductDimensions,
+} from './productReferenceDimension.service.js';
+import {
     submitReferenceContribution,
 } from './productReferenceContribution.service.js';
 
@@ -57,6 +60,18 @@ const detail = async (req, res) => {
     const result = await getWorkspaceProductDetail({
         workspaceId: req.workspace._id,
         productId: req.validated.params.productId,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: result,
+    });
+};
+
+const dimensions = async (req, res) => {
+    const result = await listProductDimensions({
+        productId: req.validated.params.productId,
+        includeArchived: false,
     });
 
     res.status(200).json({
@@ -202,6 +217,7 @@ export {
     createProduct,
     createVariant,
     detail,
+    dimensions,
     duplicateCheck,
     inspectImport,
     metadata,

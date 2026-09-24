@@ -15,6 +15,7 @@ import {
     createProduct,
     createVariant,
     detail,
+    dimensions,
     duplicateCheck,
     inspectImport,
     metadata,
@@ -197,6 +198,16 @@ productCatalogRouter.delete(
     authorizePermission(PRODUCT_CATALOG_PERMISSION.CATALOG_MANAGE),
     enforceWorkspaceAccessMode(),
     archive,
+);
+
+productCatalogRouter.get(
+    '/:productId/dimensions',
+    authenticate,
+    validateRequest({ params: productIdParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(PRODUCT_CATALOG_PERMISSION.READ),
+    enforceProductReferenceSearchFeature,
+    dimensions,
 );
 
 productCatalogRouter.get(
