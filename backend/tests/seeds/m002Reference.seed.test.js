@@ -92,164 +92,62 @@ beforeEach(async () => {
 });
 
 describe('M-002 reference bootstrap', () => {
-    it('valide le dataset bêta réel et ses frontières M-002', async () => {
+    it('valide le dataset v6 construit uniquement depuis le PDF alimentaire', async () => {
         const dataset = await loadDefaultDataset();
         const parsed = m002ReferenceDatasetSchema.parse(dataset);
 
         expect(parsed.ready).toBe(true);
-        expect(parsed.version).toBe('m002-reference-v5');
+        expect(parsed.version).toBe('m002-reference-v6');
         expect(parsed.categories).toHaveLength(14);
-        expect(parsed.categories).toEqual(expect.arrayContaining([
-            { key: 'fruits-legumes', name: 'Fruits et légumes' },
-            { key: 'viandes-volailles', name: 'Viandes et volailles' },
-            {
-                key: 'poissons-produits-mer',
-                name: 'Poissons et produits de la mer',
-            },
-            { key: 'charcuteries', name: 'Charcuteries' },
-            { key: 'produits-laitiers', name: 'Produits laitiers' },
-            { key: 'oeufs-ovoproduits', name: 'Œufs et ovoproduits' },
-            {
-                key: 'cereales-feculents-legumineuses',
-                name: 'Céréales, féculents et légumineuses',
-            },
-            {
-                key: 'pains-boulangerie',
-                name: 'Pains et produits de boulangerie',
-            },
-            { key: 'matieres-grasses', name: 'Matières grasses' },
-            {
-                key: 'condiments-sauces-aides-culinaires',
-                name: 'Condiments, sauces et aides culinaires',
-            },
-            { key: 'epicerie-salee', name: 'Épicerie salée' },
-            {
-                key: 'epicerie-sucree-patisserie',
-                name: 'Épicerie sucrée et pâtisserie',
-            },
-            { key: 'boissons', name: 'Boissons' },
-            {
-                key: 'plats-prepares-alternatives',
-                name: 'Plats préparés et alternatives végétales',
-            },
-        ]));
-        expect(parsed.products).toHaveLength(220);
+        expect(parsed.products).toHaveLength(264);
         expect(
             parsed.products.reduce(
                 (total, product) => total + product.variants.length,
                 0,
             ),
-        ).toBe(302);
+        ).toBe(264);
+
         expect(parsed.sources).toEqual([
             expect.objectContaining({
                 name: 'SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf',
-                scope: 'Denrées alimentaires uniquement',
-                excludedPages: '35-37 (Non Alimentaire)',
+                scope: 'Denrées alimentaires présentes dans le PDF uniquement',
             }),
         ]);
 
-        const carotte = parsed.products.find(({ name }) => name === 'Carotte');
-        const pomme = parsed.products.find(({ name }) => name === 'Pomme');
-        const boeuf = parsed.products.find(({ name }) => name === 'Bœuf');
-        const agneau = parsed.products.find(({ name }) => name === 'Agneau');
-        const poulet = parsed.products.find(({ name }) => name === 'Poulet');
-        const jambonBlanc = parsed.products.find(
-            ({ name }) => name === 'Jambon blanc',
+        const referenceNames = parsed.products.flatMap(
+            (product) => product.variants.map((variant) => variant.name),
         );
 
-        expect(carotte.characteristics).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    kind: 'COMMERCIAL_TYPE',
-                    name: 'Nantaise',
-                }),
-                expect.objectContaining({
-                    kind: 'PRESENTATION',
-                    name: 'En botte avec fanes',
-                }),
-                expect.objectContaining({
-                    kind: 'SIZE_FORMAT',
-                    name: 'Mini',
-                }),
-                expect.objectContaining({
-                    kind: 'QUALITY_DESIGNATION',
-                    name: 'Carottes des sables',
-                }),
-            ]),
-        );
-        expect(pomme.varieties.map(({ name }) => name)).toEqual(
-            expect.arrayContaining(['Golden', 'Gala', 'Granny Smith']),
-        );
-        expect(boeuf.characteristics).toEqual(expect.arrayContaining([
-            expect.objectContaining({ kind: 'CUT', name: 'Paleron' }),
-            expect.objectContaining({ kind: 'CUT', name: 'Faux-filet' }),
+        expect(referenceNames).toEqual(expect.arrayContaining([
+            'Cumin moulu',
+            'Carottes râpées',
+            'Roulé de surimi',
+            'Gigot d\'agneau',
+            'Quinoa gourmand',
+            'Crème dessert chocolat',
+            'Jus multifruits à base de concentré',
         ]));
-        expect(agneau.characteristics).toEqual(expect.arrayContaining([
-            expect.objectContaining({ kind: 'CUT', name: 'Gigot' }),
-        ]));
-        expect(poulet.characteristics).toEqual(expect.arrayContaining([
-            expect.objectContaining({ kind: 'CUT', name: 'Cuisse' }),
-        ]));
-        expect(boeuf.variants.map(({ name }) => name)).toEqual(
-            expect.arrayContaining([
-                'Rôti de bœuf',
-                'Sauté de bœuf',
-                'Boulette de bœuf',
-                'Rognons de bœuf',
-                'Paleron de bœuf',
-                'Faux-filet de bœuf',
-            ]),
-        );
-        expect(agneau.variants.map(({ name }) => name)).toEqual(
-            expect.arrayContaining([
-                "Gigot d'agneau",
-                "Sauté d'agneau",
-            ]),
-        );
-        expect(poulet.variants.map(({ name }) => name)).toEqual(
-            expect.arrayContaining([
-                'Filet de poulet',
-                'Sauté de poulet',
-            ]),
-        );
-        expect(jambonBlanc.categoryKey).toBe('charcuteries');
-        expect(jambonBlanc.variants.map(({ name }) => name))
-            .toContain('Jambon cuit');
 
-        expect(parsed.products).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                name: 'Poulet',
-                categoryKey: 'viandes-volailles',
-            }),
-            expect.objectContaining({
-                name: 'Saumon',
-                categoryKey: 'poissons-produits-mer',
-            }),
-            expect.objectContaining({
-                name: 'Lait',
-                categoryKey: 'produits-laitiers',
-            }),
-            expect.objectContaining({
-                name: 'Œuf',
-                categoryKey: 'oeufs-ovoproduits',
-            }),
-            expect.objectContaining({
-                name: 'Riz',
-                categoryKey: 'cereales-feculents-legumineuses',
-            }),
-            expect.objectContaining({
-                name: 'Huile d\'olive',
-                categoryKey: 'matieres-grasses',
-            }),
-            expect.objectContaining({
-                name: 'Moutarde',
-                categoryKey: 'condiments-sauces-aides-culinaires',
-            }),
-            expect.objectContaining({
-                name: 'Chocolat',
-                categoryKey: 'epicerie-sucree-patisserie',
-            }),
-        ]));
+        expect(referenceNames).not.toContain('Moule');
+        expect(referenceNames).not.toContain('Banane');
+        expect(referenceNames).not.toContain('Farine de blé');
+        expect(referenceNames).not.toContain('Paleron de bœuf');
+
+        for (const product of parsed.products) {
+            expect(product.variants).toHaveLength(1);
+            expect(product.name).toBe(product.variants[0].name);
+            expect(product.varieties).toEqual([]);
+            expect(product.characteristics).toEqual([]);
+            expect(product).not.toHaveProperty('supplier');
+            expect(product).not.toHaveProperty('price');
+            expect(product).not.toHaveProperty('packaging');
+
+            const variant = product.variants[0];
+            expect(variant.conservationType).toEqual(expect.any(String));
+            expect(variant.foodRange).toBeNull();
+            expect(variant.yieldPercent).toBeNull();
+            expect(variant).not.toHaveProperty('usageType');
+        }
 
         const representedCategoryKeys = new Set(
             parsed.products.map(({ categoryKey }) => categoryKey),
@@ -258,55 +156,11 @@ describe('M-002 reference bootstrap', () => {
             expect(representedCategoryKeys.has(category.key)).toBe(true);
         }
 
-        const normalizedReferenceNames = new Set();
-        for (const product of parsed.products) {
-            expect(product.variants.length).toBeGreaterThan(0);
-            expect(product).not.toHaveProperty('supplier');
-            expect(product).not.toHaveProperty('price');
-            expect(product).not.toHaveProperty('packaging');
-            for (const variant of product.variants) {
-                expect(variant.name).toEqual(expect.any(String));
-                expect(variant.conservationType).toEqual(expect.any(String));
-                expect(variant.yieldPercent).toBeNull();
-                if (variant.foodRange !== null) {
-                    expect(variant.foodRange).toBeGreaterThanOrEqual(1);
-                    expect(variant.foodRange).toBeLessThanOrEqual(6);
-                }
-                expect(variant).not.toHaveProperty('usageType');
-
-                const normalized = variant.name
-                    .normalize('NFKD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .toLowerCase();
-                expect(normalizedReferenceNames.has(normalized)).toBe(false);
-                normalizedReferenceNames.add(normalized);
-            }
-        }
-
-        const referenceNames = [...normalizedReferenceNames];
-        for (const forbidden of [
-            'gobelet',
-            'assiette ronde',
-            'serviette ouate',
-            'tourtiere alu',
-            'barquette alu',
-            'sac poubelle',
-            'lavette',
-            'papier hygienique',
-            'film alimentaire',
-        ]) {
-            expect(referenceNames.some((name) => name.includes(forbidden)))
-                .toBe(false);
-        }
-
-        expect(referenceNames).toEqual(expect.arrayContaining([
-            'carottes rapees',
-            'bouillon de legumes en granules',
-            'quinoa gourmand',
-            'creme dessert chocolat',
-            "gigot d'agneau",
-            'jus d\'orange',
-        ]));
+        expect(
+            new Set(
+                referenceNames.map((name) => normalizeProductText(name)),
+            ).size,
+        ).toBe(referenceNames.length);
     });
 
     it('refuse explicitement un dataset non validé', async () => {
