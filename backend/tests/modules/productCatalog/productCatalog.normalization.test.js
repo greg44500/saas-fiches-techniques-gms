@@ -45,11 +45,34 @@ describe('M-002 product normalization', () => {
         expect(isNearDuplicateKey('carotte', 'farine')).toBe(false);
     });
 
-    it('construit la signature de déclinaison structurée', () => {
+    it('conserve la signature legacy uniquement pour la migration historique', () => {
         expect(buildVariantSignature({
             presentation: 'Râpée',
             foodRange: 6,
             processingState: 'PAI / PAE',
         })).toBe('rapee|6|pai pae');
+    });
+
+    it('construit la signature cible avec des identifiants stables', () => {
+        expect(buildVariantSignature({
+            varietyId: '507f1f77bcf86cd799439011',
+            characteristics: [
+                {
+                    id: '507f191e810c19729de860ea',
+                    kind: 'PRESENTATION',
+                },
+                {
+                    id: '507f191e810c19729de860eb',
+                    kind: 'SIZE_FORMAT',
+                },
+            ],
+            foodRange: 1,
+            processingState: 'Produit frais',
+        })).toBe(
+            'v:507f1f77bcf86cd799439011'
+            + '|c:PRESENTATION:507f191e810c19729de860ea,'
+            + 'SIZE_FORMAT:507f191e810c19729de860eb'
+            + '|r:1|s:produit frais',
+        );
     });
 });

@@ -32,6 +32,7 @@ describe('M-002 product request validation', () => {
             categoryId,
             reviewedCandidateIds: [],
             variant: {
+                characteristicIds: [],
                 foodRange: 6,
                 referenceUnit: 'KG',
                 yieldPercent: 100,
@@ -60,6 +61,35 @@ describe('M-002 product request validation', () => {
             name: 'Carotte',
             categoryId,
             variant: { foodRange: 7, referenceUnit: 'KG' },
+        }).success).toBe(false);
+    });
+
+    it('valide les références structurées d une déclinaison', () => {
+        expect(createWorkspaceProductBodySchema.safeParse({
+            name: 'Pomme',
+            categoryId,
+            variant: {
+                varietyId: '507f1f77bcf86cd799439012',
+                characteristicIds: [
+                    '507f1f77bcf86cd799439013',
+                    '507f1f77bcf86cd799439014',
+                ],
+                foodRange: 1,
+                referenceUnit: 'KG',
+            },
+        }).success).toBe(true);
+
+        expect(createWorkspaceProductBodySchema.safeParse({
+            name: 'Pomme',
+            categoryId,
+            variant: {
+                characteristicIds: [
+                    '507f1f77bcf86cd799439013',
+                    '507f1f77bcf86cd799439013',
+                ],
+                foodRange: 1,
+                referenceUnit: 'KG',
+            },
         }).success).toBe(false);
     });
 

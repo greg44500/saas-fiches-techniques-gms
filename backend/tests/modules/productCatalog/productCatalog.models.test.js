@@ -53,9 +53,11 @@ describe('M-002 product catalog models', () => {
         ).toBe(true);
     });
 
-    it('porte Présentation sans conserver les anciens champs de conservation', () => {
-        expect(ProductVariant.schema.path('presentation')).toBeDefined();
-        expect(ProductVariant.schema.path('normalizedPresentation')).toBeDefined();
+    it('porte Variété et Caractéristiques structurées sans Présentation textuelle persistée', () => {
+        expect(ProductVariant.schema.path('variety')).toBeDefined();
+        expect(ProductVariant.schema.path('characteristics')).toBeDefined();
+        expect(ProductVariant.schema.path('presentation')).toBeUndefined();
+        expect(ProductVariant.schema.path('normalizedPresentation')).toBeUndefined();
         expect(ProductVariant.schema.path('form')).toBeUndefined();
         expect(ProductVariant.schema.path('preservation')).toBeUndefined();
     });

@@ -7,6 +7,7 @@ import {
     normalizeProductText,
 } from '../../modules/productCatalog/productCatalog.normalization.js';
 import {
+    PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_STATUS,
 } from '../../modules/productCatalog/productCatalog.registry.js';
@@ -15,6 +16,7 @@ import {
 } from '../../modules/productCatalog/productVariantSemantics.js';
 import { CanonicalProduct } from '../../modules/productCatalog/canonicalProduct.model.js';
 import { ProductCategory } from '../../modules/productCatalog/productCategory.model.js';
+import { ProductCharacteristic } from '../../modules/productCatalog/productCharacteristic.model.js';
 import { ProductVariant } from '../../modules/productCatalog/productVariant.model.js';
 
 const createActiveProductReference = async ({
@@ -68,15 +70,34 @@ const createActiveProductReference = async ({
         throw new Error('Fixture Produit invalide : gamme/état incompatibles.');
     }
 
+    const characteristics = [];
+    if (presentation) {
+        const characteristicSearchKeys = buildSearchKeys(presentation, []);
+        const characteristic = await ProductCharacteristic.create({
+            canonicalProduct: product._id,
+            kind: PRODUCT_CHARACTERISTIC_KIND.PRESENTATION,
+            name: presentation,
+            normalizedName: normalizeProductText(presentation),
+            aliases: [],
+            searchKeys: characteristicSearchKeys,
+            searchGrams: buildSearchGrams(characteristicSearchKeys),
+            status: PRODUCT_STATUS.ACTIVE,
+            createdBy: actorId,
+            updatedBy: actorId,
+        });
+        characteristics.push(characteristic);
+    }
+
     const variantInput = {
-        presentation,
+        varietyId: null,
+        characteristics,
         processingState: resolvedProcessingState.value,
         foodRange,
     };
     const variant = await ProductVariant.create({
         canonicalProduct: product._id,
-        presentation,
-        normalizedPresentation: normalizeProductText(presentation),
+        variety: null,
+        characteristics: characteristics.map(({ _id }) => _id),
         processingState: resolvedProcessingState.value,
         normalizedProcessingState: normalizeProductText(
             resolvedProcessingState.value,
