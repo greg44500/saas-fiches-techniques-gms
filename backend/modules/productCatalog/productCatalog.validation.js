@@ -66,9 +66,16 @@ const characteristicIdsSchema = z
         { message: 'Les Caractéristiques ne doivent pas contenir de doublons.' },
     );
 
-const variantBodySchema = z.strictObject({
+const structuredVariantBodySchema = z.strictObject({
     varietyId: objectIdSchema.nullable().optional(),
     characteristicIds: characteristicIdsSchema.optional().default([]),
+    processingState: nullableText(80).optional(),
+    foodRange: foodRangeSchema,
+    referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
+    yieldPercent: z.number().positive().max(100).nullable().optional(),
+});
+
+const newProductVariantBodySchema = z.strictObject({
     presentation: nullableText(120).optional(),
     processingState: nullableText(80).optional(),
     foodRange: foodRangeSchema,
@@ -81,18 +88,22 @@ const duplicateCheckBodySchema = z.strictObject({
     aliases: aliasesSchema.optional().default([]),
 });
 
-const createProductBodySchema = z.strictObject({
+const createWorkspaceProductBodySchema = z.strictObject({
+    name: z.string().trim().min(1).max(120),
+    categoryId: objectIdSchema,
+    variant: newProductVariantBodySchema,
+});
+
+const createGlobalProductBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
     aliases: aliasesSchema.optional().default([]),
     categoryId: objectIdSchema,
     reviewedCandidateIds: z.array(objectIdSchema).max(20).optional().default([]),
-    variant: variantBodySchema,
+    variant: newProductVariantBodySchema,
 });
 
-const createWorkspaceProductBodySchema = createProductBodySchema;
-const createGlobalProductBodySchema = createProductBodySchema;
-const createWorkspaceVariantBodySchema = variantBodySchema;
-const createGlobalVariantBodySchema = variantBodySchema;
+const createWorkspaceVariantBodySchema = structuredVariantBodySchema;
+const createGlobalVariantBodySchema = structuredVariantBodySchema;
 
 const productSearchQuerySchema = z.strictObject({
     q: z.string().trim().min(2).max(120).optional(),
@@ -177,7 +188,7 @@ const createReferenceContributionBodySchema = z.strictObject({
     ).optional(),
     value: z.string().trim().min(1).max(120),
     categoryId: objectIdSchema.optional(),
-    variant: variantBodySchema.optional(),
+    variant: newProductVariantBodySchema.optional(),
 }).superRefine((body, context) => {
     if (body.type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT) {
         if (!body.categoryId) {
@@ -304,7 +315,6 @@ const updateProductStatusBodySchema = z.strictObject({
 const updateVariantBodySchema = z.strictObject({
     varietyId: objectIdSchema.nullable().optional(),
     characteristicIds: characteristicIdsSchema.optional(),
-    presentation: nullableText(120).optional(),
     processingState: nullableText(80).optional(),
     foodRange: foodRangeSchema.optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),

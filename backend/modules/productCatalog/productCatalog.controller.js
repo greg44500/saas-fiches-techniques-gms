@@ -1,7 +1,6 @@
 import {
     archiveVariantFromWorkspace,
     attachVariantToWorkspace,
-    createWorkspaceProduct,
     createWorkspaceVariant,
     getProductMetadata,
     getWorkspaceProductDetail,
@@ -79,13 +78,16 @@ const duplicateCheck = async (req, res) => {
 };
 
 const createProduct = async (req, res) => {
-    const result = await createWorkspaceProduct({
+    const result = await submitReferenceContribution({
         workspaceId: req.workspace._id,
         actorId: req.user._id,
-        ...req.validated.body,
+        type: 'CANONICAL_PRODUCT',
+        value: req.validated.body.name,
+        categoryId: req.validated.body.categoryId,
+        variant: req.validated.body.variant,
     });
 
-    res.status(201).json({
+    res.status(result.contribution ? 201 : 200).json({
         status: 'success',
         data: result,
     });
