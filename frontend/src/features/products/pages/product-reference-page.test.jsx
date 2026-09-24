@@ -8,12 +8,19 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const mocks = vi.hoisted(() => ({
   metadataQuery: vi.fn(),
   productsQuery: vi.fn(),
+  contributionsQuery: vi.fn(),
+  reviewContribution: vi.fn(),
   updateCategoryStatus: vi.fn(),
 }));
 
 vi.mock('@/features/products/api/product-reference-api', () => ({
   useGetProductReferenceMetadataQuery: mocks.metadataQuery,
   useListProductReferenceProductsQuery: mocks.productsQuery,
+  useListProductReferenceContributionsQuery: mocks.contributionsQuery,
+  useReviewProductReferenceContributionMutation: () => [
+    mocks.reviewContribution,
+    { isLoading: false },
+  ],
   useUpdateProductReferenceCategoryStatusMutation: () => [
     mocks.updateCategoryStatus,
     { isLoading: false },
@@ -51,6 +58,18 @@ const metadata = {
   productStatuses: [
     { value: 'ACTIVE', label: 'Actif' },
     { value: 'ARCHIVED', label: 'Archivé' },
+  ],
+  productCharacteristicKinds: [
+    { value: 'QUALITY_DESIGNATION', label: 'Désignation de qualité' },
+  ],
+  productContributionTypes: [
+    { value: 'CANONICAL_PRODUCT', label: 'Produit' },
+    { value: 'CHARACTERISTIC', label: 'Caractéristique' },
+  ],
+  productContributionStatuses: [
+    { value: 'PENDING_REVIEW', label: 'À examiner' },
+    { value: 'APPROVED', label: 'Approuvée' },
+    { value: 'REJECTED', label: 'Refusée' },
   ],
 };
 
@@ -92,6 +111,19 @@ describe('ProductReferencePage', () => {
       isFetching: false,
       isLoading: false,
       refetch: vi.fn(),
+    });
+    mocks.contributionsQuery.mockReturnValue({
+      data: {
+        contributions: [],
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    mocks.reviewContribution.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({}),
     });
     mocks.updateCategoryStatus.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
@@ -146,6 +178,46 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('tab', { name: 'Catégories' }));
     expect(screen.getByRole('button', { name: 'Créer une catégorie' }))
       .toBeInTheDocument();
+  });
+
+  it('examine les contributions séparément du lifecycle des références', async () => {
+    const user = userEvent.setup();
+    mocks.contributionsQuery.mockReturnValue({
+      data: {
+        contributions: [{
+          id: 'contribution-1',
+          type: 'CHARACTERISTIC',
+          characteristicKind: 'QUALITY_DESIGNATION',
+          proposedValue: 'Carottes des sables',
+          workspace: { id: 'workspace-1', name: 'Atelier pilote' },
+          author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
+          status: 'PENDING_REVIEW',
+          reasons: [{
+            code: 'CHARACTERISTIC_REQUIRES_GOVERNANCE',
+            message: 'Ce type nécessite une revue.',
+          }],
+        }],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Contributions' }));
+
+    expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
+    expect(screen.getByText('Désignation de qualité')).toBeInTheDocument();
+    expect(screen.getByText('Atelier pilote')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Approuver' }));
+
+    expect(mocks.reviewContribution).toHaveBeenCalledWith({
+      contributionId: 'contribution-1',
+      decision: 'APPROVE',
+    });
   });
 
   it('ouvre le détail global depuis la liste', async () => {
