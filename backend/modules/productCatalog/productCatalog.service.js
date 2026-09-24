@@ -10,6 +10,7 @@ import {
 import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
+import { ProductCharacteristic } from './productCharacteristic.model.js';
 import {
     assertProductCreationReviewed,
     findProductDuplicateCandidates,
@@ -23,6 +24,8 @@ import {
 import {
     PRODUCT_CATEGORY_STATUS,
     PRODUCT_CATEGORY_STATUS_REGISTRY,
+    PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
@@ -41,6 +44,7 @@ import {
     createProductReferenceEvent,
 } from './productReferenceEvent.service.js';
 import { ProductVariant } from './productVariant.model.js';
+import { ProductVariety } from './productVariety.model.js';
 import { WorkspaceProduct } from './workspaceProduct.model.js';
 import {
     resolveProductProcessingState,
@@ -48,7 +52,65 @@ import {
 
 const asObjectId = (value) => new mongoose.Types.ObjectId(value.toString());
 
-const normalizeVariantInput = (variant) => {
+const createOrResolvePresentationCharacteristic = async ({
+    canonicalProductId,
+    workspaceId,
+    actorId,
+    presentation,
+    session,
+}) => {
+    const normalizedName = normalizeProductText(presentation);
+    if (!normalizedName) return null;
+
+    let characteristic = await ProductCharacteristic.findOne({
+        canonicalProduct: canonicalProductId,
+        kind: PRODUCT_CHARACTERISTIC_KIND.PRESENTATION,
+        normalizedName,
+        identityActive: true,
+        status: PRODUCT_STATUS.ACTIVE,
+    }).session(session);
+
+    if (characteristic) return characteristic;
+
+    const searchKeys = buildSearchKeys(presentation, []);
+
+    try {
+        [characteristic] = await ProductCharacteristic.create([
+            {
+                canonicalProduct: canonicalProductId,
+                kind: PRODUCT_CHARACTERISTIC_KIND.PRESENTATION,
+                name: presentation,
+                normalizedName,
+                aliases: [],
+                searchKeys,
+                searchGrams: buildSearchGrams(searchKeys),
+                status: PRODUCT_STATUS.ACTIVE,
+                contributedFromWorkspace: workspaceId,
+                createdBy: actorId,
+                updatedBy: actorId,
+            },
+        ], { session });
+    } catch (error) {
+        if (error?.code !== 11000) throw error;
+        characteristic = await ProductCharacteristic.findOne({
+            canonicalProduct: canonicalProductId,
+            kind: PRODUCT_CHARACTERISTIC_KIND.PRESENTATION,
+            normalizedName,
+            identityActive: true,
+            status: PRODUCT_STATUS.ACTIVE,
+        }).session(session);
+    }
+
+    return characteristic;
+};
+
+const normalizeVariantInput = async ({
+    canonicalProductId,
+    workspaceId = null,
+    actorId,
+    variant,
+    session,
+}) => {
     const processingState = resolveProductProcessingState({
         foodRange: variant.foodRange,
         processingState: variant.processingState,
@@ -63,9 +125,94 @@ const normalizeVariantInput = (variant) => {
         );
     }
 
+    let variety = null;
+    if (variant.varietyId) {
+        variety = await ProductVariety.findOne({
+            _id: variant.varietyId,
+            canonicalProduct: canonicalProductId,
+            identityActive: true,
+            status: PRODUCT_STATUS.ACTIVE,
+        }).session(session);
+
+        if (!variety) {
+            throw new AppError('Variété Produit indisponible.', 409);
+        }
+    }
+
+    const requestedCharacteristicIds = [
+        ...new Set((variant.characteristicIds ?? []).map(String)),
+    ];
+    const characteristics = requestedCharacteristicIds.length > 0
+        ? await ProductCharacteristic.find({
+            _id: mongoose.trusted({
+                $in: requestedCharacteristicIds.map(asObjectId),
+            }),
+            canonicalProduct: canonicalProductId,
+            identityActive: true,
+            status: PRODUCT_STATUS.ACTIVE,
+        }).session(session)
+        : [];
+
+    if (characteristics.length !== requestedCharacteristicIds.length) {
+        throw new AppError('Une Caractéristique Produit est indisponible.', 409);
+    }
+
+    if (variant.presentation) {
+        const presentation = await createOrResolvePresentationCharacteristic({
+            canonicalProductId,
+            workspaceId,
+            actorId,
+            presentation: variant.presentation,
+            session,
+        });
+        const existingPresentation = characteristics.find(
+            ({ kind }) => kind === PRODUCT_CHARACTERISTIC_KIND.PRESENTATION,
+        );
+
+        if (
+            existingPresentation
+            && existingPresentation._id.toString() !== presentation._id.toString()
+        ) {
+            throw new AppError(
+                'Une déclinaison ne peut contenir qu’une Présentation.',
+                409,
+            );
+        }
+
+        if (
+            !characteristics.some(
+                ({ _id }) => _id.toString() === presentation._id.toString(),
+            )
+        ) {
+            characteristics.push(presentation);
+        }
+    }
+
+    const characteristicByKind = new Map();
+    for (const characteristic of characteristics) {
+        const previous = characteristicByKind.get(characteristic.kind);
+        if (
+            previous
+            && previous._id.toString() !== characteristic._id.toString()
+        ) {
+            throw new AppError(
+                'Une déclinaison ne peut contenir plusieurs Caractéristiques du même type.',
+                409,
+            );
+        }
+        characteristicByKind.set(characteristic.kind, characteristic);
+    }
+
+    const orderedCharacteristics = [...characteristicByKind.values()].sort(
+        (left, right) => (
+            left.kind.localeCompare(right.kind)
+            || left._id.toString().localeCompare(right._id.toString())
+        ),
+    );
+
     const normalized = {
-        presentation: variant.presentation ?? null,
-        normalizedPresentation: normalizeProductText(variant.presentation),
+        variety: variety?._id ?? null,
+        characteristics: orderedCharacteristics.map(({ _id }) => _id),
         processingState: processingState.value,
         normalizedProcessingState: normalizeProductText(processingState.value),
         foodRange: variant.foodRange,
@@ -75,7 +222,12 @@ const normalizeVariantInput = (variant) => {
 
     return {
         ...normalized,
-        normalizedSignature: buildVariantSignature(normalized),
+        normalizedSignature: buildVariantSignature({
+            varietyId: normalized.variety,
+            characteristics: orderedCharacteristics,
+            foodRange: normalized.foodRange,
+            processingState: normalized.processingState,
+        }),
     };
 };
 
@@ -108,7 +260,13 @@ const createProductVariantInSession = async ({
     status = PRODUCT_STATUS.ACTIVE,
     session,
 }) => {
-    const normalized = normalizeVariantInput(variant);
+    const normalized = await normalizeVariantInput({
+        canonicalProductId,
+        workspaceId,
+        actorId,
+        variant,
+        session,
+    });
 
     const existing = await ProductVariant.findOne({
         canonicalProduct: canonicalProductId,
@@ -131,6 +289,7 @@ const createProductVariantInSession = async ({
         },
     ], { session });
 
+    await created.populate(['variety', 'characteristics']);
     return created;
 };
 
@@ -232,6 +391,7 @@ const getProductMetadata = async ({
         productStatuses: Object.values(PRODUCT_STATUS_REGISTRY),
         workspaceProductStatuses: Object.values(WORKSPACE_PRODUCT_STATUS_REGISTRY),
         productCategoryStatuses: Object.values(PRODUCT_CATEGORY_STATUS_REGISTRY),
+        productCharacteristicKinds: Object.values(PRODUCT_CHARACTERISTIC_KIND_REGISTRY),
         referenceUnits: Object.values(PRODUCT_REFERENCE_UNIT_REGISTRY),
         foodRanges: Object.values(PRODUCT_FOOD_RANGE_REGISTRY).map(
             (definition) => ({
@@ -317,11 +477,14 @@ const compareProductVariants = (left, right, productOrder) => {
     );
     if (productDifference !== 0) return productDifference;
 
+    const presentationOf = (variant) => (
+        variant.characteristics?.find(
+            ({ kind }) => kind === PRODUCT_CHARACTERISTIC_KIND.PRESENTATION,
+        )?.name ?? ''
+    );
+
     return (
-        String(left.normalizedPresentation ?? '').localeCompare(
-            String(right.normalizedPresentation ?? ''),
-            'fr',
-        )
+        presentationOf(left).localeCompare(presentationOf(right), 'fr')
         || Number(left.foodRange ?? 0) - Number(right.foodRange ?? 0)
         || String(left.normalizedProcessingState ?? '').localeCompare(
             String(right.normalizedProcessingState ?? ''),
@@ -382,7 +545,10 @@ const listProductSearch = async ({
         identityActive: true,
         status: PRODUCT_STATUS.ACTIVE,
     };
-    const variants = await ProductVariant.find(variantVisibility).lean();
+    const variants = await ProductVariant.find(variantVisibility)
+        .populate('variety')
+        .populate('characteristics')
+        .lean();
     const orderedVariants = variants.sort(
         (left, right) => compareProductVariants(left, right, productOrder),
     );
@@ -484,7 +650,11 @@ const getWorkspaceProductDetail = async ({
                 PRODUCT_STATUS.ARCHIVED,
             ],
         }),
-    }).sort({ createdAt: 1, _id: 1 }).lean();
+    })
+        .populate('variety')
+        .populate('characteristics')
+        .sort({ createdAt: 1, _id: 1 })
+        .lean();
 
     const entries = await WorkspaceProduct.find({
         workspace: workspaceId,

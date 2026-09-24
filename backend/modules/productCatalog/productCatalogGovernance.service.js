@@ -563,22 +563,37 @@ const updateVariant = async ({
         changes,
         'processingState',
     );
-    const normalized = normalizeVariantInput({
-        presentation: Object.prototype.hasOwnProperty.call(changes, 'presentation')
-            ? changes.presentation
-            : variant.presentation,
-        foodRange: hasFoodRangeChange ? changes.foodRange : variant.foodRange,
-        processingState: hasProcessingStateChange
-            ? changes.processingState
-            : hasFoodRangeChange
-                ? null
-                : variant.processingState,
-        referenceUnit: Object.prototype.hasOwnProperty.call(changes, 'referenceUnit')
-            ? changes.referenceUnit
-            : variant.referenceUnit,
-        yieldPercent: Object.prototype.hasOwnProperty.call(changes, 'yieldPercent')
-            ? changes.yieldPercent
-            : variant.yieldPercent,
+    const normalized = await normalizeVariantInput({
+        canonicalProductId: productId,
+        workspaceId: variant.contributedFromWorkspace,
+        actorId,
+        session,
+        variant: {
+            varietyId: Object.prototype.hasOwnProperty.call(changes, 'varietyId')
+                ? changes.varietyId
+                : variant.variety,
+            characteristicIds: Object.prototype.hasOwnProperty.call(
+                changes,
+                'characteristicIds',
+            )
+                ? changes.characteristicIds
+                : (variant.characteristics ?? []).map((value) => value.toString()),
+            presentation: Object.prototype.hasOwnProperty.call(changes, 'presentation')
+                ? changes.presentation
+                : undefined,
+            foodRange: hasFoodRangeChange ? changes.foodRange : variant.foodRange,
+            processingState: hasProcessingStateChange
+                ? changes.processingState
+                : hasFoodRangeChange
+                    ? null
+                    : variant.processingState,
+            referenceUnit: Object.prototype.hasOwnProperty.call(changes, 'referenceUnit')
+                ? changes.referenceUnit
+                : variant.referenceUnit,
+            yieldPercent: Object.prototype.hasOwnProperty.call(changes, 'yieldPercent')
+                ? changes.yieldPercent
+                : variant.yieldPercent,
+        },
     });
 
     Object.assign(variant, normalized);

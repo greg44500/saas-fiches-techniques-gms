@@ -16,21 +16,57 @@ const serializeProduct = (product) => ({
     updatedAt: product.updatedAt,
 });
 
-const serializeVariant = (variant) => ({
-    id: variant._id.toString(),
-    productId: (
-        variant.canonicalProduct?._id
-        ?? variant.canonicalProduct
-    ).toString(),
-    presentation: variant.presentation ?? null,
-    processingState: variant.processingState ?? null,
-    foodRange: variant.foodRange ?? null,
-    referenceUnit: variant.referenceUnit,
-    yieldPercent: variant.yieldPercent ?? null,
-    status: variant.status,
-    createdAt: variant.createdAt,
-    updatedAt: variant.updatedAt,
-});
+const serializeVariety = (variety) => {
+    if (!variety) return null;
+    if (!variety._id) return { id: variety.toString() };
+
+    return {
+        id: variety._id.toString(),
+        name: variety.name,
+        aliases: [...(variety.aliases ?? [])],
+        status: variety.status,
+    };
+};
+
+const serializeCharacteristic = (characteristic) => {
+    if (!characteristic?._id) {
+        return { id: characteristic.toString() };
+    }
+
+    return {
+        id: characteristic._id.toString(),
+        kind: characteristic.kind,
+        name: characteristic.name,
+        aliases: [...(characteristic.aliases ?? [])],
+        status: characteristic.status,
+    };
+};
+
+const serializeVariant = (variant) => {
+    const characteristics = (variant.characteristics ?? [])
+        .map(serializeCharacteristic);
+    const presentation = characteristics.find(
+        ({ kind }) => kind === 'PRESENTATION',
+    )?.name ?? null;
+
+    return {
+        id: variant._id.toString(),
+        productId: (
+            variant.canonicalProduct?._id
+            ?? variant.canonicalProduct
+        ).toString(),
+        variety: serializeVariety(variant.variety),
+        characteristics,
+        presentation,
+        processingState: variant.processingState ?? null,
+        foodRange: variant.foodRange ?? null,
+        referenceUnit: variant.referenceUnit,
+        yieldPercent: variant.yieldPercent ?? null,
+        status: variant.status,
+        createdAt: variant.createdAt,
+        updatedAt: variant.updatedAt,
+    };
+};
 
 const serializeWorkspaceProduct = (entry) => entry
     ? {
@@ -54,8 +90,10 @@ const serializeSearchResult = ({
 
 export {
     serializeCategory,
+    serializeCharacteristic,
     serializeProduct,
     serializeSearchResult,
     serializeVariant,
+    serializeVariety,
     serializeWorkspaceProduct,
 };

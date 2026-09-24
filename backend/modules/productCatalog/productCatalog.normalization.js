@@ -86,15 +86,50 @@ const isNearDuplicateKey = (left, right) => {
     return shortest >= 4 && (a.includes(b) || b.includes(a));
 };
 
-const buildVariantSignature = ({
-    presentation = null,
-    processingState = null,
-    foodRange = null,
-} = {}) => [
-    normalizeProductText(presentation) || '_',
-    foodRange === null || foodRange === undefined ? '_' : String(foodRange),
-    normalizeProductText(processingState) || '_',
-].join('|');
+const buildVariantSignature = (input = {}) => {
+    const usesStructuredIdentity = (
+        Object.prototype.hasOwnProperty.call(input, 'varietyId')
+        || Object.prototype.hasOwnProperty.call(input, 'characteristics')
+    );
+
+    if (!usesStructuredIdentity) {
+        return [
+            normalizeProductText(input.presentation) || '_',
+            input.foodRange === null || input.foodRange === undefined
+                ? '_'
+                : String(input.foodRange),
+            normalizeProductText(input.processingState) || '_',
+        ].join('|');
+    }
+
+    const varietyId = input.varietyId?._id
+        ?? input.varietyId
+        ?? null;
+    const characteristicParts = [...(input.characteristics ?? [])]
+        .map((characteristic) => ({
+            kind: characteristic.kind ?? '_',
+            id: (
+                characteristic.id
+                ?? characteristic._id
+                ?? characteristic.characteristicId
+                ?? characteristic
+            ).toString(),
+        }))
+        .sort((left, right) => (
+            left.kind.localeCompare(right.kind)
+            || left.id.localeCompare(right.id)
+        ))
+        .map(({ kind, id }) => `${kind}:${id}`);
+
+    return [
+        `v:${varietyId ? varietyId.toString() : '_'}`,
+        `c:${characteristicParts.length > 0 ? characteristicParts.join(',') : '_'}`,
+        `r:${input.foodRange === null || input.foodRange === undefined
+            ? '_'
+            : String(input.foodRange)}`,
+        `s:${normalizeProductText(input.processingState) || '_'}`,
+    ].join('|');
+};
 
 export {
     buildSearchGrams,

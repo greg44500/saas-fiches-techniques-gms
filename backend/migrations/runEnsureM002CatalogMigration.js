@@ -15,6 +15,9 @@ import {
 import {
     migrateM002VariantSemantics,
 } from './migrateM002VariantSemantics.migration.js';
+import {
+    migrateM002VariantCharacteristics,
+} from './migrateM002VariantCharacteristics.migration.js';
 
 const run = async () => {
     try {
@@ -22,12 +25,13 @@ const run = async () => {
 
         const lifecycle = await backfillM002LegacyProductLifecycle();
         const variantSemantics = await migrateM002VariantSemantics();
+        const variantCharacteristics = await migrateM002VariantCharacteristics();
         const indexes = await ensureM002CatalogIndexes();
         const permissions = await backfillRegisteredSystemRolePermissions();
 
         console.log(
             'Migration M-002 Catalogue Produits terminée :',
-            { lifecycle, variantSemantics, indexes, permissions },
+            { lifecycle, variantSemantics, variantCharacteristics, indexes, permissions },
         );
     } catch (error) {
         console.error(

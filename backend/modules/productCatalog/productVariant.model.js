@@ -17,11 +17,29 @@ const productVariantSchema = new Schema(
             required: true,
             immutable: true,
         },
-        presentation: { type: String, trim: true, maxlength: 80, default: null },
-        normalizedPresentation: { type: String, trim: true, maxlength: 80, default: '' },
+        variety: {
+            type: Schema.Types.ObjectId,
+            ref: 'ProductVariety',
+            default: null,
+        },
+        characteristics: {
+            type: [{
+                type: Schema.Types.ObjectId,
+                ref: 'ProductCharacteristic',
+            }],
+            default: [],
+            validate: {
+                validator(value) {
+                    if (!Array.isArray(value) || value.length > 5) return false;
+                    return new Set(value.map((entry) => entry.toString())).size
+                        === value.length;
+                },
+                message: 'Une déclinaison contient des caractéristiques invalides ou dupliquées.',
+            },
+        },
         processingState: { type: String, trim: true, maxlength: 80, default: null },
         normalizedProcessingState: { type: String, trim: true, maxlength: 80, default: '' },
-        normalizedSignature: { type: String, required: true, maxlength: 260 },
+        normalizedSignature: { type: String, required: true, maxlength: 700 },
         foodRange: {
             type: Number,
             enum: PRODUCT_FOOD_RANGES,

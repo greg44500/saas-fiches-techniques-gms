@@ -55,8 +55,18 @@ const foodRangeSchema = z.number().int().refine(
     { message: 'Gamme invalide.' },
 );
 
+const characteristicIdsSchema = z
+    .array(objectIdSchema)
+    .max(5)
+    .refine(
+        (ids) => new Set(ids).size === ids.length,
+        { message: 'Les Caractéristiques ne doivent pas contenir de doublons.' },
+    );
+
 const variantBodySchema = z.strictObject({
-    presentation: nullableText(80).optional(),
+    varietyId: objectIdSchema.nullable().optional(),
+    characteristicIds: characteristicIdsSchema.optional().default([]),
+    presentation: nullableText(120).optional(),
     processingState: nullableText(80).optional(),
     foodRange: foodRangeSchema,
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
@@ -181,7 +191,9 @@ const updateProductStatusBodySchema = z.strictObject({
 });
 
 const updateVariantBodySchema = z.strictObject({
-    presentation: nullableText(80).optional(),
+    varietyId: objectIdSchema.nullable().optional(),
+    characteristicIds: characteristicIdsSchema.optional(),
+    presentation: nullableText(120).optional(),
     processingState: nullableText(80).optional(),
     foodRange: foodRangeSchema.optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
