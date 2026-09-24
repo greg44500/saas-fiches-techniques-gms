@@ -48,35 +48,56 @@ const serializeReferenceCandidate = (type, reference) => ({
     status: reference.status,
 });
 
-const serializeReferenceContribution = (contribution) => ({
-    id: contribution._id.toString(),
-    type: contribution.type,
-    productId: contribution.canonicalProduct?._id
-        ? contribution.canonicalProduct._id.toString()
-        : contribution.canonicalProduct?.toString?.() ?? null,
-    characteristicKind: contribution.characteristicKind ?? null,
-    workspaceId: contribution.workspace?._id
+const serializeReferenceContribution = (contribution) => {
+    const workspaceId = contribution.workspace?._id
         ? contribution.workspace._id.toString()
-        : contribution.workspace.toString(),
-    authorId: contribution.author?._id
+        : contribution.workspace.toString();
+    const authorId = contribution.author?._id
         ? contribution.author._id.toString()
-        : contribution.author.toString(),
-    proposedValue: contribution.proposedValue,
-    classification: contribution.classification,
-    reasons: (contribution.reasons ?? []).map(({ code, message }) => ({
-        code,
-        message,
-    })),
-    status: contribution.status,
-    reviewerId: contribution.reviewer?._id
+        : contribution.author.toString();
+    const reviewerId = contribution.reviewer?._id
         ? contribution.reviewer._id.toString()
-        : contribution.reviewer?.toString?.() ?? null,
-    reviewedAt: contribution.reviewedAt ?? null,
-    resolutionEntityType: contribution.resolutionEntityType ?? null,
-    resolutionEntityId: contribution.resolutionEntityId?.toString?.() ?? null,
-    createdAt: contribution.createdAt,
-    updatedAt: contribution.updatedAt,
-});
+        : contribution.reviewer?.toString?.() ?? null;
+
+    return {
+        id: contribution._id.toString(),
+        type: contribution.type,
+        productId: contribution.canonicalProduct?._id
+            ? contribution.canonicalProduct._id.toString()
+            : contribution.canonicalProduct?.toString?.() ?? null,
+        characteristicKind: contribution.characteristicKind ?? null,
+        workspaceId,
+        workspace: contribution.workspace?._id
+            ? {
+                id: workspaceId,
+                name: contribution.workspace.name ?? null,
+            }
+            : null,
+        authorId,
+        author: contribution.author?._id
+            ? {
+                id: authorId,
+                firstName: contribution.author.firstName ?? null,
+                lastName: contribution.author.lastName ?? null,
+                email: contribution.author.email ?? null,
+            }
+            : null,
+        proposedValue: contribution.proposedValue,
+        classification: contribution.classification,
+        reasons: (contribution.reasons ?? []).map(({ code, message }) => ({
+            code,
+            message,
+        })),
+        status: contribution.status,
+        reviewerId,
+        reviewedAt: contribution.reviewedAt ?? null,
+        resolutionEntityType: contribution.resolutionEntityType ?? null,
+        resolutionEntityId:
+            contribution.resolutionEntityId?.toString?.() ?? null,
+        createdAt: contribution.createdAt,
+        updatedAt: contribution.updatedAt,
+    };
+};
 
 const findDimensionCandidates = async ({
     type,
@@ -460,6 +481,9 @@ const listReferenceContributions = async ({
     const filter = status ? { status } : {};
     const [items, total] = await Promise.all([
         ReferenceContribution.find(filter)
+            .populate('workspace', 'name')
+            .populate('author', 'firstName lastName email')
+            .populate('reviewer', 'firstName lastName email')
             .sort({ createdAt: 1, _id: 1 })
             .skip((page - 1) * limit)
             .limit(limit)
