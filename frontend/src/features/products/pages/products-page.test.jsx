@@ -121,6 +121,14 @@ const result = {
   },
   variant: {
     id: 'variant-1',
+    variety: null,
+    characteristics: [{
+      id: 'presentation-whole',
+      kind: 'PRESENTATION',
+      name: 'Entière',
+      aliases: [],
+      status: 'ACTIVE',
+    }],
     presentation: 'Entière',
     processingState: 'Produit frais',
     foodRange: 1,
@@ -185,7 +193,7 @@ describe('ProductsPage', () => {
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByText('Légumes')).toBeInTheDocument();
     expect(screen.getByText('Entière')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Présentation' }))
+    expect(screen.getByRole('columnheader', { name: 'Déclinaison' }))
       .toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Gamme' }))
       .toBeInTheDocument();

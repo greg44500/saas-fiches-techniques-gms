@@ -55,9 +55,13 @@ describe('product presentation', () => {
 
   it('présente les déclinaisons et rendements sans donnée M-003', () => {
     expect(getVariantLabel({
-      presentation: 'Râpée',
+      variety: { id: 'gala', name: 'Gala' },
+      characteristics: [
+        { id: 'rapee', kind: 'PRESENTATION', name: 'Râpée' },
+        { id: 'mini', kind: 'SIZE_FORMAT', name: 'Mini' },
+      ],
       processingState: 'Produit frais',
-    })).toBe('Râpée · Produit frais');
+    })).toBe('Gala · Râpée · Mini · Produit frais');
     expect(getFoodRangeLabel(metadata, 1)).toBe('Gamme 1');
     expect(getFoodRangeName(metadata, 1)).toBe('Frais');
     expect(formatYield(92.5)).toBe('92.5 %');
@@ -66,7 +70,7 @@ describe('product presentation', () => {
   it('présente les classifications d’import M-002', () => {
     expect(getImportClassificationPresentation('REVIEW_REQUIRED')).toEqual(
       expect.objectContaining({
-        label: 'Décision requise',
+        label: 'Revue requise',
         tone: 'warning',
       }),
     );
@@ -87,6 +91,8 @@ describe('product presentation', () => {
   it('traduit les créations et maintient la lecture des événements legacy', () => {
     expect(getProductEventLabel('PRODUCT_CREATED')).toBe('Produit créé');
     expect(getProductEventLabel('VARIANT_CREATED')).toBe('Déclinaison créée');
+    expect(getProductEventLabel('VARIETY_CREATED')).toBe('Variété créée');
+    expect(getProductEventLabel('CONTRIBUTION_SUBMITTED')).toBe('Contribution soumise');
     expect(getProductEventLabel('PRODUCT_APPROVED')).toBe('Produit activé (historique)');
   });
 });
