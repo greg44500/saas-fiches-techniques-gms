@@ -190,7 +190,7 @@ function ProductReferencePage({ canManage }) {
         <div>
           <p className="font-medium">{product.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {product.aliases?.length ? product.aliases.join(', ') : 'Aucun alias'}
+            {product.aliases?.length ? product.aliases.join(', ') : 'Aucun synonyme métier'}
           </p>
         </div>
       ),
@@ -422,79 +422,7 @@ function ProductReferencePage({ canManage }) {
                 </Button>
               </>
             )}
-            {section === 'contributions' && (
-        <section className="rounded-xl border border-border bg-card">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
-            <div>
-              <h2 className="font-semibold">Contributions au référentiel</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Examinez les propositions qui ne peuvent pas être publiées automatiquement.
-              </p>
-            </div>
-            <Select
-              items={metadata?.productContributionStatuses ?? []}
-              onValueChange={(value) => {
-                setContributionStatus(value);
-                setPage(1);
-              }}
-              value={contributionStatus}
-            >
-              <SelectTrigger aria-label="Filtrer les contributions par statut">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(metadata?.productContributionStatuses ?? []).map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {initialLoading ? (
-            <p className="p-5 text-sm text-muted-foreground">
-              Chargement des contributions…
-            </p>
-          ) : hasError ? (
-            <ErrorState
-              description="Les contributions n’ont pas pu être chargées."
-              onRetry={retry}
-              title="Contributions indisponibles"
-            />
-          ) : (
-            <>
-              <DataTable
-                caption="Contributions au référentiel Produits"
-                columns={contributionColumns}
-                data={contributionsQuery.data?.contributions ?? []}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucune contribution ne correspond à ce statut."
-                    title="Aucune contribution"
-                  />
-                )}
-                getRowKey={(contribution) => contribution.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
-              <div className="px-5 pb-5">
-                <DataPagination
-                  ariaLabel="Pagination des contributions"
-                  disabled={contributionsQuery.isFetching}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                  page={page}
-                  pageSize={pageSize}
-                  pagination={contributionsQuery.data?.pagination}
-                />
-              </div>
-            </>
-          )}
-        </section>
-      )}
-
-      {section === 'categories' && (
+            {section === 'categories' && (
               <Button
                 onClick={() => setCategoryDialog({ open: true, category: null })}
                 type="button"
@@ -523,7 +451,7 @@ function ProductReferencePage({ canManage }) {
                 aria-label="Rechercher un Produit global"
                 maxLength={120}
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Nom ou alias"
+                placeholder="Nom ou synonymes métier"
                 value={searchInput}
               />
               <Button type="submit" variant="outline">Rechercher</Button>
@@ -603,6 +531,78 @@ function ProductReferencePage({ canManage }) {
                   page={page}
                   pageSize={pageSize}
                   pagination={productsQuery.data?.pagination}
+                />
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {section === 'contributions' && (
+        <section className="rounded-xl border border-border bg-card">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
+            <div>
+              <h2 className="font-semibold">Contributions au référentiel</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Examinez les propositions qui ne peuvent pas être publiées automatiquement.
+              </p>
+            </div>
+            <Select
+              items={metadata?.productContributionStatuses ?? []}
+              onValueChange={(value) => {
+                setContributionStatus(value);
+                setPage(1);
+              }}
+              value={contributionStatus}
+            >
+              <SelectTrigger aria-label="Filtrer les contributions par statut">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(metadata?.productContributionStatuses ?? []).map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {initialLoading ? (
+            <p className="p-5 text-sm text-muted-foreground">
+              Chargement des contributions…
+            </p>
+          ) : hasError ? (
+            <ErrorState
+              description="Les contributions n’ont pas pu être chargées."
+              onRetry={retry}
+              title="Contributions indisponibles"
+            />
+          ) : (
+            <>
+              <DataTable
+                caption="Contributions au référentiel Produits"
+                columns={contributionColumns}
+                data={contributionsQuery.data?.contributions ?? []}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Aucune contribution ne correspond à ce statut."
+                    title="Aucune contribution"
+                  />
+                )}
+                getRowKey={(contribution) => contribution.id}
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+              <div className="px-5 pb-5">
+                <DataPagination
+                  ariaLabel="Pagination des contributions"
+                  disabled={contributionsQuery.isFetching}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                  page={page}
+                  pageSize={pageSize}
+                  pagination={contributionsQuery.data?.pagination}
                 />
               </div>
             </>
