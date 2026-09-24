@@ -616,6 +616,7 @@ const reviewReferenceContribution = async ({
                 variant: current.payload?.variant,
                 dimensionProposals:
                     current.payload?.dimensionProposals ?? null,
+                workspaceId: current.workspace,
                 session,
             });
 

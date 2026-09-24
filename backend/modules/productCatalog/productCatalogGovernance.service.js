@@ -272,12 +272,13 @@ const createGlobalProductInSession = async ({
     reviewedCandidateIds = [],
     variant,
     dimensionProposals = null,
+    workspaceId = null,
     session,
 }) => {
     await assertProductCreationReviewed({
         name,
         aliases,
-        workspaceId: null,
+        workspaceId,
         reviewedCandidateIds,
         session,
     });
@@ -304,7 +305,7 @@ const createGlobalProductInSession = async ({
                 searchGrams: buildSearchGrams(searchKeys),
                 category: category._id,
                 status: PRODUCT_STATUS.ACTIVE,
-                contributedFromWorkspace: null,
+                contributedFromWorkspace: workspaceId,
                 createdBy: actorId,
                 updatedBy: actorId,
             },
@@ -327,7 +328,7 @@ const createGlobalProductInSession = async ({
             productId: product._id,
             name: dimensionProposals.variety,
             aliases: [],
-            workspaceId: null,
+            workspaceId,
             session,
         });
         varietyId = variety._id;
@@ -340,7 +341,7 @@ const createGlobalProductInSession = async ({
             kind: proposal.kind,
             name: proposal.value,
             aliases: [],
-            workspaceId: null,
+            workspaceId,
             session,
         });
         characteristicIds.push(characteristic._id);
@@ -348,7 +349,7 @@ const createGlobalProductInSession = async ({
 
     const createdVariant = await createProductVariantInSession({
         canonicalProductId: product._id,
-        workspaceId: null,
+        workspaceId,
         actorId,
         variant: {
             ...variant,
@@ -361,6 +362,7 @@ const createGlobalProductInSession = async ({
 
     await createProductReferenceEvent({
         actorId,
+        workspaceId,
         action: PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_CREATED,
         entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
         entityId: product._id,
@@ -373,6 +375,7 @@ const createGlobalProductInSession = async ({
 
     await createProductReferenceEvent({
         actorId,
+        workspaceId,
         action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
         entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
         entityId: createdVariant._id,
