@@ -10,6 +10,37 @@ Aucun changement supplémentaire documenté.
 
 ---
 
+## 1.2.1 — 2026-09-24
+
+Patch rétrocompatible isolant les suites Playwright E2E des quotas anti-abus destinés au runtime réel, sans modifier les protections de production.
+
+### Fixed
+
+- ajout du flag explicite `E2E_BYPASS_RATE_LIMITS`, désactivé par défaut ;
+- activation autorisée uniquement avec `NODE_ENV=test` et une base MongoDB dont le nom se termine par `_e2e_test` ;
+- l'environnement Playwright Core active explicitement ce flag ;
+- les rate limiters restent montés et utilisent un predicate `skip` uniquement lorsque le contexte E2E sécurisé est actif ;
+- le mécanisme couvre le limiter API global, register, login IP/email, forgot-password IP/email, reset-password et les acceptations d'invitations Workspace, Platform et commerciales ;
+- les factories de rate limiting restent testables avec des seuils faibles et les tests de sécurité historiques continuent à exercer les vrais limiteurs.
+
+### Security
+
+- aucun plafond de production n'est relevé ;
+- aucun bypass implicite fondé sur le seul `NODE_ENV=test` ;
+- une activation du bypass en `development`, en `production` ou sur une base non `*_e2e_test` est refusée au démarrage ;
+- les suites Vitest ne bénéficient pas automatiquement du bypass et conservent la couverture anti-abus.
+
+### Impact
+
+- nouvelle variable d'environnement `E2E_BYPASS_RATE_LIMITS`, `false` par défaut ;
+- aucune migration MongoDB ;
+- aucune dépendance ajoutée, supprimée ou mise à niveau ;
+- aucun changement d'endpoint, payload ou contrat frontend ;
+- aucun changement métier spécifique à un SaaS dérivé ;
+- évolution rétrocompatible classée PATCH.
+
+---
+
 ## 1.2.0 — 2026-09-22
 
 Release mineure rétrocompatible ajoutant une troisième frontière d’autorisation pour les ressources métier globales des SaaS dérivés.

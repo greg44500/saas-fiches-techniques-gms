@@ -6,6 +6,7 @@ import {
 } from 'express-rate-limit';
 
 import { canonicalizeEmail } from '../utils/canonicalizeEmail.js';
+import { runtimeRateLimitSkip } from './rateLimitRuntime.config.js';
 
 
 /*
@@ -100,15 +101,18 @@ const RESET_PASSWORD_RATE_LIMIT_MESSAGE = {
  * @param {object} options
  * @param {number} [options.windowMs]
  * @param {number} [options.limit]
+ * @param {(req: import('express').Request) => boolean} [options.skip]
  * @returns {import('express').RequestHandler}
  */
 const createApiRateLimiter = ({
     windowMs = API_RATE_LIMIT_WINDOW_MS,
     limit = API_RATE_LIMIT_MAX_REQUESTS,
+    skip = runtimeRateLimitSkip,
 } = {}) =>
     rateLimit({
         windowMs,
         limit,
+        skip,
 
         standardHeaders: 'draft-8',
         legacyHeaders: false,
@@ -161,15 +165,18 @@ const buildEmailRateLimitKey = (req) => {
  * @param {object} options
  * @param {number} [options.windowMs]
  * @param {number} [options.limit]
+ * @param {(req: import('express').Request) => boolean} [options.skip]
  * @returns {import('express').RequestHandler}
  */
 const createRegisterIpRateLimiter = ({
     windowMs = REGISTER_RATE_LIMIT_WINDOW_MS,
     limit = REGISTER_IP_MAX_REQUESTS,
+    skip = runtimeRateLimitSkip,
 } = {}) =>
     rateLimit({
         windowMs,
         limit,
+        skip,
 
         standardHeaders: 'draft-8',
         legacyHeaders: false,
@@ -191,15 +198,18 @@ const createRegisterIpRateLimiter = ({
  * @param {object} options
  * @param {number} [options.windowMs]
  * @param {number} [options.limit]
+ * @param {(req: import('express').Request) => boolean} [options.skip]
  * @returns {import('express').RequestHandler}
  */
 const createLoginIpRateLimiter = ({
     windowMs = LOGIN_RATE_LIMIT_WINDOW_MS,
     limit = LOGIN_IP_MAX_FAILED_REQUESTS,
+    skip = runtimeRateLimitSkip,
 } = {}) =>
     rateLimit({
         windowMs,
         limit,
+        skip,
 
         standardHeaders: 'draft-8',
         legacyHeaders: false,
@@ -223,15 +233,18 @@ const createLoginIpRateLimiter = ({
  * @param {object} options
  * @param {number} [options.windowMs]
  * @param {number} [options.limit]
+ * @param {(req: import('express').Request) => boolean} [options.skip]
  * @returns {import('express').RequestHandler}
  */
 const createLoginEmailRateLimiter = ({
     windowMs = LOGIN_RATE_LIMIT_WINDOW_MS,
     limit = LOGIN_EMAIL_MAX_FAILED_REQUESTS,
+    skip = runtimeRateLimitSkip,
 } = {}) =>
     rateLimit({
         windowMs,
         limit,
+        skip,
 
         standardHeaders: 'draft-8',
         legacyHeaders: false,
@@ -260,15 +273,18 @@ const createLoginEmailRateLimiter = ({
  * @param {object} options
  * @param {number} [options.windowMs]
  * @param {number} [options.limit]
+ * @param {(req: import('express').Request) => boolean} [options.skip]
  * @returns {import('express').RequestHandler}
  */
 const createForgotPasswordIpRateLimiter = ({
     windowMs = FORGOT_PASSWORD_RATE_LIMIT_WINDOW_MS,
     limit = FORGOT_PASSWORD_IP_MAX_REQUESTS,
+    skip = runtimeRateLimitSkip,
 } = {}) =>
     rateLimit({
         windowMs,
         limit,
+        skip,
 
         standardHeaders: 'draft-8',
         legacyHeaders: false,
@@ -295,15 +311,18 @@ const createForgotPasswordIpRateLimiter = ({
  * @param {object} options
  * @param {number} [options.windowMs]
  * @param {number} [options.limit]
+ * @param {(req: import('express').Request) => boolean} [options.skip]
  * @returns {import('express').RequestHandler}
  */
 const createForgotPasswordEmailRateLimiter = ({
     windowMs = FORGOT_PASSWORD_RATE_LIMIT_WINDOW_MS,
     limit = FORGOT_PASSWORD_EMAIL_MAX_REQUESTS,
+    skip = runtimeRateLimitSkip,
 } = {}) =>
     rateLimit({
         windowMs,
         limit,
+        skip,
 
         standardHeaders: 'draft-8',
         legacyHeaders: false,
@@ -322,15 +341,18 @@ const createForgotPasswordEmailRateLimiter = ({
  * @param {object} options
  * @param {number} [options.windowMs]
  * @param {number} [options.limit]
+ * @param {(req: import('express').Request) => boolean} [options.skip]
  * @returns {import('express').RequestHandler}
  */
 const createResetPasswordIpRateLimiter = ({
     windowMs = RESET_PASSWORD_RATE_LIMIT_WINDOW_MS,
     limit = RESET_PASSWORD_IP_MAX_REQUESTS,
+    skip = runtimeRateLimitSkip,
 } = {}) =>
     rateLimit({
         windowMs,
         limit,
+        skip,
 
         standardHeaders: 'draft-8',
         legacyHeaders: false,

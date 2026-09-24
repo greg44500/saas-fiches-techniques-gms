@@ -41,6 +41,95 @@ const createValidEnvironment = (overrides = {}) => ({
 });
 
 describe('validateEnvironment', () => {
+    it('désactive le bypass E2E lorsque le flag est absent', () => {
+        const result = validateEnvironment(
+            createValidEnvironment(),
+        );
+
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+
+        expect(result.data.E2E_BYPASS_RATE_LIMITS).toBe(false);
+    });
+
+    it('laisse le bypass E2E désactivé lorsque le flag vaut false', () => {
+        const result = validateEnvironment(
+            createValidEnvironment({
+                E2E_BYPASS_RATE_LIMITS: 'false',
+            }),
+        );
+
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+
+        expect(result.data.E2E_BYPASS_RATE_LIMITS).toBe(false);
+    });
+
+    it.each([
+        ['production', 'https://app.example.com'],
+        ['development', 'http://localhost:5173'],
+    ])(
+        'refuse le bypass E2E lorsque NODE_ENV=%s',
+        (nodeEnv, clientUrl) => {
+            const result = validateEnvironment(
+                createValidEnvironment({
+                    NODE_ENV: nodeEnv,
+                    CLIENT_URL: clientUrl,
+                    MONGODB_URI:
+                        'mongodb://127.0.0.1:27017/saas_core_e2e_test?replicaSet=rs0',
+                    E2E_BYPASS_RATE_LIMITS: 'true',
+                }),
+            );
+
+            expect(result.success).toBe(false);
+            if (result.success) return;
+
+            expect(
+                result.error.issues.some(
+                    (issue) => issue.path[0]
+                        === 'E2E_BYPASS_RATE_LIMITS',
+                ),
+            ).toBe(true);
+        },
+    );
+
+    it('refuse le bypass E2E sur une base test non dédiée E2E', () => {
+        const result = validateEnvironment(
+            createValidEnvironment({
+                NODE_ENV: 'test',
+                MONGODB_URI:
+                    'mongodb://127.0.0.1:27017/saas_core_test?replicaSet=rs0',
+                E2E_BYPASS_RATE_LIMITS: 'true',
+            }),
+        );
+
+        expect(result.success).toBe(false);
+        if (result.success) return;
+
+        expect(
+            result.error.issues.some(
+                (issue) => issue.path[0]
+                    === 'E2E_BYPASS_RATE_LIMITS',
+            ),
+        ).toBe(true);
+    });
+
+    it('autorise le bypass E2E sur une base *_e2e_test', () => {
+        const result = validateEnvironment(
+            createValidEnvironment({
+                NODE_ENV: 'test',
+                MONGODB_URI:
+                    'mongodb://127.0.0.1:27017/saas_core_e2e_test?replicaSet=rs0',
+                E2E_BYPASS_RATE_LIMITS: 'true',
+            }),
+        );
+
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+
+        expect(result.data.E2E_BYPASS_RATE_LIMITS).toBe(true);
+    });
+
     it('accepte une configuration de production sans placeholders', () => {
         const result = validateEnvironment(
             createValidEnvironment({
