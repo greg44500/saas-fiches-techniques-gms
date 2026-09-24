@@ -68,6 +68,8 @@ describe('M-002 food range / usage type migration', () => {
             {
                 $set: {
                     usageType: null,
+                    processingState: 'Produit frais',
+                    normalizedProcessingState: 'produit frais',
                     normalizedSignature:
                         'v:_|c:_|r:1|s:produit frais',
                 },
