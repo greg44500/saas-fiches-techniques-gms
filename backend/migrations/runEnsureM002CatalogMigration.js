@@ -24,6 +24,9 @@ import {
 import {
     migrateM002ProductReferenceContract,
 } from './migrateM002ProductReferenceContract.migration.js';
+import {
+    reconcileM002LegacyReferenceDuplicates,
+} from './reconcileM002LegacyReferenceDuplicates.migration.js';
 
 const run = async () => {
     try {
@@ -33,6 +36,8 @@ const run = async () => {
         const variantSemantics = await migrateM002VariantSemantics();
         const variantCharacteristics = await migrateM002VariantCharacteristics();
         const foodRangeUsageType = await migrateM002FoodRangeUsageType();
+        const legacyReferenceDuplicates =
+            await reconcileM002LegacyReferenceDuplicates();
         const productReferenceContract = await migrateM002ProductReferenceContract();
         const indexes = await ensureM002CatalogIndexes();
         const permissions = await backfillRegisteredSystemRolePermissions();
@@ -44,6 +49,7 @@ const run = async () => {
                 variantSemantics,
                 variantCharacteristics,
                 foodRangeUsageType,
+                legacyReferenceDuplicates,
                 productReferenceContract,
                 indexes,
                 permissions,
