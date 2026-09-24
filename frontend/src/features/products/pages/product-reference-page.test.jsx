@@ -66,6 +66,7 @@ const metadata = {
     { value: 'CANONICAL_PRODUCT', label: 'Produit' },
     { value: 'CHARACTERISTIC', label: 'Caractéristique' },
   ],
+  conservationTypes: [{ value: 'FRAIS', label: 'Frais' }],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
   foodRanges: [{
     value: 1,
@@ -74,10 +75,6 @@ const metadata = {
     processingStates: ['Produit frais'],
     defaultProcessingState: 'Produit frais',
   }],
-  usageTypes: [
-    { value: 'PAI', label: 'PAI' },
-    { value: 'PAE', label: 'PAE' },
-  ],
   productContributionStatuses: [
     { value: 'PENDING_REVIEW', label: 'À examiner' },
     { value: 'APPROVED', label: 'Approuvée' },
@@ -94,6 +91,8 @@ const product = {
   updatedAt: '2026-09-23T08:00:00.000Z',
   variants: [{
     id: 'variant-1',
+    name: 'Carotte entière',
+    conservationType: 'FRAIS',
     variety: null,
     characteristics: [{
       id: 'presentation-whole',
@@ -102,9 +101,8 @@ const product = {
       aliases: [],
       status: 'ACTIVE',
     }],
-    processingState: 'Produit frais',
+    processingState: null,
     foodRange: 1,
-    usageType: null,
     referenceUnit: 'KG',
     yieldPercent: null,
     status: 'ACTIVE',
@@ -163,8 +161,8 @@ describe('ProductReferencePage', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
-    expect(screen.getByText('Entière · Produit frais')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Déclinaisons' }))
+    expect(screen.getByText('Frais · Gamme 1 · Frais')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Références' }))
       .toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: 'À valider' }))
       .not.toBeInTheDocument();
@@ -177,7 +175,7 @@ describe('ProductReferencePage', () => {
     );
   });
 
-  it('garde visible un Produit global sans déclinaison artificielle', () => {
+  it('garde visible un Produit global sans référence exploitable', () => {
     mocks.productsQuery.mockReturnValue({
       data: {
         products: [{
@@ -196,7 +194,7 @@ describe('ProductReferencePage', () => {
     renderPage();
 
     expect(screen.getByText('Bœuf')).toBeInTheDocument();
-    expect(screen.getByText('Aucune déclinaison exploitable'))
+    expect(screen.getByText('Aucune référence exploitable'))
       .toBeInTheDocument();
     expect(screen.getByPlaceholderText('Rechercher un produit…'))
       .toBeInTheDocument();
