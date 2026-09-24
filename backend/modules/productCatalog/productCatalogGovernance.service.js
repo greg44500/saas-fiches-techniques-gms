@@ -7,7 +7,6 @@ import {
     assertProductCreationReviewed,
 } from './productCatalogDedup.service.js';
 import {
-    buildSearchGrams,
     buildSearchKeys,
     normalizeProductText,
 } from './productCatalog.normalization.js';
@@ -26,6 +25,11 @@ import {
     createProductReferenceEvent,
     listProductReferenceEvents,
 } from './productReferenceEvent.service.js';
+import {
+    canonicalProductMatchesSearch,
+    compareProductVariants,
+    productVariantMatchesSearch,
+} from './productCatalogSearch.js';
 import { ProductVariant } from './productVariant.model.js';
 import {
     createProductCharacteristicInSession,
@@ -183,26 +187,75 @@ const listGlobalProducts = async ({
     };
     if (categoryId) filter.category = categoryId;
 
-    if (q) {
-        const normalized = normalizeProductText(q);
-        const grams = buildSearchGrams([normalized]);
-        if (grams.length > 0) {
-        filter.searchGrams = mongoose.trusted({ $in: grams });
+    const products = await CanonicalProduct.find(filter)
+        .populate('category')
+        .sort({ normalizedName: 1, _id: 1 })
+        .lean();
+    const productIds = products.map(({ _id }) => _id);
+    const variants = productIds.length > 0
+        ? await ProductVariant.find({
+            canonicalProduct: mongoose.trusted({ $in: productIds }),
+            identityActive: true,
+            status: mongoose.trusted({
+                $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+            }),
+        })
+            .populate('variety')
+            .populate('characteristics')
+            .lean()
+        : [];
+
+    const variantsByProductId = new Map();
+    for (const variant of variants) {
+        const productId = variant.canonicalProduct.toString();
+        const productVariants = variantsByProductId.get(productId) ?? [];
+        productVariants.push(variant);
+        variantsByProductId.set(productId, productVariants);
     }
+    for (const productVariants of variantsByProductId.values()) {
+        productVariants.sort(compareProductVariants);
     }
 
-    const [products, total] = await Promise.all([
-        CanonicalProduct.find(filter)
-            .populate('category')
-            .sort({ normalizedName: 1, _id: 1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean(),
-        CanonicalProduct.countDocuments(filter),
-    ]);
+    const groups = products
+        .map((product) => {
+            const directProductMatch = canonicalProductMatchesSearch(
+                q,
+                product,
+            );
+            const productVariants = variantsByProductId.get(
+                product._id.toString(),
+            ) ?? [];
+            const visibleVariants = (
+                !q || directProductMatch
+                    ? productVariants
+                    : productVariants.filter((variant) => (
+                        productVariantMatchesSearch({
+                            query: q,
+                            product,
+                            variant,
+                        })
+                    ))
+            );
+
+            if (q && !directProductMatch && visibleVariants.length === 0) {
+                return null;
+            }
+
+            return {
+                ...serializeProduct(product),
+                variants: visibleVariants.map(serializeVariant),
+            };
+        })
+        .filter(Boolean);
+
+    const total = groups.length;
+    const pagedProducts = groups.slice(
+        (page - 1) * limit,
+        page * limit,
+    );
 
     return {
-        products: products.map(serializeProduct),
+        products: pagedProducts,
         pagination: {
             page,
             limit,

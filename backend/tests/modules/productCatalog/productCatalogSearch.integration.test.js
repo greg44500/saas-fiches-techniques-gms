@@ -11,6 +11,7 @@ import {
     updateVariant,
 } from '../../../modules/productCatalog/productCatalogGovernance.service.js';
 import {
+    createWorkspaceVariant,
     listProductSearch,
 } from '../../../modules/productCatalog/productCatalog.service.js';
 import {
@@ -54,6 +55,7 @@ describe('M-002 recherche structurée Produit', () => {
         expect(typo.results.some(
             ({ product }) => product.name === 'Carotte',
         )).toBe(true);
+        expect(plural.results[0].variants).toHaveLength(1);
     });
 
     it('décompose carotte botte et mini carotte via les Caractéristiques', async () => {
@@ -90,7 +92,7 @@ describe('M-002 recherche structurée Produit', () => {
         expect(botteResult.results).toHaveLength(1);
         expect(miniResult.results).toHaveLength(1);
         expect(
-            botteResult.results[0].variant.characteristics.map(
+            botteResult.results[0].variants[0].variant.characteristics.map(
                 ({ kind }) => kind,
             ),
         ).toEqual(expect.arrayContaining([
@@ -133,5 +135,80 @@ describe('M-002 recherche structurée Produit', () => {
         expect(frozenResult.results.some(
             ({ product }) => product.id === carotte.product._id.toString(),
         )).toBe(true);
+    });
+
+    it('retrouve un Produit à partir d une pièce / découpe seule', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Bœuf recherche',
+        });
+        const paleron = await createProductCharacteristic({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            kind: 'CUT',
+            name: 'Paleron',
+        });
+
+        await updateVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variantId: reference.variant._id,
+            changes: { characteristicIds: [paleron.id] },
+        });
+
+        const result = await referenceSearch('paleron');
+
+        expect(result.results).toHaveLength(1);
+        expect(result.results[0].product.name).toBe('Bœuf recherche');
+        expect(
+            result.results[0].variants[0].variant.characteristics,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'CUT',
+                name: 'Paleron',
+            }),
+        ]));
+    });
+
+    it('pagine le référentiel principal par Produit et non par déclinaison', async () => {
+        const aubergine = await createActiveProductReference({
+            name: 'Aubergine pagination',
+        });
+        const sliced = await createProductCharacteristic({
+            actorId: ownerContext.owner._id,
+            productId: aubergine.product._id,
+            kind: 'PRESENTATION',
+            name: 'Tranchée',
+        });
+
+        await createWorkspaceVariant({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            productId: aubergine.product._id,
+            variant: {
+                characteristicIds: [sliced.id],
+                foodRange: 1,
+                referenceUnit: 'KG',
+            },
+        });
+        await createActiveProductReference({
+            name: 'Betterave pagination',
+        });
+
+        const firstPage = await listProductSearch({
+            workspaceId: ownerContext.workspace._id,
+            scope: 'REFERENCE',
+            page: 1,
+            limit: 1,
+        });
+
+        expect(firstPage.pagination).toEqual({
+            page: 1,
+            limit: 1,
+            total: 2,
+            totalPages: 2,
+        });
+        expect(firstPage.results).toHaveLength(1);
+        expect(firstPage.results[0].product.name).toBe('Aubergine pagination');
+        expect(firstPage.results[0].variants).toHaveLength(2);
     });
 });

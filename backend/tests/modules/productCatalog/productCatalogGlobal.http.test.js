@@ -196,6 +196,77 @@ describe('M-002 global product reference HTTP contract', () => {
         expect(created.status).toBe(201);
         expect(created.body.data.product.name).toBe('Bœuf racine');
         expect(created.body.data.variant).toBeNull();
+
+        const listed = await request(app)
+            .get('/api/product-reference')
+            .query({ q: 'Bœuf racine' })
+            .set(bearer(governorToken));
+
+        expect(listed.status).toBe(200);
+        expect(listed.body.data.products).toEqual([
+            expect.objectContaining({
+                name: 'Bœuf racine',
+                variants: [],
+            }),
+        ]);
+    });
+
+    it('recherche le référentiel global par une dimension CUT seule', async () => {
+        const category = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Viandes recherche' });
+
+        const product = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({
+                name: 'Bœuf dimension',
+                categoryId: category.body.data.category.id,
+            });
+
+        const cut = await request(app)
+            .post(
+                '/api/product-reference/'
+                + product.body.data.product.id
+                + '/characteristics',
+            )
+            .set(bearer(governorToken))
+            .send({
+                kind: 'CUT',
+                name: 'Paleron',
+            });
+
+        await request(app)
+            .post(
+                '/api/product-reference/'
+                + product.body.data.product.id
+                + '/variants',
+            )
+            .set(bearer(governorToken))
+            .send({
+                characteristicIds: [cut.body.data.characteristic.id],
+                foodRange: 1,
+                referenceUnit: 'KG',
+            })
+            .expect(201);
+
+        const listed = await request(app)
+            .get('/api/product-reference')
+            .query({ q: 'paleron' })
+            .set(bearer(governorToken));
+
+        expect(listed.status).toBe(200);
+        expect(listed.body.data.products).toHaveLength(1);
+        expect(listed.body.data.products[0].name).toBe('Bœuf dimension');
+        expect(
+            listed.body.data.products[0].variants[0].characteristics,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'CUT',
+                name: 'Paleron',
+            }),
+        ]));
     });
 
     it('inspecte et prévisualise un import global via le pipeline sécurisé', async () => {

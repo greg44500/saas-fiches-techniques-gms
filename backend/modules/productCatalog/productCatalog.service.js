@@ -15,12 +15,9 @@ import {
     findProductDuplicateCandidates,
 } from './productCatalogDedup.service.js';
 import {
-    buildSearchGrams,
     buildSearchKeys,
     buildVariantSignature,
-    matchesProductSearchValues,
     normalizeProductText,
-    productSearchValueContainedInQuery,
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CATEGORY_STATUS,
@@ -30,7 +27,6 @@ import {
     PRODUCT_CONTRIBUTION_CLASSIFICATION_REGISTRY,
     PRODUCT_CONTRIBUTION_STATUS_REGISTRY,
     PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
-    PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
@@ -43,8 +39,8 @@ import {
 } from './productCatalog.registry.js';
 import {
     serializeProduct,
-    serializeSearchResult,
     serializeVariant,
+    serializeWorkspaceProduct,
 } from './productCatalog.serializer.js';
 import {
     createProductReferenceEvent,
@@ -52,6 +48,11 @@ import {
 import { ProductVariant } from './productVariant.model.js';
 import { ProductVariety } from './productVariety.model.js';
 import { WorkspaceProduct } from './workspaceProduct.model.js';
+import {
+    canonicalProductMatchesSearch,
+    compareProductVariants,
+    productVariantMatchesSearch,
+} from './productCatalogSearch.js';
 import {
     resolveProductProcessingState,
 } from './productVariantSemantics.js';
@@ -438,14 +439,11 @@ const getWorkspaceProductSummary = async ({ workspaceId }) => {
 };
 
 const buildProductSearchFilter = ({
-    workspaceId,
     categoryId,
-    q,
     includeArchived = false,
 }) => {
-    void workspaceId;
-
-    const visibility = {
+    const filter = {
+        identityActive: true,
         status: mongoose.trusted({
             $in: [
                 PRODUCT_STATUS.ACTIVE,
@@ -454,49 +452,28 @@ const buildProductSearchFilter = ({
         }),
     };
 
-    const filter = {
-        identityActive: true,
-        ...visibility,
-    };
-
     if (categoryId) {
         filter.category = asObjectId(categoryId);
-    }
-
-    if (q) {
-        const normalized = normalizeProductText(q);
-        const grams = buildSearchGrams([normalized]);
-
-        if (grams.length > 0) {
-            filter.searchGrams = mongoose.trusted({ $in: grams });
-        }
     }
 
     return filter;
 };
 
-const compareProductVariants = (left, right, productOrder) => {
-    const productDifference = (
-        productOrder.get(left.canonicalProduct.toString())
-        - productOrder.get(right.canonicalProduct.toString())
-    );
-    if (productDifference !== 0) return productDifference;
+const groupVariantsByProduct = (variants) => {
+    const variantsByProductId = new Map();
 
-    const presentationOf = (variant) => (
-        variant.characteristics?.find(
-            ({ kind }) => kind === PRODUCT_CHARACTERISTIC_KIND.PRESENTATION,
-        )?.name ?? ''
-    );
+    for (const variant of variants) {
+        const productId = variant.canonicalProduct.toString();
+        const productVariants = variantsByProductId.get(productId) ?? [];
+        productVariants.push(variant);
+        variantsByProductId.set(productId, productVariants);
+    }
 
-    return (
-        presentationOf(left).localeCompare(presentationOf(right), 'fr')
-        || Number(left.foodRange ?? 0) - Number(right.foodRange ?? 0)
-        || String(left.normalizedProcessingState ?? '').localeCompare(
-            String(right.normalizedProcessingState ?? ''),
-            'fr',
-        )
-        || left._id.toString().localeCompare(right._id.toString())
-    );
+    for (const productVariants of variantsByProductId.values()) {
+        productVariants.sort(compareProductVariants);
+    }
+
+    return variantsByProductId;
 };
 
 const listProductSearch = async ({
@@ -508,14 +485,12 @@ const listProductSearch = async ({
     page = 1,
     limit = 20,
 }) => {
-    const productFilter = buildProductSearchFilter({
-        workspaceId,
-        categoryId,
-        q,
-        includeArchived: false,
-    });
-
-    const products = await CanonicalProduct.find(productFilter)
+    const products = await CanonicalProduct.find(
+        buildProductSearchFilter({
+            categoryId,
+            includeArchived: false,
+        }),
+    )
         .select(
             '_id name normalizedName aliases category status searchKeys createdAt updatedAt',
         )
@@ -523,17 +498,10 @@ const listProductSearch = async ({
         .sort({ normalizedName: 1, _id: 1 })
         .lean();
 
-    const normalizedQuery = q ? normalizeProductText(q) : null;
-    const filteredProducts = normalizedQuery
-        ? products.filter((product) => (
-            product.searchKeys ?? []
-        ).some((key) => productSearchValueContainedInQuery(q, key)))
-        : products;
-
     const productById = new Map(
-        filteredProducts.map((product) => [product._id.toString(), product]),
+        products.map((product) => [product._id.toString(), product]),
     );
-    const productIds = filteredProducts.map(({ _id }) => _id);
+    const productIds = products.map(({ _id }) => _id);
 
     if (productIds.length === 0) {
         return {
@@ -542,84 +510,74 @@ const listProductSearch = async ({
         };
     }
 
-    const productOrder = new Map(
-        productIds.map((productId, index) => [productId.toString(), index]),
-    );
-    const variantVisibility = {
+    const variants = await ProductVariant.find({
         canonicalProduct: mongoose.trusted({ $in: productIds }),
         identityActive: true,
         status: PRODUCT_STATUS.ACTIVE,
-    };
-    const variants = await ProductVariant.find(variantVisibility)
+    })
         .populate('variety')
         .populate('characteristics')
         .lean();
-    const orderedVariants = variants
-        .filter((variant) => {
-            if (!q) return true;
 
-            const product = productById.get(
-                variant.canonicalProduct.toString(),
-            );
-            const foodRangeDefinition = variant.foodRange
-                ? PRODUCT_FOOD_RANGE_REGISTRY[variant.foodRange]
-                : null;
-            const values = [
-                ...(product?.searchKeys ?? []),
-                ...(variant.variety?.searchKeys ?? []),
-                variant.variety?.name,
-                ...(variant.characteristics ?? []).flatMap(
-                    (characteristic) => [
-                        ...(characteristic.searchKeys ?? []),
-                        characteristic.name,
-                    ],
-                ),
-                foodRangeDefinition?.label,
-                foodRangeDefinition?.name,
-                foodRangeDefinition?.defaultProcessingState,
-                ...(foodRangeDefinition?.processingStates ?? []),
-                variant.processingState,
-                variant.usageType,
-            ].filter(Boolean);
-
-            return matchesProductSearchValues(q, values);
+    const matchingVariants = variants.filter((variant) => (
+        productVariantMatchesSearch({
+            query: q,
+            product: productById.get(variant.canonicalProduct.toString()),
+            variant,
         })
-        .sort(
-            (left, right) => compareProductVariants(
-                left,
-                right,
-                productOrder,
-            ),
-        );
+    ));
+    const matchingVariantsByProductId = groupVariantsByProduct(
+        matchingVariants,
+    );
 
     if (scope === 'WORKSPACE') {
-        const entries = await WorkspaceProduct.find({
-            workspace: workspaceId,
-            productVariant: mongoose.trusted({
-                $in: orderedVariants.map(({ _id }) => _id),
-            }),
-            ...(status
-                ? { status }
-                : { status: WORKSPACE_PRODUCT_STATUS.ACTIVE }),
-        }).lean();
+        const entries = variants.length > 0
+            ? await WorkspaceProduct.find({
+                workspace: workspaceId,
+                productVariant: mongoose.trusted({
+                    $in: variants.map(({ _id }) => _id),
+                }),
+                ...(status
+                    ? { status }
+                    : { status: WORKSPACE_PRODUCT_STATUS.ACTIVE }),
+            }).lean()
+            : [];
         const entryByVariantId = new Map(
             entries.map((entry) => [entry.productVariant.toString(), entry]),
         );
-        const workspaceVariants = orderedVariants.filter(
-            (variant) => entryByVariantId.has(variant._id.toString()),
-        );
-        const total = workspaceVariants.length;
-        const pagedVariants = workspaceVariants.slice(
+
+        const groups = products
+            .map((product) => {
+                const productVariants = (
+                    matchingVariantsByProductId.get(product._id.toString())
+                    ?? []
+                ).filter((variant) => (
+                    entryByVariantId.has(variant._id.toString())
+                ));
+
+                if (productVariants.length === 0) return null;
+
+                return {
+                    source: 'CANONICAL_PRODUCT',
+                    product: serializeProduct(product),
+                    variants: productVariants.map((variant) => ({
+                        variant: serializeVariant(variant),
+                        workspaceEntry: serializeWorkspaceProduct(
+                            entryByVariantId.get(variant._id.toString()),
+                        ),
+                    })),
+                };
+            })
+            .filter(Boolean);
+
+        const total = groups.length;
+        const pagedGroups = groups.slice(
             (page - 1) * limit,
             page * limit,
         );
 
         return {
-            results: pagedVariants.map((variant) => serializeSearchResult({
-                product: productById.get(variant.canonicalProduct.toString()),
-                variant,
-                workspaceEntry: entryByVariantId.get(variant._id.toString()),
-            })),
+            results: pagedGroups,
             pagination: {
                 page,
                 limit,
@@ -629,26 +587,57 @@ const listProductSearch = async ({
         };
     }
 
-    const total = orderedVariants.length;
-    const pagedVariants = orderedVariants.slice(
+    const groups = products
+        .map((product) => {
+            const directProductMatch = canonicalProductMatchesSearch(
+                q,
+                product,
+            );
+            const productVariants = matchingVariantsByProductId.get(
+                product._id.toString(),
+            ) ?? [];
+
+            if (q && !directProductMatch && productVariants.length === 0) {
+                return null;
+            }
+
+            return {
+                product,
+                variants: productVariants,
+            };
+        })
+        .filter(Boolean);
+
+    const total = groups.length;
+    const pagedGroups = groups.slice(
         (page - 1) * limit,
         page * limit,
     );
-    const entries = await WorkspaceProduct.find({
-        workspace: workspaceId,
-        productVariant: mongoose.trusted({
-            $in: pagedVariants.map(({ _id }) => _id),
-        }),
-    }).lean();
+    const pagedVariantIds = pagedGroups.flatMap(({ variants: groupVariants }) =>
+        groupVariants.map(({ _id }) => _id));
+
+    const entries = pagedVariantIds.length > 0
+        ? await WorkspaceProduct.find({
+            workspace: workspaceId,
+            productVariant: mongoose.trusted({
+                $in: pagedVariantIds,
+            }),
+        }).lean()
+        : [];
     const entryByVariantId = new Map(
         entries.map((entry) => [entry.productVariant.toString(), entry]),
     );
 
     return {
-        results: pagedVariants.map((variant) => serializeSearchResult({
-            product: productById.get(variant.canonicalProduct.toString()),
-            variant,
-            workspaceEntry: entryByVariantId.get(variant._id.toString()) ?? null,
+        results: pagedGroups.map(({ product, variants: groupVariants }) => ({
+            source: 'CANONICAL_PRODUCT',
+            product: serializeProduct(product),
+            variants: groupVariants.map((variant) => ({
+                variant: serializeVariant(variant),
+                workspaceEntry: serializeWorkspaceProduct(
+                    entryByVariantId.get(variant._id.toString()) ?? null,
+                ),
+            })),
         })),
         pagination: {
             page,
