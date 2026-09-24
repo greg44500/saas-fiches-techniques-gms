@@ -109,7 +109,7 @@ describe('ProductVariantFields', () => {
     await user.click(screen.getByRole('option', { name: 'Mini' }));
 
     await user.click(screen.getByLabelText('Gamme *'));
-    await user.click(screen.getByRole('option', { name: 'Gamme 1 — Frais' }));
+    await user.click(screen.getByRole('option', { name: 'Gamme 1' }));
 
     await user.click(screen.getByRole('button', { name: 'Exporter' }));
 
@@ -135,7 +135,7 @@ describe('ProductVariantFields', () => {
     expect(screen.queryByLabelText('Conservation')).not.toBeInTheDocument();
 
     await user.click(screen.getByLabelText('Gamme *'));
-    await user.click(screen.getByRole('option', { name: 'Gamme 6 — PAI / PAE' }));
+    await user.click(screen.getByRole('option', { name: 'Gamme 6' }));
 
     expect(screen.getByLabelText('État / transformation'))
       .toHaveValue('PAI / PAE');
