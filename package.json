@@ -30,7 +30,6 @@
     "migration:subscription-term-type": "node backend/migrations/runAddSubscriptionTermTypeMigration.js",
     "migration:subscription-lifecycle-indexes": "node backend/migrations/runAddSubscriptionLifecycleIndexesMigration.js",
     "migration:operational-indexes": "node backend/migrations/runHardenOperationalIndexesMigration.js",
-    "migration:application-global-authorization-indexes": "node backend/migrations/runAddApplicationGlobalAuthorizationIndexesMigration.js",
     "migration:subscription-read-permission": "node backend/migrations/runAddSubscriptionReadPermissionToSystemRolesMigration.js",
     "migration:audit-read-permission": "node backend/migrations/runAddAuditReadPermissionToSystemRolesMigration.js",
     "migration:workspace-member-usage": "node backend/migrations/runBackfillWorkspaceMemberUsageMetricMigration.js",
@@ -49,10 +48,16 @@
     "job:purge-files": "node backend/jobs/files/runPurgeDeletedFilesJob.js",
     "job:retention": "node backend/jobs/retention/runScheduledRetentionPoliciesJob.js",
     "dev:reset-trial": "node backend/operations/development/runResetTrialDevelopment.js",
-    "migration:m001-indexes": "node backend/migrations/runEnsureM001IndexesMigration.js"
+    "migration:m001-indexes": "node backend/migrations/runEnsureM001IndexesMigration.js",
+    "migration:m002-catalog": "node backend/migrations/runEnsureM002CatalogMigration.js",
+    "seed:m002-reference": "node backend/seeds/seedM002Reference.js",
+    "migration:application-global-authorization-indexes": "node backend/migrations/runAddApplicationGlobalAuthorizationIndexesMigration.js",
+    "seed:m002-governance": "node backend/seeds/seedM002ProductGovernance.js",
+    "dev:reset-m002-catalog": "node backend/operations/development/runResetM002CatalogDevelopment.js"
   },
   "license": "UNLICENSED",
   "dependencies": {
+    "@e965/xlsx": "0.20.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

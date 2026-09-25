@@ -1,4 +1,10 @@
 import { dossierRouter } from '../modules/dossier/dossier.routes.js';
+import {
+    productCatalogGlobalRouter,
+} from '../modules/productCatalog/productCatalogGlobal.routes.js';
+import {
+    productCatalogRouter,
+} from '../modules/productCatalog/productCatalog.routes.js';
 
 const ROUTE_MODULE_KEY_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
@@ -119,6 +125,16 @@ const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
         key: 'dossiers',
         mountPath: '/api/workspaces/:workspaceId/dossiers',
         router: dossierRouter,
+    }),
+    Object.freeze({
+        key: 'products',
+        mountPath: '/api/workspaces/:workspaceId/products',
+        router: productCatalogRouter,
+    }),
+    Object.freeze({
+        key: 'product-reference-governance',
+        mountPath: '/api/product-reference',
+        router: productCatalogGlobalRouter,
     }),
 ]);
 

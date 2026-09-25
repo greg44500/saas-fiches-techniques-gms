@@ -3,6 +3,9 @@ import {
     DOSSIER_ROLE_PERMISSION_MODULE,
 } from '../modules/dossier/dossierPermission.registry.js';
 import {
+    PRODUCT_CATALOG_ROLE_PERMISSION_MODULE,
+} from '../modules/productCatalog/productCatalogPermission.registry.js';
+import {
     composeRolePermissionExtensions,
     configureRolePermissionRegistry,
     createRolePermissionRegistry,
@@ -30,6 +33,7 @@ import {
  */
 const APPLICATION_ROLE_PERMISSION_MODULES = Object.freeze([
     DOSSIER_ROLE_PERMISSION_MODULE,
+    PRODUCT_CATALOG_ROLE_PERMISSION_MODULE,
 ]);
 
 const applicationRolePermissionExtensions =

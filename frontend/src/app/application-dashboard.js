@@ -1,4 +1,5 @@
 import { dossiersDashboardModule } from '@/features/dossiers/dashboard/dossiers-dashboard';
+import { productsDashboardModule } from '@/features/products/dashboard/products-dashboard';
 import { coreDashboardWidgets } from '@/features/workspace/dashboard/core-dashboard-widgets';
 
 const DASHBOARD_WIDGET_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
@@ -126,6 +127,7 @@ function getVisibleDashboardWidgets(accessibleWidgets, hiddenWidgetIds = []) {
 
 const APPLICATION_DASHBOARD_WIDGET_MODULES = Object.freeze([
   dossiersDashboardModule,
+  productsDashboardModule,
 ]);
 
 const applicationDashboardWidgets = composeApplicationDashboardWidgets(

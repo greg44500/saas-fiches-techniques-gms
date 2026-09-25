@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 
 **Statut :** VALIDÉ — vocabulaire transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-21
+**Dernière mise à jour :** 2026-09-23
 
 > Ce glossaire fixe le vocabulaire déjà stabilisé pendant le cadrage.  
 > Les termes marqués comme ouverts ne doivent pas être transformés en contrats techniques définitifs.
@@ -129,117 +129,174 @@ Les variantes lexicales équivalentes — casse, singulier/pluriel, accents, esp
 
 ---
 
-## Catalogue Produit du Workspace
+## Favoris Produits du Workspace
 
-Sélection des Produits canoniques réellement utilisés par un Workspace.
+Sélection des Références Produit globales que le Workspace souhaite retrouver rapidement.
 
-Le catalogue Workspace référence le référentiel partagé ; il ne copie pas l'identité du Produit. Les Dossiers du Workspace puisent dans cette sélection.
+`WorkspaceProduct` matérialise ce lien. Il appartient au Workspace et référence une `ProductVariant` globale sans copier son identité.
 
-Une relation conceptuelle de type `WorkspaceProduct` peut porter ce rattachement ; son schéma final relève de M-002.
+Dans l'interface, ce sous-ensemble est présenté comme **Favoris**. Il ne constitue pas un second catalogue Produit.
 
 ---
 
 ## Produit canonique
 
-Denrée, composant ou consommable de référence identifiable indépendamment d'un Workspace, d'un Fournisseur et d'un prix.
-
-Le Produit canonique porte uniquement des données génériques partageables et ne contient jamais de tarif négocié, prix facturé, fournisseur local choisi, historique commercial tenant ou autre donnée confidentielle.
+Racine ou concept Produit global identifiable indépendamment d'un Workspace, d'un Fournisseur et d'un prix.
 
 Il porte conceptuellement :
 
 - un nom canonique ;
-- une clé normalisée et des alias de recherche ;
-- une catégorie ;
-- une unité de référence ;
-- une photo facultative ;
-- des métadonnées de création et modification ;
-- les liens vers ses déclinaisons structurées lorsque nécessaires.
+- des synonymes métier gouvernés éventuels ;
+- des clés/formes de recherche ;
+- une catégorie facultative ;
+- des métadonnées d'audit/provenance ;
+- les liens vers ses Variétés, Caractéristiques et Références Produit.
+
+Il ne contient jamais de prix, fournisseur local, conditionnement commercial ou autre donnée confidentielle tenant.
+
+Un `CanonicalProduct` peut exister sans Référence Produit exploitable.
 
 ---
 
-## Déclinaison Produit
+## Référence Produit
 
-Description structurée d'une forme réellement différente d'usage d'un Produit canonique lorsque la préparation, l'état ou la conservation modifient son rendement, sa sélection commerciale ou son emploi.
+Référence métier globale directement sélectionnable dans les futurs modules métier.
 
-Axes identifiés :
+Le rôle technique est porté par `ProductVariant`, conservé pour compatibilité de migration.
 
-```text
-forme
-→ entière / rondelles / râpée / dés / julienne / purée / ...
-
-état / transformation
-→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
-
-conservation
-→ fraîche / surgelée / appertisée / ...
-```
-
-Exemple :
+Champs structurants :
 
 ```text
-Produit canonique : Carotte
-forme             : râpée
-état              : prête à l'emploi
-conservation      : fraîche
+name persistant
+normalizedName unique pour une référence active
+conservationType obligatoire
+referenceUnit obligatoire
+foodRange facultatif
+processingState facultatif
+Variété facultative
+Caractéristiques facultatives
+yieldPercent facultatif
 ```
 
-Une transformation qui crée une formulation/composition différente peut relever d'un Produit distinct plutôt que d'une simple déclinaison ; cette frontière est à fermer dans M-002.
+Le nom visible n'est jamais fabriqué à partir des dimensions.
 
-### Règle de recherche et création
-
-Avant de créer une nouvelle identité canonique, le système recherche les correspondances exactes normalisées, les alias puis les candidats proches.
+Exemples :
 
 ```text
-carotte
-Carottes
-carote
+Carotte
+Carotte râpée
+Carotte surgelée
+Farine de blé
+Paleron de bœuf
 ```
 
-doivent converger vers `Carotte` lorsqu'ils désignent la même réalité métier.
+`WorkspaceProduct` référence toujours une Référence Produit réelle.
 
-Le libellé affiché peut intégrer les dimensions structurées, par exemple `Carotte râpée prête à l'emploi`, sans créer une nouvelle identité racine uniquement à cause du texte.
+### Autorité globale Produit
 
+```text
+product:reference:read
+product:reference:manage
+```
+
+Aucun rôle Platform ou Workspace ne confère ces permissions implicitement.
 
 ---
 
 ## Catégorie
 
-Classification fonctionnelle du produit destinée au classement, à la recherche, aux filtres et aux analyses.
+Classification fonctionnelle globale du Produit destinée au classement, à la recherche, aux filtres et aux analyses.
 
-Exemples possibles : légumes, viandes, poissons, fromages, épicerie.
-
-La liste exacte n'est pas encore validée.
+Elle est facultative pour une Référence Produit.
 
 ---
+
+## Variété Produit
+
+Véritable variété ou cultivar d'un Produit canonique, représenté par `ProductVariety`.
+
+Exemples : Golden, Gala et Granny Smith pour Pomme ; Charlotte pour Pomme de terre.
+
+Une Variété est facultative dans une Référence Produit.
+
+## Caractéristique Produit
+
+Dimension structurée globale rattachée à un Produit canonique et représentée par `ProductCharacteristic`.
+
+Types M-002 :
+
+- `PRESENTATION` ;
+- `COMMERCIAL_TYPE` ;
+- `SIZE_FORMAT` ;
+- `COLOR` ;
+- `QUALITY_DESIGNATION` ;
+- `CUT` — Pièce / découpe.
+
+Une Référence Produit porte au maximum une caractéristique de chaque type.
+
+Les dimensions enrichissent la Référence mais ne fabriquent jamais son nom.
+
+## Conservation Produit
+
+Information obligatoire et indépendante de la Gamme.
+
+Valeurs M-002 :
+
+- `FRAIS` — Frais ;
+- `REFRIGERE` — Réfrigéré ;
+- `SURGELE` — Surgelé ;
+- `CONSERVE` — Conserve ;
+- `SEC` — Sec.
 
 ## Gamme alimentaire
 
-Référentiel professionnel utilisé lorsqu'il est pertinent pour le produit.
+Classification métier facultative backend-driven :
 
-Référentiel de cadrage :
+- Gamme 1 ;
+- Gamme 2 ;
+- Gamme 3 ;
+- Gamme 4 ;
+- Gamme 5 ;
+- Gamme 6 — PAI / PAE.
 
-- 1re gamme : frais ;
-- 2e gamme : conserve / appertisé ;
-- 3e gamme : surgelé ;
-- 4e gamme : cru prêt à l'emploi ;
-- 5e gamme : cuit prêt à l'emploi.
+`usageType` n'appartient plus au contrat actif M-002. Les constantes historiques éventuelles servent uniquement aux migrations déjà versionnées.
 
-La gamme n'est pas obligatoire pour tous les produits.
 
-Exemple :
+## Contribution au Référentiel
+
+Proposition issue d'un Workspace habilité et analysée par un moteur déterministe.
+
+Résultats :
+
+- `EXISTING` ;
+- `AUTO_PUBLISHABLE` ;
+- `REVIEW_REQUIRED` ;
+- `INVALID`.
+
+Une contribution nécessitant revue est portée par `ReferenceContribution`. Elle n'ajoute jamais `PENDING_REVIEW` au lifecycle des références réelles.
+
+## Gamme alimentaire
+
+Nomenclature métier M-002 backend-driven décrivant l'état physique/technique principal :
+
+- Gamme 1 : Frais → `Produit frais` ;
+- Gamme 2 : Conserves → `Conserve` ;
+- Gamme 3 : Surgelés → `Surgelé` ;
+- Gamme 4 : Sous-vide cru / épluchés → `Sous-vide cru / épluché` ;
+- Gamme 5 : Sous-vide cuit → `Sous-vide cuit`.
+
+PAI / PAE n'est pas une Gamme.
+
+## Classification d'usage PAI / PAE
+
+Classification facultative d'une Déclinaison, indépendante de sa Gamme :
 
 ```text
-Farine
-→ gamme : non applicable
-→ rendement : 100 %
+PAI → Produit alimentaire intermédiaire
+PAE → Prêt à l'emploi
 ```
 
-La gamme ne fixe pas automatiquement un taux de rendement.
-
-Référence officielle de cadrage :
-https://www.economie.gouv.fr/files/files/directions_services/daj/marches_publics/oeap/concertation/autres_groupes_travail/indexation-prix-denrees-alimentaires.pdf
-
----
+Elle peut être combinée avec une Gamme physique, par exemple un produit surgelé PAE. Un produit transformé ou tranché n'est pas automatiquement PAI/PAE.
 
 ## Unité de référence
 
@@ -313,7 +370,7 @@ Elle est distincte du taux de rendement.
 
 ## Fournisseur
 
-Acteur qui commercialise un ou plusieurs articles correspondant aux produits du catalogue.
+Acteur qui commercialise un ou plusieurs articles correspondant aux Produits du référentiel.
 
 Les fournisseurs doivent pouvoir être créés par le client dans son contexte de travail.
 
@@ -421,7 +478,7 @@ Portées prévues :
 
 ```text
 Mon Workspace
-Tout le référentiel autorisé
+Référentiel global autorisé
 ```
 
 Sources prévues :

@@ -15,7 +15,6 @@ import {
     getPlatformPermissionDefinition,
 } from '../../config/applicationPlatformPermission.registry.js';
 
-
 describe('applicationPlatformPermission registry', () => {
     it('expose le catalogue Core actif et reconnaît les clés legacy pendant la migration', () => {
         expect(
@@ -75,6 +74,17 @@ describe('applicationPlatformPermission registry', () => {
                 key: 'platform:catalog:read',
                 category: 'catalog',
             }),
+        );
+    });
+
+    it('ne mélange aucune permission Produits métier dans Platform', () => {
+        expect(
+            ACTIVE_PLATFORM_PERMISSION_REGISTRY.permissionKeys,
+        ).not.toEqual(
+            expect.arrayContaining([
+                'platform:products:read',
+                'platform:products:manage',
+            ]),
         );
     });
 

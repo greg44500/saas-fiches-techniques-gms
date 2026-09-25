@@ -1,0 +1,2062 @@
+{
+  "version": "m002-reference-v4",
+  "ready": true,
+  "categories": [
+    {
+      "key": "fruits-legumes",
+      "name": "Fruits et légumes"
+    },
+    {
+      "key": "viandes-volailles",
+      "name": "Viandes et volailles"
+    },
+    {
+      "key": "poissons-produits-mer",
+      "name": "Poissons et produits de la mer"
+    },
+    {
+      "key": "charcuteries",
+      "name": "Charcuteries"
+    },
+    {
+      "key": "produits-laitiers",
+      "name": "Produits laitiers"
+    },
+    {
+      "key": "oeufs-ovoproduits",
+      "name": "Œufs et ovoproduits"
+    },
+    {
+      "key": "cereales-feculents-legumineuses",
+      "name": "Céréales, féculents et légumineuses"
+    },
+    {
+      "key": "pains-boulangerie",
+      "name": "Pains et produits de boulangerie"
+    },
+    {
+      "key": "matieres-grasses",
+      "name": "Matières grasses"
+    },
+    {
+      "key": "condiments-sauces-aides-culinaires",
+      "name": "Condiments, sauces et aides culinaires"
+    },
+    {
+      "key": "epicerie-salee",
+      "name": "Épicerie salée"
+    },
+    {
+      "key": "epicerie-sucree-patisserie",
+      "name": "Épicerie sucrée et pâtisserie"
+    }
+  ],
+  "products": [
+    {
+      "name": "Carotte",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [
+        {
+          "key": "nantaise",
+          "kind": "COMMERCIAL_TYPE",
+          "name": "Nantaise",
+          "aliases": []
+        },
+        {
+          "key": "botte-fanes",
+          "kind": "PRESENTATION",
+          "name": "En botte avec fanes",
+          "aliases": [
+            "En botte",
+            "Avec fanes"
+          ]
+        },
+        {
+          "key": "sables",
+          "kind": "QUALITY_DESIGNATION",
+          "name": "Carottes des sables",
+          "aliases": []
+        },
+        {
+          "key": "mini",
+          "kind": "SIZE_FORMAT",
+          "name": "Mini",
+          "aliases": []
+        },
+        {
+          "key": "rapee",
+          "kind": "PRESENTATION",
+          "name": "Râpée",
+          "aliases": []
+        }
+      ],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Carotte",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [
+            "nantaise"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Carotte nantaise",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [
+            "botte-fanes"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Carotte en botte avec fanes",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [
+            "sables"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Carottes des sables",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [
+            "mini"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Carotte mini",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 3,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Carotte surgelée",
+          "conservationType": "SURGELE"
+        }
+      ]
+    },
+    {
+      "name": "Tomate",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [
+        {
+          "key": "cerise",
+          "kind": "COMMERCIAL_TYPE",
+          "name": "Cerise",
+          "aliases": []
+        },
+        {
+          "key": "grappe",
+          "kind": "PRESENTATION",
+          "name": "En grappe",
+          "aliases": []
+        },
+        {
+          "key": "coeur-boeuf",
+          "kind": "COMMERCIAL_TYPE",
+          "name": "Cœur de bœuf",
+          "aliases": []
+        }
+      ],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Tomate",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [
+            "cerise"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Tomate cerise",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [
+            "grappe"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Tomate en grappe",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [
+            "coeur-boeuf"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Tomate cœur de bœuf",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Pomme de terre",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [
+        {
+          "key": "charlotte",
+          "name": "Charlotte",
+          "aliases": []
+        }
+      ],
+      "characteristics": [
+        {
+          "key": "grenaille",
+          "kind": "SIZE_FORMAT",
+          "name": "Grenaille",
+          "aliases": []
+        }
+      ],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Pomme de terre",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "varietyKey": "charlotte",
+          "name": "Pomme de terre charlotte",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [
+            "grenaille"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Pomme de terre grenaille",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Courgette",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Courgette",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Aubergine",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Aubergine",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Poivron",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Poivron",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Oignon",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Oignon",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Ail",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Ail",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Poireau",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Poireau",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Concombre",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Concombre",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Betterave",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Betterave",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Navet",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Navet",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Céleri-rave",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Céleri-rave",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Chou-fleur",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Chou-fleur",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Brocoli",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Brocoli",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Épinard",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Épinard",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Haricot vert",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Haricot vert",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Petit pois",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Petit pois",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Champignon de Paris",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Champignon de Paris",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Laitue",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Laitue",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Endive",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Endive",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Radis",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Radis",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Pomme",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [
+        {
+          "key": "golden",
+          "name": "Golden",
+          "aliases": []
+        },
+        {
+          "key": "gala",
+          "name": "Gala",
+          "aliases": []
+        },
+        {
+          "key": "granny-smith",
+          "name": "Granny Smith",
+          "aliases": []
+        }
+      ],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Pomme",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "varietyKey": "golden",
+          "name": "Pomme golden",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "varietyKey": "gala",
+          "name": "Pomme gala",
+          "conservationType": "FRAIS"
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "varietyKey": "granny-smith",
+          "name": "Pomme granny Smith",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Poire",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Poire",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Banane",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Banane",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Orange",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Orange",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Citron",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Citron",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Kiwi",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Kiwi",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Fraise",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Fraise",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Framboise",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Framboise",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Raisin",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Raisin",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Pêche",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Pêche",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Nectarine",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Nectarine",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Abricot",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Abricot",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Melon",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Melon",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Pastèque",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Pastèque",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Ananas",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Ananas",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Mangue",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Mangue",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Clémentine",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Clémentine",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Bœuf",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [
+        {
+          "key": "paleron",
+          "kind": "CUT",
+          "name": "Paleron",
+          "aliases": []
+        },
+        {
+          "key": "faux-filet",
+          "kind": "CUT",
+          "name": "Faux-filet",
+          "aliases": []
+        }
+      ],
+      "variants": []
+    },
+    {
+      "name": "Veau",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Veau",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Porc",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Porc",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Agneau",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [
+        {
+          "key": "gigot",
+          "kind": "CUT",
+          "name": "Gigot",
+          "aliases": []
+        }
+      ],
+      "variants": []
+    },
+    {
+      "name": "Poulet",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [
+        {
+          "key": "cuisse",
+          "kind": "CUT",
+          "name": "Cuisse",
+          "aliases": []
+        }
+      ],
+      "variants": []
+    },
+    {
+      "name": "Dinde",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Dinde",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Canard",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Canard",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Lapin",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Lapin",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Pintade",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Pintade",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Caille",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Caille",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Saumon",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Cabillaud",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Cabillaud",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Colin d'Alaska",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Colin d'Alaska",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Merlu",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Merlu",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Lieu noir",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Lieu noir",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Thon",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Thon",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Sardine",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Sardine",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Maquereau",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Maquereau",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Truite",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Truite",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Crevette",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Crevette",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Moule",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Moule",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Calamar",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Calamar",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Jambon blanc",
+      "aliases": [],
+      "categoryKey": "charcuteries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Jambon cru",
+      "aliases": [],
+      "categoryKey": "charcuteries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Lardon",
+      "aliases": [],
+      "categoryKey": "charcuteries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Bacon",
+      "aliases": [],
+      "categoryKey": "charcuteries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Saucisson sec",
+      "aliases": [],
+      "categoryKey": "charcuteries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Chorizo",
+      "aliases": [],
+      "categoryKey": "charcuteries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Pâté",
+      "aliases": [],
+      "categoryKey": "charcuteries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Rillettes",
+      "aliases": [],
+      "categoryKey": "charcuteries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Lait",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "L",
+          "yieldPercent": null,
+          "name": "Lait",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Crème",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "L",
+          "yieldPercent": null,
+          "name": "Crème",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Yaourt",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Yaourt",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Fromage blanc",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Fromage blanc",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Emmental",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Emmental",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Comté",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Comté",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Mozzarella",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Mozzarella",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Parmesan",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Parmesan",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Camembert",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Camembert",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Fromage de chèvre",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "name": "Fromage de chèvre",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Œuf",
+      "aliases": [],
+      "categoryKey": "oeufs-ovoproduits",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null,
+          "name": "Œuf",
+          "conservationType": "FRAIS"
+        }
+      ]
+    },
+    {
+      "name": "Riz",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Pâtes alimentaires",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Semoule",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Quinoa",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Boulgour",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Lentille",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Pois chiche",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Haricot sec",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Flageolet",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Farine de blé",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Fécule de maïs",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Avoine",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Polenta",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Couscous",
+      "aliases": [],
+      "categoryKey": "cereales-feculents-legumineuses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Pain",
+      "aliases": [],
+      "categoryKey": "pains-boulangerie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Baguette",
+      "aliases": [],
+      "categoryKey": "pains-boulangerie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Pain de mie",
+      "aliases": [],
+      "categoryKey": "pains-boulangerie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Brioche",
+      "aliases": [],
+      "categoryKey": "pains-boulangerie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Croissant",
+      "aliases": [],
+      "categoryKey": "pains-boulangerie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Pain au chocolat",
+      "aliases": [],
+      "categoryKey": "pains-boulangerie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Huile d'olive",
+      "aliases": [],
+      "categoryKey": "matieres-grasses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Huile de colza",
+      "aliases": [],
+      "categoryKey": "matieres-grasses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Huile de tournesol",
+      "aliases": [],
+      "categoryKey": "matieres-grasses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Beurre",
+      "aliases": [],
+      "categoryKey": "matieres-grasses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Margarine",
+      "aliases": [],
+      "categoryKey": "matieres-grasses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Graisse de canard",
+      "aliases": [],
+      "categoryKey": "matieres-grasses",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Sel",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Poivre",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Moutarde",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Ketchup",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Mayonnaise",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Paprika",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Curry",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Bouillon de légumes",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Fond de veau",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Fond de volaille",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Vinaigre",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Sauce soja",
+      "aliases": [],
+      "categoryKey": "condiments-sauces-aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Chapelure",
+      "aliases": [],
+      "categoryKey": "epicerie-salee",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Levure boulangère",
+      "aliases": [],
+      "categoryKey": "epicerie-salee",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Tofu",
+      "aliases": [],
+      "categoryKey": "epicerie-salee",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Seitan",
+      "aliases": [],
+      "categoryKey": "epicerie-salee",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Tortilla de blé",
+      "aliases": [],
+      "categoryKey": "epicerie-salee",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Feuille de brick",
+      "aliases": [],
+      "categoryKey": "epicerie-salee",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Pâte feuilletée",
+      "aliases": [],
+      "categoryKey": "epicerie-salee",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Pâte brisée",
+      "aliases": [],
+      "categoryKey": "epicerie-salee",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Sucre",
+      "aliases": [],
+      "categoryKey": "epicerie-sucree-patisserie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Chocolat",
+      "aliases": [],
+      "categoryKey": "epicerie-sucree-patisserie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Cacao",
+      "aliases": [],
+      "categoryKey": "epicerie-sucree-patisserie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Miel",
+      "aliases": [],
+      "categoryKey": "epicerie-sucree-patisserie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Confiture",
+      "aliases": [],
+      "categoryKey": "epicerie-sucree-patisserie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Gélatine",
+      "aliases": [],
+      "categoryKey": "epicerie-sucree-patisserie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Levure chimique",
+      "aliases": [],
+      "categoryKey": "epicerie-sucree-patisserie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Vanille",
+      "aliases": [],
+      "categoryKey": "epicerie-sucree-patisserie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    },
+    {
+      "name": "Sirop de glucose",
+      "aliases": [],
+      "categoryKey": "epicerie-sucree-patisserie",
+      "varieties": [],
+      "characteristics": [],
+      "variants": []
+    }
+  ]
+}

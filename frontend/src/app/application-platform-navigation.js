@@ -1,4 +1,5 @@
 import { corePlatformNavigationSections } from '@/features/platform/lib/platform-navigation';
+import { productsPlatformNavigationModule } from '@/features/products/products-platform-navigation';
 
 function assertNonEmptyString(value, label) {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -183,7 +184,9 @@ function composeApplicationPlatformNavigation(navigationModules = []) {
  * Les modules ajoutés ici peuvent déclarer leurs propres libellés, routes,
  * icônes et règles isVisible(context) sans que le Core importe le métier.
  */
-const APPLICATION_PLATFORM_NAVIGATION_MODULES = Object.freeze([]);
+const APPLICATION_PLATFORM_NAVIGATION_MODULES = Object.freeze([
+  productsPlatformNavigationModule,
+]);
 
 const APPLICATION_PLATFORM_NAVIGATION =
   composeApplicationPlatformNavigation(
