@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé — M-002 recadré après QA, implémentation d'ajustement à reprendre  
-**Dernière mise à jour :** 2026-09-23
+**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé fonctionnellement — M-003 prochain cadrage  
+**Dernière mise à jour :** 2026-09-25
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -71,7 +71,7 @@ Décisions finales :
 
 ### 2.2 Référentiel Produit
 
-**État : contrat final validé — implémentation réalignée, QA visuelle et gates finaux à exécuter**
+**État : CLÔTURÉ FONCTIONNELLEMENT — contrat et UX métier validés le 2026-09-25 ; intégration protégée par la Core Gate de la PR finale**
 
 Contrat canonique :
 
@@ -86,10 +86,9 @@ Décisions finales :
 - Conservation obligatoire ;
 - unité de référence obligatoire ;
 - Catégorie facultative ;
-- Gamme facultative 1..6 ;
-- Gamme 6 = PAI / PAE ;
+- `foodRange` / Gammes conservés côté backend pour compatibilité et évolution future, mais non exposés par le frontend actif ;
 - suppression de `usageType` du contrat actif ;
-- état/transformation facultatif et indépendant de la Gamme ;
+- état/transformation facultatif ;
 - dimensions avancées facultatives ;
 - `WorkspaceProduct` présenté comme Favori ;
 - liste Workspace `Produit | Conservation | Actions` ;
@@ -100,7 +99,7 @@ Décisions finales :
 
 La dépendance générique Core de navigation Platform est déjà résolue et intégrée.
 
-À fermer avant fusion M-002 : migration/seed local, QA visuelle, tests backend/frontend, lint/build, E2E, `release:verify`, documentation de clôture éventuelle et une seule PR M-002.
+Décision de clôture du 2026-09-25 : le périmètre fonctionnel M-002 est gelé. Les retouches purement visuelles éventuelles sont non bloquantes et suivies comme dette conditionnelle ; elles ne rouvrent pas M-002. La PR finale reste soumise à la Core Gate canonique avant fusion.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
@@ -522,25 +521,21 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-M-002 est implémenté sur `feature/m002-catalogue-produits`. La priorité n'est plus de recadrer son modèle mais de prouver le lot :
+M-002 est clôturé fonctionnellement. Son intégration dans `main` passe par une unique PR finale protégée par la Core Gate canonique ; GitHub est l'autorité sur le résultat de cette gate et du merge.
+
+Le prochain lot métier est le **cadrage M-003 — Fournisseurs + Articles + prix/catalogues**. Le premier point à verrouiller est l'identité Fournisseur/Catalogue : un Article importé doit conserver un Fournisseur et une édition/catalogue explicites, puis être rapproché d'une Référence Produit M-002 sans création canonique silencieuse.
 
 ```text
-pull du HEAD M-002
-→ migration M-002 sur la base de développement
-→ tests backend ciblés
-→ tests backend globaux en tenant compte du problème connu de parallélisme
-→ tests frontend
-→ lint/build
-→ E2E M-002
-→ validation visuelle utilisateur
-→ documentation finale si un écart est démontré
-→ UNE PR M-002
-→ UNE fusion
+M-002 gelé
+→ PR finale + Core Gate
+→ merge
+→ Core Gate post-merge
+→ cadrage détaillé M-003
+→ validation du contrat M-003
+→ implémentation M-003 par lot cohérent
 ```
 
-Après fermeture de M-002, le cadrage suivant est M-003. Le premier point à verrouiller sera l'identité Fournisseur/Catalogue : un Produit sélectionné depuis un catalogue doit conserver une origine Fournisseur et une édition/catalogue explicites, avec filtres et liste de catalogues identifiés.
-
-Ne pas rouvrir M-001 sauf régression démontrée. Les ajustements visuels Dossier déjà identifiés restent un lot UX séparé après la priorité M-002.
+Les éventuelles retouches visuelles M-002 non bloquantes sont traitées opportunément sous la dette `GMS-UX-001`, sans rouvrir le contrat métier. Ne pas rouvrir M-001 sauf régression démontrée.
 `npm run format:check` reste un sujet Core/tooling séparé s'il est toujours non conforme sur des fichiers Core inchangés.
 
 La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés selon leur module.

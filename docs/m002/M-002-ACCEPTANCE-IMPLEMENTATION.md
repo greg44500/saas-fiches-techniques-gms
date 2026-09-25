@@ -1,6 +1,6 @@
 # M-002 — Critères d'acceptation et ordre de finalisation
 
-**Statut : CONTRAT FINAL IMPLÉMENTÉ — QA visuelle et gates finaux requis avant PR**
+**Statut : CLÔTURE FONCTIONNELLE ACCEPTÉE — intégration finale soumise à la Core Gate de PR**
 
 **Contrat canonique :** `docs/m002/M-002-FINAL-CONTRACT.md`
 
@@ -87,65 +87,31 @@ Un seul lot M-002, puis une seule PR finale. Pas de micro-PR de réparation.
 - [x] prix hors M-002 ;
 - [x] colonnes commerciales détectées par l'import mais non absorbées.
 
-## 8. Tests et gates à exécuter
+## 8. QA et décision de clôture
 
-Aucun statut vert final ne doit être annoncé avant exécution réelle de :
+La QA visuelle fonctionnelle a été acceptée par le porteur produit le 2026-09-25. Les dernières décisions incluent :
 
-```bash
-$env:ALLOW_DEVELOPMENT_DATA_RESET="true"
-npm run dev:reset-m002-catalog -- --confirm-m002-reset
-npm run migration:m002-catalog
-npm run seed:m002-reference
+- recherche élargie ;
+- filtres Workspace limités à Recherche, Catégorie et Conservation ;
+- ordre alphabétique par défaut sans contrôle de tri ;
+- aucune Gamme affichée, éditée, filtrée ou mappée par le frontend ;
+- séparation explicite entre import Produits M-002 et catalogue fournisseur M-003.
 
-npm run release:verify
-npm run lint
-npm test -- --no-file-parallelism
+Les éventuels raffinements purement design restants sont non bloquants et suivis par `GMS-UX-001`.
 
-cd frontend
-npm run lint
-npm test
-npm run build
-cd ..
+## 9. Gate d'intégration
 
-npm run test:e2e
+Aucun statut CI vert ne doit être inventé. La preuve finale est fournie par le workflow GitHub `Core Gate`, qui exécute `npm run release:check` sur le HEAD de la PR.
+
+Critère de fusion :
+
+```text
+PR finale unique M-002
+→ Core Gate PR = success
+→ merge
+→ Core Gate post-merge = success
 ```
-
-État actuel :
-
-- [x] tests backend/front/E2E réalignés dans le code ;
-- [ ] migration locale exécutée ;
-- [ ] seed local exécuté ;
-- [ ] backend global vert ;
-- [ ] frontend lint vert ;
-- [ ] frontend tests verts ;
-- [ ] frontend build vert ;
-- [ ] E2E verts ;
-- [ ] `release:verify` vert.
-
-## 9. QA visuelle
-
-À contrôler avant PR finale :
-
-- [ ] aucun nom fabriqué du type `Carotte carottes des sables` ;
-- [ ] références distinctes lisibles ;
-- [ ] Conservation visible et correcte ;
-- [ ] Gamme 6 affichée comme PAI / PAE ;
-- [ ] Catégorie réellement facultative ;
-- [ ] Gamme réellement facultative ;
-- [ ] drawer sans bruit de champs vides ;
-- [ ] recherche prédictive cohérente ;
-- [ ] ajout/retrait des Favoris ;
-- [ ] gouvernance globale en vocabulaire Référence ;
-- [ ] aucune donnée M-003 visible dans le modèle Produit.
 
 ## 10. Clôture
 
-Après QA visuelle et gates réellement verts :
-
-```text
-corrections finales éventuelles
-→ documentation de clôture
-→ une seule PR M-002
-→ Core Gate
-→ merge
-```
+M-002 est gelé fonctionnellement. Après fusion, le prochain lot est le cadrage détaillé M-003. Toute évolution fonctionnelle supplémentaire du Référentiel Produit doit être un besoin explicitement cadré ; un simple enrichissement des données du référentiel n'implique pas la réouverture du module.

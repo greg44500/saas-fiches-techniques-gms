@@ -1,9 +1,10 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-24  
-**Lot actif :** M-002 — Référentiel Produits  
-**Branche :** `feature/m002-catalogue-produits`  
-**HEAD :** à vérifier sur GitHub au moment de la reprise ; ne pas utiliser un SHA documentaire figé comme autorité.
+**Date :** 2026-09-25  
+**Lot clôturé :** M-002 — Référentiel Produits  
+**Prochain lot :** M-003 — Fournisseurs + Articles + prix/catalogues  
+**Intégration :** PR finale M-002 vers `main`, protégée par la Core Gate  
+**HEAD :** toujours vérifier GitHub ; ne jamais utiliser un SHA documentaire figé comme autorité.
 
 ## 1. Ordre d'autorité
 
@@ -231,67 +232,51 @@ Depuis le HEAD historique `7f432e00...`, le lot a notamment :
 - mis à jour les tests ciblés pour protéger le nouveau contrat ;
 - créé `docs/m002/M-002-FINAL-CONTRACT.md`.
 
-## 10. Vérité des tests
+## 10. Décision de clôture M-002
 
-Ne pas annoncer M-002 vert à ce stade.
+Le porteur produit a validé le 2026-09-25 la clôture fonctionnelle de M-002 après la dernière QA visuelle.
 
-Le code et les tests ont été réalignés, mais aucune campagne locale finale sur le HEAD actuel n'a encore été exécutée dans cette conversation.
+Décisions de sortie :
 
-Gates à exécuter :
+- le contrat M-002 est gelé ;
+- le frontend n'expose plus les Gammes ; `foodRange` reste conservé côté backend pour compatibilité/évolution future ;
+- l'import massif Produits CSV/XLS/XLSX et la gouvernance globale restent M-002 ;
+- l'import de catalogues fournisseur complets reste M-003 ;
+- les retouches purement design découvertes ultérieurement sont non bloquantes et ne rouvrent pas M-002, sauf régression fonctionnelle démontrée.
 
-```bash
-$env:ALLOW_DEVELOPMENT_DATA_RESET="true"
-npm run dev:reset-m002-catalog -- --confirm-m002-reset
-npm run migration:m002-catalog
-npm run seed:m002-reference
+## 11. Vérité des tests et de l'intégration
 
-npm run release:verify
-npm run lint
-npm test -- --no-file-parallelism
+Le workflow `Core Gate` du dépôt exécute `npm run release:check` sur chaque pull request et sur chaque push vers `main`. Il couvre donc la gate canonique backend, frontend, build et E2E définie par le dépôt.
 
-cd frontend
-npm run lint
-npm test
-npm run build
-cd ..
-
-npm run test:e2e
-```
-
-Les commandes migration/seed doivent être exécutées sur l'environnement local de développement avant la QA visuelle si la base contient encore le contrat précédent.
-
-## 11. QA visuelle obligatoire avant PR finale
-
-Vérifier notamment :
-
-- plus de `Carotte carottes des sables` ;
-- plus de noms fabriqués depuis les dimensions ;
-- références distinctes lisibles ;
-- colonne Conservation correcte ;
-- onglets `Tous les produits | Favoris` ;
-- Catégorie facultative ;
-- Gamme facultative ;
-- Gamme 6 visible comme `PAI / PAE` ;
-- drawer sans accumulation de champs vides ;
-- administration globale en vocabulaire Référence ;
-- ajout/retrait des Favoris ;
-- recherche prédictive par nom de Référence.
-
-## 12. Suite immédiate
+La documentation ne fige pas un résultat CI futur. Pour la clôture technique, l'autorité est :
 
 ```text
-pull local de feature/m002-catalogue-produits
-→ reset M-002 local sécurisé
-→ migration M-002
-→ seed v6
-→ tests ciblés
-→ gates backend/frontend
-→ E2E
-→ npm run dev
-→ QA visuelle utilisateur
-→ corrections si nécessaire dans le même lot
-→ documentation finale éventuelle
-→ une seule PR M-002
+HEAD de la PR finale M-002
+→ Core Gate PR = success
+→ merge vers main
+→ Core Gate post-merge = success
 ```
 
-Ne pas ouvrir la PR finale avant QA visuelle et gates réellement verts.
+Ne jamais transformer une gate non exécutée ou en cours en résultat vert.
+
+## 12. Dette UX non bloquante
+
+`GMS-UX-001` suit les éventuels raffinements visuels M-002 post-merge. Aucun changement de modèle, d'API, de règle métier, de permission ou de frontière M-002/M-003 ne doit être glissé dans cette dette.
+
+## 13. Suite immédiate
+
+Après intégration de la PR finale M-002, ouvrir le cadrage détaillé M-003.
+
+Premier verrou à fermer :
+
+```text
+Fournisseur
+→ édition/catalogue identifié
+→ Article fournisseur
+→ rapprochement Référence Produit M-002
+→ conditionnement
+→ tarif de référence
+→ contexte/prix Dossier
+```
+
+Ne pas coder de modèle M-003 avant validation de son contrat détaillé.

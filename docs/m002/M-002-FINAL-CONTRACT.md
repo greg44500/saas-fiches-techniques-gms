@@ -1,8 +1,10 @@
 # M-002 — Contrat final du Référentiel Produits
 
-**Statut : VALIDÉ — implémentation en cours de finalisation sur `feature/m002-catalogue-produits`**  
-**Date : 2026-09-24**  
+**Statut : VALIDÉ ET GELÉ FONCTIONNELLEMENT — clôture acceptée le 2026-09-25**  
+**Date : 2026-09-25**  
 **Autorité : ce document remplace les décisions M-002 antérieures lorsqu'elles le contredisent.**
+
+La clôture de M-002 gèle le contrat fonctionnel, pas le contenu du référentiel : de nouvelles données Produit peuvent continuer à être ajoutées via les flux gouvernés existants ou de nouveaux datasets versionnés. Les retouches purement visuelles non bloquantes n'autorisent pas de modification silencieuse de ce contrat.
 
 ## 1. Objectif
 
