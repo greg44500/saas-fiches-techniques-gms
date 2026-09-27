@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 import {
     enforcePlanFeature,
 } from '../../middlewares/enforcePlanFeature.js';
@@ -54,9 +56,10 @@ const enforceSupplierImportCommitAccess = async (
                     status:
                         SUPPLIER_CATALOG_IMPORT_STATUS
                             .PREVIEWED,
-                    expiresAt: {
-                        $gt: new Date(),
-                    },
+                    expiresAt:
+                        mongoose.trusted({
+                            $gt: new Date(),
+                        }),
                 })
                 .select('preview')
                 .lean();

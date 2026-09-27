@@ -20,6 +20,7 @@ import {
     SupplierArticle,
 } from './supplier.model.js';
 import {
+    SupplierCatalogEdition,
     SupplierCatalogImportSession,
     SupplierCatalogLine,
 } from './supplierCatalog.model.js';
@@ -431,36 +432,21 @@ const loadExistingEditionMapping = async ({
         );
 
     const edition =
-        await mongoose.connection
-            .collection(
-                'suppliercatalogeditions',
-            )
+        await SupplierCatalogEdition
             .findOne({
-                ...(
+                scope,
+                workspace:
                     scope
                     === SUPPLIER_SCOPE
                         .GLOBAL_SHARED
-                        ? {
-                            scope,
-                            workspace: null,
-                        }
-                        : {
-                            scope,
-                            workspace:
-                                new mongoose
-                                    .Types
-                                    .ObjectId(
-                                        workspaceId
-                                            .toString(),
-                                    ),
-                        }
-                ),
+                        ? null
+                        : workspaceId,
                 supplier:
-                    new mongoose.Types.ObjectId(
-                        supplierId.toString(),
-                    ),
+                    supplierId,
                 identityKey,
-            });
+            })
+            .select('_id')
+            .lean();
 
     if (!edition) return null;
 

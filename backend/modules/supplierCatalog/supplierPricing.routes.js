@@ -61,16 +61,14 @@ const dossierSupplierPricingRouter =
 const supplierPricingPolicyRouter =
     Router({ mergeParams: true });
 
-const readDossierContext = [
-    loadWorkspaceContext,
+const readDossierScope = [
     loadAuthorizedDossierContext,
     enforceDossierStatePolicy(
         DOSSIER_STATE_POLICY.READ,
     ),
 ];
 
-const mutateDossierContext = [
-    loadWorkspaceContext,
+const mutableDossierScope = [
     enforceWorkspaceAccessMode(),
     loadAuthorizedDossierContext,
     enforceDossierStatePolicy(
@@ -82,14 +80,14 @@ dossierSupplierPricingRouter.get(
     '/metadata',
     authenticate,
     validateRequest({
-        params:
-            dossierParamsSchema,
+        params: dossierParamsSchema,
     }),
-    ...readDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .APPLICABLE_PRICE_READ,
     ),
+    ...readDossierScope,
     metadata,
 );
 
@@ -97,16 +95,16 @@ dossierSupplierPricingRouter.get(
     '/negotiated-prices',
     authenticate,
     validateRequest({
-        params:
-            dossierParamsSchema,
+        params: dossierParamsSchema,
         query:
             listNegotiatedPriceQuerySchema,
     }),
-    ...readDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .NEGOTIATED_PRICE_READ,
     ),
+    ...readDossierScope,
     listNegotiated,
 );
 
@@ -114,16 +112,16 @@ dossierSupplierPricingRouter.post(
     '/negotiated-prices',
     authenticate,
     validateRequest({
-        params:
-            dossierParamsSchema,
+        params: dossierParamsSchema,
         body:
             createNegotiatedPriceBodySchema,
     }),
-    ...mutateDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .NEGOTIATED_PRICE_MANAGE,
     ),
+    ...mutableDossierScope,
     createNegotiated,
 );
 
@@ -134,11 +132,12 @@ dossierSupplierPricingRouter.patch(
         params:
             negotiatedPriceParamsSchema,
     }),
-    ...mutateDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .NEGOTIATED_PRICE_MANAGE,
     ),
+    ...mutableDossierScope,
     archiveNegotiated,
 );
 
@@ -146,16 +145,16 @@ dossierSupplierPricingRouter.get(
     '/invoiced-prices',
     authenticate,
     validateRequest({
-        params:
-            dossierParamsSchema,
+        params: dossierParamsSchema,
         query:
             listInvoicedPriceQuerySchema,
     }),
-    ...readDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .INVOICED_PRICE_READ,
     ),
+    ...readDossierScope,
     listInvoiced,
 );
 
@@ -163,16 +162,16 @@ dossierSupplierPricingRouter.post(
     '/invoiced-prices',
     authenticate,
     validateRequest({
-        params:
-            dossierParamsSchema,
+        params: dossierParamsSchema,
         body:
             createInvoicedPriceBodySchema,
     }),
-    ...mutateDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .INVOICED_PRICE_MANAGE,
     ),
+    ...mutableDossierScope,
     createInvoiced,
 );
 
@@ -185,11 +184,12 @@ dossierSupplierPricingRouter.patch(
         body:
             invoicedPriceDecisionBodySchema,
     }),
-    ...mutateDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .INVOICED_PRICE_VALIDATE,
     ),
+    ...mutableDossierScope,
     decideInvoiced,
 );
 
@@ -197,14 +197,14 @@ dossierSupplierPricingRouter.get(
     '/references',
     authenticate,
     validateRequest({
-        params:
-            dossierParamsSchema,
+        params: dossierParamsSchema,
     }),
-    ...readDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .DOSSIER_REFERENCE_READ,
     ),
+    ...readDossierScope,
     listReferences,
 );
 
@@ -215,11 +215,12 @@ dossierSupplierPricingRouter.put(
         params:
             dossierReferenceParamsSchema,
     }),
-    ...mutateDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .DOSSIER_REFERENCE_MANAGE,
     ),
+    ...mutableDossierScope,
     addReference,
 );
 
@@ -230,11 +231,12 @@ dossierSupplierPricingRouter.delete(
         params:
             dossierReferenceParamsSchema,
     }),
-    ...mutateDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .DOSSIER_REFERENCE_MANAGE,
     ),
+    ...mutableDossierScope,
     removeReference,
 );
 
@@ -242,16 +244,16 @@ dossierSupplierPricingRouter.get(
     '/applicable',
     authenticate,
     validateRequest({
-        params:
-            dossierParamsSchema,
+        params: dossierParamsSchema,
         query:
             applicablePriceQuerySchema,
     }),
-    ...readDossierContext,
+    loadWorkspaceContext,
     authorizePermission(
         SUPPLIER_CATALOG_PERMISSION
             .APPLICABLE_PRICE_READ,
     ),
+    ...readDossierScope,
     applicable,
 );
 
