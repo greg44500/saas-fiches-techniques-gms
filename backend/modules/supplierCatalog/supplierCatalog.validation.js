@@ -38,7 +38,7 @@ const globalImportIdParamsSchema = z.strictObject({
 const nullableDateSchema =
     z.coerce.date().nullable().optional();
 
-const editionBodySchema = z.strictObject({
+const editionBaseSchema = z.strictObject({
     supplierId: objectIdSchema,
     name: z.string().trim().min(1).max(180),
     editionDate: nullableDateSchema,
@@ -47,20 +47,35 @@ const editionBodySchema = z.strictObject({
     source: z.string().trim().max(500)
         .nullable()
         .optional(),
-}).superRefine((value, context) => {
-    if (
-        value.validFrom
-        && value.validTo
-        && value.validFrom > value.validTo
-    ) {
-        context.addIssue({
-            code: 'custom',
-            path: ['validTo'],
-            message:
-                'La fin de validité doit être postérieure ou égale au début.',
-        });
-    }
 });
+
+const validateEditionValidityPeriod =
+    (value, context) => {
+        if (
+            value.validFrom
+            && value.validTo
+            && value.validFrom > value.validTo
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['validTo'],
+                message:
+                    'La fin de validité doit être postérieure ou égale au début.',
+            });
+        }
+    };
+
+const editionBodySchema =
+    editionBaseSchema.superRefine(
+        validateEditionValidityPeriod,
+    );
+
+const importEditionBodySchema =
+    editionBaseSchema
+        .omit({ supplierId: true })
+        .superRefine(
+            validateEditionValidityPeriod,
+        );
 
 const updateCatalogStatusBodySchema =
     z.strictObject({
@@ -331,8 +346,7 @@ const importDecisionSchema =
 const importPreviewBodySchema =
     z.strictObject({
         supplierId: objectIdSchema,
-        edition: editionBodySchema
-            .omit({ supplierId: true }),
+        edition: importEditionBodySchema,
         mapping: importMappingSchema,
         defaults:
             importDefaultsSchema
