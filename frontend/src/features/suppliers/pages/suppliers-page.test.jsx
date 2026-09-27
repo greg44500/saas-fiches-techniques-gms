@@ -20,6 +20,17 @@ vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: mocks.workspaceContext,
 }));
 
+vi.mock('@/components/shared/action-icon-button', () => ({
+  ActionIconButton: ({ label, onClick, disabled }) => (
+    <button
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    />
+  ),
+}));
+
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListSuppliersQuery: mocks.listSuppliers,
   useListSupplierArticlesQuery: mocks.listArticles,

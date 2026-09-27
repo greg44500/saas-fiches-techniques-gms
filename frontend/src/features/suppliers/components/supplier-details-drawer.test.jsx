@@ -9,6 +9,12 @@ const mocks = vi.hoisted(() => ({
   listGlobalCatalogs: vi.fn(),
 }));
 
+vi.mock('@/components/shared/action-icon-button', () => ({
+  ActionIconButton: ({ label, onClick }) => (
+    <button aria-label={label} onClick={onClick} type="button" />
+  ),
+}));
+
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListSupplierArticlesQuery: mocks.listWorkspaceArticles,
   useListSupplierCatalogsQuery: mocks.listWorkspaceCatalogs,
