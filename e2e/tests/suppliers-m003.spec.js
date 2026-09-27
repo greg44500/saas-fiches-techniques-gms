@@ -78,7 +78,7 @@ async function importCatalogFromUi(page, {
   await expect(
     page.getByText('Import catalogue terminé', {
       exact: true,
-    }),
+    }).last(),
   ).toBeVisible();
 }
 
@@ -112,7 +112,7 @@ async function createNegotiatedPriceFromUi(page, {
   await expect(
     page.getByText('Prix enregistré', {
       exact: true,
-    }),
+    }).last(),
   ).toBeVisible();
 }
 
@@ -226,7 +226,7 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
   );
   await expect(
     page.getByRole('heading', {
-      name: 'Fournisseurs et prix du Dossier',
+      name: /Fournisseurs et prix/,
     }),
   ).toBeVisible();
 

@@ -81,7 +81,8 @@ function DossierSupplierPricingPage() {
     if (can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ)) return 'references';
     if (can(SUPPLIER_PERMISSION.CATALOG_READ)) return 'catalogs';
     if (can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ)) return 'negotiated';
-    return 'invoiced';
+    if (can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ)) return 'invoiced';
+    return null;
   });
   const [priceDialog, setPriceDialog] = useState(null);
   const [articleToAdd, setArticleToAdd] = useState(NONE);
@@ -650,7 +651,8 @@ function DossierSupplierPricingPage() {
         </Card>
       )}
 
-      <Tabs onValueChange={setSection} value={section}>
+      {section && (
+        <Tabs onValueChange={setSection} value={section}>
         <TabsList aria-label="Données Fournisseurs du Dossier" variant="section">
           {can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) && (
             <TabsTrigger value="references" variant="section">
@@ -673,7 +675,8 @@ function DossierSupplierPricingPage() {
             </TabsTrigger>
           )}
         </TabsList>
-      </Tabs>
+        </Tabs>
+      )}
 
       {section === 'references' && (
         <section className="space-y-4">
