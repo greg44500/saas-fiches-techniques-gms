@@ -42,6 +42,7 @@ function SupplierReferencePage({ canManage }) {
   const [section, setSection] = useState('suppliers');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('ACTIVE');
   const [supplierDialog, setSupplierDialog] = useState({
     open: false,
     supplier: null,
@@ -51,13 +52,16 @@ function SupplierReferencePage({ canManage }) {
   const supplierQuery = useListGlobalSuppliersQuery({
     limit: 100,
     search: search || undefined,
+    status,
   });
   const articleQuery = useListGlobalSupplierArticlesQuery({
     limit: 100,
     search: search || undefined,
+    status,
   });
   const catalogQuery = useListGlobalSupplierCatalogsQuery({
     limit: 100,
+    status,
   });
 
   const [updateSupplierStatus, supplierStatusState] =
@@ -323,8 +327,9 @@ function SupplierReferencePage({ canManage }) {
         </TabsList>
       </Tabs>
 
-      {(section === 'suppliers' || section === 'articles') && (
-        <form className="flex max-w-xl gap-2" onSubmit={applySearch}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        {(section === 'suppliers' || section === 'articles') && (
+        <form className="flex max-w-xl flex-1 gap-2" onSubmit={applySearch}>
           <Input
             aria-label="Rechercher dans le référentiel Fournisseurs"
             maxLength={120}
@@ -336,7 +341,22 @@ function SupplierReferencePage({ canManage }) {
             Rechercher
           </Button>
         </form>
-      )}
+        )}
+        <div className="w-full lg:w-52">
+          <label className="mb-2 block text-sm font-medium" htmlFor="global-supplier-status-filter">
+            Statut
+          </label>
+          <select
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            id="global-supplier-status-filter"
+            onChange={(event) => setStatus(event.target.value)}
+            value={status}
+          >
+            <option value="ACTIVE">Actifs</option>
+            <option value="ARCHIVED">Archivés</option>
+          </select>
+        </div>
+      </div>
 
       {currentQuery.isLoading && currentQuery.data === undefined ? (
         <p className="text-sm text-muted-foreground">Chargement…</p>

@@ -60,6 +60,22 @@ const decimalToString = (value) => (
 const serializePrice = (price, kind) => ({
     id: price._id.toString(),
     kind,
+    supplierArticleId:
+        (
+            price.supplierArticle?._id
+            ?? price.supplierArticle
+        )?.toString() ?? null,
+    supplierId:
+        (
+            price.supplier?._id
+            ?? price.supplier
+        )?.toString() ?? null,
+    supplierArticle:
+        price.supplierArticle?._id
+            ? serializeSupplierArticleSummary(
+                price.supplierArticle,
+            )
+            : null,
     sourceAmount:
         decimalToString(
             price.sourceAmount,
@@ -647,6 +663,19 @@ const listNegotiatedPrices = async ({
         await NegotiatedPrice.find(
             filter,
         )
+            .populate({
+                path: 'supplierArticle',
+                populate: [
+                    {
+                        path: 'supplier',
+                        select: '_id name scope status',
+                    },
+                    {
+                        path: 'productVariant',
+                        select: '_id name referenceUnit status',
+                    },
+                ],
+            })
             .sort({
                 validFrom: -1,
                 _id: -1,
@@ -899,6 +928,19 @@ const listInvoicedPrices = async ({
         await InvoicedPrice.find(
             filter,
         )
+            .populate({
+                path: 'supplierArticle',
+                populate: [
+                    {
+                        path: 'supplier',
+                        select: '_id name scope status',
+                    },
+                    {
+                        path: 'productVariant',
+                        select: '_id name referenceUnit status',
+                    },
+                ],
+            })
             .sort({
                 invoiceDate: -1,
                 _id: -1,

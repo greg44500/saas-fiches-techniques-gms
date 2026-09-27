@@ -301,6 +301,20 @@ function DossierSupplierPricingPage() {
 
   const negotiatedColumns = [
     {
+      id: 'article',
+      header: 'Article',
+      cell: (price) => (
+        <div>
+          <p className="font-medium">
+            {price.supplierArticle?.supplierReference ?? 'Article fournisseur'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {price.supplierArticle?.supplierName ?? 'Fournisseur'}
+          </p>
+        </div>
+      ),
+    },
+    {
       id: 'period',
       header: 'Période',
       cell: (price) => (
@@ -348,6 +362,20 @@ function DossierSupplierPricingPage() {
   ];
 
   const invoicedColumns = [
+    {
+      id: 'article',
+      header: 'Article',
+      cell: (price) => (
+        <div>
+          <p className="font-medium">
+            {price.supplierArticle?.supplierReference ?? 'Article fournisseur'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {price.supplierArticle?.supplierName ?? 'Fournisseur'}
+          </p>
+        </div>
+      ),
+    },
     {
       id: 'date',
       header: 'Date de facture',

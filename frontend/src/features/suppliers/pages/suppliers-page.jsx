@@ -61,6 +61,7 @@ function SuppliersPage() {
   const [section, setSection] = useState('suppliers');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('ACTIVE');
   const [supplierDialog, setSupplierDialog] = useState({
     open: false,
     supplier: null,
@@ -71,12 +72,14 @@ function SuppliersPage() {
   const supplierQuery = useListSuppliersQuery({
     workspaceId: workspace.id,
     search: search || undefined,
+    status,
     limit: 100,
   });
   const articleQuery = useListSupplierArticlesQuery(
     {
       workspaceId: workspace.id,
       search: search || undefined,
+      status,
       limit: 100,
     },
     {
@@ -86,6 +89,7 @@ function SuppliersPage() {
   const catalogQuery = useListSupplierCatalogsQuery(
     {
       workspaceId: workspace.id,
+      status,
       limit: 100,
     },
     {
@@ -420,8 +424,9 @@ function SuppliersPage() {
         </TabsList>
       </Tabs>
 
-      {(section === 'suppliers' || section === 'articles') && (
-        <form className="flex max-w-xl gap-2" onSubmit={applySearch}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        {(section === 'suppliers' || section === 'articles') && (
+        <form className="flex max-w-xl flex-1 gap-2" onSubmit={applySearch}>
           <Input
             aria-label="Rechercher"
             maxLength={120}
@@ -433,7 +438,22 @@ function SuppliersPage() {
             Rechercher
           </Button>
         </form>
-      )}
+        )}
+        <div className="w-full lg:w-52">
+          <label className="mb-2 block text-sm font-medium" htmlFor="supplier-status-filter">
+            Statut
+          </label>
+          <select
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            id="supplier-status-filter"
+            onChange={(event) => setStatus(event.target.value)}
+            value={status}
+          >
+            <option value="ACTIVE">Actifs</option>
+            <option value="ARCHIVED">Archivés</option>
+          </select>
+        </div>
+      </div>
 
       {section === 'articles' && canManageArticles && !canReadProducts && (
         <p className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
