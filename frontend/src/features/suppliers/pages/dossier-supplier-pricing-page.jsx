@@ -25,6 +25,9 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
+  useGetDossierByIdQuery,
+} from '@/features/dossiers/api/dossiers-api';
+import {
   useAddDossierSupplierReferenceMutation,
   useArchiveNegotiatedPriceMutation,
   useDecideInvoicedPriceMutation,
@@ -34,6 +37,7 @@ import {
   useListInvoicedPricesQuery,
   useListNegotiatedPricesQuery,
   useListSupplierArticlesQuery,
+  useListSupplierCatalogsQuery,
   useRemoveDossierSupplierReferenceMutation,
   useUpdatePricingPolicyMutation,
 } from '@/features/suppliers/api/supplier-api';
@@ -46,6 +50,9 @@ import {
 import {
   formatPrice,
   getApiErrorMessage,
+  getSupplierScopeLabel,
+  getSupplierStatusLabel,
+  getSupplierStatusTone,
 } from '@/features/suppliers/lib/supplier-presentation';
 import {
   useWorkspaceContext,
@@ -72,6 +79,7 @@ function DossierSupplierPricingPage() {
   const { toast } = useToast();
   const [section, setSection] = useState(() => {
     if (can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ)) return 'references';
+    if (can(SUPPLIER_PERMISSION.CATALOG_READ)) return 'catalogs';
     if (can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ)) return 'negotiated';
     return 'invoiced';
   });
@@ -79,6 +87,10 @@ function DossierSupplierPricingPage() {
   const [articleToAdd, setArticleToAdd] = useState(NONE);
   const [selectedArticleId, setSelectedArticleId] = useState(NONE);
 
+  const dossierQuery = useGetDossierByIdQuery({
+    workspaceId: workspace.id,
+    dossierId,
+  });
   const referencesQuery = useListDossierSupplierReferencesQuery(
     { workspaceId: workspace.id, dossierId },
     { skip: !can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) },
@@ -86,6 +98,16 @@ function DossierSupplierPricingPage() {
   const articlesQuery = useListSupplierArticlesQuery(
     { workspaceId: workspace.id, limit: 100 },
     { skip: !can(SUPPLIER_PERMISSION.ARTICLE_READ) },
+  );
+  const catalogsQuery = useListSupplierCatalogsQuery(
+    {
+      workspaceId: workspace.id,
+      status: 'ACTIVE',
+      limit: 100,
+    },
+    {
+      skip: !can(SUPPLIER_PERMISSION.CATALOG_READ),
+    },
   );
   const negotiatedQuery = useListNegotiatedPricesQuery(
     { workspaceId: workspace.id, dossierId },
@@ -365,6 +387,55 @@ function DossierSupplierPricingPage() {
     },
   ];
 
+  const catalogColumns = [
+    {
+      id: 'name',
+      header: 'Catalogue',
+      cell: (catalog) => (
+        <div>
+          <p className="font-medium">{catalog.name}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {catalog.supplierName || 'Fournisseur non disponible'}
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: 'scope',
+      header: 'Portée',
+      cell: (catalog) => getSupplierScopeLabel(catalog.scope),
+    },
+    {
+      id: 'period',
+      header: 'Période',
+      cell: (catalog) => (
+        <span>
+          {catalog.validFrom
+            ? new Date(catalog.validFrom).toLocaleDateString('fr-FR')
+            : 'Début non renseigné'}
+          {' → '}
+          {catalog.validTo
+            ? new Date(catalog.validTo).toLocaleDateString('fr-FR')
+            : 'sans fin'}
+        </span>
+      ),
+    },
+    {
+      id: 'source',
+      header: 'Provenance',
+      cell: (catalog) => catalog.source || 'Non renseignée',
+    },
+    {
+      id: 'status',
+      header: 'Statut',
+      cell: (catalog) => (
+        <StatusBadge tone={getSupplierStatusTone(catalog.status)}>
+          {getSupplierStatusLabel(catalog.status)}
+        </StatusBadge>
+      ),
+    },
+  ];
+
   const invoicedColumns = [
     {
       id: 'article',
@@ -437,6 +508,29 @@ function DossierSupplierPricingPage() {
 
   const applicable = applicablePriceQuery.data;
 
+  if (
+    dossierQuery.isLoading
+    && dossierQuery.data === undefined
+  ) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Chargement du Dossier…
+      </p>
+    );
+  }
+
+  if (dossierQuery.isError || !dossierQuery.data) {
+    return (
+      <ErrorState
+        description="Le Dossier demandé n’est pas accessible ou n’a pas pu être chargé."
+        onRetry={dossierQuery.refetch}
+        title="Dossier indisponible"
+      />
+    );
+  }
+
+  const dossier = dossierQuery.data;
+
   return (
     <div className="space-y-6">
       <header className="space-y-4">
@@ -449,7 +543,7 @@ function DossierSupplierPricingPage() {
         <div>
           <p className="text-sm font-medium text-primary">{workspace.name}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            Fournisseurs et prix du Dossier
+            {dossier.name} — Fournisseurs et prix
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Les prix affichés et résolus restent strictement limités à ce Dossier.
@@ -563,6 +657,11 @@ function DossierSupplierPricingPage() {
               Références
             </TabsTrigger>
           )}
+          {can(SUPPLIER_PERMISSION.CATALOG_READ) && (
+            <TabsTrigger value="catalogs" variant="section">
+              Catalogues
+            </TabsTrigger>
+          )}
           {can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ) && (
             <TabsTrigger value="negotiated" variant="section">
               Tarifs négociés
@@ -633,6 +732,31 @@ function DossierSupplierPricingPage() {
                 />
               )}
               getRowKey={(reference) => reference.id}
+            />
+          )}
+        </section>
+      )}
+
+      {section === 'catalogs' && (
+        <section>
+          {catalogsQuery.isError ? (
+            <ErrorState
+              description="Les catalogues accessibles à ce Workspace n’ont pas pu être chargés."
+              onRetry={catalogsQuery.refetch}
+              title="Catalogues indisponibles"
+            />
+          ) : (
+            <DataTable
+              caption="Catalogues fournisseur accessibles depuis ce Dossier"
+              columns={catalogColumns}
+              data={catalogsQuery.data?.catalogs ?? []}
+              emptyContent={(
+                <EmptyState
+                  description="Aucun catalogue fournisseur actif n’est accessible."
+                  title="Aucun catalogue"
+                />
+              )}
+              getRowKey={(catalog) => catalog.id}
             />
           )}
         </section>

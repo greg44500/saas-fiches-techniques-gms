@@ -2,6 +2,9 @@ import {
   ErrorState,
 } from '@/components/shared/error-state';
 import {
+  DossierReadGate,
+} from '@/features/dossiers/components/dossier-read-gate';
+import {
   DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
 } from '@/features/suppliers/constants/supplier-permissions';
 import {
@@ -23,7 +26,11 @@ function DossierSupplierPricingRoute() {
     );
   }
 
-  return <DossierSupplierPricingPage />;
+  return (
+    <DossierReadGate>
+      <DossierSupplierPricingPage />
+    </DossierReadGate>
+  );
 }
 
 export { DossierSupplierPricingRoute };
