@@ -9,8 +9,14 @@ vi.mock('@/services/api/base-api', () => {
   const injectedApi = {
     injectEndpoints: vi.fn(({ endpoints }) => {
       const build = {
-        query: vi.fn((definition) => definition),
-        mutation: vi.fn((definition) => definition),
+        query: vi.fn((definition) => ({
+          ...definition,
+          __kind: 'query',
+        })),
+        mutation: vi.fn((definition) => ({
+          ...definition,
+          __kind: 'mutation',
+        })),
       };
       captured.endpointDefinitions = endpoints(build);
 
@@ -22,8 +28,7 @@ vi.mock('@/services/api/base-api', () => {
         captured.endpointDefinitions,
       )) {
         const suffix =
-          definition.method === undefined
-          && definition.query !== undefined
+          definition.__kind === 'query'
             ? 'Query'
             : 'Mutation';
         const hookName =
