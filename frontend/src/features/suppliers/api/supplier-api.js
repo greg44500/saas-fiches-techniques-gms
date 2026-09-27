@@ -474,6 +474,7 @@ export const {
   useCreateSupplierMutation,
   useDecideInvoicedPriceMutation,
   useGetApplicableSupplierPriceQuery,
+  useLazyGetApplicableSupplierPriceQuery,
   useGetGlobalSupplierMetadataQuery,
   useGetPricingPolicyQuery,
   useGetSupplierCatalogMetadataQuery,
