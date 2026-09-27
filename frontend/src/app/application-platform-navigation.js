@@ -1,5 +1,6 @@
 import { corePlatformNavigationSections } from '@/features/platform/lib/platform-navigation';
 import { productsPlatformNavigationModule } from '@/features/products/products-platform-navigation';
+import { suppliersPlatformNavigationModule } from '@/features/suppliers/suppliers-platform-navigation';
 
 function assertNonEmptyString(value, label) {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -186,6 +187,7 @@ function composeApplicationPlatformNavigation(navigationModules = []) {
  */
 const APPLICATION_PLATFORM_NAVIGATION_MODULES = Object.freeze([
   productsPlatformNavigationModule,
+  suppliersPlatformNavigationModule,
 ]);
 
 const APPLICATION_PLATFORM_NAVIGATION =
