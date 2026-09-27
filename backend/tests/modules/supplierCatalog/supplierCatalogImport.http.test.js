@@ -39,8 +39,21 @@ import {
     SUPPLIER_CATALOG_FEATURE,
 } from '../../../modules/supplierCatalog/supplierCatalogCapability.registry.js';
 import {
+    SupplierCatalogEdition,
+    SupplierCatalogImportSession,
+    SupplierCatalogLine,
     SupplierTariff,
 } from '../../../modules/supplierCatalog/supplierCatalog.model.js';
+import {
+    SupplierArticle,
+} from '../../../modules/supplierCatalog/supplier.model.js';
+import {
+    createSupplier as createSupplierService,
+    createSupplierArticle,
+} from '../../../modules/supplierCatalog/supplierReference.service.js';
+import {
+    SUPPLIER_SCOPE,
+} from '../../../modules/supplierCatalog/supplierCatalog.registry.js';
 import {
     createActiveProductReference,
 } from '../../helpers/productCatalogTest.fixtures.js';
@@ -48,6 +61,7 @@ import {
     bearer,
     createWorkspaceOwnerFixture,
 } from '../../helpers/dossierTest.fixtures.js';
+import mongoose from 'mongoose';
 
 let ownerContext;
 let productReference;
@@ -224,6 +238,201 @@ describe('M-003 supplier catalog import HTTP', () => {
             );
 
         expect(response.status).toBe(403);
+    });
+
+    it('préserve les lignes ambiguës et non rapprochées sans créer par approximation', async () => {
+        await enableImportFeature();
+
+        const globalSupplier = await createSupplierService({
+            scope: SUPPLIER_SCOPE.GLOBAL_SHARED,
+            actorId: ownerContext.owner._id,
+            data: { name: 'Fournisseur ambigu M003' },
+        });
+
+        await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.GLOBAL_SHARED,
+            actorId: ownerContext.owner._id,
+            data: {
+                supplierId: globalSupplier.id,
+                productVariantId: productReference.variant._id,
+                supplierReference: 'AMB-001',
+            },
+        });
+
+        await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            data: {
+                supplierId: globalSupplier.id,
+                productVariantId: productReference.variant._id,
+                supplierReference: 'AMB-001',
+            },
+        });
+
+        const csv = [
+            'Reference;Designation',
+            'AMB-001;Carotte import M003',
+            'UNKNOWN-999;Produit totalement inconnu M003',
+        ].join('\n');
+
+        const inspect = await request(app)
+            .post(basePath() + '/imports/inspect')
+            .set(bearer(ownerContext.token))
+            .attach(
+                'file',
+                Buffer.from(csv, 'utf8'),
+                'catalogue.csv',
+            );
+
+        expect(inspect.status).toBe(201);
+
+        const preview = await request(app)
+            .post(
+                basePath()
+                + '/imports/'
+                + inspect.body.data.importId
+                + '/preview',
+            )
+            .set(bearer(ownerContext.token))
+            .send({
+                supplierId: globalSupplier.id,
+                edition: {
+                    name: 'Catalogue ambigu M003',
+                },
+                mapping: {
+                    supplierReference: 0,
+                    designation: 1,
+                },
+                defaults: {
+                    currency: 'EUR',
+                },
+            });
+
+        expect(preview.status).toBe(200);
+        expect(preview.body.data.counts).toEqual(
+            expect.objectContaining({
+                AMBIGUOUS: 1,
+                UNMATCHED: 1,
+            }),
+        );
+
+        const commit = await request(app)
+            .post(
+                basePath()
+                + '/imports/'
+                + inspect.body.data.importId
+                + '/commit',
+            )
+            .set(bearer(ownerContext.token));
+
+        expect(commit.status).toBe(200);
+        expect(commit.body.data.createdArticles).toBe(0);
+
+        const lines = await SupplierCatalogLine
+            .find({ isCurrent: true })
+            .sort({ sourceRowNumber: 1 })
+            .lean();
+
+        expect(lines.map(({ matchStatus }) => matchStatus))
+            .toEqual(['AMBIGUOUS', 'UNMATCHED']);
+    });
+
+    it('rollback toutes les écritures si une ligne échoue pendant le commit', async () => {
+        await enableImportFeature();
+
+        const csv = [
+            'Reference;Designation',
+            'ROLL-001;Carotte import M003',
+        ].join('\n');
+
+        const inspect = await request(app)
+            .post(basePath() + '/imports/inspect')
+            .set(bearer(ownerContext.token))
+            .attach(
+                'file',
+                Buffer.from(csv, 'utf8'),
+                'catalogue.csv',
+            );
+
+        const preview = await request(app)
+            .post(
+                basePath()
+                + '/imports/'
+                + inspect.body.data.importId
+                + '/preview',
+            )
+            .set(bearer(ownerContext.token))
+            .send({
+                supplierId,
+                edition: {
+                    name: 'Catalogue rollback M003',
+                },
+                mapping: {
+                    supplierReference: 0,
+                    designation: 1,
+                },
+                defaults: {
+                    currency: 'EUR',
+                },
+            });
+
+        expect(preview.status).toBe(200);
+        expect(preview.body.data.rows[0].classification)
+            .toBe('CREATE_ARTICLE');
+
+        const session = await SupplierCatalogImportSession.findById(
+            inspect.body.data.importId,
+        );
+
+        session.preview.push({
+            rowNumber: 3,
+            supplierReference: 'ROLL-BAD',
+            normalizedSupplierReference: 'ROLL-BAD',
+            designation: 'Ligne volontairement invalide au commit',
+            normalizedDesignation:
+                'ligne volontairement invalide au commit',
+            brand: null,
+            packaging: null,
+            sourcePrice: null,
+            errors: [],
+            classification: 'CREATE_ARTICLE',
+            matchStatus: 'MATCHED',
+            supplierArticleId: null,
+            productVariantId:
+                new mongoose.Types.ObjectId().toString(),
+            lineIdentityKey: 'ref:ROLL-BAD',
+        });
+        await session.save();
+
+        const commit = await request(app)
+            .post(
+                basePath()
+                + '/imports/'
+                + inspect.body.data.importId
+                + '/commit',
+            )
+            .set(bearer(ownerContext.token));
+
+        expect(commit.status).toBe(404);
+        expect(
+            await SupplierArticle.countDocuments({
+                supplier: supplierId,
+            }),
+        ).toBe(0);
+        expect(
+            await SupplierCatalogEdition.countDocuments({
+                workspace: ownerContext.workspace._id,
+                name: 'Catalogue rollback M003',
+            }),
+        ).toBe(0);
+
+        const rolledBackSession =
+            await SupplierCatalogImportSession.findById(
+                inspect.body.data.importId,
+            ).lean();
+
+        expect(rolledBackSession.status).toBe('PREVIEWED');
     });
 
     it('importe, normalise le prix et réimporte la même édition sans doublon', async () => {

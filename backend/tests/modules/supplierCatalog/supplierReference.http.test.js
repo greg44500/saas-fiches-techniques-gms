@@ -120,6 +120,26 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(response.status).toBe(403);
     });
 
+    it('applique positivement un rôle personnalisé M-003', async () => {
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: ownerA.workspace._id,
+            actorId: ownerA.owner._id,
+            permissions: [
+                SUPPLIER_CATALOG_PERMISSION.SUPPLIER_READ,
+                SUPPLIER_CATALOG_PERMISSION.SUPPLIER_MANAGE,
+            ],
+        });
+
+        const response = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(member.token))
+            .send({ name: 'Fournisseur rôle personnalisé' });
+
+        expect(response.status).toBe(201);
+        expect(response.body.data.supplier.name)
+            .toBe('Fournisseur rôle personnalisé');
+    });
+
     it('refuse un doublon Article variant seulement par casse et espaces', async () => {
         const supplier = await request(app)
             .post(supplierPath(ownerA))

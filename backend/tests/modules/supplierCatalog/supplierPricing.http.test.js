@@ -165,6 +165,99 @@ describe('M-003 dossier pricing HTTP', () => {
         expect(overlap.status).toBe(409);
     });
 
+    it('résout par Référence Produit avec exactement un Article visible', async () => {
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/applicable',
+            )
+            .query({
+                productVariantId:
+                    productReference.variant._id.toString(),
+                atDate:
+                    '2026-09-27T00:00:00.000Z',
+            })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(200);
+        expect(
+            resolved.body.data.applicablePrice.article.id,
+        ).toBe(article.id);
+    });
+
+    it('refuse la résolution par Référence Produit sans Article visible', async () => {
+        const orphanReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Produit sans article M003',
+                referenceName:
+                    'Produit sans article M003',
+            });
+
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/applicable',
+            )
+            .query({
+                productVariantId:
+                    orphanReference.variant._id.toString(),
+            })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(404);
+    });
+
+    it('refuse de choisir automatiquement entre plusieurs Articles visibles', async () => {
+        const secondSupplier =
+            await createSupplier({
+                scope:
+                    SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+                workspaceId:
+                    owner.workspace._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Deuxième fournisseur prix M003',
+                },
+            });
+
+        await createSupplierArticle({
+            scope:
+                SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId:
+                owner.workspace._id,
+            actorId:
+                owner.owner._id,
+            data: {
+                supplierId:
+                    secondSupplier.id,
+                productVariantId:
+                    productReference.variant._id,
+                supplierReference:
+                    'POM-002',
+            },
+        });
+
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/applicable',
+            )
+            .query({
+                productVariantId:
+                    productReference.variant._id.toString(),
+            })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(409);
+        expect(resolved.body.message)
+            .toMatch(/sélection explicite/i);
+    });
+
     it('n utilise jamais le Tarif négocié d un autre Dossier', async () => {
         await request(app)
             .post(
@@ -208,6 +301,71 @@ describe('M-003 dossier pricing HTTP', () => {
                 'NO_VALID_NEGOTIATED_PRICE',
             ]),
         );
+    });
+
+    it('n utilise jamais un Prix facturé VALIDATED d un autre Dossier', async () => {
+        await request(app)
+            .put(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/supplier-pricing-policy',
+            )
+            .set(bearer(owner.token))
+            .send({
+                mode: 'INVOICED_PRICE',
+            })
+            .expect(200);
+
+        const invoice = await request(app)
+            .post(
+                pricingPath(dossierA)
+                + '/invoiced-prices',
+            )
+            .set(bearer(owner.token))
+            .send({
+                supplierId:
+                    supplier.id,
+                articleId:
+                    article.id,
+                invoiceDate:
+                    '2026-09-01T00:00:00.000Z',
+                sourceAmount: '14',
+                sourceBasis: 'KG',
+            });
+
+        await request(app)
+            .patch(
+                pricingPath(dossierA)
+                + '/invoiced-prices/'
+                + invoice.body.data.price.id
+                + '/status',
+            )
+            .set(bearer(owner.token))
+            .send({
+                status: 'VALIDATED',
+            })
+            .expect(200);
+
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierB)
+                + '/applicable',
+            )
+            .query({
+                articleId:
+                    article.id,
+                atDate:
+                    '2026-09-27T00:00:00.000Z',
+            })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(200);
+        expect(
+            resolved.body.data.applicablePrice.price,
+        ).toBeNull();
+        expect(
+            resolved.body.data.applicablePrice.alerts,
+        ).toContain('NO_VALIDATED_INVOICE');
     });
 
     it('retombe sur le Tarif fournisseur lorsque le mode standard ne trouve pas de négocié', async () => {
