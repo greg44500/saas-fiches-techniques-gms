@@ -70,7 +70,11 @@ function DossierSupplierPricingPage() {
   const { dossierId } = useParams();
   const { can, workspace } = useWorkspaceContext();
   const { toast } = useToast();
-  const [section, setSection] = useState('references');
+  const [section, setSection] = useState(() => {
+    if (can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ)) return 'references';
+    if (can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ)) return 'negotiated';
+    return 'invoiced';
+  });
   const [priceDialog, setPriceDialog] = useState(null);
   const [articleToAdd, setArticleToAdd] = useState(NONE);
   const [selectedArticleId, setSelectedArticleId] = useState(NONE);
