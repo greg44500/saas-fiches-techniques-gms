@@ -1000,11 +1000,83 @@ const upsertCatalogLine = async ({
             );
         }
 
+        const preparedRow = { ...row };
+
+        if (row.supplierArticleId) {
+            const article =
+                await SupplierArticle.findOne({
+                    _id:
+                        row.supplierArticleId,
+                    supplier:
+                        catalog.supplier,
+                    status:
+                        SUPPLIER_RESOURCE_STATUS
+                            .ACTIVE,
+                    ...(scope
+                    === SUPPLIER_SCOPE
+                        .GLOBAL_SHARED
+                        ? {
+                            scope:
+                                SUPPLIER_SCOPE
+                                    .GLOBAL_SHARED,
+                            workspace: null,
+                        }
+                        : {
+                            $or:
+                                mongoose.trusted([
+                                    {
+                                        scope:
+                                            SUPPLIER_SCOPE
+                                                .GLOBAL_SHARED,
+                                        workspace:
+                                            null,
+                                    },
+                                    {
+                                        scope:
+                                            SUPPLIER_SCOPE
+                                                .WORKSPACE_PRIVATE,
+                                        workspace:
+                                            workspaceId,
+                                    },
+                                ]),
+                        }),
+                }).session(session);
+
+            if (!article) {
+                throw new AppError(
+                    'Article fournisseur introuvable pour ce catalogue.',
+                    404,
+                );
+            }
+
+            preparedRow.productVariantId =
+                article.productVariant;
+            preparedRow.matchStatus =
+                SUPPLIER_CATALOG_MATCH_STATUS
+                    .MATCHED;
+        } else if (row.productVariantId) {
+            const variant =
+                await ProductVariant.findOne({
+                    _id:
+                        row.productVariantId,
+                    status:
+                        PRODUCT_STATUS.ACTIVE,
+                    identityActive: true,
+                }).session(session);
+
+            if (!variant) {
+                throw new AppError(
+                    'Référence Produit introuvable.',
+                    404,
+                );
+            }
+        }
+
         const result =
             await upsertCatalogLineInSession({
                 catalog,
                 actorId,
-                row,
+                row: preparedRow,
                 session,
             });
 
