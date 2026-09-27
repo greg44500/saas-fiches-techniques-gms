@@ -17,7 +17,6 @@ import {
     SupplierArticle,
 } from './supplier.model.js';
 import {
-    SupplierCatalogEdition,
     SupplierTariff,
 } from './supplierCatalog.model.js';
 import {
