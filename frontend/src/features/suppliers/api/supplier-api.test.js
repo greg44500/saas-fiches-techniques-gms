@@ -13,7 +13,28 @@ vi.mock('@/services/api/base-api', () => {
         mutation: vi.fn((definition) => definition),
       };
       captured.endpointDefinitions = endpoints(build);
-      return { endpoints: captured.endpointDefinitions };
+
+      const api = {
+        endpoints: captured.endpointDefinitions,
+      };
+
+      for (const [name, definition] of Object.entries(
+        captured.endpointDefinitions,
+      )) {
+        const suffix =
+          definition.method === undefined
+          && definition.query !== undefined
+            ? 'Query'
+            : 'Mutation';
+        const hookName =
+          'use'
+          + name.charAt(0).toUpperCase()
+          + name.slice(1)
+          + suffix;
+        api[hookName] = vi.fn();
+      }
+
+      return api;
     }),
   };
 
@@ -30,12 +51,17 @@ vi.mock('@/services/api/base-api', () => {
 import {
   SUPPLIER_API_TAG_TYPES,
   supplierApi,
+  useUpdateSupplierCatalogStatusMutation,
 } from '@/features/suppliers/api/supplier-api';
 
 describe('supplierApi', () => {
   it('étend RTK Query avec les tags métier M-003', () => {
     expect(captured.addTagTypes).toEqual([...SUPPLIER_API_TAG_TYPES]);
     expect(supplierApi.endpoints).toBe(captured.endpointDefinitions);
+  });
+
+  it('exporte le hook de changement de statut d un catalogue Workspace', () => {
+    expect(useUpdateSupplierCatalogStatusMutation).toBeTypeOf('function');
   });
 
   it('utilise les routes Workspace Fournisseurs et Articles', () => {

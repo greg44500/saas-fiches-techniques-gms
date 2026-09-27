@@ -507,6 +507,7 @@ export const {
   useUpdatePricingPolicyMutation,
   useUpdateSupplierArticleMutation,
   useUpdateSupplierArticleStatusMutation,
+  useUpdateSupplierCatalogStatusMutation,
   useUpdateSupplierMutation,
   useUpdateSupplierStatusMutation,
 } = supplierApi;
