@@ -1,0 +1,206 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import {
+  ToastProvider,
+} from '@/components/shared/toast-provider';
+
+const mocks = vi.hoisted(() => ({
+  workspaceContext: vi.fn(),
+  listSuppliers: vi.fn(),
+  listArticles: vi.fn(),
+  listCatalogs: vi.fn(),
+  updateSupplierStatus: vi.fn(),
+  updateArticleStatus: vi.fn(),
+  updateCatalogStatus: vi.fn(),
+}));
+
+vi.mock('@/features/workspace/components/workspace-context', () => ({
+  useWorkspaceContext: mocks.workspaceContext,
+}));
+
+vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useListSuppliersQuery: mocks.listSuppliers,
+  useListSupplierArticlesQuery: mocks.listArticles,
+  useListSupplierCatalogsQuery: mocks.listCatalogs,
+  useUpdateSupplierStatusMutation: () => [
+    mocks.updateSupplierStatus,
+    { isLoading: false },
+  ],
+  useUpdateSupplierArticleStatusMutation: () => [
+    mocks.updateArticleStatus,
+    { isLoading: false },
+  ],
+  useUpdateSupplierCatalogStatusMutation: () => [
+    mocks.updateCatalogStatus,
+    { isLoading: false },
+  ],
+}));
+
+vi.mock('@/features/suppliers/components/supplier-form-dialog', () => ({
+  SupplierFormDialog: ({ open }) => (
+    open ? <div>Formulaire Fournisseur ouvert</div> : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-article-form-dialog', () => ({
+  SupplierArticleFormDialog: ({ open }) => (
+    open ? <div>Formulaire Article ouvert</div> : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-catalog-import-dialog', () => ({
+  SupplierCatalogImportDialog: ({ open }) => (
+    open ? <div>Import catalogue ouvert</div> : null
+  ),
+}));
+
+import {
+  SUPPLIER_CAPABILITY,
+} from '@/features/suppliers/constants/supplier-permissions';
+import {
+  SuppliersPage,
+} from '@/features/suppliers/pages/suppliers-page';
+
+const queryResult = (data) => ({
+  data,
+  isError: false,
+  isFetching: false,
+  isLoading: false,
+  refetch: vi.fn(),
+});
+
+function renderPage() {
+  return render(
+    <ToastProvider>
+      <SuppliersPage />
+    </ToastProvider>,
+  );
+}
+
+describe('SuppliersPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: () => true,
+      hasFeature: () => true,
+    });
+
+    mocks.listSuppliers.mockImplementation(({ status }) => (
+      queryResult({
+        suppliers: status === 'ARCHIVED'
+          ? []
+          : [
+            {
+              id: 'supplier-global',
+              name: 'Sysco partagé',
+              supplierCode: 'SYS',
+              scope: 'GLOBAL_SHARED',
+              status: 'ACTIVE',
+            },
+            {
+              id: 'supplier-private',
+              name: 'Fournisseur local',
+              supplierCode: 'LOC',
+              scope: 'WORKSPACE_PRIVATE',
+              status: 'ACTIVE',
+            },
+          ],
+        pagination: {
+          page: 1,
+          limit: 100,
+          total: 2,
+          totalPages: 1,
+        },
+      })
+    ));
+
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [],
+      pagination: {
+        page: 1,
+        limit: 100,
+        total: 0,
+        totalPages: 0,
+      },
+    }));
+
+    mocks.listCatalogs.mockReturnValue(queryResult({
+      catalogs: [{
+        id: 'catalog-1',
+        name: 'Catalogue septembre',
+        supplierName: 'Fournisseur local',
+        scope: 'WORKSPACE_PRIVATE',
+        status: 'ACTIVE',
+        validFrom: '2026-09-01T00:00:00.000Z',
+        validTo: '2026-09-30T00:00:00.000Z',
+      }],
+      pagination: {
+        page: 1,
+        limit: 100,
+        total: 1,
+        totalPages: 1,
+      },
+    }));
+  });
+
+  it('distingue les Fournisseurs partagés et privés', () => {
+    renderPage();
+
+    expect(screen.getByText('Sysco partagé')).toBeInTheDocument();
+    expect(screen.getByText('Fournisseur local')).toBeInTheDocument();
+    expect(screen.getByText('Partagé')).toBeInTheDocument();
+    expect(screen.getByText('Privé')).toBeInTheDocument();
+  });
+
+  it('masque l import catalogue sans capability même avec la permission RBAC', async () => {
+    const user = userEvent.setup();
+
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: () => true,
+      hasFeature: () => false,
+    });
+
+    renderPage();
+
+    await user.click(screen.getByRole('tab', { name: 'Catalogues' }));
+
+    expect(screen.queryByRole('button', {
+      name: 'Importer un catalogue',
+    })).not.toBeInTheDocument();
+  });
+
+  it('autorise l import catalogue seulement avec permission et capability', async () => {
+    const user = userEvent.setup();
+
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: () => true,
+      hasFeature: (feature) => (
+        feature === SUPPLIER_CAPABILITY.CATALOG_IMPORT
+      ),
+    });
+
+    renderPage();
+
+    await user.click(screen.getByRole('tab', { name: 'Catalogues' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Importer un catalogue',
+    }));
+
+    expect(screen.getByText('Import catalogue ouvert')).toBeInTheDocument();
+  });
+});
