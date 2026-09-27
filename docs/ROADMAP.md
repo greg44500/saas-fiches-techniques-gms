@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 cadrage validé, implémentation prochaine  
+**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 implémenté sur branche, validation en cours  
 **Dernière mise à jour :** 2026-09-27
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -103,7 +103,7 @@ Décision de clôture du 2026-09-25 : le périmètre fonctionnel M-002 est gelé
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
-**État : VALIDÉ — contrat détaillé M-003 fermé, prêt pour implémentation**
+**État : IMPLÉMENTATION PRÉSENTE SUR BRANCHE — validation visuelle, tests réels et gate finale en attente**
 
 Source canonique :
 

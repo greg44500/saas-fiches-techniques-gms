@@ -197,3 +197,53 @@ migration:m003-supplier-catalog :
 5. Zod ;
 6. controllers/routes ;
 7. tests d'intégration tenancy/RBAC/capability.
+
+## 12. État d'implémentation au 2026-09-27
+
+La conception ci-dessus est matérialisée sur :
+
+~~~text
+feature/m003-suppliers-catalogs-pricing
+~~~
+
+HEAD de référence au moment de cette mise à jour :
+
+~~~text
+ad873a3264fea026ba717da09428ba85ab0001cb
+~~~
+
+Les surfaces backend, frontend et E2E sont présentes. Aucune exécution de gate n'est revendiquée dans cette session.
+
+## 13. Gouvernance Application Global M-003
+
+L'Application Global n'autorise qu'un membership courant par utilisateur. M-003 ne crée donc pas un second membership indépendant pour le Fondateur.
+
+Le bootstrap :
+
+~~~bash
+npm run seed:m003-governance
+~~~
+
+crée/synchronise le rôle système :
+
+~~~text
+business_reference_governor
+~~~
+
+avec les permissions Produits M-002 et Fournisseurs M-003.
+
+Si le Fondateur possède encore le rôle système M-002 \`product_reference_governor\`, son membership actif existant est migré vers le rôle combiné. Un rôle personnalisé ou un membership suspendu n'est jamais remplacé silencieusement.
+
+## 14. Validation opérationnelle avant PR
+
+Sur une base locale existante :
+
+~~~bash
+npm run migration:m003-supplier-catalog
+npm run seed:m003-governance
+~~~
+
+Puis effectuer la validation visuelle et les tests applicables.
+
+La capability \`supplier_catalog_import\` reste indépendante du RBAC. Tant que le mapping commercial final des plans n'est pas validé, l'import privé se teste via un entitlement override explicite.
+

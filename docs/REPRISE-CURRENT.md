@@ -3,8 +3,9 @@
 **Date :** 2026-09-27  
 **Lot clôturé :** M-002 — Référentiel Produits  
 **Lot courant :** M-003 — Fournisseurs + Articles + conditionnements + prix/catalogues  
-**État M-003 :** cadrage détaillé VALIDÉ — implémentation autorisée  
-**Branche préparée :** `feature/m003-suppliers-catalogs-pricing`
+**État M-003 :** implémentation backend/frontend/E2E présente sur branche — validation réelle et visuelle en attente  
+**Branche :** \`feature/m003-suppliers-catalogs-pricing\`  
+**HEAD vérifié :** \`ad873a3264fea026ba717da09428ba85ab0001cb\`
 
 ## 1. Ordre d'autorité
 
@@ -19,9 +20,9 @@ KB-START-HERE
 → présente reprise
 ~~~
 
-En cas de contradiction, Git/code/tests priment.
+Aucun test ou gate M-003 n'est déclaré vert dans ce document tant qu'une exécution réelle ne l'a pas démontré.
 
-## 2. Point de départ Git vérifié
+## 2. Git et Core
 
 Dépôt :
 
@@ -29,28 +30,16 @@ Dépôt :
 greg44500/saas-fiches-techniques-gms
 ~~~
 
-Main de départ du cadrage M-003 :
+Base M-003 :
 
 ~~~text
-386e64cacd97cab15e712697c2d7fdd985a4f62e
+main = 386e64cacd97cab15e712697c2d7fdd985a4f62e
 Merge PR #20 — feat(m002): deliver the shared product reference catalog
 ~~~
 
-Preuves de clôture M-002 :
+La branche M-003 est actuellement en avance sur \`main\` et n'était pas en retard lors de la dernière vérification.
 
-~~~text
-Core Gate PR #130
-→ success
-
-Core Gate post-merge #131
-→ success
-~~~
-
-La branche M-003 a été créée depuis ce HEAD.
-
-Toujours revérifier GitHub au début de la prochaine conversation avant toute modification.
-
-## 3. Core intégré
+Core intégré :
 
 ~~~text
 repository = greg44500/saas-core-api
@@ -59,23 +48,9 @@ tag        = v1.2.1
 commit     = d90d8f1e6034cbbf4f63de2be7312eae69b1d698
 ~~~
 
-Les points d'extension nécessaires sont disponibles :
+Aucune évolution Core n'a été nécessaire pour M-003.
 
-- RBAC Workspace ;
-- capabilities ;
-- routes backend ;
-- routes frontend ;
-- navigation Workspace ;
-- navigation Platform ;
-- Dashboard ;
-- Application Global authorization ;
-- lifecycle WorkspaceMember lorsque pertinent.
-
-Aucune évolution Core n'est actuellement identifiée comme nécessaire pour M-003.
-
-Si l'implémentation démontre un manque générique, ne pas le corriger silencieusement dans le produit : retourner dans saas-core-api, tester/versionner puis intégrer par une branche core-update.
-
-## 4. Contrat canonique M-003
+## 3. Contrat canonique
 
 Source de vérité :
 
@@ -83,262 +58,316 @@ Source de vérité :
 docs/m003/M-003-FINAL-CONTRACT.md
 ~~~
 
-Le contrat a été explicitement validé le 2026-09-27.
+Le contrat M-003 a été validé le 2026-09-27.
 
-Aucun modèle Mongoose M-003 n'existait au moment de cette validation.
+Invariants structurants conservés :
 
-## 5. Frontière M-002 / M-003
+- Workspace = frontière de tenancy ;
+- \`WORKSPACE_PRIVATE\` n'est jamais visible hors Workspace ;
+- Tarif négocié et Prix facturé restent strictement Dossier ;
+- aucun fallback de prix inter-Dossier ;
+- Référence Produit M-002 et Article fournisseur M-003 restent distincts ;
+- ligne ambiguë = aucune création automatique dangereuse ;
+- absence de prix ≠ zéro ;
+- backend = autorité du Prix applicable ;
+- aucune sélection automatique de l'Article le moins cher ;
+- Owner Workspace reçoit le RBAC M-003 mais ne devient pas autorité Application Global ;
+- import privé = RBAC + capability \`supplier_catalog_import\`.
 
-M-002 reste gelé :
+## 4. Implémentation M-003 présente
 
-~~~text
-Référence Produit
-→ identité Produit exploitable
-→ catégorie/conservation/unité
-→ favoris Produits Workspace
-~~~
+### Backend
 
-M-003 ajoute :
+Le module \`backend/modules/supplierCatalog\` contient désormais :
 
-~~~text
-Fournisseur
-→ Article fournisseur
-→ conditionnement
-→ édition catalogue
-→ Tarif fournisseur
-→ Tarif négocié Dossier
-→ Prix facturé Dossier
-→ Prix applicable
-~~~
+- Fournisseurs \`GLOBAL_SHARED | WORKSPACE_PRIVATE\` ;
+- Articles fournisseur et \`replacedBy\` ;
+- conditionnements structurés ;
+- éditions de catalogues historisées ;
+- lignes de catalogue révisées via \`revision / isCurrent\` ;
+- Tarifs fournisseur historisés ;
+- imports CSV/XLS/XLSX \`inspect → preview → commit\` ;
+- rapprochement prudent : MATCHED / CREATE_ARTICLE / UNMATCHED / AMBIGUOUS / IGNORED / INVALID ;
+- réimport de la même édition sans duplication attendue ;
+- calcul exact des normalisations de prix avant Decimal128 via arithmétique rationnelle BigInt ;
+- Tarifs négociés Dossier avec refus des périodes actives chevauchantes ;
+- Prix facturés Dossier avec validation/rejet ;
+- fraîcheur du Prix facturé = 12 mois calendaires depuis \`invoiceDate\` ;
+- politique Workspace du Prix applicable ;
+- fallback strict dans le Dossier ;
+- résolution par Référence Produit : 0 candidat = refus, 1 = sélection, plusieurs = sélection explicite requise ;
+- favoris Dossier × Article sans copie de prix ;
+- événements métier M-003 ;
+- verrous métier \`SupplierCommerceLock\` pour les invariants concurrentiels.
 
-M-003 ne recrée jamais une identité Produit parallèle.
-
-## 6. Décisions M-003 validées
-
-### Portées
-
-~~~text
-GLOBAL_SHARED
-→ référentiel commun SaaS
-
-WORKSPACE_PRIVATE
-→ données propres à un Workspace
-→ jamais exposées hors Workspace
-~~~
-
-Un utilisateur peut importer un catalogue spécifique à son Workspace sans le partager au SaaS.
-
-Le SaaS peut parallèlement proposer des catalogues globaux.
-
-Un catalogue Workspace est disponible pour plusieurs Dossiers du même Workspace ; il n'est pas copié par Dossier.
-
-### Données Dossier
-
-Toujours strictement locales :
-
-- Tarif négocié ;
-- Prix facturé ;
-- Référence favorite ;
-- historique commercial Dossier.
-
-Un prix du Dossier A n'est jamais fallback du Dossier B.
-
-### Owner
+Routes composées :
 
 ~~~text
-Workspace Owner
-→ toutes les permissions métier M-003 de son Workspace
-→ tous les Dossiers
-→ sans cumul artificiel de rôles métier
+/api/workspaces/:workspaceId/suppliers
+/api/workspaces/:workspaceId/supplier-articles
+/api/workspaces/:workspaceId/supplier-catalogs
+/api/workspaces/:workspaceId/dossiers/:dossierId/supplier-pricing
+/api/workspaces/:workspaceId/supplier-pricing-policy
+/api/supplier-reference
+/api/supplier-reference/catalogs
 ~~~
 
-L'Owner reste soumis aux capabilities et n'obtient aucune autorité Application Global.
+### Permissions / capability
 
-### Fournisseur
-
-- `GLOBAL_SHARED | WORKSPACE_PRIVATE` ;
-- nom obligatoire ;
-- code fournisseur / raison sociale / site web facultatifs ;
-- `ACTIVE | ARCHIVED`.
-
-### Article fournisseur
+RBAC Workspace :
 
 ~~~text
-Fournisseur + référence fournisseur
-→ identité baseline
+supplier:read
+supplier:manage
+supplier:article:read
+supplier:article:manage
+supplier:catalog:read
+supplier:catalog:import
+supplier:catalog:manage
+supplier:negotiated-price:read
+supplier:negotiated-price:manage
+supplier:invoiced-price:read
+supplier:invoiced-price:manage
+supplier:invoiced-price:validate
+supplier:dossier-reference:read
+supplier:dossier-reference:manage
+supplier:applicable-price:read
+supplier:price-policy:manage
 ~~~
 
-- référence absente : pas de création automatique ;
-- lifecycle `ACTIVE | ARCHIVED` ;
-- remplacement possible via `replacedBy`.
-
-### Catalogues
-
-- plusieurs éditions historiques ;
-- `GLOBAL_SHARED | WORKSPACE_PRIVATE` ;
-- nouvelle édition = nouvelle réalité ;
-- réimport même édition = réconciliation sans doublon ;
-- formats V1 : CSV/XLS/XLSX ;
-- PDF libre/OCR différés.
-
-### Conditionnement
-
-Structuré pour permettre la normalisation lorsque les données sont fiables.
-
-Aucune donnée manquante n'est inventée.
-
-### Prix
-
-Tarif fournisseur :
+Application Global :
 
 ~~~text
-Article × édition
+supplier:reference:read
+supplier:reference:manage
 ~~~
 
-Tarif négocié :
+Capability :
 
 ~~~text
-Dossier × Article × période
+supplier_catalog_import
 ~~~
 
-Prix facturé :
+Le contrat ne fixe pas encore quel plan commercial précis active cette capability. Aucune attribution Free/Premium/IA n'a été inventée.
+
+### Migrations / bootstrap
+
+Commande migration M-003 :
+
+~~~bash
+npm run migration:m003-supplier-catalog
+~~~
+
+Elle :
+
+- crée/vérifie 24 index M-003 attendus ;
+- backfill les permissions des rôles système Workspace existants.
+
+Bootstrap de gouvernance globale :
+
+~~~bash
+npm run seed:m003-governance
+~~~
+
+Il crée le rôle système Application Global combiné :
 
 ~~~text
-Dossier × Article × date facture
+business_reference_governor
+→ product:reference:read
+→ product:reference:manage
+→ supplier:reference:read
+→ supplier:reference:manage
 ~~~
 
-Fraîcheur baseline du Prix facturé :
+Lorsqu'un Fondateur possède déjà le membership issu du bootstrap M-002, le seed migre ce membership actif vers le rôle combiné. Il refuse de remplacer silencieusement un rôle personnalisé ou un membership suspendu.
+
+### Frontend
+
+Surface Workspace \`/workspaces/:workspaceId/suppliers\` :
+
+- Fournisseurs partagés et privés ;
+- recherche ;
+- création/édition/archivage des Fournisseurs privés ;
+- Articles fournisseur ;
+- création manuelle d'Article privé avec Référence Produit M-002 ;
+- lifecycle Article ;
+- catalogues accessibles avec portée, période et provenance ;
+- import privé conditionné par permission + capability.
+
+Surface Dossier \`/workspaces/:workspaceId/dossiers/:dossierId/suppliers\` :
+
+- contrôle d'accès Dossier M-001 conservé ;
+- Références favorites ;
+- catalogues accessibles ;
+- Tarifs négociés ;
+- Prix facturés ;
+- validation/rejet des Prix facturés ;
+- politique Workspace ;
+- Prix applicable ;
+- source, fallback et alertes.
+
+Surface globale \`/supplier-reference\` :
+
+- autorisation Application Global explicite ;
+- Fournisseurs globaux ;
+- Articles globaux ;
+- catalogues globaux ;
+- imports globaux ;
+- lifecycle global.
+
+## 5. Tests présents dans la branche
+
+### Backend
+
+Couverture ajoutée pour :
+
+- registres permissions/capability/global ;
+- modèles/indexes/migration ;
+- isolation Fournisseur privé ;
+- catalogue privé invisible hors Workspace ;
+- Fournisseur global visible dans plusieurs Workspaces ;
+- RBAC refus et rôle personnalisé positif ;
+- normalisation/unicité Article ;
+- remplacement Article ;
+- capability import ;
+- preview ambigu/non rapproché ;
+- rollback transactionnel import ;
+- normalisation de prix ;
+- réimport idempotent ;
+- chevauchements négociés ;
+- résolution Article 0/1/N ;
+- absence de sélection automatique entre plusieurs Articles ;
+- isolation Tarif négocié inter-Dossier ;
+- isolation Prix facturé inter-Dossier ;
+- fallback fournisseur ;
+- fraîcheur 12 mois ;
+- favori sans prix copié ;
+- bootstrap de gouvernance globale M-003.
+
+### Frontend
+
+Couverture ajoutée pour :
+
+- composition routes/navigation ;
+- permission Workspace ;
+- permission Application Global ;
+- contrats RTK Query ;
+- capability d'import ;
+- distinction global/privé ;
+- mapping import ;
+- preview ambiguë ;
+- catalogues et provenance dans le contexte Dossier ;
+- Prix applicable, source/fallback ;
+- absence d'onglet non autorisé.
+
+### E2E Playwright
+
+Scénarios ajoutés :
+
+1. autorité Application Global accède au Référentiel Fournisseurs ;
+2. Workspace A importe puis réimporte la même édition privée, Workspace B ne la voit pas ;
+3. Dossier A et Dossier B utilisent le même Article avec des Tarifs négociés et Prix applicables distincts ;
+4. catalogue global visible depuis plusieurs Workspaces.
+
+La préparation E2E initialise désormais la gouvernance M-002 puis M-003.
+
+## 6. État réel de validation
+
+Non exécuté dans l'environnement de cette conversation :
 
 ~~~text
-12 mois calendaires depuis invoiceDate
+npm run migration:m003-supplier-catalog
+npm run seed:m003-governance
+npm run lint
+npm test
+npm --prefix frontend run lint
+npm --prefix frontend run test
+npm --prefix frontend run build
+npm run test:e2e
+npm run release:check
 ~~~
 
-Baseline Tarif négocié :
+Raison : le conteneur disponible n'a pas d'accès réseau au dépôt et le workflow GitHub \`Core Gate\` ne se déclenche que sur PR ou push vers \`main\`.
+
+Aucune de ces commandes n'est donc annoncée verte à ce stade.
+
+## 7. Prochaine validation locale
+
+Le frontend est suffisamment complet pour une validation visuelle depuis le clone local.
+
+Avant \`npm run dev\` sur un Workspace local existant :
+
+~~~bash
+git fetch origin
+git switch feature/m003-suppliers-catalogs-pricing
+git pull --ff-only origin feature/m003-suppliers-catalogs-pricing
+
+npm ci
+npm --prefix frontend ci
+
+npm run migration:m003-supplier-catalog
+npm run seed:m003-governance
+~~~
+
+Puis lancer backend et frontend dans deux terminaux :
+
+~~~bash
+npm run dev
+~~~
+
+~~~bash
+npm --prefix frontend run dev
+~~~
+
+Pour tester l'import privé, le Workspace de test doit disposer de la capability :
 
 ~~~text
-même Dossier + même Article
-→ périodes actives chevauchantes refusées
+supplier_catalog_import
 ~~~
 
-### Prix applicable
+Le contrat ne l'attribue encore à aucun plan précis ; utiliser un entitlement override de test si nécessaire plutôt que modifier arbitrairement un plan commercial.
+
+## 8. Points à vérifier visuellement
+
+Workspace Fournisseurs :
+
+- navigation « Fournisseurs » ;
+- distinction Partagé / Privé ;
+- création/modification/archivage privé ;
+- Articles ;
+- catalogues + provenance ;
+- bouton import visible uniquement avec la capability ;
+- inspect/mapping/preview/confirmation.
+
+Dossier :
+
+- bouton « Fournisseurs et prix » depuis un Dossier actif ;
+- nom du Dossier affiché ;
+- catalogues accessibles ;
+- favoris ;
+- Tarifs négociés ;
+- Prix facturés ;
+- Prix applicable ;
+- source/fallback.
+
+Global :
+
+- \`/supplier-reference\` accessible après \`seed:m003-governance\` ;
+- Fournisseurs/catalogues globaux ;
+- import global.
+
+## 9. Étapes restantes avant merge
 
 ~~~text
-Mode Tarif fournisseur
-→ Tarif fournisseur
-
-Mode Tarif négocié
-→ Tarif négocié Dossier
-→ sinon Tarif fournisseur
-
-Mode Prix facturé
-→ Prix facturé VALIDATED et frais du Dossier
-→ sinon Tarif négocié Dossier
-→ sinon Tarif fournisseur
+validation visuelle porteur produit
+→ corrections fonctionnelles/UX justifiées en lot
+→ exécution des gates applicables
+→ release:check / Core Gate
+→ une PR M-003
+→ validation Core Gate PR
+→ merge
+→ validation post-merge
+→ documentation de clôture
 ~~~
 
-Backend seule autorité.
-
-Jamais de fallback inter-Dossier.
-
-### Références favorites
-
-~~~text
-Dossier × Article fournisseur
-~~~
-
-Le prix n'est pas stocké dans le favori.
-
-Baseline initiale : mode manuel. Aucun seuil de fréquence arbitraire ne doit bloquer le début de M-003.
-
-### Capability
-
-L'import d'un catalogue `WORKSPACE_PRIVATE` est une capability métier dédiée et payante dans la baseline V1.
-
-RBAC et capability restent distincts.
-
-## 7. Baseline V1 révisable
-
-Peuvent évoluer après tests métier réels :
-
-- champs Fournisseur facultatifs ;
-- UX ;
-- workflow de rapprochement ;
-- replacedBy ;
-- durée standard de fraîcheur ;
-- ergonomie des périodes ;
-- capabilities commerciales ;
-- filtres ;
-- seuil de fréquence ;
-- modes suggestion/automatique ;
-- nouveaux conditionnements rencontrés.
-
-Ces ajustements ne doivent pas être considérés comme des blocages avant l'implémentation.
-
-En revanche, ne pas contourner les invariants de tenancy, isolation Dossier, sécurité et historisation.
-
-## 8. Travail à réaliser dans la prochaine conversation
-
-Avant toute modification importante :
-
-1. relire KB-START-HERE ;
-2. vérifier GitHub réel et la branche M-003 ;
-3. relire `docs/m003/M-003-FINAL-CONTRACT.md` ;
-4. vérifier `core-origin.json` ;
-5. vérifier la Core Gate et les scripts réellement exécutés ;
-6. inspecter l'architecture M-001/M-002 existante afin de réutiliser les patterns produit et les points d'extension Core.
-
-Puis implémenter M-003 par lot cohérent.
-
-Ordre prévu :
-
-~~~text
-1. constantes / registres
-2. permissions / capabilities
-3. modèles + indexes
-4. migrations
-5. services métier
-6. validations Zod
-7. controllers/routes
-8. tests backend
-9. frontend Workspace
-10. administration globale nécessaire
-11. tests frontend
-12. E2E critiques
-13. tests métier sur catalogues/cas réels
-14. corrections justifiées
-15. release:check / Core Gate
-16. validation visuelle par le porteur produit
-17. une PR M-003
-18. merge
-19. documentation de clôture
-~~~
-
-## 9. Discipline d'implémentation
-
-- un bloc M-003 cohérent ;
-- pas de micro-PR pour chaque sous-partie ;
-- ne pas modifier directement `main` ;
-- ne pas créer une primitive Core parallèle ;
-- ne pas faire de logique métier lourde dans routes/controllers ;
-- ownership explicite sur chaque donnée ;
-- backend autorité sur tenancy, prix, résolution et validations ;
-- tests métier propres à M-003, les tests Core ne les remplacent pas ;
-- les tests réels du porteur produit peuvent conduire à optimiser les baselines V1 avant la PR finale.
-
-## 10. Validation utilisateur
-
-Le porteur produit souhaite effectuer des tests visuels/réels depuis son clone local.
-
-Quand un état suffisamment complet et cohérent du frontend est disponible pour une validation visuelle, indiquer explicitement quand effectuer le pull et lancer l'application.
-
-Ne pas demander au porteur produit de relancer périodiquement des tests ou Core Gates : il signalera lui-même leurs résultats lorsque son intervention est nécessaire.
-
-## 11. Interdiction immédiate
-
-Ne pas démarrer M-004.
-
-Ne pas modifier les contrats M-002 gelés sauf incompatibilité démontrée.
-
-Ne pas créer de modèle M-003 en dehors de la branche M-003 préparée.
-
-Le prochain travail est l'implémentation M-003 à partir du contrat validé.
+Ne pas démarrer M-004 avant clôture M-003.
