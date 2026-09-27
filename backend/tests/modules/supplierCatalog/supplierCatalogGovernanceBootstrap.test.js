@@ -1,5 +1,6 @@
 import '../../setup.js';
 
+import mongoose from 'mongoose';
 import {
     describe,
     expect,
@@ -65,12 +66,13 @@ describe('M-003 reference governance bootstrap', () => {
         const currentMemberships =
             await ApplicationGlobalMember.countDocuments({
                 user: user._id,
-                status: {
-                    $in: [
-                        'active',
-                        'suspended',
-                    ],
-                },
+                status:
+                    mongoose.trusted({
+                        $in: [
+                            'active',
+                            'suspended',
+                        ],
+                    }),
             });
 
         expect(currentMemberships).toBe(1);

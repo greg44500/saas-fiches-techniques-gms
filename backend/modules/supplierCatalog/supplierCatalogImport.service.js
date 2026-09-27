@@ -458,9 +458,10 @@ const loadExistingEditionMapping = async ({
                     edition._id,
                 lineIdentityKey,
                 isCurrent: true,
-                supplierArticle: {
-                    $ne: null,
-                },
+                supplierArticle:
+                    mongoose.trusted({
+                        $ne: null,
+                    }),
             })
             .select(
                 'supplierArticle productVariant',

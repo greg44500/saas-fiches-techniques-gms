@@ -414,7 +414,9 @@ describe('M-003 supplier catalog import HTTP', () => {
             )
             .set(bearer(ownerContext.token));
 
-        expect(commit.status).toBe(404);
+        expect(commit.status).toBe(409);
+        expect(commit.body.message)
+            .toMatch(/Référence Produit indisponible/i);
         expect(
             await SupplierArticle.countDocuments({
                 supplier: supplierId,

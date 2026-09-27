@@ -57,6 +57,13 @@ const decimalToString = (value) => (
         : value.toString()
 );
 
+const isPopulatedSupplierArticle = (article) => (
+    article
+    && typeof article === 'object'
+    && article.supplier
+    && article.productVariant
+);
+
 const serializePrice = (price, kind) => ({
     id: price._id.toString(),
     kind,
@@ -71,7 +78,9 @@ const serializePrice = (price, kind) => ({
             ?? price.supplier
         )?.toString() ?? null,
     supplierArticle:
-        price.supplierArticle?._id
+        isPopulatedSupplierArticle(
+            price.supplierArticle,
+        )
             ? serializeSupplierArticleSummary(
                 price.supplierArticle,
             )
@@ -1066,9 +1075,10 @@ const findValidNegotiatedPrice = async ({
     $or: mongoose.trusted([
         { validTo: null },
         {
-            validTo: {
-                $gte: atDate,
-            },
+            validTo:
+                mongoose.trusted({
+                    $gte: atDate,
+                }),
         },
     ]),
 })
@@ -1099,10 +1109,11 @@ const findApplicableSupplierTariff = async ({
                                 null,
                         },
                         {
-                            validFrom: {
-                                $lte:
-                                    atDate,
-                            },
+                            validFrom:
+                                mongoose.trusted({
+                                    $lte:
+                                        atDate,
+                                }),
                         },
                     ],
                 },
@@ -1112,10 +1123,11 @@ const findApplicableSupplierTariff = async ({
                             validTo: null,
                         },
                         {
-                            validTo: {
-                                $gte:
-                                    atDate,
-                            },
+                            validTo:
+                                mongoose.trusted({
+                                    $gte:
+                                        atDate,
+                                }),
                         },
                     ],
                 },
