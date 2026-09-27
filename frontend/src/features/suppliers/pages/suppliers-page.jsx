@@ -220,11 +220,6 @@ function SuppliersPage() {
       cell: (supplier) => getSupplierScopeLabel(supplier.scope),
     },
     {
-      id: 'source',
-      header: 'Provenance',
-      cell: (catalog) => catalog.source || 'Non renseignée',
-    },
-    {
       id: 'status',
       header: 'Statut',
       cell: (supplier) => (
@@ -349,6 +344,11 @@ function SuppliersPage() {
             : 'sans fin'}
         </span>
       ),
+    },
+    {
+      id: 'source',
+      header: 'Provenance',
+      cell: (catalog) => catalog.source || 'Non renseignée',
     },
     {
       id: 'status',

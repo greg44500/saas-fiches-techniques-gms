@@ -126,11 +126,6 @@ function SupplierReferencePage({ canManage }) {
       ),
     },
     {
-      id: 'source',
-      header: 'Provenance',
-      cell: (catalog) => catalog.source || 'Non renseignée',
-    },
-    {
       id: 'status',
       header: 'Statut',
       cell: (supplier) => (
@@ -258,6 +253,11 @@ function SupplierReferencePage({ canManage }) {
             : 'sans fin'}
         </span>
       ),
+    },
+    {
+      id: 'source',
+      header: 'Provenance',
+      cell: (catalog) => catalog.source || 'Non renseignée',
     },
     {
       id: 'status',
