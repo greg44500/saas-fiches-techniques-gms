@@ -12,6 +12,13 @@ import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Tabs,
   TabsList,
   TabsTrigger,
@@ -75,6 +82,11 @@ function SuppliersPage() {
     status,
     limit: 100,
   });
+  const activeSupplierQuery = useListSuppliersQuery({
+    workspaceId: workspace.id,
+    status: 'ACTIVE',
+    limit: 100,
+  });
   const articleQuery = useListSupplierArticlesQuery(
     {
       workspaceId: workspace.id,
@@ -106,8 +118,8 @@ function SuppliersPage() {
 
   const suppliers = supplierQuery.data?.suppliers ?? [];
   const activeSuppliers = useMemo(
-    () => suppliers.filter(({ status }) => status === 'ACTIVE'),
-    [suppliers],
+    () => activeSupplierQuery.data?.suppliers ?? [],
+    [activeSupplierQuery.data?.suppliers],
   );
 
   const canManageSuppliers = can(SUPPLIER_PERMISSION.SUPPLIER_MANAGE);
@@ -440,18 +452,23 @@ function SuppliersPage() {
         </form>
         )}
         <div className="w-full lg:w-52">
-          <label className="mb-2 block text-sm font-medium" htmlFor="supplier-status-filter">
-            Statut
-          </label>
-          <select
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-            id="supplier-status-filter"
-            onChange={(event) => setStatus(event.target.value)}
+          <p className="mb-2 text-sm font-medium">Statut</p>
+          <Select
+            items={[
+              { value: 'ACTIVE', label: 'Actifs' },
+              { value: 'ARCHIVED', label: 'Archivés' },
+            ]}
+            onValueChange={setStatus}
             value={status}
           >
-            <option value="ACTIVE">Actifs</option>
-            <option value="ARCHIVED">Archivés</option>
-          </select>
+            <SelectTrigger aria-label="Filtrer par statut">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ACTIVE">Actifs</SelectItem>
+              <SelectItem value="ARCHIVED">Archivés</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

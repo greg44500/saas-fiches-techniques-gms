@@ -61,15 +61,17 @@ function autoDetectMapping(headers) {
 
   const find = (...terms) => normalized.findIndex((header) =>
     terms.some((term) => header.includes(term)));
+  const findExact = (...terms) => normalized.findIndex((header) =>
+    terms.includes(header.trim()));
 
   const candidates = {
     supplierReference: find('reference', 'ref article', 'code article', 'sku'),
     designation: find('designation', 'produit', 'libelle'),
     brand: find('marque', 'brand'),
     containerType: find('conditionnement', 'contenant', 'colisage'),
-    unitCount: find('unites', 'nb unite', 'nombre unite'),
+    unitCount: findExact('unites', 'nb unites', 'nombre unites'),
     quantityPerUnit: find('quantite', 'qte'),
-    unit: find('unite', 'unit'),
+    unit: findExact('unite', 'unit', 'uom'),
     priceAmount: find('prix', 'tarif', 'price'),
     priceBasis: find('base'),
     currency: find('devise', 'currency'),
