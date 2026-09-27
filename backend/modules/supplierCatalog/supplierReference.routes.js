@@ -23,6 +23,7 @@ import {
     SUPPLIER_CATALOG_PERMISSION,
 } from './supplierCatalogPermission.registry.js';
 import {
+    access,
     createGlobalArticle,
     createGlobalSupplier,
     createWorkspaceArticle,
@@ -191,6 +192,11 @@ supplierArticleRouter.post(
 );
 
 supplierReferenceGlobalRouter.use(authenticate);
+
+supplierReferenceGlobalRouter.get(
+    '/access',
+    access,
+);
 
 supplierReferenceGlobalRouter.get(
     '/metadata',

@@ -1,4 +1,7 @@
 import {
+    resolveApplicationGlobalAuthorization,
+} from '../applicationGlobalAuthorization/applicationGlobalAuthorization.service.js';
+import {
     SUPPLIER_SCOPE,
 } from './supplierCatalog.registry.js';
 import {
@@ -13,6 +16,26 @@ import {
     updateSupplierArticleStatus,
     updateSupplierStatus,
 } from './supplierReference.service.js';
+
+const access = async (req, res) => {
+    const authorization =
+        await resolveApplicationGlobalAuthorization({
+            user: req.user,
+        });
+    const granted = new Set(
+        authorization?.permissions ?? [],
+    );
+    const permissions = [
+        'supplier:reference:read',
+        'supplier:reference:manage',
+    ].filter((permission) =>
+        granted.has(permission));
+
+    res.status(200).json({
+        status: 'success',
+        data: { access: { permissions } },
+    });
+};
 
 const metadata = async (req, res) => {
     res.status(200).json({
@@ -253,6 +276,7 @@ const replaceGlobalArticle = async (req, res) => {
 };
 
 export {
+    access,
     createGlobalArticle,
     createGlobalSupplier,
     createWorkspaceArticle,
