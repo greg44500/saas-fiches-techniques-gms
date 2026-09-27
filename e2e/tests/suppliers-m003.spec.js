@@ -1,3 +1,6 @@
+import {
+  E2E_FOUNDER,
+} from '../support/environment.js';
 import { randomUUID } from 'node:crypto';
 
 import { expect, test } from '@playwright/test';
@@ -136,6 +139,17 @@ async function resolveArticlePrice(page, {
     page.getByText(/Source : NEGOTIATED_PRICE/),
   ).toBeVisible();
 }
+
+test('M-003 autorité Application Global ouvre le Référentiel Fournisseurs', async ({ page }) => {
+  await loginWithIdentity(page, E2E_FOUNDER);
+  await page.goto('/supplier-reference');
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Référentiel Fournisseurs',
+    }),
+  ).toBeVisible();
+});
 
 test('M-003 owner importe un catalogue privé, le réimporte sans doublon et un autre Workspace ne le voit pas', async ({ page }) => {
   const workspaceA = await provisionSupplierOwnerWorkspace();
