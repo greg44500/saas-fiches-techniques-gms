@@ -37,8 +37,40 @@ const buildSupplierCatalogEditionIdentityKey = ({
     formatIdentityDate(validTo),
 ].join('|');
 
+const buildSupplierCatalogLineIdentityKey = ({
+    supplierReference,
+    designation,
+    brand = null,
+    packaging = null,
+}) => {
+    const normalizedReference =
+        normalizeSupplierReference(
+            supplierReference,
+        );
+
+    if (normalizedReference) {
+        return 'ref:' + normalizedReference;
+    }
+
+    return [
+        'designation:' + normalizeSupplierText(designation),
+        'brand:' + normalizeSupplierText(brand),
+        'packaging:' + [
+            normalizeSupplierText(packaging?.containerType),
+            packaging?.unitCount ?? '_',
+            packaging?.quantityPerUnit ?? '_',
+            packaging?.unit ?? '_',
+            packaging?.netWeight ?? '_',
+            packaging?.netWeightUnit ?? '_',
+            packaging?.drainedNetWeight ?? '_',
+            packaging?.drainedNetWeightUnit ?? '_',
+        ].join(':'),
+    ].join('|');
+};
+
 export {
     buildSupplierCatalogEditionIdentityKey,
+    buildSupplierCatalogLineIdentityKey,
     normalizeSupplierReference,
     normalizeSupplierText,
 };

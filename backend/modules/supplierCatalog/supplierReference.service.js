@@ -795,6 +795,7 @@ const getSupplierReferenceMetadata = () => ({
 });
 
 export {
+    createArticleInSession,
     createSupplier,
     createSupplierArticle,
     findVisibleSupplier,
