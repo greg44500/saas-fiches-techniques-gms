@@ -1,0 +1,199 @@
+import '../../setup.js';
+
+import request from 'supertest';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest';
+
+import { app } from '../../../app.js';
+import {
+    createActiveProductReference,
+} from '../../helpers/productCatalogTest.fixtures.js';
+import {
+    bearer,
+    createWorkspaceMemberFixture,
+    createWorkspaceOwnerFixture,
+} from '../../helpers/dossierTest.fixtures.js';
+import {
+    SUPPLIER_CATALOG_PERMISSION,
+} from '../../../modules/supplierCatalog/supplierCatalogPermission.registry.js';
+import {
+    SupplierArticle,
+} from '../../../modules/supplierCatalog/supplier.model.js';
+import {
+    createSupplier,
+} from '../../../modules/supplierCatalog/supplierReference.service.js';
+import {
+    SUPPLIER_SCOPE,
+} from '../../../modules/supplierCatalog/supplierCatalog.registry.js';
+
+let ownerA;
+let ownerB;
+let productReference;
+
+beforeEach(async () => {
+    ownerA = await createWorkspaceOwnerFixture();
+    ownerB = await createWorkspaceOwnerFixture();
+    productReference = await createActiveProductReference({
+        actorId: ownerA.owner._id,
+        name: 'Carotte fournisseur test',
+    });
+});
+
+const supplierPath = (context) =>
+    '/api/workspaces/' + context.workspace._id.toString() + '/suppliers';
+
+const articlePath = (context) =>
+    '/api/workspaces/' + context.workspace._id.toString() + '/supplier-articles';
+
+describe('M-003 supplier/article HTTP contract', () => {
+    it('isole un Fournisseur privé entre Workspaces', async () => {
+        const created = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Fournisseur privé A' });
+
+        expect(created.status).toBe(201);
+
+        const visibleA = await request(app)
+            .get(supplierPath(ownerA))
+            .set(bearer(ownerA.token));
+        const visibleB = await request(app)
+            .get(supplierPath(ownerB))
+            .set(bearer(ownerB.token));
+
+        expect(visibleA.status).toBe(200);
+        expect(
+            visibleA.body.data.suppliers.map(({ name }) => name),
+        ).toContain('Fournisseur privé A');
+        expect(
+            visibleB.body.data.suppliers.map(({ name }) => name),
+        ).not.toContain('Fournisseur privé A');
+    });
+
+    it('rend un Fournisseur global visible dans plusieurs Workspaces', async () => {
+        const globalSupplier = await createSupplier({
+            scope: SUPPLIER_SCOPE.GLOBAL_SHARED,
+            actorId: ownerA.owner._id,
+            data: { name: 'Fournisseur partagé' },
+        });
+
+        const [visibleA, visibleB] = await Promise.all([
+            request(app)
+                .get(supplierPath(ownerA))
+                .set(bearer(ownerA.token)),
+            request(app)
+                .get(supplierPath(ownerB))
+                .set(bearer(ownerB.token)),
+        ]);
+
+        for (const response of [visibleA, visibleB]) {
+            expect(response.status).toBe(200);
+            expect(response.body.data.suppliers).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        id: globalSupplier.id,
+                        scope: 'GLOBAL_SHARED',
+                    }),
+                ]),
+            );
+        }
+    });
+
+    it('applique le RBAC Workspace aux écritures Fournisseur', async () => {
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: ownerA.workspace._id,
+            actorId: ownerA.owner._id,
+            permissions: [
+                SUPPLIER_CATALOG_PERMISSION.SUPPLIER_READ,
+            ],
+        });
+
+        const response = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(member.token))
+            .send({ name: 'Interdit' });
+
+        expect(response.status).toBe(403);
+    });
+
+    it('refuse un doublon Article variant seulement par casse et espaces', async () => {
+        const supplier = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Grossiste articles' });
+
+        const baseBody = {
+            supplierId: supplier.body.data.supplier.id,
+            productVariantId: productReference.variant._id.toString(),
+            supplierDesignation: 'Carotte sac',
+        };
+
+        const first = await request(app)
+            .post(articlePath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({
+                ...baseBody,
+                supplierReference: ' sys - 123 ',
+            });
+
+        const duplicate = await request(app)
+            .post(articlePath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({
+                ...baseBody,
+                supplierReference: 'SYS-123',
+            });
+
+        expect(first.status).toBe(201);
+        expect(duplicate.status).toBe(409);
+    });
+
+    it('archive l ancien Article et trace replacedBy lors d un remplacement', async () => {
+        const supplier = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Grossiste remplacement' });
+
+        const created = await request(app)
+            .post(articlePath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({
+                supplierId: supplier.body.data.supplier.id,
+                productVariantId:
+                    productReference.variant._id.toString(),
+                supplierReference: 'OLD-001',
+            });
+
+        const replaced = await request(app)
+            .post(
+                articlePath(ownerA)
+                + '/'
+                + created.body.data.article.id
+                + '/replacement',
+            )
+            .set(bearer(ownerA.token))
+            .send({ supplierReference: 'NEW-001' });
+
+        expect(replaced.status).toBe(201);
+
+        const previous = await SupplierArticle.findById(
+            created.body.data.article.id,
+        ).lean();
+
+        expect(previous.status).toBe('ARCHIVED');
+        expect(previous.replacedBy.toString())
+            .toBe(replaced.body.data.replacement.id);
+    });
+
+    it('ne donne pas l autorité globale à un Workspace Owner', async () => {
+        const response = await request(app)
+            .get('/api/supplier-reference/suppliers')
+            .set(bearer(ownerA.token));
+
+        expect(response.status).toBe(403);
+    });
+});
