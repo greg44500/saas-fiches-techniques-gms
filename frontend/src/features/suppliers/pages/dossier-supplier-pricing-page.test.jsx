@@ -24,6 +24,12 @@ vi.mock('react-router', async (importOriginal) => {
   };
 });
 
+vi.mock('@/components/shared/toast-provider', () => ({
+  useToast: () => ({
+    toast: vi.fn(),
+  }),
+}));
+
 vi.mock('@/features/dossiers/api/dossiers-api', () => ({
   useGetDossierByIdQuery: mocks.dossierQuery,
 }));

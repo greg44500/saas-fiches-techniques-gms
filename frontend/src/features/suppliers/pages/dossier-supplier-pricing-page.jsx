@@ -653,7 +653,7 @@ function DossierSupplierPricingPage() {
 
       {section && (
         <Tabs onValueChange={setSection} value={section}>
-        <TabsList aria-label="Données Fournisseurs du Dossier" variant="section">
+          <TabsList aria-label="Données Fournisseurs du Dossier" variant="section">
           {can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) && (
             <TabsTrigger value="references" variant="section">
               Références
@@ -674,7 +674,7 @@ function DossierSupplierPricingPage() {
               Prix facturés
             </TabsTrigger>
           )}
-        </TabsList>
+          </TabsList>
         </Tabs>
       )}
 
