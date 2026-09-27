@@ -8,6 +8,7 @@ import {
   createDossierFromUi,
   getDossiersUrl,
   openDossierDrawer,
+  openDossiersPage,
   selectDossierDrawerTab,
 } from '../support/dossier.js';
 import {
@@ -94,7 +95,7 @@ test('M-001 owner affecte un membre qui voit et ouvre le Dossier', async ({ page
   await closeDossierDrawer(page);
 
   await loginWithIdentity(page, member.identity);
-  await page.goto(context.dossiersUrl);
+  await openDossiersPage(page, context.dossiersUrl);
 
   await expect(
     page.getByText('Magasin E2E Affecté', { exact: true }),
@@ -117,7 +118,7 @@ test('M-001 membre sans grant ne voit pas le Dossier et l’URL directe est refu
   });
 
   await loginWithIdentity(page, member.identity);
-  await page.goto(context.dossiersUrl);
+  await openDossiersPage(page, context.dossiersUrl);
 
   await expect(
     page.getByText('Magasin E2E Isolé', { exact: true }),
@@ -199,7 +200,7 @@ test('M-001 suppression révoque les grants et restauration PAUSED ne les restau
   ).toBeVisible();
 
   await loginWithIdentity(page, member.identity);
-  await page.goto(getDossiersUrl(context.dashboardUrl));
+  await openDossiersPage(page, getDossiersUrl(context.dashboardUrl));
 
   await expect(
     page.getByText('Magasin E2E Lifecycle', { exact: true }),

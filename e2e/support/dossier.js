@@ -14,14 +14,26 @@ function getDossiersUrl(dashboardUrl) {
   return dashboardUrl.replace(/\/dashboard$/, '/dossiers');
 }
 
+const DOSSIERS_ROUTE_READY_TIMEOUT_MS = 15_000;
+
+async function openDossiersPage(page, dossiersUrl) {
+  await page.goto(dossiersUrl);
+
+  await expect(page).toHaveURL(
+    /\/workspaces\/[^/]+\/dossiers$/,
+    { timeout: DOSSIERS_ROUTE_READY_TIMEOUT_MS },
+  );
+
+  await expect(
+    page.getByRole('heading', { name: 'Dossiers' }),
+  ).toBeVisible({ timeout: DOSSIERS_ROUTE_READY_TIMEOUT_MS });
+}
+
 async function createDossierFromUi(page, {
   dashboardUrl,
   name,
 }) {
-  await page.goto(getDossiersUrl(dashboardUrl));
-  await expect(
-    page.getByRole('heading', { name: 'Dossiers' }),
-  ).toBeVisible();
+  await openDossiersPage(page, getDossiersUrl(dashboardUrl));
 
   await page.getByRole('button', { name: 'Créer un dossier' }).click();
 
@@ -85,5 +97,6 @@ export {
   getDossiersUrl,
   getWorkspaceIdFromDashboardUrl,
   openDossierDrawer,
+  openDossiersPage,
   selectDossierDrawerTab,
 };
