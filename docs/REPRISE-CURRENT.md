@@ -3,9 +3,9 @@
 **Date :** 2026-09-27  
 **Lot clôturé :** M-002 — Référentiel Produits  
 **Lot courant :** M-003 — Fournisseurs + Articles + conditionnements + prix/catalogues  
-**État M-003 :** implémentation backend/frontend/E2E présente sur branche — validation réelle et visuelle en attente  
+**État M-003 :** implémentation backend/frontend/E2E présente ; gates techniques pré-UX confirmés verts localement ; lot UX Fournisseurs implémenté — revalidation frontend et validation visuelle en attente  
 **Branche :** \`feature/m003-suppliers-catalogs-pricing\`  
-**HEAD vérifié :** \`ad873a3264fea026ba717da09428ba85ab0001cb\`
+**HEAD fonctionnel avant mise à jour documentaire :** \`d04a85f3d83bbe02b86de8369110cd476cb134e2\`
 
 ## 1. Ordre d'autorité
 
@@ -273,51 +273,52 @@ La préparation E2E initialise désormais la gouvernance M-002 puis M-003.
 
 ## 6. État réel de validation
 
-Non exécuté dans l'environnement de cette conversation :
+Après correction des premiers défauts M-003, le porteur produit a confirmé localement verts sur le HEAD \`2662f74f17ecb68d898576a0f38c7020901566d5\` :
 
 ~~~text
-npm run migration:m003-supplier-catalog
-npm run seed:m003-governance
-npm run lint
 npm test
-npm --prefix frontend run lint
+npm run lint
 npm --prefix frontend run test
+npm --prefix frontend run lint
 npm --prefix frontend run build
-npm run test:e2e
-npm run release:check
 ~~~
 
-Raison : le conteneur disponible n'a pas d'accès réseau au dépôt et le workflow GitHub \`Core Gate\` ne se déclenche que sur PR ou push vers \`main\`.
+Cette exécution constitue la baseline technique pré-UX.
 
-Aucune de ces commandes n'est donc annoncée verte à ce stade.
+Depuis cette baseline, le lot UX Fournisseurs a modifié uniquement le frontend :
+
+- actions de tableau en icônes avec infobulles verbales ;
+- action Voir ;
+- drawer Fournisseur ;
+- détail Articles / Catalogues ;
+- onglet Utilisation Workspace sans agrégation de prix inter-Dossier ;
+- même convention d'actions sur le référentiel global.
+
+Ces changements frontend doivent être revalidés avant le contrôle visuel.
+
+Restent à valider avant la PR finale :
+
+~~~text
+npm run test:e2e
+npm run release:check
+Core Gate PR
+~~~
 
 ## 7. Prochaine validation locale
 
-Le frontend est suffisamment complet pour une validation visuelle depuis le clone local.
-
-Avant \`npm run dev\` sur un Workspace local existant :
+Depuis le clone local :
 
 ~~~bash
 git fetch origin
 git switch feature/m003-suppliers-catalogs-pricing
 git pull --ff-only origin feature/m003-suppliers-catalogs-pricing
 
-npm ci
-npm --prefix frontend ci
-
-npm run migration:m003-supplier-catalog
-npm run seed:m003-governance
+npm --prefix frontend run test
+npm --prefix frontend run lint
+npm --prefix frontend run build
 ~~~
 
-Puis lancer backend et frontend dans deux terminaux :
-
-~~~bash
-npm run dev
-~~~
-
-~~~bash
-npm --prefix frontend run dev
-~~~
+Si ces trois gates sont verts, lancer ensuite backend et frontend pour le contrôle visuel.
 
 Pour tester l'import privé, le Workspace de test doit disposer de la capability :
 
@@ -326,17 +327,19 @@ supplier_catalog_import
 ~~~
 
 Le contrat ne l'attribue encore à aucun plan précis ; utiliser un entitlement override de test si nécessaire plutôt que modifier arbitrairement un plan commercial.
-
 ## 8. Points à vérifier visuellement
 
 Workspace Fournisseurs :
 
 - navigation « Fournisseurs » ;
 - distinction Partagé / Privé ;
+- actions de ligne en icônes avec infobulles « Voir », « Modifier », « Archiver » / « Réactiver » ;
+- « Voir » ouvre le drawer Fournisseur ;
+- drawer : Informations | Articles | Catalogues | Utilisation ;
+- Articles et catalogues du drawer filtrés par Fournisseur ;
+- onglet Utilisation sans agrégation de Tarifs négociés/Prix facturés entre Dossiers ;
 - création/modification/archivage privé ;
-- Articles ;
-- catalogues + provenance ;
-- bouton import visible uniquement avec la capability ;
+- onglet Catalogues : bouton « Importer un catalogue » uniquement avec permission + capability ;
 - inspect/mapping/preview/confirmation.
 
 Dossier :
@@ -359,10 +362,10 @@ Global :
 ## 9. Étapes restantes avant merge
 
 ~~~text
-validation visuelle porteur produit
-→ corrections fonctionnelles/UX justifiées en lot
-→ exécution des gates applicables
-→ release:check / Core Gate
+revalidation frontend test + lint + build
+→ validation visuelle porteur produit
+→ corrections fonctionnelles/UX justifiées en lot si nécessaire
+→ E2E + release:check
 → une PR M-003
 → validation Core Gate PR
 → merge

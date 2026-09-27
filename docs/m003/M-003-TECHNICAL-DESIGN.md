@@ -247,3 +247,41 @@ Puis effectuer la validation visuelle et les tests applicables.
 
 La capability \`supplier_catalog_import\` reste indépendante du RBAC. Tant que le mapping commercial final des plans n'est pas validé, l'import privé se teste via un entitlement override explicite.
 
+
+
+## 15. UX Fournisseur extensible
+
+Le détail Fournisseur réutilise la primitive partagée \`EntityDetailsDrawer\` et ne crée aucun système de panneau parallèle.
+
+Surface Workspace :
+
+~~~text
+Informations
+→ identité, portée, statut
+
+Articles
+→ Articles actifs filtrés par supplierId
+
+Catalogues
+→ éditions actives filtrées par supplierId
+
+Utilisation
+→ point d'extension pour Dossiers, références favorites/fréquentes
+  et futures Fiches techniques
+~~~
+
+L'onglet Utilisation ne consolide pas les Tarifs négociés ni les Prix facturés hors contexte Dossier.
+
+Le référentiel global réutilise le même drawer pour Informations / Articles / Catalogues, sans onglet Utilisation Workspace.
+
+Les actions de tableau M-003 utilisent la primitive partagée \`ActionIconButton\` avec infobulles verbales : Voir, Modifier, Archiver et Réactiver.
+
+L'import de catalogue fournisseur reste dans :
+
+~~~text
+Fournisseurs
+→ Catalogues
+→ Importer un catalogue
+~~~
+
+Il demeure distinct de l'import Produits M-002.
