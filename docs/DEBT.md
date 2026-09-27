@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Registre canonique des dettes actives
 
 **Statut :** source de vérité documentaire pour les dettes non résolues  
-**Dernière mise à jour :** 2026-09-18  
+**Dernière mise à jour :** 2026-09-25  
 **Périmètre :** Core clonable et, lorsque précisé, applications dérivées
 
 ---
@@ -215,7 +215,28 @@ Contrat détaillé :
 docs/m001/M-001-TEST-STRATEGY.md
 ```
 
-Checkpoint M-001 validé : les quatre parcours métier sont intégrés au corpus Playwright, l'exécution locale finale compte 11/11 tests verts et la Core Gate #101 est `success` sur le head applicatif `79cfe24579e4b39232835fd156009d6f038d9465`. D-012 reste à poursuivre pour chaque nouveau module métier : la validation M-001 ne remplace pas les futurs E2E M-002+.
+Checkpoint M-001 validé : les quatre parcours métier sont intégrés au corpus Playwright, l'exécution locale finale compte 11/11 tests verts et la Core Gate #101 est `success` sur le head applicatif `79cfe24579e4b39232835fd156009d6f038d9465`.
+
+M-002 ajoute deux parcours Playwright critiques : (1) soumission d'un nouveau Produit depuis un Workspace, revue/approbation par l'autorité Application Global puis ajout de la Référence aux Favoris ; (2) création directe d'un Produit par un utilisateur explicitement habilité Application Global. La clôture technique M-002 exige une Core Gate verte sur la PR finale puis sur le merge dans `main` ; GitHub reste l'autorité sur ces résultats.
+
+### GMS-UX-001 — Raffinements visuels post-M-002
+
+**Statut :** CONDITIONNEL  
+**Périmètre :** produit `saas-fiches-techniques-gms` — M-002  
+**Blocage M-002 :** non
+
+Le périmètre fonctionnel M-002 est gelé. Des raffinements purement visuels ou ergonomiques peuvent être traités après fusion lorsqu'un défaut concret est observé.
+
+Cette dette n'autorise pas à modifier sous couvert de design :
+
+- modèle ou contraintes DB Produit ;
+- contrats API ;
+- règles de déduplication/import ;
+- permissions ou capabilities ;
+- frontière M-002 / M-003 ;
+- sémantique métier des Références Produit.
+
+Une régression fonctionnelle réelle doit être corrigée comme telle ; une nouvelle fonctionnalité doit être recadrée dans le module approprié.
 
 ### D-013 — Configuration et déploiement de production
 

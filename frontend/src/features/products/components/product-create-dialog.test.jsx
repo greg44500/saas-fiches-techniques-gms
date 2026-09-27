@@ -1,0 +1,199 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+  duplicateCheck: vi.fn(),
+  createProduct: vi.fn(),
+}));
+
+vi.mock('@/features/products/api/product-catalog-api', () => ({
+  useCreateProductMutation: () => [
+    mocks.createProduct,
+    { isLoading: false },
+  ],
+  useDuplicateCheckProductMutation: () => [
+    mocks.duplicateCheck,
+    { isLoading: false },
+  ],
+}));
+
+vi.mock('@/features/products/api/product-reference-api', () => ({
+  useCreateProductReferenceMutation: () => [
+    vi.fn(),
+    { isLoading: false },
+  ],
+  useDuplicateCheckProductReferenceMutation: () => [
+    vi.fn(),
+    { isLoading: false },
+  ],
+}));
+
+import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
+
+const metadata = {
+  categories: [{ id: 'category-1', name: 'Légumes', status: 'ACTIVE' }],
+  productStatuses: [
+    { value: 'ACTIVE', label: 'Actif' },
+    { value: 'ARCHIVED', label: 'Archivé' },
+  ],
+  conservationTypes: [{ value: 'FRAIS', label: 'Frais' }],
+  referenceUnits: [{ value: 'KG', label: 'kg' }],
+  foodRanges: [
+    {
+      value: 1,
+      label: 'Gamme 1',
+      name: 'Frais',
+      processingStates: ['Produit frais'],
+      defaultProcessingState: 'Produit frais',
+    },
+    {
+      value: 6,
+      label: 'Gamme 6',
+      name: 'PAI / PAE',
+      processingStates: ['PAI / PAE'],
+      defaultProcessingState: 'PAI / PAE',
+    },
+  ],
+};
+
+function resolved(value) {
+  return { unwrap: vi.fn().mockResolvedValue(value) };
+}
+
+describe('ProductCreateDialog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('privilégie une correspondance exacte au lieu de créer un doublon', async () => {
+    const user = userEvent.setup();
+    const onUseExisting = vi.fn();
+
+    mocks.duplicateCheck.mockReturnValue(resolved({
+      exactMatch: {
+        id: 'product-existing',
+        name: 'Carotte',
+        aliases: [],
+        category: { id: 'category-1', name: 'Légumes' },
+        status: 'ACTIVE',
+      },
+      candidates: [],
+    }));
+
+    render(
+      <ProductCreateDialog
+        metadata={metadata}
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        onUseExisting={onUseExisting}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Nom du Produit'), 'Carotte');
+    await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
+    await user.click(await screen.findByRole('button', { name: 'Ouvrir cette référence' }));
+
+    expect(onUseExisting).toHaveBeenCalledWith('product-existing');
+    expect(mocks.createProduct).not.toHaveBeenCalled();
+    expect(screen.queryByLabelText('Alias')).not.toBeInTheDocument();
+  });
+
+  it('signale une correspondance exacte archivée sans proposer de l ouvrir côté Workspace', async () => {
+    const user = userEvent.setup();
+
+    mocks.duplicateCheck.mockReturnValue(resolved({
+      exactMatch: {
+        id: 'product-archived',
+        name: 'Carotte ancienne',
+        aliases: [],
+        category: { id: 'category-1', name: 'Légumes' },
+        status: 'ARCHIVED',
+      },
+      candidates: [],
+    }));
+
+    render(
+      <ProductCreateDialog
+        metadata={metadata}
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        onUseExisting={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Nom du Produit'), 'Carotte ancienne');
+    await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
+
+    expect(await screen.findByText(/référence est archivée/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ouvrir cette référence' }))
+      .not.toBeInTheDocument();
+  });
+
+  it('exige la revue des candidats mais autorise une catégorie absente', async () => {
+    const user = userEvent.setup();
+    const onCreated = vi.fn();
+
+    mocks.duplicateCheck.mockReturnValue(resolved({
+      exactMatch: null,
+      candidates: [
+        { id: 'candidate-1', name: 'Carotte entière', category: { name: 'Légumes' } },
+        { id: 'candidate-2', name: 'Carottes', category: { name: 'Légumes' } },
+      ],
+    }));
+    mocks.createProduct.mockReturnValue(resolved({
+      classification: 'REVIEW_REQUIRED',
+      contribution: {
+        id: 'contribution-1',
+        status: 'PENDING_REVIEW',
+      },
+    }));
+
+    render(
+      <ProductCreateDialog
+        metadata={metadata}
+        onClose={vi.fn()}
+        onCreated={onCreated}
+        onUseExisting={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Nom du Produit'), 'Carotte nouvelle');
+    await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
+
+    const reviews = await screen.findAllByRole('checkbox', { name: 'Différent' });
+    await user.click(reviews[0]);
+    await user.click(reviews[1]);
+
+    const createButton = screen.getByRole('button', {
+      name: 'Soumettre la proposition',
+    });
+    expect(createButton).toBeEnabled();
+
+    await user.click(createButton);
+
+    await waitFor(() => {
+      expect(mocks.createProduct).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'workspace-1',
+          name: 'Carotte nouvelle',
+          categoryId: null,
+          variant: expect.objectContaining({
+            name: 'Carotte nouvelle',
+            conservationType: 'FRAIS',
+            processingState: null,
+            referenceUnit: 'KG',
+          }),
+        }),
+      );
+    });
+    expect(onCreated).toHaveBeenCalled();
+  });
+
+});

@@ -55,7 +55,15 @@ describe('dossier metadata service', () => {
         ]);
 
         expect(
-            metadata.businessActivityActions,
-        ).toHaveLength(5);
+            metadata.businessActivityActions.map(
+                ({ value }) => value,
+            ),
+        ).toEqual(expect.arrayContaining([
+            'DOSSIER_CREATED',
+            'DOSSIER_UPDATED',
+            'DOSSIER_STATUS_CHANGED',
+            'DOSSIER_ACCESS_GRANTED',
+            'DOSSIER_ACCESS_REVOKED',
+        ]));
     });
 });

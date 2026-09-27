@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
 
 **Statut :** VALIDÉ — modèle conceptuel transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-21  
+**Dernière mise à jour :** 2026-09-23  
 **Important :** ce document décrit des concepts métier et leurs relations. Il ne constitue pas un schéma Mongoose.
 
 ---
@@ -26,14 +26,16 @@ SaaS
 ├── Référentiel Produit canonique partagé
 │   ├── identité Produit unique
 │   ├── alias / normalisation de recherche
-│   └── déclinaisons structurées lorsque pertinentes
-│       ├── forme
-│       ├── état / transformation
-│       └── conservation
+│   └── déclinaisons structurées
+│       ├── Présentation
+│       ├── Gamme 1..6
+│       ├── État / transformation dépendant de la Gamme
+│       ├── unité de référence
+│       └── rendement
 │
 └── Workspace
     │
-    ├── Catalogue d'usage Produit
+    ├── Référentiel Produit Workspace
     │   └── références vers les Produits canoniques utilisés
     │
     ├── Fournisseurs
@@ -80,7 +82,7 @@ donnée de référence canonique partagée
 
 Les ressources métier appartenant au Workspace doivent utiliser l'ownership explicite prévu par le Core.
 
-Le référentiel Produit canonique constitue une donnée de référence commune au SaaS et non la propriété d'un Workspace. Un Workspace ne copie pas le Produit : il référence les identités canoniques qu'il utilise via son catalogue d'usage.
+Le référentiel Produit canonique constitue une donnée de référence commune au SaaS et non la propriété d'un Workspace. Un Workspace ne copie pas le Produit : il référence les identités canoniques qu'il utilise via son référentiel Produit Workspace.
 
 `createdBy` / `updatedBy` servent à l'audit et ne remplacent jamais l'ownership ou la portée explicite de la ressource.
 
@@ -288,108 +290,73 @@ La lecture respecte à la fois les permissions Workspace et le scope Dossier ; u
 
 ## 5. Produit
 
-Le Produit canonique est une donnée de référence générique partagée à l'échelle du SaaS. Il est indépendant d'un Workspace, d'un Fournisseur et d'un prix.
+Le référentiel Produit M-002 est une donnée de référence globale du SaaS. Les données commerciales restent hors de ce périmètre.
 
-Invariant principal :
-
-```text
-même réalité Produit canonique
-→ une seule identité dans le SaaS
-```
-
-Un Workspace qui utilise `Carotte` référence cette identité ; il ne crée pas une copie de `Carotte`.
-
-### 5.1 Identité canonique et contrôle des doublons
-
-Conceptuellement :
+### 5.1 Modèle M-002 final
 
 ```text
-Produit canonique
-├── nom canonique
-├── clé normalisée
-├── alias de recherche
-├── catégorie
-├── unité de référence
-├── photo facultative
-├── notes génériques facultatives
-├── statut
-├── createdAt
-├── updatedAt
-├── createdBy
-└── updatedBy
+CanonicalProduct
+→ racine / concept Produit global
+→ catégorie facultative
+→ peut exister sans Référence exploitable
+
+ProductVariety
+→ variété/cultivar facultatif
+
+ProductCharacteristic
+→ PRESENTATION | COMMERCIAL_TYPE | SIZE_FORMAT | COLOR | QUALITY_DESIGNATION | CUT
+
+ProductVariant
+→ rôle métier = Référence Produit
+→ name persistant
+→ normalizedName unique pour une référence active
+→ conservationType obligatoire
+→ referenceUnit obligatoire
+→ foodRange 1..6 facultatif
+→ processingState facultatif
+→ dimensions facultatives
+→ rendement facultatif
+
+WorkspaceProduct
+→ ownership Workspace
+→ lien de Favori vers une Référence Produit globale
+
+ReferenceContribution
+→ proposition Workspace gouvernée
 ```
 
-Le détail technique de persistance reste à définir en M-002.
+`createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` conserve une provenance sans devenir un ownership.
 
-Les variantes de casse, espaces, accents, singulier/pluriel et fautes d'orthographe reconnues comme équivalentes ne doivent pas produire plusieurs identités concurrentes.
+### 5.2 Identité et présentation
 
-Le contrôle de création doit combiner au minimum :
+L'utilisateur sélectionne une Référence Produit par son nom métier persistant.
 
 ```text
-normalisation déterministe
-→ correspondance exacte normalisée
-→ alias connus
-→ recherche de proximité / suggestion
-→ création seulement si aucun équivalent crédible n'est identifié
+Carotte
+Carotte râpée
+Carotte en rondelles
+Carotte surgelée
+Farine de blé
+Paleron de bœuf
 ```
 
-Un index unique protège une clé normalisée mais ne suffit pas, à lui seul, à résoudre l'unicité sémantique.
+Variété et Caractéristiques servent à enrichir, filtrer et rechercher. Elles ne construisent jamais automatiquement le nom visible.
 
-### 5.2 Catalogue d'usage du Workspace
+L'unicité exacte porte sur `ProductVariant.normalizedName` pour les identités actives.
 
-Le Workspace possède une sélection des Produits qu'il utilise, sans dupliquer leur identité canonique.
+### 5.3 Conservation et Gamme
 
-Conceptuellement :
+`conservationType` est obligatoire :
 
 ```text
-Workspace
-→ relation d'usage
-→ Produit canonique
+FRAIS
+REFRIGERE
+SURGELE
+CONSERVE
+SEC
 ```
 
-Cette relation pourra être matérialisée par un concept de type `WorkspaceProduct`, à confirmer en M-002.
-
-Elle peut porter ultérieurement des métadonnées propres à l'usage du Workspace si un besoin est démontré, mais ne doit pas copier les propriétés de référence sans nécessité.
-
-### 5.3 Forme, état et conservation
-
-La forme de préparation ne doit pas être encodée uniquement dans un libellé libre lorsqu'elle modifie l'usage, le rendement ou la sélection d'un Article fournisseur.
-
-Axes conceptuels :
-
-```text
-Produit canonique
-→ Carotte
-
-forme
-→ entière / rondelles / râpée / dés / julienne / purée / ...
-
-état / transformation
-→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
-
-conservation
-→ fraîche / surgelée / appertisée / ...
-```
-
-Ces dimensions forment des déclinaisons structurées autour de l'identité canonique plutôt que des copies lexicales du Produit.
-
-Une transformation peut toutefois créer un Produit réellement différent lorsqu'elle introduit une formulation/composition propre. Cette frontière sera décidée en M-002 à partir de critères métier et non d'une simple ressemblance de nom.
-
-### 5.4 Catégorie et gamme
-
-La catégorie est indépendante de la gamme.
-
-```text
-Catégorie
-→ axe fonctionnel de classement
-
-Gamme
-→ axe professionnel de préparation / conservation lorsqu'applicable
-```
-
-La gamme est facultative lorsqu'elle n'est pas pertinente.
-
-Le modèle doit permettre :
+La Gamme est facultative :
 
 ```text
 1
@@ -397,53 +364,75 @@ Le modèle doit permettre :
 3
 4
 5
-non applicable
+6 → PAI / PAE
 ```
 
-La gamme ne doit pas remplacer les dimensions structurées de forme, état ou conservation lorsqu'elles sont nécessaires au calcul ou à l'usage.
+Le champ `usageType` est retiré du contrat actif.
 
-### 5.5 Rendement
+`processingState` est facultatif et n'est plus déduit automatiquement de la Gamme.
 
-Le rendement doit correspondre à la réalité effectivement utilisée dans la fiche. Il peut donc dépendre d'une déclinaison structurée plutôt que de la seule identité racine.
+### 5.4 Recherche et Favoris
 
-Exemple :
+La liste Workspace expose une ligne par Référence Produit :
 
 ```text
-Carotte entière brute
-→ rendement < 100 % possible
-
-Carotte râpée prête à l'emploi
-→ rendement 100 % possible
+Produit | Conservation | Actions
 ```
 
-Invariant :
+Vues :
 
 ```text
-fiche technique
-→ hérite du rendement de référence applicable
-→ ne demande pas une ressaisie libre ordinaire
+Tous les produits
+Favoris
 ```
 
-Lorsque le rendement est mathématiquement déductible de données fiables, il doit être calculé.
+`WorkspaceProduct` représente uniquement ce lien de Favori et ne copie jamais les données globales.
 
-Exemple :
+La recherche utilise d'abord le nom persistant de Référence, puis les dimensions comme termes secondaires.
+
+### 5.5 Contribution et gouvernance
+
+Classification :
 
 ```text
-poids net égoutté / poids net
-→ rendement conserve
+EXISTING
+AUTO_PUBLISHABLE
+REVIEW_REQUIRED
+INVALID
 ```
 
-Le modèle doit préserver une possibilité future d'exception documentée et historisée sans imposer son développement en V1.
+L'autorité globale reste Application Global :
 
-### 5.6 Contribution au référentiel partagé
+```text
+product:reference:read
+product:reference:manage
+```
 
-Un utilisateur autorisé peut rechercher le référentiel global depuis son Workspace et rattacher un Produit existant à son catalogue.
+`Super Admin Platform` et `Workspace Owner` ne deviennent jamais implicitement gouverneur Produit.
 
-Si aucun équivalent crédible n'existe, M-002 doit permettre la création/proposition d'une nouvelle identité canonique après les contrôles de doublon.
+### 5.6 Seed et migration
 
-La politique exacte de modération, fusion et correction des Produits globaux reste à fermer en M-002. Elle ne doit pas compromettre l'isolation tenant : aucune donnée commerciale du Workspace ou du Dossier ne remonte dans le Produit canonique.
+Datasets historiques immuables :
 
----
+```text
+m002-reference-v1
+m002-reference-v2
+m002-reference-v3
+```
+
+Dataset actif :
+
+```text
+m002-reference-v6
+```
+
+La migration du contrat Référence Produit est fail-closed lorsqu'un nom ou une conservation ne peut pas être déterminé sans invention.
+
+### 5.7 Frontière M-003
+
+M-002 ne porte jamais Fournisseur, catalogue/édition fournisseur, Article fournisseur, référence fournisseur, conditionnement commercial ou prix.
+
+M-003 portera le contexte économique par Dossier et pourra associer plusieurs offres fournisseurs à une même Référence Produit.
 
 ## 6. Fournisseur
 
@@ -783,7 +772,7 @@ Portée :
 
 ```text
 Mon Workspace
-Tout le référentiel autorisé
+Référentiel global autorisé
 ```
 
 Source :
@@ -1456,8 +1445,8 @@ Les rôles personnalisés combinent les permissions lorsque plusieurs responsabi
 
 ### À cadrer avant les modules concernés
 
-- catégories, unités et lifecycle Produit avant M-002 ;
-- données minimales Fournisseur et lifecycle Article avant M-003 ;
+- M-002 : cadrage Produit fermé ; validation finale du lot en cours ;
+- données minimales Fournisseur, identité Catalogue et lifecycle Article avant M-003 ;
 - convention technique de fraîcheur Prix facturé et revues tarifaires avant M-003/M-004 ;
 - types/motifs finaux de versions avant M-004 ;
 - marge semi-nette lorsqu'une définition métier fiable sera disponible ;

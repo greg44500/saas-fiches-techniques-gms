@@ -2,7 +2,7 @@
 
 **Statut :** VALIDÉ — contrat transversal produit  
 **Date :** 2026-09-21  
-**Périmètre :** ressources métier générées/supprimées par le SaaS GMS, stockage Workspace et artefacts d'export
+**Périmètre :** persistance des ressources métier, temporaires techniques, corbeille métier et artefacts d'export
 
 > Ce document ne remplace pas la politique générique Core de téléversement de fichiers.
 > Il formalise les décisions métier du produit concernant les Dossiers, DRAFTS, versions VALIDATED et formats générés.
@@ -11,40 +11,56 @@
 
 ## 1. Frontière avec le Core
 
-La fonctionnalité générique Core de téléversement de fichiers conserve ses propres règles de quota, corbeille, restauration et purge.
+Le Core fournit des primitives génériques de fichiers : réception multipart bornée, quarantaine temporaire, inspection, antivirus, checksum, stockage durable optionnel, corbeille et purge.
 
-Le présent contrat concerne le produit GMS :
+Le produit GMS n'expose pas pour autant un « Drive » ni un espace de fichiers utilisateur par défaut.
+
+Le présent contrat concerne :
 
 ```text
 DRAFTS de Fiches techniques
 versions VALIDATED / ARCHIVED
 ressources métier supprimées
-exports CSV / XLS(X)
-PDF généré pour envoi par e-mail
+imports temporaires CSV / XLS / XLSX
+exports temporaires CSV / XLS(X)
+PDF généré temporairement
 Dossiers DELETED
 ```
+
+Réutiliser les primitives techniques File du Core pour un traitement temporaire n'active pas automatiquement une fonctionnalité commerciale de stockage durable.
 
 Aucune règle produit ne doit modifier silencieusement le lifecycle générique des fichiers Core.
 
 ---
 
-## 2. Autorité de stockage
+## 2. Persistance métier et stockage fichier
 
-La capacité de stockage appartient au Workspace.
+La persistance des données métier structurées et le stockage durable de fichiers sont deux notions distinctes.
 
 ```text
-Workspace
-→ capacité / quota de stockage
+MongoDB / ressources métier structurées
+→ persistance normale du produit
+→ Produit, Fiche, version, Dossier, historique, etc.
 
-Dossiers
-→ consomment la capacité commune
-→ aucune allocation fixe
-→ aucun quota dur individuel en V1
+fichiers temporaires techniques
+→ import / export / génération PDF
+→ durée limitée au traitement
+→ suppression après usage
+→ aucun quota de stockage utilisateur durable
+
+fichiers durablement conservés
+→ aucun besoin produit V1 démontré à ce stade
+→ ne seront activés/commercialisés que si un cas d'usage réel l'exige
+
+quotas métier de ressources structurées
+→ distincts du stockage fichier
+→ peuvent limiter le nombre de ressources persistantes selon le plan
+→ moteur Plans / Metrics / EntitlementOverrides du Core
 ```
 
-Tant que le Workspace dispose de la capacité, des permissions, des capabilities et des quotas applicables, ses Dossiers peuvent créer leurs ressources métier.
+Les imports et exports temporaires peuvent être soumis à des garde-fous techniques — taille maximale, nombre de traitements concurrents, TTL des temporaires — sans devenir un quota commercial de stockage.
 
-Une ventilation de consommation par Dossier peut être calculée et affichée à des fins d'observabilité et de pilotage. Elle ne devient pas une autorité de blocage en V1.
+Il n'existe donc pas, pour M-002 ni pour les exports reproductibles, de « stockage invisible gratuit » concurrent d'un stockage payant : le temporaire est un coût d'exécution de la fonctionnalité, pas un espace de conservation mis à disposition du Workspace.
 
 ---
 
@@ -62,6 +78,8 @@ maximum         : 90 jours
 
 Lorsque la capability commerciale autorise la personnalisation, le Workspace peut sélectionner une durée dans ces bornes.
 
+Cette rétention concerne les ressources métier supprimées ; elle n'implique pas l'existence d'un quota de fichiers stockés.
+
 Le backend reste l'autorité : aucune valeur hors bornes n'est acceptée.
 
 La logique conceptuelle est :
@@ -77,6 +95,21 @@ L'échéance est figée au moment de la suppression. Une modification ultérieur
 ---
 
 ## 4. DRAFTS de Fiches techniques
+
+Un DRAFT actif est une ressource métier persistante et peut donc rester présent longtemps dans le Workspace.
+
+Décision commerciale validée :
+
+```text
+nombre de DRAFTS
+→ métrique / quota métier du produit
+→ valeur configurable selon le plan
+→ dérogation possible via les mécanismes Core
+```
+
+Cette limite porte sur le **nombre de brouillons métier**, pas sur des octets de stockage File.
+
+Les clés techniques finales, les seuils Free/Premium et les règles précises de comptage seront fermés dans M-004.
 
 Un DRAFT actif n'est jamais supprimé ou purgé uniquement parce qu'il est ancien.
 
@@ -97,6 +130,19 @@ Le contrat technique détaillé sera implémenté dans le module Fiches techniqu
 ---
 
 ## 5. Versions VALIDATED et archivage
+
+Une Fiche technique validée est une ressource métier durable ayant une valeur commerciale.
+
+Décision commerciale validée :
+
+```text
+nombre de Fiches techniques VALIDATED
+→ métrique / quota métier distinct
+→ valeur configurable selon le plan
+→ dérogation possible via les mécanismes Core
+```
+
+Cette limite ne réutilise pas `storage_bytes`. Les clés techniques, seuils et règles de comptage — notamment le traitement éventuel des fiches ARCHIVED — seront fermés dans M-004.
 
 Une version VALIDATED est une donnée métier historique et immuable.
 
@@ -186,7 +232,7 @@ Les exports ne doivent jamais devenir une seconde source de vérité ni un histo
 
 ### M-001 — Dossiers / affectations
 
-- quota de stockage : Workspace, jamais Dossier ;
+- aucun quota de fichiers métier n'est requis par M-001 ;
 - Dossier DELETED : pas de purge automatique ;
 - aucun mécanisme File Core à dupliquer.
 
@@ -194,6 +240,11 @@ Les exports ne doivent jamais devenir une seconde source de vérité ni un histo
 
 À implémenter lors de son cadrage :
 
+- métrique/quota métier de DRAFTS ;
+- métrique/quota métier de Fiches techniques VALIDATED ;
+- seuils commerciaux par plan et comportement à la limite ;
+- règles de comptage exactes, notamment vis-à-vis des ARCHIVED ;
+- intégration avec EntitlementOverrides ;
 - corbeille des DRAFTS supprimés ;
 - restauration avant échéance ;
 - purge après échéance ;
@@ -219,8 +270,9 @@ Le détail exact de la capability commerciale reste à rattacher au plan concern
 
 ## 10. Invariants
 
-- le Workspace porte la capacité de stockage ;
-- aucun quota dur par Dossier en V1 ;
+- le produit V1 n'expose pas un espace de stockage de fichiers de type Drive ;
+- les temporaires d'import/export ne consomment pas un quota de stockage utilisateur durable ;
+- les DRAFTS et Fiches techniques VALIDATED peuvent être limités par des quotas métier de comptage distincts de `storage_bytes` ;
 - un DRAFT actif n'est jamais purgé par ancienneté seule ;
 - un DRAFT supprimé peut être purgé après la durée de corbeille ;
 - une version VALIDATED n'est jamais purgée automatiquement par âge ;

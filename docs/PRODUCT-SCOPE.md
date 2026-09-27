@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
 
 **Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
-**Dernière mise à jour :** 2026-09-21  
+**Dernière mise à jour :** 2026-09-23  
 **Périmètre :** définition du problème métier, des principes produit et des invariants à préserver avant tout module métier
 
 > Ce document formalise les fondations transversales validées du produit.  
@@ -183,7 +183,7 @@ Le contrôle doit être garanti par le backend et non par l'interface seule.
 
 Le Workspace Owner peut accéder à tous les magasins, et un collaborateur peut recevoir un périmètre multi-magasins, mais tous travaillent toujours dans un contexte magasin actif lorsqu'ils créent, modifient ou valorisent une fiche.
 
-### 3.4 Référentiel Produit commun au SaaS et catalogue d'usage du Workspace
+### 3.4 Référentiel Produit global et référentiel Produit du Workspace
 
 L'identité canonique d'un Produit de référence n'est pas recréée dans chaque Workspace.
 
@@ -198,7 +198,7 @@ Référentiel SaaS
 → ...
 ```
 
-Un Workspace possède ensuite son **catalogue d'usage**, qui référence les Produits canoniques dont il a besoin sans copier leur identité.
+Un Workspace possède ensuite son **référentiel Produit**, affiché comme **Mon référentiel** dans l'interface. Il référence les Produits canoniques dont il a besoin sans copier leur identité.
 
 Conceptuellement :
 
@@ -215,11 +215,11 @@ Dossier
 → contextualise les données magasin
 ```
 
-La relation d'usage du Workspace pourra être matérialisée ultérieurement par un concept de type `WorkspaceProduct`, sans préjuger du schéma Mongoose final de M-002.
+La relation d'usage du Workspace est matérialisée par `WorkspaceProduct`, qui référence une `ProductVariant` sans recopier l'identité canonique.
 
-Les données partagées au niveau SaaS doivent rester strictement génériques. Elles ne contiennent jamais de tarif négocié, prix facturé, historique commercial local, fournisseur choisi par un magasin ou autre donnée confidentielle d'un tenant.
+Les données partagées au niveau SaaS restent strictement génériques. Elles ne contiennent jamais de tarif négocié, prix facturé, historique commercial local, fournisseur choisi par un magasin ou autre donnée confidentielle d'un tenant.
 
-Les utilisateurs autorisés doivent pouvoir rechercher un Produit du référentiel commun puis l'ajouter à leur catalogue Workspace. Si le Produit n'existe réellement pas, le parcours M-002 devra permettre de proposer/créer une nouvelle identité canonique après contrôle de doublon.
+Les utilisateurs autorisés recherchent d'abord le référentiel global puis ajoutent une référence existante à leur référentiel Workspace. Si aucun équivalent crédible n'existe, ils peuvent créer une nouvelle identité canonique après contrôle anti-doublon et sélection d'une catégorie active. Cette nouvelle identité est immédiatement `ACTIVE` et partagée dans le référentiel commun ; elle n'attend pas une validation humaine systématique.
 
 Invariant :
 
@@ -230,7 +230,7 @@ même réalité Produit canonique
 
 Les variantes de casse, espaces, accents, singulier/pluriel et fautes d'orthographe courantes ne doivent pas créer silencieusement des Produits concurrents. Le contrôle doit combiner normalisation, alias et recherche de proximité avant toute création. L'index d'unicité technique seul ne suffit pas à garantir l'unicité sémantique.
 
-La politique exacte de contribution/modération d'un nouveau Produit global reste à fermer dans M-002 ; elle ne doit pas être inventée pendant M-001.
+La politique M-002 est désormais fermée : le parcours courant ne possède pas de file de modération systématique. L'administration globale Produit sert à alimenter et maintenir la qualité du référentiel commun — création/import global, catégories, corrections, archivage/réactivation et maintenance — au moyen d'une autorité Application Global explicite, distincte des rôles Platform et Workspace.
 
 ---
 
@@ -292,7 +292,7 @@ référentiel partagé SaaS
 → identités Produit canoniques
 
 ressources globales Workspace
-→ catalogue d'usage Produit, Fournisseurs, Articles, catalogues fournisseur, administration...
+→ référentiel Produit Workspace, Fournisseurs, Articles, catalogues fournisseur, administration...
 
 ressources contextualisées dossier
 → Fiches, références magasin, prix locaux, process...
@@ -358,7 +358,7 @@ prix de vente retenu
 
 Un produit représente une denrée ou un composant utilisable dans une fiche technique, indépendamment de son fournisseur et de son prix.
 
-### 5.1 Identité canonique, nom et déclinaisons structurées
+### 5.1 Identité canonique et déclinaisons structurées
 
 Le Produit de référence représente d'abord une identité métier canonique, par exemple :
 
@@ -369,93 +369,93 @@ Farine
 Film alimentaire
 ```
 
-Cette identité ne doit pas être recréée sous des variantes lexicales équivalentes telles que `carotte`, `Carottes` ou une faute d'orthographe reconnue comme désignant la même réalité.
+Cette identité ne doit pas être recréée sous des variantes lexicales équivalentes telles que `carotte`, `Carottes` ou une faute reconnue comme désignant la même réalité.
 
-Le libellé affiché reste lisible pour l'utilisateur, mais l'identité ne repose pas uniquement sur une chaîne libre.
+La déclinaison décrit ensuite la manière dont ce Produit est présenté et préparé sans transformer chaque variante en nouvelle identité canonique.
 
-Les formes et états qui modifient réellement l'usage, le rendement ou la sélection d'un Article fournisseur doivent être identifiés de manière structurée autour de l'identité canonique.
-
-Axes conceptuels à cadrer précisément dans M-002 :
+Axes structurés retenus par M-002 :
 
 ```text
 Produit canonique
 → Carotte
 
-forme
-→ entière / rondelles / râpée / dés / julienne / purée / ...
+Présentation
+→ entière / râpée / émincée / rondelles / dés / julienne / ...
 
-état ou transformation
-→ brute / pelée / cuite / blanchie / prête à l'emploi / ...
+Gamme
+→ nomenclature métier backend-driven 1..6
 
-conservation lorsque pertinente
-→ fraîche / surgelée / appertisée / ...
+État / transformation
+→ valeur dépendante de la gamme sélectionnée
+→ proposée et validée par le backend
+
+Unité de référence
+→ g / kg / ml / cl / l / unité
+
+Rendement
+→ facultatif, 0 < rendement <= 100
 ```
+
+Le champ historique `Conservation` n'appartient plus au contrat opérationnel M-002 : la dimension qu'il recouvrait est désormais portée par la Gamme et son État / transformation associé.
 
 Exemple :
 
 ```text
 Carotte
-→ forme : râpée
-→ état : prête à l'emploi
-→ conservation : fraîche
+→ Présentation : râpée
+→ Gamme 1 — Frais
+→ État / transformation : Produit frais
+→ Unité : kg
+→ Rendement : 100 %
 ```
 
-L'interface peut composer un libellé lisible comme `Carotte râpée prête à l'emploi`, sans transformer chaque variante orthographique du libellé en nouvelle identité canonique.
-
-Une transformation qui crée réellement un produit composé ou une formulation différente ne doit pas être assimilée automatiquement à une simple forme. Par exemple, une « purée de carottes » industrielle peut contenir d'autres ingrédients. La frontière entre déclinaison et Produit distinct doit être cadrée dans M-002 à partir de critères métier, jamais par simple comparaison de texte.
+Une transformation qui crée réellement un Produit composé ou une formulation différente ne doit pas être assimilée automatiquement à une simple Présentation. Une « purée de carottes » industrielle contenant d'autres ingrédients peut donc relever d'un Produit canonique distinct.
 
 ### 5.2 Données minimales du produit
 
-Socle conceptuel actuellement retenu :
+Socle conceptuel retenu pour M-002 :
 
 - identité / nom canonique — obligatoire ;
-- clé normalisée et alias — nécessaires au contrôle des doublons et à la recherche ;
-- catégorie — nécessaire au classement, tri, recherche et aux analyses ;
-- forme / état / conservation — structurés lorsqu'ils distinguent réellement l'usage ;
-- gamme alimentaire — uniquement lorsqu'elle est pertinente ;
-- unité de référence — nécessaire aux calculs ;
-- taux de rendement — caractéristique métier de la déclinaison réellement utilisée lorsque le rendement en dépend ;
-- photo — facultative ;
-- notes — facultatives, sans logique métier cachée ;
-- date de création — système ;
-- date de dernière modification — système ;
-- créé par — audit ;
-- modifié par — audit ;
-- historique des modifications significatives — à préserver.
+- clé normalisée et alias — recherche et contrôle des doublons ;
+- catégorie active — obligatoire à la création ;
+- Variété — facultative ;
+- Caractéristiques structurées — Présentation, Type commercial, Calibre / format, Couleur, Désignation de qualité et Pièce / découpe (`CUT`) ;
+- Gamme 1 à 5 — obligatoire lorsqu'une déclinaison opérationnelle est créée ;
+- État / transformation — piloté par la Gamme et validé par le backend ;
+- classification d'usage PAI/PAE — facultative et indépendante de la Gamme ;
+- unité de référence — obligatoire ;
+- rendement — facultatif ;
+- date de création / modification — système ;
+- créé par / modifié par — audit ;
+- historique des modifications significatives — préservé.
+
+Les données Fournisseur, référence commerciale, conditionnement et prix restent strictement hors M-002.
 
 ### 5.3 Catégorie
 
-La catégorie sert à classer et filtrer les produits et pourra alimenter les analyses futures.
+La catégorie sert à classer, filtrer et rechercher les Produits.
 
-La liste canonique des catégories n'est pas encore définie.
+La taxonomie est globale au référentiel Produit. Une nouvelle identité `ACTIVE` exige une catégorie `ACTIVE`. La liste initiale n'est pas inventée dans le frontend : elle provient des données métier backend.
 
-**Point ouvert :** catégorie unique ou possibilité d'appartenance multiple.
+### 5.4 Gamme alimentaire, État / transformation et PAI/PAE
 
-### 5.4 Gamme alimentaire
+La QA M-002 du 2026-09-24 a supprimé la pseudo-Gamme 6.
 
-La notion de gamme n'est pas obligatoire pour tous les produits.
+La nomenclature cible est backend-driven :
 
-Lorsqu'elle est pertinente, le référentiel métier doit permettre les gammes 1 à 5 ainsi qu'une valeur « non applicable ».
+| Gamme | Libellé métier | État / transformation initial associé |
+| --- | --- | --- |
+| 1 | Frais | Produit frais |
+| 2 | Conserves | Conserve |
+| 3 | Surgelés | Surgelé |
+| 4 | Sous-vide cru / épluchés | Sous-vide cru / épluché |
+| 5 | Sous-vide cuit | Sous-vide cuit |
 
-Exemple validé :
+`PAI` et `PAE` sont une classification d'usage indépendante de l'état physique. Une déclinaison peut donc être par exemple `Gamme 3 / Surgelé + PAE`.
 
-```text
-Farine
-→ gamme : non applicable
-→ rendement : 100 %
-```
+Le frontend ne contient aucune copie statique de ces registres. Le backend reste l'autorité finale et refuse les combinaisons incompatibles.
 
-La gamme aide à comprendre la nature et le niveau de préparation/conservation du produit, mais ne doit jamais imposer à elle seule un rendement universel.
-
-Référence professionnelle de cadrage :
-
-- 1re gamme : frais ;
-- 2e gamme : conserve / appertisé ;
-- 3e gamme : surgelé ;
-- 4e gamme : cru prêt à l'emploi ;
-- 5e gamme : cuit prêt à l'emploi.
-
-Cette classification est un référentiel professionnel ; elle ne doit pas être forcée lorsqu'elle n'est pas pertinente.
+Le rendement n'est jamais déduit automatiquement de la Gamme ou du statut PAI/PAE.
 
 ### 5.5 Unité de référence
 
@@ -717,7 +717,7 @@ Produit
 × date de valorisation
 ~~~
 
-Un Produit peut être non valorisable dans un magasin et valorisable dans un autre. Il peut également exister dans le catalogue sans Prix applicable courant.
+Un Produit peut être non valorisable dans un magasin et valorisable dans un autre. Il peut également exister dans le référentiel Workspace sans Prix applicable courant.
 
 ### 6.9 Temporalité des différentes sources tarifaires
 
@@ -910,7 +910,7 @@ Portée :
 
 ~~~text
 Mon Workspace
-Tout le référentiel autorisé
+Référentiel global autorisé
 ~~~
 
 Source :
@@ -940,7 +940,7 @@ Références fournisseur
 
 Le résultat peut agréger plusieurs types de ressources, mais chaque résultat conserve sa nature exacte et son lien vers le Produit canonique lorsqu'il est connu.
 
-Une recherche `Mon Workspace` priorise les ressources déjà utilisées/activées par le Workspace. L'utilisateur peut élargir à `Tout le référentiel` pour rattacher une ressource existante sans la recréer.
+Une recherche `Mon Workspace` priorise les ressources déjà utilisées/activées par le Workspace. L'utilisateur peut élargir au `Référentiel global` pour rattacher une ressource existante sans la recréer.
 
 La recherche globale ne doit jamais exposer :
 
@@ -1015,7 +1015,7 @@ Chaque Produit et Article proposé à la sélection doit disposer d'une **carte 
 
 ### 6.13 Détail d'un Produit dans un magasin
 
-Le détail d'un Produit doit disposer d'une vue contextualisée par magasin, distincte de son identité globale dans le catalogue Workspace.
+Le détail d'un Produit doit disposer d'une vue contextualisée par magasin, distincte de son identité globale dans le référentiel Workspace.
 
 Cette vue de pilotage rapide doit présenter au minimum :
 
@@ -1759,24 +1759,44 @@ Il faut distinguer la fraîcheur fonctionnelle d'une recette de la fraîcheur é
 ---
 
 
-### 12.3 Conservation, corbeille métier et stockage Workspace
+### 12.3 Conservation, corbeille métier et temporaires techniques
 
-Le produit distingue la fonctionnalité générique Core de téléversement de fichiers de la politique métier de conservation des ressources générées ou supprimées par le SaaS GMS.
-
-Règles transversales validées :
+Le produit distingue trois notions :
 
 ```text
-capacité de stockage
-→ portée Workspace
+persistance des données métier structurées
+→ MongoDB
+→ source de vérité du produit
 
-Dossier
-→ aucune limite dure de stockage propre en V1
-→ peut consommer la capacité disponible du Workspace
+fichiers temporaires techniques
+→ import / export / génération PDF
+→ nécessaires à l'exécution
+→ supprimés après traitement
 
-mesure par Dossier
-→ possible pour l'observabilité et le pilotage
-→ jamais autorité de quota en V1
+stockage durable de fichiers utilisateur
+→ aucun besoin V1 démontré à ce stade
+→ ne constitue pas un Drive implicite du produit
 ```
+
+Le Core conserve ses primitives génériques de téléversement, inspection, antivirus, stockage et rétention, mais le produit GMS n'est pas obligé d'exposer ni de commercialiser un stockage documentaire durable.
+
+Les ressources métier structurées peuvent néanmoins être soumises à des quotas commerciaux de **nombre d'objets** indépendants du stockage fichier. Décision validée pour les Fiches techniques :
+
+```text
+DRAFTS actifs
+→ quota métier par Workspace / plan
+
+Fiches techniques VALIDATED
+→ quota métier distinct par Workspace / plan
+```
+
+Ces quotas utiliseront le moteur générique Core de metrics / limits / entitlements / overrides ; ils ne seront pas calculés à partir de la taille MongoDB ni de `storage_bytes`.
+
+Les valeurs exactes Free/Premium, les clés techniques définitives, le comportement lorsque la limite est atteinte et la règle de comptage des fiches ARCHIVED seront cadrés en M-004.
+
+Un import CSV/XLS/XLSX peut donc utiliser temporairement la chaîne de sécurité File du Core sans consommer un quota commercial de stockage durable. De même, un PDF ou un CSV généré peut exister le temps du téléchargement ou de l'envoi puis être détruit.
+
+Les limites applicables aux temporaires — taille maximale, TTL, concurrence de traitement — sont des garde-fous techniques et non un espace de stockage vendu au Workspace.
 
 La corbeille métier possède un comportement standard immédiatement utilisable :
 
@@ -1786,7 +1806,7 @@ borne minimale : 7 jours
 borne maximale : 90 jours
 ```
 
-Lorsque la personnalisation est autorisée, le Workspace peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. La valeur effective de rétention est figée au moment de la suppression sous forme d'une échéance de purge ; un changement ultérieur de configuration n'allonge ni ne raccourcit rétroactivement les éléments déjà placés en corbeille.
+Lorsque la personnalisation est autorisée, le Workspace peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. Cette rétention concerne les ressources métier supprimées, pas des fichiers temporaires d'import/export.
 
 Pour les Fiches techniques :
 
@@ -1798,10 +1818,12 @@ Pour les Fiches techniques :
 Pour les artefacts générés :
 
 - CSV et XLS(X) sont générés à la demande pour l'export puis détruits après remise au client ;
-- le PDF n'est pas une ressource persistante du produit : il est généré à la demande lorsqu'un document est envoyé par e-mail, joint au message puis supprimé du stockage temporaire après traitement ;
+- le PDF est généré à la demande pour téléchargement ou envoi selon le module concerné, puis supprimé du stockage temporaire après traitement ;
 - les artefacts reproductibles ne sont pas conservés durablement et ne créent pas d'historique de fichiers parallèle à la donnée métier source.
 
 Cette politique ne déclenche aucune purge automatique des Dossiers `DELETED` dans M-001.
+
+Si un futur module démontre un besoin de conservation durable de documents binaires, son usage, sa capability commerciale et son éventuel quota Workspace devront être cadrés séparément au lieu d'être déduits du simple fait que le Core sait stocker des fichiers.
 
 Le contrat transversal détaillé est conservé dans `docs/domain/STORAGE-RETENTION.md`.
 
@@ -2067,7 +2089,7 @@ Ordre recommandé :
 
 ```text
 M-001 → Dossiers / Magasins + affectations
-M-002 → Catalogue Produits
+M-002 → Référentiel Produits
 M-003 → Fournisseurs + Articles + prix/catalogues
 M-004 → Fiches techniques + valorisation
 M-005 → Atelier d'optimisation Premium
@@ -2079,7 +2101,7 @@ Sont explicitement différés et non bloquants pour M-001 :
 - marge semi-nette ;
 - Fiche process ;
 - mathématiques fines de l'Atelier d'optimisation ;
-- catalogue complet des stratégies d'arrondi personnalisées ;
+- ensemble complet des stratégies d'arrondi personnalisées ;
 - OCR / IA ;
 - imports avancés ;
 - purge physique définitive ;
@@ -2099,7 +2121,7 @@ Décisions finales fermées le 2026-09-20 :
 - contraintes réglementaires structurantes de M-001 vérifiées : les éventuelles coordonnées nominatives sont des données personnelles à minimiser et protéger, mais aucune obligation démontrée n'impose un champ métier obligatoire supplémentaire au Dossier ;
 - conformité globale et rétention restent suivies par D-003 / D-006 avant production.
 
-Les questions restantes sont désormais rattachées au module concerné : catégories/unités Produit avant M-002 ; Fournisseur/Article/prix avant M-003 ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge avant implémentation.
+Les questions restantes sont désormais rattachées au module concerné : M-002 a fermé catégories, unités, lifecycle et gouvernance Produit ; Fournisseur/Article/catalogues/prix restent à fermer en M-003 ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge avant implémentation.
 
 La validation globale n'autorise pas encore l'implémentation de M-001 : son contrat détaillé doit d'abord être cadré et validé.
 
@@ -2113,8 +2135,8 @@ Le présent document synthétise les éléments métier fournis et validés le 2
 - exemples de tarifs fournisseurs Sysco et SCAL ;
 - référentiels professionnels sur les gammes alimentaires.
 
-Référence officielle consultée pour la terminologie des gammes :
+Référence externe historiquement consultée pour la terminologie des gammes 1 à 5 :
 
 - Direction des Affaires juridiques, Ministère de l'Économie — glossaire d'indexation des prix des denrées alimentaires : https://www.economie.gouv.fr/files/files/directions_services/daj/marches_publics/oeap/concertation/autres_groupes_travail/indexation-prix-denrees-alimentaires.pdf
 
-La source métier utilisateur prime sur les hypothèses lorsqu'une règle spécifique au produit est validée.
+La source externe documente le vocabulaire historique des gammes 1 à 5. La QA métier du 2026-09-24 a confirmé que PAI / PAE ne doit pas être modélisé comme une sixième Gamme : cette classification est désormais indépendante de l'état physique. La source métier utilisateur prime sur les hypothèses lorsqu'une règle spécifique au produit est validée.

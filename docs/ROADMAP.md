@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé techniquement — M-002 devient le prochain lot métier  
-**Dernière mise à jour :** 2026-09-22
+**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé fonctionnellement — M-003 prochain cadrage  
+**Dernière mise à jour :** 2026-09-25
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.1.1` intégré ;
+- Core `v1.2.0` intégré au commit `c428fbec1edfa21a8860fcf8283072e45719832b` ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;
@@ -44,7 +44,7 @@ Décisions établies :
 - suppression logique avant éventuelle purge physique ;
 - suppression logique = coupure immédiate des accès métier et des ressources du dossier dans les flux normaux sans destruction automatique de l'historique ;
 - restauration contrôlée vers un état non opérationnel, par défaut `PAUSED` ;
-- référentiel Produit canonique partagé à l'échelle du SaaS, avec catalogue d'usage par Workspace sans duplication de l'identité Produit ;
+- référentiel Produit canonique partagé à l'échelle du SaaS, avec référentiel d'usage par Workspace sans duplication de l'identité Produit ;
 - prix et conditions contextualisés par magasin ;
 - accès multi-magasins = changement de contexte, jamais partage ou mélange des données locales ;
 - invitation Workspace puis affectation séparée des magasins après acceptation ;
@@ -69,44 +69,37 @@ Décisions finales :
 - un Dossier `DELETED` n'est pas purgé automatiquement dans M-001 ; sa purge physique reste différée ;
 - la politique métier de corbeille est validée transversalement pour les futures ressources purgeables : 30 jours par défaut, configurable de 7 à 90 jours lorsque la personnalisation est autorisée.
 
-### 2.2 Catalogue Produit
+### 2.2 Référentiel Produit
 
-**État : fondation révisée et validée — cadrage détaillé M-002 à poursuivre après M-001**
+**État : CLÔTURÉ FONCTIONNELLEMENT — contrat et UX métier validés le 2026-09-25 ; intégration protégée par la Core Gate de la PR finale**
 
-Décisions établies :
+Contrat canonique :
 
-- l'identité Produit canonique est partagée à l'échelle du SaaS et n'est pas dupliquée par Workspace ;
-- un Workspace construit son catalogue d'usage en référençant les Produits canoniques dont il a besoin ;
-- les Dossiers utilisent le catalogue de leur Workspace sans copier l'identité Produit ;
-- aucune donnée commerciale ou confidentielle tenant ne peut être stockée dans le Produit canonique ;
-- les utilisateurs autorisés peuvent rechercher le référentiel partagé et rattacher un Produit existant au Workspace ;
-- si aucun équivalent crédible n'existe, M-002 doit permettre de contribuer/créer une nouvelle identité canonique après contrôle de doublon ;
-- la prévention des doublons ne repose pas uniquement sur la casse : normalisation, alias, singulier/pluriel et recherche de proximité doivent participer au contrôle ;
-- forme, état/transformation et conservation sont des dimensions structurées lorsqu'elles changent réellement l'usage, le rendement ou la sélection d'un Article fournisseur ;
-- une simple faute ou variante orthographique ne crée jamais volontairement un nouveau Produit ;
-- une transformation qui crée une formulation réellement différente peut devenir un Produit distinct : la frontière métier sera fermée en M-002 ;
-- la recherche Produit est unifiée avec filtres de portée `Mon Workspace / Tout le référentiel autorisé` et de source `Toutes / Produits canoniques / Catalogues fournisseurs / Références-Articles fournisseur` ;
-- l'élargissement au référentiel global permet de rattacher une donnée existante au Workspace sans la recréer.
+```text
+docs/m002/M-002-FINAL-CONTRACT.md
+```
 
-À préserver :
+Décisions finales :
 
-- catégorie ;
-- gamme lorsque pertinente ;
-- unité de référence ;
-- rendement applicable à la déclinaison réellement utilisée ;
-- photo facultative ;
-- traçabilité de création / modification ;
-- historique des modifications significatives.
+- `ProductVariant` conserve son nom technique mais joue le rôle métier de Référence Produit exploitable ;
+- nom métier persistant et unique par normalisation ;
+- Conservation obligatoire ;
+- unité de référence obligatoire ;
+- Catégorie facultative ;
+- `foodRange` / Gammes conservés côté backend pour compatibilité et évolution future, mais non exposés par le frontend actif ;
+- suppression de `usageType` du contrat actif ;
+- état/transformation facultatif ;
+- dimensions avancées facultatives ;
+- `WorkspaceProduct` présenté comme Favori ;
+- liste Workspace `Produit | Conservation | Actions` ;
+- seed actif `m002-reference-v6`, source unique = PDF alimentaire fourni, 264 Références exploitables ;\n- migration de réconciliation supprimant du référentiel actif les anciennes références bootstrap absentes du v6 ;
+- migration additionnelle fail-closed ;
+- import dédupliqué par nom exact de Référence ;
+- frontière stricte M-002 / M-003 maintenue.
 
-**À terminer dans M-002 :**
+La dépendance générique Core de navigation Platform est déjà résolue et intégrée.
 
-- schéma conceptuel final entre Produit canonique, déclinaison et relation d'usage Workspace ;
-- gouvernance des catégories ;
-- unités supportées ;
-- règles exactes d'identité sémantique et d'alias ;
-- politique de contribution/modération/fusion d'un Produit partagé ;
-- critères exacts séparant déclinaison et Produit distinct ;
-- lifecycle / archivage du référentiel et du rattachement Workspace.
+Décision de clôture du 2026-09-25 : le périmètre fonctionnel M-002 est gelé. Les retouches purement visuelles éventuelles sont non bloquantes et suivies comme dette conditionnelle ; elles ne rouvrent pas M-002. La PR finale reste soumise à la Core Gate canonique avant fusion.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
@@ -141,6 +134,9 @@ Décisions établies :
 - les mappings Fournisseur + référence Article déjà validés sont réutilisés dans les éditions suivantes ;
 - une ligne peut rester non rapprochée tant qu'aucune correspondance Produit fiable n'est validée ;
 - l'identité Fournisseur associée aux catalogues globaux doit être réutilisable ; le modèle exact global/Workspace des Fournisseurs reste à fermer en M-003 ;
+- chaque édition/catalogue importé doit être rattaché explicitement à un Fournisseur identifié et conserver sa propre identité/version ;
+- l'interface M-003 doit permettre de filtrer par Fournisseur et de sélectionner un catalogue/une édition précise, sans déduire l'origine d'un Produit à partir de son seul libellé ;
+- un import de type SYSCO doit donc être identifiable comme catalogue SYSCO avant que ses Articles/références puissent être proposés dans les sélecteurs ;
 - IA/OCR uniquement comme assistance future sous contrôle métier.
 
 À finaliser :
@@ -184,6 +180,10 @@ Décisions établies :
 - Atelier d'optimisation Premium cadré fonctionnellement ;
 - un DRAFT actif n'est jamais purgé pour simple ancienneté ;
 - un DRAFT explicitement supprimé relève de la corbeille métier du Workspace ;
+- le nombre de DRAFTS actifs est destiné à être limité commercialement par un quota métier de plan ;
+- le nombre de Fiches techniques VALIDATED est destiné à être limité par un quota métier distinct ;
+- ces quotas sont des compteurs de ressources métier et ne réutilisent pas `storage_bytes` ;
+- les seuils Free/Premium, clés finales et règles de comptage des ARCHIVED seront fermés en M-004 ;
 - une version VALIDATED n'est pas purgée automatiquement par âge ;
 - CSV/XLS(X) sont générés à la demande sans conservation durable ;
 - le PDF est généré uniquement comme pièce jointe temporaire lors d'un envoi de document par e-mail et n'est pas persisté.
@@ -193,7 +193,7 @@ Décisions établies :
 - types/motifs exacts de versions avant M-004 ;
 - définition de la marge semi-nette lorsqu'elle sera disponible ;
 - paramètres mathématiques fins et garde-fous de l'optimiseur avant M-005 ;
-- catalogue complet des stratégies d'arrondi ;
+- ensemble complet des stratégies d'arrondi ;
 - contrat technique de corbeille/restauration/purge des DRAFTS avant M-004 ;
 - éventuelle suppression définitive des VALIDATED et contraintes réglementaires avant implémentation.
 
@@ -242,11 +242,12 @@ Décisions établies :
 - lifecycle Dossier et effets sur les affectations validés ;
 - Core 1.1.0 fournit désormais le point d'extension transactionnel `WorkspaceMember → REMOVED` requis par M-001 ;
 - rattachement commercial exact de l'optimisation avant M-005 ;
-- quotas uniquement lorsqu'un besoin quantitatif est démontré.
+- besoin quantitatif désormais démontré pour les DRAFTS et Fiches techniques VALIDATED : métriques/quota métier à fermer en M-004 ;
+- conserver `storage_bytes` pour les fichiers persistants Core, sans l'utiliser comme mesure des ressources MongoDB métier.
 
 ### 2.7 Paramètres métier
 
-**État : architecture fonctionnelle validée — catalogue de paramètres à poursuivre**
+**État : architecture fonctionnelle validée — ensemble de paramètres à poursuivre**
 
 Décisions établies :
 
@@ -304,7 +305,7 @@ Ordre initial recommandé :
 
 ```text
 M-001 Dossiers / Magasins + affectations
-M-002 Catalogue Produits
+M-002 Référentiel Produits
 M-003 Fournisseurs + Articles + prix/catalogues
 M-004 Fiches techniques + valorisation
 M-005 Atelier d'optimisation Premium
@@ -520,17 +521,21 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-M-001 est techniquement clôturé. La prochaine étape de roadmap est :
+M-002 est clôturé fonctionnellement. Son intégration dans `main` passe par une unique PR finale protégée par la Core Gate canonique ; GitHub est l'autorité sur le résultat de cette gate et du merge.
+
+Le prochain lot métier est le **cadrage M-003 — Fournisseurs + Articles + prix/catalogues**. Le premier point à verrouiller est l'identité Fournisseur/Catalogue : un Article importé doit conserver un Fournisseur et une édition/catalogue explicites, puis être rapproché d'une Référence Produit M-002 sans création canonique silencieuse.
 
 ```text
-M-002 — Catalogue Produits / Produits canoniques
-→ reprendre le cadrage détaillé déjà amorcé
-→ fermer le modèle conceptuel Produit canonique / déclinaisons / usage Workspace
-→ définir gouvernance, identité sémantique, alias, lifecycle et bootstrap
-→ seulement après validation : implémentation sur une branche dédiée
+M-002 gelé
+→ PR finale + Core Gate
+→ merge
+→ Core Gate post-merge
+→ cadrage détaillé M-003
+→ validation du contrat M-003
+→ implémentation M-003 par lot cohérent
 ```
 
-Ne pas rouvrir M-001 sauf régression démontrée. Les éventuels ajustements purement visuels du module Dossiers pourront être traités dans un lot UX post-merge distinct.
-`npm run format:check` reste actuellement non conforme sur des fichiers Core inchangés et n'appartient pas à la Core Gate canonique. Ce sujet doit être traité séparément comme besoin générique Core/tooling, sans correction silencieuse dans le produit.
+Les éventuelles retouches visuelles M-002 non bloquantes sont traitées opportunément sous la dette `GMS-UX-001`, sans rouvrir le contrat métier. Ne pas rouvrir M-001 sauf régression démontrée.
+`npm run format:check` reste un sujet Core/tooling séparé s'il est toujours non conforme sur des fichiers Core inchangés.
 
-La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés et non bloquants pour M-001.
+La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés selon leur module.

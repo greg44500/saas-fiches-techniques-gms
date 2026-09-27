@@ -10,6 +10,9 @@ import {
 import {
     composeApplicationGlobalPermissions,
 } from '../../modules/applicationGlobalAuthorization/applicationGlobalPermission.registry.js';
+import {
+    PRODUCT_CATALOG_GLOBAL_PERMISSION,
+} from '../../modules/productCatalog/productCatalogGlobalPermission.registry.js';
 
 const buildDefinition = ({
     key = 'example-resource:read',
@@ -24,13 +27,26 @@ const buildDefinition = ({
 });
 
 describe('application-global permission registry', () => {
-    it('reste vide dans le Core sans module métier dérivé', () => {
+    it('compose les permissions globales M-002 du produit', () => {
         expect(
             ACTIVE_APPLICATION_GLOBAL_PERMISSION_REGISTRY.permissionKeys,
-        ).toEqual([]);
+        ).toEqual(expect.arrayContaining([
+            PRODUCT_CATALOG_GLOBAL_PERMISSION.READ,
+            PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE,
+        ]));
+
         expect(
             ACTIVE_APPLICATION_GLOBAL_PERMISSION_REGISTRY.definitions,
-        ).toEqual([]);
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                key: PRODUCT_CATALOG_GLOBAL_PERMISSION.READ,
+                category: 'products',
+            }),
+            expect.objectContaining({
+                key: PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE,
+                category: 'products',
+            }),
+        ]));
     });
 
     it('compose les permissions déclarées par une application dérivée', () => {

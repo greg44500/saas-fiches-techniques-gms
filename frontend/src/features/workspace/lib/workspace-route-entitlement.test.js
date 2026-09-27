@@ -33,5 +33,10 @@ describe('getWorkspaceRouteRequiredFeature', () => {
       pathname: '/workspaces/workspace-1/dashboard',
       workspaceId: 'workspace-1',
     })).toBeNull();
+
+    expect(getWorkspaceRouteRequiredFeature({
+      pathname: '/workspaces/workspace-1/products',
+      workspaceId: 'workspace-1',
+    })).toBeNull();
   });
 });

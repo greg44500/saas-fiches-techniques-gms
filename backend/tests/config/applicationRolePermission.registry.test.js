@@ -15,6 +15,9 @@ import {
 import {
     getActiveRolePermissionRegistry,
 } from '../../modules/role/rolePermission.registry.js';
+import {
+    PRODUCT_CATALOG_PERMISSIONS,
+} from '../../modules/productCatalog/productCatalogPermission.registry.js';
 
 
 describe('application role permission registry', () => {
@@ -41,11 +44,24 @@ describe('application role permission registry', () => {
         );
     });
 
-    it('attribue les permissions Dossier uniquement au rôle système owner', () => {
+    it('enregistre les permissions M-002', () => {
+        expect(
+            ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY.permissions,
+        ).toEqual(
+            expect.arrayContaining(PRODUCT_CATALOG_PERMISSIONS),
+        );
+    });
+
+    it('attribue les permissions métier produit uniquement au rôle système owner', () => {
         expect(
             ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY
                 .systemRolePermissions[SYSTEM_ROLE_KEY.OWNER],
-        ).toEqual(DOSSIER_PERMISSIONS);
+        ).toEqual(
+            expect.arrayContaining([
+                ...DOSSIER_PERMISSIONS,
+                ...PRODUCT_CATALOG_PERMISSIONS,
+            ]),
+        );
 
         for (const roleKey of Object.values(SYSTEM_ROLE_KEY)) {
             if (roleKey === SYSTEM_ROLE_KEY.OWNER) {
@@ -58,7 +74,10 @@ describe('application role permission registry', () => {
 
             expect(
                 permissions.some((permission) =>
-                    DOSSIER_PERMISSIONS.includes(permission)),
+                    [
+                        ...DOSSIER_PERMISSIONS,
+                        ...PRODUCT_CATALOG_PERMISSIONS,
+                    ].includes(permission)),
             ).toBe(false);
         }
     });

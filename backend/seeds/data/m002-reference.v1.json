@@ -1,0 +1,838 @@
+{
+  "version": "m002-reference-v1",
+  "ready": true,
+  "categories": [
+    {
+      "key": "fruits-legumes",
+      "name": "Fruits et légumes"
+    }
+  ],
+  "products": [
+    {
+      "name": "Carotte",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [
+        {
+          "key": "nantaise",
+          "kind": "COMMERCIAL_TYPE",
+          "name": "Nantaise",
+          "aliases": []
+        },
+        {
+          "key": "botte-fanes",
+          "kind": "PRESENTATION",
+          "name": "En botte avec fanes",
+          "aliases": [
+            "En botte",
+            "Avec fanes"
+          ]
+        },
+        {
+          "key": "sables",
+          "kind": "QUALITY_DESIGNATION",
+          "name": "Carottes des sables",
+          "aliases": []
+        },
+        {
+          "key": "mini",
+          "kind": "SIZE_FORMAT",
+          "name": "Mini",
+          "aliases": []
+        },
+        {
+          "key": "rapee",
+          "kind": "PRESENTATION",
+          "name": "Râpée",
+          "aliases": []
+        }
+      ],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [
+            "nantaise"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [
+            "botte-fanes"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [
+            "sables"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [
+            "mini"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [
+            "rapee"
+          ],
+          "processingState": null,
+          "foodRange": 6,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 3,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Tomate",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [
+        {
+          "key": "cerise",
+          "kind": "COMMERCIAL_TYPE",
+          "name": "Cerise",
+          "aliases": []
+        },
+        {
+          "key": "grappe",
+          "kind": "PRESENTATION",
+          "name": "En grappe",
+          "aliases": []
+        },
+        {
+          "key": "coeur-boeuf",
+          "kind": "COMMERCIAL_TYPE",
+          "name": "Cœur de bœuf",
+          "aliases": []
+        }
+      ],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [
+            "cerise"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [
+            "grappe"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [
+            "coeur-boeuf"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pomme de terre",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [
+        {
+          "key": "charlotte",
+          "name": "Charlotte",
+          "aliases": []
+        }
+      ],
+      "characteristics": [
+        {
+          "key": "grenaille",
+          "kind": "SIZE_FORMAT",
+          "name": "Grenaille",
+          "aliases": []
+        }
+      ],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "varietyKey": "charlotte"
+        },
+        {
+          "characteristicKeys": [
+            "grenaille"
+          ],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Courgette",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Aubergine",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Poivron",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Oignon",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Ail",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Poireau",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Concombre",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Betterave",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Navet",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Céleri-rave",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Chou-fleur",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Brocoli",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Épinard",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Haricot vert",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Petit pois",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Champignon de Paris",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Laitue",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Endive",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Radis",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pomme",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [
+        {
+          "key": "golden",
+          "name": "Golden",
+          "aliases": []
+        },
+        {
+          "key": "gala",
+          "name": "Gala",
+          "aliases": []
+        },
+        {
+          "key": "granny-smith",
+          "name": "Granny Smith",
+          "aliases": []
+        }
+      ],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "varietyKey": "golden"
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "varietyKey": "gala"
+        },
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null,
+          "varietyKey": "granny-smith"
+        }
+      ]
+    },
+    {
+      "name": "Poire",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Banane",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Orange",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Citron",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Kiwi",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Fraise",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Framboise",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Raisin",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pêche",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Nectarine",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Abricot",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Melon",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pastèque",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Ananas",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mangue",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Clémentine",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "characteristicKeys": [],
+          "processingState": null,
+          "foodRange": 1,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    }
+  ]
+}

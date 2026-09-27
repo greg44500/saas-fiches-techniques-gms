@@ -1,0 +1,5095 @@
+{
+  "version": "m002-reference-v6",
+  "ready": true,
+  "sources": [
+    {
+      "name": "SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf",
+      "type": "supplier-catalog-sample",
+      "scope": "Denrées alimentaires présentes dans le PDF uniquement",
+      "pages": "1, 3-34, 38-43",
+      "excludedPages": "2, 35-37, 44-45 (sommaire, non alimentaire, mentions finales)",
+      "rules": [
+        "Le PDF est l'unique source des Références bootstrap v6",
+        "Aucune Référence issue des seeds v1 à v5 n'est conservée si elle n'est pas présente dans le PDF",
+        "Marques, références fournisseur, prix et colisages ne font pas partie de l'identité M-002",
+        "La Gamme n'est pas renseignée lorsque le PDF ne la donne pas explicitement"
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "key": "fruits-legumes",
+      "name": "Fruits et légumes"
+    },
+    {
+      "key": "entrees-traiteur",
+      "name": "Entrées et traiteur"
+    },
+    {
+      "key": "aides-culinaires",
+      "name": "Aides culinaires, sauces et condiments"
+    },
+    {
+      "key": "accompagnements",
+      "name": "Céréales, féculents et accompagnements"
+    },
+    {
+      "key": "viandes-volailles",
+      "name": "Viandes et volailles"
+    },
+    {
+      "key": "poissons-produits-mer",
+      "name": "Poissons et produits de la mer"
+    },
+    {
+      "key": "oeufs-ovoproduits",
+      "name": "Œufs et ovoproduits"
+    },
+    {
+      "key": "produits-laitiers",
+      "name": "Produits laitiers et fromages"
+    },
+    {
+      "key": "plats-prepares",
+      "name": "Plats préparés et alternatives végétales"
+    },
+    {
+      "key": "petit-dejeuner",
+      "name": "Petit déjeuner"
+    },
+    {
+      "key": "desserts",
+      "name": "Desserts et aides à la pâtisserie"
+    },
+    {
+      "key": "biscuits-confiseries",
+      "name": "Biscuits et confiseries"
+    },
+    {
+      "key": "boissons",
+      "name": "Boissons sans alcool"
+    },
+    {
+      "key": "vins",
+      "name": "Vins et boissons culinaires alcoolisées"
+    }
+  ],
+  "products": [
+    {
+      "name": "Abricot",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Abricot",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Ail",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Ail",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Artichaut",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Artichaut",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Aubergine",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Aubergine",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Avocat",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Avocat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Baba savarin",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Baba savarin",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Barre de chocolat au lait",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Barre de chocolat au lait",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Barre de chocolat noir 43 % cacao",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Barre de chocolat noir 43 % cacao",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Betterave",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Betterave",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Blé entier précuit",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Blé entier précuit",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Blette",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Blette",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Bordeaux AOP blanc",
+      "aliases": [],
+      "categoryKey": "vins",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Bordeaux AOP blanc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Bouchée hôtelière",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Bouchée hôtelière",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Boudoir",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Boudoir",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Bouillon de légumes en granulés",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Bouillon de légumes en granulés",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Boulette de bœuf",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Boulette de bœuf",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Boulgour",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Boulgour",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Briochette aux pépites de chocolat",
+      "aliases": [],
+      "categoryKey": "petit-dejeuner",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Briochette aux pépites de chocolat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Brownie",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Brownie",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Brugnon",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Brugnon",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cœur de blé",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cœur de blé",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Café moulu 50 % arabica",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Café moulu 50 % arabica",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Café moulu 70 % arabica",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Café moulu 70 % arabica",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Café soluble",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Café soluble",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cake aux fruits",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cake aux fruits",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cake aux pépites de chocolat",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cake aux pépites de chocolat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cantal",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cantal",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Carotte",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Carotte",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Carottes en dés",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Carottes en dés",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Carottes en lamelles",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Carottes en lamelles",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Carottes râpées",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Carottes râpées",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Céleri",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Céleri",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Céleri râpé",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Céleri râpé",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Champagne brut",
+      "aliases": [],
+      "categoryKey": "vins",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Champagne brut",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Champignons à la grecque",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Champignons à la grecque",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Chardonnay blanc IGP Pays d'Oc",
+      "aliases": [],
+      "categoryKey": "vins",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Chardonnay blanc IGP Pays d'Oc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Chili en poudre",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Chili en poudre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Chocolat au lait 24 % cacao",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Chocolat au lait 24 % cacao",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Chocolat noir 40 % cacao",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Chocolat noir 40 % cacao",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Chou à garnir",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Chou à garnir",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Chou-fleur",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Chou-fleur",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Chou rouge",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Chou rouge",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cinsault rosé IGP Pays d'Oc",
+      "aliases": [],
+      "categoryKey": "vins",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cinsault rosé IGP Pays d'Oc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Citron",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Citron",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cocktail de fruits au sirop léger",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cocktail de fruits au sirop léger",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cognac salé poivré",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cognac salé poivré",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Compote de pommes allégée en sucre",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Compote de pommes allégée en sucre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Compote pomme-banane",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Compote pomme-banane",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Comté",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Comté",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Concombre",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Concombre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Confiture d'abricots",
+      "aliases": [],
+      "categoryKey": "petit-dejeuner",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Confiture d'abricots",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Confiture de fraises",
+      "aliases": [],
+      "categoryKey": "petit-dejeuner",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Confiture de fraises",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Coquillettes",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Coquillettes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Coriandre moulue",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Coriandre moulue",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cornichon",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cornichon",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Côtes-du-Rhône rouge AOC",
+      "aliases": [],
+      "categoryKey": "vins",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Côtes-du-Rhône rouge AOC",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Courge",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Courge",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Courgette",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Courgette",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Couscous moyen",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Couscous moyen",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Crémant d'Alsace brut",
+      "aliases": [],
+      "categoryKey": "vins",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Crémant d'Alsace brut",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Crème dessert caramel",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Crème dessert caramel",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Crème dessert chocolat",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Crème dessert chocolat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Crème dessert vanille",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Crème dessert vanille",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cresson",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cresson",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cube de saumon Atlantique",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cube de saumon Atlantique",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Cumin moulu",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Cumin moulu",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Duo de carottes orange et jaune",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Duo de carottes orange et jaune",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Échalote",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Échalote",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Égrainé végétal",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Égrainé végétal",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Émincé végétal",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Émincé végétal",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Emmental",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Emmental",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Endive",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Endive",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Épinard",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Épinard",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Épinards en branches",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Épinards en branches",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Extrait de vanille de Madagascar",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Extrait de vanille de Madagascar",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Farfalle",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Farfalle",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Fenouil",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Fenouil",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Feuille de génoise nature",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Feuille de génoise nature",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Feuilleté au comté",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Feuilleté au comté",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Figue",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Figue",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Filet de colin d'Alaska",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Filet de colin d'Alaska",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Filet de poulet",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Filet de poulet",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Fond blanc de volaille",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Fond blanc de volaille",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Fond brun lié",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Fond brun lié",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Fourme d'Ambert",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Fourme d'Ambert",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Fraise des bois",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Fraise des bois",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Fromage blanc",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Fromage blanc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Fruit de la passion",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Fruit de la passion",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Fumet de poisson",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Fumet de poisson",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Galette bio pur beurre",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Galette bio pur beurre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Galette d'épeautre aux légumes",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Galette d'épeautre aux légumes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Galette tout beurre",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Galette tout beurre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Garniture pour taboulé",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Garniture pour taboulé",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Gélatine porcine",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Gélatine porcine",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Gigot d'agneau",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Gigot d'agneau",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Gouda",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Gouda",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Goûter chocolat",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Goûter chocolat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Graines de sésame blanc",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Graines de sésame blanc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Granola lait",
+      "aliases": [],
+      "categoryKey": "petit-dejeuner",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Granola lait",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Gruyère",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Gruyère",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Haricot vert",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Haricot vert",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Haricots verts très fins",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Haricots verts très fins",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Huile olive et tournesol",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Huile olive et tournesol",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Ice tea pêche",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Ice tea pêche",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Jurançon AOC doux",
+      "aliases": [],
+      "categoryKey": "vins",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Jurançon AOC doux",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Jus d'orange bio à base de concentré",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Jus d'orange bio à base de concentré",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Jus d'orange pulpé à base de concentré",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Jus d'orange pulpé à base de concentré",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Jus de poulet",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Jus de poulet",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Jus de veau lié",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Jus de veau lié",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Jus multifruits à base de concentré",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Jus multifruits à base de concentré",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Ketchup",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Ketchup",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Kiwi",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Kiwi",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Langue de chat",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Langue de chat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Lasagnes aux légumes",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Lasagnes aux légumes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Lentilles cuites",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Lentilles cuites",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Lentilles vertes",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Lentilles vertes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Litchis dénoyautés au sirop léger",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Litchis dénoyautés au sirop léger",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Macédoine de légumes",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Macédoine de légumes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Madeleine aux pépites de chocolat",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Madeleine aux pépites de chocolat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Madeleine de Commercy",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Madeleine de Commercy",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Madère salé poivré",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Madère salé poivré",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Maïs",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Maïs",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Maïs doux en grains",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Maïs doux en grains",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Manchons de canard confits",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Manchons de canard confits",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mandarine",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mandarine",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mangue",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mangue",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mayonnaise",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mayonnaise",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mayonnaise légère",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mayonnaise légère",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mélange d'épices à la coréenne",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mélange d'épices à la coréenne",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mélange de céréales",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mélange de céréales",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Melon",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Melon",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Merlot rouge IGP Pays d'Oc",
+      "aliases": [],
+      "categoryKey": "vins",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Merlot rouge IGP Pays d'Oc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Miel de fleurs liquide",
+      "aliases": [],
+      "categoryKey": "petit-dejeuner",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Miel de fleurs liquide",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mini roulé chocolat",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mini roulé chocolat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mini roulé framboise",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mini roulé framboise",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mirabelle",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mirabelle",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Moelleux chocolat",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Moelleux chocolat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Moelleux marbré",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Moelleux marbré",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mousse de foie de porc",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mousse de foie de porc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Moutarde de Dijon",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Moutarde de Dijon",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Mûre",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Mûre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Myrtille",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Myrtille",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Navet",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Navet",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Nectarine",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Nectarine",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Noix de joue de porc",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Noix de joue de porc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Oignon",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Oignon",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Olives noires dénoyautées",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Olives noires dénoyautées",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Olives vertes dénoyautées",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Olives vertes dénoyautées",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Omelette nature",
+      "aliases": [],
+      "categoryKey": "oeufs-ovoproduits",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Omelette nature",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Orange",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Orange",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Oseille",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Oseille",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pain au chocolat",
+      "aliases": [],
+      "categoryKey": "petit-dejeuner",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pain au chocolat",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pamplemousse",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pamplemousse",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Panais",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Panais",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pané de colin d'Alaska",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pané de colin d'Alaska",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pastèque",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pastèque",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Patate douce",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Patate douce",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pâte à tartiner",
+      "aliases": [],
+      "categoryKey": "petit-dejeuner",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pâte à tartiner",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pâté de campagne",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pâté de campagne",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pâtisson",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pâtisson",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pêche",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pêche",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Penne rigate",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Penne rigate",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pesto vert",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pesto vert",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Petit beurre bio",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Petit beurre bio",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Petit fourré abricot",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Petit fourré abricot",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Petit fourré cerise",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Petit fourré cerise",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Petit fourré chocolat-noisettes",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Petit fourré chocolat-noisettes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Petit fourré fraise",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Petit fourré fraise",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Petits dés de pêche",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Petits dés de pêche",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Petits pois doux très fins",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Petits pois doux très fins",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Petits pois extra-fins",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Petits pois extra-fins",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Poêlée maraîchère",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Poêlée maraîchère",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Poêlée villageoise",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Poêlée villageoise",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Poire",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Poire",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Poireau",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Poireau",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Poires Williams au sirop léger",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Poires Williams au sirop léger",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Poivron",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Poivron",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pomme",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pomme",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pomme de terre",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pomme de terre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pomme golden",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pomme golden",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pomme granny",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pomme granny",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pommes entières",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pommes entières",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Porto rouge salé poivré",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Porto rouge salé poivré",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pot de crème caramel beurre salé",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pot de crème caramel beurre salé",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Potage de légumes",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Potage de légumes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Potimarron",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Potimarron",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Potiron",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Potiron",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Poudre de tomate",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Poudre de tomate",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Préparation de légumes pour taboulé à l'huile d'olive",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Préparation de légumes pour taboulé à l'huile d'olive",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Préparation pour coleslaw chou blanc et carottes",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Préparation pour coleslaw chou blanc et carottes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Préparation pour flan à la vanille",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Préparation pour flan à la vanille",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Préparation pour mousse au chocolat blanc",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Préparation pour mousse au chocolat blanc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Préparation pour mousse au chocolat sans gluten",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Préparation pour mousse au chocolat sans gluten",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Préparation pour panna cotta",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Préparation pour panna cotta",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Prune",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Prune",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pruneaux dénoyautés au sirop",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pruneaux dénoyautés au sirop",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Pur jus d'orange",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Pur jus d'orange",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Purée de brocolis",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Purée de brocolis",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Purée de haricots verts",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Purée de haricots verts",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Quatre-quarts pur beurre",
+      "aliases": [],
+      "categoryKey": "biscuits-confiseries",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Quatre-quarts pur beurre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Quiche lorraine",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Quiche lorraine",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Quinoa gourmand",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Quinoa gourmand",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Radis noir",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Radis noir",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Rillettes de thon",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Rillettes de thon",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Riz au lait à la vanille",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Riz au lait à la vanille",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Riz étuvé long grain Indica",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Riz étuvé long grain Indica",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Rognons de bœuf",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Rognons de bœuf",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Rôti de bœuf",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Rôti de bœuf",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Rôti de porc cuit",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Rôti de porc cuit",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Rôti de veau",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Rôti de veau",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Roulé de surimi",
+      "aliases": [],
+      "categoryKey": "poissons-produits-mer",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Roulé de surimi",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Roux blanc",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Roux blanc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Salade",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Salade",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Salade exotique",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Salade exotique",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Saladière de riz au thon",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Saladière de riz au thon",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Saladière niçoise au thon",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Saladière niçoise au thon",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Saladière pasta au thon",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Saladière pasta au thon",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Salsifi",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Salsifi",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauce bolognaise végétale",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauce bolognaise végétale",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauce salade légère",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauce salade légère",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauce soja salée",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauce soja salée",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauce soja sucrée",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauce soja sucrée",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauce tomate et oignons",
+      "aliases": [],
+      "categoryKey": "aides-culinaires",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauce tomate et oignons",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Saucisse de Strasbourg",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Saucisse de Strasbourg",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Saucisse de Toulouse",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Saucisse de Toulouse",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauté de bœuf",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauté de bœuf",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauté de canard",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauté de canard",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauté de poulet",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauté de poulet",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauté de veau",
+      "aliases": [],
+      "categoryKey": "viandes-volailles",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauté de veau",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sauvignon blanc IGP Pays d'Oc",
+      "aliases": [],
+      "categoryKey": "vins",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sauvignon blanc IGP Pays d'Oc",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Semoule au lait à la vanille",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Semoule au lait à la vanille",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sirop d'orange sans sucre",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sirop d'orange sans sucre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sirop de cassis",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sirop de cassis",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sirop de cassis sans sucre",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sirop de cassis sans sucre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sirop de citron sans sucre",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sirop de citron sans sucre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sirop de fraise sans sucre",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sirop de fraise sans sucre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sirop de grenadine sans sucre",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sirop de grenadine sans sucre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sirop de menthe sans sucre",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sirop de menthe sans sucre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Sirop de pêche",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Sirop de pêche",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Spaghetti bio",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Spaghetti bio",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Spaghetti qualité supérieure",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Spaghetti qualité supérieure",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Spécialité pomme biscuit",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Spécialité pomme biscuit",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Spécialité pomme fraise",
+      "aliases": [],
+      "categoryKey": "desserts",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Spécialité pomme fraise",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Taboulé oriental",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Taboulé oriental",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Tartelette salée",
+      "aliases": [],
+      "categoryKey": "entrees-traiteur",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Tartelette salée",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Thé aux fruits rouges",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Thé aux fruits rouges",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Thé noir",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Thé noir",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Thé vert menthe",
+      "aliases": [],
+      "categoryKey": "boissons",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Thé vert menthe",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Tomate",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Tomate",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Topinambour",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Topinambour",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "FRAIS",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Tortellini tomate mozzarella",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Tortellini tomate mozzarella",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Torti",
+      "aliases": [],
+      "categoryKey": "accompagnements",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Torti",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "SEC",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Trio de légumes et carottes",
+      "aliases": [],
+      "categoryKey": "fruits-legumes",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Trio de légumes et carottes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Œuf dur écalé",
+      "aliases": [],
+      "categoryKey": "oeufs-ovoproduits",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Œuf dur écalé",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Velouté aux 7 légumes",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Velouté aux 7 légumes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Velouté d'asperges",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Velouté d'asperges",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Velouté de poireaux et pommes de terre",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Velouté de poireaux et pommes de terre",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Velouté de potiron",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Velouté de potiron",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Velouté tomate et pâtes",
+      "aliases": [],
+      "categoryKey": "plats-prepares",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Velouté tomate et pâtes",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "CONSERVE",
+          "foodRange": null,
+          "referenceUnit": "L",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Yaourt à la framboise",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Yaourt à la framboise",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Yaourt à la vanille",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Yaourt à la vanille",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Yaourt brassé fraise",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Yaourt brassé fraise",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Yaourt brassé nature",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Yaourt brassé nature",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    },
+    {
+      "name": "Yaourt litchi rose",
+      "aliases": [],
+      "categoryKey": "produits-laitiers",
+      "varieties": [],
+      "characteristics": [],
+      "variants": [
+        {
+          "name": "Yaourt litchi rose",
+          "varietyKey": null,
+          "characteristicKeys": [],
+          "processingState": null,
+          "conservationType": "REFRIGERE",
+          "foodRange": null,
+          "referenceUnit": "KG",
+          "yieldPercent": null
+        }
+      ]
+    }
+  ]
+}

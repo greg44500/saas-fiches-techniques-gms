@@ -1,11 +1,10 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-09-27  
-**État :** intégration du hotfix Core de déterminisme des tests avant reprise de la clôture technique M-002  
-**M-002 :** fonctionnellement terminé sur `feature/m002-catalogue-produits`, PR #20 ouverte  
-**Prochain lot métier :** M-003 après fusion définitive de M-002
-
-> Le code réel, GitHub, les contraintes DB et les tests/gates réellement exécutés priment sur cette synthèse.
+**Lot clôturé :** M-002 — Référentiel Produits  
+**Prochain lot :** M-003 — Fournisseurs + Articles + prix/catalogues  
+**Intégration :** PR finale M-002 vers `main`, protégée par la Core Gate  
+**HEAD :** toujours vérifier GitHub ; ne jamais utiliser un SHA documentaire figé comme autorité.
 
 ## 1. Ordre d'autorité
 
@@ -13,45 +12,20 @@
 KB-START-HERE
 → GitHub réel
 → code / contraintes DB
-→ tests et gates réellement exécutés
-→ contrats fonctionnels validés
+→ tests réellement exécutés
+→ docs/m002/M-002-FINAL-CONTRACT.md
+→ autres contrats M-002
 → Core réellement intégré
-→ documentation produit
 → présente reprise
 ```
 
-Principe directeur :
+En cas de contradiction, Git/code/tests priment.
 
-```text
-Core = fondations génériques
-Produit = métier
-```
+## 2. Core intégré
 
-## 2. Core ciblé par l'intégration en cours
+Produit : `greg44500/saas-fiches-techniques-gms`.
 
-Dépôt Core :
-
-```text
-greg44500/saas-core-api
-```
-
-Release stable de base :
-
-```text
-version = 1.2.1
-tag     = v1.2.1
-tag SHA = ec6714035b76b6b78910a3763c2d94446cf2238c
-```
-
-Le tag `v1.2.1` reste immuable.
-
-Commit Core post-tag validé à intégrer :
-
-```text
-d90d8f1e6034cbbf4f63de2be7312eae69b1d698
-```
-
-Provenance attendue dans le produit :
+Core intégré :
 
 ```text
 repository = greg44500/saas-core-api
@@ -60,157 +34,251 @@ tag        = v1.2.1
 commit     = d90d8f1e6034cbbf4f63de2be7312eae69b1d698
 ```
 
-Aucune version `1.2.2`, aucun nouveau tag et aucune nouvelle GitHub Release ne sont créés pour ce hotfix compatible post-tag.
+La dépendance générique de navigation Platform est déjà résolue dans le Core intégré.
 
-## 3. Nature du hotfix Core
+Le hotfix Core de déterminisme des tests backend est également intégré au commit exact `d90d8f1e6034cbbf4f63de2be7312eae69b1d698` via la PR produit #21. La Core Gate de PR #127 et la Core Gate post-merge #128 ont été validées avec succès. La configuration racine Vitest impose désormais `fileParallelism: false` afin d'éviter les collisions inter-fichiers sur la base MongoDB de test partagée.
 
-Le défaut concernait uniquement le déterminisme de la suite backend Vitest lorsqu'elle utilisait une base MongoDB de test partagée.
+## 3. Contrat final M-002
 
-Symptômes observés sur le même HEAD M-002 selon les exécutions :
-
-- disparition de fixtures comme des Users, Plans, Roles ou Members ;
-- `Utilisateur cible introuvable` ;
-- `E11000 duplicate key ... plans.key = "free"` ;
-- nombre et nature des tests en échec variables entre reruns.
-
-Correction Core :
-
-```js
-// vitest.config.js
-fileParallelism: false
-```
-
-Cette configuration rend l'exécution inter-fichiers séquentielle pour la commande normale :
-
-```bash
-npm test
-```
-
-Aucune modification fonctionnelle n'a été faite sur Workspace, Subscription, Plan, les modèles MongoDB, les migrations, les API ou les modules métier M-001/M-002.
-
-## 4. Validation du Core source
-
-PR Core :
+Source de vérité :
 
 ```text
-#43 — fix(tests): make backend test execution deterministic
+docs/m002/M-002-FINAL-CONTRACT.md
 ```
 
-Preuves validées :
+Décisions finales :
 
 ```text
-HEAD PR Core
-9849ed81370cfcc6070a6aa2c83b67e4db873ff2
+ProductVariant
+→ rôle métier actif = Référence Produit exploitable
+→ name persistant obligatoire
+→ normalizedName unique pour une référence active
+→ conservationType obligatoire
+→ referenceUnit obligatoire
+→ foodRange facultatif
+→ processingState facultatif
+→ dimensions facultatives
 
-Core Gate PR
-#81 — success
+foodRange
+→ Gammes 1..6 conservées côté backend
+→ Gamme 6 = PAI / PAE
+→ non utilisé ni affiché par le frontend actif
 
-merge main Core
-d90d8f1e6034cbbf4f63de2be7312eae69b1d698
+usageType
+→ retiré du contrat actif
+→ seulement toléré dans les migrations historiques déjà versionnées
 
-Core Gate post-merge
-#82 — success
+CanonicalProduct
+→ racine / concept Produit global
+→ peut exister sans Référence exploitable
+
+WorkspaceProduct
+→ lien Workspace ↔ Référence Produit
+→ rôle UX = Favori
 ```
 
-Le diff entre le commit Core précédemment intégré `db55f834…` et `d90d8f1…` est limité à `vitest.config.js`.
+Catégorie facultative à la création d'une référence.
 
-## 5. État Git du produit avant fusion de l'intégration
+Le nom visible n'est jamais calculé à partir de Variété / Présentation / CUT / autres dimensions.
 
-Dépôt :
+## 4. UX finale attendue
+
+Workspace Produits :
 
 ```text
-greg44500/saas-fiches-techniques-gms
+onglets
+→ Tous les produits
+→ Favoris
+
+liste
+→ Produit | Conservation | Actions
+
+filtres
+→ Recherche
+→ Catégorie
+→ Conservation
+
+ordre
+→ alphabétique par défaut
+→ aucun contrôle de tri visible
+
+Gamme
+→ aucun affichage frontend
+→ aucun champ de saisie
+→ aucun filtre
+→ aucun mapping d'import
 ```
 
-`main` avant ce lot :
+La recherche est visuellement prioritaire et dispose d'une largeur supérieure aux filtres secondaires.
+
+Le drawer et les écrans d'administration utilisent le vocabulaire « Référence Produit », pas « Déclinaison ».
+
+## 5. Frontière M-002 / M-003
+
+M-002 :
+
+- identité Produit / Référence Produit ;
+- catégorie ;
+- conservation ;
+- unité ;
+- gamme conservée côté backend pour compatibilité/évolution future ;
+- dimensions métier facultatives ;
+- recherche/déduplication ;
+- favoris Workspace ;
+- gouvernance globale ;
+- import de données M-002.
+
+M-003 :
+
+- Fournisseur ;
+- référence fournisseur ;
+- conditionnement commercial ;
+- colisage ;
+- prix catalogue / négocié / facturé ;
+- contexte économique Dossier ;
+- plusieurs offres fournisseurs pour une même Référence Produit.
+
+Les PDF catalogues fournisseur pourront être exploités après validation finale de M-002.
+
+## 6. Seed
+
+Datasets historiques immuables :
 
 ```text
-fc422ac500c2005b5e6b38090c92cef712f69768
+m002-reference-v1
+m002-reference-v2
+m002-reference-v3
 ```
 
-Branche d'intégration Core :
+Dataset actif :
 
 ```text
-core-update/test-determinism-d90d8f1
+m002-reference-v6
 ```
 
-Le vrai merge Git du Core a été réalisé sur cette branche :
+Contrôle effectué sur le v6 :
 
 ```text
-d81330ba98868dcc44c5b0d5c4bc9a23dbfe83cf
+Catégories              = 14
+Produits                 = 264
+Références exploitables  = 264
+Produits sans référence  = 0
+collisions de nom       = 0
+non-alimentaire         = 0
 ```
 
-Ce commit possède notamment comme parent Core :
+Le v6 utilise le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf` comme source unique du bootstrap. Les pages « Non Alimentaire » sont exclues. Les références des seeds v1 à v5 absentes du PDF sont archivées par migration. Marques, références fournisseur, conditionnements et prix restent hors M-002.
+
+## 7. Migration et base locale de développement
+
+La base locale actuelle a accumulé plusieurs contrats M-002 pré-release incompatibles. Il ne faut plus tenter de convertir ces artefacts un par un.
+
+Stratégie locale officielle :
 
 ```text
-d90d8f1e6034cbbf4f63de2be7312eae69b1d698
+dev:reset-m002-catalog
+→ migration:m002-catalog
+→ seed:m002-reference (v6)
 ```
 
-Contrôle local effectué :
+Le reset ne touche qu'aux collections M-002 et refuse production, MongoDB distant et toute base ne terminant pas par `_dev`.
+
+Une migration additionnelle M-002 convertit, pour les environnements qui en ont encore besoin, le contrat actuel vers :
+
+- `name` / `normalizedName` persistants sur la Référence ;
+- `conservationType` ;
+- Gamme 6 lorsqu'un ancien `usageType` l'établit explicitement ;
+- suppression de `usageType` du document actif ;
+- nouvelle signature d'identité.
+
+Principe :
 
 ```text
-git merge-base --is-ancestor d90d8f1e... HEAD
-→ 0
+déterministe → migrer
+ambigu → échouer explicitement / revue métier
 ```
 
-Le diff de ce merge est limité à trois ajouts dans `vitest.config.js`.
+Les migrations historiques ne sont pas réécrites.
 
-## 6. M-002 à préserver
+## 8. Déduplication et import
 
-PR existante :
+L'unicité métier exacte porte désormais sur le nom normalisé de la Référence Produit.
+
+Un import rencontrant exactement le même nom de Référence :
 
 ```text
-#20 — feat(m002): deliver the shared product reference catalog
+→ réutilise la Référence existante
+→ ne recrée pas une Référence sous un autre CanonicalProduct
 ```
 
-Branche :
+Les colonnes commerciales restent détectées mais hors périmètre M-002.
+
+## 9. Travail réalisé dans le dernier bloc
+
+Depuis le HEAD historique `7f432e00...`, le lot a notamment :
+
+- ajouté le nom persistant et la conservation à `ProductVariant` ;
+- ajouté Gamme 6 = PAI / PAE ;
+- retiré `usageType` du contrat actif ;
+- rendu Catégorie et Gamme facultatives ;
+- découplé `processingState` de la Gamme ;
+- ajouté l'index unique de nom normalisé ;
+- ajouté la migration de contrat Référence Produit ;
+- créé le seed `m002-reference-v6` uniquement depuis le PDF alimentaire et ajouté la réconciliation des anciens seeds ;
+- adapté le pipeline d'import ;
+- dédupliqué sur le nom exact de Référence ;
+- refondu la liste Workspace en `Produit | Conservation | Actions` ;
+- remplacé « Mon référentiel » par « Favoris » ;
+- simplifié la création et l'édition de Référence ;
+- aligné les drawers, administration globale, dashboard et E2E ;
+- mis à jour les tests ciblés pour protéger le nouveau contrat ;
+- créé `docs/m002/M-002-FINAL-CONTRACT.md`.
+
+## 10. Décision de clôture M-002
+
+Le porteur produit a validé le 2026-09-25 la clôture fonctionnelle de M-002 après la dernière QA visuelle.
+
+Décisions de sortie :
+
+- le contrat M-002 est gelé ;
+- le frontend n'expose plus les Gammes ; `foodRange` reste conservé côté backend pour compatibilité/évolution future ;
+- l'import massif Produits CSV/XLS/XLSX et la gouvernance globale restent M-002 ;
+- l'import de catalogues fournisseur complets reste M-003 ;
+- les retouches purement design découvertes ultérieurement sont non bloquantes et ne rouvrent pas M-002, sauf régression fonctionnelle démontrée.
+
+## 11. Vérité des tests et de l'intégration
+
+Le workflow `Core Gate` du dépôt exécute `npm run release:check` sur chaque pull request et sur chaque push vers `main`. Il couvre donc la gate canonique backend, frontend, build et E2E définie par le dépôt.
+
+La documentation ne fige pas un résultat CI futur. Pour la clôture technique, l'autorité est :
 
 ```text
-feature/m002-catalogue-produits
-```
-
-HEAD avant réalignement Core :
-
-```text
-5dec6403a4b8a93f175c85d55cb7e73d0528828d
-```
-
-M-002 est fonctionnellement terminé et gelé. Il ne faut pas profiter de ce hotfix Core pour modifier son contrat métier.
-
-La Core Gate #126 relancée avant l'intégration du hotfix Core ne constitue pas la preuve finale de validation de M-002, car elle exécute l'ancien HEAD sans `fileParallelism: false`.
-
-## 7. Séquence obligatoire restante
-
-```text
-PR unique d'intégration Core produit
-→ Core Gate verte
+HEAD de la PR finale M-002
+→ Core Gate PR = success
 → merge vers main
-→ Core Gate post-merge verte
-→ réaligner feature/m002-catalogue-produits avec main
-→ conserver la PR #20 existante
-→ nouvelle Core Gate PR #20
-→ merge M-002 uniquement si verte
-→ Core Gate post-merge
-→ clôture technique M-002
-→ cadrage M-003
+→ Core Gate post-merge = success
 ```
 
-Ne pas créer de PR M-002 de remplacement.
+Ne jamais transformer une gate non exécutée ou en cours en résultat vert.
 
-## 8. Frontière M-002 / M-003
+## 12. Dette UX non bloquante
 
-M-002 reste le référentiel Produit partagé.
+`GMS-UX-001` suit les éventuels raffinements visuels M-002 post-merge. Aucun changement de modèle, d'API, de règle métier, de permission ou de frontière M-002/M-003 ne doit être glissé dans cette dette.
 
-M-003 portera notamment :
+## 13. Suite immédiate
+
+Après intégration de la PR finale M-002, ouvrir le cadrage détaillé M-003.
+
+Premier verrou à fermer :
 
 ```text
 Fournisseur
-→ édition / catalogue identifié
+→ édition/catalogue identifié
 → Article fournisseur
 → rapprochement Référence Produit M-002
 → conditionnement
 → tarif de référence
-→ contexte / prix Dossier
+→ contexte/prix Dossier
 ```
 
-Aucun modèle M-003 ne doit être implémenté avant la fermeture propre de M-002 et la validation de son cadrage détaillé.
+Ne pas coder de modèle M-003 avant validation de son contrat détaillé.

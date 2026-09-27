@@ -1,11 +1,53 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  APPLICATION_PLATFORM_NAVIGATION,
   composeApplicationPlatformNavigation,
 } from '@/app/application-platform-navigation';
-import { corePlatformNavigationSections } from '@/features/platform/lib/platform-navigation';
+import {
+  corePlatformNavigationSections,
+  getVisiblePlatformNavigationSections,
+} from '@/features/platform/lib/platform-navigation';
 
 describe('application Platform navigation composition', () => {
+  it('ajoute Référentiel Produits uniquement avec la permission globale Produit', () => {
+    const withoutProductPermission = getVisiblePlatformNavigationSections(
+      {
+        status: 'active',
+        permissions: ['platform:overview:read'],
+        applicationGlobalPermissions: [],
+      },
+      APPLICATION_PLATFORM_NAVIGATION,
+    );
+
+    expect(
+      withoutProductPermission.flatMap((entry) => (
+        entry.type === 'group' ? entry.items : [entry]
+      )).some(({ id }) => id === 'product-reference'),
+    ).toBe(false);
+
+    const withProductPermission = getVisiblePlatformNavigationSections(
+      {
+        status: 'active',
+        permissions: ['platform:overview:read'],
+        applicationGlobalPermissions: ['product:reference:read'],
+      },
+      APPLICATION_PLATFORM_NAVIGATION,
+    );
+
+    expect(
+      withProductPermission.flatMap((entry) => (
+        entry.type === 'group' ? entry.items : [entry]
+      )),
+    ).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'product-reference',
+        label: 'Référentiel Produits',
+        to: '/product-reference',
+      }),
+    ]));
+  });
+
   it('conserve la navigation Core et ajoute les sections applicatives', () => {
     const applicationEntry = {
       type: 'item',
