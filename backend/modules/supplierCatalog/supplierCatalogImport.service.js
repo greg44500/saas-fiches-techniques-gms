@@ -46,6 +46,7 @@ import {
     normalizePackaging,
 } from './supplierReference.service.js';
 import {
+    acquireCommerceLock,
     assertSupplierForCatalog,
     resolveCatalogEdition,
     upsertCatalogLineInSession,
@@ -1011,6 +1012,64 @@ const createImportedArticle = async ({
     row,
     session,
 }) => {
+    const normalizedReference =
+        normalizeSupplierReference(
+            row.supplierReference,
+        );
+
+    await acquireCommerceLock({
+        key: [
+            'supplier-article',
+            scope,
+            workspaceId?.toString()
+                ?? 'global',
+            supplierId.toString(),
+            normalizedReference,
+        ].join(':'),
+        session,
+    });
+
+    const existing =
+        await SupplierArticle.findOne({
+            supplier: supplierId,
+            normalizedSupplierReference:
+                normalizedReference,
+            status: 'ACTIVE',
+            ...(scope
+            === SUPPLIER_SCOPE.GLOBAL_SHARED
+                ? {
+                    scope:
+                        SUPPLIER_SCOPE
+                            .GLOBAL_SHARED,
+                    workspace: null,
+                }
+                : {
+                    $or:
+                        mongoose.trusted([
+                            {
+                                scope:
+                                    SUPPLIER_SCOPE
+                                        .GLOBAL_SHARED,
+                                workspace: null,
+                            },
+                            {
+                                scope:
+                                    SUPPLIER_SCOPE
+                                        .WORKSPACE_PRIVATE,
+                                workspace:
+                                    workspaceId,
+                            },
+                        ]),
+                }),
+        }).session(session);
+
+    if (existing) {
+        return {
+            article: existing,
+            created: false,
+        };
+    }
+
     const article =
         await createArticleInSession({
             scope,
@@ -1033,7 +1092,10 @@ const createImportedArticle = async ({
             },
         });
 
-    return article;
+    return {
+        article,
+        created: true,
+    };
 };
 
 const commitSupplierCatalogImport = async ({
@@ -1133,8 +1195,10 @@ const commitSupplierCatalogImport = async ({
                 row.classification
                 === 'CREATE_ARTICLE'
             ) {
-                const article =
-                    await createImportedArticle({
+                const {
+                    article,
+                    created: articleCreated,
+                } = await createImportedArticle({
                         scope,
                         workspaceId,
                         actorId,
@@ -1148,7 +1212,9 @@ const commitSupplierCatalogImport = async ({
                 supplierArticleId =
                     article._id
                         .toString();
-                createdArticles += 1;
+                if (articleCreated) {
+                    createdArticles += 1;
+                }
             }
 
             if (

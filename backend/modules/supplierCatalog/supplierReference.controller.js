@@ -5,6 +5,9 @@ import {
     SUPPLIER_SCOPE,
 } from './supplierCatalog.registry.js';
 import {
+    SUPPLIER_CATALOG_GLOBAL_PERMISSION,
+} from './supplierCatalogGlobalPermission.registry.js';
+import {
     createSupplier,
     createSupplierArticle,
     getSupplierReferenceMetadata,
@@ -26,8 +29,8 @@ const access = async (req, res) => {
         authorization?.permissions ?? [],
     );
     const permissions = [
-        'supplier:reference:read',
-        'supplier:reference:manage',
+        SUPPLIER_CATALOG_GLOBAL_PERMISSION.READ,
+        SUPPLIER_CATALOG_GLOBAL_PERMISSION.MANAGE,
     ].filter((permission) =>
         granted.has(permission));
 
