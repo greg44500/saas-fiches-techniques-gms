@@ -1,6 +1,6 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-25  
+**Date :** 2026-09-27  
 **Lot clôturé :** M-002 — Référentiel Produits  
 **Prochain lot :** M-003 — Fournisseurs + Articles + prix/catalogues  
 **Intégration :** PR finale M-002 vers `main`, protégée par la Core Gate  
@@ -31,10 +31,12 @@ Core intégré :
 repository = greg44500/saas-core-api
 version    = 1.2.1
 tag        = v1.2.1
-commit     = db55f8342837d7fe3d333fd962bdc7939a8c4603
+commit     = d90d8f1e6034cbbf4f63de2be7312eae69b1d698
 ```
 
-La dépendance générique de navigation Platform est déjà résolue dans le Core intégré. Aucune nouvelle évolution Core n'est requise pour le recadrage M-002 actuel.
+La dépendance générique de navigation Platform est déjà résolue dans le Core intégré.
+
+Le hotfix Core de déterminisme des tests backend est également intégré au commit exact `d90d8f1e6034cbbf4f63de2be7312eae69b1d698` via la PR produit #21. La Core Gate de PR #127 et la Core Gate post-merge #128 ont été validées avec succès. La configuration racine Vitest impose désormais `fileParallelism: false` afin d'éviter les collisions inter-fichiers sur la base MongoDB de test partagée.
 
 ## 3. Contrat final M-002
 
