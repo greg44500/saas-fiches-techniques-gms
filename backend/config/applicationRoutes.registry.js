@@ -10,6 +10,10 @@ import {
     supplierReferenceGlobalRouter,
     supplierRouter,
 } from '../modules/supplierCatalog/supplierReference.routes.js';
+import {
+    supplierCatalogGlobalRouter,
+    supplierCatalogRouter,
+} from '../modules/supplierCatalog/supplierCatalog.routes.js';
 
 const ROUTE_MODULE_KEY_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
@@ -155,6 +159,16 @@ const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
         key: 'supplier-reference-governance',
         mountPath: '/api/supplier-reference',
         router: supplierReferenceGlobalRouter,
+    }),
+    Object.freeze({
+        key: 'supplier-catalogs',
+        mountPath: '/api/workspaces/:workspaceId/supplier-catalogs',
+        router: supplierCatalogRouter,
+    }),
+    Object.freeze({
+        key: 'supplier-catalog-governance',
+        mountPath: '/api/supplier-reference/catalogs',
+        router: supplierCatalogGlobalRouter,
     }),
 ]);
 
