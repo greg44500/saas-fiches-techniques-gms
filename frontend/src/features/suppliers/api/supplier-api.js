@@ -332,6 +332,24 @@ const supplierApi = supplierApiBase.injectEndpoints({
       transformResponse: (response) => response.data.supplier,
       invalidatesTags: ['SupplierReference', 'Supplier'],
     }),
+    updateGlobalSupplier: builder.mutation({
+      query: ({ supplierId, ...body }) => ({
+        url: '/supplier-reference/suppliers/' + supplierId,
+        method: 'PATCH',
+        body,
+      }),
+      transformResponse: (response) => response.data.supplier,
+      invalidatesTags: ['SupplierReference', 'Supplier', 'SupplierArticle', 'SupplierCatalog'],
+    }),
+    updateGlobalSupplierStatus: builder.mutation({
+      query: ({ supplierId, status }) => ({
+        url: '/supplier-reference/suppliers/' + supplierId + '/status',
+        method: 'PATCH',
+        body: { status },
+      }),
+      transformResponse: (response) => response.data.supplier,
+      invalidatesTags: ['SupplierReference', 'Supplier', 'SupplierArticle', 'SupplierCatalog'],
+    }),
     listGlobalSupplierArticles: builder.query({
       query: ({ page = 1, limit = 20, search, status = 'ACTIVE', supplierId } = {}) => ({
         url: '/supplier-reference/articles',
@@ -349,10 +367,63 @@ const supplierApi = supplierApiBase.injectEndpoints({
       transformResponse: (response) => response.data.article,
       invalidatesTags: ['SupplierReference', 'SupplierArticle'],
     }),
+    updateGlobalSupplierArticle: builder.mutation({
+      query: ({ articleId, ...body }) => ({
+        url: '/supplier-reference/articles/' + articleId,
+        method: 'PATCH',
+        body,
+      }),
+      transformResponse: (response) => response.data.article,
+      invalidatesTags: ['SupplierReference', 'SupplierArticle', 'SupplierCatalog'],
+    }),
+    updateGlobalSupplierArticleStatus: builder.mutation({
+      query: ({ articleId, status }) => ({
+        url: '/supplier-reference/articles/' + articleId + '/status',
+        method: 'PATCH',
+        body: { status },
+      }),
+      transformResponse: (response) => response.data.article,
+      invalidatesTags: ['SupplierReference', 'SupplierArticle', 'SupplierCatalog'],
+    }),
+    replaceGlobalSupplierArticle: builder.mutation({
+      query: ({ articleId, ...body }) => ({
+        url: '/supplier-reference/articles/' + articleId + '/replacement',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['SupplierReference', 'SupplierArticle', 'SupplierCatalog'],
+    }),
     listGlobalSupplierCatalogs: builder.query({
       query: ({ page = 1, limit = 20, supplierId, status = 'ACTIVE' } = {}) => ({
         url: '/supplier-reference/catalogs',
         params: { page, limit, supplierId, status },
+      }),
+      transformResponse: (response) => response.data,
+      providesTags: ['SupplierReference'],
+    }),
+    createGlobalSupplierCatalog: builder.mutation({
+      query: (body) => ({
+        url: '/supplier-reference/catalogs',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['SupplierReference', 'SupplierCatalog'],
+    }),
+    updateGlobalSupplierCatalogStatus: builder.mutation({
+      query: ({ catalogId, status }) => ({
+        url: '/supplier-reference/catalogs/' + catalogId + '/status',
+        method: 'PATCH',
+        body: { status },
+      }),
+      transformResponse: (response) => response.data.catalog,
+      invalidatesTags: ['SupplierReference', 'SupplierCatalog'],
+    }),
+    listGlobalSupplierCatalogLines: builder.query({
+      query: ({ catalogId, page = 1, limit = 50 }) => ({
+        url: '/supplier-reference/catalogs/' + catalogId + '/lines',
+        params: { page, limit },
       }),
       transformResponse: (response) => response.data,
       providesTags: ['SupplierReference'],
@@ -394,6 +465,7 @@ export const {
   useCommitGlobalSupplierCatalogImportMutation,
   useCommitSupplierCatalogImportMutation,
   useCreateGlobalSupplierArticleMutation,
+  useCreateGlobalSupplierCatalogMutation,
   useCreateGlobalSupplierMutation,
   useCreateInvoicedPriceMutation,
   useCreateNegotiatedPriceMutation,
@@ -412,6 +484,7 @@ export const {
   useInspectSupplierCatalogImportMutation,
   useListDossierSupplierReferencesQuery,
   useListGlobalSupplierArticlesQuery,
+  useListGlobalSupplierCatalogLinesQuery,
   useListGlobalSupplierCatalogsQuery,
   useListGlobalSuppliersQuery,
   useListInvoicedPricesQuery,
@@ -423,7 +496,13 @@ export const {
   usePreviewGlobalSupplierCatalogImportMutation,
   usePreviewSupplierCatalogImportMutation,
   useRemoveDossierSupplierReferenceMutation,
+  useReplaceGlobalSupplierArticleMutation,
   useReplaceSupplierArticleMutation,
+  useUpdateGlobalSupplierArticleMutation,
+  useUpdateGlobalSupplierArticleStatusMutation,
+  useUpdateGlobalSupplierCatalogStatusMutation,
+  useUpdateGlobalSupplierMutation,
+  useUpdateGlobalSupplierStatusMutation,
   useUpdatePricingPolicyMutation,
   useUpdateSupplierArticleMutation,
   useUpdateSupplierArticleStatusMutation,
