@@ -38,6 +38,12 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
   ],
 }));
 
+vi.mock('@/features/suppliers/components/supplier-details-drawer', () => ({
+  SupplierDetailsDrawer: ({ open, supplier }) => (
+    open ? <div>Détail Fournisseur : {supplier?.name}</div> : null
+  ),
+}));
+
 vi.mock('@/features/suppliers/components/supplier-form-dialog', () => ({
   SupplierFormDialog: ({ open }) => (
     open ? <div>Formulaire Fournisseur ouvert</div> : null
@@ -157,6 +163,20 @@ describe('SuppliersPage', () => {
     expect(screen.getByText('Fournisseur local')).toBeInTheDocument();
     expect(screen.getByText('Partagé')).toBeInTheDocument();
     expect(screen.getByText('Privé')).toBeInTheDocument();
+  });
+
+  it('ouvre le détail Fournisseur depuis une action Voir', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Voir Fournisseur local',
+    }));
+
+    expect(
+      screen.getByText('Détail Fournisseur : Fournisseur local'),
+    ).toBeInTheDocument();
   });
 
   it('masque l import catalogue sans capability même avec la permission RBAC', async () => {

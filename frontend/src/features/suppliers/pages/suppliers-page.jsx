@@ -1,10 +1,11 @@
-import { Archive, FileUp, Pencil, Plus } from 'lucide-react';
+import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import {
   DataTable,
   DataTableActions,
 } from '@/components/data-display/data-table';
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
@@ -41,6 +42,9 @@ import {
   SupplierCatalogImportDialog,
 } from '@/features/suppliers/components/supplier-catalog-import-dialog';
 import {
+  SupplierDetailsDrawer,
+} from '@/features/suppliers/components/supplier-details-drawer';
+import {
   SupplierFormDialog,
 } from '@/features/suppliers/components/supplier-form-dialog';
 import {
@@ -70,6 +74,10 @@ function SuppliersPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('ACTIVE');
   const [supplierDialog, setSupplierDialog] = useState({
+    open: false,
+    supplier: null,
+  });
+  const [supplierDetails, setSupplierDetails] = useState({
     open: false,
     supplier: null,
   });
@@ -232,29 +240,42 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (supplier) => (
-        supplier.scope === 'WORKSPACE_PRIVATE' && canManageSuppliers ? (
-          <DataTableActions>
-            <Button
-              onClick={() => setSupplierDialog({ open: true, supplier })}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Pencil aria-hidden="true" className="size-4" />
-              Modifier
-            </Button>
-            <Button
-              disabled={supplierStatusState.isLoading}
-              onClick={() => toggleSupplierStatus(supplier)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Archive aria-hidden="true" className="size-4" />
-              {supplier.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
-            </Button>
-          </DataTableActions>
-        ) : null
+        <DataTableActions>
+          <ActionIconButton
+            Icon={Eye}
+            label={'Voir ' + supplier.name}
+            onClick={() => setSupplierDetails({
+              open: true,
+              supplier,
+            })}
+            tooltipLabel="Voir"
+            variant="outline"
+          />
+          {supplier.scope === 'WORKSPACE_PRIVATE' && canManageSuppliers && (
+            <>
+              <ActionIconButton
+                Icon={Pencil}
+                label={'Modifier ' + supplier.name}
+                onClick={() => setSupplierDialog({ open: true, supplier })}
+                tooltipLabel="Modifier"
+                variant="outline"
+              />
+              <ActionIconButton
+                Icon={supplier.status === 'ACTIVE' ? Archive : RotateCcw}
+                disabled={supplierStatusState.isLoading}
+                label={
+                  (supplier.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
+                  + supplier.name
+                }
+                onClick={() => toggleSupplierStatus(supplier)}
+                tooltipLabel={
+                  supplier.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
+                }
+                variant="outline"
+              />
+            </>
+          )}
+        </DataTableActions>
       ),
     },
   ];
@@ -297,16 +318,21 @@ function SuppliersPage() {
       header: 'Actions',
       cell: (article) => (
         article.scope === 'WORKSPACE_PRIVATE' && canManageArticles ? (
-          <Button
-            disabled={articleStatusState.isLoading}
-            onClick={() => toggleArticleStatus(article)}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <Archive aria-hidden="true" className="size-4" />
-            {article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
-          </Button>
+          <DataTableActions>
+            <ActionIconButton
+              Icon={article.status === 'ACTIVE' ? Archive : RotateCcw}
+              disabled={articleStatusState.isLoading}
+              label={
+                (article.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
+                + article.supplierReference
+              }
+              onClick={() => toggleArticleStatus(article)}
+              tooltipLabel={
+                article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
+              }
+              variant="outline"
+            />
+          </DataTableActions>
         ) : null
       ),
     },
@@ -365,16 +391,21 @@ function SuppliersPage() {
       cell: (catalog) => (
         catalog.scope === 'WORKSPACE_PRIVATE'
         && can(SUPPLIER_PERMISSION.CATALOG_MANAGE) ? (
-          <Button
-            disabled={catalogStatusState.isLoading}
-            onClick={() => toggleCatalogStatus(catalog)}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <Archive aria-hidden="true" className="size-4" />
-            {catalog.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
-          </Button>
+          <DataTableActions>
+            <ActionIconButton
+              Icon={catalog.status === 'ACTIVE' ? Archive : RotateCcw}
+              disabled={catalogStatusState.isLoading}
+              label={
+                (catalog.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
+                + catalog.name
+              }
+              onClick={() => toggleCatalogStatus(catalog)}
+              tooltipLabel={
+                catalog.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
+              }
+              variant="outline"
+            />
+          </DataTableActions>
         ) : null
       ),
     },
@@ -536,6 +567,27 @@ function SuppliersPage() {
           rowClassName="transition-colors hover:bg-muted/50"
         />
       )}
+
+      <SupplierDetailsDrawer
+        canManage={canManageSuppliers}
+        canReadArticles={can(SUPPLIER_PERMISSION.ARTICLE_READ)}
+        canReadCatalogs={can(SUPPLIER_PERMISSION.CATALOG_READ)}
+        mode="workspace"
+        onClose={() => setSupplierDetails((current) => ({
+          ...current,
+          open: false,
+        }))}
+        onEdit={(supplier) => {
+          setSupplierDetails((current) => ({
+            ...current,
+            open: false,
+          }));
+          setSupplierDialog({ open: true, supplier });
+        }}
+        open={supplierDetails.open}
+        supplier={supplierDetails.supplier}
+        workspaceId={workspace.id}
+      />
 
       <SupplierFormDialog
         onClose={() => setSupplierDialog({ open: false, supplier: null })}
