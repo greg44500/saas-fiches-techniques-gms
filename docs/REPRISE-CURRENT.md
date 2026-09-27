@@ -2,283 +2,343 @@
 
 **Date :** 2026-09-27  
 **Lot clôturé :** M-002 — Référentiel Produits  
-**Prochain lot :** M-003 — Fournisseurs + Articles + prix/catalogues  
-**Intégration :** PR finale M-002 vers `main`, protégée par la Core Gate  
-**HEAD :** toujours vérifier GitHub ; ne jamais utiliser un SHA documentaire figé comme autorité.
+**Lot courant :** M-003 — Fournisseurs + Articles + conditionnements + prix/catalogues  
+**État M-003 :** cadrage détaillé VALIDÉ — implémentation autorisée  
+**Branche préparée :** `feature/m003-suppliers-catalogs-pricing`
 
 ## 1. Ordre d'autorité
 
-```text
+~~~text
 KB-START-HERE
 → GitHub réel
 → code / contraintes DB
 → tests réellement exécutés
-→ docs/m002/M-002-FINAL-CONTRACT.md
-→ autres contrats M-002
+→ docs/m003/M-003-FINAL-CONTRACT.md
+→ contrats M-002 nécessaires à la frontière Produit
 → Core réellement intégré
 → présente reprise
-```
+~~~
 
 En cas de contradiction, Git/code/tests priment.
 
-## 2. Core intégré
+## 2. Point de départ Git vérifié
 
-Produit : `greg44500/saas-fiches-techniques-gms`.
+Dépôt :
 
-Core intégré :
+~~~text
+greg44500/saas-fiches-techniques-gms
+~~~
 
-```text
+Main de départ du cadrage M-003 :
+
+~~~text
+386e64cacd97cab15e712697c2d7fdd985a4f62e
+Merge PR #20 — feat(m002): deliver the shared product reference catalog
+~~~
+
+Preuves de clôture M-002 :
+
+~~~text
+Core Gate PR #130
+→ success
+
+Core Gate post-merge #131
+→ success
+~~~
+
+La branche M-003 a été créée depuis ce HEAD.
+
+Toujours revérifier GitHub au début de la prochaine conversation avant toute modification.
+
+## 3. Core intégré
+
+~~~text
 repository = greg44500/saas-core-api
 version    = 1.2.1
 tag        = v1.2.1
 commit     = d90d8f1e6034cbbf4f63de2be7312eae69b1d698
-```
+~~~
 
-La dépendance générique de navigation Platform est déjà résolue dans le Core intégré.
+Les points d'extension nécessaires sont disponibles :
 
-Le hotfix Core de déterminisme des tests backend est également intégré au commit exact `d90d8f1e6034cbbf4f63de2be7312eae69b1d698` via la PR produit #21. La Core Gate de PR #127 et la Core Gate post-merge #128 ont été validées avec succès. La configuration racine Vitest impose désormais `fileParallelism: false` afin d'éviter les collisions inter-fichiers sur la base MongoDB de test partagée.
+- RBAC Workspace ;
+- capabilities ;
+- routes backend ;
+- routes frontend ;
+- navigation Workspace ;
+- navigation Platform ;
+- Dashboard ;
+- Application Global authorization ;
+- lifecycle WorkspaceMember lorsque pertinent.
 
-## 3. Contrat final M-002
+Aucune évolution Core n'est actuellement identifiée comme nécessaire pour M-003.
+
+Si l'implémentation démontre un manque générique, ne pas le corriger silencieusement dans le produit : retourner dans saas-core-api, tester/versionner puis intégrer par une branche core-update.
+
+## 4. Contrat canonique M-003
 
 Source de vérité :
 
-```text
-docs/m002/M-002-FINAL-CONTRACT.md
-```
+~~~text
+docs/m003/M-003-FINAL-CONTRACT.md
+~~~
 
-Décisions finales :
+Le contrat a été explicitement validé le 2026-09-27.
 
-```text
-ProductVariant
-→ rôle métier actif = Référence Produit exploitable
-→ name persistant obligatoire
-→ normalizedName unique pour une référence active
-→ conservationType obligatoire
-→ referenceUnit obligatoire
-→ foodRange facultatif
-→ processingState facultatif
-→ dimensions facultatives
-
-foodRange
-→ Gammes 1..6 conservées côté backend
-→ Gamme 6 = PAI / PAE
-→ non utilisé ni affiché par le frontend actif
-
-usageType
-→ retiré du contrat actif
-→ seulement toléré dans les migrations historiques déjà versionnées
-
-CanonicalProduct
-→ racine / concept Produit global
-→ peut exister sans Référence exploitable
-
-WorkspaceProduct
-→ lien Workspace ↔ Référence Produit
-→ rôle UX = Favori
-```
-
-Catégorie facultative à la création d'une référence.
-
-Le nom visible n'est jamais calculé à partir de Variété / Présentation / CUT / autres dimensions.
-
-## 4. UX finale attendue
-
-Workspace Produits :
-
-```text
-onglets
-→ Tous les produits
-→ Favoris
-
-liste
-→ Produit | Conservation | Actions
-
-filtres
-→ Recherche
-→ Catégorie
-→ Conservation
-
-ordre
-→ alphabétique par défaut
-→ aucun contrôle de tri visible
-
-Gamme
-→ aucun affichage frontend
-→ aucun champ de saisie
-→ aucun filtre
-→ aucun mapping d'import
-```
-
-La recherche est visuellement prioritaire et dispose d'une largeur supérieure aux filtres secondaires.
-
-Le drawer et les écrans d'administration utilisent le vocabulaire « Référence Produit », pas « Déclinaison ».
+Aucun modèle Mongoose M-003 n'existait au moment de cette validation.
 
 ## 5. Frontière M-002 / M-003
 
-M-002 :
+M-002 reste gelé :
 
-- identité Produit / Référence Produit ;
-- catégorie ;
-- conservation ;
-- unité ;
-- gamme conservée côté backend pour compatibilité/évolution future ;
-- dimensions métier facultatives ;
-- recherche/déduplication ;
-- favoris Workspace ;
-- gouvernance globale ;
-- import de données M-002.
+~~~text
+Référence Produit
+→ identité Produit exploitable
+→ catégorie/conservation/unité
+→ favoris Produits Workspace
+~~~
 
-M-003 :
+M-003 ajoute :
 
-- Fournisseur ;
-- référence fournisseur ;
-- conditionnement commercial ;
-- colisage ;
-- prix catalogue / négocié / facturé ;
-- contexte économique Dossier ;
-- plusieurs offres fournisseurs pour une même Référence Produit.
-
-Les PDF catalogues fournisseur pourront être exploités après validation finale de M-002.
-
-## 6. Seed
-
-Datasets historiques immuables :
-
-```text
-m002-reference-v1
-m002-reference-v2
-m002-reference-v3
-```
-
-Dataset actif :
-
-```text
-m002-reference-v6
-```
-
-Contrôle effectué sur le v6 :
-
-```text
-Catégories              = 14
-Produits                 = 264
-Références exploitables  = 264
-Produits sans référence  = 0
-collisions de nom       = 0
-non-alimentaire         = 0
-```
-
-Le v6 utilise le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf` comme source unique du bootstrap. Les pages « Non Alimentaire » sont exclues. Les références des seeds v1 à v5 absentes du PDF sont archivées par migration. Marques, références fournisseur, conditionnements et prix restent hors M-002.
-
-## 7. Migration et base locale de développement
-
-La base locale actuelle a accumulé plusieurs contrats M-002 pré-release incompatibles. Il ne faut plus tenter de convertir ces artefacts un par un.
-
-Stratégie locale officielle :
-
-```text
-dev:reset-m002-catalog
-→ migration:m002-catalog
-→ seed:m002-reference (v6)
-```
-
-Le reset ne touche qu'aux collections M-002 et refuse production, MongoDB distant et toute base ne terminant pas par `_dev`.
-
-Une migration additionnelle M-002 convertit, pour les environnements qui en ont encore besoin, le contrat actuel vers :
-
-- `name` / `normalizedName` persistants sur la Référence ;
-- `conservationType` ;
-- Gamme 6 lorsqu'un ancien `usageType` l'établit explicitement ;
-- suppression de `usageType` du document actif ;
-- nouvelle signature d'identité.
-
-Principe :
-
-```text
-déterministe → migrer
-ambigu → échouer explicitement / revue métier
-```
-
-Les migrations historiques ne sont pas réécrites.
-
-## 8. Déduplication et import
-
-L'unicité métier exacte porte désormais sur le nom normalisé de la Référence Produit.
-
-Un import rencontrant exactement le même nom de Référence :
-
-```text
-→ réutilise la Référence existante
-→ ne recrée pas une Référence sous un autre CanonicalProduct
-```
-
-Les colonnes commerciales restent détectées mais hors périmètre M-002.
-
-## 9. Travail réalisé dans le dernier bloc
-
-Depuis le HEAD historique `7f432e00...`, le lot a notamment :
-
-- ajouté le nom persistant et la conservation à `ProductVariant` ;
-- ajouté Gamme 6 = PAI / PAE ;
-- retiré `usageType` du contrat actif ;
-- rendu Catégorie et Gamme facultatives ;
-- découplé `processingState` de la Gamme ;
-- ajouté l'index unique de nom normalisé ;
-- ajouté la migration de contrat Référence Produit ;
-- créé le seed `m002-reference-v6` uniquement depuis le PDF alimentaire et ajouté la réconciliation des anciens seeds ;
-- adapté le pipeline d'import ;
-- dédupliqué sur le nom exact de Référence ;
-- refondu la liste Workspace en `Produit | Conservation | Actions` ;
-- remplacé « Mon référentiel » par « Favoris » ;
-- simplifié la création et l'édition de Référence ;
-- aligné les drawers, administration globale, dashboard et E2E ;
-- mis à jour les tests ciblés pour protéger le nouveau contrat ;
-- créé `docs/m002/M-002-FINAL-CONTRACT.md`.
-
-## 10. Décision de clôture M-002
-
-Le porteur produit a validé le 2026-09-25 la clôture fonctionnelle de M-002 après la dernière QA visuelle.
-
-Décisions de sortie :
-
-- le contrat M-002 est gelé ;
-- le frontend n'expose plus les Gammes ; `foodRange` reste conservé côté backend pour compatibilité/évolution future ;
-- l'import massif Produits CSV/XLS/XLSX et la gouvernance globale restent M-002 ;
-- l'import de catalogues fournisseur complets reste M-003 ;
-- les retouches purement design découvertes ultérieurement sont non bloquantes et ne rouvrent pas M-002, sauf régression fonctionnelle démontrée.
-
-## 11. Vérité des tests et de l'intégration
-
-Le workflow `Core Gate` du dépôt exécute `npm run release:check` sur chaque pull request et sur chaque push vers `main`. Il couvre donc la gate canonique backend, frontend, build et E2E définie par le dépôt.
-
-La documentation ne fige pas un résultat CI futur. Pour la clôture technique, l'autorité est :
-
-```text
-HEAD de la PR finale M-002
-→ Core Gate PR = success
-→ merge vers main
-→ Core Gate post-merge = success
-```
-
-Ne jamais transformer une gate non exécutée ou en cours en résultat vert.
-
-## 12. Dette UX non bloquante
-
-`GMS-UX-001` suit les éventuels raffinements visuels M-002 post-merge. Aucun changement de modèle, d'API, de règle métier, de permission ou de frontière M-002/M-003 ne doit être glissé dans cette dette.
-
-## 13. Suite immédiate
-
-Après intégration de la PR finale M-002, ouvrir le cadrage détaillé M-003.
-
-Premier verrou à fermer :
-
-```text
+~~~text
 Fournisseur
-→ édition/catalogue identifié
 → Article fournisseur
-→ rapprochement Référence Produit M-002
 → conditionnement
-→ tarif de référence
-→ contexte/prix Dossier
-```
+→ édition catalogue
+→ Tarif fournisseur
+→ Tarif négocié Dossier
+→ Prix facturé Dossier
+→ Prix applicable
+~~~
 
-Ne pas coder de modèle M-003 avant validation de son contrat détaillé.
+M-003 ne recrée jamais une identité Produit parallèle.
+
+## 6. Décisions M-003 validées
+
+### Portées
+
+~~~text
+GLOBAL_SHARED
+→ référentiel commun SaaS
+
+WORKSPACE_PRIVATE
+→ données propres à un Workspace
+→ jamais exposées hors Workspace
+~~~
+
+Un utilisateur peut importer un catalogue spécifique à son Workspace sans le partager au SaaS.
+
+Le SaaS peut parallèlement proposer des catalogues globaux.
+
+Un catalogue Workspace est disponible pour plusieurs Dossiers du même Workspace ; il n'est pas copié par Dossier.
+
+### Données Dossier
+
+Toujours strictement locales :
+
+- Tarif négocié ;
+- Prix facturé ;
+- Référence favorite ;
+- historique commercial Dossier.
+
+Un prix du Dossier A n'est jamais fallback du Dossier B.
+
+### Owner
+
+~~~text
+Workspace Owner
+→ toutes les permissions métier M-003 de son Workspace
+→ tous les Dossiers
+→ sans cumul artificiel de rôles métier
+~~~
+
+L'Owner reste soumis aux capabilities et n'obtient aucune autorité Application Global.
+
+### Fournisseur
+
+- `GLOBAL_SHARED | WORKSPACE_PRIVATE` ;
+- nom obligatoire ;
+- code fournisseur / raison sociale / site web facultatifs ;
+- `ACTIVE | ARCHIVED`.
+
+### Article fournisseur
+
+~~~text
+Fournisseur + référence fournisseur
+→ identité baseline
+~~~
+
+- référence absente : pas de création automatique ;
+- lifecycle `ACTIVE | ARCHIVED` ;
+- remplacement possible via `replacedBy`.
+
+### Catalogues
+
+- plusieurs éditions historiques ;
+- `GLOBAL_SHARED | WORKSPACE_PRIVATE` ;
+- nouvelle édition = nouvelle réalité ;
+- réimport même édition = réconciliation sans doublon ;
+- formats V1 : CSV/XLS/XLSX ;
+- PDF libre/OCR différés.
+
+### Conditionnement
+
+Structuré pour permettre la normalisation lorsque les données sont fiables.
+
+Aucune donnée manquante n'est inventée.
+
+### Prix
+
+Tarif fournisseur :
+
+~~~text
+Article × édition
+~~~
+
+Tarif négocié :
+
+~~~text
+Dossier × Article × période
+~~~
+
+Prix facturé :
+
+~~~text
+Dossier × Article × date facture
+~~~
+
+Fraîcheur baseline du Prix facturé :
+
+~~~text
+12 mois calendaires depuis invoiceDate
+~~~
+
+Baseline Tarif négocié :
+
+~~~text
+même Dossier + même Article
+→ périodes actives chevauchantes refusées
+~~~
+
+### Prix applicable
+
+~~~text
+Mode Tarif fournisseur
+→ Tarif fournisseur
+
+Mode Tarif négocié
+→ Tarif négocié Dossier
+→ sinon Tarif fournisseur
+
+Mode Prix facturé
+→ Prix facturé VALIDATED et frais du Dossier
+→ sinon Tarif négocié Dossier
+→ sinon Tarif fournisseur
+~~~
+
+Backend seule autorité.
+
+Jamais de fallback inter-Dossier.
+
+### Références favorites
+
+~~~text
+Dossier × Article fournisseur
+~~~
+
+Le prix n'est pas stocké dans le favori.
+
+Baseline initiale : mode manuel. Aucun seuil de fréquence arbitraire ne doit bloquer le début de M-003.
+
+### Capability
+
+L'import d'un catalogue `WORKSPACE_PRIVATE` est une capability métier dédiée et payante dans la baseline V1.
+
+RBAC et capability restent distincts.
+
+## 7. Baseline V1 révisable
+
+Peuvent évoluer après tests métier réels :
+
+- champs Fournisseur facultatifs ;
+- UX ;
+- workflow de rapprochement ;
+- replacedBy ;
+- durée standard de fraîcheur ;
+- ergonomie des périodes ;
+- capabilities commerciales ;
+- filtres ;
+- seuil de fréquence ;
+- modes suggestion/automatique ;
+- nouveaux conditionnements rencontrés.
+
+Ces ajustements ne doivent pas être considérés comme des blocages avant l'implémentation.
+
+En revanche, ne pas contourner les invariants de tenancy, isolation Dossier, sécurité et historisation.
+
+## 8. Travail à réaliser dans la prochaine conversation
+
+Avant toute modification importante :
+
+1. relire KB-START-HERE ;
+2. vérifier GitHub réel et la branche M-003 ;
+3. relire `docs/m003/M-003-FINAL-CONTRACT.md` ;
+4. vérifier `core-origin.json` ;
+5. vérifier la Core Gate et les scripts réellement exécutés ;
+6. inspecter l'architecture M-001/M-002 existante afin de réutiliser les patterns produit et les points d'extension Core.
+
+Puis implémenter M-003 par lot cohérent.
+
+Ordre prévu :
+
+~~~text
+1. constantes / registres
+2. permissions / capabilities
+3. modèles + indexes
+4. migrations
+5. services métier
+6. validations Zod
+7. controllers/routes
+8. tests backend
+9. frontend Workspace
+10. administration globale nécessaire
+11. tests frontend
+12. E2E critiques
+13. tests métier sur catalogues/cas réels
+14. corrections justifiées
+15. release:check / Core Gate
+16. validation visuelle par le porteur produit
+17. une PR M-003
+18. merge
+19. documentation de clôture
+~~~
+
+## 9. Discipline d'implémentation
+
+- un bloc M-003 cohérent ;
+- pas de micro-PR pour chaque sous-partie ;
+- ne pas modifier directement `main` ;
+- ne pas créer une primitive Core parallèle ;
+- ne pas faire de logique métier lourde dans routes/controllers ;
+- ownership explicite sur chaque donnée ;
+- backend autorité sur tenancy, prix, résolution et validations ;
+- tests métier propres à M-003, les tests Core ne les remplacent pas ;
+- les tests réels du porteur produit peuvent conduire à optimiser les baselines V1 avant la PR finale.
+
+## 10. Validation utilisateur
+
+Le porteur produit souhaite effectuer des tests visuels/réels depuis son clone local.
+
+Quand un état suffisamment complet et cohérent du frontend est disponible pour une validation visuelle, indiquer explicitement quand effectuer le pull et lancer l'application.
+
+Ne pas demander au porteur produit de relancer périodiquement des tests ou Core Gates : il signalera lui-même leurs résultats lorsque son intervention est nécessaire.
+
+## 11. Interdiction immédiate
+
+Ne pas démarrer M-004.
+
+Ne pas modifier les contrats M-002 gelés sauf incompatibilité démontrée.
+
+Ne pas créer de modèle M-003 en dehors de la branche M-003 préparée.
+
+Le prochain travail est l'implémentation M-003 à partir du contrat validé.
