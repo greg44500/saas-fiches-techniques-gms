@@ -52,7 +52,7 @@ Le Core v1.2.1 fournit déjà les primitives génériques nécessaires :
 - mécanismes génériques de rétention ;
 - contrôle de concurrence applicable aux écritures métier.
 
-Aucune évolution Core n'est requise par le contrat M-004 validé.
+Le contrat fonctionnel M-004 ne demande aucune règle métier au Core. La conception technique du 2026-09-28 a toutefois démontré un gap générique du moteur de rétention v1.2.1 pour les ressources dont l'échéance de purge est figée individuellement (`purgeScheduledAt`) avec une durée effective pouvant varier par Workspace. Ce gap doit être traité dans le Core avant la purge planifiée M-004 ; aucun contournement local ne doit être introduit dans le produit.
 
 ---
 
