@@ -3,7 +3,7 @@
 **Date :** 2026-09-28  
 **Lot clôturé :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité  
 **Lot courant :** M-004 — Fiches techniques + valorisation  
-**État M-004 :** CONTRAT FONCTIONNEL VALIDÉ — conception technique produite ; implémentation métier suspendue avant code sur un gap Core générique de rétention  
+**État M-004 :** CONTRAT FONCTIONNEL VALIDÉ — conception technique fermée ; PRÊT À IMPLÉMENTATION du bloc complet hors exports  
 **Branche :** `feature/m004-fiches-techniques-valorisation`  
 **Base de branche :** `main@b479b217815fad885f233e98b8f3145656641352`
 
@@ -61,7 +61,7 @@ tag        = v1.2.1
 commit     = d90d8f1e6034cbbf4f63de2be7312eae69b1d698
 ~~~
 
-La conception technique a démontré un besoin Core générique : le moteur de rétention v1.2.1 ne sait pas exécuter proprement une purge fondée sur un `purgeScheduledAt` figé par ressource lorsque la durée effective varie selon le Workspace. Ce point doit être traité dans `saas-core-api` puis réintégré au produit avant implémentation de la purge M-004.
+Aucune évolution Core n'est nécessaire pour M-004. La corbeille des Fiches techniques est gérée dans le produit : réglage Workspace 1–90 jours (30 par défaut), `purgeScheduledAt` figé à la suppression et job métier global de purge.
 
 ## 3. Contrat canonique M-004
 
@@ -398,9 +398,11 @@ Conception technique disponible :
 docs/m004/M-004-TECHNICAL-DESIGN.md
 ~~~
 
-Ne pas créer de modèle, route ou endpoint M-004 dans le produit avant traitement du gap Core de rétention et réintégration de la version Core correspondante.
+Le cadrage fonctionnel et la conception technique sont maintenant suffisants pour démarrer le code du bloc M-004 hors exports.
 
-Après intégration Core et validation de la conception :
+Avant le code, reprendre cette synthèse dans une nouvelle conversation dédiée à l'implémentation.
+
+Ordre d'exécution :
 
 ~~~text
 même branche M-004
