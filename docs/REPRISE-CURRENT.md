@@ -3,7 +3,7 @@
 **Date :** 2026-09-28  
 **Lot clôturé :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité  
 **Lot courant :** M-004 — Fiches techniques + valorisation  
-**État M-004 :** CONTRAT FONCTIONNEL VALIDÉ — conception technique autorisée, aucun code métier M-004 créé à ce stade  
+**État M-004 :** CONTRAT FONCTIONNEL VALIDÉ — conception technique produite ; implémentation métier suspendue avant code sur un gap Core générique de rétention  
 **Branche :** `feature/m004-fiches-techniques-valorisation`  
 **Base de branche :** `main@b479b217815fad885f233e98b8f3145656641352`
 
@@ -61,7 +61,7 @@ tag        = v1.2.1
 commit     = d90d8f1e6034cbbf4f63de2be7312eae69b1d698
 ~~~
 
-Aucune évolution Core nécessaire à M-004 n'a été démontrée.
+La conception technique a démontré un besoin Core générique : le moteur de rétention v1.2.1 ne sait pas exécuter proprement une purge fondée sur un `purgeScheduledAt` figé par ressource lorsque la durée effective varie selon le Workspace. Ce point doit être traité dans `saas-core-api` puis réintégré au produit avant implémentation de la purge M-004.
 
 ## 3. Contrat canonique M-004
 
@@ -392,33 +392,15 @@ Contradictions historiques résolues :
 
 ## 14. Prochaine action
 
-Ne pas implémenter de modèle, route ou endpoint M-004 avant d'avoir produit et relu la conception technique.
-
-Conception technique attendue :
+Conception technique disponible :
 
 ~~~text
-agrégats / modèles
-relations
-indexes
-transactions
-snapshots
-concurrency control
-services
-controllers
-routes
-Zod
-permissions applicatives
-métrique / quota
-migrations
-bootstrap / seeds
-rétention
-audit
-frontend
-RTK Query
-tests
+docs/m004/M-004-TECHNICAL-DESIGN.md
 ~~~
 
-Après validation de la conception :
+Ne pas créer de modèle, route ou endpoint M-004 dans le produit avant traitement du gap Core de rétention et réintégration de la version Core correspondante.
+
+Après intégration Core et validation de la conception :
 
 ~~~text
 même branche M-004
