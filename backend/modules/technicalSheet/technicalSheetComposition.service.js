@@ -41,9 +41,9 @@ const resolveProductVariants = async ({
     ];
 
     let query = ProductVariant.find({
-        _id: {
+        _id: mongoose.trusted({
             $in: ids.map(toObjectId),
-        },
+        }),
         status: PRODUCT_STATUS.ACTIVE,
         identityActive: true,
     }).select(

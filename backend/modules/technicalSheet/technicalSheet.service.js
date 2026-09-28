@@ -146,9 +146,9 @@ const listTechnicalSheets = async ({
     const filter = {
         workspace: workspaceId,
         dossier: dossierId,
-        status: status ?? {
+        status: status ?? mongoose.trusted({
             $in: DEFAULT_LIST_STATUSES,
-        },
+        }),
     };
 
     if (search) {
@@ -211,9 +211,9 @@ const getTechnicalSheet = async ({
     };
 
     if (!includeDeleted) {
-        filter.status = {
+        filter.status = mongoose.trusted({
             $ne: TECHNICAL_SHEET_STATUS.DELETED,
-        };
+        });
     }
 
     const [sheet, draft] =

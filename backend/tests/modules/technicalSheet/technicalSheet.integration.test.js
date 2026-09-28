@@ -48,6 +48,7 @@ import {
 } from '../../../modules/technicalSheet/technicalSheetLifecycle.service.js';
 import {
     createTechnicalSheet,
+    listTechnicalSheets,
 } from '../../../modules/technicalSheet/technicalSheet.service.js';
 import {
     saveTechnicalSheetDraft,
@@ -271,6 +272,35 @@ const createValuedDraft = async () => {
 };
 
 describe('M-004 services Fiches techniques', () => {
+    it('liste les Fiches actives par défaut avec sanitizeFilter activé', async () => {
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche liste M004',
+                },
+            });
+
+        const result =
+            await listTechnicalSheets({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+            });
+
+        expect(result.pagination.total).toBe(1);
+        expect(
+            result.sheets.map((sheet) => sheet.id),
+        ).toContain(created.sheet.id);
+    });
+
     it('crée, compose, valorise et valide un snapshot historique immuable', async () => {
         const {
             created,

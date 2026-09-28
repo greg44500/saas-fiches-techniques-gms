@@ -521,10 +521,10 @@ const listTechnicalSheetHistory = async ({
             _id: technicalSheetId,
             workspace: workspaceId,
             dossier: dossierId,
-            status: {
+            status: mongoose.trusted({
                 $ne:
                     TECHNICAL_SHEET_STATUS.DELETED,
-            },
+            }),
         });
 
     if (!sheetExists) {
@@ -580,10 +580,10 @@ const getTechnicalSheetValidation = async ({
             _id: technicalSheetId,
             workspace: workspaceId,
             dossier: dossierId,
-            status: {
+            status: mongoose.trusted({
                 $ne:
                     TECHNICAL_SHEET_STATUS.DELETED,
-            },
+            }),
         });
 
     if (!sheetExists) {

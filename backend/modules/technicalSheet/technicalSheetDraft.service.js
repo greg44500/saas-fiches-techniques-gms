@@ -303,10 +303,10 @@ const getTechnicalSheetDraft = async ({
             _id: technicalSheetId,
             workspace: workspaceId,
             dossier: dossierId,
-            status: {
+            status: mongoose.trusted({
                 $ne:
                     TECHNICAL_SHEET_STATUS.DELETED,
-            },
+            }),
         })
             .select('_id')
             .lean();
