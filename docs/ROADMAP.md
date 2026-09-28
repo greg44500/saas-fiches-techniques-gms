@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 implémenté sur branche, QA visuelle et revalidation finale en cours  
+**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 validé localement et prêt pour PR finale  
 **Dernière mise à jour :** 2026-09-28
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
