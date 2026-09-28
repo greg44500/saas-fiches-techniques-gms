@@ -652,6 +652,7 @@ const listNegotiatedPrices = async ({
     dossierId,
     articleId = null,
     status = null,
+    session = null,
 }) => {
     await assertDossier({
         workspaceId,
@@ -694,6 +695,7 @@ const listNegotiatedPrices = async ({
                 validFrom: -1,
                 _id: -1,
             })
+            .session(session)
             .lean();
 
     return prices.map(
@@ -918,10 +920,12 @@ const listInvoicedPrices = async ({
     dossierId,
     articleId = null,
     status = null,
+    session = null,
 }) => {
     await assertDossier({
         workspaceId,
         dossierId,
+        session,
     });
 
     const filter = {
