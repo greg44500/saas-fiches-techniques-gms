@@ -1036,6 +1036,7 @@ const findFreshValidatedInvoice = async ({
                 invoiceDate: -1,
                 _id: -1,
             })
+            .session(session)
             .lean();
 
     if (!latest) {
@@ -1323,6 +1324,7 @@ const resolveApplicablePrice = async ({
     await assertDossier({
         workspaceId,
         dossierId,
+        session,
     });
 
     const article =
@@ -1415,6 +1417,7 @@ const resolveApplicablePrice = async ({
                 articleId:
                     article._id,
                 atDate,
+                session,
             });
 
         if (negotiated) {
