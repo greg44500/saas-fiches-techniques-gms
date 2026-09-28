@@ -273,6 +273,60 @@ describe('M-002 global product reference HTTP contract', () => {
         ]));
     });
 
+    it('expose le nombre de Produits actifs dans les métadonnées Platform', async () => {
+        const category = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Catégorie usage Platform' });
+
+        const created = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({
+                name: 'Produit usage Platform',
+                categoryId: category.body.data.category.id,
+            });
+
+        expect(created.status).toBe(201);
+
+        const metadata = await request(app)
+            .get('/api/product-reference/metadata')
+            .set(bearer(governorToken));
+
+        expect(metadata.status).toBe(200);
+        expect(metadata.body.data.metadata.categories).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: category.body.data.category.id,
+                    activeProductCount: 1,
+                }),
+            ]),
+        );
+
+        await request(app)
+            .patch(
+                '/api/product-reference/'
+                + created.body.data.product.id
+                + '/status',
+            )
+            .set(bearer(governorToken))
+            .send({ status: 'ARCHIVED' })
+            .expect(200);
+
+        const afterArchive = await request(app)
+            .get('/api/product-reference/metadata')
+            .set(bearer(governorToken));
+
+        expect(afterArchive.body.data.metadata.categories).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: category.body.data.category.id,
+                    activeProductCount: 0,
+                }),
+            ]),
+        );
+    });
+
     it('inspecte et prévisualise un import global via le pipeline sécurisé', async () => {
         const category = await request(app)
             .post('/api/product-reference/categories')
