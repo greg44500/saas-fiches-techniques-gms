@@ -1,6 +1,6 @@
 # M-004 — Conception technique Fiches techniques et valorisation
 
-**Statut : DRAFT TECHNIQUE — prêt à validation, implémentation bloquée uniquement sur le gap Core de rétention décrit en section 18**  
+**Statut : PRÊT À IMPLÉMENTATION — conception fermée pour le bloc M-004 hors exports**  
 **Date : 2026-09-28**  
 **Contrat fonctionnel :** `docs/m004/M-004-FINAL-CONTRACT.md`  
 **Base produit vérifiée :** `main@b479b217815fad885f233e98b8f3145656641352`  
@@ -17,10 +17,10 @@ Principes :
 - M-001 reste l'autorité du contexte Dossier et de son access scope ;
 - M-002 reste l'autorité de la Référence Produit et des unités/rendements ;
 - M-003 reste l'autorité de l'Article fournisseur et du Prix applicable ;
-- le Core reste l'autorité RBAC générique, Plan/limits, UsageMetric, overrides, audit et rétention générique ;
+- le Core reste l'autorité RBAC générique, Plan/limits, UsageMetric, overrides et audit ;
 - M-004 ne reconstruit aucune primitive existante.
 
-Aucun code métier M-004 ne doit être écrit avant validation de cette conception et résolution du gap Core de rétention si la purge planifiée fait partie du même lot.
+La conception ne nécessite aucune modification du Core. La corbeille des Fiches techniques et sa purge automatique sont des responsabilités métier du produit.
 
 ---
 
@@ -309,6 +309,48 @@ Règles :
 - une modification du Dossier ne modifie aucune Fiche existante.
 
 Cette section appartient au produit, pas au Core.
+
+### 8.1 Réglage Workspace de corbeille
+
+Le produit ajoute un réglage Workspace métier distinct du modèle Workspace Core :
+
+~~~text
+WorkspaceBusinessSettings
+{
+    workspace             ObjectId Workspace UNIQUE, immutable
+    trashRetentionDays    integer 1..90, default 30
+    createdBy
+    updatedBy
+    createdAt / updatedAt
+}
+~~~
+
+Ce modèle appartient au produit `saas-fiches-techniques-gms`.
+
+Règles :
+
+- aucun champ n'est ajouté au modèle Workspace Core ;
+- la valeur par défaut est 30 jours ;
+- le Workspace Owner peut modifier la valeur entre 1 et 90 jours ;
+- l'absence exceptionnelle de document est interprétée fail-safe avec la valeur produit par défaut de 30 jours, puis le document peut être matérialisé par le service ;
+- la valeur est lue au moment de la suppression d'une Fiche ;
+- la modification du réglage n'est jamais rétroactive sur les Fiches déjà en corbeille.
+
+Service proposé :
+
+~~~text
+workspaceBusinessSettings.service.js
+~~~
+
+La surface HTTP reste produit-scoped :
+
+~~~text
+GET /api/workspaces/:workspaceId/business-settings
+PUT /api/workspaces/:workspaceId/business-settings/trash-retention
+~~~
+
+La permission de modification est une permission applicative métier Owner-only par défaut.
+
 
 ---
 
@@ -728,100 +770,55 @@ Le backend recalcule toutes les valeurs dérivées.
 
 ---
 
-## 18. Gap Core — rétention à résoudre avant purge planifiée
+## 18. Corbeille Workspace et purge automatique métier
 
-### Besoin produit validé
+La corbeille M-004 est implémentée dans le produit, sans utiliser ni modifier le moteur de rétention Core.
 
-Lors de la suppression :
+### Configuration Workspace
 
-~~~text
-durée effective du Workspace au moment T
-→ purgeScheduledAt figé
-→ toute modification future de politique n'est pas rétroactive
-~~~
-
-La durée Workspace peut varier dans les bornes produit.
-
-### Core v1.2.1 réel
-
-Le moteur Core :
+Source :
 
 ~~~text
-RetentionPolicy
-→ retentionDays global par target
-→ cutoffAt = now - retentionDays
-
-adapter.preview({ cutoffAt })
-adapter.executeBatch({ cutoffAt, batchSize })
+WorkspaceBusinessSettings.trashRetentionDays
 ~~~
 
-Le contrat d'adapter ne reçoit ni `now`, ni un mode d'éligibilité, ni une date de purge portée par la ressource.
-
-Une policy est également globale par `targetKey`, pas Workspace-scoped.
-
-### Conséquence
-
-Le produit ne peut pas implémenter proprement :
+Bornes :
 
 ~~~text
-Workspace A = 7 jours
-Workspace B = 30 jours
-+
-échéance figée par ressource
+default = 30
+min = 1
+max = 90
 ~~~
 
-avec le moteur Core actuel sans :
+### Suppression
 
-- détourner artificiellement `retentionDays` ;
-- dupliquer un scheduler/purge engine dans le produit ;
-- ou casser le contrat de rétention validé.
-
-Ces trois options sont rejetées.
-
-### Évolution Core générique requise
-
-Candidat Core :
+Dans la transaction de suppression :
 
 ~~~text
-support des cibles de rétention à échéance portée par la ressource
-(resource-scheduled retention)
+retentionDays = réglage Workspace courant
+purgeScheduledAt = deletedAt + retentionDays
 ~~~
 
-Le design Core devra permettre à un target code-owned de déclarer un mode d'éligibilité distinct du simple âge global.
+`purgeScheduledAt` est persisté sur la Fiche et devient l'autorité de son échéance.
 
-Exemple conceptuel :
+Changer `trashRetentionDays` après la suppression ne modifie jamais cette échéance.
+
+### Job métier
+
+Entrypoint proposé :
 
 ~~~text
-AGE_CUTOFF
-→ comportement actuel
-
-RESOURCE_SCHEDULED_AT
-→ moteur fournit now
-→ adapter sélectionne les ressources dont purgeScheduledAt <= now
-→ retentionDays de policy n'impose pas l'échéance métier
+backend/jobs/technicalSheets/runPurgeDeletedTechnicalSheetsJob.js
+npm run job:purge-technical-sheets
 ~~~
 
-Cette évolution doit rester générique, testée et versionnée dans `saas-core-api`, puis intégrée dans le produit via une branche `core-update/vX.Y.Z`.
+Le job est :
 
-M-004 ne doit pas coder un contournement local.
-
----
-
-## 19. Rétention M-004 après évolution Core
-
-Une fois le Core adapté :
-
-Target applicative proposée :
-
-~~~text
-technical_sheet_trash
-~~~
-
-Adapter produit :
-
-~~~text
-technicalSheetRetention.adapter.js
-~~~
+- global à l'application ;
+- idempotent ;
+- indépendant des Workspaces ;
+- exécutable régulièrement par l'infrastructure ;
+- sans scheduler distinct par Workspace.
 
 Éligibilité :
 
@@ -830,14 +827,64 @@ status = DELETED
 AND purgeScheduledAt <= now
 ~~~
 
-Le batch de purge appelle le service de purge M-004 afin de conserver :
+Traitement :
 
-- transaction ;
-- libération de quota ;
-- audit ;
-- suppression agrégée cohérente.
+1. sélectionner un batch borné d'identifiants éligibles ;
+2. pour chaque Fiche, appeler le service transactionnel de purge M-004 ;
+3. supprimer Draft + Validations + TechnicalSheet de façon cohérente ;
+4. libérer exactement 1 unité de métrique `technical_sheets` ;
+5. tracer l'activité/audit ;
+6. continuer sur les autres éléments même si un élément devient non éligible entre sélection et exécution.
 
-La preview ne retourne aucun contenu métier, seulement les compteurs nécessaires.
+Un index `{ status: 1, purgeScheduledAt: 1 }` supporte le job.
+
+La cadence opérationnelle du job n'est pas le réglage utilisateur. Une cadence fréquente (par exemple horaire en production) permet de traiter les échéances proches sans créer un cron par Workspace.
+
+### Purge manuelle
+
+Le Workspace Owner conserve la permission `technical-sheet:purge`.
+
+Une purge manuelle :
+
+- exige une confirmation explicite ;
+- revérifie que la Fiche est `DELETED` ;
+- purge immédiatement l'agrégat demandé même si son échéance automatique n'est pas encore atteinte ;
+- libère le quota dans la même transaction.
+
+Une action UX « Vider la corbeille » peut appeler la même primitive de purge sur les Fiches `DELETED` du Workspace, avec confirmation forte et traitement borné.
+
+### Core
+
+~~~text
+saas-core-api
+→ inchangé
+
+Core retention
+→ inchangé
+
+corbeille TechnicalSheet
+→ module métier produit
+~~~
+
+Aucune branche `core-update/*` n'est nécessaire pour M-004.
+
+---
+
+## 19. Routes de corbeille et réglages Workspace
+
+Routes produit proposées :
+
+~~~text
+GET    /api/workspaces/:workspaceId/business-settings
+PUT    /api/workspaces/:workspaceId/business-settings/trash-retention
+
+GET    /api/workspaces/:workspaceId/technical-sheets/trash
+POST   /api/workspaces/:workspaceId/technical-sheets/trash/purge
+~~~
+
+Les endpoints Dossier existants restent utilisés pour supprimer/restaurer/purger une Fiche précise.
+
+La liste de corbeille Workspace agrège uniquement les Fiches techniques `DELETED` appartenant à ce Workspace et respecte le RBAC M-004.
 
 ---
 
@@ -902,6 +949,9 @@ technicalSheetCapacity.service.js
 
 technicalSheetSettings.service.js
 → marge par défaut Dossier
+
+workspaceBusinessSettings.service.js
+→ durée de corbeille Workspace
 
 technicalSheetEvent.service.js
 → événements métier
@@ -1066,7 +1116,10 @@ Au minimum :
 - validation transactionnelle ;
 - copie A→B ;
 - lifecycle ;
-- retention adapter après évolution Core ;
+- réglage Workspace de corbeille ;
+- calcul non rétroactif de purgeScheduledAt ;
+- job métier de purge ;
+- purge manuelle Owner ;
 - reconcile UsageMetric.
 
 ---
@@ -1128,7 +1181,7 @@ purge
 → capacité libérée
 ~~~
 
-Les E2E de purge planifiée ne peuvent être finalisés qu'après intégration de l'évolution Core de rétention.
+Les E2E couvrent la purge automatique en injectant un instant contrôlé dans le service/job métier ; aucun changement Core n'est requis.
 
 ---
 
@@ -1148,6 +1201,10 @@ migration:m004-plan-limit
 migration:m004-usage-reconcile
 → recalcule UsageMetric depuis les Fiches non purgées
 
+migration:m004-workspace-business-settings
+→ index unique Workspace
+→ aucune écriture massive obligatoire : default 30 côté modèle/service
+
 seed/plans
 → installation neuve cohérente avec le registre actif
 ~~~
@@ -1158,28 +1215,30 @@ Aucune migration ne crée de Fiche technique métier fictive.
 
 ---
 
-## 29. Ordre d'implémentation après déblocage Core
+## 29. Ordre d'implémentation
 
 ~~~text
-1. intégrer la version Core corrigeant la rétention
-2. revalider Core Gate produit
-3. reprendre la branche M-004 sur le Core intégré
-4. registries permissions / metric / retention
-5. modèles + migrations
-6. math / composition
-7. valuation M-003
-8. lifecycle + quota
-9. API + tests backend
-10. frontend + tests
-11. E2E
-12. QA visuelle
-13. corrections UX compatibles
-14. release:check
-15. une PR M-004
+1. registries permissions / métrique
+2. WorkspaceBusinessSettings + corbeille
+3. modèles TechnicalSheet / Draft / Validation
+4. migrations / seeds / réconciliation quota
+5. math / composition
+6. valorisation M-003
+7. lifecycle + quota + purge métier
+8. API + tests backend
+9. frontend + tests
+10. E2E critiques
+11. QA visuelle utilisateur
+12. corrections UX compatibles
+13. npm run release:check
+14. une seule PR M-004
+15. Core Gate PR
 16. merge
-17. gate post-merge
+17. Core Gate post-merge
 18. bloc V1 Exports et diffusion séparé
 ~~~
+
+Aucune branche Core n'est nécessaire.
 
 ---
 
@@ -1199,6 +1258,6 @@ La conception M-004 est techniquement viable avec les primitives existantes pour
 - dashboard ;
 - audit.
 
-Le seul écart générique démontré avant code est la rétention à échéance portée par la ressource.
+La corbeille Workspace et sa purge automatique sont volontairement implémentées dans le produit métier avec `purgeScheduledAt` par ressource et un job global idempotent.
 
-Ce point doit être résolu dans le Core avant d'implémenter la purge planifiée M-004.
+Aucun blocker Core n'est identifié pour le bloc M-004 hors exports.
