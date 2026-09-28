@@ -453,9 +453,7 @@ function ProductsPage() {
                 />
               )}
               getRowKey={(result) => result.variant?.id ?? result.product.id + '-root'}
-              headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
               rowClassName="transition-colors hover:bg-muted/50"
-              tableClassName="border-b border-border"
             />
             <div className="px-5 pb-5">
               <DataPagination

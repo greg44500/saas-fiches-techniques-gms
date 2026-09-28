@@ -424,9 +424,7 @@ function SupplierReferencePage({ canManage }) {
         />
       ) : section === 'suppliers' ? (
         <DataTable
-          headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
           rowClassName="transition-colors hover:bg-muted/50"
-          tableClassName="border-b border-border"
           caption="Fournisseurs globaux"
           columns={supplierColumns}
           data={suppliers}
@@ -440,9 +438,7 @@ function SupplierReferencePage({ canManage }) {
         />
       ) : section === 'articles' ? (
         <DataTable
-          headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
           rowClassName="transition-colors hover:bg-muted/50"
-          tableClassName="border-b border-border"
           caption="Articles fournisseur globaux"
           columns={articleColumns}
           data={articleQuery.data?.articles ?? []}
@@ -456,9 +452,7 @@ function SupplierReferencePage({ canManage }) {
         />
       ) : (
         <DataTable
-          headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
           rowClassName="transition-colors hover:bg-muted/50"
-          tableClassName="border-b border-border"
           caption="Catalogues fournisseur globaux"
           columns={catalogColumns}
           data={catalogQuery.data?.catalogs ?? []}

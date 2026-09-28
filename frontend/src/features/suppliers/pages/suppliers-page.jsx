@@ -548,9 +548,7 @@ function SuppliersPage() {
             />
           )}
           getRowKey={(supplier) => supplier.id}
-          headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
           rowClassName="transition-colors hover:bg-muted/50"
-          tableClassName="border-b border-border"
         />
       ) : section === 'articles' ? (
         <DataTable
@@ -564,9 +562,7 @@ function SuppliersPage() {
             />
           )}
           getRowKey={(article) => article.id}
-          headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
           rowClassName="transition-colors hover:bg-muted/50"
-          tableClassName="border-b border-border"
         />
       ) : (
         <DataTable
@@ -580,9 +576,7 @@ function SuppliersPage() {
             />
           )}
           getRowKey={(catalog) => catalog.id}
-          headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
           rowClassName="transition-colors hover:bg-muted/50"
-          tableClassName="border-b border-border"
         />
       )}
 

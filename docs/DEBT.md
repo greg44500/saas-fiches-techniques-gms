@@ -238,6 +238,26 @@ Cette dette n'autorise pas à modifier sous couvert de design :
 
 Une régression fonctionnelle réelle doit être corrigée comme telle ; une nouvelle fonctionnalité doit être recadrée dans le module approprié.
 
+
+
+### GMS-CORE-UX-001 — Canoniser le survol de ligne dans DataTable
+
+**Statut :** DIFFÉRÉ — futur lot Core UI/UX  
+**Périmètre :** Core / composant partagé `DataTable`  
+**Blocage M-003 :** non
+
+Le composant partagé `DataTable` centralise déjà structure, densité et espacements, mais le survol de ligne reste actuellement fourni par les features via `rowClassName`.
+
+La convention UX produit impose pourtant un survol de ligne homogène pour faciliter le repérage visuel dans les listes. Cette règle doit à terme devenir une convention native de `DataTable`, avec revue globale des autres conventions visuelles des tableaux lors d'un vrai lot Core dédié.
+
+En attendant ce lot :
+
+- aucun composant tableau métier parallèle n'est créé ;
+- les features continuent d'utiliser `DataTable` ;
+- `rowClassName="transition-colors hover:bg-muted/50"` peut rester utilisé pour préserver l'UX attendue ;
+- aucun micro-versionnement Core n'est déclenché uniquement pour déplacer cette classe ;
+- les styles structurels de tableau ne doivent pas être redéfinis écran par écran dans le produit.
+
 ### D-013 — Configuration et déploiement de production
 
 **Statut :** À CADRER  
