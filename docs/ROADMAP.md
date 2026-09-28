@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001/M-002/M-003 clôturés — M-004 contrat validé et conception produite ; implémentation en attente d'une évolution Core de rétention  
+**Statut :** VALIDÉ — M-001/M-002/M-003 clôturés — M-004 contrat et conception validés ; prêt à implémentation hors exports  
 **Dernière mise à jour :** 2026-09-28
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -67,7 +67,7 @@ Décisions finales :
 - pour un non-owner, l'autorisation effective exige membership `ACTIVE` + permission + `DossierAccessGrant ACTIVE` + même Workspace + statut Dossier compatible ; l'Owner dispose d'un périmètre Dossier implicite sans grant individuel ;
 - aucun quota de stockage dur n'est défini par Dossier : la capacité appartient au Workspace ;
 - un Dossier `DELETED` n'est pas purgé automatiquement dans M-001 ; sa purge physique reste différée ;
-- la politique métier de corbeille est validée transversalement pour les futures ressources purgeables : 30 jours par défaut, configurable de 7 à 90 jours lorsque la personnalisation est autorisée.
+- la politique métier de corbeille des Fiches techniques est Workspace-scoped : 30 jours par défaut, configurable de 1 à 90 jours par l'Owner, échéance figée à la suppression.
 
 ### 2.2 Référentiel Produit
 
@@ -169,7 +169,7 @@ Le lot UX M-002 `GMS-UX-002` a été traité et fusionné avant l'ouverture de M
 
 ### 2.4 Fiches techniques
 
-**État : CONTRAT FONCTIONNEL VALIDÉ — conception technique produite ; code métier en attente du gap Core rétention**
+**État : CONTRAT FONCTIONNEL VALIDÉ — conception technique fermée ; prêt à implémentation hors exports**
 
 Source canonique :
 
@@ -222,14 +222,17 @@ puis bloc séparé Exports et diffusion V1
 
 Les autres exports restent différés à V2.
 
-Gap Core identifié pour M-004 :
+Corbeille M-004 :
 
 ~~~text
-rétention par ressource avec purgeScheduledAt figé
-+ durée effective pouvant varier par Workspace
-→ non représentable proprement par le moteur Core v1.2.1 à cutoff global
-→ évolution générique Core requise avant purge planifiée
+WorkspaceBusinessSettings.trashRetentionDays
+→ 30 jours par défaut
+→ 1 à 90 jours
+→ purgeScheduledAt figé à la suppression
+→ job métier global et idempotent
+→ aucun changement Core
 ~~~
+
 
 
 ### 2.5 Fiches process
