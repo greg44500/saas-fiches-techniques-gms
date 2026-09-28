@@ -126,6 +126,30 @@
       "script": "migration:m003-supplier-catalog",
       "runner": "backend/migrations/runEnsureM003SupplierCatalogMigration.js",
       "dependsOn": []
+    },
+    {
+      "id": "m004-technical-sheets",
+      "script": "migration:m004-technical-sheets",
+      "runner": "backend/migrations/runEnsureM004TechnicalSheetMigration.js",
+      "dependsOn": []
+    },
+    {
+      "id": "m004-plan-limit",
+      "script": "migration:m004-plan-limit",
+      "runner": "backend/migrations/runAddM004TechnicalSheetPlanLimitMigration.js",
+      "dependsOn": []
+    },
+    {
+      "id": "m004-workspace-business-settings",
+      "script": "migration:m004-workspace-business-settings",
+      "runner": "backend/migrations/runEnsureM004WorkspaceBusinessSettingsMigration.js",
+      "dependsOn": []
+    },
+    {
+      "id": "m004-usage-reconcile",
+      "script": "migration:m004-usage-reconcile",
+      "runner": "backend/migrations/runReconcileM004TechnicalSheetUsageMetricMigration.js",
+      "dependsOn": []
     }
   ]
 }
