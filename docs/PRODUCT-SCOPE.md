@@ -1809,11 +1809,10 @@ Le Core conserve ses primitives génériques de téléversement, inspection, ant
 Les ressources métier structurées peuvent néanmoins être soumises à des quotas commerciaux de **nombre d'objets** indépendants du stockage fichier. Décision validée pour les Fiches techniques :
 
 ```text
-DRAFTS actifs
+Fiches techniques
+→ 1 identité Fiche = 1 unité de capacité
 → quota métier par Workspace / plan
-
-Fiches techniques VALIDATED
-→ quota métier distinct par Workspace / plan
+→ brouillon, validations et historique ne sont jamais comptés séparément
 ```
 
 Ces quotas utiliseront le moteur générique Core de metrics / limits / entitlements / overrides ; ils ne seront pas calculés à partir de la taille MongoDB ni de `storage_bytes`.
@@ -1827,19 +1826,24 @@ Les limites applicables aux temporaires — taille maximale, TTL, concurrence de
 La corbeille métier possède un comportement standard immédiatement utilisable :
 
 ```text
-durée standard : 30 jours
-borne minimale : 7 jours
-borne maximale : 90 jours
+durée par défaut : 30 jours
+borne minimale  : 1 jour
+borne maximale  : 90 jours
 ```
 
-Lorsque la personnalisation est autorisée, le Workspace peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. Cette rétention concerne les ressources métier supprimées, pas des fichiers temporaires d'import/export.
+Le Workspace Owner peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. Cette rétention concerne les ressources métier supprimées, pas des fichiers temporaires d'import/export.
+
+Le réglage est porté par le produit métier et n'exige aucune modification du Core. Il exprime la durée de conservation en corbeille.
 
 Pour les Fiches techniques :
 
-- un DRAFT actif n'est jamais purgé uniquement parce qu'il est ancien ;
-- un DRAFT explicitement supprimé est placé en corbeille puis devient purgeable à l'échéance de la politique métier ;
-- une version VALIDATED reste historiquement immuable et n'est jamais purgée automatiquement par simple ancienneté ;
-- l'archivage reste le mécanisme normal pour sortir une fiche validée de l'usage courant.
+- une Fiche ACTIVE n'est jamais purgée uniquement parce qu'elle est ancienne ;
+- une Fiche explicitement supprimée est placée avec tout son agrégat en corbeille ;
+- l'échéance `purgeScheduledAt` est calculée depuis la durée du Workspace et figée au moment de la suppression ;
+- changer la durée du Workspace ne modifie que les suppressions futures ;
+- un job métier unique purge les Fiches `DELETED` arrivées à échéance ;
+- un état VALIDATED reste historiquement immuable tant que la Fiche existe ;
+- l'archivage reste le mécanisme normal pour sortir une Fiche de l'usage courant.
 
 Pour les artefacts générés :
 
