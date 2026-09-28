@@ -1,6 +1,7 @@
 import {
   Archive,
   Calculator,
+  Copy,
   CheckCircle2,
   RotateCcw,
   Save,
@@ -46,6 +47,9 @@ import {
   useValidateTechnicalSheetMutation,
   useValuateTechnicalSheetMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
+import {
+  TechnicalSheetCopyDialog,
+} from '@/features/technical-sheets/components/technical-sheet-copy-dialog';
 import {
   TechnicalSheetHistory,
 } from '@/features/technical-sheets/components/technical-sheet-history';
@@ -129,6 +133,7 @@ function TechnicalSheetWorkspacePage() {
   });
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
+  const [copyOpen, setCopyOpen] = useState(false);
 
   useEffect(() => {
     if (!sheet) return;
@@ -192,6 +197,8 @@ function TechnicalSheetWorkspacePage() {
   const canValidate = isActive && can(TECHNICAL_SHEET_PERMISSION.VALIDATE);
   const canLifecycle = can(TECHNICAL_SHEET_PERMISSION.LIFECYCLE_MANAGE);
   const canDelete = can(TECHNICAL_SHEET_PERMISSION.DELETE);
+  const canCopy = sheet.status !== 'DELETED'
+    && can(TECHNICAL_SHEET_PERMISSION.COPY);
 
   function notifyError(error, fallback) {
     toast({
@@ -832,12 +839,22 @@ function TechnicalSheetWorkspacePage() {
         </CardContent>
       </Card>
 
-      {(canLifecycle || canDelete) && (
+      {(canLifecycle || canDelete || canCopy) && (
         <Card>
           <CardHeader>
             <CardTitle>Cycle de vie</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
+            {canCopy && (
+              <Button
+                onClick={() => setCopyOpen(true)}
+                type="button"
+                variant="outline"
+              >
+                <Copy aria-hidden="true" className="size-4" />
+                Copier vers un autre Dossier
+              </Button>
+            )}
             {sheet.status === 'ACTIVE' && canLifecycle && (
               <Button
                 onClick={() => setConfirmation({ type: 'archive' })}
@@ -871,6 +888,22 @@ function TechnicalSheetWorkspacePage() {
           </CardContent>
         </Card>
       )}
+
+      <TechnicalSheetCopyDialog
+        dossierId={dossierId}
+        onClose={() => setCopyOpen(false)}
+        onCopied={(result) => {
+          setCopyOpen(false);
+          navigate(
+            '/workspaces/' + workspace.id
+            + '/dossiers/' + result.sheet.dossierId
+            + '/technical-sheets/' + result.sheet.id,
+          );
+        }}
+        open={copyOpen}
+        technicalSheetId={technicalSheetId}
+        workspaceId={workspace.id}
+      />
 
       {confirmation && (
         <ConfirmationDialog

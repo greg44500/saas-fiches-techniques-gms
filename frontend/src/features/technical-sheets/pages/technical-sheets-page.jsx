@@ -51,7 +51,7 @@ import {
 function TechnicalSheetsPage() {
   const { dossierId } = useParams();
   const navigate = useNavigate();
-  const { can, workspace } = useWorkspaceContext();
+  const { can, membership, workspace } = useWorkspaceContext();
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
@@ -113,6 +113,7 @@ function TechnicalSheetsPage() {
   const canCreate = can(TECHNICAL_SHEET_PERMISSION.CREATE)
     && operational
     && !quotaReached;
+  const isOwner = membership?.role?.key === 'owner';
 
   const columns = [
     {
@@ -193,6 +194,13 @@ function TechnicalSheetsPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {isOwner && (
+              <Button asChild size="sm" variant="outline">
+                <Link to={'/workspaces/' + workspace.id + '/technical-sheets/trash'}>
+                  Corbeille
+                </Link>
+              </Button>
+            )}
             {can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE) && (
               <Button asChild size="sm" variant="outline">
                 <Link
