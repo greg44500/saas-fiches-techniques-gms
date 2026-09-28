@@ -36,6 +36,9 @@ import {
     TECHNICAL_SHEET_PERMISSION,
 } from '../../../modules/technicalSheet/technicalSheetPermission.registry.js';
 import {
+    deleteTechnicalSheet,
+} from '../../../modules/technicalSheet/technicalSheetLifecycle.service.js';
+import {
     createTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheet.service.js';
 import {
@@ -193,6 +196,46 @@ const basePath = () =>
     + sheet.id;
 
 describe('M-004 RBAC HTTP', () => {
+    it('masque une Fiche en corbeille des lectures directes ordinaires', async () => {
+        const deleted =
+            await deleteTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    sheet.revision,
+            });
+
+        expect(deleted.status)
+            .toBe('DELETED');
+
+        await request(app)
+            .get(basePath())
+            .set(bearer(member.token))
+            .expect(404);
+
+        await request(app)
+            .get(
+                basePath()
+                + '/draft',
+            )
+            .set(bearer(member.token))
+            .expect(404);
+
+        await request(app)
+            .get(
+                basePath()
+                + '/history',
+            )
+            .set(bearer(member.token))
+            .expect(404);
+    });
+
     it('autorise le sourcing sans donner le droit de modifier la recette', async () => {
         await request(app)
             .put(

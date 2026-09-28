@@ -7,6 +7,7 @@ import {
     resolveSupplierArticle,
 } from '../supplierCatalog/supplierPricing.service.js';
 import {
+    TECHNICAL_SHEET_STATUS,
     TECHNICAL_SHEET_VALUATION_STATUS,
 } from './technicalSheet.registry.js';
 import {
@@ -297,6 +298,26 @@ const getTechnicalSheetDraft = async ({
     dossierId,
     technicalSheetId,
 }) => {
+    const sheet =
+        await TechnicalSheet.findOne({
+            _id: technicalSheetId,
+            workspace: workspaceId,
+            dossier: dossierId,
+            status: {
+                $ne:
+                    TECHNICAL_SHEET_STATUS.DELETED,
+            },
+        })
+            .select('_id')
+            .lean();
+
+    if (!sheet) {
+        throw new AppError(
+            'Fiche technique introuvable.',
+            404,
+        );
+    }
+
     const draft =
         await TechnicalSheetDraft.findOne({
             technicalSheet: technicalSheetId,

@@ -147,7 +147,6 @@ const getById = async (req, res) => {
             technicalSheetId:
                 req.validated.params
                     .technicalSheetId,
-            includeDeleted: true,
         });
 
     res.status(200).json({

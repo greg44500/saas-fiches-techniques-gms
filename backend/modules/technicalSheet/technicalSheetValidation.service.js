@@ -516,6 +516,24 @@ const listTechnicalSheetHistory = async ({
     page = 1,
     limit = 20,
 }) => {
+    const sheetExists =
+        await TechnicalSheet.exists({
+            _id: technicalSheetId,
+            workspace: workspaceId,
+            dossier: dossierId,
+            status: {
+                $ne:
+                    TECHNICAL_SHEET_STATUS.DELETED,
+            },
+        });
+
+    if (!sheetExists) {
+        throw new AppError(
+            'Fiche technique introuvable.',
+            404,
+        );
+    }
+
     const skip = (page - 1) * limit;
     const filter = {
         workspace: workspaceId,
@@ -557,6 +575,24 @@ const getTechnicalSheetValidation = async ({
     technicalSheetId,
     validationId,
 }) => {
+    const sheetExists =
+        await TechnicalSheet.exists({
+            _id: technicalSheetId,
+            workspace: workspaceId,
+            dossier: dossierId,
+            status: {
+                $ne:
+                    TECHNICAL_SHEET_STATUS.DELETED,
+            },
+        });
+
+    if (!sheetExists) {
+        throw new AppError(
+            'Fiche technique introuvable.',
+            404,
+        );
+    }
+
     const validation =
         await TechnicalSheetValidation.findOne({
             _id: validationId,
