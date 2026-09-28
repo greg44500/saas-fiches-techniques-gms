@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 validé localement et prêt pour PR finale  
+**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 clôturé — prochain lot : GMS-UX-002 avant M-004  
 **Dernière mise à jour :** 2026-09-28
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -103,7 +103,7 @@ Décision de clôture du 2026-09-25 : le périmètre fonctionnel M-002 est gelé
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
-**État : IMPLÉMENTATION PRÉSENTE SUR BRANCHE — QA visuelle en cours ; revalidation complète, E2E et gate finale encore requises**
+**État : CLÔTURÉ — PR #22 fusionnée le 2026-09-28 ; Core Gates #132 et #133 vertes**
 
 Source canonique :
 
@@ -150,6 +150,21 @@ Checkpoint UX/QA du 2026-09-28 :
 - l'onglet Catalogues reste consultable avec le droit de lecture ; seule l'action d'import dépend de `supplier_catalog_import` ;
 - le bouton d'import est masqué lorsque la capability n'est pas active ;
 - les libellés utilisateur restent en français (« espace de travail », « Origine »).
+
+Clôture M-003 :
+
+~~~text
+release:check local : vert
+QA visuelle : validée
+PR #22 : fusionnée
+Core Gate PR #132 : success
+merge : 2044dbf3c13473d926cfaa8b86f5eb9dbbf259ac
+Core Gate post-merge #133 : success
+~~~
+
+Les retours des bêta-testeurs peuvent déclencher des retouches UX ultérieures sans bloquer M-004 ni rouvrir le contrat M-003, sauf changement d'invariant métier.
+
+Avant le cadrage/implémentation de M-004, le lot UX M-002 enregistré sous `GMS-UX-002` est traité en un bloc cohérent.
 
 
 ### 2.4 Fiches techniques

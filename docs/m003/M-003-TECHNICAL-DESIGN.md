@@ -1,8 +1,8 @@
 # M-003 — Conception technique
 
-**Statut :** baseline technique d'implémentation  
+**Statut :** LIVRÉ — M-003 fusionné dans `main` le 2026-09-28  
 **Contrat fonctionnel :** docs/m003/M-003-FINAL-CONTRACT.md  
-**Branche :** feature/m003-suppliers-catalogs-pricing
+**Branche de livraison :** feature/m003-suppliers-catalogs-pricing — fusionnée via PR #22
 
 ## 1. Principes
 
@@ -198,21 +198,20 @@ migration:m003-supplier-catalog :
 6. controllers/routes ;
 7. tests d'intégration tenancy/RBAC/capability.
 
-## 12. État d'implémentation au 2026-09-28
+## 12. État de livraison au 2026-09-28
 
-La conception ci-dessus est matérialisée sur :
-
-~~~text
-feature/m003-suppliers-catalogs-pricing
-~~~
-
-HEAD fonctionnel de référence avant mise à jour documentaire :
+M-003 est livré sur `main`.
 
 ~~~text
-eb1e44312c59051ed5d525720a8b498caf4f5c84
+PR #22
+→ release:check local : vert
+→ QA visuelle : validée
+→ Core Gate PR #132 : success
+→ merge : 2044dbf3c13473d926cfaa8b86f5eb9dbbf259ac
+→ Core Gate post-merge #133 : success
 ~~~
 
-Les surfaces backend, frontend et E2E sont présentes. La baseline pré-UX a été confirmée verte localement, mais les corrections UX et le support `status=ALL` ajoutés ensuite exigent une revalidation complète avant PR.
+Les surfaces backend, frontend et E2E décrites dans ce document sont donc intégrées. Les retouches UX issues des bêta-testeurs pourront être traitées ultérieurement sans modifier les invariants techniques M-003.
 
 ## 13. Gouvernance Application Global M-003
 
