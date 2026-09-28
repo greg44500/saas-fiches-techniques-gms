@@ -1,11 +1,11 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-27  
+**Date :** 2026-09-28  
 **Lot clôturé :** M-002 — Référentiel Produits  
 **Lot courant :** M-003 — Fournisseurs + Articles + conditionnements + prix/catalogues  
-**État M-003 :** implémentation backend/frontend/E2E présente ; gates techniques pré-UX confirmés verts localement ; lot UX Fournisseurs implémenté — revalidation frontend et validation visuelle en attente  
+**État M-003 :** implémentation backend/frontend/E2E présente ; baseline technique pré-UX confirmée verte ; QA visuelle et corrections UX M-003 en cours ; revalidation complète post-corrections encore requise  
 **Branche :** \`feature/m003-suppliers-catalogs-pricing\`  
-**HEAD fonctionnel avant mise à jour documentaire :** \`d04a85f3d83bbe02b86de8369110cd476cb134e2\`
+**HEAD fonctionnel avant mise à jour documentaire :** \`eb1e44312c59051ed5d525720a8b498caf4f5c84\`
 
 ## 1. Ordre d'autorité
 
@@ -37,7 +37,16 @@ main = 386e64cacd97cab15e712697c2d7fdd985a4f62e
 Merge PR #20 — feat(m002): deliver the shared product reference catalog
 ~~~
 
-La branche M-003 est actuellement en avance sur \`main\` et n'était pas en retard lors de la dernière vérification.
+État Git vérifié le 2026-09-28 :
+
+~~~text
+main   = 386e64cacd97cab15e712697c2d7fdd985a4f62e
+branch = eb1e44312c59051ed5d525720a8b498caf4f5c84
+ahead  = 42
+behind = 0
+~~~
+
+La branche M-003 reste donc exclusivement en avance sur \`main\`.
 
 Core intégré :
 
@@ -186,13 +195,21 @@ Lorsqu'un Fondateur possède déjà le membership issu du bootstrap M-002, le se
 Surface Workspace \`/workspaces/:workspaceId/suppliers\` :
 
 - Fournisseurs partagés et privés ;
-- recherche ;
-- création/édition/archivage des Fournisseurs privés ;
+- recherche et filtre de statut ;
+- filtre Fournisseurs par défaut = \`Tous\`, avec \`Actifs | Archivés\` disponibles ;
+- Fournisseur archivé visible dans \`Tous\` et réactivable via l'action dédiée ;
+- création/édition/archivage/réactivation des Fournisseurs privés ;
+- drawer Fournisseur basé sur \`EntityDetailsDrawer\` : Informations | Articles | Catalogues | Utilisation ;
+- vocabulaire utilisateur français : « espace de travail », « Origine », jamais « Workspace » ni « Portée » dans l'UI de consultation ;
 - Articles fournisseur ;
 - création manuelle d'Article privé avec Référence Produit M-002 ;
 - lifecycle Article ;
-- catalogues accessibles avec portée, période et provenance ;
-- import privé conditionné par permission + capability.
+- catalogues accessibles avec origine, période et provenance ;
+- onglet Catalogues consultable avec \`supplier:catalog:read\` même sans capability d'import ;
+- bouton « Importer un catalogue » visible uniquement avec permission \`supplier:catalog:import\` + capability \`supplier_catalog_import\` ;
+- bloc de liste harmonisé avec Dossiers : filtres + \`DataTable\` partagé + \`DataPagination\` partagée ;
+- pagination serveur réelle sur Fournisseurs, Articles et Catalogues ;
+- recherche compacte sur une ligne desktop, bouton Rechercher désactivé à vide.
 
 Surface Dossier \`/workspaces/:workspaceId/dossiers/:dossierId/suppliers\` :
 
@@ -242,7 +259,8 @@ Couverture ajoutée pour :
 - fallback fournisseur ;
 - fraîcheur 12 mois ;
 - favori sans prix copié ;
-- bootstrap de gouvernance globale M-003.
+- bootstrap de gouvernance globale M-003 ;
+- filtre Fournisseurs `status=ALL` : actifs + archivés, avec conservation de l'isolation Workspace.
 
 ### Frontend
 
@@ -258,7 +276,12 @@ Couverture ajoutée pour :
 - preview ambiguë ;
 - catalogues et provenance dans le contexte Dossier ;
 - Prix applicable, source/fallback ;
-- absence d'onglet non autorisé.
+- absence d'onglet non autorisé ;
+- drawer Fournisseur et actions Voir/Modifier/Archiver/Réactiver ;
+- masquage du bouton d'import sans capability ;
+- filtre Fournisseurs `Tous` par défaut et réactivation d'un Fournisseur archivé ;
+- pagination serveur via `DataPagination` sur les trois onglets ;
+- recherche désactivée à vide et remise à zéro du filtre lorsqu'elle est vidée.
 
 ### E2E Playwright
 
@@ -273,7 +296,7 @@ La préparation E2E initialise désormais la gouvernance M-002 puis M-003.
 
 ## 6. État réel de validation
 
-Après correction des premiers défauts M-003, le porteur produit a confirmé localement verts sur le HEAD \`2662f74f17ecb68d898576a0f38c7020901566d5\` :
+Le porteur produit a confirmé localement verts avant le lot UX étendu, sur le checkpoint `2662f74f17ecb68d898576a0f38c7020901566d5` :
 
 ~~~text
 npm test
@@ -283,20 +306,38 @@ npm --prefix frontend run lint
 npm --prefix frontend run build
 ~~~
 
-Cette exécution constitue la baseline technique pré-UX.
+Cette exécution constitue uniquement la baseline technique pré-UX.
 
-Depuis cette baseline, le lot UX Fournisseurs a modifié uniquement le frontend :
+Depuis cette baseline, plusieurs corrections M-003 ont été ajoutées :
 
-- actions de tableau en icônes avec infobulles verbales ;
-- action Voir ;
+- corrections sanitizeFilter / `mongoose.trusted()` et sérialisation prix ;
+- actions de tableau en icônes avec infobulles ;
 - drawer Fournisseur ;
-- détail Articles / Catalogues ;
-- onglet Utilisation Workspace sans agrégation de prix inter-Dossier ;
-- même convention d'actions sur le référentiel global.
+- suppression du vocabulaire utilisateur `Workspace` / `Portée` ;
+- origine affichée comme `Référentiel partagé` / `Cet espace de travail` ;
+- filtres Produits/Fournisseurs compactés ;
+- bouton `Rechercher` désactivé à vide ;
+- retour du bouton Import catalogue au masquage sans capability ;
+- utilisation exclusive du `DataTable` partagé pour les listes ;
+- harmonisation du conteneur Fournisseurs/Articles/Catalogues avec la page Dossiers ;
+- ajout de `DataPagination` et pagination serveur réelle ;
+- ajout du filtre Fournisseurs `Tous` ;
+- `Tous` devient la valeur par défaut à l'ouverture de l'onglet Fournisseurs ;
+- support backend `status=ALL` pour la liste Workspace Fournisseurs.
 
-Ces changements frontend doivent être revalidés avant le contrôle visuel.
+Aucune exécution postérieure couvrant l'ensemble de ces changements n'a encore été confirmée verte dans cette conversation.
 
-Restent à valider avant la PR finale :
+Les commandes à rejouer avant de poursuivre la QA visuelle finale sont donc :
+
+~~~bash
+npm test
+npm run lint
+npm --prefix frontend run test
+npm --prefix frontend run lint
+npm --prefix frontend run build
+~~~
+
+Puis, après validation visuelle finale :
 
 ~~~text
 npm run test:e2e
@@ -313,34 +354,44 @@ git fetch origin
 git switch feature/m003-suppliers-catalogs-pricing
 git pull --ff-only origin feature/m003-suppliers-catalogs-pricing
 
+npm test
+npm run lint
 npm --prefix frontend run test
 npm --prefix frontend run lint
 npm --prefix frontend run build
 ~~~
 
-Si ces trois gates sont verts, lancer ensuite backend et frontend pour le contrôle visuel.
+Si ces cinq gates sont verts, relancer backend + frontend et terminer le contrôle visuel.
 
-Pour tester l'import privé, le Workspace de test doit disposer de la capability :
+Pour tester l'import privé, l'espace de travail de test doit disposer de la capability :
 
 ~~~text
 supplier_catalog_import
 ~~~
 
 Le contrat ne l'attribue encore à aucun plan précis ; utiliser un entitlement override de test si nécessaire plutôt que modifier arbitrairement un plan commercial.
+
 ## 8. Points à vérifier visuellement
 
-Workspace Fournisseurs :
+Espace de travail — Fournisseurs :
 
-- navigation « Fournisseurs » ;
-- distinction Partagé / Privé ;
+- la page utilise le même bloc visuel que Dossiers : filtres + tableau partagé + pagination partagée ;
+- aucun composant tableau métier parallèle ;
+- Fournisseurs : filtre par défaut « Tous » ;
+- « Tous » affiche actifs + archivés ;
+- un Fournisseur privé archivé expose l'action « Réactiver » ;
+- Articles et Catalogues conservent leur filtre Actifs/Archivés ;
 - actions de ligne en icônes avec infobulles « Voir », « Modifier », « Archiver » / « Réactiver » ;
 - « Voir » ouvre le drawer Fournisseur ;
 - drawer : Informations | Articles | Catalogues | Utilisation ;
+- drawer : libellé « Origine », jamais « Portée » ;
+- aucun libellé utilisateur « Workspace » sur les surfaces M-003 ;
 - Articles et catalogues du drawer filtrés par Fournisseur ;
 - onglet Utilisation sans agrégation de Tarifs négociés/Prix facturés entre Dossiers ;
-- création/modification/archivage privé ;
-- onglet Catalogues : bouton « Importer un catalogue » uniquement avec permission + capability ;
-- inspect/mapping/preview/confirmation.
+- onglet Catalogues visible avec droit de lecture ;
+- bouton « Importer un catalogue » absent sans capability, visible et actif avec permission + capability ;
+- pagination 10/20/50/100 et navigation serveur cohérentes ;
+- inspect/mapping/preview/confirmation de l'import lorsque la capability est active.
 
 Dossier :
 
@@ -362,15 +413,15 @@ Global :
 ## 9. Étapes restantes avant merge
 
 ~~~text
-revalidation frontend test + lint + build
-→ validation visuelle porteur produit
-→ corrections fonctionnelles/UX justifiées en lot si nécessaire
+revalidation backend + frontend (tests, lint, build)
+→ validation visuelle finale du porteur produit
+→ corrections résiduelles uniquement si défaut réellement observé
 → E2E + release:check
-→ une PR M-003
+→ une PR M-003 unique
 → validation Core Gate PR
 → merge
 → validation post-merge
-→ documentation de clôture
+→ documentation de clôture M-003
 ~~~
 
 Ne pas démarrer M-004 avant clôture M-003.

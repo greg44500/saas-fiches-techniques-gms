@@ -198,7 +198,7 @@ migration:m003-supplier-catalog :
 6. controllers/routes ;
 7. tests d'intégration tenancy/RBAC/capability.
 
-## 12. État d'implémentation au 2026-09-27
+## 12. État d'implémentation au 2026-09-28
 
 La conception ci-dessus est matérialisée sur :
 
@@ -206,13 +206,13 @@ La conception ci-dessus est matérialisée sur :
 feature/m003-suppliers-catalogs-pricing
 ~~~
 
-HEAD de référence au moment de cette mise à jour :
+HEAD fonctionnel de référence avant mise à jour documentaire :
 
 ~~~text
-ad873a3264fea026ba717da09428ba85ab0001cb
+eb1e44312c59051ed5d525720a8b498caf4f5c84
 ~~~
 
-Les surfaces backend, frontend et E2E sont présentes. Aucune exécution de gate n'est revendiquée dans cette session.
+Les surfaces backend, frontend et E2E sont présentes. La baseline pré-UX a été confirmée verte localement, mais les corrections UX et le support `status=ALL` ajoutés ensuite exigent une revalidation complète avant PR.
 
 ## 13. Gouvernance Application Global M-003
 
@@ -251,13 +251,13 @@ La capability \`supplier_catalog_import\` reste indépendante du RBAC. Tant que 
 
 ## 15. UX Fournisseur extensible
 
-Le détail Fournisseur réutilise la primitive partagée \`EntityDetailsDrawer\` et ne crée aucun système de panneau parallèle.
+Le détail Fournisseur réutilise la primitive partagée `EntityDetailsDrawer` et ne crée aucun système de panneau parallèle.
 
-Surface Workspace :
+Surface espace de travail :
 
 ~~~text
 Informations
-→ identité, portée, statut
+→ identité, origine, statut
 
 Articles
 → Articles actifs filtrés par supplierId
@@ -272,16 +272,59 @@ Utilisation
 
 L'onglet Utilisation ne consolide pas les Tarifs négociés ni les Prix facturés hors contexte Dossier.
 
-Le référentiel global réutilise le même drawer pour Informations / Articles / Catalogues, sans onglet Utilisation Workspace.
+Le référentiel global réutilise le même drawer pour Informations / Articles / Catalogues, sans onglet Utilisation propre à l'espace de travail.
 
-Les actions de tableau M-003 utilisent la primitive partagée \`ActionIconButton\` avec infobulles verbales : Voir, Modifier, Archiver et Réactiver.
+Les actions de tableau M-003 utilisent la primitive partagée `ActionIconButton` avec infobulles verbales : Voir, Modifier, Archiver et Réactiver.
 
-L'import de catalogue fournisseur reste dans :
+Les listes Fournisseurs / Articles / Catalogues réutilisent exclusivement :
 
 ~~~text
-Fournisseurs
-→ Catalogues
-→ Importer un catalogue
+DataTable
++ DataPagination
++ conteneur de liste standard identique au pattern Dossiers
 ~~~
 
-Il demeure distinct de l'import Produits M-002.
+Aucun composant tableau métier parallèle ni style structurel de tableau spécifique M-003 n'est créé.
+
+Le `rowClassName` de survol reste temporairement passé par les features conformément à l'état actuel du composant partagé. Sa canonisation dans le Core est enregistrée dans `GMS-CORE-UX-001` et ne justifie pas un micro-versionnement Core.
+
+### 15.1 Recherche et filtres
+
+- les zones de recherche utilisent l'espace restant sur une seule ligne desktop ;
+- le bouton Rechercher reste désactivé lorsque le champ est vide ;
+- vider une recherche appliquée retire le filtre actif ;
+- Fournisseurs démarre avec le filtre `Tous` ;
+- `Tous` affiche `ACTIVE + ARCHIVED` ;
+- un Fournisseur privé archivé peut être réactivé depuis cette vue ;
+- Articles et Catalogues restent sur `ACTIVE | ARCHIVED` ;
+- changer d'onglet depuis Fournisseurs avec `Tous` rétablit `ACTIVE` pour Articles/Catalogues.
+
+### 15.2 Catalogue et capability
+
+L'onglet Catalogues est une surface de consultation gouvernée par `supplier:catalog:read` et reste visible sans capability d'import.
+
+L'action d'import respecte :
+
+~~~text
+supplier:catalog:import
++ supplier_catalog_import
+→ bouton « Importer un catalogue » visible et actif
+
+capability absente
+→ bouton absent
+~~~
+
+L'import de catalogue fournisseur reste distinct de l'import Produits M-002.
+
+### 15.3 Vocabulaire utilisateur
+
+Les concepts techniques restent présents dans le modèle mais ne sont pas exposés tels quels lorsque ce n'est pas utile :
+
+~~~text
+Workspace → espace de travail
+Portée   → Origine
+GLOBAL_SHARED      → Référentiel partagé
+WORKSPACE_PRIVATE  → Cet espace de travail
+~~~
+
+Cette traduction UX ne modifie ni la tenancy ni les portées techniques persistées.

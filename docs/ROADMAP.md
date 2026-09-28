@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 implémenté sur branche, validation en cours  
-**Dernière mise à jour :** 2026-09-27
+**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 implémenté sur branche, QA visuelle et revalidation finale en cours  
+**Dernière mise à jour :** 2026-09-28
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.2.0` intégré au commit `c428fbec1edfa21a8860fcf8283072e45719832b` ;
+- Core `v1.2.1` intégré au commit `d90d8f1e6034cbbf4f63de2be7312eae69b1d698` ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;
@@ -103,7 +103,7 @@ Décision de clôture du 2026-09-25 : le périmètre fonctionnel M-002 est gelé
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
-**État : IMPLÉMENTATION PRÉSENTE SUR BRANCHE — validation visuelle, tests réels et gate finale en attente**
+**État : IMPLÉMENTATION PRÉSENTE SUR BRANCHE — QA visuelle en cours ; revalidation complète, E2E et gate finale encore requises**
 
 Source canonique :
 
@@ -141,6 +141,15 @@ Décisions établies :
 - import `WORKSPACE_PRIVATE` = capability commerciale dédiée et payante dans la baseline V1.
 
 Les paramètres explicitement qualifiés de baseline V1 restent révisables après tests métier réels sans bloquer l'implémentation. Les invariants de tenancy, d'isolation Dossier et d'historisation restent structurants.
+
+Checkpoint UX/QA du 2026-09-28 :
+
+- les listes Fournisseurs / Articles / Catalogues réutilisent le `DataTable` partagé et le `DataPagination` partagé dans le même pattern de conteneur que Dossiers ;
+- aucun style structurel de tableau spécifique M-003 n'est introduit ;
+- le filtre Fournisseurs démarre sur `Tous` afin d'exposer immédiatement les actifs et archivés réactivables ;
+- l'onglet Catalogues reste consultable avec le droit de lecture ; seule l'action d'import dépend de `supplier_catalog_import` ;
+- le bouton d'import est masqué lorsque la capability n'est pas active ;
+- les libellés utilisateur restent en français (« espace de travail », « Origine »).
 
 
 ### 2.4 Fiches techniques

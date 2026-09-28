@@ -242,7 +242,7 @@ Une régression fonctionnelle réelle doit être corrigée comme telle ; une nou
 
 ### GMS-CORE-UX-001 — Canoniser le survol de ligne dans DataTable
 
-**Statut :** DIFFÉRÉ — futur lot Core UI/UX  
+**Statut :** DIFFÉRÉ / ACCEPTÉ — décision confirmée le 2026-09-28 ; à traiter dans un vrai lot Core UI/UX  
 **Périmètre :** Core / composant partagé `DataTable`  
 **Blocage M-003 :** non
 
@@ -256,7 +256,9 @@ En attendant ce lot :
 - les features continuent d'utiliser `DataTable` ;
 - `rowClassName="transition-colors hover:bg-muted/50"` peut rester utilisé pour préserver l'UX attendue ;
 - aucun micro-versionnement Core n'est déclenché uniquement pour déplacer cette classe ;
-- les styles structurels de tableau ne doivent pas être redéfinis écran par écran dans le produit.
+- les styles structurels de tableau ne doivent pas être redéfinis écran par écran dans le produit ;
+- M-003 doit conserver le composant partagé et ses points d'extension existants, sans créer un variant de tableau métier ;
+- le futur traitement devra être regroupé avec une revue réelle et globale des conventions UI/UX du `DataTable` Core.
 
 ### D-013 — Configuration et déploiement de production
 
