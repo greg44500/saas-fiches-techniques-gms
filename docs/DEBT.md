@@ -660,3 +660,48 @@ run number : 11
 conclusion : success
 Run canonical Core gate : success
 ```
+
+
+### GMS-CORE-001 — Rétention à échéance portée par la ressource
+
+**Statut :** BLOQUÉ — évolution Core requise avant implémentation complète M-004  
+**Périmètre :** Core générique / produit `saas-fiches-techniques-gms`  
+**Blocage M-004 :** oui pour la purge planifiée ; non pour le contrat fonctionnel et la conception des autres sous-domaines
+
+Le contrat M-004 exige qu'une Fiche placée en corbeille conserve une échéance `purgeScheduledAt` figée au moment de la suppression. La durée effective peut varier par Workspace et une modification ultérieure de la politique ne doit pas être rétroactive.
+
+Le Core v1.2.1 utilise actuellement :
+
+~~~text
+RetentionPolicy.targetKey
++ retentionDays global
+→ cutoffAt = now - retentionDays
+→ adapter.preview({ cutoffAt })
+→ adapter.executeBatch({ cutoffAt, batchSize })
+~~~
+
+Ce contrat ne permet pas de représenter proprement une échéance portée individuellement par la ressource avec des durées Workspace différentes.
+
+Contournements interdits :
+
+- détourner artificiellement `retentionDays` ;
+- créer un scheduler de purge concurrent dans le produit ;
+- rendre une modification de politique rétroactive.
+
+Cible Core à cadrer :
+
+~~~text
+resource-scheduled retention
+→ target code-owned capable d'utiliser une échéance persistée par ressource
+→ moteur fournissant l'instant d'exécution approprié
+→ conservation des locks, previews, batches et traces d'exécution Core
+~~~
+
+Après publication de la version Core correspondante :
+
+~~~text
+branche core-update/vX.Y.Z
+→ intégration dans le produit
+→ Core Gate
+→ reprise M-004
+~~~
