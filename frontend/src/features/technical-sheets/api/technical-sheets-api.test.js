@@ -157,6 +157,34 @@ describe('technicalSheetsApi', () => {
     });
   });
 
+  it('invalide aussi le détail courant lors des transitions de cycle de vie', () => {
+    const args = {
+      workspaceId: 'workspace-1',
+      dossierId: 'dossier-1',
+      technicalSheetId: 'sheet-1',
+      expectedRevision: 3,
+    };
+
+    for (const endpointName of [
+      'archiveTechnicalSheet',
+      'reactivateTechnicalSheet',
+      'deleteTechnicalSheet',
+      'restoreTechnicalSheet',
+    ]) {
+      expect(
+        captured.endpointDefinitions[endpointName]
+          .invalidatesTags(null, null, args),
+      ).toEqual(
+        expect.arrayContaining([
+          {
+            type: 'TechnicalSheet',
+            id: 'workspace-1:dossier-1:sheet-1',
+          },
+        ]),
+      );
+    }
+  });
+
   it('exporte le hook de valorisation', () => {
     expect(
       useValuateTechnicalSheetMutation,

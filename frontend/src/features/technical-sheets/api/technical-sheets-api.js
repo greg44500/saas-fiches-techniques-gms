@@ -462,10 +462,18 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
         body: { expectedRevision },
       }),
       transformResponse: (response) => response.data.sheet,
-      invalidatesTags: (_result, _error, { workspaceId, dossierId }) => [
+      invalidatesTags: (_result, _error, { workspaceId, dossierId, technicalSheetId }) => [
         {
           type: 'TechnicalSheetList',
           id: dossierScopeId(workspaceId, dossierId),
+        },
+        {
+          type: 'TechnicalSheet',
+          id: technicalSheetScopeId(
+            workspaceId,
+            dossierId,
+            technicalSheetId,
+          ),
         },
       ],
     }),
@@ -481,10 +489,18 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
         body: { expectedRevision },
       }),
       transformResponse: (response) => response.data.sheet,
-      invalidatesTags: (_result, _error, { workspaceId, dossierId }) => [
+      invalidatesTags: (_result, _error, { workspaceId, dossierId, technicalSheetId }) => [
         {
           type: 'TechnicalSheetList',
           id: dossierScopeId(workspaceId, dossierId),
+        },
+        {
+          type: 'TechnicalSheet',
+          id: technicalSheetScopeId(
+            workspaceId,
+            dossierId,
+            technicalSheetId,
+          ),
         },
       ],
     }),
@@ -500,10 +516,18 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
         body: { expectedRevision },
       }),
       transformResponse: (response) => response.data.sheet,
-      invalidatesTags: (_result, _error, { workspaceId, dossierId }) => [
+      invalidatesTags: (_result, _error, { workspaceId, dossierId, technicalSheetId }) => [
         {
           type: 'TechnicalSheetList',
           id: dossierScopeId(workspaceId, dossierId),
+        },
+        {
+          type: 'TechnicalSheet',
+          id: technicalSheetScopeId(
+            workspaceId,
+            dossierId,
+            technicalSheetId,
+          ),
         },
         { type: 'TechnicalSheetTrash', id: workspaceId },
       ],
@@ -520,10 +544,18 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
         body: { expectedRevision },
       }),
       transformResponse: (response) => response.data.sheet,
-      invalidatesTags: (_result, _error, { workspaceId, dossierId }) => [
+      invalidatesTags: (_result, _error, { workspaceId, dossierId, technicalSheetId }) => [
         {
           type: 'TechnicalSheetList',
           id: dossierScopeId(workspaceId, dossierId),
+        },
+        {
+          type: 'TechnicalSheet',
+          id: technicalSheetScopeId(
+            workspaceId,
+            dossierId,
+            technicalSheetId,
+          ),
         },
         { type: 'TechnicalSheetTrash', id: workspaceId },
       ],
