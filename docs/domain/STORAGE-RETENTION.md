@@ -66,31 +66,47 @@ Il n'existe donc pas, pour M-002 ni pour les exports reproductibles, de « stock
 
 ## 3. Politique de corbeille métier du Workspace
 
-Le produit possède une politique de conservation métier centralisée au Workspace.
+La corbeille des ressources métier M-004 est une responsabilité du produit et non une configuration globale du moteur de rétention Core.
 
 Valeurs validées :
 
 ```text
-durée standard : 30 jours
-minimum         : 7 jours
-maximum         : 90 jours
+durée par défaut : 30 jours
+minimum           : 1 jour
+maximum           : 90 jours
 ```
 
-Lorsque la capability commerciale autorise la personnalisation, le Workspace peut sélectionner une durée dans ces bornes.
+La durée est configurée par Workspace. Le Workspace Owner peut la modifier.
 
-Cette rétention concerne les ressources métier supprimées ; elle n'implique pas l'existence d'un quota de fichiers stockés.
+Le réglage exprime une **durée de conservation avant purge automatique**, pas la fréquence d'exécution d'un scheduler propre au Workspace.
 
-Le backend reste l'autorité : aucune valeur hors bornes n'est acceptée.
+Exemples :
 
-La logique conceptuelle est :
+```text
+Workspace A = 3 jours
+Workspace B = 30 jours
+```
+
+Lors d'une suppression :
 
 ```text
 deletedAt
-+ durée effective au moment de la suppression
++ trashRetentionDays effectif au moment de la suppression
 → purgeScheduledAt
 ```
 
-L'échéance est figée au moment de la suppression. Une modification ultérieure de la configuration du Workspace n'est pas rétroactive sur les ressources déjà placées en corbeille.
+`purgeScheduledAt` est figé sur la ressource supprimée. Une modification ultérieure de `trashRetentionDays` ne modifie pas rétroactivement les échéances déjà enregistrées.
+
+La purge automatique est exécutée par un job métier produit unique et idempotent qui sélectionne les ressources dont :
+
+```text
+status = DELETED
+AND purgeScheduledAt <= maintenant
+```
+
+Il n'existe pas un job ou scheduler distinct par Workspace.
+
+Le moteur de rétention Core reste inchangé et continue de gérer ses propres cibles génériques.
 
 ---
 
@@ -268,7 +284,7 @@ Le détail exact de la capability commerciale reste à rattacher au plan concern
 - une version VALIDATED n'est jamais purgée automatiquement par âge ;
 - un Dossier DELETED n'est pas purgé automatiquement dans M-001 ;
 - la durée standard de corbeille métier est 30 jours ;
-- toute valeur personnalisée reste comprise entre 7 et 90 jours ;
+- toute valeur Workspace reste comprise entre 1 et 90 jours ;
 - l'échéance de purge est figée à la suppression ;
 - CSV, XLSX et PDF sont des représentations temporaires ;
 - impression et e-mail dérivent de la donnée métier autorisée sans créer de stockage durable par défaut ;
