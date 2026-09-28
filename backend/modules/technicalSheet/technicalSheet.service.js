@@ -156,7 +156,7 @@ const listTechnicalSheets = async ({
             {
                 name: new RegExp(
                     search.replace(
-                        /[.*+?^$\{\}()|[\]\\]/g,
+                        /[.*+?^${}()|[\]\\]/g,
                         '\\$&',
                     ),
                     'i',
@@ -165,7 +165,7 @@ const listTechnicalSheets = async ({
             {
                 description: new RegExp(
                     search.replace(
-                        /[.*+?^$\{\}()|[\]\\]/g,
+                        /[.*+?^${}()|[\]\\]/g,
                         '\\$&',
                     ),
                     'i',
