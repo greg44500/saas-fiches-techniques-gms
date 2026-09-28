@@ -1,0 +1,248 @@
+import { randomUUID } from 'node:crypto';
+
+import {
+  EntitlementOverride,
+} from '../../backend/modules/entitlementOverride/entitlementOverride.model.js';
+import {
+  Dossier,
+} from '../../backend/modules/dossier/dossier.model.js';
+import {
+  attachVariantToWorkspace,
+} from '../../backend/modules/productCatalog/productCatalog.service.js';
+import {
+  NEGOTIATED_PRICE_STATUS,
+  SUPPLIER_SCOPE,
+} from '../../backend/modules/supplierCatalog/supplierCatalog.registry.js';
+import {
+  NegotiatedPrice,
+} from '../../backend/modules/supplierCatalog/supplierPricing.model.js';
+import {
+  archiveNegotiatedPrice,
+  createNegotiatedPrice,
+} from '../../backend/modules/supplierCatalog/supplierPricing.service.js';
+import {
+  createSupplier,
+  createSupplierArticle,
+} from '../../backend/modules/supplierCatalog/supplierReference.service.js';
+import {
+  Workspace,
+} from '../../backend/modules/workspace/workspace.model.js';
+import {
+  provisionSupplierPricingWorkspace,
+} from './supplier-fixtures.js';
+import {
+  withE2eDatabase,
+} from './dossier-fixtures.js';
+
+async function provisionTechnicalSheetWorkspace({
+  ambiguous = false,
+  technicalSheetLimit = 10,
+  targetMarginBasisPoints = 6000,
+} = {}) {
+  const context =
+    await provisionSupplierPricingWorkspace();
+  const suffix =
+    randomUUID().replaceAll('-', '').slice(0, 8);
+  let secondArticle = null;
+  let secondSupplier = null;
+
+  await withE2eDatabase(async () => {
+    const workspace =
+      await Workspace.findById(
+        context.workspaceId,
+      );
+
+    if (!workspace) {
+      throw new Error(
+        'E2E M-004 workspace not found',
+      );
+    }
+
+    const ownerId = workspace.createdBy;
+
+    await attachVariantToWorkspace({
+      workspaceId: workspace._id,
+      variantId: context.productVariantId,
+      actorId: ownerId,
+    });
+
+    await Dossier.updateOne(
+      {
+        _id: context.dossierB.id,
+        workspace: workspace._id,
+      },
+      {
+        $set: {
+          'technicalSheetSettings.defaultTargetMarginBasisPoints':
+            targetMarginBasisPoints,
+          updatedBy: ownerId,
+        },
+      },
+      { runValidators: true },
+    );
+
+    await EntitlementOverride.create({
+      workspace: workspace._id,
+      targetType: 'limit',
+      metricKey: 'technical_sheets',
+      limitValue: technicalSheetLimit,
+      source: 'support',
+      startsAt: new Date(Date.now() - 1_000),
+      reason:
+        'E2E M-004 technical sheet capacity fixture',
+      grantedBy: ownerId,
+      updatedBy: ownerId,
+    });
+
+    await createNegotiatedPrice({
+      workspaceId: workspace._id,
+      dossierId: context.dossierA.id,
+      actorId: ownerId,
+      articleId: context.articleId,
+      sourceAmount: '10',
+      sourceBasis: 'KG',
+      validFrom:
+        new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    await createNegotiatedPrice({
+      workspaceId: workspace._id,
+      dossierId: context.dossierB.id,
+      actorId: ownerId,
+      articleId: context.articleId,
+      sourceAmount: '20',
+      sourceBasis: 'KG',
+      validFrom:
+        new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    if (ambiguous) {
+      secondSupplier =
+        await createSupplier({
+          scope:
+            SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+          workspaceId: workspace._id,
+          actorId: ownerId,
+          data: {
+            name:
+              'Fournisseur Ambigu M004 '
+              + suffix,
+          },
+        });
+
+      secondArticle =
+        await createSupplierArticle({
+          scope:
+            SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+          workspaceId: workspace._id,
+          actorId: ownerId,
+          data: {
+            supplierId:
+              secondSupplier.id,
+            productVariantId:
+              context.productVariantId,
+            supplierReference:
+              'AMB-' + suffix,
+            supplierDesignation:
+              context.productReferenceName,
+          },
+        });
+
+      await createNegotiatedPrice({
+        workspaceId: workspace._id,
+        dossierId: context.dossierA.id,
+        actorId: ownerId,
+        articleId: secondArticle.id,
+        sourceAmount: '8',
+        sourceBasis: 'KG',
+        validFrom:
+          new Date(
+            '2026-01-01T00:00:00.000Z',
+          ),
+      });
+    }
+  });
+
+  return {
+    ...context,
+    dossierATechnicalSheetsUrl:
+      '/workspaces/'
+      + context.workspaceId
+      + '/dossiers/'
+      + context.dossierA.id
+      + '/technical-sheets',
+    dossierBTechnicalSheetsUrl:
+      '/workspaces/'
+      + context.workspaceId
+      + '/dossiers/'
+      + context.dossierB.id
+      + '/technical-sheets',
+    secondArticleId:
+      secondArticle?.id ?? null,
+    secondArticleReference:
+      secondArticle?.supplierReference ?? null,
+    secondSupplierName:
+      secondSupplier?.name ?? null,
+    targetMarginBasisPoints,
+    technicalSheetLimit,
+  };
+}
+
+async function replaceDossierNegotiatedPrice({
+  articleId,
+  dossierId,
+  sourceAmount,
+  workspaceId,
+}) {
+  return withE2eDatabase(async () => {
+    const workspace =
+      await Workspace.findById(workspaceId);
+
+    if (!workspace) {
+      throw new Error(
+        'E2E M-004 workspace not found',
+      );
+    }
+
+    const active =
+      await NegotiatedPrice.findOne({
+        workspace: workspace._id,
+        dossier: dossierId,
+        supplierArticle: articleId,
+        status:
+          NEGOTIATED_PRICE_STATUS.ACTIVE,
+      }).sort({
+        validFrom: -1,
+        _id: -1,
+      });
+
+    if (!active) {
+      throw new Error(
+        'E2E M-004 negotiated price not found',
+      );
+    }
+
+    await archiveNegotiatedPrice({
+      workspaceId: workspace._id,
+      dossierId,
+      priceId: active._id,
+      actorId: workspace.createdBy,
+    });
+
+    return createNegotiatedPrice({
+      workspaceId: workspace._id,
+      dossierId,
+      actorId: workspace.createdBy,
+      articleId,
+      sourceAmount,
+      sourceBasis: 'KG',
+      validFrom:
+        new Date('2026-01-01T00:00:00.000Z'),
+    });
+  });
+}
+
+export {
+  provisionTechnicalSheetWorkspace,
+  replaceDossierNegotiatedPrice,
+};
