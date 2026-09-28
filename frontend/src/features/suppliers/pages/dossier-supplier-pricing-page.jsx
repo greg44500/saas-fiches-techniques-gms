@@ -8,6 +8,7 @@ import {
 } from '@/components/data-display/data-table';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
@@ -538,14 +539,14 @@ function DossierSupplierPricingPage() {
             Retour au Dossier
           </Link>
         </Button>
-        <div>
-          <p className="text-sm font-medium text-primary">{workspace.name}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+        <div className="flex items-start gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {dossier.name} — Fournisseurs et prix
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Les prix affichés et résolus restent strictement limités à ce Dossier.
-          </p>
+          <InfoTooltip
+            content="Les prix affichés et résolus restent strictement limités à ce Dossier."
+            label="À propos des Fournisseurs et prix"
+          />
         </div>
       </header>
 
@@ -678,10 +679,10 @@ function DossierSupplierPricingPage() {
       )}
 
       {section === 'references' && (
-        <section className="space-y-4">
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
           {can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE)
           && can(SUPPLIER_PERMISSION.ARTICLE_READ) && (
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row">
               <Select
                 items={[
                   { value: NONE, label: 'Sélectionner un Article' },
@@ -717,11 +718,13 @@ function DossierSupplierPricingPage() {
           )}
 
           {referencesQuery.isError ? (
-            <ErrorState
-              description="Les références du Dossier n’ont pas pu être chargées."
-              onRetry={referencesQuery.refetch}
-              title="Références indisponibles"
-            />
+            <div className="p-4">
+              <ErrorState
+                description="Les références du Dossier n’ont pas pu être chargées."
+                onRetry={referencesQuery.refetch}
+                title="Références indisponibles"
+              />
+            </div>
           ) : (
             <DataTable
               rowClassName="transition-colors hover:bg-muted/50"
@@ -730,6 +733,7 @@ function DossierSupplierPricingPage() {
               data={references}
               emptyContent={(
                 <EmptyState
+                  className="p-0"
                   description="Aucune référence fournisseur favorite n’est enregistrée pour ce Dossier."
                   title="Aucune référence"
                 />
@@ -741,13 +745,15 @@ function DossierSupplierPricingPage() {
       )}
 
       {section === 'catalogs' && (
-        <section>
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
           {catalogsQuery.isError ? (
-            <ErrorState
-              description="Les catalogues accessibles à cet espace de travail n’ont pas pu être chargés."
-              onRetry={catalogsQuery.refetch}
-              title="Catalogues indisponibles"
-            />
+            <div className="p-4">
+              <ErrorState
+                description="Les catalogues accessibles à cet espace de travail n’ont pas pu être chargés."
+                onRetry={catalogsQuery.refetch}
+                title="Catalogues indisponibles"
+              />
+            </div>
           ) : (
             <DataTable
               rowClassName="transition-colors hover:bg-muted/50"
@@ -756,6 +762,7 @@ function DossierSupplierPricingPage() {
               data={catalogsQuery.data?.catalogs ?? []}
               emptyContent={(
                 <EmptyState
+                  className="p-0"
                   description="Aucun catalogue fournisseur actif n’est accessible."
                   title="Aucun catalogue"
                 />
@@ -767,12 +774,14 @@ function DossierSupplierPricingPage() {
       )}
 
       {section === 'negotiated' && (
-        <section className="space-y-4">
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
           {can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE) && (
-            <Button onClick={() => setPriceDialog('negotiated')} type="button">
-              <Plus aria-hidden="true" className="size-4" />
-              Ajouter un Tarif négocié
-            </Button>
+            <div className="border-b border-border p-4">
+              <Button onClick={() => setPriceDialog('negotiated')} type="button">
+                <Plus aria-hidden="true" className="size-4" />
+                Ajouter un Tarif négocié
+              </Button>
+            </div>
           )}
           <DataTable
             rowClassName="transition-colors hover:bg-muted/50"
@@ -781,6 +790,7 @@ function DossierSupplierPricingPage() {
             data={negotiatedQuery.data ?? []}
             emptyContent={(
               <EmptyState
+                className="p-0"
                 description="Aucun Tarif négocié n’est enregistré pour ce Dossier."
                 title="Aucun Tarif négocié"
               />
@@ -791,12 +801,14 @@ function DossierSupplierPricingPage() {
       )}
 
       {section === 'invoiced' && (
-        <section className="space-y-4">
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
           {can(SUPPLIER_PERMISSION.INVOICED_PRICE_MANAGE) && (
-            <Button onClick={() => setPriceDialog('invoice')} type="button">
-              <Plus aria-hidden="true" className="size-4" />
-              Ajouter un Prix facturé
-            </Button>
+            <div className="border-b border-border p-4">
+              <Button onClick={() => setPriceDialog('invoice')} type="button">
+                <Plus aria-hidden="true" className="size-4" />
+                Ajouter un Prix facturé
+              </Button>
+            </div>
           )}
           <DataTable
             rowClassName="transition-colors hover:bg-muted/50"
@@ -805,6 +817,7 @@ function DossierSupplierPricingPage() {
             data={invoicedQuery.data ?? []}
             emptyContent={(
               <EmptyState
+                className="p-0"
                 description="Aucun Prix facturé n’est enregistré pour ce Dossier."
                 title="Aucun Prix facturé"
               />

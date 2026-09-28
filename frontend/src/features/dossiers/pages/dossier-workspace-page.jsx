@@ -1,4 +1,10 @@
-import { ArrowLeft } from 'lucide-react';
+import {
+  ArrowLeft,
+  Mail,
+  MapPin,
+  Phone,
+  UserRound,
+} from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import { ErrorState } from '@/components/shared/error-state';
@@ -73,37 +79,61 @@ function DossierWorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" variant="ghost">
-            <Link to={`/workspaces/${workspace.id}/dashboard`}>
-              <ArrowLeft aria-hidden="true" className="size-4" />
-              Tableau de bord
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link to={`/workspaces/${workspace.id}/dossiers`}>
-              Dossiers
-            </Link>
-          </Button>
-        </div>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild size="sm" variant="ghost">
+          <Link to={`/workspaces/${workspace.id}/dashboard`}>
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Tableau de bord
+          </Link>
+        </Button>
+        <Button asChild size="sm" variant="outline">
+          <Link to={`/workspaces/${workspace.id}/dossiers`}>
+            Dossiers
+          </Link>
+        </Button>
+      </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-primary">{workspace.name}</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-              {dossier.name}
-            </h1>
-            {dossier.brand && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {dossier.brand}
-              </p>
-            )}
-          </div>
-
+      <header className="rounded-xl border border-border bg-card p-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            {dossier.name}
+          </h1>
           <StatusBadge tone={getDossierStatusTone(dossier.status)}>
             {getDossierStatusLabel(dossier.status, metadataQuery.data)}
           </StatusBadge>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3 text-sm">
+          <div className="flex min-w-0 items-start gap-2">
+            <MapPin
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+            />
+            <span>{formatDossierLocation(dossier)}</span>
+          </div>
+          <div className="flex min-w-0 items-start gap-2">
+            <UserRound
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+            />
+            <span>{dossier.contactName || 'Responsable non renseigné'}</span>
+          </div>
+          <div className="flex min-w-0 items-start gap-2">
+            <Mail
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+            />
+            <span className="break-all">
+              {dossier.documentEmail || 'Email documents non renseigné'}
+            </span>
+          </div>
+          <div className="flex min-w-0 items-start gap-2">
+            <Phone
+              aria-hidden="true"
+              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+            />
+            <span>{dossier.phone || 'Téléphone non renseigné'}</span>
+          </div>
         </div>
       </header>
 
@@ -122,67 +152,28 @@ function DossierWorkspacePage() {
           </CardContent>
         </Card>
       ) : (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Contexte actif</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Toutes les futures opérations métier ouvertes depuis cette page seront rattachées à ce magasin et revalidées côté serveur.
-              </p>
-            </CardContent>
-          </Card>
-
-          <div className="flex flex-wrap gap-2">
-            {canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS) && (
-              <Button asChild>
-                <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossier.id + '/suppliers'}>
-                  Fournisseurs et prix
-                </Link>
-              </Button>
-            )}
-            {can(TECHNICAL_SHEET_PERMISSION.READ) && (
-              <Button asChild variant="outline">
-                <Link
-                  to={
-                    '/workspaces/' + workspace.id
-                    + '/dossiers/' + dossier.id
-                    + '/technical-sheets'
-                  }
-                >
-                  Fiches techniques
-                </Link>
-              </Button>
-            )}
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Localisation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm">{formatDossierLocation(dossier)}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p>{dossier.contactName || 'Responsable non renseigné'}</p>
-                <p className="text-muted-foreground">
-                  {dossier.documentEmail || 'Email documents non renseigné'}
-                </p>
-                <p className="text-muted-foreground">
-                  {dossier.phone || 'Téléphone non renseigné'}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </>
+        <div className="flex flex-wrap gap-2">
+          {canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS) && (
+            <Button asChild>
+              <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossier.id + '/suppliers'}>
+                Fournisseurs et prix
+              </Link>
+            </Button>
+          )}
+          {can(TECHNICAL_SHEET_PERMISSION.READ) && (
+            <Button asChild variant="outline">
+              <Link
+                to={
+                  '/workspaces/' + workspace.id
+                  + '/dossiers/' + dossier.id
+                  + '/technical-sheets'
+                }
+              >
+                Fiches techniques
+              </Link>
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );

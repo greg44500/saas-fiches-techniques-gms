@@ -1,6 +1,5 @@
 import { RotateCcw, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { useState } from 'react';
 
 import {
   DataTable,
@@ -10,6 +9,7 @@ import { DataPagination } from '@/components/data-display/data-pagination';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,16 +18,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import {
   useGetTechnicalSheetCapacityQuery,
-  useGetWorkspaceBusinessSettingsQuery,
   useListTechnicalSheetTrashQuery,
   usePurgeExpiredTechnicalSheetTrashMutation,
   usePurgeTechnicalSheetMutation,
   useRestoreTechnicalSheetMutation,
-  useUpdateWorkspaceTrashRetentionMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
   TECHNICAL_SHEET_PERMISSION,
@@ -54,25 +50,12 @@ function TechnicalSheetTrashPage() {
     },
     { skip: !isOwner },
   );
-  const settingsQuery = useGetWorkspaceBusinessSettingsQuery(
-    workspace.id,
-    { skip: !isOwner },
-  );
   const capacityQuery = useGetTechnicalSheetCapacityQuery(workspace.id);
   const [restoreSheet, restoreState] = useRestoreTechnicalSheetMutation();
   const [purgeSheet, purgeState] = usePurgeTechnicalSheetMutation();
   const [purgeExpired, purgeExpiredState] =
     usePurgeExpiredTechnicalSheetTrashMutation();
-  const [updateRetention, updateRetentionState] =
-    useUpdateWorkspaceTrashRetentionMutation();
-
-  const [retentionDays, setRetentionDays] = useState('');
   const [confirmation, setConfirmation] = useState(null);
-
-  useEffect(() => {
-    if (!settingsQuery.data) return;
-    setRetentionDays(String(settingsQuery.data.trashRetentionDays));
-  }, [settingsQuery.data]);
 
   if (!isOwner) {
     return (
@@ -108,7 +91,6 @@ function TechnicalSheetTrashPage() {
   const capacity = capacityQuery.data;
   const canRestore = can(TECHNICAL_SHEET_PERMISSION.RESTORE);
   const canPurge = can(TECHNICAL_SHEET_PERMISSION.PURGE);
-  const canSettings = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
 
   async function restore(sheet) {
     try {
@@ -174,37 +156,6 @@ function TechnicalSheetTrashPage() {
     }
   }
 
-  async function saveRetention() {
-    const parsed = Number(retentionDays);
-
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 90) {
-      toast({
-        title: 'Durée invalide',
-        description: 'La durée doit être comprise entre 1 et 90 jours.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      await updateRetention({
-        workspaceId: workspace.id,
-        trashRetentionDays: parsed,
-      }).unwrap();
-      toast({
-        title: 'Durée de conservation mise à jour',
-        description: 'Les échéances déjà figées ne sont pas recalculées.',
-        variant: 'success',
-      });
-    } catch (error) {
-      toast({
-        title: 'Modification impossible',
-        description: getTechnicalSheetApiErrorMessage(error),
-        variant: 'destructive',
-      });
-    }
-  }
-
   const columns = [
     {
       id: 'name',
@@ -264,24 +215,18 @@ function TechnicalSheetTrashPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-3">
-        <Button asChild size="sm" variant="ghost">
-          <Link to={'/workspaces/' + workspace.id + '/dashboard'}>
-            Retour au tableau de bord
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Corbeille des Fiches techniques
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Une Fiche supprimée continue de consommer une unité de capacité jusqu’à sa purge définitive.
-          </p>
-        </div>
+      <header className="flex items-start gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Corbeille des Fiches techniques
+        </h1>
+        <InfoTooltip
+          content="Une Fiche supprimée continue de consommer une unité de capacité jusqu’à sa purge définitive."
+          label="À propos de la corbeille"
+        />
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <Card className="w-full sm:max-w-xs">
           <CardHeader>
             <CardTitle>Capacité</CardTitle>
           </CardHeader>
@@ -294,69 +239,35 @@ function TechnicalSheetTrashPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Conservation</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Field>
-              <FieldLabel htmlFor="technical-sheet-trash-retention">
-                Durée de conservation (jours)
-              </FieldLabel>
-              <Input
-                disabled={!canSettings || updateRetentionState.isLoading}
-                id="technical-sheet-trash-retention"
-                max={90}
-                min={1}
-                onChange={(event) => setRetentionDays(event.target.value)}
-                type="number"
-                value={retentionDays}
-              />
-            </Field>
-            <p className="text-sm text-muted-foreground">
-              Une modification s’applique uniquement aux futures mises en corbeille.
-            </p>
-            {canSettings && (
-              <Button
-                disabled={updateRetentionState.isLoading}
-                onClick={saveRetention}
-                type="button"
-                variant="outline"
-              >
-                Enregistrer la durée
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {canPurge && (
-        <div className="flex justify-end">
+        {canPurge && (
           <Button
             disabled={purgeExpiredState.isLoading}
             onClick={purgeExpiredItems}
             type="button"
             variant="outline"
           >
+            <Trash2 aria-hidden="true" className="size-4" />
             Purger les échéances atteintes
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <DataTable
-            aria-label="Corbeille des Fiches techniques"
-            columns={columns}
-            data={sheets}
-            emptyContent={(
-              <EmptyState
-                description="Aucune Fiche technique n’attend une restauration ou une purge."
-                title="Corbeille vide"
-              />
-            )}
-            getRowKey={(sheet) => sheet.id}
-          />
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        <DataTable
+          aria-label="Corbeille des Fiches techniques"
+          columns={columns}
+          data={sheets}
+          emptyContent={(
+            <EmptyState
+              className="p-0"
+              description="Aucune Fiche technique n’attend une restauration ou une purge."
+              title="Corbeille vide"
+            />
+          )}
+          getRowKey={(sheet) => sheet.id}
+          rowClassName="transition-colors hover:bg-muted/50"
+        />
+        <div className="px-5 pb-5">
           <DataPagination
             disabled={trashQuery.isFetching}
             onPageChange={setPage}
@@ -365,8 +276,8 @@ function TechnicalSheetTrashPage() {
             pageSize={pageSize}
             pagination={pagination}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {confirmation && (
         <ConfirmationDialog

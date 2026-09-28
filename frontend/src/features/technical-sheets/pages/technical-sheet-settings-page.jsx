@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { ErrorState } from '@/components/shared/error-state';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,7 +31,7 @@ import {
 
 function TechnicalSheetSettingsPage() {
   const { dossierId } = useParams();
-  const { can, membership, workspace } = useWorkspaceContext();
+  const { can, workspace } = useWorkspaceContext();
   const { toast } = useToast();
   const query = useGetDossierTechnicalSheetSettingsQuery({
     workspaceId: workspace.id,
@@ -68,7 +69,6 @@ function TechnicalSheetSettingsPage() {
   }
 
   const canManage = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
-  const isOwner = membership?.role?.key === 'owner';
 
   async function saveMargin() {
     const basisPoints = margin.trim()
@@ -117,19 +117,26 @@ function TechnicalSheetSettingsPage() {
             Retour aux Fiches techniques
           </Link>
         </Button>
-        <div>
+        <div className="flex items-start gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">
             Réglages des Fiches techniques
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Les réglages du Dossier servent de valeurs initiales aux nouvelles Fiches et aux copies reçues.
-          </p>
+          <InfoTooltip
+            content="Les réglages du Dossier servent de valeurs initiales aux nouvelles Fiches et aux copies reçues."
+            label="À propos des réglages des Fiches techniques"
+          />
         </div>
       </header>
 
       <Card>
         <CardHeader>
-          <CardTitle>Marge cible par défaut</CardTitle>
+          <div className="flex items-start gap-2">
+            <CardTitle>Marge cible par défaut</CardTitle>
+            <InfoTooltip
+              content="Laisser vide signifie qu’aucune marge cible n’est préremplie. Modifier cette valeur ne recalcule pas les Fiches existantes."
+              label="À propos de la marge cible par défaut"
+            />
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <Field>
@@ -145,9 +152,6 @@ function TechnicalSheetSettingsPage() {
               value={margin}
             />
           </Field>
-          <p className="text-sm text-muted-foreground">
-            Laisser vide signifie qu’aucune marge cible n’est préremplie. Modifier cette valeur ne recalcule pas les Fiches existantes.
-          </p>
           {canManage && (
             <div className="flex justify-end">
               <Button
@@ -161,24 +165,6 @@ function TechnicalSheetSettingsPage() {
           )}
         </CardContent>
       </Card>
-
-      {isOwner && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Corbeille du Workspace</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              La durée de conservation et les purges définitives sont administrées au niveau du Workspace.
-            </p>
-            <Button asChild variant="outline">
-              <Link to={'/workspaces/' + workspace.id + '/technical-sheets/trash'}>
-                Ouvrir la corbeille
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

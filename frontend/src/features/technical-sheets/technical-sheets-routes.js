@@ -36,6 +36,15 @@ const technicalSheetsFrontendRouteModule = Object.freeze({
         return { Component: TechnicalSheetTrashRoute };
       },
     }),
+    Object.freeze({
+      path: 'technical-sheets/settings',
+      lazy: async () => {
+        const { TechnicalSheetWorkspaceSettingsRoute } = await import(
+          '@/features/technical-sheets/components/technical-sheet-workspace-settings-route'
+        );
+        return { Component: TechnicalSheetWorkspaceSettingsRoute };
+      },
+    }),
   ]),
 });
 

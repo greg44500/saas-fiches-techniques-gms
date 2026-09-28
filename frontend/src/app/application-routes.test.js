@@ -57,6 +57,15 @@ describe('application frontend route composition', () => {
     );
   });
 
+  it('compose les routes Workspace M-004 de corbeille et paramètres communs', () => {
+    expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'technical-sheets/trash' }),
+        expect.objectContaining({ path: 'technical-sheets/settings' }),
+      ]),
+    );
+  });
+
   it('injecte chaque route métier sous la bonne frontière du Core', () => {
     const applicationRoutes = composeApplicationFrontendRoutes([
       {

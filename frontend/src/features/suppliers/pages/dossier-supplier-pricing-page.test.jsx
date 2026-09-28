@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TooltipProvider } from '@/components/ui/tooltip';
+
 const mocks = vi.hoisted(() => ({
   dossierQuery: vi.fn(),
   params: vi.fn(),
@@ -92,7 +94,9 @@ function queryResult(data) {
 function renderPage() {
   return render(
     <MemoryRouter>
-      <DossierSupplierPricingPage />
+      <TooltipProvider>
+        <DossierSupplierPricingPage />
+      </TooltipProvider>
     </MemoryRouter>,
   );
 }
@@ -172,6 +176,10 @@ describe('DossierSupplierPricingPage', () => {
     expect(screen.getByRole('heading', {
       name: 'Magasin A — Fournisseurs et prix',
     })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'À propos des Fournisseurs et prix',
+    })).toBeInTheDocument();
+    expect(screen.queryByText('Acme')).not.toBeInTheDocument();
     expect(screen.getByRole('tab', {
       name: 'Catalogues',
     })).toHaveAttribute('aria-selected', 'true');

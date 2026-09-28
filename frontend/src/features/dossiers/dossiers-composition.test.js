@@ -3,10 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { APPLICATION_FRONTEND_ROUTES } from '@/app/application-routes';
 import { workspaceNavigation } from '@/app/workspace-navigation';
 import { DOSSIER_PERMISSION } from '@/features/dossiers/constants/dossier-permissions';
+import {
+  TECHNICAL_SHEET_PERMISSION,
+} from '@/features/technical-sheets/constants/technical-sheet-permissions';
 import { filterWorkspaceNavigation } from '@/features/workspace/components/workspace-sidebar';
 
-function hasDossiersNavigation(navigation) {
-  return navigation.some((entry) => entry.id === 'dossiers');
+function getDossiersNavigation(navigation) {
+  return navigation.find((entry) => entry.id === 'dossiers') ?? null;
 }
 
 describe('dossiers frontend composition', () => {
@@ -19,23 +22,64 @@ describe('dossiers frontend composition', () => {
     );
   });
 
-  it('masque la navigation sans dossier:read', () => {
-    expect(hasDossiersNavigation(filterWorkspaceNavigation(
+  it('masque la navigation sans accès à une surface Dossiers', () => {
+    expect(getDossiersNavigation(filterWorkspaceNavigation(
       workspaceNavigation,
       {
         can: () => false,
         hasFeature: () => true,
       },
-    ))).toBe(false);
+    ))).toBeNull();
   });
 
-  it('affiche la navigation avec dossier:read sans capability commerciale M-001', () => {
-    expect(hasDossiersNavigation(filterWorkspaceNavigation(
+  it('affiche uniquement Compte Client avec dossier:read', () => {
+    const navigation = filterWorkspaceNavigation(
       workspaceNavigation,
       {
         can: (permission) => permission === DOSSIER_PERMISSION.READ,
         hasFeature: () => false,
       },
-    ))).toBe(true);
+    );
+    const dossiers = getDossiersNavigation(navigation);
+
+    expect(dossiers).toEqual(expect.objectContaining({
+      type: 'group',
+      label: 'Dossiers',
+    }));
+    expect(dossiers.items.map((item) => item.label)).toEqual([
+      'Compte Client',
+    ]);
+  });
+
+  it('regroupe Corbeille et Paramètres avec Compte Client pour le propriétaire', () => {
+    const navigation = filterWorkspaceNavigation(
+      workspaceNavigation,
+      {
+        can: (permission) => [
+          DOSSIER_PERMISSION.READ,
+          TECHNICAL_SHEET_PERMISSION.PURGE,
+        ].includes(permission),
+        hasFeature: () => true,
+      },
+    );
+    const dossiers = getDossiersNavigation(navigation);
+
+    expect(dossiers.items.map((item) => ({
+      label: item.label,
+      path: item.path,
+    }))).toEqual([
+      {
+        label: 'Compte Client',
+        path: 'dossiers',
+      },
+      {
+        label: 'Corbeille',
+        path: 'technical-sheets/trash',
+      },
+      {
+        label: 'Paramètres',
+        path: 'technical-sheets/settings',
+      },
+    ]);
   });
 });

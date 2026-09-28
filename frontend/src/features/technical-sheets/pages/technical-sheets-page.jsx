@@ -18,6 +18,7 @@ import {
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,7 +52,7 @@ import {
 function TechnicalSheetsPage() {
   const { dossierId } = useParams();
   const navigate = useNavigate();
-  const { can, membership, workspace } = useWorkspaceContext();
+  const { can, workspace } = useWorkspaceContext();
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
@@ -113,8 +114,6 @@ function TechnicalSheetsPage() {
   const canCreate = can(TECHNICAL_SHEET_PERMISSION.CREATE)
     && operational
     && !quotaReached;
-  const isOwner = membership?.role?.key === 'owner';
-
   const columns = [
     {
       id: 'name',
@@ -185,22 +184,18 @@ function TechnicalSheetsPage() {
             <p className="text-sm font-medium text-primary">
               {dossier.name}
             </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-              Fiches techniques
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Composition, approvisionnement, valorisation et historique validé de ce Dossier.
-            </p>
+            <div className="mt-1 flex items-start gap-2">
+              <h1 className="text-3xl font-semibold tracking-tight">
+                Fiches techniques
+              </h1>
+              <InfoTooltip
+                content="Composition, approvisionnement, valorisation et historique validé de ce Dossier."
+                label="À propos des Fiches techniques"
+              />
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {isOwner && (
-              <Button asChild size="sm" variant="outline">
-                <Link to={'/workspaces/' + workspace.id + '/technical-sheets/trash'}>
-                  Corbeille
-                </Link>
-              </Button>
-            )}
             {can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE) && (
               <Button asChild size="sm" variant="outline">
                 <Link
@@ -276,42 +271,45 @@ function TechnicalSheetsPage() {
         </Card>
       )}
 
-      <div className="relative max-w-xl">
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground"
-        />
-        <Input
-          aria-label="Rechercher une Fiche technique"
-          className="pl-9"
-          onChange={(event) => {
-            setSearch(event.target.value);
-            setPage(1);
-          }}
-          placeholder="Rechercher par nom ou description…"
-          value={search}
-        />
-      </div>
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="border-b border-border p-4">
+          <div className="relative max-w-xl">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground"
+            />
+            <Input
+              aria-label="Rechercher une Fiche technique"
+              className="pl-9"
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Rechercher par nom ou description…"
+              value={search}
+            />
+          </div>
+        </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <DataTable
-            aria-label="Fiches techniques"
-            columns={columns}
-            data={sheets}
-            emptyContent={(
-              <EmptyState
-                description={
-                  search.trim()
-                    ? 'Aucune Fiche ne correspond à cette recherche.'
-                    : 'Créez la première Fiche technique de ce Dossier.'
-                }
-                title="Aucune Fiche technique"
-              />
-            )}
-            getRowKey={(sheet) => sheet.id}
-            rowClassName="transition-colors hover:bg-muted/35"
-          />
+        <DataTable
+          aria-label="Fiches techniques"
+          columns={columns}
+          data={sheets}
+          emptyContent={(
+            <EmptyState
+              className="p-0"
+              description={
+                search.trim()
+                  ? 'Aucune Fiche ne correspond à cette recherche.'
+                  : 'Créez la première Fiche technique de ce Dossier.'
+              }
+              title="Aucune Fiche technique"
+            />
+          )}
+          getRowKey={(sheet) => sheet.id}
+          rowClassName="transition-colors hover:bg-muted/50"
+        />
+        <div className="px-5 pb-5">
           <DataPagination
             disabled={listQuery.isFetching}
             onPageChange={setPage}
@@ -320,8 +318,8 @@ function TechnicalSheetsPage() {
             pageSize={pageSize}
             pagination={pagination}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       <TechnicalSheetCreateDialog
         dossierId={dossierId}

@@ -64,7 +64,7 @@ describe('DossierWorkspacePage', () => {
     mocks.metadataQuery.mockReturnValue(queryResult(metadata));
   });
 
-  it('rend un contexte de travail pour un dossier ACTIVE', () => {
+  it('présente un dossier ACTIVE dans une entête compacte sans contexte redondant', () => {
     mocks.detailQuery.mockReturnValue(queryResult({
       id: 'dossier-1',
       name: 'Nantes Centre',
@@ -82,8 +82,14 @@ describe('DossierWorkspacePage', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: 'Nantes Centre' })).toBeInTheDocument();
-    expect(screen.getByText('Contexte actif')).toBeInTheDocument();
     expect(screen.getByText('Actif')).toBeInTheDocument();
+    expect(screen.getByText(/44000/)).toBeInTheDocument();
+    expect(screen.getByText('Responsable')).toBeInTheDocument();
+    expect(screen.getByText('docs@example.test')).toBeInTheDocument();
+    expect(screen.getByText('0200000000')).toBeInTheDocument();
+    expect(screen.queryByText('Acme')).not.toBeInTheDocument();
+    expect(screen.queryByText('Leclerc')).not.toBeInTheDocument();
+    expect(screen.queryByText('Contexte actif')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Tableau de bord' })).toHaveAttribute(
       'href',
       '/workspaces/workspace-1/dashboard',
