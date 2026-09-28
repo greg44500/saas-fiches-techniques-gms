@@ -256,6 +256,18 @@ Une régression fonctionnelle réelle doit être corrigée comme telle ; une nou
 
 ### Constat B — onglet Référentiel / lisibilité des colonnes
 
+Finalité métier confirmée de la surface Platform :
+
+```text
+Platform → Référentiel Produits
+→ gouverner et mettre à disposition un référentiel Produit global
+→ fournir des Produits utilisables pour tester le SaaS
+→ fournir un socle lorsque le Workspace ne dispose pas encore de son propre catalogue ou de suffisamment de données
+→ ne pas devenir une vue analytique détaillée du modèle Produit
+```
+
+Conséquence UX : le tableau principal doit rester volontairement sobre. Une donnée ne doit être affichée en permanence que si elle aide réellement l'administrateur à gouverner ce référentiel global.
+
 Le modèle M-002 distingue volontairement :
 
 ```text
@@ -274,6 +286,8 @@ En revanche, l'UI actuelle prête à confusion :
 - pour un Produit simple dont la première Référence porte le même nom, par exemple `Abricot → Abricot`, la ligne donne une impression de duplication ;
 - chaque Référence est actuellement rendue dans un `div` bordé `rounded-md border ... p-3` à l'intérieur de la cellule du `DataTable`, ce qui produit visuellement une « carte dans le tableau » et brouille la hiérarchie de lecture ;
 - ce `div` n'est pas un problème HTML ou de structure de données en soi : une cellule `td` peut contenir un conteneur bloc et `DataTable` accepte un ReactNode ; le problème identifié est **UX / lisibilité**, pas une invalidité technique ;
+- les alias sont actuellement affichés sous le nom du Produit via un texte du type `Aucun synonyme métier` ou la liste des synonymes. Cette information n'a pas d'utilité opérationnelle suffisante dans la liste principale et crée du bruit visuel ;
+- les alias restent une donnée conservée : ils participent notamment à la recherche et à la déduplication. La dette porte sur leur **projection dans le tableau**, pas sur leur suppression du modèle ;
 - la vue Platform regroupe actuellement un `CanonicalProduct` par ligne et affiche ses 0..n `ProductVariant` dans la même cellule. Ce regroupement explique le conteneur interne mais doit être réévalué visuellement ;
 - le contrat Workspace impose déjà une vue plus opérationnelle où une ligne représente une Référence Produit exploitable. La vue Platform peut conserver une logique de gouvernance différente, mais cette différence doit être compréhensible et explicitement assumée.
 
@@ -292,17 +306,19 @@ En revanche, l'UI actuelle prête à confusion :
 
 #### Tableau Référentiel
 
-6. revoir l'intitulé `Références` ; le libellé candidat le plus explicite est `Références Produit`, sous réserve de validation UX finale ;
-7. conserver la distinction métier `CanonicalProduct / ProductVariant` : une simplification visuelle ne doit pas fusionner ces deux identités ;
-8. supprimer l'effet « carte dans la cellule » ou le remplacer par une présentation compacte cohérente avec les autres tableaux du produit ;
-9. déterminer la meilleure projection Platform parmi les options suivantes sans modifier le modèle métier :
-   - conserver une ligne par Produit et présenter les Références Produit en texte/liste compacte ;
-   - afficher un compteur de Références et accéder au détail via le drawer ;
-   - n'afficher en ligne qu'une information synthétique lorsque le Produit n'a qu'une Référence et réserver la liste complète au drawer ;
-10. éviter toute ambiguïté avec les **références fournisseur** de M-003 : le vocabulaire Platform doit employer explicitement `Référence Produit` lorsqu'il désigne un `ProductVariant` ;
-11. vérifier l'utilité réelle des colonnes `Produit`, `Statut` et `Références Produit` ensemble afin de supprimer les redondances visuelles sans masquer une donnée nécessaire à la gouvernance ;
-12. conserver `DataTable` partagé et ses conventions ; ne pas créer un tableau spécifique au Référentiel Produits ;
-13. ajouter les tests backend/frontend nécessaires pour le compteur de catégories, la navigation contextualisée, les actions de cycle de vie et la projection retenue du tableau Référentiel.
+6. afficher dans la cellule `Produit` uniquement le nom métier du Produit ; ne plus afficher les alias/synonymes sous le nom dans la liste principale ;
+7. conserver les alias dans le modèle, la recherche, la déduplication et les écrans de détail/édition lorsque cela est pertinent ;
+8. supprimer la colonne `Références` si la projection suivante est validée :
+   - le nom du Produit devient le point d'accès à une infobulle ;
+   - au survol **et au focus clavier** du nom, l'infobulle liste les Références Produit exploitables associées ;
+   - si aucune Référence Produit n'existe, l'infobulle peut indiquer cette absence sans ajouter une colonne permanente ;
+   - l'infobulle reste informative : les actions et détails importants doivent rester accessibles sans dépendre exclusivement du survol ;
+9. conserver la distinction métier `CanonicalProduct / ProductVariant` : une simplification visuelle ne doit pas fusionner ces deux identités ;
+10. supprimer l'effet « carte dans la cellule » actuellement produit par les conteneurs bordés des Références ;
+11. éviter toute ambiguïté avec les **références fournisseur** de M-003 : lorsqu'une Référence Produit doit être nommée, employer explicitement `Référence Produit` ;
+12. vérifier l'utilité réelle de chaque colonne du tableau Platform selon sa finalité de gouvernance globale ; ne conserver aucune donnée secondaire sans utilité opérationnelle démontrée ;
+13. conserver `DataTable` partagé et ses conventions ; ne pas créer un tableau spécifique au Référentiel Produits ;
+14. ajouter les tests backend/frontend nécessaires pour le compteur de catégories, la navigation contextualisée, les actions de cycle de vie, l'accessibilité de l'infobulle et la projection retenue du tableau Référentiel.
 
 ### Impact technique attendu
 
