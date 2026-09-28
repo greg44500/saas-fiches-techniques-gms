@@ -275,11 +275,13 @@ const resolveSupplierArticle = async ({
     workspaceId,
     articleId = null,
     productVariantId = null,
+    session = null,
 }) => {
     if (articleId) {
         return findVisibleSupplierArticle({
             workspaceId,
             articleId,
+            session,
         });
     }
 
@@ -296,6 +298,7 @@ const resolveSupplierArticle = async ({
             status: PRODUCT_STATUS.ACTIVE,
             identityActive: true,
         })
+            .session(session)
             .select('_id')
             .lean();
 
@@ -331,7 +334,8 @@ const resolveSupplierArticle = async ({
                 supplierReference: 1,
                 _id: 1,
             })
-            .limit(3);
+            .limit(3)
+            .session(session);
 
     const usable = candidates.filter(
         (article) =>
@@ -652,6 +656,7 @@ const listNegotiatedPrices = async ({
     await assertDossier({
         workspaceId,
         dossierId,
+        session,
     });
 
     const filter = {
@@ -954,6 +959,7 @@ const listInvoicedPrices = async ({
                 invoiceDate: -1,
                 _id: -1,
             })
+            .session(session)
             .lean();
 
     return prices.map(
@@ -1010,6 +1016,7 @@ const findFreshValidatedInvoice = async ({
     dossierId,
     articleId,
     atDate,
+    session = null,
 }) => {
     const latest =
         await InvoicedPrice.findOne({
@@ -1062,6 +1069,7 @@ const findValidNegotiatedPrice = async ({
     dossierId,
     articleId,
     atDate,
+    session = null,
 }) => NegotiatedPrice.findOne({
     workspace: workspaceId,
     dossier: dossierId,
@@ -1086,12 +1094,14 @@ const findValidNegotiatedPrice = async ({
         validFrom: -1,
         _id: -1,
     })
+    .session(session)
     .lean();
 
 const findApplicableSupplierTariff = async ({
     workspaceId,
     articleId,
     atDate,
+    session = null,
 }) => {
     const tariffs =
         await SupplierTariff.find({
@@ -1150,6 +1160,7 @@ const findApplicableSupplierTariff = async ({
                 _id: -1,
             })
             .limit(3)
+            .session(session)
             .lean();
 
     const applicable =
@@ -1173,6 +1184,7 @@ const findApplicableSupplierTariff = async ({
 
 const getPricingPolicy = async ({
     workspaceId,
+    session = null,
 }) => {
     const policy =
         await WorkspaceSupplierPricingPolicy
@@ -1180,6 +1192,7 @@ const getPricingPolicy = async ({
                 workspace:
                     workspaceId,
             })
+            .session(session)
             .lean();
 
     return policy
@@ -1305,6 +1318,7 @@ const resolveApplicablePrice = async ({
     articleId = null,
     productVariantId = null,
     atDate = new Date(),
+    session = null,
 }) => {
     await assertDossier({
         workspaceId,
@@ -1316,10 +1330,12 @@ const resolveApplicablePrice = async ({
             workspaceId,
             articleId,
             productVariantId,
+            session,
         });
     const policy =
         await getPricingPolicy({
             workspaceId,
+            session,
         });
     const alerts = [];
     const attempted = [];
@@ -1339,6 +1355,7 @@ const resolveApplicablePrice = async ({
                 articleId:
                     article._id,
                 atDate,
+                session,
             });
 
         if (invoice.price) {
@@ -1455,6 +1472,7 @@ const resolveApplicablePrice = async ({
             articleId:
                 article._id,
             atDate,
+            session,
         });
 
     if (tariff) {

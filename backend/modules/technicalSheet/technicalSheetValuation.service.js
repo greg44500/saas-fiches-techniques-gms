@@ -102,6 +102,7 @@ const buildTechnicalSheetValuation = async ({
                     productVariantId:
                         variant._id.toString(),
                     atDate,
+                    session,
                 });
         } catch (error) {
             complete = false;

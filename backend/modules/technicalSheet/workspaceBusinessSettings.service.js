@@ -1,3 +1,10 @@
+import {
+    BUSINESS_ACTIVITY_ACTION,
+    BUSINESS_ACTIVITY_ENTITY_TYPE,
+} from '../businessActivity/businessActivity.registry.js';
+import {
+    createBusinessActivityEvent,
+} from '../businessActivity/businessActivity.service.js';
 import mongoose from 'mongoose';
 
 import {
@@ -80,6 +87,24 @@ const updateTrashRetentionDays = async ({
                         session,
                     },
                 );
+
+        await createBusinessActivityEvent(
+            {
+                workspaceId,
+                actorId,
+                action:
+                    BUSINESS_ACTIVITY_ACTION
+                        .TECHNICAL_SHEET_TRASH_RETENTION_UPDATED,
+                entityType:
+                    BUSINESS_ACTIVITY_ENTITY_TYPE
+                        .WORKSPACE_BUSINESS_SETTINGS,
+                entityId: settings._id,
+                metadata: {
+                    trashRetentionDays,
+                },
+            },
+            { session },
+        );
 
         return serializeWorkspaceBusinessSettings(
             settings,

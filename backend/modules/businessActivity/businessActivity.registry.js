@@ -87,6 +87,10 @@ const BUSINESS_ACTIVITY_ACTION_REGISTRY = Object.freeze({
         value: 'TECHNICAL_SHEET_DEFAULT_MARGIN_UPDATED',
         label: 'Marge cible par défaut modifiée',
     }),
+    TECHNICAL_SHEET_TRASH_RETENTION_UPDATED: Object.freeze({
+        value: 'TECHNICAL_SHEET_TRASH_RETENTION_UPDATED',
+        label: 'Durée de conservation de la corbeille modifiée',
+    }),
     PRODUCT_REFERENCE_CREATED: Object.freeze({
         value: 'PRODUCT_REFERENCE_CREATED',
         label: 'Produit créé dans le référentiel',
@@ -112,6 +116,7 @@ const BUSINESS_ACTIVITY_ENTITY_TYPE = Object.freeze({
     PRODUCT_VARIANT: 'PRODUCT_VARIANT',
     WORKSPACE_PRODUCT: 'WORKSPACE_PRODUCT',
     TECHNICAL_SHEET: 'TECHNICAL_SHEET',
+    WORKSPACE_BUSINESS_SETTINGS: 'WORKSPACE_BUSINESS_SETTINGS',
 });
 
 export {

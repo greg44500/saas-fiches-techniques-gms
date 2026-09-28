@@ -193,6 +193,13 @@ const buildValidationLines = ({
             );
         }
 
+        if (!source.article.supplierName) {
+            throw new AppError(
+                'Le Fournisseur de l’Article est indisponible pour créer le snapshot historique.',
+                409,
+            );
+        }
+
         return {
             kind: line.kind,
             productVariantId:
@@ -224,8 +231,7 @@ const buildValidationLines = ({
             supplierId:
                 source.article.supplierId,
             supplierName:
-                source.article.supplierName
-                ?? 'Fournisseur',
+                source.article.supplierName,
             supplierReference:
                 source.article.supplierReference
                 ?? null,
@@ -261,8 +267,9 @@ const validateTechnicalSheet = async ({
     expectedDraftRevision,
     comment = null,
     atDate = new Date(),
-}) => mongoose.connection.transaction(
-    async (session) => {
+}) => {
+    const result = await mongoose.connection.transaction(
+        async (session) => {
         await assertOperationalDossier({
             workspaceId,
             dossierId,
@@ -353,13 +360,9 @@ const validateTechnicalSheet = async ({
                 { session },
             );
 
-            const error = new AppError(
-                'Les données économiques ont changé. Une revalorisation est obligatoire.',
-                409,
-            );
-            error.code =
-                'TECHNICAL_SHEET_REVALUATION_REQUIRED';
-            throw error;
+            return {
+                revaluationRequired: true,
+            };
         }
 
         const previousValidation =
@@ -490,8 +493,21 @@ const validateTechnicalSheet = async ({
             sheetRevision:
                 updatedSheet.revision,
         };
-    },
-);
+        },
+    );
+
+    if (result.revaluationRequired) {
+        const error = new AppError(
+            'Les données économiques ont changé. Une revalorisation est obligatoire.',
+            409,
+        );
+        error.code =
+            'TECHNICAL_SHEET_REVALUATION_REQUIRED';
+        throw error;
+    }
+
+    return result;
+};
 
 const listTechnicalSheetHistory = async ({
     workspaceId,
