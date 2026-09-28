@@ -28,6 +28,18 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
     vi.fn(),
     { isLoading: false },
   ],
+  useGetWorkspaceBusinessSettingsQuery: () => ({
+    data: {
+      trashRetentionDays: 30,
+    },
+    isError: false,
+    isLoading: false,
+    refetch: vi.fn(),
+  }),
+  useUpdateWorkspaceTrashRetentionMutation: () => [
+    vi.fn(),
+    { isLoading: false },
+  ],
 }));
 
 vi.mock('@/features/workspace/components/workspace-context', () => ({

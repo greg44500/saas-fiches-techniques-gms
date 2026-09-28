@@ -607,7 +607,7 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
 
   await expectVisibleToast(
     page,
-    'Fiche technique purgée définitivement',
+    'Fiche technique supprimée définitivement',
   );
 
   await expect(
