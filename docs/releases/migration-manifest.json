@@ -120,6 +120,12 @@
       "script": "migration:m002-catalog",
       "runner": "backend/migrations/runEnsureM002CatalogMigration.js",
       "dependsOn": []
+    },
+    {
+      "id": "m003-supplier-catalog",
+      "script": "migration:m003-supplier-catalog",
+      "runner": "backend/migrations/runEnsureM003SupplierCatalogMigration.js",
+      "dependsOn": []
     }
   ]
 }
