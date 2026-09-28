@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
 
 **Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
-**Dernière mise à jour :** 2026-09-27  
+**Dernière mise à jour :** 2026-09-28  
 **Périmètre :** définition du problème métier, des principes produit et des invariants à préserver avant tout module métier
 
 > Ce document formalise les fondations transversales validées du produit.  
@@ -1348,19 +1348,30 @@ Exemples :
 8,13 € → 8,50 €
 ```
 
-Le Workspace peut, lorsque sa capability le permet, choisir une autre stratégie structurée, par exemple « euro supérieur - 0,10 € » pour obtenir une terminaison en `,90`. La stratégie ne peut jamais produire un Prix conseillé inférieur au Prix théorique. Aucune formule arbitraire exécutable n'est acceptée.
+Pour M-004 V1, cette règle de multiple de 0,50 € est la règle fonctionnelle effective. Les stratégies d'arrondi personnalisées restent différées à un cadrage ultérieur et ne doivent pas être implémentées implicitement dans M-004.
 
 #### 8.8.4 Prix définitif
 
 Le Prix définitif est un choix humain.
 
-Invariant backend :
+Le Prix conseillé est proposé par défaut, mais l'utilisateur autorisé peut retenir un Prix définitif supérieur, égal ou inférieur au Prix conseillé.
+
+Invariant backend M-004 :
 
 ```text
-Prix définitif TTC >= Prix conseillé TTC
+Prix définitif TTC >= plancher économique TTC
 ```
 
-Si une revalorisation rend le Prix définitif inférieur au nouveau Prix conseillé, le DRAFT devient non conforme jusqu'à ajustement du prix ou de la composition.
+avec :
+
+```text
+plancher économique TTC
+= Coût total de fabrication HT × (1 + TVA)
+```
+
+Le Prix conseillé reste un indicateur d'aide à la décision et non un plancher obligatoire.
+
+Si une revalorisation rend un Prix définitif choisi explicitement inférieur au nouveau plancher économique, la validation est refusée jusqu'à correction explicite. Un Prix final choisi par l'utilisateur n'est jamais remplacé silencieusement par une revalorisation.
 
 #### 8.8.5 Marge réelle
 
@@ -2078,23 +2089,27 @@ La baseline validée est la suivante ; les permissions effectives restent l'auto
 | Valider Prix facturés | Oui | Non | Oui | Non | Non | Non |
 | Exécuter une revue tarifaire | Oui | Non | Oui | Non | Non | Non |
 | Gérer Références favorites | Oui | Oui | Oui | Oui | Non | Non |
+| Consulter les Fiches techniques autorisées | Oui | Oui | Oui | Oui | Oui | Oui |
 | Créer une Fiche technique | Oui | Non | Non | Oui | Oui | Non |
-| Modifier ses DRAFTS | Oui | Non | Non | Oui | Oui | Non |
-| Modifier les DRAFTS d'autrui | Oui | Non | Non | Oui | Non | Non |
-| Revaloriser ses fiches | Oui | Non | Oui | Oui | Oui | Non |
-| Revaloriser toute fiche du périmètre | Oui | Non | Oui | Oui | Non | Non |
+| Modifier identité / base d'une Fiche | Oui | Non | Non | Oui | Oui | Non |
+| Modifier la composition | Oui | Non | Non | Oui | Oui | Non |
+| Choisir / changer l'Article d'une Fiche | Oui | Oui | Oui | Oui | Oui | Non |
+| Valoriser / revaloriser une Fiche | Oui | Oui | Oui | Oui | Oui | Non |
 | Valider une Fiche technique | Oui | Non | Non | Oui | Non | Non |
-| Archiver / restaurer une fiche | Oui | Non | Non | Oui | Non | Non |
-| Consulter les Fiches techniques | Oui | Selon besoin | Oui | Oui | Oui | Oui |
-| Modifier les informations d'un Dossier | Oui | Non | Non | Non par défaut | Non | Non |
+| Archiver / réactiver une Fiche | Oui | Non | Non | Oui | Non | Non |
+| Supprimer une Fiche vers la corbeille | Oui | Non | Non | Oui | Non | Non |
+| Restaurer une Fiche | Oui | Non | Non | Oui | Non | Non |
+| Copier une Fiche | Oui | Non | Non | Oui | Oui | Non |
+| Modifier la marge cible par défaut du Dossier | Oui | Non | Non | Oui | Non | Non |
+| Purger définitivement une Fiche | Oui uniquement | Non | Non | Non | Non | Non |
+| Modifier les informations générales d'un Dossier | Oui | Non | Non | Non par défaut | Non | Non |
 | Gérer les accès Dossier | Oui | Non | Non | Non | Non | Non |
 | Changer le statut d'un Dossier | Oui | Non | Non | Non | Non | Non |
 | Lire la configuration métier | Oui | Oui | Oui | Oui | Oui | Oui |
-| Modifier la configuration métier | Oui | Non | Non | Non | Non | Non |
-| Suppression définitive d'une fiche | Oui uniquement | Non | Non | Non | Non | Non |
 
-L'Économe ne valide pas les Fiches techniques par défaut. Contributeur et Lecteur peuvent recevoir le Prix applicable nécessaire sans accès à l'historique commercial détaillé. L'administration du Dossier et l'affectation des magasins restent Owner-only par défaut.
+Les Fiches et brouillons n'appartiennent pas personnellement à leur créateur. `createdBy` et `updatedBy` servent à l'audit, pas à l'ownership. Un Contributeur FT peut donc modifier les brouillons autorisés de son périmètre Dossier selon ses permissions effectives.
 
+L'Économe ne valide pas les Fiches techniques par défaut. Acheteur et Économe peuvent intervenir sur le choix d'Article et la revalorisation sans recevoir le droit de modifier la recette. Contributeur et Lecteur peuvent recevoir le Prix applicable nécessaire sans accès à l'historique commercial détaillé. L'administration générale du Dossier et l'affectation des magasins restent Owner-only par défaut ; la marge cible par défaut des Fiches est un paramètre métier M-004 distinct, modifiable également par le Responsable FT.
 
 ## 14. V1 / hors V1
 
@@ -2107,8 +2122,9 @@ M-001 → Dossiers / Magasins + affectations
 M-002 → Référentiel Produits
 M-003 → Fournisseurs + Articles + prix/catalogues
 M-004 → Fiches techniques + valorisation
+Bloc V1 après stabilisation M-004 → CSV / XLSX / PDF / impression / e-mail
 M-005 → Atelier d'optimisation Premium
-M-006+ → Fiches process / imports / OCR / extensions
+M-006+ → Fiches process / OCR / IA / autres extensions
 ```
 
 Sont explicitement différés et non bloquants pour M-001 :
@@ -2116,7 +2132,7 @@ Sont explicitement différés et non bloquants pour M-001 :
 - marge semi-nette ;
 - Fiche process ;
 - mathématiques fines de l'Atelier d'optimisation ;
-- ensemble complet des stratégies d'arrondi personnalisées ;
+- stratégies d'arrondi personnalisées au-delà du multiple de 0,50 € V1 ;
 - OCR / IA ;
 - imports avancés ;
 - purge physique définitive ;
@@ -2136,7 +2152,7 @@ Décisions finales fermées le 2026-09-20 :
 - contraintes réglementaires structurantes de M-001 vérifiées : les éventuelles coordonnées nominatives sont des données personnelles à minimiser et protéger, mais aucune obligation démontrée n'impose un champ métier obligatoire supplémentaire au Dossier ;
 - conformité globale et rétention restent suivies par D-003 / D-006 avant production.
 
-Les questions restantes sont désormais rattachées au module concerné : M-002 est fermé ; M-003 dispose d'un contrat détaillé validé et peut passer à l'implémentation ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge physique lorsqu'un besoin réel l'exigera.
+Les questions restantes sont désormais rattachées au module concerné : M-002 et M-003 sont clôturés ; M-004 dispose d'un contrat fonctionnel validé ; les exports CSV/XLSX/PDF, l'impression et l'e-mail appartiennent à la V1 mais seront cadrés et développés dans un bloc séparé après stabilisation visuelle de M-004 ; optimisation avant M-005 ; Process avant son module.
 
 La validation globale n'autorise pas encore l'implémentation de M-001 : son contrat détaillé doit d'abord être cadré et validé.
 
