@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, FileUp, Pencil, Plus } from 'lucide-react';
+import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { DataTable, DataTableActions } from '@/components/data-display/data-table';
@@ -11,6 +11,11 @@ import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -39,8 +44,6 @@ import {
   getApiErrorMessage,
   getCategoryStatusLabel,
   getConservationTypeLabel,
-  getProductStatusLabel,
-  getProductStatusTone,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 import { useDataPagination } from '@/hooks/use-data-pagination';
@@ -137,6 +140,16 @@ function ProductReferencePage({ canManage }) {
     setDrawerState({ open: true, productId });
   }
 
+  function openCategoryProducts(category) {
+    setSection('reference');
+    setSearch('');
+    setSearchInput('');
+    setCategoryId(category.id);
+    setReferenceStatus('ACTIVE');
+    setContributionStatus('PENDING_REVIEW');
+    setPage(1);
+  }
+
   async function decideContribution(contribution, decision) {
     try {
       await reviewContribution({
@@ -189,61 +202,60 @@ function ProductReferencePage({ canManage }) {
       id: 'name',
       header: 'Produit',
       cell: (product) => (
-        <div>
-          <p className="font-medium">{product.name}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {product.aliases?.length ? product.aliases.join(', ') : 'Aucun synonyme métier'}
-          </p>
-        </div>
+        <Tooltip>
+          <TooltipTrigger
+            render={(
+              <button
+                aria-label={'Références Produit de ' + product.name}
+                className="rounded-sm text-left font-medium underline decoration-dotted underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                type="button"
+              />
+            )}
+          >
+            {product.name}
+          </TooltipTrigger>
+          <TooltipContent align="start" className="max-w-80">
+            <div className="space-y-2">
+              <p className="font-medium">Références Produit</p>
+              {product.variants?.length ? (
+                <ul className="space-y-1.5">
+                  {product.variants.map((variant) => {
+                    const details = [
+                      variant.conservationType
+                        ? getConservationTypeLabel(
+                          metadata,
+                          variant.conservationType,
+                        )
+                        : null,
+                      variant.status === 'ARCHIVED' ? 'Archivée' : null,
+                    ].filter(Boolean);
+
+                    return (
+                      <li key={variant.id}>
+                        <span className="font-medium">
+                          {getVariantLabel(variant)}
+                        </span>
+                        {details.length > 0 && (
+                          <span className="opacity-80">
+                            {' · ' + details.join(' · ')}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p>Aucune Référence Produit exploitable</p>
+              )}
+            </div>
+          </TooltipContent>
+        </Tooltip>
       ),
     },
     {
       id: 'category',
       header: 'Catégorie',
       cell: (product) => product.category?.name ?? 'Catégorie non renseignée',
-    },
-    {
-      id: 'status',
-      header: 'Statut',
-      cell: (product) => (
-        <StatusBadge tone={getProductStatusTone(product.status)}>
-          {getProductStatusLabel(metadata, product.status)}
-        </StatusBadge>
-      ),
-    },
-    {
-      id: 'variants',
-      header: 'Références',
-      cell: (product) => {
-        if (!product.variants?.length) {
-          return (
-            <p className="text-sm text-muted-foreground">
-              Aucune référence exploitable
-            </p>
-          );
-        }
-
-        return (
-          <div className="space-y-2">
-            {product.variants.map((variant) => (
-              <div
-                className="rounded-md border border-border/70 p-3"
-                key={variant.id}
-              >
-                <p className="font-medium">{getVariantLabel(variant)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {[
-                    variant.conservationType
-                      ? getConservationTypeLabel(metadata, variant.conservationType)
-                      : null,
-                    variant.status === 'ARCHIVED' ? 'Archivée' : null,
-                  ].filter(Boolean).join(' · ')}
-                </p>
-              </div>
-            ))}
-          </div>
-        );
-      },
     },
     {
       id: 'actions',
@@ -364,16 +376,38 @@ function ProductReferencePage({ canManage }) {
     {
       id: 'name',
       header: 'Catégorie',
-      cell: (category) => <span className="font-medium">{category.name}</span>,
+      cell: (category) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{category.name}</span>
+          {category.status === 'ARCHIVED' && (
+            <StatusBadge tone="neutral">
+              {getCategoryStatusLabel(metadata, category.status)}
+            </StatusBadge>
+          )}
+        </div>
+      ),
     },
     {
-      id: 'status',
-      header: 'Statut',
-      cell: (category) => (
-        <StatusBadge tone={category.status === 'ACTIVE' ? 'success' : 'neutral'}>
-          {getCategoryStatusLabel(metadata, category.status)}
-        </StatusBadge>
-      ),
+      id: 'activeProducts',
+      header: 'Produits actifs',
+      cell: (category) => {
+        const activeProductCount = category.activeProductCount ?? 0;
+
+        if (activeProductCount === 0) {
+          return <span>0</span>;
+        }
+
+        return (
+          <button
+            aria-label={'Voir les Produits actifs de ' + category.name}
+            className="rounded-sm font-medium underline underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => openCategoryProducts(category)}
+            type="button"
+          >
+            {activeProductCount}
+          </button>
+        );
+      },
     },
     {
       id: 'actions',
@@ -388,13 +422,18 @@ function ProductReferencePage({ canManage }) {
               tooltipLabel="Renommer"
               variant="outline"
             />
-            <Button
+            <ActionIconButton
+              Icon={category.status === 'ACTIVE' ? Archive : RotateCcw}
+              label={
+                (category.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
+                + category.name
+              }
               onClick={() => setCategoryLifecycle(category)}
-              type="button"
+              tooltipLabel={
+                category.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
+              }
               variant="outline"
-            >
-              {category.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
-            </Button>
+            />
           </DataTableActions>
         ) : null
       ),

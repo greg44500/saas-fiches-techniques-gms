@@ -9,7 +9,7 @@ import {
 } from '../businessActivity/businessActivity.service.js';
 import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
-import { ProductCategory } from './productCategory.model.js';
+import { listProductCategories } from './productCategoryProjection.service.js';
 import { ProductCharacteristic } from './productCharacteristic.model.js';
 import {
     findProductDuplicateCandidates,
@@ -21,7 +21,6 @@ import {
     normalizeProductText,
 } from './productCatalog.normalization.js';
 import {
-    PRODUCT_CATEGORY_STATUS,
     PRODUCT_CATEGORY_STATUS_REGISTRY,
     PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
@@ -371,14 +370,12 @@ const attachVariantToWorkspaceInSession = async ({
 
 const getProductMetadata = async ({
     includeArchivedCategories = false,
+    includeCategoryUsage = false,
 } = {}) => {
-    const categories = await ProductCategory.find(
-        includeArchivedCategories
-            ? {}
-            : { status: PRODUCT_CATEGORY_STATUS.ACTIVE },
-    )
-        .sort({ name: 1, _id: 1 })
-        .lean();
+    const categories = await listProductCategories({
+        includeArchived: includeArchivedCategories,
+        includeActiveProductCount: includeCategoryUsage,
+    });
 
     return {
         productStatuses: Object.values(PRODUCT_STATUS_REGISTRY),
@@ -402,11 +399,7 @@ const getProductMetadata = async ({
                 processingStates: [...definition.processingStates],
             }),
         ),
-        categories: categories.map((category) => ({
-            id: category._id.toString(),
-            name: category.name,
-            status: category.status,
-        })),
+        categories,
     };
 };
 
