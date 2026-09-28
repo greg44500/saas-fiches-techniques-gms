@@ -31,6 +31,18 @@ const dossierLocationSchema = new Schema(
     },
 );
 
+const technicalSheetSettingsSchema = new Schema(
+    {
+        defaultTargetMarginBasisPoints: {
+            type: Number,
+            min: 0,
+            max: 9999,
+            default: null,
+        },
+    },
+    { _id: false },
+);
+
 const dossierSchema = new Schema(
     {
         workspace: {
@@ -73,6 +85,12 @@ const dossierSchema = new Schema(
             trim: true,
             maxlength: 160,
             default: null,
+        },
+        technicalSheetSettings: {
+            type: technicalSheetSettingsSchema,
+            default: () => ({
+                defaultTargetMarginBasisPoints: null,
+            }),
         },
         status: {
             type: String,
