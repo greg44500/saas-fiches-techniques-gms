@@ -52,7 +52,7 @@ Le Core v1.2.1 fournit déjà les primitives génériques nécessaires :
 - mécanismes génériques de rétention ;
 - contrôle de concurrence applicable aux écritures métier.
 
-Le contrat fonctionnel M-004 ne demande aucune règle métier au Core. La conception technique du 2026-09-28 a toutefois démontré un gap générique du moteur de rétention v1.2.1 pour les ressources dont l'échéance de purge est figée individuellement (`purgeScheduledAt`) avec une durée effective pouvant varier par Workspace. Ce gap doit être traité dans le Core avant la purge planifiée M-004 ; aucun contournement local ne doit être introduit dans le produit.
+Le contrat fonctionnel M-004 ne demande aucune évolution du Core. La corbeille des Fiches techniques, sa configuration par Workspace, le calcul de `purgeScheduledAt` et le job de purge automatique sont des responsabilités du module métier produit. Le moteur de rétention Core v1.2.1 reste inchangé et n'est pas détourné pour ce besoin Workspace-scoped.
 
 ---
 
@@ -673,7 +673,30 @@ La restauration remet la Fiche dans son dernier état métier pertinent antérie
 
 La purge définitive détruit la Fiche complète et libère alors seulement son unité de capacité.
 
-La conception technique doit s'intégrer au mécanisme générique de rétention via les points d'extension applicatifs ; elle ne doit pas dupliquer un moteur de rétention Core.
+La corbeille M-004 est gérée dans le produit, sans modification du Core.
+
+Politique validée :
+
+```text
+configuration par Workspace
+durée par défaut = 30 jours
+minimum = 1 jour
+maximum = 90 jours
+```
+
+Lors de chaque suppression :
+
+```text
+deletedAt
++ durée du Workspace au moment de la suppression
+→ purgeScheduledAt figé
+```
+
+Une modification ultérieure du réglage du Workspace n'est pas rétroactive sur les Fiches déjà en corbeille.
+
+Un job métier unique et idempotent recherche périodiquement toutes les Fiches `DELETED` dont `purgeScheduledAt <= maintenant` et purge chaque agrégat éligible. Il n'existe pas un scheduler distinct par Workspace.
+
+Le Workspace Owner peut modifier la durée de conservation et conserve la permission de purge définitive manuelle.
 
 ---
 
@@ -814,6 +837,7 @@ Matrice fonctionnelle validée :
 | Restaurer depuis corbeille | Oui | Oui | Non | Non | Non |
 | Copier | Oui | Oui | Oui | Non | Non |
 | Modifier la marge par défaut du Dossier | Oui | Oui | Non | Non | Non |
+| Modifier la durée de corbeille du Workspace | Oui | Non | Non | Non | Non |
 | Purger définitivement | Oui | Non | Non | Non | Non |
 
 Un Économe/Acheteur peut modifier l'Article retenu et revaloriser sans obtenir le droit de modifier la recette.
