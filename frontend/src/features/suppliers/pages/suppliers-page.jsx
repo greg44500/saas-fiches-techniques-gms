@@ -83,7 +83,7 @@ function SuppliersPage() {
   const [section, setSection] = useState('suppliers');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('ACTIVE');
+  const [status, setStatus] = useState(ALL_SUPPLIER_STATUSES);
   const [supplierDialog, setSupplierDialog] = useState({
     open: false,
     supplier: null,

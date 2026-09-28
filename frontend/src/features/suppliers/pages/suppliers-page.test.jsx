@@ -199,9 +199,13 @@ describe('SuppliersPage', () => {
       expect.objectContaining({
         page: 1,
         limit: 10,
+        status: 'ALL',
       }),
     );
 
+    expect(screen.getByRole('combobox', {
+      name: 'Filtrer par statut',
+    })).toHaveTextContent('Tous');
     expect(screen.getByText('Sysco partagé')).toBeInTheDocument();
     expect(screen.getByText('Fournisseur local')).toBeInTheDocument();
     expect(screen.getByText(/Référentiel partagé/)).toBeInTheDocument();
@@ -235,15 +239,10 @@ describe('SuppliersPage', () => {
       .toBeDisabled();
   });
 
-  it('affiche Tous et permet de réactiver un Fournisseur archivé', async () => {
+  it('affiche tous les Fournisseurs par défaut et permet de réactiver un archivé', async () => {
     const user = userEvent.setup();
 
     renderPage();
-
-    await user.click(screen.getByRole('combobox', {
-      name: 'Filtrer par statut',
-    }));
-    await user.click(screen.getByRole('option', { name: 'Tous' }));
 
     expect(mocks.listSuppliers).toHaveBeenLastCalledWith(
       expect.objectContaining({
