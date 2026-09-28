@@ -204,7 +204,7 @@ Les données initiales sont :
 
 ## 8. Fournisseurs et catalogues initiaux — M-003
 
-Après validation et implémentation de M-003, les catalogues déjà disponibles peuvent servir de base aux bêta-tests.
+Le contrat M-003 est validé dans `docs/m003/M-003-FINAL-CONTRACT.md`. Après implémentation du moteur M-003, les catalogues déjà disponibles peuvent servir de base aux bêta-tests.
 
 Ils suivent le contrat de portée :
 

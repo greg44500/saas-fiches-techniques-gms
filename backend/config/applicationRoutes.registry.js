@@ -5,6 +5,19 @@ import {
 import {
     productCatalogRouter,
 } from '../modules/productCatalog/productCatalog.routes.js';
+import {
+    supplierArticleRouter,
+    supplierReferenceGlobalRouter,
+    supplierRouter,
+} from '../modules/supplierCatalog/supplierReference.routes.js';
+import {
+    supplierCatalogGlobalRouter,
+    supplierCatalogRouter,
+} from '../modules/supplierCatalog/supplierCatalog.routes.js';
+import {
+    dossierSupplierPricingRouter,
+    supplierPricingPolicyRouter,
+} from '../modules/supplierCatalog/supplierPricing.routes.js';
 
 const ROUTE_MODULE_KEY_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
@@ -135,6 +148,41 @@ const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
         key: 'product-reference-governance',
         mountPath: '/api/product-reference',
         router: productCatalogGlobalRouter,
+    }),
+    Object.freeze({
+        key: 'suppliers',
+        mountPath: '/api/workspaces/:workspaceId/suppliers',
+        router: supplierRouter,
+    }),
+    Object.freeze({
+        key: 'supplier-articles',
+        mountPath: '/api/workspaces/:workspaceId/supplier-articles',
+        router: supplierArticleRouter,
+    }),
+    Object.freeze({
+        key: 'supplier-reference-governance',
+        mountPath: '/api/supplier-reference',
+        router: supplierReferenceGlobalRouter,
+    }),
+    Object.freeze({
+        key: 'supplier-catalogs',
+        mountPath: '/api/workspaces/:workspaceId/supplier-catalogs',
+        router: supplierCatalogRouter,
+    }),
+    Object.freeze({
+        key: 'supplier-catalog-governance',
+        mountPath: '/api/supplier-reference/catalogs',
+        router: supplierCatalogGlobalRouter,
+    }),
+    Object.freeze({
+        key: 'dossier-supplier-pricing',
+        mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/supplier-pricing',
+        router: dossierSupplierPricingRouter,
+    }),
+    Object.freeze({
+        key: 'supplier-pricing-policy',
+        mountPath: '/api/workspaces/:workspaceId/supplier-pricing-policy',
+        router: supplierPricingPolicyRouter,
     }),
 ]);
 

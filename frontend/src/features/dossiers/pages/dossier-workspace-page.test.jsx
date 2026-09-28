@@ -57,6 +57,7 @@ describe('DossierWorkspacePage', () => {
   beforeEach(() => {
     mocks.params.mockReturnValue({ dossierId: 'dossier-1' });
     mocks.workspaceContext.mockReturnValue({
+      canAny: vi.fn(() => false),
       workspace: { id: 'workspace-1', name: 'Acme' },
     });
     mocks.metadataQuery.mockReturnValue(queryResult(metadata));

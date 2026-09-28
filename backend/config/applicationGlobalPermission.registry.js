@@ -2,6 +2,9 @@ import {
     PRODUCT_CATALOG_GLOBAL_PERMISSION_MODULE,
 } from '../modules/productCatalog/productCatalogGlobalPermission.registry.js';
 import {
+    SUPPLIER_CATALOG_GLOBAL_PERMISSION_MODULE,
+} from '../modules/supplierCatalog/supplierCatalogGlobalPermission.registry.js';
+import {
     ACTIVE_PLATFORM_PERMISSION_REGISTRY,
 } from './applicationPlatformPermission.registry.js';
 import {
@@ -22,6 +25,7 @@ import {
  */
 const APPLICATION_GLOBAL_PERMISSION_MODULES = Object.freeze([
     PRODUCT_CATALOG_GLOBAL_PERMISSION_MODULE,
+    SUPPLIER_CATALOG_GLOBAL_PERMISSION_MODULE,
 ]);
 
 const ACTIVE_APPLICATION_GLOBAL_PERMISSION_REGISTRY =

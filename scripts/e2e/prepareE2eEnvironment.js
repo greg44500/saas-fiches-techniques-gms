@@ -26,6 +26,11 @@ async function prepareE2eEnvironment() {
   } = await import(
     '../../backend/seeds/seedM002ProductGovernance.js'
   );
+  const {
+    seedM003ReferenceGovernance,
+  } = await import(
+    '../../backend/seeds/seedM003ReferenceGovernance.js'
+  );
 
   await connectDB(process.env.MONGODB_URI);
 
@@ -42,6 +47,9 @@ async function prepareE2eEnvironment() {
 
     const founderId = await resolveM002GovernanceFounderId();
     await seedM002ProductGovernance({
+      userId: founderId,
+    });
+    await seedM003ReferenceGovernance({
       userId: founderId,
     });
   } finally {

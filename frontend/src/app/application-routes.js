@@ -3,6 +3,7 @@ import {
 } from '@/features/help/help-routes';
 import { dossiersFrontendRouteModule } from '@/features/dossiers/dossiers-routes';
 import { productsFrontendRouteModule } from '@/features/products/products-routes';
+import { suppliersFrontendRouteModule } from '@/features/suppliers/suppliers-routes';
 
 const APPLICATION_ROUTE_COLLECTION_KEYS = Object.freeze([
   'publicRoutes',
@@ -101,6 +102,7 @@ function composeApplicationFrontendRoutes(modules = []) {
 const APPLICATION_FRONTEND_ROUTE_MODULES = Object.freeze([
   dossiersFrontendRouteModule,
   productsFrontendRouteModule,
+  suppliersFrontendRouteModule,
 ]);
 
 const APPLICATION_FRONTEND_ROUTES = composeApplicationFrontendRoutes([

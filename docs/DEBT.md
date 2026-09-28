@@ -238,6 +238,128 @@ Cette dette n'autorise pas à modifier sous couvert de design :
 
 Une régression fonctionnelle réelle doit être corrigée comme telle ; une nouvelle fonctionnalité doit être recadrée dans le module approprié.
 
+
+
+### GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité du tableau
+
+**Statut :** DIFFÉRÉ — à traiter après clôture de M-003 dans un lot M-002 UX dédié  
+**Périmètre :** produit `saas-fiches-techniques-gms` — M-002 / Platform / Référentiel Produits  
+**Blocage M-003 :** non
+
+### Constat A — onglet Catégories
+
+- dans `Platform → Référentiel Produits → Catégories`, la colonne `Statut` apporte peu d'information opérationnelle par rapport à l'action de cycle de vie disponible ;
+- la liste des catégories ne fournit actuellement aucun indicateur du nombre de Produits qui leur sont affectés ;
+- le backend refuse l'archivage d'une catégorie dès qu'au moins un Produit actif lui est encore affecté, avec un conflit `409` ;
+- l'utilisateur découvre donc cette dépendance seulement au moment de l'archivage et ne dispose pas, depuis l'onglet Catégories, d'un chemin direct pour identifier les Produits concernés ;
+- l'action de cycle de vie utilise encore un bouton texte `Archiver / Réactiver`, contrairement à la convention d'actions de tableau reposant sur `ActionIconButton` + icône + infobulle.
+
+### Constat B — onglet Référentiel / lisibilité des colonnes
+
+Finalité métier confirmée de la surface Platform :
+
+```text
+Platform → Référentiel Produits
+→ gouverner et mettre à disposition un référentiel Produit global
+→ fournir des Produits utilisables pour tester le SaaS
+→ fournir un socle lorsque le Workspace ne dispose pas encore de son propre catalogue ou de suffisamment de données
+→ ne pas devenir une vue analytique détaillée du modèle Produit
+```
+
+Conséquence UX : le tableau principal doit rester volontairement sobre. Une donnée ne doit être affichée en permanence que si elle aide réellement l'administrateur à gouverner ce référentiel global.
+
+Le modèle M-002 distingue volontairement :
+
+```text
+CanonicalProduct
+→ concept Produit global
+
+ProductVariant
+→ rôle métier actif = Référence Produit exploitable
+```
+
+La colonne frontend actuellement intitulée `Références` correspond donc techniquement aux `ProductVariant` du Produit. Cette donnée est légitime et ne doit pas être supprimée sans revoir le besoin de gouvernance Platform.
+
+En revanche, l'UI actuelle prête à confusion :
+
+- l'intitulé court `Références` ne permet pas de comprendre immédiatement qu'il s'agit des **Références Produit exploitables** et non de références fournisseur M-003 ;
+- pour un Produit simple dont la première Référence porte le même nom, par exemple `Abricot → Abricot`, la ligne donne une impression de duplication ;
+- chaque Référence est actuellement rendue dans un `div` bordé `rounded-md border ... p-3` à l'intérieur de la cellule du `DataTable`, ce qui produit visuellement une « carte dans le tableau » et brouille la hiérarchie de lecture ;
+- ce `div` n'est pas un problème HTML ou de structure de données en soi : une cellule `td` peut contenir un conteneur bloc et `DataTable` accepte un ReactNode ; le problème identifié est **UX / lisibilité**, pas une invalidité technique ;
+- les alias sont actuellement affichés sous le nom du Produit via un texte du type `Aucun synonyme métier` ou la liste des synonymes. Cette information n'a pas d'utilité opérationnelle suffisante dans la liste principale et crée du bruit visuel ;
+- les alias restent une donnée conservée : ils participent notamment à la recherche et à la déduplication. La dette porte sur leur **projection dans le tableau**, pas sur leur suppression du modèle ;
+- la vue Platform regroupe actuellement un `CanonicalProduct` par ligne et affiche ses 0..n `ProductVariant` dans la même cellule. Ce regroupement explique le conteneur interne mais doit être réévalué visuellement ;
+- le contrat Workspace impose déjà une vue plus opérationnelle où une ligne représente une Référence Produit exploitable. La vue Platform peut conserver une logique de gouvernance différente, mais cette différence doit être compréhensible et explicitement assumée.
+
+### Cible UX à cadrer et implémenter
+
+#### Catégories
+
+1. remplacer la colonne `Statut` par un indicateur d'usage plus utile, au minimum le nombre de **Produits actifs** affectés à chaque catégorie, car ce nombre correspond à la règle backend qui bloque l'archivage ;
+2. décider pendant le cadrage si un compteur total incluant les Produits archivés apporte une valeur supplémentaire ou si le compteur actif suffit ;
+3. permettre depuis la catégorie d'accéder facilement aux Produits qui empêchent son archivage, idéalement en ouvrant l'onglet Référentiel filtré sur cette catégorie, plutôt que de laisser l'utilisateur face à un simple message bloquant ;
+4. conserver l'invariant backend : aucune catégorie contenant un Produit actif ne peut être archivée ;
+5. aligner les actions de cycle de vie sur le design partagé :
+   - `Archive` + infobulle `Archiver` ;
+   - `RotateCcw` + infobulle `Réactiver` ;
+   - `ActionIconButton` dans `DataTableActions`.
+
+#### Tableau Référentiel
+
+6. afficher dans la cellule `Produit` uniquement le nom métier du Produit ; ne plus afficher les alias/synonymes sous le nom dans la liste principale ;
+7. conserver les alias dans le modèle, la recherche, la déduplication et les écrans de détail/édition lorsque cela est pertinent ;
+8. supprimer la colonne `Références` si la projection suivante est validée :
+   - le nom du Produit devient le point d'accès à une infobulle ;
+   - au survol **et au focus clavier** du nom, l'infobulle liste les Références Produit exploitables associées ;
+   - si aucune Référence Produit n'existe, l'infobulle peut indiquer cette absence sans ajouter une colonne permanente ;
+   - l'infobulle reste informative : les actions et détails importants doivent rester accessibles sans dépendre exclusivement du survol ;
+9. conserver la distinction métier `CanonicalProduct / ProductVariant` : une simplification visuelle ne doit pas fusionner ces deux identités ;
+10. supprimer l'effet « carte dans la cellule » actuellement produit par les conteneurs bordés des Références ;
+11. éviter toute ambiguïté avec les **références fournisseur** de M-003 : lorsqu'une Référence Produit doit être nommée, employer explicitement `Référence Produit` ;
+12. vérifier l'utilité réelle de chaque colonne du tableau Platform selon sa finalité de gouvernance globale ; ne conserver aucune donnée secondaire sans utilité opérationnelle démontrée ;
+13. conserver `DataTable` partagé et ses conventions ; ne pas créer un tableau spécifique au Référentiel Produits ;
+14. ajouter les tests backend/frontend nécessaires pour le compteur de catégories, la navigation contextualisée, les actions de cycle de vie, l'accessibilité de l'infobulle et la projection retenue du tableau Référentiel.
+
+### Impact technique attendu
+
+- faire évoluer la projection/liste des catégories côté backend pour exposer un compteur calculé sans requête N+1 ;
+- adapter le contrat RTK Query / sérialisation concerné ;
+- adapter `product-reference-page.jsx` et ses tests ;
+- la revue du tableau Référentiel peut rester purement frontend si aucune nouvelle donnée n'est requise par la projection retenue ;
+- ne pas modifier les invariants M-002 de catégorie, de Produit, de Référence Produit ou d'archivage sous couvert de cette amélioration UX.
+
+### Qualification de blocage
+
+Les constats actuels ne bloquent pas M-003 :
+
+- la distinction `CanonicalProduct / ProductVariant` est cohérente avec le contrat M-002 ;
+- la colonne `Références` affiche bien des données existantes et cohérentes ;
+- le conteneur `div` dans la cellule est valide techniquement ;
+- aucune perte de donnée ni corruption de modèle n'est identifiée ;
+- le défaut porte sur la compréhension, la densité visuelle et la capacité d'action de l'utilisateur Platform.
+
+Cette dette ne doit pas être implémentée sur la branche M-003 : elle appartient au périmètre M-002 et sera traitée dans un lot cohérent après livraison de M-003.
+
+### GMS-CORE-UX-001 — Canoniser le survol de ligne dans DataTable
+
+**Statut :** DIFFÉRÉ / ACCEPTÉ — décision confirmée le 2026-09-28 ; à traiter dans un vrai lot Core UI/UX  
+**Périmètre :** Core / composant partagé `DataTable`  
+**Blocage M-003 :** non
+
+Le composant partagé `DataTable` centralise déjà structure, densité et espacements, mais le survol de ligne reste actuellement fourni par les features via `rowClassName`.
+
+La convention UX produit impose pourtant un survol de ligne homogène pour faciliter le repérage visuel dans les listes. Cette règle doit à terme devenir une convention native de `DataTable`, avec revue globale des autres conventions visuelles des tableaux lors d'un vrai lot Core dédié.
+
+En attendant ce lot :
+
+- aucun composant tableau métier parallèle n'est créé ;
+- les features continuent d'utiliser `DataTable` ;
+- `rowClassName="transition-colors hover:bg-muted/50"` peut rester utilisé pour préserver l'UX attendue ;
+- aucun micro-versionnement Core n'est déclenché uniquement pour déplacer cette classe ;
+- les styles structurels de tableau ne doivent pas être redéfinis écran par écran dans le produit ;
+- M-003 doit conserver le composant partagé et ses points d'extension existants, sans créer un variant de tableau métier ;
+- le futur traitement devra être regroupé avec une revue réelle et globale des conventions UI/UX du `DataTable` Core.
+
 ### D-013 — Configuration et déploiement de production
 
 **Statut :** À CADRER  

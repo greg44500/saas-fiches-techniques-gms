@@ -131,8 +131,19 @@ function ProductsPage() {
     setSearch(nextSearch.trim());
   }
 
+  function changeSearchInput(value) {
+    setSearchInput(value);
+
+    if (!value.trim() && search) {
+      setPage(1);
+      setSearch('');
+    }
+  }
+
   function applySearch(event) {
     event.preventDefault();
+
+    if (!searchInput.trim()) return;
     runSearch(searchInput);
   }
 
@@ -292,7 +303,7 @@ function ProductsPage() {
         <div className="flex items-start gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Produits</h1>
           <InfoTooltip
-            content="Consultez les références de votre Workspace, recherchez le référentiel global et créez une nouvelle référence seulement lorsqu’aucun équivalent n’existe."
+            content="Consultez les références de votre espace de travail, recherchez le référentiel global et créez une nouvelle référence seulement lorsqu’aucun équivalent n’existe."
             label="À propos des Produits"
           />
         </div>
@@ -335,8 +346,8 @@ function ProductsPage() {
       </Tabs>
 
       <section className="rounded-xl border border-border bg-card">
-        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(480px,1fr)_220px_240px]">
-          <form className="flex min-w-0 gap-2" onSubmit={applySearch}>
+        <div className="flex flex-col gap-3 border-b border-border p-4 md:flex-row md:items-center">
+          <form className="flex min-w-0 flex-1 gap-2" onSubmit={applySearch}>
             <div className="min-w-0 flex-1">
               <ProductSearchAutocomplete
                 categoryId={
@@ -351,56 +362,65 @@ function ProductsPage() {
                 }
                 metadata={metadata}
                 onSelect={selectPredictiveResult}
-                onValueChange={setSearchInput}
+                onValueChange={changeSearchInput}
                 scope={canReferenceAccess ? 'REFERENCE' : scope}
                 status={undefined}
                 value={searchInput}
                 workspaceId={workspace.id}
               />
             </div>
-            <Button type="submit" variant="outline">Rechercher</Button>
+            <Button
+              disabled={!searchInput.trim()}
+              type="submit"
+              variant="outline"
+            >
+              Rechercher
+            </Button>
           </form>
 
-          <Select
-            items={categoryItems}
-            onValueChange={(value) => {
-              setCategoryId(value);
-              setPage(1);
-            }}
-            value={categoryId}
-          >
-            <SelectTrigger aria-label="Filtrer par catégorie">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {categoryItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-full md:w-52 md:shrink-0">
+            <Select
+              items={categoryItems}
+              onValueChange={(value) => {
+                setCategoryId(value);
+                setPage(1);
+              }}
+              value={categoryId}
+            >
+              <SelectTrigger aria-label="Filtrer par catégorie">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {categoryItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select
-            items={conservationItems}
-            onValueChange={(value) => {
-              setConservationType(value);
-              setPage(1);
-            }}
-            value={conservationType}
-          >
-            <SelectTrigger aria-label="Filtrer par conservation">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {conservationItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
+          <div className="w-full md:w-56 md:shrink-0">
+            <Select
+              items={conservationItems}
+              onValueChange={(value) => {
+                setConservationType(value);
+                setPage(1);
+              }}
+              value={conservationType}
+            >
+              <SelectTrigger aria-label="Filtrer par conservation">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {conservationItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {initialLoading ? (

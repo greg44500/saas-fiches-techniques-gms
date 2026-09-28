@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 
 **Statut :** VALIDÉ — vocabulaire transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-23
+**Dernière mise à jour :** 2026-09-27
 
 > Ce glossaire fixe le vocabulaire déjà stabilisé pendant le cadrage.  
 > Les termes marqués comme ouverts ne doivent pas être transformés en contrats techniques définitifs.
@@ -370,15 +370,32 @@ Elle est distincte du taux de rendement.
 
 ## Fournisseur
 
-Acteur qui commercialise un ou plusieurs articles correspondant aux Produits du référentiel.
+Acteur qui commercialise un ou plusieurs Articles fournisseur.
 
-Les fournisseurs doivent pouvoir être créés par le client dans son contexte de travail.
+Deux portées existent :
+
+~~~text
+GLOBAL_SHARED
+→ identité commune réutilisable entre Workspaces autorisés
+
+WORKSPACE_PRIVATE
+→ identité appartenant à un seul Workspace
+~~~
+
+Un Fournisseur privé n'est jamais exposé hors de son Workspace.
+
+Le Fournisseur n'est pas un CRM. En baseline V1, seul son nom est obligatoire côté métier ; code fournisseur, raison sociale et site web sont facultatifs.
+
+Son lifecycle baseline est `ACTIVE / ARCHIVED`.
+
 
 ---
 
 ## Article fournisseur
 
-Référence commerciale précise d'un Produit chez un Fournisseur.
+Référence commerciale précise d'une Référence Produit chez un Fournisseur.
+
+La baseline d'identité est `Fournisseur + référence fournisseur`. Une ligne sans référence exploitable ne crée pas automatiquement un Article.
 
 Un même Produit peut avoir plusieurs Articles fournisseur actifs chez un même Fournisseur, par exemple avec des références ou conditionnements différents.
 
@@ -524,7 +541,7 @@ Seul un prix VALIDÉ peut participer à la résolution automatique, sous réserv
 
 Elle se calcule depuis la date de facture.
 
-Le comportement standard retenu est un an ; la représentation technique exacte reste à fixer.
+La baseline V1 retient 12 mois calendaires depuis la date de facture. Cette durée pourra évoluer à partir des tests métier réels.
 
 Une perte de fraîcheur ne retire pas le statut VALIDÉ.
 

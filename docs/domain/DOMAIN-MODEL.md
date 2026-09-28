@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
 
 **Statut :** VALIDÉ — modèle conceptuel transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-23  
+**Dernière mise à jour :** 2026-09-27  
 **Important :** ce document décrit des concepts métier et leurs relations. Il ne constitue pas un schéma Mongoose.
 
 ---
@@ -432,70 +432,95 @@ La migration du contrat Référence Produit est fail-closed lorsqu'un nom ou une
 
 M-002 ne porte jamais Fournisseur, catalogue/édition fournisseur, Article fournisseur, référence fournisseur, conditionnement commercial ou prix.
 
-M-003 portera le contexte économique par Dossier et pourra associer plusieurs offres fournisseurs à une même Référence Produit.
+M-003 porte le contexte économique par Dossier et peut associer plusieurs offres fournisseurs à une même Référence Produit.
+
+Le contrat canonique validé est `docs/m003/M-003-FINAL-CONTRACT.md`.
 
 ## 6. Fournisseur
 
-Un Fournisseur est un acteur commercial du Workspace pouvant proposer des Articles rattachés aux Produits canoniques utilisés par ce Workspace.
+Un Fournisseur est une identité commerciale distincte de la Référence Produit.
 
-Le fournisseur ne doit pas être codé comme une liste fermée : les exemples Sysco et SCAL ne constituent pas les seuls fournisseurs possibles.
+Deux portées sont validées :
 
-Le client doit pouvoir créer ses fournisseurs.
+~~~text
+GLOBAL_SHARED
+→ Fournisseur commun administré sous autorité Application Global
+→ réutilisable par plusieurs Workspaces
 
-**À cadrer :**
+WORKSPACE_PRIVATE
+→ Fournisseur créé par un Workspace
+→ inaccessible aux autres Workspaces
+~~~
 
-- données minimales fournisseur ;
-- archivage ;
-- unicité ;
-- gestion des doublons.
+Le modèle n'est pas une liste fermée : Sysco, SCAL ou toute autre source réelle ne sont que des exemples.
 
----
+Baseline V1 :
+
+- nom obligatoire ;
+- code fournisseur facultatif ;
+- raison sociale facultative ;
+- site web facultatif ;
+- nom normalisé et portée gérés par le système ;
+- Workspace obligatoire lorsque la portée est `WORKSPACE_PRIVATE` ;
+- lifecycle `ACTIVE / ARCHIVED` ;
+- traçabilité de création/modification.
+
+L'archivage conserve l'historique et retire le Fournisseur des nouveaux usages ordinaires.
+
 
 ## 7. Article fournisseur
 
-Le domaine sépare le Produit de sa représentation commerciale chez un Fournisseur.
+Le domaine sépare la Référence Produit de sa représentation commerciale chez un Fournisseur.
 
-Relations conceptuelles :
-
-```text
-Produit
+~~~text
+Référence Produit
 1
 → 0..n Articles fournisseur
 
 Fournisseur
 1
 → 0..n Articles fournisseur
-```
+~~~
 
-Règle validée :
+Un même Produit peut avoir plusieurs Articles actifs chez un même Fournisseur et chez plusieurs Fournisseurs.
 
-> Un même Produit peut avoir plusieurs Articles fournisseur actifs chez un même Fournisseur.
+Baseline d'identité :
 
-Cela permet de représenter des références ou conditionnements différents sans dupliquer le Produit métier.
+~~~text
+Fournisseur + référence fournisseur
+→ identité métier de l'Article
+~~~
 
-Un Article fournisseur peut porter :
+La normalisation empêche les doublons basés uniquement sur la casse ou les espaces.
+
+Une ligne importée sans référence fournisseur exploitable peut rester dans l'édition et être rapprochée manuellement, mais ne crée pas automatiquement un Article sur la seule base de sa désignation.
+
+Un Article peut porter :
 
 - référence fournisseur ;
 - désignation fournisseur originale ;
 - marque éventuelle ;
+- Référence Produit M-002 associée ;
 - conditionnement structuré ;
 - libellé fournisseur du conditionnement ;
 - poids net ;
 - poids net égoutté si applicable ;
 - statut ;
+- provenance ;
 - createdAt / updatedAt ;
 - createdBy / updatedBy.
 
-Le modèle doit aussi permettre qu'un même Produit soit proposé par plusieurs Fournisseurs.
+Lifecycle baseline :
 
-**À valider avant implémentation :**
+~~~text
+ACTIVE
+ARCHIVED
+~~~
 
-- règles exactes d'unicité ;
-- lifecycle d'une référence remplacée.
+Une référence remplacée est archivée ; la nouvelle référence devient un nouvel Article. Un lien `replacedBy` peut relier l'ancien Article au nouveau pour la traçabilité, sans remplacer automatiquement les Articles déjà utilisés dans les Fiches techniques.
 
-La sélection opérationnelle n'est plus modélisée par un unique « Article privilégié » générique : le magasin dispose de Références favorites pouvant contenir plusieurs Articles d'un même Produit. Une éventuelle notion future de référence par défaut ne sera ajoutée que si un besoin distinct est démontré.
+La sélection opérationnelle n'est pas modélisée par un unique Article privilégié : le Dossier peut disposer de plusieurs Références favorites pour une même Référence Produit.
 
----
 
 ## 8. Conditionnement
 
@@ -683,14 +708,14 @@ Seul VALIDÉ peut participer à la résolution automatique.
 
 La fraîcheur est calculée depuis la date de facture.
 
-Comportement standard :
+Comportement standard V1 :
 
 ~~~text
 durée de fraîcheur
-→ 1 an
+→ 12 mois calendaires depuis la date de facture
 ~~~
 
-Cette durée est personnalisable au niveau Workspace lorsque la capability correspondante est disponible.
+Cette durée est une baseline V1 révisable après tests métier réels et reste personnalisable au niveau Workspace lorsque la capability correspondante est disponible.
 
 Une donnée trop ancienne reste VALIDÉE et historique mais devient inéligible à l'usage automatique courant. Le moteur applique alors les fallbacks prévus.
 
@@ -738,7 +763,7 @@ Un import Workspace est privé par défaut. Le caractère global exige une prove
 
 Une édition globale est stockée une seule fois et peut être référencée par plusieurs Workspaces sans recopier ses lignes.
 
-Un import CSV/XLS/XLSX crée une nouvelle édition après staging, mapping, contrôles, aperçu et validation.
+Un import CSV/XLS/XLSX crée une nouvelle édition après staging, mapping, contrôles, aperçu et validation. Le réimport d'une même édition identifiée réalise une réconciliation et ne crée pas une seconde édition identique ; une nouvelle édition commerciale reste une nouvelle ressource historique.
 
 Invariant :
 
@@ -817,7 +842,7 @@ Plusieurs Articles favoris peuvent correspondre au même Produit.
 
 Le backend calcule également un statut « fréquemment utilisée » à partir de Fiches techniques VALIDÉES distinctes du magasin.
 
-La politique Workspace peut fonctionner en mode manuel, suggestion ou ajout automatique aux favoris. Le seuil est configurable ; sa valeur standard définitive reste à fixer.
+La politique Workspace peut fonctionner en mode manuel, suggestion ou ajout automatique aux favoris. La baseline de démarrage est le mode manuel afin de ne pas inventer un seuil métier ; suggestion et ajout automatique pourront être activés lorsqu'un seuil effectif aura été configuré.
 
 Un retrait manuel est respecté et une baisse de fréquence ne retire pas automatiquement un favori.
 
@@ -1445,9 +1470,9 @@ Les rôles personnalisés combinent les permissions lorsque plusieurs responsabi
 
 ### À cadrer avant les modules concernés
 
-- M-002 : cadrage Produit fermé ; validation finale du lot en cours ;
-- données minimales Fournisseur, identité Catalogue et lifecycle Article avant M-003 ;
-- convention technique de fraîcheur Prix facturé et revues tarifaires avant M-003/M-004 ;
+- M-002 : cadrage et implémentation clôturés ;
+- M-003 : contrat détaillé validé dans `docs/m003/M-003-FINAL-CONTRACT.md`, implémentation autorisée ;
+- détails complémentaires des revues tarifaires : à ajuster au besoin pendant M-003/M-004 sans remettre en cause les temporalités déjà séparées ;
 - types/motifs finaux de versions avant M-004 ;
 - marge semi-nette lorsqu'une définition métier fiable sera disponible ;
 - paramètres mathématiques fins et garde-fous de l'Atelier avant M-005 ;

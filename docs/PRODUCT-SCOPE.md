@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
 
 **Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
-**Dernière mise à jour :** 2026-09-23  
+**Dernière mise à jour :** 2026-09-27  
 **Périmètre :** définition du problème métier, des principes produit et des invariants à préserver avant tout module métier
 
 > Ce document formalise les fondations transversales validées du produit.  
@@ -518,6 +518,8 @@ Si le poids net égoutté n'est pas disponible, le système ne doit pas inventer
 
 ## 6. Fournisseurs, articles fournisseur et tarifs
 
+Le contrat détaillé M-003 est validé dans `docs/m003/M-003-FINAL-CONTRACT.md`. Les choix explicitement qualifiés de baseline V1 y sont révisables après tests métier réels ; les invariants de tenancy, d'isolation Dossier et d'historisation restent structurants.
+
 Le Produit ne contient pas directement son fournisseur, sa référence commerciale, son conditionnement ni son prix.
 
 Le domaine distingue conceptuellement :
@@ -544,9 +546,22 @@ Prix observé
 
 ### 6.1 Fournisseur
 
-Les fournisseurs sont créés et gérés par le client ; Sysco et SYCAL ne sont que les premières sources réelles disponibles pour les essais.
+Deux portées sont validées :
 
-Le Fournisseur n'est pas un CRM. Le socle envisagé reste volontairement simple : nom, éventuel code interne, coordonnées/notes facultatives, statut et traçabilité.
+~~~text
+GLOBAL_SHARED
+→ identité commune administrée sous autorité globale
+→ réutilisable par plusieurs Workspaces sans duplication
+
+WORKSPACE_PRIVATE
+→ identité créée dans un Workspace
+→ jamais visible hors de ce Workspace
+~~~
+
+Le Fournisseur n'est pas un CRM. La baseline V1 exige uniquement le nom comme donnée métier obligatoire. Un code fournisseur, une raison sociale et un site web peuvent être facultatifs.
+
+Le lifecycle baseline est `ACTIVE / ARCHIVED`. L'archivage conserve l'historique.
+
 
 ### 6.2 Plusieurs articles pour un même Produit
 
@@ -775,7 +790,7 @@ durée de fraîcheur standard
 → 1 an
 ~~~
 
-La convention technique exacte entre douze mois calendaires et 365 jours reste à fixer avant implémentation.
+La baseline V1 retient **12 mois calendaires** depuis la date de facture. Cette durée standard pourra être ajustée ultérieurement sur la base de tests métier réels.
 
 Le Workspace peut personnaliser cette durée lorsqu'il dispose de la capability commerciale correspondante.
 
@@ -1004,7 +1019,7 @@ ou
 ajout automatique aux favoris
 ~~~
 
-Le seuil exact reste configurable et sa valeur standard définitive reste à valider.
+La baseline de démarrage est le **mode manuel**, sans seuil arbitraire bloquant. Les modes suggestion et ajout automatique pourront être activés lorsqu'un seuil effectif aura été configuré et validé.
 
 Un retrait manuel doit être respecté par l'automatisme et une référence favorite ne disparaît pas automatiquement parce que sa fréquence d'usage baisse.
 
@@ -2121,7 +2136,7 @@ Décisions finales fermées le 2026-09-20 :
 - contraintes réglementaires structurantes de M-001 vérifiées : les éventuelles coordonnées nominatives sont des données personnelles à minimiser et protéger, mais aucune obligation démontrée n'impose un champ métier obligatoire supplémentaire au Dossier ;
 - conformité globale et rétention restent suivies par D-003 / D-006 avant production.
 
-Les questions restantes sont désormais rattachées au module concerné : M-002 a fermé catégories, unités, lifecycle et gouvernance Produit ; Fournisseur/Article/catalogues/prix restent à fermer en M-003 ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge avant implémentation.
+Les questions restantes sont désormais rattachées au module concerné : M-002 est fermé ; M-003 dispose d'un contrat détaillé validé et peut passer à l'implémentation ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge physique lorsqu'un besoin réel l'exigera.
 
 La validation globale n'autorise pas encore l'implémentation de M-001 : son contrat détaillé doit d'abord être cadré et validé.
 

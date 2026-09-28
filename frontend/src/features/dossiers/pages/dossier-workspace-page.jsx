@@ -15,6 +15,9 @@ import {
   useGetDossierMetadataQuery,
 } from '@/features/dossiers/api/dossiers-api';
 import {
+  DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
+} from '@/features/suppliers/constants/supplier-permissions';
+import {
   formatDossierLocation,
   getDossierStatusLabel,
   getDossierStatusTone,
@@ -23,7 +26,7 @@ import { useWorkspaceContext } from '@/features/workspace/components/workspace-c
 
 function DossierWorkspacePage() {
   const { dossierId } = useParams();
-  const { workspace } = useWorkspaceContext();
+  const { canAny, workspace } = useWorkspaceContext();
   const dossierQuery = useGetDossierByIdQuery({
     workspaceId: workspace.id,
     dossierId,
@@ -127,6 +130,16 @@ function DossierWorkspacePage() {
               </p>
             </CardContent>
           </Card>
+
+          <div className="flex flex-wrap gap-2">
+            {canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS) && (
+              <Button asChild>
+                <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossier.id + '/suppliers'}>
+                  Fournisseurs et prix
+                </Link>
+              </Button>
+            )}
+          </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <Card>

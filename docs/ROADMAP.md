@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé fonctionnellement — M-003 prochain cadrage  
-**Dernière mise à jour :** 2026-09-25
+**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 validé localement et prêt pour PR finale  
+**Dernière mise à jour :** 2026-09-28
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.2.0` intégré au commit `c428fbec1edfa21a8860fcf8283072e45719832b` ;
+- Core `v1.2.1` intégré au commit `d90d8f1e6034cbbf4f63de2be7312eae69b1d698` ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;
@@ -103,51 +103,53 @@ Décision de clôture du 2026-09-25 : le périmètre fonctionnel M-002 est gelé
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
-**État : très avancé — moteur de résolution, fraîcheur et références magasin cadrés**
+**État : IMPLÉMENTATION PRÉSENTE SUR BRANCHE — QA visuelle en cours ; revalidation complète, E2E et gate finale encore requises**
+
+Source canonique :
+
+~~~text
+docs/m003/M-003-FINAL-CONTRACT.md
+~~~
 
 Décisions établies :
 
-- Produit / Fournisseur / Article séparés ;
-- plusieurs Articles possibles pour un même Produit ;
-- conditionnements structurés ;
-- tarifs de référence fournisseur historisés par édition ;
-- possibilité de catalogues fournisseur préchargés ;
-- Tarif négocié strictement magasin ;
-- Prix facturé validé et rattaché au magasin ;
-- fraîcheur calculée depuis la date de facture ;
-- comportement standard de fraîcheur : un an, convention technique exacte à fixer ;
+- Produit / Fournisseur / Article restent des concepts distincts ;
+- Fournisseurs et catalogues possèdent les portées `GLOBAL_SHARED` ou `WORKSPACE_PRIVATE` ;
+- un import utilisateur de catalogue est privé à son Workspace par défaut et ne devient jamais global automatiquement ;
+- un catalogue Workspace est réutilisable par plusieurs Dossiers sans duplication ;
+- l'identité baseline d'un Article est `Fournisseur + référence fournisseur` ;
+- une ligne sans référence exploitable ne crée pas automatiquement un Article ;
+- les Articles suivent `ACTIVE / ARCHIVED` et peuvent conserver un lien `replacedBy` ;
+- conditionnements structurés et prix normalisés lorsque les données sont suffisantes ;
+- éditions de catalogues historisées ; nouvelle édition ≠ écrasement de l'ancienne ;
+- réimport de la même édition = réconciliation sans duplication ;
+- Tarifs fournisseur de référence historisés par édition ;
+- Tarif négocié strictement Dossier, avec refus baseline des périodes actives chevauchantes pour le même Article ;
+- Prix facturé strictement Dossier, explicitement validé avant usage automatique ;
+- fraîcheur baseline du Prix facturé = 12 mois calendaires depuis la date de facture ;
 - politique Workspace : Tarif fournisseur / Tarif négocié / Prix facturé ;
-- fallback strictement dans le même magasin ;
-- aucun prix d'un autre magasin comme secours ;
-- backend seule autorité de résolution ;
-- sélection automatique possible uniquement lorsqu'un seul Article est exploitable ;
-- jamais de sélection automatique du moins cher ;
-- références favorites = Articles fournisseur précis propres au magasin ;
-- références fréquemment utilisées = usage calculé sur fiches VALIDÉES distinctes ;
-- modes manuel / suggestion / ajout automatique paramétrables ;
-- carte d'identité professionnelle Produit/Article ;
-- imports CSV/XLS/XLSX prévus comme extension structurée sans obligation d'IA ;
-- une ligne de catalogue importée ne crée jamais automatiquement un Produit canonique ;
-- les éditions de catalogue peuvent être `GLOBAL_SHARED` ou `WORKSPACE_PRIVATE` ;
-- un import Workspace est privé par défaut ; aucune publication globale automatique ;
-- une édition globale peut être référencée par plusieurs Workspaces sans duplication de ses lignes ;
-- les mappings Fournisseur + référence Article déjà validés sont réutilisés dans les éditions suivantes ;
-- une ligne peut rester non rapprochée tant qu'aucune correspondance Produit fiable n'est validée ;
-- l'identité Fournisseur associée aux catalogues globaux doit être réutilisable ; le modèle exact global/Workspace des Fournisseurs reste à fermer en M-003 ;
-- chaque édition/catalogue importé doit être rattaché explicitement à un Fournisseur identifié et conserver sa propre identité/version ;
-- l'interface M-003 doit permettre de filtrer par Fournisseur et de sélectionner un catalogue/une édition précise, sans déduire l'origine d'un Produit à partir de son seul libellé ;
-- un import de type SYSCO doit donc être identifiable comme catalogue SYSCO avant que ses Articles/références puissent être proposés dans les sélecteurs ;
-- IA/OCR uniquement comme assistance future sous contrôle métier.
+- fallback strictement dans le même Dossier ;
+- backend seule autorité de résolution du Prix applicable ;
+- sélection automatique d'Article possible uniquement lorsqu'un seul Article est exploitable ;
+- jamais de sélection automatique de l'Article le moins cher ;
+- référence favorite = Article fournisseur précis × Dossier ;
+- mode manuel retenu pour démarrer ; suggestion/ajout automatique pourront être activés avec un seuil effectif configuré ;
+- imports structurés CSV/XLS/XLSX ; PDF libre/OCR différés ;
+- une ligne catalogue ambiguë ne crée jamais silencieusement une Référence Produit ;
+- gouvernance `GLOBAL_SHARED` sous autorité Application Global ;
+- Workspace Owner = toutes les permissions métier M-003 dans son Workspace, sans devenir administrateur global ;
+- import `WORKSPACE_PRIVATE` = capability commerciale dédiée et payante dans la baseline V1.
 
-À finaliser :
+Les paramètres explicitement qualifiés de baseline V1 restent révisables après tests métier réels sans bloquer l'implémentation. Les invariants de tenancy, d'isolation Dossier et d'historisation restent structurants.
 
-- valeur standard exacte du seuil de fréquence ;
-- règles de comptage des fiches archivées ;
-- données minimales définitives Fournisseur ;
-- lifecycle des Articles remplacés/archivés ;
-- détails finaux des revues tarifaires ;
-- convention technique exacte de la durée de fraîcheur.
+Checkpoint UX/QA du 2026-09-28 :
 
+- les listes Fournisseurs / Articles / Catalogues réutilisent le `DataTable` partagé et le `DataPagination` partagé dans le même pattern de conteneur que Dossiers ;
+- aucun style structurel de tableau spécifique M-003 n'est introduit ;
+- le filtre Fournisseurs démarre sur `Tous` afin d'exposer immédiatement les actifs et archivés réactivables ;
+- l'onglet Catalogues reste consultable avec le droit de lecture ; seule l'action d'import dépend de `supplier_catalog_import` ;
+- le bouton d'import est masqué lorsque la capability n'est pas active ;
+- les libellés utilisateur restent en français (« espace de travail », « Origine »).
 
 
 ### 2.4 Fiches techniques
