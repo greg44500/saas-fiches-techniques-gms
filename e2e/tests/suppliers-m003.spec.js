@@ -62,10 +62,17 @@ async function importCatalogFromUi(page, {
   }).click();
 
   const inspectResponse = await inspectResponsePromise;
+  const inspectPayload = await inspectResponse.json().catch(() => null);
 
   expect(
     inspectResponse.status(),
-    'L’inspection du catalogue doit réussir avant la sélection du Fournisseur.',
+    [
+      'L’inspection du catalogue doit réussir avant la sélection du Fournisseur.',
+      'HTTP ' + inspectResponse.status() + '.',
+      inspectPayload?.message
+        ? 'Backend : ' + inspectPayload.message
+        : 'Aucun message backend exploitable.',
+    ].join(' '),
   ).toBe(201);
 
   await dialog.getByRole('combobox', {
@@ -164,7 +171,6 @@ test('M-003 autorité Application Global ouvre le Référentiel Fournisseurs', a
 });
 
 test('M-003 owner importe un catalogue privé, le réimporte sans doublon et un autre Workspace ne le voit pas', async ({ page }) => {
-  test.setTimeout(90_000);
   const workspaceA = await provisionSupplierOwnerWorkspace();
   const workspaceB = await provisionSupplierOwnerWorkspace({
     enableImport: false,
@@ -303,16 +309,13 @@ test('M-003 un catalogue global est réutilisable depuis plusieurs Workspaces', 
     name: 'Catalogues',
   }).click();
 
-  await expect(
-    page.getByText(context.catalogName, {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(
-    page.getByText('Référentiel partagé', {
-      exact: true,
-    }),
-  ).toBeVisible();
+  const workspaceACatalogRow = page
+    .getByRole('row')
+    .filter({ hasText: context.catalogName });
+
+  await expect(workspaceACatalogRow).toHaveCount(1);
+  await expect(workspaceACatalogRow).toContainText(context.catalogName);
+  await expect(workspaceACatalogRow).toContainText('Référentiel partagé');
 
   await loginWithIdentity(
     page,
@@ -325,14 +328,11 @@ test('M-003 un catalogue global est réutilisable depuis plusieurs Workspaces', 
     name: 'Catalogues',
   }).click();
 
-  await expect(
-    page.getByText(context.catalogName, {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(
-    page.getByText('Référentiel partagé', {
-      exact: true,
-    }),
-  ).toBeVisible();
+  const workspaceBCatalogRow = page
+    .getByRole('row')
+    .filter({ hasText: context.catalogName });
+
+  await expect(workspaceBCatalogRow).toHaveCount(1);
+  await expect(workspaceBCatalogRow).toContainText(context.catalogName);
+  await expect(workspaceBCatalogRow).toContainText('Référentiel partagé');
 });
