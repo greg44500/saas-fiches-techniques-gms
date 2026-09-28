@@ -68,6 +68,7 @@ const access = async (req, res) => {
 const metadata = async (_req, res) => {
     const productMetadata = await getProductMetadata({
         includeArchivedCategories: true,
+        includeCategoryUsage: true,
     });
 
     res.status(200).json({
