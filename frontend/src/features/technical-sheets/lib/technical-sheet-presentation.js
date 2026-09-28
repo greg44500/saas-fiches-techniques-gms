@@ -106,6 +106,36 @@ function formatBasisPoints(value) {
   }) + ' %';
 }
 
+function basisPointsToInput(value) {
+  if (!Number.isInteger(value)) return '';
+  return String(value / 100);
+}
+
+function percentInputToBasisPoints(value) {
+  const normalized = String(value ?? '').trim().replace(',', '.');
+  if (!normalized) return null;
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return null;
+
+  return Math.round(parsed * 100);
+}
+
+function minorToInput(value) {
+  if (!Number.isInteger(value)) return '';
+  return String(value / 100);
+}
+
+function priceInputToMinor(value) {
+  const normalized = String(value ?? '').trim().replace(',', '.');
+  if (!normalized) return null;
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed)) return null;
+
+  return Math.round(parsed * 100);
+}
+
 function getTechnicalSheetApiErrorMessage(
   error,
   fallback = 'Une erreur est survenue.',
@@ -117,9 +147,13 @@ export {
   LINE_VALUATION_PRESENTATION,
   TECHNICAL_SHEET_STATUS_PRESENTATION,
   TECHNICAL_SHEET_VALUATION_PRESENTATION,
+  basisPointsToInput,
   formatBasisPoints,
   formatDecimalCurrency,
   formatMinorCurrency,
+  minorToInput,
+  percentInputToBasisPoints,
+  priceInputToMinor,
   getLineValuationPresentation,
   getTechnicalSheetApiErrorMessage,
   getTechnicalSheetStatusPresentation,

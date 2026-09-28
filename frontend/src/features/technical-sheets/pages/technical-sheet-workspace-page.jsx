@@ -1,0 +1,906 @@
+import {
+  Archive,
+  Calculator,
+  CheckCircle2,
+  RotateCcw,
+  Save,
+  Trash2,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
+
+import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
+import { ErrorState } from '@/components/shared/error-state';
+import { StatusBadge } from '@/components/shared/status-badge';
+import { useToast } from '@/components/shared/toast-provider';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Field, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  useGetProductMetadataQuery,
+} from '@/features/products/api/product-catalog-api';
+import {
+  useArchiveTechnicalSheetMutation,
+  useDeleteTechnicalSheetMutation,
+  useGetTechnicalSheetMetadataQuery,
+  useGetTechnicalSheetQuery,
+  useListTechnicalSheetHistoryQuery,
+  useReactivateTechnicalSheetMutation,
+  useSaveTechnicalSheetDraftMutation,
+  useStartTechnicalSheetDraftMutation,
+  useUpdateTechnicalSheetMutation,
+  useValidateTechnicalSheetMutation,
+  useValuateTechnicalSheetMutation,
+} from '@/features/technical-sheets/api/technical-sheets-api';
+import {
+  TechnicalSheetHistory,
+} from '@/features/technical-sheets/components/technical-sheet-history';
+import {
+  TechnicalSheetLineEditor,
+  normalizeDraftLine,
+} from '@/features/technical-sheets/components/technical-sheet-line-editor';
+import {
+  TechnicalSheetSourcingSelect,
+} from '@/features/technical-sheets/components/technical-sheet-sourcing-select';
+import {
+  TECHNICAL_SHEET_PERMISSION,
+} from '@/features/technical-sheets/constants/technical-sheet-permissions';
+import {
+  basisPointsToInput,
+  formatBasisPoints,
+  formatDecimalCurrency,
+  formatMinorCurrency,
+  getLineValuationPresentation,
+  getTechnicalSheetApiErrorMessage,
+  getTechnicalSheetStatusPresentation,
+  getTechnicalSheetValuationPresentation,
+  minorToInput,
+  percentInputToBasisPoints,
+  priceInputToMinor,
+} from '@/features/technical-sheets/lib/technical-sheet-presentation';
+import {
+  useWorkspaceContext,
+} from '@/features/workspace/components/workspace-context';
+
+function TechnicalSheetWorkspacePage() {
+  const { dossierId, technicalSheetId } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { can, workspace } = useWorkspaceContext();
+
+  const sheetQuery = useGetTechnicalSheetQuery({
+    workspaceId: workspace.id,
+    dossierId,
+    technicalSheetId,
+  });
+  const metadataQuery = useGetTechnicalSheetMetadataQuery({
+    workspaceId: workspace.id,
+    dossierId,
+  });
+  const productMetadataQuery = useGetProductMetadataQuery(workspace.id);
+  const historyQuery = useListTechnicalSheetHistoryQuery({
+    workspaceId: workspace.id,
+    dossierId,
+    technicalSheetId,
+    page: 1,
+    limit: 20,
+  });
+
+  const [updateSheet, updateSheetState] = useUpdateTechnicalSheetMutation();
+  const [startDraft, startDraftState] = useStartTechnicalSheetDraftMutation();
+  const [saveDraft, saveDraftState] = useSaveTechnicalSheetDraftMutation();
+  const [valuate, valuateState] = useValuateTechnicalSheetMutation();
+  const [validateSheet, validateState] = useValidateTechnicalSheetMutation();
+  const [archiveSheet, archiveState] = useArchiveTechnicalSheetMutation();
+  const [reactivateSheet, reactivateState] = useReactivateTechnicalSheetMutation();
+  const [deleteSheet, deleteState] = useDeleteTechnicalSheetMutation();
+
+  const sheet = sheetQuery.data?.sheet;
+  const draft = sheetQuery.data?.draft;
+  const metadata = metadataQuery.data;
+
+  const [identity, setIdentity] = useState({
+    name: '',
+    description: '',
+  });
+  const [draftForm, setDraftForm] = useState({
+    productionQuantity: '',
+    productionUnit: '',
+    portions: '',
+    vatRate: '',
+    targetMargin: '',
+    finalPriceMode: 'ADVISED',
+    finalPriceTtc: '',
+    lines: [],
+  });
+  const [validationComment, setValidationComment] = useState('');
+  const [confirmation, setConfirmation] = useState(null);
+
+  useEffect(() => {
+    if (!sheet) return;
+    setIdentity({
+      name: sheet.name ?? '',
+      description: sheet.description ?? '',
+    });
+  }, [sheet]);
+
+  useEffect(() => {
+    if (!draft) return;
+    setDraftForm({
+      productionQuantity: draft.productionQuantity ?? '',
+      productionUnit: draft.productionUnit ?? '',
+      portions: draft.portions ?? '',
+      vatRate: basisPointsToInput(draft.vatRateBasisPoints),
+      targetMargin: basisPointsToInput(draft.targetMarginBasisPoints),
+      finalPriceMode: draft.finalPriceMode ?? 'ADVISED',
+      finalPriceTtc: minorToInput(draft.finalPriceTtcMinor),
+      lines: (draft.lines ?? []).map(normalizeDraftLine),
+    });
+  }, [draft]);
+
+  const unitItems = useMemo(
+    () => (metadata?.units ?? []).map((unit) => ({
+      value: unit.value,
+      label: unit.label,
+    })),
+    [metadata?.units],
+  );
+
+  if (
+    (sheetQuery.isLoading && !sheetQuery.data)
+    || (metadataQuery.isLoading && !metadataQuery.data)
+  ) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Chargement de la Fiche technique…
+      </p>
+    );
+  }
+
+  if (sheetQuery.isError || !sheet) {
+    return (
+      <ErrorState
+        description="La Fiche technique demandée n’est pas accessible ou n’a pas pu être chargée."
+        onRetry={sheetQuery.refetch}
+        title="Fiche technique indisponible"
+      />
+    );
+  }
+
+  const statusPresentation = getTechnicalSheetStatusPresentation(sheet.status);
+  const valuationPresentation = getTechnicalSheetValuationPresentation(
+    draft?.valuationStatus,
+  );
+  const isActive = sheet.status === 'ACTIVE';
+  const canUpdate = isActive && can(TECHNICAL_SHEET_PERMISSION.UPDATE);
+  const canSource = isActive && can(TECHNICAL_SHEET_PERMISSION.SOURCING_MANAGE);
+  const canValuate = isActive && can(TECHNICAL_SHEET_PERMISSION.VALUATION_MANAGE);
+  const canValidate = isActive && can(TECHNICAL_SHEET_PERMISSION.VALIDATE);
+  const canLifecycle = can(TECHNICAL_SHEET_PERMISSION.LIFECYCLE_MANAGE);
+  const canDelete = can(TECHNICAL_SHEET_PERMISSION.DELETE);
+
+  function notifyError(error, fallback) {
+    toast({
+      title: 'Action impossible',
+      description: getTechnicalSheetApiErrorMessage(error, fallback),
+      variant: 'destructive',
+    });
+  }
+
+  async function saveIdentity() {
+    try {
+      await updateSheet({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        expectedRevision: sheet.revision,
+        name: identity.name.trim(),
+        description: identity.description.trim() || null,
+      }).unwrap();
+      toast({
+        title: 'Fiche technique mise à jour',
+        variant: 'success',
+      });
+    } catch (error) {
+      notifyError(error, 'Les informations générales n’ont pas pu être enregistrées.');
+    }
+  }
+
+  async function createWorkingDraft() {
+    try {
+      await startDraft({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        expectedSheetRevision: sheet.revision,
+      }).unwrap();
+      toast({
+        title: 'Nouveau brouillon créé',
+        description: 'Les données validées ont été reprises. Une revalorisation sera nécessaire.',
+        variant: 'success',
+      });
+    } catch (error) {
+      notifyError(error, 'Le brouillon n’a pas pu être créé.');
+    }
+  }
+
+  async function saveWorkingDraft() {
+    const vatRateBasisPoints = percentInputToBasisPoints(draftForm.vatRate);
+    const targetMarginBasisPoints =
+      percentInputToBasisPoints(draftForm.targetMargin);
+
+    if (
+      !draftForm.productionQuantity
+      || !draftForm.productionUnit
+      || vatRateBasisPoints === null
+      || targetMarginBasisPoints === null
+    ) {
+      toast({
+        title: 'Brouillon incomplet',
+        description: 'Renseignez la base de production, son unité, la TVA et la marge cible.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await saveDraft({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        expectedRevision: draft.revision,
+        productionQuantity: draftForm.productionQuantity,
+        productionUnit: draftForm.productionUnit,
+        portions: draftForm.portions || null,
+        vatRateBasisPoints,
+        targetMarginBasisPoints,
+        finalPriceMode: draftForm.finalPriceMode,
+        finalPriceTtcMinor:
+          draftForm.finalPriceMode === 'MANUAL'
+            ? priceInputToMinor(draftForm.finalPriceTtc)
+            : null,
+        lines: draftForm.lines.map((line, index) => ({
+          ...(line.id ? { id: line.id } : {}),
+          kind: line.kind,
+          productVariantId: line.productVariantId,
+          netQuantity: line.netQuantity,
+          inputUnit: line.inputUnit,
+          order: index,
+          note: line.note.trim() || null,
+        })),
+      }).unwrap();
+      toast({
+        title: 'Brouillon enregistré',
+        variant: 'success',
+      });
+    } catch (error) {
+      notifyError(error, 'Le brouillon n’a pas pu être enregistré.');
+    }
+  }
+
+  async function valuateDraft() {
+    try {
+      const result = await valuate({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        expectedRevision: draft.revision,
+      }).unwrap();
+
+      const ambiguityCount = Object.keys(result.resolutionCandidates ?? {}).length;
+      toast({
+        title: ambiguityCount > 0
+          ? 'Valorisation incomplète'
+          : 'Fiche technique valorisée',
+        description: ambiguityCount > 0
+          ? ambiguityCount + ' ligne(s) nécessitent un choix explicite d’Article fournisseur.'
+          : undefined,
+        variant: ambiguityCount > 0 ? 'info' : 'success',
+      });
+    } catch (error) {
+      notifyError(error, 'La valorisation n’a pas pu être calculée.');
+    }
+  }
+
+  async function validateDraft() {
+    try {
+      await validateSheet({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        expectedSheetRevision: sheet.revision,
+        expectedDraftRevision: draft.revision,
+        comment: validationComment.trim() || null,
+      }).unwrap();
+      setValidationComment('');
+      toast({
+        title: 'Fiche technique validée',
+        description: 'Un nouvel état historique immuable a été créé.',
+        variant: 'success',
+      });
+    } catch (error) {
+      notifyError(error, 'La validation n’a pas pu être effectuée.');
+    }
+  }
+
+  async function confirmLifecycle() {
+    if (!confirmation) return;
+
+    const action = confirmation.type;
+
+    try {
+      if (action === 'archive') {
+        await archiveSheet({
+          workspaceId: workspace.id,
+          dossierId,
+          technicalSheetId,
+          expectedRevision: sheet.revision,
+        }).unwrap();
+      } else if (action === 'reactivate') {
+        await reactivateSheet({
+          workspaceId: workspace.id,
+          dossierId,
+          technicalSheetId,
+          expectedRevision: sheet.revision,
+        }).unwrap();
+      } else if (action === 'delete') {
+        await deleteSheet({
+          workspaceId: workspace.id,
+          dossierId,
+          technicalSheetId,
+          expectedRevision: sheet.revision,
+        }).unwrap();
+      }
+
+      setConfirmation(null);
+
+      if (action === 'delete') {
+        navigate(
+          '/workspaces/' + workspace.id
+          + '/dossiers/' + dossierId
+          + '/technical-sheets',
+        );
+        return;
+      }
+
+      toast({
+        title: action === 'archive'
+          ? 'Fiche archivée'
+          : 'Fiche réactivée',
+        variant: 'success',
+      });
+    } catch (error) {
+      notifyError(error, 'Le changement de statut n’a pas pu être appliqué.');
+    }
+  }
+
+  const economicSnapshot = draft?.economicSnapshot;
+  const pendingLifecycle = (
+    archiveState.isLoading
+    || reactivateState.isLoading
+    || deleteState.isLoading
+  );
+
+  return (
+    <div className="space-y-6">
+      <header className="space-y-3">
+        <Button asChild size="sm" variant="ghost">
+          <Link
+            to={
+              '/workspaces/' + workspace.id
+              + '/dossiers/' + dossierId
+              + '/technical-sheets'
+            }
+          >
+            Retour aux Fiches techniques
+          </Link>
+        </Button>
+
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              {sheet.name}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Travail courant, valorisation et historique validé.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge tone={statusPresentation.tone}>
+              {statusPresentation.label}
+            </StatusBadge>
+            {draft && (
+              <StatusBadge tone={valuationPresentation.tone}>
+                {valuationPresentation.label}
+              </StatusBadge>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Informations générales</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Field>
+              <FieldLabel htmlFor="technical-sheet-edit-name">Nom</FieldLabel>
+              <Input
+                disabled={!canUpdate || updateSheetState.isLoading}
+                id="technical-sheet-edit-name"
+                maxLength={160}
+                onChange={(event) => setIdentity((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))}
+                value={identity.name}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="technical-sheet-edit-description">
+                Description
+              </FieldLabel>
+              <Textarea
+                disabled={!canUpdate || updateSheetState.isLoading}
+                id="technical-sheet-edit-description"
+                maxLength={2000}
+                onChange={(event) => setIdentity((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))}
+                value={identity.description}
+              />
+            </Field>
+          </div>
+          {canUpdate && (
+            <div className="flex justify-end">
+              <Button
+                disabled={updateSheetState.isLoading || !identity.name.trim()}
+                onClick={saveIdentity}
+                type="button"
+                variant="outline"
+              >
+                <Save aria-hidden="true" className="size-4" />
+                Enregistrer les informations
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {!draft ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>État de travail</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Aucun brouillon n’est ouvert. L’état validé courant reste consultable dans l’historique.
+            </p>
+            {canUpdate && sheet.currentValidatedStateId && (
+              <Button
+                disabled={startDraftState.isLoading}
+                onClick={createWorkingDraft}
+                type="button"
+              >
+                <RotateCcw aria-hidden="true" className="size-4" />
+                Reprendre en brouillon
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Base de production</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <Field>
+                <FieldLabel htmlFor="technical-sheet-production-quantity">
+                  Quantité produite
+                </FieldLabel>
+                <Input
+                  disabled={!canUpdate}
+                  id="technical-sheet-production-quantity"
+                  inputMode="decimal"
+                  onChange={(event) => setDraftForm((current) => ({
+                    ...current,
+                    productionQuantity: event.target.value,
+                  }))}
+                  value={draftForm.productionQuantity}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel>Unité de production</FieldLabel>
+                <Select
+                  disabled={!canUpdate}
+                  items={unitItems}
+                  onValueChange={(value) => setDraftForm((current) => ({
+                    ...current,
+                    productionUnit: value,
+                  }))}
+                  value={draftForm.productionUnit}
+                >
+                  <SelectTrigger aria-label="Unité de production">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unitItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="technical-sheet-portions">
+                  Nombre de portions
+                </FieldLabel>
+                <Input
+                  disabled={!canUpdate}
+                  id="technical-sheet-portions"
+                  inputMode="decimal"
+                  onChange={(event) => setDraftForm((current) => ({
+                    ...current,
+                    portions: event.target.value,
+                  }))}
+                  value={draftForm.portions}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="technical-sheet-vat">
+                  TVA (%)
+                </FieldLabel>
+                <Input
+                  disabled={!canValuate}
+                  id="technical-sheet-vat"
+                  inputMode="decimal"
+                  onChange={(event) => setDraftForm((current) => ({
+                    ...current,
+                    vatRate: event.target.value,
+                  }))}
+                  value={draftForm.vatRate}
+                />
+              </Field>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Composition</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TechnicalSheetLineEditor
+                disabled={!canUpdate}
+                lines={draftForm.lines}
+                metadata={metadata}
+                onChange={(lines) => setDraftForm((current) => ({
+                  ...current,
+                  lines,
+                }))}
+                productMetadata={productMetadataQuery.data}
+                workspaceId={workspace.id}
+              />
+              {canUpdate && (
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    disabled={saveDraftState.isLoading}
+                    onClick={saveWorkingDraft}
+                    type="button"
+                  >
+                    <Save aria-hidden="true" className="size-4" />
+                    Enregistrer le brouillon
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Approvisionnement et valorisation</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-3">
+                {(draft.lines ?? []).map((line) => {
+                  const linePresentation = getLineValuationPresentation(
+                    line.valuation?.status,
+                  );
+
+                  return (
+                    <div
+                      className="grid gap-3 rounded-lg border border-border p-4 lg:grid-cols-[1fr_1.5fr_auto] lg:items-center"
+                      key={line.id}
+                    >
+                      <div>
+                        <p className="font-medium">
+                          {line.productVariant?.name ?? 'Référence Produit'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Brut calculé : {line.calculation?.grossQuantity ?? '—'}{' '}
+                          {line.calculation?.grossUnit ?? ''}
+                        </p>
+                      </div>
+
+                      <TechnicalSheetSourcingSelect
+                        canManage={canSource}
+                        dossierId={dossierId}
+                        draftRevision={draft.revision}
+                        line={line}
+                        onError={(message) => toast({
+                          title: 'Sélection impossible',
+                          description: message,
+                          variant: 'destructive',
+                        })}
+                        technicalSheetId={technicalSheetId}
+                        workspaceId={workspace.id}
+                      />
+
+                      <div className="text-right">
+                        <StatusBadge tone={linePresentation.tone}>
+                          {linePresentation.label}
+                        </StatusBadge>
+                        <p className="mt-2 text-sm font-medium">
+                          {formatDecimalCurrency(line.valuation?.lineCostHt)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <Field>
+                  <FieldLabel htmlFor="technical-sheet-target-margin">
+                    Marge cible (%)
+                  </FieldLabel>
+                  <Input
+                    disabled={!canValuate}
+                    id="technical-sheet-target-margin"
+                    inputMode="decimal"
+                    onChange={(event) => setDraftForm((current) => ({
+                      ...current,
+                      targetMargin: event.target.value,
+                    }))}
+                    value={draftForm.targetMargin}
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel>Mode de Prix final</FieldLabel>
+                  <Select
+                    disabled={!canValuate}
+                    items={[
+                      { value: 'ADVISED', label: 'Prix conseillé' },
+                      { value: 'MANUAL', label: 'Prix manuel' },
+                    ]}
+                    onValueChange={(value) => setDraftForm((current) => ({
+                      ...current,
+                      finalPriceMode: value,
+                    }))}
+                    value={draftForm.finalPriceMode}
+                  >
+                    <SelectTrigger aria-label="Mode de Prix final">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ADVISED">Prix conseillé</SelectItem>
+                      <SelectItem value="MANUAL">Prix manuel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="technical-sheet-final-price">
+                    Prix final TTC (€)
+                  </FieldLabel>
+                  <Input
+                    disabled={!canValuate || draftForm.finalPriceMode !== 'MANUAL'}
+                    id="technical-sheet-final-price"
+                    inputMode="decimal"
+                    onChange={(event) => setDraftForm((current) => ({
+                      ...current,
+                      finalPriceTtc: event.target.value,
+                    }))}
+                    value={draftForm.finalPriceTtc}
+                  />
+                </Field>
+
+                <div className="flex items-end">
+                  {canValuate && (
+                    <Button
+                      className="w-full"
+                      disabled={valuateState.isLoading}
+                      onClick={valuateDraft}
+                      type="button"
+                    >
+                      <Calculator aria-hidden="true" className="size-4" />
+                      {draft.valuationStatus === 'NOT_VALUED'
+                        ? 'Valoriser'
+                        : 'Revaloriser'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {economicSnapshot && (
+                <div className="grid gap-3 rounded-lg border border-border bg-muted/20 p-4 sm:grid-cols-2 xl:grid-cols-5">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Matières HT</p>
+                    <p className="font-semibold">
+                      {formatDecimalCurrency(economicSnapshot.materialCostHt)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Économat HT</p>
+                    <p className="font-semibold">
+                      {formatDecimalCurrency(economicSnapshot.economatCostHt)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Coût fabrication HT</p>
+                    <p className="font-semibold">
+                      {formatDecimalCurrency(economicSnapshot.manufacturingCostHt)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Prix final TTC</p>
+                    <p className="font-semibold">
+                      {formatMinorCurrency(economicSnapshot.finalPriceTtcMinor)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Marge réelle</p>
+                    <p className="font-semibold">
+                      {formatBasisPoints(economicSnapshot.actualMarginBasisPoints)}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {canValidate && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Validation</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Field>
+                  <FieldLabel htmlFor="technical-sheet-validation-comment">
+                    Commentaire facultatif
+                  </FieldLabel>
+                  <Textarea
+                    id="technical-sheet-validation-comment"
+                    maxLength={1000}
+                    onChange={(event) => setValidationComment(event.target.value)}
+                    value={validationComment}
+                  />
+                </Field>
+                <div className="flex justify-end">
+                  <Button
+                    disabled={
+                      validateState.isLoading
+                      || draft.valuationStatus !== 'COMPLETE'
+                    }
+                    onClick={validateDraft}
+                    type="button"
+                  >
+                    <CheckCircle2 aria-hidden="true" className="size-4" />
+                    Valider la Fiche technique
+                  </Button>
+                </div>
+                {draft.valuationStatus !== 'COMPLETE' && (
+                  <p className="text-sm text-muted-foreground">
+                    Une valorisation complète et à jour est obligatoire avant validation.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Historique validé</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TechnicalSheetHistory
+            validations={historyQuery.data?.validations ?? []}
+          />
+        </CardContent>
+      </Card>
+
+      {(canLifecycle || canDelete) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Cycle de vie</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {sheet.status === 'ACTIVE' && canLifecycle && (
+              <Button
+                onClick={() => setConfirmation({ type: 'archive' })}
+                type="button"
+                variant="outline"
+              >
+                <Archive aria-hidden="true" className="size-4" />
+                Archiver
+              </Button>
+            )}
+            {sheet.status === 'ARCHIVED' && canLifecycle && (
+              <Button
+                onClick={() => setConfirmation({ type: 'reactivate' })}
+                type="button"
+                variant="outline"
+              >
+                <RotateCcw aria-hidden="true" className="size-4" />
+                Réactiver
+              </Button>
+            )}
+            {sheet.status !== 'DELETED' && canDelete && (
+              <Button
+                onClick={() => setConfirmation({ type: 'delete' })}
+                type="button"
+                variant="destructive"
+              >
+                <Trash2 aria-hidden="true" className="size-4" />
+                Mettre dans la corbeille
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {confirmation && (
+        <ConfirmationDialog
+          confirmLabel={
+            confirmation.type === 'delete'
+              ? 'Mettre dans la corbeille'
+              : confirmation.type === 'archive'
+                ? 'Archiver'
+                : 'Réactiver'
+          }
+          confirmVariant={confirmation.type === 'delete' ? 'destructive' : 'default'}
+          description={
+            confirmation.type === 'delete'
+              ? 'La Fiche restera restaurable jusqu’à son échéance de purge et continuera de consommer une unité de capacité.'
+              : 'Le changement de statut ne modifie ni l’historique validé ni le quota.'
+          }
+          onCancel={() => setConfirmation(null)}
+          onConfirm={confirmLifecycle}
+          pending={pendingLifecycle}
+          title={
+            confirmation.type === 'delete'
+              ? 'Mettre cette Fiche dans la corbeille ?'
+              : confirmation.type === 'archive'
+                ? 'Archiver cette Fiche ?'
+                : 'Réactiver cette Fiche ?'
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+export { TechnicalSheetWorkspacePage };
