@@ -82,7 +82,10 @@ async function importCatalogFromUi(page, {
     name: supplierName,
   }).click();
 
-  await dialog.getByLabel('Édition').fill(editionName);
+  await dialog.getByRole('textbox', {
+    name: 'Édition',
+    exact: true,
+  }).fill(editionName);
   await dialog.getByRole('button', {
     name: 'Prévisualiser',
   }).click();
