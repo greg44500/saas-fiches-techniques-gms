@@ -235,6 +235,15 @@ describe('ProductsPage', () => {
       }),
     );
 
+    await user.clear(
+      screen.getByRole('textbox', { name: 'Rechercher un Produit' }),
+    );
+    expect(mocks.searchQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        q: undefined,
+      }),
+    );
+
     await user.click(screen.getByRole('tab', { name: 'Favoris' }));
 
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(

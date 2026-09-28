@@ -479,7 +479,14 @@ function SuppliersPage() {
           <Input
             aria-label="Rechercher"
             maxLength={120}
-            onChange={(event) => setSearchInput(event.target.value)}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSearchInput(value);
+
+              if (!value.trim() && search) {
+                setSearch('');
+              }
+            }}
             placeholder="Rechercher…"
             value={searchInput}
           />
@@ -540,10 +547,10 @@ function SuppliersPage() {
               title="Aucun Fournisseur"
             />
           )}
-          emptyCellClassName="border-b border-border text-muted-foreground"
           getRowKey={(supplier) => supplier.id}
           headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
-          rowClassName="border-b border-border transition-colors hover:bg-muted/50"
+          rowClassName="transition-colors hover:bg-muted/50"
+          tableClassName="border-b border-border"
         />
       ) : section === 'articles' ? (
         <DataTable
@@ -556,10 +563,10 @@ function SuppliersPage() {
               title="Aucun Article"
             />
           )}
-          emptyCellClassName="border-b border-border text-muted-foreground"
           getRowKey={(article) => article.id}
           headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
-          rowClassName="border-b border-border transition-colors hover:bg-muted/50"
+          rowClassName="transition-colors hover:bg-muted/50"
+          tableClassName="border-b border-border"
         />
       ) : (
         <DataTable
@@ -572,10 +579,10 @@ function SuppliersPage() {
               title="Aucun catalogue"
             />
           )}
-          emptyCellClassName="border-b border-border text-muted-foreground"
           getRowKey={(catalog) => catalog.id}
           headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
-          rowClassName="border-b border-border transition-colors hover:bg-muted/50"
+          rowClassName="transition-colors hover:bg-muted/50"
+          tableClassName="border-b border-border"
         />
       )}
 

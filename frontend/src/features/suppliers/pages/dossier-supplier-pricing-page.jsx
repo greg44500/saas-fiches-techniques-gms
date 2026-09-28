@@ -724,9 +724,9 @@ function DossierSupplierPricingPage() {
             />
           ) : (
             <DataTable
-              emptyCellClassName="border-b border-border text-muted-foreground"
               headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
-              rowClassName="border-b border-border transition-colors hover:bg-muted/50"
+              rowClassName="transition-colors hover:bg-muted/50"
+              tableClassName="border-b border-border"
               caption="Références fournisseur favorites du Dossier"
               columns={referenceColumns}
               data={references}
@@ -752,9 +752,9 @@ function DossierSupplierPricingPage() {
             />
           ) : (
             <DataTable
-              emptyCellClassName="border-b border-border text-muted-foreground"
               headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
-              rowClassName="border-b border-border transition-colors hover:bg-muted/50"
+              rowClassName="transition-colors hover:bg-muted/50"
+              tableClassName="border-b border-border"
               caption="Catalogues fournisseur accessibles depuis ce Dossier"
               columns={catalogColumns}
               data={catalogsQuery.data?.catalogs ?? []}
@@ -779,9 +779,9 @@ function DossierSupplierPricingPage() {
             </Button>
           )}
           <DataTable
-            emptyCellClassName="border-b border-border text-muted-foreground"
             headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
-            rowClassName="border-b border-border transition-colors hover:bg-muted/50"
+            rowClassName="transition-colors hover:bg-muted/50"
+            tableClassName="border-b border-border"
             caption="Tarifs négociés du Dossier"
             columns={negotiatedColumns}
             data={negotiatedQuery.data ?? []}
@@ -805,9 +805,9 @@ function DossierSupplierPricingPage() {
             </Button>
           )}
           <DataTable
-            emptyCellClassName="border-b border-border text-muted-foreground"
             headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
-            rowClassName="border-b border-border transition-colors hover:bg-muted/50"
+            rowClassName="transition-colors hover:bg-muted/50"
+            tableClassName="border-b border-border"
             caption="Prix facturés du Dossier"
             columns={invoicedColumns}
             data={invoicedQuery.data ?? []}

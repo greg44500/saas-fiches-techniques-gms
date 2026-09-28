@@ -199,6 +199,11 @@ describe('SuppliersPage', () => {
 
     expect(screen.getByRole('button', { name: 'Rechercher' }))
       .toBeEnabled();
+
+    await user.clear(screen.getByRole('textbox', { name: 'Rechercher' }));
+
+    expect(screen.getByRole('button', { name: 'Rechercher' }))
+      .toBeDisabled();
   });
 
   it('ouvre le détail Fournisseur depuis une action Voir', async () => {

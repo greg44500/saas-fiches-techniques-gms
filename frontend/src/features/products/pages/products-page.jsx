@@ -131,6 +131,15 @@ function ProductsPage() {
     setSearch(nextSearch.trim());
   }
 
+  function changeSearchInput(value) {
+    setSearchInput(value);
+
+    if (!value.trim() && search) {
+      setPage(1);
+      setSearch('');
+    }
+  }
+
   function applySearch(event) {
     event.preventDefault();
 
@@ -353,7 +362,7 @@ function ProductsPage() {
                 }
                 metadata={metadata}
                 onSelect={selectPredictiveResult}
-                onValueChange={setSearchInput}
+                onValueChange={changeSearchInput}
                 scope={canReferenceAccess ? 'REFERENCE' : scope}
                 status={undefined}
                 value={searchInput}
@@ -371,45 +380,45 @@ function ProductsPage() {
 
           <div className="w-full md:w-52 md:shrink-0">
             <Select
-            items={categoryItems}
-            onValueChange={(value) => {
-              setCategoryId(value);
-              setPage(1);
-            }}
-            value={categoryId}
-          >
-            <SelectTrigger aria-label="Filtrer par catégorie">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {categoryItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
+              items={categoryItems}
+              onValueChange={(value) => {
+                setCategoryId(value);
+                setPage(1);
+              }}
+              value={categoryId}
+            >
+              <SelectTrigger aria-label="Filtrer par catégorie">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {categoryItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
 
           <div className="w-full md:w-56 md:shrink-0">
             <Select
               items={conservationItems}
-            onValueChange={(value) => {
-              setConservationType(value);
-              setPage(1);
-            }}
-            value={conservationType}
-          >
-            <SelectTrigger aria-label="Filtrer par conservation">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {conservationItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
+              onValueChange={(value) => {
+                setConservationType(value);
+                setPage(1);
+              }}
+              value={conservationType}
+            >
+              <SelectTrigger aria-label="Filtrer par conservation">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {conservationItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
         </div>
@@ -443,10 +452,10 @@ function ProductsPage() {
                   title="Aucune référence à afficher"
                 />
               )}
-              emptyCellClassName="border-b border-border text-muted-foreground"
               getRowKey={(result) => result.variant?.id ?? result.product.id + '-root'}
               headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
-              rowClassName="border-b border-border transition-colors hover:bg-muted/50"
+              rowClassName="transition-colors hover:bg-muted/50"
+              tableClassName="border-b border-border"
             />
             <div className="px-5 pb-5">
               <DataPagination
