@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 clôturé — M-004 contrat validé, conception technique en cours  
+**Statut :** VALIDÉ — M-001/M-002/M-003 clôturés — M-004 contrat validé et conception produite ; implémentation en attente d'une évolution Core de rétention  
 **Dernière mise à jour :** 2026-09-28
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -169,7 +169,7 @@ Le lot UX M-002 `GMS-UX-002` a été traité et fusionné avant l'ouverture de M
 
 ### 2.4 Fiches techniques
 
-**État : CONTRAT FONCTIONNEL VALIDÉ — conception technique autorisée**
+**État : CONTRAT FONCTIONNEL VALIDÉ — conception technique produite ; code métier en attente du gap Core rétention**
 
 Source canonique :
 
@@ -221,6 +221,16 @@ puis bloc séparé Exports et diffusion V1
 ~~~
 
 Les autres exports restent différés à V2.
+
+Gap Core identifié pour M-004 :
+
+~~~text
+rétention par ressource avec purgeScheduledAt figé
++ durée effective pouvant varier par Workspace
+→ non représentable proprement par le moteur Core v1.2.1 à cutoff global
+→ évolution générique Core requise avant purge planifiée
+~~~
+
 
 ### 2.5 Fiches process
 
