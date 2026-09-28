@@ -18,6 +18,9 @@ import {
   DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
 } from '@/features/suppliers/constants/supplier-permissions';
 import {
+  TECHNICAL_SHEET_PERMISSION,
+} from '@/features/technical-sheets/constants/technical-sheet-permissions';
+import {
   formatDossierLocation,
   getDossierStatusLabel,
   getDossierStatusTone,
@@ -26,7 +29,7 @@ import { useWorkspaceContext } from '@/features/workspace/components/workspace-c
 
 function DossierWorkspacePage() {
   const { dossierId } = useParams();
-  const { canAny, workspace } = useWorkspaceContext();
+  const { can, canAny, workspace } = useWorkspaceContext();
   const dossierQuery = useGetDossierByIdQuery({
     workspaceId: workspace.id,
     dossierId,
@@ -136,6 +139,19 @@ function DossierWorkspacePage() {
               <Button asChild>
                 <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossier.id + '/suppliers'}>
                   Fournisseurs et prix
+                </Link>
+              </Button>
+            )}
+            {can(TECHNICAL_SHEET_PERMISSION.READ) && (
+              <Button asChild variant="outline">
+                <Link
+                  to={
+                    '/workspaces/' + workspace.id
+                    + '/dossiers/' + dossier.id
+                    + '/technical-sheets'
+                  }
+                >
+                  Fiches techniques
                 </Link>
               </Button>
             )}
