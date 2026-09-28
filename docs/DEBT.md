@@ -240,6 +240,42 @@ Une régression fonctionnelle réelle doit être corrigée comme telle ; une nou
 
 
 
+### GMS-UX-002 — Catégories du Référentiel Produits Platform
+
+**Statut :** DIFFÉRÉ — à traiter après clôture de M-003 dans un lot M-002 UX dédié  
+**Périmètre :** produit `saas-fiches-techniques-gms` — M-002 / Platform / Référentiel Produits  
+**Blocage M-003 :** non
+
+Constat terrain :
+
+- dans `Platform → Référentiel Produits → Catégories`, la colonne `Statut` apporte peu d'information opérationnelle par rapport à l'action de cycle de vie disponible ;
+- la liste des catégories ne fournit actuellement aucun indicateur du nombre de Produits qui leur sont affectés ;
+- le backend refuse l'archivage d'une catégorie dès qu'au moins un Produit actif lui est encore affecté, avec un conflit `409` ;
+- l'utilisateur découvre donc cette dépendance seulement au moment de l'archivage et ne dispose pas, depuis l'onglet Catégories, d'un chemin direct pour identifier les Produits concernés ;
+- l'action de cycle de vie utilise encore un bouton texte `Archiver / Réactiver`, contrairement à la convention d'actions de tableau reposant sur `ActionIconButton` + icône + infobulle.
+
+Cible UX à cadrer et implémenter :
+
+1. remplacer la colonne `Statut` par un indicateur d'usage plus utile, au minimum le nombre de **Produits actifs** affectés à chaque catégorie, car ce nombre correspond à la règle backend qui bloque l'archivage ;
+2. décider pendant le cadrage si un compteur total incluant les Produits archivés apporte une valeur supplémentaire ou si le compteur actif suffit ;
+3. permettre depuis la catégorie d'accéder facilement aux Produits qui empêchent son archivage, idéalement en ouvrant l'onglet Référentiel filtré sur cette catégorie, plutôt que de laisser l'utilisateur face à un simple message bloquant ;
+4. conserver l'invariant backend : aucune catégorie contenant un Produit actif ne peut être archivée ;
+5. aligner les actions de cycle de vie sur le design partagé :
+   - `Archive` + infobulle `Archiver` ;
+   - `RotateCcw` + infobulle `Réactiver` ;
+   - `ActionIconButton` dans `DataTableActions` ;
+6. ajouter les tests backend/frontend nécessaires pour le compteur, la navigation contextualisée et les actions de cycle de vie.
+
+Impact technique attendu :
+
+- faire évoluer la projection/liste des catégories côté backend pour exposer un compteur calculé sans requête N+1 ;
+- adapter le contrat RTK Query / sérialisation concerné ;
+- adapter `product-reference-page.jsx` et ses tests ;
+- ne pas modifier les invariants M-002 de catégorie ou d'archivage sous couvert de cette amélioration UX.
+
+Cette dette ne doit pas être implémentée sur la branche M-003 : elle appartient au périmètre M-002 et sera traitée dans un lot cohérent après livraison de M-003.
+
+
 ### GMS-CORE-UX-001 — Canoniser le survol de ligne dans DataTable
 
 **Statut :** DIFFÉRÉ / ACCEPTÉ — décision confirmée le 2026-09-28 ; à traiter dans un vrai lot Core UI/UX  
