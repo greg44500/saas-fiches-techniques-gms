@@ -206,6 +206,7 @@ const restoreTechnicalSheet = async ({
     technicalSheetId,
     actorId,
     expectedRevision,
+    now = new Date(),
 }) => mongoose.connection.transaction(
     async (session) => {
         const sheet =
@@ -215,12 +216,16 @@ const restoreTechnicalSheet = async ({
                 dossier: dossierId,
                 status:
                     TECHNICAL_SHEET_STATUS.DELETED,
+                purgeScheduledAt:
+                    mongoose.trusted({
+                        $gt: now,
+                    }),
                 revision: expectedRevision,
             }).session(session);
 
         if (!sheet) {
             throw new AppError(
-                'Conflit de restauration de la Fiche technique.',
+                'La Fiche technique n’est plus restaurable ou son état a changé.',
                 409,
             );
         }

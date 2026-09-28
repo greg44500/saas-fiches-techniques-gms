@@ -434,6 +434,72 @@ describe('M-004 services Fiches techniques', () => {
         });
     });
 
+    it('refuse la restauration lorsque l échéance de corbeille est atteinte', async () => {
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche rétention M004',
+                },
+            });
+
+        const deletedAt =
+            new Date(
+                '2026-09-01T00:00:00.000Z',
+            );
+        const deleted =
+            await deleteTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    created.sheet.revision,
+                now: deletedAt,
+            });
+
+        await expect(
+            restoreTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    deleted.revision,
+                now:
+                    new Date(
+                        deleted.purgeScheduledAt,
+                    ),
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 409,
+        });
+
+        expect(
+            await getUsageMetricValue({
+                workspaceId:
+                    owner.workspace._id,
+                metricKey:
+                    TECHNICAL_SHEET_METRIC
+                        .TECHNICAL_SHEETS,
+            }),
+        ).toBe(1);
+    });
+
     it('conserve le quota en corbeille et ne le libère qu’à la purge', async () => {
         const created =
             await createTechnicalSheet({
