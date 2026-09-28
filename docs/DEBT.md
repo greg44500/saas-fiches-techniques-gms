@@ -242,9 +242,11 @@ Une régression fonctionnelle réelle doit être corrigée comme telle ; une nou
 
 ### GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité du tableau
 
-**Statut :** DIFFÉRÉ — à traiter après clôture de M-003 dans un lot M-002 UX dédié  
+**Statut :** À TRAITER — prochain lot produit avant M-004  
 **Périmètre :** produit `saas-fiches-techniques-gms` — M-002 / Platform / Référentiel Produits  
 **Blocage M-003 :** non
+
+M-003 est clôturé depuis le 2026-09-28 : PR #22 fusionnée, Core Gate PR #132 verte et Core Gate post-merge #133 verte. Cette dette devient donc le prochain lot actif à cadrer/implémenter avant M-004.
 
 ### Constat A — onglet Catégories
 

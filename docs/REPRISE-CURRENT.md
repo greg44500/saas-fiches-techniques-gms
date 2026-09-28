@@ -1,9 +1,9 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-09-28  
-**Lot clôturé :** M-002 — Référentiel Produits  
-**Lot courant :** M-003 — Fournisseurs + Articles + conditionnements + prix/catalogues  
-**État M-003 :** implémentation backend/frontend/E2E terminée ; `npm run release:check` confirmé vert le 2026-09-28 ; QA visuelle validée par le porteur produit ; lot prêt pour l’unique PR M-003  
+**Lot clôturé :** M-003 — Fournisseurs + Articles + conditionnements + prix/catalogues  
+**Lot courant :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité du tableau  
+**État M-003 :** CLÔTURÉ — PR #22 fusionnée ; Core Gate PR #132 verte ; merge `2044dbf3c13473d926cfaa8b86f5eb9dbbf259ac` ; Core Gate post-merge #133 verte  
 **Branche :** \`feature/m003-suppliers-catalogs-pricing\`  
 **HEAD fonctionnel avant mise à jour documentaire :** \`eb1e44312c59051ed5d525720a8b498caf4f5c84\`
 
@@ -40,10 +40,10 @@ Merge PR #20 — feat(m002): deliver the shared product reference catalog
 État Git vérifié le 2026-09-28 :
 
 ~~~text
-main   = 386e64cacd97cab15e712697c2d7fdd985a4f62e
-branch = 689667caefaea41b28007ba3f9384caca446f773
-ahead  = 53
-behind = 0
+main = 2044dbf3c13473d926cfaa8b86f5eb9dbbf259ac
+PR   = #22
+Core Gate PR = #132 success
+Core Gate post-merge = #133 success
 ~~~
 
 La branche M-003 reste donc exclusivement en avance sur \`main\`.
@@ -232,7 +232,7 @@ Surface globale \`/supplier-reference\` :
 - imports globaux ;
 - lifecycle global.
 
-## 5. Tests présents dans la branche
+## 5. Tests livrés
 
 ### Backend
 
@@ -315,9 +315,16 @@ L’environnement local Windows dispose désormais de ClamAV fonctionnel pour ex
 
 La QA visuelle M-003 est validée par le porteur produit. Des ajustements UX futurs issus des retours bêta restent possibles mais ne sont pas bloquants pour la livraison du contrat M-003 actuel.
 
-## 7. Validation locale acquise
+## 7. Clôture Git et CI
 
-Aucune relance locale supplémentaire n’est requise avant ouverture de la PR M-003, sauf modification nouvelle de la branche.
+Preuves de livraison M-003 :
+
+~~~text
+PR #22
+→ Core Gate #132 : success
+→ merge : 2044dbf3c13473d926cfaa8b86f5eb9dbbf259ac
+→ Core Gate post-merge #133 : success
+~~~
 
 La capability `supplier_catalog_import` reste indépendante du RBAC. Le contrat ne l’attribue encore à aucun plan commercial précis ; aucune règle Free/Premium/IA n’a été inventée.
 
@@ -327,16 +334,17 @@ La QA visuelle M-003 a été acceptée le 2026-09-28.
 
 Cette validation autorise la livraison du module. Elle n’interdit pas des retouches ultérieures issues des bêta-testeurs ; celles-ci devront être traitées comme de nouveaux lots UX ciblés sans rouvrir artificiellement le contrat fonctionnel M-003 si les invariants restent inchangés.
 
-## 9. Étapes restantes avant clôture
+## 9. Suite
+
+M-003 est clôturé.
+
+Ordre de travail validé :
 
 ~~~text
-ouvrir l’unique PR M-003
-→ validation Core Gate PR
-→ merge
-→ validation post-merge
-→ documentation de clôture M-003
-→ lot UX M-002 déjà enregistré
-→ M-004
+GMS-UX-002 — lot UX M-002
+→ validation du lot
+→ une PR / un merge cohérents
+→ M-004 — Fiches techniques + valorisation
 ~~~
 
-Ne pas démarrer M-004 avant clôture M-003 et traitement du lot UX M-002 prévu.
+Les retours UX futurs des bêta-testeurs sur M-003 pourront être traités dans des lots ciblés sans rouvrir artificiellement M-003 tant que ses invariants métier restent inchangés.
