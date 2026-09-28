@@ -8,6 +8,7 @@ import {
     createDraftFromValidatedState,
     getTechnicalSheetDraft,
     saveTechnicalSheetDraft,
+    selectTechnicalSheetSupplierArticle,
 } from './technicalSheetDraft.service.js';
 import {
     getTechnicalSheetCapacity,
@@ -249,6 +250,26 @@ const saveDraft = async (req, res) => {
                     TECHNICAL_SHEET_PERMISSION
                         .VALUATION_MANAGE,
                 ),
+        });
+
+    res.status(200).json({
+        status: 'success',
+        data: { draft },
+    });
+};
+
+const selectSupplierArticle = async (req, res) => {
+    const draft =
+        await selectTechnicalSheetSupplierArticle({
+            workspaceId:
+                req.workspace._id,
+            dossierId:
+                req.dossier._id,
+            technicalSheetId:
+                req.validated.params
+                    .technicalSheetId,
+            actorId: req.user._id,
+            ...req.validated.body,
         });
 
     res.status(200).json({
@@ -572,6 +593,7 @@ export {
     remove,
     restore,
     saveDraft,
+    selectSupplierArticle,
     startDraft,
     trash,
     update,

@@ -247,6 +247,17 @@ const valuateTechnicalSheetSchema =
             .min(0),
     });
 
+const selectSupplierArticleSchema =
+    z.strictObject({
+        expectedRevision: z
+            .number()
+            .int()
+            .min(0),
+        lineId: objectIdSchema,
+        supplierArticleId:
+            objectIdSchema,
+    });
+
 const validateTechnicalSheetSchema =
     z.strictObject({
         expectedSheetRevision: z
@@ -327,6 +338,7 @@ export {
     purgeWorkspaceTrashSchema,
     revisionMutationSchema,
     saveTechnicalSheetDraftSchema,
+    selectSupplierArticleSchema,
     technicalSheetDossierParamsSchema,
     technicalSheetListQuerySchema,
     technicalSheetParamsSchema,

@@ -4,6 +4,9 @@ import {
     BUSINESS_ACTIVITY_ACTION,
 } from '../businessActivity/businessActivity.registry.js';
 import {
+    resolveSupplierArticle,
+} from '../supplierCatalog/supplierPricing.service.js';
+import {
     TECHNICAL_SHEET_VALUATION_STATUS,
 } from './technicalSheet.registry.js';
 import {
@@ -460,8 +463,123 @@ const createDraftFromValidatedState = async ({
     },
 );
 
+const selectTechnicalSheetSupplierArticle = async ({
+    workspaceId,
+    dossierId,
+    technicalSheetId,
+    actorId,
+    expectedRevision,
+    lineId,
+    supplierArticleId,
+}) => mongoose.connection.transaction(
+    async (session) => {
+        await assertOperationalDossier({
+            workspaceId,
+            dossierId,
+            session,
+        });
+
+        const draft =
+            await TechnicalSheetDraft.findOne({
+                technicalSheet: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                revision: expectedRevision,
+            }).session(session);
+
+        if (!draft) {
+            throw new AppError(
+                'Conflit de modification du brouillon.',
+                409,
+            );
+        }
+
+        const line = draft.lines.id(lineId);
+
+        if (!line) {
+            throw new AppError(
+                'Ligne de Fiche technique introuvable.',
+                404,
+            );
+        }
+
+        const article = await resolveSupplierArticle({
+            workspaceId,
+            articleId: supplierArticleId,
+            session,
+        });
+
+        const articleVariantId = (
+            article.productVariant?._id
+            ?? article.productVariant
+        ).toString();
+
+        if (
+            articleVariantId
+            !== line.productVariant.toString()
+        ) {
+            throw new AppError(
+                'L’Article fournisseur ne correspond pas à la Référence Produit de cette ligne.',
+                409,
+            );
+        }
+
+        line.selectedSupplierArticle =
+            article._id;
+        line.valuation = {
+            status: 'STALE',
+            supplierArticleId: null,
+            applicableSource: null,
+            applicableSourceId: null,
+            normalizedAmount: null,
+            normalizedUnit: null,
+            lineCostHt: null,
+            pricedAt: null,
+            sourceFingerprint: null,
+            alerts: [],
+        };
+        draft.valuationStatus =
+            TECHNICAL_SHEET_VALUATION_STATUS.STALE;
+        draft.valuedAt = null;
+        draft.valuationFingerprint = null;
+        draft.economicSnapshot = null;
+        draft.updatedBy = actorId;
+        draft.revision += 1;
+
+        await draft.save({ session });
+
+        await createTechnicalSheetEvent({
+            workspaceId,
+            dossierId,
+            actorId,
+            action:
+                BUSINESS_ACTIVITY_ACTION
+                    .TECHNICAL_SHEET_SOURCING_CHANGED,
+            technicalSheetId,
+            metadata: {
+                lineId:
+                    line._id.toString(),
+                supplierArticleId:
+                    article._id.toString(),
+            },
+            session,
+        });
+
+        await draft.populate({
+            path: 'lines.productVariant',
+            select:
+                '_id name referenceUnit yieldPercent status',
+        });
+
+        return serializeTechnicalSheetDraft(
+            draft,
+        );
+    },
+);
+
 export {
     createDraftFromValidatedState,
     getTechnicalSheetDraft,
     saveTechnicalSheetDraft,
+    selectTechnicalSheetSupplierArticle,
 };

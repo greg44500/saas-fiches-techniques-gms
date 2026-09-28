@@ -39,6 +39,7 @@ import {
     remove,
     restore,
     saveDraft,
+    selectSupplierArticle,
     startDraft,
     trash,
     update,
@@ -66,6 +67,7 @@ import {
     purgeWorkspaceTrashSchema,
     revisionMutationSchema,
     saveTechnicalSheetDraftSchema,
+    selectSupplierArticleSchema,
     technicalSheetDossierParamsSchema,
     technicalSheetListQuerySchema,
     technicalSheetParamsSchema,
@@ -273,6 +275,28 @@ technicalSheetDossierRouter.put(
     loadAuthorizedDossierContext,
     enforceTechnicalSheetDossierOperational,
     saveDraft,
+);
+
+technicalSheetDossierRouter.patch(
+    '/:technicalSheetId/draft/sourcing',
+    authenticate,
+    validateRequest({
+        params:
+            technicalSheetParamsSchema,
+        body:
+            selectSupplierArticleSchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        TECHNICAL_SHEET_PERMISSION
+            .SOURCING_MANAGE,
+    ),
+    enforceWorkspaceAccessMode({
+        allowDuringRemediation: true,
+    }),
+    loadAuthorizedDossierContext,
+    enforceTechnicalSheetDossierOperational,
+    selectSupplierArticle,
 );
 
 technicalSheetDossierRouter.post(
