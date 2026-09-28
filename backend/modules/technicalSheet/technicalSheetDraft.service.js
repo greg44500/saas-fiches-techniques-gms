@@ -182,13 +182,41 @@ const saveTechnicalSheetDraft = async ({
                     session,
                 });
 
+            const currentLinesById = new Map(
+                current.lines.map((line) => [
+                    line._id.toString(),
+                    line,
+                ]),
+            );
+
             preparedLines =
-                prepared.lines.map((line) => ({
-                    ...line,
-                    valuation: undefined,
-                    productVariantSnapshot:
-                        undefined,
-                }));
+                prepared.lines.map((line, index) => {
+                    const inputLine = data.lines[index];
+                    const existingLine =
+                        inputLine?.id
+                            ? currentLinesById.get(
+                                inputLine.id.toString(),
+                            )
+                            : null;
+                    const sourcingWasExplicit =
+                        Object.hasOwn(
+                            inputLine ?? {},
+                            'selectedSupplierArticleId',
+                        );
+
+                    return {
+                        ...line,
+                        selectedSupplierArticle:
+                            sourcingWasExplicit
+                                ? line.selectedSupplierArticle
+                                : existingLine
+                                    ?.selectedSupplierArticle
+                                ?? null,
+                        valuation: undefined,
+                        productVariantSnapshot:
+                            undefined,
+                    };
+                });
         }
 
         const wasValued =
