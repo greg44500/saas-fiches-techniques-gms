@@ -418,8 +418,11 @@ const validateTechnicalSheet = async ({
                         buildValidationLines({
                             valuation: fresh,
                         }),
-                    economicSnapshot:
-                        fresh.economicSnapshot,
+                    economicSnapshot: {
+                        ...fresh.economicSnapshot,
+                        finalPriceMode:
+                            draft.finalPriceMode,
+                    },
                     valuationFingerprint:
                         fresh
                             .valuationFingerprint,

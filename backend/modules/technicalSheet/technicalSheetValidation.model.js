@@ -5,6 +5,7 @@ import {
 } from '../productCatalog/productCatalog.registry.js';
 import {
     TECHNICAL_SHEET_CHANGE_KIND,
+    TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_LINE_KIND,
 } from './technicalSheet.registry.js';
 
@@ -148,6 +149,13 @@ const economicSnapshotSchema = new Schema(
         finalPriceTtcMinor: {
             type: Number,
             min: 0,
+            required: true,
+        },
+        finalPriceMode: {
+            type: String,
+            enum: Object.values(
+                TECHNICAL_SHEET_FINAL_PRICE_MODE,
+            ),
             required: true,
         },
         actualMarginAmountHt: {

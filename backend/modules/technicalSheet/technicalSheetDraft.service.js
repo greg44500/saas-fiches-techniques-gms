@@ -13,6 +13,9 @@ import {
     TechnicalSheetDraft,
 } from './technicalSheetDraft.model.js';
 import {
+    TechnicalSheetValidation,
+} from './technicalSheetValidation.model.js';
+import {
     prepareTechnicalSheetComposition,
 } from './technicalSheetComposition.service.js';
 import {
@@ -258,4 +261,207 @@ const saveTechnicalSheetDraft = async ({
     },
 );
 
-export { saveTechnicalSheetDraft };
+const getTechnicalSheetDraft = async ({
+    workspaceId,
+    dossierId,
+    technicalSheetId,
+}) => {
+    const draft =
+        await TechnicalSheetDraft.findOne({
+            technicalSheet: technicalSheetId,
+            workspace: workspaceId,
+            dossier: dossierId,
+        }).populate({
+            path: 'lines.productVariant',
+            select:
+                '_id name referenceUnit yieldPercent status',
+        });
+
+    return draft
+        ? serializeTechnicalSheetDraft(draft)
+        : null;
+};
+
+const createDraftFromValidatedState = async ({
+    workspaceId,
+    dossierId,
+    technicalSheetId,
+    actorId,
+    expectedSheetRevision,
+}) => mongoose.connection.transaction(
+    async (session) => {
+        await assertOperationalDossier({
+            workspaceId,
+            dossierId,
+            session,
+        });
+
+        const sheet =
+            await TechnicalSheet.findOne({
+                _id: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                status: 'ACTIVE',
+                revision:
+                    expectedSheetRevision,
+            }).session(session);
+
+        if (!sheet) {
+            throw new AppError(
+                'Conflit de modification de la Fiche technique.',
+                409,
+            );
+        }
+
+        const existing =
+            await TechnicalSheetDraft.findOne({
+                technicalSheet:
+                    technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+            }).session(session);
+
+        if (existing) {
+            throw new AppError(
+                'Un brouillon existe déjà pour cette Fiche technique.',
+                409,
+            );
+        }
+
+        if (!sheet.currentValidatedState) {
+            throw new AppError(
+                'Aucun état validé ne permet d’initialiser un nouveau brouillon.',
+                409,
+            );
+        }
+
+        const validation =
+            await TechnicalSheetValidation.findOne({
+                _id:
+                    sheet.currentValidatedState,
+                technicalSheet:
+                    technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+            }).session(session);
+
+        if (!validation) {
+            throw new AppError(
+                'État validé courant introuvable.',
+                409,
+            );
+        }
+
+        const prepared =
+            await prepareTechnicalSheetComposition({
+                lines:
+                    validation.linesSnapshot.map(
+                        (line) => ({
+                            kind: line.kind,
+                            productVariantId:
+                                line.productVariantId
+                                    .toString(),
+                            netQuantity:
+                                line.netQuantity
+                                    .toString(),
+                            inputUnit:
+                                line.inputUnit,
+                            order: line.order,
+                            note:
+                                line.note ?? null,
+                            selectedSupplierArticleId:
+                                line.supplierArticleId
+                                    .toString(),
+                        }),
+                    ),
+                session,
+            });
+
+        const [draft] =
+            await TechnicalSheetDraft.create(
+                [{
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    technicalSheet:
+                        technicalSheetId,
+                    productionQuantity:
+                        validation
+                            .sheetSnapshot
+                            .productionQuantity
+                            .toString(),
+                    productionUnit:
+                        validation
+                            .sheetSnapshot
+                            .productionUnit,
+                    portions:
+                        validation
+                            .sheetSnapshot
+                            .portions
+                            ?.toString()
+                        ?? null,
+                    vatRateBasisPoints:
+                        validation
+                            .sheetSnapshot
+                            .vatRateBasisPoints,
+                    targetMarginBasisPoints:
+                        validation
+                            .sheetSnapshot
+                            .targetMarginBasisPoints,
+                    finalPriceTtcMinor:
+                        validation
+                            .economicSnapshot
+                            .finalPriceTtcMinor,
+                    finalPriceMode:
+                        validation
+                            .economicSnapshot
+                            .finalPriceMode,
+                    lines:
+                        prepared.lines.map(
+                            (line) => ({
+                                ...line,
+                                valuation:
+                                    undefined,
+                                productVariantSnapshot:
+                                    undefined,
+                            }),
+                        ),
+                    valuationStatus:
+                        TECHNICAL_SHEET_VALUATION_STATUS.STALE,
+                    createdBy: actorId,
+                    updatedBy: actorId,
+                }],
+                { session },
+            );
+
+        await createTechnicalSheetEvent({
+            workspaceId,
+            dossierId,
+            actorId,
+            action:
+                BUSINESS_ACTIVITY_ACTION
+                    .TECHNICAL_SHEET_DRAFT_SAVED,
+            technicalSheetId,
+            metadata: {
+                initializedFromValidationId:
+                    validation._id.toString(),
+            },
+            session,
+        });
+
+        await draft.populate({
+            path: 'lines.productVariant',
+            select:
+                '_id name referenceUnit yieldPercent status',
+        });
+
+        return serializeTechnicalSheetDraft(
+            draft,
+        );
+    },
+);
+
+export {
+    createDraftFromValidatedState,
+    getTechnicalSheetDraft,
+    saveTechnicalSheetDraft,
+};
