@@ -103,6 +103,50 @@ describe('M-003 supplier/article HTTP contract', () => {
         }
     });
 
+    it('liste actifs et archivés avec le filtre Fournisseurs ALL', async () => {
+        const created = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Fournisseur archivé visible' });
+
+        expect(created.status).toBe(201);
+
+        const archived = await request(app)
+            .patch(
+                supplierPath(ownerA)
+                + '/'
+                + created.body.data.supplier.id
+                + '/status',
+            )
+            .set(bearer(ownerA.token))
+            .send({ status: 'ARCHIVED' });
+
+        expect(archived.status).toBe(200);
+
+        const activeOnly = await request(app)
+            .get(supplierPath(ownerA))
+            .set(bearer(ownerA.token));
+
+        expect(
+            activeOnly.body.data.suppliers
+                .map(({ name }) => name),
+        ).not.toContain('Fournisseur archivé visible');
+
+        const allStatuses = await request(app)
+            .get(supplierPath(ownerA) + '?status=ALL')
+            .set(bearer(ownerA.token));
+
+        expect(allStatuses.status).toBe(200);
+        expect(allStatuses.body.data.suppliers).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    name: 'Fournisseur archivé visible',
+                    status: 'ARCHIVED',
+                }),
+            ]),
+        );
+    });
+
     it('applique le RBAC Workspace aux écritures Fournisseur', async () => {
         const member = await createWorkspaceMemberFixture({
             workspaceId: ownerA.workspace._id,

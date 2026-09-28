@@ -156,6 +156,13 @@ const listQueryBase = {
 
 const workspaceSupplierListQuerySchema = z.strictObject({
     ...listQueryBase,
+    status: z.union([
+        z.enum(Object.values(SUPPLIER_RESOURCE_STATUS)),
+        z.literal('ALL'),
+    ])
+        .optional()
+        .default(SUPPLIER_RESOURCE_STATUS.ACTIVE)
+        .transform((value) => value === 'ALL' ? null : value),
     scope: z.enum(Object.values(SUPPLIER_SCOPE)).optional(),
 });
 

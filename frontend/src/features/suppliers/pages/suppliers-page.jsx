@@ -65,6 +65,8 @@ import {
 } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
+const ALL_SUPPLIER_STATUSES = 'ALL';
+
 function SuppliersPage() {
   const {
     can,
@@ -109,7 +111,7 @@ function SuppliersPage() {
     {
       workspaceId: workspace.id,
       search: search || undefined,
-      status,
+      status: status === ALL_SUPPLIER_STATUSES ? 'ACTIVE' : status,
       page,
       limit: pageSize,
     },
@@ -120,7 +122,7 @@ function SuppliersPage() {
   const catalogQuery = useListSupplierCatalogsQuery(
     {
       workspaceId: workspace.id,
-      status,
+      status: status === ALL_SUPPLIER_STATUSES ? 'ACTIVE' : status,
       page,
       limit: pageSize,
     },
@@ -161,6 +163,14 @@ function SuppliersPage() {
 
   function changeSection(nextSection) {
     setPage(1);
+
+    if (
+      nextSection !== 'suppliers'
+      && status === ALL_SUPPLIER_STATUSES
+    ) {
+      setStatus('ACTIVE');
+    }
+
     setSection(nextSection);
   }
 
@@ -536,6 +546,12 @@ function SuppliersPage() {
             <p className="mb-2 text-sm font-medium">Statut</p>
             <Select
               items={[
+                ...(section === 'suppliers'
+                  ? [{
+                    value: ALL_SUPPLIER_STATUSES,
+                    label: 'Tous',
+                  }]
+                  : []),
                 { value: 'ACTIVE', label: 'Actifs' },
                 { value: 'ARCHIVED', label: 'Archivés' },
               ]}
@@ -546,6 +562,11 @@ function SuppliersPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                {section === 'suppliers' && (
+                  <SelectItem value={ALL_SUPPLIER_STATUSES}>
+                    Tous
+                  </SelectItem>
+                )}
                 <SelectItem value="ACTIVE">Actifs</SelectItem>
                 <SelectItem value="ARCHIVED">Archivés</SelectItem>
               </SelectContent>
@@ -712,4 +733,7 @@ function SuppliersPage() {
   );
 }
 
-export { SuppliersPage };
+export {
+  ALL_SUPPLIER_STATUSES,
+  SuppliersPage,
+};

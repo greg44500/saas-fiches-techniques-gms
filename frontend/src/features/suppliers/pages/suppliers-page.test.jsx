@@ -106,6 +106,10 @@ describe('SuppliersPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
+    mocks.updateSupplierStatus.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({}),
+    });
+
     mocks.workspaceContext.mockReturnValue({
       workspace: {
         id: 'workspace-1',
@@ -118,7 +122,13 @@ describe('SuppliersPage', () => {
     mocks.listSuppliers.mockImplementation(({ status }) => (
       queryResult({
         suppliers: status === 'ARCHIVED'
-          ? []
+          ? [{
+            id: 'supplier-archived',
+            name: 'Fournisseur archivé',
+            supplierCode: 'ARC',
+            scope: 'WORKSPACE_PRIVATE',
+            status: 'ARCHIVED',
+          }]
           : [
             {
               id: 'supplier-global',
@@ -134,6 +144,15 @@ describe('SuppliersPage', () => {
               scope: 'WORKSPACE_PRIVATE',
               status: 'ACTIVE',
             },
+            ...(status === 'ALL'
+              ? [{
+                id: 'supplier-archived',
+                name: 'Fournisseur archivé',
+                supplierCode: 'ARC',
+                scope: 'WORKSPACE_PRIVATE',
+                status: 'ARCHIVED',
+              }]
+              : []),
           ],
         pagination: {
           page: 1,
@@ -214,6 +233,35 @@ describe('SuppliersPage', () => {
 
     expect(screen.getByRole('button', { name: 'Rechercher' }))
       .toBeDisabled();
+  });
+
+  it('affiche Tous et permet de réactiver un Fournisseur archivé', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(screen.getByRole('combobox', {
+      name: 'Filtrer par statut',
+    }));
+    await user.click(screen.getByRole('option', { name: 'Tous' }));
+
+    expect(mocks.listSuppliers).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: 'ALL',
+        page: 1,
+      }),
+    );
+    expect(screen.getByText('Fournisseur archivé')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Réactiver Fournisseur archivé',
+    }));
+
+    expect(mocks.updateSupplierStatus).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      supplierId: 'supplier-archived',
+      status: 'ACTIVE',
+    });
   });
 
   it('ouvre le détail Fournisseur depuis une action Voir', async () => {
