@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
+import { listProductCategories } from './productCategoryProjection.service.js';
 import {
     assertProductCreationReviewed,
 } from './productCatalogDedup.service.js';
@@ -75,17 +76,12 @@ const createCategory = async ({
     return serializeCategory(category);
 });
 
-const listCategories = async ({ includeArchived = true } = {}) => {
-    const filter = includeArchived
-        ? {}
-        : { status: PRODUCT_CATEGORY_STATUS.ACTIVE };
-
-    const categories = await ProductCategory.find(filter)
-        .sort({ name: 1, _id: 1 })
-        .lean();
-
-    return categories.map(serializeCategory);
-};
+const listCategories = async ({ includeArchived = true } = {}) => (
+    listProductCategories({
+        includeArchived,
+        includeActiveProductCount: true,
+    })
+);
 
 const updateCategory = async ({
     actorId,
