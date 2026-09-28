@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001/M-002/M-003 clôturés — M-004 contrat et conception validés ; prêt à implémentation hors exports  
+**Statut :** VALIDÉ — M-001/M-002/M-003 clôturés — M-004 hors exports implémenté sur branche ; validation locale/QA/Core Gate en attente  
 **Dernière mise à jour :** 2026-09-28
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -169,7 +169,7 @@ Le lot UX M-002 `GMS-UX-002` a été traité et fusionné avant l'ouverture de M
 
 ### 2.4 Fiches techniques
 
-**État : CONTRAT FONCTIONNEL VALIDÉ — conception technique fermée ; prêt à implémentation hors exports**
+**État : IMPLÉMENTÉ SUR BRANCHE — validation locale, QA visuelle et Core Gate en attente**
 
 Source canonique :
 
@@ -232,6 +232,16 @@ WorkspaceBusinessSettings.trashRetentionDays
 → job métier global et idempotent
 → aucun changement Core
 ~~~
+
+Checkpoint d'implémentation du 2026-09-28 :
+
+- backend M-004, migrations et job de purge implémentés ;
+- frontend M-004 implémenté avec RTK Query et routes Workspace/Dossier ;
+- séparation RBAC `technical-sheet:update` / `technical-sheet:sourcing:manage` implémentée ;
+- quota `technical_sheets` et capacité Dashboard implémentés ;
+- tests backend/frontend ciblés et quatre parcours Playwright M-004 ajoutés ;
+- aucun résultat de test n'est encore déclaré vert avant l'exécution locale ;
+- la PR unique et son Core Gate restent à venir après QA locale.
 
 
 

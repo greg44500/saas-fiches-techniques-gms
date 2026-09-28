@@ -3,7 +3,7 @@
 **Date :** 2026-09-28  
 **Lot clôturé :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité  
 **Lot courant :** M-004 — Fiches techniques + valorisation  
-**État M-004 :** CONTRAT FONCTIONNEL VALIDÉ — conception technique fermée ; PRÊT À IMPLÉMENTATION du bloc complet hors exports  
+**État M-004 :** IMPLÉMENTATION DU BLOC HORS EXPORTS TERMINÉE SUR BRANCHE — validation locale, QA visuelle et Core Gate encore à exécuter  
 **Branche :** `feature/m004-fiches-techniques-valorisation`  
 **Base de branche :** `main@b479b217815fad885f233e98b8f3145656641352`
 
@@ -280,7 +280,24 @@ Principes :
 
 Le périmètre Dossier M-001 reste applicable.
 
-Les détails exacts des clés de permissions sont à définir dans la conception technique.
+Les clés techniques réellement implémentées sont :
+
+~~~text
+technical-sheet:read
+technical-sheet:create
+technical-sheet:update
+technical-sheet:sourcing:manage
+technical-sheet:valuation:manage
+technical-sheet:validate
+technical-sheet:lifecycle:manage
+technical-sheet:delete
+technical-sheet:restore
+technical-sheet:purge
+technical-sheet:copy
+technical-sheet:settings:manage
+~~~
+
+Le rôle système Owner reçoit toutes ces permissions via le registre applicatif. Les profils métier restent composés par des Roles Workspace personnalisés, sans modifier les rôles système Core.
 
 ## 10. Quota commercial validé
 
@@ -368,7 +385,34 @@ Les détails de mise en page, placement d'actions, densité et microcopie sont *
 
 Une correction UX ne doit pas modifier silencieusement les invariants métier ou RBAC du contrat.
 
-## 13. Documents synchronisés avec le contrat
+## 13. État d'implémentation au 2026-09-28
+
+Le bloc M-004 hors exports est maintenant présent sur :
+
+~~~text
+feature/m004-fiches-techniques-valorisation
+~~~
+
+Implémenté :
+
+- modèles `TechnicalSheet`, `TechnicalSheetDraft`, `TechnicalSheetValidation` et `WorkspaceBusinessSettings` ;
+- composition Ingrédients / Économat, rendement M-002 et conversions compatibles ;
+- résolution Article / Prix via M-003, y compris ambiguïté explicite ;
+- valorisation HT/TTC, marge cible, Prix conseillé, Prix final et contrôle du plancher ;
+- détection de données tarifaires obsolètes et revalorisation obligatoire avant validation ;
+- snapshots validés immuables et historique ;
+- RBAC M-004 avec séparation édition recette / sourcing ;
+- création, mise à jour, archivage, réactivation, corbeille, restauration et purge ;
+- copie inter-Dossier sans données financières source ;
+- quota Workspace `technical_sheets`, corbeille comprise jusqu'à purge ;
+- rétention Workspace 1–90 jours et job de purge métier ;
+- migrations M-004 et scripts npm associés ;
+- frontend React/RTK Query : liste, création, éditeur, sourcing, valorisation, validation, historique, réglages, copie, corbeille et widget de capacité ;
+- tests backend ciblés, tests frontend ciblés et quatre scénarios Playwright M-004 ajoutés au dépôt.
+
+À ce stade, **aucun résultat local n'est encore déclaré vert dans cette synthèse**. La prochaine autorité est l'exécution locale demandée à l'utilisateur, puis la Core Gate de l'unique PR.
+
+## 14. Documents synchronisés avec le contrat
 
 Le lot documentaire M-004 met à jour :
 
@@ -390,32 +434,28 @@ Contradictions historiques résolues :
 - GMS-UX-002 clôturé ;
 - exports CSV/XLSX/PDF, impression et e-mail confirmés en V1 mais dans un bloc ultérieur séparé.
 
-## 14. Prochaine action
+## 15. Prochaine action
 
-Conception technique disponible :
+Le code du bloc M-004 hors exports est prêt pour validation locale.
 
-~~~text
-docs/m004/M-004-TECHNICAL-DESIGN.md
-~~~
-
-Le cadrage fonctionnel et la conception technique sont maintenant suffisants pour démarrer le code du bloc M-004 hors exports.
-
-Avant le code, reprendre cette synthèse dans une nouvelle conversation dédiée à l'implémentation.
-
-Ordre d'exécution :
+Ordre restant :
 
 ~~~text
-même branche M-004
-→ backend
-→ tests backend
-→ frontend
-→ tests frontend
-→ E2E
-→ QA visuelle
-→ release:check
+pull de feature/m004-fiches-techniques-valorisation
+→ migrations M-004 sur la base locale de développement
+→ tests ciblés backend/frontend
+→ E2E M-004
+→ release:check complet
+→ QA visuelle utilisateur
+→ corrections éventuelles sur la même branche
 → une seule PR
+→ Core Gate PR
 → un seul merge
+→ Core Gate post-merge
+→ mise à jour finale de la reprise
 ~~~
+
+Ne pas ouvrir la PR finale tant que les tests locaux et la QA visuelle demandés ne sont pas validés.
 
 Principe directeur :
 
