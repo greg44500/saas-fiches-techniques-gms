@@ -12,7 +12,7 @@ import {
 
 
 describe('application backend route composition', () => {
-    it('compose les modules métier M-001 et M-002', () => {
+    it('compose les routes métier M-001 à M-004', () => {
         expect(APPLICATION_BACKEND_ROUTE_MODULES).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
@@ -28,6 +28,26 @@ describe('application backend route composition', () => {
                 expect.objectContaining({
                     key: 'product-reference-governance',
                     mountPath: '/api/product-reference',
+                    router: expect.any(Function),
+                }),
+                expect.objectContaining({
+                    key: 'suppliers',
+                    mountPath: '/api/workspaces/:workspaceId/suppliers',
+                    router: expect.any(Function),
+                }),
+                expect.objectContaining({
+                    key: 'technical-sheets-dossier',
+                    mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/technical-sheets',
+                    router: expect.any(Function),
+                }),
+                expect.objectContaining({
+                    key: 'technical-sheets-workspace',
+                    mountPath: '/api/workspaces/:workspaceId/technical-sheets',
+                    router: expect.any(Function),
+                }),
+                expect.objectContaining({
+                    key: 'workspace-business-settings',
+                    mountPath: '/api/workspaces/:workspaceId/business-settings',
                     router: expect.any(Function),
                 }),
             ]),

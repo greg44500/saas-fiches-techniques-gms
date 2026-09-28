@@ -18,6 +18,12 @@ import {
 import {
     PRODUCT_CATALOG_PERMISSIONS,
 } from '../../modules/productCatalog/productCatalogPermission.registry.js';
+import {
+    SUPPLIER_CATALOG_PERMISSIONS,
+} from '../../modules/supplierCatalog/supplierCatalogPermission.registry.js';
+import {
+    TECHNICAL_SHEET_PERMISSIONS,
+} from '../../modules/technicalSheet/technicalSheetPermission.registry.js';
 
 
 describe('application role permission registry', () => {
@@ -44,11 +50,15 @@ describe('application role permission registry', () => {
         );
     });
 
-    it('enregistre les permissions M-002', () => {
+    it('enregistre les permissions M-002, M-003 et M-004', () => {
         expect(
             ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY.permissions,
         ).toEqual(
-            expect.arrayContaining(PRODUCT_CATALOG_PERMISSIONS),
+            expect.arrayContaining([
+                ...PRODUCT_CATALOG_PERMISSIONS,
+                ...SUPPLIER_CATALOG_PERMISSIONS,
+                ...TECHNICAL_SHEET_PERMISSIONS,
+            ]),
         );
     });
 
@@ -60,6 +70,8 @@ describe('application role permission registry', () => {
             expect.arrayContaining([
                 ...DOSSIER_PERMISSIONS,
                 ...PRODUCT_CATALOG_PERMISSIONS,
+                ...SUPPLIER_CATALOG_PERMISSIONS,
+                ...TECHNICAL_SHEET_PERMISSIONS,
             ]),
         );
 
@@ -77,6 +89,8 @@ describe('application role permission registry', () => {
                     [
                         ...DOSSIER_PERMISSIONS,
                         ...PRODUCT_CATALOG_PERMISSIONS,
+                        ...SUPPLIER_CATALOG_PERMISSIONS,
+                        ...TECHNICAL_SHEET_PERMISSIONS,
                     ].includes(permission)),
             ).toBe(false);
         }
