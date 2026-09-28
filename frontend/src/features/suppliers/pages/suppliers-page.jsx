@@ -1,6 +1,7 @@
 import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { DataPagination } from '@/components/data-display/data-pagination';
 import {
   DataTable,
   DataTableActions,
@@ -62,6 +63,7 @@ import {
 import {
   useWorkspaceContext,
 } from '@/features/workspace/components/workspace-context';
+import { useDataPagination } from '@/hooks/use-data-pagination';
 
 function SuppliersPage() {
   const {
@@ -70,6 +72,12 @@ function SuppliersPage() {
     workspace,
   } = useWorkspaceContext();
   const { toast } = useToast();
+  const {
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useDataPagination();
   const [section, setSection] = useState('suppliers');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -89,7 +97,8 @@ function SuppliersPage() {
     workspaceId: workspace.id,
     search: search || undefined,
     status,
-    limit: 100,
+    page,
+    limit: pageSize,
   });
   const activeSupplierQuery = useListSuppliersQuery({
     workspaceId: workspace.id,
@@ -101,7 +110,8 @@ function SuppliersPage() {
       workspaceId: workspace.id,
       search: search || undefined,
       status,
-      limit: 100,
+      page,
+      limit: pageSize,
     },
     {
       skip: !can(SUPPLIER_PERMISSION.ARTICLE_READ),
@@ -111,7 +121,8 @@ function SuppliersPage() {
     {
       workspaceId: workspace.id,
       status,
-      limit: 100,
+      page,
+      limit: pageSize,
     },
     {
       skip: !can(SUPPLIER_PERMISSION.CATALOG_READ),
@@ -144,7 +155,18 @@ function SuppliersPage() {
 
     const nextSearch = searchInput.trim();
     if (!nextSearch) return;
+    setPage(1);
     setSearch(nextSearch);
+  }
+
+  function changeSection(nextSection) {
+    setPage(1);
+    setSection(nextSection);
+  }
+
+  function changeStatus(nextStatus) {
+    setPage(1);
+    setStatus(nextStatus);
   }
 
   async function toggleSupplierStatus(supplier) {
@@ -417,6 +439,14 @@ function SuppliersPage() {
       ? articleQuery
       : catalogQuery;
 
+  useEffect(() => {
+    const totalPages = currentQuery.data?.pagination?.totalPages;
+
+    if (totalPages && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [currentQuery.data?.pagination?.totalPages, page, setPage]);
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -455,7 +485,7 @@ function SuppliersPage() {
         </div>
       </header>
 
-      <Tabs onValueChange={setSection} value={section}>
+      <Tabs onValueChange={changeSection} value={section}>
         <TabsList aria-label="Gestion Fournisseurs" variant="section">
           <TabsTrigger value="suppliers" variant="section">
             Fournisseurs
@@ -473,112 +503,143 @@ function SuppliersPage() {
         </TabsList>
       </Tabs>
 
-      <div className="flex flex-col gap-3 md:flex-row md:items-end">
-        {(section === 'suppliers' || section === 'articles') && (
-        <form className="flex min-w-0 flex-1 gap-2" onSubmit={applySearch}>
-          <Input
-            aria-label="Rechercher"
-            maxLength={120}
-            onChange={(event) => {
-              const value = event.target.value;
-              setSearchInput(value);
+      <section className="rounded-xl border border-border bg-card">
+        <div className="flex flex-col gap-3 border-b border-border p-5 md:flex-row md:items-end">
+          {(section === 'suppliers' || section === 'articles') && (
+            <form className="flex min-w-0 flex-1 gap-2" onSubmit={applySearch}>
+              <Input
+                aria-label="Rechercher"
+                maxLength={120}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSearchInput(value);
 
-              if (!value.trim() && search) {
-                setSearch('');
-              }
-            }}
-            placeholder="Rechercher…"
-            value={searchInput}
-          />
-          <Button
-            disabled={!searchInput.trim()}
-            type="submit"
-            variant="outline"
-          >
-            Rechercher
-          </Button>
-        </form>
-        )}
-        <div className="w-full md:ml-auto md:w-52 md:shrink-0">
-          <p className="mb-2 text-sm font-medium">Statut</p>
-          <Select
-            items={[
-              { value: 'ACTIVE', label: 'Actifs' },
-              { value: 'ARCHIVED', label: 'Archivés' },
-            ]}
-            onValueChange={setStatus}
-            value={status}
-          >
-            <SelectTrigger aria-label="Filtrer par statut">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ACTIVE">Actifs</SelectItem>
-              <SelectItem value="ARCHIVED">Archivés</SelectItem>
-            </SelectContent>
-          </Select>
+                  if (!value.trim() && search) {
+                    setPage(1);
+                    setSearch('');
+                  }
+                }}
+                placeholder="Rechercher…"
+                value={searchInput}
+              />
+              <Button
+                disabled={!searchInput.trim()}
+                type="submit"
+                variant="outline"
+              >
+                Rechercher
+              </Button>
+            </form>
+          )}
+
+          <div className="w-full md:ml-auto md:w-52 md:shrink-0">
+            <p className="mb-2 text-sm font-medium">Statut</p>
+            <Select
+              items={[
+                { value: 'ACTIVE', label: 'Actifs' },
+                { value: 'ARCHIVED', label: 'Archivés' },
+              ]}
+              onValueChange={changeStatus}
+              value={status}
+            >
+              <SelectTrigger aria-label="Filtrer par statut">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ACTIVE">Actifs</SelectItem>
+                <SelectItem value="ARCHIVED">Archivés</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
-      {section === 'articles' && canManageArticles && !canReadProducts && (
-        <p className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-          La création manuelle d’un Article nécessite aussi l’accès au catalogue Produits pour sélectionner sa Référence Produit. Les Articles existants restent consultables selon votre rôle.
-        </p>
-      )}
+        {section === 'articles' && canManageArticles && !canReadProducts && (
+          <div className="border-b border-border p-5">
+            <p className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+              La création manuelle d’un Article nécessite aussi l’accès au catalogue Produits pour sélectionner sa Référence Produit. Les Articles existants restent consultables selon votre rôle.
+            </p>
+          </div>
+        )}
 
-      {currentQuery.isLoading && currentQuery.data === undefined ? (
-        <p className="text-sm text-muted-foreground">
-          Chargement…
-        </p>
-      ) : currentQuery.isError ? (
-        <ErrorState
-          description="Les données Fournisseurs n’ont pas pu être chargées."
-          onRetry={currentQuery.refetch}
-          title="Données indisponibles"
-        />
-      ) : section === 'suppliers' ? (
-        <DataTable
-          caption="Fournisseurs de l’espace de travail"
-          columns={supplierColumns}
-          data={suppliers}
-          emptyContent={(
-            <EmptyState
-              description="Aucun Fournisseur ne correspond aux critères."
-              title="Aucun Fournisseur"
-            />
-          )}
-          getRowKey={(supplier) => supplier.id}
-          rowClassName="transition-colors hover:bg-muted/50"
-        />
-      ) : section === 'articles' ? (
-        <DataTable
-          caption="Articles fournisseur"
-          columns={articleColumns}
-          data={articleQuery.data?.articles ?? []}
-          emptyContent={(
-            <EmptyState
-              description="Aucun Article fournisseur ne correspond aux critères."
-              title="Aucun Article"
-            />
-          )}
-          getRowKey={(article) => article.id}
-          rowClassName="transition-colors hover:bg-muted/50"
-        />
-      ) : (
-        <DataTable
-          caption="Catalogues fournisseurs"
-          columns={catalogColumns}
-          data={catalogQuery.data?.catalogs ?? []}
-          emptyContent={(
-            <EmptyState
-              description="Aucun catalogue fournisseur n’est disponible."
-              title="Aucun catalogue"
-            />
-          )}
-          getRowKey={(catalog) => catalog.id}
-          rowClassName="transition-colors hover:bg-muted/50"
-        />
-      )}
+        {currentQuery.isLoading && currentQuery.data === undefined ? (
+          <p className="p-5 text-sm text-muted-foreground">
+            Chargement…
+          </p>
+        ) : currentQuery.isError ? (
+          <ErrorState
+            description="Les données Fournisseurs n’ont pas pu être chargées."
+            onRetry={currentQuery.refetch}
+            title="Données indisponibles"
+          />
+        ) : (
+          <>
+            {section === 'suppliers' ? (
+              <DataTable
+                caption="Fournisseurs de l’espace de travail"
+                columns={supplierColumns}
+                data={suppliers}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Aucun Fournisseur ne correspond aux critères."
+                    title="Aucun Fournisseur"
+                  />
+                )}
+                getRowKey={(supplier) => supplier.id}
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+            ) : section === 'articles' ? (
+              <DataTable
+                caption="Articles fournisseur"
+                columns={articleColumns}
+                data={articleQuery.data?.articles ?? []}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Aucun Article fournisseur ne correspond aux critères."
+                    title="Aucun Article"
+                  />
+                )}
+                getRowKey={(article) => article.id}
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+            ) : (
+              <DataTable
+                caption="Catalogues fournisseurs"
+                columns={catalogColumns}
+                data={catalogQuery.data?.catalogs ?? []}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Aucun catalogue fournisseur n’est disponible."
+                    title="Aucun catalogue"
+                  />
+                )}
+                getRowKey={(catalog) => catalog.id}
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+            )}
+
+            <div className="px-5 pb-5">
+              <DataPagination
+                ariaLabel={
+                  section === 'suppliers'
+                    ? 'Pagination des Fournisseurs'
+                    : section === 'articles'
+                      ? 'Pagination des Articles fournisseur'
+                      : 'Pagination des catalogues fournisseurs'
+                }
+                disabled={currentQuery.isFetching}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                page={page}
+                pageSize={pageSize}
+                pagination={currentQuery.data?.pagination}
+              />
+            </div>
+          </>
+        )}
+      </section>
 
       <SupplierDetailsDrawer
         canManage={canManageSuppliers}

@@ -176,12 +176,22 @@ describe('SuppliersPage', () => {
   it('distingue les Fournisseurs partagés et privés', () => {
     renderPage();
 
+    expect(mocks.listSuppliers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        page: 1,
+        limit: 10,
+      }),
+    );
+
     expect(screen.getByText('Sysco partagé')).toBeInTheDocument();
     expect(screen.getByText('Fournisseur local')).toBeInTheDocument();
     expect(screen.getByText(/Référentiel partagé/)).toBeInTheDocument();
     expect(screen.getByText(/Cet espace de travail/)).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Portée' }))
       .not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', {
+      name: 'Nombre de lignes par page',
+    })).toBeInTheDocument();
   });
 
   it('désactive la recherche tant que le champ est vide', async () => {
