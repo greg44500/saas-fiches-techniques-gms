@@ -21,7 +21,6 @@ import {
     normalizeProductText,
 } from './productCatalog.normalization.js';
 import {
-    PRODUCT_CATEGORY_STATUS,
     PRODUCT_CATEGORY_STATUS_REGISTRY,
     PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
