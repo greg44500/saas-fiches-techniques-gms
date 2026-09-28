@@ -106,6 +106,8 @@ describe('SupplierDetailsDrawer', () => {
     );
 
     expect(screen.getByText('Fournisseur Local SAS')).toBeInTheDocument();
+    expect(screen.getByText('Origine')).toBeInTheDocument();
+    expect(screen.getByText('Cet espace de travail')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Utilisation' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Articles' }));

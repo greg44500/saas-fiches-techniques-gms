@@ -20,7 +20,7 @@ import {
 } from '@/features/suppliers/api/supplier-api';
 import {
   formatPackaging,
-  getSupplierScopeLabel,
+  getSupplierOriginLabel,
   getSupplierStatusLabel,
   getSupplierStatusTone,
 } from '@/features/suppliers/lib/supplier-presentation';
@@ -148,7 +148,7 @@ function SupplierDetailsDrawer({
       description={
         isGlobal
           ? 'Identité partagée, Articles et catalogues du Fournisseur.'
-          : 'Identité, Articles, catalogues et usages du Fournisseur dans le Workspace.'
+          : 'Identité, Articles, catalogues et usages du Fournisseur dans cet espace de travail.'
       }
       onClose={onClose}
       open={open}
@@ -207,8 +207,8 @@ function SupplierDetailsDrawer({
                     value={detailSupplier.website}
                   />
                   <DetailRow
-                    label="Portée"
-                    value={getSupplierScopeLabel(detailSupplier.scope)}
+                    label="Origine"
+                    value={getSupplierOriginLabel(detailSupplier.scope)}
                   />
                   <div className="grid gap-1 py-3 sm:grid-cols-[150px_1fr]">
                     <dt className="text-sm text-muted-foreground">Statut</dt>

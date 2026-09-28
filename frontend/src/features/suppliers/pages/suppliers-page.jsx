@@ -7,6 +7,7 @@ import {
 } from '@/components/data-display/data-table';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EmptyState } from '@/components/shared/empty-state';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
@@ -54,7 +55,7 @@ import {
 import {
   formatPackaging,
   getApiErrorMessage,
-  getSupplierScopeLabel,
+  getSupplierOriginLabel,
   getSupplierStatusLabel,
   getSupplierStatusTone,
 } from '@/features/suppliers/lib/supplier-presentation';
@@ -133,9 +134,11 @@ function SuppliersPage() {
   const canManageSuppliers = can(SUPPLIER_PERMISSION.SUPPLIER_MANAGE);
   const canManageArticles = can(SUPPLIER_PERMISSION.ARTICLE_MANAGE);
   const canReadProducts = can(PRODUCT_PERMISSION.READ);
-  const canImport = (
-    can(SUPPLIER_PERMISSION.CATALOG_IMPORT)
-    && hasFeature(SUPPLIER_CAPABILITY.CATALOG_IMPORT)
+  const canRequestCatalogImport = can(
+    SUPPLIER_PERMISSION.CATALOG_IMPORT,
+  );
+  const hasCatalogImportCapability = hasFeature(
+    SUPPLIER_CAPABILITY.CATALOG_IMPORT,
   );
 
   function applySearch(event) {
@@ -217,15 +220,12 @@ function SuppliersPage() {
         <div>
           <p className="font-medium">{supplier.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {supplier.supplierCode || 'Aucun code'}
+            {(supplier.supplierCode || 'Aucun code')
+              + ' · '
+              + getSupplierOriginLabel(supplier.scope)}
           </p>
         </div>
       ),
-    },
-    {
-      id: 'scope',
-      header: 'Portée',
-      cell: (supplier) => getSupplierScopeLabel(supplier.scope),
     },
     {
       id: 'status',
@@ -296,7 +296,14 @@ function SuppliersPage() {
     {
       id: 'supplier',
       header: 'Fournisseur',
-      cell: (article) => article.supplier?.name ?? '—',
+      cell: (article) => (
+        <div>
+          <p>{article.supplier?.name ?? '—'}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {getSupplierOriginLabel(article.scope)}
+          </p>
+        </div>
+      ),
     },
     {
       id: 'product',
@@ -307,11 +314,6 @@ function SuppliersPage() {
       id: 'packaging',
       header: 'Conditionnement',
       cell: (article) => formatPackaging(article.packaging),
-    },
-    {
-      id: 'scope',
-      header: 'Portée',
-      cell: (article) => getSupplierScopeLabel(article.scope),
     },
     {
       id: 'actions',
@@ -346,15 +348,12 @@ function SuppliersPage() {
         <div>
           <p className="font-medium">{catalog.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {catalog.supplierName || 'Fournisseur non disponible'}
+            {(catalog.supplierName || 'Fournisseur non disponible')
+              + ' · '
+              + getSupplierOriginLabel(catalog.scope)}
           </p>
         </div>
       ),
-    },
-    {
-      id: 'scope',
-      header: 'Portée',
-      cell: (catalog) => getSupplierScopeLabel(catalog.scope),
     },
     {
       id: 'period',
@@ -420,13 +419,14 @@ function SuppliersPage() {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+        <div className="flex items-start gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">
             Fournisseurs
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Consultez le référentiel partagé et gérez les Fournisseurs, Articles et catalogues privés du Workspace.
-          </p>
+          <InfoTooltip
+            content="Consultez le référentiel partagé et gérez les Fournisseurs, Articles et catalogues propres à cet espace de travail."
+            label="À propos de la page Fournisseurs"
+          />
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -445,11 +445,23 @@ function SuppliersPage() {
               Créer un Article
             </Button>
           )}
-          {section === 'catalogs' && canImport && (
-            <Button onClick={() => setImportOpen(true)} type="button">
-              <FileUp aria-hidden="true" className="size-4" />
-              Importer un catalogue
-            </Button>
+          {section === 'catalogs' && canRequestCatalogImport && (
+            <div className="flex items-center gap-1">
+              <Button
+                disabled={!hasCatalogImportCapability}
+                onClick={() => setImportOpen(true)}
+                type="button"
+              >
+                <FileUp aria-hidden="true" className="size-4" />
+                Importer un catalogue
+              </Button>
+              {!hasCatalogImportCapability && (
+                <InfoTooltip
+                  content="L’import de catalogues n’est pas activé pour cet espace de travail."
+                  label="Pourquoi l’import de catalogues est indisponible ?"
+                />
+              )}
+            </div>
           )}
         </div>
       </header>
@@ -526,7 +538,7 @@ function SuppliersPage() {
         />
       ) : section === 'suppliers' ? (
         <DataTable
-          caption="Fournisseurs du Workspace"
+          caption="Fournisseurs de l’espace de travail"
           columns={supplierColumns}
           data={suppliers}
           emptyContent={(

@@ -177,8 +177,10 @@ describe('DossierSupplierPricingPage', () => {
     })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Catalogue partagé 2026'))
       .toBeInTheDocument();
-    expect(screen.getByText('Partagé'))
+    expect(screen.getByText(/Référentiel partagé/))
       .toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Portée' }))
+      .not.toBeInTheDocument();
     expect(screen.getByText('Catalogue contractuel septembre 2026'))
       .toBeInTheDocument();
   });

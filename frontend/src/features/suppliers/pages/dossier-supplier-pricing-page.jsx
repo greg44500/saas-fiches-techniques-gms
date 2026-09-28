@@ -50,7 +50,7 @@ import {
 import {
   formatPrice,
   getApiErrorMessage,
-  getSupplierScopeLabel,
+  getSupplierOriginLabel,
   getSupplierStatusLabel,
   getSupplierStatusTone,
 } from '@/features/suppliers/lib/supplier-presentation';
@@ -396,15 +396,12 @@ function DossierSupplierPricingPage() {
         <div>
           <p className="font-medium">{catalog.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {catalog.supplierName || 'Fournisseur non disponible'}
+            {(catalog.supplierName || 'Fournisseur non disponible')
+              + ' · '
+              + getSupplierOriginLabel(catalog.scope)}
           </p>
         </div>
       ),
-    },
-    {
-      id: 'scope',
-      header: 'Portée',
-      cell: (catalog) => getSupplierScopeLabel(catalog.scope),
     },
     {
       id: 'period',
@@ -560,7 +557,9 @@ function DossierSupplierPricingPage() {
           <CardContent className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-2">
               <div>
-                <p className="mb-2 text-sm font-medium">Politique Workspace</p>
+                <p className="mb-2 text-sm font-medium">
+                  Politique de l’espace de travail
+                </p>
                 <Select
                   disabled={
                     !can(SUPPLIER_PERMISSION.PRICE_POLICY_MANAGE)
@@ -744,7 +743,7 @@ function DossierSupplierPricingPage() {
         <section>
           {catalogsQuery.isError ? (
             <ErrorState
-              description="Les catalogues accessibles à ce Workspace n’ont pas pu être chargés."
+              description="Les catalogues accessibles à cet espace de travail n’ont pas pu être chargés."
               onRetry={catalogsQuery.refetch}
               title="Catalogues indisponibles"
             />

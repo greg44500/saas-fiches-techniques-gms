@@ -134,7 +134,7 @@ function SupplierFormDialog({
             </DialogTitle>
             <DialogDescription>
               {isGlobal
-                ? 'Cette identité sera partagée entre les Workspaces autorisés.'
+                ? 'Cette identité sera partagée entre les espaces de travail autorisés.'
                 : 'Ce Fournisseur restera propre à cet espace de travail.'}
             </DialogDescription>
           </DialogHeader>

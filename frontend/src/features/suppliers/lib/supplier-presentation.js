@@ -8,6 +8,12 @@ function getSupplierScopeLabel(scope) {
   return scope ?? 'Non renseigné';
 }
 
+function getSupplierOriginLabel(scope) {
+  if (scope === 'GLOBAL_SHARED') return 'Référentiel partagé';
+  if (scope === 'WORKSPACE_PRIVATE') return 'Cet espace de travail';
+  return 'Origine non renseignée';
+}
+
 function getSupplierStatusLabel(status) {
   if (status === 'ACTIVE') return 'Actif';
   if (status === 'ARCHIVED') return 'Archivé';
@@ -92,6 +98,7 @@ export {
   getApiErrorMessage,
   getImportClassificationLabel,
   getMatchStatusLabel,
+  getSupplierOriginLabel,
   getSupplierScopeLabel,
   getSupplierStatusLabel,
   getSupplierStatusTone,

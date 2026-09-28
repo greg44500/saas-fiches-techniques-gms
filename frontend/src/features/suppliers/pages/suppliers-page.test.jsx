@@ -20,6 +20,12 @@ vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: mocks.workspaceContext,
 }));
 
+vi.mock('@/components/shared/info-tooltip', () => ({
+  InfoTooltip: ({ label }) => (
+    <button aria-label={label} type="button" />
+  ),
+}));
+
 vi.mock('@/components/shared/action-icon-button', () => ({
   ActionIconButton: ({ label, onClick, disabled }) => (
     <button
@@ -172,8 +178,10 @@ describe('SuppliersPage', () => {
 
     expect(screen.getByText('Sysco partagé')).toBeInTheDocument();
     expect(screen.getByText('Fournisseur local')).toBeInTheDocument();
-    expect(screen.getByText('Partagé')).toBeInTheDocument();
-    expect(screen.getByText('Privé')).toBeInTheDocument();
+    expect(screen.getByText(/Référentiel partagé/)).toBeInTheDocument();
+    expect(screen.getByText(/Cet espace de travail/)).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Portée' }))
+      .not.toBeInTheDocument();
   });
 
   it('ouvre le détail Fournisseur depuis une action Voir', async () => {
@@ -190,7 +198,7 @@ describe('SuppliersPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('masque l import catalogue sans capability même avec la permission RBAC', async () => {
+  it('rend l import catalogue visible mais indisponible sans capability', async () => {
     const user = userEvent.setup();
 
     mocks.workspaceContext.mockReturnValue({
@@ -206,9 +214,12 @@ describe('SuppliersPage', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Catalogues' }));
 
-    expect(screen.queryByRole('button', {
+    expect(screen.getByRole('button', {
       name: 'Importer un catalogue',
-    })).not.toBeInTheDocument();
+    })).toBeDisabled();
+    expect(screen.getByRole('button', {
+      name: 'Pourquoi l’import de catalogues est indisponible ?',
+    })).toBeInTheDocument();
   });
 
   it('autorise l import catalogue seulement avec permission et capability', async () => {

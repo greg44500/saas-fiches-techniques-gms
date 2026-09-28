@@ -7,6 +7,7 @@ import {
 } from '@/components/data-display/data-table';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EmptyState } from '@/components/shared/empty-state';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
@@ -332,13 +333,14 @@ function SupplierReferencePage({ canManage }) {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+        <div className="flex items-start gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">
             Référentiel Fournisseurs
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Gouvernance des identités et catalogues partagés, indépendante des rôles Platform.
-          </p>
+          <InfoTooltip
+            content="Gouvernance des identités et catalogues partagés, indépendante des rôles d’administration de la plateforme."
+            label="À propos du référentiel Fournisseurs"
+          />
         </div>
 
         {canManage && (
