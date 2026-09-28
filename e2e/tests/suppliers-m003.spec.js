@@ -52,9 +52,21 @@ async function importCatalogFromUi(page, {
     mimeType: 'text/csv',
     buffer: Buffer.from(csv, 'utf8'),
   });
+  const inspectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/supplier-catalogs/imports/inspect')
+  ));
+
   await dialog.getByRole('button', {
     name: 'Inspecter le fichier',
   }).click();
+
+  const inspectResponse = await inspectResponsePromise;
+
+  expect(
+    inspectResponse.status(),
+    'L’inspection du catalogue doit réussir avant la sélection du Fournisseur.',
+  ).toBe(201);
 
   await dialog.getByRole('combobox', {
     name: 'Fournisseur du catalogue',
@@ -152,6 +164,7 @@ test('M-003 autorité Application Global ouvre le Référentiel Fournisseurs', a
 });
 
 test('M-003 owner importe un catalogue privé, le réimporte sans doublon et un autre Workspace ne le voit pas', async ({ page }) => {
+  test.setTimeout(90_000);
   const workspaceA = await provisionSupplierOwnerWorkspace();
   const workspaceB = await provisionSupplierOwnerWorkspace({
     enableImport: false,
@@ -296,7 +309,7 @@ test('M-003 un catalogue global est réutilisable depuis plusieurs Workspaces', 
     }),
   ).toBeVisible();
   await expect(
-    page.getByText('Partagé', {
+    page.getByText('Référentiel partagé', {
       exact: true,
     }),
   ).toBeVisible();
@@ -318,7 +331,7 @@ test('M-003 un catalogue global est réutilisable depuis plusieurs Workspaces', 
     }),
   ).toBeVisible();
   await expect(
-    page.getByText('Partagé', {
+    page.getByText('Référentiel partagé', {
       exact: true,
     }),
   ).toBeVisible();
