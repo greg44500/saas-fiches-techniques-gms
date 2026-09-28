@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Registre canonique des dettes actives
 
 **Statut :** source de vérité documentaire pour les dettes non résolues  
-**Dernière mise à jour :** 2026-09-25  
+**Dernière mise à jour :** 2026-09-28  
 **Périmètre :** Core clonable et, lorsque précisé, applications dérivées
 
 ---
@@ -242,11 +242,11 @@ Une régression fonctionnelle réelle doit être corrigée comme telle ; une nou
 
 ### GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité du tableau
 
-**Statut :** À TRAITER — prochain lot produit avant M-004  
+**Statut :** VALIDÉ — traité avant M-004  
 **Périmètre :** produit `saas-fiches-techniques-gms` — M-002 / Platform / Référentiel Produits  
-**Blocage M-003 :** non
+**Blocage M-004 :** levé
 
-M-003 est clôturé depuis le 2026-09-28 : PR #22 fusionnée, Core Gate PR #132 verte et Core Gate post-merge #133 verte. Cette dette devient donc le prochain lot actif à cadrer/implémenter avant M-004.
+Le lot a été traité et fusionné via la PR #24. Le `main` vérifié au commit `b479b217815fad885f233e98b8f3145656641352` porte les corrections UX correspondantes et son Core Gate est vert. GMS-UX-002 ne bloque plus M-004.
 
 ### Constat A — onglet Catégories
 
