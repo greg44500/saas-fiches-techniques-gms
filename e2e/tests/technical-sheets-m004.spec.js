@@ -10,6 +10,9 @@ import {
   provisionTechnicalSheetWorkspace,
   replaceDossierNegotiatedPrice,
 } from '../support/technical-sheet-fixtures.js';
+import {
+  expectVisibleToast,
+} from '../support/toast.js';
 
 async function createTechnicalSheet(page, {
   name,
@@ -118,12 +121,10 @@ async function composeTechnicalSheet(page, {
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Brouillon enregistré',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Brouillon enregistré',
+  );
 }
 
 async function valuateAndValidate(page, {
@@ -136,12 +137,10 @@ async function valuateAndValidate(page, {
 
   await valuateButton.click();
 
-  await expect(
-    page.getByText(
-      'Fiche technique valorisée',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fiche technique valorisée',
+  );
 
   if (comment) {
     await page
@@ -158,12 +157,10 @@ async function valuateAndValidate(page, {
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Fiche technique validée',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fiche technique validée',
+  );
 
   await expect(
     page.getByText(
@@ -203,12 +200,10 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Valorisation incomplète',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Valorisation incomplète',
+  );
 
   const articleSelect =
     page.getByRole('combobox', {
@@ -235,12 +230,10 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Fiche technique valorisée',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fiche technique valorisée',
+  );
 
   await replaceDossierNegotiatedPrice({
     workspaceId:
@@ -260,12 +253,10 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Les données économiques ont changé. Une revalorisation est obligatoire.',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Les données économiques ont changé. Une revalorisation est obligatoire.',
+  );
 
   await page.reload();
 
@@ -283,12 +274,10 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Fiche technique valorisée',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fiche technique valorisée',
+  );
 
   await page
     .getByLabel(
@@ -305,12 +294,10 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Fiche technique validée',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fiche technique validée',
+  );
 
   await expect(
     page.getByText(
@@ -399,12 +386,10 @@ test('M-004 copie A vers B sans finance source et valorise avec le prix du Dossi
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Fiche technique valorisée',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fiche technique valorisée',
+  );
 
   await expect(
     page.getByText(/40,00/).first(),
@@ -445,12 +430,10 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Fiche technique mise à jour',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fiche technique mise à jour',
+  );
 
   await page.goto(
     context.dossierATechnicalSheetsUrl,
@@ -567,12 +550,10 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Fiche technique restaurée',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fiche technique restaurée',
+  );
 
   await page.goto(detailUrl);
 
@@ -624,12 +605,10 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
     })
     .click();
 
-  await expect(
-    page.getByText(
-      'Fiche technique purgée définitivement',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fiche technique purgée définitivement',
+  );
 
   await expect(
     page.getByText(
