@@ -579,7 +579,7 @@ function TechnicalSheetWorkspacePage() {
                   TVA (%)
                 </FieldLabel>
                 <Input
-                  disabled={!canValuate}
+                  disabled={!canUpdate || !canValuate}
                   id="technical-sheet-vat"
                   inputMode="decimal"
                   onChange={(event) => setDraftForm((current) => ({
@@ -682,7 +682,7 @@ function TechnicalSheetWorkspacePage() {
                     Marge cible (%)
                   </FieldLabel>
                   <Input
-                    disabled={!canValuate}
+                    disabled={!canUpdate || !canValuate}
                     id="technical-sheet-target-margin"
                     inputMode="decimal"
                     onChange={(event) => setDraftForm((current) => ({
@@ -696,7 +696,7 @@ function TechnicalSheetWorkspacePage() {
                 <Field>
                   <FieldLabel>Mode de Prix final</FieldLabel>
                   <Select
-                    disabled={!canValuate}
+                    disabled={!canUpdate || !canValuate}
                     items={[
                       { value: 'ADVISED', label: 'Prix conseillé' },
                       { value: 'MANUAL', label: 'Prix manuel' },
@@ -722,7 +722,11 @@ function TechnicalSheetWorkspacePage() {
                     Prix final TTC (€)
                   </FieldLabel>
                   <Input
-                    disabled={!canValuate || draftForm.finalPriceMode !== 'MANUAL'}
+                    disabled={
+                      !canUpdate
+                      || !canValuate
+                      || draftForm.finalPriceMode !== 'MANUAL'
+                    }
                     id="technical-sheet-final-price"
                     inputMode="decimal"
                     onChange={(event) => setDraftForm((current) => ({
