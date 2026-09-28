@@ -23,11 +23,13 @@ import {
     createCategory,
     createGlobalProduct,
     createGlobalVariant,
+    listCategories,
     updateCategoryStatus,
     updateProductStatus,
 } from '../../../modules/productCatalog/productCatalogGovernance.service.js';
 import {
     attachVariantToWorkspace,
+    getProductMetadata,
 } from '../../../modules/productCatalog/productCatalog.service.js';
 import {
     reviewReferenceContribution,
@@ -95,6 +97,62 @@ describe('M-002 product reference governance', () => {
             categoryId: category.id,
             status: 'ARCHIVED',
         })).resolves.toMatchObject({ status: 'ARCHIVED' });
+    });
+
+    it('compte uniquement les Produits actifs identitaires par catégorie', async () => {
+        const usedCategory = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Catégorie comptée',
+        });
+        const emptyCategory = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Catégorie vide',
+        });
+
+        await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Produit actif compté',
+            categoryId: usedCategory.id,
+        });
+        const archived = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Produit archivé non compté',
+            categoryId: usedCategory.id,
+        });
+        const identityInactive = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Produit identité inactive non compté',
+            categoryId: usedCategory.id,
+        });
+
+        await updateProductStatus({
+            actorId: ownerContext.owner._id,
+            productId: archived.product.id,
+            status: 'ARCHIVED',
+        });
+        await CanonicalProduct.updateOne(
+            { _id: identityInactive.product.id },
+            { $set: { identityActive: false } },
+        );
+
+        const categories = await listCategories();
+        expect(categories.find(({ id }) => id === usedCategory.id))
+            .toMatchObject({ activeProductCount: 1 });
+        expect(categories.find(({ id }) => id === emptyCategory.id))
+            .toMatchObject({ activeProductCount: 0 });
+
+        const globalMetadata = await getProductMetadata({
+            includeArchivedCategories: true,
+            includeCategoryUsage: true,
+        });
+        expect(
+            globalMetadata.categories.find(({ id }) => id === usedCategory.id),
+        ).toMatchObject({ activeProductCount: 1 });
+
+        const workspaceMetadata = await getProductMetadata();
+        expect(
+            workspaceMetadata.categories.find(({ id }) => id === usedCategory.id),
+        ).not.toHaveProperty('activeProductCount');
     });
 
     it('convertit la Présentation initiale en Caractéristique structurée', async () => {
