@@ -133,6 +133,8 @@ function ProductsPage() {
 
   function applySearch(event) {
     event.preventDefault();
+
+    if (!searchInput.trim()) return;
     runSearch(searchInput);
   }
 
@@ -292,7 +294,7 @@ function ProductsPage() {
         <div className="flex items-start gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">Produits</h1>
           <InfoTooltip
-            content="Consultez les références de votre Workspace, recherchez le référentiel global et créez une nouvelle référence seulement lorsqu’aucun équivalent n’existe."
+            content="Consultez les références de votre espace de travail, recherchez le référentiel global et créez une nouvelle référence seulement lorsqu’aucun équivalent n’existe."
             label="À propos des Produits"
           />
         </div>
@@ -335,8 +337,8 @@ function ProductsPage() {
       </Tabs>
 
       <section className="rounded-xl border border-border bg-card">
-        <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(480px,1fr)_220px_240px]">
-          <form className="flex min-w-0 gap-2" onSubmit={applySearch}>
+        <div className="flex flex-col gap-3 border-b border-border p-4 md:flex-row md:items-center">
+          <form className="flex min-w-0 flex-1 gap-2" onSubmit={applySearch}>
             <div className="min-w-0 flex-1">
               <ProductSearchAutocomplete
                 categoryId={
@@ -358,10 +360,17 @@ function ProductsPage() {
                 workspaceId={workspace.id}
               />
             </div>
-            <Button type="submit" variant="outline">Rechercher</Button>
+            <Button
+              disabled={!searchInput.trim()}
+              type="submit"
+              variant="outline"
+            >
+              Rechercher
+            </Button>
           </form>
 
-          <Select
+          <div className="w-full md:w-52 md:shrink-0">
+            <Select
             items={categoryItems}
             onValueChange={(value) => {
               setCategoryId(value);
@@ -379,10 +388,12 @@ function ProductsPage() {
                 </SelectItem>
               ))}
             </SelectContent>
-          </Select>
+            </Select>
+          </div>
 
-          <Select
-            items={conservationItems}
+          <div className="w-full md:w-56 md:shrink-0">
+            <Select
+              items={conservationItems}
             onValueChange={(value) => {
               setConservationType(value);
               setPage(1);
@@ -399,8 +410,8 @@ function ProductsPage() {
                 </SelectItem>
               ))}
             </SelectContent>
-          </Select>
-
+            </Select>
+          </div>
         </div>
 
         {initialLoading ? (
@@ -432,8 +443,10 @@ function ProductsPage() {
                   title="Aucune référence à afficher"
                 />
               )}
+              emptyCellClassName="border-b border-border text-muted-foreground"
               getRowKey={(result) => result.variant?.id ?? result.product.id + '-root'}
-              rowClassName="transition-colors hover:bg-muted/50"
+              headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
+              rowClassName="border-b border-border transition-colors hover:bg-muted/50"
             />
             <div className="px-5 pb-5">
               <DataPagination

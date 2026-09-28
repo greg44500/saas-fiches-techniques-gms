@@ -134,16 +134,17 @@ function SuppliersPage() {
   const canManageSuppliers = can(SUPPLIER_PERMISSION.SUPPLIER_MANAGE);
   const canManageArticles = can(SUPPLIER_PERMISSION.ARTICLE_MANAGE);
   const canReadProducts = can(PRODUCT_PERMISSION.READ);
-  const canRequestCatalogImport = can(
-    SUPPLIER_PERMISSION.CATALOG_IMPORT,
-  );
-  const hasCatalogImportCapability = hasFeature(
-    SUPPLIER_CAPABILITY.CATALOG_IMPORT,
+  const canImport = (
+    can(SUPPLIER_PERMISSION.CATALOG_IMPORT)
+    && hasFeature(SUPPLIER_CAPABILITY.CATALOG_IMPORT)
   );
 
   function applySearch(event) {
     event.preventDefault();
-    setSearch(searchInput.trim());
+
+    const nextSearch = searchInput.trim();
+    if (!nextSearch) return;
+    setSearch(nextSearch);
   }
 
   async function toggleSupplierStatus(supplier) {
@@ -445,23 +446,11 @@ function SuppliersPage() {
               Créer un Article
             </Button>
           )}
-          {section === 'catalogs' && canRequestCatalogImport && (
-            <div className="flex items-center gap-1">
-              <Button
-                disabled={!hasCatalogImportCapability}
-                onClick={() => setImportOpen(true)}
-                type="button"
-              >
-                <FileUp aria-hidden="true" className="size-4" />
-                Importer un catalogue
-              </Button>
-              {!hasCatalogImportCapability && (
-                <InfoTooltip
-                  content="L’import de catalogues n’est pas activé pour cet espace de travail."
-                  label="Pourquoi l’import de catalogues est indisponible ?"
-                />
-              )}
-            </div>
+          {section === 'catalogs' && canImport && (
+            <Button onClick={() => setImportOpen(true)} type="button">
+              <FileUp aria-hidden="true" className="size-4" />
+              Importer un catalogue
+            </Button>
           )}
         </div>
       </header>
@@ -484,9 +473,9 @@ function SuppliersPage() {
         </TabsList>
       </Tabs>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end">
         {(section === 'suppliers' || section === 'articles') && (
-        <form className="flex max-w-xl flex-1 gap-2" onSubmit={applySearch}>
+        <form className="flex min-w-0 flex-1 gap-2" onSubmit={applySearch}>
           <Input
             aria-label="Rechercher"
             maxLength={120}
@@ -494,12 +483,16 @@ function SuppliersPage() {
             placeholder="Rechercher…"
             value={searchInput}
           />
-          <Button type="submit" variant="outline">
+          <Button
+            disabled={!searchInput.trim()}
+            type="submit"
+            variant="outline"
+          >
             Rechercher
           </Button>
         </form>
         )}
-        <div className="w-full lg:w-52">
+        <div className="w-full md:ml-auto md:w-52 md:shrink-0">
           <p className="mb-2 text-sm font-medium">Statut</p>
           <Select
             items={[
@@ -547,8 +540,10 @@ function SuppliersPage() {
               title="Aucun Fournisseur"
             />
           )}
+          emptyCellClassName="border-b border-border text-muted-foreground"
           getRowKey={(supplier) => supplier.id}
-          rowClassName="transition-colors hover:bg-muted/50"
+          headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
+          rowClassName="border-b border-border transition-colors hover:bg-muted/50"
         />
       ) : section === 'articles' ? (
         <DataTable
@@ -561,8 +556,10 @@ function SuppliersPage() {
               title="Aucun Article"
             />
           )}
+          emptyCellClassName="border-b border-border text-muted-foreground"
           getRowKey={(article) => article.id}
-          rowClassName="transition-colors hover:bg-muted/50"
+          headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
+          rowClassName="border-b border-border transition-colors hover:bg-muted/50"
         />
       ) : (
         <DataTable
@@ -575,8 +572,10 @@ function SuppliersPage() {
               title="Aucun catalogue"
             />
           )}
+          emptyCellClassName="border-b border-border text-muted-foreground"
           getRowKey={(catalog) => catalog.id}
-          rowClassName="transition-colors hover:bg-muted/50"
+          headerClassName="border-b border-border bg-muted/50 text-muted-foreground"
+          rowClassName="border-b border-border transition-colors hover:bg-muted/50"
         />
       )}
 

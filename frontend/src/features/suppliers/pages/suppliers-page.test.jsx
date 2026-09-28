@@ -184,6 +184,23 @@ describe('SuppliersPage', () => {
       .not.toBeInTheDocument();
   });
 
+  it('désactive la recherche tant que le champ est vide', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    expect(screen.getByRole('button', { name: 'Rechercher' }))
+      .toBeDisabled();
+
+    await user.type(
+      screen.getByRole('textbox', { name: 'Rechercher' }),
+      'sysco',
+    );
+
+    expect(screen.getByRole('button', { name: 'Rechercher' }))
+      .toBeEnabled();
+  });
+
   it('ouvre le détail Fournisseur depuis une action Voir', async () => {
     const user = userEvent.setup();
 
@@ -198,7 +215,7 @@ describe('SuppliersPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('rend l import catalogue visible mais indisponible sans capability', async () => {
+  it('masque l import catalogue sans capability même avec la permission RBAC', async () => {
     const user = userEvent.setup();
 
     mocks.workspaceContext.mockReturnValue({
@@ -214,12 +231,9 @@ describe('SuppliersPage', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Catalogues' }));
 
-    expect(screen.getByRole('button', {
+    expect(screen.queryByRole('button', {
       name: 'Importer un catalogue',
-    })).toBeDisabled();
-    expect(screen.getByRole('button', {
-      name: 'Pourquoi l’import de catalogues est indisponible ?',
-    })).toBeInTheDocument();
+    })).not.toBeInTheDocument();
   });
 
   it('autorise l import catalogue seulement avec permission et capability', async () => {

@@ -214,6 +214,8 @@ describe('ProductsPage', () => {
     const user = userEvent.setup();
     renderPage();
 
+    expect(screen.getByRole('button', { name: 'Rechercher' }))
+      .toBeDisabled();
     expect(screen.getByRole('tab', { name: 'Tous les produits' }))
       .toHaveAttribute('aria-selected', 'true');
 
@@ -221,6 +223,8 @@ describe('ProductsPage', () => {
       screen.getByRole('textbox', { name: 'Rechercher un Produit' }),
       'carotte',
     );
+    expect(screen.getByRole('button', { name: 'Rechercher' }))
+      .toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Rechercher' }));
 
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
