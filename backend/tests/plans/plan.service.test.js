@@ -14,6 +14,9 @@ import { Plan } from '../../modules/plan/plan.model.js';
 import {
     createPlanCapabilityRegistry,
 } from '../../modules/plan/planCapability.registry.js';
+import {
+    TECHNICAL_SHEET_METRIC,
+} from '../../modules/technicalSheet/technicalSheet.registry.js';
 
 import {
     createPlan,
@@ -113,7 +116,10 @@ describe('Plan service', () => {
                     },
                 });
             }).toThrow(
-                'Limites de plan non configurées : file_uploads_monthly.',
+                'Limites de plan non configurées : '
+                + 'file_uploads_monthly, '
+                + TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS
+                + '.',
             );
         });
     });
@@ -137,6 +143,7 @@ describe('Plan service', () => {
                     members: 5,
                     storage_bytes: 1073741824,
                     file_uploads_monthly: 100,
+                    [TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS]: 10,
                 },
             };
 
@@ -176,7 +183,10 @@ describe('Plan service', () => {
                     },
                 }),
             ).rejects.toThrow(
-                'Limites de plan non configurées : storage_bytes, file_uploads_monthly.',
+                'Limites de plan non configurées : '
+                + 'storage_bytes, file_uploads_monthly, '
+                + TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS
+                + '.',
             );
 
             expect(saveSpy).not.toHaveBeenCalled();
