@@ -1,6 +1,7 @@
 import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { DataPagination } from '@/components/data-display/data-pagination';
 import {
   DataTable,
   DataTableActions,
@@ -48,9 +49,16 @@ import {
   getSupplierStatusLabel,
   getSupplierStatusTone,
 } from '@/features/suppliers/lib/supplier-presentation';
+import { useDataPagination } from '@/hooks/use-data-pagination';
 
 function SupplierReferencePage({ canManage }) {
   const { toast } = useToast();
+  const {
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useDataPagination();
   const [section, setSection] = useState('suppliers');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -66,22 +74,25 @@ function SupplierReferencePage({ canManage }) {
   const [importOpen, setImportOpen] = useState(false);
 
   const supplierQuery = useListGlobalSuppliersQuery({
-    limit: 100,
     search: search || undefined,
     status,
+    page,
+    limit: pageSize,
   });
   const activeSupplierQuery = useListGlobalSuppliersQuery({
     limit: 100,
     status: 'ACTIVE',
   });
   const articleQuery = useListGlobalSupplierArticlesQuery({
-    limit: 100,
     search: search || undefined,
     status,
+    page,
+    limit: pageSize,
   });
   const catalogQuery = useListGlobalSupplierCatalogsQuery({
-    limit: 100,
     status,
+    page,
+    limit: pageSize,
   });
 
   const [updateSupplierStatus, supplierStatusState] =
@@ -99,7 +110,21 @@ function SupplierReferencePage({ canManage }) {
 
   function applySearch(event) {
     event.preventDefault();
-    setSearch(searchInput.trim());
+
+    const nextSearch = searchInput.trim();
+    if (!nextSearch) return;
+    setPage(1);
+    setSearch(nextSearch);
+  }
+
+  function changeSection(nextSection) {
+    setPage(1);
+    setSection(nextSection);
+  }
+
+  function changeStatus(nextStatus) {
+    setPage(1);
+    setStatus(nextStatus);
   }
 
   async function toggleStatus(mutation, item, key) {
@@ -330,6 +355,14 @@ function SupplierReferencePage({ canManage }) {
       ? articleQuery
       : catalogQuery;
 
+  useEffect(() => {
+    const totalPages = currentQuery.data?.pagination?.totalPages;
+
+    if (totalPages && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [currentQuery.data?.pagination?.totalPages, page, setPage]);
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -364,7 +397,7 @@ function SupplierReferencePage({ canManage }) {
         )}
       </header>
 
-      <Tabs onValueChange={setSection} value={section}>
+      <Tabs onValueChange={changeSection} value={section}>
         <TabsList aria-label="Référentiel Fournisseurs" variant="section">
           <TabsTrigger value="suppliers" variant="section">
             Fournisseurs
@@ -378,93 +411,133 @@ function SupplierReferencePage({ canManage }) {
         </TabsList>
       </Tabs>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-        {(section === 'suppliers' || section === 'articles') && (
-        <form className="flex max-w-xl flex-1 gap-2" onSubmit={applySearch}>
-          <Input
-            aria-label="Rechercher dans le référentiel Fournisseurs"
-            maxLength={120}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Rechercher…"
-            value={searchInput}
-          />
-          <Button type="submit" variant="outline">
-            Rechercher
-          </Button>
-        </form>
-        )}
-        <div className="w-full lg:w-52">
-          <p className="mb-2 text-sm font-medium">Statut</p>
-          <Select
-            items={[
-              { value: 'ACTIVE', label: 'Actifs' },
-              { value: 'ARCHIVED', label: 'Archivés' },
-            ]}
-            onValueChange={setStatus}
-            value={status}
-          >
-            <SelectTrigger aria-label="Filtrer par statut">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ACTIVE">Actifs</SelectItem>
-              <SelectItem value="ARCHIVED">Archivés</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <section className="rounded-xl border border-border bg-card">
+        <div className="flex flex-col gap-3 border-b border-border p-5 md:flex-row md:items-end">
+          {(section === 'suppliers' || section === 'articles') && (
+            <form className="flex min-w-0 flex-1 gap-2" onSubmit={applySearch}>
+              <Input
+                aria-label="Rechercher dans le référentiel Fournisseurs"
+                maxLength={120}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSearchInput(value);
 
-      {currentQuery.isLoading && currentQuery.data === undefined ? (
-        <p className="text-sm text-muted-foreground">Chargement…</p>
-      ) : currentQuery.isError ? (
-        <ErrorState
-          description="Le référentiel Fournisseurs n’a pas pu être chargé."
-          onRetry={currentQuery.refetch}
-          title="Référentiel indisponible"
-        />
-      ) : section === 'suppliers' ? (
-        <DataTable
-          rowClassName="transition-colors hover:bg-muted/50"
-          caption="Fournisseurs globaux"
-          columns={supplierColumns}
-          data={suppliers}
-          emptyContent={(
-            <EmptyState
-              description="Aucun Fournisseur global."
-              title="Aucun Fournisseur"
-            />
+                  if (!value.trim() && search) {
+                    setPage(1);
+                    setSearch('');
+                  }
+                }}
+                placeholder="Rechercher…"
+                value={searchInput}
+              />
+              <Button
+                disabled={!searchInput.trim()}
+                type="submit"
+                variant="outline"
+              >
+                Rechercher
+              </Button>
+            </form>
           )}
-          getRowKey={(supplier) => supplier.id}
-        />
-      ) : section === 'articles' ? (
-        <DataTable
-          rowClassName="transition-colors hover:bg-muted/50"
-          caption="Articles fournisseur globaux"
-          columns={articleColumns}
-          data={articleQuery.data?.articles ?? []}
-          emptyContent={(
-            <EmptyState
-              description="Aucun Article global."
-              title="Aucun Article"
-            />
-          )}
-          getRowKey={(article) => article.id}
-        />
-      ) : (
-        <DataTable
-          rowClassName="transition-colors hover:bg-muted/50"
-          caption="Catalogues fournisseur globaux"
-          columns={catalogColumns}
-          data={catalogQuery.data?.catalogs ?? []}
-          emptyContent={(
-            <EmptyState
-              description="Aucun catalogue global."
-              title="Aucun catalogue"
-            />
-          )}
-          getRowKey={(catalog) => catalog.id}
-        />
-      )}
+
+          <div className="w-full md:ml-auto md:w-52 md:shrink-0">
+            <p className="mb-2 text-sm font-medium">Statut</p>
+            <Select
+              items={[
+                { value: 'ACTIVE', label: 'Actifs' },
+                { value: 'ARCHIVED', label: 'Archivés' },
+              ]}
+              onValueChange={changeStatus}
+              value={status}
+            >
+              <SelectTrigger aria-label="Filtrer par statut">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ACTIVE">Actifs</SelectItem>
+                <SelectItem value="ARCHIVED">Archivés</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {currentQuery.isLoading && currentQuery.data === undefined ? (
+          <p className="p-5 text-sm text-muted-foreground">Chargement…</p>
+        ) : currentQuery.isError ? (
+          <ErrorState
+            description="Le référentiel Fournisseurs n’a pas pu être chargé."
+            onRetry={currentQuery.refetch}
+            title="Référentiel indisponible"
+          />
+        ) : (
+          <>
+            {section === 'suppliers' ? (
+              <DataTable
+                caption="Fournisseurs globaux"
+                columns={supplierColumns}
+                data={suppliers}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Aucun Fournisseur global."
+                    title="Aucun Fournisseur"
+                  />
+                )}
+                getRowKey={(supplier) => supplier.id}
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+            ) : section === 'articles' ? (
+              <DataTable
+                caption="Articles fournisseur globaux"
+                columns={articleColumns}
+                data={articleQuery.data?.articles ?? []}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Aucun Article global."
+                    title="Aucun Article"
+                  />
+                )}
+                getRowKey={(article) => article.id}
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+            ) : (
+              <DataTable
+                caption="Catalogues fournisseur globaux"
+                columns={catalogColumns}
+                data={catalogQuery.data?.catalogs ?? []}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Aucun catalogue global."
+                    title="Aucun catalogue"
+                  />
+                )}
+                getRowKey={(catalog) => catalog.id}
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+            )}
+
+            <div className="px-5 pb-5">
+              <DataPagination
+                ariaLabel={
+                  section === 'suppliers'
+                    ? 'Pagination du référentiel Fournisseurs'
+                    : section === 'articles'
+                      ? 'Pagination des Articles fournisseur globaux'
+                      : 'Pagination des catalogues fournisseur globaux'
+                }
+                disabled={currentQuery.isFetching}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                page={page}
+                pageSize={pageSize}
+                pagination={currentQuery.data?.pagination}
+              />
+            </div>
+          </>
+        )}
+      </section>
 
       <SupplierDetailsDrawer
         canManage={canManage}
