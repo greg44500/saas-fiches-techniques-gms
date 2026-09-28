@@ -3,7 +3,7 @@
 **Date :** 2026-09-28  
 **Lot clôturé :** M-002 — Référentiel Produits  
 **Lot courant :** M-003 — Fournisseurs + Articles + conditionnements + prix/catalogues  
-**État M-003 :** implémentation backend/frontend/E2E présente ; baseline technique pré-UX confirmée verte ; QA visuelle et corrections UX M-003 en cours ; revalidation complète post-corrections encore requise  
+**État M-003 :** implémentation backend/frontend/E2E terminée ; `npm run release:check` confirmé vert le 2026-09-28 ; QA visuelle validée par le porteur produit ; lot prêt pour l’unique PR M-003  
 **Branche :** \`feature/m003-suppliers-catalogs-pricing\`  
 **HEAD fonctionnel avant mise à jour documentaire :** \`eb1e44312c59051ed5d525720a8b498caf4f5c84\`
 
@@ -41,8 +41,8 @@ Merge PR #20 — feat(m002): deliver the shared product reference catalog
 
 ~~~text
 main   = 386e64cacd97cab15e712697c2d7fdd985a4f62e
-branch = eb1e44312c59051ed5d525720a8b498caf4f5c84
-ahead  = 42
+branch = 689667caefaea41b28007ba3f9384caca446f773
+ahead  = 53
 behind = 0
 ~~~
 
@@ -296,132 +296,47 @@ La préparation E2E initialise désormais la gouvernance M-002 puis M-003.
 
 ## 6. État réel de validation
 
-Le porteur produit a confirmé localement verts avant le lot UX étendu, sur le checkpoint `2662f74f17ecb68d898576a0f38c7020901566d5` :
+Validation locale finale confirmée par le porteur produit le 2026-09-28 :
 
 ~~~text
-npm test
-npm run lint
-npm --prefix frontend run test
-npm --prefix frontend run lint
-npm --prefix frontend run build
-~~~
-
-Cette exécution constitue uniquement la baseline technique pré-UX.
-
-Depuis cette baseline, plusieurs corrections M-003 ont été ajoutées :
-
-- corrections sanitizeFilter / `mongoose.trusted()` et sérialisation prix ;
-- actions de tableau en icônes avec infobulles ;
-- drawer Fournisseur ;
-- suppression du vocabulaire utilisateur `Workspace` / `Portée` ;
-- origine affichée comme `Référentiel partagé` / `Cet espace de travail` ;
-- filtres Produits/Fournisseurs compactés ;
-- bouton `Rechercher` désactivé à vide ;
-- retour du bouton Import catalogue au masquage sans capability ;
-- utilisation exclusive du `DataTable` partagé pour les listes ;
-- harmonisation du conteneur Fournisseurs/Articles/Catalogues avec la page Dossiers ;
-- ajout de `DataPagination` et pagination serveur réelle ;
-- ajout du filtre Fournisseurs `Tous` ;
-- `Tous` devient la valeur par défaut à l'ouverture de l'onglet Fournisseurs ;
-- support backend `status=ALL` pour la liste Workspace Fournisseurs.
-
-Aucune exécution postérieure couvrant l'ensemble de ces changements n'a encore été confirmée verte dans cette conversation.
-
-Les commandes à rejouer avant de poursuivre la QA visuelle finale sont donc :
-
-~~~bash
-npm test
-npm run lint
-npm --prefix frontend run test
-npm --prefix frontend run lint
-npm --prefix frontend run build
-~~~
-
-Puis, après validation visuelle finale :
-
-~~~text
-npm run test:e2e
 npm run release:check
-Core Gate PR
+→ release:verify vert
+→ lint backend/e2e vert
+→ tests backend verts
+→ lint frontend vert
+→ tests frontend verts
+→ build frontend vert
+→ E2E Playwright verts
 ~~~
 
-## 7. Prochaine validation locale
+Les quatre scénarios E2E M-003 sont donc validés, notamment l’import puis réimport d’un catalogue privé, l’isolation inter-Workspace, l’isolation des prix entre Dossiers et la réutilisation d’un catalogue global.
 
-Depuis le clone local :
+L’environnement local Windows dispose désormais de ClamAV fonctionnel pour exercer réellement le pipeline sécurisé d’import. Aucun bypass antivirus ni allègement de test n’a été introduit.
 
-~~~bash
-git fetch origin
-git switch feature/m003-suppliers-catalogs-pricing
-git pull --ff-only origin feature/m003-suppliers-catalogs-pricing
+La QA visuelle M-003 est validée par le porteur produit. Des ajustements UX futurs issus des retours bêta restent possibles mais ne sont pas bloquants pour la livraison du contrat M-003 actuel.
 
-npm test
-npm run lint
-npm --prefix frontend run test
-npm --prefix frontend run lint
-npm --prefix frontend run build
-~~~
+## 7. Validation locale acquise
 
-Si ces cinq gates sont verts, relancer backend + frontend et terminer le contrôle visuel.
+Aucune relance locale supplémentaire n’est requise avant ouverture de la PR M-003, sauf modification nouvelle de la branche.
 
-Pour tester l'import privé, l'espace de travail de test doit disposer de la capability :
+La capability `supplier_catalog_import` reste indépendante du RBAC. Le contrat ne l’attribue encore à aucun plan commercial précis ; aucune règle Free/Premium/IA n’a été inventée.
+
+## 8. QA visuelle
+
+La QA visuelle M-003 a été acceptée le 2026-09-28.
+
+Cette validation autorise la livraison du module. Elle n’interdit pas des retouches ultérieures issues des bêta-testeurs ; celles-ci devront être traitées comme de nouveaux lots UX ciblés sans rouvrir artificiellement le contrat fonctionnel M-003 si les invariants restent inchangés.
+
+## 9. Étapes restantes avant clôture
 
 ~~~text
-supplier_catalog_import
-~~~
-
-Le contrat ne l'attribue encore à aucun plan précis ; utiliser un entitlement override de test si nécessaire plutôt que modifier arbitrairement un plan commercial.
-
-## 8. Points à vérifier visuellement
-
-Espace de travail — Fournisseurs :
-
-- la page utilise le même bloc visuel que Dossiers : filtres + tableau partagé + pagination partagée ;
-- aucun composant tableau métier parallèle ;
-- Fournisseurs : filtre par défaut « Tous » ;
-- « Tous » affiche actifs + archivés ;
-- un Fournisseur privé archivé expose l'action « Réactiver » ;
-- Articles et Catalogues conservent leur filtre Actifs/Archivés ;
-- actions de ligne en icônes avec infobulles « Voir », « Modifier », « Archiver » / « Réactiver » ;
-- « Voir » ouvre le drawer Fournisseur ;
-- drawer : Informations | Articles | Catalogues | Utilisation ;
-- drawer : libellé « Origine », jamais « Portée » ;
-- aucun libellé utilisateur « Workspace » sur les surfaces M-003 ;
-- Articles et catalogues du drawer filtrés par Fournisseur ;
-- onglet Utilisation sans agrégation de Tarifs négociés/Prix facturés entre Dossiers ;
-- onglet Catalogues visible avec droit de lecture ;
-- bouton « Importer un catalogue » absent sans capability, visible et actif avec permission + capability ;
-- pagination 10/20/50/100 et navigation serveur cohérentes ;
-- inspect/mapping/preview/confirmation de l'import lorsque la capability est active.
-
-Dossier :
-
-- bouton « Fournisseurs et prix » depuis un Dossier actif ;
-- nom du Dossier affiché ;
-- catalogues accessibles ;
-- favoris ;
-- Tarifs négociés ;
-- Prix facturés ;
-- Prix applicable ;
-- source/fallback.
-
-Global :
-
-- \`/supplier-reference\` accessible après \`seed:m003-governance\` ;
-- Fournisseurs/catalogues globaux ;
-- import global.
-
-## 9. Étapes restantes avant merge
-
-~~~text
-revalidation backend + frontend (tests, lint, build)
-→ validation visuelle finale du porteur produit
-→ corrections résiduelles uniquement si défaut réellement observé
-→ E2E + release:check
-→ une PR M-003 unique
+ouvrir l’unique PR M-003
 → validation Core Gate PR
 → merge
 → validation post-merge
 → documentation de clôture M-003
+→ lot UX M-002 déjà enregistré
+→ M-004
 ~~~
 
-Ne pas démarrer M-004 avant clôture M-003.
+Ne pas démarrer M-004 avant clôture M-003 et traitement du lot UX M-002 prévu.
