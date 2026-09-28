@@ -134,6 +134,7 @@ function TechnicalSheetWorkspacePage() {
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
   const [copyOpen, setCopyOpen] = useState(false);
+  const [sourcingPendingCount, setSourcingPendingCount] = useState(0);
 
   useEffect(() => {
     if (!sheet) return;
@@ -199,6 +200,14 @@ function TechnicalSheetWorkspacePage() {
   const canDelete = can(TECHNICAL_SHEET_PERMISSION.DELETE);
   const canCopy = sheet.status !== 'DELETED'
     && can(TECHNICAL_SHEET_PERMISSION.COPY);
+  const sourcingPending = sourcingPendingCount > 0;
+  const draftSynchronizing = sourcingPending || sheetQuery.isFetching;
+
+  function handleSourcingPendingChange(pending) {
+    setSourcingPendingCount((current) => (
+      Math.max(0, current + (pending ? 1 : -1))
+    ));
+  }
 
   function notifyError(error, fallback) {
     toast({
@@ -523,7 +532,7 @@ function TechnicalSheetWorkspacePage() {
                   Quantité produite
                 </FieldLabel>
                 <Input
-                  disabled={!canUpdate}
+                  disabled={!canUpdate || draftSynchronizing}
                   id="technical-sheet-production-quantity"
                   inputMode="decimal"
                   onChange={(event) => setDraftForm((current) => ({
@@ -537,7 +546,7 @@ function TechnicalSheetWorkspacePage() {
               <Field>
                 <FieldLabel>Unité de production</FieldLabel>
                 <Select
-                  disabled={!canUpdate}
+                  disabled={!canUpdate || draftSynchronizing}
                   items={unitItems}
                   onValueChange={(value) => setDraftForm((current) => ({
                     ...current,
@@ -563,7 +572,7 @@ function TechnicalSheetWorkspacePage() {
                   Nombre de portions
                 </FieldLabel>
                 <Input
-                  disabled={!canUpdate}
+                  disabled={!canUpdate || draftSynchronizing}
                   id="technical-sheet-portions"
                   inputMode="decimal"
                   onChange={(event) => setDraftForm((current) => ({
@@ -579,7 +588,7 @@ function TechnicalSheetWorkspacePage() {
                   TVA (%)
                 </FieldLabel>
                 <Input
-                  disabled={!canUpdate || !canValuate}
+                  disabled={!canUpdate || !canValuate || draftSynchronizing}
                   id="technical-sheet-vat"
                   inputMode="decimal"
                   onChange={(event) => setDraftForm((current) => ({
@@ -598,7 +607,7 @@ function TechnicalSheetWorkspacePage() {
             </CardHeader>
             <CardContent>
               <TechnicalSheetLineEditor
-                disabled={!canUpdate}
+                disabled={!canUpdate || draftSynchronizing}
                 lines={draftForm.lines}
                 metadata={metadata}
                 onChange={(lines) => setDraftForm((current) => ({
@@ -611,7 +620,7 @@ function TechnicalSheetWorkspacePage() {
               {canUpdate && (
                 <div className="mt-4 flex justify-end">
                   <Button
-                    disabled={saveDraftState.isLoading}
+                    disabled={saveDraftState.isLoading || draftSynchronizing}
                     onClick={saveWorkingDraft}
                     type="button"
                   >
@@ -651,6 +660,7 @@ function TechnicalSheetWorkspacePage() {
 
                       <TechnicalSheetSourcingSelect
                         canManage={canSource}
+                        disabled={draftSynchronizing}
                         dossierId={dossierId}
                         draftRevision={draft.revision}
                         line={line}
@@ -659,6 +669,7 @@ function TechnicalSheetWorkspacePage() {
                           description: message,
                           variant: 'destructive',
                         })}
+                        onPendingChange={handleSourcingPendingChange}
                         technicalSheetId={technicalSheetId}
                         workspaceId={workspace.id}
                       />
@@ -682,7 +693,7 @@ function TechnicalSheetWorkspacePage() {
                     Marge cible (%)
                   </FieldLabel>
                   <Input
-                    disabled={!canUpdate || !canValuate}
+                    disabled={!canUpdate || !canValuate || draftSynchronizing}
                     id="technical-sheet-target-margin"
                     inputMode="decimal"
                     onChange={(event) => setDraftForm((current) => ({
@@ -696,7 +707,7 @@ function TechnicalSheetWorkspacePage() {
                 <Field>
                   <FieldLabel>Mode de Prix final</FieldLabel>
                   <Select
-                    disabled={!canUpdate || !canValuate}
+                    disabled={!canUpdate || !canValuate || draftSynchronizing}
                     items={[
                       { value: 'ADVISED', label: 'Prix conseillé' },
                       { value: 'MANUAL', label: 'Prix manuel' },
@@ -725,6 +736,7 @@ function TechnicalSheetWorkspacePage() {
                     disabled={
                       !canUpdate
                       || !canValuate
+                      || draftSynchronizing
                       || draftForm.finalPriceMode !== 'MANUAL'
                     }
                     id="technical-sheet-final-price"
@@ -741,7 +753,7 @@ function TechnicalSheetWorkspacePage() {
                   {canValuate && (
                     <Button
                       className="w-full"
-                      disabled={valuateState.isLoading}
+                      disabled={valuateState.isLoading || draftSynchronizing}
                       onClick={valuateDraft}
                       type="button"
                     >
@@ -812,6 +824,7 @@ function TechnicalSheetWorkspacePage() {
                   <Button
                     disabled={
                       validateState.isLoading
+                      || draftSynchronizing
                       || draft.valuationStatus !== 'COMPLETE'
                     }
                     onClick={validateDraft}

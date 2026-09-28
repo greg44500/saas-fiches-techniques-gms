@@ -27,10 +27,12 @@ function articleLabel(article) {
 
 function TechnicalSheetSourcingSelect({
   canManage,
+  disabled = false,
   dossierId,
   draftRevision,
   line,
   onError,
+  onPendingChange,
   onSelected,
   technicalSheetId,
   workspaceId,
@@ -95,6 +97,8 @@ function TechnicalSheetSourcingSelect({
   async function choose(value) {
     if (value === NO_SELECTION) return;
 
+    onPendingChange?.(true);
+
     try {
       const draft = await selectArticle({
         workspaceId,
@@ -112,12 +116,14 @@ function TechnicalSheetSourcingSelect({
           'L’Article fournisseur n’a pas pu être sélectionné.',
         ),
       );
+    } finally {
+      onPendingChange?.(false);
     }
   }
 
   return (
     <Select
-      disabled={selectState.isLoading}
+      disabled={disabled || selectState.isLoading}
       items={items}
       onValueChange={choose}
       value={selectedArticleId}
