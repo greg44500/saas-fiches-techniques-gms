@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -54,10 +54,19 @@ vi.mock('@/features/products/components/product-import-dialog', () => ({
 import { ProductReferencePage } from '@/features/products/pages/product-reference-page';
 
 const metadata = {
-  categories: [{ id: 'category-1', name: 'Légumes', status: 'ACTIVE' }],
+  categories: [{
+    id: 'category-1',
+    name: 'Légumes',
+    status: 'ACTIVE',
+    activeProductCount: 1,
+  }],
   productStatuses: [
     { value: 'ACTIVE', label: 'Actif' },
     { value: 'ARCHIVED', label: 'Archivé' },
+  ],
+  productCategoryStatuses: [
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'ARCHIVED', label: 'Archivée' },
   ],
   productCharacteristicKinds: [
     { value: 'QUALITY_DESIGNATION', label: 'Désignation de qualité' },
@@ -157,14 +166,16 @@ describe('ProductReferencePage', () => {
     });
   });
 
-  it('ouvre directement le référentiel actif sans file de validation', () => {
+  it('ouvre un référentiel Platform sobre sans alias ni colonnes redondantes', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
-    expect(screen.getByText('Frais')).toBeInTheDocument();
+    expect(screen.queryByText('Carottes')).not.toBeInTheDocument();
     expect(screen.queryByText(/Gamme 1/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Références' }))
-      .toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Références' }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Statut' }))
+      .not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: 'À valider' }))
       .not.toBeInTheDocument();
     expect(mocks.productsQuery).toHaveBeenCalledWith(
@@ -176,7 +187,22 @@ describe('ProductReferencePage', () => {
     );
   });
 
-  it('garde visible un Produit global sans référence exploitable', () => {
+  it('rend les Références Produit accessibles au focus clavier', async () => {
+    renderPage();
+
+    const trigger = screen.getByRole('button', {
+      name: 'Références Produit de Carotte',
+    });
+
+    act(() => trigger.focus());
+
+    expect(trigger).toHaveFocus();
+    expect(await screen.findByText('Références Produit')).toBeInTheDocument();
+    expect(screen.getByText('Carotte entière')).toBeInTheDocument();
+    expect(screen.getByText(/Frais/)).toBeInTheDocument();
+  });
+
+  it('garde visible un Produit global sans Référence Produit exploitable', async () => {
     mocks.productsQuery.mockReturnValue({
       data: {
         products: [{
@@ -194,26 +220,49 @@ describe('ProductReferencePage', () => {
 
     renderPage();
 
+    const trigger = screen.getByRole('button', {
+      name: 'Références Produit de Bœuf',
+    });
+    act(() => trigger.focus());
+
     expect(screen.getByText('Bœuf')).toBeInTheDocument();
-    expect(screen.getByText('Aucune référence exploitable'))
-      .toBeInTheDocument();
+    expect(
+      await screen.findByText('Aucune Référence Produit exploitable'),
+    ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Rechercher un produit…'))
       .toBeInTheDocument();
   });
 
-  it('conserve la gestion des catégories en lecture seule sans product:reference:manage', async () => {
+  it('expose le compteur Catégorie et ouvre le Référentiel filtré en lecture seule', async () => {
     const user = userEvent.setup();
     renderPage({ canManage: false });
 
     await user.click(screen.getByRole('tab', { name: 'Catégories' }));
 
     expect(screen.getByText('Légumes')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Produits actifs' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Statut' }))
+      .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Créer une catégorie' }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Renommer Légumes' }))
       .not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Archiver' }))
+    expect(screen.queryByRole('button', { name: 'Archiver Légumes' }))
       .not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Voir les Produits actifs de Légumes',
+    }));
+
+    expect(mocks.productsQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        categoryId: 'category-1',
+        status: 'ACTIVE',
+        page: 1,
+      }),
+      { skip: false },
+    );
   });
 
   it('expose création et import avec product:reference:manage', async () => {
@@ -234,6 +283,36 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('tab', { name: 'Catégories' }));
     expect(screen.getByRole('button', { name: 'Créer une catégorie' }))
       .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Renommer Légumes' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Archiver Légumes' }))
+      .toBeInTheDocument();
+  });
+
+  it('affiche une catégorie archivée et son action de réactivation', async () => {
+    const user = userEvent.setup();
+    mocks.metadataQuery.mockReturnValue({
+      data: {
+        ...metadata,
+        categories: [{
+          id: 'category-archived',
+          name: 'Ancienne catégorie',
+          status: 'ARCHIVED',
+          activeProductCount: 0,
+        }],
+      },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Catégories' }));
+
+    expect(screen.getByText('Archivée')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Réactiver Ancienne catégorie',
+    })).toBeInTheDocument();
   });
 
   it('examine les contributions séparément du lifecycle des références', async () => {
