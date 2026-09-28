@@ -1,8 +1,8 @@
 import {
+  ArrowLeft,
   Eye,
   Plus,
   Search,
-  Settings2,
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -19,7 +19,9 @@ import { DataPagination } from '@/components/data-display/data-pagination';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
-import { StatusBadge } from '@/components/shared/status-badge';
+import {
+  TechnicalSheetStatusBadge,
+} from '@/features/technical-sheets/components/technical-sheet-status-badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -135,9 +137,9 @@ function TechnicalSheetsPage() {
       cell: (sheet) => {
         const presentation = getTechnicalSheetStatusPresentation(sheet.status);
         return (
-          <StatusBadge tone={presentation.tone}>
+          <TechnicalSheetStatusBadge tone={presentation.tone}>
             {presentation.label}
-          </StatusBadge>
+          </TechnicalSheetStatusBadge>
         );
       },
     },
@@ -174,6 +176,7 @@ function TechnicalSheetsPage() {
         <div className="flex flex-wrap gap-2">
           <Button asChild size="sm" variant="ghost">
             <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossierId}>
+              <ArrowLeft aria-hidden="true" className="size-4" />
               Retour au Dossier
             </Link>
           </Button>
@@ -196,20 +199,6 @@ function TechnicalSheetsPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE) && (
-              <Button asChild size="sm" variant="outline">
-                <Link
-                  to={
-                    '/workspaces/' + workspace.id
-                    + '/dossiers/' + dossierId
-                    + '/technical-sheets/settings'
-                  }
-                >
-                  <Settings2 aria-hidden="true" className="size-4" />
-                  Réglages
-                </Link>
-              </Button>
-            )}
             {can(TECHNICAL_SHEET_PERMISSION.CREATE) && (
               <Button
                 disabled={!canCreate}
@@ -225,38 +214,14 @@ function TechnicalSheetsPage() {
         </div>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Capacité</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {capacityQuery.isError ? (
-            <p className="text-sm text-muted-foreground">
-              La capacité du Workspace n’a pas pu être chargée.
-            </p>
-          ) : capacity ? (
-            <div className="space-y-1">
-              <p className="text-2xl font-semibold">
-                {capacity.current}
-                {' / '}
-                {capacity.unlimited ? 'illimité' : capacity.limit}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Les Fiches en corbeille continuent de consommer une unité jusqu’à leur purge définitive.
-              </p>
-              {quotaReached && (
-                <p className="text-sm font-medium text-warning">
-                  Limite atteinte : la modification des Fiches existantes reste autorisée, mais pas la création ni la copie.
-                </p>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Chargement de la capacité…
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      {quotaReached && (
+        <div
+          className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"
+          role="alert"
+        >
+          La limite de Fiches techniques du Workspace est atteinte. Les Fiches existantes restent modifiables, mais aucune nouvelle Fiche ni copie ne peut être créée.
+        </div>
+      )}
 
       {!operational && (
         <Card>

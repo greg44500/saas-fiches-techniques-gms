@@ -7,6 +7,9 @@ import {
 
 import { DOSSIER_PERMISSION } from '@/features/dossiers/constants/dossier-permissions';
 import {
+  SUPPLIER_PERMISSION,
+} from '@/features/suppliers/constants/supplier-permissions';
+import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 
@@ -36,8 +39,8 @@ const dossiersWorkspaceNavigation = Object.freeze({
           id: 'dossier-settings',
           label: 'Paramètres',
           Icon: Settings2,
-          permission: TECHNICAL_SHEET_PERMISSION.PURGE,
-          path: 'technical-sheets/settings',
+          permission: SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
+          path: 'dossiers-settings',
         }),
       ]),
     }),

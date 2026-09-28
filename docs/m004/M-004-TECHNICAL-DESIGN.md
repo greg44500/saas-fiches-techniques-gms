@@ -514,13 +514,15 @@ Transaction :
 
 1. vérifier lecture source et création cible ;
 2. vérifier source ACTIVE/ARCHIVED ;
-3. vérifier Dossier cible ACTIVE ;
-4. réserver +1 quota ;
-5. créer nouvelle TechnicalSheet ;
-6. créer draft depuis les données non financières autorisées ;
-7. initialiser marge cible depuis Dossier cible ;
-8. ne copier aucune valorisation ;
-9. conserver copyOrigin.
+3. refuser la copie si un brouillon de travail est ouvert ;
+4. charger exclusivement l’état validé courant comme source de composition ;
+5. vérifier Dossier cible ACTIVE ;
+6. réserver +1 quota ;
+7. créer nouvelle TechnicalSheet ;
+8. créer draft depuis les données non financières autorisées ;
+9. initialiser marge cible depuis Dossier cible ;
+10. ne copier aucune valorisation ;
+11. conserver copyOrigin.
 
 ### Suppression vers corbeille
 

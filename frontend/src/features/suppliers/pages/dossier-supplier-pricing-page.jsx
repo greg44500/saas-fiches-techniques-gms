@@ -12,7 +12,6 @@ import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -32,7 +31,6 @@ import {
   useAddDossierSupplierReferenceMutation,
   useArchiveNegotiatedPriceMutation,
   useDecideInvoicedPriceMutation,
-  useGetPricingPolicyQuery,
   useLazyGetApplicableSupplierPriceQuery,
   useListDossierSupplierReferencesQuery,
   useListInvoicedPricesQuery,
@@ -40,7 +38,6 @@ import {
   useListSupplierArticlesQuery,
   useListSupplierCatalogsQuery,
   useRemoveDossierSupplierReferenceMutation,
-  useUpdatePricingPolicyMutation,
 } from '@/features/suppliers/api/supplier-api';
 import {
   SupplierPriceFormDialog,
@@ -72,6 +69,14 @@ function normalizeArticle(article) {
       ?? article.productVariantName
       ?? 'Référence Produit',
   };
+}
+
+function getPricingSourceLabel(source) {
+  return {
+    SUPPLIER_TARIFF: 'Tarif fournisseur',
+    NEGOTIATED_PRICE: 'Tarif négocié',
+    INVOICED_PRICE: 'Prix facturé',
+  }[source] ?? 'Source non disponible';
 }
 
 function DossierSupplierPricingPage() {
@@ -119,10 +124,6 @@ function DossierSupplierPricingPage() {
     { workspaceId: workspace.id, dossierId },
     { skip: !can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ) },
   );
-  const policyQuery = useGetPricingPolicyQuery(
-    workspace.id,
-    { skip: !can(SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ) },
-  );
   const [loadApplicablePrice, applicablePriceQuery] =
     useLazyGetApplicableSupplierPriceQuery();
 
@@ -134,8 +135,6 @@ function DossierSupplierPricingPage() {
     useArchiveNegotiatedPriceMutation();
   const [decideInvoice, decideInvoiceState] =
     useDecideInvoicedPriceMutation();
-  const [updatePolicy, updatePolicyState] =
-    useUpdatePricingPolicyMutation();
 
   const references = referencesQuery.data ?? [];
   const visibleArticles = useMemo(
@@ -215,32 +214,6 @@ function DossierSupplierPricingPage() {
       }).unwrap();
     } catch {
       // L'état d'erreur RTK Query est affiché plus bas.
-    }
-  }
-
-  async function changePolicy(mode) {
-    try {
-      await updatePolicy({
-        workspaceId: workspace.id,
-        mode,
-      }).unwrap();
-      toast({
-        title: 'Politique de prix mise à jour',
-        variant: 'success',
-      });
-      if (selectedArticleId !== NONE) {
-        loadApplicablePrice({
-          workspaceId: workspace.id,
-          dossierId,
-          articleId: selectedArticleId,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Modification impossible',
-        description: getApiErrorMessage(error),
-        variant: 'destructive',
-      });
     }
   }
 
@@ -551,104 +524,77 @@ function DossierSupplierPricingPage() {
       </header>
 
       {can(SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Prix applicable</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div>
-                <p className="mb-2 text-sm font-medium">
-                  Politique de l’espace de travail
-                </p>
-                <Select
-                  disabled={
-                    !can(SUPPLIER_PERMISSION.PRICE_POLICY_MANAGE)
-                    || updatePolicyState.isLoading
-                  }
-                  items={[
-                    { value: 'SUPPLIER_TARIFF', label: 'Tarif fournisseur' },
-                    { value: 'NEGOTIATED_PRICE', label: 'Tarif négocié' },
-                    { value: 'INVOICED_PRICE', label: 'Prix facturé' },
-                  ]}
-                  onValueChange={changePolicy}
-                  value={policyQuery.data?.mode ?? 'NEGOTIATED_PRICE'}
-                >
-                  <SelectTrigger aria-label="Politique du Prix applicable">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SUPPLIER_TARIFF">Tarif fournisseur</SelectItem>
-                    <SelectItem value="NEGOTIATED_PRICE">Tarif négocié</SelectItem>
-                    <SelectItem value="INVOICED_PRICE">Prix facturé</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm font-medium">Article à résoudre</p>
-                <Select
-                  items={[
-                    { value: NONE, label: 'Sélectionner' },
-                    ...visibleArticles.map((article) => ({
-                      value: article.id,
-                      label: article.supplierName + ' · ' + article.supplierReference,
-                    })),
-                  ]}
-                  onValueChange={chooseApplicableArticle}
-                  value={selectedArticleId}
-                >
-                  <SelectTrigger aria-label="Article pour le Prix applicable">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Sélectionner</SelectItem>
-                    {visibleArticles.map((article) => (
-                      <SelectItem key={article.id} value={article.id}>
-                        {article.supplierName} · {article.supplierReference}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <section className="rounded-xl border border-border bg-card p-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+            <div className="flex min-w-0 flex-1 items-start gap-2">
+              <h2 className="font-semibold">Vérifier un prix applicable</h2>
+              <InfoTooltip
+                content="Sélectionnez un Article fournisseur pour voir le prix que l’application utiliserait dans ce Dossier selon la politique de prix définie."
+                label="À propos de la vérification du prix applicable"
+              />
             </div>
 
-            {applicablePriceQuery.isFetching && (
-              <p className="text-sm text-muted-foreground">Résolution du prix…</p>
-            )}
+            <div className="w-full lg:max-w-xl">
+              <p className="mb-2 text-sm font-medium">Article fournisseur</p>
+              <Select
+                items={[
+                  { value: NONE, label: 'Sélectionner' },
+                  ...visibleArticles.map((article) => ({
+                    value: article.id,
+                    label: article.supplierName + ' · ' + article.supplierReference,
+                  })),
+                ]}
+                onValueChange={chooseApplicableArticle}
+                value={selectedArticleId}
+              >
+                <SelectTrigger aria-label="Article fournisseur à vérifier">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>Sélectionner</SelectItem>
+                  {visibleArticles.map((article) => (
+                    <SelectItem key={article.id} value={article.id}>
+                      {article.supplierName} · {article.supplierReference}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-            {applicablePriceQuery.isError && (
+          {applicablePriceQuery.isFetching && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Vérification du prix…
+            </p>
+          )}
+
+          {applicablePriceQuery.isError && (
+            <div className="mt-4">
               <ErrorState
-                description="Le Prix applicable n’a pas pu être résolu pour cet Article."
-                title="Résolution impossible"
+                description="Le prix applicable n’a pas pu être déterminé pour cet Article."
+                title="Vérification impossible"
               />
-            )}
+            </div>
+          )}
 
-            {applicable && (
-              <div className="rounded-lg border border-border p-4">
-                <p className="font-medium">
-                  {applicable.price
-                    ? formatPrice(applicable.price)
-                    : 'Aucun prix applicable'}
-                </p>
+          {applicable && (
+            <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4">
+              <p className="font-medium">
+                {applicable.price
+                  ? formatPrice(applicable.price)
+                  : 'Aucun prix applicable'}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Source retenue : {getPricingSourceLabel(applicable.resolvedSource)}
+              </p>
+              {applicable.fallbackApplied && (
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Source : {applicable.resolvedSource ?? 'aucune'}
-                  {applicable.fallbackApplied ? ' · fallback appliqué' : ''}
+                  Une source de remplacement a été utilisée car la source prioritaire n’était pas disponible.
                 </p>
-                {applicable.fallbackReason && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Motif : {applicable.fallbackReason}
-                  </p>
-                )}
-                {applicable.alerts?.length > 0 && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Alertes : {applicable.alerts.join(' · ')}
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </div>
+          )}
+        </section>
       )}
 
       {section && (

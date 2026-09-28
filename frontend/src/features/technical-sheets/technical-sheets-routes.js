@@ -19,30 +19,12 @@ const technicalSheetsFrontendRouteModule = Object.freeze({
       },
     }),
     Object.freeze({
-      path: 'dossiers/:dossierId/technical-sheets/settings',
-      lazy: async () => {
-        const { TechnicalSheetSettingsRoute } = await import(
-          '@/features/technical-sheets/components/technical-sheet-settings-route'
-        );
-        return { Component: TechnicalSheetSettingsRoute };
-      },
-    }),
-    Object.freeze({
       path: 'technical-sheets/trash',
       lazy: async () => {
         const { TechnicalSheetTrashRoute } = await import(
           '@/features/technical-sheets/components/technical-sheet-trash-route'
         );
         return { Component: TechnicalSheetTrashRoute };
-      },
-    }),
-    Object.freeze({
-      path: 'technical-sheets/settings',
-      lazy: async () => {
-        const { TechnicalSheetWorkspaceSettingsRoute } = await import(
-          '@/features/technical-sheets/components/technical-sheet-workspace-settings-route'
-        );
-        return { Component: TechnicalSheetWorkspaceSettingsRoute };
       },
     }),
   ]),

@@ -5,7 +5,7 @@ const TECHNICAL_SHEET_STATUS_PRESENTATION = Object.freeze({
   }),
   ARCHIVED: Object.freeze({
     label: 'Archivée',
-    tone: 'neutral',
+    tone: 'archived',
   }),
   DELETED: Object.freeze({
     label: 'Corbeille',
@@ -16,7 +16,7 @@ const TECHNICAL_SHEET_STATUS_PRESENTATION = Object.freeze({
 const TECHNICAL_SHEET_VALUATION_PRESENTATION = Object.freeze({
   NOT_VALUED: Object.freeze({
     label: 'Non valorisée',
-    tone: 'neutral',
+    tone: 'alert',
   }),
   PARTIAL: Object.freeze({
     label: 'Valorisation incomplète',
@@ -50,6 +50,21 @@ const LINE_VALUATION_PRESENTATION = Object.freeze({
     tone: 'warning',
   }),
 });
+
+function getTechnicalSheetActionAvailability({
+  status,
+  hasDraft = false,
+}) {
+  return {
+    update: status === 'ACTIVE',
+    copy:
+      status !== 'DELETED'
+      && !hasDraft,
+    archive: status === 'ACTIVE',
+    reactivate: status === 'ARCHIVED',
+    delete: status !== 'DELETED',
+  };
+}
 
 function getTechnicalSheetStatusPresentation(status) {
   return TECHNICAL_SHEET_STATUS_PRESENTATION[status] ?? {
@@ -155,6 +170,7 @@ export {
   percentInputToBasisPoints,
   priceInputToMinor,
   getLineValuationPresentation,
+  getTechnicalSheetActionAvailability,
   getTechnicalSheetApiErrorMessage,
   getTechnicalSheetStatusPresentation,
   getTechnicalSheetValuationPresentation,

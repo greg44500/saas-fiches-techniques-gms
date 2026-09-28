@@ -3,7 +3,7 @@
 **Date :** 2026-09-28  
 **Lot clôturé :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité  
 **Lot courant :** M-004 — Fiches techniques + valorisation  
-**État M-004 :** IMPLÉMENTATION DU BLOC HORS EXPORTS TERMINÉE SUR BRANCHE — validation locale, QA visuelle et Core Gate encore à exécuter  
+**État M-004 :** IMPLÉMENTATION DU BLOC HORS EXPORTS TERMINÉE SUR BRANCHE — release:check local complet validé avant ajustements UX de QA ; nouveau contrôle ciblé puis release:check à rejouer après stabilisation visuelle  
 **Branche :** `feature/m004-fiches-techniques-valorisation`  
 **Base de branche :** `main@b479b217815fad885f233e98b8f3145656641352`
 
@@ -434,7 +434,42 @@ Contradictions historiques résolues :
 - GMS-UX-002 clôturé ;
 - exports CSV/XLSX/PDF, impression et e-mail confirmés en V1 mais dans un bloc ultérieur séparé.
 
-## 15. Prochaine action
+## 15. Validation locale et QA visuelle
+
+Une exécution locale complète de :
+
+~~~text
+npm run release:check
+~~~
+
+a été confirmée entièrement verte par l’utilisateur avant les derniers ajustements UX de QA.
+
+Point Windows à conserver pour toutes les futures exécutions E2E impliquant un import ou téléversement :
+
+~~~powershell
+$env:Path += ";C:\Program Files\ClamAV"
+Get-Command clamscan
+clamscan --version
+~~~
+
+Dans cet environnement, ClamAV est installé sous Windows mais `clamscan` n’est pas nécessairement présent dans le `PATH` de la session PowerShell. Un HTTP 503 pendant l’inspection d’un fichier ne doit donc pas être interprété comme une régression applicative avant vérification de ce prérequis.
+
+La QA visuelle a ensuite conduit aux arbitrages UX suivants, en cours de stabilisation sur la même branche :
+
+- Dossiers regroupé dans la sidebar avec Compte Client, Corbeille et Paramètres ;
+- entête Compte Client compacte ;
+- paramètres de marge accessibles depuis le Dossier ;
+- politique de prix déplacée dans Paramètres des Dossiers ;
+- conservation de la Corbeille réglée directement depuis la Corbeille ;
+- capacité des Fiches présentée sur le Tableau de bord avec répartition Dossiers / Corbeille ;
+- vocabulaire utilisateur « suppression définitive » à la place de « purge » ;
+- Fiche avec brouillon ouvert non copiable ;
+- statuts visuels : Brouillon = warning, Non valorisée = alert, Archivée = archived ;
+- actions principales de la Fiche regroupées sous forme d’icônes avec infobulles.
+
+Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon, le contrat backend. Ils doivent donc être retestés avant la PR finale.
+
+## 16. Prochaine action
 
 Le code du bloc M-004 hors exports est prêt pour validation locale.
 

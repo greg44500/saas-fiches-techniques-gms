@@ -702,9 +702,11 @@ Le Workspace Owner peut modifier la durée de conservation et conserve la permis
 
 ## 27. Copie inter-Dossier
 
-Une Fiche ACTIVE ou ARCHIVED peut servir de source.
+Une Fiche ACTIVE ou ARCHIVED peut servir de source uniquement lorsqu’aucun brouillon de travail n’est ouvert.
 
 Une Fiche DELETED ne peut pas être copiée.
+
+Une Fiche possédant un brouillon ouvert ne peut pas être copiée. L’utilisateur doit d’abord valider ce brouillon afin que la copie parte d’un état validé explicite.
 
 V1 :
 
@@ -744,6 +746,8 @@ Notamment :
 - ordre ;
 - notes ;
 - TVA.
+
+La composition copiée provient exclusivement de l’état validé courant de la Fiche source. Un brouillon non validé n’est jamais utilisé comme source de copie.
 
 ### Données non copiées
 

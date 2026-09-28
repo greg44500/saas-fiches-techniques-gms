@@ -1,4 +1,4 @@
-import { RotateCcw, Trash2 } from 'lucide-react';
+import { RotateCcw, Settings2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import {
@@ -6,6 +6,7 @@ import {
   DataTableActions,
 } from '@/components/data-display/data-table';
 import { DataPagination } from '@/components/data-display/data-pagination';
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
@@ -13,18 +14,14 @@ import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  useGetTechnicalSheetCapacityQuery,
   useListTechnicalSheetTrashQuery,
   usePurgeExpiredTechnicalSheetTrashMutation,
   usePurgeTechnicalSheetMutation,
   useRestoreTechnicalSheetMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
+import {
+  TechnicalSheetTrashSettingsDialog,
+} from '@/features/technical-sheets/components/technical-sheet-trash-settings-dialog';
 import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
@@ -50,12 +47,12 @@ function TechnicalSheetTrashPage() {
     },
     { skip: !isOwner },
   );
-  const capacityQuery = useGetTechnicalSheetCapacityQuery(workspace.id);
   const [restoreSheet, restoreState] = useRestoreTechnicalSheetMutation();
   const [purgeSheet, purgeState] = usePurgeTechnicalSheetMutation();
   const [purgeExpired, purgeExpiredState] =
     usePurgeExpiredTechnicalSheetTrashMutation();
   const [confirmation, setConfirmation] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (!isOwner) {
     return (
@@ -88,9 +85,9 @@ function TechnicalSheetTrashPage() {
 
   const sheets = trashQuery.data?.sheets ?? [];
   const pagination = trashQuery.data?.pagination;
-  const capacity = capacityQuery.data;
   const canRestore = can(TECHNICAL_SHEET_PERMISSION.RESTORE);
   const canPurge = can(TECHNICAL_SHEET_PERMISSION.PURGE);
+  const canManageSettings = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
 
   async function restore(sheet) {
     try {
@@ -125,12 +122,12 @@ function TechnicalSheetTrashPage() {
       }).unwrap();
       setConfirmation(null);
       toast({
-        title: 'Fiche technique purgée définitivement',
+        title: 'Fiche technique supprimée définitivement',
         variant: 'success',
       });
     } catch (error) {
       toast({
-        title: 'Purge impossible',
+        title: 'Suppression définitive impossible',
         description: getTechnicalSheetApiErrorMessage(error),
         variant: 'destructive',
       });
@@ -143,13 +140,13 @@ function TechnicalSheetTrashPage() {
         workspaceId: workspace.id,
       }).unwrap();
       toast({
-        title: 'Purge des échéances terminée',
-        description: result.purged + ' Fiche(s) purgée(s).',
+        title: 'Suppression des échéances terminée',
+        description: result.purged + ' Fiche(s) supprimée(s) définitivement.',
         variant: 'success',
       });
     } catch (error) {
       toast({
-        title: 'Purge impossible',
+        title: 'Suppression définitive impossible',
         description: getTechnicalSheetApiErrorMessage(error),
         variant: 'destructive',
       });
@@ -176,7 +173,7 @@ function TechnicalSheetTrashPage() {
     },
     {
       id: 'purgeScheduledAt',
-      header: 'Purge prévue',
+      header: 'Suppression définitive prévue',
       cell: (sheet) => new Date(sheet.purgeScheduledAt).toLocaleString('fr-FR'),
     },
     {
@@ -205,7 +202,7 @@ function TechnicalSheetTrashPage() {
               variant="destructive"
             >
               <Trash2 aria-hidden="true" className="size-4" />
-              Purger
+              Supprimer définitivement
             </Button>
           )}
         </DataTableActions>
@@ -215,31 +212,30 @@ function TechnicalSheetTrashPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-start gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Corbeille des Fiches techniques
-        </h1>
-        <InfoTooltip
-          content="Une Fiche supprimée continue de consommer une unité de capacité jusqu’à sa purge définitive."
-          label="À propos de la corbeille"
-        />
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Corbeille des Fiches techniques
+          </h1>
+          <InfoTooltip
+            content="Les Fiches restent restaurables jusqu’à leur date de suppression définitive et continuent de compter dans la capacité pendant cette période."
+            label="À propos de la corbeille"
+          />
+        </div>
+
+        {canManageSettings && (
+          <ActionIconButton
+            Icon={Settings2}
+            label="Régler la durée de conservation de la Corbeille"
+            onClick={() => setSettingsOpen(true)}
+            tooltipLabel="Paramètres de la Corbeille"
+            variant="outline"
+          />
+        )}
       </header>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <Card className="w-full sm:max-w-xs">
-          <CardHeader>
-            <CardTitle>Capacité</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold">
-              {capacity
-                ? capacity.current + ' / ' + (capacity.unlimited ? 'illimité' : capacity.limit)
-                : '—'}
-            </p>
-          </CardContent>
-        </Card>
-
-        {canPurge && (
+      {canPurge && (
+        <div className="flex justify-end">
           <Button
             disabled={purgeExpiredState.isLoading}
             onClick={purgeExpiredItems}
@@ -247,10 +243,10 @@ function TechnicalSheetTrashPage() {
             variant="outline"
           >
             <Trash2 aria-hidden="true" className="size-4" />
-            Purger les échéances atteintes
+            Supprimer les éléments arrivés à échéance
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <DataTable
@@ -260,7 +256,7 @@ function TechnicalSheetTrashPage() {
           emptyContent={(
             <EmptyState
               className="p-0"
-              description="Aucune Fiche technique n’attend une restauration ou une purge."
+              description="Aucune Fiche technique n’attend une restauration ou une suppression définitive."
               title="Corbeille vide"
             />
           )}
@@ -279,14 +275,22 @@ function TechnicalSheetTrashPage() {
         </div>
       </section>
 
+      {settingsOpen && (
+        <TechnicalSheetTrashSettingsDialog
+          onClose={() => setSettingsOpen(false)}
+          open={settingsOpen}
+          workspaceId={workspace.id}
+        />
+      )}
+
       {confirmation && (
         <ConfirmationDialog
-          confirmLabel="Purger définitivement"
+          confirmLabel="Supprimer définitivement"
           description="Cette opération supprime définitivement la Fiche, son brouillon éventuel et tout son historique validé. Elle libère une unité de capacité."
           onCancel={() => setConfirmation(null)}
           onConfirm={confirmPurge}
           pending={purgeState.isLoading}
-          title="Purger définitivement cette Fiche ?"
+          title="Supprimer définitivement cette Fiche ?"
         />
       )}
     </div>

@@ -10,6 +10,15 @@ const dossiersFrontendRouteModule = Object.freeze({
       },
     }),
     Object.freeze({
+      path: 'dossiers-settings',
+      lazy: async () => {
+        const { DossierSettingsRoute } = await import(
+          '@/features/dossiers/components/dossier-settings-route'
+        );
+        return { Component: DossierSettingsRoute };
+      },
+    }),
+    Object.freeze({
       path: 'dossiers/:dossierId',
       lazy: async () => {
         const { DossierWorkspaceRoute } = await import(

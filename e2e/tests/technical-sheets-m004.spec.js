@@ -590,7 +590,7 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
 
   await page
     .getByRole('button', {
-      name: 'Purger',
+      name: 'Supprimer définitivement',
       exact: true,
     })
     .click();
@@ -600,7 +600,7 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
 
   await confirmation
     .getByRole('button', {
-      name: 'Purger définitivement',
+      name: 'Supprimer définitivement',
       exact: true,
     })
     .click();

@@ -358,7 +358,7 @@ const purgeTechnicalSheet = async ({
 
         if (deletion.deletedCount !== 1) {
             throw new AppError(
-                'Conflit pendant la purge de la Fiche technique.',
+                'Conflit pendant la suppression définitive de la Fiche technique.',
                 409,
             );
         }

@@ -91,45 +91,6 @@ const sourceComposition = async ({
     dossierId,
     session,
 }) => {
-    const draft =
-        await TechnicalSheetDraft.findOne({
-            technicalSheet: sheet._id,
-            workspace: workspaceId,
-            dossier: dossierId,
-        }).session(session);
-
-    if (draft) {
-        return {
-            productionQuantity:
-                draft.productionQuantity
-                    ?.toString() ?? null,
-            productionUnit:
-                draft.productionUnit,
-            portions:
-                draft.portions?.toString()
-                ?? null,
-            vatRateBasisPoints:
-                draft.vatRateBasisPoints,
-            lines:
-                draft.lines.map(
-                    (line) => ({
-                        kind: line.kind,
-                        productVariantId:
-                            line.productVariant
-                                .toString(),
-                        netQuantity:
-                            line.netQuantity
-                                .toString(),
-                        inputUnit:
-                            line.inputUnit,
-                        order: line.order,
-                        note:
-                            line.note ?? null,
-                    }),
-                ),
-        };
-    }
-
     if (!sheet.currentValidatedState) {
         throw new AppError(
             'La Fiche source ne possède aucune composition copiable.',
@@ -219,6 +180,29 @@ const copyTechnicalSheet = async ({
                 'Fiche technique source introuvable.',
                 404,
             );
+        }
+
+        const openDraft =
+            await TechnicalSheetDraft.findOne({
+                technicalSheet:
+                    source._id,
+                workspace:
+                    workspaceId,
+                dossier:
+                    sourceDossierId,
+            })
+                .select('_id')
+                .session(session)
+                .lean();
+
+        if (openDraft) {
+            const error = new AppError(
+                'La Fiche doit être validée avant de pouvoir être copiée.',
+                409,
+            );
+            error.code =
+                'TECHNICAL_SHEET_COPY_DRAFT_FORBIDDEN';
+            throw error;
         }
 
         const target =

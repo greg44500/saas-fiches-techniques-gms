@@ -1,12 +1,15 @@
 import {
   ArrowLeft,
+  BadgePercent,
   Mail,
   MapPin,
   Phone,
   UserRound,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +27,9 @@ import {
   DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
 } from '@/features/suppliers/constants/supplier-permissions';
 import {
+  DossierTechnicalSheetMarginDialog,
+} from '@/features/technical-sheets/components/dossier-technical-sheet-margin-dialog';
+import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 import {
@@ -36,6 +42,7 @@ import { useWorkspaceContext } from '@/features/workspace/components/workspace-c
 function DossierWorkspacePage() {
   const { dossierId } = useParams();
   const { can, canAny, workspace } = useWorkspaceContext();
+  const [marginDialogOpen, setMarginDialogOpen] = useState(false);
   const dossierQuery = useGetDossierByIdQuery({
     workspaceId: workspace.id,
     dossierId,
@@ -101,6 +108,17 @@ function DossierWorkspacePage() {
           <StatusBadge tone={getDossierStatusTone(dossier.status)}>
             {getDossierStatusLabel(dossier.status, metadataQuery.data)}
           </StatusBadge>
+          {can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE) && (
+            <div className="ml-auto">
+              <ActionIconButton
+                Icon={BadgePercent}
+                label="Régler la marge par défaut du Dossier"
+                onClick={() => setMarginDialogOpen(true)}
+                tooltipLabel="Régler la marge par défaut"
+                variant="outline"
+              />
+            </div>
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3 text-sm">
@@ -174,6 +192,15 @@ function DossierWorkspacePage() {
             </Button>
           )}
         </div>
+      )}
+
+      {marginDialogOpen && (
+        <DossierTechnicalSheetMarginDialog
+          dossierId={dossier.id}
+          onClose={() => setMarginDialogOpen(false)}
+          open={marginDialogOpen}
+          workspaceId={workspace.id}
+        />
       )}
     </div>
   );

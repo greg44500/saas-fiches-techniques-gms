@@ -9,7 +9,9 @@ import {
   formatBasisPoints,
   formatMinorCurrency,
   getLineValuationPresentation,
+  getTechnicalSheetActionAvailability,
   getTechnicalSheetStatusPresentation,
+  getTechnicalSheetValuationPresentation,
   percentInputToBasisPoints,
   priceInputToMinor,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
@@ -20,7 +22,14 @@ describe('technical sheet presentation', () => {
       getTechnicalSheetStatusPresentation('ARCHIVED'),
     ).toMatchObject({
       label: 'Archivée',
-      tone: 'neutral',
+      tone: 'archived',
+    });
+
+    expect(
+      getTechnicalSheetValuationPresentation('NOT_VALUED'),
+    ).toMatchObject({
+      label: 'Non valorisée',
+      tone: 'alert',
     });
 
     expect(
@@ -28,6 +37,30 @@ describe('technical sheet presentation', () => {
     ).toMatchObject({
       label: 'Prix indisponible',
       tone: 'destructive',
+    });
+  });
+
+  it('désactive la copie tant qu’un brouillon est ouvert', () => {
+    expect(getTechnicalSheetActionAvailability({
+      status: 'ACTIVE',
+      hasDraft: true,
+    })).toEqual({
+      update: true,
+      copy: false,
+      archive: true,
+      reactivate: false,
+      delete: true,
+    });
+
+    expect(getTechnicalSheetActionAvailability({
+      status: 'ARCHIVED',
+      hasDraft: false,
+    })).toEqual({
+      update: false,
+      copy: true,
+      archive: false,
+      reactivate: true,
+      delete: true,
     });
   });
 

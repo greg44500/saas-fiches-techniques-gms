@@ -2,6 +2,11 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TooltipProvider } from '@/components/ui/tooltip';
+import {
+  TECHNICAL_SHEET_PERMISSION,
+} from '@/features/technical-sheets/constants/technical-sheet-permissions';
+
 const mocks = vi.hoisted(() => ({
   detailQuery: vi.fn(),
   metadataQuery: vi.fn(),
@@ -48,7 +53,9 @@ function queryResult(data) {
 function renderPage() {
   return render(
     <MemoryRouter>
-      <DossierWorkspacePage />
+      <TooltipProvider>
+        <DossierWorkspacePage />
+      </TooltipProvider>
     </MemoryRouter>,
   );
 }
@@ -57,7 +64,9 @@ describe('DossierWorkspacePage', () => {
   beforeEach(() => {
     mocks.params.mockReturnValue({ dossierId: 'dossier-1' });
     mocks.workspaceContext.mockReturnValue({
-      can: vi.fn(() => false),
+      can: vi.fn((permission) => (
+        permission === TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE
+      )),
       canAny: vi.fn(() => false),
       workspace: { id: 'workspace-1', name: 'Acme' },
     });
@@ -90,6 +99,9 @@ describe('DossierWorkspacePage', () => {
     expect(screen.queryByText('Acme')).not.toBeInTheDocument();
     expect(screen.queryByText('Leclerc')).not.toBeInTheDocument();
     expect(screen.queryByText('Contexte actif')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Régler la marge par défaut du Dossier',
+    })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Tableau de bord' })).toHaveAttribute(
       'href',
       '/workspaces/workspace-1/dashboard',

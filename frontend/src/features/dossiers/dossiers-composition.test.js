@@ -4,6 +4,9 @@ import { APPLICATION_FRONTEND_ROUTES } from '@/app/application-routes';
 import { workspaceNavigation } from '@/app/workspace-navigation';
 import { DOSSIER_PERMISSION } from '@/features/dossiers/constants/dossier-permissions';
 import {
+  SUPPLIER_PERMISSION,
+} from '@/features/suppliers/constants/supplier-permissions';
+import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 import { filterWorkspaceNavigation } from '@/features/workspace/components/workspace-sidebar';
@@ -13,10 +16,11 @@ function getDossiersNavigation(navigation) {
 }
 
 describe('dossiers frontend composition', () => {
-  it('injecte les routes liste et contexte Dossier dans la surface Workspace', () => {
+  it('injecte les routes liste, paramètres et contexte Dossier', () => {
     expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: 'dossiers' }),
+        expect.objectContaining({ path: 'dossiers-settings' }),
         expect.objectContaining({ path: 'dossiers/:dossierId' }),
       ]),
     );
@@ -51,13 +55,14 @@ describe('dossiers frontend composition', () => {
     ]);
   });
 
-  it('regroupe Corbeille et Paramètres avec Compte Client pour le propriétaire', () => {
+  it('compose Compte Client, Corbeille et Paramètres selon leurs permissions', () => {
     const navigation = filterWorkspaceNavigation(
       workspaceNavigation,
       {
         can: (permission) => [
           DOSSIER_PERMISSION.READ,
           TECHNICAL_SHEET_PERMISSION.PURGE,
+          SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
         ].includes(permission),
         hasFeature: () => true,
       },
@@ -78,7 +83,7 @@ describe('dossiers frontend composition', () => {
       },
       {
         label: 'Paramètres',
-        path: 'technical-sheets/settings',
+        path: 'dossiers-settings',
       },
     ]);
   });

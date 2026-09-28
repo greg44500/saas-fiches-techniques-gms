@@ -42,6 +42,9 @@ import {
     TechnicalSheetValidation,
 } from '../../../modules/technicalSheet/technicalSheetValidation.model.js';
 import {
+    copyTechnicalSheet,
+} from '../../../modules/technicalSheet/technicalSheetCopy.service.js';
+import {
     deleteTechnicalSheet,
     purgeTechnicalSheet,
     restoreTechnicalSheet,
@@ -461,6 +464,58 @@ describe('M-004 services Fiches techniques', () => {
             }),
         ).resolves.toMatchObject({
             sheetRevision: 1,
+        });
+    });
+
+    it('refuse la copie tant qu’un brouillon est ouvert', async () => {
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche brouillon non copiable',
+                },
+            });
+
+        const target =
+            await Dossier.create({
+                workspace:
+                    owner.workspace._id,
+                name:
+                    'Magasin cible M004',
+                statusChangedBy:
+                    owner.owner._id,
+                createdBy:
+                    owner.owner._id,
+                updatedBy:
+                    owner.owner._id,
+            });
+
+        await expect(
+            copyTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                sourceDossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                targetDossierId:
+                    target._id,
+                actorId:
+                    owner.owner._id,
+                membershipId:
+                    owner.membership._id,
+                isOwner: true,
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 409,
+            code:
+                'TECHNICAL_SHEET_COPY_DRAFT_FORBIDDEN',
         });
     });
 

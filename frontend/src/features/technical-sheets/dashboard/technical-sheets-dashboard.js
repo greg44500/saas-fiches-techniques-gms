@@ -12,8 +12,8 @@ const technicalSheetsDashboardModule = Object.freeze({
       label: 'Fiches techniques',
       description: 'Capacité de Fiches techniques du Workspace, corbeille comprise.',
       component: TechnicalSheetsCapacityDashboardWidget,
-      slot: 'summary',
-      order: 450,
+      slot: 'content',
+      order: 70,
       configurable: true,
       access: Object.freeze({
         features: Object.freeze([]),

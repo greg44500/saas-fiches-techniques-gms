@@ -13,7 +13,6 @@ const mocks = vi.hoisted(() => ({
   listCatalogs: vi.fn(),
   listNegotiated: vi.fn(),
   listInvoiced: vi.fn(),
-  pricingPolicy: vi.fn(),
   lazyApplicable: vi.fn(),
 }));
 
@@ -46,7 +45,6 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListSupplierCatalogsQuery: mocks.listCatalogs,
   useListNegotiatedPricesQuery: mocks.listNegotiated,
   useListInvoicedPricesQuery: mocks.listInvoiced,
-  useGetPricingPolicyQuery: mocks.pricingPolicy,
   useLazyGetApplicableSupplierPriceQuery: mocks.lazyApplicable,
   useAddDossierSupplierReferenceMutation: () => [
     vi.fn(),
@@ -61,10 +59,6 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
     { isLoading: false },
   ],
   useDecideInvoicedPriceMutation: () => [
-    vi.fn(),
-    { isLoading: false },
-  ],
-  useUpdatePricingPolicyMutation: () => [
     vi.fn(),
     { isLoading: false },
   ],
@@ -128,10 +122,6 @@ describe('DossierSupplierPricingPage', () => {
     }));
     mocks.listNegotiated.mockReturnValue(queryResult([]));
     mocks.listInvoiced.mockReturnValue(queryResult([]));
-    mocks.pricingPolicy.mockReturnValue(queryResult({
-      mode: 'NEGOTIATED_PRICE',
-      isDefault: true,
-    }));
     mocks.lazyApplicable.mockReturnValue([
       vi.fn(),
       {
@@ -180,6 +170,8 @@ describe('DossierSupplierPricingPage', () => {
       name: 'À propos des Fournisseurs et prix',
     })).toBeInTheDocument();
     expect(screen.queryByText('Acme')).not.toBeInTheDocument();
+    expect(screen.queryByText('Politique de l’espace de travail'))
+      .not.toBeInTheDocument();
     expect(screen.getByRole('tab', {
       name: 'Catalogues',
     })).toHaveAttribute('aria-selected', 'true');
@@ -227,10 +219,14 @@ describe('DossierSupplierPricingPage', () => {
 
     expect(screen.getByText('12,500 EUR / KG'))
       .toBeInTheDocument();
-    expect(screen.getByText(/Source : NEGOTIATED_PRICE/))
+    expect(screen.getByText('Vérifier un prix applicable'))
       .toBeInTheDocument();
-    expect(screen.getByText(/fallback appliqué/))
+    expect(screen.getByText(/Source retenue : Tarif négocié/))
       .toBeInTheDocument();
+    expect(screen.getByText(/source de remplacement/))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/NEGOTIATED_PRICE/))
+      .not.toBeInTheDocument();
     expect(screen.queryByRole('tab'))
       .not.toBeInTheDocument();
   });

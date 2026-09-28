@@ -1,5 +1,6 @@
 import {
   Archive,
+  ArrowLeft,
   Calculator,
   Copy,
   CheckCircle2,
@@ -10,9 +11,13 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { ErrorState } from '@/components/shared/error-state';
-import { StatusBadge } from '@/components/shared/status-badge';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
+import {
+  TechnicalSheetStatusBadge,
+} from '@/features/technical-sheets/components/technical-sheet-status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -69,6 +74,7 @@ import {
   formatDecimalCurrency,
   formatMinorCurrency,
   getLineValuationPresentation,
+  getTechnicalSheetActionAvailability,
   getTechnicalSheetApiErrorMessage,
   getTechnicalSheetStatusPresentation,
   getTechnicalSheetValuationPresentation,
@@ -191,15 +197,22 @@ function TechnicalSheetWorkspacePage() {
   const valuationPresentation = getTechnicalSheetValuationPresentation(
     draft?.valuationStatus,
   );
-  const isActive = sheet.status === 'ACTIVE';
-  const canUpdate = isActive && can(TECHNICAL_SHEET_PERMISSION.UPDATE);
-  const canSource = isActive && can(TECHNICAL_SHEET_PERMISSION.SOURCING_MANAGE);
-  const canValuate = isActive && can(TECHNICAL_SHEET_PERMISSION.VALUATION_MANAGE);
-  const canValidate = isActive && can(TECHNICAL_SHEET_PERMISSION.VALIDATE);
+  const actionAvailability = getTechnicalSheetActionAvailability({
+    status: sheet.status,
+    hasDraft: Boolean(draft),
+  });
+  const canEditIdentity = can(TECHNICAL_SHEET_PERMISSION.UPDATE);
+  const canUpdate = actionAvailability.update && canEditIdentity;
+  const canSource = actionAvailability.update
+    && can(TECHNICAL_SHEET_PERMISSION.SOURCING_MANAGE);
+  const canValuate = actionAvailability.update
+    && can(TECHNICAL_SHEET_PERMISSION.VALUATION_MANAGE);
+  const canValidate = actionAvailability.update
+    && can(TECHNICAL_SHEET_PERMISSION.VALIDATE);
   const canLifecycle = can(TECHNICAL_SHEET_PERMISSION.LIFECYCLE_MANAGE);
   const canDelete = can(TECHNICAL_SHEET_PERMISSION.DELETE);
-  const canCopy = sheet.status !== 'DELETED'
-    && can(TECHNICAL_SHEET_PERMISSION.COPY);
+  const canCopy = can(TECHNICAL_SHEET_PERMISSION.COPY);
+  const copyDisabled = !actionAvailability.copy;
   const sourcingPending = sourcingPendingCount > 0;
   const draftSynchronizing = sourcingPending || sheetQuery.isFetching;
 
@@ -422,111 +435,173 @@ function TechnicalSheetWorkspacePage() {
               + '/technical-sheets'
             }
           >
+            <ArrowLeft aria-hidden="true" className="size-4" />
             Retour aux Fiches techniques
           </Link>
         </Button>
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+          <div className="flex items-start gap-2">
             <h1 className="text-3xl font-semibold tracking-tight">
               {sheet.name}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Travail courant, valorisation et historique validé.
-            </p>
+            <InfoTooltip
+              content="Travail courant, valorisation et historique validé."
+              label="À propos de la Fiche technique"
+            />
           </div>
           <div className="flex flex-wrap gap-2">
-            <StatusBadge tone={statusPresentation.tone}>
+            <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
               {statusPresentation.label}
-            </StatusBadge>
+            </TechnicalSheetStatusBadge>
             {draft && (
-              <StatusBadge tone={valuationPresentation.tone}>
+              <TechnicalSheetStatusBadge tone="warning">
+                Brouillon
+              </TechnicalSheetStatusBadge>
+            )}
+            {draft && (
+              <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
                 {valuationPresentation.label}
-              </StatusBadge>
+              </TechnicalSheetStatusBadge>
             )}
           </div>
         </div>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Informations générales</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Field>
-              <FieldLabel htmlFor="technical-sheet-edit-name">Nom</FieldLabel>
-              <Input
-                disabled={!canUpdate || updateSheetState.isLoading}
-                id="technical-sheet-edit-name"
-                maxLength={160}
-                onChange={(event) => setIdentity((current) => ({
-                  ...current,
-                  name: event.target.value,
-                }))}
-                value={identity.name}
-              />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="technical-sheet-edit-description">
-                Description
-              </FieldLabel>
-              <Textarea
-                disabled={!canUpdate || updateSheetState.isLoading}
-                id="technical-sheet-edit-description"
-                maxLength={2000}
-                onChange={(event) => setIdentity((current) => ({
-                  ...current,
-                  description: event.target.value,
-                }))}
-                value={identity.description}
-              />
-            </Field>
-          </div>
-          {canUpdate && (
-            <div className="flex justify-end">
-              <Button
-                disabled={updateSheetState.isLoading || !identity.name.trim()}
-                onClick={saveIdentity}
-                type="button"
-                variant="outline"
-              >
-                <Save aria-hidden="true" className="size-4" />
-                Enregistrer les informations
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {!draft ? (
+      <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>État de travail</CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle>Informations générales</CardTitle>
+
+              <div className="flex flex-wrap gap-2">
+                {canEditIdentity && (
+                  <ActionIconButton
+                    Icon={Save}
+                    disabled={
+                      !canUpdate
+                      || updateSheetState.isLoading
+                      || !identity.name.trim()
+                    }
+                    label="Enregistrer les informations"
+                    onClick={saveIdentity}
+                    tooltipLabel="Enregistrer les informations"
+                    variant="outline"
+                  />
+                )}
+
+                {canCopy && (
+                  <ActionIconButton
+                    Icon={Copy}
+                    disabled={copyDisabled}
+                    label="Copier vers un autre Dossier"
+                    onClick={() => setCopyOpen(true)}
+                    tooltipLabel={
+                      copyDisabled
+                        ? 'Copie indisponible tant qu’un brouillon est ouvert'
+                        : 'Copier vers un autre Dossier'
+                    }
+                    variant="outline"
+                  />
+                )}
+
+                {canLifecycle && (
+                  <ActionIconButton
+                    Icon={Archive}
+                    disabled={!actionAvailability.archive || pendingLifecycle}
+                    label="Archiver la Fiche"
+                    onClick={() => setConfirmation({ type: 'archive' })}
+                    tooltipLabel="Archiver"
+                    variant="outline"
+                  />
+                )}
+
+                {canLifecycle && (
+                  <ActionIconButton
+                    Icon={RotateCcw}
+                    disabled={!actionAvailability.reactivate || pendingLifecycle}
+                    label="Réactiver la Fiche"
+                    onClick={() => setConfirmation({ type: 'reactivate' })}
+                    tooltipLabel="Réactiver"
+                    variant="outline"
+                  />
+                )}
+
+                {canDelete && (
+                  <ActionIconButton
+                    Icon={Trash2}
+                    disabled={!actionAvailability.delete || pendingLifecycle}
+                    label="Mettre la Fiche dans la Corbeille"
+                    onClick={() => setConfirmation({ type: 'delete' })}
+                    tooltipLabel="Mettre dans la Corbeille"
+                    variant="destructive"
+                  />
+                )}
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Aucun brouillon n’est ouvert. L’état validé courant reste consultable dans l’historique.
-            </p>
-            {canUpdate && sheet.currentValidatedStateId && (
-              <Button
-                disabled={startDraftState.isLoading}
-                onClick={createWorkingDraft}
-                type="button"
-              >
-                <RotateCcw aria-hidden="true" className="size-4" />
-                Reprendre en brouillon
-              </Button>
-            )}
+
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Field>
+                <FieldLabel htmlFor="technical-sheet-edit-name">Nom</FieldLabel>
+                <Input
+                  disabled={!canUpdate || updateSheetState.isLoading}
+                  id="technical-sheet-edit-name"
+                  maxLength={160}
+                  onChange={(event) => setIdentity((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))}
+                  value={identity.name}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="technical-sheet-edit-description">
+                  Description
+                </FieldLabel>
+                <Textarea
+                  disabled={!canUpdate || updateSheetState.isLoading}
+                  id="technical-sheet-edit-description"
+                  maxLength={2000}
+                  onChange={(event) => setIdentity((current) => ({
+                    ...current,
+                    description: event.target.value,
+                  }))}
+                  value={identity.description}
+                />
+              </Field>
+            </div>
           </CardContent>
         </Card>
-      ) : (
-        <>
+
+        {!draft ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>État de travail</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Aucun brouillon n’est ouvert. L’état validé courant reste consultable dans l’historique.
+              </p>
+              {canUpdate && sheet.currentValidatedStateId && (
+                <Button
+                  disabled={startDraftState.isLoading}
+                  onClick={createWorkingDraft}
+                  type="button"
+                >
+                  <RotateCcw aria-hidden="true" className="size-4" />
+                  Reprendre en brouillon
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
           <Card>
             <CardHeader>
               <CardTitle>Base de production</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <CardContent className="grid gap-4 md:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="technical-sheet-production-quantity">
                   Quantité produite
@@ -600,7 +675,11 @@ function TechnicalSheetWorkspacePage() {
               </Field>
             </CardContent>
           </Card>
+        )}
+      </div>
 
+      {draft && (
+        <>
           <Card>
             <CardHeader>
               <CardTitle>Composition</CardTitle>
@@ -675,9 +754,9 @@ function TechnicalSheetWorkspacePage() {
                       />
 
                       <div className="text-right">
-                        <StatusBadge tone={linePresentation.tone}>
+                        <TechnicalSheetStatusBadge tone={linePresentation.tone}>
                           {linePresentation.label}
-                        </StatusBadge>
+                        </TechnicalSheetStatusBadge>
                         <p className="mt-2 text-sm font-medium">
                           {formatDecimalCurrency(line.valuation?.lineCostHt)}
                         </p>
@@ -856,56 +935,6 @@ function TechnicalSheetWorkspacePage() {
         </CardContent>
       </Card>
 
-      {(canLifecycle || canDelete || canCopy) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Cycle de vie</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {canCopy && (
-              <Button
-                onClick={() => setCopyOpen(true)}
-                type="button"
-                variant="outline"
-              >
-                <Copy aria-hidden="true" className="size-4" />
-                Copier vers un autre Dossier
-              </Button>
-            )}
-            {sheet.status === 'ACTIVE' && canLifecycle && (
-              <Button
-                onClick={() => setConfirmation({ type: 'archive' })}
-                type="button"
-                variant="outline"
-              >
-                <Archive aria-hidden="true" className="size-4" />
-                Archiver
-              </Button>
-            )}
-            {sheet.status === 'ARCHIVED' && canLifecycle && (
-              <Button
-                onClick={() => setConfirmation({ type: 'reactivate' })}
-                type="button"
-                variant="outline"
-              >
-                <RotateCcw aria-hidden="true" className="size-4" />
-                Réactiver
-              </Button>
-            )}
-            {sheet.status !== 'DELETED' && canDelete && (
-              <Button
-                onClick={() => setConfirmation({ type: 'delete' })}
-                type="button"
-                variant="destructive"
-              >
-                <Trash2 aria-hidden="true" className="size-4" />
-                Mettre dans la corbeille
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       <TechnicalSheetCopyDialog
         dossierId={dossierId}
         onClose={() => setCopyOpen(false)}
@@ -917,7 +946,7 @@ function TechnicalSheetWorkspacePage() {
             + '/technical-sheets/' + result.sheet.id,
           );
         }}
-        open={copyOpen}
+        open={copyOpen && !copyDisabled}
         technicalSheetId={technicalSheetId}
         workspaceId={workspace.id}
       />
@@ -934,7 +963,7 @@ function TechnicalSheetWorkspacePage() {
           confirmVariant={confirmation.type === 'delete' ? 'destructive' : 'default'}
           description={
             confirmation.type === 'delete'
-              ? 'La Fiche restera restaurable jusqu’à son échéance de purge et continuera de consommer une unité de capacité.'
+              ? 'La Fiche restera restaurable jusqu’à sa date de suppression définitive et continuera de consommer une unité de capacité.'
               : 'Le changement de statut ne modifie ni l’historique validé ni le quota.'
           }
           onCancel={() => setConfirmation(null)}
