@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
+  articleQuery: vi.fn(),
   productSearchProps: vi.fn(),
   sourcingProps: vi.fn(),
 }));
@@ -15,8 +16,14 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
 
     return (
       <div>
-        <span data-testid="product-search-scope">{props.scope}</span>
+        <input
+          aria-label={props.ariaLabel}
+          placeholder={props.placeholder}
+          readOnly
+          value={props.value}
+        />
         <button
+          aria-label={'Sélectionner Pomme depuis ' + props.ariaLabel}
           onClick={() => props.onSelect({
             product: {
               id: 'product-2',
@@ -26,15 +33,20 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
               id: 'variant-2',
               name: 'Pomme',
               referenceUnit: 'KG',
+              yieldPercent: '95',
             },
           })}
           type="button"
         >
-          Ajouter le Produit simulé
+          Pomme
         </button>
       </div>
     );
   },
+}));
+
+vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useListSupplierArticlesQuery: mocks.articleQuery,
 }));
 
 vi.mock('@/features/technical-sheets/components/technical-sheet-sourcing-select', () => ({
@@ -42,8 +54,8 @@ vi.mock('@/features/technical-sheets/components/technical-sheet-sourcing-select'
     mocks.sourcingProps(props);
 
     return (
-      <span data-testid={'sourcing-' + props.line.id}>
-        {props.disabled ? 'Approvisionnement verrouillé' : 'Sysco · 874215'}
+      <span data-testid="sourcing-select">
+        {props.line.productVariantName}
       </span>
     );
   },
@@ -70,12 +82,14 @@ const valuedLine = normalizeDraftLine({
     id: 'variant-1',
     name: 'Carotte râpée',
     referenceUnit: 'KG',
+    yieldPercent: '90',
   },
   netQuantity: '2.5',
   inputUnit: 'KG',
-  note: '',
+  note: 'Note conservée',
   selectedSupplierArticleId: 'article-1',
   calculation: {
+    yieldPercentUsed: '90',
     grossQuantity: '2.778',
     grossUnit: 'KG',
   },
@@ -95,20 +109,22 @@ function renderEditor(overrides = {}) {
   render(
     <TooltipProvider>
       <TechnicalSheetLineEditor
-      canManageSourcing
-      disabled={false}
-      dossierId="dossier-1"
-      draftRevision={4}
-      lines={[valuedLine]}
-      metadata={metadata}
-      onChange={onChange}
-      onSourcingError={vi.fn()}
-      onSourcingPendingChange={vi.fn()}
-      onSourcingSelected={vi.fn()}
-      productMetadata={{}}
-      sourcingDisabled={false}
-      technicalSheetId="sheet-1"
-      workspaceId="workspace-1"
+        canManageSourcing
+        canOpenPricing
+        disabled={false}
+        dossierId="dossier-1"
+        draftRevision={4}
+        lines={[valuedLine]}
+        metadata={metadata}
+        onChange={onChange}
+        onOpenPricing={vi.fn()}
+        onSourcingError={vi.fn()}
+        onSourcingPendingChange={vi.fn()}
+        onSourcingSelected={vi.fn()}
+        productMetadata={{}}
+        sourcingDisabled={false}
+        technicalSheetId="sheet-1"
+        workspaceId="workspace-1"
         {...overrides}
       />
     </TooltipProvider>,
@@ -118,101 +134,160 @@ function renderEditor(overrides = {}) {
 }
 
 describe('TechnicalSheetLineEditor', () => {
-  it('ouvre la recherche sur Tous les produits puis permet de basculer sur les Favoris', async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mocks.articleQuery.mockReturnValue({
+      data: {
+        articles: [{
+          id: 'article-1',
+          supplierReference: 'SYS-001',
+          supplierDesignation: 'Carotte râpée 10 kg',
+          packaging: {
+            unitCount: 1,
+            quantityPerUnit: '10',
+            unit: 'KG',
+          },
+          supplier: {
+            id: 'supplier-1',
+            name: 'Sysco',
+          },
+        }],
+      },
+      isError: false,
+      isLoading: false,
+    });
+  });
+
+  it('présente les sources Produit sous forme d’actions et bascule vers les Favoris', async () => {
     const user = userEvent.setup();
 
     renderEditor();
 
-    expect(screen.getByTestId('product-search-scope')).toHaveTextContent(
-      PRODUCT_SOURCE.REFERENCE,
-    );
+    expect(screen.queryByText('Source Produit')).not.toBeInTheDocument();
+
+    const globalButton = screen.getByRole('button', {
+      name: 'Tous les produits',
+    });
+    const favoritesButton = screen.getByRole('button', {
+      name: 'Favoris',
+    });
+
+    expect(globalButton).toHaveAttribute('aria-pressed', 'true');
     expect(
-      mocks.productSearchProps.mock.lastCall[0].showWorkspaceFavorite,
+      mocks.productSearchProps.mock.calls.some(
+        ([props]) => props.scope === PRODUCT_SOURCE.REFERENCE,
+      ),
     ).toBe(true);
 
-    await user.click(screen.getByRole('button', { name: 'Favoris' }));
+    await user.click(favoritesButton);
 
-    expect(screen.getByTestId('product-search-scope')).toHaveTextContent(
-      PRODUCT_SOURCE.FAVORITES,
-    );
+    expect(favoritesButton).toHaveAttribute('aria-pressed', 'true');
     expect(
-      mocks.productSearchProps.mock.lastCall[0].showWorkspaceFavorite,
-    ).toBe(false);
+      mocks.productSearchProps.mock.lastCall[0].scope,
+    ).toBe(PRODUCT_SOURCE.FAVORITES);
   });
 
-  it('affiche sur une même ligne le Produit, l’approvisionnement, le prix, sa source et le coût', () => {
+  it('affiche le tableau métier compact sans quantité brute ni colonne fournisseur', () => {
     renderEditor();
 
-    expect(screen.getByText('Carotte râpée')).toBeInTheDocument();
-    expect(screen.getByText(/2\.778/)).toBeInTheDocument();
-    expect(screen.getByTestId('sourcing-line-1')).toHaveTextContent(
-      'Sysco · 874215',
-    );
+    expect(screen.getByText('Qté')).toBeInTheDocument();
+    expect(screen.getByText('U')).toBeInTheDocument();
+    expect(screen.getByText('PUHT')).toBeInTheDocument();
+    expect(screen.getByText('CMU HT')).toBeInTheDocument();
+    expect(screen.getByText('%TR')).toBeInTheDocument();
+
+    expect(screen.queryByText('Qté brute')).not.toBeInTheDocument();
+    expect(screen.queryByText('Article / Fournisseur')).not.toBeInTheDocument();
+    expect(screen.queryByText('Type')).not.toBeInTheDocument();
+
+    expect(screen.getByText('Ingrédients')).toBeInTheDocument();
+    expect(screen.getByText('Économat')).toBeInTheDocument();
+    expect(screen.getByText('90 %')).toBeInTheDocument();
     expect(screen.getByText(/2,15/)).toBeInTheDocument();
-    expect(screen.getByText('Tarif négocié')).toBeInTheDocument();
     expect(screen.getByText(/6,02/)).toBeInTheDocument();
-    expect(screen.getByText('Valorisée')).toBeInTheDocument();
   });
 
-  it('verrouille le sourcing lorsque le brouillon doit d’abord être enregistré', () => {
-    renderEditor({
-      sourcingDisabled: true,
-      sourcingDisabledReason:
-        'Enregistrez le brouillon avant de modifier l’approvisionnement ou de valoriser.',
-    });
-
-    expect(screen.getByTestId('sourcing-line-1')).toHaveTextContent(
-      'Approvisionnement verrouillé',
-    );
-    expect(screen.getByText(
-      'Enregistrez le brouillon avant de modifier l’approvisionnement ou de valoriser.',
-    )).toBeInTheDocument();
-  });
-
-  it('propose le parcours Fournisseurs et prix lorsqu’aucun prix n’est applicable', async () => {
-    const user = userEvent.setup();
-    const onOpenPricing = vi.fn();
-    const noPriceLine = {
-      ...valuedLine,
-      valuation: {
-        ...valuedLine.valuation,
-        status: 'NO_PRICE',
-        applicableSource: null,
-        normalizedAmount: null,
-        normalizedUnit: null,
-        lineCostHt: null,
-      },
-    };
-
-    renderEditor({
-      canOpenPricing: true,
-      lines: [noPriceLine],
-      onOpenPricing,
-    });
-
-    await user.click(screen.getByRole('button', {
-      name: 'Ouvrir Fournisseurs et prix pour Carotte râpée',
-    }));
-
-    expect(onOpenPricing).toHaveBeenCalledWith(noPriceLine);
-  });
-
-  it('ajoute une Référence globale sélectionnée sans exiger qu’elle soit favorite', async () => {
+  it('ajoute un Produit directement depuis la ligne de saisie de la section', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor();
 
-    await user.click(
-      screen.getByRole('button', { name: 'Ajouter le Produit simulé' }),
-    );
+    expect(screen.getAllByPlaceholderText('Ajouter un produit')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Pomme depuis Ajouter un produit aux Ingrédients',
+    }));
 
     expect(onChange).toHaveBeenCalledWith([
       valuedLine,
       expect.objectContaining({
+        kind: 'INGREDIENT',
         productVariantId: 'variant-2',
         productVariantName: 'Pomme',
-        referenceUnit: 'KG',
         inputUnit: 'KG',
       }),
     ]);
+  });
+
+  it('remplace un Produit sans conserver son ancien sourcing ni sa valorisation', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Pomme depuis Modifier le produit Carotte râpée',
+    }));
+
+    expect(onChange).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: undefined,
+        kind: 'INGREDIENT',
+        productVariantId: 'variant-2',
+        productVariantName: 'Pomme',
+        netQuantity: '2.5',
+        inputUnit: 'KG',
+        note: 'Note conservée',
+        selectedSupplierArticleId: null,
+        calculation: null,
+        valuation: null,
+      }),
+    ]);
+  });
+
+  it('affiche les informations fournisseur au survol du Produit', async () => {
+    const user = userEvent.setup();
+
+    renderEditor();
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+
+    expect(await screen.findByText('Fournisseur : Sysco'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Référence fournisseur : SYS-001'))
+      .toBeInTheDocument();
+    expect(screen.getByText(/Conditionnement : 1 unité/))
+      .toBeInTheDocument();
+  });
+
+  it('ouvre le choix Article fournisseur depuis les actions de la ligne', async () => {
+    const user = userEvent.setup();
+
+    renderEditor();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Choisir l’Article fournisseur pour Carotte râpée',
+    }));
+
+    expect(screen.getByRole('heading', {
+      name: 'Article fournisseur',
+    })).toBeInTheDocument();
+    expect(screen.getByTestId('sourcing-select')).toHaveTextContent(
+      'Carotte râpée',
+    );
   });
 });
