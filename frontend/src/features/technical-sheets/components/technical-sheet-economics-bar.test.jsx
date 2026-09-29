@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
@@ -33,28 +33,48 @@ describe('TechnicalSheetEconomicsBar', () => {
     });
   });
 
-  it('affiche les coûts visibles avant valorisation complète et ouvre le détail', async () => {
+  it('affiche les KPI sous forme de sigles accessibles et ouvre le détail', async () => {
     const user = userEvent.setup();
 
     render(
       <TooltipProvider>
         <TechnicalSheetEconomicsBar
-          economicSnapshot={null}
-          lines={[
-            {
-              kind: 'INGREDIENT',
-              valuation: { lineCostHt: '12.5' },
-            },
-          ]}
+          canValuate
+          economicSnapshot={{
+            materialCostHt: '12.5',
+            economatCostHt: '1.5',
+            manufacturingCostHt: '14',
+            advisedPriceTtcMinor: 3500,
+            finalPriceTtcMinor: 3500,
+            actualMarginBasisPoints: 6000,
+          }}
+          finalPriceMode="ADVISED"
+          lines={[]}
+          onFinalPriceModeChange={vi.fn()}
+          onTargetMarginInputChange={vi.fn()}
+          onValuate={vi.fn()}
           targetMarginBasisPoints={7000}
+          targetMarginInputValue="70"
+          valuationStatus="COMPLETE"
           vatRateBasisPoints={1000}
         />
       </TooltipProvider>,
     );
 
-    expect(screen.getByText('Coût matières HT')).toBeInTheDocument();
-    expect(screen.getByText(/12,50/)).toBeInTheDocument();
-    expect(screen.getAllByText('Non calculé').length).toBeGreaterThan(0);
+    expect(screen.getByText('CM HT')).toBeInTheDocument();
+    expect(screen.getByText('CE HT')).toBeInTheDocument();
+    expect(screen.getByText('CF HT')).toBeInTheDocument();
+    expect(screen.getByText('%MC')).toBeInTheDocument();
+    expect(screen.getByText('PC TTC')).toBeInTheDocument();
+    expect(screen.getByText('PF TTC')).toBeInTheDocument();
+    expect(screen.getByText('%MR')).toBeInTheDocument();
+
+    expect(screen.getByRole('button', {
+      name: 'Coût matières hors taxe',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Prix conseillé toutes taxes comprises',
+    })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
       name: 'Afficher le détail de la valorisation',
@@ -65,5 +85,41 @@ describe('TechnicalSheetEconomicsBar', () => {
     })).toBeInTheDocument();
     expect(screen.getByText('Marge cible')).toBeInTheDocument();
     expect(screen.getByText('70 %')).toBeInTheDocument();
+  });
+
+  it('garde les paramètres économiques éditables tout en verrouillant la revalorisation', async () => {
+    const user = userEvent.setup();
+    const onTargetMarginInputChange = vi.fn();
+    const onValuate = vi.fn();
+
+    render(
+      <TooltipProvider>
+        <TechnicalSheetEconomicsBar
+          canValuate
+          economicSnapshot={null}
+          finalPriceMode="ADVISED"
+          lines={[]}
+          onFinalPriceModeChange={vi.fn()}
+          onTargetMarginInputChange={onTargetMarginInputChange}
+          onValuate={onValuate}
+          targetMarginBasisPoints={5000}
+          targetMarginInputValue="50"
+          valuateDisabled
+          valuationStatus="STALE"
+          vatRateBasisPoints={1000}
+        />
+      </TooltipProvider>,
+    );
+
+    const margin = screen.getByRole('textbox', {
+      name: 'Marge cible (%)',
+    });
+
+    await user.clear(margin);
+    await user.type(margin, '55');
+
+    expect(onTargetMarginInputChange).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Revaloriser' })).toBeDisabled();
+    expect(onValuate).not.toHaveBeenCalled();
   });
 });
