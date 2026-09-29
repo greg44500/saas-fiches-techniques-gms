@@ -176,6 +176,7 @@ function ProductDetailsTrigger({
   onEdit,
   workspaceId,
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const articlesQuery = useListSupplierArticlesQuery(
     {
       workspaceId,
@@ -185,7 +186,7 @@ function ProductDetailsTrigger({
       limit: 100,
     },
     {
-      skip: !line.productVariantId,
+      skip: !line.productVariantId || !detailsOpen,
     },
   );
   const articles = articlesQuery.data?.articles ?? [];
@@ -205,7 +206,10 @@ function ProductDetailsTrigger({
 
   return (
     <div className="min-w-0">
-      <Tooltip>
+      <Tooltip
+        onOpenChange={setDetailsOpen}
+        open={detailsOpen}
+      >
         <TooltipTrigger
           aria-label={'Modifier le produit ' + line.productVariantName}
           className="block max-w-full truncate text-left text-sm font-semibold underline decoration-dotted underline-offset-4"
