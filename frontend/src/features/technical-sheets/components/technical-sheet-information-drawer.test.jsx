@@ -113,6 +113,15 @@ describe('TechnicalSheetInformationDrawer', () => {
     }));
 
     expect(screen.getByText('Validation initiale')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Coût HT' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'PU TTC' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: '%MR' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', {
+      name: 'Coût de fabrication HT',
+    })).not.toBeInTheDocument();
   });
 
   it('n’active pas l’enregistrement lorsqu’aucune information n’a changé', () => {

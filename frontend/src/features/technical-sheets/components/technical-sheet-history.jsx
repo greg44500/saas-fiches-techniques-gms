@@ -44,7 +44,7 @@ function TechnicalSheetHistory({ validations }) {
     },
     {
       id: 'cost',
-      header: 'Coût de fabrication HT',
+      header: 'Coût HT',
       cell: (validation) => formatDecimalCurrency(
         validation.economicSnapshot?.manufacturingCostHt?.$numberDecimal
         ?? validation.economicSnapshot?.manufacturingCostHt,
@@ -52,14 +52,14 @@ function TechnicalSheetHistory({ validations }) {
     },
     {
       id: 'price',
-      header: 'Prix final TTC',
+      header: 'PU TTC',
       cell: (validation) => formatMinorCurrency(
         validation.economicSnapshot?.finalPriceTtcMinor,
       ),
     },
     {
       id: 'margin',
-      header: 'Marge réelle',
+      header: '%MR',
       cell: (validation) => formatBasisPoints(
         validation.economicSnapshot?.actualMarginBasisPoints,
       ),
@@ -71,6 +71,7 @@ function TechnicalSheetHistory({ validations }) {
       aria-label="Historique validé de la Fiche technique"
       columns={columns}
       data={validations}
+      density="compact"
       emptyContent="Aucun état validé."
       getRowKey={(validation) => validation.id}
     />
