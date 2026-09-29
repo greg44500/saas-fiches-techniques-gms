@@ -201,8 +201,11 @@ describe('TechnicalSheetLineEditor', () => {
     expect(screen.queryByText('Article / Fournisseur')).not.toBeInTheDocument();
     expect(screen.queryByText('Type')).not.toBeInTheDocument();
 
-    expect(screen.getByText('Ingrédients')).toBeInTheDocument();
-    expect(screen.getByText('Économat')).toBeInTheDocument();
+    expect(screen.getByText(/Ingrédients/)).toBeInTheDocument();
+    expect(screen.getByText(/Économat/)).toBeInTheDocument();
+    expect(screen.getAllByText(
+      'Sélectionnez une Référence Produit ; la quantité et l’unité restent modifiables dans la ligne.',
+    )).toHaveLength(1);
     expect(screen.getByText('90 %')).toBeInTheDocument();
     expect(screen.getByText(/2,15/)).toBeInTheDocument();
     expect(screen.getByText(/6,02/)).toBeInTheDocument();
@@ -227,6 +230,16 @@ describe('TechnicalSheetLineEditor', () => {
         inputUnit: 'KG',
       }),
     ]);
+  });
+
+  it('demande l’effacement du champ après ajout d’un Produit', () => {
+    renderEditor();
+
+    const ingredientSearch = mocks.productSearchProps.mock.calls
+      .map(([props]) => props)
+      .find((props) => props.ariaLabel === 'Ajouter un produit aux Ingrédients');
+
+    expect(ingredientSearch.clearOnSelect).toBe(true);
   });
 
   it('remplace un Produit sans conserver son ancien sourcing ni sa valorisation', async () => {
@@ -287,7 +300,7 @@ describe('TechnicalSheetLineEditor', () => {
     })).not.toBeInTheDocument();
 
     const sourcingButton = screen.getByRole('button', {
-      name: 'Choisir l’Article fournisseur pour Carotte râpée',
+      name: 'Approvisionnement de Carotte râpée',
     });
 
     expect(sourcingButton).toBeEnabled();
@@ -299,13 +312,41 @@ describe('TechnicalSheetLineEditor', () => {
     })).toBeInTheDocument();
   });
 
+  it('garde l’action Approvisionnement explicable même avant enregistrement', async () => {
+    const user = userEvent.setup();
+    const unsavedLine = {
+      ...valuedLine,
+      id: undefined,
+    };
+
+    renderEditor({
+      lines: [unsavedLine],
+      sourcingDisabled: true,
+    });
+
+    const sourcingButton = screen.getByRole('button', {
+      name: 'Approvisionnement de Carotte râpée',
+    });
+
+    expect(sourcingButton).toBeEnabled();
+
+    await user.click(sourcingButton);
+
+    expect(screen.getByRole('heading', {
+      name: 'Article fournisseur',
+    })).toBeInTheDocument();
+    expect(screen.getByText(
+      'Enregistrez le brouillon avant de modifier l’approvisionnement.',
+    )).toBeInTheDocument();
+  });
+
   it('ouvre le choix Article fournisseur depuis les actions de la ligne', async () => {
     const user = userEvent.setup();
 
     renderEditor();
 
     await user.click(screen.getByRole('button', {
-      name: 'Choisir l’Article fournisseur pour Carotte râpée',
+      name: 'Approvisionnement de Carotte râpée',
     }));
 
     expect(screen.getByRole('heading', {
