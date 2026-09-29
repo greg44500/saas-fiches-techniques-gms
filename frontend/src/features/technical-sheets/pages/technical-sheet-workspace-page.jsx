@@ -66,6 +66,9 @@ import {
   normalizeDraftLine,
 } from '@/features/technical-sheets/components/technical-sheet-line-editor';
 import {
+  DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
+} from '@/features/suppliers/constants/supplier-permissions';
+import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 import {
@@ -99,7 +102,7 @@ function TechnicalSheetWorkspacePage() {
   const { dossierId, technicalSheetId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { can, workspace } = useWorkspaceContext();
+  const { can, canAny, workspace } = useWorkspaceContext();
 
   const sheetQuery = useGetTechnicalSheetQuery({
     workspaceId: workspace.id,
@@ -228,6 +231,7 @@ function TechnicalSheetWorkspacePage() {
     && can(TECHNICAL_SHEET_PERMISSION.SOURCING_MANAGE);
   const canValuate = actionAvailability.update
     && can(TECHNICAL_SHEET_PERMISSION.VALUATION_MANAGE);
+  const canOpenSupplierPricing = canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS);
   const canValidate = actionAvailability.update
     && can(TECHNICAL_SHEET_PERMISSION.VALIDATE);
   const canLifecycle = can(TECHNICAL_SHEET_PERMISSION.LIFECYCLE_MANAGE);
@@ -822,6 +826,11 @@ function TechnicalSheetWorkspacePage() {
                     lines,
                   }));
                 }}
+                onOpenPricing={() => navigate(
+                  '/workspaces/' + workspace.id
+                  + '/dossiers/' + dossierId
+                  + '/suppliers',
+                )}
                 onSourcingError={(message) => toast({
                   title: 'Sélection impossible',
                   description: message,
@@ -834,6 +843,7 @@ function TechnicalSheetWorkspacePage() {
                   setDraftDirty(false);
                 }}
                 productMetadata={productMetadataQuery.data}
+                canOpenPricing={canOpenSupplierPricing}
                 sourcingDisabled={draftServerActionDisabled}
                 sourcingDisabledReason={
                   draftDirty
