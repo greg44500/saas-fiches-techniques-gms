@@ -1,5 +1,6 @@
 import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import {
@@ -74,13 +75,32 @@ function SuppliersPage() {
     workspace,
   } = useWorkspaceContext();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     page,
     pageSize,
     setPage,
     setPageSize,
   } = useDataPagination();
-  const [section, setSection] = useState('suppliers');
+  const [section, setSection] = useState(() => {
+    const requestedSection = searchParams.get('section');
+
+    if (
+      requestedSection === 'articles'
+      && can(SUPPLIER_PERMISSION.ARTICLE_READ)
+    ) {
+      return 'articles';
+    }
+
+    if (
+      requestedSection === 'catalogs'
+      && can(SUPPLIER_PERMISSION.CATALOG_READ)
+    ) {
+      return 'catalogs';
+    }
+
+    return 'suppliers';
+  });
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState(ALL_SUPPLIER_STATUSES);
@@ -172,6 +192,11 @@ function SuppliersPage() {
     }
 
     setSection(nextSection);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      next.set('section', nextSection);
+      return next;
+    }, { replace: true });
   }
 
   function changeStatus(nextStatus) {
