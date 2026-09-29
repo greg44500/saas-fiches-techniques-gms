@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -94,11 +95,13 @@ const queryResult = (data) => ({
   refetch: vi.fn(),
 });
 
-function renderPage() {
+function renderPage(initialEntry = '/workspaces/workspace-1/suppliers') {
   return render(
-    <ToastProvider>
-      <SuppliersPage />
-    </ToastProvider>,
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <ToastProvider>
+        <SuppliersPage />
+      </ToastProvider>
+    </MemoryRouter>,
   );
 }
 
@@ -237,6 +240,15 @@ describe('SuppliersPage', () => {
 
     expect(screen.getByRole('button', { name: 'Rechercher' }))
       .toBeDisabled();
+  });
+
+  it('ouvre directement la section Catalogues depuis le paramètre d’URL', () => {
+    renderPage('/workspaces/workspace-1/suppliers?section=catalogs');
+
+    expect(screen.getByRole('tab', { name: 'Catalogues' }))
+      .toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Catalogue septembre'))
+      .toBeInTheDocument();
   });
 
   it('affiche tous les Fournisseurs par défaut et permet de réactiver un archivé', async () => {
