@@ -15,6 +15,11 @@ import {
   AutocompleteStatus,
 } from '@/components/ui/autocomplete';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   useSearchProductsQuery,
 } from '@/features/products/api/product-catalog-api';
 import {
@@ -28,6 +33,7 @@ const PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT = 6;
 function ProductSearchAutocomplete({
   ariaLabel = 'Rechercher un Produit',
   categoryId,
+  clearOnSelect = false,
   compact = false,
   conservationType,
   metadata,
@@ -90,8 +96,8 @@ function ProductSearchAutocomplete({
       result.variant,
     );
 
-    onValueChange(nextSearch);
     onSelect(result);
+    onValueChange(clearOnSelect ? '' : nextSearch);
   }
 
   const normalizedValue = value.trim();
@@ -188,10 +194,19 @@ function ProductSearchAutocomplete({
                     </span>
                     {showWorkspaceFavorite
                     && result.workspaceEntry?.status === 'ACTIVE' && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 font-medium text-foreground">
-                        <Star aria-hidden="true" className="size-3" />
-                        Favori
-                      </span>
+                      <Tooltip>
+                        <TooltipTrigger
+                          aria-label="Favori"
+                          className="inline-flex size-5 items-center justify-center rounded-full border border-warning/40 bg-warning/10 text-warning"
+                          render={<span />}
+                        >
+                          <Star
+                            aria-hidden="true"
+                            className="size-3 fill-current"
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>Favori</TooltipContent>
+                      </Tooltip>
                     )}
                   </span>
                 </AutocompleteItem>
