@@ -211,9 +211,13 @@ function ProductDetailsTrigger({
         open={detailsOpen}
       >
         <TooltipTrigger
-          aria-label={'Modifier le produit ' + line.productVariantName}
+          aria-label={
+            onEdit
+              ? 'Modifier le produit ' + line.productVariantName
+              : 'Détails du produit ' + line.productVariantName
+          }
           className="block max-w-full truncate text-left text-sm font-semibold underline decoration-dotted underline-offset-4"
-          onClick={onEdit}
+          onClick={() => onEdit?.()}
           type="button"
         >
           {line.productVariantName}
@@ -541,7 +545,11 @@ function TechnicalSheetLineEditor({
           ) : (
             <ProductDetailsTrigger
               line={line}
-              onEdit={() => startEditing(line, index)}
+              onEdit={
+                disabled
+                  ? undefined
+                  : () => startEditing(line, index)
+              }
               workspaceId={workspaceId}
             />
           )}
@@ -650,8 +658,7 @@ function TechnicalSheetLineEditor({
           <ActionIconButton
             Icon={PackageSearch}
             disabled={
-              disabled
-              || sourcingDisabled
+              sourcingDisabled
               || !line.id
               || draftRevision === null
               || draftRevision === undefined
@@ -820,7 +827,7 @@ function TechnicalSheetLineEditor({
 
       <SupplierArticleDialog
         canManage={canManageSourcing}
-        disabled={disabled || sourcingDisabled}
+        disabled={sourcingDisabled}
         dossierId={dossierId}
         draftRevision={draftRevision}
         line={sourcingLine}
