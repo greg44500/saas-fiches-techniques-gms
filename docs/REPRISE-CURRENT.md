@@ -1,9 +1,9 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-28  
+**Date :** 2026-09-29  
 **Lot clôturé :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité  
 **Lot courant :** M-004 — Fiches techniques + valorisation  
-**État M-004 :** IMPLÉMENTATION DU BLOC HORS EXPORTS TERMINÉE SUR BRANCHE — release:check local complet validé avant ajustements UX de QA ; nouveau contrôle ciblé puis release:check à rejouer après stabilisation visuelle  
+**État M-004 :** IMPLÉMENTATION DU BLOC HORS EXPORTS TERMINÉE SUR BRANCHE — stabilisation UX de QA en cours ; tests ciblés et release:check à rejouer après validation visuelle  
 **Branche :** `feature/m004-fiches-techniques-valorisation`  
 **Base de branche :** `main@b479b217815fad885f233e98b8f3145656641352`
 
@@ -465,15 +465,34 @@ La QA visuelle a ensuite conduit aux arbitrages UX suivants, en cours de stabili
 - vocabulaire utilisateur « suppression définitive » à la place de « purge » ;
 - Fiche avec brouillon ouvert non copiable ;
 - statuts visuels : Brouillon = warning, Non valorisée = alert, Archivée = archived ;
-- actions principales de la Fiche regroupées sous forme d’icônes avec infobulles ;
+- actions globales de la Fiche regroupées dans un conteneur dédié `Panneau de contrôle` à droite du titre ;
 - retour Fiche compacté en icône à côté du titre ;
-- badges lifecycle / brouillon / valorisation replacés dans Informations générales ;
-- commentaire de validation intégré sous le nom de la Fiche ;
-- Base de production densifiée ;
-- validation remontée en action d’entête ;
-- bandeau économique sticky avec coûts partiels exacts issus des lignes déjà valorisées, détail économique ouvrable à droite et effet de flou par `backdrop-filter` lorsque la composition défile dessous.
+- badges lifecycle / brouillon / valorisation placés directement à côté du titre de la Fiche ;
+- Informations générales sorties du flux principal et déplacées dans un drawer droit accessible par une languette flottante `Infos` ;
+- bouton d’enregistrement des Informations visuellement `warning` tant que nom/description sont modifiés sans être enregistrés ;
+- commentaire de validation conservé dans le drawer et appliqué seulement lors de la validation ;
+- `Base de production` remplacé par `Indicateur de production` avec infobulle explicative ;
+- paramètres Quantité / Unité / Portion(s) / TVA de vente regroupés avec les KPI économiques dans le même conteneur sticky ;
+- KPI permanents compactés en sigles avec infobulles : `CM HT`, `CE HT`, `CF HT`, `%MC`, `PC TTC`, `PF TTC`, `%MR` ; valeur indisponible affichée `NC` dans la vue compacte ;
+- détail économique ouvrable à droite ; valorisation/revalorisation intégrée au même cockpit ;
+- Composition présentée dans un seul tableau vertical sans scroll horizontal, avec groupes Ingrédients / Économat visuellement séparés ;
+- colonnes compactes : Produit / Qté / U / PUHT / CMU HT / %TR / Note / Actions ;
+- aide de saisie Produit affichée une seule fois au niveau du groupe Ingrédients ;
+- ajout Produit intégré directement dans chaque groupe avec remise à zéro du champ après sélection ;
+- Produit existant remplaçable par recherche prédictive ; remplacement = nouvelle ligne logique conservant type/quantité/note mais réinitialisant sourcing et valorisation ;
+- Article/Fournisseur retiré des colonnes permanentes et exposé dans le détail Produit ; action Approvisionnement dédiée pour consulter/choisir l’Article fournisseur ;
+- sources Produit `Tous les produits` / `Favoris` réduites à des actions icônes ;
+- Favori signalé dans les suggestions par une étoile seule, couleur warning/gold, avec libellé accessible/infobulle.
 
 Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon, le contrat backend. Ils doivent donc être retestés avant la PR finale.
+
+Dette fonctionnelle identifiée pendant cette QA :
+
+- `GMS-TAX-001 — TVA Produit / fiscalité d’achat` est enregistrée dans `docs/DEBT.md` ;
+- M-004 conserve uniquement la TVA de vente de la Fiche pour le passage HT → TTC ;
+- M-002 ne porte actuellement aucun taux de TVA sur `ProductVariant` et M-003 travaille sur les prix d’achat HT ;
+- cette dette ne bloque pas M-004 mais devra être cadrée avant tout besoin de comptabilité d’achat, TVA déductible, facture ou export fiscal ;
+- aucune TVA Produit ne doit être ajoutée opportunément à M-002/M-003 sans contrat dédié.
 
 ## 16. Prochaine action
 
