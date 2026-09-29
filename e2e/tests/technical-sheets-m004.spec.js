@@ -80,7 +80,7 @@ async function composeTechnicalSheet(page, {
     .click();
 
   await page
-    .getByLabel('Portions')
+    .getByLabel('Portion(s)')
     .fill('20');
   await page
     .getByLabel('TVA (%)')
@@ -127,6 +127,22 @@ async function composeTechnicalSheet(page, {
   );
 }
 
+async function openInformationDrawer(page) {
+  const openButton = page.getByRole('button', {
+    name: 'Ouvrir les informations de la Fiche',
+  });
+
+  if (await openButton.isVisible().catch(() => false)) {
+    await openButton.click();
+  }
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Informations de la Fiche',
+    }),
+  ).toBeVisible();
+}
+
 async function valuateAndValidate(page, {
   comment = null,
 }) {
@@ -143,6 +159,8 @@ async function valuateAndValidate(page, {
   );
 
   if (comment) {
+    await openInformationDrawer(page);
+
     await page
       .getByLabel(
         'Commentaire de validation',
@@ -250,7 +268,7 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
   await page
     .getByRole('button', {
       name:
-        'Choisir l’Article fournisseur pour '
+        'Approvisionnement de '
         + context.productReferenceName,
     })
     .click();
@@ -329,6 +347,8 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     page,
     'Fiche technique valorisée',
   );
+
+  await openInformationDrawer(page);
 
   await page
     .getByLabel(
@@ -465,6 +485,8 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
       technicalSheetsUrl:
         context.dossierATechnicalSheetsUrl,
     });
+
+  await openInformationDrawer(page);
 
   await page
     .getByLabel(
