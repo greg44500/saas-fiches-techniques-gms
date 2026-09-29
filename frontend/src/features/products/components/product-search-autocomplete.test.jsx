@@ -191,7 +191,10 @@ describe('ProductSearchAutocomplete', () => {
     });
 
     expect(suggestion).not.toHaveTextContent('Favori');
-    expect(within(suggestion).getByLabelText('Favori')).toBeInTheDocument();
+
+    const favorite = within(suggestion).getByLabelText('Favori');
+    expect(favorite).toBeInTheDocument();
+    expect(favorite).toHaveClass('text-warning');
   });
 
   it('efface la saisie après sélection lorsque le mode ajout le demande', async () => {
