@@ -216,7 +216,9 @@ describe('ProductSearchAutocomplete', () => {
 
     await user.click(suggestion);
 
-    expect(input).toHaveValue('');
+    await waitFor(() => {
+      expect(input).toHaveValue('');
+    });
   });
 
   it('n interroge pas le serveur avant le seuil de trois caractères', async () => {
