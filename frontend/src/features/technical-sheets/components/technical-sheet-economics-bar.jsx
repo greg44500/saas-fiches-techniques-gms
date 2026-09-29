@@ -113,6 +113,7 @@ function DetailRow({ label, value }) {
 function TechnicalSheetEconomicsBar({
   economicSnapshot,
   lines = [],
+  notice = null,
   targetMarginBasisPoints,
   vatRateBasisPoints,
 }) {
@@ -129,6 +130,12 @@ function TechnicalSheetEconomicsBar({
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 -bottom-4 h-4 bg-gradient-to-b from-background/70 to-transparent"
         />
+
+        {notice && (
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            {notice}
+          </p>
+        )}
 
         <div className="flex items-center gap-4">
           <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 xl:grid-cols-5">
