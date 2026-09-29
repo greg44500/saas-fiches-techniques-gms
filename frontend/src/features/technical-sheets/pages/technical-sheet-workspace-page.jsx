@@ -66,15 +66,10 @@ import {
   normalizeDraftLine,
 } from '@/features/technical-sheets/components/technical-sheet-line-editor';
 import {
-  TechnicalSheetSourcingSelect,
-} from '@/features/technical-sheets/components/technical-sheet-sourcing-select';
-import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 import {
   basisPointsToInput,
-  formatDecimalCurrency,
-  getLineValuationPresentation,
   getTechnicalSheetActionAvailability,
   getTechnicalSheetApiErrorMessage,
   getTechnicalSheetStatusPresentation,
@@ -86,6 +81,19 @@ import {
 import {
   useWorkspaceContext,
 } from '@/features/workspace/components/workspace-context';
+
+function buildDraftForm(draft) {
+  return {
+    productionQuantity: draft.productionQuantity ?? '',
+    productionUnit: draft.productionUnit ?? '',
+    portions: draft.portions ?? '',
+    vatRate: basisPointsToInput(draft.vatRateBasisPoints),
+    targetMargin: basisPointsToInput(draft.targetMarginBasisPoints),
+    finalPriceMode: draft.finalPriceMode ?? 'ADVISED',
+    finalPriceTtc: minorToInput(draft.finalPriceTtcMinor),
+    lines: (draft.lines ?? []).map(normalizeDraftLine),
+  };
+}
 
 function TechnicalSheetWorkspacePage() {
   const { dossierId, technicalSheetId } = useParams();
@@ -138,6 +146,8 @@ function TechnicalSheetWorkspacePage() {
     finalPriceTtc: '',
     lines: [],
   });
+  const [draftFormRevision, setDraftFormRevision] = useState(null);
+  const [draftDirty, setDraftDirty] = useState(false);
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
   const [copyOpen, setCopyOpen] = useState(false);
@@ -152,18 +162,23 @@ function TechnicalSheetWorkspacePage() {
   }, [sheet]);
 
   useEffect(() => {
-    if (!draft) return;
-    setDraftForm({
-      productionQuantity: draft.productionQuantity ?? '',
-      productionUnit: draft.productionUnit ?? '',
-      portions: draft.portions ?? '',
-      vatRate: basisPointsToInput(draft.vatRateBasisPoints),
-      targetMargin: basisPointsToInput(draft.targetMarginBasisPoints),
-      finalPriceMode: draft.finalPriceMode ?? 'ADVISED',
-      finalPriceTtc: minorToInput(draft.finalPriceTtcMinor),
-      lines: (draft.lines ?? []).map(normalizeDraftLine),
-    });
-  }, [draft]);
+    setDraftDirty(false);
+    setDraftFormRevision(null);
+  }, [technicalSheetId]);
+
+  useEffect(() => {
+    if (!draft || draftDirty) return;
+
+    if (
+      draftFormRevision !== null
+      && draft.revision < draftFormRevision
+    ) {
+      return;
+    }
+
+    setDraftForm(buildDraftForm(draft));
+    setDraftFormRevision(draft.revision);
+  }, [draft, draftDirty, draftFormRevision]);
 
   const unitItems = useMemo(
     () => (metadata?.units ?? []).map((unit) => ({
@@ -195,9 +210,14 @@ function TechnicalSheetWorkspacePage() {
   }
 
   const statusPresentation = getTechnicalSheetStatusPresentation(sheet.status);
-  const valuationPresentation = getTechnicalSheetValuationPresentation(
-    draft?.valuationStatus,
-  );
+  const valuationPresentation = draftDirty
+    ? {
+        label: 'Modifications non enregistrées',
+        tone: 'warning',
+      }
+    : getTechnicalSheetValuationPresentation(
+        draft?.valuationStatus,
+      );
   const actionAvailability = getTechnicalSheetActionAvailability({
     status: sheet.status,
     hasDraft: Boolean(draft),
@@ -216,6 +236,10 @@ function TechnicalSheetWorkspacePage() {
   const copyDisabled = !actionAvailability.copy;
   const sourcingPending = sourcingPendingCount > 0;
   const draftSynchronizing = sourcingPending || sheetQuery.isFetching;
+  const draftServerActionDisabled = (
+    draftDirty
+    || draftFormRevision === null
+  );
 
   function handleSourcingPendingChange(pending) {
     setSourcingPendingCount((current) => (
@@ -287,12 +311,14 @@ function TechnicalSheetWorkspacePage() {
       return;
     }
 
+    if (draftFormRevision === null) return;
+
     try {
-      await saveDraft({
+      const savedDraft = await saveDraft({
         workspaceId: workspace.id,
         dossierId,
         technicalSheetId,
-        expectedRevision: draft.revision,
+        expectedRevision: draftFormRevision,
         productionQuantity: draftForm.productionQuantity,
         productionUnit: draftForm.productionUnit,
         portions: draftForm.portions || null,
@@ -313,6 +339,11 @@ function TechnicalSheetWorkspacePage() {
           note: line.note.trim() || null,
         })),
       }).unwrap();
+
+      setDraftForm(buildDraftForm(savedDraft));
+      setDraftFormRevision(savedDraft.revision);
+      setDraftDirty(false);
+
       toast({
         title: 'Brouillon enregistré',
         variant: 'success',
@@ -328,7 +359,7 @@ function TechnicalSheetWorkspacePage() {
         workspaceId: workspace.id,
         dossierId,
         technicalSheetId,
-        expectedRevision: draft.revision,
+        expectedRevision: draftFormRevision,
       }).unwrap();
 
       const ambiguityCount = Object.keys(result.resolutionCandidates ?? {}).length;
@@ -353,10 +384,12 @@ function TechnicalSheetWorkspacePage() {
         dossierId,
         technicalSheetId,
         expectedSheetRevision: sheet.revision,
-        expectedDraftRevision: draft.revision,
+        expectedDraftRevision: draftFormRevision,
         comment: validationComment.trim() || null,
       }).unwrap();
       setValidationComment('');
+      setDraftDirty(false);
+      setDraftFormRevision(null);
       toast({
         title: 'Fiche technique validée',
         description: 'Un nouvel état historique immuable a été créé.',
@@ -527,6 +560,7 @@ function TechnicalSheetWorkspacePage() {
                     || !draft
                     || validateState.isLoading
                     || draftSynchronizing
+                    || draftServerActionDisabled
                     || draft?.valuationStatus !== 'COMPLETE'
                   }
                   label="Valider la Fiche technique"
@@ -536,9 +570,11 @@ function TechnicalSheetWorkspacePage() {
                       ? 'Validation indisponible avec votre rôle ou le statut actuel'
                       : !draft
                         ? 'Aucun brouillon à valider'
-                        : draft.valuationStatus === 'COMPLETE'
-                          ? 'Valider la Fiche technique'
-                          : 'Valorisation complète requise avant validation'
+                        : draftDirty
+                          ? 'Enregistrer le brouillon avant validation'
+                          : draft.valuationStatus === 'COMPLETE'
+                            ? 'Valider la Fiche technique'
+                            : 'Valorisation complète requise avant validation'
                   }
                   variant="outline"
                 />
@@ -653,10 +689,13 @@ function TechnicalSheetWorkspacePage() {
                   disabled={!canUpdate || draftSynchronizing}
                   id="technical-sheet-production-quantity"
                   inputMode="decimal"
-                  onChange={(event) => setDraftForm((current) => ({
-                    ...current,
-                    productionQuantity: event.target.value,
-                  }))}
+                  onChange={(event) => {
+                    setDraftDirty(true);
+                    setDraftForm((current) => ({
+                      ...current,
+                      productionQuantity: event.target.value,
+                    }));
+                  }}
                   value={draftForm.productionQuantity}
                 />
               </Field>
@@ -666,10 +705,13 @@ function TechnicalSheetWorkspacePage() {
                 <Select
                   disabled={!canUpdate || draftSynchronizing}
                   items={unitItems}
-                  onValueChange={(value) => setDraftForm((current) => ({
-                    ...current,
-                    productionUnit: value,
-                  }))}
+                  onValueChange={(value) => {
+                    setDraftDirty(true);
+                    setDraftForm((current) => ({
+                      ...current,
+                      productionUnit: value,
+                    }));
+                  }}
                   value={draftForm.productionUnit}
                 >
                   <SelectTrigger aria-label="Unité de production">
@@ -693,10 +735,13 @@ function TechnicalSheetWorkspacePage() {
                   disabled={!canUpdate || draftSynchronizing}
                   id="technical-sheet-portions"
                   inputMode="decimal"
-                  onChange={(event) => setDraftForm((current) => ({
-                    ...current,
-                    portions: event.target.value,
-                  }))}
+                  onChange={(event) => {
+                    setDraftDirty(true);
+                    setDraftForm((current) => ({
+                      ...current,
+                      portions: event.target.value,
+                    }));
+                  }}
                   value={draftForm.portions}
                 />
               </Field>
@@ -709,10 +754,13 @@ function TechnicalSheetWorkspacePage() {
                   disabled={!canUpdate || !canValuate || draftSynchronizing}
                   id="technical-sheet-vat"
                   inputMode="decimal"
-                  onChange={(event) => setDraftForm((current) => ({
-                    ...current,
-                    vatRate: event.target.value,
-                  }))}
+                  onChange={(event) => {
+                    setDraftDirty(true);
+                    setDraftForm((current) => ({
+                      ...current,
+                      vatRate: event.target.value,
+                    }));
+                  }}
                   value={draftForm.vatRate}
                 />
               </Field>
@@ -726,6 +774,11 @@ function TechnicalSheetWorkspacePage() {
           <TechnicalSheetEconomicsBar
             economicSnapshot={economicSnapshot}
             lines={draft.lines ?? []}
+            notice={
+              draftDirty
+                ? 'Modifications non enregistrées : enregistrez puis revalorisez pour actualiser les montants.'
+                : null
+            }
             targetMarginBasisPoints={draft.targetMarginBasisPoints}
             vatRateBasisPoints={draft.vatRateBasisPoints}
           />
@@ -735,20 +788,49 @@ function TechnicalSheetWorkspacePage() {
             </CardHeader>
             <CardContent>
               <TechnicalSheetLineEditor
+                canManageSourcing={canSource}
                 disabled={!canUpdate || draftSynchronizing}
+                dossierId={dossierId}
+                draftRevision={draftFormRevision}
                 lines={draftForm.lines}
                 metadata={metadata}
-                onChange={(lines) => setDraftForm((current) => ({
-                  ...current,
-                  lines,
-                }))}
+                onChange={(lines) => {
+                  setDraftDirty(true);
+                  setDraftForm((current) => ({
+                    ...current,
+                    lines,
+                  }));
+                }}
+                onSourcingError={(message) => toast({
+                  title: 'Sélection impossible',
+                  description: message,
+                  variant: 'destructive',
+                })}
+                onSourcingPendingChange={handleSourcingPendingChange}
+                onSourcingSelected={(updatedDraft) => {
+                  setDraftForm(buildDraftForm(updatedDraft));
+                  setDraftFormRevision(updatedDraft.revision);
+                  setDraftDirty(false);
+                }}
                 productMetadata={productMetadataQuery.data}
+                sourcingDisabled={draftServerActionDisabled}
+                sourcingDisabledReason={
+                  draftDirty
+                    ? 'Enregistrez le brouillon avant de modifier l’approvisionnement ou de valoriser.'
+                    : ''
+                }
+                technicalSheetId={technicalSheetId}
                 workspaceId={workspace.id}
               />
               {canUpdate && (
                 <div className="mt-4 flex justify-end">
                   <Button
-                    disabled={saveDraftState.isLoading || draftSynchronizing}
+                    disabled={
+                      saveDraftState.isLoading
+                      || draftSynchronizing
+                      || !draftDirty
+                      || draftFormRevision === null
+                    }
                     onClick={saveWorkingDraft}
                     type="button"
                   >
@@ -762,59 +844,9 @@ function TechnicalSheetWorkspacePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Approvisionnement et valorisation</CardTitle>
+              <CardTitle>Valorisation</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="space-y-3">
-                {(draft.lines ?? []).map((line) => {
-                  const linePresentation = getLineValuationPresentation(
-                    line.valuation?.status,
-                  );
-
-                  return (
-                    <div
-                      className="grid gap-3 rounded-lg border border-border p-4 lg:grid-cols-[1fr_1.5fr_auto] lg:items-center"
-                      key={line.id}
-                    >
-                      <div>
-                        <p className="font-medium">
-                          {line.productVariant?.name ?? 'Référence Produit'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Brut calculé : {line.calculation?.grossQuantity ?? '—'}{' '}
-                          {line.calculation?.grossUnit ?? ''}
-                        </p>
-                      </div>
-
-                      <TechnicalSheetSourcingSelect
-                        canManage={canSource}
-                        disabled={draftSynchronizing}
-                        dossierId={dossierId}
-                        draftRevision={draft.revision}
-                        line={line}
-                        onError={(message) => toast({
-                          title: 'Sélection impossible',
-                          description: message,
-                          variant: 'destructive',
-                        })}
-                        onPendingChange={handleSourcingPendingChange}
-                        technicalSheetId={technicalSheetId}
-                        workspaceId={workspace.id}
-                      />
-
-                      <div className="text-right">
-                        <TechnicalSheetStatusBadge tone={linePresentation.tone}>
-                          {linePresentation.label}
-                        </TechnicalSheetStatusBadge>
-                        <p className="mt-2 text-sm font-medium">
-                          {formatDecimalCurrency(line.valuation?.lineCostHt)}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <Field>
                   <FieldLabel htmlFor="technical-sheet-target-margin">
@@ -824,10 +856,13 @@ function TechnicalSheetWorkspacePage() {
                     disabled={!canUpdate || !canValuate || draftSynchronizing}
                     id="technical-sheet-target-margin"
                     inputMode="decimal"
-                    onChange={(event) => setDraftForm((current) => ({
-                      ...current,
-                      targetMargin: event.target.value,
-                    }))}
+                    onChange={(event) => {
+                      setDraftDirty(true);
+                      setDraftForm((current) => ({
+                        ...current,
+                        targetMargin: event.target.value,
+                      }));
+                    }}
                     value={draftForm.targetMargin}
                   />
                 </Field>
@@ -840,10 +875,13 @@ function TechnicalSheetWorkspacePage() {
                       { value: 'ADVISED', label: 'Prix conseillé' },
                       { value: 'MANUAL', label: 'Prix manuel' },
                     ]}
-                    onValueChange={(value) => setDraftForm((current) => ({
-                      ...current,
-                      finalPriceMode: value,
-                    }))}
+                    onValueChange={(value) => {
+                      setDraftDirty(true);
+                      setDraftForm((current) => ({
+                        ...current,
+                        finalPriceMode: value,
+                      }));
+                    }}
                     value={draftForm.finalPriceMode}
                   >
                     <SelectTrigger aria-label="Mode de Prix final">
@@ -869,10 +907,13 @@ function TechnicalSheetWorkspacePage() {
                     }
                     id="technical-sheet-final-price"
                     inputMode="decimal"
-                    onChange={(event) => setDraftForm((current) => ({
-                      ...current,
-                      finalPriceTtc: event.target.value,
-                    }))}
+                    onChange={(event) => {
+                      setDraftDirty(true);
+                      setDraftForm((current) => ({
+                        ...current,
+                        finalPriceTtc: event.target.value,
+                      }));
+                    }}
                     value={draftForm.finalPriceTtc}
                   />
                 </Field>
@@ -881,8 +922,17 @@ function TechnicalSheetWorkspacePage() {
                   {canValuate && (
                     <Button
                       className="w-full"
-                      disabled={valuateState.isLoading || draftSynchronizing}
+                      disabled={
+                        valuateState.isLoading
+                        || draftSynchronizing
+                        || draftServerActionDisabled
+                      }
                       onClick={valuateDraft}
+                      title={
+                        draftDirty
+                          ? 'Enregistrer le brouillon avant de valoriser'
+                          : undefined
+                      }
                       type="button"
                     >
                       <Calculator aria-hidden="true" className="size-4" />
