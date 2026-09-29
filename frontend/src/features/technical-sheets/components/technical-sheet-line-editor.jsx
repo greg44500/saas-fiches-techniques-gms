@@ -657,23 +657,16 @@ function TechnicalSheetLineEditor({
 
           <ActionIconButton
             Icon={PackageSearch}
-            disabled={
-              sourcingDisabled
-              || !line.id
-              || draftRevision === null
-              || draftRevision === undefined
-              || !canManageSourcing
-            }
-            label={'Choisir l’Article fournisseur pour ' + line.productVariantName}
+            label={'Approvisionnement de ' + line.productVariantName}
             onClick={() => setSourcingLineKey(key)}
             tooltipLabel={
               !line.id
-                ? 'Enregistrer le brouillon avant de choisir l’Article fournisseur'
+                ? 'Approvisionnement — enregistrez d’abord le brouillon pour le modifier'
                 : sourcingDisabled
-                  ? 'Enregistrer le brouillon avant de modifier l’approvisionnement'
+                  ? 'Approvisionnement — enregistrez le brouillon avant modification'
                   : canManageSourcing
-                    ? 'Choisir l’Article fournisseur'
-                    : 'Choix de l’Article fournisseur non autorisé'
+                    ? 'Approvisionnement / Article fournisseur'
+                    : 'Consulter l’approvisionnement'
             }
             variant="ghost"
           />
@@ -718,19 +711,21 @@ function TechnicalSheetLineEditor({
     );
   }
 
-  function renderAddRow(kind) {
+  function renderAddRow(kind, sectionLineCount) {
     return (
       <div
         className={
           COMPOSITION_GRID_CLASS
-          + ' bg-muted/10 px-2 py-2'
+          + ' border-t border-border/70 bg-muted/10 px-2 py-2'
         }
         key={'add-' + kind}
       >
         <div className="min-w-0">
           <ProductSearchAutocomplete
             ariaLabel={'Ajouter un produit aux ' + SECTION_PRESENTATION[kind].label}
+            clearOnSelect
             compact
+            key={'add-product-' + kind + '-' + sectionLineCount}
             metadata={productMetadata}
             onSelect={(result) => addProduct(kind, result)}
             onValueChange={(value) => setAddSearch((current) => ({
@@ -745,28 +740,43 @@ function TechnicalSheetLineEditor({
             workspaceId={workspaceId}
           />
         </div>
-        <p className="hidden text-xs text-muted-foreground lg:col-span-7 lg:block">
-          Sélectionnez une Référence Produit ; la quantité et l’unité restent modifiables dans la ligne.
-        </p>
+        <div className="hidden lg:col-span-7 lg:block" />
       </div>
     );
   }
 
-  function renderSection(kind) {
+  function renderSection(kind, sectionIndex) {
     const sectionLines = lines
       .map((line, index) => ({ line, index }))
       .filter(({ line }) => line.kind === kind);
 
     return (
-      <section className="overflow-hidden rounded-lg border border-border" key={kind}>
-        <div className="border-b border-border bg-muted/35 px-3 py-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <section key={kind}>
+        <div
+          className={[
+            'flex flex-col gap-1 bg-muted/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between',
+            sectionIndex > 0
+              ? 'border-t-2 border-primary/25'
+              : 'border-t border-border',
+            'border-b border-border',
+          ].join(' ')}
+        >
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
             {SECTION_PRESENTATION[kind].label}
+            <span className="ml-1 text-muted-foreground">
+              ({sectionLines.length})
+            </span>
           </h3>
+
+          {kind === 'INGREDIENT' && (
+            <p className="text-xs text-muted-foreground">
+              Sélectionnez une Référence Produit ; la quantité et l’unité restent modifiables dans la ligne.
+            </p>
+          )}
         </div>
 
         {sectionLines.map(({ line, index }) => renderLine(line, index))}
-        {!disabled && renderAddRow(kind)}
+        {!disabled && renderAddRow(kind, sectionLines.length)}
         {disabled && sectionLines.length === 0 && (
           <p className="px-3 py-4 text-sm text-muted-foreground">
             Aucun produit.
@@ -813,23 +823,30 @@ function TechnicalSheetLineEditor({
         </p>
       )}
 
-      <div className={COMPOSITION_GRID_CLASS + ' hidden border-y border-border bg-muted/30 px-2 py-2 lg:grid'}>
-        <ColumnHeading tooltip="Produit">Produit</ColumnHeading>
-        <ColumnHeading tooltip="Quantité nette">Qté</ColumnHeading>
-        <ColumnHeading tooltip="Unité">U</ColumnHeading>
-        <ColumnHeading tooltip="Prix unitaire hors taxe">PUHT</ColumnHeading>
-        <ColumnHeading tooltip="Coût matières unitaire hors taxe">CMU HT</ColumnHeading>
-        <ColumnHeading tooltip="Taux de rendement">%TR</ColumnHeading>
-        <ColumnHeading tooltip="Note">Note</ColumnHeading>
-        <ColumnHeading tooltip="Actions">Actions</ColumnHeading>
-      </div>
+      <div className="overflow-hidden rounded-lg border border-border">
+        <div className={COMPOSITION_GRID_CLASS + ' hidden bg-muted/30 px-2 py-2 lg:grid'}>
+          <ColumnHeading tooltip="Produit">Produit</ColumnHeading>
+          <ColumnHeading tooltip="Quantité nette">Qté</ColumnHeading>
+          <ColumnHeading tooltip="Unité">U</ColumnHeading>
+          <ColumnHeading tooltip="Prix unitaire hors taxe">PUHT</ColumnHeading>
+          <ColumnHeading tooltip="Coût matières unitaire hors taxe">CMU HT</ColumnHeading>
+          <ColumnHeading tooltip="Taux de rendement">%TR</ColumnHeading>
+          <ColumnHeading tooltip="Note">Note</ColumnHeading>
+          <ColumnHeading tooltip="Actions">Actions</ColumnHeading>
+        </div>
 
-      {renderSection('INGREDIENT')}
-      {renderSection('ECONOMAT')}
+        {renderSection('INGREDIENT', 0)}
+        {renderSection('ECONOMAT', 1)}
+      </div>
 
       <SupplierArticleDialog
         canManage={canManageSourcing}
-        disabled={sourcingDisabled}
+        disabled={
+          sourcingDisabled
+          || !sourcingLine?.id
+          || draftRevision === null
+          || draftRevision === undefined
+        }
         dossierId={dossierId}
         draftRevision={draftRevision}
         line={sourcingLine}
