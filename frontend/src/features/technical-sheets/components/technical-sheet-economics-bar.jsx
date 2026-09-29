@@ -141,8 +141,8 @@ function DetailRow({ label, value }) {
 
 function TechnicalSheetEconomicsBar({
   canValuate = false,
-  disabled = false,
   economicSnapshot,
+  editDisabled = false,
   finalPriceInputValue = '',
   finalPriceMode = 'ADVISED',
   lines = [],
@@ -153,6 +153,7 @@ function TechnicalSheetEconomicsBar({
   onValuate,
   targetMarginBasisPoints,
   targetMarginInputValue = '',
+  valuateDisabled = false,
   valuatePending = false,
   valuationStatus = 'NOT_VALUED',
   vatRateBasisPoints,
@@ -198,7 +199,7 @@ function TechnicalSheetEconomicsBar({
               <Input
                 aria-label="Marge cible (%)"
                 className="h-8 min-w-0 tabular-nums"
-                disabled={disabled || !canValuate}
+                disabled={editDisabled || !canValuate}
                 inputMode="decimal"
                 onChange={(event) => onTargetMarginInputChange?.(event.target.value)}
                 value={targetMarginInputValue}
@@ -220,7 +221,7 @@ function TechnicalSheetEconomicsBar({
                   <Input
                     aria-label="Prix final TTC (€)"
                     className="h-8 min-w-0 flex-1 tabular-nums"
-                    disabled={disabled || !canValuate}
+                    disabled={editDisabled || !canValuate}
                     inputMode="decimal"
                     onChange={(event) => onFinalPriceInputChange?.(event.target.value)}
                     value={finalPriceInputValue}
@@ -232,7 +233,7 @@ function TechnicalSheetEconomicsBar({
                 )}
 
                 <Select
-                  disabled={disabled || !canValuate}
+                  disabled={editDisabled || !canValuate}
                   items={[
                     { value: 'ADVISED', label: 'Conseillé' },
                     { value: 'MANUAL', label: 'Manuel' },
@@ -265,7 +266,7 @@ function TechnicalSheetEconomicsBar({
             {canValuate && (
               <ActionIconButton
                 Icon={Calculator}
-                disabled={disabled || valuatePending}
+                disabled={valuateDisabled || valuatePending}
                 label={valuateLabel}
                 onClick={onValuate}
                 tooltipLabel={valuateLabel}
