@@ -152,6 +152,7 @@ function TechnicalSheetWorkspacePage() {
   const [draftFormRevision, setDraftFormRevision] = useState(null);
   const [draftDirty, setDraftDirty] = useState(false);
   const [identityDirty, setIdentityDirty] = useState(false);
+  const [identityFormRevision, setIdentityFormRevision] = useState(null);
   const [informationOpen, setInformationOpen] = useState(false);
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
@@ -161,16 +162,25 @@ function TechnicalSheetWorkspacePage() {
   useEffect(() => {
     if (!sheet || identityDirty) return;
 
+    if (
+      identityFormRevision !== null
+      && sheet.revision < identityFormRevision
+    ) {
+      return;
+    }
+
     setIdentity({
       name: sheet.name ?? '',
       description: sheet.description ?? '',
     });
-  }, [identityDirty, sheet]);
+    setIdentityFormRevision(sheet.revision);
+  }, [identityDirty, identityFormRevision, sheet]);
 
   useEffect(() => {
     setDraftDirty(false);
     setDraftFormRevision(null);
     setIdentityDirty(false);
+    setIdentityFormRevision(null);
     setInformationOpen(false);
   }, [technicalSheetId]);
 
@@ -266,14 +276,20 @@ function TechnicalSheetWorkspacePage() {
 
   async function saveIdentity() {
     try {
-      await updateSheet({
+      const updatedSheet = await updateSheet({
         workspaceId: workspace.id,
         dossierId,
         technicalSheetId,
-        expectedRevision: sheet.revision,
+        expectedRevision: identityFormRevision ?? sheet.revision,
         name: identity.name.trim(),
         description: identity.description.trim() || null,
       }).unwrap();
+
+      setIdentity({
+        name: updatedSheet.name ?? '',
+        description: updatedSheet.description ?? '',
+      });
+      setIdentityFormRevision(updatedSheet.revision);
       setIdentityDirty(false);
       toast({
         title: 'Fiche technique mise à jour',
