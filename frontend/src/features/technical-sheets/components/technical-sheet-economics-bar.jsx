@@ -106,6 +106,14 @@ function getVisibleCosts(lines, economicSnapshot) {
   };
 }
 
+function compactMetricValue(value) {
+  if (value === 'Non calculé' || value === 'Non renseignée') {
+    return 'NC';
+  }
+
+  return value;
+}
+
 function MetricLabel({ children, tooltip }) {
   return (
     <Tooltip>
@@ -125,7 +133,9 @@ function Metric({ label, tooltip, value }) {
   return (
     <div className="min-w-0 space-y-1">
       <MetricLabel tooltip={tooltip}>{label}</MetricLabel>
-      <p className="truncate text-sm font-semibold tabular-nums">{value}</p>
+      <p className="truncate text-sm font-semibold tabular-nums">
+        {compactMetricValue(value)}
+      </p>
     </div>
   );
 }
@@ -228,7 +238,9 @@ function TechnicalSheetEconomicsBar({
                   />
                 ) : (
                   <p className="flex h-8 min-w-0 flex-1 items-center truncate rounded-md border border-border bg-muted/20 px-2 text-sm font-semibold tabular-nums">
-                    {formatMinorCurrency(economicSnapshot?.finalPriceTtcMinor)}
+                    {compactMetricValue(
+                      formatMinorCurrency(economicSnapshot?.finalPriceTtcMinor),
+                    )}
                   </p>
                 )}
 
@@ -360,6 +372,7 @@ function TechnicalSheetEconomicsBar({
 
 export {
   MetricLabel,
+  compactMetricValue,
   TechnicalSheetEconomicsBar,
   getVisibleCosts,
   sumDecimalStrings,
