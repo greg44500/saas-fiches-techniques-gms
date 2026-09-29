@@ -1046,6 +1046,10 @@ Le poste de travail M-004 utilise un autosave frontend du brouillon sans modifie
 
 Le contrôle optimiste décrit en section 11 reste donc inchangé : l'autosave sérialise les écritures côté client au lieu de contourner `expectedRevision`.
 
+L'état compact de l'autosave reste textuel, sans badge : `Enregistré` utilise le ton success, `Enregistrement…` le ton warning, et les états non enregistrés le ton alert/destructive.
+
+La zone sticky du poste de travail se positionne sous la topbar Workspace via le token générique Core `--workspace-topbar-height`. Tant que le produit est encore dérivé de Core v1.2.1, le frontend conserve un fallback de compatibilité à `4rem` ; ce fallback n'est pas une nouvelle primitive métier.
+
 ---
 
 ## 23. RTK Query et invalidations

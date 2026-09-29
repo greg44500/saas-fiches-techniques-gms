@@ -81,7 +81,7 @@ const SECTION_PRESENTATION = Object.freeze({
 
 const COMPOSITION_GRID_CLASS = [
   'grid gap-x-2 gap-y-2',
-  'lg:grid-cols-[minmax(0,2.25fr)_4.25rem_4.75rem_5.5rem_5.75rem_4.5rem_minmax(0,1.5fr)_3.25rem]',
+  'lg:grid-cols-[minmax(0,2fr)_4.25rem_4.5rem_5rem_5.25rem_5.5rem_4.25rem_minmax(0,1.25fr)_3.25rem]',
   'lg:items-center',
 ].join(' ');
 
@@ -165,6 +165,20 @@ function getSupplierArticleActionTooltip({
 
 function hasValue(value) {
   return value !== null && value !== undefined && value !== '';
+}
+
+function formatRecipePercent(line) {
+  if (line.kind !== 'INGREDIENT') return '—';
+
+  const value = line.calculation?.recipePercent;
+  if (!hasValue(value)) return '—';
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return '—';
+
+  return parsed.toLocaleString('fr-FR', {
+    maximumFractionDigits: 2,
+  }) + ' %';
 }
 
 function formatYieldPercent(line) {
@@ -766,6 +780,13 @@ function TechnicalSheetLineEditor({
         </div>
 
         <div className="min-w-0 lg:text-center">
+          <MobileLabel>Pourcentage de recette</MobileLabel>
+          <p className="truncate text-sm tabular-nums lg:text-center">
+            {formatRecipePercent(line)}
+          </p>
+        </div>
+
+        <div className="min-w-0 lg:text-center">
           <MobileLabel>Prix unitaire hors taxe</MobileLabel>
           <Tooltip>
             <TooltipTrigger
@@ -871,7 +892,7 @@ function TechnicalSheetLineEditor({
             workspaceId={workspaceId}
           />
         </div>
-        <div className="hidden lg:col-span-7 lg:block" />
+        <div className="hidden lg:col-span-8 lg:block" />
       </div>
     );
   }
@@ -924,6 +945,12 @@ function TechnicalSheetLineEditor({
           </ColumnHeading>
           <ColumnHeading align="center" tooltip="Quantité nette">Qté</ColumnHeading>
           <ColumnHeading align="center" tooltip="Unité">U</ColumnHeading>
+          <ColumnHeading
+            align="center"
+            tooltip="Part de l’Ingrédient dans la recette, calculée automatiquement lorsque les quantités peuvent être comparées"
+          >
+            % Recette
+          </ColumnHeading>
           <ColumnHeading align="center" tooltip="Prix unitaire hors taxe">PUHT</ColumnHeading>
           <ColumnHeading align="center" tooltip="Coût matières unitaire hors taxe">CMU HT</ColumnHeading>
           <ColumnHeading align="center" tooltip="Taux de rendement">%TR</ColumnHeading>

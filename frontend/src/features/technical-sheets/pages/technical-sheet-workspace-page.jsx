@@ -673,7 +673,10 @@ function TechnicalSheetWorkspacePage() {
 
       {draft && (
         <section className="relative space-y-6">
-          <div className="sticky top-0 z-30">
+          <div
+            className="sticky z-30"
+            style={{ top: 'var(--workspace-topbar-height, 4rem)' }}
+          >
             <Card className="border-primary/20 bg-background/97 shadow-lg backdrop-blur-md">
               <CardHeader className="pb-3">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">

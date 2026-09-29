@@ -27,7 +27,7 @@ function TechnicalSheetAutosaveStatus({
         role="status"
       >
         <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
-        <span>Échec de l’enregistrement</span>
+        <span>Non enregistré — erreur</span>
         <Button
           className="h-7 px-2 text-xs"
           onClick={onRetry}
@@ -45,12 +45,12 @@ function TechnicalSheetAutosaveStatus({
     return (
       <div
         aria-label="État d’enregistrement du brouillon"
-        className="flex items-center gap-2 text-xs text-warning"
+        className="flex items-center gap-2 text-xs text-destructive"
         role="status"
         title={blockedReason ?? undefined}
       >
         <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
-        <span>À compléter</span>
+        <span>Non enregistré — à compléter</span>
       </div>
     );
   }
@@ -58,7 +58,10 @@ function TechnicalSheetAutosaveStatus({
   return (
     <div
       aria-label="État d’enregistrement du brouillon"
-      className="flex items-center gap-2 text-xs text-muted-foreground"
+      className={
+        'flex items-center gap-2 text-xs '
+        + (saving ? 'text-warning' : 'text-success')
+      }
       role="status"
     >
       {saving ? (

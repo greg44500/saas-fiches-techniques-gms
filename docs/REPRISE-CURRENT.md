@@ -492,7 +492,11 @@ La QA visuelle a ensuite conduit aux arbitrages UX suivants, en cours de stabili
 - actions de ligne regroupées sous un menu unique `…` ;
 - alignement centré des colonnes quantitatives/économiques et colonne Actions réduite ;
 - Historique déplacé dans le drawer Informations sous un onglet dédié ;
-- fondu sous la zone sticky renforcé pour matérialiser le passage de la Composition derrière les KPI.
+- fondu sous la zone sticky renforcé pour matérialiser le passage de la Composition derrière les KPI ;
+- état d'autosave rendu par texte/icône sémantique sans badge : success = enregistré, warning = enregistrement en cours, alert = non enregistré ;
+- zone sticky M-004 positionnée sous la topbar Workspace via le token Core `--workspace-topbar-height`, avec fallback temporaire compatible v1.2.1 ;
+- colonne `% Recette` affichée dans Composition à partir de `line.calculation.recipePercent` déjà calculé par le backend ; Économat et valeurs non calculables affichent `—` ;
+- l'évolution future vers un pourcentage massique multi-dimensions (conditionnement fournisseur / masse volumique) reste un changement métier séparé et n'est pas simulée dans ce correctif frontend.
 
 Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon, le contrat backend. Ils doivent donc être retestés avant la PR finale.
 

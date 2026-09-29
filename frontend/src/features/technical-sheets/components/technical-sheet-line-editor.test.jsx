@@ -94,6 +94,7 @@ const valuedLine = normalizeDraftLine({
     yieldPercentUsed: '90',
     grossQuantity: '2.778',
     grossUnit: 'KG',
+    recipePercent: '100',
   },
   valuation: {
     status: 'VALUED',
@@ -191,6 +192,7 @@ describe('TechnicalSheetLineEditor', () => {
 
     expect(screen.getByText('Qté')).toBeInTheDocument();
     expect(screen.getByText('U')).toBeInTheDocument();
+    expect(screen.getByText('% Recette')).toBeInTheDocument();
     expect(screen.getByText('PUHT')).toBeInTheDocument();
     expect(screen.getByText('CMU HT')).toBeInTheDocument();
     expect(screen.getByText('%TR')).toBeInTheDocument();
@@ -205,6 +207,7 @@ describe('TechnicalSheetLineEditor', () => {
       'Sélectionnez une Référence Produit ; la quantité et l’unité restent modifiables dans la ligne.',
     )).not.toBeInTheDocument();
     expect(screen.getByText('90 %')).toBeInTheDocument();
+    expect(screen.getByText('100 %')).toBeInTheDocument();
     expect(screen.getByText(/2,15/)).toBeInTheDocument();
     expect(screen.getByText(/6,02/)).toBeInTheDocument();
   });
