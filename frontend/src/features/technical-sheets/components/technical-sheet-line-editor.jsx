@@ -44,9 +44,6 @@ import {
   TechnicalSheetSourcingSelect,
 } from '@/features/technical-sheets/components/technical-sheet-sourcing-select';
 import {
-  TechnicalSheetStatusBadge,
-} from '@/features/technical-sheets/components/technical-sheet-status-badge';
-import {
   formatDecimalCurrency,
   getLineValuationPresentation,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
@@ -76,8 +73,8 @@ const SECTION_PRESENTATION = Object.freeze({
 });
 
 const COMPOSITION_GRID_CLASS = [
-  'grid gap-2',
-  'lg:grid-cols-[minmax(0,2.1fr)_minmax(0,.65fr)_minmax(0,.7fr)_minmax(0,.85fr)_minmax(0,.9fr)_minmax(0,.65fr)_minmax(0,1.2fr)_auto]',
+  'grid gap-x-2 gap-y-2',
+  'lg:grid-cols-[minmax(0,2fr)_4.5rem_5rem_5.5rem_5.75rem_4.5rem_minmax(0,1.25fr)_10.75rem]',
   'lg:items-center',
 ].join(' ');
 
@@ -126,6 +123,26 @@ function normalizeDraftLine(line, index) {
 
 function getPricingSourceLabel(source) {
   return PRICING_SOURCE_LABEL[source] ?? null;
+}
+
+function getSupplierArticleActionTooltip({
+  canManageSourcing,
+  line,
+  requiresSave = false,
+}) {
+  if (!canManageSourcing) return 'Consulter l’Article fournisseur';
+
+  const hasSelectedArticle = Boolean(
+    line.selectedSupplierArticleId
+    ?? line.valuation?.supplierArticleId
+  );
+  const label = hasSelectedArticle
+    ? 'Modifier l’Article fournisseur'
+    : 'Choisir un Article fournisseur';
+
+  return (!line.id || requiresSave)
+    ? label + ' — enregistrez d’abord le brouillon'
+    : label;
 }
 
 function hasValue(value) {
@@ -197,9 +214,6 @@ function ProductDetailsTrigger({
   const selectedArticle = articles.find(
     (article) => article.id === selectedArticleId,
   );
-  const valuationPresentation = getLineValuationPresentation(
-    line.valuation?.status,
-  );
   const pricingSource = getPricingSourceLabel(
     line.valuation?.applicableSource,
   );
@@ -262,18 +276,12 @@ function ProductDetailsTrigger({
             <p>Source du prix : {pricingSource}</p>
           )}
 
-          <p>Cliquez sur le Produit pour le remplacer.</p>
+          {onEdit && (
+            <p>Cliquez sur le Produit pour le remplacer.</p>
+          )}
         </TooltipContent>
       </Tooltip>
 
-      {line.valuation?.status && line.valuation.status !== 'VALUED' && (
-        <TechnicalSheetStatusBadge
-          className="mt-1 w-fit text-[10px]"
-          tone={valuationPresentation.tone}
-        >
-          {valuationPresentation.label}
-        </TechnicalSheetStatusBadge>
-      )}
     </div>
   );
 }
@@ -285,6 +293,7 @@ function SupplierArticleDialog({
   draftRevision,
   line,
   onClose,
+  requiresSave,
   onError,
   onPendingChange,
   onSelected,
@@ -334,9 +343,11 @@ function SupplierArticleDialog({
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspaceId}
               />
-              {disabled && (
+              {disabled && canManage && (
                 <p className="text-xs text-muted-foreground">
-                  Enregistrez le brouillon avant de modifier l’approvisionnement.
+                  {!line.id || requiresSave
+                    ? 'Enregistrez le brouillon avant de modifier l’approvisionnement.'
+                    : 'L’approvisionnement est momentanément indisponible.'}
                 </p>
               )}
             </div>
@@ -362,6 +373,7 @@ function TechnicalSheetLineEditor({
   onSourcingSelected,
   productMetadata,
   sourcingDisabled = false,
+  sourcingRequiresSave = false,
   technicalSheetId,
   workspaceId,
 }) {
@@ -503,6 +515,11 @@ function TechnicalSheetLineEditor({
     const sourceLabel = getPricingSourceLabel(
       line.valuation?.applicableSource,
     );
+    const sourcingTooltipLabel = getSupplierArticleActionTooltip({
+      canManageSourcing,
+      line,
+      requiresSave: sourcingRequiresSave,
+    });
 
     return (
       <div
@@ -659,15 +676,7 @@ function TechnicalSheetLineEditor({
             Icon={PackageSearch}
             label={'Approvisionnement de ' + line.productVariantName}
             onClick={() => setSourcingLineKey(key)}
-            tooltipLabel={
-              !line.id
-                ? 'Approvisionnement — enregistrez d’abord le brouillon pour le modifier'
-                : sourcingDisabled
-                  ? 'Approvisionnement — enregistrez le brouillon avant modification'
-                  : canManageSourcing
-                    ? 'Approvisionnement / Article fournisseur'
-                    : 'Consulter l’approvisionnement'
-            }
+            tooltipLabel={sourcingTooltipLabel}
             variant="ghost"
           />
 
@@ -716,7 +725,7 @@ function TechnicalSheetLineEditor({
       <div
         className={
           COMPOSITION_GRID_CLASS
-          + ' border-t border-border/70 bg-muted/10 px-2 py-2'
+          + ' bg-muted/10 px-2 py-2'
         }
         key={'add-' + kind}
       >
@@ -754,10 +763,10 @@ function TechnicalSheetLineEditor({
       <section key={kind}>
         <div
           className={[
-            'flex flex-col gap-1 bg-muted/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between',
+            'flex flex-col gap-1 bg-muted/35 px-2 py-2 sm:flex-row sm:items-center sm:justify-between',
             sectionIndex > 0
-              ? 'border-t-2 border-primary/25'
-              : 'border-t border-border',
+              ? 'border-t-2 border-primary/20'
+              : '',
             'border-b border-border',
           ].join(' ')}
         >
@@ -823,8 +832,8 @@ function TechnicalSheetLineEditor({
         </p>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-border">
-        <div className={COMPOSITION_GRID_CLASS + ' hidden bg-muted/30 px-2 py-2 lg:grid'}>
+      <div className="overflow-hidden border-y border-border">
+        <div className={COMPOSITION_GRID_CLASS + ' hidden border-b border-border bg-muted/20 px-2 py-2 lg:grid'}>
           <ColumnHeading tooltip="Produit">Produit</ColumnHeading>
           <ColumnHeading tooltip="Quantité nette">Qté</ColumnHeading>
           <ColumnHeading tooltip="Unité">U</ColumnHeading>
@@ -854,6 +863,7 @@ function TechnicalSheetLineEditor({
         onError={onSourcingError}
         onPendingChange={onSourcingPendingChange}
         onSelected={onSourcingSelected}
+        requiresSave={sourcingRequiresSave}
         technicalSheetId={technicalSheetId}
         workspaceId={workspaceId}
       />
@@ -865,5 +875,6 @@ export {
   PRODUCT_SOURCE,
   TechnicalSheetLineEditor,
   getPricingSourceLabel,
+  getSupplierArticleActionTooltip,
   normalizeDraftLine,
 };

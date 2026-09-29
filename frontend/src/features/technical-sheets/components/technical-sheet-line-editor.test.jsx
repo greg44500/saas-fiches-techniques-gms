@@ -64,6 +64,7 @@ vi.mock('@/features/technical-sheets/components/technical-sheet-sourcing-select'
 import {
   PRODUCT_SOURCE,
   TechnicalSheetLineEditor,
+  getSupplierArticleActionTooltip,
   normalizeDraftLine,
 } from '@/features/technical-sheets/components/technical-sheet-line-editor';
 
@@ -209,6 +210,59 @@ describe('TechnicalSheetLineEditor', () => {
     expect(screen.getByText('90 %')).toBeInTheDocument();
     expect(screen.getByText(/2,15/)).toBeInTheDocument();
     expect(screen.getByText(/6,02/)).toBeInTheDocument();
+  });
+
+  it('ne rend plus de badge permanent de sourcing sous le Produit', () => {
+    renderEditor({
+      lines: [{
+        ...valuedLine,
+        selectedSupplierArticleId: null,
+        valuation: {
+          ...valuedLine.valuation,
+          status: 'UNRESOLVED',
+          supplierArticleId: null,
+          normalizedAmount: null,
+          lineCostHt: null,
+        },
+      }],
+    });
+
+    expect(screen.queryByText('Article à choisir')).not.toBeInTheDocument();
+  });
+
+  it('décrit précisément l’action Article fournisseur selon le contexte', () => {
+    const unresolvedLine = {
+      ...valuedLine,
+      selectedSupplierArticleId: null,
+      valuation: {
+        ...valuedLine.valuation,
+        status: 'UNRESOLVED',
+        supplierArticleId: null,
+      },
+    };
+
+    expect(getSupplierArticleActionTooltip({
+      canManageSourcing: true,
+      line: unresolvedLine,
+    })).toBe('Choisir un Article fournisseur');
+
+    expect(getSupplierArticleActionTooltip({
+      canManageSourcing: true,
+      line: valuedLine,
+    })).toBe('Modifier l’Article fournisseur');
+
+    expect(getSupplierArticleActionTooltip({
+      canManageSourcing: false,
+      line: valuedLine,
+    })).toBe('Consulter l’Article fournisseur');
+
+    expect(getSupplierArticleActionTooltip({
+      canManageSourcing: true,
+      line: { ...unresolvedLine, id: undefined },
+      requiresSave: true,
+    })).toBe(
+      'Choisir un Article fournisseur — enregistrez d’abord le brouillon',
+    );
   });
 
   it('ajoute un Produit directement depuis la ligne de saisie de la section', async () => {

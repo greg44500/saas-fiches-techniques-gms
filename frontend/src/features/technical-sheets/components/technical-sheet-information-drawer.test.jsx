@@ -53,9 +53,13 @@ describe('TechnicalSheetInformationDrawer', () => {
     const user = userEvent.setup();
     const props = renderDrawer();
 
-    await user.click(screen.getByRole('button', {
+    const trigger = screen.getByRole('button', {
       name: 'Ouvrir les informations de la Fiche',
-    }));
+    });
+
+    expect(trigger).toHaveClass('fixed', 'z-40');
+
+    await user.click(trigger);
 
     expect(props.onOpen).toHaveBeenCalledTimes(1);
   });

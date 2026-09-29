@@ -30,7 +30,7 @@ function TechnicalSheetInformationDrawer({
         <Button
           aria-label="Ouvrir les informations de la Fiche"
           className={cn(
-            'fixed right-0 top-[42%] z-20 h-auto -translate-y-1/2 rounded-l-lg rounded-r-none border-r-0 px-2 py-3 shadow-md',
+            'fixed right-0 top-[42%] z-40 h-auto -translate-y-1/2 rounded-l-lg rounded-r-none border-r-0 px-2 py-3 shadow-md',
             dirty
               ? 'border-warning/50 bg-warning/10 text-warning hover:bg-warning/15'
               : 'bg-background',

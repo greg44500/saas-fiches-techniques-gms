@@ -723,6 +723,10 @@ function TechnicalSheetWorkspacePage() {
                 </div>
               </CardContent>
             </Card>
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-4 -bottom-5 h-5 bg-linear-to-b from-background/75 to-transparent"
+            />
           </div>
           <Card>
             <CardHeader>
@@ -786,6 +790,7 @@ function TechnicalSheetWorkspacePage() {
                   draftSynchronizing
                   || draftServerActionDisabled
                 }
+                sourcingRequiresSave={draftServerActionDisabled}
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspace.id}
               />
