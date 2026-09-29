@@ -183,6 +183,13 @@ describe('DossierSupplierPricingPage', () => {
       .not.toBeInTheDocument();
     expect(screen.getByText('Catalogue contractuel septembre 2026'))
       .toBeInTheDocument();
+    expect(screen.getByText(/Les tarifs fournisseur proviennent des catalogues/))
+      .toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Gérer les catalogues/ }))
+      .toHaveAttribute(
+        'href',
+        '/workspaces/workspace-1/suppliers?section=catalogs',
+      );
   });
 
   it('affiche le Prix applicable avec sa source et son fallback sans ouvrir un onglet non autorisé', () => {
