@@ -784,7 +784,28 @@ function TechnicalSheetWorkspacePage() {
           />
           <Card>
             <CardHeader>
-              <CardTitle>Composition</CardTitle>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle>Composition</CardTitle>
+                {canUpdate && (
+                  <ActionIconButton
+                    Icon={Save}
+                    disabled={
+                      saveDraftState.isLoading
+                      || draftSynchronizing
+                      || !draftDirty
+                      || draftFormRevision === null
+                    }
+                    label="Enregistrer le brouillon"
+                    onClick={saveWorkingDraft}
+                    tooltipLabel={
+                      draftDirty
+                        ? 'Enregistrer le brouillon'
+                        : 'Aucune modification à enregistrer'
+                    }
+                    variant="outline"
+                  />
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <TechnicalSheetLineEditor
@@ -822,23 +843,6 @@ function TechnicalSheetWorkspacePage() {
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspace.id}
               />
-              {canUpdate && (
-                <div className="mt-4 flex justify-end">
-                  <Button
-                    disabled={
-                      saveDraftState.isLoading
-                      || draftSynchronizing
-                      || !draftDirty
-                      || draftFormRevision === null
-                    }
-                    onClick={saveWorkingDraft}
-                    type="button"
-                  >
-                    <Save aria-hidden="true" className="size-4" />
-                    Enregistrer le brouillon
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
 
