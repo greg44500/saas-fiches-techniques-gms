@@ -889,11 +889,6 @@ function TechnicalSheetWorkspacePage() {
                 productMetadata={productMetadataQuery.data}
                 canOpenPricing={canOpenSupplierPricing}
                 sourcingDisabled={draftServerActionDisabled}
-                sourcingDisabledReason={
-                  draftDirty
-                    ? 'Enregistrez le brouillon avant de modifier l’approvisionnement ou de valoriser.'
-                    : ''
-                }
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspace.id}
               />
