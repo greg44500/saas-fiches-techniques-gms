@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   TechnicalSheetEconomicsBar,
+  compactMetricValue,
   getVisibleCosts,
   sumDecimalStrings,
 } from '@/features/technical-sheets/components/technical-sheet-economics-bar';
@@ -31,6 +32,12 @@ describe('TechnicalSheetEconomicsBar', () => {
       economatCostHt: '0.75',
       manufacturingCostHt: '4.075',
     });
+  });
+
+  it('compacte les valeurs non disponibles en NC dans le cockpit', () => {
+    expect(compactMetricValue('Non calculé')).toBe('NC');
+    expect(compactMetricValue('Non renseignée')).toBe('NC');
+    expect(compactMetricValue('12,50 €')).toBe('12,50 €');
   });
 
   it('affiche les KPI sous forme de sigles accessibles et ouvre le détail', async () => {
