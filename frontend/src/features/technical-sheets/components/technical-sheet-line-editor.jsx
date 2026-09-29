@@ -1,18 +1,24 @@
 import {
+  ArrowDownUp,
   ArrowUpRight,
   Globe2,
+  PackageSearch,
   Star,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import {
-  DataTable,
-  DataTableActions,
-} from '@/components/data-display/data-table';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  DialogContent,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogRoot,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -21,8 +27,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   ProductSearchAutocomplete,
 } from '@/features/products/components/product-search-autocomplete';
+import {
+  useListSupplierArticlesQuery,
+} from '@/features/suppliers/api/supplier-api';
+import {
+  formatPackaging,
+} from '@/features/suppliers/lib/supplier-presentation';
 import {
   TechnicalSheetSourcingSelect,
 } from '@/features/technical-sheets/components/technical-sheet-sourcing-select';
@@ -34,11 +51,6 @@ import {
   getLineValuationPresentation,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 
-const LINE_KIND_ITEMS = Object.freeze([
-  { value: 'INGREDIENT', label: 'Ingrédient' },
-  { value: 'ECONOMAT', label: 'Économat' },
-]);
-
 const PRODUCT_SOURCE = Object.freeze({
   REFERENCE: 'REFERENCE',
   FAVORITES: 'WORKSPACE',
@@ -49,6 +61,25 @@ const PRICING_SOURCE_LABEL = Object.freeze({
   NEGOTIATED_PRICE: 'Tarif négocié',
   INVOICED_PRICE: 'Prix facturé',
 });
+
+const SECTION_PRESENTATION = Object.freeze({
+  INGREDIENT: Object.freeze({
+    label: 'Ingrédients',
+    opposite: 'ECONOMAT',
+    oppositeLabel: 'Économat',
+  }),
+  ECONOMAT: Object.freeze({
+    label: 'Économat',
+    opposite: 'INGREDIENT',
+    oppositeLabel: 'Ingrédients',
+  }),
+});
+
+const COMPOSITION_GRID_CLASS = [
+  'grid gap-2',
+  'lg:grid-cols-[minmax(0,2.1fr)_minmax(0,.65fr)_minmax(0,.7fr)_minmax(0,.85fr)_minmax(0,.9fr)_minmax(0,.65fr)_minmax(0,1.2fr)_auto]',
+  'lg:items-center',
+].join(' ');
 
 function normalizeDraftLine(line, index) {
   return {
@@ -68,6 +99,7 @@ function normalizeDraftLine(line, index) {
               id: line.productVariantId,
               name: line.productVariantName ?? 'Référence Produit',
               referenceUnit: line.referenceUnit ?? line.inputUnit,
+              yieldPercent: line.yieldPercent ?? null,
             }
           : null
       ),
@@ -96,8 +128,220 @@ function getPricingSourceLabel(source) {
   return PRICING_SOURCE_LABEL[source] ?? null;
 }
 
+function hasValue(value) {
+  return value !== null && value !== undefined && value !== '';
+}
+
+function formatYieldPercent(line) {
+  const value = (
+    line.calculation?.yieldPercentUsed
+    ?? line.productVariant?.yieldPercent
+  );
+
+  if (!hasValue(value)) return '—';
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return '—';
+
+  return parsed.toLocaleString('fr-FR', {
+    maximumFractionDigits: 2,
+  }) + ' %';
+}
+
+function ColumnHeading({ children, tooltip }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        aria-label={tooltip}
+        className="w-fit cursor-help text-left text-xs font-semibold text-muted-foreground underline decoration-dotted underline-offset-4"
+        type="button"
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function MobileLabel({ children }) {
+  return (
+    <span className="mb-1 block text-[11px] font-medium text-muted-foreground lg:hidden">
+      {children}
+    </span>
+  );
+}
+
+function ProductDetailsTrigger({
+  line,
+  onEdit,
+  workspaceId,
+}) {
+  const articlesQuery = useListSupplierArticlesQuery(
+    {
+      workspaceId,
+      productVariantId: line.productVariantId,
+      status: 'ACTIVE',
+      page: 1,
+      limit: 100,
+    },
+    {
+      skip: !line.productVariantId,
+    },
+  );
+  const articles = articlesQuery.data?.articles ?? [];
+  const selectedArticleId = (
+    line.selectedSupplierArticleId
+    ?? line.valuation?.supplierArticleId
+  );
+  const selectedArticle = articles.find(
+    (article) => article.id === selectedArticleId,
+  );
+  const valuationPresentation = getLineValuationPresentation(
+    line.valuation?.status,
+  );
+  const pricingSource = getPricingSourceLabel(
+    line.valuation?.applicableSource,
+  );
+
+  return (
+    <div className="min-w-0">
+      <Tooltip>
+        <TooltipTrigger
+          aria-label={'Modifier le produit ' + line.productVariantName}
+          className="block max-w-full truncate text-left text-sm font-semibold underline decoration-dotted underline-offset-4"
+          onClick={onEdit}
+          type="button"
+        >
+          {line.productVariantName}
+        </TooltipTrigger>
+        <TooltipContent
+          align="start"
+          className="max-w-sm space-y-1"
+          side="top"
+        >
+          <p className="font-semibold">{line.productVariantName}</p>
+
+          {articlesQuery.isLoading && (
+            <p>Chargement des informations fournisseur…</p>
+          )}
+
+          {!articlesQuery.isLoading && selectedArticle && (
+            <>
+              <p>
+                Fournisseur : {selectedArticle.supplier?.name ?? 'Non renseigné'}
+              </p>
+              <p>
+                Référence fournisseur : {selectedArticle.supplierReference ?? 'Non renseignée'}
+              </p>
+              <p>
+                Article : {selectedArticle.supplierDesignation ?? 'Non renseigné'}
+              </p>
+              <p>
+                Conditionnement : {formatPackaging(selectedArticle.packaging)}
+              </p>
+            </>
+          )}
+
+          {!articlesQuery.isLoading && !selectedArticle && (
+            <p>
+              {articles.length === 0
+                ? 'Aucun Article fournisseur disponible.'
+                : articles.length + ' Article(s) fournisseur disponible(s).'}
+            </p>
+          )}
+
+          {pricingSource && (
+            <p>Source du prix : {pricingSource}</p>
+          )}
+
+          <p>Cliquez sur le Produit pour le remplacer.</p>
+        </TooltipContent>
+      </Tooltip>
+
+      {line.valuation?.status && line.valuation.status !== 'VALUED' && (
+        <TechnicalSheetStatusBadge
+          className="mt-1 w-fit text-[10px]"
+          tone={valuationPresentation.tone}
+        >
+          {valuationPresentation.label}
+        </TechnicalSheetStatusBadge>
+      )}
+    </div>
+  );
+}
+
+function SupplierArticleDialog({
+  canManage,
+  disabled,
+  dossierId,
+  draftRevision,
+  line,
+  onClose,
+  onError,
+  onPendingChange,
+  onSelected,
+  technicalSheetId,
+  workspaceId,
+}) {
+  return (
+    <DialogRoot
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      open={Boolean(line)}
+    >
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center justify-between gap-3">
+              <DialogTitle>Article fournisseur</DialogTitle>
+              <ActionIconButton
+                Icon={X}
+                label="Fermer le choix de l’Article fournisseur"
+                onClick={onClose}
+                tooltipLabel="Fermer"
+                variant="ghost"
+              />
+            </div>
+          </DialogHeader>
+
+          {line && (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {line.productVariantName}
+              </p>
+              <TechnicalSheetSourcingSelect
+                canManage={canManage}
+                disabled={disabled}
+                dossierId={dossierId}
+                draftRevision={draftRevision}
+                line={line}
+                onError={onError}
+                onPendingChange={onPendingChange}
+                onSelected={(updatedDraft) => {
+                  onSelected?.(updatedDraft);
+                  onClose();
+                }}
+                technicalSheetId={technicalSheetId}
+                workspaceId={workspaceId}
+              />
+              {disabled && (
+                <p className="text-xs text-muted-foreground">
+                  Enregistrez le brouillon avant de modifier l’approvisionnement.
+                </p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </DialogPortal>
+    </DialogRoot>
+  );
+}
+
 function TechnicalSheetLineEditor({
   canManageSourcing = false,
+  canOpenPricing = false,
   disabled,
   dossierId,
   draftRevision,
@@ -109,15 +353,19 @@ function TechnicalSheetLineEditor({
   onSourcingPendingChange,
   onSourcingSelected,
   productMetadata,
-  canOpenPricing = false,
   sourcingDisabled = false,
-  sourcingDisabledReason = '',
   technicalSheetId,
   workspaceId,
 }) {
-  const [search, setSearch] = useState('');
-  const [addError, setAddError] = useState('');
   const [productScope, setProductScope] = useState(PRODUCT_SOURCE.REFERENCE);
+  const [addSearch, setAddSearch] = useState({
+    INGREDIENT: '',
+    ECONOMAT: '',
+  });
+  const [editingLineKey, setEditingLineKey] = useState(null);
+  const [editSearch, setEditSearch] = useState('');
+  const [sourcingLineKey, setSourcingLineKey] = useState(null);
+  const [addError, setAddError] = useState('');
 
   const unitItems = useMemo(
     () => (metadata?.units ?? []).map((unit) => ({
@@ -126,10 +374,10 @@ function TechnicalSheetLineEditor({
     })),
     [metadata?.units],
   );
-  const unitLabelByValue = useMemo(
-    () => new Map(unitItems.map((unit) => [unit.value, unit.label])),
-    [unitItems],
-  );
+
+  function lineKey(line, index) {
+    return line.id ?? line.productVariantId + ':' + index;
+  }
 
   function updateLine(index, patch) {
     onChange(
@@ -149,7 +397,16 @@ function TechnicalSheetLineEditor({
     );
   }
 
-  function addProduct(result) {
+  function moveLine(index) {
+    const line = lines[index];
+    const presentation = SECTION_PRESENTATION[line.kind];
+
+    updateLine(index, {
+      kind: presentation.opposite,
+    });
+  }
+
+  function addProduct(kind, result) {
     if (!result?.variant?.id) {
       setAddError(
         'Cette référence doit être enrichie avant de pouvoir être utilisée dans une Fiche technique.',
@@ -162,18 +419,16 @@ function TechnicalSheetLineEditor({
       ...lines,
       {
         id: undefined,
-        kind: 'INGREDIENT',
+        kind,
         productVariantId: result.variant.id,
         productVariantName:
           result.variant.name
           ?? result.product?.name
           ?? 'Référence Produit',
         productVariant: result.variant,
-        referenceUnit:
-          result.variant.referenceUnit,
+        referenceUnit: result.variant.referenceUnit,
         netQuantity: '1',
-        inputUnit:
-          result.variant.referenceUnit,
+        inputUnit: result.variant.referenceUnit,
         order: lines.length,
         note: '',
         selectedSupplierArticleId: null,
@@ -181,330 +436,396 @@ function TechnicalSheetLineEditor({
         valuation: null,
       },
     ]);
-    setSearch('');
+    setAddSearch((current) => ({
+      ...current,
+      [kind]: '',
+    }));
   }
 
-  const columns = [
-    {
-      id: 'reference',
-      header: 'Produit',
-      headerClassName: 'min-w-48',
-      cell: (line) => (
-        <div className="min-w-44">
-          <p className="font-medium">{line.productVariantName}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Unité de référence : {
-              unitLabelByValue.get(line.referenceUnit)
-              ?? line.referenceUnit
-              ?? '—'
-            }
+  function startEditing(line, index) {
+    setEditingLineKey(lineKey(line, index));
+    setEditSearch(line.productVariantName);
+  }
+
+  function replaceProduct(index, result) {
+    const line = lines[index];
+
+    if (!result?.variant?.id) {
+      setAddError(
+        'Cette référence doit être enrichie avant de pouvoir être utilisée dans une Fiche technique.',
+      );
+      return;
+    }
+
+    if (result.variant.id === line.productVariantId) {
+      setEditingLineKey(null);
+      setEditSearch('');
+      return;
+    }
+
+    setAddError('');
+    updateLine(index, {
+      id: undefined,
+      productVariantId: result.variant.id,
+      productVariantName:
+        result.variant.name
+        ?? result.product?.name
+        ?? 'Référence Produit',
+      productVariant: result.variant,
+      referenceUnit: result.variant.referenceUnit,
+      inputUnit: result.variant.referenceUnit,
+      selectedSupplierArticleId: null,
+      calculation: null,
+      valuation: null,
+    });
+    setEditingLineKey(null);
+    setEditSearch('');
+  }
+
+  const sourcingLine = lines.find(
+    (line, index) => lineKey(line, index) === sourcingLineKey,
+  ) ?? null;
+
+  function renderLine(line, index) {
+    const key = lineKey(line, index);
+    const editing = editingLineKey === key;
+    const valuationPresentation = getLineValuationPresentation(
+      line.valuation?.status,
+    );
+    const sourceLabel = getPricingSourceLabel(
+      line.valuation?.applicableSource,
+    );
+
+    return (
+      <div
+        className={
+          COMPOSITION_GRID_CLASS
+          + ' border-b border-border px-2 py-2 transition-colors hover:bg-muted/20'
+        }
+        key={key}
+      >
+        <div className="min-w-0">
+          <MobileLabel>Produit</MobileLabel>
+          {editing ? (
+            <div className="flex min-w-0 items-center gap-1">
+              <div className="min-w-0 flex-1">
+                <ProductSearchAutocomplete
+                  ariaLabel={'Modifier le produit ' + line.productVariantName}
+                  compact
+                  metadata={productMetadata}
+                  onSelect={(result) => replaceProduct(index, result)}
+                  onValueChange={setEditSearch}
+                  placeholder="Rechercher un produit…"
+                  scope={productScope}
+                  showWorkspaceFavorite={productScope === PRODUCT_SOURCE.REFERENCE}
+                  status="ACTIVE"
+                  value={editSearch}
+                  workspaceId={workspaceId}
+                />
+              </div>
+              <ActionIconButton
+                Icon={X}
+                label="Annuler le remplacement du Produit"
+                onClick={() => {
+                  setEditingLineKey(null);
+                  setEditSearch('');
+                }}
+                tooltipLabel="Annuler"
+                variant="ghost"
+              />
+            </div>
+          ) : (
+            <ProductDetailsTrigger
+              line={line}
+              onEdit={() => startEditing(line, index)}
+              workspaceId={workspaceId}
+            />
+          )}
+        </div>
+
+        <div className="min-w-0">
+          <MobileLabel>Quantité nette</MobileLabel>
+          <Input
+            aria-label={'Quantité nette ligne ' + (index + 1)}
+            className="h-8 min-w-0 tabular-nums"
+            disabled={disabled}
+            inputMode="decimal"
+            onChange={(event) => updateLine(index, {
+              netQuantity: event.target.value,
+            })}
+            value={line.netQuantity}
+          />
+        </div>
+
+        <div className="min-w-0">
+          <MobileLabel>Unité</MobileLabel>
+          <Select
+            disabled={disabled}
+            items={unitItems}
+            onValueChange={(value) => updateLine(index, { inputUnit: value })}
+            value={line.inputUnit}
+          >
+            <SelectTrigger
+              aria-label={'Unité ligne ' + (index + 1)}
+              className="h-8 min-h-8 min-w-0 px-2"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {unitItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="min-w-0">
+          <MobileLabel>Prix unitaire hors taxe</MobileLabel>
+          <Tooltip>
+            <TooltipTrigger
+              aria-label={
+                sourceLabel
+                  ? 'Prix unitaire hors taxe — ' + sourceLabel
+                  : 'Prix unitaire hors taxe'
+              }
+              className="block max-w-full truncate text-left text-sm font-medium tabular-nums"
+              type="button"
+            >
+              {hasValue(line.valuation?.normalizedAmount)
+                ? formatDecimalCurrency(line.valuation.normalizedAmount)
+                : '—'}
+            </TooltipTrigger>
+            <TooltipContent>
+              {sourceLabel
+                ? sourceLabel
+                  + (
+                    line.valuation?.normalizedUnit
+                      ? ' · prix normalisé par ' + line.valuation.normalizedUnit
+                      : ''
+                  )
+                : valuationPresentation.label}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <div className="min-w-0">
+          <MobileLabel>Coût matières unitaire hors taxe</MobileLabel>
+          <p className="truncate text-sm font-medium tabular-nums">
+            {hasValue(line.valuation?.lineCostHt)
+              ? formatDecimalCurrency(line.valuation.lineCostHt)
+              : '—'}
           </p>
         </div>
-      ),
-    },
-    {
-      id: 'kind',
-      header: 'Type',
-      headerClassName: 'min-w-36',
-      cell: (line, index) => (
-        <Select
-          disabled={disabled}
-          items={LINE_KIND_ITEMS}
-          onValueChange={(value) => updateLine(index, { kind: value })}
-          value={line.kind}
-        >
-          <SelectTrigger aria-label={'Type de ligne ' + (index + 1)}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {LINE_KIND_ITEMS.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ),
-    },
-    {
-      id: 'sourcing',
-      header: 'Article / Fournisseur',
-      headerClassName: 'min-w-72',
-      cell: (line) => {
-        if (!line.id) {
-          return (
-            <p className="max-w-64 text-xs text-muted-foreground">
-              Enregistrez le brouillon pour choisir l’Article fournisseur.
-            </p>
-          );
-        }
 
-        return (
-          <TechnicalSheetSourcingSelect
-            canManage={canManageSourcing}
+        <div className="min-w-0">
+          <MobileLabel>Taux de rendement</MobileLabel>
+          <p className="truncate text-sm tabular-nums">
+            {formatYieldPercent(line)}
+          </p>
+        </div>
+
+        <div className="min-w-0">
+          <MobileLabel>Note</MobileLabel>
+          <Input
+            aria-label={'Note ligne ' + (index + 1)}
+            className="h-8 min-w-0"
+            disabled={disabled}
+            maxLength={500}
+            onChange={(event) => updateLine(index, {
+              note: event.target.value,
+            })}
+            value={line.note}
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-end gap-1">
+          <MobileLabel>Actions</MobileLabel>
+
+          <ActionIconButton
+            Icon={PackageSearch}
             disabled={
               disabled
               || sourcingDisabled
+              || !line.id
               || draftRevision === null
               || draftRevision === undefined
+              || !canManageSourcing
             }
-            dossierId={dossierId}
-            draftRevision={draftRevision}
-            line={line}
-            onError={onSourcingError}
-            onPendingChange={onSourcingPendingChange}
-            onSelected={onSourcingSelected}
-            technicalSheetId={technicalSheetId}
+            label={'Choisir l’Article fournisseur pour ' + line.productVariantName}
+            onClick={() => setSourcingLineKey(key)}
+            tooltipLabel={
+              !line.id
+                ? 'Enregistrer le brouillon avant de choisir l’Article fournisseur'
+                : sourcingDisabled
+                  ? 'Enregistrer le brouillon avant de modifier l’approvisionnement'
+                  : canManageSourcing
+                    ? 'Choisir l’Article fournisseur'
+                    : 'Choix de l’Article fournisseur non autorisé'
+            }
+            variant="ghost"
+          />
+
+          {canOpenPricing && line.valuation?.status === 'NO_PRICE' && (
+            <ActionIconButton
+              Icon={ArrowUpRight}
+              label={'Ouvrir Fournisseurs et prix pour ' + line.productVariantName}
+              onClick={() => onOpenPricing?.(line)}
+              tooltipLabel="Ouvrir Fournisseurs et prix"
+              variant="ghost"
+            />
+          )}
+
+          <ActionIconButton
+            Icon={ArrowDownUp}
+            disabled={disabled}
+            label={
+              'Déplacer '
+              + line.productVariantName
+              + ' vers '
+              + SECTION_PRESENTATION[line.kind].oppositeLabel
+            }
+            onClick={() => moveLine(index)}
+            tooltipLabel={
+              'Déplacer vers '
+              + SECTION_PRESENTATION[line.kind].oppositeLabel
+            }
+            variant="ghost"
+          />
+
+          <ActionIconButton
+            Icon={Trash2}
+            disabled={disabled}
+            label={'Supprimer ' + line.productVariantName}
+            onClick={() => removeLine(index)}
+            tooltipLabel="Supprimer la ligne"
+            variant="ghost"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  function renderAddRow(kind) {
+    return (
+      <div
+        className={
+          COMPOSITION_GRID_CLASS
+          + ' bg-muted/10 px-2 py-2'
+        }
+        key={'add-' + kind}
+      >
+        <div className="min-w-0">
+          <ProductSearchAutocomplete
+            ariaLabel={'Ajouter un produit aux ' + SECTION_PRESENTATION[kind].label}
+            compact
+            metadata={productMetadata}
+            onSelect={(result) => addProduct(kind, result)}
+            onValueChange={(value) => setAddSearch((current) => ({
+              ...current,
+              [kind]: value,
+            }))}
+            placeholder="Ajouter un produit"
+            scope={productScope}
+            showWorkspaceFavorite={productScope === PRODUCT_SOURCE.REFERENCE}
+            status="ACTIVE"
+            value={addSearch[kind]}
             workspaceId={workspaceId}
           />
-        );
-      },
-    },
-    {
-      id: 'quantity',
-      header: 'Qté nette',
-      headerClassName: 'min-w-28',
-      cell: (line, index) => (
-        <Input
-          aria-label={'Quantité nette ligne ' + (index + 1)}
-          className="min-w-24"
-          disabled={disabled}
-          inputMode="decimal"
-          onChange={(event) => updateLine(index, {
-            netQuantity: event.target.value,
-          })}
-          value={line.netQuantity}
-        />
-      ),
-    },
-    {
-      id: 'grossQuantity',
-      header: 'Qté brute',
-      headerClassName: 'min-w-28',
-      cell: (line) => (
-        <span className="whitespace-nowrap tabular-nums">
-          {line.calculation?.grossQuantity ?? '—'}{' '}
-          {
-            unitLabelByValue.get(line.calculation?.grossUnit)
-            ?? line.calculation?.grossUnit
-            ?? ''
-          }
-        </span>
-      ),
-    },
-    {
-      id: 'unit',
-      header: 'Unité',
-      headerClassName: 'min-w-28',
-      cell: (line, index) => (
-        <Select
-          disabled={disabled}
-          items={unitItems}
-          onValueChange={(value) => updateLine(index, { inputUnit: value })}
-          value={line.inputUnit}
-        >
-          <SelectTrigger aria-label={'Unité ligne ' + (index + 1)}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {unitItems.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ),
-    },
-    {
-      id: 'price',
-      header: 'Prix applicable',
-      headerClassName: 'min-w-44',
-      cell: (line) => {
-        const valuationPresentation = line.id
-          ? getLineValuationPresentation(line.valuation?.status)
-          : { label: 'À enregistrer', tone: 'warning' };
-        const sourceLabel = getPricingSourceLabel(
-          line.valuation?.applicableSource,
-        );
-        const normalizedUnit = (
-          unitLabelByValue.get(line.valuation?.normalizedUnit)
-          ?? line.valuation?.normalizedUnit
-        );
+        </div>
+        <p className="hidden text-xs text-muted-foreground lg:col-span-7 lg:block">
+          Sélectionnez une Référence Produit ; la quantité et l’unité restent modifiables dans la ligne.
+        </p>
+      </div>
+    );
+  }
 
-        return (
-          <div className="space-y-1">
-            <p className="whitespace-nowrap font-medium tabular-nums">
-              {line.valuation?.normalizedAmount
-                ? (
-                    formatDecimalCurrency(line.valuation.normalizedAmount)
-                    + (normalizedUnit ? ' / ' + normalizedUnit : '')
-                  )
-                : '—'}
-            </p>
-            {sourceLabel && (
-              <p className="text-xs text-muted-foreground">
-                {sourceLabel}
-              </p>
-            )}
-            <div className="flex items-center gap-1">
-              <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-                {valuationPresentation.label}
-              </TechnicalSheetStatusBadge>
-              {canOpenPricing
-              && line.valuation?.status === 'NO_PRICE' && (
-                <ActionIconButton
-                  Icon={ArrowUpRight}
-                  label={'Ouvrir Fournisseurs et prix pour ' + line.productVariantName}
-                  onClick={() => onOpenPricing?.(line)}
-                  tooltipLabel="Ouvrir Fournisseurs et prix"
-                  variant="ghost"
-                />
-              )}
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'cost',
-      header: 'Coût HT',
-      headerClassName: 'min-w-28',
-      cell: (line) => (
-        <span className="whitespace-nowrap font-medium tabular-nums">
-          {line.valuation?.lineCostHt
-            ? formatDecimalCurrency(line.valuation.lineCostHt)
-            : '—'}
-        </span>
-      ),
-    },
-    {
-      id: 'note',
-      header: 'Note',
-      headerClassName: 'min-w-44',
-      cell: (line, index) => (
-        <Input
-          aria-label={'Note ligne ' + (index + 1)}
-          className="min-w-40"
-          disabled={disabled}
-          maxLength={500}
-          onChange={(event) => updateLine(index, {
-            note: event.target.value,
-          })}
-          value={line.note}
-        />
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (_line, index) => (
-        <DataTableActions>
-          <Button
-            aria-label={'Supprimer la ligne ' + (index + 1)}
-            disabled={disabled}
-            onClick={() => removeLine(index)}
-            size="icon"
-            type="button"
-            variant="ghost"
-          >
-            <Trash2 aria-hidden="true" className="size-4" />
-          </Button>
-        </DataTableActions>
-      ),
-    },
-  ];
+  function renderSection(kind) {
+    const sectionLines = lines
+      .map((line, index) => ({ line, index }))
+      .filter(({ line }) => line.kind === kind);
+
+    return (
+      <section className="overflow-hidden rounded-lg border border-border" key={kind}>
+        <div className="border-b border-border bg-muted/35 px-3 py-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {SECTION_PRESENTATION[kind].label}
+          </h3>
+        </div>
+
+        {sectionLines.map(({ line, index }) => renderLine(line, index))}
+        {!disabled && renderAddRow(kind)}
+        {disabled && sectionLines.length === 0 && (
+          <p className="px-3 py-4 text-sm text-muted-foreground">
+            Aucun produit.
+          </p>
+        )}
+      </section>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {!disabled && (
-        <div className="rounded-lg border border-border bg-muted/15 p-3">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-end">
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Source Produit</p>
-              <div
-                aria-label="Source Produit"
-                className="flex gap-2"
-                role="group"
-              >
-                <Button
-                  aria-pressed={productScope === PRODUCT_SOURCE.REFERENCE}
-                  onClick={() => setProductScope(PRODUCT_SOURCE.REFERENCE)}
-                  size="sm"
-                  type="button"
-                  variant={
-                    productScope === PRODUCT_SOURCE.REFERENCE
-                      ? 'default'
-                      : 'outline'
-                  }
-                >
-                  <Globe2 aria-hidden="true" className="size-4" />
-                  Tous les produits
-                </Button>
-                <Button
-                  aria-pressed={productScope === PRODUCT_SOURCE.FAVORITES}
-                  onClick={() => setProductScope(PRODUCT_SOURCE.FAVORITES)}
-                  size="sm"
-                  type="button"
-                  variant={
-                    productScope === PRODUCT_SOURCE.FAVORITES
-                      ? 'default'
-                      : 'outline'
-                  }
-                >
-                  <Star aria-hidden="true" className="size-4" />
-                  Favoris
-                </Button>
-              </div>
-            </div>
+    <div className="space-y-3">
+      <div className="flex items-center justify-end gap-2">
+        <ActionIconButton
+          Icon={Globe2}
+          aria-pressed={productScope === PRODUCT_SOURCE.REFERENCE}
+          label="Tous les produits"
+          onClick={() => setProductScope(PRODUCT_SOURCE.REFERENCE)}
+          tooltipLabel="Tous les produits"
+          variant={
+            productScope === PRODUCT_SOURCE.REFERENCE
+              ? 'default'
+              : 'outline'
+          }
+        />
+        <ActionIconButton
+          Icon={Star}
+          aria-pressed={productScope === PRODUCT_SOURCE.FAVORITES}
+          label="Favoris"
+          onClick={() => setProductScope(PRODUCT_SOURCE.FAVORITES)}
+          tooltipLabel="Favoris"
+          variant={
+            productScope === PRODUCT_SOURCE.FAVORITES
+              ? 'default'
+              : 'outline'
+          }
+        />
+      </div>
 
-            <div className="min-w-0 flex-1 space-y-2">
-              <p className="text-sm font-medium">
-                Ajouter une Référence Produit
-              </p>
-              <ProductSearchAutocomplete
-                metadata={productMetadata}
-                onSelect={addProduct}
-                onValueChange={setSearch}
-                scope={productScope}
-                showWorkspaceFavorite={productScope === PRODUCT_SOURCE.REFERENCE}
-                status="ACTIVE"
-                value={search}
-                workspaceId={workspaceId}
-              />
-            </div>
-          </div>
-
-          {addError && (
-            <p className="mt-2 text-sm text-destructive" role="alert">
-              {addError}
-            </p>
-          )}
-
-          {sourcingDisabled && sourcingDisabledReason && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {sourcingDisabledReason}
-            </p>
-          )}
-        </div>
+      {addError && (
+        <p className="text-sm text-destructive" role="alert">
+          {addError}
+        </p>
       )}
 
-      <DataTable
-        aria-label="Composition de la Fiche technique"
-        columns={columns}
-        data={lines}
-        density="compact"
-        emptyContent={(
-          <div className="space-y-1">
-            <p className="font-medium">Aucune ligne</p>
-            <p className="text-sm text-muted-foreground">
-              Recherchez une Référence Produit pour commencer la composition.
-            </p>
-          </div>
-        )}
-        getRowKey={(line, index) => line.id ?? line.productVariantId + ':' + index}
-        rowClassName="transition-colors hover:bg-muted/35"
-        tableClassName="min-w-[1380px]"
+      <div className={COMPOSITION_GRID_CLASS + ' hidden border-y border-border bg-muted/30 px-2 py-2 lg:grid'}>
+        <ColumnHeading tooltip="Produit">Produit</ColumnHeading>
+        <ColumnHeading tooltip="Quantité nette">Qté</ColumnHeading>
+        <ColumnHeading tooltip="Unité">U</ColumnHeading>
+        <ColumnHeading tooltip="Prix unitaire hors taxe">PUHT</ColumnHeading>
+        <ColumnHeading tooltip="Coût matières unitaire hors taxe">CMU HT</ColumnHeading>
+        <ColumnHeading tooltip="Taux de rendement">%TR</ColumnHeading>
+        <ColumnHeading tooltip="Note">Note</ColumnHeading>
+        <ColumnHeading tooltip="Actions">Actions</ColumnHeading>
+      </div>
+
+      {renderSection('INGREDIENT')}
+      {renderSection('ECONOMAT')}
+
+      <SupplierArticleDialog
+        canManage={canManageSourcing}
+        disabled={disabled || sourcingDisabled}
+        dossierId={dossierId}
+        draftRevision={draftRevision}
+        line={sourcingLine}
+        onClose={() => setSourcingLineKey(null)}
+        onError={onSourcingError}
+        onPendingChange={onSourcingPendingChange}
+        onSelected={onSourcingSelected}
+        technicalSheetId={technicalSheetId}
+        workspaceId={workspaceId}
       />
     </div>
   );
