@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import { TooltipProvider } from '@/components/ui/tooltip';
+
 const mocks = vi.hoisted(() => ({
   productSearchProps: vi.fn(),
   sourcingProps: vi.fn(),
@@ -91,7 +93,8 @@ function renderEditor(overrides = {}) {
   const onChange = vi.fn();
 
   render(
-    <TechnicalSheetLineEditor
+    <TooltipProvider>
+      <TechnicalSheetLineEditor
       canManageSourcing
       disabled={false}
       dossierId="dossier-1"
@@ -106,8 +109,9 @@ function renderEditor(overrides = {}) {
       sourcingDisabled={false}
       technicalSheetId="sheet-1"
       workspaceId="workspace-1"
-      {...overrides}
-    />,
+        {...overrides}
+      />
+    </TooltipProvider>,
   );
 
   return { onChange };
@@ -163,6 +167,34 @@ describe('TechnicalSheetLineEditor', () => {
     expect(screen.getByText(
       'Enregistrez le brouillon avant de modifier l’approvisionnement ou de valoriser.',
     )).toBeInTheDocument();
+  });
+
+  it('propose le parcours Fournisseurs et prix lorsqu’aucun prix n’est applicable', async () => {
+    const user = userEvent.setup();
+    const onOpenPricing = vi.fn();
+    const noPriceLine = {
+      ...valuedLine,
+      valuation: {
+        ...valuedLine.valuation,
+        status: 'NO_PRICE',
+        applicableSource: null,
+        normalizedAmount: null,
+        normalizedUnit: null,
+        lineCostHt: null,
+      },
+    };
+
+    renderEditor({
+      canOpenPricing: true,
+      lines: [noPriceLine],
+      onOpenPricing,
+    });
+
+    await user.click(screen.getByRole('button', {
+      name: 'Ouvrir Fournisseurs et prix pour Carotte râpée',
+    }));
+
+    expect(onOpenPricing).toHaveBeenCalledWith(noPriceLine);
   });
 
   it('ajoute une Référence globale sélectionnée sans exiger qu’elle soit favorite', async () => {
