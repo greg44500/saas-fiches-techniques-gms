@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Registre canonique des dettes actives
 
 **Statut :** source de vérité documentaire pour les dettes non résolues  
-**Dernière mise à jour :** 2026-09-28  
+**Dernière mise à jour :** 2026-09-29  
 **Périmètre :** Core clonable et, lorsque précisé, applications dérivées
 
 ---
@@ -119,6 +119,7 @@ D-010 authentification avancée — dont Google SSO
 D-020 validation terrain invitation commerciale / onboarding bêta
 D-023 demande gouvernée de capacité exceptionnelle de transfert de propriété — cible Core 1.1
 D-024 console d’administration Platform contextualisée du Workspace — cible Core 1.1
+GMS-TAX-001 TVA Produit / fiscalité d’achat — à cadrer avant tout besoin comptable/fiscal avancé
 ```
 
 ---
@@ -363,6 +364,47 @@ En attendant ce lot :
 - les styles structurels de tableau ne doivent pas être redéfinis écran par écran dans le produit ;
 - M-003 doit conserver le composant partagé et ses points d'extension existants, sans créer un variant de tableau métier ;
 - le futur traitement devra être regroupé avec une revue réelle et globale des conventions UI/UX du `DataTable` Core.
+
+### GMS-TAX-001 — TVA Produit / fiscalité d’achat
+
+**Statut :** À CADRER  \
+**Périmètre :** produit `saas-fiches-techniques-gms` — M-002 / M-003 / futurs flux comptables  \
+**Blocage M-004 :** non
+
+Le contrat M-004 porte actuellement une **TVA de vente au niveau de la Fiche technique**, utilisée pour convertir l’économie de la Fiche de HT vers TTC. Les coûts d’achat exploités par M-003 et M-004 restent calculés en HT.
+
+Le modèle actif `ProductVariant` M-002 ne porte actuellement aucun taux de TVA Produit et le contrat M-002 validé ne définit pas cette donnée. M-003 ne modélise pas non plus, à ce stade, une fiscalité d’achat par Article/Tarif.
+
+Cette absence ne bloque pas la valorisation M-004 actuelle, mais constitue une dette fonctionnelle avant tout besoin futur de :
+
+- comptabilité d’achat ;
+- TVA déductible ;
+- exports comptables ou fiscaux ;
+- rapprochement facture avec ventilation de taxes ;
+- distinction fiscale entre denrées, boissons, économat ou autres familles ;
+- historisation d’un taux fiscal susceptible d’évoluer dans le temps.
+
+Le cadrage devra déterminer explicitement l’autorité de cette donnée sans l’inventer par anticipation :
+
+```text
+ProductVariant M-002 ?
+SupplierArticle M-003 ?
+Tarif / Prix facturé M-003 ?
+règle fiscale contextualisée et datée ?
+combinaison de plusieurs niveaux ?
+```
+
+Points obligatoires du futur cadrage :
+
+1. distinguer clairement TVA de vente de la Fiche et TVA d’achat ;
+2. déterminer l’ownership et la portée de la donnée fiscale ;
+3. définir les dates d’effet et l’historisation ;
+4. définir le comportement lorsqu’un Produit/Article peut relever de plusieurs taux selon son usage ou son contexte ;
+5. préserver les snapshots historiques et éviter toute réécriture rétroactive ;
+6. définir les impacts import catalogue, factures, exports et comptabilité ;
+7. ne modifier M-002 ou M-003 qu’après validation d’un contrat dédié.
+
+Aucune valeur de TVA Produit ne doit être ajoutée silencieusement au modèle actuel sous couvert de M-004.
 
 ### D-013 — Configuration et déploiement de production
 
