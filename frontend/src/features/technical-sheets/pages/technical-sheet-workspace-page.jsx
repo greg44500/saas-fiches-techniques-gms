@@ -578,7 +578,7 @@ function TechnicalSheetWorkspacePage() {
                   <CardTitle>Indicateur de production</CardTitle>
                   <InfoTooltip
                     content="Regroupe les paramètres de production, la TVA de vente de la Fiche et les principaux indicateurs économiques utilisés pour calculer et piloter sa valorisation."
-                    label="À propos des Indicateur de production"
+                    label="À propos de l’Indicateur de production"
                   />
                 </div>
               </CardHeader>
