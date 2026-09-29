@@ -194,11 +194,9 @@ function SuppliersPage() {
     }
 
     setSection(nextSection);
-    setSearchParams((current) => {
-      const next = new URLSearchParams(current);
-      next.set('section', nextSection);
-      return next;
-    }, { replace: true });
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set('section', nextSection);
+    setSearchParams(nextSearchParams, { replace: true });
   }
 
   function changeStatus(nextStatus) {
