@@ -115,16 +115,12 @@ async function composeTechnicalSheet(page, {
     )
     .fill('2');
 
-  await page
-    .getByRole('button', {
-      name: 'Enregistrer le brouillon',
-    })
-    .click();
+  const autosaveStatus = page.getByRole('status', {
+    name: 'État d’enregistrement du brouillon',
+  });
 
-  await expectVisibleToast(
-    page,
-    'Brouillon enregistré',
-  );
+  await expect(autosaveStatus).toContainText('Enregistrement…');
+  await expect(autosaveStatus).toContainText('Enregistré');
 }
 
 async function openInformationDrawer(page) {
@@ -272,8 +268,14 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
   await page
     .getByRole('button', {
       name:
-        'Approvisionnement de '
+        'Actions pour '
         + context.productReferenceName,
+    })
+    .click();
+
+  await page
+    .getByRole('button', {
+      name: 'Choisir un Article fournisseur',
     })
     .click();
 
@@ -377,6 +379,12 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     page,
     'Fiche technique validée',
   );
+
+  await openInformationDrawer(page);
+
+  await page.getByRole('tab', {
+    name: 'Historique',
+  }).click();
 
   await expect(
     page.getByText(

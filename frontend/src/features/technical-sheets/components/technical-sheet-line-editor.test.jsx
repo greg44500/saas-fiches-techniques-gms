@@ -64,6 +64,7 @@ vi.mock('@/features/technical-sheets/components/technical-sheet-sourcing-select'
 import {
   PRODUCT_SOURCE,
   TechnicalSheetLineEditor,
+  TechnicalSheetProductScopeControls,
   getSupplierArticleActionTooltip,
   normalizeDraftLine,
 } from '@/features/technical-sheets/components/technical-sheet-line-editor';
@@ -160,12 +161,18 @@ describe('TechnicalSheetLineEditor', () => {
     });
   });
 
-  it('présente les sources Produit sous forme d’actions et bascule vers les Favoris', async () => {
+  it('expose les sources Produit sous forme de contrôles réutilisables', async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
 
-    renderEditor();
-
-    expect(screen.queryByText('Source Produit')).not.toBeInTheDocument();
+    render(
+      <TooltipProvider>
+        <TechnicalSheetProductScopeControls
+          onChange={onChange}
+          productScope={PRODUCT_SOURCE.REFERENCE}
+        />
+      </TooltipProvider>,
+    );
 
     const globalButton = screen.getByRole('button', {
       name: 'Tous les produits',
@@ -175,18 +182,8 @@ describe('TechnicalSheetLineEditor', () => {
     });
 
     expect(globalButton).toHaveAttribute('aria-pressed', 'true');
-    expect(
-      mocks.productSearchProps.mock.calls.some(
-        ([props]) => props.scope === PRODUCT_SOURCE.REFERENCE,
-      ),
-    ).toBe(true);
-
     await user.click(favoritesButton);
-
-    expect(favoritesButton).toHaveAttribute('aria-pressed', 'true');
-    expect(
-      mocks.productSearchProps.mock.lastCall[0].scope,
-    ).toBe(PRODUCT_SOURCE.FAVORITES);
+    expect(onChange).toHaveBeenCalledWith(PRODUCT_SOURCE.FAVORITES);
   });
 
   it('affiche le tableau métier compact sans quantité brute ni colonne fournisseur', () => {
@@ -202,11 +199,11 @@ describe('TechnicalSheetLineEditor', () => {
     expect(screen.queryByText('Article / Fournisseur')).not.toBeInTheDocument();
     expect(screen.queryByText('Type')).not.toBeInTheDocument();
 
-    expect(screen.getByText(/Ingrédients/)).toBeInTheDocument();
+    expect(screen.getByText(/INGRÉDIENTS/)).toBeInTheDocument();
     expect(screen.getByText(/Économat/)).toBeInTheDocument();
-    expect(screen.getAllByText(
+    expect(screen.queryByText(
       'Sélectionnez une Référence Produit ; la quantité et l’unité restent modifiables dans la ligne.',
-    )).toHaveLength(1);
+    )).not.toBeInTheDocument();
     expect(screen.getByText('90 %')).toBeInTheDocument();
     expect(screen.getByText(/2,15/)).toBeInTheDocument();
     expect(screen.getByText(/6,02/)).toBeInTheDocument();
@@ -275,15 +272,18 @@ describe('TechnicalSheetLineEditor', () => {
       name: 'Sélectionner Pomme depuis Ajouter un produit aux Ingrédients',
     }));
 
-    expect(onChange).toHaveBeenCalledWith([
-      valuedLine,
-      expect.objectContaining({
-        kind: 'INGREDIENT',
-        productVariantId: 'variant-2',
-        productVariantName: 'Pomme',
-        inputUnit: 'KG',
-      }),
-    ]);
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        valuedLine,
+        expect.objectContaining({
+          kind: 'INGREDIENT',
+          productVariantId: 'variant-2',
+          productVariantName: 'Pomme',
+          inputUnit: 'KG',
+        }),
+      ],
+      { immediate: true },
+    );
   });
 
   it('demande l’effacement du champ après ajout d’un Produit', () => {
@@ -308,20 +308,23 @@ describe('TechnicalSheetLineEditor', () => {
       name: 'Sélectionner Pomme depuis Modifier le produit Carotte râpée',
     }));
 
-    expect(onChange).toHaveBeenCalledWith([
-      expect.objectContaining({
-        id: undefined,
-        kind: 'INGREDIENT',
-        productVariantId: 'variant-2',
-        productVariantName: 'Pomme',
-        netQuantity: '2.5',
-        inputUnit: 'KG',
-        note: 'Note conservée',
-        selectedSupplierArticleId: null,
-        calculation: null,
-        valuation: null,
-      }),
-    ]);
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          id: undefined,
+          kind: 'INGREDIENT',
+          productVariantId: 'variant-2',
+          productVariantName: 'Pomme',
+          netQuantity: '2.5',
+          inputUnit: 'KG',
+          note: 'Note conservée',
+          selectedSupplierArticleId: null,
+          calculation: null,
+          valuation: null,
+        }),
+      ],
+      { immediate: true },
+    );
   });
 
   it('affiche les informations fournisseur au survol du Produit', async () => {
@@ -353,13 +356,15 @@ describe('TechnicalSheetLineEditor', () => {
       name: 'Tous les produits',
     })).not.toBeInTheDocument();
 
-    const sourcingButton = screen.getByRole('button', {
-      name: 'Approvisionnement de Carotte râpée',
+    const actionsButton = screen.getByRole('button', {
+      name: 'Actions pour Carotte râpée',
     });
 
-    expect(sourcingButton).toBeEnabled();
-
-    await user.click(sourcingButton);
+    expect(actionsButton).toBeEnabled();
+    await user.click(actionsButton);
+    await user.click(screen.getByRole('button', {
+      name: /Article fournisseur/,
+    }));
 
     expect(screen.getByRole('heading', {
       name: 'Article fournisseur',
@@ -378,13 +383,15 @@ describe('TechnicalSheetLineEditor', () => {
       sourcingDisabled: true,
     });
 
-    const sourcingButton = screen.getByRole('button', {
-      name: 'Approvisionnement de Carotte râpée',
+    const actionsButton = screen.getByRole('button', {
+      name: 'Actions pour Carotte râpée',
     });
 
-    expect(sourcingButton).toBeEnabled();
-
-    await user.click(sourcingButton);
+    expect(actionsButton).toBeEnabled();
+    await user.click(actionsButton);
+    await user.click(screen.getByRole('button', {
+      name: /Article fournisseur/,
+    }));
 
     expect(screen.getByRole('heading', {
       name: 'Article fournisseur',
@@ -400,7 +407,10 @@ describe('TechnicalSheetLineEditor', () => {
     renderEditor();
 
     await user.click(screen.getByRole('button', {
-      name: 'Approvisionnement de Carotte râpée',
+      name: 'Actions pour Carotte râpée',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Modifier l’Article fournisseur',
     }));
 
     expect(screen.getByRole('heading', {

@@ -2,6 +2,7 @@ import {
   ArrowDownUp,
   ArrowUpRight,
   Globe2,
+  MoreHorizontal,
   PackageSearch,
   Star,
   Trash2,
@@ -10,7 +11,13 @@ import {
 import { useMemo, useState } from 'react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   DialogContent,
   DialogHeader,
@@ -74,12 +81,23 @@ const SECTION_PRESENTATION = Object.freeze({
 
 const COMPOSITION_GRID_CLASS = [
   'grid gap-x-2 gap-y-2',
-  'lg:grid-cols-[minmax(0,2fr)_4.5rem_5rem_5.5rem_5.75rem_4.5rem_minmax(0,1.25fr)_10.75rem]',
+  'lg:grid-cols-[minmax(0,2.25fr)_4.25rem_4.75rem_5.5rem_5.75rem_4.5rem_minmax(0,1.5fr)_3.25rem]',
   'lg:items-center',
 ].join(' ');
 
+let localLineSequence = 0;
+
+function createLocalLineClientKey() {
+  localLineSequence += 1;
+  return 'technical-sheet-line-' + localLineSequence;
+}
+
 function normalizeDraftLine(line, index) {
   return {
+    clientKey:
+      line.clientKey
+      ?? line.id
+      ?? 'technical-sheet-existing-' + line.productVariantId + '-' + index,
     id: line.id,
     kind: line.kind ?? 'INGREDIENT',
     productVariantId:
@@ -165,18 +183,59 @@ function formatYieldPercent(line) {
   }) + ' %';
 }
 
-function ColumnHeading({ children, tooltip }) {
+function ColumnHeading({ align = 'left', children, tooltip }) {
   return (
     <Tooltip>
       <TooltipTrigger
         aria-label={tooltip}
-        className="w-fit cursor-help text-left text-xs font-semibold text-muted-foreground underline decoration-dotted underline-offset-4"
+        className={
+          'w-fit cursor-help text-xs font-semibold text-muted-foreground underline decoration-dotted underline-offset-4'
+          + (align === 'center' ? ' mx-auto text-center' : ' text-left')
+        }
         type="button"
       >
         {children}
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
     </Tooltip>
+  );
+}
+
+function TechnicalSheetProductScopeControls({
+  onChange,
+  productScope,
+}) {
+  return (
+    <div
+      aria-label="Source des Produits"
+      className="flex items-center gap-1 rounded-lg border border-border bg-card/70 p-1"
+      role="group"
+    >
+      <ActionIconButton
+        Icon={Globe2}
+        aria-pressed={productScope === PRODUCT_SOURCE.REFERENCE}
+        label="Tous les produits"
+        onClick={() => onChange(PRODUCT_SOURCE.REFERENCE)}
+        tooltipLabel="Tous les produits"
+        variant={
+          productScope === PRODUCT_SOURCE.REFERENCE
+            ? 'default'
+            : 'ghost'
+        }
+      />
+      <ActionIconButton
+        Icon={Star}
+        aria-pressed={productScope === PRODUCT_SOURCE.FAVORITES}
+        label="Favoris"
+        onClick={() => onChange(PRODUCT_SOURCE.FAVORITES)}
+        tooltipLabel="Favoris"
+        variant={
+          productScope === PRODUCT_SOURCE.FAVORITES
+            ? 'default'
+            : 'ghost'
+        }
+      />
+    </div>
   );
 }
 
@@ -358,6 +417,92 @@ function SupplierArticleDialog({
   );
 }
 
+function LineActionsMenu({
+  canOpenPricing,
+  disabled,
+  line,
+  onMove,
+  onOpenPricing,
+  onOpenSourcing,
+  onRemove,
+  sourcingLabel,
+}) {
+  const [open, setOpen] = useState(false);
+
+  function runAction(action) {
+    setOpen(false);
+    action?.();
+  }
+
+  return (
+    <Popover onOpenChange={setOpen} open={open}>
+      <PopoverTrigger
+        render={(
+          <Button
+            aria-label={'Actions pour ' + line.productVariantName}
+            size="icon"
+            type="button"
+            variant="ghost"
+          />
+        )}
+      >
+        <MoreHorizontal aria-hidden="true" className="size-4" />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 p-1">
+        <div className="space-y-1">
+          <Button
+            className="w-full justify-start"
+            onClick={() => runAction(onOpenSourcing)}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            <PackageSearch aria-hidden="true" className="size-4" />
+            {sourcingLabel}
+          </Button>
+
+          {canOpenPricing && line.valuation?.status === 'NO_PRICE' && (
+            <Button
+              className="w-full justify-start"
+              onClick={() => runAction(onOpenPricing)}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <ArrowUpRight aria-hidden="true" className="size-4" />
+              Ouvrir Fournisseurs et prix
+            </Button>
+          )}
+
+          <Button
+            className="w-full justify-start"
+            disabled={disabled}
+            onClick={() => runAction(onMove)}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            <ArrowDownUp aria-hidden="true" className="size-4" />
+            Déplacer vers {SECTION_PRESENTATION[line.kind].oppositeLabel}
+          </Button>
+
+          <Button
+            className="w-full justify-start text-destructive hover:text-destructive"
+            disabled={disabled}
+            onClick={() => runAction(onRemove)}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            <Trash2 aria-hidden="true" className="size-4" />
+            Supprimer la ligne
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function TechnicalSheetLineEditor({
   canManageSourcing = false,
   canOpenPricing = false,
@@ -367,17 +512,18 @@ function TechnicalSheetLineEditor({
   lines,
   metadata,
   onChange,
+  onFieldBlur,
   onOpenPricing,
   onSourcingError,
   onSourcingPendingChange,
   onSourcingSelected,
   productMetadata,
+  productScope = PRODUCT_SOURCE.REFERENCE,
   sourcingDisabled = false,
   sourcingRequiresSave = false,
   technicalSheetId,
   workspaceId,
 }) {
-  const [productScope, setProductScope] = useState(PRODUCT_SOURCE.REFERENCE);
   const [addSearch, setAddSearch] = useState({
     INGREDIENT: '',
     ECONOMAT: '',
@@ -396,16 +542,17 @@ function TechnicalSheetLineEditor({
   );
 
   function lineKey(line, index) {
-    return line.id ?? line.productVariantId + ':' + index;
+    return line.clientKey ?? line.id ?? line.productVariantId + ':' + index;
   }
 
-  function updateLine(index, patch) {
+  function updateLine(index, patch, { immediate = false } = {}) {
     onChange(
       lines.map((line, currentIndex) => (
         currentIndex === index
           ? { ...line, ...patch }
           : line
       )),
+      { immediate },
     );
   }
 
@@ -414,6 +561,7 @@ function TechnicalSheetLineEditor({
       lines
         .filter((_, currentIndex) => currentIndex !== index)
         .map((line, order) => ({ ...line, order })),
+      { immediate: true },
     );
   }
 
@@ -423,7 +571,7 @@ function TechnicalSheetLineEditor({
 
     updateLine(index, {
       kind: presentation.opposite,
-    });
+    }, { immediate: true });
   }
 
   function addProduct(kind, result) {
@@ -438,6 +586,7 @@ function TechnicalSheetLineEditor({
     onChange([
       ...lines,
       {
+        clientKey: createLocalLineClientKey(),
         id: undefined,
         kind,
         productVariantId: result.variant.id,
@@ -455,7 +604,7 @@ function TechnicalSheetLineEditor({
         calculation: null,
         valuation: null,
       },
-    ]);
+    ], { immediate: true });
     setAddSearch((current) => ({
       ...current,
       [kind]: '',
@@ -485,6 +634,7 @@ function TechnicalSheetLineEditor({
 
     setAddError('');
     updateLine(index, {
+      clientKey: createLocalLineClientKey(),
       id: undefined,
       productVariantId: result.variant.id,
       productVariantName:
@@ -497,7 +647,7 @@ function TechnicalSheetLineEditor({
       selectedSupplierArticleId: null,
       calculation: null,
       valuation: null,
-    });
+    }, { immediate: true });
     setEditingLineKey(null);
     setEditSearch('');
   }
@@ -572,13 +722,14 @@ function TechnicalSheetLineEditor({
           )}
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:text-center">
           <MobileLabel>Quantité nette</MobileLabel>
           <Input
             aria-label={'Quantité nette ligne ' + (index + 1)}
-            className="h-8 min-w-0 tabular-nums"
+            className="h-8 min-w-0 text-center tabular-nums"
             disabled={disabled}
             inputMode="decimal"
+            onBlur={onFieldBlur}
             onChange={(event) => updateLine(index, {
               netQuantity: event.target.value,
             })}
@@ -586,17 +737,21 @@ function TechnicalSheetLineEditor({
           />
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:text-center">
           <MobileLabel>Unité</MobileLabel>
           <Select
             disabled={disabled}
             items={unitItems}
-            onValueChange={(value) => updateLine(index, { inputUnit: value })}
+            onValueChange={(value) => updateLine(
+              index,
+              { inputUnit: value },
+              { immediate: true },
+            )}
             value={line.inputUnit}
           >
             <SelectTrigger
               aria-label={'Unité ligne ' + (index + 1)}
-              className="h-8 min-h-8 min-w-0 px-2"
+              className="h-8 min-h-8 min-w-0 justify-center px-2 text-center"
             >
               <SelectValue />
             </SelectTrigger>
@@ -610,7 +765,7 @@ function TechnicalSheetLineEditor({
           </Select>
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:text-center">
           <MobileLabel>Prix unitaire hors taxe</MobileLabel>
           <Tooltip>
             <TooltipTrigger
@@ -619,7 +774,7 @@ function TechnicalSheetLineEditor({
                   ? 'Prix unitaire hors taxe — ' + sourceLabel
                   : 'Prix unitaire hors taxe'
               }
-              className="block max-w-full truncate text-left text-sm font-medium tabular-nums"
+              className="block max-w-full truncate text-left text-sm font-medium tabular-nums lg:mx-auto lg:text-center"
               type="button"
             >
               {hasValue(line.valuation?.normalizedAmount)
@@ -639,18 +794,18 @@ function TechnicalSheetLineEditor({
           </Tooltip>
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:text-center">
           <MobileLabel>Coût matières unitaire hors taxe</MobileLabel>
-          <p className="truncate text-sm font-medium tabular-nums">
+          <p className="truncate text-sm font-medium tabular-nums lg:text-center">
             {hasValue(line.valuation?.lineCostHt)
               ? formatDecimalCurrency(line.valuation.lineCostHt)
               : '—'}
           </p>
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:text-center">
           <MobileLabel>Taux de rendement</MobileLabel>
-          <p className="truncate text-sm tabular-nums">
+          <p className="truncate text-sm tabular-nums lg:text-center">
             {formatYieldPercent(line)}
           </p>
         </div>
@@ -662,6 +817,7 @@ function TechnicalSheetLineEditor({
             className="h-8 min-w-0"
             disabled={disabled}
             maxLength={500}
+            onBlur={onFieldBlur}
             onChange={(event) => updateLine(index, {
               note: event.target.value,
             })}
@@ -669,51 +825,17 @@ function TechnicalSheetLineEditor({
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-1">
+        <div className="flex items-center justify-center">
           <MobileLabel>Actions</MobileLabel>
-
-          <ActionIconButton
-            Icon={PackageSearch}
-            label={'Approvisionnement de ' + line.productVariantName}
-            onClick={() => setSourcingLineKey(key)}
-            tooltipLabel={sourcingTooltipLabel}
-            variant="ghost"
-          />
-
-          {canOpenPricing && line.valuation?.status === 'NO_PRICE' && (
-            <ActionIconButton
-              Icon={ArrowUpRight}
-              label={'Ouvrir Fournisseurs et prix pour ' + line.productVariantName}
-              onClick={() => onOpenPricing?.(line)}
-              tooltipLabel="Ouvrir Fournisseurs et prix"
-              variant="ghost"
-            />
-          )}
-
-          <ActionIconButton
-            Icon={ArrowDownUp}
+          <LineActionsMenu
+            canOpenPricing={canOpenPricing}
             disabled={disabled}
-            label={
-              'Déplacer '
-              + line.productVariantName
-              + ' vers '
-              + SECTION_PRESENTATION[line.kind].oppositeLabel
-            }
-            onClick={() => moveLine(index)}
-            tooltipLabel={
-              'Déplacer vers '
-              + SECTION_PRESENTATION[line.kind].oppositeLabel
-            }
-            variant="ghost"
-          />
-
-          <ActionIconButton
-            Icon={Trash2}
-            disabled={disabled}
-            label={'Supprimer ' + line.productVariantName}
-            onClick={() => removeLine(index)}
-            tooltipLabel="Supprimer la ligne"
-            variant="ghost"
+            line={line}
+            onMove={() => moveLine(index)}
+            onOpenPricing={() => onOpenPricing?.(line)}
+            onOpenSourcing={() => setSourcingLineKey(key)}
+            onRemove={() => removeLine(index)}
+            sourcingLabel={sourcingTooltipLabel}
           />
         </div>
       </div>
@@ -754,35 +876,23 @@ function TechnicalSheetLineEditor({
     );
   }
 
-  function renderSection(kind, sectionIndex) {
+  function renderSection(kind) {
     const sectionLines = lines
       .map((line, index) => ({ line, index }))
       .filter(({ line }) => line.kind === kind);
 
     return (
       <section key={kind}>
-        <div
-          className={[
-            'flex flex-col gap-1 bg-muted/35 px-2 py-2 sm:flex-row sm:items-center sm:justify-between',
-            sectionIndex > 0
-              ? 'border-t-2 border-primary/20'
-              : '',
-            'border-b border-border',
-          ].join(' ')}
-        >
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
-            {SECTION_PRESENTATION[kind].label}
-            <span className="ml-1 text-muted-foreground">
-              ({sectionLines.length})
-            </span>
-          </h3>
-
-          {kind === 'INGREDIENT' && (
-            <p className="text-xs text-muted-foreground">
-              Sélectionnez une Référence Produit ; la quantité et l’unité restent modifiables dans la ligne.
-            </p>
-          )}
-        </div>
+        {kind === 'ECONOMAT' && (
+          <div className="border-y-2 border-primary/35 bg-muted/45 px-2 py-2.5">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+              Économat
+              <span className="ml-1 text-muted-foreground">
+                ({sectionLines.length})
+              </span>
+            </h3>
+          </div>
+        )}
 
         {sectionLines.map(({ line, index }) => renderLine(line, index))}
         {!disabled && renderAddRow(kind, sectionLines.length)}
@@ -795,37 +905,12 @@ function TechnicalSheetLineEditor({
     );
   }
 
-  return (
-    <div className="space-y-3">
-      {!disabled && (
-        <div className="flex items-center justify-end gap-2">
-          <ActionIconButton
-            Icon={Globe2}
-            aria-pressed={productScope === PRODUCT_SOURCE.REFERENCE}
-            label="Tous les produits"
-            onClick={() => setProductScope(PRODUCT_SOURCE.REFERENCE)}
-            tooltipLabel="Tous les produits"
-            variant={
-              productScope === PRODUCT_SOURCE.REFERENCE
-                ? 'default'
-                : 'outline'
-            }
-          />
-          <ActionIconButton
-            Icon={Star}
-            aria-pressed={productScope === PRODUCT_SOURCE.FAVORITES}
-            label="Favoris"
-            onClick={() => setProductScope(PRODUCT_SOURCE.FAVORITES)}
-            tooltipLabel="Favoris"
-            variant={
-              productScope === PRODUCT_SOURCE.FAVORITES
-                ? 'default'
-                : 'outline'
-            }
-          />
-        </div>
-      )}
+  const ingredientCount = lines.filter(
+    (line) => line.kind === 'INGREDIENT',
+  ).length;
 
+  return (
+    <div>
       {addError && (
         <p className="text-sm text-destructive" role="alert">
           {addError}
@@ -834,18 +919,20 @@ function TechnicalSheetLineEditor({
 
       <div className="overflow-hidden border-y border-border">
         <div className={COMPOSITION_GRID_CLASS + ' hidden border-b border-border bg-muted/20 px-2 py-2 lg:grid'}>
-          <ColumnHeading tooltip="Produit">Produit</ColumnHeading>
-          <ColumnHeading tooltip="Quantité nette">Qté</ColumnHeading>
-          <ColumnHeading tooltip="Unité">U</ColumnHeading>
-          <ColumnHeading tooltip="Prix unitaire hors taxe">PUHT</ColumnHeading>
-          <ColumnHeading tooltip="Coût matières unitaire hors taxe">CMU HT</ColumnHeading>
-          <ColumnHeading tooltip="Taux de rendement">%TR</ColumnHeading>
+          <ColumnHeading tooltip="Produits ingrédients">
+            INGRÉDIENTS <span className="text-muted-foreground">({ingredientCount})</span>
+          </ColumnHeading>
+          <ColumnHeading align="center" tooltip="Quantité nette">Qté</ColumnHeading>
+          <ColumnHeading align="center" tooltip="Unité">U</ColumnHeading>
+          <ColumnHeading align="center" tooltip="Prix unitaire hors taxe">PUHT</ColumnHeading>
+          <ColumnHeading align="center" tooltip="Coût matières unitaire hors taxe">CMU HT</ColumnHeading>
+          <ColumnHeading align="center" tooltip="Taux de rendement">%TR</ColumnHeading>
           <ColumnHeading tooltip="Note">Note</ColumnHeading>
-          <ColumnHeading tooltip="Actions">Actions</ColumnHeading>
+          <ColumnHeading align="center" tooltip="Actions">Actions</ColumnHeading>
         </div>
 
-        {renderSection('INGREDIENT', 0)}
-        {renderSection('ECONOMAT', 1)}
+        {renderSection('INGREDIENT')}
+        {renderSection('ECONOMAT')}
       </div>
 
       <SupplierArticleDialog
@@ -874,6 +961,7 @@ function TechnicalSheetLineEditor({
 export {
   PRODUCT_SOURCE,
   TechnicalSheetLineEditor,
+  TechnicalSheetProductScopeControls,
   getPricingSourceLabel,
   getSupplierArticleActionTooltip,
   normalizeDraftLine,

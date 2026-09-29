@@ -29,6 +29,14 @@ function renderDrawer(overrides = {}) {
     canValidate: true,
     description: 'Description initiale',
     dirty: false,
+    history: [{
+      id: 'validation-1',
+      validatedAt: '2026-09-29T08:00:00.000Z',
+      comment: 'Validation initiale',
+      changeKinds: ['COMPOSITION'],
+      economicSnapshot: {},
+    }],
+    historyLoading: false,
     name: 'Fiche test',
     onClose: vi.fn(),
     onDescriptionChange: vi.fn(),
@@ -90,6 +98,21 @@ describe('TechnicalSheetInformationDrawer', () => {
 
     await user.click(save);
     expect(props.onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it('affiche l’historique dans un second onglet du drawer', async () => {
+    const user = userEvent.setup();
+    renderDrawer({ open: true });
+
+    expect(screen.getByRole('tab', {
+      name: 'Informations générales',
+    })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', {
+      name: 'Historique',
+    }));
+
+    expect(screen.getByText('Validation initiale')).toBeInTheDocument();
   });
 
   it('n’active pas l’enregistrement lorsqu’aucune information n’a changé', () => {

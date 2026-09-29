@@ -1007,14 +1007,14 @@ Réutiliser :
 Sections logiques :
 
 - identité ;
-- base de production ;
+- Indicateurs de production ;
 - Ingrédients ;
 - Économat ;
 - valorisation ;
 - prix/marge ;
 - historique.
 
-Le choix final tabs/sections/drawer reste soumis à QA visuelle.
+La QA visuelle M-004 retient un poste de travail dense : les Indicateurs, sources Produit, état d'autosave et actions globales restent dans la zone sticky ; Composition reste dans le flux ; Informations générales et Historique partagent le drawer droit via deux onglets.
 
 ### État serveur
 
@@ -1031,6 +1031,20 @@ RTK Query exclusivement pour :
 Redux Toolkit n'est utilisé que si un véritable état global client apparaît.
 
 Le formulaire local peut utiliser `useState`/composants contrôlés selon les patterns actuels.
+
+### Autosave du brouillon
+
+Le poste de travail M-004 utilise un autosave frontend du brouillon sans modifier le contrat backend :
+
+- les frappes sont regroupées par debounce court ;
+- les changements structurels de composition déclenchent une sauvegarde immédiate ;
+- une seule mutation `PUT /draft` peut être active à la fois ;
+- les modifications saisies pendant une requête restent locales et sont rejouées ensuite avec la nouvelle `TechnicalSheetDraft.revision` renvoyée par le serveur ;
+- un échec laisse le brouillon local non enregistré, l'affiche explicitement et permet une nouvelle tentative ;
+- les opérations serveur dépendantes du brouillon restent bloquées tant qu'une sauvegarde est en attente ou en échec ;
+- l'autosave ne déclenche jamais automatiquement Valoriser/Revaloriser ; le backend reste l'autorité économique.
+
+Le contrôle optimiste décrit en section 11 reste donc inchangé : l'autosave sérialise les écritures côté client au lieu de contourner `expectedRevision`.
 
 ---
 

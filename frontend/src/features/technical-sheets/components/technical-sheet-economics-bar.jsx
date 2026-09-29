@@ -157,6 +157,7 @@ function TechnicalSheetEconomicsBar({
   finalPriceMode = 'ADVISED',
   lines = [],
   notice = null,
+  onFieldBlur,
   onFinalPriceInputChange,
   onFinalPriceModeChange,
   onTargetMarginInputChange,
@@ -211,6 +212,7 @@ function TechnicalSheetEconomicsBar({
                 className="h-8 min-w-0 tabular-nums"
                 disabled={editDisabled || !canValuate}
                 inputMode="decimal"
+                onBlur={onFieldBlur}
                 onChange={(event) => onTargetMarginInputChange?.(event.target.value)}
                 value={targetMarginInputValue}
               />
@@ -233,6 +235,7 @@ function TechnicalSheetEconomicsBar({
                     className="h-8 min-w-0 flex-1 tabular-nums"
                     disabled={editDisabled || !canValuate}
                     inputMode="decimal"
+                    onBlur={onFieldBlur}
                     onChange={(event) => onFinalPriceInputChange?.(event.target.value)}
                     value={finalPriceInputValue}
                   />

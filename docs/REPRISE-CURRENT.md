@@ -482,7 +482,17 @@ La QA visuelle a ensuite conduit aux arbitrages UX suivants, en cours de stabili
 - Produit existant remplaçable par recherche prédictive ; remplacement = nouvelle ligne logique conservant type/quantité/note mais réinitialisant sourcing et valorisation ;
 - Article/Fournisseur retiré des colonnes permanentes et exposé dans le détail Produit ; action Approvisionnement dédiée pour consulter/choisir l’Article fournisseur ;
 - sources Produit `Tous les produits` / `Favoris` réduites à des actions icônes ;
-- Favori signalé dans les suggestions par une étoile seule, couleur warning/gold, avec libellé accessible/infobulle.
+- Favori signalé dans les suggestions par une étoile seule, couleur warning/gold, avec libellé accessible/infobulle ;
+- autosave du brouillon : saisies textuelles temporisées, changements structurels immédiats, une seule écriture concurrente et réutilisation stricte de la révision serveur suivante ;
+- état d'enregistrement visible dans la zone sticky et possibilité de réessayer après échec ;
+- aucune valorisation automatique déclenchée par l'autosave ;
+- sources Produit et Panneau de contrôle déplacés dans la zone sticky des Indicateurs de production ;
+- `Indicateur de production` renommé `Indicateurs de production` ;
+- Composition densifiée : `INGRÉDIENTS` remplace le header Produit, aide textuelle supprimée, séparation Économat renforcée ;
+- actions de ligne regroupées sous un menu unique `…` ;
+- alignement centré des colonnes quantitatives/économiques et colonne Actions réduite ;
+- Historique déplacé dans le drawer Informations sous un onglet dédié ;
+- fondu sous la zone sticky renforcé pour matérialiser le passage de la Composition derrière les KPI.
 
 Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon, le contrat backend. Ils doivent donc être retestés avant la PR finale.
 

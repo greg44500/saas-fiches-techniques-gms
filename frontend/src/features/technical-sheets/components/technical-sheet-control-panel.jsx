@@ -44,7 +44,7 @@ function TechnicalSheetControlPanel({
       : identityDirty
         ? 'Enregistrer les informations avant validation'
         : draftDirty
-          ? 'Enregistrer le brouillon avant validation'
+          ? 'Enregistrement du brouillon requis avant validation'
           : draft.valuationStatus === 'COMPLETE'
           ? 'Valider la Fiche technique'
           : 'Valorisation complète requise avant validation';
