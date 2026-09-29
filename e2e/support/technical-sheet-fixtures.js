@@ -36,6 +36,7 @@ import {
 
 async function provisionTechnicalSheetWorkspace({
   ambiguous = false,
+  favoriteProduct = true,
   technicalSheetLimit = 10,
   targetMarginBasisPoints = 6000,
 } = {}) {
@@ -60,11 +61,13 @@ async function provisionTechnicalSheetWorkspace({
 
     const ownerId = workspace.createdBy;
 
-    await attachVariantToWorkspace({
-      workspaceId: workspace._id,
-      variantId: context.productVariantId,
-      actorId: ownerId,
-    });
+    if (favoriteProduct) {
+      await attachVariantToWorkspace({
+        workspaceId: workspace._id,
+        variantId: context.productVariantId,
+        actorId: ownerId,
+      });
+    }
 
     await Dossier.updateOne(
       {
