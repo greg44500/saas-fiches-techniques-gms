@@ -103,7 +103,9 @@ function SuppliersPage() {
   });
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState(ALL_SUPPLIER_STATUSES);
+  const [status, setStatus] = useState(
+    section === 'suppliers' ? ALL_SUPPLIER_STATUSES : 'ACTIVE',
+  );
   const [supplierDialog, setSupplierDialog] = useState({
     open: false,
     supplier: null,
