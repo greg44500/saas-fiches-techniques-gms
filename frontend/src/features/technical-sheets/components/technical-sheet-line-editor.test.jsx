@@ -274,6 +274,31 @@ describe('TechnicalSheetLineEditor', () => {
       .toBeInTheDocument();
   });
 
+  it('autorise le sourcing même lorsque la composition est en lecture seule', async () => {
+    const user = userEvent.setup();
+
+    renderEditor({
+      disabled: true,
+      sourcingDisabled: false,
+    });
+
+    expect(screen.queryByRole('button', {
+      name: 'Tous les produits',
+    })).not.toBeInTheDocument();
+
+    const sourcingButton = screen.getByRole('button', {
+      name: 'Choisir l’Article fournisseur pour Carotte râpée',
+    });
+
+    expect(sourcingButton).toBeEnabled();
+
+    await user.click(sourcingButton);
+
+    expect(screen.getByRole('heading', {
+      name: 'Article fournisseur',
+    })).toBeInTheDocument();
+  });
+
   it('ouvre le choix Article fournisseur depuis les actions de la ligne', async () => {
     const user = userEvent.setup();
 
