@@ -1,7 +1,6 @@
 import {
   Archive,
   ArrowLeft,
-  Calculator,
   Copy,
   CheckCircle2,
   RotateCcw,
@@ -486,7 +485,7 @@ function TechnicalSheetWorkspacePage() {
           />
         </div>      </header>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="space-y-6">
         <Card>
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -658,7 +657,7 @@ function TechnicalSheetWorkspacePage() {
           </CardContent>
         </Card>
 
-        {!draft ? (
+        {!draft && (
           <Card>
             <CardHeader>
               <CardTitle>État de travail</CardTitle>
@@ -679,113 +678,158 @@ function TechnicalSheetWorkspacePage() {
               )}
             </CardContent>
           </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Base de production</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <Field>
-                <FieldLabel htmlFor="technical-sheet-production-quantity">
-                  Quantité
-                </FieldLabel>
-                <Input
-                  disabled={!canUpdate || draftSynchronizing}
-                  id="technical-sheet-production-quantity"
-                  inputMode="decimal"
-                  onChange={(event) => {
-                    setDraftDirty(true);
-                    setDraftForm((current) => ({
-                      ...current,
-                      productionQuantity: event.target.value,
-                    }));
-                  }}
-                  value={draftForm.productionQuantity}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel>Unité</FieldLabel>
-                <Select
-                  disabled={!canUpdate || draftSynchronizing}
-                  items={unitItems}
-                  onValueChange={(value) => {
-                    setDraftDirty(true);
-                    setDraftForm((current) => ({
-                      ...current,
-                      productionUnit: value,
-                    }));
-                  }}
-                  value={draftForm.productionUnit}
-                >
-                  <SelectTrigger aria-label="Unité de production">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unitItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="technical-sheet-portions">
-                  Portions
-                </FieldLabel>
-                <Input
-                  disabled={!canUpdate || draftSynchronizing}
-                  id="technical-sheet-portions"
-                  inputMode="decimal"
-                  onChange={(event) => {
-                    setDraftDirty(true);
-                    setDraftForm((current) => ({
-                      ...current,
-                      portions: event.target.value,
-                    }));
-                  }}
-                  value={draftForm.portions}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="technical-sheet-vat">
-                  TVA (%)
-                </FieldLabel>
-                <Input
-                  disabled={!canUpdate || !canValuate || draftSynchronizing}
-                  id="technical-sheet-vat"
-                  inputMode="decimal"
-                  onChange={(event) => {
-                    setDraftDirty(true);
-                    setDraftForm((current) => ({
-                      ...current,
-                      vatRate: event.target.value,
-                    }));
-                  }}
-                  value={draftForm.vatRate}
-                />
-              </Field>
-            </CardContent>
-          </Card>
         )}
       </div>
 
       {draft && (
         <section className="relative space-y-6">
-          <TechnicalSheetEconomicsBar
-            economicSnapshot={economicSnapshot}
-            lines={draft.lines ?? []}
-            notice={
-              draftDirty
-                ? 'Modifications non enregistrées : enregistrez puis revalorisez pour actualiser les montants.'
-                : null
-            }
-            targetMarginBasisPoints={draft.targetMarginBasisPoints}
-            vatRateBasisPoints={draft.vatRateBasisPoints}
-          />
+          <div className="sticky top-0 z-30">
+            <Card className="border-primary/20 bg-background/95 shadow-sm backdrop-blur-md">
+              <CardHeader className="pb-3">
+                <CardTitle>Base de production</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <Field>
+                    <FieldLabel htmlFor="technical-sheet-production-quantity">
+                      Quantité
+                    </FieldLabel>
+                    <Input
+                      className="h-9"
+                      disabled={!canUpdate || draftSynchronizing}
+                      id="technical-sheet-production-quantity"
+                      inputMode="decimal"
+                      onChange={(event) => {
+                        setDraftDirty(true);
+                        setDraftForm((current) => ({
+                          ...current,
+                          productionQuantity: event.target.value,
+                        }));
+                      }}
+                      value={draftForm.productionQuantity}
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel>Unité</FieldLabel>
+                    <Select
+                      disabled={!canUpdate || draftSynchronizing}
+                      items={unitItems}
+                      onValueChange={(value) => {
+                        setDraftDirty(true);
+                        setDraftForm((current) => ({
+                          ...current,
+                          productionUnit: value,
+                        }));
+                      }}
+                      value={draftForm.productionUnit}
+                    >
+                      <SelectTrigger
+                        aria-label="Unité de production"
+                        className="h-9 min-h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {unitItems.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="technical-sheet-portions">
+                      Portions
+                    </FieldLabel>
+                    <Input
+                      className="h-9"
+                      disabled={!canUpdate || draftSynchronizing}
+                      id="technical-sheet-portions"
+                      inputMode="decimal"
+                      onChange={(event) => {
+                        setDraftDirty(true);
+                        setDraftForm((current) => ({
+                          ...current,
+                          portions: event.target.value,
+                        }));
+                      }}
+                      value={draftForm.portions}
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="technical-sheet-vat">
+                      TVA (%)
+                    </FieldLabel>
+                    <Input
+                      className="h-9"
+                      disabled={!canUpdate || !canValuate || draftSynchronizing}
+                      id="technical-sheet-vat"
+                      inputMode="decimal"
+                      onChange={(event) => {
+                        setDraftDirty(true);
+                        setDraftForm((current) => ({
+                          ...current,
+                          vatRate: event.target.value,
+                        }));
+                      }}
+                      value={draftForm.vatRate}
+                    />
+                  </Field>
+                </div>
+
+                <div className="border-t border-border pt-4">
+                  <TechnicalSheetEconomicsBar
+                    canValuate={canValuate}
+                    economicSnapshot={economicSnapshot}
+                    editDisabled={!canUpdate || draftSynchronizing}
+                    finalPriceInputValue={draftForm.finalPriceTtc}
+                    finalPriceMode={draftForm.finalPriceMode}
+                    lines={draft.lines ?? []}
+                    notice={
+                      draftDirty
+                        ? 'Modifications non enregistrées : enregistrez le brouillon avant de revaloriser.'
+                        : null
+                    }
+                    onFinalPriceInputChange={(value) => {
+                      setDraftDirty(true);
+                      setDraftForm((current) => ({
+                        ...current,
+                        finalPriceTtc: value,
+                      }));
+                    }}
+                    onFinalPriceModeChange={(value) => {
+                      setDraftDirty(true);
+                      setDraftForm((current) => ({
+                        ...current,
+                        finalPriceMode: value,
+                      }));
+                    }}
+                    onTargetMarginInputChange={(value) => {
+                      setDraftDirty(true);
+                      setDraftForm((current) => ({
+                        ...current,
+                        targetMargin: value,
+                      }));
+                    }}
+                    onValuate={valuateDraft}
+                    targetMarginBasisPoints={draft.targetMarginBasisPoints}
+                    targetMarginInputValue={draftForm.targetMargin}
+                    valuateDisabled={
+                      draftSynchronizing
+                      || draftServerActionDisabled
+                    }
+                    valuatePending={valuateState.isLoading}
+                    valuationStatus={draft.valuationStatus}
+                    vatRateBasisPoints={draft.vatRateBasisPoints}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between gap-3">
@@ -853,111 +897,6 @@ function TechnicalSheetWorkspacePage() {
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspace.id}
               />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Valorisation</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field>
-                  <FieldLabel htmlFor="technical-sheet-target-margin">
-                    Marge cible (%)
-                  </FieldLabel>
-                  <Input
-                    disabled={!canUpdate || !canValuate || draftSynchronizing}
-                    id="technical-sheet-target-margin"
-                    inputMode="decimal"
-                    onChange={(event) => {
-                      setDraftDirty(true);
-                      setDraftForm((current) => ({
-                        ...current,
-                        targetMargin: event.target.value,
-                      }));
-                    }}
-                    value={draftForm.targetMargin}
-                  />
-                </Field>
-
-                <Field>
-                  <FieldLabel>Mode de Prix final</FieldLabel>
-                  <Select
-                    disabled={!canUpdate || !canValuate || draftSynchronizing}
-                    items={[
-                      { value: 'ADVISED', label: 'Prix conseillé' },
-                      { value: 'MANUAL', label: 'Prix manuel' },
-                    ]}
-                    onValueChange={(value) => {
-                      setDraftDirty(true);
-                      setDraftForm((current) => ({
-                        ...current,
-                        finalPriceMode: value,
-                      }));
-                    }}
-                    value={draftForm.finalPriceMode}
-                  >
-                    <SelectTrigger aria-label="Mode de Prix final">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ADVISED">Prix conseillé</SelectItem>
-                      <SelectItem value="MANUAL">Prix manuel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="technical-sheet-final-price">
-                    Prix final TTC (€)
-                  </FieldLabel>
-                  <Input
-                    disabled={
-                      !canUpdate
-                      || !canValuate
-                      || draftSynchronizing
-                      || draftForm.finalPriceMode !== 'MANUAL'
-                    }
-                    id="technical-sheet-final-price"
-                    inputMode="decimal"
-                    onChange={(event) => {
-                      setDraftDirty(true);
-                      setDraftForm((current) => ({
-                        ...current,
-                        finalPriceTtc: event.target.value,
-                      }));
-                    }}
-                    value={draftForm.finalPriceTtc}
-                  />
-                </Field>
-
-                <div className="flex items-end">
-                  {canValuate && (
-                    <Button
-                      className="w-full"
-                      disabled={
-                        valuateState.isLoading
-                        || draftSynchronizing
-                        || draftServerActionDisabled
-                      }
-                      onClick={valuateDraft}
-                      title={
-                        draftDirty
-                          ? 'Enregistrer le brouillon avant de valoriser'
-                          : undefined
-                      }
-                      type="button"
-                    >
-                      <Calculator aria-hidden="true" className="size-4" />
-                      {draft.valuationStatus === 'NOT_VALUED'
-                        ? 'Valoriser'
-                        : 'Revaloriser'}
-                    </Button>
-                  )}
-                </div>
-              </div>
-
             </CardContent>
           </Card>
 
