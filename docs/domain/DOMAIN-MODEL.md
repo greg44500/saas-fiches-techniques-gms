@@ -460,10 +460,13 @@ Baseline V1 :
 - code fournisseur facultatif ;
 - raison sociale facultative ;
 - site web facultatif ;
+- zéro à plusieurs catégories Produit actives, référencées depuis le référentiel M-002 ;
 - nom normalisé et portée gérés par le système ;
 - Workspace obligatoire lorsque la portée est `WORKSPACE_PRIVATE` ;
 - lifecycle `ACTIVE / ARCHIVED` ;
 - traçabilité de création/modification.
+
+Les catégories Fournisseur qualifient l'offre de façon descriptive et réutilisent les identités de catégories Produit existantes. Elles ne sont jamais une seconde taxonomie, ne sont pas inférées silencieusement à partir des Articles et ne participent ni au choix d'un Article ni au calcul du Prix applicable.
 
 L'archivage conserve l'historique et retire le Fournisseur des nouveaux usages ordinaires.
 

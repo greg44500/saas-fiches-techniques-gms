@@ -74,6 +74,72 @@ describe('M-003 supplier/article HTTP contract', () => {
         ).not.toContain('Fournisseur privé A');
     });
 
+    it('associe plusieurs catégories Produit existantes à un Fournisseur', async () => {
+        const categoryId =
+            productReference.category._id.toString();
+
+        const metadata = await request(app)
+            .get(supplierPath(ownerA) + '/metadata')
+            .set(bearer(ownerA.token));
+
+        expect(metadata.status).toBe(200);
+        expect(metadata.body.data.metadata.categories).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: categoryId,
+                    name: 'Légumes',
+                }),
+            ]),
+        );
+
+        const created = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({
+                name: 'Fournisseur catégorisé',
+                categoryIds: [categoryId],
+            });
+
+        expect(created.status).toBe(201);
+        expect(created.body.data.supplier.categories).toEqual([
+            expect.objectContaining({
+                id: categoryId,
+                name: 'Légumes',
+            }),
+        ]);
+
+        const visible = await request(app)
+            .get(supplierPath(ownerA))
+            .set(bearer(ownerA.token));
+
+        expect(visible.status).toBe(200);
+        expect(visible.body.data.suppliers).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    name: 'Fournisseur catégorisé',
+                    categories: [
+                        expect.objectContaining({
+                            id: categoryId,
+                            name: 'Légumes',
+                        }),
+                    ],
+                }),
+            ]),
+        );
+
+        const updated = await request(app)
+            .patch(
+                supplierPath(ownerA)
+                + '/'
+                + created.body.data.supplier.id,
+            )
+            .set(bearer(ownerA.token))
+            .send({ categoryIds: [] });
+
+        expect(updated.status).toBe(200);
+        expect(updated.body.data.supplier.categories).toEqual([]);
+    });
+
     it('rend un Fournisseur global visible dans plusieurs Workspaces', async () => {
         const globalSupplier = await createSupplier({
             scope: SUPPLIER_SCOPE.GLOBAL_SHARED,

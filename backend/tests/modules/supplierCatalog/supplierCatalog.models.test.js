@@ -44,6 +44,13 @@ describe('M-003 supplier catalog models', () => {
         }).validate()).rejects.toThrow(/globale/);
     });
 
+    it('référence les catégories Produit sans créer de taxonomie Fournisseur parallèle', () => {
+        const categoryPath = Supplier.schema.path('productCategories');
+
+        expect(categoryPath.instance).toBe('Array');
+        expect(categoryPath.caster.options.ref).toBe('ProductCategory');
+    });
+
     it('utilise Decimal128 pour les prix source et normalisés', () => {
         expect(SupplierTariff.schema.path('sourceAmount').instance)
             .toBe('Decimal128');

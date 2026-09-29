@@ -1,8 +1,8 @@
 import {
   ArrowUpRight,
+  CircleMinus,
   Plus,
   Star,
-  Trash2,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
@@ -34,7 +34,6 @@ import {
   useAddDossierSupplierReferenceMutation,
   useArchiveNegotiatedPriceMutation,
   useDecideInvoicedPriceMutation,
-  useLazyGetApplicableSupplierPriceQuery,
   useListDossierSupplierReferencesQuery,
   useListInvoicedPricesQuery,
   useListNegotiatedPricesQuery,
@@ -74,14 +73,6 @@ function normalizeArticle(article) {
   };
 }
 
-function getPricingSourceLabel(source) {
-  return {
-    SUPPLIER_TARIFF: 'Tarif fournisseur',
-    NEGOTIATED_PRICE: 'Tarif négocié',
-    INVOICED_PRICE: 'Prix facturé',
-  }[source] ?? 'Source non disponible';
-}
-
 function DossierSupplierPricingPage() {
   const { dossierId } = useParams();
   const { can, workspace } = useWorkspaceContext();
@@ -95,7 +86,6 @@ function DossierSupplierPricingPage() {
   });
   const [priceDialog, setPriceDialog] = useState(null);
   const [articleToAdd, setArticleToAdd] = useState(NONE);
-  const [selectedArticleId, setSelectedArticleId] = useState(NONE);
 
   const referencesQuery = useListDossierSupplierReferencesQuery(
     { workspaceId: workspace.id, dossierId },
@@ -123,9 +113,6 @@ function DossierSupplierPricingPage() {
     { workspaceId: workspace.id, dossierId },
     { skip: !can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ) },
   );
-  const [loadApplicablePrice, applicablePriceQuery] =
-    useLazyGetApplicableSupplierPriceQuery();
-
   const [addReference, addReferenceState] =
     useAddDossierSupplierReferenceMutation();
   const [removeReference, removeReferenceState] =
@@ -200,22 +187,6 @@ function DossierSupplierPricingPage() {
     }
   }
 
-  async function chooseApplicableArticle(articleId) {
-    setSelectedArticleId(articleId);
-
-    if (articleId === NONE) return;
-
-    try {
-      await loadApplicablePrice({
-        workspaceId: workspace.id,
-        dossierId,
-        articleId,
-      }).unwrap();
-    } catch {
-      // L'état d'erreur RTK Query est affiché plus bas.
-    }
-  }
-
   async function archiveNegotiatedPrice(priceId) {
     try {
       await archiveNegotiated({
@@ -284,16 +255,18 @@ function DossierSupplierPricingPage() {
       header: 'Actions',
       cell: (reference) => (
         can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE) ? (
-          <Button
+          <ActionIconButton
+            Icon={CircleMinus}
             disabled={removeReferenceState.isLoading}
+            label={
+              'Retirer '
+              + reference.supplierArticle.supplierReference
+              + ' du Dossier'
+            }
             onClick={() => removeFavorite(reference.supplierArticle.id)}
-            size="sm"
-            type="button"
+            tooltipLabel="Retirer du Dossier"
             variant="outline"
-          >
-            <Trash2 aria-hidden="true" className="size-4" />
-            Retirer
-          </Button>
+          />
         ) : null
       ),
     },
@@ -477,8 +450,6 @@ function DossierSupplierPricingPage() {
     },
   ];
 
-  const applicable = applicablePriceQuery.data;
-
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-2">
@@ -490,80 +461,6 @@ function DossierSupplierPricingPage() {
           label="À propos des Fournisseurs et prix"
         />
       </div>
-
-      {can(SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ) && (
-        <section className="rounded-xl border border-border bg-card p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-            <div className="flex min-w-0 flex-1 items-start gap-2">
-              <h2 className="font-semibold">Vérifier un prix applicable</h2>
-              <InfoTooltip
-                content="Sélectionnez un Article fournisseur pour voir le prix que l’application utiliserait dans ce Dossier selon la politique de prix définie."
-                label="À propos de la vérification du prix applicable"
-              />
-            </div>
-
-            <div className="w-full lg:max-w-xl">
-              <p className="mb-2 text-sm font-medium">Article fournisseur</p>
-              <Select
-                items={[
-                  { value: NONE, label: 'Sélectionner' },
-                  ...visibleArticles.map((article) => ({
-                    value: article.id,
-                    label: article.supplierName + ' · ' + article.supplierReference,
-                  })),
-                ]}
-                onValueChange={chooseApplicableArticle}
-                value={selectedArticleId}
-              >
-                <SelectTrigger aria-label="Article fournisseur à vérifier">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>Sélectionner</SelectItem>
-                  {visibleArticles.map((article) => (
-                    <SelectItem key={article.id} value={article.id}>
-                      {article.supplierName} · {article.supplierReference}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {applicablePriceQuery.isFetching && (
-            <p className="mt-4 text-sm text-muted-foreground">
-              Vérification du prix…
-            </p>
-          )}
-
-          {applicablePriceQuery.isError && (
-            <div className="mt-4">
-              <ErrorState
-                description="Le prix applicable n’a pas pu être déterminé pour cet Article."
-                title="Vérification impossible"
-              />
-            </div>
-          )}
-
-          {applicable && (
-            <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4">
-              <p className="font-medium">
-                {applicable.price
-                  ? formatPrice(applicable.price)
-                  : 'Aucun prix applicable'}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Source retenue : {getPricingSourceLabel(applicable.resolvedSource)}
-              </p>
-              {applicable.fallbackApplied && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Une source de remplacement a été utilisée car la source prioritaire n’était pas disponible.
-                </p>
-              )}
-            </div>
-          )}
-        </section>
-      )}
 
       {section && (
         <Tabs onValueChange={setSection} value={section}>

@@ -558,7 +558,9 @@ WORKSPACE_PRIVATE
 → jamais visible hors de ce Workspace
 ~~~
 
-Le Fournisseur n'est pas un CRM. La baseline V1 exige uniquement le nom comme donnée métier obligatoire. Un code fournisseur, une raison sociale et un site web peuvent être facultatifs.
+Le Fournisseur n'est pas un CRM. La baseline V1 exige uniquement le nom comme donnée métier obligatoire. Un code fournisseur, une raison sociale, un site web et une ou plusieurs catégories Produit fournies peuvent être facultatifs.
+
+Les catégories fournies réutilisent le référentiel de catégories M-002 : elles sont descriptives, sélectionnées explicitement et ne créent ni nouvelle taxonomie, ni règle de sourcing, ni règle tarifaire. Le rattachement précis d'un Article à une Référence Produit reste l'autorité sur ce qui est réellement commercialisé.
 
 Le lifecycle baseline est `ACTIVE / ARCHIVED`. L'archivage conserve l'historique.
 

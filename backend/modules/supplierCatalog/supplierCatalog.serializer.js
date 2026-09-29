@@ -19,6 +19,22 @@ const serializePackaging = (packaging) => packaging
     }
     : null;
 
+const serializeSupplierCategory = (category) => {
+    if (!category) return null;
+
+    if (!category._id) {
+        return {
+            id: category.toString(),
+            name: null,
+        };
+    }
+
+    return {
+        id: category._id.toString(),
+        name: category.name,
+    };
+};
+
 const serializeSupplier = (supplier) => ({
     id: supplier._id.toString(),
     scope: supplier.scope,
@@ -27,6 +43,9 @@ const serializeSupplier = (supplier) => ({
     supplierCode: supplier.supplierCode ?? null,
     legalName: supplier.legalName ?? null,
     website: supplier.website ?? null,
+    categories: (supplier.productCategories ?? [])
+        .map(serializeSupplierCategory)
+        .filter(Boolean),
     status: supplier.status,
     createdAt: supplier.createdAt,
     updatedAt: supplier.updatedAt,

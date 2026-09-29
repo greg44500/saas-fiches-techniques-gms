@@ -207,6 +207,13 @@ function SupplierDetailsDrawer({
                     value={detailSupplier.website}
                   />
                   <DetailRow
+                    label="Catégories"
+                    value={(detailSupplier.categories ?? [])
+                      .map(({ name }) => name)
+                      .filter(Boolean)
+                      .join(', ')}
+                  />
+                  <DetailRow
                     label="Origine"
                     value={getSupplierOriginLabel(detailSupplier.scope)}
                   />

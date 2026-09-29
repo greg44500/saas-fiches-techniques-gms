@@ -44,7 +44,7 @@ const metadata = async (req, res) => {
     res.status(200).json({
         status: 'success',
         data: {
-            metadata: getSupplierReferenceMetadata(),
+            metadata: await getSupplierReferenceMetadata(),
         },
     });
 };

@@ -167,7 +167,12 @@ Données facultatives :
 
 - code fournisseur ;
 - raison sociale ;
-- site web.
+- site web ;
+- une ou plusieurs catégories Produit fournies.
+
+Les catégories d'un Fournisseur réutilisent exclusivement les catégories actives du référentiel Produit M-002. Elles servent à qualifier son offre pour la recherche et la lecture métier ; elles ne créent aucune taxonomie Fournisseur parallèle, ne remplacent pas le rattachement précis des Articles aux Références Produit et ne modifient aucune règle de prix.
+
+L'affectation est explicite : le système ne déduit pas silencieusement les catégories du Fournisseur à partir de ses Articles ou d'un catalogue importé.
 
 Données système nécessaires :
 

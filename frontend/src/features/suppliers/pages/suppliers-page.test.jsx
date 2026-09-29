@@ -137,6 +137,7 @@ describe('SuppliersPage', () => {
               id: 'supplier-global',
               name: 'Sysco partagé',
               supplierCode: 'SYS',
+              categories: [{ id: 'cat-epicerie', name: 'Épicerie' }],
               scope: 'GLOBAL_SHARED',
               status: 'ACTIVE',
             },
@@ -144,6 +145,10 @@ describe('SuppliersPage', () => {
               id: 'supplier-private',
               name: 'Fournisseur local',
               supplierCode: 'LOC',
+              categories: [{
+                id: 'cat-fruits-legumes',
+                name: 'Fruits et légumes',
+              }],
               scope: 'WORKSPACE_PRIVATE',
               status: 'ACTIVE',
             },
@@ -195,7 +200,7 @@ describe('SuppliersPage', () => {
     }));
   });
 
-  it('distingue les Fournisseurs partagés et privés', () => {
+  it('présente les catégories métier plutôt que la portée technique du Fournisseur', () => {
     renderPage();
 
     expect(mocks.listSuppliers).toHaveBeenCalledWith(
@@ -211,8 +216,10 @@ describe('SuppliersPage', () => {
     })).toHaveTextContent('Tous');
     expect(screen.getByText('Sysco partagé')).toBeInTheDocument();
     expect(screen.getByText('Fournisseur local')).toBeInTheDocument();
-    expect(screen.getByText(/Référentiel partagé/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Cet espace de travail/)).toHaveLength(2);
+    expect(screen.getByText(/SYS · Épicerie/)).toBeInTheDocument();
+    expect(screen.getByText(/LOC · Fruits et légumes/)).toBeInTheDocument();
+    expect(screen.queryByText(/Référentiel partagé/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Cet espace de travail/)).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Portée' }))
       .not.toBeInTheDocument();
     expect(screen.getByRole('combobox', {

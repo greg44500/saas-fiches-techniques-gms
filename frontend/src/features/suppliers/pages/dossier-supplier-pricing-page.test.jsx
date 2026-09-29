@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
-  dossierQuery: vi.fn(),
   params: vi.fn(),
   workspaceContext: vi.fn(),
   listReferences: vi.fn(),
@@ -13,7 +12,6 @@ const mocks = vi.hoisted(() => ({
   listCatalogs: vi.fn(),
   listNegotiated: vi.fn(),
   listInvoiced: vi.fn(),
-  lazyApplicable: vi.fn(),
 }));
 
 vi.mock('react-router', async (importOriginal) => {
@@ -31,10 +29,6 @@ vi.mock('@/components/shared/toast-provider', () => ({
   }),
 }));
 
-vi.mock('@/features/dossiers/api/dossiers-api', () => ({
-  useGetDossierByIdQuery: mocks.dossierQuery,
-}));
-
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: mocks.workspaceContext,
 }));
@@ -45,7 +39,6 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListSupplierCatalogsQuery: mocks.listCatalogs,
   useListNegotiatedPricesQuery: mocks.listNegotiated,
   useListInvoicedPricesQuery: mocks.listInvoiced,
-  useLazyGetApplicableSupplierPriceQuery: mocks.lazyApplicable,
   useAddDossierSupplierReferenceMutation: () => [
     vi.fn(),
     { isLoading: false },
@@ -102,11 +95,6 @@ describe('DossierSupplierPricingPage', () => {
     mocks.params.mockReturnValue({
       dossierId: 'dossier-1',
     });
-    mocks.dossierQuery.mockReturnValue(queryResult({
-      id: 'dossier-1',
-      name: 'Magasin A',
-      status: 'ACTIVE',
-    }));
     mocks.listReferences.mockReturnValue(queryResult([]));
     mocks.listArticles.mockReturnValue(queryResult({
       articles: [],
@@ -122,14 +110,6 @@ describe('DossierSupplierPricingPage', () => {
     }));
     mocks.listNegotiated.mockReturnValue(queryResult([]));
     mocks.listInvoiced.mockReturnValue(queryResult([]));
-    mocks.lazyApplicable.mockReturnValue([
-      vi.fn(),
-      {
-        data: undefined,
-        isError: false,
-        isFetching: false,
-      },
-    ]);
   });
 
   it('affiche les catalogues accessibles avec portée et provenance dans le contexte Dossier', () => {
@@ -168,77 +148,50 @@ describe('DossierSupplierPricingPage', () => {
       name: 'Fournisseurs et prix',
     })).toBeInTheDocument();
     expect(screen.queryByText('Retour au Dossier')).not.toBeInTheDocument();
-    expect(screen.queryByText('Magasin A — Fournisseurs et prix'))
-      .not.toBeInTheDocument();
-    expect(screen.getByRole('button', {
-      name: 'À propos des Fournisseurs et prix',
-    })).toBeInTheDocument();
-    expect(screen.queryByText('Acme')).not.toBeInTheDocument();
-    expect(screen.queryByText('Politique de l’espace de travail'))
-      .not.toBeInTheDocument();
     expect(screen.getByRole('tab', {
       name: 'Catalogues',
     })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Catalogue partagé 2026'))
       .toBeInTheDocument();
-    expect(screen.getByText(/Référentiel partagé/))
-      .toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: 'Portée' }))
-      .not.toBeInTheDocument();
     expect(screen.getByText('Catalogue contractuel septembre 2026'))
-      .toBeInTheDocument();
-    expect(screen.getByText(/Les tarifs fournisseur proviennent des catalogues/))
       .toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Gérer les catalogues/ }))
       .toHaveAttribute(
         'href',
         '/workspaces/workspace-1/suppliers?section=catalogs',
       );
+    expect(screen.queryByText('Vérifier un prix applicable'))
+      .not.toBeInTheDocument();
   });
 
-  it('affiche le Prix applicable avec sa source et son fallback sans ouvrir un onglet non autorisé', () => {
+  it('utilise une action Retirer dédiée plutôt qu’une suppression', () => {
     mocks.workspaceContext.mockReturnValue({
       workspace: {
         id: 'workspace-1',
         name: 'Acme',
       },
-      can: (permission) => (
-        permission === SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ
-      ),
+      can: (permission) => [
+        SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ,
+        SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE,
+      ].includes(permission),
     });
-    mocks.lazyApplicable.mockReturnValue([
-      vi.fn(),
-      {
-        data: {
-          requestedMode: 'INVOICED_PRICE',
-          resolvedSource: 'NEGOTIATED_PRICE',
-          fallbackApplied: true,
-          fallbackReason: 'NO_VALIDATED_INVOICE',
-          price: {
-            normalizedAmount: '12.5',
-            normalizedUnit: 'UNIT',
-            currency: 'EUR',
-          },
-          alerts: ['NO_VALIDATED_INVOICE'],
-        },
-        isError: false,
-        isFetching: false,
+    mocks.listReferences.mockReturnValue(queryResult([{
+      id: 'dossier-reference-1',
+      supplierArticle: {
+        id: 'article-1',
+        supplierReference: 'Ali321',
+        supplierName: 'Sysco',
+        productVariantName: 'Ail',
       },
-    ]);
+    }]));
 
     renderPage();
 
-    expect(screen.getByText('12,500 EUR / PCE'))
-      .toBeInTheDocument();
-    expect(screen.getByText('Vérifier un prix applicable'))
-      .toBeInTheDocument();
-    expect(screen.getByText(/Source retenue : Tarif négocié/))
-      .toBeInTheDocument();
-    expect(screen.getByText(/source de remplacement/))
-      .toBeInTheDocument();
-    expect(screen.queryByText(/NEGOTIATED_PRICE/))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole('tab'))
-      .not.toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Retirer Ali321 du Dossier',
+    })).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: /Supprimer Ali321/i,
+    })).not.toBeInTheDocument();
   });
 });

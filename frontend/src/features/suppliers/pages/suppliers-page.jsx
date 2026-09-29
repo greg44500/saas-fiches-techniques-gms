@@ -278,9 +278,11 @@ function SuppliersPage() {
         <div>
           <p className="font-medium">{supplier.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {(supplier.supplierCode || 'Aucun code')
-              + ' · '
-              + getSupplierOriginLabel(supplier.scope)}
+            {[
+              supplier.supplierCode,
+              (supplier.categories ?? []).map(({ name }) => name).join(', ')
+                || 'Catégories non renseignées',
+            ].filter(Boolean).join(' · ')}
           </p>
         </div>
       ),

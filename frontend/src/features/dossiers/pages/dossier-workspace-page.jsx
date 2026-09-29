@@ -11,6 +11,7 @@ import {
   Link,
   NavLink,
   Outlet,
+  useLocation,
   useParams,
 } from 'react-router';
 
@@ -29,6 +30,13 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {
+  SECTION_TAB_ACTIVE_CLASS_NAME,
+  SECTION_TAB_INACTIVE_CLASS_NAME,
+  SECTION_TAB_LIST_CLASS_NAME,
+  SECTION_TAB_NAV_CLASS_NAME,
+  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+} from '@/components/ui/section-tab-styles';
+import {
   useGetDossierByIdQuery,
   useGetDossierMetadataQuery,
 } from '@/features/dossiers/api/dossiers-api';
@@ -38,7 +46,11 @@ import {
   getDossierStatusTone,
 } from '@/features/dossiers/lib/dossier-presentation';
 import {
+  DossierApplicablePriceCard,
+} from '@/features/suppliers/components/dossier-applicable-price-card';
+import {
   DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
+  SUPPLIER_PERMISSION,
 } from '@/features/suppliers/constants/supplier-permissions';
 import {
   DossierTechnicalSheetMarginDialog,
@@ -55,13 +67,9 @@ import {
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { cn } from '@/lib/utils';
 
-const DOSSIER_TAB_CLASS_NAME = [
-  'inline-flex min-h-10 items-center justify-center rounded-t-lg border border-b-0 px-4 text-sm font-medium',
-  'outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-].join(' ');
-
 function DossierWorkspacePage() {
   const { dossierId } = useParams();
+  const location = useLocation();
   const { can, canAny, workspace } = useWorkspaceContext();
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
   const dossierQuery = useGetDossierByIdQuery({
@@ -125,7 +133,14 @@ function DossierWorkspacePage() {
     || dossier.location?.postalCode
     || dossier.location?.city,
   );
-  const location = hasLocation ? formatDossierLocation(dossier) : null;
+  const locationLabel = hasLocation ? formatDossierLocation(dossier) : null;
+  const supplierRouteActive = location.pathname.endsWith(
+    '/dossiers/' + dossier.id + '/suppliers',
+  );
+  const showApplicablePriceCard = (
+    supplierRouteActive
+    && can(SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ)
+  );
 
   return (
     <div className="space-y-5">
@@ -136,8 +151,12 @@ function DossierWorkspacePage() {
         </Link>
       </Button>
 
-      <header className="rounded-xl border border-border bg-card px-5 py-4">
-        <div className="flex flex-wrap items-center gap-2.5">
+      <div className={cn(
+        'grid items-stretch gap-4',
+        showApplicablePriceCard ? 'lg:grid-cols-2' : 'grid-cols-1',
+      )}>
+        <header className="h-full rounded-xl border border-border bg-card px-5 py-4">
+          <div className="flex flex-wrap items-center gap-2.5">
           <h1 className="text-2xl font-semibold tracking-tight">
             {dossier.name}
           </h1>
@@ -176,15 +195,15 @@ function DossierWorkspacePage() {
           )}
         </div>
 
-        {(location
+        {(locationLabel
           || dossier.contactName
           || dossier.documentEmail
           || dossier.phone) && (
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
-            {location && (
+            {locationLabel && (
               <div className="flex min-w-0 items-start gap-2">
                 <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                <span>{location}</span>
+                <span>{locationLabel}</span>
               </div>
             )}
             {dossier.contactName && (
@@ -206,8 +225,16 @@ function DossierWorkspacePage() {
               </div>
             )}
           </div>
+          )}
+        </header>
+
+        {showApplicablePriceCard && (
+          <DossierApplicablePriceCard
+            dossierId={dossier.id}
+            workspaceId={workspace.id}
+          />
         )}
-      </header>
+      </div>
 
       {!operational && (
         <Card>
@@ -225,34 +252,36 @@ function DossierWorkspacePage() {
       {(canReadSuppliers || canReadTechnicalSheets) && (
         <nav
           aria-label="Navigation du Dossier"
-          className="flex flex-wrap gap-2 border-b border-border"
+          className={SECTION_TAB_NAV_CLASS_NAME}
         >
-          {canReadSuppliers && (
-            <NavLink
-              className={({ isActive }) => cn(
-                DOSSIER_TAB_CLASS_NAME,
-                isActive
-                  ? 'border-border bg-card text-primary'
-                  : 'border-transparent bg-muted/25 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
-              )}
-              to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/suppliers`}
-            >
-              Fournisseurs et prix
-            </NavLink>
-          )}
-          {canReadTechnicalSheets && (
-            <NavLink
-              className={({ isActive }) => cn(
-                DOSSIER_TAB_CLASS_NAME,
-                isActive
-                  ? 'border-border bg-card text-primary'
-                  : 'border-transparent bg-muted/25 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
-              )}
-              to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/technical-sheets`}
-            >
-              Fiches techniques
-            </NavLink>
-          )}
+          <div className={SECTION_TAB_LIST_CLASS_NAME}>
+            {canReadSuppliers && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/suppliers`}
+              >
+                Fournisseurs et prix
+              </NavLink>
+            )}
+            {canReadTechnicalSheets && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/technical-sheets`}
+              >
+                Fiches techniques
+              </NavLink>
+            )}
+          </div>
         </nav>
       )}
 

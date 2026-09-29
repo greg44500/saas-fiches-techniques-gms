@@ -37,11 +37,19 @@ const globalArticleIdParamsSchema = z.strictObject({
 const nullableText = (max) =>
     z.string().trim().max(max).nullable();
 
+const categoryIdsSchema = z
+    .array(objectIdSchema)
+    .refine(
+        (values) => new Set(values).size === values.length,
+        'Une catégorie ne peut être sélectionnée qu’une seule fois.',
+    );
+
 const supplierFields = {
     name: z.string().trim().min(1).max(160),
     supplierCode: nullableText(80).optional(),
     legalName: nullableText(200).optional(),
     website: z.string().trim().url().max(500).nullable().optional(),
+    categoryIds: categoryIdsSchema.optional(),
 };
 
 const createSupplierBodySchema = z.strictObject(supplierFields);
@@ -51,6 +59,7 @@ const updateSupplierBodySchema = z.strictObject({
     supplierCode: supplierFields.supplierCode,
     legalName: supplierFields.legalName,
     website: supplierFields.website,
+    categoryIds: supplierFields.categoryIds,
 }).refine(
     (value) => Object.keys(value).length > 0,
     'Au moins un champ doit être modifié.',

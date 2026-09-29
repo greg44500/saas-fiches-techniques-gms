@@ -384,7 +384,9 @@ WORKSPACE_PRIVATE
 
 Un Fournisseur privé n'est jamais exposé hors de son Workspace.
 
-Le Fournisseur n'est pas un CRM. En baseline V1, seul son nom est obligatoire côté métier ; code fournisseur, raison sociale et site web sont facultatifs.
+Le Fournisseur n'est pas un CRM. En baseline V1, seul son nom est obligatoire côté métier ; code fournisseur, raison sociale, site web et catégories Produit fournies sont facultatifs.
+
+Un Fournisseur peut être associé explicitement à plusieurs catégories actives du référentiel Produit afin de décrire les familles de produits qu'il fournit. Cette association est informative : elle ne remplace pas les Articles fournisseur, n'est pas déduite automatiquement et n'intervient pas dans la résolution des prix.
 
 Son lifecycle baseline est `ACTIVE / ARCHIVED`.
 

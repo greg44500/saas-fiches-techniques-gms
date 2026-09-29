@@ -33,6 +33,12 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
   useGetDossierTechnicalSheetSettingsQuery: mocks.marginQuery,
 }));
 
+vi.mock('@/features/suppliers/components/dossier-applicable-price-card', () => ({
+  DossierApplicablePriceCard: () => (
+    <section aria-label="Carte prix applicable">Prix applicable compact</section>
+  ),
+}));
+
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: mocks.workspaceContext,
 }));
@@ -55,10 +61,12 @@ function queryResult(data) {
   };
 }
 
-function renderPage() {
+function renderPage(
+  initialEntry = '/workspaces/workspace-1/dossiers/dossier-1',
+) {
   return render(
     <MemoryRouter
-      initialEntries={['/workspaces/workspace-1/dossiers/dossier-1']}
+      initialEntries={[initialEntry]}
     >
       <TooltipProvider>
         <DossierWorkspacePage />
@@ -126,6 +134,32 @@ describe('DossierWorkspacePage', () => {
       'href',
       '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets',
     );
+  });
+
+  it('affiche la carte de prix compacte à côté du contexte sur la route Fournisseurs', () => {
+    mocks.detailQuery.mockReturnValue(queryResult({
+      id: 'dossier-1',
+      name: 'Nantes Centre',
+      location: null,
+      contactName: null,
+      documentEmail: null,
+      phone: null,
+      status: 'ACTIVE',
+    }));
+
+    renderPage(
+      '/workspaces/workspace-1/dossiers/dossier-1/suppliers',
+    );
+
+    expect(screen.getByRole('region', {
+      name: 'Carte prix applicable',
+    })).toBeInTheDocument();
+
+    const supplierTab = screen.getByRole('link', {
+      name: 'Fournisseurs et prix',
+    });
+    expect(supplierTab).toHaveClass('border-primary');
+    expect(supplierTab).toHaveClass('text-primary');
   });
 
   it('masque les coordonnées absentes et conserve la consultation d’un Dossier non actif', () => {
