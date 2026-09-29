@@ -157,6 +157,7 @@ order                   integer
 note                    String|null
 
 selectedSupplierArticle ObjectId SupplierArticle|null
+→ reste null lorsque la valorisation repose sur un Prix indicatif M-003 sans Article
 
 calculation             {
     yieldPercentUsed    Decimal128|null
@@ -191,6 +192,10 @@ ligne Ingrédient valorisée
 Elle n'est renseignée qu'après valorisation complète et lorsque `materialCostHt > 0`. Les lignes Économat conservent `null`. L'ancien moteur physique multi-dimensions envisagé pour un pourcentage de composition est abandonné et ne constitue pas une dette produit.
 
 ---
+
+### Prix indicatif M-003
+
+La valorisation appelle toujours le résolveur M-003. Lorsqu'il retourne `INDICATIVE_DOSSIER` ou `INDICATIVE_WORKSPACE`, aucun faux Article fournisseur n'est créé : les champs de sourcing fournisseur restent `null` et la source tarifaire ainsi que son identifiant sont figés dans le snapshot.
 
 ## 6. Modèle TechnicalSheetValidation
 
@@ -228,9 +233,9 @@ linesSnapshot[]         {
     yieldPercentUsed
     grossQuantity
     grossUnit
-    supplierArticleId
-    supplierId
-    supplierName
+    supplierArticleId|null
+    supplierId|null
+    supplierName|null
     supplierReference
     supplierDesignation
     brand

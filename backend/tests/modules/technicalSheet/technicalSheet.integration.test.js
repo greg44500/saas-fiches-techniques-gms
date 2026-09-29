@@ -26,6 +26,7 @@ import {
 } from '../../../modules/supplierCatalog/supplierCatalog.registry.js';
 import {
     createNegotiatedPrice,
+    setIndicativePrice,
 } from '../../../modules/supplierCatalog/supplierPricing.service.js';
 import {
     createSupplier,
@@ -342,6 +343,158 @@ describe('M-004 services Fiches techniques', () => {
             ),
         ).toEqual(['25', '75', null]);
     });
+    it('valorise et valide une Référence Produit sans Article grâce au Prix indicatif Workspace', async () => {
+        const indicativeReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Produit indicatif M004',
+                referenceName:
+                    'Produit indicatif M004',
+                referenceUnit:
+                    'KG',
+                yieldPercent:
+                    '100',
+            });
+
+        await setIndicativePrice({
+            workspaceId:
+                owner.workspace._id,
+            productVariantId:
+                indicativeReference.variant._id,
+            actorId:
+                owner.owner._id,
+            sourceAmount:
+                '2.5',
+            sourceBasis:
+                'KG',
+            source:
+                'Estimation interne',
+        });
+
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche prix indicatif',
+                },
+            });
+
+        const saved =
+            await saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    created.draft.revision,
+                canManageSourcing: true,
+                canManageValuation: true,
+                data: {
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'KG',
+                    portions:
+                        '10',
+                    vatRateBasisPoints:
+                        1000,
+                    targetMarginBasisPoints:
+                        5000,
+                    finalPriceMode:
+                        'ADVISED',
+                    lines: [{
+                        kind:
+                            'INGREDIENT',
+                        productVariantId:
+                            indicativeReference.variant
+                                ._id.toString(),
+                        netQuantity:
+                            '2',
+                        inputUnit:
+                            'KG',
+                        order: 0,
+                    }],
+                },
+            });
+
+        const valued =
+            await valuateTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    saved.revision,
+                atDate,
+            });
+
+        expect(
+            valued.draft.valuationStatus,
+        ).toBe(
+            TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE,
+        );
+        expect(
+            valued.draft.lines[0]
+                .valuation.applicableSource,
+        ).toBe('INDICATIVE_WORKSPACE');
+        expect(
+            valued.draft.lines[0]
+                .valuation.supplierArticleId,
+        ).toBeNull();
+        expect(
+            valued.draft.lines[0]
+                .valuation.lineCostHt,
+        ).toBe('5');
+
+        const validated =
+            await validateTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedSheetRevision:
+                    created.sheet.revision,
+                expectedDraftRevision:
+                    valued.draft.revision,
+                comment:
+                    'Validation sur estimation interne',
+                atDate,
+            });
+
+        expect(
+            validated.validation.linesSnapshot[0]
+                .supplierArticleId,
+        ).toBeNull();
+        expect(
+            validated.validation.linesSnapshot[0]
+                .supplierName,
+        ).toBeNull();
+        expect(
+            validated.validation.linesSnapshot[0]
+                .applicableSource,
+        ).toBe('INDICATIVE_WORKSPACE');
+    });
+
     it('crée, compose, valorise et valide un snapshot historique immuable', async () => {
         const {
             created,

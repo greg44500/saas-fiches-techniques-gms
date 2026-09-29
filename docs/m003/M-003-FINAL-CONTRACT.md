@@ -587,6 +587,34 @@ Cette durée standard reste révisable à partir des tests métier réels.
 
 ---
 
+## 13.2 Prix indicatif
+
+Le Prix indicatif est une estimation interne explicite. Il n'est ni un Tarif fournisseur, ni un Tarif négocié, ni un Prix facturé.
+
+Deux portées sont autorisées :
+
+~~~text
+Workspace × Référence Produit
+→ estimation commune à l'espace de travail
+
+Dossier × Référence Produit
+→ surcharge locale facultative pour un magasin
+~~~
+
+Le Prix indicatif ne dépend pas obligatoirement d'un Article fournisseur. Il existe précisément pour permettre de valoriser une Référence Produit lorsqu'aucune donnée commerciale exploitable n'est encore disponible.
+
+Règles :
+
+- un seul Prix indicatif `ACTIVE` par portée et Référence Produit ;
+- une modification archive l'ancien enregistrement puis crée une nouvelle réalité historisée ;
+- la devise V1 est `EUR` ;
+- l'unité du prix doit être compatible avec l'unité de référence du Produit ;
+- le Prix indicatif Dossier n'est jamais partagé avec un autre Dossier ;
+- le Prix indicatif Workspace peut être utilisé par les Dossiers du même Workspace ;
+- un Prix indicatif n'est jamais promu silencieusement en Tarif fournisseur ou Tarif négocié.
+
+---
+
 ## 14. Prix normalisé et précision
 
 Le prix source est conservé tel qu'exprimé commercialement.
@@ -641,13 +669,19 @@ Mode Prix facturé
 → Prix facturé VALIDATED suffisamment frais du Dossier
 → sinon Tarif négocié valide du Dossier
 → sinon Tarif fournisseur applicable
+
+Puis, pour tous les modes, si aucune source commerciale n'est exploitable :
+→ Prix indicatif Dossier
+→ sinon Prix indicatif Workspace
+→ sinon aucun prix
 ~~~
 
 Le backend est la seule autorité de résolution.
 
 Il expose au minimum :
 
-- Article retenu ;
+- Article retenu lorsqu'un Article est nécessaire et résolu ;
+- Référence Produit retenue ;
 - montant ;
 - prix normalisé ;
 - source ;
@@ -668,6 +702,10 @@ Règles :
 ~~~text
 Article explicitement sélectionné
 → conservé
+
+aucun Article exploitable
+→ Prix indicatif possible sur la Référence Produit
+→ sinon aucun Prix applicable
 
 un seul Article exploitable
 → résolution automatique possible
@@ -724,6 +762,7 @@ Périmètres fonctionnels nécessaires :
 - Catalogues : lecture / import / gestion ;
 - Tarifs négociés : lecture / gestion ;
 - Prix facturés : lecture / gestion / validation ;
+- Prix indicatifs : lecture / gestion ;
 - Références Dossier : lecture / gestion.
 
 Le rôle système owner reçoit toutes les permissions M-003.
@@ -809,6 +848,8 @@ Surfaces Workspace conceptuelles :
 /workspaces/:workspaceId/dossiers/:dossierId/negotiated-prices
 /workspaces/:workspaceId/dossiers/:dossierId/invoiced-prices
 /workspaces/:workspaceId/dossiers/:dossierId/references
+/workspaces/:workspaceId/supplier-pricing/indicative-prices
+/workspaces/:workspaceId/dossiers/:dossierId/supplier-pricing/indicative-prices
 ~~~
 
 Import :
@@ -871,6 +912,7 @@ Doivent être auditables selon leur importance :
 - mapping : validation/correction ;
 - Tarif négocié : création/modification ;
 - Prix facturé : création/validation/rejet ;
+- Prix indicatif : création/remplacement/archivage ;
 - favori : ajout/retrait ;
 - politique tarifaire ;
 - gouvernance globale.
@@ -889,6 +931,7 @@ Article → archive
 Catalogue/édition → archive
 Tarif → historique conservé
 Prix facturé → historique conservé
+Prix indicatif → historique conservé
 ~~~
 
 Aucune purge physique automatique des historiques économiques n'est requise en M-003 V1.
@@ -946,6 +989,7 @@ Dossier :
 - catalogue accessible ;
 - Tarif négocié ;
 - Prix facturé ;
+- Prix indicatif Dossier ;
 - Prix applicable ;
 - source/fallback.
 
@@ -1041,6 +1085,8 @@ Prix :
 - Tarif fournisseur ;
 - Tarif négocié ;
 - Prix facturé ;
+- Prix indicatif Workspace et Dossier ;
+- priorité des sources commerciales sur l'indicatif ;
 - chevauchements refusés ;
 - fraîcheur 12 mois calendaires ;
 - fallback correct ;
@@ -1146,6 +1192,12 @@ Tarif négocié
 Prix facturé
 → strictement Dossier
 
+Prix indicatif Dossier
+→ strictement Dossier
+
+Prix indicatif Workspace
+→ dernier fallback interne commun au Workspace
+
 aucun prix d'un autre Dossier comme fallback
 
 Owner
@@ -1208,14 +1260,15 @@ M-003 est acceptable lorsque :
 7. les ambiguïtés restent contrôlées ;
 8. les catalogues privés restent strictement Workspace ;
 9. les Tarifs négociés et Prix facturés restent strictement Dossier ;
-10. le Prix applicable respecte la politique Workspace ;
-11. aucun fallback inter-Dossier n'existe ;
-12. l'Owner possède toutes les permissions métier de son Workspace mais reste soumis aux capabilities ;
-13. les autres membres restent contrôlés par RBAC ;
-14. l'historique économique est conservé ;
-15. les tests backend/frontend/E2E couvrent les invariants critiques ;
-16. la Core Gate finale est verte ;
-17. les tests métier et la validation visuelle sont réalisés avant merge.
+10. les Prix indicatifs restent explicitement distincts des sources commerciales et respectent leur portée Workspace/Dossier ;
+11. le Prix applicable respecte la politique Workspace puis utilise l'indicatif seulement en dernier recours ;
+12. aucun fallback inter-Dossier n'existe ;
+13. l'Owner possède toutes les permissions métier de son Workspace mais reste soumis aux capabilities ;
+14. les autres membres restent contrôlés par RBAC ;
+15. l'historique économique est conservé ;
+16. les tests backend/frontend/E2E couvrent les invariants critiques ;
+17. la Core Gate finale est verte ;
+18. les tests métier et la validation visuelle sont réalisés avant merge.
 
 ---
 

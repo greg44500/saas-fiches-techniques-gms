@@ -156,8 +156,9 @@ const buildTechnicalSheetValuation = async ({
         }
 
         if (
-            applicable.article.productVariantId
-            !== variant._id.toString()
+            applicable.article
+            && applicable.article.productVariantId
+                !== variant._id.toString()
         ) {
             throw new AppError(
                 'L’Article fournisseur sélectionné ne correspond pas à la Référence Produit de la ligne.',
@@ -166,6 +167,22 @@ const buildTechnicalSheetValuation = async ({
         }
 
         const price = applicable.price;
+        const indicativePrice = [
+            'INDICATIVE_DOSSIER',
+            'INDICATIVE_WORKSPACE',
+        ].includes(
+            applicable.resolvedSource,
+        );
+        const priceArticleId =
+            indicativePrice
+                ? null
+                : applicable.article?.id
+                    ?? null;
+        const selectedSupplierArticle =
+            indicativePrice
+                ? line.selectedSupplierArticle
+                    ?? null
+                : priceArticleId;
 
         if (
             !price
@@ -175,8 +192,7 @@ const buildTechnicalSheetValuation = async ({
             complete = false;
             lines.push({
                 ...line,
-                selectedSupplierArticle:
-                    applicable.article.id,
+                selectedSupplierArticle,
                 productVariantSnapshot:
                     undefined,
                 valuation:
@@ -211,7 +227,7 @@ const buildTechnicalSheetValuation = async ({
         const sourceFingerprint =
             stableFingerprint({
                 articleId:
-                    applicable.article.id,
+                    priceArticleId,
                 source:
                     applicable.resolvedSource,
                 sourceId: price.id,
@@ -225,8 +241,7 @@ const buildTechnicalSheetValuation = async ({
 
         const valuedLine = {
             ...line,
-            selectedSupplierArticle:
-                applicable.article.id,
+            selectedSupplierArticle,
             productVariantSnapshot:
                 undefined,
             valuation: {
@@ -234,7 +249,7 @@ const buildTechnicalSheetValuation = async ({
                     TECHNICAL_SHEET_LINE_VALUATION_STATUS
                         .VALUED,
                 supplierArticleId:
-                    applicable.article.id,
+                    priceArticleId,
                 applicableSource:
                     applicable.resolvedSource,
                 applicableSourceId:
@@ -274,7 +289,9 @@ const buildTechnicalSheetValuation = async ({
                     variant.yieldPercent ?? null,
             },
             article:
-                applicable.article,
+                indicativePrice
+                    ? null
+                    : applicable.article,
             price: {
                 id: price.id,
                 source:

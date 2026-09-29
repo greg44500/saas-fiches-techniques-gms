@@ -542,6 +542,10 @@ Tarif spécifique magasin
 
 Prix observé
 → prix réellement constaté, par exemple sur une facture
+
+Prix indicatif
+→ estimation interne de dernier recours portée par le Workspace ou un Dossier
+→ distincte de toute donnée commerciale fournisseur
 ```
 
 ### 6.1 Fournisseur
@@ -655,7 +659,29 @@ Provenances déjà identifiées :
 
 L'OCR est une extension différable. Il devra alimenter le même historique tarifaire et ne jamais écraser automatiquement un prix existant sans contrôles suffisants.
 
-### 6.7 Historisation
+### 6.7 Prix indicatif interne
+
+Lorsque le référentiel Produit est exploitable mais qu'aucun Article/Tarif fournisseur, Tarif négocié ou Prix facturé admissible ne permet encore de valoriser la Référence Produit, l'utilisateur peut enregistrer un Prix indicatif.
+
+Portées :
+
+~~~text
+Workspace × Référence Produit
+→ estimation commune à l'entreprise
+
+Dossier × Référence Produit
+→ estimation locale prioritaire sur l'indicatif Workspace
+~~~
+
+Un Prix indicatif :
+
+- peut exister sans Article fournisseur ;
+- reste explicitement identifié comme estimation ;
+- ne remplace jamais une source commerciale disponible ;
+- est historisé par archivage/remplacement ;
+- reste isolé par Workspace et, pour la surcharge locale, par Dossier.
+
+### 6.8 Historisation
 
 Une nouvelle donnée tarifaire ajoute une nouvelle réalité temporelle ; elle ne doit pas écraser silencieusement l'ancienne.
 
@@ -670,7 +696,7 @@ Le système doit pouvoir déterminer :
 
 La priorité entre les sources est définie par la politique de Prix applicable du Workspace et ses fallbacks strictement contextualisés au même magasin.
 
-### 6.8 Politique de Prix applicable du Workspace
+### 6.9 Politique de Prix applicable du Workspace
 
 La stratégie générale de sélection du prix est un **paramètre du Workspace** et s'applique à tous ses magasins/dossiers.
 
@@ -705,13 +731,19 @@ Mode Prix facturé
    pour le magasin + Article
 → sinon Tarif négocié valide pour ce même magasin
 → sinon Tarif fournisseur de référence applicable
+
+Puis, quel que soit le mode, à défaut de source commerciale :
+→ Prix indicatif Dossier
+→ sinon Prix indicatif Workspace
+→ sinon aucun prix
 ~~~
 
 Un prix spécifique d'un autre magasin n'entre jamais dans cette chaîne de résolution.
 
 Le backend conserve et expose au minimum :
 
-- l'Article fournisseur réellement retenu ;
+- l'Article fournisseur réellement retenu lorsqu'une source Article est utilisée ;
+- la Référence Produit retenue ;
 - la source tarifaire réellement utilisée ;
 - la valeur source ;
 - la valeur normalisée ;
@@ -727,18 +759,18 @@ Le frontend ne reconstruit jamais cette logique et ne possède aucune liste stat
 Le Prix applicable n'est donc pas une propriété globale du Produit. Il résulte du contexte :
 
 ~~~text
-Produit
+Référence Produit
 × magasin/dossier
-× Article fournisseur
+× Article fournisseur éventuel
 × politique de prix du Workspace
 × date de valorisation
 ~~~
 
 Un Produit peut être non valorisable dans un magasin et valorisable dans un autre. Il peut également exister dans le référentiel Workspace sans Prix applicable courant.
 
-### 6.9 Temporalité des différentes sources tarifaires
+### 6.10 Temporalité des différentes sources tarifaires
 
-Les trois familles de prix ne portent pas la même temporalité :
+Les trois familles commerciales de prix ne portent pas la même temporalité. Le Prix indicatif est une estimation interne sans validité commerciale implicite :
 
 ~~~text
 Tarif fournisseur
@@ -755,7 +787,7 @@ Ces notions ne doivent jamais être fusionnées dans un champ générique d'anci
 
 Une revue opérationnelle est également distincte de ces temporalités : elle confirme qu'un contrôle a été effectué mais ne prolonge pas artificiellement une validité commerciale.
 
-### 6.10 Prix facturé exploitable et fraîcheur
+### 6.11 Prix facturé exploitable et fraîcheur
 
 Un prix lu ou importé depuis une facture n'est pas automatiquement utilisable dans les calculs.
 
@@ -805,7 +837,7 @@ L'expiration de fraîcheur :
 
 La raison de ce fallback doit rester explicable.
 
-### 6.11 Catalogues fournisseur de référence
+### 6.12 Catalogues fournisseur de référence
 
 Le SaaS peut proposer des catalogues fournisseur de référence préchargés et partagés afin que le premier usage soit réellement exploitable sans obliger chaque client à recréer manuellement les mêmes Articles fournisseur.
 
@@ -967,7 +999,7 @@ La recherche globale ne doit jamais exposer :
 - catalogue `WORKSPACE_PRIVATE` d'un autre Workspace ;
 - donnée Dossier non autorisée.
 
-### 6.12 Sélection d'Article fournisseur et références du magasin
+### 6.13 Sélection d'Article fournisseur et références du magasin
 
 Un Produit peut correspondre à plusieurs Articles fournisseur exploitables dans un même magasin.
 
@@ -1030,7 +1062,7 @@ Chaque Produit et Article proposé à la sélection doit disposer d'une **carte 
 ---
 
 
-### 6.13 Détail d'un Produit dans un magasin
+### 6.14 Détail d'un Produit dans un magasin
 
 Le détail d'un Produit doit disposer d'une vue contextualisée par magasin, distincte de son identité globale dans le référentiel Workspace.
 
@@ -1495,7 +1527,7 @@ Une modification d'une version VALIDATED ne réécrit jamais cette version. Elle
 
 Une revalorisation peut produire une nouvelle version DRAFT dont la composition est inchangée mais dont les prix et coûts sont recalculés. Elle doit ensuite être explicitement validée.
 
-Chaque version validée doit conserver le snapshot nécessaire à la reproductibilité économique : Produit, Article fournisseur réellement utilisé, quantités, rendement, Prix applicable, source, contexte magasin, date de valorisation et autres données indispensables.
+Chaque version validée doit conserver le snapshot nécessaire à la reproductibilité économique : Produit, Article fournisseur lorsqu'il existe, quantités, rendement, Prix applicable, source, contexte magasin, date de valorisation et autres données indispensables.
 
 Le backend doit pouvoir expliquer les différences entre versions, par exemple :
 
@@ -1518,8 +1550,8 @@ Elle doit notamment recontrôler :
 - accès au dossier/magasin ;
 - complétude requise ;
 - cohérence des quantités ;
-- Article fournisseur réellement utilisable ;
-- présence d'un Prix applicable pour chaque ligne devant être valorisée ;
+- Article fournisseur réellement utilisable lorsque la source de prix en dépend ;
+- présence d'un Prix applicable pour chaque ligne devant être valorisée, y compris éventuellement un Prix indicatif M-003 explicitement identifié ;
 - actualité de la valorisation ;
 - changements concurrents incompatibles.
 

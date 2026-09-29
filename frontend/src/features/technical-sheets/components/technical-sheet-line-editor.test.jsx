@@ -215,6 +215,24 @@ describe('TechnicalSheetLineEditor', () => {
     expect(screen.getByText(/6,02/)).toBeInTheDocument();
   });
 
+  it('signale un Prix indicatif comme source de valorisation', () => {
+    renderEditor({
+      lines: [{
+        ...valuedLine,
+        selectedSupplierArticleId: null,
+        valuation: {
+          ...valuedLine.valuation,
+          supplierArticleId: null,
+          applicableSource: 'INDICATIVE_WORKSPACE',
+        },
+      }],
+    });
+
+    expect(screen.getByRole('button', {
+      name: 'Prix unitaire hors taxe — Prix indicatif espace de travail',
+    })).toBeInTheDocument();
+  });
+
   it('ne rend plus de badge permanent de sourcing sous le Produit', () => {
     renderEditor({
       lines: [{

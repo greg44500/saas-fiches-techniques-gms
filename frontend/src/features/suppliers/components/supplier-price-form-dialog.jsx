@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogOverlay,
@@ -148,12 +148,15 @@ function SupplierPriceFormDialog({
         <DialogOverlay />
         <DialogContent initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>
-              {isInvoice ? 'Ajouter un Prix facturé' : 'Ajouter un Tarif négocié'}
-            </DialogTitle>
-            <DialogDescription>
-              Cette donnée commerciale appartient strictement au Dossier courant.
-            </DialogDescription>
+            <div className="flex items-center gap-2">
+              <DialogTitle>
+                {isInvoice ? 'Ajouter un Prix facturé' : 'Ajouter un Tarif négocié'}
+              </DialogTitle>
+              <InfoTooltip
+                content="Cette donnée commerciale appartient strictement au Dossier courant."
+                label="À propos de ce prix"
+              />
+            </div>
           </DialogHeader>
 
           <form className="mt-5 space-y-4" onSubmit={submit}>
@@ -201,7 +204,7 @@ function SupplierPriceFormDialog({
               </Field>
 
               <Field>
-                <FieldLabel>Base du prix</FieldLabel>
+                <FieldLabel>Unité du prix (Kilo, Pièce, etc.)</FieldLabel>
                 <Select
                   items={PRICE_BASES.map((value) => ({
                     value,
@@ -210,7 +213,7 @@ function SupplierPriceFormDialog({
                   onValueChange={setBasis}
                   value={basis}
                 >
-                  <SelectTrigger aria-label="Base du prix">
+                  <SelectTrigger aria-label="Unité du prix">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

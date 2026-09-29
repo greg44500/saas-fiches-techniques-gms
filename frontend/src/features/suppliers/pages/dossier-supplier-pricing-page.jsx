@@ -35,12 +35,16 @@ import {
   useArchiveNegotiatedPriceMutation,
   useDecideInvoicedPriceMutation,
   useListDossierSupplierReferencesQuery,
+  useListDossierIndicativePricesQuery,
   useListInvoicedPricesQuery,
   useListNegotiatedPricesQuery,
   useListSupplierArticlesQuery,
   useListSupplierCatalogsQuery,
   useRemoveDossierSupplierReferenceMutation,
 } from '@/features/suppliers/api/supplier-api';
+import {
+  IndicativePriceDialog,
+} from '@/features/suppliers/components/indicative-price-dialog';
 import {
   SupplierPriceFormDialog,
 } from '@/features/suppliers/components/supplier-price-form-dialog';
@@ -82,10 +86,13 @@ function DossierSupplierPricingPage() {
     if (can(SUPPLIER_PERMISSION.CATALOG_READ)) return 'catalogs';
     if (can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ)) return 'negotiated';
     if (can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ)) return 'invoiced';
+    if (can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ)) return 'indicative';
     return null;
   });
   const [priceDialog, setPriceDialog] = useState(null);
   const [articleToAdd, setArticleToAdd] = useState(NONE);
+  const [indicativeDialogOpen, setIndicativeDialogOpen] = useState(false);
+  const [indicativeVariant, setIndicativeVariant] = useState(null);
 
   const referencesQuery = useListDossierSupplierReferencesQuery(
     { workspaceId: workspace.id, dossierId },
@@ -113,6 +120,14 @@ function DossierSupplierPricingPage() {
     { workspaceId: workspace.id, dossierId },
     { skip: !can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ) },
   );
+  const indicativeQuery = useListDossierIndicativePricesQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+      status: 'ACTIVE',
+    },
+    { skip: !can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ) },
+  );
   const [addReference, addReferenceState] =
     useAddDossierSupplierReferenceMutation();
   const [removeReference, removeReferenceState] =
@@ -123,6 +138,18 @@ function DossierSupplierPricingPage() {
     useDecideInvoicedPriceMutation();
 
   const references = referencesQuery.data ?? [];
+  const negotiatedPrices = negotiatedQuery.data ?? [];
+  const invoicedPrices = invoicedQuery.data ?? [];
+  const indicativePrices = indicativeQuery.data ?? [];
+  const catalogCount = (
+    catalogsQuery.data?.pagination?.total
+    ?? catalogsQuery.data?.catalogs?.length
+    ?? 0
+  );
+  const negotiatedCount = negotiatedPrices.length;
+  const invoicedCount = invoicedPrices.length;
+  const indicativeCount = indicativePrices.length;
+
   const visibleArticles = useMemo(
     () => (
       can(SUPPLIER_PERMISSION.ARTICLE_READ)
@@ -380,6 +407,57 @@ function DossierSupplierPricingPage() {
     },
   ];
 
+  const indicativeColumns = [
+    {
+      id: 'product',
+      header: 'Produit',
+      cell: (price) => (
+        <div>
+          <p className="font-medium">
+            {price.productVariant?.productName
+              ?? price.productVariant?.name
+              ?? 'Référence Produit'}
+          </p>
+          {price.productVariant?.name
+          && price.productVariant?.name !== price.productVariant?.productName && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {price.productVariant.name}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'price',
+      header: 'Prix indicatif',
+      cell: (price) => formatPrice(price),
+    },
+    {
+      id: 'source',
+      header: 'Note / provenance',
+      cell: (price) => price.source || 'Non renseignée',
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (price) => (
+        can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE) ? (
+          <Button
+            onClick={() => {
+              setIndicativeVariant(price.productVariant);
+              setIndicativeDialogOpen(true);
+            }}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Modifier
+          </Button>
+        ) : null
+      ),
+    },
+  ];
+
   const invoicedColumns = [
     {
       id: 'article',
@@ -467,22 +545,27 @@ function DossierSupplierPricingPage() {
           <TabsList aria-label="Données Fournisseurs du Dossier" variant="section">
           {can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) && (
             <TabsTrigger value="references" variant="section">
-              Références
+              Références ({references.length})
             </TabsTrigger>
           )}
           {can(SUPPLIER_PERMISSION.CATALOG_READ) && (
             <TabsTrigger value="catalogs" variant="section">
-              Catalogues
+              Catalogues ({catalogCount})
             </TabsTrigger>
           )}
           {can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ) && (
             <TabsTrigger value="negotiated" variant="section">
-              Tarifs négociés
+              Tarifs négociés ({negotiatedCount})
             </TabsTrigger>
           )}
           {can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ) && (
             <TabsTrigger value="invoiced" variant="section">
-              Prix facturés
+              Prix facturés ({invoicedCount})
+            </TabsTrigger>
+          )}
+          {can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ) && (
+            <TabsTrigger value="indicative" variant="section">
+              Prix indicatifs ({indicativeCount})
             </TabsTrigger>
           )}
           </TabsList>
@@ -611,35 +694,35 @@ function DossierSupplierPricingPage() {
       {section === 'negotiated' && (
         <section className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="flex items-center justify-between gap-3 border-b border-border p-4">
-            <div>
+            <div className="flex items-center gap-2">
               <p className="text-sm font-medium">
                 Tarifs négociés du Dossier
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Prix contractuels spécifiques à cet Article dans ce Dossier et pour une période donnée.
-              </p>
+              <InfoTooltip
+                content="Prix contractuels spécifiques à un Article fournisseur dans ce Dossier et pour une période donnée."
+                label="À propos des Tarifs négociés"
+              />
             </div>
             {can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE) && (
-              <ActionIconButton
-                Icon={Plus}
-                label="Ajouter un Tarif négocié"
+              <Button
                 onClick={() => setPriceDialog('negotiated')}
-                tooltipLabel="Ajouter un Tarif négocié"
-                variant="outline"
-              />
+                size="sm"
+                type="button"
+              >
+                <Plus aria-hidden="true" className="size-4" />
+                Ajouter un tarif négocié
+              </Button>
             )}
           </div>
           <DataTable
             rowClassName="transition-colors hover:bg-muted/50"
             caption="Tarifs négociés du Dossier"
             columns={negotiatedColumns}
-            data={negotiatedQuery.data ?? []}
+            data={negotiatedPrices}
             emptyContent={(
-              <EmptyState
-                className="p-0"
-                description="Aucun Tarif négocié n’est enregistré pour ce Dossier."
-                title="Aucun Tarif négocié"
-              />
+              <p className="p-5 text-sm text-muted-foreground">
+                Aucun tarif négocié n’est enregistré pour ce Dossier.
+              </p>
             )}
             getRowKey={(price) => price.id}
           />
@@ -671,7 +754,7 @@ function DossierSupplierPricingPage() {
             rowClassName="transition-colors hover:bg-muted/50"
             caption="Prix facturés du Dossier"
             columns={invoicedColumns}
-            data={invoicedQuery.data ?? []}
+            data={invoicedPrices}
             emptyContent={(
               <EmptyState
                 className="p-0"
@@ -683,6 +766,79 @@ function DossierSupplierPricingPage() {
           />
         </section>
       )}
+
+      {section === 'indicative' && (
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">
+                Prix indicatifs du Dossier
+              </p>
+              <InfoTooltip
+                content="Estimations internes propres à ce Dossier. Elles servent uniquement de dernier recours lorsqu’aucun Tarif négocié, Prix facturé admissible ou Tarif fournisseur n’est applicable."
+                label="À propos des Prix indicatifs"
+              />
+            </div>
+            {can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE) && (
+              <Button
+                onClick={() => {
+                  setIndicativeVariant(null);
+                  setIndicativeDialogOpen(true);
+                }}
+                size="sm"
+                type="button"
+              >
+                <Plus aria-hidden="true" className="size-4" />
+                Ajouter un prix indicatif
+              </Button>
+            )}
+          </div>
+
+          {indicativeQuery.isError ? (
+            <div className="p-4">
+              <ErrorState
+                description="Les Prix indicatifs du Dossier n’ont pas pu être chargés."
+                onRetry={indicativeQuery.refetch}
+                title="Prix indicatifs indisponibles"
+              />
+            </div>
+          ) : (
+            <DataTable
+              rowClassName="transition-colors hover:bg-muted/50"
+              caption="Prix indicatifs du Dossier"
+              columns={indicativeColumns}
+              data={indicativePrices}
+              emptyContent={(
+                <p className="p-5 text-sm text-muted-foreground">
+                  Aucun prix indicatif n’est enregistré pour ce Dossier.
+                </p>
+              )}
+              getRowKey={(price) => price.id}
+            />
+          )}
+        </section>
+      )}
+
+      <IndicativePriceDialog
+        dossierId={dossierId}
+        onClose={() => {
+          setIndicativeDialogOpen(false);
+          setIndicativeVariant(null);
+        }}
+        onSaved={(result) => {
+          setIndicativeDialogOpen(false);
+          setIndicativeVariant(null);
+          toast({
+            title: result?.removed
+              ? 'Prix indicatif retiré'
+              : 'Prix indicatif enregistré',
+            variant: 'success',
+          });
+        }}
+        open={indicativeDialogOpen}
+        variant={indicativeVariant}
+        workspaceId={workspace.id}
+      />
 
       <SupplierPriceFormDialog
         articles={visibleArticles}

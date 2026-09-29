@@ -17,6 +17,7 @@ import {
 import {
     dossierSupplierPricingRouter,
     supplierPricingPolicyRouter,
+    workspaceSupplierPricingRouter,
 } from '../modules/supplierCatalog/supplierPricing.routes.js';
 import {
     technicalSheetDossierRouter,
@@ -203,6 +204,11 @@ const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
         key: 'supplier-pricing-policy',
         mountPath: '/api/workspaces/:workspaceId/supplier-pricing-policy',
         router: supplierPricingPolicyRouter,
+    }),
+    Object.freeze({
+        key: 'workspace-supplier-pricing',
+        mountPath: '/api/workspaces/:workspaceId/supplier-pricing',
+        router: workspaceSupplierPricingRouter,
     }),
 ]);
 

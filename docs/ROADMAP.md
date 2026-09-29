@@ -164,6 +164,8 @@ Core Gate post-merge #133 : success
 
 Les retours des bêta-testeurs peuvent déclencher des retouches UX ultérieures sans bloquer M-004 ni rouvrir le contrat M-003, sauf changement d'invariant métier.
 
+Extension post-clôture validée le 2026-09-29 pendant la QA M-004 : ajout d'un Prix indicatif interne, historisé, porté par Workspace ou Dossier et utilisable comme dernier recours lorsqu'aucune source commerciale M-003 n'est exploitable. Cette extension ne modifie ni l'isolation Dossier des Tarifs négociés/Prix facturés, ni la priorité des sources commerciales, ni la frontière Core/Produit.
+
 Le lot UX M-002 `GMS-UX-002` a été traité et fusionné avant l'ouverture de M-004. M-004 peut donc poursuivre sa conception sur le `main` vérifié au commit `b479b217815fad885f233e98b8f3145656641352`.
 
 
@@ -187,7 +189,8 @@ Décisions fermées :
 - conversions uniquement entre unités physiquement compatibles ;
 - sections Ingrédients et Économat séparées ;
 - M-003 reste l'unique autorité de résolution Article / Prix applicable ;
-- 0 Article = non résolu, 1 = résolution automatique possible, N = choix humain obligatoire ;
+- 0 Article peut désormais rester valorisable par Prix indicatif M-003 ; sinon non résolu ;
+- 1 Article = résolution automatique possible, N = choix humain obligatoire ;
 - aucun Article le moins cher sélectionné automatiquement ;
 - absence de Prix applicable distincte de zéro ;
 - Coût matière HT + Économat HT = Coût de fabrication HT ;

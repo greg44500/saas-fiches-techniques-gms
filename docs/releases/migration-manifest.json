@@ -128,6 +128,14 @@
       "dependsOn": []
     },
     {
+      "id": "m003-indicative-pricing",
+      "script": "migration:m003-indicative-pricing",
+      "runner": "backend/migrations/runEnsureM003IndicativePricingMigration.js",
+      "dependsOn": [
+        "m003-supplier-catalog"
+      ]
+    },
+    {
       "id": "m004-technical-sheets",
       "script": "migration:m004-technical-sheets",
       "runner": "backend/migrations/runEnsureM004TechnicalSheetMigration.js",

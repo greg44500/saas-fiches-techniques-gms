@@ -521,6 +521,18 @@ Sa validité repose sur sa propre période commerciale et non sur un seuil gén�
 
 ---
 
+## Prix indicatif
+
+Estimation interne de dernier recours, distincte des données commerciales fournisseur.
+
+Portées :
+- Workspace : estimation commune à l'espace de travail ;
+- Dossier : surcharge locale facultative.
+
+Le Prix indicatif peut exister sans Article fournisseur. La portée Dossier est essayée avant la portée Workspace, après toutes les sources commerciales admissibles.
+
+---
+
 ## Prix observé
 
 Prix réellement constaté à une date donnée, notamment sur une facture.
@@ -567,7 +579,7 @@ Une revue peut être réalisée en masse mais ne modifie pas artificiellement le
 
 ## Produit valorisable
 
-Produit pour lequel le backend peut résoudre, dans le magasin courant, un Article et un Prix applicable conformes aux règles du Workspace.
+Produit pour lequel le backend peut résoudre, dans le magasin courant, un Prix applicable conforme aux règles du Workspace. Un Article fournisseur reste requis pour une source commerciale liée à un Article, mais un Prix indicatif peut valoriser directement la Référence Produit lorsqu'aucun Article commercial exploitable n'existe.
 
 ---
 

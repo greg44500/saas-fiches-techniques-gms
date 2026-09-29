@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   detailQuery: vi.fn(),
   marginQuery: vi.fn(),
   metadataQuery: vi.fn(),
+  activeSheetsQuery: vi.fn(),
   params: vi.fn(),
   workspaceContext: vi.fn(),
 }));
@@ -34,6 +35,7 @@ vi.mock('@/features/dossiers/api/dossiers-api', () => ({
 
 vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
   useGetDossierTechnicalSheetSettingsQuery: mocks.marginQuery,
+  useListTechnicalSheetsQuery: mocks.activeSheetsQuery,
 }));
 
 vi.mock('@/features/suppliers/components/dossier-applicable-price-card', () => ({
@@ -94,6 +96,15 @@ describe('DossierWorkspacePage', () => {
     mocks.marginQuery.mockReturnValue(queryResult({
       defaultTargetMarginBasisPoints: 3000,
     }));
+    mocks.activeSheetsQuery.mockReturnValue(queryResult({
+      sheets: [],
+      pagination: {
+        page: 1,
+        limit: 1,
+        total: 3,
+        totalPages: 3,
+      },
+    }));
   });
 
   it('présente le contexte Dossier compact et ses onglets métier', () => {
@@ -134,9 +145,22 @@ describe('DossierWorkspacePage', () => {
       'href',
       '/workspaces/workspace-1/dossiers/dossier-1/suppliers',
     );
-    expect(screen.getByRole('link', { name: 'Fiches techniques' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Fiches techniques (3)' })).toHaveAttribute(
       'href',
       '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets',
+    );
+
+    expect(mocks.activeSheetsQuery).toHaveBeenCalledWith(
+      {
+        workspaceId: 'workspace-1',
+        dossierId: 'dossier-1',
+        page: 1,
+        limit: 1,
+        status: 'ACTIVE',
+      },
+      {
+        skip: false,
+      },
     );
   });
 
@@ -160,7 +184,7 @@ describe('DossierWorkspacePage', () => {
     })).toBeInTheDocument();
 
     const technicalSheetsTab = screen.getByRole('link', {
-      name: 'Fiches techniques',
+      name: 'Fiches techniques (3)',
     });
     expect(technicalSheetsTab).toHaveClass('border-primary');
     expect(technicalSheetsTab).toHaveClass('text-primary');
@@ -191,6 +215,6 @@ describe('DossierWorkspacePage', () => {
     expect(screen.queryByText('Email documents non renseigné')).not.toBeInTheDocument();
     expect(screen.queryByText('Téléphone non renseigné')).not.toBeInTheDocument();
     expect(screen.queryByText('Non renseignée')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Fiches techniques' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Fiches techniques (3)' })).toBeInTheDocument();
   });
 });

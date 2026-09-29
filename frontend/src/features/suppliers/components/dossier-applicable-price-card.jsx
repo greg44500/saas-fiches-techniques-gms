@@ -38,6 +38,8 @@ function getPricingSourceLabel(source) {
     SUPPLIER_TARIFF: 'Tarif fournisseur',
     NEGOTIATED_PRICE: 'Tarif négocié',
     INVOICED_PRICE: 'Prix facturé',
+    INDICATIVE_DOSSIER: 'Prix indicatif Dossier',
+    INDICATIVE_WORKSPACE: 'Prix indicatif espace de travail',
   }[source] ?? 'Source non disponible';
 }
 

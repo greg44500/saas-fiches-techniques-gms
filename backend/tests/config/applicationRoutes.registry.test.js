@@ -50,6 +50,11 @@ describe('application backend route composition', () => {
                     mountPath: '/api/workspaces/:workspaceId/business-settings',
                     router: expect.any(Function),
                 }),
+                expect.objectContaining({
+                    key: 'workspace-supplier-pricing',
+                    mountPath: '/api/workspaces/:workspaceId/supplier-pricing',
+                    router: expect.any(Function),
+                }),
             ]),
         );
     });

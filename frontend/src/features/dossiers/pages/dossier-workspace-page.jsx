@@ -62,6 +62,7 @@ import {
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 import {
   useGetDossierTechnicalSheetSettingsQuery,
+  useListTechnicalSheetsQuery,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { cn } from '@/lib/utils';
@@ -75,6 +76,18 @@ function DossierWorkspacePage() {
     dossierId,
   });
   const metadataQuery = useGetDossierMetadataQuery(workspace.id);
+  const activeSheetsQuery = useListTechnicalSheetsQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+      page: 1,
+      limit: 1,
+      status: 'ACTIVE',
+    },
+    {
+      skip: !can(TECHNICAL_SHEET_PERMISSION.READ),
+    },
+  );
   const marginQuery = useGetDossierTechnicalSheetSettingsQuery(
     {
       workspaceId: workspace.id,
@@ -122,6 +135,7 @@ function DossierWorkspacePage() {
   const canReadSuppliers = canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS);
   const canReadTechnicalSheets = can(TECHNICAL_SHEET_PERMISSION.READ);
   const canManageMargin = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
+  const activeSheetCount = activeSheetsQuery.data?.pagination?.total;
   const marginBasisPoints = marginQuery.data?.defaultTargetMarginBasisPoints;
   const marginLabel = Number.isInteger(marginBasisPoints)
     ? 'Marge cible ' + formatBasisPoints(marginBasisPoints)
@@ -276,6 +290,9 @@ function DossierWorkspacePage() {
                 to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/technical-sheets`}
               >
                 Fiches techniques
+                {Number.isInteger(activeSheetCount)
+                  ? ' (' + activeSheetCount + ')'
+                  : ''}
               </NavLink>
             )}
           </div>

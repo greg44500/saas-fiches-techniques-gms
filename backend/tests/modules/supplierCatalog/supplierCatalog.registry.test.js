@@ -14,6 +14,7 @@ import {
     ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY,
 } from '../../../config/applicationRolePermission.registry.js';
 import {
+    INDICATIVE_PRICE_STATUS,
     INVOICED_PRICE_STATUS,
     SUPPLIER_PRICING_POLICY_MODE,
     SUPPLIER_RESOURCE_STATUS,
@@ -43,6 +44,10 @@ describe('M-003 supplier catalog registries', () => {
             PENDING_VALIDATION: 'PENDING_VALIDATION',
             VALIDATED: 'VALIDATED',
             REJECTED: 'REJECTED',
+        });
+        expect(INDICATIVE_PRICE_STATUS).toEqual({
+            ACTIVE: 'ACTIVE',
+            ARCHIVED: 'ARCHIVED',
         });
         expect(SUPPLIER_PRICING_POLICY_MODE.NEGOTIATED_PRICE)
             .toBe('NEGOTIATED_PRICE');

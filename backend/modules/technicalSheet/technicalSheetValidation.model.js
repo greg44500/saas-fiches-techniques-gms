@@ -80,13 +80,13 @@ const lineSnapshotSchema = new Schema(
         },
         supplierArticleId: {
             type: Schema.Types.ObjectId,
-            required: true,
+            default: null,
         },
         supplierId: {
             type: Schema.Types.ObjectId,
-            required: true,
+            default: null,
         },
-        supplierName: { type: String, required: true },
+        supplierName: { type: String, default: null },
         supplierReference: { type: String, default: null },
         supplierDesignation: { type: String, default: null },
         brand: { type: String, default: null },

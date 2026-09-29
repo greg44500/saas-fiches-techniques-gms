@@ -294,7 +294,8 @@ Article explicitement sélectionné
 → conservé
 
 0 Article exploitable
-→ ligne non résolue
+→ si M-003 résout un Prix indicatif pour la Référence Produit, la ligne peut être valorisée sans Article fournisseur
+→ sinon ligne non résolue
 
 1 Article exploitable
 → résolution automatique autorisée
@@ -323,7 +324,9 @@ jamais 0 €
 → Fiche non complètement valorisée
 ```
 
-Le fallback reste celui du contrat M-003 et toujours dans le contexte autorisé du même Dossier.
+Le fallback reste celui du contrat M-003 et toujours dans le contexte autorisé du même Dossier. Les Prix indicatifs M-003 constituent le dernier recours après les sources commerciales : surcharge Dossier puis valeur Workspace.
+
+Une ligne valorisée par Prix indicatif conserve `supplierArticleId = null` et une source explicite `INDICATIVE_DOSSIER` ou `INDICATIVE_WORKSPACE`. Le snapshot historique reste valide sans inventer de Fournisseur ni d'Article.
 
 ---
 

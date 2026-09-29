@@ -104,6 +104,47 @@ describe('DossierApplicablePriceCard', () => {
     expect(screen.getByText(/source de remplacement/)).toBeInTheDocument();
   });
 
+  it('identifie explicitement un Prix indicatif utilisé en dernier recours', async () => {
+    const user = userEvent.setup();
+
+    mocks.lazyApplicable.mockReturnValue([
+      mocks.loadApplicable,
+      {
+        data: {
+          resolvedSource: 'INDICATIVE_WORKSPACE',
+          fallbackApplied: true,
+          price: {
+            normalizedAmount: '3.1',
+            normalizedUnit: 'KG',
+            currency: 'EUR',
+          },
+        },
+        isError: false,
+        isFetching: false,
+        reset: mocks.resetApplicable,
+      },
+    ]);
+
+    render(
+      <DossierApplicablePriceCard
+        dossierId="dossier-1"
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    }));
+    await user.click(screen.getByRole('option', {
+      name: 'Sysco · Ali321',
+    }));
+
+    expect(screen.getByText(/Prix indicatif espace de travail/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/source de remplacement/))
+      .toBeInTheDocument();
+  });
+
   it('efface le résultat précédent quand la sélection revient à Sélectionner', async () => {
     const user = userEvent.setup();
 

@@ -599,7 +599,7 @@ Les règles d'arrondi des montants agrégés et prix de vente restent à cadrer.
 
 Le prix n'est jamais une propriété directe et intemporelle du Produit.
 
-Le domaine distingue trois réalités tarifaires.
+Le domaine distingue quatre réalités tarifaires.
 
 ### 9.1 Tarif fournisseur de référence
 
@@ -621,9 +621,26 @@ Prix réellement constaté, notamment sur une facture.
 
 Il peut être contextualisé par magasin lorsque celui-ci est identifiable.
 
+### 9.4 Prix indicatif
+
+Estimation interne de dernier recours, distincte de toute donnée commerciale fournisseur.
+
+Deux portées sont retenues :
+
+~~~text
+Workspace × Référence Produit
+→ estimation commune à l'espace de travail
+
+Dossier × Référence Produit
+→ surcharge locale facultative
+~~~
+
+Le Prix indicatif peut exister sans Article fournisseur. Il ne remplace jamais une source commerciale applicable. La surcharge Dossier est prioritaire sur l'indicatif Workspace, mais ces deux sources restent derrière Tarif fournisseur, Tarif négocié et Prix facturé admissibles.
+
 Chaque donnée tarifaire doit pouvoir porter conceptuellement :
 
-- Article fournisseur ;
+- Article fournisseur lorsque la source commerciale l'exige ;
+- Référence Produit ;
 - montant source ;
 - base / unité du prix ;
 - devise ;
@@ -643,7 +660,7 @@ Provenances identifiées :
 - import fichier ;
 - futur OCR.
 
-### 9.4 Politique de prix du Workspace
+### 9.5 Politique de prix du Workspace
 
 La stratégie de sélection du Prix applicable est un paramètre du Workspace.
 
@@ -675,17 +692,22 @@ Prix facturé
 → dernier Prix facturé VALIDE, exploitable et suffisamment frais du même magasin
 → sinon Tarif négocié valide du même magasin
 → sinon Tarif fournisseur de référence
+
+Puis, quel que soit le mode, si aucune source commerciale n'est exploitable :
+→ Prix indicatif Dossier
+→ sinon Prix indicatif Workspace
+→ sinon aucun prix
 ~~~
 
 Le backend est la seule autorité de résolution et expose la source, la valeur, le fallback, sa raison et les alertes utiles.
 
-### 9.5 Valorisabilité contextuelle
+### 9.6 Valorisabilité contextuelle
 
 La capacité à valoriser une ligne dépend de :
 
 ~~~text
-Produit
-× Article fournisseur
+Référence Produit
+× Article fournisseur éventuel
 × magasin/dossier
 × politique Workspace
 × date
@@ -695,7 +717,7 @@ Un autre magasin n'est jamais une source de fallback.
 
 L'absence de Prix applicable est un état distinct de zéro.
 
-### 9.6 Prix facturé exploitable et fraîcheur
+### 9.7 Prix facturé exploitable et fraîcheur
 
 Un Prix facturé doit être correctement rattaché au Fournisseur, à l'Article, au magasin, à la date de facture, au prix source et aux données de normalisation puis explicitement validé.
 
@@ -722,7 +744,7 @@ Cette durée est une baseline V1 révisable après tests métier réels et reste
 
 Une donnée trop ancienne reste VALIDÉE et historique mais devient inéligible à l'usage automatique courant. Le moteur applique alors les fallbacks prévus.
 
-### 9.7 Validité commerciale et revue tarifaire
+### 9.8 Validité commerciale et revue tarifaire
 
 Les temporalités restent distinctes :
 
@@ -742,7 +764,7 @@ revue tarifaire
 
 Une revue n'étend jamais artificiellement la validité commerciale.
 
-### 9.8 Catalogue fournisseur de référence
+### 9.9 Catalogue fournisseur de référence
 
 Un Fournisseur peut posséder plusieurs éditions historiques de catalogue.
 
@@ -792,7 +814,7 @@ Fournisseur + référence Article connue
 
 Les mappings Fournisseur ainsi que les correspondances `Article fournisseur → Produit/déclinaison` doivent pouvoir être mémorisés et réutilisés.
 
-### 9.8.1 Recherche transverse Produits / catalogues / références
+### 9.9.1 Recherche transverse Produits / catalogues / références
 
 Le produit expose conceptuellement une recherche unifiée, avec au moins deux axes.
 
@@ -818,7 +840,7 @@ Un résultat issu d'un catalogue conserve son Fournisseur, son édition, sa réf
 
 La portée globale n'expose jamais les catalogues privés, prix négociés, prix facturés ou historiques commerciaux d'un autre tenant.
 
-### 9.9 Résolution des Articles fournisseur
+### 9.10 Résolution des Articles fournisseur
 
 Un Produit peut avoir plusieurs Articles exploitables dans un même magasin.
 
@@ -830,7 +852,7 @@ S'il n'existe qu'un seul candidat exploitable, le backend peut le résoudre auto
 
 Un changement de prix du même Article est une revalorisation ; un changement d'Article est une modification d'approvisionnement distincte.
 
-### 9.10 Références du magasin
+### 9.11 Références du magasin
 
 La relation opérationnelle utile est une référence favorite de magasin vers un Article fournisseur précis.
 
@@ -849,7 +871,7 @@ La politique Workspace peut fonctionner en mode manuel, suggestion ou ajout auto
 
 Un retrait manuel est respecté et une baisse de fréquence ne retire pas automatiquement un favori.
 
-### 9.11 Carte d'identité Produit / Article
+### 9.12 Carte d'identité Produit / Article
 
 Chaque Produit ou Article proposé dans un sélecteur doit pouvoir être présenté avec une carte d'identité fournie par le backend.
 
@@ -860,7 +882,7 @@ Le frontend ne reconstruit ni la valorisabilité, ni le statut favori/fréquent,
 ---
 
 
-### 9.12 Détail Produit / Magasin
+### 9.13 Détail Produit / Magasin
 
 Le Produit reste global au Workspace, mais sa projection opérationnelle dans un Dossier/Magasin expose des informations contextualisées.
 
@@ -928,7 +950,7 @@ Version
 
 ### 11.0 Éligibilité d'une ligne
 
-Une ligne ne peut être officiellement validée que si le backend peut résoudre un Article fournisseur autorisé et un Prix applicable dans le magasin courant.
+Une ligne ne peut être officiellement validée que si le backend peut résoudre un Prix applicable dans le magasin courant. Un Article fournisseur est requis lorsque la source tarifaire en dépend ; il peut rester absent lorsque M-003 utilise explicitement un Prix indicatif.
 
 Un DRAFT peut temporairement être incomplet ou non valorisable.
 

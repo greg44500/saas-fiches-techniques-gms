@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   listCatalogs: vi.fn(),
   listNegotiated: vi.fn(),
   listInvoiced: vi.fn(),
+  listIndicative: vi.fn(),
 }));
 
 vi.mock('react-router', async (importOriginal) => {
@@ -39,6 +40,7 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListSupplierCatalogsQuery: mocks.listCatalogs,
   useListNegotiatedPricesQuery: mocks.listNegotiated,
   useListInvoicedPricesQuery: mocks.listInvoiced,
+  useListDossierIndicativePricesQuery: mocks.listIndicative,
   useAddDossierSupplierReferenceMutation: () => [
     vi.fn(),
     { isLoading: false },
@@ -59,6 +61,12 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
 
 vi.mock('@/features/suppliers/components/supplier-price-form-dialog', () => ({
   SupplierPriceFormDialog: () => null,
+}));
+
+vi.mock('@/features/suppliers/components/indicative-price-dialog', () => ({
+  IndicativePriceDialog: ({ open }) => (
+    open ? <div>Dialogue Prix indicatif ouvert</div> : null
+  ),
 }));
 
 import {
@@ -110,6 +118,7 @@ describe('DossierSupplierPricingPage', () => {
     }));
     mocks.listNegotiated.mockReturnValue(queryResult([]));
     mocks.listInvoiced.mockReturnValue(queryResult([]));
+    mocks.listIndicative.mockReturnValue(queryResult([]));
   });
 
   it('affiche les catalogues accessibles avec portée et provenance dans le contexte Dossier', () => {
@@ -149,7 +158,7 @@ describe('DossierSupplierPricingPage', () => {
     })).toBeInTheDocument();
     expect(screen.queryByText('Retour au Dossier')).not.toBeInTheDocument();
     expect(screen.getByRole('tab', {
-      name: 'Catalogues',
+      name: 'Catalogues (1)',
     })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Catalogue partagé 2026'))
       .toBeInTheDocument();
@@ -161,6 +170,91 @@ describe('DossierSupplierPricingPage', () => {
         '/workspaces/workspace-1/suppliers?section=catalogs',
       );
     expect(screen.queryByText('Vérifier un prix applicable'))
+      .not.toBeInTheDocument();
+  });
+
+  it('rend les volumes visibles et l’ajout d’un tarif négocié explicite', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: (permission) => [
+        SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ,
+        SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE,
+        SUPPLIER_PERMISSION.INVOICED_PRICE_READ,
+        SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ,
+      ].includes(permission),
+    });
+    mocks.listNegotiated.mockReturnValue(queryResult([
+      {
+        id: 'price-active',
+        status: 'ACTIVE',
+        validFrom: '2026-09-01T00:00:00.000Z',
+        validTo: null,
+      },
+      {
+        id: 'price-archived',
+        status: 'ARCHIVED',
+        validFrom: '2026-01-01T00:00:00.000Z',
+        validTo: null,
+      },
+    ]));
+    mocks.listInvoiced.mockReturnValue(queryResult([
+      { id: 'invoice-1', status: 'VALIDATED', invoiceDate: '2026-09-01T00:00:00.000Z' },
+      { id: 'invoice-2', status: 'PENDING_VALIDATION', invoiceDate: '2026-09-02T00:00:00.000Z' },
+    ]));
+    mocks.listIndicative.mockReturnValue(queryResult([
+      {
+        id: 'indicative-1',
+        status: 'ACTIVE',
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte',
+          productName: 'Carotte',
+        },
+        normalizedAmount: '1.8',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
+      },
+    ]));
+
+    renderPage();
+
+    expect(screen.getByRole('tab', {
+      name: 'Tarifs négociés (2)',
+    })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', {
+      name: 'Prix facturés (2)',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('tab', {
+      name: 'Prix indicatifs (1)',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Ajouter un tarif négocié',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'À propos des Tarifs négociés',
+    })).toBeInTheDocument();
+  });
+
+  it('n’affiche qu’un seul message lorsque le Dossier n’a aucun tarif négocié', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: (permission) => (
+        permission === SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ
+      ),
+    });
+
+    renderPage();
+
+    expect(screen.getAllByText(
+      'Aucun tarif négocié n’est enregistré pour ce Dossier.',
+    )).toHaveLength(1);
+    expect(screen.queryByText('Aucun Tarif négocié'))
       .not.toBeInTheDocument();
   });
 

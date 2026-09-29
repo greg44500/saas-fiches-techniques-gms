@@ -60,6 +60,14 @@ InvoicedPrice
 - seul VALIDATED est éligible à la résolution ;
 - la fraîcheur de 12 mois calendaires est calculée au runtime.
 
+IndicativePrice
+- workspace + productVariant ;
+- dossier nullable : null = portée Workspace, renseigné = surcharge Dossier ;
+- sourceAmount/sourceBasis/currency + valeur normalisée ;
+- `ACTIVE / ARCHIVED` ;
+- un seul `ACTIVE` par portée + productVariant ;
+- ne dépend pas obligatoirement d'un SupplierArticle.
+
 DossierSupplierReference
 - favori Dossier × Article fournisseur ;
 - aucun prix n'est copié dans cette relation.
@@ -68,7 +76,15 @@ DossierSupplierReference
 
 WorkspaceSupplierPricingPolicy
 - politique du Prix applicable ;
-- absence de document = mode NEGOTIATED_PRICE par défaut.
+- absence de document = mode NEGOTIATED_PRICE par défaut ;
+- les sources commerciales prévues par le mode restent prioritaires ;
+- dernier recours commun : IndicativePrice Dossier puis Workspace.
+
+Migration d'extension post-clôture :
+- `migration:m003-indicative-pricing` ;
+- crée/vérifie les indexes M-003 incluant IndicativePrice ;
+- backfill idempotent des nouvelles permissions système Owner ;
+- dépend de `m003-supplier-catalog` afin de couvrir aussi les bases où la migration M-003 historique avait déjà été exécutée.
 
 SupplierCatalogImportSession
 - état temporaire inspect / preview / confirm ;
@@ -90,6 +106,7 @@ SupplierCommerceLock
 | SupplierTariff | workspace null | workspace requis | non |
 | NegotiatedPrice | non | workspace requis | requis |
 | InvoicedPrice | non | workspace requis | requis |
+| IndicativePrice | non | workspace requis | facultatif |
 | DossierSupplierReference | non | workspace requis | requis |
 | WorkspaceSupplierPricingPolicy | non | workspace requis | non |
 | SupplierCatalogImportSession | selon portée | selon portée | non |
@@ -115,7 +132,8 @@ normalizedAmount null signifie « non calculable », jamais zéro.
 - ligne modifiée : nouvelle révision SupplierCatalogLine ;
 - Tarif fournisseur modifié : nouvelle révision SupplierTariff ;
 - Tarif négocié : archivage explicite, jamais réécriture silencieuse ;
-- Prix facturé : observation conservée, seules les décisions validation/rejet évoluent.
+- Prix facturé : observation conservée, seules les décisions validation/rejet évoluent ;
+- Prix indicatif : remplacement par archivage de l'actif puis création d'une nouvelle réalité.
 
 ## 7. Concurrence
 
@@ -144,6 +162,8 @@ Les plages temporelles sont protégées par transaction MongoDB + SupplierCommer
 - supplier:invoiced-price:read
 - supplier:invoiced-price:manage
 - supplier:invoiced-price:validate
+- supplier:indicative-price:read
+- supplier:indicative-price:manage
 - supplier:dossier-reference:read
 - supplier:dossier-reference:manage
 - supplier:applicable-price:read
@@ -174,6 +194,7 @@ Workspace :
 - /api/workspaces/:workspaceId/supplier-articles
 - /api/workspaces/:workspaceId/supplier-catalogs
 - /api/workspaces/:workspaceId/dossiers/:dossierId/supplier-pricing
+- /api/workspaces/:workspaceId/supplier-pricing
 
 Administration globale :
 - /api/supplier-reference

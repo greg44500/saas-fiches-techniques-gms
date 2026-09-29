@@ -112,7 +112,8 @@ const inferChangeKinds = ({
         valuation.lineSnapshots.map(
             (entry) => ({
                 articleId:
-                    entry.article.id,
+                    entry.article?.id
+                    ?? null,
                 source:
                     entry.price.source,
                 sourceId:
@@ -123,7 +124,9 @@ const inferChangeKinds = ({
         (previousValidation.linesSnapshot ?? [])
             .map((line) => ({
                 articleId:
-                    line.supplierArticleId.toString(),
+                    line.supplierArticleId
+                        ?.toString()
+                    ?? null,
                 source:
                     line.applicableSource,
                 sourceId:
@@ -193,7 +196,15 @@ const buildValidationLines = ({
             );
         }
 
-        if (!source.article.supplierName) {
+        const indicativeSource = [
+            'INDICATIVE_DOSSIER',
+            'INDICATIVE_WORKSPACE',
+        ].includes(source.price.source);
+
+        if (
+            !indicativeSource
+            && !source.article?.supplierName
+        ) {
             throw new AppError(
                 'Le Fournisseur de l’Article est indisponible pour créer le snapshot historique.',
                 409,
@@ -222,20 +233,23 @@ const buildValidationLines = ({
             grossUnit:
                 line.calculation.grossUnit,
             supplierArticleId:
-                source.article.id,
+                source.article?.id
+                ?? null,
             supplierId:
-                source.article.supplierId,
+                source.article?.supplierId
+                ?? null,
             supplierName:
-                source.article.supplierName,
+                source.article?.supplierName
+                ?? null,
             supplierReference:
-                source.article.supplierReference
+                source.article?.supplierReference
                 ?? null,
             supplierDesignation:
                 source.article
-                    .supplierDesignation
+                    ?.supplierDesignation
                 ?? null,
             brand:
-                source.article.brand ?? null,
+                source.article?.brand ?? null,
             normalizedPriceHt:
                 source.price.normalizedAmount,
             normalizedUnit:

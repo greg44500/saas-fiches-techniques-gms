@@ -3,7 +3,7 @@
 **Date :** 2026-09-29  
 **Lot clôturé :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité  
 **Lot courant :** M-004 — Fiches techniques + valorisation  
-**État M-004 :** IMPLÉMENTATION DU BLOC HORS EXPORTS TERMINÉE SUR BRANCHE — stabilisation UX de QA en cours ; tests ciblés et release:check à rejouer après validation visuelle  
+**État M-004 :** IMPLÉMENTATION DU BLOC HORS EXPORTS TERMINÉE SUR BRANCHE — stabilisation UX/M-003 en cours avec Prix indicatifs Workspace/Dossier ; tests ciblés, migration M-003 et release:check à rejouer avant PR  
 **Branche :** `feature/m004-fiches-techniques-valorisation`  
 **Base de branche :** `main@b479b217815fad885f233e98b8f3145656641352`
 
@@ -119,16 +119,21 @@ M-004 réutilise impérativement M-003 :
 
 ~~~text
 ProductVariant
-→ SupplierArticle
+→ SupplierArticle lorsque nécessaire
 → Prix applicable
 → contexte Dossier
+
+Dernier recours M-003 :
+Prix indicatif Dossier
+→ sinon Prix indicatif Workspace
 ~~~
 
 Résolution Article :
 
 ~~~text
 0 Article
-→ non résolu
+→ Prix indicatif possible directement sur la Référence Produit
+→ sinon non résolu
 
 1 Article
 → résolution automatique possible
@@ -383,6 +388,18 @@ Les invariants UX structurants sont validés :
 
 Les détails de mise en page, placement d'actions, densité et microcopie sont **non bloquants** pour la conception technique et restent ajustables après validation visuelle.
 
+Checkpoint UX du 2026-09-29 :
+
+- compte du nombre de Fiches techniques `ACTIVE` dans l'onglet principal ;
+- compteurs sur Références, Catalogues, Tarifs négociés, Prix facturés et Prix indicatifs ;
+- action textuelle visible « Ajouter un tarif négocié » ;
+- aide des Tarifs négociés déplacée dans un `(i)` ;
+- état vide Tarifs négociés réduit à un seul message ;
+- libellé tarifaire « Unité du prix (Kilo, Pièce, etc.) » ;
+- Prix indicatif Workspace saisissable depuis le référentiel Produits, y compris pour une Référence globale non favorite ;
+- Prix indicatif Dossier saisissable depuis Fournisseurs et prix ;
+- sources `INDICATIVE_DOSSIER` / `INDICATIVE_WORKSPACE` affichées explicitement comme estimations de dernier recours.
+
 Une correction UX ne doit pas modifier silencieusement les invariants métier ou RBAC du contrat.
 
 ## 13. État d'implémentation au 2026-09-28
@@ -500,7 +517,21 @@ La QA visuelle a ensuite conduit aux arbitrages UX suivants, en cours de stabili
 - l'ancien pourcentage physique de composition est supprimé du contrat, des modèles, snapshots et API M-004 ;
 - aucun moteur de conversion physique `COUNT / VOLUME / MASS`, densité ou poids/unité n'est conservé comme dette : ce besoin est abandonné pour M-004.
 
-Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon, le contrat backend. Ils doivent donc être retestés avant la PR finale.
+Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon ainsi que l'extension Prix indicatif M-003, le contrat backend. Ils doivent donc être retestés avant la PR finale.
+
+Extension M-003 validée pendant la QA M-004 :
+
+~~~text
+sources commerciales applicables
+→ priorité conservée
+
+à défaut
+→ Prix indicatif Dossier
+→ sinon Prix indicatif Workspace
+→ sinon aucun prix
+~~~
+
+Le Prix indicatif est une estimation interne historisée et explicitement identifiée. Il peut exister sans Article fournisseur. Il ne devient jamais silencieusement un Tarif fournisseur, un Tarif négocié ou un Prix facturé.
 
 Dette fonctionnelle identifiée pendant cette QA :
 
@@ -518,6 +549,8 @@ Ordre restant :
 
 ~~~text
 pull de feature/m004-fiches-techniques-valorisation
+→ npm run migration:m003-indicative-pricing
+   (nouveaux indexes + permissions Prix indicatif, y compris si M-003 avait déjà été migré)
 → migrations M-004 sur la base locale de développement
 → tests ciblés backend/frontend
 → E2E M-004

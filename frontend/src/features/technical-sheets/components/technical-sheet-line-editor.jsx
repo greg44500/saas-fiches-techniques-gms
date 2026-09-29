@@ -67,6 +67,8 @@ const PRICING_SOURCE_LABEL = Object.freeze({
   SUPPLIER_TARIFF: 'Tarif fournisseur',
   NEGOTIATED_PRICE: 'Tarif négocié',
   INVOICED_PRICE: 'Prix facturé',
+  INDICATIVE_DOSSIER: 'Prix indicatif Dossier',
+  INDICATIVE_WORKSPACE: 'Prix indicatif espace de travail',
 });
 
 const SECTION_PRESENTATION = Object.freeze({

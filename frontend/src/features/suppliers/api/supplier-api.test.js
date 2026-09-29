@@ -56,6 +56,8 @@ vi.mock('@/services/api/base-api', () => {
 import {
   SUPPLIER_API_TAG_TYPES,
   supplierApi,
+  useSetDossierIndicativePriceMutation,
+  useSetWorkspaceIndicativePriceMutation,
   useUpdateSupplierCatalogStatusMutation,
 } from '@/features/suppliers/api/supplier-api';
 
@@ -154,6 +156,50 @@ describe('supplierApi', () => {
     ).toEqual({
       url: '/workspaces/workspace-1/supplier-catalogs/imports/import-1/commit',
       method: 'POST',
+    });
+  });
+
+  it('expose les Prix indicatifs Workspace et Dossier sans Article fournisseur obligatoire', () => {
+    expect(useSetWorkspaceIndicativePriceMutation).toBeTypeOf('function');
+    expect(useSetDossierIndicativePriceMutation).toBeTypeOf('function');
+
+    expect(
+      captured.endpointDefinitions.setWorkspaceIndicativePrice.query({
+        workspaceId: 'workspace-1',
+        productVariantId: 'variant-1',
+        sourceAmount: '2.5',
+        sourceBasis: 'KG',
+        currency: 'EUR',
+      }),
+    ).toEqual({
+      url:
+        '/workspaces/workspace-1/supplier-pricing/indicative-prices/variant-1',
+      method: 'PUT',
+      body: {
+        sourceAmount: '2.5',
+        sourceBasis: 'KG',
+        currency: 'EUR',
+      },
+    });
+
+    expect(
+      captured.endpointDefinitions.setDossierIndicativePrice.query({
+        workspaceId: 'workspace-1',
+        dossierId: 'dossier-1',
+        productVariantId: 'variant-1',
+        sourceAmount: '2.8',
+        sourceBasis: 'KG',
+        currency: 'EUR',
+      }),
+    ).toEqual({
+      url:
+        '/workspaces/workspace-1/dossiers/dossier-1/supplier-pricing/indicative-prices/variant-1',
+      method: 'PUT',
+      body: {
+        sourceAmount: '2.8',
+        sourceBasis: 'KG',
+        currency: 'EUR',
+      },
     });
   });
 

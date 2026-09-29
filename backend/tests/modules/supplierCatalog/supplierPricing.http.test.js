@@ -210,6 +210,210 @@ describe('M-003 dossier pricing HTTP', () => {
         expect(resolved.status).toBe(404);
     });
 
+    it('utilise un Prix indicatif Workspace lorsqu aucun Article fournisseur n existe', async () => {
+        const orphanReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Produit indicatif Workspace M003',
+                referenceName:
+                    'Produit indicatif Workspace M003',
+                referenceUnit:
+                    'KG',
+            });
+
+        await request(app)
+            .put(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/supplier-pricing/indicative-prices/'
+                + orphanReference.variant._id.toString(),
+            )
+            .set(bearer(owner.token))
+            .send({
+                sourceAmount: '3.1',
+                sourceBasis: 'KG',
+                source:
+                    'Estimation interne',
+            })
+            .expect(200);
+
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/applicable',
+            )
+            .query({
+                productVariantId:
+                    orphanReference.variant._id.toString(),
+            })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(200);
+        expect(
+            resolved.body.data.applicablePrice,
+        ).toEqual(
+            expect.objectContaining({
+                article: null,
+                resolvedSource:
+                    'INDICATIVE_WORKSPACE',
+                fallbackApplied: true,
+            }),
+        );
+        expect(
+            resolved.body.data.applicablePrice
+                .price.normalizedAmount,
+        ).toBe('3.1');
+        expect(
+            resolved.body.data.applicablePrice
+                .price.normalizedUnit,
+        ).toBe('KG');
+    });
+
+    it('n attribue pas un Prix indicatif à l Article fournisseur unique visible', async () => {
+        await request(app)
+            .put(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/supplier-pricing/indicative-prices/'
+                + productReference.variant._id.toString(),
+            )
+            .set(bearer(owner.token))
+            .send({
+                sourceAmount: '2.9',
+                sourceBasis: 'KG',
+            })
+            .expect(200);
+
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/applicable',
+            )
+            .query({
+                productVariantId:
+                    productReference.variant._id.toString(),
+            })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(200);
+        expect(
+            resolved.body.data.applicablePrice
+                .resolvedSource,
+        ).toBe('INDICATIVE_WORKSPACE');
+        expect(
+            resolved.body.data.applicablePrice
+                .article,
+        ).toBeNull();
+    });
+
+    it('préfère le Prix indicatif Dossier au Prix indicatif Workspace', async () => {
+        const orphanReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Produit indicatif Dossier M003',
+                referenceName:
+                    'Produit indicatif Dossier M003',
+                referenceUnit:
+                    'KG',
+            });
+        const variantId =
+            orphanReference.variant._id.toString();
+
+        await request(app)
+            .put(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/supplier-pricing/indicative-prices/'
+                + variantId,
+            )
+            .set(bearer(owner.token))
+            .send({
+                sourceAmount: '3.1',
+                sourceBasis: 'KG',
+            })
+            .expect(200);
+
+        await request(app)
+            .put(
+                pricingPath(dossierA)
+                + '/indicative-prices/'
+                + variantId,
+            )
+            .set(bearer(owner.token))
+            .send({
+                sourceAmount: '3.35',
+                sourceBasis: 'KG',
+            })
+            .expect(200);
+
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/applicable',
+            )
+            .query({
+                productVariantId:
+                    variantId,
+            })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(200);
+        expect(
+            resolved.body.data.applicablePrice
+                .resolvedSource,
+        ).toBe('INDICATIVE_DOSSIER');
+        expect(
+            resolved.body.data.applicablePrice
+                .price.normalizedAmount,
+        ).toBe('3.35');
+    });
+
+    it('ne partage jamais un Prix indicatif Dossier avec un autre Dossier', async () => {
+        const orphanReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Produit indicatif isolé M003',
+                referenceName:
+                    'Produit indicatif isolé M003',
+                referenceUnit:
+                    'KG',
+            });
+        const variantId =
+            orphanReference.variant._id.toString();
+
+        await request(app)
+            .put(
+                pricingPath(dossierA)
+                + '/indicative-prices/'
+                + variantId,
+            )
+            .set(bearer(owner.token))
+            .send({
+                sourceAmount: '4.2',
+                sourceBasis: 'KG',
+            })
+            .expect(200);
+
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierB)
+                + '/applicable',
+            )
+            .query({
+                productVariantId:
+                    variantId,
+            })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(404);
+    });
+
     it('refuse de choisir automatiquement entre plusieurs Articles visibles', async () => {
         const secondSupplier =
             await createSupplier({
@@ -368,7 +572,21 @@ describe('M-003 dossier pricing HTTP', () => {
         ).toContain('NO_VALIDATED_INVOICE');
     });
 
-    it('retombe sur le Tarif fournisseur lorsque le mode standard ne trouve pas de négocié', async () => {
+    it('retombe sur le Tarif fournisseur avant tout Prix indicatif', async () => {
+        await request(app)
+            .put(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/supplier-pricing/indicative-prices/'
+                + productReference.variant._id.toString(),
+            )
+            .set(bearer(owner.token))
+            .send({
+                sourceAmount: '19',
+                sourceBasis: 'KG',
+            })
+            .expect(200);
+
         const catalog =
             await createCatalogEdition({
                 scope:

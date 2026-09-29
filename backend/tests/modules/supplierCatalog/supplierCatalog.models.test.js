@@ -17,6 +17,7 @@ import {
 } from '../../../modules/supplierCatalog/supplierCatalog.model.js';
 import {
     DossierSupplierReference,
+    IndicativePrice,
     InvoicedPrice,
     NegotiatedPrice,
     WorkspaceSupplierPricingPolicy,
@@ -60,6 +61,10 @@ describe('M-003 supplier catalog models', () => {
             .toBe('Decimal128');
         expect(InvoicedPrice.schema.path('normalizedAmount').instance)
             .toBe('Decimal128');
+        expect(IndicativePrice.schema.path('sourceAmount').instance)
+            .toBe('Decimal128');
+        expect(IndicativePrice.schema.path('normalizedAmount').instance)
+            .toBe('Decimal128');
     });
 
     it('porte workspace et dossier sur toutes les données commerciales locales', () => {
@@ -73,6 +78,25 @@ describe('M-003 supplier catalog models', () => {
             expect(model.schema.path('workspace').options.immutable).toBe(true);
             expect(model.schema.path('dossier').options.immutable).toBe(true);
         }
+    });
+
+    it('autorise un Prix indicatif Workspace ou Dossier sans Article fournisseur', () => {
+        expect(IndicativePrice.schema.path('workspace').options.required)
+            .toBe(true);
+        expect(IndicativePrice.schema.path('dossier').options.default)
+            .toBeNull();
+        expect(IndicativePrice.schema.path('productVariant').options.required)
+            .toBe(true);
+
+        const activeIndex = IndicativePrice.schema.indexes().find(
+            ([, options]) =>
+                options.name
+                    === 'indicative_price_active_scope_product_unique',
+        );
+
+        expect(activeIndex?.[1].unique).toBe(true);
+        expect(activeIndex?.[1].partialFilterExpression)
+            .toEqual({ status: 'ACTIVE' });
     });
 
     it('versionne les lignes et tarifs courants', () => {

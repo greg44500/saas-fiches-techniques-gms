@@ -44,6 +44,17 @@ vi.mock('@/features/products/components/product-import-dialog', () => ({
   ),
 }));
 
+vi.mock('@/features/suppliers/components/indicative-price-dialog', () => ({
+  IndicativePriceDialog: ({ open, variant }) => (
+    open ? (
+      <div>
+        Prix indicatif ouvert
+        {variant?.name ? ' · ' + variant.name : ''}
+      </div>
+    ) : null
+  ),
+}));
+
 vi.mock('@/features/products/components/product-search-autocomplete', () => ({
   ProductSearchAutocomplete: ({
     onSelect,
@@ -276,6 +287,18 @@ describe('ProductsPage', () => {
     );
   });
 
+  it('ouvre le Prix indicatif depuis un Produit du référentiel', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Prix indicatif pour Carotte',
+    }));
+
+    expect(screen.getByText(/Prix indicatif ouvert · Carotte/))
+      .toBeInTheDocument();
+  });
+
   it('ouvre création, import et détail selon les droits', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -336,6 +359,9 @@ describe('ProductsPage', () => {
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', {
       name: 'Retirer Carotte des favoris',
+    })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Prix indicatif pour Carotte',
     })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Voir Carotte' }))
       .toBeInTheDocument();
