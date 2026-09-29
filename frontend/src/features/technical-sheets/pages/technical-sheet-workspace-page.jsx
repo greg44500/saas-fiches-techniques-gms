@@ -315,7 +315,7 @@ function TechnicalSheetWorkspacePage() {
     ) {
       toast({
         title: 'Brouillon incomplet',
-        description: 'Renseignez la base de production, son unité, la TVA et la marge cible.',
+        description: 'Renseignez les indicateurs de production, la TVA de vente et la marge cible.',
         variant: 'destructive',
       });
       return;
@@ -559,10 +559,10 @@ function TechnicalSheetWorkspacePage() {
             <Card className="border-primary/20 bg-background/95 shadow-sm backdrop-blur-md">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
-                  <CardTitle>Indicateurs de production</CardTitle>
+                  <CardTitle>Indicateur de production</CardTitle>
                   <InfoTooltip
-                    content="Regroupe les paramètres de production et les principaux indicateurs économiques utilisés pour calculer et piloter la valorisation de la Fiche technique."
-                    label="À propos des Indicateurs de production"
+                    content="Regroupe les paramètres de production, la TVA de vente de la Fiche et les principaux indicateurs économiques utilisés pour calculer et piloter sa valorisation."
+                    label="À propos des Indicateur de production"
                   />
                 </div>
               </CardHeader>
