@@ -888,7 +888,10 @@ function TechnicalSheetWorkspacePage() {
                 }}
                 productMetadata={productMetadataQuery.data}
                 canOpenPricing={canOpenSupplierPricing}
-                sourcingDisabled={draftServerActionDisabled}
+                sourcingDisabled={
+                  draftSynchronizing
+                  || draftServerActionDisabled
+                }
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspace.id}
               />
