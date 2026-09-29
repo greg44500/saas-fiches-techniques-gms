@@ -1,4 +1,5 @@
 import {
+  Calculator,
   PanelRightOpen,
   X,
 } from 'lucide-react';
@@ -13,6 +14,19 @@ import {
   DialogRoot,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   formatBasisPoints,
   formatDecimalCurrency,
@@ -92,10 +106,25 @@ function getVisibleCosts(lines, economicSnapshot) {
   };
 }
 
-function Metric({ label, value }) {
+function MetricLabel({ children, tooltip }) {
   return (
-    <div className="min-w-0">
-      <p className="truncate text-xs text-muted-foreground">{label}</p>
+    <Tooltip>
+      <TooltipTrigger
+        aria-label={tooltip}
+        className="w-fit cursor-help text-xs font-medium text-muted-foreground underline decoration-dotted underline-offset-4"
+        type="button"
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function Metric({ label, tooltip, value }) {
+  return (
+    <div className="min-w-0 space-y-1">
+      <MetricLabel tooltip={tooltip}>{label}</MetricLabel>
       <p className="truncate text-sm font-semibold tabular-nums">{value}</p>
     </div>
   );
@@ -105,16 +134,27 @@ function DetailRow({ label, value }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-border py-3 last:border-b-0">
       <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-semibold tabular-nums text-right">{value}</span>
+      <span className="text-right text-sm font-semibold tabular-nums">{value}</span>
     </div>
   );
 }
 
 function TechnicalSheetEconomicsBar({
+  canValuate = false,
+  disabled = false,
   economicSnapshot,
+  finalPriceInputValue = '',
+  finalPriceMode = 'ADVISED',
   lines = [],
   notice = null,
+  onFinalPriceInputChange,
+  onFinalPriceModeChange,
+  onTargetMarginInputChange,
+  onValuate,
   targetMarginBasisPoints,
+  targetMarginInputValue = '',
+  valuatePending = false,
+  valuationStatus = 'NOT_VALUED',
   vatRateBasisPoints,
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -122,52 +162,125 @@ function TechnicalSheetEconomicsBar({
     () => getVisibleCosts(lines, economicSnapshot),
     [economicSnapshot, lines],
   );
+  const valuateLabel = valuationStatus === 'NOT_VALUED'
+    ? 'Valoriser'
+    : 'Revaloriser';
 
   return (
     <>
-      <div className="sticky top-0 z-30 -mx-px border-y border-border bg-background/85 px-4 py-3 shadow-sm backdrop-blur-md">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 -bottom-4 h-4 bg-gradient-to-b from-background/70 to-transparent"
-        />
-
+      <div className="space-y-3">
         {notice && (
-          <p className="mb-2 text-xs font-medium text-muted-foreground">
+          <p className="text-xs font-medium text-muted-foreground">
             {notice}
           </p>
         )}
 
-        <div className="flex items-center gap-4">
-          <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="flex items-end gap-3">
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4 xl:grid-cols-7">
             <Metric
-              label="Coût matières HT"
+              label="CM HT"
+              tooltip="Coût matières hors taxe"
               value={formatDecimalCurrency(visibleCosts.materialCostHt)}
             />
             <Metric
-              label="Économat HT"
+              label="CE HT"
+              tooltip="Coût économat hors taxe"
               value={formatDecimalCurrency(visibleCosts.economatCostHt)}
             />
             <Metric
-              label="Coût fabrication HT"
+              label="CF HT"
+              tooltip="Coût de fabrication hors taxe"
               value={formatDecimalCurrency(visibleCosts.manufacturingCostHt)}
             />
+
+            <div className="min-w-0 space-y-1">
+              <MetricLabel tooltip="Marge cible">%MC</MetricLabel>
+              <Input
+                aria-label="Marge cible (%)"
+                className="h-8 min-w-0 tabular-nums"
+                disabled={disabled || !canValuate}
+                inputMode="decimal"
+                onChange={(event) => onTargetMarginInputChange?.(event.target.value)}
+                value={targetMarginInputValue}
+              />
+            </div>
+
             <Metric
-              label="Prix final TTC"
-              value={formatMinorCurrency(economicSnapshot?.finalPriceTtcMinor)}
+              label="PC TTC"
+              tooltip="Prix conseillé toutes taxes comprises"
+              value={formatMinorCurrency(economicSnapshot?.advisedPriceTtcMinor)}
             />
+
+            <div className="min-w-0 space-y-1">
+              <MetricLabel tooltip="Prix final toutes taxes comprises">
+                PF TTC
+              </MetricLabel>
+              <div className="flex min-w-0 gap-1">
+                {finalPriceMode === 'MANUAL' ? (
+                  <Input
+                    aria-label="Prix final TTC (€)"
+                    className="h-8 min-w-0 flex-1 tabular-nums"
+                    disabled={disabled || !canValuate}
+                    inputMode="decimal"
+                    onChange={(event) => onFinalPriceInputChange?.(event.target.value)}
+                    value={finalPriceInputValue}
+                  />
+                ) : (
+                  <p className="flex h-8 min-w-0 flex-1 items-center truncate rounded-md border border-border bg-muted/20 px-2 text-sm font-semibold tabular-nums">
+                    {formatMinorCurrency(economicSnapshot?.finalPriceTtcMinor)}
+                  </p>
+                )}
+
+                <Select
+                  disabled={disabled || !canValuate}
+                  items={[
+                    { value: 'ADVISED', label: 'Conseillé' },
+                    { value: 'MANUAL', label: 'Manuel' },
+                  ]}
+                  onValueChange={onFinalPriceModeChange}
+                  value={finalPriceMode}
+                >
+                  <SelectTrigger
+                    aria-label="Mode de Prix final"
+                    className="h-8 min-h-8 w-24 shrink-0 px-2 text-xs"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ADVISED">Conseillé</SelectItem>
+                    <SelectItem value="MANUAL">Manuel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <Metric
-              label="Marge réelle"
+              label="%MR"
+              tooltip="Marge réelle"
               value={formatBasisPoints(economicSnapshot?.actualMarginBasisPoints)}
             />
           </div>
 
-          <ActionIconButton
-            Icon={PanelRightOpen}
-            label="Afficher le détail de la valorisation"
-            onClick={() => setDetailsOpen(true)}
-            tooltipLabel="Détail de la valorisation"
-            variant="outline"
-          />
+          <div className="flex shrink-0 items-center gap-2">
+            {canValuate && (
+              <ActionIconButton
+                Icon={Calculator}
+                disabled={disabled || valuatePending}
+                label={valuateLabel}
+                onClick={onValuate}
+                tooltipLabel={valuateLabel}
+                variant="outline"
+              />
+            )}
+
+            <ActionIconButton
+              Icon={PanelRightOpen}
+              label="Afficher le détail de la valorisation"
+              onClick={() => setDetailsOpen(true)}
+              tooltipLabel="Détail de la valorisation"
+              variant="outline"
+            />
+          </div>
         </div>
       </div>
 
@@ -245,6 +358,7 @@ function TechnicalSheetEconomicsBar({
 }
 
 export {
+  MetricLabel,
   TechnicalSheetEconomicsBar,
   getVisibleCosts,
   sumDecimalStrings,
