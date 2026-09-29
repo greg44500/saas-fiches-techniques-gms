@@ -340,4 +340,34 @@ describe('SuppliersPage', () => {
 
     expect(screen.getByText('Import catalogue ouvert')).toBeInTheDocument();
   });
+
+  it('affiche UNIT comme PCE dans le conditionnement Article', () => {
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [{
+        id: 'article-1',
+        supplierReference: 'ABR-1',
+        supplierDesignation: 'Abricot',
+        productVariant: { id: 'variant-1', name: 'Abricot' },
+        supplier: { id: 'supplier-1', name: 'Sysco' },
+        scope: 'WORKSPACE_PRIVATE',
+        status: 'ACTIVE',
+        packaging: {
+          unitCount: 12,
+          quantityPerUnit: '1',
+          unit: 'UNIT',
+        },
+      }],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
+      },
+    }));
+
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+
+    expect(screen.getByText(/1 PCE/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 UNIT/)).not.toBeInTheDocument();
+  });
 });

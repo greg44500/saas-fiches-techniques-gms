@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   Eye,
   Plus,
   Search,
@@ -172,45 +171,29 @@ function TechnicalSheetsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" variant="ghost">
-            <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossierId}>
-              <ArrowLeft aria-hidden="true" className="size-4" />
-              Retour au Dossier
-            </Link>
-          </Button>
+      <header className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex items-start gap-2">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Fiches techniques
+          </h2>
+          <InfoTooltip
+            content="Composition, approvisionnement, valorisation et historique validé de ce Dossier."
+            label="À propos des Fiches techniques"
+          />
         </div>
 
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-sm font-medium text-primary">
-              {dossier.name}
-            </p>
-            <div className="mt-1 flex items-start gap-2">
-              <h1 className="text-3xl font-semibold tracking-tight">
-                Fiches techniques
-              </h1>
-              <InfoTooltip
-                content="Composition, approvisionnement, valorisation et historique validé de ce Dossier."
-                label="À propos des Fiches techniques"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {can(TECHNICAL_SHEET_PERMISSION.CREATE) && (
-              <Button
-                disabled={!canCreate}
-                onClick={() => setCreateOpen(true)}
-                size="sm"
-                type="button"
-              >
-                <Plus aria-hidden="true" className="size-4" />
-                Créer
-              </Button>
-            )}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {can(TECHNICAL_SHEET_PERMISSION.CREATE) && (
+            <Button
+              disabled={!canCreate}
+              onClick={() => setCreateOpen(true)}
+              size="sm"
+              type="button"
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              Créer
+            </Button>
+          )}
         </div>
       </header>
 

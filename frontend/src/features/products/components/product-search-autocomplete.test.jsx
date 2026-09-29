@@ -136,6 +136,7 @@ describe('ProductSearchAutocomplete', () => {
       name: /Carotte râpée.*Légumes.*Référence Produit/i,
     });
     expect(suggestion).not.toHaveTextContent(/Gamme/i);
+    expect(suggestion).toHaveTextContent('Frais');
 
     await user.click(suggestion);
 

@@ -9,6 +9,7 @@ import {
 
 const mocks = vi.hoisted(() => ({
   detailQuery: vi.fn(),
+  marginQuery: vi.fn(),
   metadataQuery: vi.fn(),
   params: vi.fn(),
   workspaceContext: vi.fn(),
@@ -26,6 +27,10 @@ vi.mock('react-router', async (importOriginal) => {
 vi.mock('@/features/dossiers/api/dossiers-api', () => ({
   useGetDossierByIdQuery: mocks.detailQuery,
   useGetDossierMetadataQuery: mocks.metadataQuery,
+}));
+
+vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
+  useGetDossierTechnicalSheetSettingsQuery: mocks.marginQuery,
 }));
 
 vi.mock('@/features/workspace/components/workspace-context', () => ({
@@ -52,7 +57,9 @@ function queryResult(data) {
 
 function renderPage() {
   return render(
-    <MemoryRouter>
+    <MemoryRouter
+      initialEntries={['/workspaces/workspace-1/dossiers/dossier-1']}
+    >
       <TooltipProvider>
         <DossierWorkspacePage />
       </TooltipProvider>
@@ -64,16 +71,20 @@ describe('DossierWorkspacePage', () => {
   beforeEach(() => {
     mocks.params.mockReturnValue({ dossierId: 'dossier-1' });
     mocks.workspaceContext.mockReturnValue({
-      can: vi.fn((permission) => (
-        permission === TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE
-      )),
-      canAny: vi.fn(() => false),
+      can: vi.fn((permission) => [
+        TECHNICAL_SHEET_PERMISSION.READ,
+        TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE,
+      ].includes(permission)),
+      canAny: vi.fn(() => true),
       workspace: { id: 'workspace-1', name: 'Acme' },
     });
     mocks.metadataQuery.mockReturnValue(queryResult(metadata));
+    mocks.marginQuery.mockReturnValue(queryResult({
+      defaultTargetMarginBasisPoints: 3000,
+    }));
   });
 
-  it('présente un dossier ACTIVE dans une entête compacte sans contexte redondant', () => {
+  it('présente le contexte Dossier compact et ses onglets métier', () => {
     mocks.detailQuery.mockReturnValue(queryResult({
       id: 'dossier-1',
       name: 'Nantes Centre',
@@ -98,17 +109,26 @@ describe('DossierWorkspacePage', () => {
     expect(screen.getByText('0200000000')).toBeInTheDocument();
     expect(screen.queryByText('Acme')).not.toBeInTheDocument();
     expect(screen.queryByText('Leclerc')).not.toBeInTheDocument();
-    expect(screen.queryByText('Contexte actif')).not.toBeInTheDocument();
+
     expect(screen.getByRole('button', {
-      name: 'Régler la marge par défaut du Dossier',
-    })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Tableau de bord' })).toHaveAttribute(
+      name: 'Modifier la marge cible par défaut des nouvelles Fiches',
+    })).toHaveTextContent('Marge cible 30 %');
+
+    expect(screen.getByRole('link', { name: 'Dossiers' })).toHaveAttribute(
       'href',
-      '/workspaces/workspace-1/dashboard',
+      '/workspaces/workspace-1/dossiers',
+    );
+    expect(screen.getByRole('link', { name: 'Fournisseurs et prix' })).toHaveAttribute(
+      'href',
+      '/workspaces/workspace-1/dossiers/dossier-1/suppliers',
+    );
+    expect(screen.getByRole('link', { name: 'Fiches techniques' })).toHaveAttribute(
+      'href',
+      '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets',
     );
   });
 
-  it('refuse le contexte opérationnel pour un dossier non ACTIVE', () => {
+  it('masque les coordonnées absentes et conserve la consultation d’un Dossier non actif', () => {
     mocks.detailQuery.mockReturnValue(queryResult({
       id: 'dossier-1',
       name: 'Nantes Centre',
@@ -122,8 +142,12 @@ describe('DossierWorkspacePage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Contexte de travail indisponible')).toBeInTheDocument();
+    expect(screen.getByText('Dossier non opérationnel')).toBeInTheDocument();
     expect(screen.getByText('En pause')).toBeInTheDocument();
-    expect(screen.queryByText('Contexte actif')).not.toBeInTheDocument();
+    expect(screen.queryByText('Responsable non renseigné')).not.toBeInTheDocument();
+    expect(screen.queryByText('Email documents non renseigné')).not.toBeInTheDocument();
+    expect(screen.queryByText('Téléphone non renseigné')).not.toBeInTheDocument();
+    expect(screen.queryByText('Non renseignée')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Fiches techniques' })).toBeInTheDocument();
   });
 });

@@ -165,8 +165,11 @@ describe('DossierSupplierPricingPage', () => {
     renderPage();
 
     expect(screen.getByRole('heading', {
-      name: 'Magasin A — Fournisseurs et prix',
+      name: 'Fournisseurs et prix',
     })).toBeInTheDocument();
+    expect(screen.queryByText('Retour au Dossier')).not.toBeInTheDocument();
+    expect(screen.queryByText('Magasin A — Fournisseurs et prix'))
+      .not.toBeInTheDocument();
     expect(screen.getByRole('button', {
       name: 'À propos des Fournisseurs et prix',
     })).toBeInTheDocument();
@@ -213,7 +216,7 @@ describe('DossierSupplierPricingPage', () => {
           fallbackReason: 'NO_VALIDATED_INVOICE',
           price: {
             normalizedAmount: '12.5',
-            normalizedUnit: 'KG',
+            normalizedUnit: 'UNIT',
             currency: 'EUR',
           },
           alerts: ['NO_VALIDATED_INVOICE'],
@@ -225,7 +228,7 @@ describe('DossierSupplierPricingPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('12,500 EUR / KG'))
+    expect(screen.getByText('12,500 EUR / PCE'))
       .toBeInTheDocument();
     expect(screen.getByText('Vérifier un prix applicable'))
       .toBeInTheDocument();

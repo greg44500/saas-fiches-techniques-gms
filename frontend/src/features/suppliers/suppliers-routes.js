@@ -1,3 +1,15 @@
+const dossierSupplierFrontendRoutes = Object.freeze([
+  Object.freeze({
+    path: 'suppliers',
+    lazy: async () => {
+      const { DossierSupplierPricingRoute } = await import(
+        '@/features/suppliers/components/dossier-supplier-pricing-route'
+      );
+      return { Component: DossierSupplierPricingRoute };
+    },
+  }),
+]);
+
 const suppliersFrontendRouteModule = Object.freeze({
   authenticatedRoutes: Object.freeze([
     Object.freeze({
@@ -20,16 +32,10 @@ const suppliersFrontendRouteModule = Object.freeze({
         return { Component: SuppliersRoute };
       },
     }),
-    Object.freeze({
-      path: 'dossiers/:dossierId/suppliers',
-      lazy: async () => {
-        const { DossierSupplierPricingRoute } = await import(
-          '@/features/suppliers/components/dossier-supplier-pricing-route'
-        );
-        return { Component: DossierSupplierPricingRoute };
-      },
-    }),
   ]),
 });
 
-export { suppliersFrontendRouteModule };
+export {
+  dossierSupplierFrontendRoutes,
+  suppliersFrontendRouteModule,
+};

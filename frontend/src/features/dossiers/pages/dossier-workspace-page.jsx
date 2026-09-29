@@ -1,15 +1,19 @@
 import {
   ArrowLeft,
-  BadgePercent,
   Mail,
   MapPin,
   Phone,
+  SlidersHorizontal,
   UserRound,
 } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useParams,
+} from 'react-router';
 
-import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
@@ -20,9 +24,19 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   useGetDossierByIdQuery,
   useGetDossierMetadataQuery,
 } from '@/features/dossiers/api/dossiers-api';
+import {
+  formatDossierLocation,
+  getDossierStatusLabel,
+  getDossierStatusTone,
+} from '@/features/dossiers/lib/dossier-presentation';
 import {
   DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
 } from '@/features/suppliers/constants/supplier-permissions';
@@ -33,11 +47,18 @@ import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 import {
-  formatDossierLocation,
-  getDossierStatusLabel,
-  getDossierStatusTone,
-} from '@/features/dossiers/lib/dossier-presentation';
+  formatBasisPoints,
+} from '@/features/technical-sheets/lib/technical-sheet-presentation';
+import {
+  useGetDossierTechnicalSheetSettingsQuery,
+} from '@/features/technical-sheets/api/technical-sheets-api';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
+import { cn } from '@/lib/utils';
+
+const DOSSIER_TAB_CLASS_NAME = [
+  'inline-flex min-h-10 items-center justify-center rounded-t-lg border border-b-0 px-4 text-sm font-medium',
+  'outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+].join(' ');
 
 function DossierWorkspacePage() {
   const { dossierId } = useParams();
@@ -48,6 +69,15 @@ function DossierWorkspacePage() {
     dossierId,
   });
   const metadataQuery = useGetDossierMetadataQuery(workspace.id);
+  const marginQuery = useGetDossierTechnicalSheetSettingsQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+    },
+    {
+      skip: !can(TECHNICAL_SHEET_PERMISSION.READ),
+    },
+  );
 
   if (
     (dossierQuery.isLoading && dossierQuery.data === undefined)
@@ -66,7 +96,7 @@ function DossierWorkspacePage() {
         <Button asChild variant="outline">
           <Link to={`/workspaces/${workspace.id}/dossiers`}>
             <ArrowLeft aria-hidden="true" className="size-4" />
-            Retour aux dossiers
+            Dossiers
           </Link>
         </Button>
         <ErrorState
@@ -83,116 +113,150 @@ function DossierWorkspacePage() {
 
   const dossier = dossierQuery.data;
   const operational = dossier.status === 'ACTIVE';
+  const canReadSuppliers = canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS);
+  const canReadTechnicalSheets = can(TECHNICAL_SHEET_PERMISSION.READ);
+  const canManageMargin = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
+  const marginBasisPoints = marginQuery.data?.defaultTargetMarginBasisPoints;
+  const marginLabel = Number.isInteger(marginBasisPoints)
+    ? 'Marge cible ' + formatBasisPoints(marginBasisPoints)
+    : 'Marge cible';
+  const hasLocation = Boolean(
+    dossier.location?.address
+    || dossier.location?.postalCode
+    || dossier.location?.city,
+  );
+  const location = hasLocation ? formatDossierLocation(dossier) : null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        <Button asChild size="sm" variant="ghost">
-          <Link to={`/workspaces/${workspace.id}/dashboard`}>
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            Tableau de bord
-          </Link>
-        </Button>
-        <Button asChild size="sm" variant="outline">
-          <Link to={`/workspaces/${workspace.id}/dossiers`}>
-            Dossiers
-          </Link>
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <Button asChild size="sm" variant="ghost">
+        <Link to={`/workspaces/${workspace.id}/dossiers`}>
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          Dossiers
+        </Link>
+      </Button>
 
-      <header className="rounded-xl border border-border bg-card p-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight">
+      <header className="rounded-xl border border-border bg-card px-5 py-4">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {dossier.name}
           </h1>
           <StatusBadge tone={getDossierStatusTone(dossier.status)}>
             {getDossierStatusLabel(dossier.status, metadataQuery.data)}
           </StatusBadge>
-          {can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE) && (
-            <div className="ml-auto">
-              <ActionIconButton
-                Icon={BadgePercent}
-                label="Régler la marge par défaut du Dossier"
-                onClick={() => setMarginDialogOpen(true)}
-                tooltipLabel="Régler la marge par défaut"
-                variant="outline"
-              />
-            </div>
+
+          {canManageMargin && (
+            <Tooltip>
+              <TooltipTrigger
+                render={(
+                  <Button
+                    aria-label="Modifier la marge cible par défaut des nouvelles Fiches"
+                    onClick={() => setMarginDialogOpen(true)}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  />
+                )}
+              >
+                <SlidersHorizontal aria-hidden="true" className="size-4" />
+                {marginLabel}
+              </TooltipTrigger>
+              <TooltipContent>
+                Modifier la marge cible par défaut des nouvelles Fiches.
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          {!canManageMargin
+          && canReadTechnicalSheets
+          && Number.isInteger(marginBasisPoints) && (
+            <span className="text-sm font-medium text-muted-foreground">
+              {marginLabel}
+            </span>
           )}
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3 text-sm">
-          <div className="flex min-w-0 items-start gap-2">
-            <MapPin
-              aria-hidden="true"
-              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            />
-            <span>{formatDossierLocation(dossier)}</span>
+        {(location
+          || dossier.contactName
+          || dossier.documentEmail
+          || dossier.phone) && (
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            {location && (
+              <div className="flex min-w-0 items-start gap-2">
+                <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span>{location}</span>
+              </div>
+            )}
+            {dossier.contactName && (
+              <div className="flex min-w-0 items-start gap-2">
+                <UserRound aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span>{dossier.contactName}</span>
+              </div>
+            )}
+            {dossier.documentEmail && (
+              <div className="flex min-w-0 items-start gap-2">
+                <Mail aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span className="break-all">{dossier.documentEmail}</span>
+              </div>
+            )}
+            {dossier.phone && (
+              <div className="flex min-w-0 items-start gap-2">
+                <Phone aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span>{dossier.phone}</span>
+              </div>
+            )}
           </div>
-          <div className="flex min-w-0 items-start gap-2">
-            <UserRound
-              aria-hidden="true"
-              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            />
-            <span>{dossier.contactName || 'Responsable non renseigné'}</span>
-          </div>
-          <div className="flex min-w-0 items-start gap-2">
-            <Mail
-              aria-hidden="true"
-              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            />
-            <span className="break-all">
-              {dossier.documentEmail || 'Email documents non renseigné'}
-            </span>
-          </div>
-          <div className="flex min-w-0 items-start gap-2">
-            <Phone
-              aria-hidden="true"
-              className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-            />
-            <span>{dossier.phone || 'Téléphone non renseigné'}</span>
-          </div>
-        </div>
+        )}
       </header>
 
-      {!operational ? (
+      {!operational && (
         <Card>
           <CardHeader>
-            <CardTitle>Contexte de travail indisponible</CardTitle>
+            <CardTitle>Dossier non opérationnel</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent>
             <p className="text-sm text-muted-foreground">
-              Seul un dossier actif peut être utilisé comme contexte de travail métier.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Vous pouvez consulter ou administrer ce dossier depuis la liste des Dossiers selon vos permissions.
+              La consultation reste disponible selon vos droits, mais les actions métier courantes exigent un Dossier actif.
             </p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS) && (
-            <Button asChild>
-              <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossier.id + '/suppliers'}>
-                Fournisseurs et prix
-              </Link>
-            </Button>
-          )}
-          {can(TECHNICAL_SHEET_PERMISSION.READ) && (
-            <Button asChild variant="outline">
-              <Link
-                to={
-                  '/workspaces/' + workspace.id
-                  + '/dossiers/' + dossier.id
-                  + '/technical-sheets'
-                }
-              >
-                Fiches techniques
-              </Link>
-            </Button>
-          )}
-        </div>
       )}
+
+      {(canReadSuppliers || canReadTechnicalSheets) && (
+        <nav
+          aria-label="Navigation du Dossier"
+          className="flex flex-wrap gap-2 border-b border-border"
+        >
+          {canReadSuppliers && (
+            <NavLink
+              className={({ isActive }) => cn(
+                DOSSIER_TAB_CLASS_NAME,
+                isActive
+                  ? 'border-border bg-card text-primary'
+                  : 'border-transparent bg-muted/25 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+              )}
+              to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/suppliers`}
+            >
+              Fournisseurs et prix
+            </NavLink>
+          )}
+          {canReadTechnicalSheets && (
+            <NavLink
+              className={({ isActive }) => cn(
+                DOSSIER_TAB_CLASS_NAME,
+                isActive
+                  ? 'border-border bg-card text-primary'
+                  : 'border-transparent bg-muted/25 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+              )}
+              to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/technical-sheets`}
+            >
+              Fiches techniques
+            </NavLink>
+          )}
+        </nav>
+      )}
+
+      <Outlet />
 
       {marginDialogOpen && (
         <DossierTechnicalSheetMarginDialog

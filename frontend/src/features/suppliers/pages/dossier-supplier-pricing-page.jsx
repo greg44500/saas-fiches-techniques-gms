@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   ArrowUpRight,
   Plus,
   Star,
@@ -31,9 +30,6 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import {
-  useGetDossierByIdQuery,
-} from '@/features/dossiers/api/dossiers-api';
 import {
   useAddDossierSupplierReferenceMutation,
   useArchiveNegotiatedPriceMutation,
@@ -101,10 +97,6 @@ function DossierSupplierPricingPage() {
   const [articleToAdd, setArticleToAdd] = useState(NONE);
   const [selectedArticleId, setSelectedArticleId] = useState(NONE);
 
-  const dossierQuery = useGetDossierByIdQuery({
-    workspaceId: workspace.id,
-    dossierId,
-  });
   const referencesQuery = useListDossierSupplierReferencesQuery(
     { workspaceId: workspace.id, dossierId },
     { skip: !can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) },
@@ -487,48 +479,17 @@ function DossierSupplierPricingPage() {
 
   const applicable = applicablePriceQuery.data;
 
-  if (
-    dossierQuery.isLoading
-    && dossierQuery.data === undefined
-  ) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Chargement du Dossier…
-      </p>
-    );
-  }
-
-  if (dossierQuery.isError || !dossierQuery.data) {
-    return (
-      <ErrorState
-        description="Le Dossier demandé n’est pas accessible ou n’a pas pu être chargé."
-        onRetry={dossierQuery.refetch}
-        title="Dossier indisponible"
-      />
-    );
-  }
-
-  const dossier = dossierQuery.data;
-
   return (
     <div className="space-y-6">
-      <header className="space-y-4">
-        <Button asChild size="sm" variant="ghost">
-          <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossierId}>
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            Retour au Dossier
-          </Link>
-        </Button>
-        <div className="flex items-start gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {dossier.name} — Fournisseurs et prix
-          </h1>
-          <InfoTooltip
-            content="Les prix affichés et résolus restent strictement limités à ce Dossier."
-            label="À propos des Fournisseurs et prix"
-          />
-        </div>
-      </header>
+      <div className="flex items-start gap-2">
+        <h2 className="text-xl font-semibold tracking-tight">
+          Fournisseurs et prix
+        </h2>
+        <InfoTooltip
+          content="Les prix affichés et résolus restent strictement limités à ce Dossier."
+          label="À propos des Fournisseurs et prix"
+        />
+      </div>
 
       {can(SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ) && (
         <section className="rounded-xl border border-border bg-card p-4">

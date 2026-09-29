@@ -42,6 +42,9 @@ import {
   ProductSearchAutocomplete,
 } from '@/features/products/components/product-search-autocomplete';
 import {
+  getReferenceUnitLabel,
+} from '@/features/products/lib/product-presentation';
+import {
   useListSupplierArticlesQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
@@ -550,9 +553,9 @@ function TechnicalSheetLineEditor({
   const unitItems = useMemo(
     () => (metadata?.units ?? []).map((unit) => ({
       value: unit.value,
-      label: unit.label,
+      label: getReferenceUnitLabel(productMetadata, unit.value),
     })),
-    [metadata?.units],
+    [metadata?.units, productMetadata],
   );
 
   function lineKey(line, index) {
@@ -800,7 +803,11 @@ function TechnicalSheetLineEditor({
                 ? sourceLabel
                   + (
                     line.valuation?.normalizedUnit
-                      ? ' · prix normalisé par ' + line.valuation.normalizedUnit
+                      ? ' · prix normalisé par '
+                        + getReferenceUnitLabel(
+                          productMetadata,
+                          line.valuation.normalizedUnit,
+                        )
                       : ''
                   )
                 : valuationPresentation.label}

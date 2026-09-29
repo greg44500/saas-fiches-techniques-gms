@@ -31,6 +31,7 @@ const metadata = {
   ],
   referenceUnits: [
     { value: 'KG', label: 'kg' },
+    { value: 'UNIT', label: 'unité' },
   ],
   foodRanges: [
     {
@@ -48,6 +49,7 @@ describe('product presentation', () => {
     expect(getCategoryStatusLabel(metadata, 'ARCHIVED')).toBe('Archivée');
     expect(getConservationTypeLabel(metadata, 'SURGELE')).toBe('Surgelé');
     expect(getReferenceUnitLabel(metadata, 'KG')).toBe('kg');
+    expect(getReferenceUnitLabel(metadata, 'UNIT')).toBe('PCE');
   });
 
   it('présente directement le nom métier persistant de la référence', () => {

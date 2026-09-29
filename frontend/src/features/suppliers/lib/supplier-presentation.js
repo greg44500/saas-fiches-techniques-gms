@@ -1,3 +1,7 @@
+import {
+  getReferenceUnitLabel,
+} from '@/features/products/lib/product-presentation';
+
 function getApiErrorMessage(error, fallback = 'Une erreur est survenue.') {
   return error?.data?.message ?? fallback;
 }
@@ -30,22 +34,36 @@ function formatPackaging(packaging) {
   const parts = [];
 
   if (packaging.containerType) parts.push(packaging.containerType);
-  if (packaging.unitCount) parts.push(String(packaging.unitCount) + ' unité(s)');
+  if (packaging.unitCount) parts.push(String(packaging.unitCount) + ' pièce(s)');
   if (packaging.quantityPerUnit && packaging.unit) {
-    parts.push(String(packaging.quantityPerUnit) + ' ' + packaging.unit);
+    parts.push(
+      String(packaging.quantityPerUnit)
+      + ' '
+      + getReferenceUnitLabel(null, packaging.unit),
+    );
   }
   if (packaging.totalQuantity && packaging.unit) {
-    parts.push('total ' + String(packaging.totalQuantity) + ' ' + packaging.unit);
+    parts.push(
+      'total '
+      + String(packaging.totalQuantity)
+      + ' '
+      + getReferenceUnitLabel(null, packaging.unit),
+    );
   }
   if (packaging.netWeight && packaging.netWeightUnit) {
-    parts.push('net ' + String(packaging.netWeight) + ' ' + packaging.netWeightUnit);
+    parts.push(
+      'net '
+      + String(packaging.netWeight)
+      + ' '
+      + getReferenceUnitLabel(null, packaging.netWeightUnit),
+    );
   }
   if (packaging.drainedNetWeight && packaging.drainedNetWeightUnit) {
     parts.push(
       'égoutté '
       + String(packaging.drainedNetWeight)
       + ' '
-      + packaging.drainedNetWeightUnit,
+      + getReferenceUnitLabel(null, packaging.drainedNetWeightUnit),
     );
   }
 
@@ -65,7 +83,8 @@ function formatPrice(price) {
   return Number(amount).toLocaleString('fr-FR', {
     minimumFractionDigits: 3,
     maximumFractionDigits: 3,
-  }) + ' ' + (price.currency ?? 'EUR') + ' / ' + (unit ?? '—');
+  }) + ' ' + (price.currency ?? 'EUR') + ' / '
+    + (unit ? getReferenceUnitLabel(null, unit) : '—');
 }
 
 function getMatchStatusLabel(status) {

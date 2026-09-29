@@ -16,12 +16,25 @@ function getDossiersNavigation(navigation) {
 }
 
 describe('dossiers frontend composition', () => {
-  it('injecte les routes liste, paramètres et contexte Dossier', () => {
+  it('injecte les routes liste, paramètres et shell Dossier imbriqué', () => {
     expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: 'dossiers' }),
         expect.objectContaining({ path: 'dossiers-settings' }),
         expect.objectContaining({ path: 'dossiers/:dossierId' }),
+      ]),
+    );
+
+    const dossierRoute = APPLICATION_FRONTEND_ROUTES.workspaceRoutes.find(
+      (route) => route.path === 'dossiers/:dossierId',
+    );
+
+    expect(dossierRoute.children).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ index: true }),
+        expect.objectContaining({ path: 'suppliers' }),
+        expect.objectContaining({ path: 'technical-sheets' }),
+        expect.objectContaining({ path: 'technical-sheets/:technicalSheetId' }),
       ]),
     );
   });

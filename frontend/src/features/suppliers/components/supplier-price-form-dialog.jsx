@@ -30,6 +30,9 @@ import {
   useCreateNegotiatedPriceMutation,
 } from '@/features/suppliers/api/supplier-api';
 import {
+  getReferenceUnitLabel,
+} from '@/features/products/lib/product-presentation';
+import {
   getApiErrorMessage,
 } from '@/features/suppliers/lib/supplier-presentation';
 
@@ -202,7 +205,7 @@ function SupplierPriceFormDialog({
                 <Select
                   items={PRICE_BASES.map((value) => ({
                     value,
-                    label: value,
+                    label: getReferenceUnitLabel(null, value),
                   }))}
                   onValueChange={setBasis}
                   value={basis}
@@ -213,7 +216,7 @@ function SupplierPriceFormDialog({
                   <SelectContent>
                     {PRICE_BASES.map((value) => (
                       <SelectItem key={value} value={value}>
-                        {value}
+                        {getReferenceUnitLabel(null, value)}
                       </SelectItem>
                     ))}
                   </SelectContent>

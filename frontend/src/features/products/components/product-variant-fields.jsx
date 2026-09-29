@@ -1,4 +1,7 @@
 import { Field, FieldLabel } from '@/components/ui/field';
+import {
+  getReferenceUnitLabel,
+} from '@/features/products/lib/product-presentation';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -63,7 +66,10 @@ function ProductVariantFields({
   structured = false,
   value,
 }) {
-  const unitItems = metadata?.referenceUnits ?? [];
+  const unitItems = (metadata?.referenceUnits ?? []).map((item) => ({
+    ...item,
+    label: getReferenceUnitLabel(metadata, item.value),
+  }));
   const conservationItems = metadata?.conservationTypes ?? [];
   const varieties = (dimensions?.varieties ?? []).filter(
     (variety) => variety.status === 'ACTIVE',

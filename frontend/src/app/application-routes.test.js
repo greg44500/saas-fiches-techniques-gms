@@ -71,6 +71,22 @@ describe('application frontend route composition', () => {
     );
   });
 
+  it('imbrique les modules métier dans le shell Dossier persistant', () => {
+    const dossierRoute = APPLICATION_FRONTEND_ROUTES.workspaceRoutes.find(
+      (route) => route.path === 'dossiers/:dossierId',
+    );
+
+    expect(dossierRoute).toBeDefined();
+    expect(collectPaths(dossierRoute.children)).toEqual(
+      expect.arrayContaining([
+        'suppliers',
+        'technical-sheets',
+        'technical-sheets/:technicalSheetId',
+      ]),
+    );
+    expect(dossierRoute.children.some((route) => route.index === true)).toBe(true);
+  });
+
   it('injecte chaque route métier sous la bonne frontière du Core', () => {
     const applicationRoutes = composeApplicationFrontendRoutes([
       {

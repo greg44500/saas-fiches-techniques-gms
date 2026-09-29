@@ -23,6 +23,7 @@ import {
   useSearchProductsQuery,
 } from '@/features/products/api/product-catalog-api';
 import {
+  getConservationTypeLabel,
   getReferenceLabel,
 } from '@/features/products/lib/product-presentation';
 
@@ -147,7 +148,7 @@ function ProductSearchAutocomplete({
       </AutocompleteInputGroup>
 
       <AutocompletePortal>
-        <AutocompletePositioner>
+        <AutocompletePositioner className="z-[calc(var(--layer-modal)+1)]">
           <AutocompletePopup className="border-primary/25 bg-popover/95 shadow-2xl ring-1 ring-foreground/5 backdrop-blur-md">
             <div className="border-b border-border bg-muted/35 px-3 py-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -197,7 +198,12 @@ function ProductSearchAutocomplete({
                     <span>
                       {[
                         result.product.category?.name,
-                        result.variant ? null : 'Référence à enrichir',
+                        result.variant
+                          ? getConservationTypeLabel(
+                              metadata,
+                              result.variant.conservationType,
+                            )
+                          : 'Référence à enrichir',
                       ].filter(Boolean).join(' · ')}
                     </span>
                     {showWorkspaceFavorite

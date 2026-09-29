@@ -30,8 +30,22 @@ function getCategoryStatusLabel(metadata, status) {
   );
 }
 
+const PRODUCT_REFERENCE_UNIT_PRESENTATION = Object.freeze({
+  G: 'g',
+  KG: 'kg',
+  ML: 'ml',
+  CL: 'cl',
+  L: 'L',
+  UNIT: 'PCE',
+});
+
 function getReferenceUnitLabel(metadata, unit) {
-  return getMetadataLabel(metadata?.referenceUnits, unit, unit ?? 'Non renseignée');
+  if (unit === null || unit === undefined || unit === '') {
+    return 'Non renseignée';
+  }
+
+  return PRODUCT_REFERENCE_UNIT_PRESENTATION[unit]
+    ?? getMetadataLabel(metadata?.referenceUnits, unit, String(unit));
 }
 
 function getProductStatusTone(status) {
@@ -141,6 +155,7 @@ function getApiErrorMessage(error, fallback = 'Une erreur est survenue.') {
 export {
   IMPORT_CLASSIFICATION_PRESENTATION,
   PRODUCT_EVENT_LABELS,
+  PRODUCT_REFERENCE_UNIT_PRESENTATION,
   createValueLabelMap,
   formatYield,
   getApiErrorMessage,

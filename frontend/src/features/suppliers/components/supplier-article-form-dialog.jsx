@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogOverlay,
@@ -33,6 +33,9 @@ import {
   useGetProductMetadataQuery,
 } from '@/features/products/api/product-catalog-api';
 import {
+  getReferenceUnitLabel,
+} from '@/features/products/lib/product-presentation';
+import {
   useCreateSupplierArticleMutation,
 } from '@/features/suppliers/api/supplier-api';
 import {
@@ -40,6 +43,7 @@ import {
 } from '@/features/suppliers/lib/supplier-presentation';
 
 const NO_SUPPLIER = '__NONE__';
+const PACKAGING_UNITS = Object.freeze(['G', 'KG', 'ML', 'CL', 'L', 'UNIT']);
 
 function SupplierArticleFormDialog({
   onClose,
@@ -65,6 +69,10 @@ function SupplierArticleFormDialog({
   const [quantityPerUnit, setQuantityPerUnit] = useState('');
   const [unit, setUnit] = useState('KG');
   const [error, setError] = useState('');
+  const packagingUnitItems = PACKAGING_UNITS.map((value) => ({
+    value,
+    label: getReferenceUnitLabel(metadataQuery.data, value),
+  }));
 
   useEffect(() => {
     if (!open) return;
@@ -156,10 +164,13 @@ function SupplierArticleFormDialog({
           initialFocus={cancelRef}
         >
           <DialogHeader>
-            <DialogTitle>Créer un Article fournisseur</DialogTitle>
-            <DialogDescription>
-              L’Article relie une référence commerciale fournisseur à une Référence Produit M-002.
-            </DialogDescription>
+            <div className="flex items-center gap-2">
+              <DialogTitle>Créer un Article fournisseur</DialogTitle>
+              <InfoTooltip
+                content="L’Article relie une référence commerciale fournisseur au Produit correspondant."
+                label="À propos de l’Article fournisseur"
+              />
+            </div>
           </DialogHeader>
 
           <form className="mt-5 space-y-4" onSubmit={submit}>
@@ -208,14 +219,16 @@ function SupplierArticleFormDialog({
                 }}
                 onValueChange={(value) => {
                   setProductSearch(value);
-                  setProductVariant(null);
+                  setProductVariant((current) => (
+                    current?.name === value ? current : null
+                  ));
                 }}
                 scope="REFERENCE"
                 value={productSearch}
                 workspaceId={workspaceId}
               />
               <FieldDescription>
-                Recherchez la référence M-002 correspondant à l’Article fournisseur.
+                Recherchez puis sélectionnez le Produit correspondant à cet Article fournisseur.
               </FieldDescription>
             </Field>
 
@@ -288,10 +301,7 @@ function SupplierArticleFormDialog({
                     value={quantityPerUnit}
                   />
                   <Select
-                    items={['G', 'KG', 'ML', 'CL', 'L', 'UNIT'].map((value) => ({
-                      value,
-                      label: value,
-                    }))}
+                    items={packagingUnitItems}
                     onValueChange={setUnit}
                     value={unit}
                   >
@@ -299,9 +309,9 @@ function SupplierArticleFormDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {['G', 'KG', 'ML', 'CL', 'L', 'UNIT'].map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {value}
+                      {packagingUnitItems.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
                         </SelectItem>
                       ))}
                     </SelectContent>

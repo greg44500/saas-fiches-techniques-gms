@@ -18,7 +18,10 @@ const metadata = {
     { value: 'FRAIS', label: 'Frais' },
     { value: 'SEC', label: 'Sec' },
   ],
-  referenceUnits: [{ value: 'KG', label: 'kg' }],
+  referenceUnits: [
+    { value: 'KG', label: 'kg' },
+    { value: 'UNIT', label: 'unité' },
+  ],
   foodRanges: [
     { value: 1, label: 'Gamme 1', name: 'Frais' },
     { value: 6, label: 'Gamme 6', name: 'PAI / PAE' },
@@ -97,6 +100,18 @@ describe('ProductVariantFields', () => {
       processingState: null,
       referenceUnit: 'KG',
     }));
+  });
+
+  it('présente UNIT comme PCE sans modifier la valeur canonique', async () => {
+    const user = userEvent.setup();
+    const onPayload = vi.fn();
+
+    render(<StructuredHarness onPayload={onPayload} />);
+
+    await user.click(screen.getByLabelText('Unité de référence *'));
+
+    expect(screen.getByRole('option', { name: 'PCE' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'unité' })).not.toBeInTheDocument();
   });
 
   it('n expose plus la gamme et ne l envoie pas dans le payload frontend', async () => {
