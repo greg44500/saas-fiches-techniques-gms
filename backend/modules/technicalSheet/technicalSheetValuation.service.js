@@ -27,6 +27,7 @@ import {
 } from './technicalSheetComposition.service.js';
 import {
     decimalFraction,
+    divideFractions,
     fractionToDecimal,
     multiplyFractions,
     calculateEconomics,
@@ -58,6 +59,7 @@ const emptyLineValuation = ({
     normalizedAmount: null,
     normalizedUnit: null,
     lineCostHt: null,
+    materialCostSharePercent: null,
     pricedAt: null,
     sourceFingerprint: null,
     alerts,
@@ -242,6 +244,7 @@ const buildTechnicalSheetValuation = async ({
                 normalizedUnit:
                     price.normalizedUnit,
                 lineCostHt,
+                materialCostSharePercent: null,
                 pricedAt: atDate,
                 sourceFingerprint,
                 alerts:
@@ -334,6 +337,44 @@ const buildTechnicalSheetValuation = async ({
         }
     }
 
+    if (
+        complete
+        && economics?.materialCostHt !== null
+        && economics?.materialCostHt !== undefined
+    ) {
+        const materialCost =
+            decimalFraction(economics.materialCostHt);
+
+        if (materialCost.numerator > 0n) {
+            for (const line of lines) {
+                if (
+                    line.kind
+                    !== TECHNICAL_SHEET_LINE_KIND.INGREDIENT
+                    || line.valuation?.lineCostHt === null
+                    || line.valuation?.lineCostHt === undefined
+                ) {
+                    continue;
+                }
+
+                const share = multiplyFractions(
+                    divideFractions(
+                        decimalFraction(
+                            line.valuation.lineCostHt,
+                        ),
+                        materialCost,
+                    ),
+                    {
+                        numerator: 100n,
+                        denominator: 1n,
+                    },
+                );
+
+                line.valuation.materialCostSharePercent =
+                    fractionToDecimal(share);
+            }
+        }
+    }
+
     const fingerprint =
         complete
             ? stableFingerprint({
@@ -409,8 +450,6 @@ const buildTechnicalSheetValuation = async ({
         economicSnapshot: economics,
         resolutionCandidates,
         lineSnapshots,
-        recipePercentAvailable:
-            prepared.recipePercentAvailable,
     };
 };
 
@@ -574,8 +613,6 @@ const valuateTechnicalSheet = async ({
             serializeTechnicalSheetDraft(draft),
         resolutionCandidates:
             valuation.resolutionCandidates,
-        recipePercentAvailable:
-            valuation.recipePercentAvailable,
     };
 };
 

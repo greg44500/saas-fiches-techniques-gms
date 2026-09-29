@@ -189,7 +189,9 @@ beforeEach(async () => {
     });
 });
 
-const createValuedDraft = async () => {
+const createValuedDraft = async ({
+    lines = null,
+} = {}) => {
     const created =
         await createTechnicalSheet({
             workspaceId:
@@ -233,7 +235,7 @@ const createValuedDraft = async () => {
                     5000,
                 finalPriceMode:
                     'ADVISED',
-                lines: [
+                lines: lines ?? [
                     {
                         kind:
                             'INGREDIENT',
@@ -304,6 +306,42 @@ describe('M-004 services Fiches techniques', () => {
         ).toContain(created.sheet.id);
     });
 
+    it('calcule %CM comme contribution de chaque Ingrédient au coût matière total', async () => {
+        const commonLine = {
+            kind: 'INGREDIENT',
+            productVariantId:
+                reference.variant._id.toString(),
+            inputUnit: 'KG',
+            selectedSupplierArticleId: article.id,
+        };
+
+        const { valued } = await createValuedDraft({
+            lines: [
+                {
+                    ...commonLine,
+                    netQuantity: '1',
+                    order: 0,
+                },
+                {
+                    ...commonLine,
+                    netQuantity: '3',
+                    order: 1,
+                },
+                {
+                    ...commonLine,
+                    kind: 'ECONOMAT',
+                    netQuantity: '1',
+                    order: 2,
+                },
+            ],
+        });
+
+        expect(
+            valued.draft.lines.map(
+                (line) => line.valuation.materialCostSharePercent,
+            ),
+        ).toEqual(['25', '75', null]);
+    });
     it('crée, compose, valorise et valide un snapshot historique immuable', async () => {
         const {
             created,
@@ -323,6 +361,10 @@ describe('M-004 services Fiches techniques', () => {
             valued.draft.lines[0]
                 .valuation.lineCostHt,
         ).toBe('25');
+        expect(
+            valued.draft.lines[0]
+                .valuation.materialCostSharePercent,
+        ).toBe('100');
         expect(
             valued.draft.economicSnapshot
                 .finalPriceTtcMinor,
@@ -353,6 +395,11 @@ describe('M-004 services Fiches techniques', () => {
         expect(
             result.validation.linesSnapshot,
         ).toHaveLength(1);
+        expect(
+            result.validation.linesSnapshot[0]
+                .materialCostSharePercent
+                .toString(),
+        ).toBe('100');
         expect(
             await TechnicalSheetDraft.countDocuments({
                 technicalSheet:
@@ -425,6 +472,10 @@ describe('M-004 services Fiches techniques', () => {
         ).toBe(
             TECHNICAL_SHEET_VALUATION_STATUS.STALE,
         );
+        expect(
+            stale.lines[0]
+                .valuation.materialCostSharePercent,
+        ).toBeNull();
 
         const revalued =
             await valuateTechnicalSheet({

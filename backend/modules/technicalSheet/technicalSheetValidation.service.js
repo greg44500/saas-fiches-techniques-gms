@@ -221,11 +221,6 @@ const buildValidationLines = ({
                     .toString(),
             grossUnit:
                 line.calculation.grossUnit,
-            recipePercent:
-                line.calculation
-                    .recipePercent
-                    ?.toString()
-                ?? null,
             supplierArticleId:
                 source.article.id,
             supplierId:
@@ -252,6 +247,11 @@ const buildValidationLines = ({
             lineCostHt:
                 line.valuation.lineCostHt
                     .toString(),
+            materialCostSharePercent:
+                line.valuation
+                    .materialCostSharePercent
+                    ?.toString()
+                ?? null,
             order: line.order,
             note: line.note ?? null,
         };
@@ -353,6 +353,8 @@ const validateTechnicalSheet = async ({
                         valuationFingerprint:
                             null,
                         economicSnapshot: null,
+                        'lines.$[].valuation.materialCostSharePercent':
+                            null,
                         updatedBy: actorId,
                     },
                     $inc: { revision: 1 },

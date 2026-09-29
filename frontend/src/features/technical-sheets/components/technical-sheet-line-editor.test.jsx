@@ -94,7 +94,6 @@ const valuedLine = normalizeDraftLine({
     yieldPercentUsed: '90',
     grossQuantity: '2.778',
     grossUnit: 'KG',
-    recipePercent: '100',
   },
   valuation: {
     status: 'VALUED',
@@ -103,6 +102,7 @@ const valuedLine = normalizeDraftLine({
     normalizedAmount: '2.15',
     normalizedUnit: 'KG',
     lineCostHt: '6.02',
+    materialCostSharePercent: '100',
   },
 }, 0);
 
@@ -192,7 +192,10 @@ describe('TechnicalSheetLineEditor', () => {
 
     expect(screen.getByText('Qté')).toBeInTheDocument();
     expect(screen.getByText('U')).toBeInTheDocument();
-    expect(screen.getByText('% Recette')).toBeInTheDocument();
+    expect(screen.getByText('%CM')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Part de cette ligne Ingrédient dans le coût matière HT total de la Fiche. Disponible après valorisation complète.',
+    })).toBeInTheDocument();
     expect(screen.getByText('PUHT')).toBeInTheDocument();
     expect(screen.getByText('CMU HT')).toBeInTheDocument();
     expect(screen.getByText('%TR')).toBeInTheDocument();

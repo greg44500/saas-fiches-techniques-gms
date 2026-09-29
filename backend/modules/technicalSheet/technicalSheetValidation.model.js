@@ -78,10 +78,6 @@ const lineSnapshotSchema = new Schema(
             enum: Object.values(PRODUCT_REFERENCE_UNIT),
             required: true,
         },
-        recipePercent: {
-            type: Schema.Types.Decimal128,
-            default: null,
-        },
         supplierArticleId: {
             type: Schema.Types.ObjectId,
             required: true,
@@ -108,6 +104,10 @@ const lineSnapshotSchema = new Schema(
         lineCostHt: {
             type: Schema.Types.Decimal128,
             required: true,
+        },
+        materialCostSharePercent: {
+            type: Schema.Types.Decimal128,
+            default: null,
         },
         order: { type: Number, min: 0, required: true },
         note: { type: String, default: null },

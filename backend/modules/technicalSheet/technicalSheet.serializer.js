@@ -69,10 +69,6 @@ const serializeLine = (line) => ({
             ),
         grossUnit:
             line.calculation?.grossUnit ?? null,
-        recipePercent:
-            decimalToString(
-                line.calculation?.recipePercent,
-            ),
     },
     valuation: {
         status: line.valuation?.status,
@@ -92,6 +88,11 @@ const serializeLine = (line) => ({
         lineCostHt:
             decimalToString(
                 line.valuation?.lineCostHt,
+            ),
+        materialCostSharePercent:
+            decimalToString(
+                line.valuation
+                    ?.materialCostSharePercent,
             ),
         pricedAt:
             line.valuation?.pricedAt ?? null,

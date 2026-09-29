@@ -353,6 +353,7 @@ export {
     calculateGrossQuantity,
     convertQuantity,
     decimalFraction,
+    divideFractions,
     fractionToDecimal,
     multiplyFractions,
     normalizeFraction,

@@ -27,10 +27,6 @@ const lineCalculationSchema = new Schema(
             enum: Object.values(PRODUCT_REFERENCE_UNIT),
             default: null,
         },
-        recipePercent: {
-            type: Schema.Types.Decimal128,
-            default: null,
-        },
     },
     { _id: false },
 );
@@ -73,6 +69,10 @@ const lineValuationSchema = new Schema(
             default: null,
         },
         lineCostHt: {
+            type: Schema.Types.Decimal128,
+            default: null,
+        },
+        materialCostSharePercent: {
             type: Schema.Types.Decimal128,
             default: null,
         },

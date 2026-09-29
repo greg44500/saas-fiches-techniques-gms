@@ -573,6 +573,12 @@ const selectTechnicalSheetSupplierArticle = async ({
             );
         }
 
+        for (const draftLine of draft.lines) {
+            if (draftLine.valuation) {
+                draftLine.valuation.materialCostSharePercent = null;
+            }
+        }
+
         line.selectedSupplierArticle =
             article._id;
         line.valuation = {
@@ -583,6 +589,7 @@ const selectTechnicalSheetSupplierArticle = async ({
             normalizedAmount: null,
             normalizedUnit: null,
             lineCostHt: null,
+            materialCostSharePercent: null,
             pricedAt: null,
             sourceFingerprint: null,
             alerts: [],

@@ -162,7 +162,6 @@ calculation             {
     yieldPercentUsed    Decimal128|null
     grossQuantity       Decimal128|null
     grossUnit           unité|null
-    recipePercent       Decimal128|null
 }
 
 valuation               {
@@ -172,6 +171,7 @@ valuation               {
     normalizedAmount    Decimal128|null
     normalizedUnit      unité|null
     lineCostHt          Decimal128|null
+    materialCostSharePercent Decimal128|null
     pricedAt            Date|null
     sourceFingerprint   String|null
     alerts[]            String[]
@@ -179,6 +179,16 @@ valuation               {
 ~~~
 
 Les libellés Produit/Fournisseur/Article ne constituent pas la source de vérité du brouillon : ils sont résolus pour l'affichage. Les états validés, eux, en conservent un snapshot historique.
+
+`materialCostSharePercent` est une donnée financière dérivée de la valorisation :
+
+~~~text
+ligne Ingrédient valorisée
+→ lineCostHt / economicSnapshot.materialCostHt × 100
+→ materialCostSharePercent
+~~~
+
+Elle n'est renseignée qu'après valorisation complète et lorsque `materialCostHt > 0`. Les lignes Économat conservent `null`. L'ancien moteur physique multi-dimensions envisagé pour un pourcentage de composition est abandonné et ne constitue pas une dette produit.
 
 ---
 
@@ -218,7 +228,6 @@ linesSnapshot[]         {
     yieldPercentUsed
     grossQuantity
     grossUnit
-    recipePercent
     supplierArticleId
     supplierId
     supplierName
@@ -229,6 +238,7 @@ linesSnapshot[]         {
     normalizedUnit
     applicableSource
     lineCostHt
+    materialCostSharePercent
     order
     note
 }
@@ -374,7 +384,7 @@ Responsabilités :
 
 - conversion d'unités compatibles ;
 - quantité brute ;
-- pourcentage recette ;
+- contribution au coût matière (%CM) ;
 - multiplication quantité × Prix normalisé ;
 - agrégation CM / Économat / fabrication ;
 - marge cible et coefficient ;
@@ -763,7 +773,7 @@ Principes :
 - unités limitées aux registries M-002 ;
 - taux représentés en basis points côté API ou transformés de façon déterministe ;
 - aucun champ calculé accepté depuis le client ;
-- aucun coût, marge réelle, quantité brute ou pourcentage recette fiable depuis le frontend ;
+- aucun coût, marge réelle, quantité brute ou contribution %CM fiable depuis le frontend ;
 - `expectedRevision` obligatoire sur les mutations concurrentes ;
 - commentaire de validation facultatif et borné ;
 - aucune référence libre de Produit/Fournisseur.

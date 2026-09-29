@@ -251,13 +251,26 @@ Les conversions nécessaires aux calculs sont réalisées selon des règles back
 
 ---
 
-## 10. Pourcentage de recette
+## 10. Contribution au coût matière (%CM)
 
-Le pourcentage de recette est calculé automatiquement à partir des quantités nettes des lignes Ingrédients.
+La Fiche calcule automatiquement, pour chaque ligne Ingrédient valorisée, sa contribution au coût matière HT total :
 
-Il n'est jamais saisi librement par l'utilisateur.
+```text
+%CM ligne
+= coût HT de la ligne Ingrédient
+/ Coût matière HT total de la Fiche
+× 100
+```
 
-La conception technique doit préciser le comportement des lignes non convertibles vers une base commune ; aucune approximation silencieuse n'est autorisée.
+Le `%CM` :
+
+- n'est jamais saisi librement ;
+- est calculé par le backend uniquement lorsque la valorisation est complète ;
+- est non applicable aux lignes Économat ;
+- reste indisponible lorsque le Coût matière HT total est nul ;
+- doit totaliser 100 % sur les lignes Ingrédients lorsque le Coût matière HT est strictement positif, sous réserve des arrondis d'affichage.
+
+Le pourcentage physique de composition n'appartient plus à M-004. Aucun moteur de conversion `COUNT / VOLUME / MASS`, densité ou poids par unité n'est requis pour calculer `%CM`.
 
 ---
 
@@ -541,7 +554,7 @@ Il conserve au minimum, selon pertinence :
 - unité ;
 - rendement utilisé lorsque pertinent ;
 - quantité brute ;
-- pourcentage recette lorsque pertinent ;
+- contribution au coût matière (%CM) lorsque pertinente ;
 - Article fournisseur retenu ;
 - identité utile de l'Article et du Fournisseur ;
 - source du Prix applicable ;
@@ -1201,7 +1214,7 @@ M-004 Fiche technique est fonctionnellement acceptable lorsque :
 6. M-003 est réutilisé comme autorité de résolution Article/Prix ;
 7. plusieurs Articles exigent un choix humain ;
 8. un Prix absent n'est jamais transformé en 0 ;
-9. CM, Économat et coût de fabrication sont calculés séparément ;
+9. CM, %CM, Économat et coût de fabrication sont calculés séparément ;
 10. TVA, marge cible, prix théorique, conseillé et final sont correctement calculés ;
 11. le Prix final peut différer du conseillé sans passer sous le plancher ;
 12. la marge réelle est recalculée ;
@@ -1241,7 +1254,7 @@ Prévoir notamment :
 - quantité brute ;
 - rendement ;
 - conversions ;
-- pourcentage recette ;
+- contribution au coût matière (%CM) ;
 - CM ;
 - Économat ;
 - coût total ;

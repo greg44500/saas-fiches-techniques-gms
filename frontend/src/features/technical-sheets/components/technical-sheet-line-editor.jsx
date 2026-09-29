@@ -167,10 +167,10 @@ function hasValue(value) {
   return value !== null && value !== undefined && value !== '';
 }
 
-function formatRecipePercent(line) {
+function formatMaterialCostSharePercent(line) {
   if (line.kind !== 'INGREDIENT') return '—';
 
-  const value = line.calculation?.recipePercent;
+  const value = line.valuation?.materialCostSharePercent;
   if (!hasValue(value)) return '—';
 
   const parsed = Number(value);
@@ -780,13 +780,6 @@ function TechnicalSheetLineEditor({
         </div>
 
         <div className="min-w-0 lg:text-center">
-          <MobileLabel>Pourcentage de recette</MobileLabel>
-          <p className="truncate text-sm tabular-nums lg:text-center">
-            {formatRecipePercent(line)}
-          </p>
-        </div>
-
-        <div className="min-w-0 lg:text-center">
           <MobileLabel>Prix unitaire hors taxe</MobileLabel>
           <Tooltip>
             <TooltipTrigger
@@ -821,6 +814,13 @@ function TechnicalSheetLineEditor({
             {hasValue(line.valuation?.lineCostHt)
               ? formatDecimalCurrency(line.valuation.lineCostHt)
               : '—'}
+          </p>
+        </div>
+
+        <div className="min-w-0 lg:text-center">
+          <MobileLabel>Part du coût matière</MobileLabel>
+          <p className="truncate text-sm font-medium tabular-nums lg:text-center">
+            {formatMaterialCostSharePercent(line)}
           </p>
         </div>
 
@@ -945,14 +945,14 @@ function TechnicalSheetLineEditor({
           </ColumnHeading>
           <ColumnHeading align="center" tooltip="Quantité nette">Qté</ColumnHeading>
           <ColumnHeading align="center" tooltip="Unité">U</ColumnHeading>
-          <ColumnHeading
-            align="center"
-            tooltip="Part de l’Ingrédient dans la recette, calculée automatiquement lorsque les quantités peuvent être comparées"
-          >
-            % Recette
-          </ColumnHeading>
           <ColumnHeading align="center" tooltip="Prix unitaire hors taxe">PUHT</ColumnHeading>
           <ColumnHeading align="center" tooltip="Coût matières unitaire hors taxe">CMU HT</ColumnHeading>
+          <ColumnHeading
+            align="center"
+            tooltip="Part de cette ligne Ingrédient dans le coût matière HT total de la Fiche. Disponible après valorisation complète."
+          >
+            %CM
+          </ColumnHeading>
           <ColumnHeading align="center" tooltip="Taux de rendement">%TR</ColumnHeading>
           <ColumnHeading tooltip="Note">Note</ColumnHeading>
           <ColumnHeading align="center" tooltip="Actions">Actions</ColumnHeading>

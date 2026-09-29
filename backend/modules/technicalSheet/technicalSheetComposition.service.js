@@ -8,15 +8,9 @@ import {
     ProductVariant,
 } from '../productCatalog/productVariant.model.js';
 import {
-    TECHNICAL_SHEET_LINE_KIND,
-} from './technicalSheet.registry.js';
-import {
     calculateGrossQuantity,
     convertQuantity,
-    decimalFraction,
     fractionToDecimal,
-    multiplyFractions,
-    sumFractions,
 } from './technicalSheetMath.service.js';
 import { AppError } from '../../utils/appError.js';
 
@@ -149,7 +143,6 @@ const prepareTechnicalSheetComposition = async ({
                         gross.grossQuantity,
                     ),
                 grossUnit: line.inputUnit,
-                recipePercent: null,
             },
             valuation:
                 line.valuation?.toObject?.()
@@ -159,85 +152,9 @@ const prepareTechnicalSheetComposition = async ({
         };
     });
 
-    const ingredientLines = prepared.filter(
-        (line) =>
-            line.kind
-            === TECHNICAL_SHEET_LINE_KIND.INGREDIENT,
-    );
-
-    const ingredientDimensions = new Set(
-        ingredientLines.map((line) =>
-            PRODUCT_REFERENCE_UNIT_REGISTRY[
-                line.inputUnit
-            ].dimension),
-    );
-
-    if (
-        ingredientLines.length > 0
-        && ingredientDimensions.size === 1
-    ) {
-        const baseQuantities =
-            ingredientLines.map((line) => {
-                const definition =
-                    PRODUCT_REFERENCE_UNIT_REGISTRY[
-                        line.inputUnit
-                    ];
-
-                return multiplyFractions(
-                    decimalFraction(line.netQuantity),
-                    {
-                        numerator:
-                            BigInt(definition.factorToBase),
-                        denominator: 1n,
-                    },
-                );
-            });
-        const total =
-            sumFractions(baseQuantities);
-
-        if (total.numerator > 0n) {
-            let ingredientIndex = 0;
-
-            for (const line of prepared) {
-                if (
-                    line.kind
-                    !== TECHNICAL_SHEET_LINE_KIND.INGREDIENT
-                ) {
-                    continue;
-                }
-
-                const percent = multiplyFractions(
-                    {
-                        numerator:
-                            baseQuantities[
-                                ingredientIndex
-                            ].numerator
-                            * total.denominator,
-                        denominator:
-                            baseQuantities[
-                                ingredientIndex
-                            ].denominator
-                            * total.numerator,
-                    },
-                    {
-                        numerator: 100n,
-                        denominator: 1n,
-                    },
-                );
-
-                line.calculation.recipePercent =
-                    fractionToDecimal(percent);
-                ingredientIndex += 1;
-            }
-        }
-    }
-
     return {
         lines: prepared,
         variants,
-        recipePercentAvailable:
-            ingredientLines.length === 0
-            || ingredientDimensions.size === 1,
     };
 };
 

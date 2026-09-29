@@ -495,8 +495,10 @@ La QA visuelle a ensuite conduit aux arbitrages UX suivants, en cours de stabili
 - fondu sous la zone sticky renforcé pour matérialiser le passage de la Composition derrière les KPI ;
 - état d'autosave rendu par texte/icône sémantique sans badge : success = enregistré, warning = enregistrement en cours, alert = non enregistré ;
 - zone sticky M-004 positionnée sous la topbar Workspace via le token Core `--workspace-topbar-height`, avec fallback temporaire compatible v1.2.1 ;
-- colonne `% Recette` affichée dans Composition à partir de `line.calculation.recipePercent` déjà calculé par le backend ; Économat et valeurs non calculables affichent `—` ;
-- l'évolution future vers un pourcentage massique multi-dimensions (conditionnement fournisseur / masse volumique) reste un changement métier séparé et n'est pas simulée dans ce correctif frontend.
+- colonne `%CM` affichée dans Composition après `CMU HT`, avec infobulle : contribution financière de la ligne Ingrédient au Coût matière HT total ;
+- `%CM = lineCostHt / materialCostHt × 100`, calculé uniquement après valorisation complète ; Économat et coût matière total nul affichent `—` ;
+- l'ancien pourcentage physique de composition est supprimé du contrat, des modèles, snapshots et API M-004 ;
+- aucun moteur de conversion physique `COUNT / VOLUME / MASS`, densité ou poids/unité n'est conservé comme dette : ce besoin est abandonné pour M-004.
 
 Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon, le contrat backend. Ils doivent donc être retestés avant la PR finale.
 
