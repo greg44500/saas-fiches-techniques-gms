@@ -708,17 +708,19 @@ function DossierSupplierPricingPage() {
                 Les tarifs fournisseur proviennent des catalogues. L’import et la gestion des catalogues se font depuis la page Fournisseurs.
               </p>
             </div>
-            <Button asChild size="sm" variant="outline">
-              <Link
-                to={
-                  '/workspaces/' + workspace.id
-                  + '/suppliers?section=catalogs'
-                }
-              >
-                Gérer les catalogues
-                <ArrowUpRight aria-hidden="true" className="size-4" />
-              </Link>
-            </Button>
+            {can(SUPPLIER_PERMISSION.SUPPLIER_READ) && (
+              <Button asChild size="sm" variant="outline">
+                <Link
+                  to={
+                    '/workspaces/' + workspace.id
+                    + '/suppliers?section=catalogs'
+                  }
+                >
+                  Gérer les catalogues
+                  <ArrowUpRight aria-hidden="true" className="size-4" />
+                </Link>
+              </Button>
+            )}
           </div>
 
           {catalogsQuery.isError ? (
