@@ -18,6 +18,7 @@ function TechnicalSheetControlPanel({
   draft,
   draftDirty,
   draftSynchronizing,
+  identityDirty,
   onArchive,
   onCopy,
   onDelete,
@@ -32,6 +33,7 @@ function TechnicalSheetControlPanel({
     || validatePending
     || draftSynchronizing
     || draftDirty
+    || identityDirty
     || draft?.valuationStatus !== 'COMPLETE'
   );
 
@@ -39,9 +41,11 @@ function TechnicalSheetControlPanel({
     ? 'Validation indisponible avec votre rôle ou le statut actuel'
     : !draft
       ? 'Aucun brouillon à valider'
-      : draftDirty
-        ? 'Enregistrer le brouillon avant validation'
-        : draft.valuationStatus === 'COMPLETE'
+      : identityDirty
+        ? 'Enregistrer les informations avant validation'
+        : draftDirty
+          ? 'Enregistrer le brouillon avant validation'
+          : draft.valuationStatus === 'COMPLETE'
           ? 'Valider la Fiche technique'
           : 'Valorisation complète requise avant validation';
 
