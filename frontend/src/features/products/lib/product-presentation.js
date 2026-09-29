@@ -31,11 +31,6 @@ function getCategoryStatusLabel(metadata, status) {
 }
 
 const PRODUCT_REFERENCE_UNIT_PRESENTATION = Object.freeze({
-  G: 'g',
-  KG: 'kg',
-  ML: 'ml',
-  CL: 'cl',
-  L: 'L',
   UNIT: 'PCE',
 });
 

@@ -34,7 +34,7 @@ function formatPackaging(packaging) {
   const parts = [];
 
   if (packaging.containerType) parts.push(packaging.containerType);
-  if (packaging.unitCount) parts.push(String(packaging.unitCount) + ' pièce(s)');
+  if (packaging.unitCount) parts.push(String(packaging.unitCount) + ' unité(s)');
   if (packaging.quantityPerUnit && packaging.unit) {
     parts.push(
       String(packaging.quantityPerUnit)

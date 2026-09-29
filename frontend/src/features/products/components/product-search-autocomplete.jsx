@@ -148,7 +148,7 @@ function ProductSearchAutocomplete({
       </AutocompleteInputGroup>
 
       <AutocompletePortal>
-        <AutocompletePositioner className="z-[calc(var(--layer-modal)+1)]">
+        <AutocompletePositioner className="z-[calc(var(--layer-modal)_+_1)]">
           <AutocompletePopup className="border-primary/25 bg-popover/95 shadow-2xl ring-1 ring-foreground/5 backdrop-blur-md">
             <div className="border-b border-border bg-muted/35 px-3 py-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
