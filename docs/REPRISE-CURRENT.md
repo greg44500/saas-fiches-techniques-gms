@@ -408,7 +408,7 @@ Implémenté :
 - rétention Workspace 1–90 jours et job de purge métier ;
 - migrations M-004 et scripts npm associés ;
 - frontend React/RTK Query : liste, création, éditeur, sourcing, valorisation, validation, historique, réglages, copie, corbeille et widget de capacité ;
-- tests backend ciblés, tests frontend ciblés et quatre scénarios Playwright M-004 ajoutés au dépôt.
+- tests backend ciblés, tests frontend ciblés et cinq scénarios Playwright M-004 ajoutés au dépôt, dont le parcours Produit global non favori.
 
 À ce stade, **aucun résultat local n'est encore déclaré vert dans cette synthèse**. La prochaine autorité est l'exécution locale demandée à l'utilisateur, puis la Core Gate de l'unique PR.
 
