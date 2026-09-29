@@ -1,10 +1,16 @@
-import { Globe2, Star, Trash2 } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Globe2,
+  Star,
+  Trash2,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import {
   DataTable,
   DataTableActions,
 } from '@/components/data-display/data-table';
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -98,10 +104,12 @@ function TechnicalSheetLineEditor({
   lines,
   metadata,
   onChange,
+  onOpenPricing,
   onSourcingError,
   onSourcingPendingChange,
   onSourcingSelected,
   productMetadata,
+  canOpenPricing = false,
   sourcingDisabled = false,
   sourcingDisabledReason = '',
   technicalSheetId,
@@ -339,9 +347,21 @@ function TechnicalSheetLineEditor({
                 {sourceLabel}
               </p>
             )}
-            <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-              {valuationPresentation.label}
-            </TechnicalSheetStatusBadge>
+            <div className="flex items-center gap-1">
+              <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
+                {valuationPresentation.label}
+              </TechnicalSheetStatusBadge>
+              {canOpenPricing
+              && line.valuation?.status === 'NO_PRICE' && (
+                <ActionIconButton
+                  Icon={ArrowUpRight}
+                  label={'Ouvrir Fournisseurs et prix pour ' + line.productVariantName}
+                  onClick={() => onOpenPricing?.(line)}
+                  tooltipLabel="Ouvrir Fournisseurs et prix"
+                  variant="ghost"
+                />
+              )}
+            </div>
           </div>
         );
       },
