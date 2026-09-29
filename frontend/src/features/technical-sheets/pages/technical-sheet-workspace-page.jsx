@@ -9,7 +9,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
@@ -56,6 +56,9 @@ import {
   TechnicalSheetCopyDialog,
 } from '@/features/technical-sheets/components/technical-sheet-copy-dialog';
 import {
+  TechnicalSheetEconomicsBar,
+} from '@/features/technical-sheets/components/technical-sheet-economics-bar';
+import {
   TechnicalSheetHistory,
 } from '@/features/technical-sheets/components/technical-sheet-history';
 import {
@@ -70,9 +73,7 @@ import {
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 import {
   basisPointsToInput,
-  formatBasisPoints,
   formatDecimalCurrency,
-  formatMinorCurrency,
   getLineValuationPresentation,
   getTechnicalSheetActionAvailability,
   getTechnicalSheetApiErrorMessage,
@@ -426,46 +427,46 @@ function TechnicalSheetWorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <header className="space-y-3">
-        <Button asChild size="sm" variant="ghost">
-          <Link
-            to={
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <ActionIconButton
+            Icon={ArrowLeft}
+            label="Retour aux Fiches techniques"
+            onClick={() => navigate(
               '/workspaces/' + workspace.id
               + '/dossiers/' + dossierId
-              + '/technical-sheets'
-            }
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            Retour aux Fiches techniques
-          </Link>
-        </Button>
-
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex items-start gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight">
-              {sheet.name}
-            </h1>
-            <InfoTooltip
-              content="Travail courant, valorisation et historique validé."
-              label="À propos de la Fiche technique"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
-              {statusPresentation.label}
-            </TechnicalSheetStatusBadge>
-            {draft && (
-              <TechnicalSheetStatusBadge tone="warning">
-                Brouillon
-              </TechnicalSheetStatusBadge>
+              + '/technical-sheets',
             )}
-            {draft && (
-              <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-                {valuationPresentation.label}
-              </TechnicalSheetStatusBadge>
-            )}
-          </div>
+            tooltipLabel="Retour aux Fiches techniques"
+            variant="ghost"
+          />
+          <h1 className="truncate text-3xl font-semibold tracking-tight">
+            {sheet.name}
+          </h1>
+          <InfoTooltip
+            content="Travail courant, valorisation et historique validé."
+            label="À propos de la Fiche technique"
+          />
         </div>
+
+        {canValidate && draft && (
+          <ActionIconButton
+            Icon={CheckCircle2}
+            disabled={
+              validateState.isLoading
+              || draftSynchronizing
+              || draft.valuationStatus !== 'COMPLETE'
+            }
+            label="Valider la Fiche technique"
+            onClick={validateDraft}
+            tooltipLabel={
+              draft.valuationStatus === 'COMPLETE'
+                ? 'Valider la Fiche technique'
+                : 'Valorisation complète requise avant validation'
+            }
+            variant="outline"
+          />
+        )}
       </header>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -539,28 +540,66 @@ function TechnicalSheetWorkspacePage() {
                 )}
               </div>
             </div>
+
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div className="flex flex-wrap gap-2">
+                <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+                  {statusPresentation.label}
+                </TechnicalSheetStatusBadge>
+                {draft && (
+                  <TechnicalSheetStatusBadge tone="warning">
+                    Brouillon
+                  </TechnicalSheetStatusBadge>
+                )}
+                {draft && (
+                  <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
+                    {valuationPresentation.label}
+                  </TechnicalSheetStatusBadge>
+                )}
+              </div>
+            </div>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent>
             <div className="grid gap-4 lg:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="technical-sheet-edit-name">Nom</FieldLabel>
-                <Input
-                  disabled={!canUpdate || updateSheetState.isLoading}
-                  id="technical-sheet-edit-name"
-                  maxLength={160}
-                  onChange={(event) => setIdentity((current) => ({
-                    ...current,
-                    name: event.target.value,
-                  }))}
-                  value={identity.name}
-                />
-              </Field>
-              <Field>
+              <div className="space-y-4">
+                <Field>
+                  <FieldLabel htmlFor="technical-sheet-edit-name">Nom</FieldLabel>
+                  <Input
+                    disabled={!canUpdate || updateSheetState.isLoading}
+                    id="technical-sheet-edit-name"
+                    maxLength={160}
+                    onChange={(event) => setIdentity((current) => ({
+                      ...current,
+                      name: event.target.value,
+                    }))}
+                    value={identity.name}
+                  />
+                </Field>
+
+                {canValidate && draft && (
+                  <Field>
+                    <FieldLabel htmlFor="technical-sheet-validation-comment">
+                      Commentaire de validation
+                    </FieldLabel>
+                    <Textarea
+                      className="min-h-20"
+                      id="technical-sheet-validation-comment"
+                      maxLength={1000}
+                      onChange={(event) => setValidationComment(event.target.value)}
+                      placeholder="Facultatif"
+                      value={validationComment}
+                    />
+                  </Field>
+                )}
+              </div>
+
+              <Field className="h-full">
                 <FieldLabel htmlFor="technical-sheet-edit-description">
                   Description
                 </FieldLabel>
                 <Textarea
+                  className="min-h-32 h-full"
                   disabled={!canUpdate || updateSheetState.isLoading}
                   id="technical-sheet-edit-description"
                   maxLength={2000}
@@ -601,10 +640,10 @@ function TechnicalSheetWorkspacePage() {
             <CardHeader>
               <CardTitle>Base de production</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+            <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <Field>
                 <FieldLabel htmlFor="technical-sheet-production-quantity">
-                  Quantité produite
+                  Quantité
                 </FieldLabel>
                 <Input
                   disabled={!canUpdate || draftSynchronizing}
@@ -619,7 +658,7 @@ function TechnicalSheetWorkspacePage() {
               </Field>
 
               <Field>
-                <FieldLabel>Unité de production</FieldLabel>
+                <FieldLabel>Unité</FieldLabel>
                 <Select
                   disabled={!canUpdate || draftSynchronizing}
                   items={unitItems}
@@ -644,7 +683,7 @@ function TechnicalSheetWorkspacePage() {
 
               <Field>
                 <FieldLabel htmlFor="technical-sheet-portions">
-                  Nombre de portions
+                  Portions
                 </FieldLabel>
                 <Input
                   disabled={!canUpdate || draftSynchronizing}
@@ -679,7 +718,13 @@ function TechnicalSheetWorkspacePage() {
       </div>
 
       {draft && (
-        <>
+        <section className="relative space-y-6">
+          <TechnicalSheetEconomicsBar
+            economicSnapshot={economicSnapshot}
+            lines={draft.lines ?? []}
+            targetMarginBasisPoints={draft.targetMarginBasisPoints}
+            vatRateBasisPoints={draft.vatRateBasisPoints}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Composition</CardTitle>
@@ -845,83 +890,10 @@ function TechnicalSheetWorkspacePage() {
                 </div>
               </div>
 
-              {economicSnapshot && (
-                <div className="grid gap-3 rounded-lg border border-border bg-muted/20 p-4 sm:grid-cols-2 xl:grid-cols-5">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Matières HT</p>
-                    <p className="font-semibold">
-                      {formatDecimalCurrency(economicSnapshot.materialCostHt)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Économat HT</p>
-                    <p className="font-semibold">
-                      {formatDecimalCurrency(economicSnapshot.economatCostHt)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Coût fabrication HT</p>
-                    <p className="font-semibold">
-                      {formatDecimalCurrency(economicSnapshot.manufacturingCostHt)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Prix final TTC</p>
-                    <p className="font-semibold">
-                      {formatMinorCurrency(economicSnapshot.finalPriceTtcMinor)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Marge réelle</p>
-                    <p className="font-semibold">
-                      {formatBasisPoints(economicSnapshot.actualMarginBasisPoints)}
-                    </p>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          {canValidate && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Validation</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Field>
-                  <FieldLabel htmlFor="technical-sheet-validation-comment">
-                    Commentaire facultatif
-                  </FieldLabel>
-                  <Textarea
-                    id="technical-sheet-validation-comment"
-                    maxLength={1000}
-                    onChange={(event) => setValidationComment(event.target.value)}
-                    value={validationComment}
-                  />
-                </Field>
-                <div className="flex justify-end">
-                  <Button
-                    disabled={
-                      validateState.isLoading
-                      || draftSynchronizing
-                      || draft.valuationStatus !== 'COMPLETE'
-                    }
-                    onClick={validateDraft}
-                    type="button"
-                  >
-                    <CheckCircle2 aria-hidden="true" className="size-4" />
-                    Valider la Fiche technique
-                  </Button>
-                </div>
-                {draft.valuationStatus !== 'COMPLETE' && (
-                  <p className="text-sm text-muted-foreground">
-                    Une valorisation complète et à jour est obligatoire avant validation.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </>
+        </section>
       )}
 
       <Card>

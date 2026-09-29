@@ -223,30 +223,28 @@ function TechnicalSheetTrashPage() {
           />
         </div>
 
-        {canManageSettings && (
-          <ActionIconButton
-            Icon={Settings2}
-            label="Régler la durée de conservation de la Corbeille"
-            onClick={() => setSettingsOpen(true)}
-            tooltipLabel="Paramètres de la Corbeille"
-            variant="outline"
-          />
-        )}
-      </header>
-
-      {canPurge && (
-        <div className="flex justify-end">
-          <Button
-            disabled={purgeExpiredState.isLoading}
-            onClick={purgeExpiredItems}
-            type="button"
-            variant="outline"
-          >
-            <Trash2 aria-hidden="true" className="size-4" />
-            Supprimer les éléments arrivés à échéance
-          </Button>
+        <div className="flex items-center gap-2">
+          {canPurge && (
+            <ActionIconButton
+              Icon={Trash2}
+              disabled={purgeExpiredState.isLoading}
+              label="Supprimer les éléments arrivés à échéance"
+              onClick={purgeExpiredItems}
+              tooltipLabel="Supprimer les éléments arrivés à échéance"
+              variant="outline"
+            />
+          )}
+          {canManageSettings && (
+            <ActionIconButton
+              Icon={Settings2}
+              label="Régler la durée de conservation de la Corbeille"
+              onClick={() => setSettingsOpen(true)}
+              tooltipLabel="Paramètres de la Corbeille"
+              variant="outline"
+            />
+          )}
         </div>
-      )}
+      </header>
 
       <section className="overflow-hidden rounded-xl border border-border bg-card">
         <DataTable

@@ -465,7 +465,13 @@ La QA visuelle a ensuite conduit aux arbitrages UX suivants, en cours de stabili
 - vocabulaire utilisateur « suppression définitive » à la place de « purge » ;
 - Fiche avec brouillon ouvert non copiable ;
 - statuts visuels : Brouillon = warning, Non valorisée = alert, Archivée = archived ;
-- actions principales de la Fiche regroupées sous forme d’icônes avec infobulles.
+- actions principales de la Fiche regroupées sous forme d’icônes avec infobulles ;
+- retour Fiche compacté en icône à côté du titre ;
+- badges lifecycle / brouillon / valorisation replacés dans Informations générales ;
+- commentaire de validation intégré sous le nom de la Fiche ;
+- Base de production densifiée ;
+- validation remontée en action d’entête ;
+- bandeau économique sticky avec coûts partiels exacts issus des lignes déjà valorisées, détail économique ouvrable à droite et effet de flou par `backdrop-filter` lorsque la composition défile dessous.
 
 Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon, le contrat backend. Ils doivent donc être retestés avant la PR finale.
 
