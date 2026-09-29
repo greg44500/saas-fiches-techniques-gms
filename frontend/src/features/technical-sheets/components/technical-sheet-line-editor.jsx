@@ -778,32 +778,34 @@ function TechnicalSheetLineEditor({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-end gap-2">
-        <ActionIconButton
-          Icon={Globe2}
-          aria-pressed={productScope === PRODUCT_SOURCE.REFERENCE}
-          label="Tous les produits"
-          onClick={() => setProductScope(PRODUCT_SOURCE.REFERENCE)}
-          tooltipLabel="Tous les produits"
-          variant={
-            productScope === PRODUCT_SOURCE.REFERENCE
-              ? 'default'
-              : 'outline'
-          }
-        />
-        <ActionIconButton
-          Icon={Star}
-          aria-pressed={productScope === PRODUCT_SOURCE.FAVORITES}
-          label="Favoris"
-          onClick={() => setProductScope(PRODUCT_SOURCE.FAVORITES)}
-          tooltipLabel="Favoris"
-          variant={
-            productScope === PRODUCT_SOURCE.FAVORITES
-              ? 'default'
-              : 'outline'
-          }
-        />
-      </div>
+      {!disabled && (
+        <div className="flex items-center justify-end gap-2">
+          <ActionIconButton
+            Icon={Globe2}
+            aria-pressed={productScope === PRODUCT_SOURCE.REFERENCE}
+            label="Tous les produits"
+            onClick={() => setProductScope(PRODUCT_SOURCE.REFERENCE)}
+            tooltipLabel="Tous les produits"
+            variant={
+              productScope === PRODUCT_SOURCE.REFERENCE
+                ? 'default'
+                : 'outline'
+            }
+          />
+          <ActionIconButton
+            Icon={Star}
+            aria-pressed={productScope === PRODUCT_SOURCE.FAVORITES}
+            label="Favoris"
+            onClick={() => setProductScope(PRODUCT_SOURCE.FAVORITES)}
+            tooltipLabel="Favoris"
+            variant={
+              productScope === PRODUCT_SOURCE.FAVORITES
+                ? 'default'
+                : 'outline'
+            }
+          />
+        </div>
+      )}
 
       {addError && (
         <p className="text-sm text-destructive" role="alert">
