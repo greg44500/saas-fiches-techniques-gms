@@ -97,7 +97,15 @@ function ProductSearchAutocomplete({
     );
 
     onSelect(result);
-    onValueChange(clearOnSelect ? '' : nextSearch);
+
+    if (clearOnSelect) {
+      globalThis.queueMicrotask(() => {
+        onValueChange('');
+      });
+      return;
+    }
+
+    onValueChange(nextSearch);
   }
 
   const normalizedValue = value.trim();
