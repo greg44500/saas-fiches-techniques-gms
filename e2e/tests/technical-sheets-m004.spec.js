@@ -166,6 +166,10 @@ async function valuateAndValidate(page, {
         'Commentaire de validation',
       )
       .fill(comment);
+
+    await page.getByRole('button', {
+      name: 'Fermer',
+    }).click();
   }
 
   await page
@@ -357,6 +361,10 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     .fill(
       'Validation après revalorisation',
     );
+
+  await page.getByRole('button', {
+    name: 'Fermer',
+  }).click();
 
   await page
     .getByRole('button', {
