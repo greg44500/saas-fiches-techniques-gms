@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import {
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogOverlay,
@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/dialog';
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldLabel,
 } from '@/components/ui/field';
@@ -50,9 +49,8 @@ const MAPPING_FIELDS = Object.freeze([
   ['unitCount', 'Nombre d’unités'],
   ['quantityPerUnit', 'Quantité par unité'],
   ['unit', 'Unité'],
-  ['priceAmount', 'Prix'],
-  ['priceBasis', 'Base du prix'],
-  ['currency', 'Devise'],
+  ['priceAmount', 'Prix HT'],
+  ['priceBasis', 'Unité du prix (Kilo, Pièce, etc.)'],
 ]);
 
 function autoDetectMapping(headers) {
@@ -73,8 +71,7 @@ function autoDetectMapping(headers) {
     quantityPerUnit: find('quantite', 'qte'),
     unit: findExact('unite', 'unit', 'uom'),
     priceAmount: find('prix', 'tarif', 'price'),
-    priceBasis: find('base'),
-    currency: find('devise', 'currency'),
+    priceBasis: find('base', 'unite prix', 'prix par'),
   };
 
   return Object.fromEntries(
@@ -279,17 +276,26 @@ function SupplierCatalogImportDialog({
           initialFocus={cancelRef}
         >
           <DialogHeader>
-            <DialogTitle>Importer un catalogue fournisseur</DialogTitle>
-            <DialogDescription>
-              Le fichier reste temporaire. Les écritures définitives ne sont effectuées qu’à la confirmation.
-            </DialogDescription>
+            <div className="flex items-center gap-2">
+              <DialogTitle>Importer un catalogue fournisseur</DialogTitle>
+              <InfoTooltip
+                content="Le fichier reste temporaire. Les écritures définitives ne sont effectuées qu’à la confirmation."
+                label="À propos de l’import d’un catalogue fournisseur"
+              />
+            </div>
           </DialogHeader>
 
           <div className="mt-5 space-y-6">
             {!inspectResult && (
               <section className="space-y-4">
                 <Field>
-                  <FieldLabel htmlFor="supplier-catalog-file">Fichier</FieldLabel>
+                  <div className="flex items-center gap-1">
+                    <FieldLabel htmlFor="supplier-catalog-file">Fichier</FieldLabel>
+                    <InfoTooltip
+                      content="Formats autorisés : CSV, XLS et XLSX."
+                      label="Formats de fichier autorisés"
+                    />
+                  </div>
                   <Input
                     accept=".csv,.xls,.xlsx"
                     id="supplier-catalog-file"
@@ -299,9 +305,6 @@ function SupplierCatalogImportDialog({
                     }}
                     type="file"
                   />
-                  <FieldDescription>
-                    Formats autorisés : CSV, XLS et XLSX.
-                  </FieldDescription>
                 </Field>
                 <Button disabled={pending || !file} onClick={inspect} type="button">
                   {pending ? 'Inspection…' : 'Inspecter le fichier'}
@@ -405,11 +408,12 @@ function SupplierCatalogImportDialog({
                 </section>
 
                 <section className="space-y-3">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <h3 className="font-semibold">Mapping des colonnes</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Associez les colonnes utiles. Les autres colonnes sont ignorées.
-                    </p>
+                    <InfoTooltip
+                      content="Associez les colonnes utiles. Les autres colonnes sont ignorées. En V1, la devise est fixée à l’euro (EUR)."
+                      label="À propos du mapping des colonnes"
+                    />
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">

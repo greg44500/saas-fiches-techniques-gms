@@ -1035,6 +1035,8 @@ L'AuditLog générique ne remplace pas l'historique fonctionnel validé de la Fi
 
 M-004 s'intègre dans la vraie page de travail du Dossier M-001.
 
+Le shell Dossier conserve les outils de contexte utiles pendant la navigation entre les modules. En particulier, lorsqu'un utilisateur possède l'autorité M-003 correspondante, la vérification du Prix applicable reste accessible depuis l'onglet Fiches techniques afin d'aider à choisir ou contrôler un Article fournisseur pendant la composition.
+
 Surfaces fonctionnelles :
 
 - liste des Fiches du Dossier ;

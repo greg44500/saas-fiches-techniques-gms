@@ -11,7 +11,6 @@ import {
   Link,
   NavLink,
   Outlet,
-  useLocation,
   useParams,
 } from 'react-router';
 
@@ -69,7 +68,6 @@ import { cn } from '@/lib/utils';
 
 function DossierWorkspacePage() {
   const { dossierId } = useParams();
-  const location = useLocation();
   const { can, canAny, workspace } = useWorkspaceContext();
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
   const dossierQuery = useGetDossierByIdQuery({
@@ -134,12 +132,8 @@ function DossierWorkspacePage() {
     || dossier.location?.city,
   );
   const locationLabel = hasLocation ? formatDossierLocation(dossier) : null;
-  const supplierRouteActive = location.pathname.endsWith(
-    '/dossiers/' + dossier.id + '/suppliers',
-  );
-  const showApplicablePriceCard = (
-    supplierRouteActive
-    && can(SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ)
+  const showApplicablePriceCard = can(
+    SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
   );
 
   return (
@@ -155,76 +149,79 @@ function DossierWorkspacePage() {
         'grid items-stretch gap-4',
         showApplicablePriceCard ? 'lg:grid-cols-2' : 'grid-cols-1',
       )}>
-        <header className="h-full rounded-xl border border-border bg-card px-5 py-4">
+        <header className={cn(
+          'rounded-xl border border-border bg-card px-5 py-4',
+          showApplicablePriceCard && 'lg:h-56',
+        )}>
           <div className="flex flex-wrap items-center gap-2.5">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {dossier.name}
-          </h1>
-          <StatusBadge tone={getDossierStatusTone(dossier.status)}>
-            {getDossierStatusLabel(dossier.status, metadataQuery.data)}
-          </StatusBadge>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {dossier.name}
+            </h1>
+            <StatusBadge tone={getDossierStatusTone(dossier.status)}>
+              {getDossierStatusLabel(dossier.status, metadataQuery.data)}
+            </StatusBadge>
 
-          {canManageMargin && (
-            <Tooltip>
-              <TooltipTrigger
-                render={(
-                  <Button
-                    aria-label="Modifier la marge cible par défaut des nouvelles Fiches"
-                    onClick={() => setMarginDialogOpen(true)}
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  />
-                )}
-              >
-                <SlidersHorizontal aria-hidden="true" className="size-4" />
+            {canManageMargin && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={(
+                    <Button
+                      aria-label="Modifier la marge cible par défaut des nouvelles Fiches"
+                      onClick={() => setMarginDialogOpen(true)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    />
+                  )}
+                >
+                  <SlidersHorizontal aria-hidden="true" className="size-4" />
+                  {marginLabel}
+                </TooltipTrigger>
+                <TooltipContent>
+                  Modifier la marge cible par défaut des nouvelles Fiches.
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {!canManageMargin
+            && canReadTechnicalSheets
+            && Number.isInteger(marginBasisPoints) && (
+              <span className="text-sm font-medium text-muted-foreground">
                 {marginLabel}
-              </TooltipTrigger>
-              <TooltipContent>
-                Modifier la marge cible par défaut des nouvelles Fiches.
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          {!canManageMargin
-          && canReadTechnicalSheets
-          && Number.isInteger(marginBasisPoints) && (
-            <span className="text-sm font-medium text-muted-foreground">
-              {marginLabel}
-            </span>
-          )}
-        </div>
-
-        {(locationLabel
-          || dossier.contactName
-          || dossier.documentEmail
-          || dossier.phone) && (
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
-            {locationLabel && (
-              <div className="flex min-w-0 items-start gap-2">
-                <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                <span>{locationLabel}</span>
-              </div>
-            )}
-            {dossier.contactName && (
-              <div className="flex min-w-0 items-start gap-2">
-                <UserRound aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                <span>{dossier.contactName}</span>
-              </div>
-            )}
-            {dossier.documentEmail && (
-              <div className="flex min-w-0 items-start gap-2">
-                <Mail aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                <span className="break-all">{dossier.documentEmail}</span>
-              </div>
-            )}
-            {dossier.phone && (
-              <div className="flex min-w-0 items-start gap-2">
-                <Phone aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                <span>{dossier.phone}</span>
-              </div>
+              </span>
             )}
           </div>
+
+          {(locationLabel
+            || dossier.contactName
+            || dossier.documentEmail
+            || dossier.phone) && (
+            <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
+              {locationLabel && (
+                <div className="flex min-w-0 items-start gap-2">
+                  <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                  <span>{locationLabel}</span>
+                </div>
+              )}
+              {dossier.contactName && (
+                <div className="flex min-w-0 items-start gap-2">
+                  <UserRound aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                  <span>{dossier.contactName}</span>
+                </div>
+              )}
+              {dossier.documentEmail && (
+                <div className="flex min-w-0 items-start gap-2">
+                  <Mail aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                  <span className="break-all">{dossier.documentEmail}</span>
+                </div>
+              )}
+              {dossier.phone && (
+                <div className="flex min-w-0 items-start gap-2">
+                  <Phone aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                  <span>{dossier.phone}</span>
+                </div>
+              )}
+            </div>
           )}
         </header>
 

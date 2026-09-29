@@ -432,6 +432,24 @@ téléversement temporaire sécurisé
 
 La confirmation est l'étape d'écriture définitive.
 
+Baseline V1 de devise :
+
+~~~text
+EUR
+~~~
+
+L'interface d'import ne demande pas de mapper une devise en V1 : l'euro est appliqué explicitement par défaut. Le modèle conserve néanmoins une devise structurée afin de ne pas mélanger montant et unité d'expression et de permettre une évolution contractuelle ultérieure sans réécrire l'historique.
+
+Pour le mapping tarifaire, l'interface distingue :
+
+~~~text
+Prix HT
+→ montant source
+
+Unité du prix (Kilo, Pièce, etc.)
+→ base d'expression du montant : colis, kg, L, pièce...
+~~~
+
 ### 10.3 Rapprochement
 
 Ordre conceptuel :

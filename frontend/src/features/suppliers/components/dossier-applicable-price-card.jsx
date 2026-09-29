@@ -81,7 +81,10 @@ function DossierApplicablePriceCard({
   async function chooseArticle(articleId) {
     setSelectedArticleId(articleId);
 
-    if (articleId === NONE) return;
+    if (articleId === NONE) {
+      applicablePriceQuery.reset();
+      return;
+    }
 
     try {
       await loadApplicablePrice({
@@ -96,8 +99,10 @@ function DossierApplicablePriceCard({
 
   const applicable = applicablePriceQuery.data;
 
+  const showResult = selectedArticleId !== NONE;
+
   return (
-    <section className="h-full rounded-xl border border-border bg-card px-5 py-4">
+    <section className="flex h-full flex-col rounded-xl border border-border bg-card px-5 py-4 lg:h-56">
       <div className="flex items-start gap-2">
         <h2 className="font-semibold">Vérifier un prix applicable</h2>
         <InfoTooltip
@@ -135,31 +140,39 @@ function DossierApplicablePriceCard({
         </Select>
       </div>
 
-      {applicablePriceQuery.isFetching && (
-        <p className="mt-3 text-sm text-muted-foreground">
-          Vérification du prix…
-        </p>
-      )}
-
-      {applicablePriceQuery.isError && (
-        <p className="mt-3 text-sm text-destructive">
-          Le prix applicable n’a pas pu être déterminé.
-        </p>
-      )}
-
-      {applicable && (
-        <div className="mt-3 border-t border-border pt-3">
-          <p className="font-medium">
-            {applicable.price
-              ? formatPrice(applicable.price)
-              : 'Aucun prix applicable'}
+      <div
+        aria-live="polite"
+        className="mt-auto min-h-14 border-t border-border pt-3"
+      >
+        {showResult && applicablePriceQuery.isFetching && (
+          <p className="text-sm text-muted-foreground">
+            Vérification du prix…
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Source : {getPricingSourceLabel(applicable.resolvedSource)}
-            {applicable.fallbackApplied ? ' · source de remplacement' : ''}
+        )}
+
+        {showResult && applicablePriceQuery.isError && (
+          <p className="text-sm text-destructive">
+            Le prix applicable n’a pas pu être déterminé.
           </p>
-        </div>
-      )}
+        )}
+
+        {showResult
+        && !applicablePriceQuery.isFetching
+        && !applicablePriceQuery.isError
+        && applicable && (
+          <>
+            <p className="font-medium">
+              {applicable.price
+                ? formatPrice(applicable.price)
+                : 'Aucun prix applicable'}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Source : {getPricingSourceLabel(applicable.resolvedSource)}
+              {applicable.fallbackApplied ? ' · source de remplacement' : ''}
+            </p>
+          </>
+        )}
+      </div>
     </section>
   );
 }

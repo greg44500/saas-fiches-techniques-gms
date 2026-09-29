@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
+  SUPPLIER_PERMISSION,
+} from '@/features/suppliers/constants/supplier-permissions';
+import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 
@@ -80,6 +83,7 @@ describe('DossierWorkspacePage', () => {
     mocks.params.mockReturnValue({ dossierId: 'dossier-1' });
     mocks.workspaceContext.mockReturnValue({
       can: vi.fn((permission) => [
+        SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
         TECHNICAL_SHEET_PERMISSION.READ,
         TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE,
       ].includes(permission)),
@@ -136,7 +140,7 @@ describe('DossierWorkspacePage', () => {
     );
   });
 
-  it('affiche la carte de prix compacte à côté du contexte sur la route Fournisseurs', () => {
+  it('maintient la carte de prix dans le contexte Dossier jusque dans les Fiches techniques', () => {
     mocks.detailQuery.mockReturnValue(queryResult({
       id: 'dossier-1',
       name: 'Nantes Centre',
@@ -148,18 +152,23 @@ describe('DossierWorkspacePage', () => {
     }));
 
     renderPage(
-      '/workspaces/workspace-1/dossiers/dossier-1/suppliers',
+      '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets',
     );
 
     expect(screen.getByRole('region', {
       name: 'Carte prix applicable',
     })).toBeInTheDocument();
 
-    const supplierTab = screen.getByRole('link', {
-      name: 'Fournisseurs et prix',
+    const technicalSheetsTab = screen.getByRole('link', {
+      name: 'Fiches techniques',
     });
-    expect(supplierTab).toHaveClass('border-primary');
-    expect(supplierTab).toHaveClass('text-primary');
+    expect(technicalSheetsTab).toHaveClass('border-primary');
+    expect(technicalSheetsTab).toHaveClass('text-primary');
+
+    const identityCard = screen.getByRole('heading', {
+      name: 'Nantes Centre',
+    }).closest('header');
+    expect(identityCard).toHaveClass('lg:h-56');
   });
 
   it('masque les coordonnées absentes et conserve la consultation d’un Dossier non actif', () => {

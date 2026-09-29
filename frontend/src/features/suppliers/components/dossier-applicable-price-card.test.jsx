@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   listReferences: vi.fn(),
   listArticles: vi.fn(),
   loadApplicable: vi.fn(),
+  resetApplicable: vi.fn(),
   lazyApplicable: vi.fn(),
 }));
 
@@ -71,6 +72,7 @@ describe('DossierApplicablePriceCard', () => {
         },
         isError: false,
         isFetching: false,
+        reset: mocks.resetApplicable,
       },
     ]);
   });
@@ -100,5 +102,36 @@ describe('DossierApplicablePriceCard', () => {
     expect(screen.getByText('12,500 EUR / PCE')).toBeInTheDocument();
     expect(screen.getByText(/Tarif négocié/)).toBeInTheDocument();
     expect(screen.getByText(/source de remplacement/)).toBeInTheDocument();
+  });
+
+  it('efface le résultat précédent quand la sélection revient à Sélectionner', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DossierApplicablePriceCard
+        dossierId="dossier-1"
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    }));
+    await user.click(screen.getByRole('option', {
+      name: 'Sysco · Ali321',
+    }));
+
+    expect(screen.getByText('12,500 EUR / PCE')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    }));
+    await user.click(screen.getByRole('option', {
+      name: 'Sélectionner',
+    }));
+
+    expect(mocks.resetApplicable).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('12,500 EUR / PCE')).not.toBeInTheDocument();
+    expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();
   });
 });
