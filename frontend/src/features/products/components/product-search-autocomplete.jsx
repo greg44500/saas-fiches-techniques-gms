@@ -26,11 +26,14 @@ const PRODUCT_SEARCH_AUTOCOMPLETE_DEBOUNCE_MS = 300;
 const PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT = 6;
 
 function ProductSearchAutocomplete({
+  ariaLabel = 'Rechercher un Produit',
   categoryId,
+  compact = false,
   conservationType,
   metadata,
   onSelect,
   onValueChange,
+  placeholder = 'Rechercher un produit…',
   scope,
   showWorkspaceFavorite = false,
   status,
@@ -111,16 +114,18 @@ function ProductSearchAutocomplete({
       onValueChange={onValueChange}
       value={value}
     >
-      <AutocompleteInputGroup className="h-10 min-h-10">
+      <AutocompleteInputGroup
+        className={compact ? 'h-8 min-h-8' : 'h-10 min-h-10'}
+      >
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
         />
         <AutocompleteInput
-          aria-label="Rechercher un Produit"
-          className="h-10"
+          aria-label={ariaLabel}
+          className={compact ? 'h-8' : 'h-10'}
           maxLength={120}
-          placeholder="Rechercher un produit…"
+          placeholder={placeholder}
         />
         <AutocompleteClear aria-label="Effacer la recherche">
           <X aria-hidden="true" className="size-4" />
