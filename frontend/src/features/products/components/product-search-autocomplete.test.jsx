@@ -1,5 +1,10 @@
 import { useState } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -50,6 +55,7 @@ const result = {
 
 function Harness({
   ariaLabel,
+  clearOnSelect = false,
   compact = false,
   onSelect,
   placeholder,
@@ -80,6 +86,7 @@ function Harness({
     <ProductSearchAutocomplete
       ariaLabel={ariaLabel}
       categoryId={undefined}
+      clearOnSelect={clearOnSelect}
       compact={compact}
       metadata={metadata}
       onSelect={onSelect}
@@ -183,7 +190,33 @@ describe('ProductSearchAutocomplete', () => {
       name: /Carotte râpée.*Favori/i,
     });
 
-    expect(suggestion).toHaveTextContent('Favori');
+    expect(suggestion).not.toHaveTextContent('Favori');
+    expect(within(suggestion).getByLabelText('Favori')).toBeInTheDocument();
+  });
+
+  it('efface la saisie après sélection lorsque le mode ajout le demande', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <Harness
+        clearOnSelect
+        onSelect={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByRole('combobox', {
+      name: 'Rechercher un Produit',
+    });
+
+    await user.type(input, 'car');
+
+    const suggestion = await screen.findByRole('option', {
+      name: /Carotte râpée.*Référence Produit/i,
+    });
+
+    await user.click(suggestion);
+
+    expect(input).toHaveValue('');
   });
 
   it('n interroge pas le serveur avant le seuil de trois caractères', async () => {
