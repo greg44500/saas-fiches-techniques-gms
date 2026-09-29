@@ -64,7 +64,7 @@ async function composeTechnicalSheet(page, {
   productReferenceName,
 }) {
   await page
-    .getByLabel('Quantité produite')
+    .getByLabel('Quantité')
     .fill('10');
 
   await page
@@ -80,7 +80,7 @@ async function composeTechnicalSheet(page, {
     .click();
 
   await page
-    .getByLabel('Nombre de portions')
+    .getByLabel('Portions')
     .fill('20');
   await page
     .getByLabel('TVA (%)')
@@ -145,7 +145,7 @@ async function valuateAndValidate(page, {
   if (comment) {
     await page
       .getByLabel(
-        'Commentaire facultatif',
+        'Commentaire de validation',
       )
       .fill(comment);
   }
@@ -169,6 +169,48 @@ async function valuateAndValidate(page, {
     ),
   ).toBeVisible();
 }
+
+test('M-004 une Référence Produit globale non favorite reste composable et valorisable', async ({ page }) => {
+  const context =
+    await provisionTechnicalSheetWorkspace({
+      favoriteProduct: false,
+    });
+
+  await loginWithIdentity(
+    page,
+    context.identity,
+  );
+
+  await createTechnicalSheet(page, {
+    name:
+      'Fiche M004 Produit global',
+    technicalSheetsUrl:
+      context.dossierATechnicalSheetsUrl,
+  });
+
+  await expect(
+    page.getByRole('button', {
+      name: 'Tous les produits',
+    }),
+  ).toHaveAttribute('aria-pressed', 'true');
+
+  await composeTechnicalSheet(page, {
+    productReferenceName:
+      context.productReferenceName,
+  });
+
+  await expect(
+    page.getByText(
+      context.productReferenceName,
+      { exact: true },
+    ).first(),
+  ).toBeVisible();
+
+  await valuateAndValidate(page, {
+    comment:
+      'Référence globale non favorite',
+  });
+});
 
 test('M-004 ambiguïté Article, changement de prix, revalorisation puis validation', async ({ page }) => {
   const context =
@@ -281,7 +323,7 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
 
   await page
     .getByLabel(
-      'Commentaire facultatif',
+      'Commentaire de validation',
     )
     .fill(
       'Validation après revalorisation',
