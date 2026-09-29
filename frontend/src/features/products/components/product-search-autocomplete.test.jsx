@@ -48,8 +48,30 @@ const result = {
   workspaceEntry: null,
 };
 
-function Harness({ onSelect }) {
+function Harness({
+  onSelect,
+  resultOverride = result,
+  showWorkspaceFavorite = false,
+}) {
   const [value, setValue] = useState('');
+
+  mocks.searchQuery.mockImplementation((args, options) => ({
+    data: (
+      !options?.skip
+      && args?.q === 'car'
+    )
+      ? {
+          results: [resultOverride],
+          pagination: {
+            page: 1,
+            limit: 6,
+            total: 1,
+            totalPages: 1,
+          },
+        }
+      : undefined,
+    isFetching: false,
+  }));
 
   return (
     <ProductSearchAutocomplete
@@ -58,6 +80,7 @@ function Harness({ onSelect }) {
       onSelect={onSelect}
       onValueChange={setValue}
       scope="REFERENCE"
+      showWorkspaceFavorite={showWorkspaceFavorite}
       status={undefined}
       value={value}
       workspaceId="workspace-1"
@@ -68,24 +91,6 @@ function Harness({ onSelect }) {
 describe('ProductSearchAutocomplete', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mocks.searchQuery.mockImplementation((args, options) => ({
-      data: (
-        !options?.skip
-        && args?.q === 'car'
-      )
-        ? {
-            results: [result],
-            pagination: {
-              page: 1,
-              limit: 6,
-              total: 1,
-              totalPages: 1,
-            },
-          }
-        : undefined,
-      isFetching: false,
-    }));
   });
 
   it('déclenche une recherche prédictive après trois caractères et applique la référence métier', async () => {
@@ -124,6 +129,37 @@ describe('ProductSearchAutocomplete', () => {
     expect(onSelect).toHaveBeenCalledWith(result);
     expect(input).toHaveValue('Carotte râpée');
     expect(input).toHaveAttribute('placeholder', 'Rechercher un produit…');
+  });
+
+  it('signale une Référence déjà favorite dans la recherche globale', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <Harness
+        onSelect={vi.fn()}
+        resultOverride={{
+          ...result,
+          workspaceEntry: {
+            id: 'workspace-product-1',
+            status: 'ACTIVE',
+          },
+        }}
+        showWorkspaceFavorite
+      />,
+    );
+
+    await user.type(
+      screen.getByRole('combobox', {
+        name: 'Rechercher un Produit',
+      }),
+      'car',
+    );
+
+    const suggestion = await screen.findByRole('option', {
+      name: /Carotte râpée.*Favori/i,
+    });
+
+    expect(suggestion).toHaveTextContent('Favori');
   });
 
   it('n interroge pas le serveur avant le seuil de trois caractères', async () => {
