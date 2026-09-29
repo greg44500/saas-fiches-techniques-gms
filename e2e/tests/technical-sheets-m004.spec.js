@@ -91,7 +91,7 @@ async function composeTechnicalSheet(page, {
 
   const productSearch =
     page.getByRole('combobox', {
-      name: 'Rechercher un Produit',
+      name: 'Ajouter un produit aux Ingrédients',
     });
 
   await productSearch.fill(
@@ -247,12 +247,21 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     'Valorisation incomplète',
   );
 
-  const articleSelect =
-    page.getByRole('combobox', {
+  await page
+    .getByRole('button', {
       name:
-        'Article fournisseur pour '
+        'Choisir l’Article fournisseur pour '
         + context.productReferenceName,
-    });
+    })
+    .click();
+
+  const articleSelect =
+    page.getByRole('dialog')
+      .getByRole('combobox', {
+        name:
+          'Article fournisseur pour '
+          + context.productReferenceName,
+      });
 
   await articleSelect.click();
 
