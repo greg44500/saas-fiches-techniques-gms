@@ -1,11 +1,7 @@
 import {
-  Archive,
   ArrowLeft,
-  Copy,
-  CheckCircle2,
   RotateCcw,
   Save,
-  Trash2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -34,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import {
   useGetProductMetadataQuery,
 } from '@/features/products/api/product-catalog-api';
@@ -52,8 +47,14 @@ import {
   useValuateTechnicalSheetMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
+  TechnicalSheetControlPanel,
+} from '@/features/technical-sheets/components/technical-sheet-control-panel';
+import {
   TechnicalSheetCopyDialog,
 } from '@/features/technical-sheets/components/technical-sheet-copy-dialog';
+import {
+  TechnicalSheetInformationDrawer,
+} from '@/features/technical-sheets/components/technical-sheet-information-drawer';
 import {
   TechnicalSheetEconomicsBar,
 } from '@/features/technical-sheets/components/technical-sheet-economics-bar';
@@ -150,22 +151,27 @@ function TechnicalSheetWorkspacePage() {
   });
   const [draftFormRevision, setDraftFormRevision] = useState(null);
   const [draftDirty, setDraftDirty] = useState(false);
+  const [identityDirty, setIdentityDirty] = useState(false);
+  const [informationOpen, setInformationOpen] = useState(false);
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
   const [copyOpen, setCopyOpen] = useState(false);
   const [sourcingPendingCount, setSourcingPendingCount] = useState(0);
 
   useEffect(() => {
-    if (!sheet) return;
+    if (!sheet || identityDirty) return;
+
     setIdentity({
       name: sheet.name ?? '',
       description: sheet.description ?? '',
     });
-  }, [sheet]);
+  }, [identityDirty, sheet]);
 
   useEffect(() => {
     setDraftDirty(false);
     setDraftFormRevision(null);
+    setIdentityDirty(false);
+    setInformationOpen(false);
   }, [technicalSheetId]);
 
   useEffect(() => {
@@ -268,6 +274,7 @@ function TechnicalSheetWorkspacePage() {
         name: identity.name.trim(),
         description: identity.description.trim() || null,
       }).unwrap();
+      setIdentityDirty(false);
       toast({
         title: 'Fiche technique mise à jour',
         variant: 'success',
@@ -463,7 +470,7 @@ function TechnicalSheetWorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 items-center gap-2">
           <ActionIconButton
             Icon={ArrowLeft}
@@ -476,187 +483,52 @@ function TechnicalSheetWorkspacePage() {
             tooltipLabel="Retour aux Fiches techniques"
             variant="ghost"
           />
-          <h1 className="truncate text-3xl font-semibold tracking-tight">
-            {sheet.name}
-          </h1>
-          <InfoTooltip
-            content="Travail courant, valorisation et historique validé."
-            label="À propos de la Fiche technique"
-          />
-        </div>      </header>
+
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h1 className="truncate text-3xl font-semibold tracking-tight">
+              {sheet.name}
+            </h1>
+
+            <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+              {statusPresentation.label}
+            </TechnicalSheetStatusBadge>
+
+            {draft && (
+              <TechnicalSheetStatusBadge tone="warning">
+                Brouillon
+              </TechnicalSheetStatusBadge>
+            )}
+
+            {draft && (
+              <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
+                {valuationPresentation.label}
+              </TechnicalSheetStatusBadge>
+            )}
+          </div>
+        </div>
+
+        <TechnicalSheetControlPanel
+          actionAvailability={actionAvailability}
+          canCopy={canCopy}
+          canDelete={canDelete}
+          canLifecycle={canLifecycle}
+          canValidate={canValidate}
+          copyDisabled={copyDisabled}
+          draft={draft}
+          draftDirty={draftDirty}
+          draftSynchronizing={draftSynchronizing}
+          identityDirty={identityDirty}
+          onArchive={() => setConfirmation({ type: 'archive' })}
+          onCopy={() => setCopyOpen(true)}
+          onDelete={() => setConfirmation({ type: 'delete' })}
+          onReactivate={() => setConfirmation({ type: 'reactivate' })}
+          onValidate={validateDraft}
+          pendingLifecycle={pendingLifecycle}
+          validatePending={validateState.isLoading}
+        />
+      </header>
 
       <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <CardTitle>Informations générales</CardTitle>
-
-              <div className="flex flex-wrap gap-2">
-                {canEditIdentity && (
-                  <ActionIconButton
-                    Icon={Save}
-                    disabled={
-                      !canUpdate
-                      || updateSheetState.isLoading
-                      || !identity.name.trim()
-                    }
-                    label="Enregistrer les informations"
-                    onClick={saveIdentity}
-                    tooltipLabel="Enregistrer les informations"
-                    variant="outline"
-                  />
-                )}
-
-                {canCopy && (
-                  <ActionIconButton
-                    Icon={Copy}
-                    disabled={copyDisabled}
-                    label="Copier vers un autre Dossier"
-                    onClick={() => setCopyOpen(true)}
-                    tooltipLabel={
-                      copyDisabled
-                        ? 'Copie indisponible tant qu’un brouillon est ouvert'
-                        : 'Copier vers un autre Dossier'
-                    }
-                    variant="outline"
-                  />
-                )}
-
-                {canLifecycle && (
-                  <ActionIconButton
-                    Icon={Archive}
-                    disabled={!actionAvailability.archive || pendingLifecycle}
-                    label="Archiver la Fiche"
-                    onClick={() => setConfirmation({ type: 'archive' })}
-                    tooltipLabel="Archiver"
-                    variant="outline"
-                  />
-                )}
-
-                {canLifecycle && (
-                  <ActionIconButton
-                    Icon={RotateCcw}
-                    disabled={!actionAvailability.reactivate || pendingLifecycle}
-                    label="Réactiver la Fiche"
-                    onClick={() => setConfirmation({ type: 'reactivate' })}
-                    tooltipLabel="Réactiver"
-                    variant="outline"
-                  />
-                )}
-
-                {canDelete && (
-                  <ActionIconButton
-                    Icon={Trash2}
-                    disabled={!actionAvailability.delete || pendingLifecycle}
-                    label="Mettre la Fiche dans la Corbeille"
-                    onClick={() => setConfirmation({ type: 'delete' })}
-                    tooltipLabel="Mettre dans la Corbeille"
-                    variant="destructive"
-                  />
-                )}
-
-
-                <ActionIconButton
-                  Icon={CheckCircle2}
-                  disabled={
-                    !canValidate
-                    || !draft
-                    || validateState.isLoading
-                    || draftSynchronizing
-                    || draftServerActionDisabled
-                    || draft?.valuationStatus !== 'COMPLETE'
-                  }
-                  label="Valider la Fiche technique"
-                  onClick={validateDraft}
-                  tooltipLabel={
-                    !canValidate
-                      ? 'Validation indisponible avec votre rôle ou le statut actuel'
-                      : !draft
-                        ? 'Aucun brouillon à valider'
-                        : draftDirty
-                          ? 'Enregistrer le brouillon avant validation'
-                          : draft.valuationStatus === 'COMPLETE'
-                            ? 'Valider la Fiche technique'
-                            : 'Valorisation complète requise avant validation'
-                  }
-                  variant="outline"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-3 lg:grid-cols-2">
-              <div className="flex flex-wrap gap-2">
-                <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
-                  {statusPresentation.label}
-                </TechnicalSheetStatusBadge>
-                {draft && (
-                  <TechnicalSheetStatusBadge tone="warning">
-                    Brouillon
-                  </TechnicalSheetStatusBadge>
-                )}
-                {draft && (
-                  <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-                    {valuationPresentation.label}
-                  </TechnicalSheetStatusBadge>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="space-y-4">
-                <Field>
-                  <FieldLabel htmlFor="technical-sheet-edit-name">Nom</FieldLabel>
-                  <Input
-                    disabled={!canUpdate || updateSheetState.isLoading}
-                    id="technical-sheet-edit-name"
-                    maxLength={160}
-                    onChange={(event) => setIdentity((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))}
-                    value={identity.name}
-                  />
-                </Field>
-
-                {canValidate && draft && (
-                  <Field>
-                    <FieldLabel htmlFor="technical-sheet-validation-comment">
-                      Commentaire de validation
-                    </FieldLabel>
-                    <Textarea
-                      className="min-h-20"
-                      id="technical-sheet-validation-comment"
-                      maxLength={1000}
-                      onChange={(event) => setValidationComment(event.target.value)}
-                      placeholder="Facultatif"
-                      value={validationComment}
-                    />
-                  </Field>
-                )}
-              </div>
-
-              <Field className="h-full">
-                <FieldLabel htmlFor="technical-sheet-edit-description">
-                  Description
-                </FieldLabel>
-                <Textarea
-                  className="min-h-32 h-full"
-                  disabled={!canUpdate || updateSheetState.isLoading}
-                  id="technical-sheet-edit-description"
-                  maxLength={2000}
-                  onChange={(event) => setIdentity((current) => ({
-                    ...current,
-                    description: event.target.value,
-                  }))}
-                  value={identity.description}
-                />
-              </Field>
-            </div>
-          </CardContent>
-        </Card>
-
         {!draft && (
           <Card>
             <CardHeader>
@@ -686,7 +558,13 @@ function TechnicalSheetWorkspacePage() {
           <div className="sticky top-0 z-30">
             <Card className="border-primary/20 bg-background/95 shadow-sm backdrop-blur-md">
               <CardHeader className="pb-3">
-                <CardTitle>Base de production</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Indicateurs de production</CardTitle>
+                  <InfoTooltip
+                    content="Regroupe les paramètres de production et les principaux indicateurs économiques utilisés pour calculer et piloter la valorisation de la Fiche technique."
+                    label="À propos des Indicateurs de production"
+                  />
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -742,7 +620,7 @@ function TechnicalSheetWorkspacePage() {
 
                   <Field>
                     <FieldLabel htmlFor="technical-sheet-portions">
-                      Portions
+                      Portion(s)
                     </FieldLabel>
                     <Input
                       className="h-9"
@@ -911,6 +789,36 @@ function TechnicalSheetWorkspacePage() {
           />
         </CardContent>
       </Card>
+
+      <TechnicalSheetInformationDrawer
+        canEdit={canEditIdentity && actionAvailability.update}
+        canValidate={canValidate}
+        description={identity.description}
+        dirty={identityDirty}
+        name={identity.name}
+        onClose={() => setInformationOpen(false)}
+        onDescriptionChange={(value) => {
+          setIdentityDirty(true);
+          setIdentity((current) => ({
+            ...current,
+            description: value,
+          }));
+        }}
+        onNameChange={(value) => {
+          setIdentityDirty(true);
+          setIdentity((current) => ({
+            ...current,
+            name: value,
+          }));
+        }}
+        onOpen={() => setInformationOpen(true)}
+        onSave={saveIdentity}
+        onValidationCommentChange={setValidationComment}
+        open={informationOpen}
+        pending={updateSheetState.isLoading}
+        showValidationComment={Boolean(draft)}
+        validationComment={validationComment}
+      />
 
       <TechnicalSheetCopyDialog
         dossierId={dossierId}
