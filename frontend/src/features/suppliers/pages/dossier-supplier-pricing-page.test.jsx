@@ -140,6 +140,7 @@ describe('DossierSupplierPricingPage', () => {
       },
       can: (permission) => (
         permission === SUPPLIER_PERMISSION.CATALOG_READ
+        || permission === SUPPLIER_PERMISSION.SUPPLIER_READ
       ),
     });
     mocks.listCatalogs.mockReturnValue(queryResult({
