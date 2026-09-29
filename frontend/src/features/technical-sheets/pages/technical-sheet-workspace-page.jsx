@@ -447,27 +447,7 @@ function TechnicalSheetWorkspacePage() {
             content="Travail courant, valorisation et historique validé."
             label="À propos de la Fiche technique"
           />
-        </div>
-
-        {canValidate && draft && (
-          <ActionIconButton
-            Icon={CheckCircle2}
-            disabled={
-              validateState.isLoading
-              || draftSynchronizing
-              || draft.valuationStatus !== 'COMPLETE'
-            }
-            label="Valider la Fiche technique"
-            onClick={validateDraft}
-            tooltipLabel={
-              draft.valuationStatus === 'COMPLETE'
-                ? 'Valider la Fiche technique'
-                : 'Valorisation complète requise avant validation'
-            }
-            variant="outline"
-          />
-        )}
-      </header>
+        </div>      </header>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
@@ -538,6 +518,30 @@ function TechnicalSheetWorkspacePage() {
                     variant="destructive"
                   />
                 )}
+
+
+                <ActionIconButton
+                  Icon={CheckCircle2}
+                  disabled={
+                    !canValidate
+                    || !draft
+                    || validateState.isLoading
+                    || draftSynchronizing
+                    || draft?.valuationStatus !== 'COMPLETE'
+                  }
+                  label="Valider la Fiche technique"
+                  onClick={validateDraft}
+                  tooltipLabel={
+                    !canValidate
+                      ? 'Validation indisponible avec votre rôle ou le statut actuel'
+                      : !draft
+                        ? 'Aucun brouillon à valider'
+                        : draft.valuationStatus === 'COMPLETE'
+                          ? 'Valider la Fiche technique'
+                          : 'Valorisation complète requise avant validation'
+                  }
+                  variant="outline"
+                />
               </div>
             </div>
 
