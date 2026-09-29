@@ -49,7 +49,10 @@ const result = {
 };
 
 function Harness({
+  ariaLabel,
+  compact = false,
   onSelect,
+  placeholder,
   resultOverride = result,
   showWorkspaceFavorite = false,
 }) {
@@ -75,10 +78,13 @@ function Harness({
 
   return (
     <ProductSearchAutocomplete
+      ariaLabel={ariaLabel}
       categoryId={undefined}
+      compact={compact}
       metadata={metadata}
       onSelect={onSelect}
       onValueChange={setValue}
+      placeholder={placeholder}
       scope="REFERENCE"
       showWorkspaceFavorite={showWorkspaceFavorite}
       status={undefined}
@@ -129,6 +135,24 @@ describe('ProductSearchAutocomplete', () => {
     expect(onSelect).toHaveBeenCalledWith(result);
     expect(input).toHaveValue('Carotte râpée');
     expect(input).toHaveAttribute('placeholder', 'Rechercher un produit…');
+  });
+
+  it('accepte un libellé accessible et un placeholder compacts pour la Composition', () => {
+    render(
+      <Harness
+        ariaLabel="Ajouter un produit aux Ingrédients"
+        compact
+        onSelect={vi.fn()}
+        placeholder="Ajouter un produit"
+      />,
+    );
+
+    const input = screen.getByRole('combobox', {
+      name: 'Ajouter un produit aux Ingrédients',
+    });
+
+    expect(input).toHaveAttribute('placeholder', 'Ajouter un produit');
+    expect(input).toHaveClass('h-8');
   });
 
   it('signale une Référence déjà favorite dans la recherche globale', async () => {
