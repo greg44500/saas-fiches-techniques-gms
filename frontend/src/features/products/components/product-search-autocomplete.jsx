@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react';
+import { Search, Star, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -32,6 +32,7 @@ function ProductSearchAutocomplete({
   onSelect,
   onValueChange,
   scope,
+  showWorkspaceFavorite = false,
   status,
   value,
   workspaceId,
@@ -160,6 +161,9 @@ function ProductSearchAutocomplete({
                     getReferenceLabel(metadata, result.product, result.variant),
                     result.product.category?.name,
                     result.variant ? 'Référence Produit' : 'À enrichir',
+                    showWorkspaceFavorite && result.workspaceEntry?.status === 'ACTIVE'
+                      ? 'Favori'
+                      : null,
                   ].filter(Boolean).join('. ')}
                   className="border-b border-border/50 last:border-b-0 data-highlighted:bg-accent/70"
                   index={index}
@@ -170,11 +174,20 @@ function ProductSearchAutocomplete({
                   <span className="font-medium">
                     {getReferenceLabel(metadata, result.product, result.variant)}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    {[
-                      result.product.category?.name,
-                      result.variant ? null : 'Référence à enrichir',
-                    ].filter(Boolean).join(' · ')}
+                  <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>
+                      {[
+                        result.product.category?.name,
+                        result.variant ? null : 'Référence à enrichir',
+                      ].filter(Boolean).join(' · ')}
+                    </span>
+                    {showWorkspaceFavorite
+                    && result.workspaceEntry?.status === 'ACTIVE' && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border px-1.5 py-0.5 font-medium text-foreground">
+                        <Star aria-hidden="true" className="size-3" />
+                        Favori
+                      </span>
+                    )}
                   </span>
                 </AutocompleteItem>
               )}
