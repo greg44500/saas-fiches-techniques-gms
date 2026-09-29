@@ -1,4 +1,10 @@
-import { ArrowLeft, Plus, Star, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Plus,
+  Star,
+  Trash2,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
@@ -6,6 +12,7 @@ import {
   DataTable,
   DataTableActions,
 } from '@/components/data-display/data-table';
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
@@ -692,6 +699,28 @@ function DossierSupplierPricingPage() {
 
       {section === 'catalogs' && (
         <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium">
+                Tarifs fournisseur
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Les tarifs fournisseur proviennent des catalogues. L’import et la gestion des catalogues se font depuis la page Fournisseurs.
+              </p>
+            </div>
+            <Button asChild size="sm" variant="outline">
+              <Link
+                to={
+                  '/workspaces/' + workspace.id
+                  + '/suppliers?section=catalogs'
+                }
+              >
+                Gérer les catalogues
+                <ArrowUpRight aria-hidden="true" className="size-4" />
+              </Link>
+            </Button>
+          </div>
+
           {catalogsQuery.isError ? (
             <div className="p-4">
               <ErrorState
@@ -721,14 +750,25 @@ function DossierSupplierPricingPage() {
 
       {section === 'negotiated' && (
         <section className="overflow-hidden rounded-xl border border-border bg-card">
-          {can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE) && (
-            <div className="border-b border-border p-4">
-              <Button onClick={() => setPriceDialog('negotiated')} type="button">
-                <Plus aria-hidden="true" className="size-4" />
-                Ajouter un Tarif négocié
-              </Button>
+          <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div>
+              <p className="text-sm font-medium">
+                Tarifs négociés du Dossier
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Prix contractuels spécifiques à cet Article dans ce Dossier et pour une période donnée.
+              </p>
             </div>
-          )}
+            {can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE) && (
+              <ActionIconButton
+                Icon={Plus}
+                label="Ajouter un Tarif négocié"
+                onClick={() => setPriceDialog('negotiated')}
+                tooltipLabel="Ajouter un Tarif négocié"
+                variant="outline"
+              />
+            )}
+          </div>
           <DataTable
             rowClassName="transition-colors hover:bg-muted/50"
             caption="Tarifs négociés du Dossier"
@@ -748,14 +788,25 @@ function DossierSupplierPricingPage() {
 
       {section === 'invoiced' && (
         <section className="overflow-hidden rounded-xl border border-border bg-card">
-          {can(SUPPLIER_PERMISSION.INVOICED_PRICE_MANAGE) && (
-            <div className="border-b border-border p-4">
-              <Button onClick={() => setPriceDialog('invoice')} type="button">
-                <Plus aria-hidden="true" className="size-4" />
-                Ajouter un Prix facturé
-              </Button>
+          <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div>
+              <p className="text-sm font-medium">
+                Prix facturés du Dossier
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Prix réellement constatés sur facture, soumis à validation avant utilisation par la politique de prix.
+              </p>
             </div>
-          )}
+            {can(SUPPLIER_PERMISSION.INVOICED_PRICE_MANAGE) && (
+              <ActionIconButton
+                Icon={Plus}
+                label="Ajouter un Prix facturé"
+                onClick={() => setPriceDialog('invoice')}
+                tooltipLabel="Ajouter un Prix facturé"
+                variant="outline"
+              />
+            )}
+          </div>
           <DataTable
             rowClassName="transition-colors hover:bg-muted/50"
             caption="Prix facturés du Dossier"
