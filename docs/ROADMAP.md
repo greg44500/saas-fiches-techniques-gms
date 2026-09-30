@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 clôturé — M-002 clôturé — M-003 clôturé — prochain lot : GMS-UX-002 avant M-004  
+**Statut :** VALIDÉ — M-001/M-002/M-003 clôturés — M-004 hors exports implémenté sur branche ; validation locale/QA/Core Gate en attente  
 **Dernière mise à jour :** 2026-09-28
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -67,7 +67,7 @@ Décisions finales :
 - pour un non-owner, l'autorisation effective exige membership `ACTIVE` + permission + `DossierAccessGrant ACTIVE` + même Workspace + statut Dossier compatible ; l'Owner dispose d'un périmètre Dossier implicite sans grant individuel ;
 - aucun quota de stockage dur n'est défini par Dossier : la capacité appartient au Workspace ;
 - un Dossier `DELETED` n'est pas purgé automatiquement dans M-001 ; sa purge physique reste différée ;
-- la politique métier de corbeille est validée transversalement pour les futures ressources purgeables : 30 jours par défaut, configurable de 7 à 90 jours lorsque la personnalisation est autorisée.
+- la politique métier de corbeille des Fiches techniques est Workspace-scoped : 30 jours par défaut, configurable de 1 à 90 jours par l'Owner, échéance figée à la suppression.
 
 ### 2.2 Référentiel Produit
 
@@ -164,55 +164,92 @@ Core Gate post-merge #133 : success
 
 Les retours des bêta-testeurs peuvent déclencher des retouches UX ultérieures sans bloquer M-004 ni rouvrir le contrat M-003, sauf changement d'invariant métier.
 
-Avant le cadrage/implémentation de M-004, le lot UX M-002 enregistré sous `GMS-UX-002` est traité en un bloc cohérent.
+Extension post-clôture validée le 2026-09-29 pendant la QA M-004 : ajout d'un Prix indicatif interne, historisé, porté par Workspace ou Dossier et utilisable comme dernier recours lorsqu'aucune source commerciale M-003 n'est exploitable. Cette extension ne modifie ni l'isolation Dossier des Tarifs négociés/Prix facturés, ni la priorité des sources commerciales, ni la frontière Core/Produit.
+
+Checkpoint UX du 2026-09-30 : le parcours Produit ↔ Fournisseur doit rester unique. Les écrans Produit et Fournisseurs peuvent ouvrir le même workflow M-003 avec un contexte prérempli, mais aucune donnée commerciale ni aucun formulaire parallèle ne doit être créé. Le drawer Produit expose les Favoris actifs, le Prix indicatif Workspace et les Articles/conditionnements accessibles sans sélectionner automatiquement un fournisseur.
+
+Le **corpus d'aide métier** est volontairement traité dans un bloc séparé après stabilisation de ces parcours. Il devra utiliser le point d'extension Core `APPLICATION_HELP_MODULES` et conserver le filtrage serveur selon permissions, capabilities et contexte ; aucune logique d'aide parallèle ne doit être créée.
+
+Le lot UX M-002 `GMS-UX-002` a été traité et fusionné avant l'ouverture de M-004. M-004 peut donc poursuivre sa conception sur le `main` vérifié au commit `b479b217815fad885f233e98b8f3145656641352`.
 
 
 ### 2.4 Fiches techniques
 
-**État : socle économique suffisamment cadré pour ne plus bloquer M-001**
+**État : IMPLÉMENTÉ SUR BRANCHE — validation locale, QA visuelle et Core Gate en attente**
 
-Décisions établies :
+Source canonique :
 
-- quantité nette saisie, brute calculée ;
-- coûts HT ;
-- CM + Économat ;
-- version DRAFT / VALIDATED / ARCHIVED ;
-- version VALIDATED immuable ;
-- revalorisation explicite ;
-- snapshot économique historique ;
-- validation backend complète ;
-- absence de prix distincte de zéro ;
-- copie inter-magasin sans prix ni historique source ;
-- TVA distincte des coûts HT ;
-- Objectif de marge = `(PV HT - coût fabrication HT) / PV HT` ;
-- coefficient = `1 / (1 - objectif de marge)` ;
-- Prix théorique HT = `Coût fabrication HT × coefficient` ;
-- Prix conseillé obtenu après application de la règle d'arrondi Workspace au Prix théorique TTC ;
-- Prix définitif choisi humainement ;
-- invariant `Prix définitif TTC >= Prix conseillé TTC >= Prix théorique TTC` ;
-- marge réelle % et € calculées depuis le Prix définitif ;
-- règle standard d'arrondi = multiple de 0,50 € immédiatement supérieur ou égal ;
-- règles d'arrondi personnalisables par stratégies structurées ;
-- marge semi-nette explicitement différée et non bloquante ;
-- Atelier d'optimisation Premium cadré fonctionnellement ;
-- un DRAFT actif n'est jamais purgé pour simple ancienneté ;
-- un DRAFT explicitement supprimé relève de la corbeille métier du Workspace ;
-- le nombre de DRAFTS actifs est destiné à être limité commercialement par un quota métier de plan ;
-- le nombre de Fiches techniques VALIDATED est destiné à être limité par un quota métier distinct ;
-- ces quotas sont des compteurs de ressources métier et ne réutilisent pas `storage_bytes` ;
-- les seuils Free/Premium, clés finales et règles de comptage des ARCHIVED seront fermés en M-004 ;
-- une version VALIDATED n'est pas purgée automatiquement par âge ;
-- CSV/XLS(X) sont générés à la demande sans conservation durable ;
-- le PDF est généré uniquement comme pièce jointe temporaire lors d'un envoi de document par e-mail et n'est pas persisté.
+~~~text
+docs/m004/M-004-FINAL-CONTRACT.md
+~~~
 
-À cadrer avant les modules concernés, pas avant M-001 :
+Décisions fermées :
 
-- types/motifs exacts de versions avant M-004 ;
-- définition de la marge semi-nette lorsqu'elle sera disponible ;
-- paramètres mathématiques fins et garde-fous de l'optimiseur avant M-005 ;
-- ensemble complet des stratégies d'arrondi ;
-- contrat technique de corbeille/restauration/purge des DRAFTS avant M-004 ;
-- éventuelle suppression définitive des VALIDATED et contraintes réglementaires avant implémentation.
+- une Fiche est une identité durable appartenant à un Workspace et un Dossier ;
+- 0 ou 1 brouillon de travail, 0 ou 1 état validé courant, historique automatique immuable ;
+- toute ligne repose sur une Référence Produit M-002 ;
+- quantité nette saisie, quantité brute calculée depuis le rendement M-002 ;
+- aucune surcharge locale du rendement en V1 ;
+- conversions uniquement entre unités physiquement compatibles ;
+- sections Ingrédients et Économat séparées ;
+- M-003 reste l'unique autorité de résolution Article / Prix applicable ;
+- 0 Article peut désormais rester valorisable par Prix indicatif M-003 ; sinon non résolu ;
+- 1 Article = résolution automatique possible, N = choix humain obligatoire ;
+- aucun Article le moins cher sélectionné automatiquement ;
+- absence de Prix applicable distincte de zéro ;
+- Coût matière HT + Économat HT = Coût de fabrication HT ;
+- TVA, marge cible, prix théorique, Prix conseillé, Prix final et marge réelle historisés ;
+- arrondi V1 du Prix conseillé = multiple de 0,50 € immédiatement supérieur ou égal ;
+- le Prix final peut être inférieur au Prix conseillé mais jamais au plancher économique ;
+- revalorisation explicite obligatoire si les données tarifaires ont changé avant validation ;
+- copie inter-Dossier sans aucune donnée financière source ;
+- marge cible d'une copie initialisée depuis le Dossier cible ;
+- archivage, corbeille, restauration et purge portent sur la Fiche entière ;
+- une Fiche en corbeille continue de consommer sa capacité ;
+- 1 identité Fiche = 1 unité de quota, indépendamment du brouillon et de l'historique ;
+- seule la purge définitive libère une unité ;
+- seuil commercial Free définitif à décider ; une limite temporaire de développement, par exemple 10 Fiches, peut être configurée ;
+- RBAC M-004 validé dans le contrat canonique ;
+- contrôle de concurrence optimiste obligatoire ;
+- détails UX ajustables après QA visuelle sans modifier les invariants fonctionnels.
+
+Périmètre produit V1 :
+
+~~~text
+Bloc Fiche technique
+→ implémentation + tests + QA visuelle + stabilisation
+
+puis bloc séparé Exports et diffusion V1
+→ CSV
+→ XLSX
+→ PDF
+→ impression
+→ envoi e-mail
+~~~
+
+Les autres exports restent différés à V2.
+
+Corbeille M-004 :
+
+~~~text
+WorkspaceBusinessSettings.trashRetentionDays
+→ 30 jours par défaut
+→ 1 à 90 jours
+→ purgeScheduledAt figé à la suppression
+→ job métier global et idempotent
+→ aucun changement Core
+~~~
+
+Checkpoint d'implémentation du 2026-09-28 :
+
+- backend M-004, migrations et job de purge implémentés ;
+- frontend M-004 implémenté avec RTK Query et routes Workspace/Dossier ;
+- séparation RBAC `technical-sheet:update` / `technical-sheet:sourcing:manage` implémentée ;
+- quota `technical_sheets` et capacité Dashboard implémentés ;
+- tests backend/frontend ciblés et quatre parcours Playwright M-004 ajoutés ;
+- aucun résultat de test n'est encore déclaré vert avant l'exécution locale ;
+- la PR unique et son Core Gate restent à venir après QA locale.
+
 
 
 ### 2.5 Fiches process

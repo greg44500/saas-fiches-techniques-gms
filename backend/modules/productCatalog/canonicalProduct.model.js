@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 import {
+    PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REJECTION_REASON,
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
@@ -31,6 +32,12 @@ const canonicalProductSchema = new Schema(
             required: true,
         },
         identityActive: { type: Boolean, default: true, required: true },
+        governanceStatus: {
+            type: String,
+            enum: Object.values(PRODUCT_GOVERNANCE_STATUS),
+            default: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+            required: true,
+        },
         contributedFromWorkspace: {
             type: Schema.Types.ObjectId,
             ref: 'Workspace',
@@ -54,9 +61,23 @@ const canonicalProductSchema = new Schema(
 canonicalProductSchema.index(
     { searchKeys: 1 },
     {
-        name: 'canonical_product_search_keys_unique',
+        name: 'canonical_product_approved_search_keys_unique',
         unique: true,
-        partialFilterExpression: { identityActive: true },
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+        },
+    },
+);
+canonicalProductSchema.index(
+    { contributedFromWorkspace: 1, searchKeys: 1 },
+    {
+        name: 'canonical_product_provisional_workspace_search_keys_unique',
+        unique: true,
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+        },
     },
 );
 canonicalProductSchema.index(
@@ -70,6 +91,10 @@ canonicalProductSchema.index(
 canonicalProductSchema.index(
     { contributedFromWorkspace: 1, status: 1, createdAt: -1 },
     { name: 'canonical_product_workspace_status_created_at' },
+);
+canonicalProductSchema.index(
+    { governanceStatus: 1, contributedFromWorkspace: 1, updatedAt: -1 },
+    { name: 'canonical_product_governance_workspace_updated_at' },
 );
 
 const CanonicalProduct = model('CanonicalProduct', canonicalProductSchema);

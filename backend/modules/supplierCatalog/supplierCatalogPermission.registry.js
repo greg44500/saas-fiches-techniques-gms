@@ -13,6 +13,8 @@ const SUPPLIER_CATALOG_PERMISSION = Object.freeze({
     INVOICED_PRICE_READ: 'supplier:invoiced-price:read',
     INVOICED_PRICE_MANAGE: 'supplier:invoiced-price:manage',
     INVOICED_PRICE_VALIDATE: 'supplier:invoiced-price:validate',
+    INDICATIVE_PRICE_READ: 'supplier:indicative-price:read',
+    INDICATIVE_PRICE_MANAGE: 'supplier:indicative-price:manage',
     DOSSIER_REFERENCE_READ: 'supplier:dossier-reference:read',
     DOSSIER_REFERENCE_MANAGE: 'supplier:dossier-reference:manage',
     APPLICABLE_PRICE_READ: 'supplier:applicable-price:read',

@@ -74,6 +74,72 @@ describe('M-003 supplier/article HTTP contract', () => {
         ).not.toContain('Fournisseur privé A');
     });
 
+    it('associe plusieurs catégories Produit existantes à un Fournisseur', async () => {
+        const categoryId =
+            productReference.category._id.toString();
+
+        const metadata = await request(app)
+            .get(supplierPath(ownerA) + '/metadata')
+            .set(bearer(ownerA.token));
+
+        expect(metadata.status).toBe(200);
+        expect(metadata.body.data.metadata.categories).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: categoryId,
+                    name: 'Légumes',
+                }),
+            ]),
+        );
+
+        const created = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({
+                name: 'Fournisseur catégorisé',
+                categoryIds: [categoryId],
+            });
+
+        expect(created.status).toBe(201);
+        expect(created.body.data.supplier.categories).toEqual([
+            expect.objectContaining({
+                id: categoryId,
+                name: 'Légumes',
+            }),
+        ]);
+
+        const visible = await request(app)
+            .get(supplierPath(ownerA))
+            .set(bearer(ownerA.token));
+
+        expect(visible.status).toBe(200);
+        expect(visible.body.data.suppliers).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    name: 'Fournisseur catégorisé',
+                    categories: [
+                        expect.objectContaining({
+                            id: categoryId,
+                            name: 'Légumes',
+                        }),
+                    ],
+                }),
+            ]),
+        );
+
+        const updated = await request(app)
+            .patch(
+                supplierPath(ownerA)
+                + '/'
+                + created.body.data.supplier.id,
+            )
+            .set(bearer(ownerA.token))
+            .send({ categoryIds: [] });
+
+        expect(updated.status).toBe(200);
+        expect(updated.body.data.supplier.categories).toEqual([]);
+    });
+
     it('rend un Fournisseur global visible dans plusieurs Workspaces', async () => {
         const globalSupplier = await createSupplier({
             scope: SUPPLIER_SCOPE.GLOBAL_SHARED,
@@ -182,6 +248,49 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(response.status).toBe(201);
         expect(response.body.data.supplier.name)
             .toBe('Fournisseur rôle personnalisé');
+    });
+
+    it('filtre les Articles par Produit sans requête par Référence', async () => {
+        const secondProduct =
+            await createActiveProductReference({
+                actorId: ownerA.owner._id,
+                name: 'Poire fournisseur test',
+            });
+
+        const supplier = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Grossiste filtrage Produit' });
+
+        for (const [variant, supplierReference] of [
+            [productReference.variant, 'CAR-001'],
+            [secondProduct.variant, 'POI-001'],
+        ]) {
+            await request(app)
+                .post(articlePath(ownerA))
+                .set(bearer(ownerA.token))
+                .send({
+                    supplierId: supplier.body.data.supplier.id,
+                    productVariantId: variant._id.toString(),
+                    supplierReference,
+                })
+                .expect(201);
+        }
+
+        const response = await request(app)
+            .get(articlePath(ownerA))
+            .query({
+                productId: productReference.product._id.toString(),
+                limit: 100,
+            })
+            .set(bearer(ownerA.token));
+
+        expect(response.status).toBe(200);
+        expect(
+            response.body.data.articles.map(
+                ({ supplierReference }) => supplierReference,
+            ),
+        ).toEqual(['CAR-001']);
     });
 
     it('refuse un doublon Article variant seulement par casse et espaces', async () => {

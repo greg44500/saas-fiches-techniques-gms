@@ -1,11 +1,21 @@
 import mongoose from 'mongoose';
 
 import {
+    PRODUCT_CATEGORY_STATUS,
     PRODUCT_STATUS,
 } from '../productCatalog/productCatalog.registry.js';
 import {
+    ProductCategory,
+} from '../productCatalog/productCategory.model.js';
+import {
+    listProductCategories,
+} from '../productCatalog/productCategoryProjection.service.js';
+import {
     ProductVariant,
 } from '../productCatalog/productVariant.model.js';
+import {
+    buildWorkspaceGovernanceVisibilityFilter,
+} from '../productCatalog/productReferenceGovernance.service.js';
 import { AppError } from '../../utils/appError.js';
 import {
     Supplier,
@@ -110,14 +120,61 @@ const buildWorkspaceVisibilityFilter = (workspaceId) => mongoose.trusted({
     ],
 });
 
+const resolveActiveSupplierCategories = async ({
+    categoryIds = [],
+    session,
+}) => {
+    const uniqueCategoryIds = [...new Set(
+        (categoryIds ?? []).map((categoryId) => categoryId.toString()),
+    )];
+
+    if (uniqueCategoryIds.length === 0) return [];
+
+    const categories = await ProductCategory.find({
+        _id: mongoose.trusted({ $in: uniqueCategoryIds }),
+        status: PRODUCT_CATEGORY_STATUS.ACTIVE,
+    })
+        .select('_id name status')
+        .session(session);
+
+    if (categories.length !== uniqueCategoryIds.length) {
+        throw new AppError(
+            'Une ou plusieurs catégories Produit sont indisponibles.',
+            409,
+        );
+    }
+
+    const categoryById = new Map(
+        categories.map((category) => [
+            category._id.toString(),
+            category,
+        ]),
+    );
+
+    return uniqueCategoryIds.map(
+        (categoryId) => categoryById.get(categoryId)._id,
+    );
+};
+
+const populateSupplierCategories = async (supplier) => {
+    await supplier.populate({
+        path: 'productCategories',
+        select: '_id name status',
+    });
+
+    return supplier;
+};
+
 const assertActiveProductVariant = async ({
     productVariantId,
+    workspaceId = null,
     session,
 }) => {
     const productVariant = await ProductVariant.findOne({
         _id: productVariantId,
         status: PRODUCT_STATUS.ACTIVE,
         identityActive: true,
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     }).session(session);
 
     if (!productVariant) {
@@ -178,6 +235,11 @@ const createSupplier = async ({
     actorId,
     data,
 }) => mongoose.connection.transaction(async (session) => {
+    const productCategories = await resolveActiveSupplierCategories({
+        categoryIds: data.categoryIds ?? [],
+        session,
+    });
+
     const [supplier] = await Supplier.create([
         {
             scope,
@@ -189,6 +251,7 @@ const createSupplier = async ({
             supplierCode: data.supplierCode ?? null,
             legalName: data.legalName ?? null,
             website: data.website ?? null,
+            productCategories,
             createdBy: actorId,
             updatedBy: actorId,
         },
@@ -203,6 +266,8 @@ const createSupplier = async ({
         entityId: supplier._id,
         session,
     });
+
+    await populateSupplierCategories(supplier);
 
     return serializeSupplier(supplier);
 });
@@ -243,7 +308,29 @@ const updateSupplier = async ({
         }
     }
 
+    if (Object.hasOwn(data, 'categoryIds')) {
+        const productCategories = await resolveActiveSupplierCategories({
+            categoryIds: data.categoryIds,
+            session,
+        });
+        const previousCategoryIds = (supplier.productCategories ?? [])
+            .map((categoryId) => categoryId.toString());
+        const nextCategoryIds = productCategories
+            .map((categoryId) => categoryId.toString());
+
+        if (
+            previousCategoryIds.length !== nextCategoryIds.length
+            || previousCategoryIds.some(
+                (categoryId, index) => categoryId !== nextCategoryIds[index],
+            )
+        ) {
+            supplier.productCategories = productCategories;
+            changedFields.push('productCategories');
+        }
+    }
+
     if (changedFields.length === 0) {
+        await populateSupplierCategories(supplier);
         return serializeSupplier(supplier);
     }
 
@@ -260,6 +347,8 @@ const updateSupplier = async ({
         metadata: { changedFields },
         session,
     });
+
+    await populateSupplierCategories(supplier);
 
     return serializeSupplier(supplier);
 });
@@ -279,6 +368,7 @@ const updateSupplierStatus = async ({
     });
 
     if (supplier.status === status) {
+        await populateSupplierCategories(supplier);
         return serializeSupplier(supplier);
     }
 
@@ -297,6 +387,8 @@ const updateSupplierStatus = async ({
         entityId: supplier._id,
         session,
     });
+
+    await populateSupplierCategories(supplier);
 
     return serializeSupplier(supplier);
 });
@@ -335,6 +427,10 @@ const listSuppliers = async ({
             .sort({ name: 1, _id: 1 })
             .skip(skip)
             .limit(limit)
+            .populate({
+                path: 'productCategories',
+                select: '_id name status',
+            })
             .lean(),
         Supplier.countDocuments(filter),
     ]);
@@ -429,6 +525,7 @@ const createArticleInSession = async ({
 
     await assertActiveProductVariant({
         productVariantId: data.productVariantId,
+        workspaceId,
         session,
     });
 
@@ -531,6 +628,7 @@ const updateSupplierArticle = async ({
     if (Object.hasOwn(data, 'productVariantId')) {
         await assertActiveProductVariant({
             productVariantId: data.productVariantId,
+            workspaceId,
             session,
         });
         if (
@@ -718,6 +816,7 @@ const listSupplierArticles = async ({
     status = SUPPLIER_RESOURCE_STATUS.ACTIVE,
     scope = null,
     supplierId = null,
+    productId = null,
     productVariantId = null,
 }) => {
     const filter = globalOnly
@@ -732,7 +831,19 @@ const listSupplierArticles = async ({
     if (status) filter.status = status;
     if (scope) filter.scope = scope;
     if (supplierId) filter.supplier = supplierId;
-    if (productVariantId) filter.productVariant = productVariantId;
+
+    if (productVariantId) {
+        filter.productVariant = productVariantId;
+    } else if (productId) {
+        const productVariantIds = await ProductVariant.find({
+            canonicalProduct: productId,
+            identityActive: true,
+        }).distinct('_id');
+
+        filter.productVariant = mongoose.trusted({
+            $in: productVariantIds,
+        });
+    }
 
     if (search) {
         const normalized = normalizeSupplierText(search);
@@ -789,9 +900,12 @@ const listSupplierArticles = async ({
     };
 };
 
-const getSupplierReferenceMetadata = () => ({
+const getSupplierReferenceMetadata = async () => ({
     scopes: Object.values(SUPPLIER_SCOPE),
     statuses: Object.values(SUPPLIER_RESOURCE_STATUS),
+    categories: await listProductCategories({
+        includeArchived: false,
+    }),
 });
 
 export {

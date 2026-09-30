@@ -14,6 +14,7 @@ import {
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CATEGORY_STATUS,
+    PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_STATUS,
@@ -323,6 +324,7 @@ const createGlobalProductInSession = async ({
     variant,
     dimensionProposals = null,
     workspaceId = null,
+    governanceStatus = PRODUCT_GOVERNANCE_STATUS.APPROVED,
     session,
 }) => {
     await assertProductCreationReviewed({
@@ -357,6 +359,7 @@ const createGlobalProductInSession = async ({
                 searchGrams: buildSearchGrams(searchKeys),
                 category: category?._id ?? null,
                 status: PRODUCT_STATUS.ACTIVE,
+                governanceStatus,
                 contributedFromWorkspace: workspaceId,
                 createdBy: actorId,
                 updatedBy: actorId,
@@ -381,6 +384,7 @@ const createGlobalProductInSession = async ({
             name: dimensionProposals.variety,
             aliases: [],
             workspaceId,
+            governanceStatus,
             session,
         });
         varietyId = variety._id;
@@ -394,6 +398,7 @@ const createGlobalProductInSession = async ({
             name: proposal.value,
             aliases: [],
             workspaceId,
+            governanceStatus,
             session,
         });
         characteristicIds.push(characteristic._id);
@@ -412,6 +417,7 @@ const createGlobalProductInSession = async ({
                 characteristicIds,
             },
             status: PRODUCT_STATUS.ACTIVE,
+            governanceStatus,
             session,
         })
         : null;
@@ -484,6 +490,9 @@ const createGlobalVariant = async ({
         actorId,
         variant,
         status: PRODUCT_STATUS.ACTIVE,
+        governanceStatus: product.governanceStatus === PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
+            ? PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
+            : null,
         session,
     });
 
@@ -702,7 +711,14 @@ const updateVariant = async ({
         },
     });
 
-    Object.assign(variant, normalized);
+    const {
+        requiresProvisionalGovernance,
+        ...persistedVariant
+    } = normalized;
+    Object.assign(variant, persistedVariant);
+    if (requiresProvisionalGovernance) {
+        variant.governanceStatus = PRODUCT_GOVERNANCE_STATUS.PROVISIONAL;
+    }
     variant.updatedBy = actorId;
 
     const duplicate = await ProductVariant.findOne({

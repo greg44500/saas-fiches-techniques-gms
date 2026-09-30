@@ -1,6 +1,17 @@
-import { useRef, useState } from 'react';
-import { Plus } from 'lucide-react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  Euro,
+  Minus,
+  PackagePlus,
+  Plus,
+} from 'lucide-react';
 
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EntityDetailsDrawer } from '@/components/shared/entity-details-drawer';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
@@ -30,8 +41,25 @@ import {
   getProductStatusTone,
   getReferenceUnitLabel,
   getVariantLabel,
-  getWorkspaceProductStatusLabel,
 } from '@/features/products/lib/product-presentation';
+import {
+  useListSupplierArticlesQuery,
+  useListSuppliersQuery,
+  useListWorkspaceIndicativePricesQuery,
+} from '@/features/suppliers/api/supplier-api';
+import {
+  IndicativePriceDialog,
+} from '@/features/suppliers/components/indicative-price-dialog';
+import {
+  SupplierArticleFormDialog,
+} from '@/features/suppliers/components/supplier-article-form-dialog';
+import {
+  SUPPLIER_PERMISSION,
+} from '@/features/suppliers/constants/supplier-permissions';
+import {
+  formatPackaging,
+  formatPrice,
+} from '@/features/suppliers/lib/supplier-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 
 function DetailRow({ label, value }) {
@@ -40,6 +68,24 @@ function DetailRow({ label, value }) {
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="text-sm font-medium sm:text-right">{value || 'Non renseigné'}</dd>
     </div>
+  );
+}
+
+function VariantIdentity({ metadata, variant }) {
+  return (
+    <>
+      <p className="font-medium">{getVariantLabel(variant)}</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Conservation : {getConservationTypeLabel(
+          metadata,
+          variant.conservationType,
+        )}
+        {' · '}Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
+        {variant.yieldPercent
+          ? ' · Rendement : ' + formatYield(variant.yieldPercent)
+          : ''}
+      </p>
+    </>
   );
 }
 
@@ -53,18 +99,113 @@ function ProductDetailsDrawer({
   const { can, hasFeature } = useWorkspaceContext();
   const { toast } = useToast();
   const retainedRef = useRef(null);
+  const [section, setSection] = useState('product');
   const [variantDialogOpen, setVariantDialogOpen] = useState(false);
+  const [articleVariant, setArticleVariant] = useState(null);
+  const [indicativeVariant, setIndicativeVariant] = useState(null);
+
+  const canReadSupplierArticles = can(SUPPLIER_PERMISSION.ARTICLE_READ);
+  const canManageSupplierArticles = can(SUPPLIER_PERMISSION.ARTICLE_MANAGE);
+  const canReadSuppliers = can(SUPPLIER_PERMISSION.SUPPLIER_READ);
+  const canReadIndicativePrices = can(
+    SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ,
+  );
+  const canManageIndicativePrices = can(
+    SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE,
+  );
+
   const query = useGetWorkspaceProductDetailQuery(
     { workspaceId, productId },
     { skip: !productId },
   );
+  const articleQuery = useListSupplierArticlesQuery(
+    {
+      workspaceId,
+      productId,
+      status: 'ACTIVE',
+      limit: 100,
+    },
+    {
+      skip: !open || !productId || !canReadSupplierArticles,
+    },
+  );
+  const indicativePriceQuery = useListWorkspaceIndicativePricesQuery(
+    {
+      workspaceId,
+      productId,
+      status: 'ACTIVE',
+    },
+    {
+      skip: !open || !productId || !canReadIndicativePrices,
+    },
+  );
+  const supplierQuery = useListSuppliersQuery(
+    {
+      workspaceId,
+      status: 'ACTIVE',
+      limit: 100,
+    },
+    {
+      skip: (
+        !open
+        || !articleVariant
+        || !canManageSupplierArticles
+        || !canReadSuppliers
+      ),
+    },
+  );
+
   const [attachVariant, attachState] = useAttachProductVariantMutation();
   const [archiveVariant, archiveState] = useArchiveProductVariantMutation();
+
+  useEffect(() => {
+    if (!open) return;
+
+    setSection('product');
+    setVariantDialogOpen(false);
+    setArticleVariant(null);
+    setIndicativeVariant(null);
+  }, [open, productId]);
 
   if (query.data) retainedRef.current = query.data;
   const detail = query.data ?? retainedRef.current;
   const product = detail?.product;
-  const variants = detail?.variants ?? [];
+  const variants = useMemo(
+    () => detail?.variants ?? [],
+    [detail?.variants],
+  );
+  const favoriteVariants = useMemo(
+    () => variants.filter(
+      (variant) => variant.workspaceEntry?.status === 'ACTIVE',
+    ),
+    [variants],
+  );
+  const articles = useMemo(
+    () => articleQuery.data?.articles ?? [],
+    [articleQuery.data?.articles],
+  );
+  const articlesByVariant = useMemo(() => {
+    const grouped = new Map();
+
+    articles.forEach((article) => {
+      const variantId = article.productVariant?.id;
+      if (!variantId) return;
+
+      const current = grouped.get(variantId) ?? [];
+      current.push(article);
+      grouped.set(variantId, current);
+    });
+
+    return grouped;
+  }, [articles]);
+  const indicativePriceByVariant = useMemo(
+    () => new Map(
+      (indicativePriceQuery.data ?? [])
+        .map((price) => [price.productVariant?.id, price])
+        .filter(([variantId]) => Boolean(variantId)),
+    ),
+    [indicativePriceQuery.data],
+  );
   const mutationPending = attachState.isLoading || archiveState.isLoading;
 
   if (!detail && !open) return null;
@@ -76,7 +217,13 @@ function ProductDetailsDrawer({
           workspaceId,
           variantId: variant.id,
         }).unwrap();
-        toast({ title: 'Référence ajoutée aux favoris', variant: 'success' });
+        setSection('catalog');
+        toast({
+          title: 'Référence ajoutée aux favoris',
+          description:
+            'Vous pouvez maintenant compléter son prix indicatif ou son approvisionnement.',
+          variant: 'success',
+        });
       } else {
         await archiveVariant({
           workspaceId,
@@ -96,7 +243,7 @@ function ProductDetailsDrawer({
   return (
     <>
       <EntityDetailsDrawer
-        description="Identité Produit, références exploitables et favoris du Workspace."
+        description="Identité Produit, Références, favoris et données commerciales disponibles dans cet espace de travail."
         onClose={onClose}
         open={open}
         title={product?.name ?? 'Produit'}
@@ -111,11 +258,15 @@ function ProductDetailsDrawer({
             title="Produit indisponible"
           />
         ) : product ? (
-          <Tabs defaultValue="product">
+          <Tabs onValueChange={setSection} value={section}>
             <TabsList aria-label="Détails du Produit" variant="section">
               <TabsTrigger value="product" variant="section">Produit</TabsTrigger>
-              <TabsTrigger value="variants" variant="section">Références</TabsTrigger>
-              <TabsTrigger value="catalog" variant="section">Favoris</TabsTrigger>
+              <TabsTrigger value="variants" variant="section">
+                Références ({variants.length})
+              </TabsTrigger>
+              <TabsTrigger value="catalog" variant="section">
+                Favoris ({favoriteVariants.length})
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="product" variant="section">
@@ -156,82 +307,223 @@ function ProductDetailsDrawer({
                   </div>
                 )}
 
-                <ul className="space-y-3">
-                  {variants.map((variant) => (
-                    <li className="rounded-lg border border-border p-4" key={variant.id}>
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="font-medium">{getVariantLabel(variant)}</p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Conservation : {getConservationTypeLabel(
-                              metadata,
-                              variant.conservationType,
+                <ul aria-label="Références Produit" className="space-y-3">
+                  {variants.map((variant) => {
+                    const inCatalog =
+                      variant.workspaceEntry?.status === 'ACTIVE';
+                    const canAttach = (
+                      can(PRODUCT_PERMISSION.CATALOG_MANAGE)
+                      && product.status === 'ACTIVE'
+                      && variant.status === 'ACTIVE'
+                    );
+
+                    return (
+                      <li
+                        className="rounded-lg border border-border p-4"
+                        key={variant.id}
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <VariantIdentity metadata={metadata} variant={variant} />
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <StatusBadge tone={getProductStatusTone(variant.status)}>
+                              {getProductStatusLabel(metadata, variant.status)}
+                            </StatusBadge>
+
+                            {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
+                              inCatalog ? (
+                                <ActionIconButton
+                                  Icon={Minus}
+                                  disabled={mutationPending}
+                                  label={
+                                    'Retirer '
+                                    + getVariantLabel(variant)
+                                    + ' des favoris'
+                                  }
+                                  onClick={() => changeCatalog(variant, false)}
+                                  tooltipLabel="Retirer des favoris"
+                                  variant="outline"
+                                />
+                              ) : canAttach ? (
+                                <ActionIconButton
+                                  Icon={Plus}
+                                  disabled={mutationPending}
+                                  label={
+                                    'Ajouter '
+                                    + getVariantLabel(variant)
+                                    + ' aux favoris'
+                                  }
+                                  onClick={() => changeCatalog(variant, true)}
+                                  tooltipLabel="Ajouter aux favoris"
+                                />
+                              ) : null
                             )}
-                            {' · '}Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
-                            {variant.yieldPercent
-                              ? ' · Rendement : ' + formatYield(variant.yieldPercent)
-                              : ''}
-                          </p>
+                          </div>
                         </div>
-                        <StatusBadge tone={getProductStatusTone(variant.status)}>
-                          {getProductStatusLabel(metadata, variant.status)}
-                        </StatusBadge>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </TabsContent>
 
             <TabsContent value="catalog" variant="section">
-              <ul className="space-y-3">
-                {variants.map((variant) => {
-                  const inCatalog = variant.workspaceEntry?.status === 'ACTIVE';
-                  const canAttach = (
-                    can(PRODUCT_PERMISSION.CATALOG_MANAGE)
-                    && product.status === 'ACTIVE'
-                    && variant.status === 'ACTIVE'
-                  );
+              <div className="space-y-3">
+                {canReadSupplierArticles
+                && articleQuery.isError && (
+                  <p className="text-sm text-destructive">
+                    Les approvisionnements n’ont pas pu être chargés.
+                  </p>
+                )}
 
-                  return (
-                    <li className="rounded-lg border border-border p-4" key={variant.id}>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="font-medium">{getVariantLabel(variant)}</p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {variant.workspaceEntry
-                              ? getWorkspaceProductStatusLabel(
-                                metadata,
-                                variant.workspaceEntry.status,
-                              )
-                              : 'Absente des favoris'}
-                          </p>
-                        </div>
-                        {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
-                          inCatalog ? (
-                            <Button
-                              disabled={mutationPending}
-                              onClick={() => changeCatalog(variant, false)}
-                              type="button"
-                              variant="outline"
-                            >
-                              Retirer des favoris
-                            </Button>
-                          ) : canAttach ? (
-                            <Button
-                              disabled={mutationPending}
-                              onClick={() => changeCatalog(variant, true)}
-                              type="button"
-                            >
-                              Ajouter aux favoris
-                            </Button>
-                          ) : null
-                        )}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                {canReadIndicativePrices
+                && indicativePriceQuery.isError && (
+                  <p className="text-sm text-destructive">
+                    Les Prix indicatifs n’ont pas pu être chargés.
+                  </p>
+                )}
+
+                {favoriteVariants.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Aucune Référence n’est ajoutée aux favoris.
+                  </p>
+                ) : (
+                  <ul aria-label="Références favorites" className="space-y-3">
+                    {favoriteVariants.map((variant) => {
+                      const variantArticles =
+                        articlesByVariant.get(variant.id) ?? [];
+                      const indicativePrice =
+                        indicativePriceByVariant.get(variant.id) ?? null;
+
+                      return (
+                        <li
+                          className="rounded-lg border border-border p-4"
+                          key={variant.id}
+                        >
+                          <div className="flex flex-col gap-4">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <VariantIdentity
+                                  metadata={metadata}
+                                  variant={variant}
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {canManageIndicativePrices && (
+                                  <ActionIconButton
+                                    Icon={Euro}
+                                    label={
+                                      'Appliquer un prix indicatif à '
+                                      + getVariantLabel(variant)
+                                    }
+                                    onClick={() => setIndicativeVariant(variant)}
+                                    tooltipLabel="Appliquer un prix indicatif"
+                                    variant="outline"
+                                  />
+                                )}
+
+                                {canManageSupplierArticles
+                                && canReadSuppliers && (
+                                  <ActionIconButton
+                                    Icon={PackagePlus}
+                                    label={
+                                      'Ajouter un Article fournisseur pour '
+                                      + getVariantLabel(variant)
+                                    }
+                                    onClick={() => setArticleVariant(variant)}
+                                    tooltipLabel="Ajouter un Article fournisseur"
+                                    variant="outline"
+                                  />
+                                )}
+
+                                {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
+                                  <ActionIconButton
+                                    Icon={Minus}
+                                    disabled={mutationPending}
+                                    label={
+                                      'Retirer '
+                                      + getVariantLabel(variant)
+                                      + ' des favoris'
+                                    }
+                                    onClick={() => changeCatalog(variant, false)}
+                                    tooltipLabel="Retirer des favoris"
+                                    variant="outline"
+                                  />
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid gap-3 border-t border-border pt-3">
+                              {canReadIndicativePrices && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground">
+                                    PU HT estimé
+                                  </p>
+                                  <p className="mt-1 text-sm font-medium">
+                                    {indicativePriceQuery.isLoading
+                                      && indicativePriceQuery.data === undefined
+                                      ? 'Chargement…'
+                                      : indicativePrice
+                                        ? formatPrice(indicativePrice, {
+                                            hideDefaultCurrency: true,
+                                          })
+                                        : 'Non renseigné'}
+                                  </p>
+                                  {indicativePrice?.source && (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      {indicativePrice.source}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              {canReadSupplierArticles && (
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground">
+                                    Approvisionnements ({variantArticles.length})
+                                  </p>
+
+                                  {articleQuery.isLoading
+                                  && articleQuery.data === undefined ? (
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                      Chargement…
+                                    </p>
+                                  ) : variantArticles.length === 0 ? (
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                      Aucun Article fournisseur actif.
+                                    </p>
+                                  ) : (
+                                    <ul className="mt-2 space-y-2">
+                                      {variantArticles.map((article) => (
+                                        <li
+                                          className="rounded-md bg-muted/30 px-3 py-2"
+                                          key={article.id}
+                                        >
+                                          <p className="text-sm font-medium">
+                                            {(article.supplier?.name ?? 'Fournisseur')
+                                              + ' · '
+                                              + article.supplierReference}
+                                          </p>
+                                          <p className="mt-1 text-xs text-muted-foreground">
+                                            {formatPackaging(article.packaging)}
+                                          </p>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         ) : null}
@@ -244,8 +536,11 @@ function ProductDetailsDrawer({
           onClose={() => setVariantDialogOpen(false)}
           onCreated={() => {
             setVariantDialogOpen(false);
+            setSection('catalog');
             toast({
               title: 'Référence créée',
+              description:
+                'Elle a été ajoutée aux favoris. Vous pouvez maintenant compléter son prix ou son approvisionnement.',
               variant: 'success',
             });
           }}
@@ -254,6 +549,38 @@ function ProductDetailsDrawer({
           workspaceId={workspaceId}
         />
       )}
+
+      <IndicativePriceDialog
+        onClose={() => setIndicativeVariant(null)}
+        onSaved={(result) => {
+          setIndicativeVariant(null);
+          toast({
+            title: result?.removed
+              ? 'Prix indicatif retiré'
+              : 'Prix indicatif enregistré',
+            variant: 'success',
+          });
+        }}
+        open={Boolean(indicativeVariant)}
+        variant={indicativeVariant}
+        workspaceId={workspaceId}
+      />
+
+      <SupplierArticleFormDialog
+        initialProductVariant={articleVariant}
+        onClose={() => setArticleVariant(null)}
+        onSaved={() => {
+          setArticleVariant(null);
+          toast({
+            title: 'Article fournisseur créé',
+            variant: 'success',
+          });
+        }}
+        open={Boolean(articleVariant)}
+        suppliers={supplierQuery.data?.suppliers ?? []}
+        suppliersLoading={supplierQuery.isLoading}
+        workspaceId={workspaceId}
+      />
     </>
   );
 }

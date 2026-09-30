@@ -1,4 +1,14 @@
-import { ArrowLeft, Plus, Star, Trash2 } from 'lucide-react';
+import {
+  Archive,
+  ArrowUpRight,
+  Check,
+  CircleMinus,
+  Euro,
+  Pencil,
+  Plus,
+  Star,
+  X,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
@@ -6,12 +16,13 @@ import {
   DataTable,
   DataTableActions,
 } from '@/components/data-display/data-table';
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -25,22 +36,21 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
-  useGetDossierByIdQuery,
-} from '@/features/dossiers/api/dossiers-api';
-import {
   useAddDossierSupplierReferenceMutation,
   useArchiveNegotiatedPriceMutation,
   useDecideInvoicedPriceMutation,
-  useGetPricingPolicyQuery,
-  useLazyGetApplicableSupplierPriceQuery,
   useListDossierSupplierReferencesQuery,
+  useListDossierIndicativePricesQuery,
   useListInvoicedPricesQuery,
+  useListWorkspaceIndicativePricesQuery,
   useListNegotiatedPricesQuery,
   useListSupplierArticlesQuery,
   useListSupplierCatalogsQuery,
   useRemoveDossierSupplierReferenceMutation,
-  useUpdatePricingPolicyMutation,
 } from '@/features/suppliers/api/supplier-api';
+import {
+  IndicativePriceDialog,
+} from '@/features/suppliers/components/indicative-price-dialog';
 import {
   SupplierPriceFormDialog,
 } from '@/features/suppliers/components/supplier-price-form-dialog';
@@ -73,6 +83,18 @@ function normalizeArticle(article) {
   };
 }
 
+function UnitPriceHeader() {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>PU HT</span>
+      <InfoTooltip
+        content="Prix Unitaire HT en €"
+        label="À propos du Prix Unitaire HT"
+      />
+    </span>
+  );
+}
+
 function DossierSupplierPricingPage() {
   const { dossierId } = useParams();
   const { can, workspace } = useWorkspaceContext();
@@ -82,16 +104,14 @@ function DossierSupplierPricingPage() {
     if (can(SUPPLIER_PERMISSION.CATALOG_READ)) return 'catalogs';
     if (can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ)) return 'negotiated';
     if (can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ)) return 'invoiced';
+    if (can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ)) return 'indicative';
     return null;
   });
   const [priceDialog, setPriceDialog] = useState(null);
   const [articleToAdd, setArticleToAdd] = useState(NONE);
-  const [selectedArticleId, setSelectedArticleId] = useState(NONE);
+  const [indicativeDialogOpen, setIndicativeDialogOpen] = useState(false);
+  const [indicativeVariant, setIndicativeVariant] = useState(null);
 
-  const dossierQuery = useGetDossierByIdQuery({
-    workspaceId: workspace.id,
-    dossierId,
-  });
   const referencesQuery = useListDossierSupplierReferencesQuery(
     { workspaceId: workspace.id, dossierId },
     { skip: !can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) },
@@ -118,13 +138,21 @@ function DossierSupplierPricingPage() {
     { workspaceId: workspace.id, dossierId },
     { skip: !can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ) },
   );
-  const policyQuery = useGetPricingPolicyQuery(
-    workspace.id,
-    { skip: !can(SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ) },
+  const indicativeQuery = useListDossierIndicativePricesQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+      status: 'ACTIVE',
+    },
+    { skip: !can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ) },
   );
-  const [loadApplicablePrice, applicablePriceQuery] =
-    useLazyGetApplicableSupplierPriceQuery();
-
+  const workspaceIndicativeQuery = useListWorkspaceIndicativePricesQuery(
+    {
+      workspaceId: workspace.id,
+      status: 'ACTIVE',
+    },
+    { skip: !can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ) },
+  );
   const [addReference, addReferenceState] =
     useAddDossierSupplierReferenceMutation();
   const [removeReference, removeReferenceState] =
@@ -133,10 +161,61 @@ function DossierSupplierPricingPage() {
     useArchiveNegotiatedPriceMutation();
   const [decideInvoice, decideInvoiceState] =
     useDecideInvoicedPriceMutation();
-  const [updatePolicy, updatePolicyState] =
-    useUpdatePricingPolicyMutation();
 
-  const references = referencesQuery.data ?? [];
+  const references = useMemo(
+    () => referencesQuery.data ?? [],
+    [referencesQuery.data],
+  );
+  const negotiatedPrices = negotiatedQuery.data ?? [];
+  const invoicedPrices = invoicedQuery.data ?? [];
+  const dossierIndicativePrices = useMemo(
+    () => indicativeQuery.data ?? [],
+    [indicativeQuery.data],
+  );
+  const workspaceIndicativePrices = useMemo(
+    () => workspaceIndicativeQuery.data ?? [],
+    [workspaceIndicativeQuery.data],
+  );
+  const indicativePrices = useMemo(() => {
+    const byProductVariant = new Map();
+
+    workspaceIndicativePrices.forEach((price) => {
+      const productVariantId = (
+        price.productVariant?.id
+        ?? price.productVariantId
+      );
+      if (!productVariantId) return;
+
+      byProductVariant.set(productVariantId, {
+        ...price,
+        priceScope: 'WORKSPACE',
+      });
+    });
+
+    dossierIndicativePrices.forEach((price) => {
+      const productVariantId = (
+        price.productVariant?.id
+        ?? price.productVariantId
+      );
+      if (!productVariantId) return;
+
+      byProductVariant.set(productVariantId, {
+        ...price,
+        priceScope: 'DOSSIER',
+      });
+    });
+
+    return Array.from(byProductVariant.values());
+  }, [dossierIndicativePrices, workspaceIndicativePrices]);
+  const catalogCount = (
+    catalogsQuery.data?.pagination?.total
+    ?? catalogsQuery.data?.catalogs?.length
+    ?? 0
+  );
+  const negotiatedCount = negotiatedPrices.length;
+  const invoicedCount = invoicedPrices.length;
+  const indicativeCount = indicativePrices.length;
+
   const visibleArticles = useMemo(
     () => (
       can(SUPPLIER_PERMISSION.ARTICLE_READ)
@@ -195,48 +274,6 @@ function DossierSupplierPricingPage() {
     } catch (error) {
       toast({
         title: 'Retrait impossible',
-        description: getApiErrorMessage(error),
-        variant: 'destructive',
-      });
-    }
-  }
-
-  async function chooseApplicableArticle(articleId) {
-    setSelectedArticleId(articleId);
-
-    if (articleId === NONE) return;
-
-    try {
-      await loadApplicablePrice({
-        workspaceId: workspace.id,
-        dossierId,
-        articleId,
-      }).unwrap();
-    } catch {
-      // L'état d'erreur RTK Query est affiché plus bas.
-    }
-  }
-
-  async function changePolicy(mode) {
-    try {
-      await updatePolicy({
-        workspaceId: workspace.id,
-        mode,
-      }).unwrap();
-      toast({
-        title: 'Politique de prix mise à jour',
-        variant: 'success',
-      });
-      if (selectedArticleId !== NONE) {
-        loadApplicablePrice({
-          workspaceId: workspace.id,
-          dossierId,
-          articleId: selectedArticleId,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Modification impossible',
         description: getApiErrorMessage(error),
         variant: 'destructive',
       });
@@ -311,16 +348,18 @@ function DossierSupplierPricingPage() {
       header: 'Actions',
       cell: (reference) => (
         can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE) ? (
-          <Button
+          <ActionIconButton
+            Icon={CircleMinus}
             disabled={removeReferenceState.isLoading}
+            label={
+              'Retirer '
+              + reference.supplierArticle.supplierReference
+              + ' du Dossier'
+            }
             onClick={() => removeFavorite(reference.supplierArticle.id)}
-            size="sm"
-            type="button"
+            tooltipLabel="Retirer du Dossier"
             variant="outline"
-          >
-            <Trash2 aria-hidden="true" className="size-4" />
-            Retirer
-          </Button>
+          />
         ) : null
       ),
     },
@@ -356,8 +395,10 @@ function DossierSupplierPricingPage() {
     },
     {
       id: 'price',
-      header: 'Prix',
-      cell: (price) => formatPrice(price),
+      header: <UnitPriceHeader />,
+      cell: (price) => formatPrice(price, {
+        hideDefaultCurrency: true,
+      }),
     },
     {
       id: 'status',
@@ -374,15 +415,14 @@ function DossierSupplierPricingPage() {
       cell: (price) => (
         price.status === 'ACTIVE'
         && can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE) ? (
-          <Button
+          <ActionIconButton
+            Icon={Archive}
             disabled={archiveNegotiatedState.isLoading}
+            label="Archiver le tarif négocié"
             onClick={() => archiveNegotiatedPrice(price.id)}
-            size="sm"
-            type="button"
+            tooltipLabel="Archiver le tarif négocié"
             variant="outline"
-          >
-            Archiver
-          </Button>
+          />
         ) : null
       ),
     },
@@ -434,6 +474,79 @@ function DossierSupplierPricingPage() {
     },
   ];
 
+  const indicativeColumns = [
+    {
+      id: 'product',
+      header: 'Produit',
+      cell: (price) => (
+        <div>
+          <p className="font-medium">
+            {price.productVariant?.productName
+              ?? price.productVariant?.name
+              ?? 'Référence Produit'}
+          </p>
+          {price.productVariant?.name
+          && price.productVariant?.name !== price.productVariant?.productName && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {price.productVariant.name}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'price',
+      header: <UnitPriceHeader />,
+      cell: (price) => formatPrice(price, {
+        hideDefaultCurrency: true,
+      }),
+    },
+    {
+      id: 'origin',
+      header: 'Origine',
+      cell: (price) => (
+        price.priceScope === 'DOSSIER'
+          ? 'Dossier'
+          : 'Espace de travail'
+      ),
+    },
+    {
+      id: 'source',
+      header: 'Note / provenance',
+      cell: (price) => price.source || 'Non renseignée',
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: (price) => {
+        if (!can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE)) return null;
+
+        const isDossierPrice = price.priceScope === 'DOSSIER';
+
+        return (
+          <ActionIconButton
+            Icon={isDossierPrice ? Pencil : Euro}
+            label={
+              isDossierPrice
+                ? 'Modifier le prix indicatif du Dossier'
+                : 'Définir un prix indicatif pour ce Dossier'
+            }
+            onClick={() => {
+              setIndicativeVariant(price.productVariant);
+              setIndicativeDialogOpen(true);
+            }}
+            tooltipLabel={
+              isDossierPrice
+                ? 'Modifier le prix indicatif du Dossier'
+                : 'Définir un prix indicatif pour ce Dossier'
+            }
+            variant="outline"
+          />
+        );
+      },
+    },
+  ];
+
   const invoicedColumns = [
     {
       id: 'article',
@@ -456,8 +569,10 @@ function DossierSupplierPricingPage() {
     },
     {
       id: 'price',
-      header: 'Prix',
-      cell: (price) => formatPrice(price),
+      header: <UnitPriceHeader />,
+      cell: (price) => formatPrice(price, {
+        hideDefaultCurrency: true,
+      }),
     },
     {
       id: 'status',
@@ -481,196 +596,65 @@ function DossierSupplierPricingPage() {
         price.status === 'PENDING_VALIDATION'
         && can(SUPPLIER_PERMISSION.INVOICED_PRICE_VALIDATE) ? (
           <DataTableActions>
-            <Button
+            <ActionIconButton
+              Icon={Check}
               disabled={decideInvoiceState.isLoading}
+              label="Valider le prix facturé"
               onClick={() => decideInvoicedPrice(price.id, 'VALIDATED')}
-              size="sm"
-              type="button"
-            >
-              Valider
-            </Button>
-            <Button
+              tooltipLabel="Valider le prix facturé"
+            />
+            <ActionIconButton
+              Icon={X}
               disabled={decideInvoiceState.isLoading}
+              label="Rejeter le prix facturé"
               onClick={() => decideInvoicedPrice(price.id, 'REJECTED')}
-              size="sm"
-              type="button"
+              tooltipLabel="Rejeter le prix facturé"
               variant="outline"
-            >
-              Rejeter
-            </Button>
+            />
           </DataTableActions>
         ) : null
       ),
     },
   ];
 
-  const applicable = applicablePriceQuery.data;
-
-  if (
-    dossierQuery.isLoading
-    && dossierQuery.data === undefined
-  ) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Chargement du Dossier…
-      </p>
-    );
-  }
-
-  if (dossierQuery.isError || !dossierQuery.data) {
-    return (
-      <ErrorState
-        description="Le Dossier demandé n’est pas accessible ou n’a pas pu être chargé."
-        onRetry={dossierQuery.refetch}
-        title="Dossier indisponible"
-      />
-    );
-  }
-
-  const dossier = dossierQuery.data;
-
   return (
     <div className="space-y-6">
-      <header className="space-y-4">
-        <Button asChild size="sm" variant="ghost">
-          <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossierId}>
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            Retour au Dossier
-          </Link>
-        </Button>
-        <div>
-          <p className="text-sm font-medium text-primary">{workspace.name}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            {dossier.name} — Fournisseurs et prix
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Les prix affichés et résolus restent strictement limités à ce Dossier.
-          </p>
-        </div>
-      </header>
-
-      {can(SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Prix applicable</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div>
-                <p className="mb-2 text-sm font-medium">
-                  Politique de l’espace de travail
-                </p>
-                <Select
-                  disabled={
-                    !can(SUPPLIER_PERMISSION.PRICE_POLICY_MANAGE)
-                    || updatePolicyState.isLoading
-                  }
-                  items={[
-                    { value: 'SUPPLIER_TARIFF', label: 'Tarif fournisseur' },
-                    { value: 'NEGOTIATED_PRICE', label: 'Tarif négocié' },
-                    { value: 'INVOICED_PRICE', label: 'Prix facturé' },
-                  ]}
-                  onValueChange={changePolicy}
-                  value={policyQuery.data?.mode ?? 'NEGOTIATED_PRICE'}
-                >
-                  <SelectTrigger aria-label="Politique du Prix applicable">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="SUPPLIER_TARIFF">Tarif fournisseur</SelectItem>
-                    <SelectItem value="NEGOTIATED_PRICE">Tarif négocié</SelectItem>
-                    <SelectItem value="INVOICED_PRICE">Prix facturé</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm font-medium">Article à résoudre</p>
-                <Select
-                  items={[
-                    { value: NONE, label: 'Sélectionner' },
-                    ...visibleArticles.map((article) => ({
-                      value: article.id,
-                      label: article.supplierName + ' · ' + article.supplierReference,
-                    })),
-                  ]}
-                  onValueChange={chooseApplicableArticle}
-                  value={selectedArticleId}
-                >
-                  <SelectTrigger aria-label="Article pour le Prix applicable">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Sélectionner</SelectItem>
-                    {visibleArticles.map((article) => (
-                      <SelectItem key={article.id} value={article.id}>
-                        {article.supplierName} · {article.supplierReference}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {applicablePriceQuery.isFetching && (
-              <p className="text-sm text-muted-foreground">Résolution du prix…</p>
-            )}
-
-            {applicablePriceQuery.isError && (
-              <ErrorState
-                description="Le Prix applicable n’a pas pu être résolu pour cet Article."
-                title="Résolution impossible"
-              />
-            )}
-
-            {applicable && (
-              <div className="rounded-lg border border-border p-4">
-                <p className="font-medium">
-                  {applicable.price
-                    ? formatPrice(applicable.price)
-                    : 'Aucun prix applicable'}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Source : {applicable.resolvedSource ?? 'aucune'}
-                  {applicable.fallbackApplied ? ' · fallback appliqué' : ''}
-                </p>
-                {applicable.fallbackReason && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Motif : {applicable.fallbackReason}
-                  </p>
-                )}
-                {applicable.alerts?.length > 0 && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Alertes : {applicable.alerts.join(' · ')}
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <div className="flex items-start gap-2">
+        <h2 className="text-xl font-semibold tracking-tight">
+          Fournisseurs et prix
+        </h2>
+        <InfoTooltip
+          content="Les prix affichés et résolus restent strictement limités à ce Dossier."
+          label="À propos des Fournisseurs et prix"
+        />
+      </div>
 
       {section && (
         <Tabs onValueChange={setSection} value={section}>
           <TabsList aria-label="Données Fournisseurs du Dossier" variant="section">
           {can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) && (
             <TabsTrigger value="references" variant="section">
-              Références
+              Références ({references.length})
             </TabsTrigger>
           )}
           {can(SUPPLIER_PERMISSION.CATALOG_READ) && (
             <TabsTrigger value="catalogs" variant="section">
-              Catalogues
+              Catalogues ({catalogCount})
             </TabsTrigger>
           )}
           {can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ) && (
             <TabsTrigger value="negotiated" variant="section">
-              Tarifs négociés
+              Tarifs négociés ({negotiatedCount})
             </TabsTrigger>
           )}
           {can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ) && (
             <TabsTrigger value="invoiced" variant="section">
-              Prix facturés
+              Prix facturés ({invoicedCount})
+            </TabsTrigger>
+          )}
+          {can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ) && (
+            <TabsTrigger value="indicative" variant="section">
+              Prix indicatifs ({indicativeCount})
             </TabsTrigger>
           )}
           </TabsList>
@@ -678,10 +662,10 @@ function DossierSupplierPricingPage() {
       )}
 
       {section === 'references' && (
-        <section className="space-y-4">
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
           {can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE)
           && can(SUPPLIER_PERMISSION.ARTICLE_READ) && (
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row">
               <Select
                 items={[
                   { value: NONE, label: 'Sélectionner un Article' },
@@ -717,11 +701,13 @@ function DossierSupplierPricingPage() {
           )}
 
           {referencesQuery.isError ? (
-            <ErrorState
-              description="Les références du Dossier n’ont pas pu être chargées."
-              onRetry={referencesQuery.refetch}
-              title="Références indisponibles"
-            />
+            <div className="p-4">
+              <ErrorState
+                description="Les références du Dossier n’ont pas pu être chargées."
+                onRetry={referencesQuery.refetch}
+                title="Références indisponibles"
+              />
+            </div>
           ) : (
             <DataTable
               rowClassName="transition-colors hover:bg-muted/50"
@@ -730,6 +716,7 @@ function DossierSupplierPricingPage() {
               data={references}
               emptyContent={(
                 <EmptyState
+                  className="p-0"
                   description="Aucune référence fournisseur favorite n’est enregistrée pour ce Dossier."
                   title="Aucune référence"
                 />
@@ -741,13 +728,40 @@ function DossierSupplierPricingPage() {
       )}
 
       {section === 'catalogs' && (
-        <section>
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">
+                Tarifs fournisseur
+              </p>
+              <InfoTooltip
+                content="Les tarifs fournisseur proviennent des catalogues. L’import et la gestion des catalogues se font depuis la page Fournisseurs."
+                label="À propos des Tarifs fournisseur"
+              />
+            </div>
+            {can(SUPPLIER_PERMISSION.SUPPLIER_READ) && (
+              <Button asChild size="sm" variant="outline">
+                <Link
+                  to={
+                    '/workspaces/' + workspace.id
+                    + '/suppliers?section=catalogs'
+                  }
+                >
+                  Gérer les catalogues
+                  <ArrowUpRight aria-hidden="true" className="size-4" />
+                </Link>
+              </Button>
+            )}
+          </div>
+
           {catalogsQuery.isError ? (
-            <ErrorState
-              description="Les catalogues accessibles à cet espace de travail n’ont pas pu être chargés."
-              onRetry={catalogsQuery.refetch}
-              title="Catalogues indisponibles"
-            />
+            <div className="p-4">
+              <ErrorState
+                description="Les catalogues accessibles à cet espace de travail n’ont pas pu être chargés."
+                onRetry={catalogsQuery.refetch}
+                title="Catalogues indisponibles"
+              />
+            </div>
           ) : (
             <DataTable
               rowClassName="transition-colors hover:bg-muted/50"
@@ -756,6 +770,7 @@ function DossierSupplierPricingPage() {
               data={catalogsQuery.data?.catalogs ?? []}
               emptyContent={(
                 <EmptyState
+                  className="p-0"
                   description="Aucun catalogue fournisseur actif n’est accessible."
                   title="Aucun catalogue"
                 />
@@ -767,23 +782,37 @@ function DossierSupplierPricingPage() {
       )}
 
       {section === 'negotiated' && (
-        <section className="space-y-4">
-          {can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE) && (
-            <Button onClick={() => setPriceDialog('negotiated')} type="button">
-              <Plus aria-hidden="true" className="size-4" />
-              Ajouter un Tarif négocié
-            </Button>
-          )}
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">
+                Tarifs négociés du Dossier
+              </p>
+              <InfoTooltip
+                content="Prix contractuels spécifiques à un Article fournisseur dans ce Dossier et pour une période donnée."
+                label="À propos des Tarifs négociés"
+              />
+            </div>
+            {can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE) && (
+              <Button
+                onClick={() => setPriceDialog('negotiated')}
+                size="sm"
+                type="button"
+              >
+                <Plus aria-hidden="true" className="size-4" />
+                Ajouter un tarif négocié
+              </Button>
+            )}
+          </div>
           <DataTable
             rowClassName="transition-colors hover:bg-muted/50"
             caption="Tarifs négociés du Dossier"
             columns={negotiatedColumns}
-            data={negotiatedQuery.data ?? []}
+            data={negotiatedPrices}
             emptyContent={(
-              <EmptyState
-                description="Aucun Tarif négocié n’est enregistré pour ce Dossier."
-                title="Aucun Tarif négocié"
-              />
+              <p className="p-5 text-sm text-muted-foreground">
+                Aucun tarif négocié n’est enregistré pour ce Dossier.
+              </p>
             )}
             getRowKey={(price) => price.id}
           />
@@ -791,28 +820,118 @@ function DossierSupplierPricingPage() {
       )}
 
       {section === 'invoiced' && (
-        <section className="space-y-4">
-          {can(SUPPLIER_PERMISSION.INVOICED_PRICE_MANAGE) && (
-            <Button onClick={() => setPriceDialog('invoice')} type="button">
-              <Plus aria-hidden="true" className="size-4" />
-              Ajouter un Prix facturé
-            </Button>
-          )}
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">
+                Prix facturés du Dossier
+              </p>
+              <InfoTooltip
+                content="Prix réellement constatés sur facture, soumis à validation avant utilisation par la politique de prix."
+                label="À propos des Prix facturés"
+              />
+            </div>
+            {can(SUPPLIER_PERMISSION.INVOICED_PRICE_MANAGE) && (
+              <Button
+                onClick={() => setPriceDialog('invoice')}
+                size="sm"
+                type="button"
+              >
+                <Plus aria-hidden="true" className="size-4" />
+                Ajouter un prix facturé
+              </Button>
+            )}
+          </div>
           <DataTable
             rowClassName="transition-colors hover:bg-muted/50"
             caption="Prix facturés du Dossier"
             columns={invoicedColumns}
-            data={invoicedQuery.data ?? []}
+            data={invoicedPrices}
             emptyContent={(
-              <EmptyState
-                description="Aucun Prix facturé n’est enregistré pour ce Dossier."
-                title="Aucun Prix facturé"
-              />
+              <p className="p-5 text-sm text-muted-foreground">
+                Aucun prix facturé n’est enregistré pour ce Dossier.
+              </p>
             )}
             getRowKey={(price) => price.id}
           />
         </section>
       )}
+
+      {section === 'indicative' && (
+        <section className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b border-border p-4">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">
+                Prix indicatifs du Dossier
+              </p>
+              <InfoTooltip
+                content="Estimations internes propres à ce Dossier. Elles servent uniquement de dernier recours lorsqu’aucun Tarif négocié, Prix facturé admissible ou Tarif fournisseur n’est applicable."
+                label="À propos des Prix indicatifs"
+              />
+            </div>
+            {can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE) && (
+              <Button
+                onClick={() => {
+                  setIndicativeVariant(null);
+                  setIndicativeDialogOpen(true);
+                }}
+                size="sm"
+                type="button"
+              >
+                <Plus aria-hidden="true" className="size-4" />
+                Ajouter un prix indicatif
+              </Button>
+            )}
+          </div>
+
+          {indicativeQuery.isError || workspaceIndicativeQuery.isError ? (
+            <div className="p-4">
+              <ErrorState
+                description="Les Prix indicatifs du Dossier n’ont pas pu être chargés."
+                onRetry={() => {
+                  indicativeQuery.refetch();
+                  workspaceIndicativeQuery.refetch();
+                }}
+                title="Prix indicatifs indisponibles"
+              />
+            </div>
+          ) : (
+            <DataTable
+              rowClassName="transition-colors hover:bg-muted/50"
+              caption="Prix indicatifs du Dossier"
+              columns={indicativeColumns}
+              data={indicativePrices}
+              emptyContent={(
+                <p className="p-5 text-sm text-muted-foreground">
+                  Aucun prix indicatif n’est enregistré pour ce Dossier.
+                </p>
+              )}
+              getRowKey={(price) => price.id}
+            />
+          )}
+        </section>
+      )}
+
+      <IndicativePriceDialog
+        dossierId={dossierId}
+        onClose={() => {
+          setIndicativeDialogOpen(false);
+          setIndicativeVariant(null);
+        }}
+        onSaved={(result) => {
+          setIndicativeDialogOpen(false);
+          setIndicativeVariant(null);
+          toast({
+            title: result?.removed
+              ? 'Prix indicatif retiré'
+              : 'Prix indicatif enregistré',
+            variant: 'success',
+          });
+        }}
+        open={indicativeDialogOpen}
+        variant={indicativeVariant}
+        workspaceId={workspace.id}
+      />
 
       <SupplierPriceFormDialog
         articles={visibleArticles}

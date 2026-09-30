@@ -1,7 +1,7 @@
 # SAAS-CORE-API — Registre canonique des dettes actives
 
 **Statut :** source de vérité documentaire pour les dettes non résolues  
-**Dernière mise à jour :** 2026-09-25  
+**Dernière mise à jour :** 2026-09-29  
 **Périmètre :** Core clonable et, lorsque précisé, applications dérivées
 
 ---
@@ -119,6 +119,7 @@ D-010 authentification avancée — dont Google SSO
 D-020 validation terrain invitation commerciale / onboarding bêta
 D-023 demande gouvernée de capacité exceptionnelle de transfert de propriété — cible Core 1.1
 D-024 console d’administration Platform contextualisée du Workspace — cible Core 1.1
+GMS-TAX-001 TVA Produit / fiscalité d’achat — à cadrer avant tout besoin comptable/fiscal avancé
 ```
 
 ---
@@ -219,6 +220,8 @@ Checkpoint M-001 validé : les quatre parcours métier sont intégrés au corpus
 
 M-002 ajoute deux parcours Playwright critiques : (1) soumission d'un nouveau Produit depuis un Workspace, revue/approbation par l'autorité Application Global puis ajout de la Référence aux Favoris ; (2) création directe d'un Produit par un utilisateur explicitement habilité Application Global. La clôture technique M-002 exige une Core Gate verte sur la PR finale puis sur le merge dans `main` ; GitHub reste l'autorité sur ces résultats.
 
+M-004 ajoute cinq parcours Playwright critiques au corpus : (1) une Référence Produit globale non favorite reste composable, valorisable et validable ; (2) ambiguïté d'Article fournisseur puis sélection explicite, changement de prix, refus de validation et revalorisation ; (3) copie d'une Fiche du Dossier A vers B sans finance source puis valorisation avec le prix du Dossier cible ; (4) quota atteint bloquant création/copie sans bloquer la modification d'une Fiche existante ; (5) corbeille → restauration → nouvelle suppression → purge, avec quota conservé jusqu'à la purge. Ces scénarios sont présents sur la branche M-004 mais leur exécution locale et la Core Gate finale restent à valider avant clôture.
+
 ### GMS-UX-001 — Raffinements visuels post-M-002
 
 **Statut :** CONDITIONNEL  
@@ -242,11 +245,11 @@ Une régression fonctionnelle réelle doit être corrigée comme telle ; une nou
 
 ### GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité du tableau
 
-**Statut :** À TRAITER — prochain lot produit avant M-004  
+**Statut :** VALIDÉ — traité avant M-004  
 **Périmètre :** produit `saas-fiches-techniques-gms` — M-002 / Platform / Référentiel Produits  
-**Blocage M-003 :** non
+**Blocage M-004 :** levé
 
-M-003 est clôturé depuis le 2026-09-28 : PR #22 fusionnée, Core Gate PR #132 verte et Core Gate post-merge #133 verte. Cette dette devient donc le prochain lot actif à cadrer/implémenter avant M-004.
+Le lot a été traité et fusionné via la PR #24. Le `main` vérifié au commit `b479b217815fad885f233e98b8f3145656641352` porte les corrections UX correspondantes et son Core Gate est vert. GMS-UX-002 ne bloque plus M-004.
 
 ### Constat A — onglet Catégories
 
@@ -361,6 +364,55 @@ En attendant ce lot :
 - les styles structurels de tableau ne doivent pas être redéfinis écran par écran dans le produit ;
 - M-003 doit conserver le composant partagé et ses points d'extension existants, sans créer un variant de tableau métier ;
 - le futur traitement devra être regroupé avec une revue réelle et globale des conventions UI/UX du `DataTable` Core.
+
+### GMS-TAX-001 — TVA Produit / fiscalité d’achat
+
+**Statut :** À CADRER  \
+**Périmètre :** produit `saas-fiches-techniques-gms` — M-002 / M-003 / M-004 / éventuels futurs flux Achats et comptables  \
+**Blocage M-004 :** non  \
+**Prérequis futur :** oui avant toute conception ou implémentation d’une éventuelle fonctionnalité de gestion des achats, factures d’achat ou TVA déductible
+
+Le contrat M-004 porte actuellement une **TVA de vente au niveau de la Fiche technique**, utilisée pour convertir l’économie de la Fiche de HT vers TTC. Les coûts d’achat exploités par M-003 et M-004 restent calculés en HT.
+
+Le modèle actif `ProductVariant` M-002 ne porte actuellement aucun taux de TVA Produit et le contrat M-002 validé ne définit pas cette donnée. M-003 ne modélise pas non plus, à ce stade, une fiscalité d’achat par Article/Tarif.
+
+Cette absence ne bloque pas la valorisation M-004 actuelle. En revanche, **GMS-TAX-001 doit être cadrée explicitement avant tout futur module Achats** afin d’éviter qu’une logique de TVA insuffisante soit figée dans les Produits, Articles fournisseur, factures ou snapshots comptables. La fonctionnalité Achats reste éventuelle et hors périmètre actuel ; cette dette constitue seulement un prérequis d’architecture si elle est décidée ultérieurement.
+
+Le futur cadrage devra notamment étudier, sans préjuger de la solution finale, la pertinence d’un référentiel fiscal global et versionné, les dates d’effet des taux, leur portée territoriale, l’autorité de modification et la séparation entre taux légal, classification fiscale et taux réellement appliqué à une opération.
+
+Cette dette fonctionnelle doit être résolue avant tout besoin futur de :
+
+- gestion des achats / commandes / réceptions lorsque le périmètre fiscal devient nécessaire ;
+- comptabilité d’achat ;
+- TVA déductible ;
+- exports comptables ou fiscaux ;
+- rapprochement facture avec ventilation de taxes ;
+- distinction fiscale entre denrées, boissons, économat ou autres familles ;
+- historisation d’un taux fiscal susceptible d’évoluer dans le temps.
+
+Le cadrage devra déterminer explicitement l’autorité de cette donnée sans l’inventer par anticipation :
+
+```text
+ProductVariant M-002 ?
+SupplierArticle M-003 ?
+Tarif / Prix facturé M-003 ?
+règle fiscale contextualisée et datée ?
+combinaison de plusieurs niveaux ?
+```
+
+Points obligatoires du futur cadrage :
+
+1. distinguer clairement TVA de vente de la Fiche et TVA d’achat ;
+2. déterminer l’ownership et la portée de la donnée fiscale ;
+3. définir les dates d’effet et l’historisation ;
+4. définir le comportement lorsqu’un Produit/Article peut relever de plusieurs taux selon son usage ou son contexte ;
+5. préserver les snapshots historiques et éviter toute réécriture rétroactive ;
+6. définir les impacts import catalogue, factures, exports et comptabilité ;
+7. ne modifier M-002, M-003 ou M-004 qu’après validation d’un contrat dédié ;
+8. définir le lien avec un éventuel futur module Achats sans créer aujourd’hui de modèle ou de dépendance anticipée ;
+9. distinguer un référentiel de taux légal de la règle métier qui détermine le taux applicable à une opération réelle.
+
+Aucune valeur de TVA Produit ne doit être ajoutée silencieusement au modèle actuel sous couvert de M-004.
 
 ### D-013 — Configuration et déploiement de production
 

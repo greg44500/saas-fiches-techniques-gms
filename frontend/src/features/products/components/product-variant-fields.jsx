@@ -1,4 +1,7 @@
 import { Field, FieldLabel } from '@/components/ui/field';
+import {
+  getReferenceUnitLabel,
+} from '@/features/products/lib/product-presentation';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -63,7 +66,10 @@ function ProductVariantFields({
   structured = false,
   value,
 }) {
-  const unitItems = metadata?.referenceUnits ?? [];
+  const unitItems = (metadata?.referenceUnits ?? []).map((item) => ({
+    ...item,
+    label: getReferenceUnitLabel(metadata, item.value),
+  }));
   const conservationItems = metadata?.conservationTypes ?? [];
   const varieties = (dimensions?.varieties ?? []).filter(
     (variety) => variety.status === 'ACTIVE',
@@ -72,6 +78,9 @@ function ProductVariantFields({
     (characteristic) => characteristic.status === 'ACTIVE',
   );
   const characteristicKinds = metadata?.productCharacteristicKinds ?? [];
+  const varietyEmptyLabel = varieties.length === 0
+    ? 'Aucune variété disponible'
+    : 'Non renseigné';
 
   function change(field, nextValue) {
     onChange({
@@ -101,12 +110,15 @@ function ProductVariantFields({
           <Field>
             <FieldLabel htmlFor="product-variant-variety">Variété</FieldLabel>
             <Select
-              disabled={disabled}
+              disabled={disabled || varieties.length === 0}
               items={[
-                { value: EMPTY_OPTION, label: 'Aucune variété' },
+                { value: EMPTY_OPTION, label: varietyEmptyLabel },
                 ...varieties.map((variety) => ({
                   value: variety.id,
-                  label: variety.name,
+                  label: variety.name
+                    + (variety.governanceStatus === 'PROVISIONAL'
+                      ? ' · À valider'
+                      : ''),
                 })),
               ]}
               onValueChange={(nextValue) => change(
@@ -119,10 +131,15 @@ function ProductVariantFields({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={EMPTY_OPTION}>Aucune variété</SelectItem>
+                <SelectItem value={EMPTY_OPTION}>
+                  {varietyEmptyLabel}
+                </SelectItem>
                 {varieties.map((variety) => (
                   <SelectItem key={variety.id} value={variety.id}>
                     {variety.name}
+                    {variety.governanceStatus === 'PROVISIONAL'
+                      ? ' · À valider'
+                      : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -136,17 +153,23 @@ function ProductVariantFields({
             const fieldId = 'product-variant-characteristic-' + kind.value;
             const selected = value.characteristicIdsByKind?.[kind.value]
               ?? EMPTY_OPTION;
+            const emptyLabel = options.length === 0
+              ? 'Aucune valeur disponible'
+              : 'Non renseigné';
 
             return (
               <Field key={kind.value}>
                 <FieldLabel htmlFor={fieldId}>{kind.label}</FieldLabel>
                 <Select
-                  disabled={disabled}
+                  disabled={disabled || options.length === 0}
                   items={[
-                    { value: EMPTY_OPTION, label: 'Non renseigné' },
+                    { value: EMPTY_OPTION, label: emptyLabel },
                     ...options.map((option) => ({
                       value: option.id,
-                      label: option.name,
+                      label: option.name
+                        + (option.governanceStatus === 'PROVISIONAL'
+                          ? ' · À valider'
+                          : ''),
                     })),
                   ]}
                   onValueChange={(nextValue) => onChange({
@@ -163,10 +186,13 @@ function ProductVariantFields({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={EMPTY_OPTION}>Non renseigné</SelectItem>
+                    <SelectItem value={EMPTY_OPTION}>{emptyLabel}</SelectItem>
                     {options.map((option) => (
                       <SelectItem key={option.id} value={option.id}>
                         {option.name}
+                        {option.governanceStatus === 'PROVISIONAL'
+                          ? ' · À valider'
+                          : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>

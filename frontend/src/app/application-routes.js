@@ -1,9 +1,19 @@
 import {
   CORE_HELP_FRONTEND_ROUTE_MODULE,
 } from '@/features/help/help-routes';
-import { dossiersFrontendRouteModule } from '@/features/dossiers/dossiers-routes';
+import {
+  dossierWorkspaceRoute,
+  dossiersFrontendRouteModule,
+} from '@/features/dossiers/dossiers-routes';
 import { productsFrontendRouteModule } from '@/features/products/products-routes';
-import { suppliersFrontendRouteModule } from '@/features/suppliers/suppliers-routes';
+import {
+  dossierSupplierFrontendRoutes,
+  suppliersFrontendRouteModule,
+} from '@/features/suppliers/suppliers-routes';
+import {
+  dossierTechnicalSheetFrontendRoutes,
+  technicalSheetsFrontendRouteModule,
+} from '@/features/technical-sheets/technical-sheets-routes';
 
 const APPLICATION_ROUTE_COLLECTION_KEYS = Object.freeze([
   'publicRoutes',
@@ -99,10 +109,33 @@ function composeApplicationFrontendRoutes(modules = []) {
  * modules métier. Les SaaS dérivés ajoutent ensuite leurs routes sans modifier
  * le routeur principal ni découvrir des fichiers automatiquement.
  */
+const dossierWorkspaceFrontendRouteModule = Object.freeze({
+  workspaceRoutes: Object.freeze([
+    Object.freeze({
+      ...dossierWorkspaceRoute,
+      children: Object.freeze([
+        Object.freeze({
+          index: true,
+          lazy: async () => {
+            const { DossierWorkspaceIndexRoute } = await import(
+              '@/features/dossiers/components/dossier-workspace-index-route'
+            );
+            return { Component: DossierWorkspaceIndexRoute };
+          },
+        }),
+        ...dossierSupplierFrontendRoutes,
+        ...dossierTechnicalSheetFrontendRoutes,
+      ]),
+    }),
+  ]),
+});
+
 const APPLICATION_FRONTEND_ROUTE_MODULES = Object.freeze([
   dossiersFrontendRouteModule,
+  dossierWorkspaceFrontendRouteModule,
   productsFrontendRouteModule,
   suppliersFrontendRouteModule,
+  technicalSheetsFrontendRouteModule,
 ]);
 
 const APPLICATION_FRONTEND_ROUTES = composeApplicationFrontendRoutes([

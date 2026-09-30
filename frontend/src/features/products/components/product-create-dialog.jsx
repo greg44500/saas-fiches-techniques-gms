@@ -181,8 +181,25 @@ function ProductCreateDialog({
           workspaceId,
           name: name.trim(),
           categoryId: selectedCategoryId,
+          reviewedCandidateIds,
+          forceCreate: candidates.length > 0,
           variant: variantPayload,
         }).unwrap();
+
+      if (
+        !isGlobal
+        && result?.classification === 'USER_CONFIRMATION_REQUIRED'
+      ) {
+        setDuplicateResult({
+          exactMatch: null,
+          candidates: result.candidates ?? [],
+        });
+        setReviewedCandidateIds([]);
+        setFormError(
+          'De nouvelles références proches ont été détectées. Examinez-les avant de confirmer la création.',
+        );
+        return;
+      }
 
       onCreated(result);
     } catch (error) {
@@ -311,7 +328,7 @@ function ProductCreateDialog({
                   <p className="mt-1 text-sm text-muted-foreground">
                     {isGlobal
                       ? 'Elle sera publiée dans le référentiel global après le dernier contrôle serveur.'
-                      : 'Elle sera soumise au référentiel global. Aucun Produit n’est publié avant la décision de gouvernance.'}
+                      : 'Elle sera utilisable immédiatement dans cet espace de travail avec le statut À valider, puis harmonisée par la gouvernance du référentiel.'}
                   </p>
                 </div>
 

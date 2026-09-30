@@ -11,6 +11,9 @@ import {
 import {
   provisionProductOwnerWorkspace,
 } from '../support/product-fixtures.js';
+import {
+  expectVisibleToast,
+} from '../support/toast.js';
 
 test('M-002 contribution Workspace est revue puis publiée globalement', async ({ page }) => {
   const context = await provisionProductOwnerWorkspace();
@@ -34,9 +37,24 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
     .getByRole('button', { name: 'Soumettre la proposition' })
     .click();
 
+  await expectVisibleToast(
+    page,
+    'Produit créé · À valider',
+  );
+
   await expect(
-    page.getByText('Proposition envoyée en revue', { exact: true }),
+    page.getByRole('heading', {
+      name: context.productName,
+      exact: true,
+    }),
   ).toBeVisible();
+
+  const closeProductDrawer = page.getByRole('button', {
+    name: 'Fermer',
+    exact: true,
+  });
+  await closeProductDrawer.click();
+  await expect(closeProductDrawer).toBeHidden();
 
   await page.getByRole('tab', { name: 'Favoris' }).click();
   await expect(
@@ -53,9 +71,10 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
   await expect(contributionRow).toBeVisible();
   await contributionRow.getByRole('button', { name: 'Approuver' }).click();
 
-  await expect(
-    page.getByText('Contribution approuvée', { exact: true }),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Contribution approuvée',
+  );
 
   await page.getByRole('tab', { name: 'Référentiel' }).click();
   const globalSearch = page.getByRole('textbox', {
@@ -108,9 +127,10 @@ test('M-002 autorité Application Global alimente directement le référentiel',
   await dialog.getByLabel('Nom').fill(categoryName);
   await dialog.getByRole('button', { name: 'Enregistrer' }).click();
 
-  await expect(
-    page.getByText('Catégorie enregistrée', { exact: true }),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Catégorie enregistrée',
+  );
 
   await page.getByRole('tab', { name: 'Référentiel' }).click();
   await page.getByRole('button', { name: 'Créer un Produit' }).click();
@@ -125,9 +145,10 @@ test('M-002 autorité Application Global alimente directement le référentiel',
     .getByRole('button', { name: 'Créer dans le référentiel global' })
     .click();
 
-  await expect(
-    page.getByText('Produit créé dans le référentiel', { exact: true }),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Produit créé dans le référentiel',
+  );
 
   await expect(
     page.getByText(productName, { exact: true }).first(),

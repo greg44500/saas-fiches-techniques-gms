@@ -31,13 +31,21 @@ function flattenPlatformEntries(entries) {
 }
 
 describe('suppliers frontend composition', () => {
-  it('injecte les routes Workspace Dossier et gouvernance globale', () => {
+  it('injecte les routes Workspace, Dossier imbriquée et gouvernance globale', () => {
     expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: 'suppliers' }),
-        expect.objectContaining({
-          path: 'dossiers/:dossierId/suppliers',
-        }),
+      ]),
+    );
+
+    const dossierRoute = APPLICATION_FRONTEND_ROUTES.workspaceRoutes.find(
+      (route) => route.path === 'dossiers/:dossierId',
+    );
+
+    expect(dossierRoute).toBeDefined();
+    expect(dossierRoute.children).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'suppliers' }),
       ]),
     );
 

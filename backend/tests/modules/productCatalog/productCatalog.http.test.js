@@ -135,8 +135,14 @@ const inspectAndPreview = async ({
 };
 
 describe('M-002 product catalog HTTP contract', () => {
-    it('soumet un nouveau Produit Workspace en revue sans le publier', async () => {
+    it('rend un Produit provisoire utilisable dans son Workspace sans le publier ailleurs', async () => {
         const headers = bearer(ownerContext.token);
+        const otherContext = await createWorkspaceOwnerFixture();
+
+        await enableProductFeature({
+            context: otherContext,
+            featureKey: PRODUCT_CATALOG_FEATURE.REFERENCE_ACCESS,
+        });
 
         const metadata = await request(app)
             .get(`${basePath()}/metadata`)
@@ -182,7 +188,15 @@ describe('M-002 product catalog HTTP contract', () => {
 
         expect(created.status).toBe(201);
         expect(created.body.data).toMatchObject({
-            classification: 'REVIEW_REQUIRED',
+            classification: 'PROVISIONAL',
+            provisionalReference: {
+                name: 'Lentille verte',
+                governanceStatus: 'PROVISIONAL',
+                variant: {
+                    name: 'Lentille verte',
+                    governanceStatus: 'PROVISIONAL',
+                },
+            },
             contribution: {
                 status: 'PENDING_REVIEW',
                 proposedValue: 'Lentille verte',
@@ -204,11 +218,30 @@ describe('M-002 product catalog HTTP contract', () => {
         });
 
         const search = await request(app)
-            .get(`${basePath()}/search?scope=REFERENCE`)
+            .get(`${basePath()}/search?scope=REFERENCE&q=Lentille%20verte`)
             .set(headers);
 
         expect(search.status).toBe(200);
-        expect(search.body.data.results).toHaveLength(0);
+        expect(search.body.data.results).toHaveLength(1);
+        expect(search.body.data.results[0]).toMatchObject({
+            product: {
+                name: 'Lentille verte',
+                governanceStatus: 'PROVISIONAL',
+            },
+            variant: {
+                name: 'Lentille verte',
+                governanceStatus: 'PROVISIONAL',
+            },
+        });
+
+        const otherWorkspaceSearch = await request(app)
+            .get(
+                `${productBasePath(otherContext)}/search?scope=REFERENCE&q=Lentille%20verte`,
+            )
+            .set(bearer(otherContext.token));
+
+        expect(otherWorkspaceSearch.status).toBe(200);
+        expect(otherWorkspaceSearch.body.data.results).toHaveLength(0);
     });
 
     it('applique RBAC et validation des ObjectIds', async () => {

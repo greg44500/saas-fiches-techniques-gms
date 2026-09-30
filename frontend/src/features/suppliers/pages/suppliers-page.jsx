@@ -1,5 +1,6 @@
 import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import {
@@ -74,16 +75,37 @@ function SuppliersPage() {
     workspace,
   } = useWorkspaceContext();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     page,
     pageSize,
     setPage,
     setPageSize,
   } = useDataPagination();
-  const [section, setSection] = useState('suppliers');
+  const [section, setSection] = useState(() => {
+    const requestedSection = searchParams.get('section');
+
+    if (
+      requestedSection === 'articles'
+      && can(SUPPLIER_PERMISSION.ARTICLE_READ)
+    ) {
+      return 'articles';
+    }
+
+    if (
+      requestedSection === 'catalogs'
+      && can(SUPPLIER_PERMISSION.CATALOG_READ)
+    ) {
+      return 'catalogs';
+    }
+
+    return 'suppliers';
+  });
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState(ALL_SUPPLIER_STATUSES);
+  const [status, setStatus] = useState(
+    section === 'suppliers' ? ALL_SUPPLIER_STATUSES : 'ACTIVE',
+  );
   const [supplierDialog, setSupplierDialog] = useState({
     open: false,
     supplier: null,
@@ -172,6 +194,9 @@ function SuppliersPage() {
     }
 
     setSection(nextSection);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set('section', nextSection);
+    setSearchParams(nextSearchParams, { replace: true });
   }
 
   function changeStatus(nextStatus) {
@@ -252,13 +277,26 @@ function SuppliersPage() {
       cell: (supplier) => (
         <div>
           <p className="font-medium">{supplier.name}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {(supplier.supplierCode || 'Aucun code')
-              + ' · '
-              + getSupplierOriginLabel(supplier.scope)}
-          </p>
+          {supplier.supplierCode && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {supplier.supplierCode}
+            </p>
+          )}
         </div>
       ),
+    },
+    {
+      id: 'categories',
+      header: 'Catégories commercialisées',
+      cell: (supplier) => {
+        const categories = (supplier.categories ?? [])
+          .map(({ name }) => name)
+          .filter(Boolean);
+
+        return categories.length > 0
+          ? categories.join(', ')
+          : 'Non renseignées';
+      },
     },
     {
       id: 'status',

@@ -15,6 +15,7 @@ import {
     PRODUCT_CONTRIBUTION_CLASSIFICATION,
     PRODUCT_CONTRIBUTION_STATUS,
     PRODUCT_CONTRIBUTION_TYPE,
+    PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_STATUS,
@@ -29,11 +30,40 @@ import {
 import {
     createProductReferenceEvent,
 } from './productReferenceEvent.service.js';
+import {
+    buildDuplicateGovernanceVisibilityFilter,
+    buildWorkspaceGovernanceVisibilityFilter,
+} from './productReferenceGovernance.service.js';
+import {
+    resolveProvisionalContribution,
+} from './productReferenceResolution.service.js';
 import { ProductCharacteristic } from './productCharacteristic.model.js';
 import { ProductVariety } from './productVariety.model.js';
 import { ReferenceContribution } from './referenceContribution.model.js';
 
 const typoThreshold = (length) => (length <= 6 ? 1 : 2);
+
+const numericTokens = (value) => (
+    normalizeProductText(value)
+        .match(/\d+(?:[.,]\d+)?/g)
+    ?? []
+);
+
+const sizeFormatNumericIdentityMatches = (left, right) => {
+    const leftTokens = numericTokens(left);
+    const rightTokens = numericTokens(right);
+
+    if (leftTokens.length === 0 && rightTokens.length === 0) {
+        return true;
+    }
+
+    return (
+        leftTokens.length === rightTokens.length
+        && leftTokens.every(
+            (token, index) => token === rightTokens[index],
+        )
+    );
+};
 
 const contributionReason = (code, message) => ({ code, message });
 
@@ -43,18 +73,20 @@ const serializeReferenceCandidate = (type, reference) => ({
     name: reference.name,
     ...(reference.kind ? { kind: reference.kind } : {}),
     status: reference.status,
+    governanceStatus: reference.governanceStatus
+        ?? PRODUCT_GOVERNANCE_STATUS.APPROVED,
 });
 
+const serializeReferenceId = (reference) => (
+    reference?._id?.toString?.()
+    ?? reference?.toString?.()
+    ?? null
+);
+
 const serializeReferenceContribution = (contribution) => {
-    const workspaceId = contribution.workspace?._id
-        ? contribution.workspace._id.toString()
-        : contribution.workspace.toString();
-    const authorId = contribution.author?._id
-        ? contribution.author._id.toString()
-        : contribution.author.toString();
-    const reviewerId = contribution.reviewer?._id
-        ? contribution.reviewer._id.toString()
-        : contribution.reviewer?.toString?.() ?? null;
+    const workspaceId = serializeReferenceId(contribution.workspace);
+    const authorId = serializeReferenceId(contribution.author);
+    const reviewerId = serializeReferenceId(contribution.reviewer);
 
     return {
         id: contribution._id.toString(),
@@ -86,8 +118,12 @@ const serializeReferenceContribution = (contribution) => {
             message,
         })),
         status: contribution.status,
+        candidates: contribution.payload?.candidates ?? [],
         reviewerId,
         reviewedAt: contribution.reviewedAt ?? null,
+        provisionalEntityType: contribution.provisionalEntityType ?? null,
+        provisionalEntityId:
+            contribution.provisionalEntityId?.toString?.() ?? null,
         resolutionEntityType: contribution.resolutionEntityType ?? null,
         resolutionEntityId:
             contribution.resolutionEntityId?.toString?.() ?? null,
@@ -101,6 +137,7 @@ const findDimensionCandidates = async ({
     productId,
     kind = null,
     normalizedValue,
+    workspaceId,
     session,
 }) => {
     const Model = type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
@@ -113,6 +150,7 @@ const findDimensionCandidates = async ({
             $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
         }),
         ...(kind ? { kind } : {}),
+        ...buildDuplicateGovernanceVisibilityFilter(workspaceId),
     };
 
     const exact = await Model.findOne({
@@ -136,6 +174,16 @@ const findDimensionCandidates = async ({
             ...(candidate.searchKeys ?? []),
         ].filter(Boolean);
         return candidateNames.some((candidateName) => {
+            if (
+                kind === PRODUCT_CHARACTERISTIC_KIND.SIZE_FORMAT
+                && !sizeFormatNumericIdentityMatches(
+                    normalizedValue,
+                    candidateName,
+                )
+            ) {
+                return false;
+            }
+
             const shortest = Math.min(
                 normalizedValue.length,
                 candidateName.length,
@@ -175,6 +223,7 @@ const classifyReferenceContributionInSession = async ({
     categoryId = null,
     variant = null,
     dimensionProposals = null,
+    forceCreate = false,
     session,
 }) => {
     const normalizedValue = normalizeProductText(value);
@@ -213,15 +262,33 @@ const classifyReferenceContributionInSession = async ({
             };
         }
 
+        if (duplicateCheck.candidates.length > 0 && !forceCreate) {
+            return {
+                classification:
+                    PRODUCT_CONTRIBUTION_CLASSIFICATION
+                        .USER_CONFIRMATION_REQUIRED,
+                reasons: [contributionReason(
+                    'CANONICAL_PRODUCT_NEAR_CANDIDATES',
+                    'Des Produits proches existent. Confirmez la référence à utiliser ou la création.',
+                )],
+                normalizedValue,
+                existingReference: null,
+                candidates: duplicateCheck.candidates,
+                payload: {
+                    categoryId,
+                    variant,
+                    dimensionProposals,
+                },
+            };
+        }
+
         return {
-            classification: PRODUCT_CONTRIBUTION_CLASSIFICATION.REVIEW_REQUIRED,
+            classification: PRODUCT_CONTRIBUTION_CLASSIFICATION.PROVISIONAL,
             reasons: [contributionReason(
-                duplicateCheck.candidates.length > 0
-                    ? 'CANONICAL_PRODUCT_NEAR_CANDIDATES'
-                    : 'NEW_CANONICAL_PRODUCT_REQUIRES_REVIEW',
-                duplicateCheck.candidates.length > 0
-                    ? 'Des Produits proches doivent être examinés.'
-                    : 'Une nouvelle identité Produit racine nécessite une revue.',
+                forceCreate
+                    ? 'CANONICAL_PRODUCT_USER_CONFIRMED_NEW'
+                    : 'NEW_CANONICAL_PRODUCT_PROVISIONAL',
+                'Le Produit est créé provisoirement pour ce Workspace en attendant la gouvernance.',
             )],
             normalizedValue,
             existingReference: null,
@@ -238,6 +305,7 @@ const classifyReferenceContributionInSession = async ({
         _id: productId,
         identityActive: true,
         status: PRODUCT_STATUS.ACTIVE,
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     }).session(session);
     if (!product) {
         return {
@@ -274,6 +342,7 @@ const classifyReferenceContributionInSession = async ({
             ? characteristicKind
             : null,
         normalizedValue,
+        workspaceId,
         session,
     });
 
@@ -292,31 +361,44 @@ const classifyReferenceContributionInSession = async ({
         };
     }
 
-    if (candidates.typo) {
-        return {
-            classification: PRODUCT_CONTRIBUTION_CLASSIFICATION.EXISTING,
-            reasons: [contributionReason(
-                'TYPO_MATCH',
-                'La saisie correspond à une référence existante avec une faute mineure.',
-            )],
-            normalizedValue,
-            existingReference: serializeReferenceCandidate(
-                type,
-                candidates.typo,
-            ),
-        };
-    }
+    const suggestedCandidates = [
+        ...(candidates.typo ? [candidates.typo] : []),
+        ...candidates.ambiguous,
+    ].filter((candidate, index, values) => (
+        values.findIndex(({ _id }) => (
+            _id.toString() === candidate._id.toString()
+        )) === index
+    ));
 
-    if (candidates.ambiguous.length > 0) {
+    if (suggestedCandidates.length > 0 && !forceCreate) {
         return {
-            classification: PRODUCT_CONTRIBUTION_CLASSIFICATION.REVIEW_REQUIRED,
+            classification:
+                PRODUCT_CONTRIBUTION_CLASSIFICATION
+                    .USER_CONFIRMATION_REQUIRED,
             reasons: [contributionReason(
-                'AMBIGUOUS_REFERENCE',
-                'La proposition est proche d’une référence existante sans équivalence certaine.',
+                candidates.typo
+                    ? 'TYPO_CANDIDATE'
+                    : 'AMBIGUOUS_REFERENCE',
+                'Une ou plusieurs valeurs proches existent déjà. Confirmez la valeur à utiliser ou la création.',
             )],
             normalizedValue,
             existingReference: null,
-            candidates: candidates.ambiguous.map((candidate) => (
+            candidates: suggestedCandidates.map((candidate) => (
+                serializeReferenceCandidate(type, candidate)
+            )),
+        };
+    }
+
+    if (forceCreate) {
+        return {
+            classification: PRODUCT_CONTRIBUTION_CLASSIFICATION.PROVISIONAL,
+            reasons: [contributionReason(
+                'USER_CONFIRMED_NEW_VALUE',
+                'La valeur est créée provisoirement pour ce Workspace.',
+            )],
+            normalizedValue,
+            existingReference: null,
+            candidates: suggestedCandidates.map((candidate) => (
                 serializeReferenceCandidate(type, candidate)
             )),
         };
@@ -352,10 +434,10 @@ const classifyReferenceContributionInSession = async ({
     }
 
     return {
-        classification: PRODUCT_CONTRIBUTION_CLASSIFICATION.REVIEW_REQUIRED,
+        classification: PRODUCT_CONTRIBUTION_CLASSIFICATION.PROVISIONAL,
         reasons: [contributionReason(
-            'CHARACTERISTIC_REQUIRES_GOVERNANCE',
-            'Ce type de Caractéristique nécessite une revue de gouvernance.',
+            'CHARACTERISTIC_PROVISIONAL',
+            'Cette valeur est utilisable dans ce Workspace en attendant la gouvernance.',
         )],
         normalizedValue,
         existingReference: null,
@@ -372,6 +454,8 @@ const submitReferenceContribution = async ({
     categoryId = null,
     variant = null,
     dimensionProposals = null,
+    forceCreate = false,
+    reviewedCandidateIds = [],
 }) => mongoose.connection.transaction(async (session) => {
     const decision = await classifyReferenceContributionInSession({
         workspaceId,
@@ -382,6 +466,7 @@ const submitReferenceContribution = async ({
         categoryId,
         variant,
         dimensionProposals,
+        forceCreate,
         session,
     });
 
@@ -390,6 +475,9 @@ const submitReferenceContribution = async ({
         === PRODUCT_CONTRIBUTION_CLASSIFICATION.INVALID
         || decision.classification
         === PRODUCT_CONTRIBUTION_CLASSIFICATION.EXISTING
+        || decision.classification
+        === PRODUCT_CONTRIBUTION_CLASSIFICATION
+            .USER_CONFIRMATION_REQUIRED
     ) {
         return decision;
     }
@@ -431,10 +519,90 @@ const submitReferenceContribution = async ({
         };
     }
 
+    let provisionalEntityType = null;
+    let provisionalEntityId = null;
+    let provisionalReference = null;
+
+    if (
+        decision.classification
+        === PRODUCT_CONTRIBUTION_CLASSIFICATION.PROVISIONAL
+    ) {
+        if (type === PRODUCT_CONTRIBUTION_TYPE.VARIETY) {
+            const provisional = await createProductVarietyInSession({
+                actorId,
+                workspaceId,
+                productId,
+                name: value,
+                aliases: [],
+                governanceStatus:
+                    PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+                session,
+            });
+            provisionalEntityType =
+                PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY;
+            provisionalEntityId = provisional._id;
+            provisionalReference = serializeReferenceCandidate(
+                type,
+                provisional,
+            );
+        } else if (
+            type === PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC
+        ) {
+            const provisional =
+                await createProductCharacteristicInSession({
+                    actorId,
+                    workspaceId,
+                    productId,
+                    kind: characteristicKind,
+                    name: value,
+                    aliases: [],
+                    governanceStatus:
+                        PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+                    session,
+                });
+            provisionalEntityType =
+                PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC;
+            provisionalEntityId = provisional._id;
+            provisionalReference = serializeReferenceCandidate(
+                type,
+                provisional,
+            );
+        } else {
+            const created = await createGlobalProductInSession({
+                actorId,
+                name: value,
+                aliases: [],
+                categoryId,
+                reviewedCandidateIds: [
+                    ...new Set([
+                        ...reviewedCandidateIds.map(String),
+                        ...(decision.candidates ?? []).map(({ id }) => id),
+                    ]),
+                ],
+                variant,
+                dimensionProposals,
+                workspaceId,
+                governanceStatus:
+                    PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+                session,
+            });
+            provisionalEntityType =
+                PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT;
+            provisionalEntityId = created.product.id;
+            provisionalReference = {
+                type,
+                ...created.product,
+                variant: created.variant,
+            };
+        }
+    }
+
     const [contribution] = await ReferenceContribution.create([
         {
             type,
-            canonicalProduct: productId,
+            canonicalProduct: type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT
+                ? provisionalEntityId
+                : productId,
             characteristicKind,
             workspace: workspaceId,
             author: actorId,
@@ -447,6 +615,8 @@ const submitReferenceContribution = async ({
             classification: decision.classification,
             reasons: decision.reasons,
             status: PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
+            provisionalEntityType,
+            provisionalEntityId,
         },
     ], { session });
 
@@ -466,6 +636,7 @@ const submitReferenceContribution = async ({
 
     return {
         ...decision,
+        provisionalReference,
         contribution: serializeReferenceContribution(contribution),
     };
 });
@@ -503,6 +674,8 @@ const reviewReferenceContribution = async ({
     contributionId,
     actorId,
     decision,
+    targetReferenceId = null,
+    correctedValue = null,
 }) => mongoose.connection.transaction(async (session) => {
     const current = await ReferenceContribution.findOne({
         _id: contributionId,
@@ -511,6 +684,60 @@ const reviewReferenceContribution = async ({
 
     if (!current) {
         throw new AppError('Contribution à examiner introuvable.', 404);
+    }
+
+    if (current.provisionalEntityId) {
+        const resolution = await resolveProvisionalContribution({
+            contribution: current,
+            actorId,
+            decision,
+            targetReferenceId,
+            correctedValue,
+            session,
+        });
+
+        const approved = decision !== 'REJECT';
+        current.status = approved
+            ? PRODUCT_CONTRIBUTION_STATUS.APPROVED
+            : PRODUCT_CONTRIBUTION_STATUS.REJECTED;
+        current.reviewer = actorId;
+        current.reviewedAt = new Date();
+        current.resolutionEntityType = approved
+            ? (
+                current.type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT
+                    ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT
+                    : current.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
+                        ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY
+                        : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC
+            )
+            : null;
+        current.resolutionEntityId = approved
+            ? resolution?.resolutionEntityId ?? null
+            : null;
+        await current.save({ session });
+
+        await createProductReferenceEvent({
+            actorId,
+            workspaceId: current.workspace,
+            action: approved
+                ? PRODUCT_REFERENCE_EVENT_ACTION.CONTRIBUTION_APPROVED
+                : PRODUCT_REFERENCE_EVENT_ACTION.CONTRIBUTION_REJECTED,
+            entityType:
+                PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CONTRIBUTION,
+            entityId: current._id,
+            metadata: {
+                decision,
+                ...(current.resolutionEntityId
+                    ? {
+                        resolutionEntityId:
+                            current.resolutionEntityId.toString(),
+                    }
+                    : {}),
+            },
+            session,
+        });
+
+        return serializeReferenceContribution(current);
     }
 
     if (decision === 'REJECT') {

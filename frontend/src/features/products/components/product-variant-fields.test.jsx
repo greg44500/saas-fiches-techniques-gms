@@ -18,7 +18,10 @@ const metadata = {
     { value: 'FRAIS', label: 'Frais' },
     { value: 'SEC', label: 'Sec' },
   ],
-  referenceUnits: [{ value: 'KG', label: 'kg' }],
+  referenceUnits: [
+    { value: 'KG', label: 'kg' },
+    { value: 'UNIT', label: 'unité' },
+  ],
   foodRanges: [
     { value: 1, label: 'Gamme 1', name: 'Frais' },
     { value: 6, label: 'Gamme 6', name: 'PAI / PAE' },
@@ -45,7 +48,10 @@ const dimensions = {
   ],
 };
 
-function StructuredHarness({ onPayload }) {
+function StructuredHarness({
+  availableDimensions = dimensions,
+  onPayload,
+}) {
   const [value, setValue] = useState(() => createEmptyVariantDraft(
     metadata,
     { structured: true },
@@ -54,7 +60,7 @@ function StructuredHarness({ onPayload }) {
   return (
     <>
       <ProductVariantFields
-        dimensions={dimensions}
+        dimensions={availableDimensions}
         metadata={metadata}
         onChange={setValue}
         structured
@@ -97,6 +103,43 @@ describe('ProductVariantFields', () => {
       processingState: null,
       referenceUnit: 'KG',
     }));
+  });
+
+  it('distingue une liste vide d un choix volontairement non renseigné', () => {
+    const onPayload = vi.fn();
+
+    render(
+      <StructuredHarness
+        availableDimensions={{
+          varieties: [],
+          characteristics: [],
+        }}
+        onPayload={onPayload}
+      />,
+    );
+
+    expect(screen.getByLabelText('Variété'))
+      .toHaveTextContent('Aucune variété disponible');
+    expect(screen.getByLabelText('Présentation'))
+      .toHaveTextContent('Aucune valeur disponible');
+    expect(screen.getByLabelText('Calibre / format'))
+      .toHaveTextContent('Aucune valeur disponible');
+
+    expect(screen.getByLabelText('Variété')).toBeDisabled();
+    expect(screen.getByLabelText('Présentation')).toBeDisabled();
+    expect(screen.getByLabelText('Calibre / format')).toBeDisabled();
+  });
+
+  it('présente UNIT comme PCE sans modifier la valeur canonique', async () => {
+    const user = userEvent.setup();
+    const onPayload = vi.fn();
+
+    render(<StructuredHarness onPayload={onPayload} />);
+
+    await user.click(screen.getByLabelText('Unité de référence *'));
+
+    expect(screen.getByRole('option', { name: 'PCE' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'unité' })).not.toBeInTheDocument();
   });
 
   it('n expose plus la gamme et ne l envoie pas dans le payload frontend', async () => {

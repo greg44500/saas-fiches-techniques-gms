@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Stockage, corbeille métier et rétention
 
 **Statut :** VALIDÉ — contrat transversal produit  
-**Date :** 2026-09-21  
+**Date :** 2026-09-28  
 **Périmètre :** persistance des ressources métier, temporaires techniques, corbeille métier et artefacts d'export
 
 > Ce document ne remplace pas la politique générique Core de téléversement de fichiers.
@@ -66,96 +66,104 @@ Il n'existe donc pas, pour M-002 ni pour les exports reproductibles, de « stock
 
 ## 3. Politique de corbeille métier du Workspace
 
-Le produit possède une politique de conservation métier centralisée au Workspace.
+La corbeille des ressources métier M-004 est une responsabilité du produit et non une configuration globale du moteur de rétention Core.
 
 Valeurs validées :
 
 ```text
-durée standard : 30 jours
-minimum         : 7 jours
-maximum         : 90 jours
+durée par défaut : 30 jours
+minimum           : 1 jour
+maximum           : 90 jours
 ```
 
-Lorsque la capability commerciale autorise la personnalisation, le Workspace peut sélectionner une durée dans ces bornes.
+La durée est configurée par Workspace. Le Workspace Owner peut la modifier.
 
-Cette rétention concerne les ressources métier supprimées ; elle n'implique pas l'existence d'un quota de fichiers stockés.
+Le réglage exprime une **durée de conservation avant purge automatique**, pas la fréquence d'exécution d'un scheduler propre au Workspace.
 
-Le backend reste l'autorité : aucune valeur hors bornes n'est acceptée.
+Exemples :
 
-La logique conceptuelle est :
+```text
+Workspace A = 3 jours
+Workspace B = 30 jours
+```
+
+Lors d'une suppression :
 
 ```text
 deletedAt
-+ durée effective au moment de la suppression
++ trashRetentionDays effectif au moment de la suppression
 → purgeScheduledAt
 ```
 
-L'échéance est figée au moment de la suppression. Une modification ultérieure de la configuration du Workspace n'est pas rétroactive sur les ressources déjà placées en corbeille.
+`purgeScheduledAt` est figé sur la ressource supprimée. Une modification ultérieure de `trashRetentionDays` ne modifie pas rétroactivement les échéances déjà enregistrées.
+
+La purge automatique est exécutée par un job métier produit unique et idempotent qui sélectionne les ressources dont :
+
+```text
+status = DELETED
+AND purgeScheduledAt <= maintenant
+```
+
+Il n'existe pas un job ou scheduler distinct par Workspace.
+
+Le moteur de rétention Core reste inchangé et continue de gérer ses propres cibles génériques.
 
 ---
 
-## 4. DRAFTS de Fiches techniques
+## 4. Fiches techniques, brouillon et quota métier
 
-Un DRAFT actif est une ressource métier persistante et peut donc rester présent longtemps dans le Workspace.
+Une Fiche technique est une identité métier persistante. Son brouillon éventuel, son état validé courant et son historique ne constituent pas des ressources commerciales comptées séparément.
 
-Décision commerciale validée :
-
-```text
-nombre de DRAFTS
-→ métrique / quota métier du produit
-→ valeur configurable selon le plan
-→ dérogation possible via les mécanismes Core
-```
-
-Cette limite porte sur le **nombre de brouillons métier**, pas sur des octets de stockage File.
-
-Les clés techniques finales, les seuils Free/Premium et les règles précises de comptage seront fermés dans M-004.
-
-Un DRAFT actif n'est jamais supprimé ou purgé uniquement parce qu'il est ancien.
-
-Une ancienneté importante peut produire un signalement ou une suggestion de nettoyage, mais jamais une destruction silencieuse.
-
-Lorsqu'un DRAFT est explicitement supprimé :
+Décision M-004 validée :
 
 ```text
-DRAFT actif
-→ suppression explicite
-→ corbeille métier
-→ restaurable pendant la rétention
-→ purge à l'échéance
+1 identité Fiche = 1 unité de capacité
 ```
 
-Le contrat technique détaillé sera implémenté dans le module Fiches techniques, pas dans M-001.
+Le comptage est indépendant :
+
+- du statut ACTIVE / ARCHIVED / DELETED ;
+- de l'existence d'un brouillon ;
+- du nombre de validations ;
+- du nombre de revalorisations ;
+- du nombre d'états historiques.
+
+```text
+création = +1
+copie = +1
+modification = +0
+revalorisation = +0
+nouvelle validation = +0
+archivage = +0
+mise en corbeille = +0
+restauration = +0
+purge définitive = -1
+```
+
+Cette limite porte sur le **nombre de Fiches métier**, pas sur des octets de stockage File.
+
+La limite effective est configurable selon le Plan et les mécanismes d'EntitlementOverride du Core. Le seuil commercial Free définitif reste à décider. Une valeur temporaire de développement telle que 10 Fiches peut être utilisée sans être codée en dur dans la logique métier.
+
+Un brouillon actif n'est jamais supprimé ou purgé uniquement parce qu'il est ancien.
 
 ---
 
-## 5. Versions VALIDATED et archivage
+## 5. États validés et historique
 
-Une Fiche technique validée est une ressource métier durable ayant une valeur commerciale.
-
-Décision commerciale validée :
-
-```text
-nombre de Fiches techniques VALIDATED
-→ métrique / quota métier distinct
-→ valeur configurable selon le plan
-→ dérogation possible via les mécanismes Core
-```
-
-Cette limite ne réutilise pas `storage_bytes`. Les clés techniques, seuils et règles de comptage — notamment le traitement éventuel des fiches ARCHIVED — seront fermés dans M-004.
-
-Une version VALIDATED est une donnée métier historique et immuable.
+Un état VALIDATED possède une valeur historique et économique immuable.
 
 ```text
 VALIDATED
-→ conservation historique
-→ archivage possible
+→ conservation historique dans l'identité Fiche
+→ aucune purge individuelle
 → aucune purge automatique par simple ancienneté
 ```
 
-Le parcours normal pour sortir une fiche validée de l'usage courant reste l'archivage.
+L'archivage concerne l'identité Fiche entière et ne détruit pas ses états validés.
 
-Une éventuelle suppression définitive de fiches validées devra faire l'objet d'un contrat spécifique, audité et compatible avec les exigences réglementaires applicables.
+La suppression place également la Fiche entière en corbeille : brouillon éventuel, état courant, historique et snapshots restent restaurables ensemble pendant la rétention.
+
+La purge définitive porte sur l'agrégat Fiche complet et libère alors seulement son unité de capacité.
 
 ---
 
@@ -177,38 +185,38 @@ La politique de corbeille des DRAFTS ne doit donc pas être appliquée mécaniqu
 
 ---
 
-## 7. Exports et documents générés
+## 7. Exports, impression et documents générés
 
-Les formats de sortie reproductibles ne sont pas des ressources métier persistantes.
+Les sorties reproductibles de la V1 sont :
 
-### CSV / XLS(X)
+- CSV ;
+- XLSX ;
+- PDF ;
+- impression ;
+- envoi par e-mail.
+
+Elles appartiennent au produit V1 mais sont développées dans un bloc séparé après validation fonctionnelle, tests et QA visuelle du bloc Fiche technique.
+
+Leur cadrage détaillé déterminera notamment l'état de Fiche exportable, les templates, permissions, destinataires, noms de fichiers, mécanisme d'impression et audit.
+
+Principe de stockage :
 
 ```text
-donnée métier
+donnée métier persistée
 → génération à la demande
-→ téléchargement / remise au client
-→ suppression du temporaire
+→ téléchargement / impression / pièce jointe
+→ destruction du temporaire après usage
 ```
 
-Aucun historique de fichiers d'export n'est conservé par défaut.
+Aucun historique de binaires d'export n'est conservé par défaut.
 
-### PDF
+Un PDF peut être généré pour téléchargement direct, impression ou envoi e-mail. Il reste une représentation dérivée temporaire, pas une ressource métier persistante.
 
-Le PDF est uniquement un format de représentation généré à la demande lors de l'envoi d'un document par e-mail.
+Une nouvelle tentative d'envoi ou un nouvel export régénère la représentation depuis la donnée source autorisée.
 
-```text
-version de Fiche technique
-→ génération PDF temporaire
-→ pièce jointe e-mail
-→ envoi
-→ destruction du temporaire
-```
+L'audit peut conserver l'identité de la Fiche / état, l'acteur, le destinataire éventuel, la date et le résultat sans conserver le binaire.
 
-Le PDF n'est pas stocké comme ressource métier persistante.
-
-En cas de nouvelle tentative d'envoi, il est régénéré depuis la donnée/version source.
-
-L'audit pourra conserver l'identité de la fiche/version, l'acteur, le destinataire, la date et le résultat d'envoi sans conserver le binaire PDF.
+Les autres exports restent différés à V2.
 
 ---
 
@@ -238,19 +246,17 @@ Les exports ne doivent jamais devenir une seconde source de vérité ni un histo
 
 ### Module Fiches techniques
 
-À implémenter lors de son cadrage :
+Contrat M-004 validé :
 
-- métrique/quota métier de DRAFTS ;
-- métrique/quota métier de Fiches techniques VALIDATED ;
-- seuils commerciaux par plan et comportement à la limite ;
-- règles de comptage exactes, notamment vis-à-vis des ARCHIVED ;
-- intégration avec EntitlementOverrides ;
-- corbeille des DRAFTS supprimés ;
+- une métrique/quota métier compte les identités Fiche ;
+- brouillon, validations et historique ne sont pas comptés séparément ;
+- ACTIVE, ARCHIVED et DELETED comptent tant que la Fiche n'est pas purgée ;
+- intégration avec les limites de Plan et EntitlementOverrides ;
+- suppression de la Fiche entière vers la corbeille ;
 - restauration avant échéance ;
-- purge après échéance ;
-- conservation des VALIDATED ;
-- génération transitoire CSV/XLS(X) ;
-- génération transitoire PDF pour e-mail.
+- purge de l'agrégat complet après échéance ou action Owner explicitement autorisée ;
+- conservation immuable des états VALIDATED tant que la Fiche existe ;
+- bloc V1 séparé pour CSV, XLSX, PDF, impression et e-mail après stabilisation M-004.
 
 ### Panneau Workspace
 
@@ -272,14 +278,14 @@ Le détail exact de la capability commerciale reste à rattacher au plan concern
 
 - le produit V1 n'expose pas un espace de stockage de fichiers de type Drive ;
 - les temporaires d'import/export ne consomment pas un quota de stockage utilisateur durable ;
-- les DRAFTS et Fiches techniques VALIDATED peuvent être limités par des quotas métier de comptage distincts de `storage_bytes` ;
+- les Fiches techniques sont limitées par un quota métier en nombre d'identités Fiche, distinct de `storage_bytes` ;
 - un DRAFT actif n'est jamais purgé par ancienneté seule ;
-- un DRAFT supprimé peut être purgé après la durée de corbeille ;
+- une Fiche supprimée reste restaurable avec tout son agrégat jusqu'à sa purge ;
 - une version VALIDATED n'est jamais purgée automatiquement par âge ;
 - un Dossier DELETED n'est pas purgé automatiquement dans M-001 ;
 - la durée standard de corbeille métier est 30 jours ;
-- toute valeur personnalisée reste comprise entre 7 et 90 jours ;
+- toute valeur Workspace reste comprise entre 1 et 90 jours ;
 - l'échéance de purge est figée à la suppression ;
-- CSV/XLS(X) sont temporaires ;
-- le PDF d'e-mail est temporaire et non persisté ;
+- CSV, XLSX et PDF sont des représentations temporaires ;
+- impression et e-mail dérivent de la donnée métier autorisée sans créer de stockage durable par défaut ;
 - les fichiers générés ne créent pas une seconde source de vérité.

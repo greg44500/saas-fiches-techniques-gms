@@ -33,6 +33,21 @@ async function createOwnerWorkspaceWithDossier(page, dossierName) {
   };
 }
 
+async function expectDossierWorkspaceShell(page, dossierName) {
+  await expect(
+    page.getByRole('heading', {
+      name: dossierName,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('link', {
+      name: 'Dossiers',
+      exact: true,
+    }),
+  ).toBeVisible();
+}
+
 test('M-001 owner crée, consulte et ouvre un Dossier', async ({ page }) => {
   const context = await createOwnerWorkspaceWithDossier(
     page,
@@ -56,9 +71,7 @@ test('M-001 owner crée, consulte et ouvre un Dossier', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: 'Magasin E2E Owner' }),
   ).toBeVisible();
-  await expect(
-    page.getByText('Contexte actif', { exact: true }),
-  ).toBeVisible();
+  await expectDossierWorkspaceShell(page, 'Magasin E2E Owner');
 });
 
 test('M-001 owner affecte un membre qui voit et ouvre le Dossier', async ({ page }) => {
@@ -103,9 +116,7 @@ test('M-001 owner affecte un membre qui voit et ouvre le Dossier', async ({ page
 
   await page.getByRole('link', { name: 'Ouvrir' }).click();
   await expect(page).toHaveURL(context.dossierUrl);
-  await expect(
-    page.getByText('Contexte actif', { exact: true }),
-  ).toBeVisible();
+  await expectDossierWorkspaceShell(page, 'Magasin E2E Affecté');
 });
 
 test('M-001 membre sans grant ne voit pas le Dossier et l’URL directe est refusée', async ({ page }) => {

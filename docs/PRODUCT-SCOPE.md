@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
 
 **Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
-**Dernière mise à jour :** 2026-09-27  
+**Dernière mise à jour :** 2026-09-28  
 **Périmètre :** définition du problème métier, des principes produit et des invariants à préserver avant tout module métier
 
 > Ce document formalise les fondations transversales validées du produit.  
@@ -542,6 +542,10 @@ Tarif spécifique magasin
 
 Prix observé
 → prix réellement constaté, par exemple sur une facture
+
+Prix indicatif
+→ estimation interne de dernier recours portée par le Workspace ou un Dossier
+→ distincte de toute donnée commerciale fournisseur
 ```
 
 ### 6.1 Fournisseur
@@ -558,7 +562,9 @@ WORKSPACE_PRIVATE
 → jamais visible hors de ce Workspace
 ~~~
 
-Le Fournisseur n'est pas un CRM. La baseline V1 exige uniquement le nom comme donnée métier obligatoire. Un code fournisseur, une raison sociale et un site web peuvent être facultatifs.
+Le Fournisseur n'est pas un CRM. La baseline V1 exige uniquement le nom comme donnée métier obligatoire. Un code fournisseur, une raison sociale, un site web et une ou plusieurs catégories Produit fournies peuvent être facultatifs.
+
+Les catégories fournies réutilisent le référentiel de catégories M-002 : elles sont descriptives, sélectionnées explicitement et ne créent ni nouvelle taxonomie, ni règle de sourcing, ni règle tarifaire. Le rattachement précis d'un Article à une Référence Produit reste l'autorité sur ce qui est réellement commercialisé.
 
 Le lifecycle baseline est `ACTIVE / ARCHIVED`. L'archivage conserve l'historique.
 
@@ -653,7 +659,29 @@ Provenances déjà identifiées :
 
 L'OCR est une extension différable. Il devra alimenter le même historique tarifaire et ne jamais écraser automatiquement un prix existant sans contrôles suffisants.
 
-### 6.7 Historisation
+### 6.7 Prix indicatif interne
+
+Lorsque le référentiel Produit est exploitable mais qu'aucun Article/Tarif fournisseur, Tarif négocié ou Prix facturé admissible ne permet encore de valoriser la Référence Produit, l'utilisateur peut enregistrer un Prix indicatif.
+
+Portées :
+
+~~~text
+Workspace × Référence Produit
+→ estimation commune à l'entreprise
+
+Dossier × Référence Produit
+→ estimation locale prioritaire sur l'indicatif Workspace
+~~~
+
+Un Prix indicatif :
+
+- peut exister sans Article fournisseur ;
+- reste explicitement identifié comme estimation ;
+- ne remplace jamais une source commerciale disponible ;
+- est historisé par archivage/remplacement ;
+- reste isolé par Workspace et, pour la surcharge locale, par Dossier.
+
+### 6.8 Historisation
 
 Une nouvelle donnée tarifaire ajoute une nouvelle réalité temporelle ; elle ne doit pas écraser silencieusement l'ancienne.
 
@@ -668,7 +696,7 @@ Le système doit pouvoir déterminer :
 
 La priorité entre les sources est définie par la politique de Prix applicable du Workspace et ses fallbacks strictement contextualisés au même magasin.
 
-### 6.8 Politique de Prix applicable du Workspace
+### 6.9 Politique de Prix applicable du Workspace
 
 La stratégie générale de sélection du prix est un **paramètre du Workspace** et s'applique à tous ses magasins/dossiers.
 
@@ -703,13 +731,19 @@ Mode Prix facturé
    pour le magasin + Article
 → sinon Tarif négocié valide pour ce même magasin
 → sinon Tarif fournisseur de référence applicable
+
+Puis, quel que soit le mode, à défaut de source commerciale :
+→ Prix indicatif Dossier
+→ sinon Prix indicatif Workspace
+→ sinon aucun prix
 ~~~
 
 Un prix spécifique d'un autre magasin n'entre jamais dans cette chaîne de résolution.
 
 Le backend conserve et expose au minimum :
 
-- l'Article fournisseur réellement retenu ;
+- l'Article fournisseur réellement retenu lorsqu'une source Article est utilisée ;
+- la Référence Produit retenue ;
 - la source tarifaire réellement utilisée ;
 - la valeur source ;
 - la valeur normalisée ;
@@ -725,18 +759,18 @@ Le frontend ne reconstruit jamais cette logique et ne possède aucune liste stat
 Le Prix applicable n'est donc pas une propriété globale du Produit. Il résulte du contexte :
 
 ~~~text
-Produit
+Référence Produit
 × magasin/dossier
-× Article fournisseur
+× Article fournisseur éventuel
 × politique de prix du Workspace
 × date de valorisation
 ~~~
 
 Un Produit peut être non valorisable dans un magasin et valorisable dans un autre. Il peut également exister dans le référentiel Workspace sans Prix applicable courant.
 
-### 6.9 Temporalité des différentes sources tarifaires
+### 6.10 Temporalité des différentes sources tarifaires
 
-Les trois familles de prix ne portent pas la même temporalité :
+Les trois familles commerciales de prix ne portent pas la même temporalité. Le Prix indicatif est une estimation interne sans validité commerciale implicite :
 
 ~~~text
 Tarif fournisseur
@@ -753,7 +787,7 @@ Ces notions ne doivent jamais être fusionnées dans un champ générique d'anci
 
 Une revue opérationnelle est également distincte de ces temporalités : elle confirme qu'un contrôle a été effectué mais ne prolonge pas artificiellement une validité commerciale.
 
-### 6.10 Prix facturé exploitable et fraîcheur
+### 6.11 Prix facturé exploitable et fraîcheur
 
 Un prix lu ou importé depuis une facture n'est pas automatiquement utilisable dans les calculs.
 
@@ -803,7 +837,7 @@ L'expiration de fraîcheur :
 
 La raison de ce fallback doit rester explicable.
 
-### 6.11 Catalogues fournisseur de référence
+### 6.12 Catalogues fournisseur de référence
 
 Le SaaS peut proposer des catalogues fournisseur de référence préchargés et partagés afin que le premier usage soit réellement exploitable sans obliger chaque client à recréer manuellement les mêmes Articles fournisseur.
 
@@ -965,7 +999,7 @@ La recherche globale ne doit jamais exposer :
 - catalogue `WORKSPACE_PRIVATE` d'un autre Workspace ;
 - donnée Dossier non autorisée.
 
-### 6.12 Sélection d'Article fournisseur et références du magasin
+### 6.13 Sélection d'Article fournisseur et références du magasin
 
 Un Produit peut correspondre à plusieurs Articles fournisseur exploitables dans un même magasin.
 
@@ -1028,7 +1062,7 @@ Chaque Produit et Article proposé à la sélection doit disposer d'une **carte 
 ---
 
 
-### 6.13 Détail d'un Produit dans un magasin
+### 6.14 Détail d'un Produit dans un magasin
 
 Le détail d'un Produit doit disposer d'une vue contextualisée par magasin, distincte de son identité globale dans le référentiel Workspace.
 
@@ -1348,19 +1382,30 @@ Exemples :
 8,13 € → 8,50 €
 ```
 
-Le Workspace peut, lorsque sa capability le permet, choisir une autre stratégie structurée, par exemple « euro supérieur - 0,10 € » pour obtenir une terminaison en `,90`. La stratégie ne peut jamais produire un Prix conseillé inférieur au Prix théorique. Aucune formule arbitraire exécutable n'est acceptée.
+Pour M-004 V1, cette règle de multiple de 0,50 € est la règle fonctionnelle effective. Les stratégies d'arrondi personnalisées restent différées à un cadrage ultérieur et ne doivent pas être implémentées implicitement dans M-004.
 
 #### 8.8.4 Prix définitif
 
 Le Prix définitif est un choix humain.
 
-Invariant backend :
+Le Prix conseillé est proposé par défaut, mais l'utilisateur autorisé peut retenir un Prix définitif supérieur, égal ou inférieur au Prix conseillé.
+
+Invariant backend M-004 :
 
 ```text
-Prix définitif TTC >= Prix conseillé TTC
+Prix définitif TTC >= plancher économique TTC
 ```
 
-Si une revalorisation rend le Prix définitif inférieur au nouveau Prix conseillé, le DRAFT devient non conforme jusqu'à ajustement du prix ou de la composition.
+avec :
+
+```text
+plancher économique TTC
+= Coût total de fabrication HT × (1 + TVA)
+```
+
+Le Prix conseillé reste un indicateur d'aide à la décision et non un plancher obligatoire.
+
+Si une revalorisation rend un Prix définitif choisi explicitement inférieur au nouveau plancher économique, la validation est refusée jusqu'à correction explicite. Un Prix final choisi par l'utilisateur n'est jamais remplacé silencieusement par une revalorisation.
 
 #### 8.8.5 Marge réelle
 
@@ -1482,7 +1527,7 @@ Une modification d'une version VALIDATED ne réécrit jamais cette version. Elle
 
 Une revalorisation peut produire une nouvelle version DRAFT dont la composition est inchangée mais dont les prix et coûts sont recalculés. Elle doit ensuite être explicitement validée.
 
-Chaque version validée doit conserver le snapshot nécessaire à la reproductibilité économique : Produit, Article fournisseur réellement utilisé, quantités, rendement, Prix applicable, source, contexte magasin, date de valorisation et autres données indispensables.
+Chaque version validée doit conserver le snapshot nécessaire à la reproductibilité économique : Produit, Article fournisseur lorsqu'il existe, quantités, rendement, Prix applicable, source, contexte magasin, date de valorisation et autres données indispensables.
 
 Le backend doit pouvoir expliquer les différences entre versions, par exemple :
 
@@ -1505,8 +1550,8 @@ Elle doit notamment recontrôler :
 - accès au dossier/magasin ;
 - complétude requise ;
 - cohérence des quantités ;
-- Article fournisseur réellement utilisable ;
-- présence d'un Prix applicable pour chaque ligne devant être valorisée ;
+- Article fournisseur réellement utilisable lorsque la source de prix en dépend ;
+- présence d'un Prix applicable pour chaque ligne devant être valorisée, y compris éventuellement un Prix indicatif M-003 explicitement identifié ;
 - actualité de la valorisation ;
 - changements concurrents incompatibles.
 
@@ -1798,11 +1843,10 @@ Le Core conserve ses primitives génériques de téléversement, inspection, ant
 Les ressources métier structurées peuvent néanmoins être soumises à des quotas commerciaux de **nombre d'objets** indépendants du stockage fichier. Décision validée pour les Fiches techniques :
 
 ```text
-DRAFTS actifs
+Fiches techniques
+→ 1 identité Fiche = 1 unité de capacité
 → quota métier par Workspace / plan
-
-Fiches techniques VALIDATED
-→ quota métier distinct par Workspace / plan
+→ brouillon, validations et historique ne sont jamais comptés séparément
 ```
 
 Ces quotas utiliseront le moteur générique Core de metrics / limits / entitlements / overrides ; ils ne seront pas calculés à partir de la taille MongoDB ni de `storage_bytes`.
@@ -1816,19 +1860,24 @@ Les limites applicables aux temporaires — taille maximale, TTL, concurrence de
 La corbeille métier possède un comportement standard immédiatement utilisable :
 
 ```text
-durée standard : 30 jours
-borne minimale : 7 jours
-borne maximale : 90 jours
+durée par défaut : 30 jours
+borne minimale  : 1 jour
+borne maximale  : 90 jours
 ```
 
-Lorsque la personnalisation est autorisée, le Workspace peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. Cette rétention concerne les ressources métier supprimées, pas des fichiers temporaires d'import/export.
+Le Workspace Owner peut choisir une valeur comprise dans ces bornes. Le backend reste l'autorité sur les limites. Cette rétention concerne les ressources métier supprimées, pas des fichiers temporaires d'import/export.
+
+Le réglage est porté par le produit métier et n'exige aucune modification du Core. Il exprime la durée de conservation en corbeille.
 
 Pour les Fiches techniques :
 
-- un DRAFT actif n'est jamais purgé uniquement parce qu'il est ancien ;
-- un DRAFT explicitement supprimé est placé en corbeille puis devient purgeable à l'échéance de la politique métier ;
-- une version VALIDATED reste historiquement immuable et n'est jamais purgée automatiquement par simple ancienneté ;
-- l'archivage reste le mécanisme normal pour sortir une fiche validée de l'usage courant.
+- une Fiche ACTIVE n'est jamais purgée uniquement parce qu'elle est ancienne ;
+- une Fiche explicitement supprimée est placée avec tout son agrégat en corbeille ;
+- l'échéance `purgeScheduledAt` est calculée depuis la durée du Workspace et figée au moment de la suppression ;
+- changer la durée du Workspace ne modifie que les suppressions futures ;
+- un job métier unique purge les Fiches `DELETED` arrivées à échéance ;
+- un état VALIDATED reste historiquement immuable tant que la Fiche existe ;
+- l'archivage reste le mécanisme normal pour sortir une Fiche de l'usage courant.
 
 Pour les artefacts générés :
 
@@ -2078,23 +2127,27 @@ La baseline validée est la suivante ; les permissions effectives restent l'auto
 | Valider Prix facturés | Oui | Non | Oui | Non | Non | Non |
 | Exécuter une revue tarifaire | Oui | Non | Oui | Non | Non | Non |
 | Gérer Références favorites | Oui | Oui | Oui | Oui | Non | Non |
+| Consulter les Fiches techniques autorisées | Oui | Oui | Oui | Oui | Oui | Oui |
 | Créer une Fiche technique | Oui | Non | Non | Oui | Oui | Non |
-| Modifier ses DRAFTS | Oui | Non | Non | Oui | Oui | Non |
-| Modifier les DRAFTS d'autrui | Oui | Non | Non | Oui | Non | Non |
-| Revaloriser ses fiches | Oui | Non | Oui | Oui | Oui | Non |
-| Revaloriser toute fiche du périmètre | Oui | Non | Oui | Oui | Non | Non |
+| Modifier identité / base d'une Fiche | Oui | Non | Non | Oui | Oui | Non |
+| Modifier la composition | Oui | Non | Non | Oui | Oui | Non |
+| Choisir / changer l'Article d'une Fiche | Oui | Oui | Oui | Oui | Oui | Non |
+| Valoriser / revaloriser une Fiche | Oui | Oui | Oui | Oui | Oui | Non |
 | Valider une Fiche technique | Oui | Non | Non | Oui | Non | Non |
-| Archiver / restaurer une fiche | Oui | Non | Non | Oui | Non | Non |
-| Consulter les Fiches techniques | Oui | Selon besoin | Oui | Oui | Oui | Oui |
-| Modifier les informations d'un Dossier | Oui | Non | Non | Non par défaut | Non | Non |
+| Archiver / réactiver une Fiche | Oui | Non | Non | Oui | Non | Non |
+| Supprimer une Fiche vers la corbeille | Oui | Non | Non | Oui | Non | Non |
+| Restaurer une Fiche | Oui | Non | Non | Oui | Non | Non |
+| Copier une Fiche | Oui | Non | Non | Oui | Oui | Non |
+| Modifier la marge cible par défaut du Dossier | Oui | Non | Non | Oui | Non | Non |
+| Purger définitivement une Fiche | Oui uniquement | Non | Non | Non | Non | Non |
+| Modifier les informations générales d'un Dossier | Oui | Non | Non | Non par défaut | Non | Non |
 | Gérer les accès Dossier | Oui | Non | Non | Non | Non | Non |
 | Changer le statut d'un Dossier | Oui | Non | Non | Non | Non | Non |
 | Lire la configuration métier | Oui | Oui | Oui | Oui | Oui | Oui |
-| Modifier la configuration métier | Oui | Non | Non | Non | Non | Non |
-| Suppression définitive d'une fiche | Oui uniquement | Non | Non | Non | Non | Non |
 
-L'Économe ne valide pas les Fiches techniques par défaut. Contributeur et Lecteur peuvent recevoir le Prix applicable nécessaire sans accès à l'historique commercial détaillé. L'administration du Dossier et l'affectation des magasins restent Owner-only par défaut.
+Les Fiches et brouillons n'appartiennent pas personnellement à leur créateur. `createdBy` et `updatedBy` servent à l'audit, pas à l'ownership. Un Contributeur FT peut donc modifier les brouillons autorisés de son périmètre Dossier selon ses permissions effectives.
 
+L'Économe ne valide pas les Fiches techniques par défaut. Acheteur et Économe peuvent intervenir sur le choix d'Article et la revalorisation sans recevoir le droit de modifier la recette. Contributeur et Lecteur peuvent recevoir le Prix applicable nécessaire sans accès à l'historique commercial détaillé. L'administration générale du Dossier et l'affectation des magasins restent Owner-only par défaut ; la marge cible par défaut des Fiches est un paramètre métier M-004 distinct, modifiable également par le Responsable FT.
 
 ## 14. V1 / hors V1
 
@@ -2107,8 +2160,9 @@ M-001 → Dossiers / Magasins + affectations
 M-002 → Référentiel Produits
 M-003 → Fournisseurs + Articles + prix/catalogues
 M-004 → Fiches techniques + valorisation
+Bloc V1 après stabilisation M-004 → CSV / XLSX / PDF / impression / e-mail
 M-005 → Atelier d'optimisation Premium
-M-006+ → Fiches process / imports / OCR / extensions
+M-006+ → Fiches process / OCR / IA / autres extensions
 ```
 
 Sont explicitement différés et non bloquants pour M-001 :
@@ -2116,7 +2170,7 @@ Sont explicitement différés et non bloquants pour M-001 :
 - marge semi-nette ;
 - Fiche process ;
 - mathématiques fines de l'Atelier d'optimisation ;
-- ensemble complet des stratégies d'arrondi personnalisées ;
+- stratégies d'arrondi personnalisées au-delà du multiple de 0,50 € V1 ;
 - OCR / IA ;
 - imports avancés ;
 - purge physique définitive ;
@@ -2136,7 +2190,7 @@ Décisions finales fermées le 2026-09-20 :
 - contraintes réglementaires structurantes de M-001 vérifiées : les éventuelles coordonnées nominatives sont des données personnelles à minimiser et protéger, mais aucune obligation démontrée n'impose un champ métier obligatoire supplémentaire au Dossier ;
 - conformité globale et rétention restent suivies par D-003 / D-006 avant production.
 
-Les questions restantes sont désormais rattachées au module concerné : M-002 est fermé ; M-003 dispose d'un contrat détaillé validé et peut passer à l'implémentation ; versionnement FT avant M-004 ; optimisation avant M-005 ; Process avant son module ; rétention/purge physique lorsqu'un besoin réel l'exigera.
+Les questions restantes sont désormais rattachées au module concerné : M-002 et M-003 sont clôturés ; M-004 dispose d'un contrat fonctionnel validé ; les exports CSV/XLSX/PDF, l'impression et l'e-mail appartiennent à la V1 mais seront cadrés et développés dans un bloc séparé après stabilisation visuelle de M-004 ; optimisation avant M-005 ; Process avant son module.
 
 La validation globale n'autorise pas encore l'implémentation de M-001 : son contrat détaillé doit d'abord être cadré et validé.
 

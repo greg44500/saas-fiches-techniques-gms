@@ -132,7 +132,7 @@ const reviewContribution = async (req, res) => {
     const contribution = await reviewReferenceContribution({
         contributionId: req.validated.params.contributionId,
         actorId: req.user._id,
-        decision: req.validated.body.decision,
+        ...req.validated.body,
     });
     res.status(200).json({
         status: 'success',
@@ -144,6 +144,7 @@ const dimensions = async (req, res) => {
     const result = await listProductDimensions({
         productId: req.validated.params.productId,
         includeArchived: true,
+        includeProvisional: true,
     });
     res.status(200).json({ status: 'success', data: result });
 };

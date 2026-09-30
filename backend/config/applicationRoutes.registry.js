@@ -17,7 +17,13 @@ import {
 import {
     dossierSupplierPricingRouter,
     supplierPricingPolicyRouter,
+    workspaceSupplierPricingRouter,
 } from '../modules/supplierCatalog/supplierPricing.routes.js';
+import {
+    technicalSheetDossierRouter,
+    technicalSheetWorkspaceRouter,
+    workspaceBusinessSettingsRouter,
+} from '../modules/technicalSheet/technicalSheet.routes.js';
 
 const ROUTE_MODULE_KEY_PATTERN = /^[a-z][a-z0-9_-]*$/;
 
@@ -180,9 +186,29 @@ const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
         router: dossierSupplierPricingRouter,
     }),
     Object.freeze({
+        key: 'technical-sheets-dossier',
+        mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/technical-sheets',
+        router: technicalSheetDossierRouter,
+    }),
+    Object.freeze({
+        key: 'technical-sheets-workspace',
+        mountPath: '/api/workspaces/:workspaceId/technical-sheets',
+        router: technicalSheetWorkspaceRouter,
+    }),
+    Object.freeze({
+        key: 'workspace-business-settings',
+        mountPath: '/api/workspaces/:workspaceId/business-settings',
+        router: workspaceBusinessSettingsRouter,
+    }),
+    Object.freeze({
         key: 'supplier-pricing-policy',
         mountPath: '/api/workspaces/:workspaceId/supplier-pricing-policy',
         router: supplierPricingPolicyRouter,
+    }),
+    Object.freeze({
+        key: 'workspace-supplier-pricing',
+        mountPath: '/api/workspaces/:workspaceId/supplier-pricing',
+        router: workspaceSupplierPricingRouter,
     }),
 ]);
 

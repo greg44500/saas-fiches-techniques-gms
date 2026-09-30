@@ -1,5 +1,18 @@
-import { ArrowLeft } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import {
+  ArrowLeft,
+  Mail,
+  MapPin,
+  Phone,
+  SlidersHorizontal,
+  UserRound,
+} from 'lucide-react';
+import { useState } from 'react';
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useParams,
+} from 'react-router';
 
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
@@ -11,27 +24,79 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  SECTION_TAB_ACTIVE_CLASS_NAME,
+  SECTION_TAB_INACTIVE_CLASS_NAME,
+  SECTION_TAB_LIST_CLASS_NAME,
+  SECTION_TAB_NAV_CLASS_NAME,
+  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+} from '@/components/ui/section-tab-styles';
+import {
   useGetDossierByIdQuery,
   useGetDossierMetadataQuery,
 } from '@/features/dossiers/api/dossiers-api';
-import {
-  DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
-} from '@/features/suppliers/constants/supplier-permissions';
 import {
   formatDossierLocation,
   getDossierStatusLabel,
   getDossierStatusTone,
 } from '@/features/dossiers/lib/dossier-presentation';
+import {
+  DossierApplicablePriceCard,
+} from '@/features/suppliers/components/dossier-applicable-price-card';
+import {
+  DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
+  SUPPLIER_PERMISSION,
+} from '@/features/suppliers/constants/supplier-permissions';
+import {
+  DossierTechnicalSheetMarginDialog,
+} from '@/features/technical-sheets/components/dossier-technical-sheet-margin-dialog';
+import {
+  TECHNICAL_SHEET_PERMISSION,
+} from '@/features/technical-sheets/constants/technical-sheet-permissions';
+import {
+  formatBasisPoints,
+} from '@/features/technical-sheets/lib/technical-sheet-presentation';
+import {
+  useGetDossierTechnicalSheetSettingsQuery,
+  useListTechnicalSheetsQuery,
+} from '@/features/technical-sheets/api/technical-sheets-api';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
+import { cn } from '@/lib/utils';
 
 function DossierWorkspacePage() {
   const { dossierId } = useParams();
-  const { canAny, workspace } = useWorkspaceContext();
+  const { can, canAny, workspace } = useWorkspaceContext();
+  const [marginDialogOpen, setMarginDialogOpen] = useState(false);
   const dossierQuery = useGetDossierByIdQuery({
     workspaceId: workspace.id,
     dossierId,
   });
   const metadataQuery = useGetDossierMetadataQuery(workspace.id);
+  const activeSheetsQuery = useListTechnicalSheetsQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+      page: 1,
+      limit: 1,
+      status: 'ACTIVE',
+    },
+    {
+      skip: !can(TECHNICAL_SHEET_PERMISSION.READ),
+    },
+  );
+  const marginQuery = useGetDossierTechnicalSheetSettingsQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+    },
+    {
+      skip: !can(TECHNICAL_SHEET_PERMISSION.READ),
+    },
+  );
 
   if (
     (dossierQuery.isLoading && dossierQuery.data === undefined)
@@ -50,7 +115,7 @@ function DossierWorkspacePage() {
         <Button asChild variant="outline">
           <Link to={`/workspaces/${workspace.id}/dossiers`}>
             <ArrowLeft aria-hidden="true" className="size-4" />
-            Retour aux dossiers
+            Dossiers
           </Link>
         </Button>
         <ErrorState
@@ -67,106 +132,182 @@ function DossierWorkspacePage() {
 
   const dossier = dossierQuery.data;
   const operational = dossier.status === 'ACTIVE';
+  const canReadSuppliers = canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS);
+  const canReadTechnicalSheets = can(TECHNICAL_SHEET_PERMISSION.READ);
+  const canManageMargin = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
+  const activeSheetCount = activeSheetsQuery.data?.pagination?.total;
+  const marginBasisPoints = marginQuery.data?.defaultTargetMarginBasisPoints;
+  const marginLabel = Number.isInteger(marginBasisPoints)
+    ? 'Marge cible ' + formatBasisPoints(marginBasisPoints)
+    : 'Marge cible';
+  const hasLocation = Boolean(
+    dossier.location?.address
+    || dossier.location?.postalCode
+    || dossier.location?.city,
+  );
+  const locationLabel = hasLocation ? formatDossierLocation(dossier) : null;
+  const showApplicablePriceCard = can(
+    SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
+  );
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" variant="ghost">
-            <Link to={`/workspaces/${workspace.id}/dashboard`}>
-              <ArrowLeft aria-hidden="true" className="size-4" />
-              Tableau de bord
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link to={`/workspaces/${workspace.id}/dossiers`}>
-              Dossiers
-            </Link>
-          </Button>
-        </div>
+    <div className="space-y-5">
+      <Button asChild size="sm" variant="ghost">
+        <Link to={`/workspaces/${workspace.id}/dossiers`}>
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          Dossiers
+        </Link>
+      </Button>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-primary">{workspace.name}</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+      <div className={cn(
+        'grid items-stretch gap-4',
+        showApplicablePriceCard ? 'lg:grid-cols-2' : 'grid-cols-1',
+      )}>
+        <header className={cn(
+          'rounded-xl border border-border bg-card px-5 py-4',
+          showApplicablePriceCard && 'lg:h-56',
+        )}>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl font-semibold tracking-tight">
               {dossier.name}
             </h1>
-            {dossier.brand && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {dossier.brand}
-              </p>
+            <StatusBadge tone={getDossierStatusTone(dossier.status)}>
+              {getDossierStatusLabel(dossier.status, metadataQuery.data)}
+            </StatusBadge>
+
+            {canManageMargin && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={(
+                    <Button
+                      aria-label="Modifier la marge cible par défaut des nouvelles Fiches"
+                      onClick={() => setMarginDialogOpen(true)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    />
+                  )}
+                >
+                  <SlidersHorizontal aria-hidden="true" className="size-4" />
+                  {marginLabel}
+                </TooltipTrigger>
+                <TooltipContent>
+                  Modifier la marge cible par défaut des nouvelles Fiches.
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {!canManageMargin
+            && canReadTechnicalSheets
+            && Number.isInteger(marginBasisPoints) && (
+              <span className="text-sm font-medium text-muted-foreground">
+                {marginLabel}
+              </span>
             )}
           </div>
 
-          <StatusBadge tone={getDossierStatusTone(dossier.status)}>
-            {getDossierStatusLabel(dossier.status, metadataQuery.data)}
-          </StatusBadge>
-        </div>
-      </header>
+          {(locationLabel
+            || dossier.contactName
+            || dossier.documentEmail
+            || dossier.phone) && (
+            <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
+              {locationLabel && (
+                <div className="flex min-w-0 items-start gap-2">
+                  <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                  <span>{locationLabel}</span>
+                </div>
+              )}
+              {dossier.contactName && (
+                <div className="flex min-w-0 items-start gap-2">
+                  <UserRound aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                  <span>{dossier.contactName}</span>
+                </div>
+              )}
+              {dossier.documentEmail && (
+                <div className="flex min-w-0 items-start gap-2">
+                  <Mail aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                  <span className="break-all">{dossier.documentEmail}</span>
+                </div>
+              )}
+              {dossier.phone && (
+                <div className="flex min-w-0 items-start gap-2">
+                  <Phone aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                  <span>{dossier.phone}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </header>
 
-      {!operational ? (
+        {showApplicablePriceCard && (
+          <DossierApplicablePriceCard
+            dossierId={dossier.id}
+            workspaceId={workspace.id}
+          />
+        )}
+      </div>
+
+      {!operational && (
         <Card>
           <CardHeader>
-            <CardTitle>Contexte de travail indisponible</CardTitle>
+            <CardTitle>Dossier non opérationnel</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent>
             <p className="text-sm text-muted-foreground">
-              Seul un dossier actif peut être utilisé comme contexte de travail métier.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Vous pouvez consulter ou administrer ce dossier depuis la liste des Dossiers selon vos permissions.
+              La consultation reste disponible selon vos droits, mais les actions métier courantes exigent un Dossier actif.
             </p>
           </CardContent>
         </Card>
-      ) : (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Contexte actif</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Toutes les futures opérations métier ouvertes depuis cette page seront rattachées à ce magasin et revalidées côté serveur.
-              </p>
-            </CardContent>
-          </Card>
+      )}
 
-          <div className="flex flex-wrap gap-2">
-            {canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS) && (
-              <Button asChild>
-                <Link to={'/workspaces/' + workspace.id + '/dossiers/' + dossier.id + '/suppliers'}>
-                  Fournisseurs et prix
-                </Link>
-              </Button>
+      {(canReadSuppliers || canReadTechnicalSheets) && (
+        <nav
+          aria-label="Navigation du Dossier"
+          className={SECTION_TAB_NAV_CLASS_NAME}
+        >
+          <div className={SECTION_TAB_LIST_CLASS_NAME}>
+            {canReadSuppliers && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/suppliers`}
+              >
+                Fournisseurs et prix
+              </NavLink>
+            )}
+            {canReadTechnicalSheets && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/technical-sheets`}
+              >
+                Fiches techniques
+                {Number.isInteger(activeSheetCount)
+                  ? ' (' + activeSheetCount + ')'
+                  : ''}
+              </NavLink>
             )}
           </div>
+        </nav>
+      )}
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Localisation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm">{formatDossierLocation(dossier)}</p>
-              </CardContent>
-            </Card>
+      <Outlet />
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p>{dossier.contactName || 'Responsable non renseigné'}</p>
-                <p className="text-muted-foreground">
-                  {dossier.documentEmail || 'Email documents non renseigné'}
-                </p>
-                <p className="text-muted-foreground">
-                  {dossier.phone || 'Téléphone non renseigné'}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </>
+      {marginDialogOpen && (
+        <DossierTechnicalSheetMarginDialog
+          dossierId={dossier.id}
+          onClose={() => setMarginDialogOpen(false)}
+          open={marginDialogOpen}
+          workspaceId={workspace.id}
+        />
       )}
     </div>
   );

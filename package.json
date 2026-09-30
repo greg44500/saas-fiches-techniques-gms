@@ -55,7 +55,13 @@
     "seed:m002-governance": "node backend/seeds/seedM002ProductGovernance.js",
     "dev:reset-m002-catalog": "node backend/operations/development/runResetM002CatalogDevelopment.js",
     "migration:m003-supplier-catalog": "node backend/migrations/runEnsureM003SupplierCatalogMigration.js",
-    "seed:m003-governance": "node backend/seeds/seedM003ReferenceGovernance.js"
+    "migration:m003-indicative-pricing": "node backend/migrations/runEnsureM003IndicativePricingMigration.js",
+    "seed:m003-governance": "node backend/seeds/seedM003ReferenceGovernance.js",
+    "migration:m004-technical-sheets": "node backend/migrations/runEnsureM004TechnicalSheetMigration.js",
+    "migration:m004-plan-limit": "node backend/migrations/runAddM004TechnicalSheetPlanLimitMigration.js",
+    "migration:m004-usage-reconcile": "node backend/migrations/runReconcileM004TechnicalSheetUsageMetricMigration.js",
+    "migration:m004-workspace-business-settings": "node backend/migrations/runEnsureM004WorkspaceBusinessSettingsMigration.js",
+    "job:purge-technical-sheets": "node backend/jobs/technicalSheets/runPurgeDeletedTechnicalSheetsJob.js"
   },
   "license": "UNLICENSED",
   "dependencies": {

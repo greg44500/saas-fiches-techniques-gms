@@ -1053,6 +1053,22 @@ const resolveMissingImportDimensions = async ({
 
         if (
             result.classification
+            === PRODUCT_CONTRIBUTION_CLASSIFICATION.PROVISIONAL
+        ) {
+            if (proposal.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY) {
+                varietyId = result.provisionalReference?.id ?? null;
+            } else if (result.provisionalReference?.id) {
+                characteristicIds.push(result.provisionalReference.id);
+            }
+
+            if (result.contribution?.id) {
+                pendingContributionIds.push(result.contribution.id);
+            }
+            continue;
+        }
+
+        if (
+            result.classification
             === PRODUCT_CONTRIBUTION_CLASSIFICATION.REVIEW_REQUIRED
         ) {
             if (result.contribution?.id) {
@@ -1089,14 +1105,6 @@ const createVariantFromImport = async ({
         row,
     });
 
-    if (dimensions.pendingContributionIds.length > 0) {
-        return {
-            status: 'PENDING_REVIEW',
-            productId,
-            contributionIds: dimensions.pendingContributionIds,
-        };
-    }
-
     const variant = {
         ...row.data.variant,
         varietyId: dimensions.varietyId,
@@ -1123,8 +1131,13 @@ const createVariantFromImport = async ({
     });
 
     return {
-        status: 'CREATED_VARIANT',
+        status: dimensions.pendingContributionIds.length > 0
+            ? 'PENDING_REVIEW'
+            : 'CREATED_VARIANT',
         variantId: created.variant.id,
+        ...(dimensions.pendingContributionIds.length > 0
+            ? { contributionIds: dimensions.pendingContributionIds }
+            : {}),
     };
 };
 
@@ -1187,15 +1200,21 @@ const createProductFromImport = async ({
         categoryId: row.data.categoryId,
         variant: baseVariant,
         dimensionProposals,
+        reviewedCandidateIds,
+        forceCreate: reviewedCandidateIds.length > 0,
     });
 
     if (
         result.classification
+        === PRODUCT_CONTRIBUTION_CLASSIFICATION.PROVISIONAL
+        || result.classification
         === PRODUCT_CONTRIBUTION_CLASSIFICATION.REVIEW_REQUIRED
     ) {
         return {
             status: 'PENDING_REVIEW',
             contributionId: result.contribution?.id ?? null,
+            productId: result.provisionalReference?.id ?? null,
+            variantId: result.provisionalReference?.variant?.id ?? null,
         };
     }
 

@@ -1,3 +1,7 @@
+import {
+  getReferenceUnitLabel,
+} from '@/features/products/lib/product-presentation';
+
 function getApiErrorMessage(error, fallback = 'Une erreur est survenue.') {
   return error?.data?.message ?? fallback;
 }
@@ -32,27 +36,44 @@ function formatPackaging(packaging) {
   if (packaging.containerType) parts.push(packaging.containerType);
   if (packaging.unitCount) parts.push(String(packaging.unitCount) + ' unité(s)');
   if (packaging.quantityPerUnit && packaging.unit) {
-    parts.push(String(packaging.quantityPerUnit) + ' ' + packaging.unit);
+    parts.push(
+      String(packaging.quantityPerUnit)
+      + ' '
+      + getReferenceUnitLabel(null, packaging.unit),
+    );
   }
   if (packaging.totalQuantity && packaging.unit) {
-    parts.push('total ' + String(packaging.totalQuantity) + ' ' + packaging.unit);
+    parts.push(
+      'total '
+      + String(packaging.totalQuantity)
+      + ' '
+      + getReferenceUnitLabel(null, packaging.unit),
+    );
   }
   if (packaging.netWeight && packaging.netWeightUnit) {
-    parts.push('net ' + String(packaging.netWeight) + ' ' + packaging.netWeightUnit);
+    parts.push(
+      'net '
+      + String(packaging.netWeight)
+      + ' '
+      + getReferenceUnitLabel(null, packaging.netWeightUnit),
+    );
   }
   if (packaging.drainedNetWeight && packaging.drainedNetWeightUnit) {
     parts.push(
       'égoutté '
       + String(packaging.drainedNetWeight)
       + ' '
-      + packaging.drainedNetWeightUnit,
+      + getReferenceUnitLabel(null, packaging.drainedNetWeightUnit),
     );
   }
 
   return parts.length > 0 ? parts.join(' · ') : 'Non renseigné';
 }
 
-function formatPrice(price) {
+function formatPrice(
+  price,
+  { hideDefaultCurrency = false } = {},
+) {
   if (!price) return 'Indisponible';
 
   const amount = price.normalizedAmount ?? price.sourceAmount;
@@ -62,10 +83,18 @@ function formatPrice(price) {
 
   if (!amount) return 'Indisponible';
 
+  const currency = price.currency ?? 'EUR';
+  const currencyLabel = (
+    hideDefaultCurrency && currency === 'EUR'
+      ? ''
+      : ' ' + currency
+  );
+
   return Number(amount).toLocaleString('fr-FR', {
     minimumFractionDigits: 3,
     maximumFractionDigits: 3,
-  }) + ' ' + (price.currency ?? 'EUR') + ' / ' + (unit ?? '—');
+  }) + currencyLabel + ' / '
+    + (unit ? getReferenceUnitLabel(null, unit) : '—');
 }
 
 function getMatchStatusLabel(status) {

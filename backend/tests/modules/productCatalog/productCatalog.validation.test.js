@@ -32,6 +32,8 @@ describe('M-002 product request validation', () => {
         })).toEqual({
             name: 'Carotte',
             categoryId: null,
+            reviewedCandidateIds: [],
+            forceCreate: false,
             variant: {
                 ...minimalReference,
                 foodRange: null,

@@ -1,4 +1,5 @@
 import {
+    INDICATIVE_PRICE_STATUS,
     INVOICED_PRICE_STATUS,
     NEGOTIATED_PRICE_STATUS,
     SUPPLIER_PRICE_BASIS,
@@ -6,15 +7,18 @@ import {
 } from './supplierCatalog.registry.js';
 import {
     addDossierReference,
+    archiveIndicativePrice,
     archiveNegotiatedPrice,
     createInvoicedPrice,
     createNegotiatedPrice,
     getPricingPolicy,
     listDossierReferences,
+    listIndicativePrices,
     listInvoicedPrices,
     listNegotiatedPrices,
     removeDossierReference,
     resolveApplicablePrice,
+    setIndicativePrice,
     transitionInvoicedPrice,
     updatePricingPolicy,
 } from './supplierPricing.service.js';
@@ -35,6 +39,10 @@ const metadata = async (req, res) => {
                 invoicedPriceStatuses:
                     Object.values(
                         INVOICED_PRICE_STATUS,
+                    ),
+                indicativePriceStatuses:
+                    Object.values(
+                        INDICATIVE_PRICE_STATUS,
                     ),
                 pricingPolicyModes:
                     Object.values(
@@ -217,6 +225,94 @@ const removeReference = async (req, res) => {
     });
 };
 
+const listWorkspaceIndicative = async (req, res) => {
+    const prices = await listIndicativePrices({
+        workspaceId: req.workspace._id,
+        dossierId: null,
+        ...req.validated.query,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { prices },
+    });
+};
+
+const setWorkspaceIndicative = async (req, res) => {
+    const price = await setIndicativePrice({
+        workspaceId: req.workspace._id,
+        dossierId: null,
+        productVariantId:
+            req.validated.params.productVariantId,
+        actorId: req.user._id,
+        ...req.validated.body,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { price },
+    });
+};
+
+const archiveWorkspaceIndicative = async (req, res) => {
+    const price = await archiveIndicativePrice({
+        workspaceId: req.workspace._id,
+        dossierId: null,
+        productVariantId:
+            req.validated.params.productVariantId,
+        actorId: req.user._id,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { price },
+    });
+};
+
+const listDossierIndicative = async (req, res) => {
+    const prices = await listIndicativePrices({
+        workspaceId: req.workspace._id,
+        dossierId: req.dossier._id,
+        ...req.validated.query,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { prices },
+    });
+};
+
+const setDossierIndicative = async (req, res) => {
+    const price = await setIndicativePrice({
+        workspaceId: req.workspace._id,
+        dossierId: req.dossier._id,
+        productVariantId:
+            req.validated.params.productVariantId,
+        actorId: req.user._id,
+        ...req.validated.body,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { price },
+    });
+};
+
+const archiveDossierIndicative = async (req, res) => {
+    const price = await archiveIndicativePrice({
+        workspaceId: req.workspace._id,
+        dossierId: req.dossier._id,
+        productVariantId:
+            req.validated.params.productVariantId,
+        actorId: req.user._id,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { price },
+    });
+};
+
 const applicable = async (req, res) => {
     const result =
         await resolveApplicablePrice({
@@ -270,15 +366,21 @@ const updatePolicy = async (req, res) => {
 export {
     addReference,
     applicable,
+    archiveDossierIndicative,
+    archiveWorkspaceIndicative,
     archiveNegotiated,
     createInvoiced,
     createNegotiated,
     decideInvoiced,
     getPolicy,
+    listDossierIndicative,
     listInvoiced,
     listNegotiated,
+    listWorkspaceIndicative,
     listReferences,
     metadata,
     removeReference,
+    setDossierIndicative,
+    setWorkspaceIndicative,
     updatePolicy,
 };

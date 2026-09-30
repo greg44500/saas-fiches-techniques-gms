@@ -48,6 +48,9 @@ vi.mock(
 import {
     getPlatformEntitlementContext,
 } from '../../../modules/platform/entitlementOverrides/platformEntitlementContext.service.js';
+import {
+    TECHNICAL_SHEET_METRIC,
+} from '../../../modules/technicalSheet/technicalSheet.registry.js';
 
 
 describe('platformEntitlementContext.service', () => {
@@ -141,6 +144,7 @@ describe('platformEntitlementContext.service', () => {
                 members: 1,
                 storage_bytes: 0,
                 file_uploads_monthly: 0,
+                [TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS]: 0,
             },
             appliedOverrides: [
                 {
@@ -168,6 +172,11 @@ describe('platformEntitlementContext.service', () => {
         expect(mocks.getUsageMetricValue).toHaveBeenCalledWith({
             workspaceId: 'workspace-id',
             metricKey: 'members',
+            at,
+        });
+        expect(mocks.getUsageMetricValue).toHaveBeenCalledWith({
+            workspaceId: 'workspace-id',
+            metricKey: TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS,
             at,
         });
         expect(

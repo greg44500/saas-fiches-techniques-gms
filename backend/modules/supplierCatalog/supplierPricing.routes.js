@@ -28,26 +28,36 @@ import {
 import {
     addReference,
     applicable,
+    archiveDossierIndicative,
     archiveNegotiated,
+    archiveWorkspaceIndicative,
     createInvoiced,
     createNegotiated,
     decideInvoiced,
     getPolicy,
+    listDossierIndicative,
     listInvoiced,
     listNegotiated,
     listReferences,
+    listWorkspaceIndicative,
     metadata,
     removeReference,
+    setDossierIndicative,
+    setWorkspaceIndicative,
     updatePolicy,
 } from './supplierPricing.controller.js';
 import {
     applicablePriceQuerySchema,
     createInvoicedPriceBodySchema,
     createNegotiatedPriceBodySchema,
+    dossierIndicativePriceScopeParamsSchema,
     dossierParamsSchema,
     dossierReferenceParamsSchema,
+    indicativePriceBodySchema,
+    indicativePriceScopeParamsSchema,
     invoicedPriceDecisionBodySchema,
     invoicedPriceParamsSchema,
+    listIndicativePriceQuerySchema,
     listInvoicedPriceQuerySchema,
     listNegotiatedPriceQuerySchema,
     negotiatedPriceParamsSchema,
@@ -59,6 +69,9 @@ const dossierSupplierPricingRouter =
     Router({ mergeParams: true });
 
 const supplierPricingPolicyRouter =
+    Router({ mergeParams: true });
+
+const workspaceSupplierPricingRouter =
     Router({ mergeParams: true });
 
 const readDossierScope = [
@@ -241,6 +254,50 @@ dossierSupplierPricingRouter.delete(
 );
 
 dossierSupplierPricingRouter.get(
+    '/indicative-prices',
+    authenticate,
+    validateRequest({
+        params: dossierParamsSchema,
+        query: listIndicativePriceQuerySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        SUPPLIER_CATALOG_PERMISSION.INDICATIVE_PRICE_READ,
+    ),
+    ...readDossierScope,
+    listDossierIndicative,
+);
+
+dossierSupplierPricingRouter.put(
+    '/indicative-prices/:productVariantId',
+    authenticate,
+    validateRequest({
+        params: dossierIndicativePriceScopeParamsSchema,
+        body: indicativePriceBodySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        SUPPLIER_CATALOG_PERMISSION.INDICATIVE_PRICE_MANAGE,
+    ),
+    ...mutableDossierScope,
+    setDossierIndicative,
+);
+
+dossierSupplierPricingRouter.delete(
+    '/indicative-prices/:productVariantId',
+    authenticate,
+    validateRequest({
+        params: dossierIndicativePriceScopeParamsSchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        SUPPLIER_CATALOG_PERMISSION.INDICATIVE_PRICE_MANAGE,
+    ),
+    ...mutableDossierScope,
+    archiveDossierIndicative,
+);
+
+dossierSupplierPricingRouter.get(
     '/applicable',
     authenticate,
     validateRequest({
@@ -255,6 +312,49 @@ dossierSupplierPricingRouter.get(
     ),
     ...readDossierScope,
     applicable,
+);
+
+workspaceSupplierPricingRouter.get(
+    '/indicative-prices',
+    authenticate,
+    validateRequest({
+        params: workspaceIdParamsSchema,
+        query: listIndicativePriceQuerySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        SUPPLIER_CATALOG_PERMISSION.INDICATIVE_PRICE_READ,
+    ),
+    listWorkspaceIndicative,
+);
+
+workspaceSupplierPricingRouter.put(
+    '/indicative-prices/:productVariantId',
+    authenticate,
+    validateRequest({
+        params: indicativePriceScopeParamsSchema,
+        body: indicativePriceBodySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        SUPPLIER_CATALOG_PERMISSION.INDICATIVE_PRICE_MANAGE,
+    ),
+    enforceWorkspaceAccessMode(),
+    setWorkspaceIndicative,
+);
+
+workspaceSupplierPricingRouter.delete(
+    '/indicative-prices/:productVariantId',
+    authenticate,
+    validateRequest({
+        params: indicativePriceScopeParamsSchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        SUPPLIER_CATALOG_PERMISSION.INDICATIVE_PRICE_MANAGE,
+    ),
+    enforceWorkspaceAccessMode(),
+    archiveWorkspaceIndicative,
 );
 
 supplierPricingPolicyRouter.get(
@@ -293,4 +393,5 @@ supplierPricingPolicyRouter.put(
 export {
     dossierSupplierPricingRouter,
     supplierPricingPolicyRouter,
+    workspaceSupplierPricingRouter,
 };

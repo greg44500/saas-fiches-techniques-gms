@@ -33,6 +33,13 @@ const supplierSchema = new Schema(
         supplierCode: { type: String, trim: true, maxlength: 80, default: null },
         legalName: { type: String, trim: true, maxlength: 200, default: null },
         website: { type: String, trim: true, maxlength: 500, default: null },
+        productCategories: {
+            type: [{
+                type: Schema.Types.ObjectId,
+                ref: 'ProductCategory',
+            }],
+            default: [],
+        },
         status: {
             type: String,
             enum: Object.values(SUPPLIER_RESOURCE_STATUS),

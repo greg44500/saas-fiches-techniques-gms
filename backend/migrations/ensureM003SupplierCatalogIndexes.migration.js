@@ -14,6 +14,7 @@ import {
 } from '../modules/supplierCatalog/supplierCatalog.model.js';
 import {
     DossierSupplierReference,
+    IndicativePrice,
     InvoicedPrice,
     NegotiatedPrice,
     WorkspaceSupplierPricingPolicy,
@@ -35,6 +36,8 @@ const M003_INDEX_NAMES = Object.freeze([
     'negotiated_price_dossier_article_period',
     'invoiced_price_dossier_article_invoice_date',
     'invoiced_price_dossier_status_date',
+    'indicative_price_active_scope_product_unique',
+    'indicative_price_scope_status_updated_at',
     'dossier_supplier_reference_unique',
     'dossier_supplier_reference_status',
     'workspace_supplier_pricing_policy_unique',
@@ -54,6 +57,7 @@ const M003_MODELS = Object.freeze([
     SupplierTariff,
     NegotiatedPrice,
     InvoicedPrice,
+    IndicativePrice,
     DossierSupplierReference,
     WorkspaceSupplierPricingPolicy,
     SupplierCatalogImportSession,

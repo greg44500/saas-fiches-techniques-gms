@@ -1,11 +1,11 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-28  
-**Lot clôturé :** M-003 — Fournisseurs + Articles + conditionnements + prix/catalogues  
-**Lot courant :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité du tableau  
-**État M-003 :** CLÔTURÉ — PR #22 fusionnée ; Core Gate PR #132 verte ; merge `2044dbf3c13473d926cfaa8b86f5eb9dbbf259ac` ; Core Gate post-merge #133 verte  
-**Branche :** \`feature/m003-suppliers-catalogs-pricing\`  
-**HEAD fonctionnel avant mise à jour documentaire :** \`eb1e44312c59051ed5d525720a8b498caf4f5c84\`
+**Date :** 2026-09-29  
+**Lot clôturé :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité  
+**Lot courant :** M-004 — Fiches techniques + valorisation  
+**État M-004 :** IMPLÉMENTATION DU BLOC HORS EXPORTS TERMINÉE SUR BRANCHE — stabilisation UX/M-003 en cours avec Prix indicatifs Workspace/Dossier ; tests ciblés, migration M-003 et release:check à rejouer avant PR  
+**Branche :** `feature/m004-fiches-techniques-valorisation`  
+**Base de branche :** `main@b479b217815fad885f233e98b8f3145656641352`
 
 ## 1. Ordre d'autorité
 
@@ -14,15 +14,16 @@ KB-START-HERE
 → GitHub réel
 → code / contraintes DB
 → tests réellement exécutés
-→ docs/m003/M-003-FINAL-CONTRACT.md
-→ contrats M-002 nécessaires à la frontière Produit
-→ Core réellement intégré
+→ docs/m004/M-004-FINAL-CONTRACT.md
+→ contrats validés M-001 / M-002 / M-003
+→ Core v1.2.1 réellement intégré
+→ dette active
 → présente reprise
 ~~~
 
-Aucun test ou gate M-003 n'est déclaré vert dans ce document tant qu'une exécution réelle ne l'a pas démontré.
+En cas de contradiction, Git/code/tests priment sur cette synthèse.
 
-## 2. Git et Core
+## 2. État Git et Core vérifié
 
 Dépôt :
 
@@ -30,23 +31,26 @@ Dépôt :
 greg44500/saas-fiches-techniques-gms
 ~~~
 
-Base M-003 :
+État de départ M-004 vérifié le 2026-09-28 :
 
 ~~~text
-main = 386e64cacd97cab15e712697c2d7fdd985a4f62e
-Merge PR #20 — feat(m002): deliver the shared product reference catalog
+main = b479b217815fad885f233e98b8f3145656641352
+merge = PR #24 — fix(m002): améliorer la lisibilité du référentiel Produits Platform
+Core Gate du main = success
+run GitHub Actions = 36430902323
 ~~~
 
-État Git vérifié le 2026-09-28 :
+Le workflow `Core Gate` exécute `npm run release:check`, soit :
 
 ~~~text
-main = 2044dbf3c13473d926cfaa8b86f5eb9dbbf259ac
-PR   = #22
-Core Gate PR = #132 success
-Core Gate post-merge = #133 success
+release:verify
+→ lint backend
+→ tests backend
+→ lint frontend
+→ tests frontend
+→ build frontend
+→ E2E Playwright
 ~~~
-
-La branche M-003 reste donc exclusivement en avance sur \`main\`.
 
 Core intégré :
 
@@ -57,294 +61,528 @@ tag        = v1.2.1
 commit     = d90d8f1e6034cbbf4f63de2be7312eae69b1d698
 ~~~
 
-Aucune évolution Core n'a été nécessaire pour M-003.
+Aucune évolution Core n'est nécessaire pour M-004. La corbeille des Fiches techniques est gérée dans le produit : réglage Workspace 1–90 jours (30 par défaut), `purgeScheduledAt` figé à la suppression et job métier global de purge.
 
-## 3. Contrat canonique
+## 3. Contrat canonique M-004
 
 Source de vérité :
 
 ~~~text
-docs/m003/M-003-FINAL-CONTRACT.md
+docs/m004/M-004-FINAL-CONTRACT.md
 ~~~
 
-Le contrat M-003 a été validé le 2026-09-27.
+Contrat validé le 2026-09-28.
 
-Invariants structurants conservés :
-
-- Workspace = frontière de tenancy ;
-- \`WORKSPACE_PRIVATE\` n'est jamais visible hors Workspace ;
-- Tarif négocié et Prix facturé restent strictement Dossier ;
-- aucun fallback de prix inter-Dossier ;
-- Référence Produit M-002 et Article fournisseur M-003 restent distincts ;
-- ligne ambiguë = aucune création automatique dangereuse ;
-- absence de prix ≠ zéro ;
-- backend = autorité du Prix applicable ;
-- aucune sélection automatique de l'Article le moins cher ;
-- Owner Workspace reçoit le RBAC M-003 mais ne devient pas autorité Application Global ;
-- import privé = RBAC + capability \`supplier_catalog_import\`.
-
-## 4. Implémentation M-003 présente
-
-### Backend
-
-Le module \`backend/modules/supplierCatalog\` contient désormais :
-
-- Fournisseurs \`GLOBAL_SHARED | WORKSPACE_PRIVATE\` ;
-- Articles fournisseur et \`replacedBy\` ;
-- conditionnements structurés ;
-- éditions de catalogues historisées ;
-- lignes de catalogue révisées via \`revision / isCurrent\` ;
-- Tarifs fournisseur historisés ;
-- imports CSV/XLS/XLSX \`inspect → preview → commit\` ;
-- rapprochement prudent : MATCHED / CREATE_ARTICLE / UNMATCHED / AMBIGUOUS / IGNORED / INVALID ;
-- réimport de la même édition sans duplication attendue ;
-- calcul exact des normalisations de prix avant Decimal128 via arithmétique rationnelle BigInt ;
-- Tarifs négociés Dossier avec refus des périodes actives chevauchantes ;
-- Prix facturés Dossier avec validation/rejet ;
-- fraîcheur du Prix facturé = 12 mois calendaires depuis \`invoiceDate\` ;
-- politique Workspace du Prix applicable ;
-- fallback strict dans le Dossier ;
-- résolution par Référence Produit : 0 candidat = refus, 1 = sélection, plusieurs = sélection explicite requise ;
-- favoris Dossier × Article sans copie de prix ;
-- événements métier M-003 ;
-- verrous métier \`SupplierCommerceLock\` pour les invariants concurrentiels.
-
-Routes composées :
+Principes structurants :
 
 ~~~text
-/api/workspaces/:workspaceId/suppliers
-/api/workspaces/:workspaceId/supplier-articles
-/api/workspaces/:workspaceId/supplier-catalogs
-/api/workspaces/:workspaceId/dossiers/:dossierId/supplier-pricing
-/api/workspaces/:workspaceId/supplier-pricing-policy
-/api/supplier-reference
-/api/supplier-reference/catalogs
+1 Fiche durable
++
+0 ou 1 brouillon
++
+0 ou 1 état validé courant
++
+historique automatique immuable
 ~~~
 
-### Permissions / capability
-
-RBAC Workspace :
+Ownership :
 
 ~~~text
-supplier:read
-supplier:manage
-supplier:article:read
-supplier:article:manage
-supplier:catalog:read
-supplier:catalog:import
-supplier:catalog:manage
-supplier:negotiated-price:read
-supplier:negotiated-price:manage
-supplier:invoiced-price:read
-supplier:invoiced-price:manage
-supplier:invoiced-price:validate
-supplier:dossier-reference:read
-supplier:dossier-reference:manage
-supplier:applicable-price:read
-supplier:price-policy:manage
+Workspace
+× Dossier
 ~~~
 
-Application Global :
+`createdBy` / `updatedBy` = audit uniquement, jamais ownership.
+
+Une Fiche ou un brouillon n'appartient pas personnellement à son créateur.
+
+## 4. Composition et valorisation
+
+Toute ligne utilise obligatoirement un `ProductVariant` M-002.
 
 ~~~text
-supplier:reference:read
-supplier:reference:manage
+quantité nette saisie
+→ rendement M-002
+→ quantité brute calculée
 ~~~
 
-Capability :
+Pas de surcharge locale du rendement en V1.
+
+Les sections restent distinctes :
 
 ~~~text
-supplier_catalog_import
+Ingrédients
+Économat
 ~~~
 
-Le contrat ne fixe pas encore quel plan commercial précis active cette capability. Aucune attribution Free/Premium/IA n'a été inventée.
-
-### Migrations / bootstrap
-
-Commande migration M-003 :
-
-~~~bash
-npm run migration:m003-supplier-catalog
-~~~
-
-Elle :
-
-- crée/vérifie 24 index M-003 attendus ;
-- backfill les permissions des rôles système Workspace existants.
-
-Bootstrap de gouvernance globale :
-
-~~~bash
-npm run seed:m003-governance
-~~~
-
-Il crée le rôle système Application Global combiné :
+M-004 réutilise impérativement M-003 :
 
 ~~~text
-business_reference_governor
-→ product:reference:read
-→ product:reference:manage
-→ supplier:reference:read
-→ supplier:reference:manage
+ProductVariant
+→ SupplierArticle lorsque nécessaire
+→ Prix applicable
+→ contexte Dossier
+
+Dernier recours M-003 :
+Prix indicatif Dossier
+→ sinon Prix indicatif Workspace
 ~~~
 
-Lorsqu'un Fondateur possède déjà le membership issu du bootstrap M-002, le seed migre ce membership actif vers le rôle combiné. Il refuse de remplacer silencieusement un rôle personnalisé ou un membership suspendu.
+Résolution Article :
 
-### Frontend
+~~~text
+0 Article
+→ Prix indicatif possible directement sur la Référence Produit
+→ sinon non résolu
 
-Surface Workspace \`/workspaces/:workspaceId/suppliers\` :
+1 Article
+→ résolution automatique possible
 
-- Fournisseurs partagés et privés ;
-- recherche et filtre de statut ;
-- filtre Fournisseurs par défaut = \`Tous\`, avec \`Actifs | Archivés\` disponibles ;
-- Fournisseur archivé visible dans \`Tous\` et réactivable via l'action dédiée ;
-- création/édition/archivage/réactivation des Fournisseurs privés ;
-- drawer Fournisseur basé sur \`EntityDetailsDrawer\` : Informations | Articles | Catalogues | Utilisation ;
-- vocabulaire utilisateur français : « espace de travail », « Origine », jamais « Workspace » ni « Portée » dans l'UI de consultation ;
-- Articles fournisseur ;
-- création manuelle d'Article privé avec Référence Produit M-002 ;
-- lifecycle Article ;
-- catalogues accessibles avec origine, période et provenance ;
-- onglet Catalogues consultable avec \`supplier:catalog:read\` même sans capability d'import ;
-- bouton « Importer un catalogue » visible uniquement avec permission \`supplier:catalog:import\` + capability \`supplier_catalog_import\` ;
-- bloc de liste harmonisé avec Dossiers : filtres + \`DataTable\` partagé + \`DataPagination\` partagée ;
-- pagination serveur réelle sur Fournisseurs, Articles et Catalogues ;
-- recherche compacte sur une ligne desktop, bouton Rechercher désactivé à vide.
+N Articles
+→ choix humain obligatoire
+~~~
 
-Surface Dossier \`/workspaces/:workspaceId/dossiers/:dossierId/suppliers\` :
+Jamais de sélection automatique de l'Article le moins cher.
 
-- contrôle d'accès Dossier M-001 conservé ;
-- Références favorites ;
-- catalogues accessibles ;
-- Tarifs négociés ;
-- Prix facturés ;
-- validation/rejet des Prix facturés ;
-- politique Workspace ;
-- Prix applicable ;
-- source, fallback et alertes.
+Prix absent :
 
-Surface globale \`/supplier-reference\` :
+~~~text
+jamais 0 €
+→ ligne non valorisée
+→ validation impossible tant que non résolue
+~~~
 
-- autorisation Application Global explicite ;
-- Fournisseurs globaux ;
-- Articles globaux ;
-- catalogues globaux ;
-- imports globaux ;
-- lifecycle global.
+## 5. Calcul économique validé
 
-## 5. Tests livrés
+~~~text
+Coût matière HT
+= somme Ingrédients
 
-### Backend
+Économat HT
+= somme Économat
 
-Couverture ajoutée pour :
+Coût fabrication HT
+= Coût matière HT + Économat HT
+~~~
 
-- registres permissions/capability/global ;
-- modèles/indexes/migration ;
-- isolation Fournisseur privé ;
-- catalogue privé invisible hors Workspace ;
-- Fournisseur global visible dans plusieurs Workspaces ;
-- RBAC refus et rôle personnalisé positif ;
-- normalisation/unicité Article ;
-- remplacement Article ;
-- capability import ;
-- preview ambigu/non rapproché ;
-- rollback transactionnel import ;
-- normalisation de prix ;
-- réimport idempotent ;
-- chevauchements négociés ;
-- résolution Article 0/1/N ;
-- absence de sélection automatique entre plusieurs Articles ;
-- isolation Tarif négocié inter-Dossier ;
-- isolation Prix facturé inter-Dossier ;
-- fallback fournisseur ;
-- fraîcheur 12 mois ;
-- favori sans prix copié ;
-- bootstrap de gouvernance globale M-003 ;
-- filtre Fournisseurs `status=ALL` : actifs + archivés, avec conservation de l'isolation Workspace.
+Marge cible :
 
-### Frontend
+~~~text
+coefficient = 1 / (1 - marge cible)
+Prix théorique HT = Coût fabrication HT × coefficient
+~~~
 
-Couverture ajoutée pour :
+Prix conseillé TTC :
 
-- composition routes/navigation ;
-- permission Workspace ;
-- permission Application Global ;
-- contrats RTK Query ;
-- capability d'import ;
-- distinction global/privé ;
-- mapping import ;
-- preview ambiguë ;
-- catalogues et provenance dans le contexte Dossier ;
-- Prix applicable, source/fallback ;
-- absence d'onglet non autorisé ;
-- drawer Fournisseur et actions Voir/Modifier/Archiver/Réactiver ;
-- masquage du bouton d'import sans capability ;
-- filtre Fournisseurs `Tous` par défaut et réactivation d'un Fournisseur archivé ;
-- pagination serveur via `DataPagination` sur les trois onglets ;
-- recherche désactivée à vide et remise à zéro du filtre lorsqu'elle est vidée.
+~~~text
+Prix théorique TTC
+→ arrondi au prochain multiple de 0,50 € supérieur ou égal
+~~~
 
-### E2E Playwright
+Prix final :
 
-Scénarios ajoutés :
+~~~text
+peut être >, = ou < au Prix conseillé
 
-1. autorité Application Global accède au Référentiel Fournisseurs ;
-2. Workspace A importe puis réimporte la même édition privée, Workspace B ne la voit pas ;
-3. Dossier A et Dossier B utilisent le même Article avec des Tarifs négociés et Prix applicables distincts ;
-4. catalogue global visible depuis plusieurs Workspaces.
+mais
 
-La préparation E2E initialise désormais la gouvernance M-002 puis M-003.
+Prix final TTC >= plancher économique TTC
+~~~
 
-## 6. État réel de validation
+Une revalorisation ne remplace jamais silencieusement un Prix final choisi explicitement.
 
-Validation locale finale confirmée par le porteur produit le 2026-09-28 :
+## 6. Historique et fraîcheur économique
+
+À la validation :
+
+~~~text
+nouvel état validé courant
++
+ancien état validé conservé dans l'historique
+~~~
+
+Les sauvegardes de brouillon ne créent pas de versions utilisateur.
+
+Si les Prix M-003 ont changé depuis la valorisation :
+
+~~~text
+validation refusée
+→ revalorisation explicite obligatoire
+~~~
+
+Les snapshots validés doivent rester historiquement explicables même si Produit, Article ou Fournisseur évoluent ensuite.
+
+## 7. Lifecycle
+
+États principaux de l'identité Fiche :
+
+~~~text
+ACTIVE
+ARCHIVED
+DELETED
+~~~
+
+Suppression :
+
+~~~text
+Fiche entière
+→ corbeille
+→ restauration pendant rétention
+→ purge définitive
+~~~
+
+La suppression porte ensemble sur :
+
+- brouillon éventuel ;
+- état validé courant ;
+- historique ;
+- snapshots économiques.
+
+Aucun état historique n'est supprimé individuellement.
+
+## 8. Copie inter-Dossier
+
+Source possible :
+
+~~~text
+ACTIVE
+ARCHIVED
+~~~
+
+Source interdite :
+
+~~~text
+DELETED
+~~~
+
+La copie crée une nouvelle identité Fiche et un nouveau brouillon.
+
+Aucune donnée financière du Dossier source n'est copiée.
+
+Dans le Dossier cible :
+
+~~~text
+TVA
+→ copiée depuis la Fiche source
+
+marge cible
+→ marge par défaut du Dossier cible
+
+Article / Prix
+→ résolution M-003 du Dossier cible
+~~~
+
+## 9. RBAC validé
+
+Principes :
+
+- Owner = toutes permissions M-004 ;
+- Responsable FT = création, édition, composition, sourcing, valorisation, validation, lifecycle métier, copie et marge par défaut ;
+- Contributeur FT = création, édition, composition, sourcing, valorisation et copie, sans validation/lifecycle destructif ;
+- Acheteur / Économe = sourcing et valorisation sans modification de recette ni validation FT ;
+- Lecteur = consultation uniquement ;
+- purge définitive = Owner uniquement.
+
+Le périmètre Dossier M-001 reste applicable.
+
+Les clés techniques réellement implémentées sont :
+
+~~~text
+technical-sheet:read
+technical-sheet:create
+technical-sheet:update
+technical-sheet:sourcing:manage
+technical-sheet:valuation:manage
+technical-sheet:validate
+technical-sheet:lifecycle:manage
+technical-sheet:delete
+technical-sheet:restore
+technical-sheet:purge
+technical-sheet:copy
+technical-sheet:settings:manage
+~~~
+
+Le rôle système Owner reçoit toutes ces permissions via le registre applicatif. Les profils métier restent composés par des Roles Workspace personnalisés, sans modifier les rôles système Core.
+
+## 10. Quota commercial validé
+
+~~~text
+1 identité Fiche = 1 unité
+~~~
+
+Le comptage ne dépend pas :
+
+- du brouillon ;
+- du nombre de validations ;
+- de l'historique ;
+- de l'archivage ;
+- de la mise en corbeille.
+
+~~~text
+création = +1
+copie = +1
+purge définitive = -1
+toutes les autres opérations = 0
+~~~
+
+La limite est Workspace-scoped.
+
+Le seuil commercial Free définitif reste à décider.
+
+Pour développement/tests :
+
+~~~text
+valeur temporaire possible = 10 Fiches
+ou valeur plus basse dans les tests
+~~~
+
+Cette valeur ne doit jamais être codée en dur : le runtime compare l'usage avec la limite effective Plan / entitlement.
+
+## 11. Exports et diffusion V1
+
+Appartiennent à la V1 produit :
+
+~~~text
+CSV
+XLSX
+PDF
+impression
+e-mail
+~~~
+
+Ils ne font pas partie du premier bloc d'implémentation M-004.
+
+Ordre retenu :
+
+~~~text
+M-004 Fiche technique
+→ backend
+→ tests backend
+→ frontend
+→ tests frontend
+→ E2E
+→ Core Gate
+→ QA visuelle utilisateur
+→ stabilisation
+
+puis
+
+bloc V1 Exports et diffusion
+→ cadrage dédié
+→ implémentation
+→ tests
+→ QA visuelle
+~~~
+
+Les autres exports restent V2.
+
+## 12. UX
+
+Les invariants UX structurants sont validés :
+
+- vocabulaire métier français ;
+- pas de jargon Core exposé ;
+- réutilisation des composants existants ;
+- gestion explicite des états vides, erreurs, ambiguïtés Article, Prix absent, quota et conflits ;
+- accessibilité des actions par icônes / tooltips.
+
+Les détails de mise en page, placement d'actions, densité et microcopie sont **non bloquants** pour la conception technique et restent ajustables après validation visuelle.
+
+Checkpoint UX du 2026-09-29 :
+
+- compte du nombre de Fiches techniques `ACTIVE` dans l'onglet principal ;
+- compteurs sur Références, Catalogues, Tarifs négociés, Prix facturés et Prix indicatifs ;
+- action textuelle visible « Ajouter un tarif négocié » ;
+- aide des Tarifs négociés déplacée dans un `(i)` ;
+- état vide Tarifs négociés réduit à un seul message ;
+- libellé tarifaire « Unité du prix (Kilo, Pièce, etc.) » ;
+- Prix indicatif Workspace saisissable depuis le référentiel Produits, y compris pour une Référence globale non favorite ;
+- Prix indicatif Dossier saisissable depuis Fournisseurs et prix ;
+- sources `INDICATIVE_DOSSIER` / `INDICATIVE_WORKSPACE` affichées explicitement comme estimations de dernier recours ;
+- parcours Produit ↔ Fournisseur unifié : mêmes workflows Article fournisseur / Prix indicatif depuis plusieurs points d'entrée contextuels, sans duplication métier ;
+- liste Fournisseurs : catégories commercialisées dans une colonne dédiée, sans taxonomie « univers commerciaux » inventée ;
+- drawer Produit : compteurs `Références (n)` / `Favoris (n)`, Favoris limités aux liens Workspace actifs, actions + / − par icônes et infobulles ;
+- Favoris Produit enrichis par les données M-003 accessibles : Prix indicatif Workspace, Articles fournisseur et conditionnements ;
+- filtres backend M-003 `productId` ajoutés aux listes Articles et Prix indicatifs afin d'éviter les requêtes N+1 ;
+- création d'un Article fournisseur depuis un Produit réutilise le formulaire M-003 existant avec la Référence Produit préremplie ;
+- aide métier explicitement différée dans un bloc séparé basé sur `APPLICATION_HELP_MODULES`.
+- création de Référence Produit : explications secondaires déplacées dans des `(i)` avec infobulle ;
+- enrichissement Variétés/Caractéristiques converti en session multi-ajouts sans fermeture entre deux valeurs ;
+- choix de dimension simplifié : Variété / Présentation / Pièce-découpe / Calibre-format / Couleur / Désignation de qualité directement, sans jargon « Caractéristique » intermédiaire ; `Type commercial` reste supporté par le modèle mais est masqué pour les nouveaux ajouts Workspace tant que sa définition métier n'est pas validée ;
+- états vides des selects explicités (`Aucune variété disponible` / `Aucune valeur disponible`) afin de distinguer absence de données et choix volontaire `Non renseigné` ;
+- gouvernance M-002 rendue non bloquante : `governanceStatus` distinct du lifecycle, valeurs `PROVISIONAL` utilisables immédiatement dans leur Workspace d'origine, isolation inter-Workspace, confirmation explicite avant création d'une valeur proche, puis validation/fusion/rejet côté Platform ;
+- statut de chaque ajout visible dans la session : `Disponible`, `Existe déjà` ou `À valider` ;
+- les résolutions peuvent harmoniser les dépendances opérationnelles courantes M-002/M-003/M-004 mais ne réécrivent jamais les snapshots `TechnicalSheetValidation` validés.
+
+Une correction UX ne doit pas modifier silencieusement les invariants métier ou RBAC du contrat.
+
+## 13. État d'implémentation au 2026-09-28
+
+Le bloc M-004 hors exports est maintenant présent sur :
+
+~~~text
+feature/m004-fiches-techniques-valorisation
+~~~
+
+Implémenté :
+
+- modèles `TechnicalSheet`, `TechnicalSheetDraft`, `TechnicalSheetValidation` et `WorkspaceBusinessSettings` ;
+- composition Ingrédients / Économat, rendement M-002 et conversions compatibles ;
+- résolution Article / Prix via M-003, y compris ambiguïté explicite ;
+- valorisation HT/TTC, marge cible, Prix conseillé, Prix final et contrôle du plancher ;
+- détection de données tarifaires obsolètes et revalorisation obligatoire avant validation ;
+- snapshots validés immuables et historique ;
+- RBAC M-004 avec séparation édition recette / sourcing ;
+- création, mise à jour, archivage, réactivation, corbeille, restauration et purge ;
+- copie inter-Dossier sans données financières source ;
+- quota Workspace `technical_sheets`, corbeille comprise jusqu'à purge ;
+- rétention Workspace 1–90 jours et job de purge métier ;
+- migrations M-004 et scripts npm associés ;
+- frontend React/RTK Query : liste, création, éditeur, sourcing, valorisation, validation, historique, réglages, copie, corbeille et widget de capacité ;
+- tests backend ciblés, tests frontend ciblés et cinq scénarios Playwright M-004 ajoutés au dépôt, dont le parcours Produit global non favori.
+
+À ce stade, **aucun résultat local n'est encore déclaré vert dans cette synthèse**. La prochaine autorité est l'exécution locale demandée à l'utilisateur, puis la Core Gate de l'unique PR.
+
+## 14. Documents synchronisés avec le contrat
+
+Le lot documentaire M-004 met à jour :
+
+~~~text
+docs/m004/M-004-FINAL-CONTRACT.md
+docs/ROADMAP.md
+docs/PRODUCT-SCOPE.md
+docs/domain/STORAGE-RETENTION.md
+docs/DEBT.md
+docs/REPRISE-CURRENT.md
+~~~
+
+Contradictions historiques résolues :
+
+- ancien invariant `Prix final >= Prix conseillé` supprimé ;
+- anciens quotas séparés DRAFT / VALIDATED supprimés ;
+- ancienne notion `ses DRAFTS` supprimée au profit du périmètre Dossier + RBAC ;
+- stratégie d'arrondi personnalisable différée hors M-004 V1 ;
+- GMS-UX-002 clôturé ;
+- exports CSV/XLSX/PDF, impression et e-mail confirmés en V1 mais dans un bloc ultérieur séparé.
+
+## 15. Validation locale et QA visuelle
+
+Une exécution locale complète de :
 
 ~~~text
 npm run release:check
-→ release:verify vert
-→ lint backend/e2e vert
-→ tests backend verts
-→ lint frontend vert
-→ tests frontend verts
-→ build frontend vert
-→ E2E Playwright verts
 ~~~
 
-Les quatre scénarios E2E M-003 sont donc validés, notamment l’import puis réimport d’un catalogue privé, l’isolation inter-Workspace, l’isolation des prix entre Dossiers et la réutilisation d’un catalogue global.
+a été confirmée entièrement verte par l’utilisateur avant les derniers ajustements UX de QA.
 
-L’environnement local Windows dispose désormais de ClamAV fonctionnel pour exercer réellement le pipeline sécurisé d’import. Aucun bypass antivirus ni allègement de test n’a été introduit.
+Point Windows à conserver pour toutes les futures exécutions E2E impliquant un import ou téléversement :
 
-La QA visuelle M-003 est validée par le porteur produit. Des ajustements UX futurs issus des retours bêta restent possibles mais ne sont pas bloquants pour la livraison du contrat M-003 actuel.
+~~~powershell
+$env:Path += ";C:\Program Files\ClamAV"
+Get-Command clamscan
+clamscan --version
+~~~
 
-## 7. Clôture Git et CI
+Dans cet environnement, ClamAV est installé sous Windows mais `clamscan` n’est pas nécessairement présent dans le `PATH` de la session PowerShell. Un HTTP 503 pendant l’inspection d’un fichier ne doit donc pas être interprété comme une régression applicative avant vérification de ce prérequis.
 
-Preuves de livraison M-003 :
+La QA visuelle a ensuite conduit aux arbitrages UX suivants, en cours de stabilisation sur la même branche :
+
+- Dossiers regroupé dans la sidebar avec Compte Client, Corbeille et Paramètres ;
+- entête Compte Client compacte ;
+- paramètres de marge accessibles depuis le Dossier ;
+- politique de prix déplacée dans Paramètres des Dossiers ;
+- conservation de la Corbeille réglée directement depuis la Corbeille ;
+- capacité des Fiches présentée sur le Tableau de bord avec répartition Dossiers / Corbeille ;
+- vocabulaire utilisateur « suppression définitive » à la place de « purge » ;
+- Fiche avec brouillon ouvert non copiable ;
+- statuts visuels : Brouillon = warning, Non valorisée = alert, Archivée = archived ;
+- actions globales de la Fiche regroupées dans un conteneur dédié `Panneau de contrôle` à droite du titre ;
+- retour Fiche compacté en icône à côté du titre ;
+- badges lifecycle / brouillon / valorisation placés directement à côté du titre de la Fiche ;
+- Informations générales sorties du flux principal et déplacées dans un drawer droit accessible par une languette flottante `Infos` ;
+- bouton d’enregistrement des Informations visuellement `warning` tant que nom/description sont modifiés sans être enregistrés ;
+- commentaire de validation conservé dans le drawer et appliqué seulement lors de la validation ;
+- `Base de production` remplacé par `Indicateur de production` avec infobulle explicative ;
+- paramètres Quantité / Unité / Portion(s) / TVA de vente regroupés avec les KPI économiques dans le même conteneur sticky ;
+- KPI permanents compactés en sigles avec infobulles : `CM HT`, `CE HT`, `CF HT`, `%MC`, `PC TTC`, `PF TTC`, `%MR` ; valeur indisponible affichée `NC` dans la vue compacte ;
+- détail économique ouvrable à droite ; valorisation/revalorisation intégrée au même cockpit ;
+- Composition présentée dans un seul tableau vertical sans scroll horizontal, avec groupes Ingrédients / Économat visuellement séparés ;
+- colonnes compactes : Produit / Qté / U / PUHT / CMU HT / %TR / Note / Actions ;
+- aide de saisie Produit affichée une seule fois au niveau du groupe Ingrédients ;
+- ajout Produit intégré directement dans chaque groupe avec remise à zéro du champ après sélection ;
+- Produit existant remplaçable par recherche prédictive ; remplacement = nouvelle ligne logique conservant type/quantité/note mais réinitialisant sourcing et valorisation ;
+- Article/Fournisseur retiré des colonnes permanentes et exposé dans le détail Produit ; action Approvisionnement dédiée pour consulter/choisir l’Article fournisseur ;
+- sources Produit `Tous les produits` / `Favoris` réduites à des actions icônes ;
+- Favori signalé dans les suggestions par une étoile seule, couleur warning/gold, avec libellé accessible/infobulle ;
+- autosave du brouillon : saisies textuelles temporisées, changements structurels immédiats, une seule écriture concurrente et réutilisation stricte de la révision serveur suivante ;
+- état d'enregistrement visible dans la zone sticky et possibilité de réessayer après échec ;
+- aucune valorisation automatique déclenchée par l'autosave ;
+- sources Produit et Panneau de contrôle déplacés dans la zone sticky des Indicateurs de production ;
+- `Indicateur de production` renommé `Indicateurs de production` ;
+- Composition densifiée : `INGRÉDIENTS` remplace le header Produit, aide textuelle supprimée, séparation Économat renforcée ;
+- actions de ligne regroupées sous un menu unique `…` ;
+- alignement centré des colonnes quantitatives/économiques et colonne Actions réduite ;
+- Historique déplacé dans le drawer Informations sous un onglet dédié ;
+- fondu sous la zone sticky renforcé pour matérialiser le passage de la Composition derrière les KPI ;
+- état d'autosave rendu par texte/icône sémantique sans badge : success = enregistré, warning = enregistrement en cours, alert = non enregistré ;
+- zone sticky M-004 positionnée sous la topbar Workspace via le token Core `--workspace-topbar-height`, avec fallback temporaire compatible v1.2.1 ;
+- colonne `%CM` affichée dans Composition après `CMU HT`, avec infobulle : contribution financière de la ligne Ingrédient au Coût matière HT total ;
+- `%CM = lineCostHt / materialCostHt × 100`, calculé uniquement après valorisation complète ; Économat et coût matière total nul affichent `—` ;
+- l'ancien pourcentage physique de composition est supprimé du contrat, des modèles, snapshots et API M-004 ;
+- aucun moteur de conversion physique `COUNT / VOLUME / MASS`, densité ou poids/unité n'est conservé comme dette : ce besoin est abandonné pour M-004.
+
+Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon ainsi que l'extension Prix indicatif M-003, le contrat backend. Ils doivent donc être retestés avant la PR finale.
+
+Extension M-003 validée pendant la QA M-004 :
 
 ~~~text
-PR #22
-→ Core Gate #132 : success
-→ merge : 2044dbf3c13473d926cfaa8b86f5eb9dbbf259ac
-→ Core Gate post-merge #133 : success
+sources commerciales applicables
+→ priorité conservée
+
+à défaut
+→ Prix indicatif Dossier
+→ sinon Prix indicatif Workspace
+→ sinon aucun prix
 ~~~
 
-La capability `supplier_catalog_import` reste indépendante du RBAC. Le contrat ne l’attribue encore à aucun plan commercial précis ; aucune règle Free/Premium/IA n’a été inventée.
+Le Prix indicatif est une estimation interne historisée et explicitement identifiée. Il peut exister sans Article fournisseur. Il ne devient jamais silencieusement un Tarif fournisseur, un Tarif négocié ou un Prix facturé.
 
-## 8. QA visuelle
+Dette fonctionnelle identifiée pendant cette QA :
 
-La QA visuelle M-003 a été acceptée le 2026-09-28.
+- `GMS-TAX-001 — TVA Produit / fiscalité d’achat` est enregistrée dans `docs/DEBT.md` ;
+- M-004 conserve uniquement la TVA de vente de la Fiche pour le passage HT → TTC ;
+- M-002 ne porte actuellement aucun taux de TVA sur `ProductVariant` et M-003 travaille sur les prix d’achat HT ;
+- cette dette ne bloque pas M-004 mais devra être cadrée avant tout besoin de comptabilité d’achat, TVA déductible, facture ou export fiscal ;
+- aucune TVA Produit ne doit être ajoutée opportunément à M-002/M-003 sans contrat dédié.
 
-Cette validation autorise la livraison du module. Elle n’interdit pas des retouches ultérieures issues des bêta-testeurs ; celles-ci devront être traitées comme de nouveaux lots UX ciblés sans rouvrir artificiellement le contrat fonctionnel M-003 si les invariants restent inchangés.
+## 16. Prochaine action
 
-## 9. Suite
+Le code du bloc M-004 hors exports est prêt pour validation locale.
 
-M-003 est clôturé.
-
-Ordre de travail validé :
+Ordre restant :
 
 ~~~text
-GMS-UX-002 — lot UX M-002
-→ validation du lot
-→ une PR / un merge cohérents
-→ M-004 — Fiches techniques + valorisation
+pull de feature/m004-fiches-techniques-valorisation
+→ npm run migration:m003-indicative-pricing
+   (nouveaux indexes + permissions Prix indicatif, y compris si M-003 avait déjà été migré)
+→ migrations M-004 sur la base locale de développement
+→ tests ciblés backend/frontend
+→ E2E M-004
+→ release:check complet
+→ QA visuelle utilisateur
+→ corrections éventuelles sur la même branche
+→ une seule PR
+→ Core Gate PR
+→ un seul merge
+→ Core Gate post-merge
+→ mise à jour finale de la reprise
 ~~~
 
-Les retours UX futurs des bêta-testeurs sur M-003 pourront être traités dans des lots ciblés sans rouvrir artificiellement M-003 tant que ses invariants métier restent inchangés.
+Ne pas ouvrir la PR finale tant que les tests locaux et la QA visuelle demandés ne sont pas validés.
+
+Principe directeur :
+
+~~~text
+Core = fondations génériques
+Produit = métier
+~~~

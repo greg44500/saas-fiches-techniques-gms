@@ -4,6 +4,10 @@ import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductVariant } from './productVariant.model.js';
 import {
+    buildDuplicateGovernanceVisibilityFilter,
+    isReferenceVisibleToWorkspace,
+} from './productReferenceGovernance.service.js';
+import {
     buildSearchGrams,
     buildSearchKeys,
     isNearDuplicateKey,
@@ -78,6 +82,7 @@ const findProductDuplicateCandidates = async ({
             $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
         }),
         normalizedName: mongoose.trusted({ $in: searchKeys }),
+        ...buildDuplicateGovernanceVisibilityFilter(workspaceId),
     })
         .populate({
             path: 'canonicalProduct',
@@ -89,6 +94,10 @@ const findProductDuplicateCandidates = async ({
     const exactVariantVisible = (
         exactVariant?.canonicalProduct
         && productVisibleInReference(exactVariant.canonicalProduct)
+        && isReferenceVisibleToWorkspace({
+            reference: exactVariant.canonicalProduct,
+            workspaceId,
+        })
         && (
             !excludeProductId
             || exactVariant.canonicalProduct._id.toString()
@@ -105,6 +114,7 @@ const findProductDuplicateCandidates = async ({
             $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
         }),
         searchKeys: mongoose.trusted({ $in: searchKeys }),
+        ...buildDuplicateGovernanceVisibilityFilter(workspaceId),
     })
         .populate('category')
         .lean();
@@ -131,6 +141,7 @@ const findProductDuplicateCandidates = async ({
                 }
                 : {}),
             searchGrams: mongoose.trusted({ $in: grams }),
+            ...buildDuplicateGovernanceVisibilityFilter(workspaceId),
         })
             .populate('category')
             .sort({ updatedAt: -1 })

@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpenCheck, Eye, FileUp, Minus, Plus } from 'lucide-react';
+import {
+  BookOpenCheck,
+  Euro,
+  Eye,
+  FileUp,
+  Minus,
+  Plus,
+} from 'lucide-react';
 import { useNavigate } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
@@ -34,6 +41,12 @@ import { ProductDetailsDrawer } from '@/features/products/components/product-det
 import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
 import { ProductSearchAutocomplete } from '@/features/products/components/product-search-autocomplete';
 import {
+  IndicativePriceDialog,
+} from '@/features/suppliers/components/indicative-price-dialog';
+import {
+  SUPPLIER_PERMISSION,
+} from '@/features/suppliers/constants/supplier-permissions';
+import {
   PRODUCT_CAPABILITY,
   PRODUCT_PERMISSION,
   PRODUCT_REFERENCE_PERMISSION,
@@ -65,6 +78,7 @@ function ProductsPage() {
   const [drawerState, setDrawerState] = useState({ open: false, productId: null });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [indicativeVariant, setIndicativeVariant] = useState(null);
 
   const productReferenceAccessQuery = useGetProductReferenceAccessQuery();
   const metadataQuery = useGetProductMetadataQuery(workspace.id);
@@ -272,6 +286,16 @@ function ProductsPage() {
                   tooltipLabel="Ajouter aux favoris"
                 />
               ) : null
+            )}
+            {result.variant
+            && can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE) && (
+              <ActionIconButton
+                Icon={Euro}
+                label={'Appliquer un prix indicatif à ' + referenceLabel}
+                onClick={() => setIndicativeVariant(result.variant)}
+                tooltipLabel="Appliquer un prix indicatif"
+                variant="outline"
+              />
             )}
             <ActionIconButton
               Icon={Eye}
@@ -483,13 +507,18 @@ function ProductsPage() {
         onClose={() => setCreateOpen(false)}
         onCreated={(result) => {
           setCreateOpen(false);
-          if (result?.classification === 'REVIEW_REQUIRED') {
+          if (
+            result?.classification === 'PROVISIONAL'
+            || result?.classification === 'REVIEW_REQUIRED'
+          ) {
             toast({
-              title: 'Proposition envoyée en revue',
+              title: 'Produit créé · À valider',
               description:
-                'Le Produit sera disponible après validation du référentiel global.',
+                'Le Produit est utilisable dans cet espace de travail en attendant la validation du référentiel global.',
               variant: 'success',
             });
+            const productId = result?.provisionalReference?.id;
+            if (productId) openProduct(productId);
             return;
           }
           if (result?.classification === 'EXISTING') {
@@ -513,6 +542,22 @@ function ProductsPage() {
           openProduct(productId);
         }}
         open={createOpen}
+        workspaceId={workspace.id}
+      />
+
+      <IndicativePriceDialog
+        onClose={() => setIndicativeVariant(null)}
+        onSaved={(result) => {
+          setIndicativeVariant(null);
+          toast({
+            title: result?.removed
+              ? 'Prix indicatif retiré'
+              : 'Prix indicatif enregistré',
+            variant: 'success',
+          });
+        }}
+        open={Boolean(indicativeVariant)}
+        variant={indicativeVariant}
         workspaceId={workspace.id}
       />
 

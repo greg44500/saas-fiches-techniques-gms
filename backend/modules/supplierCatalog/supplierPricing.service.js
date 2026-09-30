@@ -14,6 +14,9 @@ import {
     ProductVariant,
 } from '../productCatalog/productVariant.model.js';
 import {
+    buildWorkspaceGovernanceVisibilityFilter,
+} from '../productCatalog/productReferenceGovernance.service.js';
+import {
     SupplierArticle,
 } from './supplier.model.js';
 import {
@@ -21,6 +24,7 @@ import {
 } from './supplierCatalog.model.js';
 import {
     DOSSIER_SUPPLIER_REFERENCE_STATUS,
+    INDICATIVE_PRICE_STATUS,
     INVOICED_PRICE_STATUS,
     NEGOTIATED_PRICE_STATUS,
     SUPPLIER_CATALOG_EVENT_ACTION,
@@ -32,6 +36,7 @@ import {
 } from './supplierCatalog.registry.js';
 import {
     DossierSupplierReference,
+    IndicativePrice,
     InvoicedPrice,
     NegotiatedPrice,
     WorkspaceSupplierPricingPolicy,
@@ -127,6 +132,19 @@ const serializePrice = (price, kind) => ({
     updatedAt:
         price.updatedAt,
 });
+
+const serializeProductVariantSummary =
+    (variant) => ({
+        id: variant._id.toString(),
+        name: variant.name,
+        referenceUnit: variant.referenceUnit,
+        productId:
+            variant.canonicalProduct?._id
+                ? variant.canonicalProduct._id.toString()
+                : variant.canonicalProduct?.toString() ?? null,
+        productName:
+            variant.canonicalProduct?.name ?? null,
+    });
 
 const serializeSupplierArticleSummary =
     (article) => ({
@@ -240,7 +258,11 @@ const findVisibleSupplierArticle = async ({
             .populate({
                 path: 'productVariant',
                 select:
-                    '_id name referenceUnit status identityActive',
+                    '_id name referenceUnit status identityActive canonicalProduct',
+                populate: {
+                    path: 'canonicalProduct',
+                    select: '_id name',
+                },
             })
             .session(session);
 
@@ -271,16 +293,104 @@ const findVisibleSupplierArticle = async ({
     return article;
 };
 
-const resolveSupplierArticle = async ({
+const findActiveProductVariant = async ({
+    productVariantId,
+    workspaceId,
+    session = null,
+}) => {
+    const productVariant =
+        await ProductVariant.findOne({
+            _id: productVariantId,
+            status: PRODUCT_STATUS.ACTIVE,
+            identityActive: true,
+            ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
+        })
+            .populate({
+                path: 'canonicalProduct',
+                select: '_id name',
+            })
+            .session(session);
+
+    if (!productVariant) {
+        throw new AppError(
+            'Référence Produit introuvable.',
+            404,
+        );
+    }
+
+    return productVariant;
+};
+
+const findUsableSupplierArticlesForVariant = async ({
+    workspaceId,
+    productVariantId,
+    session = null,
+}) => {
+    const candidates =
+        await SupplierArticle.find({
+            productVariant: productVariantId,
+            status: SUPPLIER_RESOURCE_STATUS.ACTIVE,
+            ...visibleArticleFilter({ workspaceId }),
+        })
+            .populate({
+                path: 'supplier',
+                select: '_id name scope workspace status',
+            })
+            .populate({
+                path: 'productVariant',
+                select:
+                    '_id name referenceUnit status identityActive canonicalProduct',
+                populate: {
+                    path: 'canonicalProduct',
+                    select: '_id name',
+                },
+            })
+            .sort({
+                supplierReference: 1,
+                _id: 1,
+            })
+            .limit(3)
+            .session(session);
+
+    return candidates.filter(
+        (article) =>
+            article.supplier?.status
+                === SUPPLIER_RESOURCE_STATUS.ACTIVE
+            && article.productVariant?.status
+                === PRODUCT_STATUS.ACTIVE
+            && article.productVariant?.identityActive,
+    );
+};
+
+const resolvePricingContext = async ({
     workspaceId,
     articleId = null,
     productVariantId = null,
+    session = null,
 }) => {
     if (articleId) {
-        return findVisibleSupplierArticle({
-            workspaceId,
-            articleId,
-        });
+        const article =
+            await findVisibleSupplierArticle({
+                workspaceId,
+                articleId,
+                session,
+            });
+
+        if (
+            productVariantId
+            && article.productVariant._id.toString()
+                !== productVariantId.toString()
+        ) {
+            throw new AppError(
+                'L’Article fournisseur ne correspond pas à la Référence Produit demandée.',
+                409,
+            );
+        }
+
+        return {
+            article,
+            productVariant: article.productVariant,
+        };
     }
 
     if (!productVariantId) {
@@ -291,64 +401,18 @@ const resolveSupplierArticle = async ({
     }
 
     const productVariant =
-        await ProductVariant.findOne({
-            _id: productVariantId,
-            status: PRODUCT_STATUS.ACTIVE,
-            identityActive: true,
-        })
-            .select('_id')
-            .lean();
+        await findActiveProductVariant({
+            productVariantId,
+            workspaceId,
+            session,
+        });
 
-    if (!productVariant) {
-        throw new AppError(
-            'Référence Produit introuvable.',
-            404,
-        );
-    }
-
-    const candidates =
-        await SupplierArticle.find({
-            productVariant:
-                productVariant._id,
-            status:
-                SUPPLIER_RESOURCE_STATUS
-                    .ACTIVE,
-            ...visibleArticleFilter({
-                workspaceId,
-            }),
-        })
-            .populate({
-                path: 'supplier',
-                select:
-                    '_id name scope workspace status',
-            })
-            .populate({
-                path: 'productVariant',
-                select:
-                    '_id name referenceUnit status identityActive',
-            })
-            .sort({
-                supplierReference: 1,
-                _id: 1,
-            })
-            .limit(3);
-
-    const usable = candidates.filter(
-        (article) =>
-            article.supplier?.status
-                === SUPPLIER_RESOURCE_STATUS.ACTIVE
-            && article.productVariant?.status
-                === PRODUCT_STATUS.ACTIVE
-            && article.productVariant
-                ?.identityActive,
-    );
-
-    if (usable.length === 0) {
-        throw new AppError(
-            'Aucun Article fournisseur exploitable pour cette Référence Produit.',
-            404,
-        );
-    }
+    const usable =
+        await findUsableSupplierArticlesForVariant({
+            workspaceId,
+            productVariantId: productVariant._id,
+            session,
+        });
 
     if (usable.length > 1) {
         const error = new AppError(
@@ -358,13 +422,28 @@ const resolveSupplierArticle = async ({
         error.code =
             'SUPPLIER_ARTICLE_SELECTION_REQUIRED';
         error.candidates =
-            usable.map(
-                serializeSupplierArticleSummary,
-            );
+            usable.map(serializeSupplierArticleSummary);
         throw error;
     }
 
-    return usable[0];
+    return {
+        article: usable[0] ?? null,
+        productVariant,
+    };
+};
+
+const resolveSupplierArticle = async (options) => {
+    const context =
+        await resolvePricingContext(options);
+
+    if (!context.article) {
+        throw new AppError(
+            'Aucun Article fournisseur exploitable pour cette Référence Produit.',
+            404,
+        );
+    }
+
+    return context.article;
 };
 
 const normalizePriceForArticle = ({
@@ -648,10 +727,12 @@ const listNegotiatedPrices = async ({
     dossierId,
     articleId = null,
     status = null,
+    session = null,
 }) => {
     await assertDossier({
         workspaceId,
         dossierId,
+        session,
     });
 
     const filter = {
@@ -689,6 +770,7 @@ const listNegotiatedPrices = async ({
                 validFrom: -1,
                 _id: -1,
             })
+            .session(session)
             .lean();
 
     return prices.map(
@@ -913,10 +995,12 @@ const listInvoicedPrices = async ({
     dossierId,
     articleId = null,
     status = null,
+    session = null,
 }) => {
     await assertDossier({
         workspaceId,
         dossierId,
+        session,
     });
 
     const filter = {
@@ -954,6 +1038,7 @@ const listInvoicedPrices = async ({
                 invoiceDate: -1,
                 _id: -1,
             })
+            .session(session)
             .lean();
 
     return prices.map(
@@ -1010,6 +1095,7 @@ const findFreshValidatedInvoice = async ({
     dossierId,
     articleId,
     atDate,
+    session = null,
 }) => {
     const latest =
         await InvoicedPrice.findOne({
@@ -1029,6 +1115,7 @@ const findFreshValidatedInvoice = async ({
                 invoiceDate: -1,
                 _id: -1,
             })
+            .session(session)
             .lean();
 
     if (!latest) {
@@ -1062,6 +1149,7 @@ const findValidNegotiatedPrice = async ({
     dossierId,
     articleId,
     atDate,
+    session = null,
 }) => NegotiatedPrice.findOne({
     workspace: workspaceId,
     dossier: dossierId,
@@ -1086,12 +1174,14 @@ const findValidNegotiatedPrice = async ({
         validFrom: -1,
         _id: -1,
     })
+    .session(session)
     .lean();
 
 const findApplicableSupplierTariff = async ({
     workspaceId,
     articleId,
     atDate,
+    session = null,
 }) => {
     const tariffs =
         await SupplierTariff.find({
@@ -1150,6 +1240,7 @@ const findApplicableSupplierTariff = async ({
                 _id: -1,
             })
             .limit(3)
+            .session(session)
             .lean();
 
     const applicable =
@@ -1171,8 +1262,343 @@ const findApplicableSupplierTariff = async ({
     return applicable[0] ?? null;
 };
 
+const serializeIndicativePrice = (price) => ({
+    id: price._id.toString(),
+    workspaceId: price.workspace.toString(),
+    dossierId: price.dossier?.toString() ?? null,
+    productVariant:
+        price.productVariant?._id
+            ? serializeProductVariantSummary(price.productVariant)
+            : { id: price.productVariant.toString() },
+    sourceAmount: decimalToString(price.sourceAmount),
+    sourceBasis: price.sourceBasis,
+    currency: price.currency,
+    normalizedAmount: decimalToString(price.normalizedAmount),
+    normalizedUnit: price.normalizedUnit,
+    source: price.source ?? null,
+    status: price.status,
+    createdAt: price.createdAt,
+    updatedAt: price.updatedAt,
+});
+
+const indicativeScopeFilter = ({
+    workspaceId,
+    dossierId = null,
+}) => ({
+    workspace: workspaceId,
+    dossier: dossierId ?? null,
+});
+
+const populateIndicativeProductVariant = (query) =>
+    query.populate({
+        path: 'productVariant',
+        select:
+            '_id name referenceUnit canonicalProduct',
+        populate: {
+            path: 'canonicalProduct',
+            select: '_id name',
+        },
+    });
+
+const listIndicativePrices = async ({
+    workspaceId,
+    dossierId = null,
+    productId = null,
+    productVariantId = null,
+    status = INDICATIVE_PRICE_STATUS.ACTIVE,
+}) => {
+    if (dossierId) {
+        await assertDossier({
+            workspaceId,
+            dossierId,
+        });
+    }
+
+    let productVariantFilter = null;
+
+    if (productVariantId) {
+        productVariantFilter = productVariantId;
+    } else if (productId) {
+        const productVariantIds = await ProductVariant.find({
+            canonicalProduct: productId,
+            identityActive: true,
+        }).distinct('_id');
+
+        productVariantFilter = mongoose.trusted({
+            $in: productVariantIds,
+        });
+    }
+
+    const query =
+        IndicativePrice.find({
+            ...indicativeScopeFilter({
+                workspaceId,
+                dossierId,
+            }),
+            status,
+            ...(productVariantFilter
+                ? { productVariant: productVariantFilter }
+                : {}),
+        })
+            .sort({
+                updatedAt: -1,
+                _id: -1,
+            });
+
+    const prices =
+        await populateIndicativeProductVariant(query);
+
+    return prices.map(serializeIndicativePrice);
+};
+
+const findActiveIndicativePrice = async ({
+    workspaceId,
+    dossierId = null,
+    productVariantId,
+    session = null,
+}) => {
+    const query =
+        IndicativePrice.findOne({
+            ...indicativeScopeFilter({
+                workspaceId,
+                dossierId,
+            }),
+            productVariant: productVariantId,
+            status: INDICATIVE_PRICE_STATUS.ACTIVE,
+        })
+            .sort({
+                createdAt: -1,
+                _id: -1,
+            })
+            .session(session);
+
+    return populateIndicativeProductVariant(query);
+};
+
+const buildIndicativePriceLockKey = ({
+    workspaceId,
+    dossierId = null,
+    productVariantId,
+}) => [
+    'indicative-price',
+    workspaceId.toString(),
+    dossierId
+        ? 'dossier:' + dossierId.toString()
+        : 'workspace',
+    productVariantId.toString(),
+].join(':');
+
+const setIndicativePrice = async ({
+    workspaceId,
+    dossierId = null,
+    productVariantId,
+    actorId,
+    sourceAmount,
+    sourceBasis,
+    currency = 'EUR',
+    source = null,
+}) => mongoose.connection.transaction(
+    async (session) => {
+        if (dossierId) {
+            await assertDossier({
+                workspaceId,
+                dossierId,
+                session,
+                mutable: true,
+            });
+        }
+
+        const productVariant =
+            await findActiveProductVariant({
+                productVariantId,
+                workspaceId,
+                session,
+            });
+
+        const normalized =
+            normalizeSupplierPrice({
+                sourceAmount,
+                sourceBasis,
+                targetUnit:
+                    productVariant.referenceUnit,
+            });
+
+        if (
+            !normalized.normalizedAmount
+            || !normalized.normalizedUnit
+        ) {
+            throw new AppError(
+                'L’unité du prix indicatif est incompatible avec l’unité de référence du Produit.',
+                400,
+            );
+        }
+
+        await acquireCommerceLock({
+            key: buildIndicativePriceLockKey({
+                workspaceId,
+                dossierId,
+                productVariantId,
+            }),
+            session,
+        });
+
+        const previous =
+            await IndicativePrice.findOne({
+                ...indicativeScopeFilter({
+                    workspaceId,
+                    dossierId,
+                }),
+                productVariant: productVariantId,
+                status: INDICATIVE_PRICE_STATUS.ACTIVE,
+            }).session(session);
+
+        if (previous) {
+            previous.status =
+                INDICATIVE_PRICE_STATUS.ARCHIVED;
+            previous.archivedAt = new Date();
+            previous.archivedBy = actorId;
+            previous.updatedBy = actorId;
+            await previous.save({ session });
+        }
+
+        const [price] =
+            await IndicativePrice.create([
+                {
+                    workspace: workspaceId,
+                    dossier: dossierId ?? null,
+                    productVariant: productVariantId,
+                    sourceAmount,
+                    sourceBasis,
+                    currency,
+                    normalizedAmount:
+                        normalized.normalizedAmount,
+                    normalizedUnit:
+                        normalized.normalizedUnit,
+                    source: source ?? null,
+                    createdBy: actorId,
+                    updatedBy: actorId,
+                },
+            ], { session });
+
+        await createSupplierCatalogEvent({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId,
+            dossierId: dossierId ?? null,
+            actorId,
+            action:
+                SUPPLIER_CATALOG_EVENT_ACTION
+                    .INDICATIVE_PRICE_SET,
+            entityType:
+                SUPPLIER_CATALOG_EVENT_ENTITY_TYPE
+                    .INDICATIVE_PRICE,
+            entityId: price._id,
+            metadata: {
+                productVariantId:
+                    productVariantId.toString(),
+                scope:
+                    dossierId
+                        ? 'DOSSIER'
+                        : 'WORKSPACE',
+            },
+            session,
+        });
+
+        await price.populate({
+            path: 'productVariant',
+            select:
+                '_id name referenceUnit canonicalProduct',
+            populate: {
+                path: 'canonicalProduct',
+                select: '_id name',
+            },
+        });
+
+        return serializeIndicativePrice(price);
+    },
+);
+
+const archiveIndicativePrice = async ({
+    workspaceId,
+    dossierId = null,
+    productVariantId,
+    actorId,
+}) => mongoose.connection.transaction(
+    async (session) => {
+        if (dossierId) {
+            await assertDossier({
+                workspaceId,
+                dossierId,
+                session,
+                mutable: true,
+            });
+        }
+
+        await acquireCommerceLock({
+            key: buildIndicativePriceLockKey({
+                workspaceId,
+                dossierId,
+                productVariantId,
+            }),
+            session,
+        });
+
+        const price =
+            await IndicativePrice.findOne({
+                ...indicativeScopeFilter({
+                    workspaceId,
+                    dossierId,
+                }),
+                productVariant: productVariantId,
+                status: INDICATIVE_PRICE_STATUS.ACTIVE,
+            }).session(session);
+
+        if (!price) {
+            throw new AppError(
+                'Prix indicatif actif introuvable.',
+                404,
+            );
+        }
+
+        price.status =
+            INDICATIVE_PRICE_STATUS.ARCHIVED;
+        price.archivedAt = new Date();
+        price.archivedBy = actorId;
+        price.updatedBy = actorId;
+        await price.save({ session });
+
+        await createSupplierCatalogEvent({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId,
+            dossierId: dossierId ?? null,
+            actorId,
+            action:
+                SUPPLIER_CATALOG_EVENT_ACTION
+                    .INDICATIVE_PRICE_ARCHIVED,
+            entityType:
+                SUPPLIER_CATALOG_EVENT_ENTITY_TYPE
+                    .INDICATIVE_PRICE,
+            entityId: price._id,
+            metadata: {
+                productVariantId:
+                    productVariantId.toString(),
+                scope:
+                    dossierId
+                        ? 'DOSSIER'
+                        : 'WORKSPACE',
+            },
+            session,
+        });
+
+        return {
+            id: price._id.toString(),
+            status: price.status,
+        };
+    },
+);
+
 const getPricingPolicy = async ({
     workspaceId,
+    session = null,
 }) => {
     const policy =
         await WorkspaceSupplierPricingPolicy
@@ -1180,6 +1606,7 @@ const getPricingPolicy = async ({
                 workspace:
                     workspaceId,
             })
+            .session(session)
             .lean();
 
     return policy
@@ -1305,72 +1732,75 @@ const resolveApplicablePrice = async ({
     articleId = null,
     productVariantId = null,
     atDate = new Date(),
+    session = null,
 }) => {
     await assertDossier({
         workspaceId,
         dossierId,
+        session,
     });
 
-    const article =
-        await resolveSupplierArticle({
-            workspaceId,
-            articleId,
-            productVariantId,
-        });
+    const {
+        article,
+        productVariant,
+    } = await resolvePricingContext({
+        workspaceId,
+        articleId,
+        productVariantId,
+        session,
+    });
+
     const policy =
         await getPricingPolicy({
             workspaceId,
+            session,
         });
+
     const alerts = [];
     const attempted = [];
 
-    if (
-        policy.mode
-        === SUPPLIER_PRICING_POLICY_MODE
-            .INVOICED_PRICE
-    ) {
-        attempted.push(
-            'INVOICED_PRICE',
+    if (!article) {
+        alerts.push(
+            'NO_USABLE_SUPPLIER_ARTICLE',
         );
+    }
+
+    if (
+        article
+        && policy.mode
+        === SUPPLIER_PRICING_POLICY_MODE.INVOICED_PRICE
+    ) {
+        attempted.push('INVOICED_PRICE');
         const invoice =
             await findFreshValidatedInvoice({
                 workspaceId,
                 dossierId,
-                articleId:
-                    article._id,
+                articleId: article._id,
                 atDate,
+                session,
             });
 
         if (invoice.price) {
             return {
                 article:
-                    serializeSupplierArticleSummary(
-                        article,
-                    ),
+                    serializeSupplierArticleSummary(article),
+                productVariant:
+                    serializeProductVariantSummary(productVariant),
                 policy,
-                requestedMode:
-                    policy.mode,
-                resolvedSource:
-                    'INVOICED_PRICE',
-                fallbackApplied:
-                    false,
-                fallbackReason:
-                    null,
-                price:
-                    serializeApplicableSource({
-                        source:
-                            'INVOICED_PRICE',
-                        price:
-                            invoice.price,
-                        extra: {
-                            invoiceDate:
-                                invoice.price
-                                    .invoiceDate,
-                            freshUntil:
-                                invoice
-                                    .freshUntil,
-                        },
-                    }),
+                requestedMode: policy.mode,
+                resolvedSource: 'INVOICED_PRICE',
+                fallbackApplied: false,
+                fallbackReason: null,
+                price: serializeApplicableSource({
+                    source: 'INVOICED_PRICE',
+                    price: invoice.price,
+                    extra: {
+                        invoiceDate:
+                            invoice.price.invoiceDate,
+                        freshUntil:
+                            invoice.freshUntil,
+                    },
+                }),
                 alerts,
                 atDate,
             };
@@ -1384,141 +1814,176 @@ const resolveApplicablePrice = async ({
     }
 
     if (
-        policy.mode
-        !== SUPPLIER_PRICING_POLICY_MODE
-            .SUPPLIER_TARIFF
+        article
+        && policy.mode
+        !== SUPPLIER_PRICING_POLICY_MODE.SUPPLIER_TARIFF
     ) {
-        attempted.push(
-            'NEGOTIATED_PRICE',
-        );
+        attempted.push('NEGOTIATED_PRICE');
         const negotiated =
             await findValidNegotiatedPrice({
                 workspaceId,
                 dossierId,
-                articleId:
-                    article._id,
+                articleId: article._id,
                 atDate,
+                session,
             });
 
         if (negotiated) {
             return {
                 article:
-                    serializeSupplierArticleSummary(
-                        article,
-                    ),
+                    serializeSupplierArticleSummary(article),
+                productVariant:
+                    serializeProductVariantSummary(productVariant),
                 policy,
-                requestedMode:
-                    policy.mode,
-                resolvedSource:
-                    'NEGOTIATED_PRICE',
+                requestedMode: policy.mode,
+                resolvedSource: 'NEGOTIATED_PRICE',
                 fallbackApplied:
                     policy.mode
-                    !== SUPPLIER_PRICING_POLICY_MODE
-                        .NEGOTIATED_PRICE,
+                    !== SUPPLIER_PRICING_POLICY_MODE.NEGOTIATED_PRICE,
                 fallbackReason:
                     policy.mode
-                    === SUPPLIER_PRICING_POLICY_MODE
-                        .INVOICED_PRICE
+                    === SUPPLIER_PRICING_POLICY_MODE.INVOICED_PRICE
                         ? alerts[0]
                         : null,
-                price:
-                    serializeApplicableSource({
-                        source:
-                            'NEGOTIATED_PRICE',
-                        price:
-                            negotiated,
-                        extra: {
-                            validFrom:
-                                negotiated
-                                    .validFrom,
-                            validTo:
-                                negotiated
-                                    .validTo,
-                        },
-                    }),
+                price: serializeApplicableSource({
+                    source: 'NEGOTIATED_PRICE',
+                    price: negotiated,
+                    extra: {
+                        validFrom: negotiated.validFrom,
+                        validTo: negotiated.validTo,
+                    },
+                }),
                 alerts,
                 atDate,
             };
         }
 
-        alerts.push(
-            'NO_VALID_NEGOTIATED_PRICE',
-        );
+        alerts.push('NO_VALID_NEGOTIATED_PRICE');
     }
 
-    attempted.push(
-        'SUPPLIER_TARIFF',
-    );
-    const tariff =
-        await findApplicableSupplierTariff({
-            workspaceId,
-            articleId:
-                article._id,
-            atDate,
-        });
+    if (article) {
+        attempted.push('SUPPLIER_TARIFF');
+        const tariff =
+            await findApplicableSupplierTariff({
+                workspaceId,
+                articleId: article._id,
+                atDate,
+                session,
+            });
 
-    if (tariff) {
-        return {
-            article:
-                serializeSupplierArticleSummary(
-                    article,
-                ),
-            policy,
-            requestedMode:
-                policy.mode,
-            resolvedSource:
-                'SUPPLIER_TARIFF',
-            fallbackApplied:
-                policy.mode
-                !== SUPPLIER_PRICING_POLICY_MODE
-                    .SUPPLIER_TARIFF,
-            fallbackReason:
-                alerts[0] ?? null,
-            price:
-                serializeApplicableSource({
-                    source:
-                        'SUPPLIER_TARIFF',
-                    price:
-                        tariff,
+        if (tariff) {
+            return {
+                article:
+                    serializeSupplierArticleSummary(article),
+                productVariant:
+                    serializeProductVariantSummary(productVariant),
+                policy,
+                requestedMode: policy.mode,
+                resolvedSource: 'SUPPLIER_TARIFF',
+                fallbackApplied:
+                    policy.mode
+                    !== SUPPLIER_PRICING_POLICY_MODE.SUPPLIER_TARIFF,
+                fallbackReason: alerts[0] ?? null,
+                price: serializeApplicableSource({
+                    source: 'SUPPLIER_TARIFF',
+                    price: tariff,
                     extra: {
                         catalogEdition: {
                             id:
-                                tariff
-                                    .catalogEdition
-                                    ._id
-                                    .toString(),
+                                tariff.catalogEdition._id.toString(),
                             name:
-                                tariff
-                                    .catalogEdition
-                                    .name,
+                                tariff.catalogEdition.name,
                             editionDate:
-                                tariff
-                                    .catalogEdition
-                                    .editionDate,
+                                tariff.catalogEdition.editionDate,
                         },
-                        validFrom:
-                            tariff.validFrom,
-                        validTo:
-                            tariff.validTo,
+                        validFrom: tariff.validFrom,
+                        validTo: tariff.validTo,
                     },
                 }),
+                alerts,
+                atDate,
+            };
+        }
+
+        alerts.push('NO_APPLICABLE_SUPPLIER_TARIFF');
+    }
+
+    attempted.push('INDICATIVE_DOSSIER');
+    const dossierIndicative =
+        await findActiveIndicativePrice({
+            workspaceId,
+            dossierId,
+            productVariantId: productVariant._id,
+            session,
+        });
+
+    if (dossierIndicative) {
+        return {
+            article: null,
+            productVariant:
+                serializeProductVariantSummary(productVariant),
+            policy,
+            requestedMode: policy.mode,
+            resolvedSource: 'INDICATIVE_DOSSIER',
+            fallbackApplied: true,
+            fallbackReason:
+                alerts[0] ?? 'NO_COMMERCIAL_PRICE',
+            price: serializeApplicableSource({
+                source: 'INDICATIVE_DOSSIER',
+                price: dossierIndicative,
+            }),
             alerts,
             atDate,
         };
     }
 
-    alerts.push(
-        'NO_APPLICABLE_SUPPLIER_TARIFF',
-    );
+    alerts.push('NO_DOSSIER_INDICATIVE_PRICE');
+
+    attempted.push('INDICATIVE_WORKSPACE');
+    const workspaceIndicative =
+        await findActiveIndicativePrice({
+            workspaceId,
+            dossierId: null,
+            productVariantId: productVariant._id,
+            session,
+        });
+
+    if (workspaceIndicative) {
+        return {
+            article: null,
+            productVariant:
+                serializeProductVariantSummary(productVariant),
+            policy,
+            requestedMode: policy.mode,
+            resolvedSource: 'INDICATIVE_WORKSPACE',
+            fallbackApplied: true,
+            fallbackReason:
+                alerts[0] ?? 'NO_COMMERCIAL_PRICE',
+            price: serializeApplicableSource({
+                source: 'INDICATIVE_WORKSPACE',
+                price: workspaceIndicative,
+            }),
+            alerts,
+            atDate,
+        };
+    }
+
+    alerts.push('NO_WORKSPACE_INDICATIVE_PRICE');
+
+    if (!article) {
+        throw new AppError(
+            'Aucun Article fournisseur exploitable ni Prix indicatif pour cette Référence Produit.',
+            404,
+        );
+    }
 
     return {
         article:
-            serializeSupplierArticleSummary(
-                article,
-            ),
+            serializeSupplierArticleSummary(article),
+        productVariant:
+            serializeProductVariantSummary(productVariant),
         policy,
-        requestedMode:
-            policy.mode,
+        requestedMode: policy.mode,
         resolvedSource: null,
         fallbackApplied:
             attempted.length > 1,
@@ -1781,20 +2246,24 @@ const listDossierReferences = async ({
 export {
     addCalendarMonths,
     addDossierReference,
+    archiveIndicativePrice,
     archiveNegotiatedPrice,
     createInvoicedPrice,
     createNegotiatedPrice,
     findApplicableSupplierTariff,
+    findActiveIndicativePrice,
     findFreshValidatedInvoice,
     findValidNegotiatedPrice,
     findVisibleSupplierArticle,
     getPricingPolicy,
     listDossierReferences,
+    listIndicativePrices,
     listInvoicedPrices,
     listNegotiatedPrices,
     removeDossierReference,
     resolveApplicablePrice,
     resolveSupplierArticle,
+    setIndicativePrice,
     transitionInvoicedPrice,
     updatePricingPolicy,
 };

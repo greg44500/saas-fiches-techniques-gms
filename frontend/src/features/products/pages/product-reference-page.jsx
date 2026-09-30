@@ -150,16 +150,23 @@ function ProductReferencePage({ canManage }) {
     setPage(1);
   }
 
-  async function decideContribution(contribution, decision) {
+  async function decideContribution(
+    contribution,
+    decision,
+    targetReferenceId = null,
+  ) {
     try {
       await reviewContribution({
         contributionId: contribution.id,
         decision,
+        ...(targetReferenceId ? { targetReferenceId } : {}),
       }).unwrap();
       toast({
         title: decision === 'APPROVE'
           ? 'Contribution approuvée'
-          : 'Contribution refusée',
+          : decision === 'MERGE'
+            ? 'Contribution fusionnée'
+            : 'Contribution refusée',
         variant: 'success',
       });
     } catch (error) {
@@ -338,9 +345,16 @@ function ProductReferencePage({ canManage }) {
       id: 'reason',
       header: 'Motif',
       cell: (contribution) => (
-        <span className="text-sm text-muted-foreground">
-          {contribution.reasons?.[0]?.message ?? 'Aucun motif'}
-        </span>
+        <div className="space-y-1 text-sm text-muted-foreground">
+          <p>{contribution.reasons?.[0]?.message ?? 'Aucun motif'}</p>
+          {(contribution.candidates ?? []).length > 0 && (
+            <p className="text-xs">
+              Valeurs proches : {(contribution.candidates ?? [])
+                .map((candidate) => candidate.name)
+                .join(', ')}
+            </p>
+          )}
+        </div>
       ),
     },
     {
@@ -357,6 +371,22 @@ function ProductReferencePage({ canManage }) {
             >
               Approuver
             </Button>
+            {(contribution.candidates ?? []).map((candidate) => (
+              <Button
+                disabled={reviewContributionState.isLoading}
+                key={candidate.id}
+                onClick={() => decideContribution(
+                  contribution,
+                  'MERGE',
+                  candidate.id,
+                )}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Fusionner avec {candidate.name}
+              </Button>
+            ))}
             <Button
               disabled={reviewContributionState.isLoading}
               onClick={() => decideContribution(contribution, 'REJECT')}

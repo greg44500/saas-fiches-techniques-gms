@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
   DialogClose,
@@ -134,9 +135,19 @@ function ProductVariantCreateDialog({
         <DialogOverlay />
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-2xl overflow-y-auto" initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>Créer une référence Produit</DialogTitle>
-            <DialogDescription>
-              Vérifiez les références existantes de {product?.name} avant d’en créer une nouvelle.
+            <div className="flex items-center gap-2">
+              <DialogTitle>Créer une référence Produit</DialogTitle>
+              <InfoTooltip
+                content={
+                  'Vérifiez les références existantes de '
+                  + (product?.name ?? 'ce Produit')
+                  + ' avant d’en créer une nouvelle.'
+                }
+                label="À propos de la création d’une référence Produit"
+              />
+            </div>
+            <DialogDescription className="sr-only">
+              Créez une Référence Produit à partir des dimensions disponibles.
             </DialogDescription>
           </DialogHeader>
 
@@ -158,13 +169,14 @@ function ProductVariantCreateDialog({
             )}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
+              <div className="flex items-center gap-2">
                 <p className="text-sm font-medium">
                   Variété et caractéristiques
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Sélectionnez des dimensions existantes ou enrichissez le référentiel.
-                </p>
+                <InfoTooltip
+                  content="Sélectionnez les valeurs existantes ou ajoutez plusieurs variétés et caractéristiques au référentiel de ce Produit."
+                  label="À propos des variétés et caractéristiques"
+                />
               </div>
               <Button
                 disabled={pending}
@@ -172,7 +184,7 @@ function ProductVariantCreateDialog({
                 type="button"
                 variant="outline"
               >
-                Enrichir le référentiel
+                Ajouter des valeurs
               </Button>
             </div>
 

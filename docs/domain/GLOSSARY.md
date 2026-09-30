@@ -266,14 +266,26 @@ Classification métier facultative backend-driven :
 
 Proposition issue d'un Workspace habilité et analysée par un moteur déterministe.
 
-Résultats :
+Résultats actifs :
 
 - `EXISTING` ;
+- `USER_CONFIRMATION_REQUIRED` ;
 - `AUTO_PUBLISHABLE` ;
-- `REVIEW_REQUIRED` ;
+- `PROVISIONAL` ;
 - `INVALID`.
 
-Une contribution nécessitant revue est portée par `ReferenceContribution`. Elle n'ajoute jamais `PENDING_REVIEW` au lifecycle des références réelles.
+`REVIEW_REQUIRED` reste une valeur historique compatible avec les contributions antérieures.
+
+Une contribution `PROVISIONAL` crée une vraie identité exploitable immédiatement dans le Workspace d'origine et une `ReferenceContribution` en attente de gouvernance. `PENDING_REVIEW` reste un statut de contribution et ne devient jamais un état de lifecycle de la référence.
+
+## Statut de gouvernance Produit
+
+État distinct du lifecycle `ACTIVE` / `ARCHIVED` :
+
+- `APPROVED` : identité canonique globale ;
+- `PROVISIONAL` : identité utilisable uniquement par le Workspace contributeur et visible par la Platform ;
+- `RESOLVED` : identité fusionnée/remplacée, non sélectionnable ;
+- `REJECTED` : proposition refusée, non sélectionnable.
 
 ## Gamme alimentaire
 
@@ -384,7 +396,9 @@ WORKSPACE_PRIVATE
 
 Un Fournisseur privé n'est jamais exposé hors de son Workspace.
 
-Le Fournisseur n'est pas un CRM. En baseline V1, seul son nom est obligatoire côté métier ; code fournisseur, raison sociale et site web sont facultatifs.
+Le Fournisseur n'est pas un CRM. En baseline V1, seul son nom est obligatoire côté métier ; code fournisseur, raison sociale, site web et catégories Produit fournies sont facultatifs.
+
+Un Fournisseur peut être associé explicitement à plusieurs catégories actives du référentiel Produit afin de décrire les familles de produits qu'il fournit. Cette association est informative : elle ne remplace pas les Articles fournisseur, n'est pas déduite automatiquement et n'intervient pas dans la résolution des prix.
 
 Son lifecycle baseline est `ACTIVE / ARCHIVED`.
 
@@ -519,6 +533,18 @@ Sa validité repose sur sa propre période commerciale et non sur un seuil gén�
 
 ---
 
+## Prix indicatif
+
+Estimation interne de dernier recours, distincte des données commerciales fournisseur.
+
+Portées :
+- Workspace : estimation commune à l'espace de travail ;
+- Dossier : surcharge locale facultative.
+
+Le Prix indicatif peut exister sans Article fournisseur. La portée Dossier est essayée avant la portée Workspace, après toutes les sources commerciales admissibles.
+
+---
+
 ## Prix observé
 
 Prix réellement constaté à une date donnée, notamment sur une facture.
@@ -565,7 +591,7 @@ Une revue peut être réalisée en masse mais ne modifie pas artificiellement le
 
 ## Produit valorisable
 
-Produit pour lequel le backend peut résoudre, dans le magasin courant, un Article et un Prix applicable conformes aux règles du Workspace.
+Produit pour lequel le backend peut résoudre, dans le magasin courant, un Prix applicable conforme aux règles du Workspace. Un Article fournisseur reste requis pour une source commerciale liée à un Article, mais un Prix indicatif peut valoriser directement la Référence Produit lorsqu'aucun Article commercial exploitable n'existe.
 
 ---
 

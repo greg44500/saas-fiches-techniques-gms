@@ -12,6 +12,12 @@ const serializeDossier = (dossier) => ({
     documentEmail: dossier.documentEmail ?? null,
     phone: dossier.phone ?? null,
     contactName: dossier.contactName ?? null,
+    technicalSheetSettings: {
+        defaultTargetMarginBasisPoints:
+            dossier.technicalSheetSettings
+                ?.defaultTargetMarginBasisPoints
+            ?? null,
+    },
     status: dossier.status,
     statusChangedAt: dossier.statusChangedAt,
     deletedAt: dossier.deletedAt ?? null,

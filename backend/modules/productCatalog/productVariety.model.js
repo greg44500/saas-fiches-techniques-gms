@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 import {
+    PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
 
@@ -35,6 +36,12 @@ const productVarietySchema = new Schema(
             required: true,
         },
         identityActive: { type: Boolean, default: true, required: true },
+        governanceStatus: {
+            type: String,
+            enum: Object.values(PRODUCT_GOVERNANCE_STATUS),
+            default: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+            required: true,
+        },
         contributedFromWorkspace: {
             type: Schema.Types.ObjectId,
             ref: 'Workspace',
@@ -50,9 +57,27 @@ const productVarietySchema = new Schema(
 productVarietySchema.index(
     { canonicalProduct: 1, normalizedName: 1 },
     {
-        name: 'product_variety_product_name_unique',
+        name: 'product_variety_approved_product_name_unique',
         unique: true,
-        partialFilterExpression: { identityActive: true },
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+        },
+    },
+);
+productVarietySchema.index(
+    {
+        canonicalProduct: 1,
+        contributedFromWorkspace: 1,
+        normalizedName: 1,
+    },
+    {
+        name: 'product_variety_provisional_workspace_name_unique',
+        unique: true,
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+        },
     },
 );
 productVarietySchema.index(
@@ -62,6 +87,10 @@ productVarietySchema.index(
 productVarietySchema.index(
     { searchGrams: 1, status: 1 },
     { name: 'product_variety_search_grams_status' },
+);
+productVarietySchema.index(
+    { governanceStatus: 1, contributedFromWorkspace: 1, canonicalProduct: 1 },
+    { name: 'product_variety_governance_workspace_product' },
 );
 
 const ProductVariety = model('ProductVariety', productVarietySchema);

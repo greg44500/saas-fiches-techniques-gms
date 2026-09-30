@@ -14,6 +14,12 @@ import {
 import {
     PRODUCT_CATALOG_FEATURE,
 } from '../../modules/productCatalog/productCatalogCapability.registry.js';
+import {
+    SUPPLIER_CATALOG_FEATURE,
+} from '../../modules/supplierCatalog/supplierCatalogCapability.registry.js';
+import {
+    TECHNICAL_SHEET_METRIC,
+} from '../../modules/technicalSheet/technicalSheet.registry.js';
 
 
 describe('Application plan capability registry', () => {
@@ -26,7 +32,7 @@ describe('Application plan capability registry', () => {
         ).toBe(true);
     });
 
-    it('compose les capabilities M-002 dans le registre applicatif actif', () => {
+    it('compose les capabilities métier M-002 à M-004 dans le registre applicatif actif', () => {
         expect(
             ACTIVE_PLAN_CAPABILITY_REGISTRY.features.has(
                 PRODUCT_CATALOG_FEATURE.REFERENCE_ACCESS,
@@ -50,6 +56,27 @@ describe('Application plan capability registry', () => {
         ).toEqual(expect.objectContaining({
             category: 'products',
             categoryLabel: 'Produits',
+        }));
+
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.features.has(
+                SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT,
+            ),
+        ).toBe(true);
+
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.metrics.has(
+                TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS,
+            ),
+        ).toBe(true);
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.getMetricPresentation(
+                TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS,
+            ),
+        ).toEqual(expect.objectContaining({
+            label: 'Fiches techniques',
+            category: 'technical_sheets',
+            unit: 'count',
         }));
     });
 

@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react';
+import { Search, Star, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -15,9 +15,15 @@ import {
   AutocompleteStatus,
 } from '@/components/ui/autocomplete';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   useSearchProductsQuery,
 } from '@/features/products/api/product-catalog-api';
 import {
+  getConservationTypeLabel,
   getReferenceLabel,
 } from '@/features/products/lib/product-presentation';
 
@@ -26,12 +32,17 @@ const PRODUCT_SEARCH_AUTOCOMPLETE_DEBOUNCE_MS = 300;
 const PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT = 6;
 
 function ProductSearchAutocomplete({
+  ariaLabel = 'Rechercher un Produit',
   categoryId,
+  clearOnSelect = false,
+  compact = false,
   conservationType,
   metadata,
   onSelect,
   onValueChange,
+  placeholder = 'Rechercher un produit…',
   scope,
+  showWorkspaceFavorite = false,
   status,
   value,
   workspaceId,
@@ -86,8 +97,16 @@ function ProductSearchAutocomplete({
       result.variant,
     );
 
-    onValueChange(nextSearch);
     onSelect(result);
+
+    if (clearOnSelect) {
+      globalThis.queueMicrotask(() => {
+        onValueChange('');
+      });
+      return;
+    }
+
+    onValueChange(nextSearch);
   }
 
   const normalizedValue = value.trim();
@@ -110,16 +129,18 @@ function ProductSearchAutocomplete({
       onValueChange={onValueChange}
       value={value}
     >
-      <AutocompleteInputGroup className="h-10 min-h-10">
+      <AutocompleteInputGroup
+        className={compact ? 'h-8 min-h-8' : 'h-10 min-h-10'}
+      >
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
         />
         <AutocompleteInput
-          aria-label="Rechercher un Produit"
-          className="h-10"
+          aria-label={ariaLabel}
+          className={compact ? 'h-8' : 'h-10'}
           maxLength={120}
-          placeholder="Rechercher un produit…"
+          placeholder={placeholder}
         />
         <AutocompleteClear aria-label="Effacer la recherche">
           <X aria-hidden="true" className="size-4" />
@@ -127,7 +148,7 @@ function ProductSearchAutocomplete({
       </AutocompleteInputGroup>
 
       <AutocompletePortal>
-        <AutocompletePositioner>
+        <AutocompletePositioner className="z-[calc(var(--layer-modal)_+_1)]">
           <AutocompletePopup className="border-primary/25 bg-popover/95 shadow-2xl ring-1 ring-foreground/5 backdrop-blur-md">
             <div className="border-b border-border bg-muted/35 px-3 py-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -160,6 +181,9 @@ function ProductSearchAutocomplete({
                     getReferenceLabel(metadata, result.product, result.variant),
                     result.product.category?.name,
                     result.variant ? 'Référence Produit' : 'À enrichir',
+                    showWorkspaceFavorite && result.workspaceEntry?.status === 'ACTIVE'
+                      ? 'Favori'
+                      : null,
                   ].filter(Boolean).join('. ')}
                   className="border-b border-border/50 last:border-b-0 data-highlighted:bg-accent/70"
                   index={index}
@@ -170,11 +194,34 @@ function ProductSearchAutocomplete({
                   <span className="font-medium">
                     {getReferenceLabel(metadata, result.product, result.variant)}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    {[
-                      result.product.category?.name,
-                      result.variant ? null : 'Référence à enrichir',
-                    ].filter(Boolean).join(' · ')}
+                  <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span>
+                      {[
+                        result.product.category?.name,
+                        result.variant
+                          ? getConservationTypeLabel(
+                              metadata,
+                              result.variant.conservationType,
+                            )
+                          : 'Référence à enrichir',
+                      ].filter(Boolean).join(' · ')}
+                    </span>
+                    {showWorkspaceFavorite
+                    && result.workspaceEntry?.status === 'ACTIVE' && (
+                      <Tooltip>
+                        <TooltipTrigger
+                          aria-label="Favori"
+                          className="inline-flex size-5 items-center justify-center rounded-full border border-warning/40 bg-warning/10 text-warning"
+                          render={<span />}
+                        >
+                          <Star
+                            aria-hidden="true"
+                            className="size-3 fill-current"
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>Favori</TooltipContent>
+                      </Tooltip>
+                    )}
                   </span>
                 </AutocompleteItem>
               )}

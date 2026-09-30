@@ -1,3 +1,13 @@
+const dossierWorkspaceRoute = Object.freeze({
+  path: 'dossiers/:dossierId',
+  lazy: async () => {
+    const { DossierWorkspaceRoute } = await import(
+      '@/features/dossiers/components/dossier-workspace-route'
+    );
+    return { Component: DossierWorkspaceRoute };
+  },
+});
+
 const dossiersFrontendRouteModule = Object.freeze({
   workspaceRoutes: Object.freeze([
     Object.freeze({
@@ -10,15 +20,18 @@ const dossiersFrontendRouteModule = Object.freeze({
       },
     }),
     Object.freeze({
-      path: 'dossiers/:dossierId',
+      path: 'dossiers-settings',
       lazy: async () => {
-        const { DossierWorkspaceRoute } = await import(
-          '@/features/dossiers/components/dossier-workspace-route'
+        const { DossierSettingsRoute } = await import(
+          '@/features/dossiers/components/dossier-settings-route'
         );
-        return { Component: DossierWorkspaceRoute };
+        return { Component: DossierSettingsRoute };
       },
     }),
   ]),
 });
 
-export { dossiersFrontendRouteModule };
+export {
+  dossierWorkspaceRoute,
+  dossiersFrontendRouteModule,
+};

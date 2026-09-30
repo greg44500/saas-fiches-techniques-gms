@@ -72,6 +72,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
         status = 'ACTIVE',
         scope,
         supplierId,
+        productId,
         productVariantId,
       }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-articles',
@@ -82,6 +83,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
           status,
           scope,
           supplierId,
+          productId,
           productVariantId,
         },
       }),
@@ -305,6 +307,74 @@ const supplierApi = supplierApiBase.injectEndpoints({
       transformResponse: (response) => response.data.applicablePrice,
       providesTags: ['SupplierPricing'],
     }),
+    listWorkspaceIndicativePrices: builder.query({
+      query: ({
+        workspaceId,
+        productId,
+        productVariantId,
+        status = 'ACTIVE',
+      }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-pricing/indicative-prices',
+        params: { productId, productVariantId, status },
+      }),
+      transformResponse: (response) => response.data.prices,
+      providesTags: ['SupplierPricing'],
+    }),
+    setWorkspaceIndicativePrice: builder.mutation({
+      query: ({ workspaceId, productVariantId, ...body }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/supplier-pricing/indicative-prices/' + productVariantId,
+        method: 'PUT',
+        body,
+      }),
+      transformResponse: (response) => response.data.price,
+      invalidatesTags: ['SupplierPricing'],
+    }),
+    archiveWorkspaceIndicativePrice: builder.mutation({
+      query: ({ workspaceId, productVariantId }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/supplier-pricing/indicative-prices/' + productVariantId,
+        method: 'DELETE',
+      }),
+      transformResponse: (response) => response.data.price,
+      invalidatesTags: ['SupplierPricing'],
+    }),
+    listDossierIndicativePrices: builder.query({
+      query: ({ workspaceId, dossierId, productVariantId, status = 'ACTIVE' }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/dossiers/' + dossierId
+          + '/supplier-pricing/indicative-prices',
+        params: { productVariantId, status },
+      }),
+      transformResponse: (response) => response.data.prices,
+      providesTags: ['SupplierPricing'],
+    }),
+    setDossierIndicativePrice: builder.mutation({
+      query: ({ workspaceId, dossierId, productVariantId, ...body }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/dossiers/' + dossierId
+          + '/supplier-pricing/indicative-prices/' + productVariantId,
+        method: 'PUT',
+        body,
+      }),
+      transformResponse: (response) => response.data.price,
+      invalidatesTags: ['SupplierPricing'],
+    }),
+    archiveDossierIndicativePrice: builder.mutation({
+      query: ({ workspaceId, dossierId, productVariantId }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/dossiers/' + dossierId
+          + '/supplier-pricing/indicative-prices/' + productVariantId,
+        method: 'DELETE',
+      }),
+      transformResponse: (response) => response.data.price,
+      invalidatesTags: ['SupplierPricing'],
+    }),
     getSupplierReferenceAccess: builder.query({
       query: () => ({ url: '/supplier-reference/access' }),
       transformResponse: (response) => response.data.access,
@@ -461,7 +531,9 @@ const supplierApi = supplierApiBase.injectEndpoints({
 
 export const {
   useAddDossierSupplierReferenceMutation,
+  useArchiveDossierIndicativePriceMutation,
   useArchiveNegotiatedPriceMutation,
+  useArchiveWorkspaceIndicativePriceMutation,
   useCommitGlobalSupplierCatalogImportMutation,
   useCommitSupplierCatalogImportMutation,
   useCreateGlobalSupplierArticleMutation,
@@ -483,6 +555,7 @@ export const {
   useGetSupplierReferenceAccessQuery,
   useInspectGlobalSupplierCatalogImportMutation,
   useInspectSupplierCatalogImportMutation,
+  useListDossierIndicativePricesQuery,
   useListDossierSupplierReferencesQuery,
   useListGlobalSupplierArticlesQuery,
   useListGlobalSupplierCatalogLinesQuery,
@@ -494,6 +567,7 @@ export const {
   useListSupplierCatalogLinesQuery,
   useListSupplierCatalogsQuery,
   useListSuppliersQuery,
+  useListWorkspaceIndicativePricesQuery,
   usePreviewGlobalSupplierCatalogImportMutation,
   usePreviewSupplierCatalogImportMutation,
   useRemoveDossierSupplierReferenceMutation,
@@ -504,6 +578,8 @@ export const {
   useUpdateGlobalSupplierCatalogStatusMutation,
   useUpdateGlobalSupplierMutation,
   useUpdateGlobalSupplierStatusMutation,
+  useSetDossierIndicativePriceMutation,
+  useSetWorkspaceIndicativePriceMutation,
   useUpdatePricingPolicyMutation,
   useUpdateSupplierArticleMutation,
   useUpdateSupplierArticleStatusMutation,

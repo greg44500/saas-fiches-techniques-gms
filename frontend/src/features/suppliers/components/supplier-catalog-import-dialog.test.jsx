@@ -63,6 +63,7 @@ describe('SupplierCatalogImportDialog', () => {
       'Unite',
       'Prix',
       'Base',
+      'Devise',
     ])).toEqual({
       supplierReference: 0,
       designation: 1,
@@ -155,6 +156,10 @@ describe('SupplierCatalogImportDialog', () => {
       }),
     );
 
+    expect(screen.getByText('Unité du prix (Kilo, Pièce, etc.)'))
+      .toBeInTheDocument();
+    expect(screen.queryByText('Devise')).not.toBeInTheDocument();
+
     expect(
       await screen.findByText('Ambigu : 1'),
     ).toBeInTheDocument();
@@ -175,6 +180,9 @@ describe('SupplierCatalogImportDialog', () => {
           priceAmount: 2,
           priceBasis: 3,
         }),
+        defaults: {
+          currency: 'EUR',
+        },
       }),
     );
   });

@@ -50,6 +50,10 @@ const supplier = {
   supplierCode: 'LOC',
   legalName: 'Fournisseur Local SAS',
   website: 'https://example.test',
+  categories: [
+    { id: 'cat-1', name: 'Fruits et légumes' },
+    { id: 'cat-2', name: 'Produits laitiers' },
+  ],
   scope: 'WORKSPACE_PRIVATE',
   status: 'ACTIVE',
 };
@@ -106,6 +110,9 @@ describe('SupplierDetailsDrawer', () => {
     );
 
     expect(screen.getByText('Fournisseur Local SAS')).toBeInTheDocument();
+    expect(screen.getByText('Catégories')).toBeInTheDocument();
+    expect(screen.getByText('Fruits et légumes, Produits laitiers'))
+      .toBeInTheDocument();
     expect(screen.getByText('Origine')).toBeInTheDocument();
     expect(screen.getByText('Cet espace de travail')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Utilisation' })).toBeInTheDocument();

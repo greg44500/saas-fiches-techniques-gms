@@ -9,6 +9,7 @@ import {
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_STATUS,
@@ -17,6 +18,10 @@ import {
     serializeCharacteristic,
     serializeVariety,
 } from './productCatalog.serializer.js';
+import {
+    buildPlatformGovernanceVisibilityFilter,
+    buildWorkspaceGovernanceVisibilityFilter,
+} from './productReferenceGovernance.service.js';
 import {
     createProductReferenceEvent,
 } from './productReferenceEvent.service.js';
@@ -54,6 +59,7 @@ const createProductVarietyInSession = async ({
     name,
     aliases = [],
     workspaceId = null,
+    governanceStatus = PRODUCT_GOVERNANCE_STATUS.APPROVED,
     session,
 }) => {
     await assertProductAvailable({ productId, session });
@@ -62,6 +68,10 @@ const createProductVarietyInSession = async ({
         canonicalProduct: productId,
         normalizedName,
         identityActive: true,
+        governanceStatus,
+        ...(governanceStatus === PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
+            ? { contributedFromWorkspace: workspaceId }
+            : {}),
     }).session(session);
 
     if (existing) {
@@ -80,6 +90,7 @@ const createProductVarietyInSession = async ({
                 searchKeys,
                 searchGrams: buildSearchGrams(searchKeys),
                 status: PRODUCT_STATUS.ACTIVE,
+                governanceStatus,
                 contributedFromWorkspace: workspaceId,
                 createdBy: actorId,
                 updatedBy: actorId,
@@ -115,6 +126,7 @@ const createProductCharacteristicInSession = async ({
     name,
     aliases = [],
     workspaceId = null,
+    governanceStatus = PRODUCT_GOVERNANCE_STATUS.APPROVED,
     session,
 }) => {
     await assertProductAvailable({ productId, session });
@@ -129,6 +141,10 @@ const createProductCharacteristicInSession = async ({
         kind,
         normalizedName,
         identityActive: true,
+        governanceStatus,
+        ...(governanceStatus === PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
+            ? { contributedFromWorkspace: workspaceId }
+            : {}),
     }).session(session);
 
     if (existing) {
@@ -151,6 +167,7 @@ const createProductCharacteristicInSession = async ({
                 searchKeys,
                 searchGrams: buildSearchGrams(searchKeys),
                 status: PRODUCT_STATUS.ACTIVE,
+                governanceStatus,
                 contributedFromWorkspace: workspaceId,
                 createdBy: actorId,
                 updatedBy: actorId,
@@ -202,7 +219,9 @@ const createProductCharacteristic = (payload) => (
 
 const listProductDimensions = async ({
     productId,
+    workspaceId = null,
     includeArchived = false,
+    includeProvisional = false,
 }) => {
     const product = await CanonicalProduct.findOne({
         _id: productId,
@@ -225,16 +244,22 @@ const listProductDimensions = async ({
             ...(includeArchived ? [PRODUCT_STATUS.ARCHIVED] : []),
         ],
     });
+    const governanceFilter = includeProvisional
+        ? buildPlatformGovernanceVisibilityFilter()
+        : buildWorkspaceGovernanceVisibilityFilter(workspaceId);
+
     const [varieties, characteristics] = await Promise.all([
         ProductVariety.find({
             canonicalProduct: productId,
             identityActive: true,
             status: statusFilter,
+            ...governanceFilter,
         }).sort({ normalizedName: 1, _id: 1 }).lean(),
         ProductCharacteristic.find({
             canonicalProduct: productId,
             identityActive: true,
             status: statusFilter,
+            ...governanceFilter,
         }).sort({ kind: 1, normalizedName: 1, _id: 1 }).lean(),
     ]);
 

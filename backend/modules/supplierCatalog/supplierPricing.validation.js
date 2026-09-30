@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 import {
+    PRODUCT_REFERENCE_UNIT,
+} from '../productCatalog/productCatalog.registry.js';
+import {
+    INDICATIVE_PRICE_STATUS,
     INVOICED_PRICE_STATUS,
     NEGOTIATED_PRICE_STATUS,
     SUPPLIER_PRICE_BASIS,
@@ -180,6 +184,44 @@ const applicablePriceQuerySchema =
         },
     );
 
+const indicativePriceScopeParamsSchema =
+    z.strictObject({
+        workspaceId: objectIdSchema,
+        productVariantId: objectIdSchema,
+    });
+
+const dossierIndicativePriceScopeParamsSchema =
+    z.strictObject({
+        workspaceId: objectIdSchema,
+        dossierId: objectIdSchema,
+        productVariantId: objectIdSchema,
+    });
+
+const indicativePriceBodySchema =
+    z.strictObject({
+        sourceAmount: positiveDecimalSchema,
+        sourceBasis: z.enum(
+            Object.values(PRODUCT_REFERENCE_UNIT),
+        ),
+        currency: currencySchema.optional().default('EUR'),
+        source: z.string().trim().max(500).nullable().optional(),
+    });
+
+const listIndicativePriceQuerySchema =
+    z.strictObject({
+        productId: objectIdSchema.optional(),
+        productVariantId: objectIdSchema.optional(),
+        status: z.enum(
+            Object.values(INDICATIVE_PRICE_STATUS),
+        ).optional().default(INDICATIVE_PRICE_STATUS.ACTIVE),
+    }).refine(
+        (value) => !(value.productId && value.productVariantId),
+        {
+            message:
+                'productId et productVariantId ne peuvent pas être combinés.',
+        },
+    );
+
 const updatePricingPolicyBodySchema =
     z.strictObject({
         mode:
@@ -194,10 +236,14 @@ export {
     applicablePriceQuerySchema,
     createInvoicedPriceBodySchema,
     createNegotiatedPriceBodySchema,
+    dossierIndicativePriceScopeParamsSchema,
     dossierParamsSchema,
     dossierReferenceParamsSchema,
+    indicativePriceBodySchema,
+    indicativePriceScopeParamsSchema,
     invoicedPriceDecisionBodySchema,
     invoicedPriceParamsSchema,
+    listIndicativePriceQuerySchema,
     listInvoicedPriceQuerySchema,
     listNegotiatedPriceQuerySchema,
     negotiatedPriceParamsSchema,

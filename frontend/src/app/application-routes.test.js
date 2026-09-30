@@ -57,6 +57,36 @@ describe('application frontend route composition', () => {
     );
   });
 
+  it('compose les routes Workspace de Corbeille et paramètres Dossiers', () => {
+    expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'technical-sheets/trash' }),
+        expect.objectContaining({ path: 'dossiers-settings' }),
+      ]),
+    );
+    expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'technical-sheets/settings' }),
+      ]),
+    );
+  });
+
+  it('imbrique les modules métier dans le shell Dossier persistant', () => {
+    const dossierRoute = APPLICATION_FRONTEND_ROUTES.workspaceRoutes.find(
+      (route) => route.path === 'dossiers/:dossierId',
+    );
+
+    expect(dossierRoute).toBeDefined();
+    expect(collectPaths(dossierRoute.children)).toEqual(
+      expect.arrayContaining([
+        'suppliers',
+        'technical-sheets',
+        'technical-sheets/:technicalSheetId',
+      ]),
+    );
+    expect(dossierRoute.children.some((route) => route.index === true)).toBe(true);
+  });
+
   it('injecte chaque route métier sous la bonne frontière du Core', () => {
     const applicationRoutes = composeApplicationFrontendRoutes([
       {

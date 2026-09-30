@@ -12,6 +12,7 @@ const serializeProduct = (product) => ({
     aliases: [...(product.aliases ?? [])],
     category: serializeCategory(product.category),
     status: product.status,
+    governanceStatus: product.governanceStatus ?? 'APPROVED',
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
 });
@@ -25,6 +26,7 @@ const serializeVariety = (variety) => {
         name: variety.name,
         aliases: [...(variety.aliases ?? [])],
         status: variety.status,
+        governanceStatus: variety.governanceStatus ?? 'APPROVED',
     };
 };
 
@@ -39,6 +41,7 @@ const serializeCharacteristic = (characteristic) => {
         name: characteristic.name,
         aliases: [...(characteristic.aliases ?? [])],
         status: characteristic.status,
+        governanceStatus: characteristic.governanceStatus ?? 'APPROVED',
     };
 };
 
@@ -65,6 +68,7 @@ const serializeVariant = (variant) => {
         referenceUnit: variant.referenceUnit,
         yieldPercent: variant.yieldPercent ?? null,
         status: variant.status,
+        governanceStatus: variant.governanceStatus ?? 'APPROVED',
         createdAt: variant.createdAt,
         updatedAt: variant.updatedAt,
     };

@@ -356,6 +356,50 @@ describe('ProductReferencePage', () => {
     });
   });
 
+  it('propose une fusion explicite avec les candidats de gouvernance', async () => {
+    const user = userEvent.setup();
+    mocks.contributionsQuery.mockReturnValue({
+      data: {
+        contributions: [{
+          id: 'contribution-merge',
+          type: 'VARIETY',
+          proposedValue: 'Galla',
+          workspace: { id: 'workspace-1', name: 'Atelier pilote' },
+          author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
+          status: 'PENDING_REVIEW',
+          reasons: [{
+            code: 'TYPO_CANDIDATE',
+            message: 'Une valeur proche existe.',
+          }],
+          candidates: [{
+            id: 'variety-gala',
+            name: 'Gala',
+          }],
+        }],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Contributions' }));
+
+    expect(screen.getByText(/Valeurs proches : Gala/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Fusionner avec Gala',
+    }));
+
+    expect(mocks.reviewContribution).toHaveBeenCalledWith({
+      contributionId: 'contribution-merge',
+      decision: 'MERGE',
+      targetReferenceId: 'variety-gala',
+    });
+  });
+
   it('ouvre le détail global depuis la liste', async () => {
     const user = userEvent.setup();
     renderPage();

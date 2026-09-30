@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TooltipProvider } from '@/components/ui/tooltip';
+
 const mocks = vi.hoisted(() => ({
   contribute: vi.fn(),
   createVariety: vi.fn(),
@@ -33,6 +35,8 @@ import {
 const metadata = {
   productCharacteristicKinds: [
     { value: 'PRESENTATION', label: 'Présentation' },
+    { value: 'COMMERCIAL_TYPE', label: 'Type commercial' },
+    { value: 'COLOR', label: 'Couleur' },
     { value: 'QUALITY_DESIGNATION', label: 'Désignation de qualité' },
   ],
 };
@@ -55,7 +59,11 @@ function renderDialog(overrides = {}) {
     ...overrides,
   };
 
-  render(<ProductDimensionContributionDialog {...props} />);
+  render(
+    <TooltipProvider>
+      <ProductDimensionContributionDialog {...props} />
+    </TooltipProvider>,
+  );
   return props;
 }
 
@@ -64,38 +72,61 @@ describe('ProductDimensionContributionDialog', () => {
     vi.clearAllMocks();
   });
 
-  it('auto-publie une nouvelle Variété non conflictuelle via le moteur Workspace', async () => {
+  it('permet plusieurs ajouts successifs de Variétés sans fermer le dialogue', async () => {
     const user = userEvent.setup();
     const props = renderDialog();
 
-    mocks.contribute.mockReturnValue(resolved({
-      classification: 'AUTO_PUBLISHABLE',
-      publishedReference: {
-        id: 'variety-gala',
-        type: 'VARIETY',
-        name: 'Gala',
-      },
-    }));
+    mocks.contribute
+      .mockReturnValueOnce(resolved({
+        classification: 'AUTO_PUBLISHABLE',
+        publishedReference: {
+          id: 'variety-gala',
+          type: 'VARIETY',
+          name: 'Gala',
+        },
+      }))
+      .mockReturnValueOnce(resolved({
+        classification: 'AUTO_PUBLISHABLE',
+        publishedReference: {
+          id: 'variety-golden',
+          type: 'VARIETY',
+          name: 'Golden',
+        },
+      }));
 
-    await user.type(screen.getByLabelText('Nom de la variété'), 'Gala');
+    const input = screen.getByLabelText('Nom de la variété');
+
+    await user.type(input, 'Gala');
     await user.click(screen.getByRole('button', { name: 'Ajouter' }));
 
-    expect(mocks.contribute).toHaveBeenCalledWith({
+    expect(input).toHaveValue('');
+    expect(props.onClose).not.toHaveBeenCalled();
+
+    await user.type(input, 'Golden');
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
+
+    expect(mocks.contribute).toHaveBeenNthCalledWith(1, {
       workspaceId: 'workspace-1',
       type: 'VARIETY',
       productId: 'product-1',
       value: 'Gala',
+      forceCreate: false,
     });
-    expect(props.onResolved).toHaveBeenCalledWith(expect.objectContaining({
-      classification: 'AUTO_PUBLISHABLE',
-      publishedReference: expect.objectContaining({
-        id: 'variety-gala',
-      }),
-    }));
-    expect(props.onClose).toHaveBeenCalledTimes(1);
+    expect(mocks.contribute).toHaveBeenNthCalledWith(2, {
+      workspaceId: 'workspace-1',
+      type: 'VARIETY',
+      productId: 'product-1',
+      value: 'Golden',
+      forceCreate: false,
+    });
+    expect(props.onResolved).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Gala')).toBeInTheDocument();
+    expect(screen.getByText('Golden')).toBeInTheDocument();
+    expect(screen.getAllByText('Disponible')).toHaveLength(2);
+    expect(props.onClose).not.toHaveBeenCalled();
   });
 
-  it('réutilise une référence EXISTING sans création supplémentaire', async () => {
+  it('réutilise une valeur EXISTING et permet de poursuivre la session', async () => {
     const user = userEvent.setup();
     const props = renderDialog();
 
@@ -117,36 +148,49 @@ describe('ProductDimensionContributionDialog', () => {
         id: 'variety-reinette',
       }),
     }));
-    expect(props.onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Reinette')).toBeInTheDocument();
+    expect(screen.getByText('Existe déjà')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nom de la variété')).toHaveValue('');
+    expect(props.onClose).not.toHaveBeenCalled();
     expect(mocks.createVariety).not.toHaveBeenCalled();
     expect(mocks.createCharacteristic).not.toHaveBeenCalled();
   });
 
-  it('maintient ouverte une caractéristique REVIEW_REQUIRED jusqu à la revue globale', async () => {
+  it('propose directement les types métier et rend une valeur provisoire immédiatement utilisable', async () => {
     const user = userEvent.setup();
     const props = renderDialog();
 
     mocks.contribute.mockReturnValue(resolved({
-      classification: 'REVIEW_REQUIRED',
+      classification: 'PROVISIONAL',
+      provisionalReference: {
+        id: 'quality-1',
+        type: 'CHARACTERISTIC',
+        name: 'Carottes des sables',
+        governanceStatus: 'PROVISIONAL',
+      },
       contribution: {
         id: 'contribution-1',
         status: 'PENDING_REVIEW',
       },
       reasons: [{
-        code: 'CHARACTERISTIC_REQUIRES_GOVERNANCE',
-        message: 'Revue requise.',
+        code: 'CHARACTERISTIC_PROVISIONAL',
+        message: 'À valider.',
       }],
     }));
 
-    await user.click(screen.getByLabelText('Dimension'));
-    await user.click(screen.getByRole('option', { name: 'Caractéristique' }));
+    expect(screen.queryByLabelText('Dimension')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Type de caractéristique'))
+      .not.toBeInTheDocument();
 
-    await user.click(screen.getByLabelText('Type de caractéristique'));
+    await user.click(screen.getByLabelText('Type de valeur'));
     await user.click(screen.getByRole('option', {
       name: 'Désignation de qualité',
     }));
 
-    await user.type(screen.getByLabelText('Valeur'), 'Carottes des sables');
+    await user.type(
+      screen.getByLabelText('Désignation de qualité'),
+      'Carottes des sables',
+    );
     await user.click(screen.getByRole('button', { name: 'Ajouter' }));
 
     expect(mocks.contribute).toHaveBeenCalledWith({
@@ -155,14 +199,78 @@ describe('ProductDimensionContributionDialog', () => {
       productId: 'product-1',
       characteristicKind: 'QUALITY_DESIGNATION',
       value: 'Carottes des sables',
+      forceCreate: false,
     });
-    expect(await screen.findByText(/nécessite une revue du référentiel global/i))
+    expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
+    expect(screen.getByText('À valider')).toBeInTheDocument();
+    expect(screen.getByText(/Utilisable dans votre espace de travail/i))
       .toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ajouter' }))
-      .not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ajouter' }))
+      .toBeInTheDocument();
     expect(props.onResolved).toHaveBeenCalledWith(expect.objectContaining({
-      classification: 'REVIEW_REQUIRED',
+      classification: 'PROVISIONAL',
     }));
     expect(props.onClose).not.toHaveBeenCalled();
+  });
+
+  it('demande confirmation pour une valeur proche puis crée provisoirement sur choix explicite', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+
+    mocks.contribute
+      .mockReturnValueOnce(resolved({
+        classification: 'USER_CONFIRMATION_REQUIRED',
+        candidates: [{
+          id: 'variety-gala',
+          type: 'VARIETY',
+          name: 'Gala',
+        }],
+      }))
+      .mockReturnValueOnce(resolved({
+        classification: 'PROVISIONAL',
+        provisionalReference: {
+          id: 'variety-galla',
+          type: 'VARIETY',
+          name: 'Galla',
+          governanceStatus: 'PROVISIONAL',
+        },
+        contribution: {
+          id: 'contribution-galla',
+          status: 'PENDING_REVIEW',
+        },
+      }));
+
+    await user.type(screen.getByLabelText('Nom de la variété'), 'Galla');
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
+
+    expect(screen.getByRole('button', { name: 'Utiliser Gala' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Créer quand même « Galla »',
+    })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Créer quand même « Galla »',
+    }));
+
+    expect(mocks.contribute).toHaveBeenNthCalledWith(2, {
+      workspaceId: 'workspace-1',
+      type: 'VARIETY',
+      productId: 'product-1',
+      value: 'Galla',
+      forceCreate: true,
+    });
+    expect(screen.getByText('Galla')).toBeInTheDocument();
+    expect(screen.getByText('À valider')).toBeInTheDocument();
+  });
+
+  it('masque Type commercial tant que sa définition métier n est pas validée', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+
+    await user.click(screen.getByLabelText('Type de valeur'));
+
+    expect(screen.queryByRole('option', { name: 'Type commercial' }))
+      .not.toBeInTheDocument();
   });
 });

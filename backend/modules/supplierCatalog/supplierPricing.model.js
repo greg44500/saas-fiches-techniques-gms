@@ -5,6 +5,7 @@ import {
 } from '../productCatalog/productCatalog.registry.js';
 import {
     DOSSIER_SUPPLIER_REFERENCE_STATUS,
+    INDICATIVE_PRICE_STATUS,
     INVOICED_PRICE_STATUS,
     NEGOTIATED_PRICE_STATUS,
     SUPPLIER_PRICE_BASIS,
@@ -168,6 +169,93 @@ invoicedPriceSchema.index(
     { name: 'invoiced_price_dossier_status_date' },
 );
 
+const indicativePriceSchema = new Schema(
+    {
+        workspace: {
+            type: Schema.Types.ObjectId,
+            ref: 'Workspace',
+            required: true,
+            immutable: true,
+        },
+        dossier: {
+            type: Schema.Types.ObjectId,
+            ref: 'Dossier',
+            default: null,
+            immutable: true,
+        },
+        productVariant: {
+            type: Schema.Types.ObjectId,
+            ref: 'ProductVariant',
+            required: true,
+            immutable: true,
+        },
+        sourceAmount: {
+            type: Schema.Types.Decimal128,
+            required: true,
+            immutable: true,
+        },
+        sourceBasis: {
+            type: String,
+            enum: Object.values(PRODUCT_REFERENCE_UNIT),
+            required: true,
+            immutable: true,
+        },
+        currency: {
+            type: String,
+            trim: true,
+            uppercase: true,
+            minlength: 3,
+            maxlength: 3,
+            default: 'EUR',
+            required: true,
+            immutable: true,
+        },
+        normalizedAmount: {
+            type: Schema.Types.Decimal128,
+            required: true,
+            immutable: true,
+        },
+        normalizedUnit: {
+            type: String,
+            enum: Object.values(PRODUCT_REFERENCE_UNIT),
+            required: true,
+            immutable: true,
+        },
+        source: {
+            type: String,
+            trim: true,
+            maxlength: 500,
+            default: null,
+            immutable: true,
+        },
+        status: {
+            type: String,
+            enum: Object.values(INDICATIVE_PRICE_STATUS),
+            default: INDICATIVE_PRICE_STATUS.ACTIVE,
+            required: true,
+        },
+        archivedAt: { type: Date, default: null },
+        archivedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+        ...createAuditFields(),
+    },
+    { timestamps: true },
+);
+
+indicativePriceSchema.index(
+    { workspace: 1, dossier: 1, productVariant: 1, status: 1 },
+    {
+        name: 'indicative_price_active_scope_product_unique',
+        unique: true,
+        partialFilterExpression: {
+            status: INDICATIVE_PRICE_STATUS.ACTIVE,
+        },
+    },
+);
+indicativePriceSchema.index(
+    { workspace: 1, dossier: 1, status: 1, updatedAt: -1 },
+    { name: 'indicative_price_scope_status_updated_at' },
+);
+
 const dossierSupplierReferenceSchema = new Schema(
     {
         ...dossierFields(),
@@ -223,6 +311,10 @@ workspaceSupplierPricingPolicySchema.index(
 
 const NegotiatedPrice = model('NegotiatedPrice', negotiatedPriceSchema);
 const InvoicedPrice = model('InvoicedPrice', invoicedPriceSchema);
+const IndicativePrice = model(
+    'IndicativePrice',
+    indicativePriceSchema,
+);
 const DossierSupplierReference = model(
     'DossierSupplierReference',
     dossierSupplierReferenceSchema,
@@ -234,6 +326,7 @@ const WorkspaceSupplierPricingPolicy = model(
 
 export {
     DossierSupplierReference,
+    IndicativePrice,
     InvoicedPrice,
     NegotiatedPrice,
     WorkspaceSupplierPricingPolicy,

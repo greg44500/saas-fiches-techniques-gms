@@ -2,8 +2,9 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TooltipProvider } from '@/components/ui/tooltip';
+
 const mocks = vi.hoisted(() => ({
-  dossierQuery: vi.fn(),
   params: vi.fn(),
   workspaceContext: vi.fn(),
   listReferences: vi.fn(),
@@ -11,8 +12,8 @@ const mocks = vi.hoisted(() => ({
   listCatalogs: vi.fn(),
   listNegotiated: vi.fn(),
   listInvoiced: vi.fn(),
-  pricingPolicy: vi.fn(),
-  lazyApplicable: vi.fn(),
+  listIndicative: vi.fn(),
+  listWorkspaceIndicative: vi.fn(),
 }));
 
 vi.mock('react-router', async (importOriginal) => {
@@ -30,10 +31,6 @@ vi.mock('@/components/shared/toast-provider', () => ({
   }),
 }));
 
-vi.mock('@/features/dossiers/api/dossiers-api', () => ({
-  useGetDossierByIdQuery: mocks.dossierQuery,
-}));
-
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: mocks.workspaceContext,
 }));
@@ -44,8 +41,8 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListSupplierCatalogsQuery: mocks.listCatalogs,
   useListNegotiatedPricesQuery: mocks.listNegotiated,
   useListInvoicedPricesQuery: mocks.listInvoiced,
-  useGetPricingPolicyQuery: mocks.pricingPolicy,
-  useLazyGetApplicableSupplierPriceQuery: mocks.lazyApplicable,
+  useListDossierIndicativePricesQuery: mocks.listIndicative,
+  useListWorkspaceIndicativePricesQuery: mocks.listWorkspaceIndicative,
   useAddDossierSupplierReferenceMutation: () => [
     vi.fn(),
     { isLoading: false },
@@ -62,14 +59,16 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
     vi.fn(),
     { isLoading: false },
   ],
-  useUpdatePricingPolicyMutation: () => [
-    vi.fn(),
-    { isLoading: false },
-  ],
 }));
 
 vi.mock('@/features/suppliers/components/supplier-price-form-dialog', () => ({
   SupplierPriceFormDialog: () => null,
+}));
+
+vi.mock('@/features/suppliers/components/indicative-price-dialog', () => ({
+  IndicativePriceDialog: ({ open }) => (
+    open ? <div>Dialogue Prix indicatif ouvert</div> : null
+  ),
 }));
 
 import {
@@ -92,7 +91,9 @@ function queryResult(data) {
 function renderPage() {
   return render(
     <MemoryRouter>
-      <DossierSupplierPricingPage />
+      <TooltipProvider>
+        <DossierSupplierPricingPage />
+      </TooltipProvider>
     </MemoryRouter>,
   );
 }
@@ -104,11 +105,6 @@ describe('DossierSupplierPricingPage', () => {
     mocks.params.mockReturnValue({
       dossierId: 'dossier-1',
     });
-    mocks.dossierQuery.mockReturnValue(queryResult({
-      id: 'dossier-1',
-      name: 'Magasin A',
-      status: 'ACTIVE',
-    }));
     mocks.listReferences.mockReturnValue(queryResult([]));
     mocks.listArticles.mockReturnValue(queryResult({
       articles: [],
@@ -124,18 +120,8 @@ describe('DossierSupplierPricingPage', () => {
     }));
     mocks.listNegotiated.mockReturnValue(queryResult([]));
     mocks.listInvoiced.mockReturnValue(queryResult([]));
-    mocks.pricingPolicy.mockReturnValue(queryResult({
-      mode: 'NEGOTIATED_PRICE',
-      isDefault: true,
-    }));
-    mocks.lazyApplicable.mockReturnValue([
-      vi.fn(),
-      {
-        data: undefined,
-        isError: false,
-        isFetching: false,
-      },
-    ]);
+    mocks.listIndicative.mockReturnValue(queryResult([]));
+    mocks.listWorkspaceIndicative.mockReturnValue(queryResult([]));
   });
 
   it('affiche les catalogues accessibles avec portée et provenance dans le contexte Dossier', () => {
@@ -146,6 +132,7 @@ describe('DossierSupplierPricingPage', () => {
       },
       can: (permission) => (
         permission === SUPPLIER_PERMISSION.CATALOG_READ
+        || permission === SUPPLIER_PERMISSION.SUPPLIER_READ
       ),
     });
     mocks.listCatalogs.mockReturnValue(queryResult({
@@ -170,60 +157,226 @@ describe('DossierSupplierPricingPage', () => {
     renderPage();
 
     expect(screen.getByRole('heading', {
-      name: 'Magasin A — Fournisseurs et prix',
+      name: 'Fournisseurs et prix',
     })).toBeInTheDocument();
+    expect(screen.queryByText('Retour au Dossier')).not.toBeInTheDocument();
     expect(screen.getByRole('tab', {
-      name: 'Catalogues',
+      name: 'Catalogues (1)',
     })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Catalogue partagé 2026'))
       .toBeInTheDocument();
-    expect(screen.getByText(/Référentiel partagé/))
-      .toBeInTheDocument();
-    expect(screen.queryByRole('columnheader', { name: 'Portée' }))
-      .not.toBeInTheDocument();
     expect(screen.getByText('Catalogue contractuel septembre 2026'))
       .toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Gérer les catalogues/ }))
+      .toHaveAttribute(
+        'href',
+        '/workspaces/workspace-1/suppliers?section=catalogs',
+      );
+    expect(screen.queryByText('Vérifier un prix applicable'))
+      .not.toBeInTheDocument();
   });
 
-  it('affiche le Prix applicable avec sa source et son fallback sans ouvrir un onglet non autorisé', () => {
+  it('rend les volumes visibles et l’ajout d’un tarif négocié explicite', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: (permission) => [
+        SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ,
+        SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE,
+        SUPPLIER_PERMISSION.INVOICED_PRICE_READ,
+        SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ,
+      ].includes(permission),
+    });
+    mocks.listNegotiated.mockReturnValue(queryResult([
+      {
+        id: 'price-active',
+        status: 'ACTIVE',
+        validFrom: '2026-09-01T00:00:00.000Z',
+        validTo: null,
+      },
+      {
+        id: 'price-archived',
+        status: 'ARCHIVED',
+        validFrom: '2026-01-01T00:00:00.000Z',
+        validTo: null,
+      },
+    ]));
+    mocks.listInvoiced.mockReturnValue(queryResult([
+      { id: 'invoice-1', status: 'VALIDATED', invoiceDate: '2026-09-01T00:00:00.000Z' },
+      { id: 'invoice-2', status: 'PENDING_VALIDATION', invoiceDate: '2026-09-02T00:00:00.000Z' },
+    ]));
+    mocks.listIndicative.mockReturnValue(queryResult([
+      {
+        id: 'indicative-1',
+        status: 'ACTIVE',
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte',
+          productName: 'Carotte',
+        },
+        normalizedAmount: '1.8',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
+      },
+    ]));
+
+    renderPage();
+
+    expect(screen.getByRole('tab', {
+      name: 'Tarifs négociés (2)',
+    })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', {
+      name: 'Prix facturés (2)',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('tab', {
+      name: 'Prix indicatifs (1)',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Ajouter un tarif négocié',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'À propos des Tarifs négociés',
+    })).toBeInTheDocument();
+  });
+
+  it('affiche le Prix indicatif Workspace hérité lorsqu’aucune surcharge Dossier n’existe', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: (permission) => [
+        SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ,
+        SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE,
+      ].includes(permission),
+    });
+    mocks.listWorkspaceIndicative.mockReturnValue(queryResult([
+      {
+        id: 'workspace-indicative-1',
+        status: 'ACTIVE',
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte',
+          productName: 'Carotte',
+        },
+        normalizedAmount: '1.8',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
+        source: 'Estimation Workspace',
+      },
+    ]));
+
+    renderPage();
+
+    expect(screen.getByRole('tab', {
+      name: 'Prix indicatifs (1)',
+    })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('columnheader', {
+      name: /PU HT/,
+    })).toBeInTheDocument();
+    expect(screen.getByText('1,800 / KG')).toBeInTheDocument();
+    expect(screen.getByText('Espace de travail')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Définir un prix indicatif pour ce Dossier',
+    })).toBeInTheDocument();
+  });
+
+  it('privilégie le Prix indicatif du Dossier sur la valeur Workspace affichée', () => {
     mocks.workspaceContext.mockReturnValue({
       workspace: {
         id: 'workspace-1',
         name: 'Acme',
       },
       can: (permission) => (
-        permission === SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ
+        permission === SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ
       ),
     });
-    mocks.lazyApplicable.mockReturnValue([
-      vi.fn(),
+    mocks.listWorkspaceIndicative.mockReturnValue(queryResult([
       {
-        data: {
-          requestedMode: 'INVOICED_PRICE',
-          resolvedSource: 'NEGOTIATED_PRICE',
-          fallbackApplied: true,
-          fallbackReason: 'NO_VALIDATED_INVOICE',
-          price: {
-            normalizedAmount: '12.5',
-            normalizedUnit: 'KG',
-            currency: 'EUR',
-          },
-          alerts: ['NO_VALIDATED_INVOICE'],
+        id: 'workspace-indicative-1',
+        status: 'ACTIVE',
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte',
+          productName: 'Carotte',
         },
-        isError: false,
-        isFetching: false,
+        normalizedAmount: '1.8',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
       },
-    ]);
+    ]));
+    mocks.listIndicative.mockReturnValue(queryResult([
+      {
+        id: 'dossier-indicative-1',
+        status: 'ACTIVE',
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte',
+          productName: 'Carotte',
+        },
+        normalizedAmount: '2.1',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
+      },
+    ]));
 
     renderPage();
 
-    expect(screen.getByText('12,500 EUR / KG'))
-      .toBeInTheDocument();
-    expect(screen.getByText(/Source : NEGOTIATED_PRICE/))
-      .toBeInTheDocument();
-    expect(screen.getByText(/fallback appliqué/))
-      .toBeInTheDocument();
-    expect(screen.queryByRole('tab'))
+    expect(screen.getByText('2,100 / KG')).toBeInTheDocument();
+    expect(screen.queryByText('1,800 / KG')).not.toBeInTheDocument();
+    expect(screen.getByText('Dossier')).toBeInTheDocument();
+  });
+
+  it('n’affiche qu’un seul message lorsque le Dossier n’a aucun tarif négocié', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: (permission) => (
+        permission === SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ
+      ),
+    });
+
+    renderPage();
+
+    expect(screen.getAllByText(
+      'Aucun tarif négocié n’est enregistré pour ce Dossier.',
+    )).toHaveLength(1);
+    expect(screen.queryByText('Aucun Tarif négocié'))
       .not.toBeInTheDocument();
+  });
+
+  it('utilise une action Retirer dédiée plutôt qu’une suppression', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: (permission) => [
+        SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ,
+        SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE,
+      ].includes(permission),
+    });
+    mocks.listReferences.mockReturnValue(queryResult([{
+      id: 'dossier-reference-1',
+      supplierArticle: {
+        id: 'article-1',
+        supplierReference: 'Ali321',
+        supplierName: 'Sysco',
+        productVariantName: 'Ail',
+      },
+    }]));
+
+    renderPage();
+
+    expect(screen.getByRole('button', {
+      name: 'Retirer Ali321 du Dossier',
+    })).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: /Supprimer Ali321/i,
+    })).not.toBeInTheDocument();
   });
 });

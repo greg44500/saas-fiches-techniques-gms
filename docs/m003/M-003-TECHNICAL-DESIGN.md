@@ -60,6 +60,14 @@ InvoicedPrice
 - seul VALIDATED est éligible à la résolution ;
 - la fraîcheur de 12 mois calendaires est calculée au runtime.
 
+IndicativePrice
+- workspace + productVariant ;
+- dossier nullable : null = portée Workspace, renseigné = surcharge Dossier ;
+- sourceAmount/sourceBasis/currency + valeur normalisée ;
+- `ACTIVE / ARCHIVED` ;
+- un seul `ACTIVE` par portée + productVariant ;
+- ne dépend pas obligatoirement d'un SupplierArticle.
+
 DossierSupplierReference
 - favori Dossier × Article fournisseur ;
 - aucun prix n'est copié dans cette relation.
@@ -68,7 +76,15 @@ DossierSupplierReference
 
 WorkspaceSupplierPricingPolicy
 - politique du Prix applicable ;
-- absence de document = mode NEGOTIATED_PRICE par défaut.
+- absence de document = mode NEGOTIATED_PRICE par défaut ;
+- les sources commerciales prévues par le mode restent prioritaires ;
+- dernier recours commun : IndicativePrice Dossier puis Workspace.
+
+Migration d'extension post-clôture :
+- `migration:m003-indicative-pricing` ;
+- crée/vérifie les indexes M-003 incluant IndicativePrice ;
+- backfill idempotent des nouvelles permissions système Owner ;
+- dépend de `m003-supplier-catalog` afin de couvrir aussi les bases où la migration M-003 historique avait déjà été exécutée.
 
 SupplierCatalogImportSession
 - état temporaire inspect / preview / confirm ;
@@ -90,6 +106,7 @@ SupplierCommerceLock
 | SupplierTariff | workspace null | workspace requis | non |
 | NegotiatedPrice | non | workspace requis | requis |
 | InvoicedPrice | non | workspace requis | requis |
+| IndicativePrice | non | workspace requis | facultatif |
 | DossierSupplierReference | non | workspace requis | requis |
 | WorkspaceSupplierPricingPolicy | non | workspace requis | non |
 | SupplierCatalogImportSession | selon portée | selon portée | non |
@@ -115,7 +132,8 @@ normalizedAmount null signifie « non calculable », jamais zéro.
 - ligne modifiée : nouvelle révision SupplierCatalogLine ;
 - Tarif fournisseur modifié : nouvelle révision SupplierTariff ;
 - Tarif négocié : archivage explicite, jamais réécriture silencieuse ;
-- Prix facturé : observation conservée, seules les décisions validation/rejet évoluent.
+- Prix facturé : observation conservée, seules les décisions validation/rejet évoluent ;
+- Prix indicatif : remplacement par archivage de l'actif puis création d'une nouvelle réalité.
 
 ## 7. Concurrence
 
@@ -144,6 +162,8 @@ Les plages temporelles sont protégées par transaction MongoDB + SupplierCommer
 - supplier:invoiced-price:read
 - supplier:invoiced-price:manage
 - supplier:invoiced-price:validate
+- supplier:indicative-price:read
+- supplier:indicative-price:manage
 - supplier:dossier-reference:read
 - supplier:dossier-reference:manage
 - supplier:applicable-price:read
@@ -174,6 +194,7 @@ Workspace :
 - /api/workspaces/:workspaceId/supplier-articles
 - /api/workspaces/:workspaceId/supplier-catalogs
 - /api/workspaces/:workspaceId/dossiers/:dossierId/supplier-pricing
+- /api/workspaces/:workspaceId/supplier-pricing
 
 Administration globale :
 - /api/supplier-reference
@@ -327,3 +348,51 @@ WORKSPACE_PRIVATE  → Cet espace de travail
 ~~~
 
 Cette traduction UX ne modifie ni la tenancy ni les portées techniques persistées.
+
+
+### 15.4 Parcours Produit ↔ Fournisseur unifié
+
+Le checkpoint UX du 2026-09-30 confirme qu'il ne doit pas exister deux workflows concurrents pour une même donnée commerciale.
+
+Principe :
+
+~~~text
+Produit
+→ point d'entrée orienté « ce que j'utilise »
+
+Fournisseur
+→ point d'entrée orienté « chez qui / sous quelle forme je l'achète »
+
+mais
+
+Article fournisseur / Prix indicatif
+→ une seule donnée métier
+→ un seul composant de saisie
+→ une seule validation
+→ une seule API
+→ un seul service backend
+~~~
+
+Le drawer Produit peut donc ouvrir le workflow M-003 existant avec la Référence Produit préremplie. La page Fournisseurs conserve le même workflow avec sélection de la Référence Produit. Aucun second formulaire ou modèle parallèle n'est créé.
+
+Pour éviter les requêtes N+1 lors de la projection commerciale d'un Produit, les listes Workspace existantes acceptent un filtre agrégé `productId` :
+
+~~~text
+GET /api/workspaces/:workspaceId/supplier-articles?productId=...
+GET /api/workspaces/:workspaceId/supplier-pricing/indicative-prices?productId=...
+~~~
+
+Chaque endpoint conserve sa propre permission M-003. Le frontend n'agrège donc que les données auxquelles l'utilisateur a effectivement accès.
+
+Dans le drawer Produit :
+
+- `Références (n)` compte les Références Produit visibles ;
+- `Favoris (n)` compte uniquement les `WorkspaceProduct ACTIVE` ;
+- l'onglet Favoris n'affiche jamais « Favori » comme information redondante ;
+- un Prix indicatif Workspace est présenté comme `PU HT estimé` ;
+- les conditionnements proviennent exclusivement des Articles fournisseur M-003 ;
+- plusieurs Articles sont tous présentés, sans sélection automatique d'un fournisseur ou du moins cher ;
+- les actions contextuelles réutilisent les workflows Prix indicatif et Article fournisseur existants ;
+- retirer un favori reste une action M-002 et ne supprime aucune donnée commerciale M-003.
+
+Dans la liste Fournisseurs, les catégories Produit commercialisées sont projetées dans une colonne dédiée. Aucun « univers commercial » n'est déduit automatiquement des catégories M-002 : une éventuelle taxonomie de spécialités fournisseur devra être cadrée séparément avant ajout au modèle.

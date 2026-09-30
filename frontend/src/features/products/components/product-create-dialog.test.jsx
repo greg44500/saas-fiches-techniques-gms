@@ -146,7 +146,12 @@ describe('ProductCreateDialog', () => {
       ],
     }));
     mocks.createProduct.mockReturnValue(resolved({
-      classification: 'REVIEW_REQUIRED',
+      classification: 'PROVISIONAL',
+      provisionalReference: {
+        id: 'product-provisional',
+        name: 'Carotte nouvelle',
+        governanceStatus: 'PROVISIONAL',
+      },
       contribution: {
         id: 'contribution-1',
         status: 'PENDING_REVIEW',
@@ -184,6 +189,8 @@ describe('ProductCreateDialog', () => {
           workspaceId: 'workspace-1',
           name: 'Carotte nouvelle',
           categoryId: null,
+          reviewedCandidateIds: ['candidate-1', 'candidate-2'],
+          forceCreate: true,
           variant: expect.objectContaining({
             name: 'Carotte nouvelle',
             conservationType: 'FRAIS',

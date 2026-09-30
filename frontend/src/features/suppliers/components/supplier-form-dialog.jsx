@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DialogClose,
   DialogContent,
@@ -21,6 +22,8 @@ import { Input } from '@/components/ui/input';
 import {
   useCreateGlobalSupplierMutation,
   useCreateSupplierMutation,
+  useGetGlobalSupplierMetadataQuery,
+  useGetSupplierMetadataQuery,
   useUpdateGlobalSupplierMutation,
   useUpdateSupplierMutation,
 } from '@/features/suppliers/api/supplier-api';
@@ -42,7 +45,21 @@ function SupplierFormDialog({
   const [supplierCode, setSupplierCode] = useState('');
   const [legalName, setLegalName] = useState('');
   const [website, setWebsite] = useState('');
+  const [categoryIds, setCategoryIds] = useState([]);
   const [error, setError] = useState('');
+
+  const workspaceMetadataQuery = useGetSupplierMetadataQuery(
+    workspaceId,
+    { skip: !open || isGlobal || !workspaceId },
+  );
+  const globalMetadataQuery = useGetGlobalSupplierMetadataQuery(
+    undefined,
+    { skip: !open || !isGlobal },
+  );
+  const metadata = isGlobal
+    ? globalMetadataQuery.data
+    : workspaceMetadataQuery.data;
+  const categories = metadata?.categories ?? [];
 
   const [createWorkspace, createWorkspaceState] =
     useCreateSupplierMutation();
@@ -67,6 +84,11 @@ function SupplierFormDialog({
     setSupplierCode(supplier?.supplierCode ?? '');
     setLegalName(supplier?.legalName ?? '');
     setWebsite(supplier?.website ?? '');
+    setCategoryIds(
+      (supplier?.categories ?? [])
+        .map((category) => category.id)
+        .filter(Boolean),
+    );
     setError('');
   }, [open, supplier]);
 
@@ -83,6 +105,7 @@ function SupplierFormDialog({
       supplierCode: supplierCode.trim() || null,
       legalName: legalName.trim() || null,
       website: website.trim() || null,
+      categoryIds,
     };
 
     try {
@@ -179,6 +202,44 @@ function SupplierFormDialog({
                 placeholder="https://..."
                 value={website}
               />
+            </Field>
+
+            <Field>
+              <FieldLabel>Catégories de produits</FieldLabel>
+              <div className="max-h-44 overflow-y-auto rounded-md border border-border p-3">
+                {categories.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Aucune catégorie Produit active n’est disponible.
+                  </p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {categories.map((category) => {
+                      const checked = categoryIds.includes(category.id);
+
+                      return (
+                        <label
+                          className="flex cursor-pointer items-center gap-2 text-sm"
+                          htmlFor={'supplier-category-' + category.id}
+                          key={category.id}
+                        >
+                          <Checkbox
+                            checked={checked}
+                            id={'supplier-category-' + category.id}
+                            onChange={(event) => {
+                              setCategoryIds((current) => (
+                                event.target.checked
+                                  ? [...current, category.id]
+                                  : current.filter((id) => id !== category.id)
+                              ));
+                            }}
+                          />
+                          <span>{category.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </Field>
 
             <FieldError>{error}</FieldError>

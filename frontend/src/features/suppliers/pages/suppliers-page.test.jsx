@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -94,11 +95,13 @@ const queryResult = (data) => ({
   refetch: vi.fn(),
 });
 
-function renderPage() {
+function renderPage(initialEntry = '/workspaces/workspace-1/suppliers') {
   return render(
-    <ToastProvider>
-      <SuppliersPage />
-    </ToastProvider>,
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <ToastProvider>
+        <SuppliersPage />
+      </ToastProvider>
+    </MemoryRouter>,
   );
 }
 
@@ -134,6 +137,7 @@ describe('SuppliersPage', () => {
               id: 'supplier-global',
               name: 'Sysco partagé',
               supplierCode: 'SYS',
+              categories: [{ id: 'cat-epicerie', name: 'Épicerie' }],
               scope: 'GLOBAL_SHARED',
               status: 'ACTIVE',
             },
@@ -141,6 +145,10 @@ describe('SuppliersPage', () => {
               id: 'supplier-private',
               name: 'Fournisseur local',
               supplierCode: 'LOC',
+              categories: [{
+                id: 'cat-fruits-legumes',
+                name: 'Fruits et légumes',
+              }],
               scope: 'WORKSPACE_PRIVATE',
               status: 'ACTIVE',
             },
@@ -192,7 +200,7 @@ describe('SuppliersPage', () => {
     }));
   });
 
-  it('distingue les Fournisseurs partagés et privés', () => {
+  it('présente les catégories métier plutôt que la portée technique du Fournisseur', () => {
     renderPage();
 
     expect(mocks.listSuppliers).toHaveBeenCalledWith(
@@ -208,8 +216,15 @@ describe('SuppliersPage', () => {
     })).toHaveTextContent('Tous');
     expect(screen.getByText('Sysco partagé')).toBeInTheDocument();
     expect(screen.getByText('Fournisseur local')).toBeInTheDocument();
-    expect(screen.getByText(/Référentiel partagé/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Cet espace de travail/)).toHaveLength(2);
+    expect(screen.getByRole('columnheader', {
+      name: 'Catégories commercialisées',
+    })).toBeInTheDocument();
+    expect(screen.getByText('SYS')).toBeInTheDocument();
+    expect(screen.getByText('LOC')).toBeInTheDocument();
+    expect(screen.getByText('Épicerie')).toBeInTheDocument();
+    expect(screen.getByText('Fruits et légumes')).toBeInTheDocument();
+    expect(screen.queryByText(/Référentiel partagé/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Cet espace de travail/)).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Portée' }))
       .not.toBeInTheDocument();
     expect(screen.getByRole('combobox', {
@@ -237,6 +252,15 @@ describe('SuppliersPage', () => {
 
     expect(screen.getByRole('button', { name: 'Rechercher' }))
       .toBeDisabled();
+  });
+
+  it('ouvre directement la section Catalogues depuis le paramètre d’URL', () => {
+    renderPage('/workspaces/workspace-1/suppliers?section=catalogs');
+
+    expect(screen.getByRole('tab', { name: 'Catalogues' }))
+      .toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Catalogue septembre'))
+      .toBeInTheDocument();
   });
 
   it('affiche tous les Fournisseurs par défaut et permet de réactiver un archivé', async () => {
@@ -327,5 +351,35 @@ describe('SuppliersPage', () => {
     }));
 
     expect(screen.getByText('Import catalogue ouvert')).toBeInTheDocument();
+  });
+
+  it('affiche UNIT comme PCE dans le conditionnement Article', () => {
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [{
+        id: 'article-1',
+        supplierReference: 'ABR-1',
+        supplierDesignation: 'Abricot',
+        productVariant: { id: 'variant-1', name: 'Abricot' },
+        supplier: { id: 'supplier-1', name: 'Sysco' },
+        scope: 'WORKSPACE_PRIVATE',
+        status: 'ACTIVE',
+        packaging: {
+          unitCount: 12,
+          quantityPerUnit: '1',
+          unit: 'UNIT',
+        },
+      }],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
+      },
+    }));
+
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+
+    expect(screen.getByText(/1 PCE/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 UNIT/)).not.toBeInTheDocument();
   });
 });

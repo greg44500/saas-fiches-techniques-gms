@@ -244,7 +244,11 @@ describe('M-002 product reference governance', () => {
             },
         });
 
-        expect(submitted.classification).toBe('REVIEW_REQUIRED');
+        expect(submitted.classification).toBe('PROVISIONAL');
+        expect(submitted.provisionalReference).toMatchObject({
+            name: 'Pomme',
+            governanceStatus: 'PROVISIONAL',
+        });
 
         const approved = await reviewReferenceContribution({
             contributionId: submitted.contribution.id,
