@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -36,6 +36,28 @@ function queryResult(data) {
     isFetching: false,
     refetch: vi.fn(),
   };
+}
+
+async function selectArticleOption(user, optionName) {
+  const trigger = screen.getByRole('combobox', {
+    name: 'Article fournisseur à vérifier',
+  });
+
+  await user.click(trigger);
+  await waitFor(() => {
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  const option = await screen.findByRole('option', {
+    name: optionName,
+  });
+  await user.click(option);
+
+  await waitFor(() => {
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  return trigger;
 }
 
 describe('DossierApplicablePriceCard', () => {
@@ -87,12 +109,7 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox', {
-      name: 'Article fournisseur à vérifier',
-    }));
-    await user.click(screen.getByRole('option', {
-      name: 'Sysco · Ali321',
-    }));
+    await selectArticleOption(user, 'Sysco · Ali321');
 
     expect(mocks.loadApplicable).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
@@ -132,12 +149,7 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox', {
-      name: 'Article fournisseur à vérifier',
-    }));
-    await user.click(screen.getByRole('option', {
-      name: 'Sysco · Ali321',
-    }));
+    await selectArticleOption(user, 'Sysco · Ali321');
 
     expect(screen.getByText('3,100 / KG')).toBeInTheDocument();
     expect(screen.getByText(/Prix indicatif espace de travail/))
@@ -156,23 +168,15 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox', {
-      name: 'Article fournisseur à vérifier',
-    }));
-    await user.click(screen.getByRole('option', {
-      name: 'Sysco · Ali321',
-    }));
+    await selectArticleOption(user, 'Sysco · Ali321');
 
     expect(screen.getByText('12,500 / PCE')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('combobox', {
-      name: 'Article fournisseur à vérifier',
-    }));
-    await user.click(screen.getByRole('option', {
-      name: 'Sélectionner',
-    }));
+    const trigger = await selectArticleOption(user, 'Sélectionner');
 
     expect(mocks.resetApplicable).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveTextContent('Sélectionner');
+    expect(mocks.loadApplicable).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('12,500 / PCE')).not.toBeInTheDocument();
     expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();
   });
