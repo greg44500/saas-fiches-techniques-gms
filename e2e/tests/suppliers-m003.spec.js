@@ -152,13 +152,22 @@ async function resolveArticlePrice(page, {
     name: articleLabel,
   }).click();
 
+  const applicablePriceCard = page.locator('section').filter({
+    has: page.getByRole('heading', {
+      name: 'Vérifier un prix applicable',
+    }),
+  });
+
   await expect(
-    page.getByText(expectedPrice, {
+    applicablePriceCard.getByText(expectedPrice, {
       exact: true,
     }),
   ).toBeVisible();
   await expect(
-    page.getByText('Source : Tarif négocié', { exact: true }),
+    applicablePriceCard.getByText(
+      'Source : Tarif négocié',
+      { exact: true },
+    ),
   ).toBeVisible();
 }
 
