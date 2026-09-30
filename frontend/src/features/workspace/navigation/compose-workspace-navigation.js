@@ -1,4 +1,8 @@
-import { coreWorkspaceNavigation } from '@/features/workspace/navigation/core-workspace-navigation';
+import {
+  coreWorkspaceAdministrationNavigation,
+  coreWorkspaceDashboardNavigationItem,
+  coreWorkspaceNavigation,
+} from '@/features/workspace/navigation/core-workspace-navigation';
 
 const WORKSPACE_ADMINISTRATION_SEPARATOR = Object.freeze({
   id: 'workspace-administration-separator',
@@ -9,8 +13,9 @@ const WORKSPACE_ADMINISTRATION_SEPARATOR = Object.freeze({
 /**
  * Compose le shell Workspace sans connaître les modules métier.
  *
- * Un produit dérivé place sa valeur métier en premier. Le Core reste regroupé
- * sous une séparation visuelle explicite sans introduire de titre "Métier".
+ * Le Dashboard reste en tête car il agrège les widgets Core et applicatifs.
+ * Les modules applicatifs suivent sans séparation artificielle, puis le Core
+ * regroupe ses autres surfaces sous "Administration de l’espace".
  */
 function composeWorkspaceNavigation(navigationModules = []) {
   if (!Array.isArray(navigationModules)) {
@@ -44,9 +49,10 @@ function composeWorkspaceNavigation(navigationModules = []) {
   }
 
   return Object.freeze([
+    coreWorkspaceDashboardNavigationItem,
     ...applicationEntries,
     WORKSPACE_ADMINISTRATION_SEPARATOR,
-    ...coreWorkspaceNavigation,
+    ...coreWorkspaceAdministrationNavigation,
   ]);
 }
 

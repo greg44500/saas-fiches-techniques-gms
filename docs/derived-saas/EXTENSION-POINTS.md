@@ -321,10 +321,19 @@ coreWorkspaceNavigation
 Lorsqu’un SaaS dérivé déclare des entrées applicatives, l’ordre final est :
 
 ```text
-navigation applicative / métier
+Tableau de bord Core
+→ navigation applicative / métier
 → séparateur « Administration de l’espace »
-→ navigation Workspace Core
+→ autres surfaces Workspace Core
 ```
+
+Le Tableau de bord est volontairement le seul élément Core placé avant les
+modules applicatifs : son registre compose les widgets Core et les widgets du
+produit dérivé. Il reste donc la surface transversale d’entrée du Workspace.
+
+Aucun séparateur ni espacement spécifique n’est injecté entre le Tableau de
+bord et les modules applicatifs ; ils suivent la cadence normale des items de
+navigation.
 
 Le Core ne crée aucun titre « Métier », « Gestion métier » ou équivalent. Les
 descriptors applicatifs portent déjà leurs propres libellés.
@@ -477,7 +486,7 @@ shell applicatif.
 
 ```text
 statut du Workspace
-→ badge dans la WorkspaceTopbar
+→ badge immédiatement après le nom du Workspace : « Nom | badge »
 
 rôle Workspace courant
 → identité utilisateur du shell + détails du popover compte

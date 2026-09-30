@@ -69,14 +69,29 @@ describe('WorkspaceTopbar', () => {
     );
   });
 
-  it('affiche le statut courant à côté du sélecteur de workspace', () => {
+  it('regroupe visuellement le workspace et son statut sous la forme nom | badge', () => {
     useWorkspaceContextMock.mockReturnValue({ can: () => false });
     useGetWorkspaceSubscriptionQueryMock.mockReturnValue({ data: undefined });
 
-    renderTopbar(workspace);
+    const { container } = renderTopbar(workspace);
 
-    expect(screen.getByText('Espace de travail : Acme')).toBeInTheDocument();
-    expect(screen.getByText('Actif')).toBeInTheDocument();
+    const context = container.querySelector('[data-workspace-status-context]');
+    const separator = container.querySelector('[data-workspace-status-separator]');
+    const workspaceLabel = screen.getByText('Espace de travail : Acme');
+    const status = screen.getByText('Actif');
+
+    expect(context).toContainElement(workspaceLabel);
+    expect(context).toContainElement(separator);
+    expect(context).toContainElement(status);
+    expect(separator).toHaveTextContent('|');
+    expect(
+      workspaceLabel.compareDocumentPosition(separator)
+      & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      separator.compareDocumentPosition(status)
+      & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('affiche le plan effectif uniquement avec subscription:read', () => {

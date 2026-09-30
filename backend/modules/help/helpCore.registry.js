@@ -195,10 +195,11 @@ const CORE_HELP_ENTRIES = Object.freeze([
         ],
         whoCanPerform: 'Tout membre ayant accès à l’espace de travail.',
         steps: [
-            'Repérez le statut de l’espace à côté du sélecteur dans la barre supérieure.',
+            'Repérez le statut immédiatement après le nom de l’espace dans la barre supérieure, sous la forme « Nom de l’espace | statut ».',
             'Ouvrez le menu du compte utilisateur pour consulter votre rôle dans cet espace.',
             'Si vous disposez du droit de lecture de l’abonnement, consultez également le plan effectif affiché dans votre identité utilisateur.',
-            'Utilisez la section « Administration de l’espace » de la navigation latérale pour accéder aux fonctions Core disponibles : Tableau de bord, Fichiers, Membres, Rôles et permissions, Paramètres, Abonnement et Activité.',
+            'Le Tableau de bord reste la première entrée de navigation car il agrège les widgets Core et applicatifs ; les modules applicatifs le suivent directement.',
+            'Utilisez ensuite la section « Administration de l’espace » pour accéder aux autres fonctions Core disponibles : Fichiers, Membres, Rôles et permissions, Paramètres, Abonnement et Activité.',
         ],
         outcome: 'Les informations structurelles de l’espace restent disponibles dans le shell sans être dupliquées comme indicateurs du tableau de bord.',
         edgeCases: [

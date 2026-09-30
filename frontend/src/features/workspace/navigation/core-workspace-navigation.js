@@ -12,19 +12,24 @@ import { WORKSPACE_FEATURE } from '@/features/workspace/constants/workspace-feat
 import { WORKSPACE_PERMISSION } from '@/features/workspace/constants/workspace-permissions';
 
 /**
- * Navigation générique du Core Workspace.
- *
- * Dans un SaaS dérivé, le moteur de composition place les modules applicatifs
- * avant cette liste puis ajoute le séparateur "Administration de l’espace".
+ * Le Dashboard reste une surface Core mais constitue l'entrée commune des
+ * widgets Core et applicatifs. Dans un SaaS dérivé, il reste donc au sommet de
+ * la navigation, immédiatement suivi des modules applicatifs.
  */
-const coreWorkspaceNavigation = Object.freeze([
-  Object.freeze({
-    id: 'dashboard',
-    type: 'item',
-    label: 'Tableau de bord',
-    Icon: LayoutDashboard,
-    path: 'dashboard',
-  }),
+const coreWorkspaceDashboardNavigationItem = Object.freeze({
+  id: 'dashboard',
+  type: 'item',
+  label: 'Tableau de bord',
+  Icon: LayoutDashboard,
+  path: 'dashboard',
+});
+
+/**
+ * Les autres surfaces Core relèvent de l'administration générique de l'espace
+ * et sont regroupées après le séparateur "Administration de l’espace" lorsqu'un
+ * SaaS dérivé déclare des modules applicatifs.
+ */
+const coreWorkspaceAdministrationNavigation = Object.freeze([
   Object.freeze({
     id: 'files',
     type: 'item',
@@ -78,4 +83,13 @@ const coreWorkspaceNavigation = Object.freeze([
   }),
 ]);
 
-export { coreWorkspaceNavigation };
+const coreWorkspaceNavigation = Object.freeze([
+  coreWorkspaceDashboardNavigationItem,
+  ...coreWorkspaceAdministrationNavigation,
+]);
+
+export {
+  coreWorkspaceAdministrationNavigation,
+  coreWorkspaceDashboardNavigationItem,
+  coreWorkspaceNavigation,
+};

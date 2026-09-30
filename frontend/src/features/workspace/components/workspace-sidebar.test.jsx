@@ -233,7 +233,7 @@ describe('WorkspaceSidebar', () => {
     expect(group).toHaveFocus();
   });
 
-  it('rend un séparateur entre modules applicatifs et administration Core', () => {
+  it('garde le Dashboard avec les modules applicatifs avant le séparateur d’administration', () => {
     const navigation = composeWorkspaceNavigation([
       {
         groups: [
@@ -255,11 +255,11 @@ describe('WorkspaceSidebar', () => {
       { navigation },
     );
 
+    const dashboard = screen.getByRole('link', { name: 'Tableau de bord' });
     const catalog = screen.getByRole('link', { name: 'Catalogue' });
     const separator = screen.getByRole('separator', {
       name: 'Administration de l’espace',
     });
-    const dashboard = screen.getByRole('link', { name: 'Tableau de bord' });
     const files = screen.getByRole('link', { name: 'Fichiers' });
 
     expect(separator).toHaveAttribute(
@@ -267,15 +267,15 @@ describe('WorkspaceSidebar', () => {
       'workspace-administration-separator',
     );
     expect(
+      dashboard.compareDocumentPosition(catalog)
+      & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
       catalog.compareDocumentPosition(separator)
       & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      separator.compareDocumentPosition(dashboard)
-      & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      dashboard.compareDocumentPosition(files)
+      separator.compareDocumentPosition(files)
       & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });

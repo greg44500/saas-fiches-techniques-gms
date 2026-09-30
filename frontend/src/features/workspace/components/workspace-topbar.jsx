@@ -19,10 +19,18 @@ function WorkspaceTopbar({ sidebarTrigger = null, workspace }) {
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <div className="flex min-h-[var(--workspace-topbar-height)] items-center gap-4 px-4 sm:px-6">
         {sidebarTrigger}
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <WorkspaceSwitcher currentWorkspace={workspace} />
-          </div>
+        <div
+          className="flex min-w-0 flex-1 items-center gap-2"
+          data-workspace-status-context
+        >
+          <WorkspaceSwitcher currentWorkspace={workspace} />
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-muted-foreground"
+            data-workspace-status-separator
+          >
+            |
+          </span>
           <WorkspaceStatusBadge
             className="shrink-0"
             status={workspace.status}
