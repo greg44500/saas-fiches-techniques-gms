@@ -112,17 +112,42 @@ async function composeTechnicalSheet(page, {
   await expect(result).toBeVisible();
   await result.click();
 
+  const persistedQuantityResponse = page.waitForResponse((response) => {
+    const request = response.request();
+    const pathname = new URL(response.url()).pathname;
+
+    if (
+      request.method() !== 'PUT'
+      || !pathname.includes('/technical-sheets/')
+      || !pathname.endsWith('/draft')
+    ) {
+      return false;
+    }
+
+    try {
+      const payload = request.postDataJSON();
+
+      return Array.isArray(payload?.lines)
+        && payload.lines.some((line) => line.netQuantity === '2');
+    } catch {
+      return false;
+    }
+  });
+
   await page
     .getByLabel(
       'Quantité nette ligne 1',
     )
     .fill('2');
 
+  const saveResponse = await persistedQuantityResponse;
+
+  expect(saveResponse.ok()).toBeTruthy();
+
   const autosaveStatus = page.getByRole('status', {
     name: 'État d’enregistrement du brouillon',
   });
 
-  await expect(autosaveStatus).toContainText('Enregistrement…');
   await expect(autosaveStatus).toContainText('Enregistré');
 }
 
