@@ -58,13 +58,14 @@ describe('WorkspaceTopbar', () => {
     vi.clearAllMocks();
   });
 
-  it('utilise le token de hauteur Workspace exposé aux contenus sticky', () => {
+  it('aligne la hauteur de la topbar sur le header de la sidebar', () => {
     useWorkspaceContextMock.mockReturnValue({ can: () => false });
     useGetWorkspaceSubscriptionQueryMock.mockReturnValue({ data: undefined });
 
     const { container } = renderTopbar(workspace);
 
-    expect(container.querySelector('header > div')).toHaveClass(
+    expect(container.querySelector('header > div')).toHaveClass('h-16');
+    expect(container.querySelector('header > div')).not.toHaveClass(
       'min-h-[var(--workspace-topbar-height)]',
     );
   });
