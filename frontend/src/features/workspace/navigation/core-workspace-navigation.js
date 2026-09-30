@@ -1,25 +1,21 @@
 import {
   CreditCard,
   Files,
-  FolderOpen,
   History,
   LayoutDashboard,
   Settings,
   ShieldCheck,
   Users,
-  WalletCards,
-  Wrench,
 } from 'lucide-react';
 
 import { WORKSPACE_FEATURE } from '@/features/workspace/constants/workspace-features';
 import { WORKSPACE_PERMISSION } from '@/features/workspace/constants/workspace-permissions';
 
 /**
- * Navigation fournie par le Core.
+ * Navigation générique du Core Workspace.
  *
- * Ce registre décrit uniquement les surfaces génériques du workspace. Les
- * modules métier d'une application dérivée sont composés au niveau `app/` et
- * ne doivent jamais être importés par le Core.
+ * Dans un SaaS dérivé, le moteur de composition place les modules applicatifs
+ * avant cette liste puis ajoute le séparateur "Administration de l’espace".
  */
 const coreWorkspaceNavigation = Object.freeze([
   Object.freeze({
@@ -30,73 +26,55 @@ const coreWorkspaceNavigation = Object.freeze([
     path: 'dashboard',
   }),
   Object.freeze({
-    id: 'resources',
-    type: 'group',
-    label: 'Ressources',
-    Icon: FolderOpen,
-    items: Object.freeze([
-      Object.freeze({
-        id: 'files',
-        label: 'Fichiers',
-        Icon: Files,
-        permission: WORKSPACE_PERMISSION.FILE_READ,
-        path: 'files',
-      }),
-    ]),
+    id: 'files',
+    type: 'item',
+    label: 'Fichiers',
+    Icon: Files,
+    permission: WORKSPACE_PERMISSION.FILE_READ,
+    path: 'files',
   }),
   Object.freeze({
-    id: 'workspace-management',
-    type: 'group',
-    label: 'Gestion du workspace',
-    Icon: Wrench,
-    items: Object.freeze([
-      Object.freeze({
-        id: 'members',
-        label: 'Membres',
-        Icon: Users,
-        permission: WORKSPACE_PERMISSION.MEMBER_READ,
-        feature: WORKSPACE_FEATURE.TEAM_MANAGEMENT,
-        path: 'members',
-      }),
-      Object.freeze({
-        id: 'roles',
-        label: 'Rôles et permissions',
-        Icon: ShieldCheck,
-        permission: WORKSPACE_PERMISSION.ROLE_READ,
-        feature: WORKSPACE_FEATURE.TEAM_MANAGEMENT,
-        path: 'roles',
-      }),
-      Object.freeze({
-        id: 'settings',
-        label: 'Paramètres',
-        Icon: Settings,
-        permission: WORKSPACE_PERMISSION.WORKSPACE_UPDATE,
-        path: 'settings',
-      }),
-    ]),
+    id: 'members',
+    type: 'item',
+    label: 'Membres',
+    Icon: Users,
+    permission: WORKSPACE_PERMISSION.MEMBER_READ,
+    feature: WORKSPACE_FEATURE.TEAM_MANAGEMENT,
+    path: 'members',
   }),
   Object.freeze({
-    id: 'account-offer',
-    type: 'group',
-    label: 'Compte & offre',
-    Icon: WalletCards,
-    items: Object.freeze([
-      Object.freeze({
-        id: 'subscription',
-        label: 'Abonnement',
-        Icon: CreditCard,
-        permission: WORKSPACE_PERMISSION.SUBSCRIPTION_READ,
-        path: 'subscription',
-      }),
-      Object.freeze({
-        id: 'activity',
-        label: 'Activité',
-        Icon: History,
-        permission: WORKSPACE_PERMISSION.AUDIT_READ,
-        feature: WORKSPACE_FEATURE.AUDIT_LOGS,
-        path: 'activity',
-      }),
-    ]),
+    id: 'roles',
+    type: 'item',
+    label: 'Rôles et permissions',
+    Icon: ShieldCheck,
+    permission: WORKSPACE_PERMISSION.ROLE_READ,
+    feature: WORKSPACE_FEATURE.TEAM_MANAGEMENT,
+    path: 'roles',
+  }),
+  Object.freeze({
+    id: 'settings',
+    type: 'item',
+    label: 'Paramètres',
+    Icon: Settings,
+    permission: WORKSPACE_PERMISSION.WORKSPACE_UPDATE,
+    path: 'settings',
+  }),
+  Object.freeze({
+    id: 'subscription',
+    type: 'item',
+    label: 'Abonnement',
+    Icon: CreditCard,
+    permission: WORKSPACE_PERMISSION.SUBSCRIPTION_READ,
+    path: 'subscription',
+  }),
+  Object.freeze({
+    id: 'activity',
+    type: 'item',
+    label: 'Activité',
+    Icon: History,
+    permission: WORKSPACE_PERMISSION.AUDIT_READ,
+    feature: WORKSPACE_FEATURE.AUDIT_LOGS,
+    path: 'activity',
   }),
 ]);
 

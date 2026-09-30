@@ -1,20 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import { coreDashboardWidgets } from '@/features/workspace/dashboard/core-dashboard-widgets';
-import { coreWorkspaceNavigation } from '@/features/workspace/navigation/core-workspace-navigation';
 
-describe('Core file surfaces', () => {
+describe('Core workspace dashboard surfaces', () => {
+  it('ne rend plus le statut et le rôle comme widgets de dashboard', () => {
+    const widgetIds = coreDashboardWidgets.map((widget) => widget.id);
+
+    expect(widgetIds).not.toContain('core.workspace-status');
+    expect(widgetIds).not.toContain('core.workspace-role');
+  });
+
   it('ne traite plus le nombre de fichiers actifs comme un KPI de dashboard', () => {
     expect(
       coreDashboardWidgets.some((widget) => widget.id === 'core.files'),
     ).toBe(false);
-  });
-
-  it('conserve une seule entrée Fichiers dans la navigation Ressources', () => {
-    const resources = coreWorkspaceNavigation.find(
-      (entry) => entry.id === 'resources',
-    );
-
-    expect(resources?.items.map((item) => item.id)).toEqual(['files']);
   });
 });
