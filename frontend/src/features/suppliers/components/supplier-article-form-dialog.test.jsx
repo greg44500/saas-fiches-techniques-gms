@@ -47,7 +47,7 @@ import {
   SupplierArticleFormDialog,
 } from '@/features/suppliers/components/supplier-article-form-dialog';
 
-function renderDialog(onSaved = vi.fn()) {
+function renderDialog(onSaved = vi.fn(), props = {}) {
   return render(
     <TooltipProvider>
       <SupplierArticleFormDialog
@@ -59,6 +59,7 @@ function renderDialog(onSaved = vi.fn()) {
           name: 'Sysco',
         }]}
         workspaceId="workspace-1"
+        {...props}
       />
     </TooltipProvider>,
   );
@@ -114,6 +115,46 @@ describe('SupplierArticleFormDialog', () => {
       }),
     );
     expect(onSaved).toHaveBeenCalledWith({ id: 'article-1' });
+  });
+
+  it('réutilise le même workflow avec une Référence Produit préremplie', async () => {
+    const user = userEvent.setup();
+
+    renderDialog(vi.fn(), {
+      initialProductVariant: {
+        id: 'variant-prefilled',
+        name: 'Purée d’abricots',
+        referenceUnit: 'KG',
+      },
+    });
+
+    expect(screen.getByText('Purée d’abricots')).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Choisir Abricot',
+    })).not.toBeInTheDocument();
+    expect(screen.getByText(
+      'La Référence Produit est préremplie depuis le Produit consulté.',
+    )).toBeInTheDocument();
+
+    await user.click(screen.getByRole('combobox', {
+      name: 'Sélectionner le Fournisseur',
+    }));
+    await user.click(screen.getByRole('option', { name: 'Sysco' }));
+    await user.type(
+      screen.getByLabelText('Référence fournisseur'),
+      'PUR-001',
+    );
+    await user.click(screen.getByRole('button', {
+      name: 'Créer l’Article',
+    }));
+
+    expect(mocks.createArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productVariantId: 'variant-prefilled',
+        supplierId: 'supplier-1',
+        supplierReference: 'PUR-001',
+      }),
+    );
   });
 
   it('présente une aide métier sans jargon M-002 et affiche UNIT comme PCE', async () => {

@@ -271,6 +271,60 @@ describe('M-003 dossier pricing HTTP', () => {
         ).toBe('KG');
     });
 
+    it('filtre les Prix indicatifs Workspace par Produit', async () => {
+        const secondReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Poire prix indicatif M003',
+                referenceName:
+                    'Poire prix indicatif M003',
+                referenceUnit:
+                    'KG',
+            });
+
+        for (const [variant, amount] of [
+            [productReference.variant, '3.2'],
+            [secondReference.variant, '4.4'],
+        ]) {
+            await request(app)
+                .put(
+                    '/api/workspaces/'
+                    + owner.workspace._id.toString()
+                    + '/supplier-pricing/indicative-prices/'
+                    + variant._id.toString(),
+                )
+                .set(bearer(owner.token))
+                .send({
+                    sourceAmount: amount,
+                    sourceBasis: 'KG',
+                })
+                .expect(200);
+        }
+
+        const response = await request(app)
+            .get(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/supplier-pricing/indicative-prices',
+            )
+            .query({
+                productId:
+                    productReference.product._id.toString(),
+            })
+            .set(bearer(owner.token));
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.prices).toHaveLength(1);
+        expect(
+            response.body.data.prices[0].productVariant.id,
+        ).toBe(productReference.variant._id.toString());
+        expect(
+            response.body.data.prices[0].normalizedAmount,
+        ).toBe('3.2');
+    });
+
     it('n attribue pas un Prix indicatif à l Article fournisseur unique visible', async () => {
         await request(app)
             .put(

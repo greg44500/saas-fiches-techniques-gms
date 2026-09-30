@@ -277,15 +277,26 @@ function SuppliersPage() {
       cell: (supplier) => (
         <div>
           <p className="font-medium">{supplier.name}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {[
-              supplier.supplierCode,
-              (supplier.categories ?? []).map(({ name }) => name).join(', ')
-                || 'Catégories non renseignées',
-            ].filter(Boolean).join(' · ')}
-          </p>
+          {supplier.supplierCode && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {supplier.supplierCode}
+            </p>
+          )}
         </div>
       ),
+    },
+    {
+      id: 'categories',
+      header: 'Catégories commercialisées',
+      cell: (supplier) => {
+        const categories = (supplier.categories ?? [])
+          .map(({ name }) => name)
+          .filter(Boolean);
+
+        return categories.length > 0
+          ? categories.join(', ')
+          : 'Non renseignées';
+      },
     },
     {
       id: 'status',

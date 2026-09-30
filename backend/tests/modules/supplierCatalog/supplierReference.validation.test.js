@@ -7,6 +7,7 @@ import {
 import {
     createSupplierBodySchema,
     updateSupplierBodySchema,
+    workspaceArticleListQuerySchema,
 } from '../../../modules/supplierCatalog/supplierReference.validation.js';
 
 const categoryA = '507f1f77bcf86cd799439011';
@@ -41,5 +42,18 @@ describe('M-003 supplier reference validation', () => {
                 }),
             ]),
         );
+    });
+
+    it('autorise le filtrage des Articles par Produit sans le combiner à une Référence précise', () => {
+        expect(workspaceArticleListQuerySchema.safeParse({
+            productId: categoryA,
+        }).success).toBe(true);
+
+        const conflict = workspaceArticleListQuerySchema.safeParse({
+            productId: categoryA,
+            productVariantId: categoryB,
+        });
+
+        expect(conflict.success).toBe(false);
     });
 });

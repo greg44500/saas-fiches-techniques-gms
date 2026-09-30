@@ -348,3 +348,51 @@ WORKSPACE_PRIVATE  → Cet espace de travail
 ~~~
 
 Cette traduction UX ne modifie ni la tenancy ni les portées techniques persistées.
+
+
+### 15.4 Parcours Produit ↔ Fournisseur unifié
+
+Le checkpoint UX du 2026-09-30 confirme qu'il ne doit pas exister deux workflows concurrents pour une même donnée commerciale.
+
+Principe :
+
+~~~text
+Produit
+→ point d'entrée orienté « ce que j'utilise »
+
+Fournisseur
+→ point d'entrée orienté « chez qui / sous quelle forme je l'achète »
+
+mais
+
+Article fournisseur / Prix indicatif
+→ une seule donnée métier
+→ un seul composant de saisie
+→ une seule validation
+→ une seule API
+→ un seul service backend
+~~~
+
+Le drawer Produit peut donc ouvrir le workflow M-003 existant avec la Référence Produit préremplie. La page Fournisseurs conserve le même workflow avec sélection de la Référence Produit. Aucun second formulaire ou modèle parallèle n'est créé.
+
+Pour éviter les requêtes N+1 lors de la projection commerciale d'un Produit, les listes Workspace existantes acceptent un filtre agrégé `productId` :
+
+~~~text
+GET /api/workspaces/:workspaceId/supplier-articles?productId=...
+GET /api/workspaces/:workspaceId/supplier-pricing/indicative-prices?productId=...
+~~~
+
+Chaque endpoint conserve sa propre permission M-003. Le frontend n'agrège donc que les données auxquelles l'utilisateur a effectivement accès.
+
+Dans le drawer Produit :
+
+- `Références (n)` compte les Références Produit visibles ;
+- `Favoris (n)` compte uniquement les `WorkspaceProduct ACTIVE` ;
+- l'onglet Favoris n'affiche jamais « Favori » comme information redondante ;
+- un Prix indicatif Workspace est présenté comme `PU HT estimé` ;
+- les conditionnements proviennent exclusivement des Articles fournisseur M-003 ;
+- plusieurs Articles sont tous présentés, sans sélection automatique d'un fournisseur ou du moins cher ;
+- les actions contextuelles réutilisent les workflows Prix indicatif et Article fournisseur existants ;
+- retirer un favori reste une action M-002 et ne supprime aucune donnée commerciale M-003.
+
+Dans la liste Fournisseurs, les catégories Produit commercialisées sont projetées dans une colonne dédiée. Aucun « univers commercial » n'est déduit automatiquement des catégories M-002 : une éventuelle taxonomie de spécialités fournisseur devra être cadrée séparément avant ajout au modèle.

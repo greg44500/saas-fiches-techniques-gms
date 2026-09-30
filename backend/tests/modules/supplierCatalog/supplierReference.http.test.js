@@ -250,6 +250,49 @@ describe('M-003 supplier/article HTTP contract', () => {
             .toBe('Fournisseur rôle personnalisé');
     });
 
+    it('filtre les Articles par Produit sans requête par Référence', async () => {
+        const secondProduct =
+            await createActiveProductReference({
+                actorId: ownerA.owner._id,
+                name: 'Poire fournisseur test',
+            });
+
+        const supplier = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Grossiste filtrage Produit' });
+
+        for (const [variant, supplierReference] of [
+            [productReference.variant, 'CAR-001'],
+            [secondProduct.variant, 'POI-001'],
+        ]) {
+            await request(app)
+                .post(articlePath(ownerA))
+                .set(bearer(ownerA.token))
+                .send({
+                    supplierId: supplier.body.data.supplier.id,
+                    productVariantId: variant._id.toString(),
+                    supplierReference,
+                })
+                .expect(201);
+        }
+
+        const response = await request(app)
+            .get(articlePath(ownerA))
+            .query({
+                productId: productReference.product._id.toString(),
+                limit: 100,
+            })
+            .set(bearer(ownerA.token));
+
+        expect(response.status).toBe(200);
+        expect(
+            response.body.data.articles.map(
+                ({ supplierReference }) => supplierReference,
+            ),
+        ).toEqual(['CAR-001']);
+    });
+
     it('refuse un doublon Article variant seulement par casse et espaces', async () => {
         const supplier = await request(app)
             .post(supplierPath(ownerA))

@@ -809,6 +809,7 @@ const listSupplierArticles = async ({
     status = SUPPLIER_RESOURCE_STATUS.ACTIVE,
     scope = null,
     supplierId = null,
+    productId = null,
     productVariantId = null,
 }) => {
     const filter = globalOnly
@@ -823,7 +824,19 @@ const listSupplierArticles = async ({
     if (status) filter.status = status;
     if (scope) filter.scope = scope;
     if (supplierId) filter.supplier = supplierId;
-    if (productVariantId) filter.productVariant = productVariantId;
+
+    if (productVariantId) {
+        filter.productVariant = productVariantId;
+    } else if (productId) {
+        const productVariantIds = await ProductVariant.find({
+            canonicalProduct: productId,
+            identityActive: true,
+        }).distinct('_id');
+
+        filter.productVariant = mongoose.trusted({
+            $in: productVariantIds,
+        });
+    }
 
     if (search) {
         const normalized = normalizeSupplierText(search);

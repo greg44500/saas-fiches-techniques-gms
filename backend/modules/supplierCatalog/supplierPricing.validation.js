@@ -209,11 +209,18 @@ const indicativePriceBodySchema =
 
 const listIndicativePriceQuerySchema =
     z.strictObject({
+        productId: objectIdSchema.optional(),
         productVariantId: objectIdSchema.optional(),
         status: z.enum(
             Object.values(INDICATIVE_PRICE_STATUS),
         ).optional().default(INDICATIVE_PRICE_STATUS.ACTIVE),
-    });
+    }).refine(
+        (value) => !(value.productId && value.productVariantId),
+        {
+            message:
+                'productId et productVariantId ne peuvent pas être combinés.',
+        },
+    );
 
 const updatePricingPolicyBodySchema =
     z.strictObject({

@@ -92,6 +92,26 @@ describe('supplierApi', () => {
     });
 
     expect(
+      captured.endpointDefinitions.listSupplierArticles.query({
+        workspaceId: 'workspace-1',
+        productId: 'product-1',
+        limit: 100,
+      }),
+    ).toEqual({
+      url: '/workspaces/workspace-1/supplier-articles',
+      params: {
+        page: 1,
+        limit: 100,
+        search: undefined,
+        status: 'ACTIVE',
+        scope: undefined,
+        supplierId: undefined,
+        productId: 'product-1',
+        productVariantId: undefined,
+      },
+    });
+
+    expect(
       captured.endpointDefinitions.createSupplierArticle.query({
         workspaceId: 'workspace-1',
         supplierId: 'supplier-1',
@@ -162,6 +182,21 @@ describe('supplierApi', () => {
   it('expose les Prix indicatifs Workspace et Dossier sans Article fournisseur obligatoire', () => {
     expect(useSetWorkspaceIndicativePriceMutation).toBeTypeOf('function');
     expect(useSetDossierIndicativePriceMutation).toBeTypeOf('function');
+
+    expect(
+      captured.endpointDefinitions.listWorkspaceIndicativePrices.query({
+        workspaceId: 'workspace-1',
+        productId: 'product-1',
+      }),
+    ).toEqual({
+      url:
+        '/workspaces/workspace-1/supplier-pricing/indicative-prices',
+      params: {
+        productId: 'product-1',
+        productVariantId: undefined,
+        status: 'ACTIVE',
+      },
+    });
 
     expect(
       captured.endpointDefinitions.setWorkspaceIndicativePrice.query({

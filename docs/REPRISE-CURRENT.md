@@ -398,7 +398,14 @@ Checkpoint UX du 2026-09-29 :
 - libellé tarifaire « Unité du prix (Kilo, Pièce, etc.) » ;
 - Prix indicatif Workspace saisissable depuis le référentiel Produits, y compris pour une Référence globale non favorite ;
 - Prix indicatif Dossier saisissable depuis Fournisseurs et prix ;
-- sources `INDICATIVE_DOSSIER` / `INDICATIVE_WORKSPACE` affichées explicitement comme estimations de dernier recours.
+- sources `INDICATIVE_DOSSIER` / `INDICATIVE_WORKSPACE` affichées explicitement comme estimations de dernier recours ;
+- parcours Produit ↔ Fournisseur unifié : mêmes workflows Article fournisseur / Prix indicatif depuis plusieurs points d'entrée contextuels, sans duplication métier ;
+- liste Fournisseurs : catégories commercialisées dans une colonne dédiée, sans taxonomie « univers commerciaux » inventée ;
+- drawer Produit : compteurs `Références (n)` / `Favoris (n)`, Favoris limités aux liens Workspace actifs, actions + / − par icônes et infobulles ;
+- Favoris Produit enrichis par les données M-003 accessibles : Prix indicatif Workspace, Articles fournisseur et conditionnements ;
+- filtres backend M-003 `productId` ajoutés aux listes Articles et Prix indicatifs afin d'éviter les requêtes N+1 ;
+- création d'un Article fournisseur depuis un Produit réutilise le formulaire M-003 existant avec la Référence Produit préremplie ;
+- aide métier explicitement différée dans un bloc séparé basé sur `APPLICATION_HELP_MODULES`.
 
 Une correction UX ne doit pas modifier silencieusement les invariants métier ou RBAC du contrat.
 

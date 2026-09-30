@@ -72,6 +72,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
         status = 'ACTIVE',
         scope,
         supplierId,
+        productId,
         productVariantId,
       }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-articles',
@@ -82,6 +83,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
           status,
           scope,
           supplierId,
+          productId,
           productVariantId,
         },
       }),
@@ -306,9 +308,14 @@ const supplierApi = supplierApiBase.injectEndpoints({
       providesTags: ['SupplierPricing'],
     }),
     listWorkspaceIndicativePrices: builder.query({
-      query: ({ workspaceId, productVariantId, status = 'ACTIVE' }) => ({
+      query: ({
+        workspaceId,
+        productId,
+        productVariantId,
+        status = 'ACTIVE',
+      }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-pricing/indicative-prices',
-        params: { productVariantId, status },
+        params: { productId, productVariantId, status },
       }),
       transformResponse: (response) => response.data.prices,
       providesTags: ['SupplierPricing'],

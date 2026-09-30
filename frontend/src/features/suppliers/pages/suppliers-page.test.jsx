@@ -216,8 +216,13 @@ describe('SuppliersPage', () => {
     })).toHaveTextContent('Tous');
     expect(screen.getByText('Sysco partagé')).toBeInTheDocument();
     expect(screen.getByText('Fournisseur local')).toBeInTheDocument();
-    expect(screen.getByText(/SYS · Épicerie/)).toBeInTheDocument();
-    expect(screen.getByText(/LOC · Fruits et légumes/)).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', {
+      name: 'Catégories commercialisées',
+    })).toBeInTheDocument();
+    expect(screen.getByText('SYS')).toBeInTheDocument();
+    expect(screen.getByText('LOC')).toBeInTheDocument();
+    expect(screen.getByText('Épicerie')).toBeInTheDocument();
+    expect(screen.getByText('Fruits et légumes')).toBeInTheDocument();
     expect(screen.queryByText(/Référentiel partagé/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Cet espace de travail/)).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Portée' }))

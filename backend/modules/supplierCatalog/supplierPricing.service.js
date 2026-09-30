@@ -1297,6 +1297,7 @@ const populateIndicativeProductVariant = (query) =>
 const listIndicativePrices = async ({
     workspaceId,
     dossierId = null,
+    productId = null,
     productVariantId = null,
     status = INDICATIVE_PRICE_STATUS.ACTIVE,
 }) => {
@@ -1307,6 +1308,21 @@ const listIndicativePrices = async ({
         });
     }
 
+    let productVariantFilter = null;
+
+    if (productVariantId) {
+        productVariantFilter = productVariantId;
+    } else if (productId) {
+        const productVariantIds = await ProductVariant.find({
+            canonicalProduct: productId,
+            identityActive: true,
+        }).distinct('_id');
+
+        productVariantFilter = mongoose.trusted({
+            $in: productVariantIds,
+        });
+    }
+
     const query =
         IndicativePrice.find({
             ...indicativeScopeFilter({
@@ -1314,8 +1330,8 @@ const listIndicativePrices = async ({
                 dossierId,
             }),
             status,
-            ...(productVariantId
-                ? { productVariant: productVariantId }
+            ...(productVariantFilter
+                ? { productVariant: productVariantFilter }
                 : {}),
         })
             .sort({

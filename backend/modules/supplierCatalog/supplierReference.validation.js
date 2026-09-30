@@ -183,8 +183,15 @@ const workspaceArticleListQuerySchema = z.strictObject({
     ...listQueryBase,
     scope: z.enum(Object.values(SUPPLIER_SCOPE)).optional(),
     supplierId: objectIdSchema.optional(),
+    productId: objectIdSchema.optional(),
     productVariantId: objectIdSchema.optional(),
-});
+}).refine(
+    (value) => !(value.productId && value.productVariantId),
+    {
+        message:
+            'productId et productVariantId ne peuvent pas être combinés.',
+    },
+);
 
 const globalArticleListQuerySchema = z.strictObject({
     ...listQueryBase,

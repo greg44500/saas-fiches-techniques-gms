@@ -46,10 +46,12 @@ const NO_SUPPLIER = '__NONE__';
 const PACKAGING_UNITS = Object.freeze(['G', 'KG', 'ML', 'CL', 'L', 'UNIT']);
 
 function SupplierArticleFormDialog({
+  initialProductVariant = null,
   onClose,
   onSaved,
   open,
   suppliers,
+  suppliersLoading = false,
   workspaceId,
 }) {
   const cancelRef = useRef(null);
@@ -78,8 +80,8 @@ function SupplierArticleFormDialog({
     if (!open) return;
 
     setSupplierId(NO_SUPPLIER);
-    setProductSearch('');
-    setProductVariant(null);
+    setProductSearch(initialProductVariant?.name ?? '');
+    setProductVariant(initialProductVariant ?? null);
     setSupplierReference('');
     setDesignation('');
     setBrand('');
@@ -88,7 +90,7 @@ function SupplierArticleFormDialog({
     setQuantityPerUnit('');
     setUnit('KG');
     setError('');
-  }, [open]);
+  }, [initialProductVariant, open]);
 
   async function submit(event) {
     event.preventDefault();
@@ -177,6 +179,7 @@ function SupplierArticleFormDialog({
             <Field>
               <FieldLabel>Fournisseur</FieldLabel>
               <Select
+                disabled={suppliersLoading || suppliers.length === 0}
                 items={[
                   { value: NO_SUPPLIER, label: 'Sélectionner' },
                   ...suppliers.map((supplier) => ({
@@ -199,36 +202,53 @@ function SupplierArticleFormDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {suppliersLoading ? (
+                <FieldDescription>
+                  Chargement des Fournisseurs…
+                </FieldDescription>
+              ) : suppliers.length === 0 ? (
+                <FieldDescription>
+                  Aucun Fournisseur actif n’est disponible. Créez d’abord un Fournisseur depuis la page Fournisseurs.
+                </FieldDescription>
+              ) : null}
             </Field>
 
             <Field>
               <FieldLabel>Référence Produit</FieldLabel>
-              <ProductSearchAutocomplete
-                metadata={metadataQuery.data}
-                onSelect={(result) => {
-                  if (!result.variant) {
-                    setProductVariant(null);
-                    setError(
-                      'Ce Produit ne possède pas encore de Référence Produit exploitable.',
-                    );
-                    return;
-                  }
+              {initialProductVariant ? (
+                <p className="rounded-md border border-border px-3 py-2 text-sm">
+                  {initialProductVariant.name}
+                </p>
+              ) : (
+                <ProductSearchAutocomplete
+                  metadata={metadataQuery.data}
+                  onSelect={(result) => {
+                    if (!result.variant) {
+                      setProductVariant(null);
+                      setError(
+                        'Ce Produit ne possède pas encore de Référence Produit exploitable.',
+                      );
+                      return;
+                    }
 
-                  setProductVariant(result.variant);
-                  setError('');
-                }}
-                onValueChange={(value) => {
-                  setProductSearch(value);
-                  setProductVariant((current) => (
-                    current?.name === value ? current : null
-                  ));
-                }}
-                scope="REFERENCE"
-                value={productSearch}
-                workspaceId={workspaceId}
-              />
+                    setProductVariant(result.variant);
+                    setError('');
+                  }}
+                  onValueChange={(value) => {
+                    setProductSearch(value);
+                    setProductVariant((current) => (
+                      current?.name === value ? current : null
+                    ));
+                  }}
+                  scope="REFERENCE"
+                  value={productSearch}
+                  workspaceId={workspaceId}
+                />
+              )}
               <FieldDescription>
-                Recherchez puis sélectionnez le Produit correspondant à cet Article fournisseur.
+                {initialProductVariant
+                  ? 'La Référence Produit est préremplie depuis le Produit consulté.'
+                  : 'Recherchez puis sélectionnez le Produit correspondant à cet Article fournisseur.'}
               </FieldDescription>
             </Field>
 
@@ -330,7 +350,14 @@ function SupplierArticleFormDialog({
               >
                 Annuler
               </DialogClose>
-              <Button disabled={createState.isLoading} type="submit">
+              <Button
+                disabled={
+                  createState.isLoading
+                  || suppliersLoading
+                  || suppliers.length === 0
+                }
+                type="submit"
+              >
                 {createState.isLoading ? 'Création…' : 'Créer l’Article'}
               </Button>
             </DialogFooter>
