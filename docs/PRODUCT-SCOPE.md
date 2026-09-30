@@ -297,7 +297,7 @@ Depuis tout dossier ouvert, le Dashboard Workspace doit rester accessible en un 
 
 Le Dashboard Workspace constitue la surface de pilotage globale du Workspace : Produits, Dossiers, Fiches techniques, Fiches process, alertes, activité et accès au panneau de configuration métier selon les modules réellement disponibles.
 
-La Sidebar Workspace est composée via le moteur Core de navigation. Les fonctions métier du produit sont affichées en premier, sans rubrique artificielle « Métier », puis un séparateur « Administration de l’espace » précède la navigation générique Core. Cette composition distingue clairement :
+La Sidebar Workspace est composée via le moteur Core de navigation. Le Tableau de bord reste la première entrée car il agrège les widgets Core et métier ; les fonctions métier du produit le suivent immédiatement, sans rubrique artificielle « Métier » ni séparateur intermédiaire. Un séparateur « Administration de l’espace » précède ensuite les fonctions génériques d’administration Core. Dans ce produit, l’entrée générique `Fichiers` est masquée dans la navigation sans supprimer les routes, API, services, permissions ou capacités de stockage Core. Cette composition distingue clairement :
 
 ```text
 référentiel partagé SaaS

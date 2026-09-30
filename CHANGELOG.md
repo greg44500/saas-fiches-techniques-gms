@@ -8,10 +8,12 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Changed
 
-- intégration du Core post-tag `v1.2.1` jusqu’au commit `a9d99aa6307a6e7adf884e949cebc4059549824e`, sans nouvelle version ni tag ;
-- shell Workspace modernisé : statut dans la topbar, rôle dans l’identité utilisateur, navigation métier prioritaire puis « Administration de l’espace », groupes animés ;
+- intégration du Core post-tag `v1.2.1` jusqu’au commit `d3b9891bc2a32705a0a99b2ed62bed60caf653ca`, sans nouvelle version ni tag ;
+- shell Workspace modernisé : Tableau de bord en tête, modules métier immédiatement après, statut regroupé avec le nom dans la topbar, rôle dans l’identité utilisateur, puis « Administration de l’espace » ;
 - navigation Platform conservée avec séparation des modules applicatifs et accès rapide aux vues autorisées ;
 - Help Center générique mis à niveau et composé avec l’aide métier M-001 à M-004 ;
+- libellés métier des capabilities et métriques projetés depuis le registre backend dans la vue Abonnement ;
+- entrée générique `Fichiers` masquée dans la sidebar du produit sans supprimer les primitives File Core ;
 - aucune migration MongoDB nouvelle introduite par cet upgrade.
 
 ---

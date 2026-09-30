@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.2.1` intégré jusqu’au commit post-tag `a9d99aa6307a6e7adf884e949cebc4059549824e` ;
+- Core `v1.2.1` intégré jusqu’au commit post-tag `d3b9891bc2a32705a0a99b2ed62bed60caf653ca` ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;

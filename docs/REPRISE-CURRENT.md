@@ -38,10 +38,10 @@ M-001, M-002, M-003 et M-004 hors exports ne doivent pas être réimplémentés 
 repository = greg44500/saas-core-api
 version    = 1.2.1
 tag        = v1.2.1
-commit     = a9d99aa6307a6e7adf884e949cebc4059549824e
+commit     = d3b9891bc2a32705a0a99b2ed62bed60caf653ca
 ~~~
 
-Ce commit est postérieur au tag v1.2.1 et correspond aux PR Core #45/#46.
+Ce commit est postérieur au tag v1.2.1 et correspond aux PR Core #45/#46/#47. La Core Gate post-merge Core #90 est verte sur ce SHA.
 
 Décision :
 
@@ -55,16 +55,20 @@ Décision :
 
 ### Workspace
 
-- fonctions métier déclarées par le produit avant la navigation Core ;
-- séparateur « Administration de l’espace » ;
-- navigation Core plate : Tableau de bord, Fichiers, Membres, Rôles et permissions, Paramètres, Abonnement, Activité ;
+- Tableau de bord Core conservé comme première entrée car il compose les widgets Core et métier ;
+- Dossiers, Produits et Fournisseurs immédiatement après, sans titre ni espace artificiel ;
+- séparateur « Administration de l’espace » après les modules métier ;
+- Membres, Rôles et permissions, Paramètres, Abonnement et Activité conservés sous cette séparation ;
+- entrée `Fichiers` masquée uniquement dans la navigation de ce produit ; les primitives File Core restent présentes ;
 - groupes repliables avec animation fluide et respect de reduced motion ;
-- badge statut Workspace dans la topbar ;
+- badge statut regroupé avec le nom du Workspace sous la forme `Nom | statut` ;
 - rôle Workspace et plan effectif dans l’identité utilisateur selon les droits ;
-- suppression des widgets Dashboard redondants Statut du workspace / Votre rôle ;
+- widgets Dashboard Core et widgets métier toujours composés ensemble ;
 - suppression de la recherche globale Workspace.
 
 Les recherches restent locales aux pages métier concernées.
+
+La vue Abonnement reçoit désormais les métadonnées de présentation du registre actif afin d’afficher les libellés français des capabilities/métriques métier au lieu de leurs clés techniques.
 
 ### Platform
 
@@ -186,3 +190,30 @@ un lot cohérent
 Ne pas créer de micro-PR de correction. Ne pas relancer périodiquement les Core Gates : l’utilisateur communique leur résultat.
 
 La prochaine conversation doit d’abord vérifier GitHub réel et l’état de l’intégration Core avant de commencer la vue Platform « Gestion des référentiels ».
+
+
+## 9. Validation de l’intégration en cours
+
+La PR produit existante reste :
+
+~~~text
+PR #26
+branche = core-update/post-v1.2.1-a9d99aa
+~~~
+
+La Core Gate #147 était verte sur l’ancien HEAD `f4919e2d363151c03a98602b90745e9db72daa3e`, avant l’intégration du Core `d3b9891...`.
+
+Elle ne constitue donc plus la preuve finale du lot. Le nouveau HEAD doit obtenir une nouvelle Core Gate avant toute fusion.
+
+La validation visuelle utilisateur doit confirmer notamment :
+
+- Tableau de bord tout en haut ;
+- Dossiers / Produits / Fournisseurs immédiatement après ;
+- `Administration de l’espace` ensuite ;
+- absence de l’entrée `Fichiers` dans ce produit ;
+- `Espace de travail : Nom | badge` ;
+- libellés métier français dans Abonnement ;
+- widgets Core + widgets métier toujours présents sur le Dashboard selon leurs droits.
+
+Le nom commercial de l’application n’est pas modifié tant qu’il n’a pas été explicitement validé par l’utilisateur.
+
