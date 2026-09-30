@@ -17,7 +17,7 @@ function WorkspaceTopbar({ sidebarTrigger = null, workspace }) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-      <div className="flex min-h-[var(--workspace-topbar-height)] items-center gap-4 px-4 sm:px-6">
+      <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
         {sidebarTrigger}
         <div
           className="flex min-w-0 flex-1 items-center gap-2"
