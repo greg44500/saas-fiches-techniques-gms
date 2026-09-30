@@ -219,18 +219,30 @@ La relation d'usage du Workspace est matérialisée par `WorkspaceProduct`, qui 
 
 Les données partagées au niveau SaaS restent strictement génériques. Elles ne contiennent jamais de tarif négocié, prix facturé, historique commercial local, fournisseur choisi par un magasin ou autre donnée confidentielle d'un tenant.
 
-Les utilisateurs autorisés recherchent d'abord le référentiel global puis ajoutent une référence existante à leur référentiel Workspace. Si aucun équivalent crédible n'existe, ils peuvent créer une nouvelle identité canonique après contrôle anti-doublon et sélection d'une catégorie active. Cette nouvelle identité est immédiatement `ACTIVE` et partagée dans le référentiel commun ; elle n'attend pas une validation humaine systématique.
+Les utilisateurs autorisés recherchent d'abord le référentiel global puis ajoutent une Référence existante à leurs Favoris Workspace lorsqu'ils le souhaitent. Si une identité ou une dimension nécessaire n'existe pas, une contribution peut créer une valeur `PROVISIONAL` après contrôle anti-doublon et, lorsqu'une valeur proche existe, confirmation explicite de l'utilisateur.
+
+La gouvernance est volontairement non bloquante :
+
+~~~text
+valeur provisoire
+→ utilisable immédiatement dans le Workspace contributeur
+→ isolée des autres Workspaces
+→ revue Application Global
+→ validation, fusion ou rejet
+~~~
+
+Une valeur `APPROVED` appartient au référentiel partagé. Une valeur `PROVISIONAL` conserve son Workspace d'origine jusqu'à résolution. Le lifecycle fonctionnel et le statut de gouvernance restent deux dimensions distinctes.
 
 Invariant :
 
-```text
+~~~text
 même réalité Produit canonique
-→ une seule identité de référence dans le SaaS
-```
+→ une seule identité de référence approuvée dans le SaaS
+~~~
 
-Les variantes de casse, espaces, accents, singulier/pluriel et fautes d'orthographe courantes ne doivent pas créer silencieusement des Produits concurrents. Le contrôle doit combiner normalisation, alias et recherche de proximité avant toute création. L'index d'unicité technique seul ne suffit pas à garantir l'unicité sémantique.
+Les variantes de casse, espaces, accents, singulier/pluriel et fautes d'orthographe courantes ne doivent pas créer silencieusement des Produits concurrents. Le contrôle combine normalisation, alias et recherche de proximité avant création ; l'index d'unicité technique seul ne garantit pas l'unicité sémantique.
 
-La politique M-002 est désormais fermée : le parcours courant ne possède pas de file de modération systématique. L'administration globale Produit sert à alimenter et maintenir la qualité du référentiel commun — création/import global, catégories, corrections, archivage/réactivation et maintenance — au moyen d'une autorité Application Global explicite, distincte des rôles Platform et Workspace.
+L'administration globale Produit utilise une autorité Application Global explicite, distincte des rôles Platform et Workspace. Elle permet la création/import global, la gestion des catégories, la correction, l'archivage/réactivation et la gouvernance des contributions. Une résolution peut harmoniser les dépendances opérationnelles courantes M-002/M-003/M-004 mais ne réécrit jamais les snapshots historiques `TechnicalSheetValidation`.
 
 ---
 
@@ -285,7 +297,7 @@ Depuis tout dossier ouvert, le Dashboard Workspace doit rester accessible en un 
 
 Le Dashboard Workspace constitue la surface de pilotage globale du Workspace : Produits, Dossiers, Fiches techniques, Fiches process, alertes, activité et accès au panneau de configuration métier selon les modules réellement disponibles.
 
-La Sidebar Workspace devra être recomposée avec les sections métier du produit en utilisant le point d'extension Core `frontend/src/app/workspace-navigation.js`. Sa structure définitive sera arrêtée après validation du périmètre V1 afin de distinguer clairement :
+La Sidebar Workspace est composée via le moteur Core de navigation. Les fonctions métier du produit sont affichées en premier, sans rubrique artificielle « Métier », puis un séparateur « Administration de l’espace » précède la navigation générique Core. Cette composition distingue clairement :
 
 ```text
 référentiel partagé SaaS

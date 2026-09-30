@@ -218,9 +218,22 @@ docs/m001/M-001-TEST-STRATEGY.md
 
 Checkpoint M-001 validé : les quatre parcours métier sont intégrés au corpus Playwright, l'exécution locale finale compte 11/11 tests verts et la Core Gate #101 est `success` sur le head applicatif `79cfe24579e4b39232835fd156009d6f038d9465`.
 
-M-002 ajoute deux parcours Playwright critiques : (1) soumission d'un nouveau Produit depuis un Workspace, revue/approbation par l'autorité Application Global puis ajout de la Référence aux Favoris ; (2) création directe d'un Produit par un utilisateur explicitement habilité Application Global. La clôture technique M-002 exige une Core Gate verte sur la PR finale puis sur le merge dans `main` ; GitHub reste l'autorité sur ces résultats.
+M-002 conserve ses deux parcours Playwright critiques : (1) contribution Workspace puis revue/approbation par l’autorité Application Global ; (2) création directe par une autorité Application Global explicitement habilitée.
 
-M-004 ajoute cinq parcours Playwright critiques au corpus : (1) une Référence Produit globale non favorite reste composable, valorisable et validable ; (2) ambiguïté d'Article fournisseur puis sélection explicite, changement de prix, refus de validation et revalorisation ; (3) copie d'une Fiche du Dossier A vers B sans finance source puis valorisation avec le prix du Dossier cible ; (4) quota atteint bloquant création/copie sans bloquer la modification d'une Fiche existante ; (5) corbeille → restauration → nouvelle suppression → purge, avec quota conservé jusqu'à la purge. Ces scénarios sont présents sur la branche M-004 mais leur exécution locale et la Core Gate finale restent à valider avant clôture.
+M-004 ajoute cinq parcours Playwright critiques : (1) Référence Produit globale non favorite composable/valorisable ; (2) ambiguïté Article, changement de prix, revalorisation puis validation ; (3) copie inter-Dossier sans finance source ; (4) quota bloquant création/copie sans bloquer la modification ; (5) corbeille, restauration et purge avec quota conservé jusqu’à la purge.
+
+Checkpoint de clôture M-002 à M-004 du 2026-09-30 :
+
+~~~text
+lint / tests globaux / build : verts localement
+E2E Playwright : 22/22 verts
+PR #25 : fusionnée
+Core Gate PR #145 : success
+merge : 588612ba987c4a91951d4939231f9f44881c50d8
+Core Gate post-merge #146 : success
+~~~
+
+D-012 reste une responsabilité permanente de chaque futur module métier, mais les preuves E2E M-001 à M-004 actuellement livrées sont validées.
 
 ### GMS-UX-001 — Raffinements visuels post-M-002
 
