@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 
+import { TooltipProvider } from '@/components/ui/tooltip';
+
 const useGetCurrentUserQueryMock = vi.hoisted(() => vi.fn());
 const useLogoutMutationMock = vi.hoisted(() => vi.fn());
 const useGetCurrentPlatformContextQueryMock = vi.hoisted(() => vi.fn());
@@ -18,21 +20,29 @@ vi.mock('@/features/platform/api/platform-current-context-api', () => ({
 
 import { UserMenu, getInitials } from '@/features/auth/components/user-menu';
 
-function renderUserMenu(initialPath = '/workspaces/workspace-1/dashboard') {
+function renderUserMenu(
+  initialPath = '/workspaces/workspace-1/dashboard',
+  props = {},
+) {
+  const Component = () => <UserMenu {...props} />;
   const router = createMemoryRouter(
     [
-      { path: '/workspaces/:workspaceId/dashboard', Component: UserMenu },
+      { path: '/workspaces/:workspaceId/dashboard', Component },
       { path: '/account/profile', Component: () => <h1>Profil cible</h1> },
       { path: '/account/preferences', Component: () => <h1>Préférences cible</h1> },
       { path: '/account/security', Component: () => <h1>Sécurité cible</h1> },
-      { path: '/platform/overview', Component: UserMenu },
-      { path: '/platform/users', Component: UserMenu },
+      { path: '/platform/overview', Component },
+      { path: '/platform/users', Component },
       { path: '/login', Component: () => <h1>Connexion cible</h1> },
     ],
     { initialEntries: [initialPath] },
   );
 
-  render(<RouterProvider router={router} />);
+  render(
+    <TooltipProvider delay={0}>
+      <RouterProvider router={router} />
+    </TooltipProvider>,
+  );
   return router;
 }
 
@@ -78,9 +88,24 @@ describe('UserMenu', () => {
     expect(getInitials({ email: 'user@example.com' })).toBe('U');
   });
 
-  it('affiche l’identité et les actions du compte avec des boutons natifs', async () => {
+  it('explique le clic sur l’avatar via un tooltip', async () => {
     const user = userEvent.setup();
     renderUserMenu();
+
+    const trigger = screen.getByRole('button', { name: 'Ouvrir le menu utilisateur' });
+    await user.hover(trigger);
+
+    expect(await screen.findByText('Voir le compte utilisateur')).toBeInTheDocument();
+  });
+
+  it('affiche l’identité, les détails contextuels et les actions du compte', async () => {
+    const user = userEvent.setup();
+    renderUserMenu('/workspaces/workspace-1/dashboard', {
+      contextItems: [
+        { label: 'Rôle dans cet espace', value: 'Administrateur' },
+        { label: 'Plan', value: 'Premium' },
+      ],
+    });
 
     await user.click(
       screen.getByRole('button', { name: 'Ouvrir le menu utilisateur' }),
@@ -89,6 +114,10 @@ describe('UserMenu', () => {
     expect(screen.getByRole('group', { name: 'Menu utilisateur' })).toBeInTheDocument();
     expect(screen.getByText('Greg Martin')).toBeInTheDocument();
     expect(screen.getByText('greg@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Rôle dans cet espace')).toBeInTheDocument();
+    expect(screen.getByText('Administrateur')).toBeInTheDocument();
+    expect(screen.getByText('Plan')).toBeInTheDocument();
+    expect(screen.getByText('Premium')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Profil' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Préférences' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Sécurité' })).toBeEnabled();

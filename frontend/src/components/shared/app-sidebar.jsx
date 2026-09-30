@@ -36,6 +36,47 @@ function findActiveGroupId(navigation, isItemActive) {
   ))?.id ?? null;
 }
 
+function AppSidebarSeparator({ id, label = null }) {
+  if (!label) {
+    return (
+      <li
+        aria-orientation="horizontal"
+        className="mx-2 my-2 border-t border-sidebar-border group-data-[collapsible=icon]:mx-1"
+        data-navigation-id={id}
+        data-sidebar="separator"
+        role="separator"
+      />
+    );
+  }
+
+  return (
+    <li
+      aria-label={label}
+      aria-orientation="horizontal"
+      className="my-3 flex items-center gap-2"
+      data-navigation-id={id}
+      data-sidebar="separator"
+      role="separator"
+    >
+      <span
+        aria-hidden="true"
+        className="h-px flex-1 bg-sidebar-border group-data-[collapsible=icon]:hidden"
+      />
+      <span className="shrink-0 text-[0.65rem] font-semibold uppercase tracking-wide text-muted-foreground group-data-[collapsible=icon]:sr-only">
+        {label}
+      </span>
+      <span
+        aria-hidden="true"
+        className="h-px flex-1 bg-sidebar-border group-data-[collapsible=icon]:hidden"
+      />
+      <span
+        aria-hidden="true"
+        className="hidden h-px flex-1 bg-sidebar-border group-data-[collapsible=icon]:block"
+      />
+    </li>
+  );
+}
+
 function AppSidebarLink({
   getHref,
   getIcon,
@@ -153,7 +194,14 @@ function ExpandedSidebarGroup({
           )}
         />
       </CollapsibleTrigger>
-      <CollapsibleContent>
+      <CollapsibleContent
+        className={cn(
+          'h-[var(--collapsible-panel-height)] overflow-hidden opacity-100',
+          'transition-[height,opacity] duration-200 ease-out motion-reduce:transition-none',
+          'data-[starting-style]:h-0 data-[starting-style]:opacity-0',
+          'data-[ending-style]:h-0 data-[ending-style]:opacity-0',
+        )}
+      >
         <SidebarMenuSub>
           {group.items.map((item) => (
             <SidebarMenuSubItem key={item.id}>
@@ -192,11 +240,6 @@ function AppSidebarGroup(props) {
   return <ExpandedSidebarGroup {...props} active={active} />;
 }
 
-/**
- * Rend une navigation normalisée sans connaître les permissions, features ou
- * modules métier qui l'ont produite. Les adaptateurs Workspace/Platform
- * restent responsables de l'autorisation ; ce composant ne porte que l'UX.
- */
 function AppSidebarNavigation({
   getHref,
   getIcon,
@@ -234,7 +277,13 @@ function AppSidebarNavigation({
           <SidebarGroupContent>
             <SidebarMenu>
               {navigation.map((entry) => (
-                entry.type === 'group' ? (
+                entry.type === 'separator' ? (
+                  <AppSidebarSeparator
+                    id={entry.id}
+                    key={entry.id}
+                    label={entry.label}
+                  />
+                ) : entry.type === 'group' ? (
                   <AppSidebarGroup
                     expanded={openGroupId === entry.id}
                     getHref={getHref}
@@ -308,4 +357,9 @@ function AppSidebar({
   );
 }
 
-export { AppSidebar, AppSidebarNavigation, findActiveGroupId };
+export {
+  AppSidebar,
+  AppSidebarNavigation,
+  AppSidebarSeparator,
+  findActiveGroupId,
+};

@@ -12,11 +12,14 @@ function getUserDisplayName(user) {
 /**
  * Identité authentifiée commune aux surfaces applicatives.
  *
- * `actions` permet à un contexte (Platform, Workspace, futur module) d'ajouter
- * ses raccourcis juste avant la déconnexion sans coupler ce composant Auth à
- * une fonctionnalité métier ou d'administration précise.
+ * Les surfaces construisent leurs détails contextuels avant de les transmettre.
+ * Auth reste ainsi générique et ne connaît ni Workspace ni Platform.
  */
-function AuthenticatedUserIdentity({ actions = null, secondaryText }) {
+function AuthenticatedUserIdentity({
+  actions = null,
+  menuContextItems = [],
+  secondaryText,
+}) {
   const { data: user } = useGetCurrentUserQuery();
   const displayName = getUserDisplayName(user);
   const resolvedSecondaryText = secondaryText ?? user?.email ?? null;
@@ -24,7 +27,7 @@ function AuthenticatedUserIdentity({ actions = null, secondaryText }) {
   return (
     <div className="flex min-w-0 items-center gap-2">
       <div className="flex min-w-0 items-center rounded-xl border border-border bg-card/70 p-1 text-card-foreground shadow-sm">
-        <UserMenu />
+        <UserMenu contextItems={menuContextItems} />
 
         <div className="hidden min-w-0 px-2 sm:block">
           <p className="max-w-48 truncate text-sm font-semibold">{displayName}</p>
