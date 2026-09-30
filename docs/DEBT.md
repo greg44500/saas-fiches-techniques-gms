@@ -368,15 +368,21 @@ En attendant ce lot :
 ### GMS-TAX-001 — TVA Produit / fiscalité d’achat
 
 **Statut :** À CADRER  \
-**Périmètre :** produit `saas-fiches-techniques-gms` — M-002 / M-003 / futurs flux comptables  \
-**Blocage M-004 :** non
+**Périmètre :** produit `saas-fiches-techniques-gms` — M-002 / M-003 / M-004 / éventuels futurs flux Achats et comptables  \
+**Blocage M-004 :** non  \
+**Prérequis futur :** oui avant toute conception ou implémentation d’une éventuelle fonctionnalité de gestion des achats, factures d’achat ou TVA déductible
 
 Le contrat M-004 porte actuellement une **TVA de vente au niveau de la Fiche technique**, utilisée pour convertir l’économie de la Fiche de HT vers TTC. Les coûts d’achat exploités par M-003 et M-004 restent calculés en HT.
 
 Le modèle actif `ProductVariant` M-002 ne porte actuellement aucun taux de TVA Produit et le contrat M-002 validé ne définit pas cette donnée. M-003 ne modélise pas non plus, à ce stade, une fiscalité d’achat par Article/Tarif.
 
-Cette absence ne bloque pas la valorisation M-004 actuelle, mais constitue une dette fonctionnelle avant tout besoin futur de :
+Cette absence ne bloque pas la valorisation M-004 actuelle. En revanche, **GMS-TAX-001 doit être cadrée explicitement avant tout futur module Achats** afin d’éviter qu’une logique de TVA insuffisante soit figée dans les Produits, Articles fournisseur, factures ou snapshots comptables. La fonctionnalité Achats reste éventuelle et hors périmètre actuel ; cette dette constitue seulement un prérequis d’architecture si elle est décidée ultérieurement.
 
+Le futur cadrage devra notamment étudier, sans préjuger de la solution finale, la pertinence d’un référentiel fiscal global et versionné, les dates d’effet des taux, leur portée territoriale, l’autorité de modification et la séparation entre taux légal, classification fiscale et taux réellement appliqué à une opération.
+
+Cette dette fonctionnelle doit être résolue avant tout besoin futur de :
+
+- gestion des achats / commandes / réceptions lorsque le périmètre fiscal devient nécessaire ;
 - comptabilité d’achat ;
 - TVA déductible ;
 - exports comptables ou fiscaux ;
@@ -402,7 +408,9 @@ Points obligatoires du futur cadrage :
 4. définir le comportement lorsqu’un Produit/Article peut relever de plusieurs taux selon son usage ou son contexte ;
 5. préserver les snapshots historiques et éviter toute réécriture rétroactive ;
 6. définir les impacts import catalogue, factures, exports et comptabilité ;
-7. ne modifier M-002 ou M-003 qu’après validation d’un contrat dédié.
+7. ne modifier M-002, M-003 ou M-004 qu’après validation d’un contrat dédié ;
+8. définir le lien avec un éventuel futur module Achats sans créer aujourd’hui de modèle ou de dépendance anticipée ;
+9. distinguer un référentiel de taux légal de la règle métier qui détermine le taux applicable à une opération réelle.
 
 Aucune valeur de TVA Produit ne doit être ajoutée silencieusement au modèle actuel sous couvert de M-004.
 

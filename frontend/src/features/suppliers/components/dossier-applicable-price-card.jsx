@@ -165,12 +165,13 @@ function DossierApplicablePriceCard({
           <>
             <p className="font-medium">
               {applicable.price
-                ? formatPrice(applicable.price)
+                ? formatPrice(applicable.price, {
+                    hideDefaultCurrency: true,
+                  })
                 : 'Aucun prix applicable'}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Source : {getPricingSourceLabel(applicable.resolvedSource)}
-              {applicable.fallbackApplied ? ' · source de remplacement' : ''}
             </p>
           </>
         )}

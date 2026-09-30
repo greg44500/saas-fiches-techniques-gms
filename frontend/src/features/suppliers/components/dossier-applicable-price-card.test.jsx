@@ -99,9 +99,9 @@ describe('DossierApplicablePriceCard', () => {
       dossierId: 'dossier-1',
       articleId: 'article-1',
     });
-    expect(screen.getByText('12,500 EUR / PCE')).toBeInTheDocument();
+    expect(screen.getByText('12,500 / PCE')).toBeInTheDocument();
     expect(screen.getByText(/Tarif négocié/)).toBeInTheDocument();
-    expect(screen.getByText(/source de remplacement/)).toBeInTheDocument();
+    expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();
   });
 
   it('identifie explicitement un Prix indicatif utilisé en dernier recours', async () => {
@@ -139,10 +139,11 @@ describe('DossierApplicablePriceCard', () => {
       name: 'Sysco · Ali321',
     }));
 
+    expect(screen.getByText('3,100 / KG')).toBeInTheDocument();
     expect(screen.getByText(/Prix indicatif espace de travail/))
       .toBeInTheDocument();
-    expect(screen.getByText(/source de remplacement/))
-      .toBeInTheDocument();
+    expect(screen.queryByText(/source de remplacement/))
+      .not.toBeInTheDocument();
   });
 
   it('efface le résultat précédent quand la sélection revient à Sélectionner', async () => {
@@ -162,7 +163,7 @@ describe('DossierApplicablePriceCard', () => {
       name: 'Sysco · Ali321',
     }));
 
-    expect(screen.getByText('12,500 EUR / PCE')).toBeInTheDocument();
+    expect(screen.getByText('12,500 / PCE')).toBeInTheDocument();
 
     await user.click(screen.getByRole('combobox', {
       name: 'Article fournisseur à vérifier',
@@ -172,7 +173,7 @@ describe('DossierApplicablePriceCard', () => {
     }));
 
     expect(mocks.resetApplicable).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText('12,500 EUR / PCE')).not.toBeInTheDocument();
+    expect(screen.queryByText('12,500 / PCE')).not.toBeInTheDocument();
     expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();
   });
 });

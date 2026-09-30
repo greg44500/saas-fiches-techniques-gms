@@ -70,7 +70,10 @@ function formatPackaging(packaging) {
   return parts.length > 0 ? parts.join(' · ') : 'Non renseigné';
 }
 
-function formatPrice(price) {
+function formatPrice(
+  price,
+  { hideDefaultCurrency = false } = {},
+) {
   if (!price) return 'Indisponible';
 
   const amount = price.normalizedAmount ?? price.sourceAmount;
@@ -80,10 +83,17 @@ function formatPrice(price) {
 
   if (!amount) return 'Indisponible';
 
+  const currency = price.currency ?? 'EUR';
+  const currencyLabel = (
+    hideDefaultCurrency && currency === 'EUR'
+      ? ''
+      : ' ' + currency
+  );
+
   return Number(amount).toLocaleString('fr-FR', {
     minimumFractionDigits: 3,
     maximumFractionDigits: 3,
-  }) + ' ' + (price.currency ?? 'EUR') + ' / '
+  }) + currencyLabel + ' / '
     + (unit ? getReferenceUnitLabel(null, unit) : '—');
 }
 

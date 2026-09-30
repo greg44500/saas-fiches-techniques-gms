@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   BookOpenCheck,
-  CircleDollarSign,
+  Euro,
   Eye,
   FileUp,
   Minus,
@@ -289,16 +289,13 @@ function ProductsPage() {
             )}
             {result.variant
             && can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE) && (
-              <Button
-                aria-label={'Prix indicatif pour ' + referenceLabel}
+              <ActionIconButton
+                Icon={Euro}
+                label={'Appliquer un prix indicatif à ' + referenceLabel}
                 onClick={() => setIndicativeVariant(result.variant)}
-                size="sm"
-                type="button"
+                tooltipLabel="Appliquer un prix indicatif"
                 variant="outline"
-              >
-                <CircleDollarSign aria-hidden="true" className="size-4" />
-                Prix indicatif
-              </Button>
+              />
             )}
             <ActionIconButton
               Icon={Eye}

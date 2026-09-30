@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   listNegotiated: vi.fn(),
   listInvoiced: vi.fn(),
   listIndicative: vi.fn(),
+  listWorkspaceIndicative: vi.fn(),
 }));
 
 vi.mock('react-router', async (importOriginal) => {
@@ -41,6 +42,7 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListNegotiatedPricesQuery: mocks.listNegotiated,
   useListInvoicedPricesQuery: mocks.listInvoiced,
   useListDossierIndicativePricesQuery: mocks.listIndicative,
+  useListWorkspaceIndicativePricesQuery: mocks.listWorkspaceIndicative,
   useAddDossierSupplierReferenceMutation: () => [
     vi.fn(),
     { isLoading: false },
@@ -119,6 +121,7 @@ describe('DossierSupplierPricingPage', () => {
     mocks.listNegotiated.mockReturnValue(queryResult([]));
     mocks.listInvoiced.mockReturnValue(queryResult([]));
     mocks.listIndicative.mockReturnValue(queryResult([]));
+    mocks.listWorkspaceIndicative.mockReturnValue(queryResult([]));
   });
 
   it('affiche les catalogues accessibles avec portée et provenance dans le contexte Dossier', () => {
@@ -236,6 +239,94 @@ describe('DossierSupplierPricingPage', () => {
     expect(screen.getByRole('button', {
       name: 'À propos des Tarifs négociés',
     })).toBeInTheDocument();
+  });
+
+  it('affiche le Prix indicatif Workspace hérité lorsqu’aucune surcharge Dossier n’existe', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: (permission) => [
+        SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ,
+        SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE,
+      ].includes(permission),
+    });
+    mocks.listWorkspaceIndicative.mockReturnValue(queryResult([
+      {
+        id: 'workspace-indicative-1',
+        status: 'ACTIVE',
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte',
+          productName: 'Carotte',
+        },
+        normalizedAmount: '1.8',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
+        source: 'Estimation Workspace',
+      },
+    ]));
+
+    renderPage();
+
+    expect(screen.getByRole('tab', {
+      name: 'Prix indicatifs (1)',
+    })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('columnheader', {
+      name: /PU HT/,
+    })).toBeInTheDocument();
+    expect(screen.getByText('1,800 / KG')).toBeInTheDocument();
+    expect(screen.getByText('Espace de travail')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Définir un prix indicatif pour ce Dossier',
+    })).toBeInTheDocument();
+  });
+
+  it('privilégie le Prix indicatif du Dossier sur la valeur Workspace affichée', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: {
+        id: 'workspace-1',
+        name: 'Acme',
+      },
+      can: (permission) => (
+        permission === SUPPLIER_PERMISSION.INDICATIVE_PRICE_READ
+      ),
+    });
+    mocks.listWorkspaceIndicative.mockReturnValue(queryResult([
+      {
+        id: 'workspace-indicative-1',
+        status: 'ACTIVE',
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte',
+          productName: 'Carotte',
+        },
+        normalizedAmount: '1.8',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
+      },
+    ]));
+    mocks.listIndicative.mockReturnValue(queryResult([
+      {
+        id: 'dossier-indicative-1',
+        status: 'ACTIVE',
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte',
+          productName: 'Carotte',
+        },
+        normalizedAmount: '2.1',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
+      },
+    ]));
+
+    renderPage();
+
+    expect(screen.getByText('2,100 / KG')).toBeInTheDocument();
+    expect(screen.queryByText('1,800 / KG')).not.toBeInTheDocument();
+    expect(screen.getByText('Dossier')).toBeInTheDocument();
   });
 
   it('n’affiche qu’un seul message lorsque le Dossier n’a aucun tarif négocié', () => {

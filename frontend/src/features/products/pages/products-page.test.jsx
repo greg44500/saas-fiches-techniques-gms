@@ -292,7 +292,7 @@ describe('ProductsPage', () => {
     renderPage();
 
     await user.click(screen.getByRole('button', {
-      name: 'Prix indicatif pour Carotte',
+      name: 'Appliquer un prix indicatif à Carotte',
     }));
 
     expect(screen.getByText(/Prix indicatif ouvert · Carotte/))
@@ -361,7 +361,7 @@ describe('ProductsPage', () => {
       name: 'Retirer Carotte des favoris',
     })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', {
-      name: 'Prix indicatif pour Carotte',
+      name: 'Appliquer un prix indicatif à Carotte',
     })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Voir Carotte' }))
       .toBeInTheDocument();
