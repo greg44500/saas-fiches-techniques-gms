@@ -396,10 +396,38 @@ Classification :
 
 ```text
 EXISTING
+USER_CONFIRMATION_REQUIRED
 AUTO_PUBLISHABLE
-REVIEW_REQUIRED
+PROVISIONAL
 INVALID
 ```
+
+`REVIEW_REQUIRED` reste accepté comme valeur historique de contribution mais n'est plus le résultat normal d'une nouvelle création gouvernée Workspace.
+
+Les entités `CanonicalProduct`, `ProductVariety`, `ProductCharacteristic` et `ProductVariant` portent un `governanceStatus` distinct du lifecycle :
+
+```text
+APPROVED
+PROVISIONAL
+RESOLVED
+REJECTED
+```
+
+Visibilité :
+
+```text
+Workspace courant
+→ APPROVED globaux
++ PROVISIONAL contributedFromWorkspace = Workspace courant
+
+Autre Workspace
+→ APPROVED globaux uniquement
+
+Platform gouvernance
+→ APPROVED + PROVISIONAL
+```
+
+La confirmation utilisateur est obligatoire pour une proximité lexicale incertaine. Une fusion/correction Platform peut repointer les dépendances courantes ; les snapshots validés de Fiche technique restent immuables.
 
 L'autorité globale reste Application Global :
 

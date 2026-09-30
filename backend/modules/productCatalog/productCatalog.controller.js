@@ -71,6 +71,7 @@ const detail = async (req, res) => {
 const dimensions = async (req, res) => {
     const result = await listProductDimensions({
         productId: req.validated.params.productId,
+        workspaceId: req.workspace._id,
         includeArchived: false,
     });
 
@@ -100,6 +101,8 @@ const createProduct = async (req, res) => {
         value: req.validated.body.name,
         categoryId: req.validated.body.categoryId,
         variant: req.validated.body.variant,
+        forceCreate: req.validated.body.forceCreate,
+        reviewedCandidateIds: req.validated.body.reviewedCandidateIds,
     });
 
     res.status(result.contribution ? 201 : 200).json({

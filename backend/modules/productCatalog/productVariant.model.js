@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import {
     PRODUCT_CONSERVATION_TYPE,
     PRODUCT_FOOD_RANGES,
+    PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_REJECTION_REASON,
     PRODUCT_STATUS,
@@ -71,6 +72,12 @@ const productVariantSchema = new Schema(
             required: true,
         },
         identityActive: { type: Boolean, default: true, required: true },
+        governanceStatus: {
+            type: String,
+            enum: Object.values(PRODUCT_GOVERNANCE_STATUS),
+            default: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+            required: true,
+        },
         contributedFromWorkspace: {
             type: Schema.Types.ObjectId,
             ref: 'Workspace',
@@ -93,17 +100,49 @@ const productVariantSchema = new Schema(
 productVariantSchema.index(
     { normalizedName: 1 },
     {
-        name: 'product_variant_normalized_name_unique',
+        name: 'product_variant_approved_normalized_name_unique',
         unique: true,
-        partialFilterExpression: { identityActive: true },
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+        },
+    },
+);
+productVariantSchema.index(
+    { contributedFromWorkspace: 1, normalizedName: 1 },
+    {
+        name: 'product_variant_provisional_workspace_name_unique',
+        unique: true,
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+        },
     },
 );
 productVariantSchema.index(
     { canonicalProduct: 1, normalizedSignature: 1 },
     {
-        name: 'product_variant_identity_unique',
+        name: 'product_variant_approved_identity_unique',
         unique: true,
-        partialFilterExpression: { identityActive: true },
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+        },
+    },
+);
+productVariantSchema.index(
+    {
+        canonicalProduct: 1,
+        contributedFromWorkspace: 1,
+        normalizedSignature: 1,
+    },
+    {
+        name: 'product_variant_provisional_workspace_identity_unique',
+        unique: true,
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+        },
     },
 );
 productVariantSchema.index(
@@ -113,6 +152,10 @@ productVariantSchema.index(
 productVariantSchema.index(
     { contributedFromWorkspace: 1, status: 1, createdAt: -1 },
     { name: 'product_variant_workspace_status_created_at' },
+);
+productVariantSchema.index(
+    { governanceStatus: 1, contributedFromWorkspace: 1, updatedAt: -1 },
+    { name: 'product_variant_governance_workspace_updated_at' },
 );
 
 const ProductVariant = model('ProductVariant', productVariantSchema);

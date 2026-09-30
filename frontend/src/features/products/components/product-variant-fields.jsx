@@ -115,7 +115,10 @@ function ProductVariantFields({
                 { value: EMPTY_OPTION, label: varietyEmptyLabel },
                 ...varieties.map((variety) => ({
                   value: variety.id,
-                  label: variety.name,
+                  label: variety.name
+                    + (variety.governanceStatus === 'PROVISIONAL'
+                      ? ' · À valider'
+                      : ''),
                 })),
               ]}
               onValueChange={(nextValue) => change(
@@ -134,6 +137,9 @@ function ProductVariantFields({
                 {varieties.map((variety) => (
                   <SelectItem key={variety.id} value={variety.id}>
                     {variety.name}
+                    {variety.governanceStatus === 'PROVISIONAL'
+                      ? ' · À valider'
+                      : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -160,7 +166,10 @@ function ProductVariantFields({
                     { value: EMPTY_OPTION, label: emptyLabel },
                     ...options.map((option) => ({
                       value: option.id,
-                      label: option.name,
+                      label: option.name
+                        + (option.governanceStatus === 'PROVISIONAL'
+                          ? ' · À valider'
+                          : ''),
                     })),
                   ]}
                   onValueChange={(nextValue) => onChange({
@@ -181,6 +190,9 @@ function ProductVariantFields({
                     {options.map((option) => (
                       <SelectItem key={option.id} value={option.id}>
                         {option.name}
+                        {option.governanceStatus === 'PROVISIONAL'
+                          ? ' · À valider'
+                          : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>

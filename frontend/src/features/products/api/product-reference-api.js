@@ -105,10 +105,10 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
     reviewProductReferenceContribution: builder.mutation({
-      query: ({ contributionId, decision }) => ({
+      query: ({ contributionId, ...body }) => ({
         url: '/product-reference/contributions/' + contributionId + '/decision',
         method: 'POST',
-        body: { decision },
+        body,
       }),
       transformResponse: (response) => response.data.contribution,
       invalidatesTags: ['ProductReference', 'ProductCatalog'],

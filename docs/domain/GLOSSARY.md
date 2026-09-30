@@ -266,14 +266,26 @@ Classification métier facultative backend-driven :
 
 Proposition issue d'un Workspace habilité et analysée par un moteur déterministe.
 
-Résultats :
+Résultats actifs :
 
 - `EXISTING` ;
+- `USER_CONFIRMATION_REQUIRED` ;
 - `AUTO_PUBLISHABLE` ;
-- `REVIEW_REQUIRED` ;
+- `PROVISIONAL` ;
 - `INVALID`.
 
-Une contribution nécessitant revue est portée par `ReferenceContribution`. Elle n'ajoute jamais `PENDING_REVIEW` au lifecycle des références réelles.
+`REVIEW_REQUIRED` reste une valeur historique compatible avec les contributions antérieures.
+
+Une contribution `PROVISIONAL` crée une vraie identité exploitable immédiatement dans le Workspace d'origine et une `ReferenceContribution` en attente de gouvernance. `PENDING_REVIEW` reste un statut de contribution et ne devient jamais un état de lifecycle de la référence.
+
+## Statut de gouvernance Produit
+
+État distinct du lifecycle `ACTIVE` / `ARCHIVED` :
+
+- `APPROVED` : identité canonique globale ;
+- `PROVISIONAL` : identité utilisable uniquement par le Workspace contributeur et visible par la Platform ;
+- `RESOLVED` : identité fusionnée/remplacée, non sélectionnable ;
+- `REJECTED` : proposition refusée, non sélectionnable.
 
 ## Gamme alimentaire
 

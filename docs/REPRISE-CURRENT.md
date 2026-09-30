@@ -408,9 +408,11 @@ Checkpoint UX du 2026-09-29 :
 - aide métier explicitement différée dans un bloc séparé basé sur `APPLICATION_HELP_MODULES`.
 - création de Référence Produit : explications secondaires déplacées dans des `(i)` avec infobulle ;
 - enrichissement Variétés/Caractéristiques converti en session multi-ajouts sans fermeture entre deux valeurs ;
-- choix de dimension simplifié : Variété / Présentation / Pièce-découpe / Type commercial / Calibre-format / Couleur / Désignation de qualité directement, sans jargon « Caractéristique » intermédiaire ;
+- choix de dimension simplifié : Variété / Présentation / Pièce-découpe / Calibre-format / Couleur / Désignation de qualité directement, sans jargon « Caractéristique » intermédiaire ; `Type commercial` reste supporté par le modèle mais est masqué pour les nouveaux ajouts Workspace tant que sa définition métier n'est pas validée ;
 - états vides des selects explicités (`Aucune variété disponible` / `Aucune valeur disponible`) afin de distinguer absence de données et choix volontaire `Non renseigné` ;
-- statut de chaque ajout visible dans la session : `Disponible`, `Existe déjà` ou `À examiner`, sans modifier la gouvernance backend M-002.
+- gouvernance M-002 rendue non bloquante : `governanceStatus` distinct du lifecycle, valeurs `PROVISIONAL` utilisables immédiatement dans leur Workspace d'origine, isolation inter-Workspace, confirmation explicite avant création d'une valeur proche, puis validation/fusion/rejet côté Platform ;
+- statut de chaque ajout visible dans la session : `Disponible`, `Existe déjà` ou `À valider` ;
+- les résolutions peuvent harmoniser les dépendances opérationnelles courantes M-002/M-003/M-004 mais ne réécrivent jamais les snapshots `TechnicalSheetValidation` validés.
 
 Une correction UX ne doit pas modifier silencieusement les invariants métier ou RBAC du contrat.
 

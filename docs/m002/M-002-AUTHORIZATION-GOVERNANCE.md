@@ -4,7 +4,7 @@
 
 ## 1. Ownership
 
-`CanonicalProduct`, `ProductVariety`, `ProductCharacteristic`, `ProductVariant`, `ProductCategory` et `ReferenceContribution` sont globaux. `WorkspaceProduct` est tenant-scoped.
+`CanonicalProduct`, `ProductVariety`, `ProductCharacteristic`, `ProductVariant`, `ProductCategory` et `ReferenceContribution` restent des primitives du référentiel Produit global. `WorkspaceProduct` est tenant-scoped. Une identité en gouvernance `PROVISIONAL` est cependant visible et exploitable uniquement dans son Workspace d'origine jusqu'à sa résolution Platform ; `contributedFromWorkspace` conserve cette provenance sans devenir un ownership métier.
 
 ## 2. Workspace
 
@@ -47,3 +47,32 @@ Traitement obligatoire avant reprise du code M-002 : une branche/PR Core unique,
 ## 6. Gouvernance
 
 `product:reference:manage` couvre création/correction/archivage/réactivation des Produits, catégories, Variétés, Caractéristiques, CUT, variantes, synonymes gouvernés, contributions et import global.
+
+## 7. Gouvernance non bloquante des contributions
+
+Le lifecycle (`ACTIVE` / `ARCHIVED`) est distinct de la gouvernance :
+
+```text
+APPROVED
+PROVISIONAL
+RESOLVED
+REJECTED
+```
+
+Règles :
+
+- `APPROVED` : valeur canonique visible par tous les Workspaces autorisés ;
+- `PROVISIONAL` : vraie entité exploitable immédiatement, visible uniquement dans le Workspace d'origine et dans l'administration Platform ;
+- `RESOLVED` : ancienne identité remplacée ou fusionnée, conservée pour traçabilité mais non sélectionnable ;
+- `REJECTED` : proposition refusée et non sélectionnable.
+
+Une faute ou proximité lexicale n'est jamais fusionnée silencieusement. Le moteur peut retourner `USER_CONFIRMATION_REQUIRED` avec des candidats ; l'utilisateur choisit une valeur existante ou confirme explicitement la création. Une création forcée devient `PROVISIONAL`.
+
+La gouvernance Platform permet :
+
+- validation canonique ;
+- correction puis validation ;
+- fusion vers une référence `APPROVED` ;
+- rejet uniquement si la valeur n'est pas déjà utilisée, sinon une fusion/remplacement explicite est requise.
+
+Les opérations de résolution sont transactionnelles. Elles peuvent repointer les dépendances opérationnelles courantes, mais ne réécrivent jamais les snapshots validés M-004.

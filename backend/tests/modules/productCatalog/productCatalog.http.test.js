@@ -182,7 +182,15 @@ describe('M-002 product catalog HTTP contract', () => {
 
         expect(created.status).toBe(201);
         expect(created.body.data).toMatchObject({
-            classification: 'REVIEW_REQUIRED',
+            classification: 'PROVISIONAL',
+            provisionalReference: {
+                name: 'Lentille verte',
+                governanceStatus: 'PROVISIONAL',
+                variant: {
+                    name: 'Lentille verte',
+                    governanceStatus: 'PROVISIONAL',
+                },
+            },
             contribution: {
                 status: 'PENDING_REVIEW',
                 proposedValue: 'Lentille verte',
@@ -208,6 +216,20 @@ describe('M-002 product catalog HTTP contract', () => {
             .set(headers);
 
         expect(search.status).toBe(200);
+        expect(search.body.data.results).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    product: expect.objectContaining({
+                        name: 'Lentille verte',
+                        governanceStatus: 'PROVISIONAL',
+                    }),
+                    variant: expect.objectContaining({
+                        name: 'Lentille verte',
+                        governanceStatus: 'PROVISIONAL',
+                    }),
+                }),
+            ]),
+        );
         expect(search.body.data.results).toHaveLength(0);
     });
 

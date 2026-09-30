@@ -11,26 +11,23 @@ import {
     CanonicalProduct,
 } from '../../../modules/productCatalog/canonicalProduct.model.js';
 import {
+    ProductCharacteristic,
+} from '../../../modules/productCatalog/productCharacteristic.model.js';
+import {
+    ProductVariety,
+} from '../../../modules/productCatalog/productVariety.model.js';
+import {
+    ReferenceContribution,
+} from '../../../modules/productCatalog/referenceContribution.model.js';
+import {
     reviewReferenceContribution,
     submitReferenceContribution,
 } from '../../../modules/productCatalog/productReferenceContribution.service.js';
 import {
     createProductCharacteristic,
     createProductVariety,
+    listProductDimensions,
 } from '../../../modules/productCatalog/productReferenceDimension.service.js';
-import {
-    createCategory,
-    updateCategoryStatus,
-} from '../../../modules/productCatalog/productCatalogGovernance.service.js';
-import {
-    ProductVariety,
-} from '../../../modules/productCatalog/productVariety.model.js';
-import {
-    ProductCharacteristic,
-} from '../../../modules/productCatalog/productCharacteristic.model.js';
-import {
-    ReferenceContribution,
-} from '../../../modules/productCatalog/referenceContribution.model.js';
 import {
     createWorkspaceOwnerFixture,
 } from '../../helpers/dossierTest.fixtures.js';
@@ -44,8 +41,8 @@ beforeEach(async () => {
     ownerContext = await createWorkspaceOwnerFixture();
 });
 
-describe('M-002 contribution semi-automatique', () => {
-    it('classe une faute mineure de Variété comme EXISTING sans la persister', async () => {
+describe('M-002 contribution gouvernée et non bloquante', () => {
+    it('demande une confirmation utilisateur pour une faute mineure sans fusion silencieuse', async () => {
         const reference = await createActiveProductReference({
             name: 'Pomme contribution typo',
         });
@@ -63,15 +60,75 @@ describe('M-002 contribution semi-automatique', () => {
             value: 'Reinnette',
         });
 
-        expect(result.classification).toBe('EXISTING');
-        expect(result.existingReference.id).toBe(reinette.id);
+        expect(result.classification).toBe('USER_CONFIRMATION_REQUIRED');
+        expect(result.candidates).toEqual([
+            expect.objectContaining({
+                id: reinette.id,
+                name: 'Reinette',
+            }),
+        ]);
         expect(await ReferenceContribution.countDocuments()).toBe(0);
         expect(await ProductVariety.countDocuments({
             canonicalProduct: reference.product._id,
         })).toBe(1);
     });
 
-    it('auto-publie une nouvelle Variété non conflictuelle', async () => {
+    it('crée une faute confirmée comme valeur provisoire visible seulement dans le Workspace origine', async () => {
+        const otherContext = await createWorkspaceOwnerFixture();
+        const reference = await createActiveProductReference({
+            name: 'Pomme contribution provisoire',
+        });
+        await createProductVariety({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            name: 'Reinette',
+        });
+
+        const result = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'VARIETY',
+            productId: reference.product._id,
+            value: 'Reinnette',
+            forceCreate: true,
+        });
+
+        expect(result.classification).toBe('PROVISIONAL');
+        expect(result.provisionalReference).toMatchObject({
+            type: 'VARIETY',
+            name: 'Reinnette',
+            governanceStatus: 'PROVISIONAL',
+        });
+        expect(result.contribution).toMatchObject({
+            status: 'PENDING_REVIEW',
+            provisionalEntityType: 'VARIETY',
+        });
+
+        const originDimensions = await listProductDimensions({
+            productId: reference.product._id,
+            workspaceId: ownerContext.workspace._id,
+        });
+        const otherDimensions = await listProductDimensions({
+            productId: reference.product._id,
+            workspaceId: otherContext.workspace._id,
+        });
+
+        expect(originDimensions.varieties).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    name: 'Reinnette',
+                    governanceStatus: 'PROVISIONAL',
+                }),
+            ]),
+        );
+        expect(otherDimensions.varieties).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ name: 'Reinnette' }),
+            ]),
+        );
+    });
+
+    it('conserve l auto-publication d une nouvelle Variété non conflictuelle', async () => {
         const reference = await createActiveProductReference({
             name: 'Pomme contribution auto',
         });
@@ -88,13 +145,45 @@ describe('M-002 contribution semi-automatique', () => {
         expect(result.publishedReference).toMatchObject({
             type: 'VARIETY',
             name: 'Gala',
+            governanceStatus: 'APPROVED',
         });
         expect(await ReferenceContribution.countDocuments()).toBe(0);
     });
 
-    it('envoie une désignation de qualité en revue au lieu de créer une référence', async () => {
+    it('traite des calibres numériques différents comme des identités distinctes', async () => {
         const reference = await createActiveProductReference({
-            name: 'Carotte contribution revue',
+            name: 'Crevette calibre contribution',
+        });
+        await createProductCharacteristic({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            kind: 'SIZE_FORMAT',
+            name: '35/40',
+        });
+
+        const result = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: 'SIZE_FORMAT',
+            value: '30/40',
+        });
+
+        expect(result.classification).toBe('AUTO_PUBLISHABLE');
+        expect(result.publishedReference).toMatchObject({
+            name: '30/40',
+            governanceStatus: 'APPROVED',
+        });
+        expect(await ProductCharacteristic.countDocuments({
+            canonicalProduct: reference.product._id,
+            kind: 'SIZE_FORMAT',
+        })).toBe(2);
+    });
+
+    it('rend immédiatement utilisable une Désignation de qualité provisoire', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Carotte contribution provisoire',
         });
 
         const result = await submitReferenceContribution({
@@ -106,7 +195,12 @@ describe('M-002 contribution semi-automatique', () => {
             value: 'Carottes des sables',
         });
 
-        expect(result.classification).toBe('REVIEW_REQUIRED');
+        expect(result.classification).toBe('PROVISIONAL');
+        expect(result.provisionalReference).toMatchObject({
+            type: 'CHARACTERISTIC',
+            name: 'Carottes des sables',
+            governanceStatus: 'PROVISIONAL',
+        });
         expect(result.contribution).toMatchObject({
             status: 'PENDING_REVIEW',
             characteristicKind: 'QUALITY_DESIGNATION',
@@ -114,7 +208,7 @@ describe('M-002 contribution semi-automatique', () => {
         expect(await ReferenceContribution.countDocuments()).toBe(1);
     });
 
-    it('envoie un nouveau CanonicalProduct en revue sans le publier', async () => {
+    it('crée un nouveau Produit canonique comme provisoire Workspace au lieu de bloquer le travail', async () => {
         const reference = await createActiveProductReference({
             name: 'Produit témoin contribution',
         });
@@ -134,13 +228,22 @@ describe('M-002 contribution semi-automatique', () => {
             },
         });
 
-        expect(result.classification).toBe('REVIEW_REQUIRED');
+        expect(result.classification).toBe('PROVISIONAL');
         expect(result.contribution.status).toBe('PENDING_REVIEW');
-        expect(await CanonicalProduct.countDocuments()).toBe(before);
+        expect(result.provisionalReference).toMatchObject({
+            name: 'Betterave Chioggia',
+            governanceStatus: 'PROVISIONAL',
+            variant: expect.objectContaining({
+                name: 'Betterave Chioggia',
+                governanceStatus: 'PROVISIONAL',
+            }),
+        });
+        expect(await CanonicalProduct.countDocuments()).toBe(before + 1);
     });
-    it('revalide une contribution avant approbation et réutilise l existant', async () => {
+
+    it('valide une valeur provisoire sans changer son identifiant', async () => {
         const reference = await createActiveProductReference({
-            name: 'Carotte contribution concurrence',
+            name: 'Carotte contribution validation',
         });
         const submitted = await submitReferenceContribution({
             workspaceId: ownerContext.workspace._id,
@@ -151,13 +254,7 @@ describe('M-002 contribution semi-automatique', () => {
             value: 'Carottes des sables',
         });
 
-        const existing = await createProductCharacteristic({
-            actorId: ownerContext.owner._id,
-            productId: reference.product._id,
-            kind: 'QUALITY_DESIGNATION',
-            name: 'Carottes des sables',
-        });
-
+        const provisionalId = submitted.provisionalReference.id;
         const approved = await reviewReferenceContribution({
             contributionId: submitted.contribution.id,
             actorId: ownerContext.owner._id,
@@ -167,53 +264,50 @@ describe('M-002 contribution semi-automatique', () => {
         expect(approved).toMatchObject({
             status: 'APPROVED',
             resolutionEntityType: 'CHARACTERISTIC',
-            resolutionEntityId: existing.id,
+            resolutionEntityId: provisionalId,
         });
-        expect(await ProductCharacteristic.countDocuments({
-            canonicalProduct: reference.product._id,
-            kind: 'QUALITY_DESIGNATION',
-        })).toBe(1);
+        expect(await ProductCharacteristic.findById(provisionalId).lean())
+            .toMatchObject({
+                governanceStatus: 'APPROVED',
+                identityActive: true,
+            });
     });
 
-    it('rollback l approbation si le contexte devient invalide', async () => {
-        const category = await createCategory({
+    it('fusionne une valeur provisoire avec la valeur canonique choisie', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Pomme contribution fusion',
+        });
+        const canonical = await createProductVariety({
             actorId: ownerContext.owner._id,
-            name: 'Catégorie contribution invalidée',
+            productId: reference.product._id,
+            name: 'Reinette',
         });
         const submitted = await submitReferenceContribution({
             workspaceId: ownerContext.workspace._id,
             actorId: ownerContext.owner._id,
-            type: 'CANONICAL_PRODUCT',
-            value: 'Produit à revalider',
-            categoryId: category.id,
-            variant: {
-                name: 'Produit à revalider',
-                conservationType: 'FRAIS',
-                foodRange: 1,
-                referenceUnit: 'KG',
-            },
+            type: 'VARIETY',
+            productId: reference.product._id,
+            value: 'Reinnette',
+            forceCreate: true,
         });
 
-        await updateCategoryStatus({
-            actorId: ownerContext.owner._id,
-            categoryId: category.id,
-            status: 'ARCHIVED',
-        });
-
-        await expect(reviewReferenceContribution({
+        const provisionalId = submitted.provisionalReference.id;
+        const merged = await reviewReferenceContribution({
             contributionId: submitted.contribution.id,
             actorId: ownerContext.owner._id,
-            decision: 'APPROVE',
-        })).rejects.toMatchObject({ statusCode: 409 });
+            decision: 'MERGE',
+            targetReferenceId: canonical.id,
+        });
 
-        const contribution = await ReferenceContribution.findById(
-            submitted.contribution.id,
-        ).lean();
-
-        expect(contribution.status).toBe('PENDING_REVIEW');
-        expect(await CanonicalProduct.exists({
-            name: 'Produit à revalider',
-        })).toBeNull();
+        expect(merged).toMatchObject({
+            status: 'APPROVED',
+            resolutionEntityType: 'VARIETY',
+            resolutionEntityId: canonical.id,
+        });
+        expect(await ProductVariety.findById(provisionalId).lean())
+            .toMatchObject({
+                governanceStatus: 'RESOLVED',
+                identityActive: false,
+            });
     });
-
 });

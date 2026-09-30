@@ -92,6 +92,15 @@ const referenceContributionSchema = new Schema(
             default: null,
         },
         reviewedAt: { type: Date, default: null },
+        provisionalEntityType: {
+            type: String,
+            enum: Object.values(PRODUCT_REFERENCE_EVENT_ENTITY_TYPE),
+            default: null,
+        },
+        provisionalEntityId: {
+            type: Schema.Types.ObjectId,
+            default: null,
+        },
         resolutionEntityType: {
             type: String,
             enum: Object.values(PRODUCT_REFERENCE_EVENT_ENTITY_TYPE),

@@ -68,29 +68,37 @@ describe('M-002 product catalog models', () => {
         expect(ProductVariant.schema.path('usageType')).toBeUndefined();
     });
 
-    it('crée par défaut les identités Produit en ACTIVE', () => {
+    it('sépare le lifecycle et la gouvernance des identités Produit', () => {
         expect(CanonicalProduct.schema.path('status').options.default).toBe('ACTIVE');
         expect(ProductVariant.schema.path('status').options.default).toBe('ACTIVE');
+        expect(CanonicalProduct.schema.path('governanceStatus').options.default)
+            .toBe('APPROVED');
+        expect(ProductVariant.schema.path('governanceStatus').options.default)
+            .toBe('APPROVED');
+        expect(ProductVariety.schema.path('governanceStatus').options.default)
+            .toBe('APPROVED');
+        expect(ProductCharacteristic.schema.path('governanceStatus').options.default)
+            .toBe('APPROVED');
     });
 
     it('déclare les contraintes uniques structurantes', () => {
         const productIndex = CanonicalProduct.schema.indexes().find(
             ([fields, options]) => (
                 fields.searchKeys === 1
-                && options.name === 'canonical_product_search_keys_unique'
+                && options.name === 'canonical_product_approved_search_keys_unique'
             ),
         );
         const variantNameIndex = ProductVariant.schema.indexes().find(
             ([fields, options]) => (
                 fields.normalizedName === 1
-                && options.name === 'product_variant_normalized_name_unique'
+                && options.name === 'product_variant_approved_normalized_name_unique'
             ),
         );
         const variantIndex = ProductVariant.schema.indexes().find(
             ([fields, options]) => (
                 fields.canonicalProduct === 1
                 && fields.normalizedSignature === 1
-                && options.name === 'product_variant_identity_unique'
+                && options.name === 'product_variant_approved_identity_unique'
             ),
         );
         const workspaceIndex = WorkspaceProduct.schema.indexes().find(
@@ -116,7 +124,9 @@ describe('M-002 product catalog models', () => {
         ).toEqual([
             'EXISTING',
             'AUTO_PUBLISHABLE',
+            'USER_CONFIRMATION_REQUIRED',
             'REVIEW_REQUIRED',
+            'PROVISIONAL',
             'INVALID',
         ]);
         expect(
@@ -129,6 +139,9 @@ describe('M-002 product catalog models', () => {
         expect(
             CanonicalProduct.schema.path('status').options.enum,
         ).toEqual(['ACTIVE', 'ARCHIVED']);
+        expect(
+            CanonicalProduct.schema.path('governanceStatus').options.enum,
+        ).toEqual(['APPROVED', 'PROVISIONAL', 'RESOLVED', 'REJECTED']);
     });
 
     it('rend les événements globaux immuables et les imports temporaires scopés', () => {

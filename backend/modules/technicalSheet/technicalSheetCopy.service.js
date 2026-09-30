@@ -234,6 +234,7 @@ const copyTechnicalSheet = async ({
 
         const prepared =
             await prepareTechnicalSheetComposition({
+                workspaceId,
                 lines:
                     composition.lines,
                 session,

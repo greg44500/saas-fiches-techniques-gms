@@ -8,6 +8,9 @@ import {
     ProductVariant,
 } from '../productCatalog/productVariant.model.js';
 import {
+    buildWorkspaceGovernanceVisibilityFilter,
+} from '../productCatalog/productReferenceGovernance.service.js';
+import {
     calculateGrossQuantity,
     convertQuantity,
     fractionToDecimal,
@@ -22,6 +25,7 @@ const toObjectId = (value) => (
 
 const resolveProductVariants = async ({
     lines,
+    workspaceId,
     session = null,
 }) => {
     const ids = [
@@ -40,6 +44,7 @@ const resolveProductVariants = async ({
         }),
         status: PRODUCT_STATUS.ACTIVE,
         identityActive: true,
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     }).select(
         '_id name referenceUnit yieldPercent status identityActive',
     );
@@ -89,10 +94,12 @@ const assertCompatibleUnit = (
 
 const prepareTechnicalSheetComposition = async ({
     lines,
+    workspaceId,
     session = null,
 }) => {
     const variants = await resolveProductVariants({
         lines,
+        workspaceId,
         session,
     });
 

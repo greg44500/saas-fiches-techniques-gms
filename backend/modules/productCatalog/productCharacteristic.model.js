@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 import {
     PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
 
@@ -42,6 +43,12 @@ const productCharacteristicSchema = new Schema(
             required: true,
         },
         identityActive: { type: Boolean, default: true, required: true },
+        governanceStatus: {
+            type: String,
+            enum: Object.values(PRODUCT_GOVERNANCE_STATUS),
+            default: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+            required: true,
+        },
         contributedFromWorkspace: {
             type: Schema.Types.ObjectId,
             ref: 'Workspace',
@@ -57,9 +64,28 @@ const productCharacteristicSchema = new Schema(
 productCharacteristicSchema.index(
     { canonicalProduct: 1, kind: 1, normalizedName: 1 },
     {
-        name: 'product_characteristic_product_kind_name_unique',
+        name: 'product_characteristic_approved_product_kind_name_unique',
         unique: true,
-        partialFilterExpression: { identityActive: true },
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+        },
+    },
+);
+productCharacteristicSchema.index(
+    {
+        canonicalProduct: 1,
+        contributedFromWorkspace: 1,
+        kind: 1,
+        normalizedName: 1,
+    },
+    {
+        name: 'product_characteristic_provisional_workspace_kind_name_unique',
+        unique: true,
+        partialFilterExpression: {
+            identityActive: true,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+        },
     },
 );
 productCharacteristicSchema.index(
@@ -69,6 +95,15 @@ productCharacteristicSchema.index(
 productCharacteristicSchema.index(
     { searchGrams: 1, status: 1 },
     { name: 'product_characteristic_search_grams_status' },
+);
+productCharacteristicSchema.index(
+    {
+        governanceStatus: 1,
+        contributedFromWorkspace: 1,
+        canonicalProduct: 1,
+        kind: 1,
+    },
+    { name: 'product_characteristic_governance_workspace_product_kind' },
 );
 
 const ProductCharacteristic = model(

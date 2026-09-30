@@ -37,9 +37,12 @@ const CHARACTERISTIC = 'CHARACTERISTIC';
 const CHARACTERISTIC_PREFIX = 'CHARACTERISTIC:';
 
 function getSessionStatus(result) {
-  if (result.classification === 'REVIEW_REQUIRED') {
+  if (
+    result.classification === 'PROVISIONAL'
+    || result.classification === 'REVIEW_REQUIRED'
+  ) {
     return {
-      label: 'À examiner',
+      label: 'À valider',
       tone: 'warning',
     };
   }
@@ -73,6 +76,7 @@ function ProductDimensionContributionDialog({
   const [selectedType, setSelectedType] = useState(VARIETY);
   const [value, setValue] = useState('');
   const [formError, setFormError] = useState('');
+  const [confirmation, setConfirmation] = useState(null);
   const [sessionEntries, setSessionEntries] = useState([]);
 
   const [contribute, workspaceState] = useContributeProductReferenceMutation();
@@ -82,11 +86,15 @@ function ProductDimensionContributionDialog({
 
   const typeItems = useMemo(() => [
     { value: VARIETY, label: 'Variété' },
-    ...characteristicKinds.map((kind) => ({
-      value: CHARACTERISTIC_PREFIX + kind.value,
-      label: kind.label,
-    })),
-  ], [characteristicKinds]);
+    ...characteristicKinds
+      .filter((kind) => (
+        isGlobal || kind.value !== 'COMMERCIAL_TYPE'
+      ))
+      .map((kind) => ({
+        value: CHARACTERISTIC_PREFIX + kind.value,
+        label: kind.label,
+      })),
+  ], [characteristicKinds, isGlobal]);
 
   useEffect(() => {
     if (!open) return;
@@ -94,6 +102,7 @@ function ProductDimensionContributionDialog({
     setSelectedType(VARIETY);
     setValue('');
     setFormError('');
+    setConfirmation(null);
     setSessionEntries([]);
   }, [open]);
 
@@ -127,8 +136,11 @@ function ProductDimensionContributionDialog({
         typeLabel: selectedDefinition?.label ?? 'Valeur',
         value: resolvedReference?.name ?? proposedValue,
         status,
-        detail: result.classification === 'REVIEW_REQUIRED'
-          ? 'Disponible après validation du référentiel global.'
+        detail: (
+          result.classification === 'PROVISIONAL'
+          || result.classification === 'REVIEW_REQUIRED'
+        )
+          ? 'Utilisable dans votre espace de travail en attendant la validation du référentiel global.'
           : null,
       },
     ]);
@@ -137,19 +149,26 @@ function ProductDimensionContributionDialog({
   function prepareNextValue() {
     setValue('');
     setFormError('');
+    setConfirmation(null);
     globalThis.queueMicrotask(() => {
       valueRef.current?.focus();
     });
   }
 
-  async function submit() {
+  async function submit({ forceCreate = false } = {}) {
     const proposedValue = value.trim();
     if (!proposedValue) {
       setFormError('Renseignez la valeur à ajouter au référentiel.');
       return;
     }
 
+    if (/,/.test(proposedValue)) {
+      setFormError('Ajoutez une seule valeur à la fois.');
+      return;
+    }
+
     setFormError('');
+    setConfirmation(null);
 
     try {
       if (isGlobal) {
@@ -185,6 +204,7 @@ function ProductDimensionContributionDialog({
           ? {}
           : { characteristicKind }),
         value: proposedValue,
+        forceCreate,
       }).unwrap();
 
       if (result.classification === 'INVALID') {
@@ -192,6 +212,14 @@ function ProductDimensionContributionDialog({
           result.reasons?.[0]?.message
           ?? 'La proposition ne peut pas être utilisée.',
         );
+        return;
+      }
+
+      if (result.classification === 'USER_CONFIRMATION_REQUIRED') {
+        setConfirmation({
+          proposedValue,
+          candidates: result.candidates ?? [],
+        });
         return;
       }
 
@@ -204,6 +232,16 @@ function ProductDimensionContributionDialog({
         'Le référentiel n’a pas pu être enrichi.',
       ));
     }
+  }
+
+  async function useCandidate(candidate) {
+    const result = {
+      classification: 'EXISTING',
+      existingReference: candidate,
+    };
+    recordResolvedValue(result, candidate.name);
+    onResolved?.(result);
+    prepareNextValue();
   }
 
   return (
@@ -287,7 +325,17 @@ function ProductDimensionContributionDialog({
                   placeholder={
                     isVariety
                       ? 'Ex. Bergeron'
-                      : 'Ex. Entier, Orange, 35/40…'
+                      : characteristicKind === 'PRESENTATION'
+                        ? 'Ex. Entier'
+                        : characteristicKind === 'CUT'
+                          ? 'Ex. Filet'
+                          : characteristicKind === 'SIZE_FORMAT'
+                            ? 'Ex. 35/40'
+                            : characteristicKind === 'COLOR'
+                              ? 'Ex. Rouge'
+                              : characteristicKind === 'QUALITY_DESIGNATION'
+                                ? 'Ex. Label Rouge'
+                                : 'Saisissez une valeur'
                   }
                   ref={valueRef}
                   value={value}
@@ -303,6 +351,40 @@ function ProductDimensionContributionDialog({
             </Field>
 
             <FieldError>{formError}</FieldError>
+
+            {confirmation && (
+              <section className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
+                <div>
+                  <p className="text-sm font-medium">
+                    Une valeur proche existe déjà.
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Utilisez une valeur existante si elle correspond, ou confirmez la création de « {confirmation.proposedValue} ».
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {confirmation.candidates.map((candidate) => (
+                    <Button
+                      disabled={pending}
+                      key={candidate.id}
+                      onClick={() => useCandidate(candidate)}
+                      type="button"
+                      variant="outline"
+                    >
+                      Utiliser {candidate.name}
+                    </Button>
+                  ))}
+                  <Button
+                    disabled={pending}
+                    onClick={() => submit({ forceCreate: true })}
+                    type="button"
+                  >
+                    Créer quand même « {confirmation.proposedValue} »
+                  </Button>
+                </div>
+              </section>
+            )}
 
             {sessionEntries.length > 0 && (
               <section

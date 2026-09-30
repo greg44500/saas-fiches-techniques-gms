@@ -507,13 +507,18 @@ function ProductsPage() {
         onClose={() => setCreateOpen(false)}
         onCreated={(result) => {
           setCreateOpen(false);
-          if (result?.classification === 'REVIEW_REQUIRED') {
+          if (
+            result?.classification === 'PROVISIONAL'
+            || result?.classification === 'REVIEW_REQUIRED'
+          ) {
             toast({
-              title: 'Proposition envoyée en revue',
+              title: 'Produit créé · À valider',
               description:
-                'Le Produit sera disponible après validation du référentiel global.',
+                'Le Produit est utilisable dans cet espace de travail en attendant la validation du référentiel global.',
               variant: 'success',
             });
+            const productId = result?.provisionalReference?.id;
+            if (productId) openProduct(productId);
             return;
           }
           if (result?.classification === 'EXISTING') {

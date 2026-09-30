@@ -180,6 +180,7 @@ const saveTechnicalSheetDraft = async ({
             const prepared =
                 await prepareTechnicalSheetComposition({
                     lines: data.lines,
+                    workspaceId,
                     session,
                 });
 
@@ -406,6 +407,7 @@ const createDraftFromValidatedState = async ({
 
         const prepared =
             await prepareTechnicalSheetComposition({
+                workspaceId,
                 lines:
                     validation.linesSnapshot.map(
                         (line) => ({

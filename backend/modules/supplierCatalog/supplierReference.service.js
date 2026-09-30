@@ -13,6 +13,9 @@ import {
 import {
     ProductVariant,
 } from '../productCatalog/productVariant.model.js';
+import {
+    buildWorkspaceGovernanceVisibilityFilter,
+} from '../productCatalog/productReferenceGovernance.service.js';
 import { AppError } from '../../utils/appError.js';
 import {
     Supplier,
@@ -164,12 +167,14 @@ const populateSupplierCategories = async (supplier) => {
 
 const assertActiveProductVariant = async ({
     productVariantId,
+    workspaceId = null,
     session,
 }) => {
     const productVariant = await ProductVariant.findOne({
         _id: productVariantId,
         status: PRODUCT_STATUS.ACTIVE,
         identityActive: true,
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     }).session(session);
 
     if (!productVariant) {
@@ -520,6 +525,7 @@ const createArticleInSession = async ({
 
     await assertActiveProductVariant({
         productVariantId: data.productVariantId,
+        workspaceId,
         session,
     });
 
@@ -622,6 +628,7 @@ const updateSupplierArticle = async ({
     if (Object.hasOwn(data, 'productVariantId')) {
         await assertActiveProductVariant({
             productVariantId: data.productVariantId,
+            workspaceId,
             session,
         });
         if (

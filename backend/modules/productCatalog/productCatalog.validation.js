@@ -100,6 +100,8 @@ const duplicateCheckBodySchema = z.strictObject({
 const createWorkspaceProductBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
     categoryId: objectIdSchema.nullable().optional().default(null),
+    reviewedCandidateIds: z.array(objectIdSchema).max(20).optional().default([]),
+    forceCreate: z.boolean().optional().default(false),
     variant: newProductVariantBodySchema,
 });
 
@@ -212,6 +214,8 @@ const createReferenceContributionBodySchema = z.strictObject({
     value: z.string().trim().min(1).max(120),
     categoryId: objectIdSchema.optional(),
     variant: newProductVariantBodySchema.optional(),
+    forceCreate: z.boolean().optional().default(false),
+    reviewedCandidateIds: z.array(objectIdSchema).max(20).optional().default([]),
 }).superRefine((body, context) => {
     if (body.type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT) {
         if (!body.variant) {
@@ -264,7 +268,17 @@ const referenceContributionParamsSchema = z.strictObject({
 });
 
 const referenceContributionDecisionBodySchema = z.strictObject({
-    decision: z.enum(['APPROVE', 'REJECT']),
+    decision: z.enum(['APPROVE', 'REJECT', 'MERGE']),
+    targetReferenceId: objectIdSchema.nullable().optional().default(null),
+    correctedValue: z.string().trim().min(1).max(120).nullable().optional().default(null),
+}).superRefine((body, context) => {
+    if (body.decision === 'MERGE' && !body.targetReferenceId) {
+        context.addIssue({
+            code: 'custom',
+            path: ['targetReferenceId'],
+            message: 'Une cible est requise pour fusionner une contribution.',
+        });
+    }
 });
 
 const globalProductVarietyParamsSchema = z.strictObject({

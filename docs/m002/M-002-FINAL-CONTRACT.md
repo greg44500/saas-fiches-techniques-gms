@@ -136,6 +136,10 @@ Les dimensions suivantes restent facultatives :
 
 Une référence reste exploitable sans devoir renseigner toutes ces dimensions.
 
+La gouvernance des valeurs est non bloquante : une nouvelle identité nécessitant contrôle peut être créée en `PROVISIONAL`, immédiatement exploitable dans le Workspace d'origine, puis validée, corrigée, fusionnée ou rejetée par la gouvernance Platform. Une proximité lexicale produit une confirmation utilisateur explicite et jamais une fusion automatique silencieuse.
+
+`Type commercial` reste dans le modèle M-002 et dans les données existantes, mais les nouveaux ajouts Workspace sont temporairement masqués tant que sa définition métier n'est pas validée.
+
 ## 7. UX Workspace
 
 Deux vues :

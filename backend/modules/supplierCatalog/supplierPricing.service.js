@@ -14,6 +14,9 @@ import {
     ProductVariant,
 } from '../productCatalog/productVariant.model.js';
 import {
+    buildWorkspaceGovernanceVisibilityFilter,
+} from '../productCatalog/productReferenceGovernance.service.js';
+import {
     SupplierArticle,
 } from './supplier.model.js';
 import {
@@ -292,6 +295,7 @@ const findVisibleSupplierArticle = async ({
 
 const findActiveProductVariant = async ({
     productVariantId,
+    workspaceId,
     session = null,
 }) => {
     const productVariant =
@@ -299,6 +303,7 @@ const findActiveProductVariant = async ({
             _id: productVariantId,
             status: PRODUCT_STATUS.ACTIVE,
             identityActive: true,
+            ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
         })
             .populate({
                 path: 'canonicalProduct',
@@ -398,6 +403,7 @@ const resolvePricingContext = async ({
     const productVariant =
         await findActiveProductVariant({
             productVariantId,
+            workspaceId,
             session,
         });
 
@@ -1405,6 +1411,7 @@ const setIndicativePrice = async ({
         const productVariant =
             await findActiveProductVariant({
                 productVariantId,
+                workspaceId,
                 session,
             });
 

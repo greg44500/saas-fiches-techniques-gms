@@ -31,6 +31,8 @@ import {
     PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
+    PRODUCT_GOVERNANCE_STATUS,
+    PRODUCT_GOVERNANCE_STATUS_REGISTRY,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
@@ -47,6 +49,10 @@ import {
 import {
     createProductReferenceEvent,
 } from './productReferenceEvent.service.js';
+import {
+    buildWorkspaceGovernanceVisibilityFilter,
+    isReferenceVisibleToWorkspace,
+} from './productReferenceGovernance.service.js';
 import { ProductVariant } from './productVariant.model.js';
 import { ProductVariety } from './productVariety.model.js';
 import { WorkspaceProduct } from './workspaceProduct.model.js';
@@ -72,6 +78,7 @@ const createOrResolvePresentationCharacteristic = async ({
         normalizedName,
         identityActive: true,
         status: PRODUCT_STATUS.ACTIVE,
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     }).session(session);
 
     if (characteristic) return characteristic;
@@ -89,6 +96,7 @@ const createOrResolvePresentationCharacteristic = async ({
                 searchKeys,
                 searchGrams: buildSearchGrams(searchKeys),
                 status: PRODUCT_STATUS.ACTIVE,
+                governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
                 contributedFromWorkspace: workspaceId,
                 createdBy: actorId,
                 updatedBy: actorId,
@@ -102,6 +110,7 @@ const createOrResolvePresentationCharacteristic = async ({
             normalizedName,
             identityActive: true,
             status: PRODUCT_STATUS.ACTIVE,
+            ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
         }).session(session);
     }
 
@@ -143,6 +152,7 @@ const normalizeVariantInput = async ({
             canonicalProduct: canonicalProductId,
             identityActive: true,
             status: PRODUCT_STATUS.ACTIVE,
+            ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
         }).session(session);
 
         if (!variety) {
@@ -161,6 +171,7 @@ const normalizeVariantInput = async ({
             canonicalProduct: canonicalProductId,
             identityActive: true,
             status: PRODUCT_STATUS.ACTIVE,
+            ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
         }).session(session)
         : [];
 
@@ -242,6 +253,13 @@ const normalizeVariantInput = async ({
             varietyId: normalized.variety,
             characteristics: orderedCharacteristics,
         }),
+        requiresProvisionalGovernance: [
+            variety,
+            ...orderedCharacteristics,
+        ].some((reference) => (
+            reference?.governanceStatus
+            === PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
+        )),
     };
 };
 
@@ -251,6 +269,7 @@ const createProductVariantInSession = async ({
     actorId,
     variant,
     status = PRODUCT_STATUS.ACTIVE,
+    governanceStatus = null,
     session,
 }) => {
     const normalized = await normalizeVariantInput({
@@ -261,9 +280,24 @@ const createProductVariantInSession = async ({
         session,
     });
 
+    const {
+        requiresProvisionalGovernance,
+        ...persistedVariant
+    } = normalized;
+    const effectiveGovernanceStatus = governanceStatus
+        ?? (
+            requiresProvisionalGovernance
+                ? PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
+                : PRODUCT_GOVERNANCE_STATUS.APPROVED
+        );
+
     const existing = await ProductVariant.findOne({
         normalizedName: normalized.normalizedName,
         identityActive: true,
+        governanceStatus: effectiveGovernanceStatus,
+        ...(effectiveGovernanceStatus === PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
+            ? { contributedFromWorkspace: workspaceId }
+            : {}),
     }).session(session);
 
     if (existing) {
@@ -273,8 +307,9 @@ const createProductVariantInSession = async ({
     const [created] = await ProductVariant.create([
         {
             canonicalProduct: canonicalProductId,
-            ...normalized,
+            ...persistedVariant,
             status,
+            governanceStatus: effectiveGovernanceStatus,
             contributedFromWorkspace: workspaceId,
             createdBy: actorId,
             updatedBy: actorId,
@@ -296,7 +331,13 @@ const attachVariantToWorkspaceInSession = async ({
         identityActive: true,
     }).session(session);
 
-    if (!variant) {
+    if (
+        !variant
+        || !isReferenceVisibleToWorkspace({
+            reference: variant,
+            workspaceId,
+        })
+    ) {
         throw new AppError('Référence Produit introuvable.', 404);
     }
 
@@ -305,7 +346,13 @@ const attachVariantToWorkspaceInSession = async ({
         identityActive: true,
     }).session(session);
 
-    if (!product) {
+    if (
+        !product
+        || !isReferenceVisibleToWorkspace({
+            reference: product,
+            workspaceId,
+        })
+    ) {
         throw new AppError('Produit introuvable.', 404);
     }
 
@@ -379,6 +426,9 @@ const getProductMetadata = async ({
 
     return {
         productStatuses: Object.values(PRODUCT_STATUS_REGISTRY),
+        productGovernanceStatuses: Object.values(
+            PRODUCT_GOVERNANCE_STATUS_REGISTRY,
+        ),
         workspaceProductStatuses: Object.values(WORKSPACE_PRODUCT_STATUS_REGISTRY),
         productCategoryStatuses: Object.values(PRODUCT_CATEGORY_STATUS_REGISTRY),
         productCharacteristicKinds: Object.values(PRODUCT_CHARACTERISTIC_KIND_REGISTRY),
@@ -407,6 +457,7 @@ const getWorkspaceProductSummary = async ({ workspaceId }) => {
     const activeProductIds = await CanonicalProduct.find({
         status: PRODUCT_STATUS.ACTIVE,
         identityActive: true,
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     }).distinct('_id');
 
     const activeVariantIds = activeProductIds.length > 0
@@ -414,6 +465,7 @@ const getWorkspaceProductSummary = async ({ workspaceId }) => {
             canonicalProduct: mongoose.trusted({ $in: activeProductIds }),
             status: PRODUCT_STATUS.ACTIVE,
             identityActive: true,
+            ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
         }).distinct('_id')
         : [];
 
@@ -530,12 +582,13 @@ const listProductSearch = async ({
     page = 1,
     limit = 20,
 }) => {
-    const products = await CanonicalProduct.find(
-        buildProductSearchFilter({
+    const products = await CanonicalProduct.find({
+        ...buildProductSearchFilter({
             categoryId,
             includeArchived: false,
         }),
-    )
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
+    })
         .select(
             '_id name normalizedName aliases category status searchKeys createdAt updatedAt',
         )
@@ -559,6 +612,7 @@ const listProductSearch = async ({
         canonicalProduct: mongoose.trusted({ $in: productIds }),
         identityActive: true,
         status: PRODUCT_STATUS.ACTIVE,
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     })
         .populate('variety')
         .populate('characteristics')
@@ -689,6 +743,7 @@ const getWorkspaceProductDetail = async ({
                 PRODUCT_STATUS.ARCHIVED,
             ],
         }),
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     })
         .populate('category')
         .lean();
@@ -706,6 +761,7 @@ const getWorkspaceProductDetail = async ({
                 PRODUCT_STATUS.ARCHIVED,
             ],
         }),
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     })
         .populate('variety')
         .populate('characteristics')
@@ -760,6 +816,7 @@ const createWorkspaceVariant = async ({
         _id: productId,
         status: PRODUCT_STATUS.ACTIVE,
         identityActive: true,
+        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     }).session(session);
 
     if (!product) {
@@ -771,6 +828,9 @@ const createWorkspaceVariant = async ({
         workspaceId,
         actorId,
         variant,
+        governanceStatus: product.governanceStatus === PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
+            ? PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
+            : null,
         session,
     });
 

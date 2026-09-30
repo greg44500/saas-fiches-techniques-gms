@@ -8,6 +8,21 @@ const PRODUCT_STATUS_REGISTRY = Object.freeze({
     ARCHIVED: Object.freeze({ value: PRODUCT_STATUS.ARCHIVED, label: 'Archivé' }),
 });
 
+const PRODUCT_GOVERNANCE_STATUS_REGISTRY = Object.freeze({
+    APPROVED: Object.freeze({ value: 'APPROVED', label: 'Validé' }),
+    PROVISIONAL: Object.freeze({ value: 'PROVISIONAL', label: 'À valider' }),
+    RESOLVED: Object.freeze({ value: 'RESOLVED', label: 'Résolu' }),
+    REJECTED: Object.freeze({ value: 'REJECTED', label: 'Refusé' }),
+});
+
+const PRODUCT_GOVERNANCE_STATUS = Object.freeze(
+    Object.fromEntries(
+        Object.entries(PRODUCT_GOVERNANCE_STATUS_REGISTRY).map(
+            ([key, definition]) => [key, definition.value],
+        ),
+    ),
+);
+
 const WORKSPACE_PRODUCT_STATUS_REGISTRY = Object.freeze({
     ACTIVE: Object.freeze({ value: 'ACTIVE', label: 'Favori' }),
     ARCHIVED: Object.freeze({ value: 'ARCHIVED', label: 'Retiré des favoris' }),
@@ -90,9 +105,17 @@ const PRODUCT_CONTRIBUTION_CLASSIFICATION_REGISTRY = Object.freeze({
         value: 'AUTO_PUBLISHABLE',
         label: 'Publication automatique autorisée',
     }),
+    USER_CONFIRMATION_REQUIRED: Object.freeze({
+        value: 'USER_CONFIRMATION_REQUIRED',
+        label: 'Confirmation utilisateur requise',
+    }),
     REVIEW_REQUIRED: Object.freeze({
         value: 'REVIEW_REQUIRED',
         label: 'Revue requise',
+    }),
+    PROVISIONAL: Object.freeze({
+        value: 'PROVISIONAL',
+        label: 'Valeur provisoire',
     }),
     INVALID: Object.freeze({
         value: 'INVALID',
@@ -319,6 +342,8 @@ export {
     PRODUCT_CONSERVATION_TYPE_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
+    PRODUCT_GOVERNANCE_STATUS,
+    PRODUCT_GOVERNANCE_STATUS_REGISTRY,
     PRODUCT_IMPORT_ROW_CLASSIFICATION,
     PRODUCT_IMPORT_SCOPE,
     PRODUCT_IMPORT_STATUS,

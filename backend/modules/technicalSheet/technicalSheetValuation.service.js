@@ -74,6 +74,7 @@ const buildTechnicalSheetValuation = async ({
 }) => {
     const prepared =
         await prepareTechnicalSheetComposition({
+            workspaceId,
             lines: draft.lines,
             session,
         });
