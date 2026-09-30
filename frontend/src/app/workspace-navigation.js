@@ -8,9 +8,10 @@ import {
 /**
  * Point de composition Workspace du produit dérivé.
  *
- * Les fonctions métier sont déclarées ici et restent prioritaires dans la
- * sidebar. Le moteur Core injecte ensuite le séparateur
- * "Administration de l’espace" puis la navigation générique du Workspace.
+ * Le moteur Core conserve le Tableau de bord en tête, place ensuite les
+ * modules métier puis l'administration générique de l'espace. La surface
+ * Fichiers reste techniquement disponible dans le Core mais n'est pas exposée
+ * comme entrée principale dans ce produit.
  */
 const APPLICATION_WORKSPACE_NAVIGATION_MODULES = Object.freeze([
   dossiersWorkspaceNavigation,
@@ -18,8 +19,10 @@ const APPLICATION_WORKSPACE_NAVIGATION_MODULES = Object.freeze([
   suppliersWorkspaceNavigation,
 ]);
 
-const workspaceNavigation = composeWorkspaceNavigation(
-  APPLICATION_WORKSPACE_NAVIGATION_MODULES,
+const workspaceNavigation = Object.freeze(
+  composeWorkspaceNavigation(
+    APPLICATION_WORKSPACE_NAVIGATION_MODULES,
+  ).filter(({ id }) => id !== 'files'),
 );
 
 export {

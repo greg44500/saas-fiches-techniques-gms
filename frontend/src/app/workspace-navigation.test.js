@@ -8,7 +8,11 @@ import {
 import {
   WORKSPACE_ADMINISTRATION_SEPARATOR,
 } from '@/features/workspace/navigation/compose-workspace-navigation';
-import { coreWorkspaceNavigation } from '@/features/workspace/navigation/core-workspace-navigation';
+import {
+  coreWorkspaceAdministrationNavigation,
+  coreWorkspaceDashboardNavigationItem,
+  coreWorkspaceNavigation,
+} from '@/features/workspace/navigation/core-workspace-navigation';
 
 describe('workspace navigation composition', () => {
   it('conserve la navigation Core plate lorsqu’aucun module applicatif n’est déclaré', () => {
@@ -18,7 +22,7 @@ describe('workspace navigation composition', () => {
     expect(navigation.every((entry) => entry.type === 'item')).toBe(true);
   });
 
-  it('place les modules applicatifs avant le séparateur puis la navigation Core', () => {
+  it('garde le Tableau de bord en tête puis place les modules avant l’administration', () => {
     const catalogGroup = {
       id: 'catalog',
       type: 'group',
@@ -33,28 +37,41 @@ describe('workspace navigation composition', () => {
     ]);
 
     expect(navigation).toEqual([
+      coreWorkspaceDashboardNavigationItem,
       catalogGroup,
       WORKSPACE_ADMINISTRATION_SEPARATOR,
-      ...coreWorkspaceNavigation,
+      ...coreWorkspaceAdministrationNavigation,
     ]);
     expect(WORKSPACE_ADMINISTRATION_SEPARATOR.label)
       .toBe('Administration de l’espace');
   });
 
-  it('compose les modules métier actuels avant l’administration de l’espace', () => {
+  it('compose le produit sans espace artificiel après le Dashboard et masque Fichiers', () => {
     const separatorIndex = workspaceNavigation.findIndex(
       ({ id }) => id === WORKSPACE_ADMINISTRATION_SEPARATOR.id,
     );
-    const applicationIds = workspaceNavigation
+    const beforeAdministration = workspaceNavigation
       .slice(0, separatorIndex)
+      .map(({ id }) => id);
+    const administrationIds = workspaceNavigation
+      .slice(separatorIndex + 1)
       .map(({ id }) => id);
 
     expect(APPLICATION_WORKSPACE_NAVIGATION_MODULES).toHaveLength(3);
-    expect(applicationIds).toEqual(
-      expect.arrayContaining(['dossiers', 'products', 'suppliers']),
-    );
-    expect(workspaceNavigation.slice(separatorIndex + 1))
-      .toEqual(coreWorkspaceNavigation);
+    expect(beforeAdministration[0]).toBe('dashboard');
+    expect(beforeAdministration.slice(1)).toEqual([
+      'dossiers',
+      'products',
+      'suppliers',
+    ]);
+    expect(workspaceNavigation.some(({ id }) => id === 'files')).toBe(false);
+    expect(administrationIds).toEqual([
+      'members',
+      'roles',
+      'settings',
+      'subscription',
+      'activity',
+    ]);
   });
 
   it('refuse un descriptor de navigation invalide', () => {

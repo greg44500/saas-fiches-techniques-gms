@@ -82,8 +82,10 @@ function formatSubscriptionDate(value) {
   }).format(date);
 }
 
-function formatFeatureLabel(featureKey) {
-  return FEATURE_LABEL[featureKey] ?? featureKey;
+function formatFeatureLabel(featureKey, presentations = {}) {
+  return presentations?.[featureKey]?.label
+    ?? FEATURE_LABEL[featureKey]
+    ?? featureKey;
 }
 
 /**
@@ -121,9 +123,12 @@ function formatFeatureAvailability(availability, { now = new Date() } = {}) {
  * incompatibilité de plan. Cette tolérance évite de coupler le rendu à une
  * représentation simplifiée qui ferait perdre `usage`, `limit` et `excess`.
  */
-function formatLimitLabel(limit) {
+function formatLimitLabel(limit, presentations = {}) {
   const limitKey = typeof limit === 'string' ? limit : limit?.key;
-  return LIMIT_LABEL[limitKey] ?? limitKey ?? 'Limite inconnue';
+  return presentations?.[limitKey]?.label
+    ?? LIMIT_LABEL[limitKey]
+    ?? limitKey
+    ?? 'Limite inconnue';
 }
 
 function formatBytes(value) {

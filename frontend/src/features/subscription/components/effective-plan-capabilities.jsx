@@ -16,6 +16,8 @@ import {
 function EffectivePlanCapabilities({ entitlement, now = new Date() }) {
   const features = entitlement?.features ?? [];
   const featureAvailability = entitlement?.featureAvailability ?? {};
+  const featurePresentations = entitlement?.featurePresentations ?? {};
+  const limitPresentations = entitlement?.limitPresentations ?? {};
   const limitEntries = Object.entries(entitlement?.limits ?? {});
 
   return (
@@ -39,7 +41,9 @@ function EffectivePlanCapabilities({ entitlement, now = new Date() }) {
                   className="flex flex-col gap-1 rounded-md bg-muted/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                   key={featureKey}
                 >
-                  <span className="font-medium">{formatFeatureLabel(featureKey)}</span>
+                  <span className="font-medium">
+                    {formatFeatureLabel(featureKey, featurePresentations)}
+                  </span>
                   <span className="text-xs text-muted-foreground sm:text-right">
                     {formatFeatureAvailability(featureAvailability[featureKey], { now })}
                   </span>
@@ -57,7 +61,9 @@ function EffectivePlanCapabilities({ entitlement, now = new Date() }) {
             <dl className="mt-3 divide-y divide-border rounded-md border border-border">
               {limitEntries.map(([limitKey, value]) => (
                 <div className="flex items-center justify-between gap-4 px-3 py-2 text-sm" key={limitKey}>
-                  <dt className="text-muted-foreground">{formatLimitLabel(limitKey)}</dt>
+                  <dt className="text-muted-foreground">
+                    {formatLimitLabel(limitKey, limitPresentations)}
+                  </dt>
                   <dd className="font-medium">
                     {formatEffectiveLimitValue(limitKey, value, features)}
                   </dd>
