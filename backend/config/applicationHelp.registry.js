@@ -1,4 +1,16 @@
 import {
+    DOSSIER_HELP_MODULE,
+} from '../modules/dossier/dossierHelp.registry.js';
+import {
+    PRODUCT_CATALOG_HELP_MODULE,
+} from '../modules/productCatalog/productCatalogHelp.registry.js';
+import {
+    SUPPLIER_CATALOG_HELP_MODULE,
+} from '../modules/supplierCatalog/supplierCatalogHelp.registry.js';
+import {
+    TECHNICAL_SHEET_HELP_MODULE,
+} from '../modules/technicalSheet/technicalSheetHelp.registry.js';
+import {
     composeHelpModuleExtensions,
     createHelpRegistry,
 } from '../modules/help/help.registry.js';
@@ -10,19 +22,19 @@ import {
     CORE_HELP_ENTRIES,
 } from '../modules/help/helpCore.registry.js';
 
-
 /**
- * Point d'extension explicite du centre d'aide pour les SaaS dérivés.
+ * Point de composition explicite du centre d’aide du SaaS dérivé.
  *
- * Un module métier peut ajouter ses catégories et fiches sans modifier le
- * corpus Core. La limite de cinq catégories par contexte reste contrôlée par
- * createHelpRegistry afin de préserver le contrat UX D-025.
- *
- * Une extension doit aussi déclarer explicitement les fiches Workspace qui
- * restent exécutables en mode remédiation. Sans déclaration, la fiche reste
- * limitée au mode normal par sécurité.
+ * Le Core conserve son corpus générique. Chaque module métier fournit ses
+ * propres fiches et s’appuie sur les permissions réellement déclarées par
+ * l’application.
  */
-const APPLICATION_HELP_MODULES = Object.freeze([]);
+const APPLICATION_HELP_MODULES = Object.freeze([
+    DOSSIER_HELP_MODULE,
+    PRODUCT_CATALOG_HELP_MODULE,
+    SUPPLIER_CATALOG_HELP_MODULE,
+    TECHNICAL_SHEET_HELP_MODULE,
+]);
 
 const helpExtensions = composeHelpModuleExtensions(
     APPLICATION_HELP_MODULES,
@@ -42,7 +54,6 @@ const ACTIVE_HELP_REGISTRY = createHelpRegistry({
         ...helpExtensions.workspaceRemediationEntryIds,
     ],
 });
-
 
 export {
     ACTIVE_HELP_REGISTRY,

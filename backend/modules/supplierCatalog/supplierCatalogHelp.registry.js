@@ -1,0 +1,169 @@
+import {
+    SUPPLIER_CATALOG_PERMISSION,
+} from './supplierCatalogPermission.registry.js';
+import {
+    SUPPLIER_CATALOG_GLOBAL_PERMISSION,
+} from './supplierCatalogGlobalPermission.registry.js';
+import { HELP_CONTEXT } from '../help/help.registry.js';
+
+const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
+    key: 'suppliers',
+    categories: Object.freeze([
+        {
+            id: 'workspace_suppliers',
+            context: HELP_CONTEXT.WORKSPACE,
+            label: 'Fournisseurs & prix',
+            description: 'Fournisseurs, Articles, catalogues et prix applicables.',
+            order: 120,
+        },
+        {
+            id: 'platform_supplier_references',
+            context: HELP_CONTEXT.PLATFORM,
+            label: 'Référentiel Fournisseurs',
+            description: 'Gouvernance des Fournisseurs et catalogues partagés.',
+            order: 110,
+        },
+    ]),
+    entries: Object.freeze([
+        {
+            id: 'workspace.suppliers.reference',
+            context: HELP_CONTEXT.WORKSPACE,
+            categoryId: 'workspace_suppliers',
+            title: 'Gérer les Fournisseurs et Articles',
+            summary: 'Consulter les Fournisseurs, Articles et conditionnements disponibles dans l’espace de travail.',
+            search: {
+                keywords: ['fournisseur', 'article', 'conditionnement', 'catalogue'],
+                questions: [
+                    'Comment retrouver un Article fournisseur ?',
+                    'Où gérer mes Fournisseurs ?',
+                ],
+            },
+            audience: {
+                permissions: [SUPPLIER_CATALOG_PERMISSION.SUPPLIER_READ],
+                applicationGlobalPermissions: [],
+                ownerOnly: false,
+            },
+            requirements: { features: [] },
+            whoCanPerform: 'Un membre autorisé à consulter les Fournisseurs.',
+            prerequisites: [],
+            steps: [
+                'Ouvrez Fournisseurs depuis la navigation de l’espace.',
+                'Consultez le Fournisseur ou l’Article souhaité.',
+                'Utilisez les vues Dossier lorsque vous devez travailler avec un prix local.',
+            ],
+            outcome: 'Les données fournisseur restent distinguées des Références Produit et des prix propres à chaque Dossier.',
+            edgeCases: [],
+            sensitiveConsequences: [],
+            relatedEntryIds: [],
+            order: 100,
+        },
+        {
+            id: 'workspace.suppliers.pricing',
+            context: HELP_CONTEXT.WORKSPACE,
+            categoryId: 'workspace_suppliers',
+            title: 'Comprendre le Prix applicable',
+            summary: 'Vérifier la source de prix réellement utilisée dans un Dossier.',
+            search: {
+                keywords: ['prix', 'tarif négocié', 'prix facturé', 'indicatif', 'dossier'],
+                questions: [
+                    'Quel prix sera utilisé dans ce Dossier ?',
+                    'Pourquoi le prix diffère-t-il entre deux magasins ?',
+                ],
+            },
+            audience: {
+                permissions: [SUPPLIER_CATALOG_PERMISSION.APPLICABLE_PRICE_READ],
+                applicationGlobalPermissions: [],
+                ownerOnly: false,
+            },
+            requirements: { features: [] },
+            whoCanPerform: 'Un membre autorisé à consulter le Prix applicable.',
+            prerequisites: [
+                'Travaillez dans le Dossier concerné afin de conserver le bon contexte économique.',
+            ],
+            steps: [
+                'Ouvrez Fournisseurs et prix du Dossier.',
+                'Sélectionnez l’Article fournisseur à vérifier.',
+                'Lisez le prix résolu et sa source.',
+            ],
+            outcome: 'Le prix affiché respecte la politique Workspace et reste strictement contextualisé au Dossier.',
+            edgeCases: [
+                'Un prix négocié d’un autre Dossier n’est jamais utilisé comme fallback.',
+                'En l’absence de source fournisseur exploitable, un Prix indicatif Dossier puis Workspace peut servir de dernier recours.',
+            ],
+            sensitiveConsequences: [],
+            relatedEntryIds: [],
+            order: 110,
+        },
+        {
+            id: 'platform.suppliers.reference',
+            context: HELP_CONTEXT.PLATFORM,
+            categoryId: 'platform_supplier_references',
+            title: 'Consulter le référentiel Fournisseurs global',
+            summary: 'Accéder aux Fournisseurs et catalogues partagés selon l’autorisation métier globale.',
+            search: {
+                keywords: ['fournisseur', 'référentiel', 'global', 'catalogue'],
+                questions: [
+                    'Comment consulter le référentiel Fournisseurs global ?',
+                ],
+            },
+            audience: {
+                permissions: [],
+                applicationGlobalPermissions: [
+                    SUPPLIER_CATALOG_GLOBAL_PERMISSION.READ,
+                ],
+                ownerOnly: false,
+            },
+            requirements: { features: [] },
+            whoCanPerform: 'Un membre disposant de la permission métier globale de consultation du référentiel Fournisseurs.',
+            prerequisites: [],
+            steps: [
+                'Ouvrez la surface Platform.',
+                'Accédez au référentiel Fournisseurs depuis la navigation autorisée.',
+                'Consultez les Fournisseurs, Articles et catalogues partagés disponibles.',
+            ],
+            outcome: 'Les données globales partagées sont consultées sans exposer les catalogues privés d’un autre Workspace.',
+            edgeCases: [],
+            sensitiveConsequences: [],
+            relatedEntryIds: [],
+            order: 100,
+        },
+        {
+            id: 'platform.suppliers.manage',
+            context: HELP_CONTEXT.PLATFORM,
+            categoryId: 'platform_supplier_references',
+            title: 'Gérer le référentiel Fournisseurs global',
+            summary: 'Créer, corriger ou archiver les données fournisseur partagées.',
+            search: {
+                keywords: ['fournisseur', 'catalogue', 'gérer', 'archiver'],
+                questions: [
+                    'Comment administrer un Fournisseur global ?',
+                ],
+            },
+            audience: {
+                permissions: [],
+                applicationGlobalPermissions: [
+                    SUPPLIER_CATALOG_GLOBAL_PERMISSION.MANAGE,
+                ],
+                ownerOnly: false,
+            },
+            requirements: { features: [] },
+            whoCanPerform: 'Un gestionnaire disposant de la permission métier globale de gestion du référentiel Fournisseurs.',
+            prerequisites: [],
+            steps: [
+                'Ouvrez le référentiel Fournisseurs global.',
+                'Sélectionnez l’objet à créer ou corriger.',
+                'Enregistrez ou archivez explicitement selon le besoin.',
+            ],
+            outcome: 'Le référentiel fournisseur partagé est administré sans modifier les catalogues privés des Workspaces.',
+            edgeCases: [],
+            sensitiveConsequences: [
+                'Archiver une donnée globale peut la rendre indisponible pour de nouveaux usages selon les règles métier.',
+            ],
+            relatedEntryIds: [],
+            order: 110,
+        },
+    ]),
+    workspaceRemediationEntryIds: Object.freeze([]),
+});
+
+export { SUPPLIER_CATALOG_HELP_MODULE };
