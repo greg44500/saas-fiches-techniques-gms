@@ -9,6 +9,7 @@ import {
   getActivePlatformNavigationGroupId,
   getFirstPlatformDestination,
   getPlatformNavigationItemForPath,
+  getPlatformQuickAccessItems,
   getVisiblePlatformNavigationSections,
   hasActivePlatformAccess,
 } from '@/features/platform/lib/platform-navigation';
@@ -20,11 +21,12 @@ function visibleDestinations(
   return getVisiblePlatformNavigationSections(
     visibilityContext,
     navigationSections,
-  ).flatMap((entry) => (
-    entry.type === 'group'
+  ).flatMap((entry) => {
+    if (entry.type === 'separator') return [];
+    return entry.type === 'group'
       ? entry.items.map((item) => item.to)
-      : [entry.to]
-  ));
+      : [entry.to];
+  });
 }
 
 describe('platform navigation policy', () => {
@@ -87,10 +89,17 @@ describe('platform navigation policy', () => {
       ],
     };
 
+    const visibleApplicationNavigation = getVisiblePlatformNavigationSections(
+      platformAccess,
+      applicationNavigation,
+    );
+
     expect(visibleDestinations(
       platformAccess,
       applicationNavigation,
     )).toContain('/derived-reference');
+    expect(visibleApplicationNavigation.map((entry) => entry.type))
+      .toContain('separator');
     expect(canAccessPlatformPath(
       '/derived-reference',
       platformAccess,
@@ -106,11 +115,77 @@ describe('platform navigation policy', () => {
       withoutApplicationPermission,
       applicationNavigation,
     )).not.toContain('/derived-reference');
+    expect(
+      getVisiblePlatformNavigationSections(
+        withoutApplicationPermission,
+        applicationNavigation,
+      ).some((entry) => entry.type === 'separator'),
+    ).toBe(false);
     expect(canAccessPlatformPath(
       '/derived-reference',
       withoutApplicationPermission,
       applicationNavigation,
     )).toBe(false);
+  });
+
+  it('alimente l’accès rapide avec les seules destinations autorisées, y compris applicatives', () => {
+    const navigation = composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'group',
+            id: 'derived-governance',
+            label: 'Gouvernance applicative',
+            items: [
+              {
+                id: 'derived-reference',
+                label: 'Référentiel applicatif',
+                to: '/derived-reference',
+                isVisible: ({ applicationGlobalPermissions }) => (
+                  applicationGlobalPermissions.has(
+                    'derived:reference:read',
+                  )
+                ),
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const allowedItems = getPlatformQuickAccessItems(
+      {
+        status: 'active',
+        permissions: [PLATFORM_PERMISSION.USERS_READ],
+        applicationGlobalPermissions: ['derived:reference:read'],
+      },
+      navigation,
+    );
+
+    expect(allowedItems).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'users',
+        label: 'Utilisateurs',
+        groupLabel: 'Gestion clients',
+      }),
+      expect.objectContaining({
+        id: 'derived-reference',
+        label: 'Référentiel applicatif',
+        groupLabel: 'Gouvernance applicative',
+      }),
+    ]));
+
+    const forbiddenItems = getPlatformQuickAccessItems(
+      {
+        status: 'active',
+        permissions: [PLATFORM_PERMISSION.USERS_READ],
+        applicationGlobalPermissions: [],
+      },
+      navigation,
+    );
+
+    expect(forbiddenItems.map(({ id }) => id))
+      .not.toContain('derived-reference');
   });
 
   it('ne transforme jamais les permissions Platform en autorisation Application Global', () => {

@@ -23,6 +23,15 @@ vi.mock('@/features/platform/components/platform-sidebar', () => ({
   PlatformSidebar: () => <aside>Navigation administration</aside>,
 }));
 
+vi.mock('@/features/platform/components/platform-quick-access', () => ({
+  PlatformQuickAccess: () => (
+    <div
+      aria-label="Accès rapide aux vues d’administration"
+      role="search"
+    />
+  ),
+}));
+
 import { PlatformLayout } from '@/app/layouts/platform-layout';
 
 function renderLayout(initialEntry) {
@@ -41,13 +50,13 @@ function renderLayout(initialEntry) {
 describe('PlatformLayout', () => {
   afterEach(() => cleanup());
 
-  it('affiche la recherche et les préférences d’affichage sur la vue d’ensemble Platform', () => {
+  it('affiche l’accès rapide et les préférences d’affichage sur la vue d’ensemble Platform', () => {
     renderLayout('/platform/overview');
 
     expect(
       screen.getByText('Console d’administration globale'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('search', { name: 'Recherche globale' }))
+    expect(screen.getByRole('search', { name: 'Accès rapide aux vues d’administration' }))
       .toBeInTheDocument();
     expect(screen.getByText('Identité Platform')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Préférences d’affichage' }))
@@ -58,7 +67,7 @@ describe('PlatformLayout', () => {
     renderLayout('/platform/users');
 
     expect(screen.getByText('Utilisateurs Platform')).toBeInTheDocument();
-    expect(screen.getByRole('search', { name: 'Recherche globale' }))
+    expect(screen.getByRole('search', { name: 'Accès rapide aux vues d’administration' }))
       .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Préférences d’affichage' }))
       .toBeInTheDocument();
