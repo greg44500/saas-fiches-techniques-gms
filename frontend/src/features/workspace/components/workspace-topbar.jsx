@@ -1,8 +1,8 @@
-import { ExpandableSearch } from '@/components/shared/expandable-search';
 import { HelpCenterLink } from '@/features/help/components/help-center-link';
 import { useGetWorkspaceSubscriptionQuery } from '@/features/subscription/api/subscription-api';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { WorkspaceDashboardDisplayPreferences } from '@/features/workspace/components/workspace-dashboard-display-preferences';
+import { WorkspaceStatusBadge } from '@/features/workspace/components/workspace-status-badge';
 import { WorkspaceSwitcher } from '@/features/workspace/components/workspace-switcher';
 import { WorkspaceUserIdentity } from '@/features/workspace/components/workspace-user-identity';
 import { WORKSPACE_PERMISSION } from '@/features/workspace/constants/workspace-permissions';
@@ -17,16 +17,26 @@ function WorkspaceTopbar({ sidebarTrigger = null, workspace }) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-      <div className="flex min-h-16 items-center gap-4 px-4 sm:px-6">
+      <div className="flex h-16 items-center gap-4 px-4 sm:px-6">
         {sidebarTrigger}
-        <div className="min-w-0 flex-1">
+        <div
+          className="flex min-w-0 flex-1 items-center gap-2"
+          data-workspace-status-context
+        >
           <WorkspaceSwitcher currentWorkspace={workspace} />
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-muted-foreground"
+            data-workspace-status-separator
+          >
+            |
+          </span>
+          <WorkspaceStatusBadge
+            className="shrink-0"
+            status={workspace.status}
+          />
         </div>
         <div className="ml-auto flex min-w-0 items-center gap-3">
-          <ExpandableSearch
-            ariaLabel="Recherche globale"
-            placeholder="Rechercher…"
-          />
           <WorkspaceUserIdentity
             actions={(
               <>

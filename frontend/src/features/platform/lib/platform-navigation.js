@@ -1,3 +1,4 @@
+import { compactNavigationSeparators } from '@/components/shared/navigation-separators';
 import { PLATFORM_PERMISSION } from '@/features/platform/constants/platform-permissions';
 
 const corePlatformNavigationSections = Object.freeze([
@@ -96,9 +97,10 @@ const corePlatformNavigationSections = Object.freeze([
 ]);
 
 function getPlatformNavigationItems(navigationSections) {
-  return navigationSections.flatMap((entry) => (
-    entry.type === 'group' ? entry.items : [entry]
-  ));
+  return navigationSections.flatMap((entry) => {
+    if (entry.type === 'separator') return [];
+    return entry.type === 'group' ? entry.items : [entry];
+  });
 }
 
 const corePlatformNavigationItems = Object.freeze(
@@ -182,7 +184,11 @@ function getVisiblePlatformNavigationSections(
   visibilityContextInput,
   navigationSections = corePlatformNavigationSections,
 ) {
-  return navigationSections.flatMap((entry) => {
+  const visibleNavigation = navigationSections.flatMap((entry) => {
+    if (entry.type === 'separator') {
+      return [entry];
+    }
+
     if (entry.type !== 'group') {
       return canDisplayPlatformNavigationItem(
         entry,
@@ -210,6 +216,32 @@ function getVisiblePlatformNavigationSections(
     ));
 
     return items.length > 0 ? [{ ...entry, items }] : [];
+  });
+
+  return compactNavigationSeparators(visibleNavigation);
+}
+
+function getPlatformQuickAccessItems(
+  visibilityContextInput,
+  navigationSections = corePlatformNavigationSections,
+) {
+  return getVisiblePlatformNavigationSections(
+    visibilityContextInput,
+    navigationSections,
+  ).flatMap((entry) => {
+    if (entry.type === 'separator') return [];
+
+    if (entry.type === 'group') {
+      return entry.items.map((item) => ({
+        ...item,
+        groupLabel: entry.label,
+      }));
+    }
+
+    return [{
+      ...entry,
+      groupLabel: null,
+    }];
   });
 }
 
@@ -310,6 +342,7 @@ export {
   getActivePlatformNavigationGroupId,
   getFirstPlatformDestination,
   getPlatformNavigationItemForPath,
+  getPlatformQuickAccessItems,
   getVisiblePlatformNavigationSections,
   hasActivePlatformAccess,
   platformNavigationItems,

@@ -1,11 +1,29 @@
 # SAAS-CORE-API — Points d’extension des SaaS dérivés
 
 **Statut :** canonique — actif  
-**Dernière mise à jour :** 2026-09-24  
+**Dernière mise à jour :** 2026-09-30  
 **Périmètre :** RBAC, capabilities, routing, navigations Workspace/Platform, widgets Dashboard, autorisation Application Global et lifecycle transactionnel WorkspaceMember
 
 ---
 
+## Offset sticky sous la topbar Workspace
+
+Le layout Workspace expose le token CSS générique :
+
+~~~css
+--workspace-topbar-height
+~~~
+
+La `WorkspaceTopbar` consomme elle-même ce token. Un module dérivé qui doit
+maintenir une zone `sticky` immédiatement sous la topbar peut donc utiliser :
+
+~~~css
+top: var(--workspace-topbar-height);
+~~~
+
+Le module dérivé ne doit pas recopier `4rem`, `min-h-16` ou une autre hauteur
+interne de la topbar. Si la hauteur Core évolue, le token reste l’autorité de
+layout.
 ## 1. Objectif
 
 Un SaaS dérivé doit pouvoir ajouter un module métier sans modifier les longues listes centrales du Core.
@@ -282,23 +300,68 @@ Une route métier peut ajouter un guard ou un composant de contrôle supplément
 
 ## 7. Point d’extension de la navigation Workspace
 
-Fichier applicatif :
+Le produit déclare uniquement ses modules dans :
 
 ```text
 frontend/src/app/workspace-navigation.js
 ```
 
-Le Core fournit :
+Le moteur de composition générique appartient au Core :
+
+```text
+frontend/src/features/workspace/navigation/compose-workspace-navigation.js
+```
+
+Le Core fournit une navigation Workspace plate :
 
 ```text
 coreWorkspaceNavigation
 ```
 
-L’application dérivée compose les groupes de navigation de ses modules dans `workspaceNavigation`.
+Lorsqu’un SaaS dérivé déclare des entrées applicatives, l’ordre final est :
 
-Le composant Sidebar reste générique et ne doit pas importer directement un module métier.
+```text
+Tableau de bord Core
+→ navigation applicative / métier
+→ séparateur « Administration de l’espace »
+→ autres surfaces Workspace Core
+```
 
-Les entrées sont filtrées selon les permissions et capabilities effectives lorsque le domaine le nécessite.
+Le Tableau de bord est volontairement le seul élément Core placé avant les
+modules applicatifs : son registre compose les widgets Core et les widgets du
+produit dérivé. Il reste donc la surface transversale d’entrée du Workspace.
+
+Aucun séparateur ni espacement spécifique n’est injecté entre le Tableau de
+bord et les modules applicatifs ; ils suivent la cadence normale des items de
+navigation.
+
+Le Core ne crée aucun titre « Métier », « Gestion métier » ou équivalent. Les
+descriptors applicatifs portent déjà leurs propres libellés.
+
+Sans module applicatif, `coreWorkspaceNavigation` est rendu directement et
+aucun séparateur artificiel n’est ajouté.
+
+Le renderer partagé accepte trois types de descriptors :
+
+```text
+item
+group
+separator
+```
+
+Le séparateur Workspace est injecté par le moteur Core avec le libellé
+`Administration de l’espace`. Les séparateurs de tête, de fin ou consécutifs
+sont retirés après filtrage des permissions/capabilities.
+
+Les groupes conservent leur comportement développé/réduit. En mode développé,
+leur panneau utilise la transition native Base UI fondée sur
+`--collapsible-panel-height`, avec `motion-reduce` pour respecter les
+préférences d’accessibilité. En mode icône, ils restent présentés dans un
+popover.
+
+Le SaaS dérivé ne doit plus recopier `composeWorkspaceNavigation()`. Son
+fichier `app/workspace-navigation.js` importe le moteur Core puis déclare
+uniquement `APPLICATION_WORKSPACE_NAVIGATION_MODULES`.
 
 ---
 
@@ -416,13 +479,37 @@ Ces capacités ne seront introduites que si une application dérivée démontre 
 
 ### 8.4 Widgets Core et widgets métier
 
-Les widgets Workspace actuels du Core — par exemple statut du workspace, rôle, abonnement ou activité — servent principalement à fournir un Dashboard générique avant dérivation.
+Le Dashboard Workspace ne doit pas dupliquer les informations structurelles du
+shell applicatif.
 
-Ils ne constituent pas le modèle fonctionnel du futur Dashboard métier.
+À partir du lot UI/UX du 2026-09-30 :
 
-Dans un SaaS dérivé, les modules applicatifs sont destinés à déclarer les KPI et données opérationnelles pertinentes pour le métier via ce point d’extension.
+```text
+statut du Workspace
+→ badge immédiatement après le nom du Workspace : « Nom | badge »
 
-Le Dashboard Platform est un cas distinct : il constitue déjà une surface métier d’administration de la plateforme. Sa projection d’autorisation reste définie côté backend ; la préférence personnelle ne peut que réduire cette projection.
+rôle Workspace courant
+→ identité utilisateur du shell + détails du popover compte
+```
+
+Les descriptors `core.workspace-status` et `core.workspace-role` ne font
+donc plus partie du registre Dashboard. Les anciens identifiants éventuellement
+présents dans `User.preferences.dashboard.hiddenWidgetIds` deviennent
+simplement inertes : le registre courant reste l’autorité et aucune migration
+de préférence n’est nécessaire.
+
+Les widgets Core restants ne doivent être conservés que lorsqu’ils apportent
+une synthèse réellement utile, par exemple abonnement ou activité selon les
+droits disponibles.
+
+Dans un SaaS dérivé, les modules applicatifs sont destinés à déclarer les KPI
+et données opérationnelles pertinentes pour le métier via ce point
+d’extension.
+
+Le Dashboard Platform est un cas distinct : il constitue déjà une surface
+métier d’administration de la plateforme. Sa projection d’autorisation reste
+définie côté backend ; la préférence personnelle ne peut que réduire cette
+projection.
 
 ---
 
@@ -540,6 +627,8 @@ backend/config/applicationRoutes.registry.js
 backend/config/applicationWorkspaceMemberLifecycle.registry.js
 frontend/src/app/application-routes.js
 frontend/src/app/workspace-navigation.js
+frontend/src/features/workspace/navigation/compose-workspace-navigation.js
+frontend/src/features/workspace/navigation/core-workspace-navigation.js
 frontend/src/app/application-platform-navigation.js
 frontend/src/app/application-dashboard.js
 ```
@@ -675,6 +764,127 @@ Toute modification de ces points de composition doit vérifier si le présent co
 
 ---
 
+## Centre d’aide applicatif
+
+Le Core fournit déjà le moteur, les routes, la recherche locale et les
+composants du centre d’aide. Un SaaS dérivé ajoute uniquement son contenu
+fonctionnel.
+
+Point de composition backend :
+
+```text
+backend/config/applicationHelp.registry.js
+```
+
+Collection :
+
+```text
+APPLICATION_HELP_MODULES
+```
+
+Un module d’aide peut déclarer :
+
+```js
+{
+    key: 'catalog',
+    categories: [...],
+    entries: [...],
+    workspaceRemediationEntryIds: [...],
+}
+```
+
+Le registre final compose :
+
+```text
+corpus Help Core
++
+modules Help applicatifs
+→ ACTIVE_HELP_REGISTRY
+→ même centre d’aide utilisateur
+```
+
+Le produit ne doit donc pas modifier `helpCore.registry.js` pour ajouter
+Dossiers, Produits, Fournisseurs ou toute autre notion métier.
+
+### Audience d’une fiche
+
+Pour une fiche Workspace :
+
+```text
+audience.permissions
+→ permissions Workspace
+
+requirements.features
+→ capabilities Workspace éventuelles
+
+applicationGlobalPermissions
+→ interdit
+```
+
+Pour une fiche Platform :
+
+```text
+audience.permissions
+→ permissions Platform éventuelles
+
+audience.applicationGlobalPermissions
+→ permissions globales applicatives éventuelles
+```
+
+Les deux tableaux peuvent être combinés. Dans ce cas, toutes les exigences
+doivent être satisfaites.
+
+Exemple générique :
+
+```js
+{
+    id: 'platform.catalog.read',
+    context: 'platform',
+    categoryId: 'platform_application_catalog',
+    audience: {
+        permissions: [],
+        applicationGlobalPermissions: ['catalog:read'],
+        ownerOnly: false,
+    },
+    // ...
+}
+```
+
+Le service Help résout les deux autorités séparément. Une permission Platform
+ne se transforme jamais en permission Application Global.
+
+### Catégories
+
+Le registre autorise jusqu’à 10 catégories par contexte. Le Core en utilise
+actuellement :
+
+```text
+Workspace → 4
+Platform  → 5
+```
+
+La capacité restante appartient aux produits dérivés. Les modules d’un même
+produit peuvent aussi partager une catégorie applicative commune lorsque cela
+rend l’aide plus lisible.
+
+Le frontend affiche le corpus composé dans le même Help Center et conserve la
+recherche sur les seules fiches déjà autorisées par le backend.
+
+Tests minimaux d’un module Help dérivé :
+
+```text
+composition du module
+unicité des ids
+catégories valides
+permissions connues
+filtrage Workspace/Platform
+filtrage Application Global si utilisé
+remédiation Workspace si déclarée
+absence des fiches non autorisées
+```
+
+---
+
 ## Application-global authorization
 
 ### Point de composition
@@ -792,14 +1002,19 @@ Le Core fournit :
 corePlatformNavigationSections
 ```
 
-La navigation finale est composée explicitement :
+La navigation finale est composée explicitement sans refondre la Sidebar
+Platform :
 
 ```text
 navigation Platform Core
-+
-sections déclarées par les modules applicatifs
+→ séparateur visuel simple
+→ sections déclarées par les modules applicatifs
 → APPLICATION_PLATFORM_NAVIGATION
 ```
+
+Le séparateur est ajouté uniquement lorsqu’au moins une section applicative est
+déclarée. Il n’a pas de libellé métier imposé par le Core et disparaît
+automatiquement si le filtrage d’autorisation laisse une séparation orpheline.
 
 Un module applicatif fournit un tableau `sections`. Une entrée peut être un
 item direct ou un groupe. Les identifiants et destinations sont contrôlés sur

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
@@ -90,7 +90,9 @@ describe('PlatformSidebar', () => {
 
     expect(clientGroup).toHaveAttribute('aria-expanded', 'true');
     expect(securityGroup).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('link', { name: 'Rétention & purge' })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: 'Rétention & purge' })).not.toBeInTheDocument();
+    });
     expect(screen.getByRole('link', { name: 'Utilisateurs' })).toBeInTheDocument();
   });
 

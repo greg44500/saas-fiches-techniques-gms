@@ -1,4 +1,8 @@
 import {
+    ACTIVE_PLAN_CAPABILITY_REGISTRY,
+} from '../../../config/applicationCapability.registry.js';
+
+import {
     SUBSCRIPTION_KIND,
     SUBSCRIPTION_STATUS,
     SUBSCRIPTION_TERM_TYPE,
@@ -81,6 +85,30 @@ const toValidDate = (value) => {
 
 const sameSubscription = (left, right) =>
     left?._id?.toString?.() === right?._id?.toString?.();
+
+const buildCapabilityPresentations = ({
+    features,
+    limits,
+    registry = ACTIVE_PLAN_CAPABILITY_REGISTRY,
+}) => {
+    const featurePresentations = Object.fromEntries(
+        features.flatMap((featureKey) => {
+            const definition = registry.getFeatureDefinition(featureKey);
+            return definition ? [[featureKey, definition]] : [];
+        }),
+    );
+    const limitPresentations = Object.fromEntries(
+        Object.keys(limits).flatMap((metricKey) => {
+            const presentation = registry.getMetricPresentation(metricKey);
+            return presentation ? [[metricKey, presentation]] : [];
+        }),
+    );
+
+    return {
+        featurePresentations,
+        limitPresentations,
+    };
+};
 
 /**
  * Construit une projection utilisateur de la durée des fonctionnalités déjà
@@ -197,6 +225,7 @@ const serializeWorkspaceEffectiveEntitlement = (
     {
         baselinePlan = null,
         commercialSubscription = null,
+        registry = ACTIVE_PLAN_CAPABILITY_REGISTRY,
     } = {},
 ) => {
     if (
@@ -227,6 +256,14 @@ const serializeWorkspaceEffectiveEntitlement = (
     const limits = rawLimits instanceof Map
         ? Object.fromEntries(rawLimits)
         : { ...rawLimits };
+    const {
+        featurePresentations,
+        limitPresentations,
+    } = buildCapabilityPresentations({
+        features: access.effectiveCapabilities.features,
+        limits,
+        registry,
+    });
 
     return {
         plan: serializePlan(access.plan),
@@ -239,6 +276,8 @@ const serializeWorkspaceEffectiveEntitlement = (
             commercialSubscription,
         }),
         limits,
+        featurePresentations,
+        limitPresentations,
         subscriptionKind: access.subscription.kind,
         subscriptionTermType: access.subscription.termType ?? null,
         subscriptionStatus: access.subscription.status,
@@ -340,6 +379,7 @@ const getWorkspaceSubscriptionOverview = async ({
 };
 
 export {
+    buildCapabilityPresentations,
     buildFeatureAvailability,
     getWorkspaceSubscriptionOverview,
     serializePlan,

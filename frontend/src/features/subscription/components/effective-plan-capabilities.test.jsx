@@ -47,6 +47,41 @@ describe('EffectivePlanCapabilities', () => {
     expect(screen.getByText('Illimité')).toBeInTheDocument();
   });
 
+  it('affiche les libellés métier projetés sans exposer les clés techniques', () => {
+    render(
+      <EffectivePlanCapabilities
+        entitlement={{
+          features: ['product_reference_access'],
+          featureAvailability: {
+            product_reference_access: {
+              mode: 'open_ended',
+              endsAt: null,
+            },
+          },
+          featurePresentations: {
+            product_reference_access: {
+              label: 'Accès au référentiel Produits',
+            },
+          },
+          limits: {
+            technical_sheets: 10,
+          },
+          limitPresentations: {
+            technical_sheets: {
+              label: 'Fiches techniques',
+            },
+          },
+        }}
+        now={NOW}
+      />,
+    );
+
+    expect(screen.getByText('Accès au référentiel Produits')).toBeInTheDocument();
+    expect(screen.getByText('Fiches techniques')).toBeInTheDocument();
+    expect(screen.queryByText('product_reference_access')).not.toBeInTheDocument();
+    expect(screen.queryByText('technical_sheets')).not.toBeInTheDocument();
+  });
+
   it('n’invente pas de durée lorsque le backend ne fournit pas la projection', () => {
     render(
       <EffectivePlanCapabilities

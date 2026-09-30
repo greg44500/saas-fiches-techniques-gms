@@ -10,6 +10,11 @@ import { useLocation, useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   useGetCurrentUserQuery,
   useLogoutMutation,
 } from '@/features/auth/api/auth-api';
@@ -31,7 +36,7 @@ function getLocationPath(location) {
   return `${location.pathname}${location.search ?? ''}${location.hash ?? ''}`;
 }
 
-function UserMenu() {
+function UserMenu({ contextItems = [] }) {
   const navigate = useNavigate();
   const location = useLocation();
   const rootRef = useRef(null);
@@ -40,14 +45,17 @@ function UserMenu() {
   const { data: user, isLoading } = useGetCurrentUserQuery();
   const { data: platformAccess } = useGetCurrentPlatformContextQuery();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
+  const visibleContextItems = (Array.isArray(contextItems) ? contextItems : [])
+    .filter((item) => (
+      typeof item?.label === 'string'
+      && item.label.trim().length > 0
+      && typeof item?.value === 'string'
+      && item.value.trim().length > 0
+    ));
 
   useEffect(() => {
     if (!open) return undefined;
 
-    /*
-     * Ce composant est un disclosure contenant des actions natives, pas un
-     * widget ARIA `menu`. Tab conserve donc son comportement navigateur normal.
-     */
     function handlePointerDown(event) {
       if (!rootRef.current?.contains(event.target)) {
         setOpen(false);
@@ -72,11 +80,6 @@ function UserMenu() {
   }, [open]);
 
   useEffect(() => {
-    /*
-     * Une navigation peut provenir de la sidebar ou d'un autre composant alors
-     * que le menu est encore ouvert. La route devient donc une seconde borne de
-     * cycle de vie : le popover ne doit jamais persister sur la page suivante.
-     */
     setOpen(false);
   }, [location.pathname, location.search, location.hash]);
 
@@ -111,22 +114,31 @@ function UserMenu() {
 
   return (
     <div className="relative" ref={rootRef}>
-      <Button
-        aria-controls={open ? USER_MENU_POPOVER_ID : undefined}
-        aria-expanded={open}
-        aria-label={open ? 'Fermer le menu utilisateur' : 'Ouvrir le menu utilisateur'}
-        className="rounded-full"
-        disabled={isLoading || isLoggingOut}
-        onClick={() => setOpen((current) => !current)}
-        ref={triggerRef}
-        size="icon"
-        type="button"
-        variant="outline"
-      >
-        <span className="text-xs font-semibold" aria-hidden="true">
-          {getInitials(user)}
-        </span>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={(
+            <Button
+              aria-controls={open ? USER_MENU_POPOVER_ID : undefined}
+              aria-expanded={open}
+              aria-label={open ? 'Fermer le menu utilisateur' : 'Ouvrir le menu utilisateur'}
+              className="rounded-full"
+              disabled={isLoading || isLoggingOut}
+              onClick={() => setOpen((current) => !current)}
+              ref={triggerRef}
+              size="icon"
+              type="button"
+              variant="outline"
+            />
+          )}
+        >
+          <span className="text-xs font-semibold" aria-hidden="true">
+            {getInitials(user)}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent align="center" side="bottom">
+          Voir le compte utilisateur
+        </TooltipContent>
+      </Tooltip>
 
       {open && (
         <div
@@ -141,6 +153,22 @@ function UserMenu() {
               <p className="truncate text-xs text-muted-foreground">{user.email}</p>
             )}
             <PlatformAccessSummary platformAccess={platformAccess} />
+
+            {visibleContextItems.length > 0 && (
+              <dl className="mt-2 space-y-1 border-t border-border pt-2">
+                {visibleContextItems.map((item) => (
+                  <div
+                    className="flex items-start justify-between gap-3 text-xs"
+                    key={item.label}
+                  >
+                    <dt className="text-muted-foreground">{item.label}</dt>
+                    <dd className="min-w-0 truncate text-right font-medium">
+                      {item.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
           </div>
 
           <div className="py-2">

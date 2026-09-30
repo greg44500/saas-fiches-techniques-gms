@@ -25,7 +25,7 @@ function WorkspaceHelpPage() {
       catalog={catalogQuery.data}
       catalogError={catalogQuery.error}
       catalogLoading={catalogQuery.isLoading}
-      description="Retrouvez uniquement les procédures disponibles avec vos droits, votre offre et l’état actuel de ce workspace."
+      description="Retrouvez les procédures Core et applicatives disponibles avec vos droits, votre offre et l’état actuel de cet espace de travail."
       entry={entryQuery.data}
       entryError={entryQuery.error}
       entryId={entryId}

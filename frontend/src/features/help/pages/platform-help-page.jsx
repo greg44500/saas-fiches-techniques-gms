@@ -22,7 +22,7 @@ function PlatformHelpPage() {
       catalog={catalogQuery.data}
       catalogError={catalogQuery.error}
       catalogLoading={catalogQuery.isLoading}
-      description="Consultez les procédures d’administration correspondant strictement à vos permissions Platform effectives."
+      description="Consultez les procédures d’administration disponibles selon vos permissions Platform et, lorsqu’un module le requiert, vos permissions globales applicatives."
       entry={entryQuery.data}
       entryError={entryQuery.error}
       entryId={entryId}

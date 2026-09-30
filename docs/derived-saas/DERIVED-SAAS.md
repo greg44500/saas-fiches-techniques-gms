@@ -815,13 +815,14 @@ L’ancien `core-deferred-work-for-derived-saas.md` est désormais absorbé sur 
 
 ---
 
-## 22. État des points d’extension au 2026-09-24
+## 22. État des points d’extension au 2026-09-30
 
 | Zone | État | Commentaire |
 |---|---|---|
 | Capability Registry | prêt | point de composition explicite disponible, métadonnées et relations feature → métriques supportées |
-| Navigation Workspace | prêt | composition au niveau `app/workspace-navigation.js` |
+| Navigation Workspace | prêt | Tableau de bord Core en tête, modules applicatifs immédiatement après, puis séparateur « Administration de l’espace » et autres surfaces Core via `features/workspace/navigation/compose-workspace-navigation.js` |
 | Navigation Platform | prêt | composition au niveau `app/application-platform-navigation.js`, visibilité générique et autorité backend séparée |
+| Centre d’aide | prêt | `applicationHelp.registry.js` compose le corpus Core et l’aide produit ; les fiches Platform peuvent exiger séparément des permissions Application Global |
 | Composants frontend partagés | prêt | réutilisation par composition |
 | Permissions métier / rôles système | prêt | registre applicatif `applicationRolePermission.registry.js`, composition et tests locaux validés |
 | Routes backend métier | prêt | composition dans `applicationRoutes.registry.js`, tests locaux validés |

@@ -56,31 +56,45 @@ describe('useWorkspaceDashboardWidgets', () => {
     const { result } = renderHook(() => useWorkspaceDashboardWidgets());
     const accessibleIds = result.current.accessibleWidgets.map((widget) => widget.id);
 
-    expect(accessibleIds).toContain('core.workspace-status');
-    expect(accessibleIds).toContain('core.workspace-role');
-    expect(accessibleIds).toContain('core.members');
+    expect(accessibleIds).toEqual(['core.members']);
+    expect(accessibleIds).not.toContain('core.workspace-status');
+    expect(accessibleIds).not.toContain('core.workspace-role');
     expect(accessibleIds).not.toContain('core.pending-invitations');
     expect(accessibleIds).not.toContain('core.files');
     expect(accessibleIds).not.toContain('core.recent-activity');
   });
 
-  it('applique le masquage personnel uniquement à un widget déjà accessible', () => {
+  it('ignore les anciens ids de widgets retirés sans modifier les préférences persistées', () => {
     mockWorkspaceContext({
       features: [WORKSPACE_FEATURE.TEAM_MANAGEMENT],
       permissions: [WORKSPACE_PERMISSION.MEMBER_READ],
     });
-    mockPreferences({ hiddenWidgetIds: ['core.members', 'core.files'] });
+    mockPreferences({
+      hiddenWidgetIds: [
+        'core.workspace-status',
+        'core.workspace-role',
+      ],
+    });
 
     const { result } = renderHook(() => useWorkspaceDashboardWidgets());
-    const visibleIds = result.current.visibleWidgets.map((widget) => widget.id);
 
-    expect(visibleIds).toContain('core.workspace-status');
-    expect(visibleIds).toContain('core.workspace-role');
-    expect(visibleIds).not.toContain('core.members');
-    expect(visibleIds).not.toContain('core.files');
+    expect(result.current.visibleWidgets.map((widget) => widget.id))
+      .toEqual(['core.members']);
   });
 
-  it('ne monte que le contexte non configurable tant que les préférences sont en chargement', () => {
+  it('applique le masquage personnel uniquement à un widget encore enregistré et accessible', () => {
+    mockWorkspaceContext({
+      features: [WORKSPACE_FEATURE.TEAM_MANAGEMENT],
+      permissions: [WORKSPACE_PERMISSION.MEMBER_READ],
+    });
+    mockPreferences({ hiddenWidgetIds: ['core.members'] });
+
+    const { result } = renderHook(() => useWorkspaceDashboardWidgets());
+
+    expect(result.current.visibleWidgets).toEqual([]);
+  });
+
+  it('ne monte aucun widget configurable tant que les préférences sont en chargement', () => {
     mockWorkspaceContext({
       features: [WORKSPACE_FEATURE.TEAM_MANAGEMENT],
       permissions: [WORKSPACE_PERMISSION.MEMBER_READ],
@@ -89,10 +103,7 @@ describe('useWorkspaceDashboardWidgets', () => {
 
     const { result } = renderHook(() => useWorkspaceDashboardWidgets());
 
-    expect(result.current.visibleWidgets.map((widget) => widget.id)).toEqual([
-      'core.workspace-status',
-      'core.workspace-role',
-    ]);
+    expect(result.current.visibleWidgets).toEqual([]);
     expect(result.current.isPreferencesLoading).toBe(true);
   });
 });

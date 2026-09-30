@@ -1,6 +1,9 @@
 import {
     ACTIVE_HELP_REGISTRY,
 } from '../../config/applicationHelp.registry.js';
+import {
+    resolveApplicationGlobalAuthorization,
+} from '../applicationGlobalAuthorization/applicationGlobalAuthorization.service.js';
 import { SYSTEM_ROLE_KEY } from '../../constants/role.constants.js';
 import {
     PLATFORM_TEAM_MEMBER_STATUS,
@@ -77,6 +80,8 @@ const createHelpService = ({
     registry = ACTIVE_HELP_REGISTRY,
     resolveWorkspaceAccess = getWorkspaceAccessEntitlement,
     resolvePlatformAccess = resolvePlatformAuthorization,
+    resolveApplicationGlobalAccess =
+        resolveApplicationGlobalAuthorization,
 } = {}) => {
     const getWorkspaceVisibleEntries = async ({
         workspace,
@@ -147,12 +152,26 @@ const createHelpService = ({
 
     const getPlatformVisibleEntries = async ({ user }) => {
         const authorization = await getPlatformAuthorization(user);
+        const requiresApplicationGlobalAuthorization =
+            registry.entries.some(
+                (entry) =>
+                    entry.context === HELP_CONTEXT.PLATFORM
+                    && entry.audience.applicationGlobalPermissions.length > 0,
+            );
+        const applicationGlobalAuthorization =
+            requiresApplicationGlobalAuthorization
+                ? await resolveApplicationGlobalAccess({ user })
+                : { permissions: [] };
 
         return registry.entries.filter((entry) =>
             entry.context === HELP_CONTEXT.PLATFORM
             && hasAll(
                 authorization.permissions,
                 entry.audience.permissions,
+            )
+            && hasAll(
+                applicationGlobalAuthorization.permissions,
+                entry.audience.applicationGlobalPermissions,
             ));
     };
 

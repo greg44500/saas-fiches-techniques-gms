@@ -15,20 +15,12 @@ import {
   getSummaryItemClass,
 } from '@/features/workspace/pages/workspace-dashboard-page';
 
-function WorkspaceStatusWidget() {
-  return <div>Statut du workspace : Actif</div>;
-}
-
-function WorkspaceRoleWidget() {
-  return <div>Votre rôle : Administrateur</div>;
-}
-
 function MembersWidget() {
   return <div>Membres : 4</div>;
 }
 
-function FilesWidget() {
-  return <div>Fichiers actifs : 7</div>;
+function SubscriptionWidget() {
+  return <div>Abonnement : Free</div>;
 }
 
 function ActivityWidget() {
@@ -36,22 +28,6 @@ function ActivityWidget() {
 }
 
 const allWidgets = [
-  {
-    id: 'core.workspace-status',
-    label: 'Statut du workspace',
-    description: 'État courant du workspace.',
-    slot: 'summary',
-    configurable: false,
-    component: WorkspaceStatusWidget,
-  },
-  {
-    id: 'core.workspace-role',
-    label: 'Votre rôle',
-    description: 'Rôle effectif dans ce workspace.',
-    slot: 'summary',
-    configurable: false,
-    component: WorkspaceRoleWidget,
-  },
   {
     id: 'core.members',
     label: 'Membres',
@@ -61,12 +37,12 @@ const allWidgets = [
     component: MembersWidget,
   },
   {
-    id: 'core.files',
-    label: 'Fichiers actifs',
-    description: 'Nombre de fichiers actifs accessibles dans le workspace.',
+    id: 'core.subscription',
+    label: 'Abonnement',
+    description: 'Synthèse de l’abonnement.',
     slot: 'summary',
     configurable: true,
-    component: FilesWidget,
+    component: SubscriptionWidget,
   },
   {
     id: 'core.recent-activity',
@@ -108,24 +84,18 @@ describe('WorkspaceDashboardPage', () => {
 
   afterEach(() => cleanup());
 
-  it('compose les widgets visibles fournis par le registre et déporte l’aide du header', () => {
+  it('compose uniquement les widgets visibles fournis par le registre', () => {
     renderDashboard();
 
     expect(screen.getByRole('heading', { name: 'Tableau de bord' })).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'À propos du tableau de bord' }),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/Vue synthétique du workspace courant/),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText('Statut du workspace : Actif')).toBeInTheDocument();
-    expect(screen.getByText('Votre rôle : Administrateur')).toBeInTheDocument();
     expect(screen.getByText('Membres : 4')).toBeInTheDocument();
-    expect(screen.getByText('Fichiers actifs : 7')).toBeInTheDocument();
+    expect(screen.getByText('Abonnement : Free')).toBeInTheDocument();
     expect(screen.getByText('Activité récente : Workspace modifié')).toBeInTheDocument();
-    expect(screen.queryByRole('button', {
-      name: 'Personnaliser le tableau de bord',
-    })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Statut du workspace/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Votre rôle/)).not.toBeInTheDocument();
   });
 
   it('utilise une grille à six colonnes pour répartir les tiers et les moitiés', () => {
@@ -134,21 +104,16 @@ describe('WorkspaceDashboardPage', () => {
 
   it('équilibre automatiquement la dernière ligne selon le nombre visible', () => {
     expect(getSummaryItemClass(0, 1)).toContain('xl:col-span-6');
-
     expect(getSummaryItemClass(0, 2)).toContain('xl:col-span-3');
     expect(getSummaryItemClass(1, 2)).toContain('xl:col-span-3');
-
     expect(getSummaryItemClass(0, 3)).toContain('xl:col-span-2');
     expect(getSummaryItemClass(2, 3)).toContain('xl:col-span-2');
-
     expect(getSummaryItemClass(0, 4)).toContain('xl:col-span-3');
     expect(getSummaryItemClass(3, 4)).toContain('xl:col-span-3');
-
     expect(getSummaryItemClass(0, 5)).toContain('xl:col-span-2');
     expect(getSummaryItemClass(2, 5)).toContain('xl:col-span-2');
     expect(getSummaryItemClass(3, 5)).toContain('xl:col-span-3');
     expect(getSummaryItemClass(4, 5)).toContain('xl:col-span-3');
-
     expect(getSummaryItemClass(0, 7)).toContain('xl:col-span-2');
     expect(getSummaryItemClass(3, 7)).toContain('xl:col-span-3');
     expect(getSummaryItemClass(6, 7)).toContain('xl:col-span-3');
@@ -157,28 +122,26 @@ describe('WorkspaceDashboardPage', () => {
   it('ne monte pas un widget accessible mais masqué par la préférence utilisateur', () => {
     useWorkspaceDashboardWidgetsMock.mockReturnValue({
       ...baseData,
-      visibleWidgets: allWidgets.filter((widget) => widget.id !== 'core.files'),
+      visibleWidgets: allWidgets.filter((widget) => widget.id !== 'core.members'),
     });
 
     renderDashboard();
 
-    expect(screen.queryByText('Fichiers actifs : 7')).not.toBeInTheDocument();
-    expect(screen.getByText('Membres : 4')).toBeInTheDocument();
+    expect(screen.queryByText('Membres : 4')).not.toBeInTheDocument();
+    expect(screen.getByText('Abonnement : Free')).toBeInTheDocument();
   });
 
   it('affiche des skeletons sans monter les widgets configurables pendant le chargement des préférences', () => {
     useWorkspaceDashboardWidgetsMock.mockReturnValue({
       ...baseData,
-      visibleWidgets: allWidgets.filter((widget) => !widget.configurable),
+      visibleWidgets: [],
       isPreferencesLoading: true,
     });
 
     renderDashboard();
 
-    expect(screen.getByText('Statut du workspace : Actif')).toBeInTheDocument();
-    expect(screen.getByText('Votre rôle : Administrateur')).toBeInTheDocument();
     expect(screen.queryByText('Membres : 4')).not.toBeInTheDocument();
-    expect(screen.queryByText('Fichiers actifs : 7')).not.toBeInTheDocument();
+    expect(screen.queryByText('Abonnement : Free')).not.toBeInTheDocument();
     expect(screen.getAllByRole('status').length).toBeGreaterThan(0);
   });
 });

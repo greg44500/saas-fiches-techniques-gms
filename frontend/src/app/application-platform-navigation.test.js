@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   APPLICATION_PLATFORM_NAVIGATION,
+  PLATFORM_APPLICATION_SEPARATOR,
   composeApplicationPlatformNavigation,
 } from '@/app/application-platform-navigation';
 import {
@@ -48,7 +49,7 @@ describe('application Platform navigation composition', () => {
     ]));
   });
 
-  it('conserve la navigation Core et ajoute les sections applicatives', () => {
+  it('conserve le Core puis ajoute un séparateur avant les sections applicatives', () => {
     const applicationEntry = {
       type: 'item',
       id: 'catalog',
@@ -66,6 +67,8 @@ describe('application Platform navigation composition', () => {
     expect(
       navigation.slice(0, corePlatformNavigationSections.length),
     ).toEqual(corePlatformNavigationSections);
+    expect(navigation.at(corePlatformNavigationSections.length))
+      .toEqual(PLATFORM_APPLICATION_SEPARATOR);
     expect(navigation.at(-1)).toMatchObject({
       id: 'catalog',
       label: 'Catalogue',

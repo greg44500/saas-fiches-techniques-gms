@@ -39,6 +39,7 @@ const makeEntry = ({
     id,
     context,
     permission = null,
+    applicationGlobalPermission = null,
     ownerOnly = false,
     feature = null,
     relatedEntryIds = [],
@@ -56,6 +57,9 @@ const makeEntry = ({
     },
     audience: {
         permissions: permission ? [permission] : [],
+        applicationGlobalPermissions: applicationGlobalPermission
+            ? [applicationGlobalPermission]
+            : [],
         ownerOnly,
     },
     requirements: {
@@ -104,8 +108,14 @@ const registry = createHelpRegistry({
             context: HELP_CONTEXT.PLATFORM,
             permission: PLATFORM_PERMISSION.TEAM_INVITE,
         }),
+        makeEntry({
+            id: 'platform.test.catalog',
+            context: HELP_CONTEXT.PLATFORM,
+            applicationGlobalPermission: 'catalog:read',
+        }),
     ],
     workspaceRemediationEntryIds: ['workspace.test.public'],
+    applicationGlobalPermissions: ['catalog:read'],
 });
 
 const workspace = {
@@ -257,6 +267,9 @@ describe('help.service', () => {
                 status: PLATFORM_TEAM_MEMBER_STATUS.ACTIVE,
                 permissions: [PLATFORM_PERMISSION.USERS_READ],
             })),
+            resolveApplicationGlobalAccess: vi.fn(async () => ({
+                permissions: [],
+            })),
         });
 
         const catalog = await service.getPlatformCatalog({
@@ -266,6 +279,33 @@ describe('help.service', () => {
         expect(catalog.entries.map(({ id }) => id)).toEqual([
             'platform.test.users',
         ]);
+    });
+
+    it('filtre aussi les fiches Platform selon les permissions Application Global effectives', async () => {
+        const service = createHelpService({
+            registry,
+            resolvePlatformAccess: vi.fn(async () => ({
+                source: 'team_member',
+                status: PLATFORM_TEAM_MEMBER_STATUS.ACTIVE,
+                permissions: [PLATFORM_PERMISSION.USERS_READ],
+            })),
+            resolveApplicationGlobalAccess: vi.fn(async () => ({
+                permissions: ['catalog:read'],
+            })),
+        });
+
+        const catalog = await service.getPlatformCatalog({
+            user: { _id: 'user-id' },
+        });
+
+        expect(catalog.entries.map(({ id }) => id)).toEqual(
+            expect.arrayContaining([
+                'platform.test.users',
+                'platform.test.catalog',
+            ]),
+        );
+        expect(catalog.entries.map(({ id }) => id))
+            .not.toContain('platform.test.team');
     });
 
     it('refuse le centre Platform à un utilisateur sans contexte Platform actif', async () => {

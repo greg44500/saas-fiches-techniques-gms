@@ -167,7 +167,7 @@ describe('workspace subscription overview projection', () => {
         const result =
             serializeWorkspaceEffectiveEntitlement(access);
 
-        expect(result).toEqual({
+        expect(result).toMatchObject({
             plan: expect.objectContaining({
                 id: expect.any(String),
                 isBaseline: false,
@@ -208,6 +208,40 @@ describe('workspace subscription overview projection', () => {
         expect(JSON.stringify(result)).not.toContain(
             'Geste commercial interne',
         );
+    });
+
+    it('projette les libellés métier depuis le registre actif sans dupliquer les traductions', () => {
+        const access = {
+            subscription: {
+                kind: 'baseline',
+                termType: 'open_ended',
+                status: 'active',
+            },
+            plan: buildPlan({
+                systemRole: PLAN_SYSTEM_ROLE.BASELINE,
+                features: ['product_reference_access'],
+            }),
+            effectiveCapabilities: {
+                features: ['product_reference_access'],
+                limits: {
+                    technical_sheets: 10,
+                },
+                appliedOverrides: [],
+            },
+            accessMode: 'normal',
+            reason: null,
+            blockingLimits: [],
+            nonBlockingLimits: [],
+        };
+
+        const result = serializeWorkspaceEffectiveEntitlement(access);
+
+        expect(
+            result.featurePresentations.product_reference_access.label,
+        ).toBe('Accès au référentiel Produits');
+        expect(
+            result.limitPresentations.technical_sheets.label,
+        ).toBe('Fiches techniques');
     });
 
     it('conserve sans échéance une feature de trial qui existe aussi dans la baseline', () => {

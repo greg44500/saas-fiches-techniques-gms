@@ -7,7 +7,11 @@ vi.mock('@/features/auth/api/auth-api', () => ({
   useGetCurrentUserQuery: useGetCurrentUserQueryMock,
 }));
 vi.mock('@/features/auth/components/user-menu', () => ({
-  UserMenu: () => <button type="button">Avatar utilisateur</button>,
+  UserMenu: ({ contextItems }) => (
+    <button type="button">
+      Avatar utilisateur {contextItems?.map((item) => item.value).join(' ')}
+    </button>
+  ),
 }));
 vi.mock('@/features/auth/components/logout-shortcut', () => ({
   LogoutShortcut: () => <button type="button">Déconnexion</button>,
@@ -34,6 +38,28 @@ describe('AuthenticatedUserIdentity', () => {
     expect(screen.getByText('Plan Free')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Avatar utilisateur' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Déconnexion' })).toBeInTheDocument();
+  });
+
+  it('transmet les détails contextuels au menu sans connaître leur domaine', () => {
+    useGetCurrentUserQueryMock.mockReturnValue({
+      data: {
+        firstName: 'Laetitia',
+        lastName: 'BALLAT',
+        email: 'laetitia@test.com',
+      },
+    });
+
+    render(
+      <AuthenticatedUserIdentity
+        menuContextItems={[
+          { label: 'Contexte', value: 'Administrateur' },
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole('button', {
+      name: 'Avatar utilisateur Administrateur',
+    })).toBeInTheDocument();
   });
 
   it('place les actions contextuelles juste avant la déconnexion', () => {

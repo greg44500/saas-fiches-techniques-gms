@@ -105,7 +105,16 @@ recherche / catégorie active → useState local
 
 ### Centres et catégories
 
-Le centre Workspace reste limité à 4 catégories principales et le centre Platform à 5 catégories principales.
+Le corpus Core fournit 4 catégories Workspace et 5 catégories Platform.
+
+**Évolution post-validation — 2026-09-30 :** le registre autorise désormais
+jusqu’à 10 catégories par contexte pour laisser une capacité explicite aux
+SaaS dérivés. La liste des catégories est déjà scrollable horizontalement côté
+frontend ; cette extension ne modifie donc pas le principe UX du centre d’aide.
+
+Les modules dérivés restent composés via `APPLICATION_HELP_MODULES`. Une fiche
+Platform peut en plus déclarer des `applicationGlobalPermissions`, résolues
+séparément des permissions Platform.
 
 Les descriptions d’orientation ne sont pas répétées visuellement : elles sont disponibles via des `InfoTooltip` accessibles et explicitement nommés.
 

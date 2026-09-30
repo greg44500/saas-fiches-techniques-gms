@@ -1,588 +1,219 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-29  
-**Lot clôturé :** GMS-UX-002 — Référentiel Produits Platform : catégories et lisibilité  
-**Lot courant :** M-004 — Fiches techniques + valorisation  
-**État M-004 :** IMPLÉMENTATION DU BLOC HORS EXPORTS TERMINÉE SUR BRANCHE — stabilisation UX/M-003 en cours avec Prix indicatifs Workspace/Dossier ; tests ciblés, migration M-003 et release:check à rejouer avant PR  
-**Branche :** `feature/m004-fiches-techniques-valorisation`  
-**Base de branche :** `main@b479b217815fad885f233e98b8f3145656641352`
+**Date :** 2026-09-30  
+**Lot précédent clôturé :** M-002 → M-004 hors exports — PR #25  
+**Lot courant :** intégration Core post-tag v1.2.1 — shell Workspace / navigation / Help Center  
+**Branche :** `core-update/post-v1.2.1-a9d99aa`  
+**Base :** `main@588612ba987c4a91951d4939231f9f44881c50d8`
 
-## 1. Ordre d'autorité
+## 1. Autorité
 
 ~~~text
-KB-START-HERE
-→ GitHub réel
-→ code / contraintes DB
-→ tests réellement exécutés
-→ docs/m004/M-004-FINAL-CONTRACT.md
-→ contrats validés M-001 / M-002 / M-003
-→ Core v1.2.1 réellement intégré
+Git/code/DB
+→ tests et Core Gates réellement exécutés
+→ contrats M-001/M-002/M-003/M-004
+→ Core réellement intégré
 → dette active
 → présente reprise
 ~~~
 
-En cas de contradiction, Git/code/tests priment sur cette synthèse.
+## 2. État produit validé avant l’upgrade
 
-## 2. État Git et Core vérifié
-
-Dépôt :
+Le lot M-002 à M-004 est fusionné et validé :
 
 ~~~text
-greg44500/saas-fiches-techniques-gms
+PR #25
+Core Gate PR #145 : success
+merge : 588612ba987c4a91951d4939231f9f44881c50d8
+Core Gate post-merge #146 : success
+lint / tests globaux / build : verts localement
+E2E Playwright : 22/22 verts
 ~~~
 
-État de départ M-004 vérifié le 2026-09-28 :
+M-001, M-002, M-003 et M-004 hors exports ne doivent pas être réimplémentés dans une future reprise.
 
-~~~text
-main = b479b217815fad885f233e98b8f3145656641352
-merge = PR #24 — fix(m002): améliorer la lisibilité du référentiel Produits Platform
-Core Gate du main = success
-run GitHub Actions = 36430902323
-~~~
-
-Le workflow `Core Gate` exécute `npm run release:check`, soit :
-
-~~~text
-release:verify
-→ lint backend
-→ tests backend
-→ lint frontend
-→ tests frontend
-→ build frontend
-→ E2E Playwright
-~~~
-
-Core intégré :
+## 3. Core intégré par ce lot
 
 ~~~text
 repository = greg44500/saas-core-api
 version    = 1.2.1
 tag        = v1.2.1
-commit     = d90d8f1e6034cbbf4f63de2be7312eae69b1d698
+commit     = d3b9891bc2a32705a0a99b2ed62bed60caf653ca
 ~~~
 
-Aucune évolution Core n'est nécessaire pour M-004. La corbeille des Fiches techniques est gérée dans le produit : réglage Workspace 1–90 jours (30 par défaut), `purgeScheduledAt` figé à la suppression et job métier global de purge.
+Ce commit est postérieur au tag v1.2.1 et correspond aux PR Core #45/#46/#47. La Core Gate post-merge Core #90 est verte sur ce SHA.
 
-## 3. Contrat canonique M-004
+Décision :
 
-Source de vérité :
+- aucune nouvelle version Core ;
+- aucun nouveau tag ;
+- aucune GitHub Release ;
+- aucune migration DB nouvelle pour ce lot ;
+- provenance enregistrée par SHA exact.
+
+## 4. Adaptations incluses dans l’intégration
+
+### Workspace
+
+- Tableau de bord Core conservé comme première entrée car il compose les widgets Core et métier ;
+- Dossiers, Produits et Fournisseurs immédiatement après, sans titre ni espace artificiel ;
+- séparateur « Administration de l’espace » après les modules métier ;
+- Membres, Rôles et permissions, Paramètres, Abonnement et Activité conservés sous cette séparation ;
+- entrée `Fichiers` masquée uniquement dans la navigation de ce produit ; les primitives File Core restent présentes ;
+- groupes repliables avec animation fluide et respect de reduced motion ;
+- badge statut regroupé avec le nom du Workspace sous la forme `Nom | statut` ;
+- rôle Workspace et plan effectif dans l’identité utilisateur selon les droits ;
+- widgets Dashboard Core et widgets métier toujours composés ensemble ;
+- suppression de la recherche globale Workspace.
+
+Les recherches restent locales aux pages métier concernées.
+
+La vue Abonnement reçoit désormais les métadonnées de présentation du registre actif afin d’afficher les libellés français des capabilities/métriques métier au lieu de leurs clés techniques.
+
+### Platform
+
+- navigation Core conservée ;
+- séparateur visuel avant les modules applicatifs ;
+- modules globaux Produits/Fournisseurs conservés selon leurs permissions Application Global ;
+- accès rapide Platform construit uniquement depuis les destinations autorisées.
+
+Il ne s’agit pas d’une recherche plein texte dans les données.
+
+### Help Center
+
+Le Core et le produit partagent une seule expérience d’aide.
+
+Modules métier composés : Dossiers, Produits, Fournisseurs & prix, Fiches techniques, Référentiel Produits Platform et Référentiel Fournisseurs Platform.
+
+Les permissions Workspace, Platform et Application Global restent strictement séparées.
+
+## 5. État fonctionnel à ne pas rouvrir
+
+### M-002
+
+- gouvernance non bloquante ;
+- `PROVISIONAL` utilisable immédiatement dans le Workspace contributeur ;
+- isolation inter-Workspace ;
+- revue/fusion/rejet Application Global ;
+- snapshots `TechnicalSheetValidation` immuables ;
+- seed actif actuel : `m002-reference.v6`.
+
+### M-003
+
+- Fournisseur / Article / Catalogue / Prix distincts ;
+- imports CSV/XLS/XLSX ;
+- catalogues Workspace privés et catalogues globaux partagés ;
+- prix Dossier strictement isolés ;
+- Prix applicable résolu par le backend ;
+- Prix indicatif Dossier puis Workspace comme dernier recours.
+
+### M-004
+
+- Fiche durable + brouillon courant + validation courante + historique immuable ;
+- valorisation M-002/M-003 ;
+- copie inter-Dossier sans finance source ;
+- quota `technical_sheets` ;
+- corbeille, restauration et purge ;
+- exports V1 toujours séparés.
+
+## 6. Prochaines étapes produit après validation de l’upgrade
+
+### Priorité A — UX/UI Platform : Gestion des référentiels
+
+Créer un lot produit séparé, sans rouvrir M-002/M-003 :
 
 ~~~text
-docs/m004/M-004-FINAL-CONTRACT.md
+sidebar Platform existante
+→ séparateur simple pour la gestion des référentiels
+→ entrée unique « Gestion des référentiels »
+→ vue à onglets
+   - Produits
+   - Fournisseurs
 ~~~
 
-Contrat validé le 2026-09-28.
+La visibilité doit utiliser les permissions Application Global effectives et les guards existants.
 
-Principes structurants :
+Pour Produits, réutiliser les surfaces/API déjà livrées : Référentiel, Contributions, Catégories, Produits, Variétés, Caractéristiques et Références/Variantes.
+
+Types de caractéristiques déjà supportés : Présentation, Pièce / découpe, Type commercial, Calibre / format, Couleur, Désignation de qualité.
+
+Pour Fournisseurs, réutiliser le référentiel global M-003 existant.
+
+Ne pas créer un deuxième système de gouvernance ni dupliquer les pages existantes : la prochaine tâche est une recomposition UX.
+
+### Priorité B — enrichissement du référentiel initial
+
+État actuel vérifié de `m002-reference.v6.json` :
 
 ~~~text
-1 Fiche durable
-+
-0 ou 1 brouillon
-+
-0 ou 1 état validé courant
-+
-historique automatique immuable
+14 catégories
+264 Produits
+264 Variantes
+0 Variété
+0 Caractéristique
 ~~~
 
-Ownership :
+Créer ultérieurement une nouvelle version de dataset, par exemple `m002-reference.v7.json`, au lieu de modifier v6.
+
+Objectif : offrir dès la première mise à disposition un référentiel global nettement plus riche, incluant selon les Produits des variétés, présentations, découpes, calibres/formats, couleurs et autres valeurs validées.
+
+Le mécanisme de seed est versionné/hashé : une version déjà enregistrée ne doit jamais être réécrite silencieusement.
+
+### Priorité C — validation visuelle du nouveau shell
+
+Après fusion de l’upgrade Core, vérifier avec `npm run dev` :
+
+Workspace : métier avant Administration de l’espace, séparateur discret, animation smooth, badge statut, rôle/plan dans l’identité, aucune carte statut/rôle et aucune recherche globale.
+
+Platform : navigation Core inchangée, séparateur avant les entrées applicatives, accès rapide fonctionnel et aucune permission globale héritée implicitement du rôle Platform.
+
+Help : aide Core + métier dans le même centre et aucune fuite de fiche non autorisée.
+
+## 7. Lots explicitement séparés
+
+- exports/diffusion M-004 : CSV, XLSX, PDF, impression, e-mail ;
+- enrichissement massif du seed M-002 ;
+- dette Core DataTable `GMS-CORE-UX-001` sur le survol canonique des lignes ;
+- sujets production : billing, observabilité, stockage production, conformité.
+
+## 8. Discipline de reprise
 
 ~~~text
-Workspace
-× Dossier
-~~~
-
-`createdBy` / `updatedBy` = audit uniquement, jamais ownership.
-
-Une Fiche ou un brouillon n'appartient pas personnellement à son créateur.
-
-## 4. Composition et valorisation
-
-Toute ligne utilise obligatoirement un `ProductVariant` M-002.
-
-~~~text
-quantité nette saisie
-→ rendement M-002
-→ quantité brute calculée
-~~~
-
-Pas de surcharge locale du rendement en V1.
-
-Les sections restent distinctes :
-
-~~~text
-Ingrédients
-Économat
-~~~
-
-M-004 réutilise impérativement M-003 :
-
-~~~text
-ProductVariant
-→ SupplierArticle lorsque nécessaire
-→ Prix applicable
-→ contexte Dossier
-
-Dernier recours M-003 :
-Prix indicatif Dossier
-→ sinon Prix indicatif Workspace
-~~~
-
-Résolution Article :
-
-~~~text
-0 Article
-→ Prix indicatif possible directement sur la Référence Produit
-→ sinon non résolu
-
-1 Article
-→ résolution automatique possible
-
-N Articles
-→ choix humain obligatoire
-~~~
-
-Jamais de sélection automatique de l'Article le moins cher.
-
-Prix absent :
-
-~~~text
-jamais 0 €
-→ ligne non valorisée
-→ validation impossible tant que non résolue
-~~~
-
-## 5. Calcul économique validé
-
-~~~text
-Coût matière HT
-= somme Ingrédients
-
-Économat HT
-= somme Économat
-
-Coût fabrication HT
-= Coût matière HT + Économat HT
-~~~
-
-Marge cible :
-
-~~~text
-coefficient = 1 / (1 - marge cible)
-Prix théorique HT = Coût fabrication HT × coefficient
-~~~
-
-Prix conseillé TTC :
-
-~~~text
-Prix théorique TTC
-→ arrondi au prochain multiple de 0,50 € supérieur ou égal
-~~~
-
-Prix final :
-
-~~~text
-peut être >, = ou < au Prix conseillé
-
-mais
-
-Prix final TTC >= plancher économique TTC
-~~~
-
-Une revalorisation ne remplace jamais silencieusement un Prix final choisi explicitement.
-
-## 6. Historique et fraîcheur économique
-
-À la validation :
-
-~~~text
-nouvel état validé courant
-+
-ancien état validé conservé dans l'historique
-~~~
-
-Les sauvegardes de brouillon ne créent pas de versions utilisateur.
-
-Si les Prix M-003 ont changé depuis la valorisation :
-
-~~~text
-validation refusée
-→ revalorisation explicite obligatoire
-~~~
-
-Les snapshots validés doivent rester historiquement explicables même si Produit, Article ou Fournisseur évoluent ensuite.
-
-## 7. Lifecycle
-
-États principaux de l'identité Fiche :
-
-~~~text
-ACTIVE
-ARCHIVED
-DELETED
-~~~
-
-Suppression :
-
-~~~text
-Fiche entière
-→ corbeille
-→ restauration pendant rétention
-→ purge définitive
-~~~
-
-La suppression porte ensemble sur :
-
-- brouillon éventuel ;
-- état validé courant ;
-- historique ;
-- snapshots économiques.
-
-Aucun état historique n'est supprimé individuellement.
-
-## 8. Copie inter-Dossier
-
-Source possible :
-
-~~~text
-ACTIVE
-ARCHIVED
-~~~
-
-Source interdite :
-
-~~~text
-DELETED
-~~~
-
-La copie crée une nouvelle identité Fiche et un nouveau brouillon.
-
-Aucune donnée financière du Dossier source n'est copiée.
-
-Dans le Dossier cible :
-
-~~~text
-TVA
-→ copiée depuis la Fiche source
-
-marge cible
-→ marge par défaut du Dossier cible
-
-Article / Prix
-→ résolution M-003 du Dossier cible
-~~~
-
-## 9. RBAC validé
-
-Principes :
-
-- Owner = toutes permissions M-004 ;
-- Responsable FT = création, édition, composition, sourcing, valorisation, validation, lifecycle métier, copie et marge par défaut ;
-- Contributeur FT = création, édition, composition, sourcing, valorisation et copie, sans validation/lifecycle destructif ;
-- Acheteur / Économe = sourcing et valorisation sans modification de recette ni validation FT ;
-- Lecteur = consultation uniquement ;
-- purge définitive = Owner uniquement.
-
-Le périmètre Dossier M-001 reste applicable.
-
-Les clés techniques réellement implémentées sont :
-
-~~~text
-technical-sheet:read
-technical-sheet:create
-technical-sheet:update
-technical-sheet:sourcing:manage
-technical-sheet:valuation:manage
-technical-sheet:validate
-technical-sheet:lifecycle:manage
-technical-sheet:delete
-technical-sheet:restore
-technical-sheet:purge
-technical-sheet:copy
-technical-sheet:settings:manage
-~~~
-
-Le rôle système Owner reçoit toutes ces permissions via le registre applicatif. Les profils métier restent composés par des Roles Workspace personnalisés, sans modifier les rôles système Core.
-
-## 10. Quota commercial validé
-
-~~~text
-1 identité Fiche = 1 unité
-~~~
-
-Le comptage ne dépend pas :
-
-- du brouillon ;
-- du nombre de validations ;
-- de l'historique ;
-- de l'archivage ;
-- de la mise en corbeille.
-
-~~~text
-création = +1
-copie = +1
-purge définitive = -1
-toutes les autres opérations = 0
-~~~
-
-La limite est Workspace-scoped.
-
-Le seuil commercial Free définitif reste à décider.
-
-Pour développement/tests :
-
-~~~text
-valeur temporaire possible = 10 Fiches
-ou valeur plus basse dans les tests
-~~~
-
-Cette valeur ne doit jamais être codée en dur : le runtime compare l'usage avec la limite effective Plan / entitlement.
-
-## 11. Exports et diffusion V1
-
-Appartiennent à la V1 produit :
-
-~~~text
-CSV
-XLSX
-PDF
-impression
-e-mail
-~~~
-
-Ils ne font pas partie du premier bloc d'implémentation M-004.
-
-Ordre retenu :
-
-~~~text
-M-004 Fiche technique
-→ backend
-→ tests backend
-→ frontend
-→ tests frontend
-→ E2E
-→ Core Gate
-→ QA visuelle utilisateur
-→ stabilisation
-
-puis
-
-bloc V1 Exports et diffusion
-→ cadrage dédié
-→ implémentation
+un lot cohérent
+→ une branche
 → tests
-→ QA visuelle
+→ une PR
+→ une Core Gate
+→ un merge
 ~~~
 
-Les autres exports restent V2.
+Ne pas créer de micro-PR de correction. Ne pas relancer périodiquement les Core Gates : l’utilisateur communique leur résultat.
 
-## 12. UX
+La prochaine conversation doit d’abord vérifier GitHub réel et l’état de l’intégration Core avant de commencer la vue Platform « Gestion des référentiels ».
 
-Les invariants UX structurants sont validés :
 
-- vocabulaire métier français ;
-- pas de jargon Core exposé ;
-- réutilisation des composants existants ;
-- gestion explicite des états vides, erreurs, ambiguïtés Article, Prix absent, quota et conflits ;
-- accessibilité des actions par icônes / tooltips.
+## 9. Validation de l’intégration en cours
 
-Les détails de mise en page, placement d'actions, densité et microcopie sont **non bloquants** pour la conception technique et restent ajustables après validation visuelle.
-
-Checkpoint UX du 2026-09-29 :
-
-- compte du nombre de Fiches techniques `ACTIVE` dans l'onglet principal ;
-- compteurs sur Références, Catalogues, Tarifs négociés, Prix facturés et Prix indicatifs ;
-- action textuelle visible « Ajouter un tarif négocié » ;
-- aide des Tarifs négociés déplacée dans un `(i)` ;
-- état vide Tarifs négociés réduit à un seul message ;
-- libellé tarifaire « Unité du prix (Kilo, Pièce, etc.) » ;
-- Prix indicatif Workspace saisissable depuis le référentiel Produits, y compris pour une Référence globale non favorite ;
-- Prix indicatif Dossier saisissable depuis Fournisseurs et prix ;
-- sources `INDICATIVE_DOSSIER` / `INDICATIVE_WORKSPACE` affichées explicitement comme estimations de dernier recours ;
-- parcours Produit ↔ Fournisseur unifié : mêmes workflows Article fournisseur / Prix indicatif depuis plusieurs points d'entrée contextuels, sans duplication métier ;
-- liste Fournisseurs : catégories commercialisées dans une colonne dédiée, sans taxonomie « univers commerciaux » inventée ;
-- drawer Produit : compteurs `Références (n)` / `Favoris (n)`, Favoris limités aux liens Workspace actifs, actions + / − par icônes et infobulles ;
-- Favoris Produit enrichis par les données M-003 accessibles : Prix indicatif Workspace, Articles fournisseur et conditionnements ;
-- filtres backend M-003 `productId` ajoutés aux listes Articles et Prix indicatifs afin d'éviter les requêtes N+1 ;
-- création d'un Article fournisseur depuis un Produit réutilise le formulaire M-003 existant avec la Référence Produit préremplie ;
-- aide métier explicitement différée dans un bloc séparé basé sur `APPLICATION_HELP_MODULES`.
-- création de Référence Produit : explications secondaires déplacées dans des `(i)` avec infobulle ;
-- enrichissement Variétés/Caractéristiques converti en session multi-ajouts sans fermeture entre deux valeurs ;
-- choix de dimension simplifié : Variété / Présentation / Pièce-découpe / Calibre-format / Couleur / Désignation de qualité directement, sans jargon « Caractéristique » intermédiaire ; `Type commercial` reste supporté par le modèle mais est masqué pour les nouveaux ajouts Workspace tant que sa définition métier n'est pas validée ;
-- états vides des selects explicités (`Aucune variété disponible` / `Aucune valeur disponible`) afin de distinguer absence de données et choix volontaire `Non renseigné` ;
-- gouvernance M-002 rendue non bloquante : `governanceStatus` distinct du lifecycle, valeurs `PROVISIONAL` utilisables immédiatement dans leur Workspace d'origine, isolation inter-Workspace, confirmation explicite avant création d'une valeur proche, puis validation/fusion/rejet côté Platform ;
-- statut de chaque ajout visible dans la session : `Disponible`, `Existe déjà` ou `À valider` ;
-- les résolutions peuvent harmoniser les dépendances opérationnelles courantes M-002/M-003/M-004 mais ne réécrivent jamais les snapshots `TechnicalSheetValidation` validés.
-
-Une correction UX ne doit pas modifier silencieusement les invariants métier ou RBAC du contrat.
-
-## 13. État d'implémentation au 2026-09-28
-
-Le bloc M-004 hors exports est maintenant présent sur :
+La PR produit existante reste :
 
 ~~~text
-feature/m004-fiches-techniques-valorisation
+PR #26
+branche = core-update/post-v1.2.1-a9d99aa
 ~~~
 
-Implémenté :
+La Core Gate #147 était verte sur l’ancien HEAD `f4919e2d363151c03a98602b90745e9db72daa3e`, avant l’intégration du Core `d3b9891...`.
 
-- modèles `TechnicalSheet`, `TechnicalSheetDraft`, `TechnicalSheetValidation` et `WorkspaceBusinessSettings` ;
-- composition Ingrédients / Économat, rendement M-002 et conversions compatibles ;
-- résolution Article / Prix via M-003, y compris ambiguïté explicite ;
-- valorisation HT/TTC, marge cible, Prix conseillé, Prix final et contrôle du plancher ;
-- détection de données tarifaires obsolètes et revalorisation obligatoire avant validation ;
-- snapshots validés immuables et historique ;
-- RBAC M-004 avec séparation édition recette / sourcing ;
-- création, mise à jour, archivage, réactivation, corbeille, restauration et purge ;
-- copie inter-Dossier sans données financières source ;
-- quota Workspace `technical_sheets`, corbeille comprise jusqu'à purge ;
-- rétention Workspace 1–90 jours et job de purge métier ;
-- migrations M-004 et scripts npm associés ;
-- frontend React/RTK Query : liste, création, éditeur, sourcing, valorisation, validation, historique, réglages, copie, corbeille et widget de capacité ;
-- tests backend ciblés, tests frontend ciblés et cinq scénarios Playwright M-004 ajoutés au dépôt, dont le parcours Produit global non favori.
+Elle ne constitue donc plus la preuve finale du lot. Le nouveau HEAD doit obtenir une nouvelle Core Gate avant toute fusion.
 
-À ce stade, **aucun résultat local n'est encore déclaré vert dans cette synthèse**. La prochaine autorité est l'exécution locale demandée à l'utilisateur, puis la Core Gate de l'unique PR.
+La validation visuelle utilisateur doit confirmer notamment :
 
-## 14. Documents synchronisés avec le contrat
+- Tableau de bord tout en haut ;
+- Dossiers / Produits / Fournisseurs immédiatement après ;
+- `Administration de l’espace` ensuite ;
+- absence de l’entrée `Fichiers` dans ce produit ;
+- `Espace de travail : Nom | badge` ;
+- libellés métier français dans Abonnement ;
+- widgets Core + widgets métier toujours présents sur le Dashboard selon leurs droits.
 
-Le lot documentaire M-004 met à jour :
+Le nom commercial de l’application n’est pas modifié tant qu’il n’a pas été explicitement validé par l’utilisateur.
 
-~~~text
-docs/m004/M-004-FINAL-CONTRACT.md
-docs/ROADMAP.md
-docs/PRODUCT-SCOPE.md
-docs/domain/STORAGE-RETENTION.md
-docs/DEBT.md
-docs/REPRISE-CURRENT.md
-~~~
-
-Contradictions historiques résolues :
-
-- ancien invariant `Prix final >= Prix conseillé` supprimé ;
-- anciens quotas séparés DRAFT / VALIDATED supprimés ;
-- ancienne notion `ses DRAFTS` supprimée au profit du périmètre Dossier + RBAC ;
-- stratégie d'arrondi personnalisable différée hors M-004 V1 ;
-- GMS-UX-002 clôturé ;
-- exports CSV/XLSX/PDF, impression et e-mail confirmés en V1 mais dans un bloc ultérieur séparé.
-
-## 15. Validation locale et QA visuelle
-
-Une exécution locale complète de :
-
-~~~text
-npm run release:check
-~~~
-
-a été confirmée entièrement verte par l’utilisateur avant les derniers ajustements UX de QA.
-
-Point Windows à conserver pour toutes les futures exécutions E2E impliquant un import ou téléversement :
-
-~~~powershell
-$env:Path += ";C:\Program Files\ClamAV"
-Get-Command clamscan
-clamscan --version
-~~~
-
-Dans cet environnement, ClamAV est installé sous Windows mais `clamscan` n’est pas nécessairement présent dans le `PATH` de la session PowerShell. Un HTTP 503 pendant l’inspection d’un fichier ne doit donc pas être interprété comme une régression applicative avant vérification de ce prérequis.
-
-La QA visuelle a ensuite conduit aux arbitrages UX suivants, en cours de stabilisation sur la même branche :
-
-- Dossiers regroupé dans la sidebar avec Compte Client, Corbeille et Paramètres ;
-- entête Compte Client compacte ;
-- paramètres de marge accessibles depuis le Dossier ;
-- politique de prix déplacée dans Paramètres des Dossiers ;
-- conservation de la Corbeille réglée directement depuis la Corbeille ;
-- capacité des Fiches présentée sur le Tableau de bord avec répartition Dossiers / Corbeille ;
-- vocabulaire utilisateur « suppression définitive » à la place de « purge » ;
-- Fiche avec brouillon ouvert non copiable ;
-- statuts visuels : Brouillon = warning, Non valorisée = alert, Archivée = archived ;
-- actions globales de la Fiche regroupées dans un conteneur dédié `Panneau de contrôle` à droite du titre ;
-- retour Fiche compacté en icône à côté du titre ;
-- badges lifecycle / brouillon / valorisation placés directement à côté du titre de la Fiche ;
-- Informations générales sorties du flux principal et déplacées dans un drawer droit accessible par une languette flottante `Infos` ;
-- bouton d’enregistrement des Informations visuellement `warning` tant que nom/description sont modifiés sans être enregistrés ;
-- commentaire de validation conservé dans le drawer et appliqué seulement lors de la validation ;
-- `Base de production` remplacé par `Indicateur de production` avec infobulle explicative ;
-- paramètres Quantité / Unité / Portion(s) / TVA de vente regroupés avec les KPI économiques dans le même conteneur sticky ;
-- KPI permanents compactés en sigles avec infobulles : `CM HT`, `CE HT`, `CF HT`, `%MC`, `PC TTC`, `PF TTC`, `%MR` ; valeur indisponible affichée `NC` dans la vue compacte ;
-- détail économique ouvrable à droite ; valorisation/revalorisation intégrée au même cockpit ;
-- Composition présentée dans un seul tableau vertical sans scroll horizontal, avec groupes Ingrédients / Économat visuellement séparés ;
-- colonnes compactes : Produit / Qté / U / PUHT / CMU HT / %TR / Note / Actions ;
-- aide de saisie Produit affichée une seule fois au niveau du groupe Ingrédients ;
-- ajout Produit intégré directement dans chaque groupe avec remise à zéro du champ après sélection ;
-- Produit existant remplaçable par recherche prédictive ; remplacement = nouvelle ligne logique conservant type/quantité/note mais réinitialisant sourcing et valorisation ;
-- Article/Fournisseur retiré des colonnes permanentes et exposé dans le détail Produit ; action Approvisionnement dédiée pour consulter/choisir l’Article fournisseur ;
-- sources Produit `Tous les produits` / `Favoris` réduites à des actions icônes ;
-- Favori signalé dans les suggestions par une étoile seule, couleur warning/gold, avec libellé accessible/infobulle ;
-- autosave du brouillon : saisies textuelles temporisées, changements structurels immédiats, une seule écriture concurrente et réutilisation stricte de la révision serveur suivante ;
-- état d'enregistrement visible dans la zone sticky et possibilité de réessayer après échec ;
-- aucune valorisation automatique déclenchée par l'autosave ;
-- sources Produit et Panneau de contrôle déplacés dans la zone sticky des Indicateurs de production ;
-- `Indicateur de production` renommé `Indicateurs de production` ;
-- Composition densifiée : `INGRÉDIENTS` remplace le header Produit, aide textuelle supprimée, séparation Économat renforcée ;
-- actions de ligne regroupées sous un menu unique `…` ;
-- alignement centré des colonnes quantitatives/économiques et colonne Actions réduite ;
-- Historique déplacé dans le drawer Informations sous un onglet dédié ;
-- fondu sous la zone sticky renforcé pour matérialiser le passage de la Composition derrière les KPI ;
-- état d'autosave rendu par texte/icône sémantique sans badge : success = enregistré, warning = enregistrement en cours, alert = non enregistré ;
-- zone sticky M-004 positionnée sous la topbar Workspace via le token Core `--workspace-topbar-height`, avec fallback temporaire compatible v1.2.1 ;
-- colonne `%CM` affichée dans Composition après `CMU HT`, avec infobulle : contribution financière de la ligne Ingrédient au Coût matière HT total ;
-- `%CM = lineCostHt / materialCostHt × 100`, calculé uniquement après valorisation complète ; Économat et coût matière total nul affichent `—` ;
-- l'ancien pourcentage physique de composition est supprimé du contrat, des modèles, snapshots et API M-004 ;
-- aucun moteur de conversion physique `COUNT / VOLUME / MASS`, densité ou poids/unité n'est conservé comme dette : ce besoin est abandonné pour M-004.
-
-Ces ajustements modifient le frontend et, pour la règle de copie d’un brouillon ainsi que l'extension Prix indicatif M-003, le contrat backend. Ils doivent donc être retestés avant la PR finale.
-
-Extension M-003 validée pendant la QA M-004 :
-
-~~~text
-sources commerciales applicables
-→ priorité conservée
-
-à défaut
-→ Prix indicatif Dossier
-→ sinon Prix indicatif Workspace
-→ sinon aucun prix
-~~~
-
-Le Prix indicatif est une estimation interne historisée et explicitement identifiée. Il peut exister sans Article fournisseur. Il ne devient jamais silencieusement un Tarif fournisseur, un Tarif négocié ou un Prix facturé.
-
-Dette fonctionnelle identifiée pendant cette QA :
-
-- `GMS-TAX-001 — TVA Produit / fiscalité d’achat` est enregistrée dans `docs/DEBT.md` ;
-- M-004 conserve uniquement la TVA de vente de la Fiche pour le passage HT → TTC ;
-- M-002 ne porte actuellement aucun taux de TVA sur `ProductVariant` et M-003 travaille sur les prix d’achat HT ;
-- cette dette ne bloque pas M-004 mais devra être cadrée avant tout besoin de comptabilité d’achat, TVA déductible, facture ou export fiscal ;
-- aucune TVA Produit ne doit être ajoutée opportunément à M-002/M-003 sans contrat dédié.
-
-## 16. Prochaine action
-
-Le code du bloc M-004 hors exports est prêt pour validation locale.
-
-Ordre restant :
-
-~~~text
-pull de feature/m004-fiches-techniques-valorisation
-→ npm run migration:m003-indicative-pricing
-   (nouveaux indexes + permissions Prix indicatif, y compris si M-003 avait déjà été migré)
-→ migrations M-004 sur la base locale de développement
-→ tests ciblés backend/frontend
-→ E2E M-004
-→ release:check complet
-→ QA visuelle utilisateur
-→ corrections éventuelles sur la même branche
-→ une seule PR
-→ Core Gate PR
-→ un seul merge
-→ Core Gate post-merge
-→ mise à jour finale de la reprise
-~~~
-
-Ne pas ouvrir la PR finale tant que les tests locaux et la QA visuelle demandés ne sont pas validés.
-
-Principe directeur :
-
-~~~text
-Core = fondations génériques
-Produit = métier
-~~~

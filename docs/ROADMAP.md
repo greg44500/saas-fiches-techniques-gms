@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001/M-002/M-003 clôturés — M-004 hors exports implémenté sur branche ; validation locale/QA/Core Gate en attente  
-**Dernière mise à jour :** 2026-09-28
+**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; intégration Core post-tag v1.2.1 en cours  
+**Dernière mise à jour :** 2026-09-30
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.2.1` intégré au commit `d90d8f1e6034cbbf4f63de2be7312eae69b1d698` ;
+- Core `v1.2.1` intégré jusqu’au commit post-tag `d3b9891bc2a32705a0a99b2ed62bed60caf653ca` ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;
@@ -175,7 +175,7 @@ Le lot UX M-002 `GMS-UX-002` a été traité et fusionné avant l'ouverture de M
 
 ### 2.4 Fiches techniques
 
-**État : IMPLÉMENTÉ SUR BRANCHE — validation locale, QA visuelle et Core Gate en attente**
+**État : CLÔTURÉ HORS EXPORTS — PR #25 fusionnée ; Core Gates #145 et #146 vertes**
 
 Source canonique :
 
@@ -240,16 +240,20 @@ WorkspaceBusinessSettings.trashRetentionDays
 → aucun changement Core
 ~~~
 
-Checkpoint d'implémentation du 2026-09-28 :
+Clôture technique confirmée le 2026-09-30 :
 
 - backend M-004, migrations et job de purge implémentés ;
 - frontend M-004 implémenté avec RTK Query et routes Workspace/Dossier ;
 - séparation RBAC `technical-sheet:update` / `technical-sheet:sourcing:manage` implémentée ;
 - quota `technical_sheets` et capacité Dashboard implémentés ;
-- tests backend/frontend ciblés et quatre parcours Playwright M-004 ajoutés ;
-- aucun résultat de test n'est encore déclaré vert avant l'exécution locale ;
-- la PR unique et son Core Gate restent à venir après QA locale.
+- corpus Playwright final : 22/22 scénarios verts localement, dont les cinq parcours critiques M-004 ;
+- lint, tests globaux et build confirmés verts localement ;
+- PR #25 fusionnée dans `main` ;
+- Core Gate PR #145 : success ;
+- merge : `588612ba987c4a91951d4939231f9f44881c50d8` ;
+- Core Gate post-merge #146 : success.
 
+Les exports et la diffusion restent un bloc V1 séparé et ne sont pas implicitement ouverts par cette clôture.
 
 
 ### 2.5 Fiches process

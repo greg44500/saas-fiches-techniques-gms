@@ -5,6 +5,7 @@ import {
   formatAccessReason,
   formatBillingInterval,
   formatFeatureAvailability,
+  formatFeatureLabel,
   formatLimitLabel,
   formatPlanLimitValue,
   formatSubscriptionKind,
@@ -23,6 +24,26 @@ describe('subscription formatters', () => {
     );
     expect(formatLimitLabel({ key: 'storage_bytes', usage: 1200, limit: 1000 })).toBe('Stockage');
     expect(formatLimitLabel('future_metric')).toBe('future_metric');
+  });
+
+  it('privilégie les métadonnées métier fournies par le backend', () => {
+    const featurePresentations = {
+      product_reference_access: {
+        label: 'Accès au référentiel Produits',
+      },
+    };
+    const limitPresentations = {
+      technical_sheets: {
+        label: 'Fiches techniques',
+      },
+    };
+
+    expect(
+      formatFeatureLabel('product_reference_access', featurePresentations),
+    ).toBe('Accès au référentiel Produits');
+    expect(
+      formatLimitLabel('technical_sheets', limitPresentations),
+    ).toBe('Fiches techniques');
   });
 
   it('formate la disponibilité effective sans inventer une échéance', () => {

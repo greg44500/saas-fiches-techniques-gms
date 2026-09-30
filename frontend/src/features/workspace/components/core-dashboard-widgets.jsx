@@ -12,37 +12,10 @@ import { DashboardSubscriptionSummary } from '@/features/workspace/components/da
 import { DashboardSummaryCard } from '@/features/workspace/components/dashboard-summary-card';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { isInitialQueryLoading } from '@/features/workspace/lib/dashboard-query';
-import {
-  formatDashboardCount,
-  formatWorkspaceStatus,
-} from '@/features/workspace/lib/workspace-presentation';
+import { formatDashboardCount } from '@/features/workspace/lib/workspace-presentation';
 
 const SUMMARY_QUERY_LIMIT = 1;
 const RECENT_ACTIVITY_LIMIT = 5;
-
-function WorkspaceStatusDashboardWidget() {
-  const { workspace } = useWorkspaceContext();
-
-  return (
-    <DashboardSummaryCard
-      description="État courant du workspace."
-      label="Statut du workspace"
-      value={formatWorkspaceStatus(workspace.status)}
-    />
-  );
-}
-
-function WorkspaceRoleDashboardWidget() {
-  const { membership } = useWorkspaceContext();
-
-  return (
-    <DashboardSummaryCard
-      description="Rôle effectif dans ce workspace."
-      label="Votre rôle"
-      value={membership.role?.name ?? 'Non renseigné'}
-    />
-  );
-}
 
 function MembersDashboardWidget() {
   const { workspace } = useWorkspaceContext();
@@ -129,6 +102,4 @@ export {
   PendingInvitationsDashboardWidget,
   RecentActivityDashboardWidget,
   SubscriptionDashboardWidget,
-  WorkspaceRoleDashboardWidget,
-  WorkspaceStatusDashboardWidget,
 };
