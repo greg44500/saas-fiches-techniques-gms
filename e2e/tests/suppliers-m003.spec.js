@@ -13,6 +13,9 @@ import {
   provisionSupplierOwnerWorkspace,
   provisionSupplierPricingWorkspace,
 } from '../support/supplier-fixtures.js';
+import {
+  expectVisibleToast,
+} from '../support/toast.js';
 
 async function createSupplierFromUi(page, supplierName) {
   await page.getByRole('button', {
@@ -25,11 +28,10 @@ async function createSupplierFromUi(page, supplierName) {
     name: 'Enregistrer',
   }).click();
 
-  await expect(
-    page.getByText('Fournisseur enregistré', {
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Fournisseur enregistré',
+  );
 }
 
 async function importCatalogFromUi(page, {
@@ -47,7 +49,7 @@ async function importCatalogFromUi(page, {
 
   const dialog = page.getByRole('dialog');
 
-  await dialog.getByLabel('Fichier').setInputFiles({
+  await dialog.getByLabel('Fichier', { exact: true }).setInputFiles({
     name: 'catalogue.csv',
     mimeType: 'text/csv',
     buffer: Buffer.from(csv, 'utf8'),
@@ -100,11 +102,10 @@ async function importCatalogFromUi(page, {
     name: 'Confirmer l’import',
   }).click();
 
-  await expect(
-    page.getByText('Import catalogue terminé', {
-      exact: true,
-    }).last(),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Import catalogue terminé',
+  );
 }
 
 async function createNegotiatedPriceFromUi(page, {
@@ -134,11 +135,10 @@ async function createNegotiatedPriceFromUi(page, {
     name: 'Enregistrer',
   }).click();
 
-  await expect(
-    page.getByText('Prix enregistré', {
-      exact: true,
-    }).last(),
-  ).toBeVisible();
+  await expectVisibleToast(
+    page,
+    'Prix enregistré',
+  );
 }
 
 async function resolveArticlePrice(page, {
@@ -146,7 +146,7 @@ async function resolveArticlePrice(page, {
   expectedPrice,
 }) {
   await page.getByRole('combobox', {
-    name: 'Article pour le Prix applicable',
+    name: 'Article fournisseur à vérifier',
   }).click();
   await page.getByRole('option', {
     name: articleLabel,
@@ -158,7 +158,7 @@ async function resolveArticlePrice(page, {
     }),
   ).toBeVisible();
   await expect(
-    page.getByText(/Source : NEGOTIATED_PRICE/),
+    page.getByText('Source : Tarif négocié', { exact: true }),
   ).toBeVisible();
 }
 
@@ -272,7 +272,7 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
   });
   await resolveArticlePrice(page, {
     articleLabel,
-    expectedPrice: '10,000 EUR / KG',
+    expectedPrice: '10,000 / KG',
   });
 
   await page.goto(
@@ -285,7 +285,7 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
   });
   await resolveArticlePrice(page, {
     articleLabel,
-    expectedPrice: '20,000 EUR / KG',
+    expectedPrice: '20,000 / KG',
   });
 
   await page.goto(
@@ -293,7 +293,7 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
   );
   await resolveArticlePrice(page, {
     articleLabel,
-    expectedPrice: '10,000 EUR / KG',
+    expectedPrice: '10,000 / KG',
   });
 });
 

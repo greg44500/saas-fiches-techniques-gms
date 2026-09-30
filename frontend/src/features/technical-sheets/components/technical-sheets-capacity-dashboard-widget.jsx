@@ -47,7 +47,11 @@ function TechnicalSheetsCapacityDashboardWidget() {
     : null;
 
   return (
-    <Card className="h-full shadow-sm">
+    <Card
+      aria-label="Capacité des Fiches techniques"
+      className="h-full shadow-sm"
+      role="region"
+    >
       <CardHeader>
         <div className="flex items-center gap-1">
           <CardTitle as="h2">Fiches techniques</CardTitle>

@@ -64,7 +64,10 @@ async function composeTechnicalSheet(page, {
   productReferenceName,
 }) {
   await page
-    .getByLabel('Quantité')
+    .getByRole('textbox', {
+      name: 'Quantité',
+      exact: true,
+    })
     .fill('10');
 
   await page
@@ -121,6 +124,44 @@ async function composeTechnicalSheet(page, {
 
   await expect(autosaveStatus).toContainText('Enregistrement…');
   await expect(autosaveStatus).toContainText('Enregistré');
+}
+
+async function expectTechnicalSheetCapacity(page, {
+  dashboardUrl,
+  expected,
+  inDossiers,
+  inTrash,
+}) {
+  await page.goto(dashboardUrl);
+
+  const capacityRegion = page.getByRole('region', {
+    name: 'Capacité des Fiches techniques',
+  });
+
+  await expect(capacityRegion).toBeVisible();
+  await expect(
+    capacityRegion.getByText(expected, { exact: true }),
+  ).toBeVisible();
+
+  if (Number.isInteger(inDossiers)) {
+    const dossierMetric = capacityRegion
+      .getByText('Dans les Dossiers', { exact: true })
+      .locator('..');
+    await expect(
+      dossierMetric.getByText(String(inDossiers), { exact: true }),
+    ).toBeVisible();
+  }
+
+  if (Number.isInteger(inTrash)) {
+    const trashMetric = capacityRegion
+      .getByText('Dans la Corbeille', { exact: true })
+      .locator('..');
+    await expect(
+      trashMetric.getByText(String(inTrash), { exact: true }),
+    ).toBeVisible();
+  }
+
+  return capacityRegion;
 }
 
 async function openInformationDrawer(page) {
@@ -502,6 +543,16 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
         context.dossierATechnicalSheetsUrl,
     });
 
+  await composeTechnicalSheet(page, {
+    productReferenceName:
+      context.productReferenceName,
+  });
+
+  await valuateAndValidate(page, {
+    comment:
+      'Validation avant contrôle du quota',
+  });
+
   await openInformationDrawer(page);
 
   await page
@@ -524,16 +575,16 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
     'Fiche technique mise à jour',
   );
 
+  await expectTechnicalSheetCapacity(page, {
+    dashboardUrl: context.dashboardUrl,
+    expected: '1 / 1',
+    inDossiers: 1,
+    inTrash: 0,
+  });
+
   await page.goto(
     context.dossierATechnicalSheetsUrl,
   );
-
-  await expect(
-    page.getByText(
-      '1 / 1',
-      { exact: true },
-    ),
-  ).toBeVisible();
 
   await expect(
     page.getByRole('button', {
@@ -544,12 +595,12 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
 
   await page.goto(detailUrl);
 
-  await page
-    .getByRole('button', {
-      name:
-        'Copier vers un autre Dossier',
-    })
-    .click();
+  const copyButton = page.getByRole('button', {
+    name:
+      'Copier vers un autre Dossier',
+  });
+  await expect(copyButton).toBeEnabled();
+  await copyButton.click();
 
   const dialog =
     page.getByRole('dialog');
@@ -600,7 +651,8 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
   await page
     .getByRole('button', {
       name:
-        'Mettre dans la corbeille',
+        'Mettre la Fiche dans la Corbeille',
+      exact: true,
     })
     .click();
 
@@ -619,18 +671,19 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
     context.dossierATechnicalSheetsUrl,
   );
 
-  await page
+  let capacityRegion =
+    await expectTechnicalSheetCapacity(page, {
+      dashboardUrl: context.dashboardUrl,
+      expected: '1 / 10',
+      inDossiers: 0,
+      inTrash: 1,
+    });
+
+  await capacityRegion
     .getByRole('link', {
-      name: 'Corbeille',
+      name: 'Voir la Corbeille',
     })
     .click();
-
-  await expect(
-    page.getByText(
-      '1 / 10',
-      { exact: true },
-    ),
-  ).toBeVisible();
 
   await page
     .getByRole('button', {
@@ -644,12 +697,20 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
     'Fiche technique restaurée',
   );
 
+  await expectTechnicalSheetCapacity(page, {
+    dashboardUrl: context.dashboardUrl,
+    expected: '1 / 10',
+    inDossiers: 1,
+    inTrash: 0,
+  });
+
   await page.goto(detailUrl);
 
   await page
     .getByRole('button', {
       name:
-        'Mettre dans la corbeille',
+        'Mettre la Fiche dans la Corbeille',
+      exact: true,
     })
     .click();
 
@@ -664,18 +725,23 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
     })
     .click();
 
-  await page
+  await expect(page).toHaveURL(
+    context.dossierATechnicalSheetsUrl,
+  );
+
+  capacityRegion =
+    await expectTechnicalSheetCapacity(page, {
+      dashboardUrl: context.dashboardUrl,
+      expected: '1 / 10',
+      inDossiers: 0,
+      inTrash: 1,
+    });
+
+  await capacityRegion
     .getByRole('link', {
-      name: 'Corbeille',
+      name: 'Voir la Corbeille',
     })
     .click();
-
-  await expect(
-    page.getByText(
-      '1 / 10',
-      { exact: true },
-    ),
-  ).toBeVisible();
 
   await page
     .getByRole('button', {
@@ -699,10 +765,10 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
     'Fiche technique supprimée définitivement',
   );
 
-  await expect(
-    page.getByText(
-      '0 / 10',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  await expectTechnicalSheetCapacity(page, {
+    dashboardUrl: context.dashboardUrl,
+    expected: '0 / 10',
+    inDossiers: 0,
+    inTrash: 0,
+  });
 });

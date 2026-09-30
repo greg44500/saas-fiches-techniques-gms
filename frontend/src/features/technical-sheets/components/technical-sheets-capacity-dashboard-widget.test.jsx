@@ -84,6 +84,11 @@ describe('TechnicalSheetsCapacityDashboardWidget', () => {
   it('répartit la capacité entre Dossiers et Corbeille pour le propriétaire', () => {
     renderWidget();
 
+    expect(
+      screen.getByRole('region', {
+        name: 'Capacité des Fiches techniques',
+      }),
+    ).toBeInTheDocument();
     expect(mocks.capacityQuery).toHaveBeenCalledWith('workspace-1');
     expect(mocks.trashQuery).toHaveBeenCalledWith(
       {
