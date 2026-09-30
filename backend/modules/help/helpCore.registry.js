@@ -95,6 +95,7 @@ const buildEntry = ({
     keywords,
     questions,
     permissions = [],
+    applicationGlobalPermissions = [],
     ownerOnly = false,
     features = [],
     whoCanPerform,
@@ -117,6 +118,7 @@ const buildEntry = ({
     },
     audience: {
         permissions,
+        applicationGlobalPermissions,
         ownerOnly,
     },
     requirements: {
@@ -178,6 +180,32 @@ const CORE_HELP_ENTRIES = Object.freeze([
             'Un changement de mot de passe peut révoquer les sessions existantes selon le workflow de sécurité du Core.',
         ],
         order: 20,
+    }),
+    buildEntry({
+        id: 'workspace.context.read',
+        context: HELP_CONTEXT.WORKSPACE,
+        categoryId: CORE_HELP_CATEGORY.WORKSPACE_TEAM,
+        title: 'Comprendre le contexte de l’espace de travail',
+        summary: 'Repérer le statut de l’espace, votre rôle et, si vous y êtes autorisé, le plan effectif depuis le shell.',
+        keywords: ['espace de travail', 'statut', 'rôle', 'plan', 'navigation'],
+        questions: [
+            'Où voir le statut de mon espace de travail ?',
+            'Où voir mon rôle et mon plan ?',
+            'À quoi sert Administration de l’espace ?',
+        ],
+        whoCanPerform: 'Tout membre ayant accès à l’espace de travail.',
+        steps: [
+            'Repérez le statut de l’espace à côté du sélecteur dans la barre supérieure.',
+            'Ouvrez le menu du compte utilisateur pour consulter votre rôle dans cet espace.',
+            'Si vous disposez du droit de lecture de l’abonnement, consultez également le plan effectif affiché dans votre identité utilisateur.',
+            'Utilisez la section « Administration de l’espace » de la navigation latérale pour accéder aux fonctions Core disponibles : Tableau de bord, Fichiers, Membres, Rôles et permissions, Paramètres, Abonnement et Activité.',
+        ],
+        outcome: 'Les informations structurelles de l’espace restent disponibles dans le shell sans être dupliquées comme indicateurs du tableau de bord.',
+        edgeCases: [
+            'Le plan n’est pas affiché lorsque votre rôle ne possède pas le droit de lecture de l’abonnement.',
+            'Les entrées d’administration invisibles restent soumises aux permissions et fonctionnalités effectives de l’espace.',
+        ],
+        order: 90,
     }),
     buildEntry({
         id: 'workspace.settings.update',
@@ -403,7 +431,7 @@ const CORE_HELP_ENTRIES = Object.freeze([
             'Le workspace doit disposer de quota suffisant.',
         ],
         steps: [
-            'Ouvrez Ressources puis Fichiers.',
+            'Ouvrez Fichiers dans la section « Administration de l’espace ».',
             'Choisissez le fichier à téléverser.',
             'Validez le téléversement et attendez le résultat du contrôle de sécurité.',
         ],
@@ -430,7 +458,7 @@ const CORE_HELP_ENTRIES = Object.freeze([
             'Le fichier doit encore être présent dans la corbeille et son contenu physique doit exister.',
         ],
         steps: [
-            'Ouvrez Ressources puis Fichiers et sélectionnez l’onglet Corbeille.',
+            'Ouvrez Fichiers dans la section « Administration de l’espace », puis accédez à la Corbeille.',
             'Repérez le fichier à restaurer.',
             'Lancez la restauration.',
         ],
@@ -760,6 +788,32 @@ const CORE_HELP_ENTRIES = Object.freeze([
         ],
         outcome: 'Une invitation commerciale temporaire est créée sans accorder de rôle dans l’équipe Platform.',
         order: 530,
+    }),
+    buildEntry({
+        id: 'platform.authorization.scopes',
+        context: HELP_CONTEXT.PLATFORM,
+        categoryId: CORE_HELP_CATEGORY.PLATFORM_ACCESS_OVERRIDES,
+        title: 'Distinguer les droits Platform et les droits globaux applicatifs',
+        summary: 'Comprendre pourquoi l’administration de la plateforme et la gouvernance globale d’un produit utilisent deux autorités indépendantes.',
+        keywords: ['platform', 'application global', 'permissions', 'gouvernance', 'métier'],
+        questions: [
+            'Quelle différence entre un droit Platform et un droit global applicatif ?',
+            'Un Super administrateur Platform a-t-il automatiquement les droits métier globaux ?',
+            'Comment l’aide métier globale est-elle filtrée ?',
+        ],
+        whoCanPerform: 'Tout membre Platform actif.',
+        steps: [
+            'Les permissions Platform gouvernent les fonctions administratives génériques du Core, par exemple les utilisateurs, les espaces de travail, les plans, les abonnements et l’équipe interne.',
+            'Une application dérivée peut déclarer une autorité Application Global distincte pour ses fonctions globales propres au produit.',
+            'Un rôle Platform, y compris Fondateur ou Super administrateur, ne reçoit aucun droit Application Global implicitement.',
+            'Les modules dérivés peuvent ajouter leurs procédures au même centre d’aide ; une procédure globale applicative n’est visible que si ses permissions Application Global déclarées sont réellement accordées.',
+        ],
+        outcome: 'Les responsabilités d’administration générique et de gouvernance globale du produit restent lisibles sans fusionner leurs permissions.',
+        edgeCases: [
+            'Une entrée de navigation peut être visible grâce à une permission Application Global sans transformer cette permission en permission Platform.',
+            'La sécurité de la route métier reste indépendante de la visibilité de la navigation ou de l’aide.',
+        ],
+        order: 590,
     }),
     buildEntry({
         id: 'platform.entitlement_overrides.create',
