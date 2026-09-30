@@ -49,7 +49,8 @@ describe('M-003 supplier catalog models', () => {
         const categoryPath = Supplier.schema.path('productCategories');
 
         expect(categoryPath.instance).toBe('Array');
-        expect(categoryPath.caster.options.ref).toBe('ProductCategory');
+        expect(categoryPath.embeddedSchemaType.options.ref)
+            .toBe('ProductCategory');
     });
 
     it('utilise Decimal128 pour les prix source et normalisés', () => {

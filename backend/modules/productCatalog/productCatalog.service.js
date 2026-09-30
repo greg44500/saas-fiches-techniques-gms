@@ -590,7 +590,7 @@ const listProductSearch = async ({
         ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
     })
         .select(
-            '_id name normalizedName aliases category status searchKeys createdAt updatedAt',
+            '_id name normalizedName aliases category status governanceStatus searchKeys createdAt updatedAt',
         )
         .populate('category')
         .sort({ normalizedName: 1, _id: 1 })

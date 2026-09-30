@@ -137,8 +137,12 @@ describe('M-002 product import service', () => {
 
         expect(committed.results[0].status).toBe('PENDING_REVIEW');
         expect(
-            await CanonicalProduct.countDocuments({ name: 'Panais' }),
-        ).toBe(0);
+            await CanonicalProduct.countDocuments({
+                name: 'Panais',
+                governanceStatus: 'PROVISIONAL',
+                contributedFromWorkspace: ownerContext.workspace._id,
+            }),
+        ).toBe(1);
         expect(
             await ReferenceContribution.countDocuments({
                 workspace: ownerContext.workspace._id,

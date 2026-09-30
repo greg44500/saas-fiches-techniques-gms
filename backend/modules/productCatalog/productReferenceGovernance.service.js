@@ -11,7 +11,7 @@ const buildWorkspaceGovernanceVisibilityFilter = (workspaceId) => {
         };
     }
 
-    return mongoose.trusted({
+    return {
         $or: [
             {
                 governanceStatus:
@@ -23,16 +23,16 @@ const buildWorkspaceGovernanceVisibilityFilter = (workspaceId) => {
                 contributedFromWorkspace: workspaceId,
             },
         ],
-    });
+    };
 };
 
-const buildPlatformGovernanceVisibilityFilter = () => mongoose.trusted({
-    governanceStatus: {
+const buildPlatformGovernanceVisibilityFilter = () => ({
+    governanceStatus: mongoose.trusted({
         $in: [
             PRODUCT_GOVERNANCE_STATUS.APPROVED,
             PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
         ],
-    },
+    }),
 });
 
 const buildDuplicateGovernanceVisibilityFilter = (workspaceId) => {
