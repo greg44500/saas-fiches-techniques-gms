@@ -77,16 +77,16 @@ const serializeReferenceCandidate = (type, reference) => ({
         ?? PRODUCT_GOVERNANCE_STATUS.APPROVED,
 });
 
+const serializeReferenceId = (reference) => (
+    reference?._id?.toString?.()
+    ?? reference?.toString?.()
+    ?? null
+);
+
 const serializeReferenceContribution = (contribution) => {
-    const workspaceId = contribution.workspace?._id
-        ? contribution.workspace._id.toString()
-        : contribution.workspace.toString();
-    const authorId = contribution.author?._id
-        ? contribution.author._id.toString()
-        : contribution.author.toString();
-    const reviewerId = contribution.reviewer?._id
-        ? contribution.reviewer._id.toString()
-        : contribution.reviewer?.toString?.() ?? null;
+    const workspaceId = serializeReferenceId(contribution.workspace);
+    const authorId = serializeReferenceId(contribution.author);
+    const reviewerId = serializeReferenceId(contribution.reviewer);
 
     return {
         id: contribution._id.toString(),

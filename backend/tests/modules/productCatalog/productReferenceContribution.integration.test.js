@@ -1,5 +1,7 @@
 import '../../setup.js';
 
+import mongoose from 'mongoose';
+
 import {
     beforeEach,
     describe,
@@ -20,6 +22,7 @@ import {
     ReferenceContribution,
 } from '../../../modules/productCatalog/referenceContribution.model.js';
 import {
+    listReferenceContributions,
     reviewReferenceContribution,
     submitReferenceContribution,
 } from '../../../modules/productCatalog/productReferenceContribution.service.js';
@@ -309,5 +312,29 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
                 governanceStatus: 'RESOLVED',
                 identityActive: false,
             });
+    });
+
+    it('liste les contributions même si le Workspace ou l’auteur référencé n’existe plus', async () => {
+        await ReferenceContribution.create({
+            type: 'CANONICAL_PRODUCT',
+            workspace: new mongoose.Types.ObjectId(),
+            author: new mongoose.Types.ObjectId(),
+            proposedValue: 'Produit orphelin',
+            normalizedValue: 'produit orphelin',
+            classification: 'PROVISIONAL',
+        });
+
+        const result = await listReferenceContributions({});
+
+        expect(result.pagination.total).toBe(1);
+        expect(result.contributions).toEqual([
+            expect.objectContaining({
+                proposedValue: 'Produit orphelin',
+                workspaceId: null,
+                workspace: null,
+                authorId: null,
+                author: null,
+            }),
+        ]);
     });
 });

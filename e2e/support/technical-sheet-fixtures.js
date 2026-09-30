@@ -84,18 +84,34 @@ async function provisionTechnicalSheetWorkspace({
       { runValidators: true },
     );
 
-    await EntitlementOverride.create({
-      workspace: workspace._id,
-      targetType: 'limit',
-      metricKey: 'technical_sheets',
-      limitValue: technicalSheetLimit,
-      source: 'support',
-      startsAt: new Date(Date.now() - 1_000),
-      reason:
-        'E2E M-004 technical sheet capacity fixture',
-      grantedBy: ownerId,
-      updatedBy: ownerId,
-    });
+    const startsAt = new Date(Date.now() - 1_000);
+
+    await EntitlementOverride.create([
+      {
+        workspace: workspace._id,
+        targetType: 'feature',
+        featureKey: 'product_reference_access',
+        featureEnabled: true,
+        source: 'support',
+        startsAt,
+        reason:
+          'E2E M-004 product reference access fixture',
+        grantedBy: ownerId,
+        updatedBy: ownerId,
+      },
+      {
+        workspace: workspace._id,
+        targetType: 'limit',
+        metricKey: 'technical_sheets',
+        limitValue: technicalSheetLimit,
+        source: 'support',
+        startsAt,
+        reason:
+          'E2E M-004 technical sheet capacity fixture',
+        grantedBy: ownerId,
+        updatedBy: ownerId,
+      },
+    ]);
 
     await createNegotiatedPrice({
       workspaceId: workspace._id,
