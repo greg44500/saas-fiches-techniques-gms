@@ -72,7 +72,6 @@ function ProductDimensionContributionDialog({
   const cancelRef = useRef(null);
   const valueRef = useRef(null);
   const isGlobal = mode === 'global';
-  const characteristicKinds = metadata?.productCharacteristicKinds ?? [];
   const [selectedType, setSelectedType] = useState(VARIETY);
   const [value, setValue] = useState('');
   const [formError, setFormError] = useState('');
@@ -86,7 +85,7 @@ function ProductDimensionContributionDialog({
 
   const typeItems = useMemo(() => [
     { value: VARIETY, label: 'Variété' },
-    ...characteristicKinds
+    ...(metadata?.productCharacteristicKinds ?? [])
       .filter((kind) => (
         isGlobal || kind.value !== 'COMMERCIAL_TYPE'
       ))
@@ -94,7 +93,7 @@ function ProductDimensionContributionDialog({
         value: CHARACTERISTIC_PREFIX + kind.value,
         label: kind.label,
       })),
-  ], [characteristicKinds, isGlobal]);
+  ], [isGlobal, metadata?.productCharacteristicKinds]);
 
   useEffect(() => {
     if (!open) return;
@@ -234,7 +233,7 @@ function ProductDimensionContributionDialog({
     }
   }
 
-  async function useCandidate(candidate) {
+  function selectCandidate(candidate) {
     const result = {
       classification: 'EXISTING',
       existingReference: candidate,
@@ -368,7 +367,7 @@ function ProductDimensionContributionDialog({
                     <Button
                       disabled={pending}
                       key={candidate.id}
-                      onClick={() => useCandidate(candidate)}
+                      onClick={() => selectCandidate(candidate)}
                       type="button"
                       variant="outline"
                     >

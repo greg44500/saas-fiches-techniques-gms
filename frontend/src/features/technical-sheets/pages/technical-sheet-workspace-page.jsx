@@ -254,7 +254,16 @@ function TechnicalSheetWorkspacePage() {
   const [productScope, setProductScope] = useState(PRODUCT_SOURCE.REFERENCE);
   const [sourcingPendingCount, setSourcingPendingCount] = useState(0);
 
-  const autosave = useTechnicalSheetDraftAutosave({
+  const {
+    blockedReason: autosaveBlockedReason,
+    flush: flushAutosave,
+    hasUnsavedChanges: autosaveHasUnsavedChanges,
+    isSaving: autosaveIsSaving,
+    queue: queueAutosave,
+    reset: resetAutosave,
+    retry: retryAutosave,
+    status: autosaveStatus,
+  } = useTechnicalSheetDraftAutosave({
     buildRequest: (form, revision) => buildDraftSaveRequest({
       workspaceId: workspace.id,
       dossierId,
@@ -319,11 +328,11 @@ function TechnicalSheetWorkspacePage() {
     setIdentityFormRevision(null);
     setInformationOpen(false);
     setProductScope(PRODUCT_SOURCE.REFERENCE);
-    autosave.reset(null);
-  }, [autosave.reset, technicalSheetId]);
+    resetAutosave(null);
+  }, [resetAutosave, technicalSheetId]);
 
   useEffect(() => {
-    if (!draft || draftDirty || autosave.hasUnsavedChanges) return;
+    if (!draft || draftDirty || autosaveHasUnsavedChanges) return;
 
     if (
       draftFormRevision !== null
@@ -336,10 +345,10 @@ function TechnicalSheetWorkspacePage() {
     draftFormRef.current = nextForm;
     setDraftForm(nextForm);
     setDraftFormRevision(draft.revision);
-    autosave.reset(draft.revision);
+    resetAutosave(draft.revision);
   }, [
-    autosave.hasUnsavedChanges,
-    autosave.reset,
+    autosaveHasUnsavedChanges,
+    resetAutosave,
     draft,
     draftDirty,
     draftFormRevision,
@@ -404,7 +413,7 @@ function TechnicalSheetWorkspacePage() {
   const draftSynchronizing = sourcingPending;
   const draftServerActionDisabled = (
     draftDirty
-    || autosave.isSaving
+    || autosaveIsSaving
     || draftFormRevision === null
   );
 
@@ -423,7 +432,7 @@ function TechnicalSheetWorkspacePage() {
     draftFormRef.current = next;
     setDraftForm(next);
     setDraftDirty(true);
-    autosave.queue(next, { immediate });
+    queueAutosave(next, { immediate });
   }
 
   function notifyError(error, fallback) {
@@ -515,7 +524,7 @@ function TechnicalSheetWorkspacePage() {
       setValidationComment('');
       setDraftDirty(false);
       setDraftFormRevision(null);
-      autosave.reset(null);
+      resetAutosave(null);
       toast({
         title: 'Fiche technique validée',
         description: 'Un nouvel état historique immuable a été créé.',
@@ -696,9 +705,9 @@ function TechnicalSheetWorkspacePage() {
                     )}
                     {canUpdate && (
                       <TechnicalSheetAutosaveStatus
-                        blockedReason={autosave.blockedReason}
-                        onRetry={autosave.retry}
-                        status={autosave.status}
+                        blockedReason={autosaveBlockedReason}
+                        onRetry={retryAutosave}
+                        status={autosaveStatus}
                       />
                     )}
                     <TechnicalSheetControlPanel
@@ -734,7 +743,7 @@ function TechnicalSheetWorkspacePage() {
                       disabled={!canUpdate || draftSynchronizing}
                       id="technical-sheet-production-quantity"
                       inputMode="decimal"
-                      onBlur={autosave.flush}
+                      onBlur={flushAutosave}
                       onChange={(event) => {
                         updateDraftForm((current) => ({
                           ...current,
@@ -783,7 +792,7 @@ function TechnicalSheetWorkspacePage() {
                       disabled={!canUpdate || draftSynchronizing}
                       id="technical-sheet-portions"
                       inputMode="decimal"
-                      onBlur={autosave.flush}
+                      onBlur={flushAutosave}
                       onChange={(event) => {
                         updateDraftForm((current) => ({
                           ...current,
@@ -803,7 +812,7 @@ function TechnicalSheetWorkspacePage() {
                       disabled={!canUpdate || !canValuate || draftSynchronizing}
                       id="technical-sheet-vat"
                       inputMode="decimal"
-                      onBlur={autosave.flush}
+                      onBlur={flushAutosave}
                       onChange={(event) => {
                         updateDraftForm((current) => ({
                           ...current,
@@ -846,7 +855,7 @@ function TechnicalSheetWorkspacePage() {
                         targetMargin: value,
                       }));
                     }}
-                    onFieldBlur={autosave.flush}
+                    onFieldBlur={flushAutosave}
                     onValuate={valuateDraft}
                     targetMarginBasisPoints={draft.targetMarginBasisPoints}
                     targetMarginInputValue={draftForm.targetMargin}
@@ -884,7 +893,7 @@ function TechnicalSheetWorkspacePage() {
                     lines,
                   }), { immediate });
                 }}
-                onFieldBlur={autosave.flush}
+                onFieldBlur={flushAutosave}
                 onOpenPricing={() => navigate(
                   '/workspaces/' + workspace.id
                   + '/dossiers/' + dossierId
@@ -902,7 +911,7 @@ function TechnicalSheetWorkspacePage() {
                   setDraftForm(nextForm);
                   setDraftFormRevision(updatedDraft.revision);
                   setDraftDirty(false);
-                  autosave.reset(updatedDraft.revision);
+                  resetAutosave(updatedDraft.revision);
                 }}
                 productMetadata={productMetadataQuery.data}
                 productScope={productScope}

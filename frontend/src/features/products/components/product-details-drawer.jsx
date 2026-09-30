@@ -170,14 +170,20 @@ function ProductDetailsDrawer({
   if (query.data) retainedRef.current = query.data;
   const detail = query.data ?? retainedRef.current;
   const product = detail?.product;
-  const variants = detail?.variants ?? [];
+  const variants = useMemo(
+    () => detail?.variants ?? [],
+    [detail?.variants],
+  );
   const favoriteVariants = useMemo(
     () => variants.filter(
       (variant) => variant.workspaceEntry?.status === 'ACTIVE',
     ),
     [variants],
   );
-  const articles = articleQuery.data?.articles ?? [];
+  const articles = useMemo(
+    () => articleQuery.data?.articles ?? [],
+    [articleQuery.data?.articles],
+  );
   const articlesByVariant = useMemo(() => {
     const grouped = new Map();
 

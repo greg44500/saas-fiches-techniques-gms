@@ -162,11 +162,20 @@ function DossierSupplierPricingPage() {
   const [decideInvoice, decideInvoiceState] =
     useDecideInvoicedPriceMutation();
 
-  const references = referencesQuery.data ?? [];
+  const references = useMemo(
+    () => referencesQuery.data ?? [],
+    [referencesQuery.data],
+  );
   const negotiatedPrices = negotiatedQuery.data ?? [];
   const invoicedPrices = invoicedQuery.data ?? [];
-  const dossierIndicativePrices = indicativeQuery.data ?? [];
-  const workspaceIndicativePrices = workspaceIndicativeQuery.data ?? [];
+  const dossierIndicativePrices = useMemo(
+    () => indicativeQuery.data ?? [],
+    [indicativeQuery.data],
+  );
+  const workspaceIndicativePrices = useMemo(
+    () => workspaceIndicativeQuery.data ?? [],
+    [workspaceIndicativeQuery.data],
+  );
   const indicativePrices = useMemo(() => {
     const byProductVariant = new Map();
 
