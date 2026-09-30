@@ -2,6 +2,7 @@ import { useLocation } from 'react-router';
 
 import { APPLICATION_IDENTITY } from '@/app/application-identity';
 import { AppSidebar } from '@/components/shared/app-sidebar';
+import { compactNavigationSeparators } from '@/components/shared/navigation-separators';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 
 function canDisplayNavigationItem(item, { can, hasFeature }) {
@@ -14,7 +15,11 @@ function canDisplayNavigationItem(item, { can, hasFeature }) {
  * règle UX : l'autorisation de sécurité demeure imposée par les guards et API.
  */
 function filterWorkspaceNavigation(navigation, access) {
-  return navigation.flatMap((entry) => {
+  const filtered = navigation.flatMap((entry) => {
+    if (entry.type === 'separator') {
+      return [entry];
+    }
+
     if (entry.type !== 'group') {
       return canDisplayNavigationItem(entry, access) ? [entry] : [];
     }
@@ -25,6 +30,8 @@ function filterWorkspaceNavigation(navigation, access) {
 
     return items.length > 0 ? [{ ...entry, items }] : [];
   });
+
+  return compactNavigationSeparators(filtered);
 }
 
 function isNavigationItemActive({ item, pathname, workspaceId }) {

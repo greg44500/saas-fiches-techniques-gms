@@ -5,11 +5,6 @@ import { MemoryRouter } from 'react-router';
 const useWorkspaceContextMock = vi.hoisted(() => vi.fn());
 const useGetWorkspaceSubscriptionQueryMock = vi.hoisted(() => vi.fn());
 
-vi.mock('@/components/shared/expandable-search', () => ({
-  ExpandableSearch: ({ ariaLabel }) => (
-    <div aria-label={ariaLabel} role="search" />
-  ),
-}));
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: useWorkspaceContextMock,
 }));
@@ -53,10 +48,35 @@ function renderTopbar(workspace, path = '/workspaces/workspace-1/dashboard') {
 }
 
 describe('WorkspaceTopbar', () => {
-  const workspace = { id: 'workspace-1', name: 'Acme' };
+  const workspace = {
+    id: 'workspace-1',
+    name: 'Acme',
+    status: 'active',
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('utilise le token de hauteur Workspace exposé aux contenus sticky', () => {
+    useWorkspaceContextMock.mockReturnValue({ can: () => false });
+    useGetWorkspaceSubscriptionQueryMock.mockReturnValue({ data: undefined });
+
+    const { container } = renderTopbar(workspace);
+
+    expect(container.querySelector('header > div')).toHaveClass(
+      'min-h-[var(--workspace-topbar-height)]',
+    );
+  });
+
+  it('affiche le statut courant à côté du sélecteur de workspace', () => {
+    useWorkspaceContextMock.mockReturnValue({ can: () => false });
+    useGetWorkspaceSubscriptionQueryMock.mockReturnValue({ data: undefined });
+
+    renderTopbar(workspace);
+
+    expect(screen.getByText('Espace de travail : Acme')).toBeInTheDocument();
+    expect(screen.getByText('Actif')).toBeInTheDocument();
   });
 
   it('affiche le plan effectif uniquement avec subscription:read', () => {
@@ -78,22 +98,20 @@ describe('WorkspaceTopbar', () => {
     expect(screen.getByText('Plan Free')).toBeInTheDocument();
   });
 
-  it('affiche la recherche et les préférences sur le Dashboard comme sur les autres pages Workspace', () => {
+  it('ne duplique pas les recherches métier dans la topbar Workspace', () => {
     useWorkspaceContextMock.mockReturnValue({ can: () => true });
     useGetWorkspaceSubscriptionQueryMock.mockReturnValue({ data: undefined });
 
     const { unmount } = renderTopbar(workspace);
 
-    expect(screen.getByRole('search', { name: 'Recherche globale' }))
-      .toBeInTheDocument();
+    expect(screen.queryByRole('search')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Préférences d’affichage' }))
       .toBeInTheDocument();
 
     unmount();
     renderTopbar(workspace, '/workspaces/workspace-1/members');
 
-    expect(screen.getByRole('search', { name: 'Recherche globale' }))
-      .toBeInTheDocument();
+    expect(screen.queryByRole('search')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Préférences d’affichage' }))
       .toBeInTheDocument();
   });

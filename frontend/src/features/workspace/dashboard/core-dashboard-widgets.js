@@ -3,33 +3,11 @@ import {
   PendingInvitationsDashboardWidget,
   RecentActivityDashboardWidget,
   SubscriptionDashboardWidget,
-  WorkspaceRoleDashboardWidget,
-  WorkspaceStatusDashboardWidget,
 } from '@/features/workspace/components/core-dashboard-widgets';
 import { WORKSPACE_FEATURE } from '@/features/workspace/constants/workspace-features';
 import { WORKSPACE_PERMISSION } from '@/features/workspace/constants/workspace-permissions';
 
 const coreDashboardWidgets = Object.freeze([
-  Object.freeze({
-    id: 'core.workspace-status',
-    label: 'Statut du workspace',
-    description: 'État courant du workspace.',
-    component: WorkspaceStatusDashboardWidget,
-    slot: 'summary',
-    order: 100,
-    configurable: false,
-    access: Object.freeze({ features: Object.freeze([]), permissions: Object.freeze([]) }),
-  }),
-  Object.freeze({
-    id: 'core.workspace-role',
-    label: 'Votre rôle',
-    description: 'Rôle effectif dans ce workspace.',
-    component: WorkspaceRoleDashboardWidget,
-    slot: 'summary',
-    order: 200,
-    configurable: false,
-    access: Object.freeze({ features: Object.freeze([]), permissions: Object.freeze([]) }),
-  }),
   Object.freeze({
     id: 'core.members',
     label: 'Membres',
