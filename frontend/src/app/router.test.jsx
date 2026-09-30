@@ -284,13 +284,15 @@ describe('application routing', () => {
     expect(screen.getByRole('button', { name: 'Compte test' })).toBeInTheDocument();
   });
 
-  it('rend la route Files dans le shell workspace', async () => {
+  it('rend la route Files sans exposer Fichiers dans la navigation Workspace', async () => {
     renderRoute('/workspaces/workspace-123/files', 'authenticated');
 
     expect(
       await screen.findByRole('heading', { name: 'Fichiers' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Fichiers' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Fichiers' }),
+    ).not.toBeInTheDocument();
   });
 
   it('rend la route Abonnement dans le shell workspace', async () => {
