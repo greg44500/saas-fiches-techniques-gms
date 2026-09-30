@@ -1,6 +1,7 @@
 # SAAS-CORE-API — Frontière Dashboard Workspace / Platform
 
-Date de décision : 2026-09-02
+Date de décision : 2026-09-02  
+Dernière mise à jour : 2026-09-30
 
 ## 1. Objet
 
@@ -29,6 +30,10 @@ Il a permis de valider :
 Il ne constitue pas le dashboard produit final.
 
 Les informations Core déjà accessibles depuis la navigation (`Membres`, `Fichiers`, `Abonnement`, `Activité`, `Paramètres`) ne doivent pas être continuellement dupliquées ou enrichies dans le dashboard principal sans valeur décisionnelle réelle.
+
+Le statut du Workspace et le rôle courant sont des informations de contexte du
+shell et non des KPI. Ils sont donc affichés respectivement dans la topbar et
+dans l’identité utilisateur, puis retirés du registre de widgets Dashboard.
 
 Après validation technique de F8.8.2, le développement fonctionnel du Dashboard Workspace est **mis en pause** jusqu’au cadrage du premier module métier.
 

@@ -1009,6 +1009,74 @@ Une fiche absente et une fiche non autorisée ne doivent pas permettre au client
 
 Le registre Help du Core est extensible par composition afin qu’un SaaS dérivé puisse ajouter ses fiches métier sans réécrire le corpus Core.
 
+Point de composition :
+
+```text
+backend/config/applicationHelp.registry.js
+→ APPLICATION_HELP_MODULES
+→ ACTIVE_HELP_REGISTRY
+```
+
+Le même centre d’aide peut donc présenter un corpus Core et un corpus applicatif.
+La séparation reste une responsabilité du code source, pas une séparation
+visible imposée à l’utilisateur final.
+
+Pour les fiches Platform, deux autorités peuvent être requises simultanément :
+
+```text
+audience.permissions
+→ permissions Platform
+
+audience.applicationGlobalPermissions
+→ permissions Application Global du produit dérivé
+```
+
+Les permissions Application Global ne sont autorisées que pour les fiches du
+contexte Platform. Elles sont validées contre le registre actif
+`applicationGlobalPermission.registry.js` puis résolues séparément par
+`resolveApplicationGlobalAuthorization()`.
+
+Invariant :
+
+```text
+permission Platform
+≠
+permission Application Global
+```
+
+Un Fondateur ou Super administrateur Platform ne reçoit donc jamais
+implicitement le droit de lire une procédure métier globale. Inversement, une
+permission Application Global ne crée aucun droit Platform.
+
+Le Core fournit actuellement 4 catégories Workspace et 5 catégories Platform.
+Le registre autorise jusqu’à 10 catégories par contexte afin de laisser une
+capacité réelle aux modules dérivés ; le frontend conserve une liste de
+catégories scrollable horizontalement.
+
+### 18.4 Recherche et accès rapide dans les shells
+
+Le shell Workspace ne fournit pas de recherche globale générique. Les recherches
+de données restent dans les pages fonctionnelles qui connaissent réellement
+leurs filtres, permissions et contrats API.
+
+La topbar Platform fournit un accès rapide aux **vues d’administration
+autorisées** à partir de la navigation composée. Elle ne recherche pas les
+données métier ou administratives elles-mêmes.
+
+```text
+recherche Platform
+→ destinations de navigation autorisées
+→ Core + modules applicatifs visibles
+
+recherche de données
+→ page concernée
+→ filtres / API / permissions propres au domaine
+```
+
+Les destinations d’un SaaS dérivé deviennent donc automatiquement
+recherchables dans l’accès rapide lorsqu’elles sont réellement visibles selon
+leurs permissions Platform ou Application Global.
+
 ---
 
 ## 19. Sécurité : ordre conceptuel des contrôles
