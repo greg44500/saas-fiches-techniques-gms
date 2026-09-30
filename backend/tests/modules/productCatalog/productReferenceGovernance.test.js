@@ -19,12 +19,11 @@ describe('M-002 governance filters with sanitizeFilter', () => {
 
         mongoose.sanitizeFilter(filter);
 
-        expect(filter.governanceStatus).toEqual({
-            $in: [
-                PRODUCT_GOVERNANCE_STATUS.APPROVED,
-                PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
-            ],
-        });
+        expect(filter.governanceStatus.$in).toEqual([
+            PRODUCT_GOVERNANCE_STATUS.APPROVED,
+            PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+        ]);
+        expect(filter.governanceStatus.$eq).toBeUndefined();
     });
 
     it('préserve la visibilité Workspace sans opérateur imbriqué non fiable', () => {
