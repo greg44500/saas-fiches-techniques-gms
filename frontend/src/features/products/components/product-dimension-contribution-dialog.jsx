@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import {
   DialogClose,
@@ -32,6 +34,28 @@ import { getApiErrorMessage } from '@/features/products/lib/product-presentation
 
 const VARIETY = 'VARIETY';
 const CHARACTERISTIC = 'CHARACTERISTIC';
+const CHARACTERISTIC_PREFIX = 'CHARACTERISTIC:';
+
+function getSessionStatus(result) {
+  if (result.classification === 'REVIEW_REQUIRED') {
+    return {
+      label: 'À examiner',
+      tone: 'warning',
+    };
+  }
+
+  if (result.classification === 'EXISTING') {
+    return {
+      label: 'Existe déjà',
+      tone: 'neutral',
+    };
+  }
+
+  return {
+    label: 'Disponible',
+    tone: 'success',
+  };
+}
 
 function ProductDimensionContributionDialog({
   metadata,
@@ -43,37 +67,80 @@ function ProductDimensionContributionDialog({
   workspaceId,
 }) {
   const cancelRef = useRef(null);
+  const valueRef = useRef(null);
   const isGlobal = mode === 'global';
   const characteristicKinds = metadata?.productCharacteristicKinds ?? [];
-  const [type, setType] = useState(VARIETY);
-  const [kind, setKind] = useState(characteristicKinds[0]?.value ?? '');
+  const [selectedType, setSelectedType] = useState(VARIETY);
   const [value, setValue] = useState('');
   const [formError, setFormError] = useState('');
-  const [reviewMessage, setReviewMessage] = useState('');
+  const [sessionEntries, setSessionEntries] = useState([]);
 
   const [contribute, workspaceState] = useContributeProductReferenceMutation();
   const [createVariety, varietyState] = useCreateProductReferenceVarietyMutation();
   const [createCharacteristic, characteristicState] =
     useCreateProductReferenceCharacteristicMutation();
 
+  const typeItems = useMemo(() => [
+    { value: VARIETY, label: 'Variété' },
+    ...characteristicKinds.map((kind) => ({
+      value: CHARACTERISTIC_PREFIX + kind.value,
+      label: kind.label,
+    })),
+  ], [characteristicKinds]);
+
   useEffect(() => {
     if (!open) return;
-    setType(VARIETY);
-    setKind(characteristicKinds[0]?.value ?? '');
+
+    setSelectedType(VARIETY);
     setValue('');
     setFormError('');
-    setReviewMessage('');
-  }, [characteristicKinds, open]);
+    setSessionEntries([]);
+  }, [open]);
 
   const pending = (
     workspaceState.isLoading
     || varietyState.isLoading
     || characteristicState.isLoading
   );
-  const typeItems = useMemo(() => [
-    { value: VARIETY, label: 'Variété' },
-    { value: CHARACTERISTIC, label: 'Caractéristique' },
-  ], []);
+  const selectedDefinition = typeItems.find(
+    (item) => item.value === selectedType,
+  ) ?? typeItems[0];
+  const isVariety = selectedType === VARIETY;
+  const characteristicKind = isVariety
+    ? null
+    : selectedType.slice(CHARACTERISTIC_PREFIX.length);
+  const valueLabel = isVariety
+    ? 'Nom de la variété'
+    : selectedDefinition?.label ?? 'Valeur';
+
+  function recordResolvedValue(result, proposedValue) {
+    const status = getSessionStatus(result);
+    const resolvedReference = (
+      result.publishedReference
+      ?? result.existingReference
+      ?? null
+    );
+
+    setSessionEntries((current) => [
+      ...current,
+      {
+        typeLabel: selectedDefinition?.label ?? 'Valeur',
+        value: resolvedReference?.name ?? proposedValue,
+        status,
+        detail: result.classification === 'REVIEW_REQUIRED'
+          ? 'Disponible après validation du référentiel global.'
+          : null,
+      },
+    ]);
+  }
+
+  function prepareNextValue() {
+    setValue('');
+    setFormError('');
+    globalThis.queueMicrotask(() => {
+      valueRef.current?.focus();
+    });
+  }
 
   async function submit() {
     const proposedValue = value.trim();
@@ -81,17 +148,12 @@ function ProductDimensionContributionDialog({
       setFormError('Renseignez la valeur à ajouter au référentiel.');
       return;
     }
-    if (type === CHARACTERISTIC && !kind) {
-      setFormError('Sélectionnez le type de caractéristique.');
-      return;
-    }
 
     setFormError('');
-    setReviewMessage('');
 
     try {
       if (isGlobal) {
-        const result = type === VARIETY
+        const publishedReference = isVariety
           ? await createVariety({
             productId: product.id,
             name: proposedValue,
@@ -99,35 +161,31 @@ function ProductDimensionContributionDialog({
           }).unwrap()
           : await createCharacteristic({
             productId: product.id,
-            kind,
+            kind: characteristicKind,
             name: proposedValue,
             aliases: [],
           }).unwrap();
 
-        onResolved?.({
+        const result = {
           classification: 'PUBLISHED',
-          publishedReference: result,
-        });
-        onClose();
+          publishedReference,
+        };
+
+        recordResolvedValue(result, proposedValue);
+        onResolved?.(result);
+        prepareNextValue();
         return;
       }
 
       const result = await contribute({
         workspaceId,
-        type,
+        type: isVariety ? VARIETY : CHARACTERISTIC,
         productId: product.id,
-        ...(type === CHARACTERISTIC ? { characteristicKind: kind } : {}),
+        ...(isVariety
+          ? {}
+          : { characteristicKind }),
         value: proposedValue,
       }).unwrap();
-
-      if (result.classification === 'REVIEW_REQUIRED') {
-        setReviewMessage(
-          'La proposition nécessite une revue du référentiel global. '
-          + 'Elle ne sera disponible dans une référence Produit qu’après validation.',
-        );
-        onResolved?.(result);
-        return;
-      }
 
       if (result.classification === 'INVALID') {
         setFormError(
@@ -137,8 +195,9 @@ function ProductDimensionContributionDialog({
         return;
       }
 
+      recordResolvedValue(result, proposedValue);
       onResolved?.(result);
-      onClose();
+      prepareNextValue();
     } catch (error) {
       setFormError(getApiErrorMessage(
         error,
@@ -157,27 +216,41 @@ function ProductDimensionContributionDialog({
     >
       <DialogPortal>
         <DialogOverlay />
-        <DialogContent initialFocus={cancelRef}>
+        <DialogContent
+          className="max-h-[calc(100vh-2rem)] max-w-xl overflow-y-auto"
+          initialFocus={cancelRef}
+        >
           <DialogHeader>
-            <DialogTitle>Enrichir le référentiel</DialogTitle>
-            <DialogDescription>
-              Ajoutez une dimension à {product?.name}. Les ajouts Workspace
-              suivent la politique de contribution du référentiel global.
+            <div className="flex items-center gap-2">
+              <DialogTitle>Ajouter des valeurs au référentiel</DialogTitle>
+              <InfoTooltip
+                content={
+                  'Ajoutez successivement les variétés et caractéristiques utiles à '
+                  + (product?.name ?? 'ce Produit')
+                  + '. Une valeur peut être disponible immédiatement ou nécessiter une validation.'
+                }
+                label="À propos de l’enrichissement du référentiel"
+              />
+            </div>
+            <DialogDescription className="sr-only">
+              Ajoutez plusieurs valeurs au référentiel du Produit sans fermer ce formulaire.
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-5 space-y-4">
             <Field>
-              <FieldLabel htmlFor="product-dimension-type">Dimension</FieldLabel>
+              <FieldLabel htmlFor="product-dimension-type">
+                Type de valeur
+              </FieldLabel>
               <Select
                 disabled={pending}
                 items={typeItems}
                 onValueChange={(nextType) => {
-                  setType(nextType);
+                  setSelectedType(nextType);
+                  setValue('');
                   setFormError('');
-                  setReviewMessage('');
                 }}
-                value={type}
+                value={selectedType}
               >
                 <SelectTrigger id="product-dimension-type">
                   <SelectValue />
@@ -192,60 +265,82 @@ function ProductDimensionContributionDialog({
               </Select>
             </Field>
 
-            {type === CHARACTERISTIC && (
-              <Field>
-                <FieldLabel htmlFor="product-dimension-kind">
-                  Type de caractéristique
-                </FieldLabel>
-                <Select
-                  disabled={pending}
-                  items={characteristicKinds}
-                  onValueChange={setKind}
-                  value={kind || null}
-                >
-                  <SelectTrigger id="product-dimension-kind">
-                    <SelectValue placeholder="Sélectionner un type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {characteristicKinds.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
-
             <Field>
               <FieldLabel htmlFor="product-dimension-value">
-                {type === VARIETY ? 'Nom de la variété' : 'Valeur'}
+                {valueLabel}
               </FieldLabel>
-              <Input
-                disabled={pending}
-                id="product-dimension-value"
-                maxLength={120}
-                onChange={(event) => {
-                  setValue(event.target.value);
-                  setFormError('');
-                  setReviewMessage('');
-                }}
-                placeholder={
-                  type === VARIETY
-                    ? 'Ex. Gala, Charlotte'
-                    : 'Ex. En botte avec fanes'
-                }
-                value={value}
-              />
+              <div className="flex gap-2">
+                <Input
+                  disabled={pending}
+                  id="product-dimension-value"
+                  maxLength={120}
+                  onChange={(event) => {
+                    setValue(event.target.value);
+                    setFormError('');
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      submit();
+                    }
+                  }}
+                  placeholder={
+                    isVariety
+                      ? 'Ex. Bergeron'
+                      : 'Ex. Entier, Orange, 35/40…'
+                  }
+                  ref={valueRef}
+                  value={value}
+                />
+                <Button
+                  disabled={pending || !value.trim()}
+                  onClick={submit}
+                  type="button"
+                >
+                  {pending ? 'Traitement…' : 'Ajouter'}
+                </Button>
+              </div>
             </Field>
 
-            {reviewMessage && (
-              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
-                {reviewMessage}
-              </div>
-            )}
-
             <FieldError>{formError}</FieldError>
+
+            {sessionEntries.length > 0 && (
+              <section
+                aria-label="Valeurs ajoutées dans cette session"
+                className="rounded-lg border border-border p-3"
+              >
+                <p className="text-sm font-medium">
+                  Valeurs ajoutées dans cette session
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {sessionEntries.map((entry, index) => (
+                    <li
+                      className="flex flex-wrap items-start justify-between gap-3 rounded-md bg-muted/30 px-3 py-2"
+                      key={
+                        entry.typeLabel
+                        + '-'
+                        + entry.value
+                        + '-'
+                        + index
+                      }
+                    >
+                      <div>
+                        <p className="text-sm font-medium">
+                          {entry.value}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {entry.typeLabel}
+                          {entry.detail ? ' · ' + entry.detail : ''}
+                        </p>
+                      </div>
+                      <StatusBadge tone={entry.status.tone}>
+                        {entry.status.label}
+                      </StatusBadge>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </div>
 
           <DialogFooter>
@@ -256,11 +351,6 @@ function ProductDimensionContributionDialog({
             >
               Fermer
             </DialogClose>
-            {!reviewMessage && (
-              <Button disabled={pending} onClick={submit} type="button">
-                {pending ? 'Traitement…' : 'Ajouter'}
-              </Button>
-            )}
           </DialogFooter>
         </DialogContent>
       </DialogPortal>

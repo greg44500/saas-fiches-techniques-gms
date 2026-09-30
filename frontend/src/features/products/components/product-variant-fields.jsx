@@ -78,6 +78,9 @@ function ProductVariantFields({
     (characteristic) => characteristic.status === 'ACTIVE',
   );
   const characteristicKinds = metadata?.productCharacteristicKinds ?? [];
+  const varietyEmptyLabel = varieties.length === 0
+    ? 'Aucune variété disponible'
+    : 'Non renseigné';
 
   function change(field, nextValue) {
     onChange({
@@ -107,9 +110,9 @@ function ProductVariantFields({
           <Field>
             <FieldLabel htmlFor="product-variant-variety">Variété</FieldLabel>
             <Select
-              disabled={disabled}
+              disabled={disabled || varieties.length === 0}
               items={[
-                { value: EMPTY_OPTION, label: 'Aucune variété' },
+                { value: EMPTY_OPTION, label: varietyEmptyLabel },
                 ...varieties.map((variety) => ({
                   value: variety.id,
                   label: variety.name,
@@ -125,7 +128,9 @@ function ProductVariantFields({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={EMPTY_OPTION}>Aucune variété</SelectItem>
+                <SelectItem value={EMPTY_OPTION}>
+                  {varietyEmptyLabel}
+                </SelectItem>
                 {varieties.map((variety) => (
                   <SelectItem key={variety.id} value={variety.id}>
                     {variety.name}
@@ -142,14 +147,17 @@ function ProductVariantFields({
             const fieldId = 'product-variant-characteristic-' + kind.value;
             const selected = value.characteristicIdsByKind?.[kind.value]
               ?? EMPTY_OPTION;
+            const emptyLabel = options.length === 0
+              ? 'Aucune valeur disponible'
+              : 'Non renseigné';
 
             return (
               <Field key={kind.value}>
                 <FieldLabel htmlFor={fieldId}>{kind.label}</FieldLabel>
                 <Select
-                  disabled={disabled}
+                  disabled={disabled || options.length === 0}
                   items={[
-                    { value: EMPTY_OPTION, label: 'Non renseigné' },
+                    { value: EMPTY_OPTION, label: emptyLabel },
                     ...options.map((option) => ({
                       value: option.id,
                       label: option.name,
@@ -169,7 +177,7 @@ function ProductVariantFields({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={EMPTY_OPTION}>Non renseigné</SelectItem>
+                    <SelectItem value={EMPTY_OPTION}>{emptyLabel}</SelectItem>
                     {options.map((option) => (
                       <SelectItem key={option.id} value={option.id}>
                         {option.name}

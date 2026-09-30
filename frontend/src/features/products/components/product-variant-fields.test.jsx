@@ -48,7 +48,10 @@ const dimensions = {
   ],
 };
 
-function StructuredHarness({ onPayload }) {
+function StructuredHarness({
+  availableDimensions = dimensions,
+  onPayload,
+}) {
   const [value, setValue] = useState(() => createEmptyVariantDraft(
     metadata,
     { structured: true },
@@ -57,7 +60,7 @@ function StructuredHarness({ onPayload }) {
   return (
     <>
       <ProductVariantFields
-        dimensions={dimensions}
+        dimensions={availableDimensions}
         metadata={metadata}
         onChange={setValue}
         structured
@@ -100,6 +103,31 @@ describe('ProductVariantFields', () => {
       processingState: null,
       referenceUnit: 'KG',
     }));
+  });
+
+  it('distingue une liste vide d un choix volontairement non renseigné', () => {
+    const onPayload = vi.fn();
+
+    render(
+      <StructuredHarness
+        availableDimensions={{
+          varieties: [],
+          characteristics: [],
+        }}
+        onPayload={onPayload}
+      />,
+    );
+
+    expect(screen.getByLabelText('Variété'))
+      .toHaveTextContent('Aucune variété disponible');
+    expect(screen.getByLabelText('Présentation'))
+      .toHaveTextContent('Aucune valeur disponible');
+    expect(screen.getByLabelText('Calibre / format'))
+      .toHaveTextContent('Aucune valeur disponible');
+
+    expect(screen.getByLabelText('Variété')).toBeDisabled();
+    expect(screen.getByLabelText('Présentation')).toBeDisabled();
+    expect(screen.getByLabelText('Calibre / format')).toBeDisabled();
   });
 
   it('présente UNIT comme PCE sans modifier la valeur canonique', async () => {

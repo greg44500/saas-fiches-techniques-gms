@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TooltipProvider } from '@/components/ui/tooltip';
+
 const mocks = vi.hoisted(() => ({
   contribute: vi.fn(),
   createVariety: vi.fn(),
@@ -33,6 +35,7 @@ import {
 const metadata = {
   productCharacteristicKinds: [
     { value: 'PRESENTATION', label: 'Présentation' },
+    { value: 'COLOR', label: 'Couleur' },
     { value: 'QUALITY_DESIGNATION', label: 'Désignation de qualité' },
   ],
 };
@@ -55,7 +58,11 @@ function renderDialog(overrides = {}) {
     ...overrides,
   };
 
-  render(<ProductDimensionContributionDialog {...props} />);
+  render(
+    <TooltipProvider>
+      <ProductDimensionContributionDialog {...props} />
+    </TooltipProvider>,
+  );
   return props;
 }
 
@@ -64,38 +71,59 @@ describe('ProductDimensionContributionDialog', () => {
     vi.clearAllMocks();
   });
 
-  it('auto-publie une nouvelle Variété non conflictuelle via le moteur Workspace', async () => {
+  it('permet plusieurs ajouts successifs de Variétés sans fermer le dialogue', async () => {
     const user = userEvent.setup();
     const props = renderDialog();
 
-    mocks.contribute.mockReturnValue(resolved({
-      classification: 'AUTO_PUBLISHABLE',
-      publishedReference: {
-        id: 'variety-gala',
-        type: 'VARIETY',
-        name: 'Gala',
-      },
-    }));
+    mocks.contribute
+      .mockReturnValueOnce(resolved({
+        classification: 'AUTO_PUBLISHABLE',
+        publishedReference: {
+          id: 'variety-gala',
+          type: 'VARIETY',
+          name: 'Gala',
+        },
+      }))
+      .mockReturnValueOnce(resolved({
+        classification: 'AUTO_PUBLISHABLE',
+        publishedReference: {
+          id: 'variety-golden',
+          type: 'VARIETY',
+          name: 'Golden',
+        },
+      }));
 
-    await user.type(screen.getByLabelText('Nom de la variété'), 'Gala');
+    const input = screen.getByLabelText('Nom de la variété');
+
+    await user.type(input, 'Gala');
     await user.click(screen.getByRole('button', { name: 'Ajouter' }));
 
-    expect(mocks.contribute).toHaveBeenCalledWith({
+    expect(input).toHaveValue('');
+    expect(props.onClose).not.toHaveBeenCalled();
+
+    await user.type(input, 'Golden');
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
+
+    expect(mocks.contribute).toHaveBeenNthCalledWith(1, {
       workspaceId: 'workspace-1',
       type: 'VARIETY',
       productId: 'product-1',
       value: 'Gala',
     });
-    expect(props.onResolved).toHaveBeenCalledWith(expect.objectContaining({
-      classification: 'AUTO_PUBLISHABLE',
-      publishedReference: expect.objectContaining({
-        id: 'variety-gala',
-      }),
-    }));
-    expect(props.onClose).toHaveBeenCalledTimes(1);
+    expect(mocks.contribute).toHaveBeenNthCalledWith(2, {
+      workspaceId: 'workspace-1',
+      type: 'VARIETY',
+      productId: 'product-1',
+      value: 'Golden',
+    });
+    expect(props.onResolved).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('Gala')).toBeInTheDocument();
+    expect(screen.getByText('Golden')).toBeInTheDocument();
+    expect(screen.getAllByText('Disponible')).toHaveLength(2);
+    expect(props.onClose).not.toHaveBeenCalled();
   });
 
-  it('réutilise une référence EXISTING sans création supplémentaire', async () => {
+  it('réutilise une valeur EXISTING et permet de poursuivre la session', async () => {
     const user = userEvent.setup();
     const props = renderDialog();
 
@@ -117,12 +145,15 @@ describe('ProductDimensionContributionDialog', () => {
         id: 'variety-reinette',
       }),
     }));
-    expect(props.onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Reinette')).toBeInTheDocument();
+    expect(screen.getByText('Existe déjà')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nom de la variété')).toHaveValue('');
+    expect(props.onClose).not.toHaveBeenCalled();
     expect(mocks.createVariety).not.toHaveBeenCalled();
     expect(mocks.createCharacteristic).not.toHaveBeenCalled();
   });
 
-  it('maintient ouverte une caractéristique REVIEW_REQUIRED jusqu à la revue globale', async () => {
+  it('propose directement les types métier et conserve une valeur à examiner dans la session', async () => {
     const user = userEvent.setup();
     const props = renderDialog();
 
@@ -138,15 +169,19 @@ describe('ProductDimensionContributionDialog', () => {
       }],
     }));
 
-    await user.click(screen.getByLabelText('Dimension'));
-    await user.click(screen.getByRole('option', { name: 'Caractéristique' }));
+    expect(screen.queryByLabelText('Dimension')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Type de caractéristique'))
+      .not.toBeInTheDocument();
 
-    await user.click(screen.getByLabelText('Type de caractéristique'));
+    await user.click(screen.getByLabelText('Type de valeur'));
     await user.click(screen.getByRole('option', {
       name: 'Désignation de qualité',
     }));
 
-    await user.type(screen.getByLabelText('Valeur'), 'Carottes des sables');
+    await user.type(
+      screen.getByLabelText('Désignation de qualité'),
+      'Carottes des sables',
+    );
     await user.click(screen.getByRole('button', { name: 'Ajouter' }));
 
     expect(mocks.contribute).toHaveBeenCalledWith({
@@ -156,10 +191,12 @@ describe('ProductDimensionContributionDialog', () => {
       characteristicKind: 'QUALITY_DESIGNATION',
       value: 'Carottes des sables',
     });
-    expect(await screen.findByText(/nécessite une revue du référentiel global/i))
+    expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
+    expect(screen.getByText('À examiner')).toBeInTheDocument();
+    expect(screen.getByText(/Disponible après validation/i))
       .toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ajouter' }))
-      .not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ajouter' }))
+      .toBeInTheDocument();
     expect(props.onResolved).toHaveBeenCalledWith(expect.objectContaining({
       classification: 'REVIEW_REQUIRED',
     }));
