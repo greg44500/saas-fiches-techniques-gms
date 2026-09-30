@@ -6,7 +6,13 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ## Unreleased
 
-Aucun changement supplémentaire documenté.
+### Changed
+
+- intégration du Core post-tag `v1.2.1` jusqu’au commit `a9d99aa6307a6e7adf884e949cebc4059549824e`, sans nouvelle version ni tag ;
+- shell Workspace modernisé : statut dans la topbar, rôle dans l’identité utilisateur, navigation métier prioritaire puis « Administration de l’espace », groupes animés ;
+- navigation Platform conservée avec séparation des modules applicatifs et accès rapide aux vues autorisées ;
+- Help Center générique mis à niveau et composé avec l’aide métier M-001 à M-004 ;
+- aucune migration MongoDB nouvelle introduite par cet upgrade.
 
 ---
 
