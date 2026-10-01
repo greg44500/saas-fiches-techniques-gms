@@ -46,6 +46,7 @@ import {
   useStartTechnicalSheetDraftMutation,
   useUpdateTechnicalSheetMutation,
   useValidateTechnicalSheetMutation,
+  useValuateTechnicalSheetMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
   TechnicalSheetControlPanel,
@@ -215,6 +216,7 @@ function TechnicalSheetWorkspacePage() {
   const [updateSheet, updateSheetState] = useUpdateTechnicalSheetMutation();
   const [startDraft, startDraftState] = useStartTechnicalSheetDraftMutation();
   const [saveDraft] = useSaveTechnicalSheetDraftMutation();
+  const [valuate, valuateState] = useValuateTechnicalSheetMutation();
   const [validateSheet, validateState] = useValidateTechnicalSheetMutation();
   const [archiveSheet, archiveState] = useArchiveTechnicalSheetMutation();
   const [reactivateSheet, reactivateState] = useReactivateTechnicalSheetMutation();
@@ -346,6 +348,44 @@ function TechnicalSheetWorkspacePage() {
     draft,
     draftDirty,
     draftFormRevision,
+  ]);
+
+  useEffect(() => {
+    if (
+      !draft
+      || draftDirty
+      || autosaveHasUnsavedChanges
+      || valuateState.isLoading
+      || !['NOT_VALUED', 'STALE'].includes(draft.valuationStatus)
+      || (draft.lines ?? []).length === 0
+      || !draft.productionQuantity
+      || !draft.productionUnit
+      || draft.vatRateBasisPoints === null
+      || draft.targetMarginBasisPoints === null
+    ) {
+      return;
+    }
+
+    valuate({
+      workspaceId: workspace.id,
+      dossierId,
+      technicalSheetId,
+      expectedRevision: draft.revision,
+    }).unwrap().catch((error) => {
+      notifyError(
+        error,
+        'Les calculs automatiques de la Fiche n’ont pas pu être actualisés.',
+      );
+    });
+  }, [
+    autosaveHasUnsavedChanges,
+    dossierId,
+    draft,
+    draftDirty,
+    technicalSheetId,
+    valuate,
+    valuateState.isLoading,
+    workspace.id,
   ]);
 
   const unitItems = useMemo(
