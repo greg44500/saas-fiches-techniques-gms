@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 import {
     CanonicalProduct,
 } from '../modules/productCatalog/canonicalProduct.model.js';
@@ -110,12 +112,19 @@ const backfillGovernanceStatus = async () => {
     const results = [];
     for (const model of GOVERNED_MODELS) {
         const result = await model.updateMany(
-            { governanceStatus: { $exists: false } },
+            {
+                governanceStatus: mongoose.trusted({
+                    $exists: false,
+                }),
+            },
             {
                 $set: {
                     governanceStatus:
                         PRODUCT_GOVERNANCE_STATUS.APPROVED,
                 },
+            },
+            {
+                timestamps: false,
             },
         );
         results.push({
