@@ -57,6 +57,16 @@ describe('application frontend route composition', () => {
     );
   });
 
+  it('compose la route authentifiée unique de gestion des référentiels', () => {
+    expect(APPLICATION_FRONTEND_ROUTES.authenticatedRoutes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'reference-management/:section?',
+        }),
+      ]),
+    );
+  });
+
   it('compose les routes Workspace de Corbeille et paramètres Dossiers', () => {
     expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).toEqual(
       expect.arrayContaining([
