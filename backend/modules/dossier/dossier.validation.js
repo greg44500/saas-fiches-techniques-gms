@@ -69,6 +69,11 @@ const createDossierSchema = z.strictObject({
         .optional(),
     phone: nullableTrimmedString(40).optional(),
     contactName: nullableTrimmedString(160).optional(),
+    defaultTargetMarginBasisPoints: z
+        .number()
+        .int()
+        .min(0)
+        .max(9999),
 });
 
 const updateDossierSchema = z.strictObject({
