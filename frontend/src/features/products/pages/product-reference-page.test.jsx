@@ -197,6 +197,54 @@ describe('ProductReferencePage', () => {
   });
 
 
+  it('affiche des compteurs d’onglets basés sur les totaux filtrés', async () => {
+    const user = userEvent.setup();
+
+    mocks.productsQuery.mockImplementation((args) => ({
+      data: {
+        products: [product],
+        pagination: {
+          page: 1,
+          limit: args.limit,
+          total: args.categoryId === 'category-1' ? 7 : 264,
+          totalPages: 1,
+        },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    }));
+    mocks.contributionsQuery.mockReturnValue({
+      data: {
+        contributions: [],
+        pagination: { page: 1, limit: 1, total: 4, totalPages: 4 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByRole('tab', { name: 'Référentiel (264)' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Contributions (4)' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Catégories (1)' }))
+      .toBeInTheDocument();
+
+    await user.click(screen.getByRole('combobox', {
+      name: 'Filtrer par catégorie',
+    }));
+    await user.click(screen.getByRole('option', { name: 'Légumes' }));
+
+    expect(await screen.findByRole('tab', { name: 'Référentiel (7)' }))
+      .toBeInTheDocument();
+  });
+
+
   it('signale les nouvelles Dimensions et ouvre directement les lignes à vérifier', async () => {
     const user = userEvent.setup();
 
@@ -283,7 +331,7 @@ describe('ProductReferencePage', () => {
     const user = userEvent.setup();
     renderPage({ canManage: false });
 
-    await user.click(screen.getByRole('tab', { name: 'Catégories' }));
+    await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
 
     expect(screen.getByText('Légumes')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Produits actifs' }))
@@ -326,7 +374,7 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('button', { name: 'Importer' }));
     expect(screen.getByText('Import global ouvert')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'Catégories' }));
+    await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
     expect(screen.getByRole('button', { name: 'Créer une catégorie' }))
       .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Renommer Légumes' }))
@@ -353,7 +401,7 @@ describe('ProductReferencePage', () => {
     });
 
     renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Catégories' }));
+    await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
 
     expect(screen.getByText('Archivée')).toBeInTheDocument();
     expect(screen.getByRole('button', {
@@ -387,7 +435,7 @@ describe('ProductReferencePage', () => {
     });
 
     renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Contributions' }));
+    await user.click(screen.getByRole('tab', { name: 'Contributions (1)' }));
 
     expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
     expect(screen.getByText('Caractéristique · Désignation de qualité'))
@@ -431,7 +479,7 @@ describe('ProductReferencePage', () => {
     });
 
     renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Contributions' }));
+    await user.click(screen.getByRole('tab', { name: 'Contributions (1)' }));
 
     expect(screen.getByText(/Valeurs proches : Gala/i)).toBeInTheDocument();
 

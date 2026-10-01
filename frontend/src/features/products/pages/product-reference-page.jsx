@@ -78,18 +78,18 @@ function ProductReferencePage({ canManage }) {
       status: referenceStatus,
       categoryId: categoryId === ALL_REFERENCE_CATEGORIES ? undefined : categoryId,
       q: search || undefined,
-      page,
-      limit: pageSize,
+      page: section === 'reference' ? page : 1,
+      limit: section === 'reference' ? pageSize : 1,
     },
-    { skip: section !== 'reference' },
+    { skip: false },
   );
   const contributionsQuery = useListProductReferenceContributionsQuery(
     {
       status: contributionStatus,
-      page,
-      limit: pageSize,
+      page: section === 'contributions' ? page : 1,
+      limit: section === 'contributions' ? pageSize : 1,
     },
-    { skip: section !== 'contributions' },
+    { skip: false },
   );
   const [reviewContribution, reviewContributionState] =
     useReviewProductReferenceContributionMutation();
@@ -97,9 +97,12 @@ function ProductReferencePage({ canManage }) {
     useUpdateProductReferenceCategoryStatusMutation();
 
   useEffect(() => {
-    const totalPages = section === 'contributions'
-      ? contributionsQuery.data?.pagination?.totalPages
-      : productsQuery.data?.pagination?.totalPages;
+    const totalPages = section === 'reference'
+      ? productsQuery.data?.pagination?.totalPages
+      : section === 'contributions'
+        ? contributionsQuery.data?.pagination?.totalPages
+        : null;
+
     if (totalPages && page > totalPages) setPage(totalPages);
   }, [
     contributionsQuery.data?.pagination?.totalPages,
@@ -124,6 +127,10 @@ function ProductReferencePage({ canManage }) {
       ['ACTIVE', 'ARCHIVED'].includes(value)),
     [metadata?.productStatuses],
   );
+
+  const referenceCount = productsQuery.data?.pagination?.total ?? 0;
+  const contributionCount = contributionsQuery.data?.pagination?.total ?? 0;
+  const categoryCount = metadata?.categories?.length ?? 0;
 
   function changeSection(nextSection) {
     setSection(nextSection);
@@ -592,9 +599,15 @@ function ProductReferencePage({ canManage }) {
 
       <Tabs onValueChange={changeSection} value={section}>
         <TabsList aria-label="Administration du référentiel Produits" variant="section">
-          <TabsTrigger value="reference" variant="section">Référentiel</TabsTrigger>
-          <TabsTrigger value="contributions" variant="section">Contributions</TabsTrigger>
-          <TabsTrigger value="categories" variant="section">Catégories</TabsTrigger>
+          <TabsTrigger value="reference" variant="section">
+            Référentiel ({referenceCount})
+          </TabsTrigger>
+          <TabsTrigger value="contributions" variant="section">
+            Contributions ({contributionCount})
+          </TabsTrigger>
+          <TabsTrigger value="categories" variant="section">
+            Catégories ({categoryCount})
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
