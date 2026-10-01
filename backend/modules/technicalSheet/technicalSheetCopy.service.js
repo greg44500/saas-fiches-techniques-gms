@@ -213,6 +213,20 @@ const copyTechnicalSheet = async ({
                 session,
             });
 
+        if (
+            target.technicalSheetSettings
+                ?.defaultTargetMarginBasisPoints
+            === null
+            || target.technicalSheetSettings
+                ?.defaultTargetMarginBasisPoints
+            === undefined
+        ) {
+            throw new AppError(
+                'Renseignez la marge cible par défaut du Dossier cible avant de copier une Fiche technique.',
+                409,
+            );
+        }
+
         await enforcePlanLimit({
             workspaceId,
             metricKey:
