@@ -316,7 +316,7 @@ plusieurs Articles exploitables
 
 Il est interdit de sélectionner automatiquement l'Article le moins cher.
 
-Un changement d'Article constitue une modification d'approvisionnement distincte d'une simple revalorisation.
+Un changement d'Article constitue une modification d'approvisionnement distincte d'un simple recalcul tarifaire.
 
 ---
 
@@ -708,7 +708,7 @@ Une suppression ne détruit jamais individuellement un ancien état validé.
 
 Une Fiche en corbeille reste comptée dans le quota tant qu'elle est restaurable.
 
-La restauration remet la Fiche dans son dernier état métier pertinent antérieur à la suppression, sans revalorisation ni validation silencieuse.
+La restauration remet la Fiche dans son dernier état métier pertinent antérieur à la suppression, sans recalcul économique ni validation silencieuse.
 
 La purge définitive détruit la Fiche complète et libère alors seulement son unité de capacité.
 
