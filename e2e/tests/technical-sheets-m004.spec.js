@@ -474,7 +474,11 @@ test('M-004 copie A vers B sans finance source et valorise avec le prix du Dossi
   ).toHaveValue('60');
 
   await expect(
-    page.getByText(/4,00/).first(),
+    page.getByText(/40,00/).first(),
+  ).toBeVisible();
+
+  await expect(
+    page.getByText(/11,00/).first(),
   ).toBeVisible();
 });
 
