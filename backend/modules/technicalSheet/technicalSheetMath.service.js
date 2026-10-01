@@ -216,6 +216,7 @@ const ceilPositiveFraction = ({
 const calculateEconomics = ({
     ingredientCosts,
     economatCosts,
+    productionQuantity,
     vatRateBasisPoints,
     targetMarginBasisPoints,
     finalPriceTtcMinor = null,
@@ -241,9 +242,33 @@ const calculateEconomics = ({
     const economatCostHt = sumFractions(economatCosts);
     const manufacturingCostHt =
         addFractions(materialCostHt, economatCostHt);
+    const productionQuantityFraction =
+        decimalFraction(productionQuantity);
+
+    if (productionQuantityFraction.numerator <= 0n) {
+        throw new TypeError(
+            'La quantité produite doit être strictement positive.',
+        );
+    }
+
+    const materialCostPerProductionUnitHt =
+        divideFractions(
+            materialCostHt,
+            productionQuantityFraction,
+        );
+    const economatCostPerProductionUnitHt =
+        divideFractions(
+            economatCostHt,
+            productionQuantityFraction,
+        );
+    const manufacturingCostPerProductionUnitHt =
+        divideFractions(
+            manufacturingCostHt,
+            productionQuantityFraction,
+        );
 
     const theoreticalPriceHt = multiplyFractions(
-        manufacturingCostHt,
+        manufacturingCostPerProductionUnitHt,
         {
             numerator: 10000n,
             denominator:
@@ -274,7 +299,7 @@ const calculateEconomics = ({
 
     const economicFloorTtc =
         multiplyFractions(
-            manufacturingCostHt,
+            manufacturingCostPerProductionUnitHt,
             vatFactor,
         );
 
@@ -311,7 +336,7 @@ const calculateEconomics = ({
     const actualMarginAmountHt =
         subtractFractions(
             finalPriceHt,
-            manufacturingCostHt,
+            manufacturingCostPerProductionUnitHt,
         );
     const actualMarginBasisPoints =
         finalPriceHt.numerator === 0n
@@ -331,6 +356,18 @@ const calculateEconomics = ({
             fractionToDecimal(economatCostHt),
         manufacturingCostHt:
             fractionToDecimal(manufacturingCostHt),
+        materialCostPerProductionUnitHt:
+            fractionToDecimal(
+                materialCostPerProductionUnitHt,
+            ),
+        economatCostPerProductionUnitHt:
+            fractionToDecimal(
+                economatCostPerProductionUnitHt,
+            ),
+        manufacturingCostPerProductionUnitHt:
+            fractionToDecimal(
+                manufacturingCostPerProductionUnitHt,
+            ),
         theoreticalPriceHt:
             fractionToDecimal(theoreticalPriceHt),
         theoreticalPriceTtc:
