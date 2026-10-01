@@ -1,10 +1,10 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-30  
-**Lot précédent clôturé :** M-002 → M-004 hors exports — PR #25  
-**Lot courant :** intégration Core post-tag v1.2.1 — shell Workspace / navigation / Help Center  
-**Branche :** `core-update/post-v1.2.1-a9d99aa`  
-**Base :** `main@588612ba987c4a91951d4939231f9f44881c50d8`
+**Date :** 2026-10-01  
+**Lot précédent clôturé :** intégration Core post-tag v1.2.1 + stabilisation autosave M-004 — PR #26/#27  
+**Lot courant :** Platform — Gestion des référentiels Produits / Fournisseurs  
+**Branche :** `feature/platform-reference-management`  
+**Base :** `main@70da4bb1b9c055ee977f685d7de2e326761a75a2`
 
 ## 1. Autorité
 
@@ -116,32 +116,36 @@ Les permissions Workspace, Platform et Application Global restent strictement s�
 - corbeille, restauration et purge ;
 - exports V1 toujours séparés.
 
-## 6. Prochaines étapes produit après validation de l’upgrade
+## 6. Lot courant — Platform : Gestion des référentiels
 
-### Priorité A — UX/UI Platform : Gestion des référentiels
+L'audit du 2026-10-01 confirme qu'aucune nouvelle primitive Core n'est nécessaire. Le Core intégré au SHA `d3b9891...` sait déjà composer une entrée applicative, appliquer le séparateur Platform et filtrer sa visibilité depuis les permissions Application Global.
 
-Créer un lot produit séparé, sans rouvrir M-002/M-003 :
+Le lot reste donc strictement produit :
 
 ~~~text
 sidebar Platform existante
-→ séparateur simple pour la gestion des référentiels
-→ entrée unique « Gestion des référentiels »
-→ vue à onglets
-   - Produits
-   - Fournisseurs
+→ séparateur Core existant
+→ une entrée « Gestion des référentiels »
+→ route authentifiée /reference-management/:section?
+→ onglet Produits si product:reference:read
+→ onglet Fournisseurs si supplier:reference:read
 ~~~
 
-La visibilité doit utiliser les permissions Application Global effectives et les guards existants.
+Les pages `ProductReferencePage` et `SupplierReferencePage`, leurs APIs et leurs guards backend sont réutilisés. Aucun endpoint, modèle MongoDB, registre de permission ou système de gouvernance supplémentaire n'est introduit.
 
-Pour Produits, réutiliser les surfaces/API déjà livrées : Référentiel, Contributions, Catégories, Produits, Variétés, Caractéristiques et Références/Variantes.
+Comportement d'autorisation attendu :
 
-Types de caractéristiques déjà supportés : Présentation, Pièce / découpe, Type commercial, Calibre / format, Couleur, Désignation de qualité.
+~~~text
+Produits uniquement     → onglet Produits
+Fournisseurs uniquement → onglet Fournisseurs
+les deux                → les deux onglets
+aucun                   → accès refusé
+URL d’un onglet refusé  → redirection vers le premier onglet autorisé
+~~~
 
-Pour Fournisseurs, réutiliser le référentiel global M-003 existant.
+Les anciennes routes autonomes restent disponibles pendant ce lot pour compatibilité, mais ne sont plus exposées dans la navigation Platform.
 
-Ne pas créer un deuxième système de gouvernance ni dupliquer les pages existantes : la prochaine tâche est une recomposition UX.
-
-### Priorité B — enrichissement du référentiel initial
+### Priorité suivante — enrichissement du référentiel initial
 
 État actuel vérifié de `m002-reference.v6.json` :
 
@@ -159,7 +163,7 @@ Objectif : offrir dès la première mise à disposition un référentiel global 
 
 Le mécanisme de seed est versionné/hashé : une version déjà enregistrée ne doit jamais être réécrite silencieusement.
 
-### Priorité C — validation visuelle du nouveau shell
+### Validation visuelle du shell déjà intégré
 
 Après fusion de l’upgrade Core, vérifier avec `npm run dev` :
 
@@ -192,28 +196,19 @@ Ne pas créer de micro-PR de correction. Ne pas relancer périodiquement les Cor
 La prochaine conversation doit d’abord vérifier GitHub réel et l’état de l’intégration Core avant de commencer la vue Platform « Gestion des référentiels ».
 
 
-## 9. Validation de l’intégration en cours
+## 9. Validation du lot courant
 
-La PR produit existante reste :
+Avant merge :
 
 ~~~text
-PR #26
-branche = core-update/post-v1.2.1-a9d99aa
+tests ciblés frontend
+→ lint / tests globaux applicables
+→ build
+→ E2E si la gate canonique les exécute
+→ Core Gate PR verte
+→ validation utilisateur
 ~~~
 
-La Core Gate #147 était verte sur l’ancien HEAD `f4919e2d363151c03a98602b90745e9db72daa3e`, avant l’intégration du Core `d3b9891...`.
+Aucun merge ne doit être effectué tant que les tests/gates requis ne sont pas verts. L'utilisateur communique lui-même le résultat des Core Gates ; ne pas les relancer ni les sonder périodiquement.
 
-Elle ne constitue donc plus la preuve finale du lot. Le nouveau HEAD doit obtenir une nouvelle Core Gate avant toute fusion.
-
-La validation visuelle utilisateur doit confirmer notamment :
-
-- Tableau de bord tout en haut ;
-- Dossiers / Produits / Fournisseurs immédiatement après ;
-- `Administration de l’espace` ensuite ;
-- absence de l’entrée `Fichiers` dans ce produit ;
-- `Espace de travail : Nom | badge` ;
-- libellés métier français dans Abonnement ;
-- widgets Core + widgets métier toujours présents sur le Dashboard selon leurs droits.
-
-Le nom commercial de l’application n’est pas modifié tant qu’il n’a pas été explicitement validé par l’utilisateur.
-
+Après merge validé, reprendre la priorité suivante de la roadmap sans modifier `core-origin.json`, car ce lot n'intègre aucun nouveau commit Core.
