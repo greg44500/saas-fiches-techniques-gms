@@ -105,6 +105,18 @@ const createTechnicalSheetSchema =
             .max(2000)
             .nullable()
             .optional(),
+        productionQuantity:
+            positiveDecimalStringSchema,
+        productionUnit: z.enum(
+            Object.values(
+                PRODUCT_REFERENCE_UNIT,
+            ),
+        ),
+        vatRateBasisPoints: z
+            .number()
+            .int()
+            .min(0)
+            .max(10000),
     });
 
 const updateTechnicalSheetSchema =
@@ -193,9 +205,6 @@ const saveTechnicalSheetDraftSchema =
             )
             .nullable()
             .optional(),
-        portions:
-            nullablePositiveDecimal
-                .optional(),
         vatRateBasisPoints: z
             .number()
             .int()
