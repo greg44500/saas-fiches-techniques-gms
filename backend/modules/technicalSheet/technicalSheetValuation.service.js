@@ -329,6 +329,9 @@ const buildTechnicalSheetValuation = async ({
             economics = calculateEconomics({
                 ingredientCosts,
                 economatCosts,
+                productionQuantity:
+                    draft.productionQuantity
+                        .toString(),
                 vatRateBasisPoints:
                     draft.vatRateBasisPoints,
                 targetMarginBasisPoints:
