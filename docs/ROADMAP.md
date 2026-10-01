@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; intégration Core post-tag v1.2.1 en cours  
-**Dernière mise à jour :** 2026-09-30
+**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; Core post-tag v1.2.1 intégré ; lot Platform « Gestion des référentiels » en cours  
+**Dernière mise à jour :** 2026-10-01
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -171,6 +171,23 @@ Checkpoint UX du 2026-09-30 : le parcours Produit ↔ Fournisseur doit rester un
 Le **corpus d'aide métier** est volontairement traité dans un bloc séparé après stabilisation de ces parcours. Il devra utiliser le point d'extension Core `APPLICATION_HELP_MODULES` et conserver le filtrage serveur selon permissions, capabilities et contexte ; aucune logique d'aide parallèle ne doit être créée.
 
 Le lot UX M-002 `GMS-UX-002` a été traité et fusionné avant l'ouverture de M-004. M-004 peut donc poursuivre sa conception sur le `main` vérifié au commit `b479b217815fad885f233e98b8f3145656641352`.
+
+### 2.3.1 UX Platform transverse M-002 / M-003 — Gestion des référentiels
+
+**État : EN COURS — 2026-10-01**
+
+Ce lot ne rouvre aucun contrat métier M-002/M-003. Il recompose uniquement leurs surfaces globales existantes :
+
+~~~text
+sidebar Platform
+→ une entrée « Gestion des référentiels »
+→ onglet Produits si product:reference:read
+→ onglet Fournisseurs si supplier:reference:read
+~~~
+
+Les deux permissions restent Application Global et indépendantes des permissions Platform. Les APIs, guards backend, pages de gouvernance, modèles et workflows existants restent les autorités. Aucun nouveau modèle, endpoint, stockage ou système de gouvernance n'est créé.
+
+La route racine choisit le premier onglet réellement autorisé. Une URL demandant un onglet non autorisé est redirigée vers un onglet autorisé, sans rendre les données de la section refusée.
 
 
 ### 2.4 Fiches techniques
