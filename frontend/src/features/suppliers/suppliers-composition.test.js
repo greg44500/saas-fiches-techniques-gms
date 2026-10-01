@@ -80,7 +80,7 @@ describe('suppliers frontend composition', () => {
     expect(hasWorkspaceEntry(visible, 'suppliers')).toBe(true);
   });
 
-  it('affiche le Référentiel Fournisseurs uniquement avec la permission Application Global', () => {
+  it('expose Gestion des référentiels avec la permission Fournisseurs globale', () => {
     const withoutPermission = flattenPlatformEntries(
       getVisiblePlatformNavigationSections(
         {
@@ -93,7 +93,7 @@ describe('suppliers frontend composition', () => {
     );
 
     expect(
-      withoutPermission.some(({ id }) => id === 'supplier-reference'),
+      withoutPermission.some(({ id }) => id === 'reference-management'),
     ).toBe(false);
 
     const withPermission = flattenPlatformEntries(
@@ -112,9 +112,9 @@ describe('suppliers frontend composition', () => {
     expect(withPermission).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: 'supplier-reference',
-          label: 'Référentiel Fournisseurs',
-          to: '/supplier-reference',
+          id: 'reference-management',
+          label: 'Gestion des référentiels',
+          to: '/reference-management',
         }),
       ]),
     );
