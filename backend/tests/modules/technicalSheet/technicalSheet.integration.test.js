@@ -282,6 +282,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche liste M004',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'KG',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 
@@ -649,6 +655,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche brouillon non copiable',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'KG',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 
@@ -701,6 +713,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche rétention M004',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'KG',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 
@@ -767,6 +785,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche quota M004',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'KG',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 
