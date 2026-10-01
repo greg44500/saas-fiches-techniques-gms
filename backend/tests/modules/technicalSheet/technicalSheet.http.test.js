@@ -62,6 +62,10 @@ beforeEach(async () => {
             owner.workspace._id,
         name:
             'Magasin RBAC M004',
+        technicalSheetSettings: {
+            defaultTargetMarginBasisPoints:
+                5000,
+        },
         statusChangedBy:
             owner.owner._id,
         createdBy:
@@ -125,6 +129,12 @@ beforeEach(async () => {
             data: {
                 name:
                     'Fiche RBAC M004',
+                productionQuantity:
+                    '1',
+                productionUnit:
+                    'KG',
+                vatRateBasisPoints:
+                    1000,
             },
         });
 
