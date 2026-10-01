@@ -6,6 +6,7 @@ import {
   dossiersFrontendRouteModule,
 } from '@/features/dossiers/dossiers-routes';
 import { productsFrontendRouteModule } from '@/features/products/products-routes';
+import { referenceManagementFrontendRouteModule } from '@/features/reference-management/reference-management-routes';
 import {
   dossierSupplierFrontendRoutes,
   suppliersFrontendRouteModule,
@@ -135,6 +136,7 @@ const APPLICATION_FRONTEND_ROUTE_MODULES = Object.freeze([
   dossierWorkspaceFrontendRouteModule,
   productsFrontendRouteModule,
   suppliersFrontendRouteModule,
+  referenceManagementFrontendRouteModule,
   technicalSheetsFrontendRouteModule,
 ]);
 

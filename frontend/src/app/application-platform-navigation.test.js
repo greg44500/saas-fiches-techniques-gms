@@ -10,46 +10,106 @@ import {
   getVisiblePlatformNavigationSections,
 } from '@/features/platform/lib/platform-navigation';
 
+function flattenNavigationItems(navigation) {
+  return navigation.flatMap((entry) => (
+    entry.type === 'group' || entry.type === 'section'
+      ? entry.items
+      : entry.type === 'separator'
+        ? []
+        : [entry]
+  ));
+}
+
 describe('application Platform navigation composition', () => {
-  it('ajoute Référentiel Produits uniquement avec la permission globale Produit', () => {
-    const withoutProductPermission = getVisiblePlatformNavigationSections(
+  it('affiche une seule entrée Gestion des référentiels dès qu’un référentiel métier est autorisé', () => {
+    const withoutReferencePermission =
+      getVisiblePlatformNavigationSections(
+        {
+          status: 'active',
+          permissions: ['platform:overview:read'],
+          applicationGlobalPermissions: [],
+        },
+        APPLICATION_PLATFORM_NAVIGATION,
+      );
+
+    expect(
+      flattenNavigationItems(withoutReferencePermission)
+        .some(({ id }) => id === 'reference-management'),
+    ).toBe(false);
+
+    for (const permission of [
+      'product:reference:read',
+      'supplier:reference:read',
+    ]) {
+      const visibleNavigation =
+        getVisiblePlatformNavigationSections(
+          {
+            status: 'active',
+            permissions: ['platform:overview:read'],
+            applicationGlobalPermissions: [permission],
+          },
+          APPLICATION_PLATFORM_NAVIGATION,
+        );
+
+      expect(
+        flattenNavigationItems(visibleNavigation),
+      ).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          id: 'reference-management',
+          label: 'Gestion des référentiels',
+          to: '/platform/reference-management',
+        }),
+      ]));
+
+      expect(
+        flattenNavigationItems(visibleNavigation)
+          .filter(({ id }) => id === 'reference-management'),
+      ).toHaveLength(1);
+    }
+  });
+
+  it('ne donne aucun accès métier implicite à un administrateur Platform', () => {
+    const visibleNavigation = getVisiblePlatformNavigationSections(
       {
         status: 'active',
-        permissions: ['platform:overview:read'],
+        permissions: [
+          'platform:overview:read',
+          'platform:users:read',
+          'platform:workspaces:read',
+        ],
         applicationGlobalPermissions: [],
       },
       APPLICATION_PLATFORM_NAVIGATION,
     );
 
     expect(
-      withoutProductPermission.flatMap((entry) => (
-        entry.type === 'group' ? entry.items : [entry]
-      )).some(({ id }) => id === 'product-reference'),
+      flattenNavigationItems(visibleNavigation)
+        .some(({ id }) => id === 'reference-management'),
     ).toBe(false);
-
-    const withProductPermission = getVisiblePlatformNavigationSections(
-      {
-        status: 'active',
-        permissions: ['platform:overview:read'],
-        applicationGlobalPermissions: ['product:reference:read'],
-      },
-      APPLICATION_PLATFORM_NAVIGATION,
-    );
-
-    expect(
-      withProductPermission.flatMap((entry) => (
-        entry.type === 'group' ? entry.items : [entry]
-      )),
-    ).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: 'product-reference',
-        label: 'Référentiel Produits',
-        to: '/product-reference',
-      }),
-    ]));
   });
 
-  it('conserve le Core puis ajoute un séparateur avant les sections applicatives', () => {
+  it('compose la surface GMS comme une section Core sans séparateur redondant', () => {
+    const applicationEntry =
+      APPLICATION_PLATFORM_NAVIGATION.at(
+        corePlatformNavigationSections.length,
+      );
+
+    expect(applicationEntry).toMatchObject({
+      id: 'gms',
+      type: 'section',
+      label: 'GMS',
+    });
+    expect(applicationEntry.items).toEqual([
+      expect.objectContaining({
+        id: 'reference-management',
+        label: 'Gestion des référentiels',
+      }),
+    ]);
+    expect(APPLICATION_PLATFORM_NAVIGATION)
+      .not.toContain(PLATFORM_APPLICATION_SEPARATOR);
+  });
+
+  it('conserve le Core puis ajoute un séparateur avant les anciens items applicatifs', () => {
     const applicationEntry = {
       type: 'item',
       id: 'catalog',
@@ -135,6 +195,7 @@ describe('application Platform navigation composition', () => {
       'navigationModules[0].sections[0].isVisible must be a function',
     );
   });
+
   it('compose des sections visuelles applicatives sans séparateur global redondant', () => {
     const navigation = composeApplicationPlatformNavigation([
       {

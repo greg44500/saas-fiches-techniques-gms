@@ -111,6 +111,37 @@ describe('PlatformSidebar', () => {
     expect(screen.queryByRole('button', { name: 'Sécurité & données' })).not.toBeInTheDocument();
   });
 
+  it('rend la section GMS et son unique entrée quand un référentiel métier est autorisé', () => {
+    useGetCurrentPlatformContextQueryMock.mockReturnValue({
+      data: {
+        status: 'active',
+        permissions: allNavigationPermissions,
+        applicationGlobalPermissions: ['product:reference:read'],
+      },
+    });
+
+    renderSidebar({
+      path: '/platform/reference-management/products',
+    });
+
+    expect(screen.getByText('GMS')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {
+        name: 'Gestion des référentiels',
+      }),
+    ).toHaveAttribute('href', '/platform/reference-management');
+    expect(
+      screen.queryByRole('link', {
+        name: 'Référentiel Produits',
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {
+        name: 'Référentiel Fournisseurs',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it('utilise le tooltip shadcn pour les groupes en mode réduit', async () => {
     const user = userEvent.setup();
     renderSidebar({ collapsed: true });
