@@ -213,6 +213,43 @@ describe('M-002 global product reference HTTP contract', () => {
         ]);
     });
 
+    it('permet à la gouvernance de retirer immédiatement une dimension globale inutilisée', async () => {
+        const product = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Abricot undo global' });
+
+        expect(product.status).toBe(201);
+
+        const variety = await request(app)
+            .post(
+                '/api/product-reference/'
+                + product.body.data.product.id
+                + '/varieties',
+            )
+            .set(bearer(governorToken))
+            .send({ name: 'Roussillon' });
+
+        expect(variety.status).toBe(201);
+
+        const undone = await request(app)
+            .post(
+                '/api/product-reference/'
+                + product.body.data.product.id
+                + '/dimensions/VARIETY/'
+                + variety.body.data.variety.id
+                + '/undo',
+            )
+            .set(bearer(governorToken));
+
+        expect(undone.status).toBe(200);
+        expect(undone.body.data.dimension).toMatchObject({
+            id: variety.body.data.variety.id,
+            name: 'Roussillon',
+            status: 'ARCHIVED',
+        });
+    });
+
     it('recherche le référentiel global par une dimension CUT seule', async () => {
         const category = await request(app)
             .post('/api/product-reference/categories')

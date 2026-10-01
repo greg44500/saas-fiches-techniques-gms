@@ -532,6 +532,84 @@ const updateProductCharacteristicStatus = async ({
     return serializeCharacteristic(characteristic);
 });
 
+
+const undoProductDimensionAddition = async ({
+    actorId,
+    workspaceId = null,
+    productId,
+    type,
+    dimensionId,
+}) => mongoose.connection.transaction(async (session) => {
+    await assertProductAvailable({
+        productId,
+        session,
+        activeOnly: false,
+    });
+
+    const isVariety = type === 'VARIETY';
+    const isCharacteristic = type === 'CHARACTERISTIC';
+    if (!isVariety && !isCharacteristic) {
+        throw new AppError('Type de dimension invalide.', 400);
+    }
+
+    const model = isVariety ? ProductVariety : ProductCharacteristic;
+    const dimension = await model.findOne({
+        _id: dimensionId,
+        canonicalProduct: productId,
+        identityActive: true,
+        status: PRODUCT_STATUS.ACTIVE,
+        governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+        createdBy: actorId,
+        contributedFromWorkspace: workspaceId,
+    }).session(session);
+
+    if (!dimension) {
+        throw new AppError(
+            'Cette valeur ne peut plus être retirée.',
+            409,
+        );
+    }
+
+    const used = await ProductVariant.exists({
+        canonicalProduct: productId,
+        ...(isVariety
+            ? { variety: dimension._id }
+            : { characteristics: dimension._id }),
+    }).session(session);
+
+    if (used) {
+        throw new AppError(
+            'Cette valeur est déjà utilisée par une Référence Produit.',
+            409,
+        );
+    }
+
+    dimension.status = PRODUCT_STATUS.ARCHIVED;
+    dimension.updatedBy = actorId;
+    await dimension.save({ session });
+
+    await createProductReferenceEvent({
+        actorId,
+        workspaceId,
+        action: isVariety
+            ? PRODUCT_REFERENCE_EVENT_ACTION.VARIETY_ARCHIVED
+            : PRODUCT_REFERENCE_EVENT_ACTION.CHARACTERISTIC_ARCHIVED,
+        entityType: isVariety
+            ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY
+            : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC,
+        entityId: dimension._id,
+        metadata: {
+            productId: productId.toString(),
+            reason: 'IMMEDIATE_UNDO',
+        },
+        session,
+    });
+
+    return isVariety
+        ? serializeVariety(dimension)
+        : serializeCharacteristic(dimension);
+});
+
 export {
     createProductCharacteristic,
     createProductCharacteristicInSession,
@@ -539,6 +617,7 @@ export {
     createProductVarietyInSession,
     listProductDimensions,
     updateProductCharacteristic,
+    undoProductDimensionAddition,
     updateProductCharacteristicStatus,
     updateProductVariety,
     updateProductVarietyStatus,

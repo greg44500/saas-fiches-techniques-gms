@@ -39,6 +39,7 @@ import {
     createProductCharacteristic,
     createProductVariety,
     listProductDimensions,
+    undoProductDimensionAddition,
     updateProductCharacteristic,
     updateProductCharacteristicStatus,
     updateProductVariety,
@@ -147,6 +148,21 @@ const dimensions = async (req, res) => {
         includeProvisional: true,
     });
     res.status(200).json({ status: 'success', data: result });
+};
+
+
+const undoDimensionAddition = async (req, res) => {
+    const dimension = await undoProductDimensionAddition({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        type: req.validated.params.dimensionType,
+        dimensionId: req.validated.params.dimensionId,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { dimension },
+    });
 };
 
 const createVarietyController = async (req, res) => {
@@ -348,6 +364,7 @@ export {
     updateCategoryStatusController,
     updateProductController,
     updateProductStatusController,
+    undoDimensionAddition,
     updateVariantController,
     updateVarietyController,
     updateVarietyStatusController,

@@ -33,6 +33,7 @@ import {
     updateCategoryStatusController,
     updateProductController,
     updateProductStatusController,
+    undoDimensionAddition,
     updateVariantController,
     updateVarietyController,
     updateVarietyStatusController,
@@ -51,6 +52,7 @@ import {
     globalCategoryParamsSchema,
     globalImportIdParamsSchema,
     globalProductCharacteristicParamsSchema,
+    globalProductDimensionUndoParamsSchema,
     globalProductIdParamsSchema,
     globalProductVarietyParamsSchema,
     globalProductListQuerySchema,
@@ -213,6 +215,14 @@ productCatalogGlobalRouter.get(
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.READ),
     validateRequest({ params: globalProductIdParamsSchema }),
     dimensions,
+);
+
+
+productCatalogGlobalRouter.post(
+    '/:productId/dimensions/:dimensionType/:dimensionId/undo',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({ params: globalProductDimensionUndoParamsSchema }),
+    undoDimensionAddition,
 );
 
 productCatalogGlobalRouter.post(

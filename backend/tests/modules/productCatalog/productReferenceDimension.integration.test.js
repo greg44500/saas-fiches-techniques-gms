@@ -13,6 +13,7 @@ import {
 import {
     createProductCharacteristic,
     createProductVariety,
+    undoProductDimensionAddition,
     updateProductCharacteristicStatus,
     updateProductVariety,
     updateProductVarietyStatus,
@@ -31,6 +32,34 @@ let ownerContext;
 
 beforeEach(async () => {
     ownerContext = await createWorkspaceOwnerFixture();
+
+    it('refuse de retirer immédiatement une dimension déjà utilisée', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Pomme undo dimension utilisée',
+        });
+        const variety = await createProductVariety({
+            actorId: ownerContext.owner._id,
+            workspaceId: ownerContext.workspace._id,
+            productId: reference.product._id,
+            name: 'Roussillon',
+        });
+
+        await updateVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variantId: reference.variant._id,
+            changes: { varietyId: variety.id },
+        });
+
+        await expect(undoProductDimensionAddition({
+            actorId: ownerContext.owner._id,
+            workspaceId: ownerContext.workspace._id,
+            productId: reference.product._id,
+            type: 'VARIETY',
+            dimensionId: variety.id,
+        })).rejects.toMatchObject({ statusCode: 409 });
+    });
+
 });
 
 describe('M-002 ProductVariety / ProductCharacteristic', () => {
