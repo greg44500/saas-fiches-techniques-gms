@@ -372,10 +372,14 @@ function TechnicalSheetWorkspacePage() {
       technicalSheetId,
       expectedRevision: draft.revision,
     }).unwrap().catch((error) => {
-      notifyError(
-        error,
-        'Les calculs automatiques de la Fiche n’ont pas pu être actualisés.',
-      );
+      toast({
+        title: 'Calcul impossible',
+        description: getTechnicalSheetApiErrorMessage(
+          error,
+          'Les calculs automatiques de la Fiche n’ont pas pu être actualisés.',
+        ),
+        variant: 'destructive',
+      });
     });
   }, [
     autosaveHasUnsavedChanges,
@@ -383,6 +387,7 @@ function TechnicalSheetWorkspacePage() {
     draft,
     draftDirty,
     technicalSheetId,
+    toast,
     valuate,
     valuateState.isLoading,
     workspace.id,
