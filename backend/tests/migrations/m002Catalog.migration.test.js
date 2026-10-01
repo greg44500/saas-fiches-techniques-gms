@@ -12,12 +12,16 @@ import {
     ensureM002CatalogIndexes,
 } from '../../migrations/ensureM002CatalogIndexes.migration.js';
 import {
+    backfillM002ProductDimensionQualityReview,
+} from '../../migrations/backfillM002ProductDimensionQualityReview.migration.js';
+import {
     CanonicalProduct,
 } from '../../modules/productCatalog/canonicalProduct.model.js';
 import {
     ProductCharacteristic,
 } from '../../modules/productCatalog/productCharacteristic.model.js';
 import {
+    PRODUCT_DIMENSION_REVIEW_STATUS,
     PRODUCT_GOVERNANCE_STATUS,
 } from '../../modules/productCatalog/productCatalog.registry.js';
 import {
@@ -36,6 +40,106 @@ describe('M-002 catalog index migration', () => {
         expect(second.totalExpected).toBe(M002_INDEX_NAMES.length);
         expect(first.ensuredCount).toBe(M002_INDEX_NAMES.length);
         expect(second.ensuredCount).toBe(M002_INDEX_NAMES.length);
+    });
+
+
+    it('backfill la revue qualité selon l’origine Platform ou Workspace', async () => {
+        const actorId = new mongoose.Types.ObjectId();
+        const productId = new mongoose.Types.ObjectId();
+        const workspaceId = new mongoose.Types.ObjectId();
+        const globalVarietyId = new mongoose.Types.ObjectId();
+        const workspaceCharacteristicId = new mongoose.Types.ObjectId();
+
+        await CanonicalProduct.collection.insertOne({
+            _id: productId,
+            name: 'Produit revue legacy',
+            normalizedName: 'produit revue legacy',
+            aliases: [],
+            searchKeys: ['produit revue legacy'],
+            searchGrams: ['produit revue legacy'],
+            category: null,
+            status: 'ACTIVE',
+            identityActive: true,
+            governanceStatus: 'APPROVED',
+            contributedFromWorkspace: null,
+            createdBy: actorId,
+            updatedBy: actorId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        await ProductVariety.collection.insertOne({
+            _id: globalVarietyId,
+            canonicalProduct: productId,
+            name: 'Globale legacy',
+            normalizedName: 'globale legacy',
+            aliases: [],
+            searchKeys: ['globale legacy'],
+            searchGrams: ['globale legacy'],
+            status: 'ACTIVE',
+            identityActive: true,
+            governanceStatus: 'APPROVED',
+            contributedFromWorkspace: null,
+            createdBy: actorId,
+            updatedBy: actorId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        await ProductCharacteristic.collection.insertOne({
+            _id: workspaceCharacteristicId,
+            canonicalProduct: productId,
+            kind: 'COLOR',
+            name: 'Workspace legacy',
+            normalizedName: 'workspace legacy',
+            aliases: [],
+            searchKeys: ['workspace legacy'],
+            searchGrams: ['workspace legacy'],
+            status: 'ACTIVE',
+            identityActive: true,
+            governanceStatus: 'APPROVED',
+            contributedFromWorkspace: workspaceId,
+            createdBy: actorId,
+            updatedBy: actorId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        const first = await backfillM002ProductDimensionQualityReview();
+        const second = await backfillM002ProductDimensionQualityReview();
+
+        const globalVariety = await ProductVariety.collection.findOne({
+            _id: globalVarietyId,
+        });
+        const workspaceCharacteristic =
+            await ProductCharacteristic.collection.findOne({
+                _id: workspaceCharacteristicId,
+            });
+
+        expect(globalVariety.qualityReviewStatus).toBe(
+            PRODUCT_DIMENSION_REVIEW_STATUS.NOT_REQUIRED,
+        );
+        expect(workspaceCharacteristic.qualityReviewStatus).toBe(
+            PRODUCT_DIMENSION_REVIEW_STATUS.PENDING,
+        );
+        expect(
+            first.reduce(
+                (sum, result) => (
+                    sum
+                    + result.pending.modifiedCount
+                    + result.notRequired.modifiedCount
+                ),
+                0,
+            ),
+        ).toBe(2);
+        expect(
+            second.reduce(
+                (sum, result) => (
+                    sum
+                    + result.pending.modifiedCount
+                    + result.notRequired.modifiedCount
+                ),
+                0,
+            ),
+        ).toBe(0);
     });
 
     it('backfill les documents legacy avec sanitizeFilter actif sans modifier updatedAt', async () => {

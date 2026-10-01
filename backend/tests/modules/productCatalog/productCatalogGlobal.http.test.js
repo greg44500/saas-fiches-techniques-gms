@@ -217,7 +217,7 @@ describe('M-002 global product reference HTTP contract', () => {
         ]);
     });
 
-    it('signale les nouvelles Dimensions Workspace puis les acquitte sans approuver une contribution', async () => {
+    it('traite les nouvelles Dimensions Workspace ligne par ligne', async () => {
         const workspace = await createWorkspaceOwnerFixture();
 
         const productResponse = await request(app)
@@ -242,6 +242,9 @@ describe('M-002 global product reference HTTP contract', () => {
             name: 'Rouge revue',
         });
 
+        expect(variety.qualityReviewStatus).toBe('PENDING');
+        expect(characteristic.qualityReviewStatus).toBe('PENDING');
+
         const listedBefore = await request(app)
             .get('/api/product-reference')
             .query({ q: 'Abricot revue Platform' })
@@ -249,10 +252,7 @@ describe('M-002 global product reference HTTP contract', () => {
 
         expect(listedBefore.status).toBe(200);
         expect(listedBefore.body.data.products[0].dimensionReview)
-            .toMatchObject({
-                pendingCount: 2,
-                reviewedAt: null,
-            });
+            .toEqual({ pendingCount: 2 });
 
         const dimensionsBefore = await request(app)
             .get('/api/product-reference/' + productId + '/dimensions')
@@ -264,54 +264,69 @@ describe('M-002 global product reference HTTP contract', () => {
             expect.arrayContaining([
                 expect.objectContaining({
                     id: variety.id,
-                    isNew: true,
-                }),
-            ]),
-        );
-        expect(dimensionsBefore.body.data.characteristics).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    id: characteristic.id,
-                    isNew: true,
+                    qualityReviewStatus: 'PENDING',
                 }),
             ]),
         );
 
         const reviewed = await request(app)
-            .post('/api/product-reference/' + productId + '/dimensions/review')
+            .post(
+                '/api/product-reference/'
+                + productId
+                + '/dimensions/VARIETY/'
+                + variety.id
+                + '/review',
+            )
             .set(bearer(governorToken));
 
         expect(reviewed.status).toBe(200);
-        expect(reviewed.body.data.review.pendingCount).toBe(0);
-        expect(reviewed.body.data.review.reviewedAt).toBeTruthy();
+        expect(reviewed.body.data.dimension).toMatchObject({
+            id: variety.id,
+            qualityReviewStatus: 'REVIEWED',
+        });
 
-        const listedAfter = await request(app)
+        const listedAfterOneReview = await request(app)
             .get('/api/product-reference')
             .query({ q: 'Abricot revue Platform' })
             .set(bearer(governorToken));
 
-        expect(listedAfter.body.data.products[0].dimensionReview.pendingCount)
-            .toBe(0);
+        expect(
+            listedAfterOneReview.body.data.products[0]
+                .dimensionReview.pendingCount,
+        ).toBe(1);
+
+        const deleted = await request(app)
+            .delete(
+                '/api/product-reference/'
+                + productId
+                + '/dimensions/CHARACTERISTIC/'
+                + characteristic.id,
+            )
+            .set(bearer(governorToken));
+
+        expect(deleted.status).toBe(200);
+        expect(deleted.body.data.dimension).toMatchObject({
+            id: characteristic.id,
+            status: 'ARCHIVED',
+        });
+
+        const listedAfterDelete = await request(app)
+            .get('/api/product-reference')
+            .query({ q: 'Abricot revue Platform' })
+            .set(bearer(governorToken));
+
+        expect(
+            listedAfterDelete.body.data.products[0]
+                .dimensionReview.pendingCount,
+        ).toBe(0);
 
         const dimensionsAfter = await request(app)
             .get('/api/product-reference/' + productId + '/dimensions')
             .set(bearer(governorToken));
 
-        expect(dimensionsAfter.body.data.review.pendingCount).toBe(0);
-        expect(dimensionsAfter.body.data.varieties).toEqual(
+        expect(dimensionsAfter.body.data.characteristics).not.toEqual(
             expect.arrayContaining([
-                expect.objectContaining({
-                    id: variety.id,
-                    isNew: false,
-                }),
-            ]),
-        );
-        expect(dimensionsAfter.body.data.characteristics).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    id: characteristic.id,
-                    isNew: false,
-                }),
+                expect.objectContaining({ id: characteristic.id }),
             ]),
         );
 
@@ -330,6 +345,90 @@ describe('M-002 global product reference HTTP contract', () => {
             listedAfterPlatformAddition.body.data.products[0]
                 .dimensionReview.pendingCount,
         ).toBe(0);
+    });
+
+    it('considère une correction Platform comme une revue explicite', async () => {
+        const workspace = await createWorkspaceOwnerFixture();
+        const productResponse = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Abricot correction revue' });
+        const productId = productResponse.body.data.product.id;
+
+        const variety = await createProductVariety({
+            actorId: workspace.owner._id,
+            workspaceId: workspace.workspace._id,
+            productId,
+            name: 'Roussillon',
+        });
+
+        const corrected = await request(app)
+            .patch(
+                '/api/product-reference/'
+                + productId
+                + '/varieties/'
+                + variety.id,
+            )
+            .set(bearer(governorToken))
+            .send({ name: 'Rouge du Roussillon' });
+
+        expect(corrected.status).toBe(200);
+        expect(corrected.body.data.variety).toMatchObject({
+            name: 'Rouge du Roussillon',
+            qualityReviewStatus: 'REVIEWED',
+        });
+
+        const listed = await request(app)
+            .get('/api/product-reference')
+            .query({ q: 'Abricot correction revue' })
+            .set(bearer(governorToken));
+
+        expect(listed.body.data.products[0].dimensionReview.pendingCount)
+            .toBe(0);
+    });
+
+    it('refuse de supprimer une Dimension utilisée par une Référence Produit', async () => {
+        const product = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Abricot suppression protégée' });
+        const productId = product.body.data.product.id;
+
+        const characteristic = await request(app)
+            .post('/api/product-reference/' + productId + '/characteristics')
+            .set(bearer(governorToken))
+            .send({
+                kind: 'CUT',
+                name: 'Découpe protégée',
+            });
+
+        await request(app)
+            .post('/api/product-reference/' + productId + '/variants')
+            .set(bearer(governorToken))
+            .send({
+                name: 'Abricot référence protégée',
+                characteristicIds: [
+                    characteristic.body.data.characteristic.id,
+                ],
+                conservationType: 'FRAIS',
+                foodRange: 1,
+                referenceUnit: 'KG',
+            })
+            .expect(201);
+
+        const deleted = await request(app)
+            .delete(
+                '/api/product-reference/'
+                + productId
+                + '/dimensions/CHARACTERISTIC/'
+                + characteristic.body.data.characteristic.id,
+            )
+            .set(bearer(governorToken));
+
+        expect(deleted.status).toBe(409);
+        expect(deleted.body.message).toMatch(
+            /utilisée par une Référence Produit/i,
+        );
     });
 
     it('permet à la gouvernance de retirer immédiatement une dimension globale inutilisée', async () => {
