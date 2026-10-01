@@ -5,6 +5,9 @@ import {
     SUPPLIER_CATALOG_GLOBAL_PERMISSION,
 } from './supplierCatalogGlobalPermission.registry.js';
 import { HELP_CONTEXT } from '../help/help.registry.js';
+import {
+    PLATFORM_REFERENCE_MANAGEMENT_HELP_CATEGORY_ID,
+} from '../referenceManagement/referenceManagementHelp.registry.js';
 
 const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
     key: 'suppliers',
@@ -15,13 +18,6 @@ const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
             label: 'Fournisseurs & prix',
             description: 'Fournisseurs, Articles, catalogues et prix applicables.',
             order: 120,
-        },
-        {
-            id: 'platform_supplier_references',
-            context: HELP_CONTEXT.PLATFORM,
-            label: 'Référentiel Fournisseurs',
-            description: 'Gouvernance des Fournisseurs et catalogues partagés.',
-            order: 110,
         },
     ]),
     entries: Object.freeze([
@@ -97,13 +93,20 @@ const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
         {
             id: 'platform.suppliers.reference',
             context: HELP_CONTEXT.PLATFORM,
-            categoryId: 'platform_supplier_references',
-            title: 'Consulter le référentiel Fournisseurs global',
-            summary: 'Accéder aux Fournisseurs et catalogues partagés selon l’autorisation métier globale.',
+            categoryId: PLATFORM_REFERENCE_MANAGEMENT_HELP_CATEGORY_ID,
+            title: 'Consulter le référentiel Fournisseurs',
+            summary: 'Consulter les Fournisseurs et catalogues partagés depuis la gestion unifiée des référentiels.',
             search: {
-                keywords: ['fournisseur', 'référentiel', 'global', 'catalogue'],
+                keywords: [
+                    'fournisseur',
+                    'référentiel',
+                    'global',
+                    'catalogue',
+                    'gestion des référentiels',
+                ],
                 questions: [
-                    'Comment consulter le référentiel Fournisseurs global ?',
+                    'Comment consulter le référentiel Fournisseurs ?',
+                    'Où trouver les Fournisseurs dans Gestion des référentiels ?',
                 ],
             },
             audience: {
@@ -118,7 +121,8 @@ const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
             prerequisites: [],
             steps: [
                 'Ouvrez la surface Platform.',
-                'Accédez au référentiel Fournisseurs depuis la navigation autorisée.',
+                'Dans la section GMS, ouvrez Gestion des référentiels.',
+                'Sélectionnez l’onglet Fournisseurs.',
                 'Consultez les Fournisseurs, Articles et catalogues partagés disponibles.',
             ],
             outcome: 'Les données globales partagées sont consultées sans exposer les catalogues privés d’un autre Workspace.',
@@ -130,13 +134,13 @@ const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
         {
             id: 'platform.suppliers.manage',
             context: HELP_CONTEXT.PLATFORM,
-            categoryId: 'platform_supplier_references',
-            title: 'Gérer le référentiel Fournisseurs global',
+            categoryId: PLATFORM_REFERENCE_MANAGEMENT_HELP_CATEGORY_ID,
+            title: 'Gérer le référentiel Fournisseurs',
             summary: 'Créer, corriger ou archiver les données fournisseur partagées.',
             search: {
                 keywords: ['fournisseur', 'catalogue', 'gérer', 'archiver'],
                 questions: [
-                    'Comment administrer un Fournisseur global ?',
+                    'Comment administrer les Fournisseurs partagés ?',
                 ],
             },
             audience: {
@@ -150,9 +154,9 @@ const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
             whoCanPerform: 'Un gestionnaire disposant de la permission métier globale de gestion du référentiel Fournisseurs.',
             prerequisites: [],
             steps: [
-                'Ouvrez le référentiel Fournisseurs global.',
-                'Sélectionnez l’objet à créer ou corriger.',
-                'Enregistrez ou archivez explicitement selon le besoin.',
+                'Dans la section GMS, ouvrez Gestion des référentiels puis l’onglet Fournisseurs.',
+                'Sélectionnez Fournisseurs, Articles ou Catalogues selon l’objet à administrer.',
+                'Créez, corrigez, importez ou archivez explicitement selon le besoin.',
             ],
             outcome: 'Le référentiel fournisseur partagé est administré sans modifier les catalogues privés des Workspaces.',
             edgeCases: [],

@@ -25,9 +25,16 @@ function hasWorkspaceEntry(navigation, id) {
 }
 
 function flattenPlatformEntries(entries) {
-  return entries.flatMap((entry) => (
-    entry.type === 'group' ? entry.items : [entry]
-  ));
+  return entries.flatMap((entry) => {
+    if (entry.type === 'separator') return [];
+
+    return (
+      entry.type === 'group'
+      || entry.type === 'section'
+    )
+      ? entry.items
+      : [entry];
+  });
 }
 
 describe('suppliers frontend composition', () => {
@@ -80,7 +87,7 @@ describe('suppliers frontend composition', () => {
     expect(hasWorkspaceEntry(visible, 'suppliers')).toBe(true);
   });
 
-  it('affiche le Référentiel Fournisseurs uniquement avec la permission Application Global', () => {
+  it('affiche Gestion des référentiels avec le droit Fournisseurs Application Global', () => {
     const withoutPermission = flattenPlatformEntries(
       getVisiblePlatformNavigationSections(
         {
@@ -93,7 +100,7 @@ describe('suppliers frontend composition', () => {
     );
 
     expect(
-      withoutPermission.some(({ id }) => id === 'supplier-reference'),
+      withoutPermission.some(({ id }) => id === 'reference-management'),
     ).toBe(false);
 
     const withPermission = flattenPlatformEntries(
@@ -112,11 +119,17 @@ describe('suppliers frontend composition', () => {
     expect(withPermission).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: 'supplier-reference',
-          label: 'Référentiel Fournisseurs',
-          to: '/supplier-reference',
+          id: 'reference-management',
+          label: 'Gestion des référentiels',
+          to: '/platform/reference-management',
         }),
       ]),
     );
+    expect(
+      withPermission.filter(({ id }) => id === 'reference-management'),
+    ).toHaveLength(1);
+    expect(
+      withPermission.some(({ id }) => id === 'supplier-reference'),
+    ).toBe(false);
   });
 });

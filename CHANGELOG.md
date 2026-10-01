@@ -22,6 +22,9 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Changed
 
+- navigation Platform GMS unifiée sous « Gestion des référentiels », avec onglets Produits/Fournisseurs filtrés par permissions Application Global ;
+- aide métier Platform alignée sur cette navigation avec une catégorie unique « Gestion des référentiels », sans modifier le moteur d’aide Core ni les catégories Workspace ;
+
 - drawer Platform Produit densifié : recherche et enrichissement alignés, compteurs, filtres À vérifier/Actives/Archivées/Toutes et actions par icônes ;
 - aides secondaires de création/enrichissement déplacées vers des infobulles contextuelles ;
 

@@ -57,6 +57,16 @@ describe('application frontend route composition', () => {
     );
   });
 
+  it('compose la route Platform unifiée de gestion des référentiels', () => {
+    expect(APPLICATION_FRONTEND_ROUTES.platformRoutes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'reference-management/:section?',
+        }),
+      ]),
+    );
+  });
+
   it('compose les routes Workspace de Corbeille et paramètres Dossiers', () => {
     expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).toEqual(
       expect.arrayContaining([

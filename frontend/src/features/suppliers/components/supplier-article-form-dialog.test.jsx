@@ -65,6 +65,21 @@ function renderDialog(onSaved = vi.fn(), props = {}) {
   );
 }
 
+async function selectOption(user, triggerName, optionName) {
+  const trigger = screen.getByRole('combobox', {
+    name: triggerName,
+  });
+
+  vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
+    DOMRect.fromRect({ x: 24, y: 24, width: 240, height: 40 }),
+  );
+
+  await user.click(trigger);
+  await user.click(await screen.findByRole('option', {
+    name: optionName,
+  }));
+}
+
 describe('SupplierArticleFormDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -90,10 +105,11 @@ describe('SupplierArticleFormDialog', () => {
 
     renderDialog(onSaved);
 
-    await user.click(screen.getByRole('combobox', {
-      name: 'Sélectionner le Fournisseur',
-    }));
-    await user.click(screen.getByRole('option', { name: 'Sysco' }));
+    await selectOption(
+      user,
+      'Sélectionner le Fournisseur',
+      'Sysco',
+    );
 
     await user.click(screen.getByRole('button', { name: 'Choisir Abricot' }));
 
@@ -136,10 +152,11 @@ describe('SupplierArticleFormDialog', () => {
       'La Référence Produit est préremplie depuis le Produit consulté.',
     )).toBeInTheDocument();
 
-    await user.click(screen.getByRole('combobox', {
-      name: 'Sélectionner le Fournisseur',
-    }));
-    await user.click(screen.getByRole('option', { name: 'Sysco' }));
+    await selectOption(
+      user,
+      'Sélectionner le Fournisseur',
+      'Sysco',
+    );
     await user.type(
       screen.getByLabelText('Référence fournisseur'),
       'PUR-001',
@@ -170,11 +187,19 @@ describe('SupplierArticleFormDialog', () => {
     )).toBeInTheDocument();
     expect(screen.queryByText(/M-002/)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('combobox', {
+    const unitTrigger = screen.getByRole('combobox', {
       name: 'Unité du conditionnement',
-    }));
+    });
 
-    expect(screen.getByRole('option', { name: 'PCE' })).toBeInTheDocument();
+    vi.spyOn(unitTrigger, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 24, y: 24, width: 240, height: 40 }),
+    );
+
+    await user.click(unitTrigger);
+
+    expect(
+      await screen.findByRole('option', { name: 'PCE' }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'UNIT' })).not.toBeInTheDocument();
   });
 });
