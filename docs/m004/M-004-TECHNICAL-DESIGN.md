@@ -96,6 +96,29 @@ createdAt / updatedAt
 
 ---
 
+## 3 bis. Paramètres obligatoires à l'entrée dans le poste de travail
+
+Un nouveau Dossier doit posséder une marge cible par défaut. Une nouvelle Fiche est créée uniquement lorsque les données suivantes sont disponibles :
+
+~~~text
+nom
+quantité produite
+unité de production
+TVA
+marge cible héritée du Dossier
+~~~
+
+La quantité produite remplace l'ancien champ `portions`. Elle représente le nombre d'unités produites dans `productionUnit` et sert de dénominateur économique :
+
+~~~text
+coût fabrication HT par unité produite
+= coût fabrication HT total / quantité produite
+~~~
+
+Le Prix théorique, le Prix conseillé, le Prix final et le plancher économique sont exprimés par unité produite. Les coûts matière, économat et fabrication totaux restent également conservés pour expliquer la recette complète.
+
+---
+
 ## 4. Modèle TechnicalSheetDraft
 
 Rôle : unique état de travail mutable d'une Fiche.
@@ -111,8 +134,6 @@ revision               integer >= 0
 
 productionQuantity     Decimal128|null
 productionUnit         unité M-002|null
-portions               Decimal128|null
-
 vatRateBasisPoints     integer|null
 targetMarginBasisPoints integer|null
 
@@ -137,7 +158,7 @@ createdAt / updatedAt
 - Decimal128 est conservé pour les quantités et calculs non monétaires exacts ;
 - les taux en basis points évitent les flottants pour TVA et marge ;
 - le Prix final TTC est stockable en unité monétaire mineure ;
-- `finalPriceMode` permet de préserver explicitement un choix utilisateur lors d'une revalorisation.
+- `finalPriceMode` permet de préserver explicitement un choix utilisateur lors des recalculs automatiques.
 
 Aucune valeur de TVA ou de marge cible n'est inventée par la conception.
 
@@ -219,7 +240,6 @@ sheetSnapshot           {
     description
     productionQuantity
     productionUnit
-    portions
     vatRateBasisPoints
     targetMarginBasisPoints
 }
@@ -434,10 +454,10 @@ Le draft conserve ensuite un `valuationFingerprint` global dérivé de :
 1. recharger ProductVariants et Articles ;
 2. relancer la résolution M-003 des Prix applicables ;
 3. recalculer le fingerprint ;
-4. refuser avec `409` si le fingerprint économique a changé ;
-5. exiger une revalorisation explicite.
+4. si le fingerprint économique a changé, persister la valorisation actualisée dans le brouillon et refuser cette tentative avec `409` ;
+5. demander une nouvelle confirmation après vérification humaine.
 
-Le frontend ne décide jamais de la fraîcheur.
+Le frontend ne décide jamais de la fraîcheur et n'expose plus d'action manuelle « Valoriser / Revaloriser » dans le parcours normal.
 
 ---
 
@@ -1057,7 +1077,9 @@ Le poste de travail M-004 utilise un autosave frontend du brouillon sans modifie
 - les modifications saisies pendant une requête restent locales et sont rejouées ensuite avec la nouvelle `TechnicalSheetDraft.revision` renvoyée par le serveur ;
 - un échec laisse le brouillon local non enregistré, l'affiche explicitement et permet une nouvelle tentative ;
 - les opérations serveur dépendantes du brouillon restent bloquées tant qu'une sauvegarde est en attente ou en échec ;
-- l'autosave ne déclenche jamais automatiquement Valoriser/Revaloriser ; le backend reste l'autorité économique.
+- chaque sauvegarde persistée recalcule automatiquement la valorisation du brouillon lorsque sa composition contient des lignes ;
+- le backend reste l'unique autorité économique ;
+- un brouillon historique `NOT_VALUED` ou `STALE` complet est recalculé automatiquement au chargement pour compatibilité.
 
 Le contrôle optimiste décrit en section 11 reste donc inchangé : l'autosave sérialise les écritures côté client au lieu de contourner `expectedRevision`.
 
@@ -1108,10 +1130,11 @@ Pour un `409` de concurrence :
 - proposer de recharger l'état courant ;
 - conserver localement les données non envoyées seulement si le composant peut le faire sans ambiguïté.
 
-Pour un `409` de prix obsolète :
+Pour un `409` dû à un prix devenu différent :
 
-- message distinct ;
-- action principale « Revaloriser ».
+- le backend actualise d'abord le brouillon ;
+- le frontend affiche un message distinct ;
+- l'utilisateur vérifie les nouveaux résultats puis confirme à nouveau la validation.
 
 Pour `SUPPLIER_ARTICLE_SELECTION_REQUIRED` :
 
@@ -1171,7 +1194,7 @@ Au minimum :
 - choix Article ambigu ;
 - Prix absent ;
 - valorisation ;
-- revalorisation ;
+- recalcul automatique ;
 - prix final manuel ;
 - validation ;
 - historique ;
@@ -1191,13 +1214,14 @@ Au minimum :
 Conserver le périmètre contractuel :
 
 ~~~text
-créer → composer → valoriser → valider
+créer avec paramètres → composer → calcul automatique → valider
 
 ambiguïté Article → choix humain
 
 prix modifié
-→ validation refusée
-→ revalorisation
+→ tentative de validation
+→ calculs actualisés
+→ nouvelle confirmation
 → validation
 
 Dossier A ≠ Dossier B
