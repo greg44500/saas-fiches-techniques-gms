@@ -272,6 +272,9 @@ economicSnapshot        {
     materialCostHt
     economatCostHt
     manufacturingCostHt
+    materialCostPerProductionUnitHt
+    economatCostPerProductionUnitHt
+    manufacturingCostPerProductionUnitHt
     theoreticalPriceHt
     theoreticalPriceTtc
     advisedPriceTtc
@@ -1042,10 +1045,10 @@ Réutiliser :
 Sections logiques :
 
 - identité ;
-- Indicateurs de production ;
+- Paramètres de production ;
+- Résultats économiques ;
 - Ingrédients ;
 - Économat ;
-- valorisation ;
 - prix/marge ;
 - historique.
 
@@ -1193,8 +1196,8 @@ Au minimum :
 - composition ;
 - choix Article ambigu ;
 - Prix absent ;
-- valorisation ;
-- recalcul automatique ;
+- calcul économique automatique ;
+- actualisation automatique après changement ;
 - prix final manuel ;
 - validation ;
 - historique ;
