@@ -125,10 +125,6 @@ const sourceComposition = async ({
         productionUnit:
             validation.sheetSnapshot
                 .productionUnit,
-        portions:
-            validation.sheetSnapshot
-                .portions
-                ?.toString() ?? null,
         vatRateBasisPoints:
             validation.sheetSnapshot
                 .vatRateBasisPoints,
@@ -282,8 +278,6 @@ const copyTechnicalSheet = async ({
                     productionUnit:
                         composition
                             .productionUnit,
-                    portions:
-                        composition.portions,
                     vatRateBasisPoints:
                         composition
                             .vatRateBasisPoints,
