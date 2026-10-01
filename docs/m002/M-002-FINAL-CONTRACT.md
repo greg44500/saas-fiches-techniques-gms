@@ -140,6 +140,27 @@ La gouvernance des valeurs est non bloquante : une nouvelle identité nécessita
 
 `Type commercial` reste dans le modèle M-002 et dans les données existantes, mais les nouveaux ajouts Workspace sont temporairement masqués tant que sa définition métier n'est pas validée.
 
+## 6.1. Revue Platform des Dimensions ajoutées depuis un Workspace
+
+Extension fonctionnelle validée le 2026-10-01.
+
+La Platform doit pouvoir identifier les Produits dont le référentiel a reçu de nouvelles Variétés ou Caractéristiques depuis un Workspace.
+
+Règles :
+
+- seuls les ajouts provenant d'un Workspace déclenchent l'indicateur ;
+- les ajouts directs effectués par l'autorité Platform ne se notifient pas eux-mêmes ;
+- une valeur retirée immédiatement ou devenue non visible par la gouvernance ne reste pas comptée ;
+- le compteur est persistant et calculé depuis les données métier réelles ;
+- la dernière revue Platform est enregistrée dans l'historique immuable via l'événement `PRODUCT_DIMENSIONS_REVIEWED` ;
+- le tableau Platform expose le nombre de nouvelles valeurs à vérifier ;
+- la pastille ouvre directement le drawer du Produit sur l'onglet Dimensions ;
+- les valeurs concernées portent l'indication `Nouveau` jusqu'à la revue ;
+- l'action Platform est libellée `Marquer comme vérifié` ;
+- cette action acquitte uniquement l'indicateur de revue et ne vaut jamais approbation d'une contribution `PROVISIONAL` ou `PENDING_REVIEW`.
+
+La revue des Dimensions et la gouvernance des Contributions restent donc deux responsabilités distinctes.
+
 ## 7. UX Workspace
 
 Deux vues :

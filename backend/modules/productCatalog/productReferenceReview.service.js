@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import {
+    PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
 } from './productCatalog.registry.js';
@@ -63,6 +64,12 @@ const getProductDimensionReviewSummaries = async ({
     const dimensionFilter = {
         canonicalProduct: mongoose.trusted({ $in: objectIds }),
         identityActive: true,
+        governanceStatus: mongoose.trusted({
+            $in: [
+                PRODUCT_GOVERNANCE_STATUS.APPROVED,
+                PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+            ],
+        }),
         contributedFromWorkspace: mongoose.trusted({ $ne: null }),
     };
 

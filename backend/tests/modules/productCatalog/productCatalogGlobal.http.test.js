@@ -314,6 +314,22 @@ describe('M-002 global product reference HTTP contract', () => {
                 }),
             ]),
         );
+
+        await request(app)
+            .post('/api/product-reference/' + productId + '/varieties')
+            .set(bearer(governorToken))
+            .send({ name: 'Créée directement Platform' })
+            .expect(201);
+
+        const listedAfterPlatformAddition = await request(app)
+            .get('/api/product-reference')
+            .query({ q: 'Abricot revue Platform' })
+            .set(bearer(governorToken));
+
+        expect(
+            listedAfterPlatformAddition.body.data.products[0]
+                .dimensionReview.pendingCount,
+        ).toBe(0);
     });
 
     it('permet à la gouvernance de retirer immédiatement une dimension globale inutilisée', async () => {

@@ -115,7 +115,7 @@ const metadata = {
   ],
 };
 
-function renderDrawer() {
+function renderDrawer(overrides = {}) {
   return render(
     <ProductReferenceDetailsDrawer
       canManage
@@ -123,6 +123,7 @@ function renderDrawer() {
       onClose={vi.fn()}
       open
       productId="product-1"
+      {...overrides}
     />,
   );
 }
@@ -206,6 +207,15 @@ describe('ProductReferenceDetailsDrawer', () => {
     mocks.updateVariantStatus.mockReturnValue(resolvedMutation);
     mocks.updateVarietyStatus.mockReturnValue(resolvedMutation);
     mocks.updateCharacteristicStatus.mockReturnValue(resolvedMutation);
+  });
+
+
+  it('ouvre directement l’onglet Dimensions depuis une notification Produit', () => {
+    renderDrawer({ initialTab: 'dimensions' });
+
+    expect(screen.getByRole('textbox', {
+      name: 'Rechercher dans les dimensions',
+    })).toBeInTheDocument();
   });
 
   it('affiche les compteurs des Dimensions, Références et sous-sections', async () => {
