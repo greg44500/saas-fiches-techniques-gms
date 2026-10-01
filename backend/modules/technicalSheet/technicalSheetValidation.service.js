@@ -352,6 +352,16 @@ const validateTechnicalSheet = async ({
             || fresh.valuationFingerprint
                 !== draft.valuationFingerprint
         ) {
+            const refreshedLines =
+                fresh.lines.map((line) => {
+                    const {
+                        productVariantSnapshot,
+                        ...persisted
+                    } = line;
+
+                    return persisted;
+                });
+
             await TechnicalSheetDraft.updateOne(
                 {
                     _id: draft._id,
@@ -360,15 +370,22 @@ const validateTechnicalSheet = async ({
                 },
                 {
                     $set: {
+                        lines: refreshedLines,
                         valuationStatus:
-                            TECHNICAL_SHEET_VALUATION_STATUS
-                                .STALE,
-                        valuedAt: null,
+                            fresh.valuationStatus,
+                        valuedAt:
+                            fresh.valuedAt,
                         valuationFingerprint:
-                            null,
-                        economicSnapshot: null,
-                        'lines.$[].valuation.materialCostSharePercent':
-                            null,
+                            fresh.valuationFingerprint,
+                        economicSnapshot:
+                            fresh.economicSnapshot,
+                        ...(fresh.economicSnapshot
+                            ? {
+                                finalPriceTtcMinor:
+                                    fresh.economicSnapshot
+                                        .finalPriceTtcMinor,
+                            }
+                            : {}),
                         updatedBy: actorId,
                     },
                     $inc: { revision: 1 },
@@ -377,7 +394,9 @@ const validateTechnicalSheet = async ({
             );
 
             return {
-                revaluationRequired: true,
+                valuationRefreshed: true,
+                valuationStatus:
+                    fresh.valuationStatus,
             };
         }
 
@@ -508,13 +527,16 @@ const validateTechnicalSheet = async ({
         },
     );
 
-    if (result.revaluationRequired) {
+    if (result.valuationRefreshed) {
         const error = new AppError(
-            'Les données économiques ont changé. Une revalorisation est obligatoire.',
+            result.valuationStatus
+                === TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE
+                ? 'Les données économiques ont changé. Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.'
+                : 'Les données économiques ont changé et la Fiche n’est plus complètement valorisable. Les calculs ont été actualisés.',
             409,
         );
         error.code =
-            'TECHNICAL_SHEET_REVALUATION_REQUIRED';
+            'TECHNICAL_SHEET_VALUATION_REFRESHED';
         throw error;
     }
 
