@@ -48,6 +48,16 @@ function DossierFormDialog({
   });
 
   const addressValue = watch('locationAddress');
+  const nameValue = watch('name') ?? '';
+  const defaultTargetMarginValue =
+    watch('defaultTargetMargin') ?? '';
+  const createRequiredFieldsMissing = (
+    !editing
+    && (
+      !nameValue.trim()
+      || !defaultTargetMarginValue.trim()
+    )
+  );
   const addressAutocomplete = useAddressAutocomplete(addressValue, {
     enabled: open,
   });
@@ -292,7 +302,11 @@ function DossierFormDialog({
             >
               Annuler
             </DialogClose>
-            <Button disabled={pending} form="dossier-form" type="submit">
+            <Button
+              disabled={pending || createRequiredFieldsMissing}
+              form="dossier-form"
+              type="submit"
+            >
               {pending
                 ? 'Enregistrement…'
                 : editing
