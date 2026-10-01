@@ -424,10 +424,6 @@ const validateTechnicalSheet = async ({
                                 .toString(),
                         productionUnit:
                             draft.productionUnit,
-                        portions:
-                            draft.portions
-                                ?.toString()
-                            ?? null,
                         vatRateBasisPoints:
                             draft.vatRateBasisPoints,
                         targetMarginBasisPoints:
