@@ -622,7 +622,9 @@ Règles :
 - ne donner aucun droit métier implicite à un rôle Platform ;
 - utiliser la primitive Core `type: 'section'` sans modifier le renderer Core ;
 - ne pas créer de backend, modèle, permission ou capability supplémentaire ;
-- le Help Center existant reste valide car il ne dépend pas des anciennes URLs.
+- conserver le moteur Help Center Core mais aligner la composition métier Platform sur la nouvelle navigation ;
+- regrouper les aides Platform Produits/Fournisseurs sous une catégorie unique « Gestion des référentiels » tout en conservant leur filtrage Application Global ;
+- conserver séparées les catégories Workspace « Produits » et « Fournisseurs & prix ».
 
 État actuel :
 

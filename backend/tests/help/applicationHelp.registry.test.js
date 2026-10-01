@@ -9,6 +9,7 @@ describe('application Help registry', () => {
     it('compose le corpus Core avec les quatre modules métier livrés', () => {
         expect(APPLICATION_HELP_MODULES.map(({ key }) => key)).toEqual([
             'dossiers',
+            'reference-management',
             'products',
             'suppliers',
             'technical-sheets',
@@ -26,6 +27,32 @@ describe('application Help registry', () => {
             .toHaveProperty('platform.products.reference');
         expect(ACTIVE_HELP_REGISTRY.entriesById)
             .toHaveProperty('platform.suppliers.reference');
+    });
+
+    it('regroupe l’aide Platform Produits et Fournisseurs dans une catégorie métier unique', () => {
+        expect(ACTIVE_HELP_REGISTRY.categoriesById)
+            .toHaveProperty('platform_reference_management');
+        expect(
+            ACTIVE_HELP_REGISTRY.categoriesById.platform_reference_management,
+        ).toMatchObject({
+            context: 'platform',
+            label: 'Gestion des référentiels',
+        });
+
+        expect(ACTIVE_HELP_REGISTRY.categoriesById)
+            .not.toHaveProperty('platform_product_references');
+        expect(ACTIVE_HELP_REGISTRY.categoriesById)
+            .not.toHaveProperty('platform_supplier_references');
+
+        for (const entryId of [
+            'platform.products.reference',
+            'platform.products.governance',
+            'platform.suppliers.reference',
+            'platform.suppliers.manage',
+        ]) {
+            expect(ACTIVE_HELP_REGISTRY.entriesById[entryId].categoryId)
+                .toBe('platform_reference_management');
+        }
     });
 
     it('conserve séparées les permissions Workspace et Application Global', () => {

@@ -5,6 +5,9 @@ import {
     PRODUCT_CATALOG_GLOBAL_PERMISSION,
 } from './productCatalogGlobalPermission.registry.js';
 import { HELP_CONTEXT } from '../help/help.registry.js';
+import {
+    PLATFORM_REFERENCE_MANAGEMENT_HELP_CATEGORY_ID,
+} from '../referenceManagement/referenceManagementHelp.registry.js';
 
 const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
     key: 'products',
@@ -15,13 +18,6 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
             label: 'Produits',
             description: 'Références Produit, favoris et enrichissement du référentiel.',
             order: 110,
-        },
-        {
-            id: 'platform_product_references',
-            context: HELP_CONTEXT.PLATFORM,
-            label: 'Référentiel Produits',
-            description: 'Gouvernance du référentiel Produit partagé.',
-            order: 100,
         },
     ]),
     entries: Object.freeze([
@@ -98,13 +94,20 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
         {
             id: 'platform.products.reference',
             context: HELP_CONTEXT.PLATFORM,
-            categoryId: 'platform_product_references',
-            title: 'Consulter le référentiel Produits global',
-            summary: 'Accéder aux Produits et contributions visibles selon les autorisations métier globales.',
+            categoryId: PLATFORM_REFERENCE_MANAGEMENT_HELP_CATEGORY_ID,
+            title: 'Consulter le référentiel Produits',
+            summary: 'Consulter les Produits et contributions partagés depuis la gestion unifiée des référentiels.',
             search: {
-                keywords: ['produit', 'référentiel', 'global', 'contribution'],
+                keywords: [
+                    'produit',
+                    'référentiel',
+                    'global',
+                    'contribution',
+                    'gestion des référentiels',
+                ],
                 questions: [
-                    'Comment consulter le référentiel Produits global ?',
+                    'Comment consulter le référentiel Produits ?',
+                    'Où trouver les Produits dans Gestion des référentiels ?',
                 ],
             },
             audience: {
@@ -119,7 +122,8 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
             prerequisites: [],
             steps: [
                 'Ouvrez la surface Platform.',
-                'Accédez au référentiel Produits depuis la navigation autorisée.',
+                'Dans la section GMS, ouvrez Gestion des référentiels.',
+                'Sélectionnez l’onglet Produits.',
                 'Consultez les Produits, catégories et contributions disponibles.',
             ],
             outcome: 'Le référentiel global est consulté sans élévation implicite liée au rôle Platform.',
@@ -131,7 +135,7 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
         {
             id: 'platform.products.governance',
             context: HELP_CONTEXT.PLATFORM,
-            categoryId: 'platform_product_references',
+            categoryId: PLATFORM_REFERENCE_MANAGEMENT_HELP_CATEGORY_ID,
             title: 'Gouverner les contributions Produit',
             summary: 'Valider, fusionner ou refuser les valeurs provisoires proposées par les Workspaces.',
             search: {
@@ -154,7 +158,8 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
                 'Examiner la valeur proposée et les éventuelles références existantes proches.',
             ],
             steps: [
-                'Ouvrez les contributions Produit.',
+                'Dans la section GMS, ouvrez Gestion des référentiels puis l’onglet Produits.',
+                'Sélectionnez Contributions.',
                 'Examinez la proposition et son contexte.',
                 'Validez, fusionnez ou refusez explicitement la contribution.',
             ],

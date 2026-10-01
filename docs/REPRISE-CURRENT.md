@@ -148,17 +148,55 @@ route   : /platform/reference-management
 
 Les anciens descriptors Platform séparés Produits/Fournisseurs sont retirés de la composition afin d'éviter deux chemins de navigation concurrents.
 
-## 7. Centre d'aide
+## 7. Centre d'aide métier
 
-Les modules d'aide M-002/M-003 ont été vérifiés.
+Le moteur d'aide reste celui du Core générique. Seule la composition métier du produit est adaptée au BLOC B.
 
-Ils :
+Avant le BLOC B, la surface Platform exposait deux catégories distinctes :
 
-- filtrent déjà leurs contenus selon les permissions Application Global ;
-- ne codent pas les anciennes URLs en dur ;
-- décrivent les parcours fonctionnels sans dépendre du chemin exact.
+~~~text
+Référentiel Produits
+Référentiel Fournisseurs
+~~~
 
-Aucune modification du Help Center n'est requise dans ce bloc.
+Elles sont désormais regroupées sous une catégorie Produit unique :
+
+~~~text
+Gestion des référentiels
+→ Consulter le référentiel Produits
+→ Gouverner les contributions Produit
+→ Consulter le référentiel Fournisseurs
+→ Gérer le référentiel Fournisseurs
+~~~
+
+Implémentation :
+
+~~~text
+backend/modules/referenceManagement/referenceManagementHelp.registry.js
+→ catégorie Platform partagée
+
+productCatalogHelp.registry.js
+supplierCatalogHelp.registry.js
+→ fiches métier rattachées à cette catégorie
+~~~
+
+Les parcours d'aide suivent maintenant l'interface réelle :
+
+~~~text
+Platform
+→ GMS
+→ Gestion des référentiels
+→ Produits ou Fournisseurs
+~~~
+
+Les catégories Workspace restent séparées :
+
+~~~text
+Produits
+Fournisseurs & prix
+~~~
+
+Le filtrage serveur par permissions Application Global est conservé. Un utilisateur ne voit donc dans la catégorie commune que les fiches correspondant réellement à ses droits métier.
 
 ## 8. Validation à effectuer
 
@@ -181,7 +219,8 @@ Scénarios à vérifier :
 5. administrateur Platform sans droit métier ;
 6. route racine redirigée vers le premier onglet autorisé ;
 7. tentative d'accès à un onglet non autorisé redirigée vers l'onglet autorisé ;
-8. anciennes routes globales toujours fonctionnelles.
+8. anciennes routes globales toujours fonctionnelles ;
+9. Help Center Platform : une seule catégorie Gestion des référentiels, avec uniquement les fiches autorisées.
 
 ## 9. Séquence de sortie
 

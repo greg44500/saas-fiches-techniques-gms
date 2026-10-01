@@ -5,6 +5,9 @@ import {
     PRODUCT_CATALOG_HELP_MODULE,
 } from '../modules/productCatalog/productCatalogHelp.registry.js';
 import {
+    REFERENCE_MANAGEMENT_HELP_MODULE,
+} from '../modules/referenceManagement/referenceManagementHelp.registry.js';
+import {
     SUPPLIER_CATALOG_HELP_MODULE,
 } from '../modules/supplierCatalog/supplierCatalogHelp.registry.js';
 import {
@@ -31,6 +34,7 @@ import {
  */
 const APPLICATION_HELP_MODULES = Object.freeze([
     DOSSIER_HELP_MODULE,
+    REFERENCE_MANAGEMENT_HELP_MODULE,
     PRODUCT_CATALOG_HELP_MODULE,
     SUPPLIER_CATALOG_HELP_MODULE,
     TECHNICAL_SHEET_HELP_MODULE,
