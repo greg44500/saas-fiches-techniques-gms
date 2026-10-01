@@ -1,6 +1,7 @@
 import { corePlatformNavigationSections } from '@/features/platform/lib/platform-navigation';
-import { productsPlatformNavigationModule } from '@/features/products/products-platform-navigation';
-import { suppliersPlatformNavigationModule } from '@/features/suppliers/suppliers-platform-navigation';
+import {
+  referenceManagementPlatformNavigationModule,
+} from '@/features/reference-management/reference-management-platform-navigation';
 
 const PLATFORM_APPLICATION_SEPARATOR = Object.freeze({
   id: 'platform-application-separator',
@@ -200,8 +201,7 @@ function composeApplicationPlatformNavigation(navigationModules = []) {
  * icônes et règles isVisible(context) sans que le Core importe le métier.
  */
 const APPLICATION_PLATFORM_NAVIGATION_MODULES = Object.freeze([
-  productsPlatformNavigationModule,
-  suppliersPlatformNavigationModule,
+  referenceManagementPlatformNavigationModule,
 ]);
 
 const APPLICATION_PLATFORM_NAVIGATION =
