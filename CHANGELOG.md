@@ -181,3 +181,133 @@ Release mineure rétrocompatible ajoutant un point d’extension transactionnel 
 - aucune variable d’environnement ;
 - aucune dépendance ajoutée, supprimée ou mise à niveau ;
 - aucun changement de modèle ou d’index MongoDB ;
+- aucun breaking change HTTP ;
+- les applications dérivées sans module lifecycle enregistré conservent le comportement Core existant.
+
+---
+
+## 1.0.1 — 2026-09-18
+
+Patch de gouvernance des SaaS dérivés corrigeant l’écart entre le contrat 1.0 — version applicative du produit indépendante du Core — et la gate de release héritée.
+
+### Changed
+
+- ajout du contrat machine-readable `product-release.json` pour l’identité et la version applicative propres au produit dérivé ;
+- `release:verify` exige ce fichier lorsqu’un `core-origin.json` est présent ;
+- `product-release.json` est refusé dans le dépôt Core lorsqu’aucun `core-origin.json` n’existe ;
+- validation SemVer et des canaux `development`, `rc` et `stable` pour la version produit ;
+- maintien de `core-release.json` et des package/lockfiles comme métadonnées techniques du Core afin de limiter les conflits d’upgrade.
+
+### Impact
+
+- aucune migration MongoDB ;
+- aucune variable d’environnement ;
+- aucune dépendance ajoutée ou mise à niveau ;
+- aucun changement de contrat DB ;
+- aucun changement métier ou runtime de l’API.
+
+---
+
+## 1.0.0 — 2026-09-17
+
+Première release stable du Core, publiée après validation de D-015, D-016 et D-017.
+
+### Validation stable
+
+- aucun blocker Core 1.0 actif démontré par `docs/DEBT.md` ;
+- D-017 a validé une dérivation réelle puis un upgrade réel du pilote `saas-core-derived-pilot` ;
+- le module métier `catalog` a été conservé sans adaptation fonctionnelle lors du passage de Core `1.0.0-rc.1` à `1.0.0-rc.2` ;
+- la Core Gate #36 (run `35245765480`) a validé le `main` post-clôture D-017 au commit `5bf91252415e3e8f97b60c5aa1e165bd9829a3a2` ;
+- la préparation stable ne modifie ni contrat DB, ni dépendance, ni variable d’environnement, ni migration applicative.
+
+Publication finale validée :
+
+```text
+commit : dfdd39a57c7fb1ec7e53ab7778a806fdc86f1dff
+Core Gate : #38
+run : 35248517242
+conclusion : success
+tag : v1.0.0
+GitHub Release : 390898671
+```
+
+Le tag `v1.0.0` est publié et immuable.
+
+---
+
+## 1.0.0-rc.2 — 2026-09-17
+
+Seconde Release Candidate du Core, utilisée pour valider l’upgrade réel du SaaS dérivé pilote.
+
+Référence :
+
+```text
+tag : v1.0.0-rc.2
+commit : 5c61c7066eeb56460adb164ba39ae0a0462bef53
+channel : rc
+Core Gate post-merge : #34
+run : 35239618709
+conclusion : success
+```
+
+### Changed
+
+- durcissement générique de la composition des routes frontend : un même chemin strict ne peut plus être déclaré deux fois dans une même surface ;
+- le même chemin reste autorisé sur des surfaces différentes.
+
+### Validation D-017
+
+- upgrade Git réel du pilote depuis `v1.0.0-rc.1` vers `v1.0.0-rc.2` ;
+- zéro conflit manuel ;
+- aucune adaptation fonctionnelle du module `catalog` ;
+- provenance `core-origin.json` mise à jour ;
+- gates pilote #9, #10 et #11 validées.
+
+---
+
+## 1.0.0-rc.1 — 2026-09-17
+
+Première Release Candidate réelle du Core, utilisée comme base immuable de dérivation pour l’exercice D-017.
+
+Référence :
+
+```text
+tag : v1.0.0-rc.1
+commit : 432fcfd88cd185234e6317a27df0d3d458f93f28
+channel : rc
+Core Gate post-merge : #28
+run : 35224400758
+conclusion : success
+```
+
+### Release governance
+
+- politique SemVer et cycle release candidate / stable ;
+- identité Core machine-readable via `core-release.json` ;
+- inventaire machine-readable des migrations ;
+- gate de release reproductible ;
+- CI `Core Gate` alignée sur `npm run release:check` ;
+- ruleset `Main protection` actif avec Pull Request et status check `Core Gate` requis ;
+- tag Git annoté `v1.0.0-rc.1` publié sur le SHA validé ;
+- GitHub Release publiée comme pre-release avec notes structurées.
+
+### E2E Core
+
+- package Playwright autonome sous `e2e/` ;
+- environnement E2E isolé avec garde MongoDB `_e2e_test` ;
+- parcours critiques Auth, Workspace et Account couverts ;
+- `npm run test:e2e` intégré à `npm run release:check` et à la CI `Core Gate`.
+
+### Core 1.0
+
+- D-015 et D-016 sont validées ;
+- l’audit final architecture / sécurité / qualité n’a démontré aucun nouveau blocker applicatif ;
+- la préparation de `1.0.0-rc.1` n’introduit pas de fonctionnalité métier supplémentaire ;
+- le module pilote `catalog` reste destiné au dépôt SaaS dérivé, pas au Core ;
+- la release stable `v1.0.0` reste interdite tant que D-017 n’a pas validé la dérivation et l’upgrade réels d’un SaaS pilote.
+
+---
+
+## Development baseline — 0.1.0
+
+La ligne `0.1.0` représente la phase de construction du Core avant adoption du processus de release formel. Elle inclut notamment les fondations Auth, Workspace, RBAC, Plans/Subscriptions/Entitlements, Files, Audit, Retention, Platform et Help validées avant l’ouverture de D-015.

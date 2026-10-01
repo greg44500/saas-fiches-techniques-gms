@@ -6,7 +6,7 @@ import {
 } from '../../config/applicationHelp.registry.js';
 
 describe('application Help registry', () => {
-    it('compose le corpus Core avec les quatre modules métier livrés', () => {
+    it('compose le corpus Core avec les extensions métier livrées', () => {
         expect(APPLICATION_HELP_MODULES.map(({ key }) => key)).toEqual([
             'dossiers',
             'reference-management',
@@ -43,6 +43,17 @@ describe('application Help registry', () => {
             .not.toHaveProperty('platform_product_references');
         expect(ACTIVE_HELP_REGISTRY.categoriesById)
             .not.toHaveProperty('platform_supplier_references');
+
+        expect(ACTIVE_HELP_REGISTRY.categoriesById.workspace_products)
+            .toMatchObject({
+                context: 'workspace',
+                label: 'Produits',
+            });
+        expect(ACTIVE_HELP_REGISTRY.categoriesById.workspace_suppliers)
+            .toMatchObject({
+                context: 'workspace',
+                label: 'Fournisseurs & prix',
+            });
 
         for (const entryId of [
             'platform.products.reference',

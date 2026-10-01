@@ -135,12 +135,12 @@ const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
             id: 'platform.suppliers.manage',
             context: HELP_CONTEXT.PLATFORM,
             categoryId: PLATFORM_REFERENCE_MANAGEMENT_HELP_CATEGORY_ID,
-            title: 'Gérer le référentiel Fournisseurs global',
+            title: 'Gérer le référentiel Fournisseurs',
             summary: 'Créer, corriger ou archiver les données fournisseur partagées.',
             search: {
                 keywords: ['fournisseur', 'catalogue', 'gérer', 'archiver'],
                 questions: [
-                    'Comment administrer un Fournisseur global ?',
+                    'Comment administrer les Fournisseurs partagés ?',
                 ],
             },
             audience: {
