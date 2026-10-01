@@ -119,8 +119,8 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
             prerequisites: [],
             steps: [
                 'Ouvrez la surface Platform.',
-                'Accédez au référentiel Produits depuis la navigation autorisée.',
-                'Consultez les Produits, catégories et contributions disponibles.',
+                'Accédez à Gestion des référentiels depuis la navigation autorisée.',
+                'Ouvrez l’onglet Produits puis consultez les Produits, catégories et contributions disponibles.',
             ],
             outcome: 'Le référentiel global est consulté sans élévation implicite liée au rôle Platform.',
             edgeCases: [],
@@ -154,8 +154,8 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
                 'Examiner la valeur proposée et les éventuelles références existantes proches.',
             ],
             steps: [
-                'Ouvrez les contributions Produit.',
-                'Examinez la proposition et son contexte.',
+                'Ouvrez Gestion des référentiels puis l’onglet Produits.',
+                'Ouvrez les contributions Produit et examinez la proposition dans son contexte.',
                 'Validez, fusionnez ou refusez explicitement la contribution.',
             ],
             outcome: 'Le référentiel partagé est harmonisé tout en conservant les snapshots historiques validés.',
