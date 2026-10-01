@@ -77,6 +77,19 @@ const createTechnicalSheet = async ({
             ?? null;
 
         if (
+            !data.productionQuantity
+            || !data.productionUnit
+            || !Number.isInteger(
+                data.vatRateBasisPoints,
+            )
+        ) {
+            throw new AppError(
+                'La quantité produite, l’unité de production et la TVA sont obligatoires à la création de la Fiche technique.',
+                400,
+            );
+        }
+
+        if (
             defaultTargetMarginBasisPoints
             === null
         ) {
