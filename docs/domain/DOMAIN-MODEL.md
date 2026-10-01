@@ -882,7 +882,7 @@ Un Article explicitement sélectionné reste attaché à la version concernée.
 
 S'il n'existe qu'un seul candidat exploitable, le backend peut le résoudre automatiquement. S'il existe plusieurs candidats sans décision explicite, une sélection utilisateur est requise.
 
-Un changement de prix du même Article est une revalorisation ; un changement d'Article est une modification d'approvisionnement distincte.
+Un changement de prix du même Article déclenche un recalcul économique ; un changement d'Article est une modification d'approvisionnement distincte.
 
 ### 9.11 Références du magasin
 
@@ -1044,14 +1044,24 @@ L'énergie est exclue.
 
 Le Coût Matière, l'Économat et le Coût total de fabrication restent calculés en HT.
 
+La Fiche porte une quantité produite et une unité de production. Les coûts de recette restent totaux ; les prix de vente sont calculés par unité produite.
+
+```text
+Coût de fabrication HT / unité produite
+=
+Coût total de fabrication HT
+/
+quantité produite
+```
+
 Convention d'Objectif de marge :
 
 ```text
 Objectif de marge
 =
-(Prix de vente HT - Coût total de fabrication HT)
+(Prix de vente HT unitaire - Coût de fabrication HT unitaire)
 /
-Prix de vente HT
+Prix de vente HT unitaire
 ```
 
 Coefficient :
@@ -1063,9 +1073,9 @@ coefficient = 1 / (1 - objectif de marge)
 Prix théorique :
 
 ```text
-Prix théorique HT
+Prix théorique HT unitaire
 =
-Coût total de fabrication HT × coefficient
+Coût de fabrication HT unitaire × coefficient
 ```
 
 Le Prix théorique TTC est calculé avec la TVA de la fiche.
@@ -1084,8 +1094,8 @@ au Prix théorique TTC
 Invariants :
 
 ```text
-Prix conseillé TTC >= Prix théorique TTC
-Prix définitif TTC >= Prix conseillé TTC
+Prix conseillé TTC unitaire >= Prix théorique TTC unitaire
+Prix définitif TTC unitaire >= plancher économique TTC unitaire
 ```
 
 Le Prix définitif reste une décision humaine.
@@ -1095,16 +1105,16 @@ Marge réelle :
 ```text
 Marge réelle %
 =
-(Prix définitif HT - Coût total de fabrication HT)
+(Prix définitif HT unitaire - Coût de fabrication HT unitaire)
 /
-Prix définitif HT
+Prix définitif HT unitaire
 × 100
 ```
 
 ```text
 Marge réelle €
 =
-Prix définitif HT - Coût total de fabrication HT
+Prix définitif HT unitaire - Coût de fabrication HT unitaire
 ```
 
 La marge semi-nette reste non définie et explicitement différée.
@@ -1113,13 +1123,11 @@ Une version VALIDATED conserve le snapshot nécessaire à l'explication de cette
 
 ## 12. Composition, valorisation et concurrence
 
-Composition et valorisation sont distinctes.
+Composition et calcul économique restent des concepts distincts, mais le brouillon courant est recalculé automatiquement après sauvegarde d'une modification.
 
-Une mise à jour tarifaire ne modifie jamais silencieusement une fiche ouverte ou une version déjà validée.
+Une mise à jour tarifaire ne modifie jamais une version déjà validée. Avant validation, le backend recontrôle les Prix applicables ; si un prix a changé, il actualise le brouillon courant et refuse cette tentative afin de laisser l'utilisateur vérifier les nouveaux résultats avant de confirmer à nouveau.
 
-Avant validation, le backend recontrôle les Prix applicables. Si un prix a changé, une revalorisation explicite est requise.
-
-Un changement d'Article est distingué d'une revalorisation du même Article.
+Un changement d'Article reste distingué d'un simple changement tarifaire du même Article.
 
 ## 12.1 Copie inter-magasin
 
@@ -1141,7 +1149,7 @@ Une version VALIDATED est historiquement immuable.
 
 Modifier une fiche validée ouvre/crée une nouvelle version DRAFT.
 
-Une revalorisation peut produire un nouveau DRAFT avec composition identique et valorisation courante.
+Un changement tarifaire peut produire un nouveau calcul du DRAFT avec composition identique.
 
 Chaque version validée conserve le snapshot économique nécessaire à sa reproductibilité.
 
