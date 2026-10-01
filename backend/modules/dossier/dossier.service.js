@@ -235,11 +235,19 @@ const createDossier = async ({
         }
     }
 
+    const {
+        defaultTargetMarginBasisPoints,
+        ...dossierData
+    } = data;
+
     const [dossier] = await Dossier.create(
         [
             {
                 workspace: workspaceId,
-                ...data,
+                ...dossierData,
+                technicalSheetSettings: {
+                    defaultTargetMarginBasisPoints,
+                },
                 status: DOSSIER_STATUS.ACTIVE,
                 statusChangedBy: actorId,
                 createdBy: actorId,
