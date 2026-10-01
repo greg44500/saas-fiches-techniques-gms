@@ -85,6 +85,10 @@ beforeEach(async () => {
             owner.workspace._id,
         name:
             'Magasin M004',
+        technicalSheetSettings: {
+            defaultTargetMarginBasisPoints:
+                5000,
+        },
         statusChangedBy:
             owner.owner._id,
         createdBy:
@@ -206,6 +210,12 @@ const createValuedDraft = async ({
                     'Purée de carottes',
                 description:
                     'Test M-004',
+                productionQuantity:
+                    '10',
+                productionUnit:
+                    'KG',
+                vatRateBasisPoints:
+                    1000,
             },
         });
 
@@ -228,8 +238,6 @@ const createValuedDraft = async ({
                     '10',
                 productionUnit:
                     'KG',
-                portions:
-                    '20',
                 vatRateBasisPoints:
                     1000,
                 targetMarginBasisPoints:
@@ -255,25 +263,12 @@ const createValuedDraft = async ({
             },
         });
 
-    const valued =
-        await valuateTechnicalSheet({
-            workspaceId:
-                owner.workspace._id,
-            dossierId:
-                dossier._id,
-            technicalSheetId:
-                created.sheet.id,
-            actorId:
-                owner.owner._id,
-            expectedRevision:
-                saved.revision,
-            atDate,
-        });
-
     return {
         created,
         saved,
-        valued,
+        valued: {
+            draft: saved,
+        },
     };
 };
 
@@ -384,6 +379,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche prix indicatif',
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'KG',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 
@@ -406,8 +407,6 @@ describe('M-004 services Fiches techniques', () => {
                         '10',
                     productionUnit:
                         'KG',
-                    portions:
-                        '10',
                     vatRateBasisPoints:
                         1000,
                     targetMarginBasisPoints:
@@ -429,20 +428,9 @@ describe('M-004 services Fiches techniques', () => {
                 },
             });
 
-        const valued =
-            await valuateTechnicalSheet({
-                workspaceId:
-                    owner.workspace._id,
-                dossierId:
-                    dossier._id,
-                technicalSheetId:
-                    created.sheet.id,
-                actorId:
-                    owner.owner._id,
-                expectedRevision:
-                    saved.revision,
-                atDate,
-            });
+        const valued = {
+            draft: saved,
+        };
 
         expect(
             valued.draft.valuationStatus,
@@ -567,7 +555,7 @@ describe('M-004 services Fiches techniques', () => {
         ).toBe(1);
     });
 
-    it('refuse la validation si le Prix applicable change et persiste STALE avant revalorisation', async () => {
+    it('actualise automatiquement les calculs si le Prix applicable change avant validation', async () => {
         const {
             created,
             valued,
@@ -611,43 +599,24 @@ describe('M-004 services Fiches techniques', () => {
         ).rejects.toMatchObject({
             statusCode: 409,
             code:
-                'TECHNICAL_SHEET_REVALUATION_REQUIRED',
+                'TECHNICAL_SHEET_VALUATION_REFRESHED',
         });
 
-        const stale =
+        const refreshed =
             await TechnicalSheetDraft.findOne({
                 technicalSheet:
                     created.sheet.id,
             });
 
         expect(
-            stale.valuationStatus,
+            refreshed.valuationStatus,
         ).toBe(
-            TECHNICAL_SHEET_VALUATION_STATUS.STALE,
+            TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE,
         );
         expect(
-            stale.lines[0]
-                .valuation.materialCostSharePercent,
-        ).toBeNull();
-
-        const revalued =
-            await valuateTechnicalSheet({
-                workspaceId:
-                    owner.workspace._id,
-                dossierId:
-                    dossier._id,
-                technicalSheetId:
-                    created.sheet.id,
-                actorId:
-                    owner.owner._id,
-                expectedRevision:
-                    stale.revision,
-                atDate,
-            });
-
-        expect(
-            revalued.draft.lines[0]
-                .valuation.lineCostHt,
+            refreshed.lines[0]
+                .valuation.lineCostHt
+                .toString(),
         ).toBe('30');
 
         await expect(
@@ -663,7 +632,7 @@ describe('M-004 services Fiches techniques', () => {
                 expectedSheetRevision:
                     created.sheet.revision,
                 expectedDraftRevision:
-                    revalued.draft.revision,
+                    refreshed.revision,
                 atDate,
             }),
         ).resolves.toMatchObject({
