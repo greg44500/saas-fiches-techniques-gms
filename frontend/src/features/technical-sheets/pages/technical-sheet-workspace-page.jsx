@@ -906,7 +906,6 @@ function TechnicalSheetWorkspacePage() {
                   !canUpdate
                   || draftSynchronizing
                   || !parametersComplete
-                  || draftServerActionDisabled
                 }
                 dossierId={dossierId}
                 draftRevision={draftFormRevision}
