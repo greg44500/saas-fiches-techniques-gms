@@ -1,10 +1,9 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-09-30  
-**Lot précédent clôturé :** M-002 → M-004 hors exports — PR #25  
-**Lot courant :** intégration Core post-tag v1.2.1 — shell Workspace / navigation / Help Center  
-**Branche :** `core-update/post-v1.2.1-a9d99aa`  
-**Base :** `main@588612ba987c4a91951d4939231f9f44881c50d8`
+**Date :** 2026-10-01  
+**Lot courant :** correctif et consolidation M-002 — référentiel Produits / gouvernance / revue qualité  
+**Branche :** `fix/m002-governance-backfill`  
+**Base :** `main@70da4bb1b9c055ee977f685d7de2e326761a75a2`
 
 ## 1. Autorité
 
@@ -17,22 +16,7 @@ Git/code/DB
 → présente reprise
 ~~~
 
-## 2. État produit validé avant l’upgrade
-
-Le lot M-002 à M-004 est fusionné et validé :
-
-~~~text
-PR #25
-Core Gate PR #145 : success
-merge : 588612ba987c4a91951d4939231f9f44881c50d8
-Core Gate post-merge #146 : success
-lint / tests globaux / build : verts localement
-E2E Playwright : 22/22 verts
-~~~
-
-M-001, M-002, M-003 et M-004 hors exports ne doivent pas être réimplémentés dans une future reprise.
-
-## 3. Core intégré par ce lot
+## 2. Core actuellement enregistré dans le produit
 
 ~~~text
 repository = greg44500/saas-core-api
@@ -41,142 +25,205 @@ tag        = v1.2.1
 commit     = d3b9891bc2a32705a0a99b2ed62bed60caf653ca
 ~~~
 
-Ce commit est postérieur au tag v1.2.1 et correspond aux PR Core #45/#46/#47. La Core Gate post-merge Core #90 est verte sur ce SHA.
+`core-origin.json` reste l'autorité de provenance.
 
-Décision :
+L'intégration ultérieure du commit Core `6581e573c6a6885790b23fe502bd34d8199ea6ba`, qui apporte la primitive générique de navigation `type: 'section'`, reste un lot séparé. Elle ne doit pas être mélangée au présent correctif M-002.
 
-- aucune nouvelle version Core ;
-- aucun nouveau tag ;
-- aucune GitHub Release ;
-- aucune migration DB nouvelle pour ce lot ;
-- provenance enregistrée par SHA exact.
+## 3. Pourquoi le lot M-002 a été rouvert
 
-## 4. Adaptations incluses dans l’intégration
+Une régression réelle de visibilité du référentiel a été constatée côté Workspace :
 
-### Workspace
+- les Produits historiques du seed M-002 existaient bien en base ;
+- les anciens documents ne possédaient pas `governanceStatus` ;
+- le filtre MongoDB de gouvernance exigeait explicitement ce champ ;
+- les helpers objet considéraient pourtant l'absence du champ comme `APPROVED` ;
+- la migration M-002 ne backfillait pas encore cette gouvernance historique.
 
-- Tableau de bord Core conservé comme première entrée car il compose les widgets Core et métier ;
-- Dossiers, Produits et Fournisseurs immédiatement après, sans titre ni espace artificiel ;
-- séparateur « Administration de l’espace » après les modules métier ;
-- Membres, Rôles et permissions, Paramètres, Abonnement et Activité conservés sous cette séparation ;
-- entrée `Fichiers` masquée uniquement dans la navigation de ce produit ; les primitives File Core restent présentes ;
-- groupes repliables avec animation fluide et respect de reduced motion ;
-- badge statut regroupé avec le nom du Workspace sous la forme `Nom | statut` ;
-- rôle Workspace et plan effectif dans l’identité utilisateur selon les droits ;
-- widgets Dashboard Core et widgets métier toujours composés ensemble ;
-- suppression de la recherche globale Workspace.
-
-Les recherches restent locales aux pages métier concernées.
-
-La vue Abonnement reçoit désormais les métadonnées de présentation du registre actif afin d’afficher les libellés français des capabilities/métriques métier au lieu de leurs clés techniques.
-
-### Platform
-
-- navigation Core conservée ;
-- séparateur visuel avant les modules applicatifs ;
-- modules globaux Produits/Fournisseurs conservés selon leurs permissions Application Global ;
-- accès rapide Platform construit uniquement depuis les destinations autorisées.
-
-Il ne s’agit pas d’une recherche plein texte dans les données.
-
-### Help Center
-
-Le Core et le produit partagent une seule expérience d’aide.
-
-Modules métier composés : Dossiers, Produits, Fournisseurs & prix, Fiches techniques, Référentiel Produits Platform et Référentiel Fournisseurs Platform.
-
-Les permissions Workspace, Platform et Application Global restent strictement séparées.
-
-## 5. État fonctionnel à ne pas rouvrir
-
-### M-002
-
-- gouvernance non bloquante ;
-- `PROVISIONAL` utilisable immédiatement dans le Workspace contributeur ;
-- isolation inter-Workspace ;
-- revue/fusion/rejet Application Global ;
-- snapshots `TechnicalSheetValidation` immuables ;
-- seed actif actuel : `m002-reference.v6`.
-
-### M-003
-
-- Fournisseur / Article / Catalogue / Prix distincts ;
-- imports CSV/XLS/XLSX ;
-- catalogues Workspace privés et catalogues globaux partagés ;
-- prix Dossier strictement isolés ;
-- Prix applicable résolu par le backend ;
-- Prix indicatif Dossier puis Workspace comme dernier recours.
-
-### M-004
-
-- Fiche durable + brouillon courant + validation courante + historique immuable ;
-- valorisation M-002/M-003 ;
-- copie inter-Dossier sans finance source ;
-- quota `technical_sheets` ;
-- corbeille, restauration et purge ;
-- exports V1 toujours séparés.
-
-## 6. Prochaines étapes produit après validation de l’upgrade
-
-### Priorité A — UX/UI Platform : Gestion des référentiels
-
-Créer un lot produit séparé, sans rouvrir M-002/M-003 :
+Comptages observés avant correction :
 
 ~~~text
-sidebar Platform existante
-→ séparateur simple pour la gestion des référentiels
-→ entrée unique « Gestion des référentiels »
-→ vue à onglets
-   - Produits
-   - Fournisseurs
+CanonicalProduct sans governanceStatus      : 264
+ProductVariant sans governanceStatus        : 265
+ProductVariety sans governanceStatus        : 1
+ProductCharacteristic sans governanceStatus : 5
 ~~~
 
-La visibilité doit utiliser les permissions Application Global effectives et les guards existants.
+Le lot corrige durablement cette incohérence par migration, tests et compatibilité du filtrage.
 
-Pour Produits, réutiliser les surfaces/API déjà livrées : Référentiel, Contributions, Catégories, Produits, Variétés, Caractéristiques et Références/Variantes.
+## 4. Consolidation fonctionnelle livrée dans ce lot
 
-Types de caractéristiques déjà supportés : Présentation, Pièce / découpe, Type commercial, Calibre / format, Couleur, Désignation de qualité.
+### 4.1 Migration et gouvernance historique
 
-Pour Fournisseurs, réutiliser le référentiel global M-003 existant.
+- backfill idempotent de `governanceStatus` sur les références M-002 historiques ;
+- compatibilité avec `sanitizeFilter=true` ;
+- migration intégrée à `npm run migration:m002-catalog` ;
+- couverture des Produits, Références Produit, Variétés et Caractéristiques historiques.
 
-Ne pas créer un deuxième système de gouvernance ni dupliquer les pages existantes : la prochaine tâche est une recomposition UX.
+### 4.2 Création Produit et déduplication
 
-### Priorité B — enrichissement du référentiel initial
+- feedback explicite lorsqu'aucun Produit existant correspondant n'est trouvé ;
+- informations secondaires déplacées dans des infobulles `(i)` ;
+- moteur de déduplication existant conservé ;
+- aucune création silencieuse en cas de candidat exact/proche.
 
-État actuel vérifié de `m002-reference.v6.json` :
+### 4.3 Enrichissement du référentiel
+
+- ajout successif de plusieurs valeurs sans fermer le dialogue ;
+- badge `Ajoutée` ;
+- aide de confirmation déplacée dans une infobulle ;
+- retrait immédiat d'une valeur fraîchement ajoutée avec animation ;
+- retrait refusé dès qu'une Référence Produit l'utilise ;
+- audit conservé.
+
+### 4.4 Drawer Platform — Dimensions
+
+- `Dimensions (n)` et `Références (n)` ;
+- sous-compteurs Variétés / Caractéristiques ;
+- recherche compacte avec placeholder `Rechercher une caractéristique` ;
+- recherche et bouton `Enrichir le référentiel` sur une même ligne lorsque la largeur le permet ;
+- lignes compactes sur une seule rangée ;
+- actions Corriger / Archiver / Réactiver sous forme d'icônes avec infobulles.
+
+### 4.5 Revue qualité ligne par ligne
+
+La revue qualité est distincte du lifecycle et de la gouvernance :
 
 ~~~text
-14 catégories
-264 Produits
-264 Variantes
-0 Variété
-0 Caractéristique
+Lifecycle
+ACTIVE | ARCHIVED
+
+Gouvernance
+APPROVED | PROVISIONAL | RESOLVED | REJECTED
+
+Revue qualité
+NOT_REQUIRED | PENDING | REVIEWED
 ~~~
 
-Créer ultérieurement une nouvelle version de dataset, par exemple `m002-reference.v7.json`, au lieu de modifier v6.
+Règles :
 
-Objectif : offrir dès la première mise à disposition un référentiel global nettement plus riche, incluant selon les Produits des variétés, présentations, découpes, calibres/formats, couleurs et autres valeurs validées.
+- une Dimension créée depuis un Workspace devient `PENDING` ;
+- une Dimension créée directement par la Platform devient `NOT_REQUIRED` ;
+- la migration historique applique la même règle via `contributedFromWorkspace` ;
+- le tableau Platform affiche une pastille chiffrée sur les Produits ayant des Dimensions actives à vérifier ;
+- un clic ouvre directement le drawer sur `Dimensions > À vérifier` ;
+- chaque ligne `PENDING` peut être marquée `REVIEWED` individuellement ;
+- une correction Platform d'une ligne `PENDING` vaut revue explicite ;
+- aucune action globale ne peut acquitter tout un Produit depuis le tableau.
 
-Le mécanisme de seed est versionné/hashé : une version déjà enregistrée ne doit jamais être réécrite silencieusement.
+### 4.6 Suppression contrôlée d'une valeur erronée
 
-### Priorité C — validation visuelle du nouveau shell
+Une Dimension erronée peut être retirée du référentiel actif depuis le drawer :
 
-Après fusion de l’upgrade Core, vérifier avec `npm run dev` :
+- confirmation utilisateur obligatoire ;
+- suppression fonctionnelle auditée ;
+- refus si une Référence Produit active ou historique dépend encore de la valeur ;
+- message de conflit indiquant le nombre de Références concernées ;
+- archivage conservé comme action distincte pour une valeur métier valide mais indisponible.
 
-Workspace : métier avant Administration de l’espace, séparateur discret, animation smooth, badge statut, rôle/plan dans l’identité, aucune carte statut/rôle et aucune recherche globale.
+### 4.7 Compteurs dynamiques Platform
 
-Platform : navigation Core inchangée, séparateur avant les entrées applicatives, accès rapide fonctionnel et aucune permission globale héritée implicitement du rôle Platform.
+Les onglets affichent désormais :
 
-Help : aide Core + métier dans le même centre et aucune fuite de fiche non autorisée.
+~~~text
+Référentiel (n)
+Contributions (n)
+Catégories (n)
+~~~
 
-## 7. Lots explicitement séparés
+- `Référentiel (n)` repose sur le `pagination.total` serveur et suit recherche, catégorie et statut ;
+- `Contributions (n)` repose sur le total serveur filtré par statut ;
+- `Catégories (n)` correspond aux catégories actuellement exposées par les métadonnées ;
+- les onglets inactifs utilisent des requêtes minimales (`limit: 1`) afin de conserver des totaux exacts sans charger une page complète.
+
+## 5. Contrats mis à jour
+
+Documents canoniques concernés :
+
+~~~text
+docs/m002/M-002-FINAL-CONTRACT.md
+docs/domain/DOMAIN-MODEL.md
+~~~
+
+Les modèles `ProductVariety` et `ProductCharacteristic` portent désormais :
+
+~~~text
+qualityReviewStatus
+qualityReviewedAt
+qualityReviewedBy
+~~~
+
+Les nouveaux événements métier d'audit sont :
+
+~~~text
+PRODUCT_DIMENSION_REVIEWED
+PRODUCT_DIMENSION_DELETED
+~~~
+
+## 6. Validation du lot
+
+Tests ciblés backend et frontend ont été exécutés au fil du développement et les régressions détectées ont été corrigées.
+
+La preuve finale de clôture reste à produire sur le HEAD final documentaire :
+
+~~~text
+npm run migration:m002-catalog
+npm run release:check
+~~~
+
+Ne pas considérer le lot clôturé avant :
+
+~~~text
+migration locale réussie
+→ release:check vert
+→ une PR
+→ Core Gate PR verte
+→ merge
+→ Core Gate post-merge verte
+~~~
+
+## 7. Prochaine séquence après clôture M-002
+
+### Bloc A — intégration Core de la primitive de navigation `section`
+
+Core cible déjà préparé séparément :
+
+~~~text
+greg44500/saas-core-api
+version = 1.2.1
+tag     = v1.2.1
+commit  = 6581e573c6a6885790b23fe502bd34d8199ea6ba
+~~~
+
+Cette intégration doit être finalisée dans son propre lot/PR Core-update avant toute recomposition de la sidebar Platform.
+
+### Bloc B — Gestion des référentiels Platform
+
+Une fois le Bloc A fusionné et son gate post-merge vert :
+
+~~~text
+sidebar Platform
+→ une seule entrée « Gestion des référentiels »
+→ page dédiée
+   [ Produits | Fournisseurs ]
+~~~
+
+Règles :
+
+- réutiliser les surfaces/API M-002 et M-003 existantes ;
+- conserver les permissions Application Global existantes ;
+- ne pas dupliquer les écrans ou systèmes de gouvernance ;
+- gérer Produits seul / Fournisseurs seul / les deux / aucun droit ;
+- une branche produit dédiée ;
+- une PR et un merge pour ce bloc.
+
+## 8. Lots explicitement séparés
 
 - exports/diffusion M-004 : CSV, XLSX, PDF, impression, e-mail ;
-- enrichissement massif du seed M-002 ;
-- dette Core DataTable `GMS-CORE-UX-001` sur le survol canonique des lignes ;
-- sujets production : billing, observabilité, stockage production, conformité.
+- enrichissement massif du seed M-002 : nouvelle version de dataset, jamais modification silencieuse de v6 ;
+- dette Core DataTable `GMS-CORE-UX-001` ;
+- production : billing, observabilité, stockage, conformité.
 
-## 8. Discipline de reprise
+## 9. Discipline de reprise
 
 ~~~text
 un lot cohérent
@@ -185,35 +232,7 @@ un lot cohérent
 → une PR
 → une Core Gate
 → un merge
+→ une Core Gate post-merge
 ~~~
 
-Ne pas créer de micro-PR de correction. Ne pas relancer périodiquement les Core Gates : l’utilisateur communique leur résultat.
-
-La prochaine conversation doit d’abord vérifier GitHub réel et l’état de l’intégration Core avant de commencer la vue Platform « Gestion des référentiels ».
-
-
-## 9. Validation de l’intégration en cours
-
-La PR produit existante reste :
-
-~~~text
-PR #26
-branche = core-update/post-v1.2.1-a9d99aa
-~~~
-
-La Core Gate #147 était verte sur l’ancien HEAD `f4919e2d363151c03a98602b90745e9db72daa3e`, avant l’intégration du Core `d3b9891...`.
-
-Elle ne constitue donc plus la preuve finale du lot. Le nouveau HEAD doit obtenir une nouvelle Core Gate avant toute fusion.
-
-La validation visuelle utilisateur doit confirmer notamment :
-
-- Tableau de bord tout en haut ;
-- Dossiers / Produits / Fournisseurs immédiatement après ;
-- `Administration de l’espace` ensuite ;
-- absence de l’entrée `Fichiers` dans ce produit ;
-- `Espace de travail : Nom | badge` ;
-- libellés métier français dans Abonnement ;
-- widgets Core + widgets métier toujours présents sur le Dashboard selon leurs droits.
-
-Le nom commercial de l’application n’est pas modifié tant qu’il n’a pas été explicitement validé par l’utilisateur.
-
+Ne pas créer de micro-PR. Ne pas relancer périodiquement les Core Gates : l'utilisateur communique leur résultat.

@@ -6,7 +6,24 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ## Unreleased
 
+### Added
+
+- revue qualité Platform ligne par ligne des Variétés et Caractéristiques M-002 avec états `NOT_REQUIRED / PENDING / REVIEWED` ;
+- signalement chiffré des Produits ayant des Dimensions Workspace à vérifier et ouverture directe du drawer filtré ;
+- suppression fonctionnelle contrôlée d'une Dimension erronée lorsqu'aucune Référence Produit ne l'utilise ;
+- compteurs dynamiques des onglets Référentiel, Contributions et Catégories.
+
+### Fixed
+
+- backfill M-002 des références historiques dépourvues de `governanceStatus`, compatible avec `sanitizeFilter=true` ;
+- restauration de la visibilité Workspace des Produits historiques ;
+- feedback anti-doublon explicite lors de la création d'un Produit ;
+- retrait immédiat sécurisé d'une Dimension fraîchement ajoutée.
+
 ### Changed
+
+- drawer Platform Produit densifié : recherche et enrichissement alignés, compteurs, filtres À vérifier/Actives/Archivées/Toutes et actions par icônes ;
+- aides secondaires de création/enrichissement déplacées vers des infobulles contextuelles ;
 
 - intégration du Core post-tag `v1.2.1` jusqu’au commit `d3b9891bc2a32705a0a99b2ed62bed60caf653ca`, sans nouvelle version ni tag ;
 - shell Workspace modernisé : Tableau de bord en tête, modules métier immédiatement après, statut regroupé avec le nom dans la topbar, rôle dans l’identité utilisateur, puis « Administration de l’espace » ;
