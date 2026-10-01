@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pencil, Plus } from 'lucide-react';
+import { Archive, Pencil, Plus, RotateCcw, Search, X } from 'lucide-react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EntityDetailsDrawer } from '@/components/shared/entity-details-drawer';
@@ -7,6 +7,7 @@ import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Tabs,
   TabsContent,
@@ -46,6 +47,15 @@ function AdminDetailRow({ label, value }) {
   );
 }
 
+
+function normalizeDimensionSearch(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLocaleLowerCase('fr-FR');
+}
+
 function ProductReferenceDetailsDrawer({
   canManage,
   metadata,
@@ -60,6 +70,7 @@ function ProductReferenceDetailsDrawer({
   const [editDimension, setEditDimension] = useState(null);
   const [createVariantOpen, setCreateVariantOpen] = useState(false);
   const [createDimensionOpen, setCreateDimensionOpen] = useState(false);
+  const [dimensionSearch, setDimensionSearch] = useState('');
 
   const query = useGetProductReferenceDetailQuery(productId, { skip: !productId });
   const dimensionsQuery = useGetProductReferenceDimensionsQuery(productId, {
@@ -84,6 +95,56 @@ function ProductReferenceDetailsDrawer({
       ({ value, label }) => [value, label],
     ),
   );
+  const dimensionCount = varieties.length + characteristics.length;
+  const normalizedDimensionSearch = normalizeDimensionSearch(dimensionSearch);
+  const dimensionEntries = [
+    ...varieties.map((variety) => ({
+      key: 'VARIETY:' + variety.id,
+      name: variety.name,
+      typeLabel: 'Variété',
+      searchText: normalizeDimensionSearch([
+        variety.name,
+        ...(variety.aliases ?? []),
+        'Variété',
+      ].join(' ')),
+    })),
+    ...characteristics.map((characteristic) => ({
+      key: 'CHARACTERISTIC:' + characteristic.id,
+      name: characteristic.name,
+      typeLabel:
+        characteristicKindLabels.get(characteristic.kind)
+        ?? characteristic.kind,
+      searchText: normalizeDimensionSearch([
+        characteristic.name,
+        ...(characteristic.aliases ?? []),
+        characteristicKindLabels.get(characteristic.kind)
+          ?? characteristic.kind,
+      ].join(' ')),
+    })),
+  ];
+  const matchingDimensionEntries = normalizedDimensionSearch
+    ? dimensionEntries.filter(({ searchText }) => (
+      searchText.includes(normalizedDimensionSearch)
+    ))
+    : dimensionEntries;
+  const matchingDimensionKeys = new Set(
+    matchingDimensionEntries.map(({ key }) => key),
+  );
+  const filteredVarieties = normalizedDimensionSearch
+    ? varieties.filter((variety) => (
+      matchingDimensionKeys.has('VARIETY:' + variety.id)
+    ))
+    : varieties;
+  const filteredCharacteristics = normalizedDimensionSearch
+    ? characteristics.filter((characteristic) => (
+      matchingDimensionKeys.has('CHARACTERISTIC:' + characteristic.id)
+    ))
+    : characteristics;
+  const dimensionSuggestions = normalizedDimensionSearch
+    ? matchingDimensionEntries.slice(0, 6)
+    : [];
+  const dimensionResultCount =
+    filteredVarieties.length + filteredCharacteristics.length;
   const pending = (
     productStatusState.isLoading
     || variantStatusState.isLoading
@@ -166,8 +227,8 @@ function ProductReferenceDetailsDrawer({
           <Tabs defaultValue="product">
             <TabsList aria-label="Administration du Produit" variant="section">
               <TabsTrigger value="product" variant="section">Produit</TabsTrigger>
-              <TabsTrigger value="dimensions" variant="section">Dimensions</TabsTrigger>
-              <TabsTrigger value="variants" variant="section">Références</TabsTrigger>
+              <TabsTrigger value="dimensions" variant="section">Dimensions ({dimensionCount})</TabsTrigger>
+              <TabsTrigger value="variants" variant="section">Références ({variants.length})</TabsTrigger>
               <TabsTrigger value="history" variant="section">Historique</TabsTrigger>
             </TabsList>
 
@@ -178,27 +239,29 @@ function ProductReferenceDetailsDrawer({
                     <ActionIconButton
                       Icon={Pencil}
                       label="Corriger le Produit"
+                      tooltipLabel="Corriger"
                       onClick={() => setEditProductOpen(true)}
                       variant="outline"
                     />
                     {product.status === 'ACTIVE' && (
-                      <Button
+                      <ActionIconButton
                         disabled={pending}
+                        Icon={Archive}
+                        label="Archiver le Produit"
                         onClick={() => changeProductStatus('ARCHIVED')}
-                        type="button"
+                        tooltipLabel="Archiver"
                         variant="outline"
-                      >
-                        Archiver
-                      </Button>
+                      />
                     )}
                     {product.status === 'ARCHIVED' && (
-                      <Button
+                      <ActionIconButton
                         disabled={pending}
+                        Icon={RotateCcw}
+                        label="Réactiver le Produit"
                         onClick={() => changeProductStatus('ACTIVE')}
-                        type="button"
-                      >
-                        Réactiver
-                      </Button>
+                        tooltipLabel="Réactiver"
+                        variant="outline"
+                      />
                     )}
                   </div>
                 )}
@@ -239,15 +302,79 @@ function ProductReferenceDetailsDrawer({
                   </div>
                 )}
 
+
+                {dimensionCount > 0 && (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search
+                        aria-hidden="true"
+                        className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                      />
+                      <Input
+                        aria-label="Rechercher dans les dimensions"
+                        className="pl-9 pr-10"
+                        onChange={(event) => setDimensionSearch(event.target.value)}
+                        placeholder="Rechercher une variété ou une caractéristique…"
+                        value={dimensionSearch}
+                      />
+                      {dimensionSearch && (
+                        <button
+                          aria-label="Effacer la recherche"
+                          className="absolute right-2 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          onClick={() => setDimensionSearch('')}
+                          type="button"
+                        >
+                          <X aria-hidden="true" className="size-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {normalizedDimensionSearch && (
+                      <>
+                        {dimensionSuggestions.length > 0 && (
+                          <ul
+                            aria-label="Suggestions de dimensions"
+                            className="overflow-hidden rounded-lg border border-border bg-background"
+                          >
+                            {dimensionSuggestions.map((suggestion) => (
+                              <li key={suggestion.key}>
+                                <button
+                                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
+                                  onClick={() => setDimensionSearch(suggestion.name)}
+                                  type="button"
+                                >
+                                  <span className="font-medium">
+                                    {suggestion.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {suggestion.typeLabel}
+                                  </span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {dimensionResultCount}{' '}
+                          {dimensionResultCount > 1 ? 'résultats' : 'résultat'}
+                          {' '}sur {dimensionCount} dimensions
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <section className="space-y-3">
-                  <h3 className="text-sm font-semibold">Variétés</h3>
-                  {varieties.length === 0 ? (
+                  <h3 className="text-sm font-semibold">Variétés ({varieties.length})</h3>
+                  {filteredVarieties.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Aucune variété n’est définie pour ce Produit.
+                      {normalizedDimensionSearch
+                        ? 'Aucune variété ne correspond à cette recherche.'
+                        : 'Aucune variété n’est définie pour ce Produit.'}
                     </p>
                   ) : (
                     <ul className="space-y-2">
-                      {varieties.map((variety) => (
+                      {filteredVarieties.map((variety) => (
                         <li
                           className="rounded-lg border border-border p-3"
                           key={variety.id}
@@ -267,47 +394,45 @@ function ProductReferenceDetailsDrawer({
                           </div>
                           {canManage && (
                             <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-                              <Button
+                              <ActionIconButton
                                 disabled={pending}
+                                Icon={Pencil}
+                                label={'Corriger la variété ' + variety.name}
                                 onClick={() => setEditDimension({
                                   type: 'VARIETY',
                                   dimension: variety,
                                 })}
-                                size="sm"
-                                type="button"
+                                tooltipLabel="Corriger"
                                 variant="outline"
-                              >
-                                Corriger
-                              </Button>
+                              />
                               {variety.status === 'ACTIVE' && (
-                                <Button
+                                <ActionIconButton
                                   disabled={pending}
+                                  Icon={Archive}
+                                  label={'Archiver la variété ' + variety.name}
                                   onClick={() => changeDimensionStatus(
                                     'VARIETY',
                                     variety,
                                     'ARCHIVED',
                                   )}
-                                  size="sm"
-                                  type="button"
+                                  tooltipLabel="Archiver"
                                   variant="outline"
-                                >
-                                  Archiver
-                                </Button>
+                                />
                               )}
                               {variety.status === 'ARCHIVED'
                                 && product.status === 'ACTIVE' && (
-                                <Button
+                                <ActionIconButton
                                   disabled={pending}
+                                  Icon={RotateCcw}
+                                  label={'Réactiver la variété ' + variety.name}
                                   onClick={() => changeDimensionStatus(
                                     'VARIETY',
                                     variety,
                                     'ACTIVE',
                                   )}
-                                  size="sm"
-                                  type="button"
-                                >
-                                  Réactiver
-                                </Button>
+                                  tooltipLabel="Réactiver"
+                                  variant="outline"
+                                />
                               )}
                             </div>
                           )}
@@ -318,14 +443,16 @@ function ProductReferenceDetailsDrawer({
                 </section>
 
                 <section className="space-y-3">
-                  <h3 className="text-sm font-semibold">Caractéristiques</h3>
-                  {characteristics.length === 0 ? (
+                  <h3 className="text-sm font-semibold">Caractéristiques ({characteristics.length})</h3>
+                  {filteredCharacteristics.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Aucune caractéristique n’est définie pour ce Produit.
+                      {normalizedDimensionSearch
+                        ? 'Aucune caractéristique ne correspond à cette recherche.'
+                        : 'Aucune caractéristique n’est définie pour ce Produit.'}
                     </p>
                   ) : (
                     <ul className="space-y-2">
-                      {characteristics.map((characteristic) => (
+                      {filteredCharacteristics.map((characteristic) => (
                         <li
                           className="rounded-lg border border-border p-3"
                           key={characteristic.id}
@@ -347,47 +474,45 @@ function ProductReferenceDetailsDrawer({
                           </div>
                           {canManage && (
                             <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-                              <Button
+                              <ActionIconButton
                                 disabled={pending}
+                                Icon={Pencil}
+                                label={'Corriger la caractéristique ' + characteristic.name}
                                 onClick={() => setEditDimension({
                                   type: 'CHARACTERISTIC',
                                   dimension: characteristic,
                                 })}
-                                size="sm"
-                                type="button"
+                                tooltipLabel="Corriger"
                                 variant="outline"
-                              >
-                                Corriger
-                              </Button>
+                              />
                               {characteristic.status === 'ACTIVE' && (
-                                <Button
+                                <ActionIconButton
                                   disabled={pending}
+                                  Icon={Archive}
+                                  label={'Archiver la caractéristique ' + characteristic.name}
                                   onClick={() => changeDimensionStatus(
                                     'CHARACTERISTIC',
                                     characteristic,
                                     'ARCHIVED',
                                   )}
-                                  size="sm"
-                                  type="button"
+                                  tooltipLabel="Archiver"
                                   variant="outline"
-                                >
-                                  Archiver
-                                </Button>
+                                />
                               )}
                               {characteristic.status === 'ARCHIVED'
                                 && product.status === 'ACTIVE' && (
-                                <Button
+                                <ActionIconButton
                                   disabled={pending}
+                                  Icon={RotateCcw}
+                                  label={'Réactiver la caractéristique ' + characteristic.name}
                                   onClick={() => changeDimensionStatus(
                                     'CHARACTERISTIC',
                                     characteristic,
                                     'ACTIVE',
                                   )}
-                                  size="sm"
-                                  type="button"
-                                >
-                                  Réactiver
-                                </Button>
+                                  tooltipLabel="Réactiver"
+                                  variant="outline"
+                                />
                               )}
                             </div>
                           )}
@@ -438,35 +563,33 @@ function ProductReferenceDetailsDrawer({
 
                       {canManage && (
                         <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-                          <Button
+                          <ActionIconButton
                             disabled={pending}
+                            Icon={Pencil}
+                            label={'Corriger la référence ' + getVariantLabel(variant)}
                             onClick={() => setEditVariant(variant)}
-                            size="sm"
-                            type="button"
+                            tooltipLabel="Corriger"
                             variant="outline"
-                          >
-                            Corriger
-                          </Button>
+                          />
                           {variant.status === 'ACTIVE' && (
-                            <Button
+                            <ActionIconButton
                               disabled={pending}
+                              Icon={Archive}
+                              label={'Archiver la référence ' + getVariantLabel(variant)}
                               onClick={() => changeVariantStatus(variant, 'ARCHIVED')}
-                              size="sm"
-                              type="button"
+                              tooltipLabel="Archiver"
                               variant="outline"
-                            >
-                              Archiver
-                            </Button>
+                            />
                           )}
                           {variant.status === 'ARCHIVED' && product.status === 'ACTIVE' && (
-                            <Button
+                            <ActionIconButton
                               disabled={pending}
+                              Icon={RotateCcw}
+                              label={'Réactiver la référence ' + getVariantLabel(variant)}
                               onClick={() => changeVariantStatus(variant, 'ACTIVE')}
-                              size="sm"
-                              type="button"
-                            >
-                              Réactiver
-                            </Button>
+                              tooltipLabel="Réactiver"
+                              variant="outline"
+                            />
                           )}
                         </div>
                       )}

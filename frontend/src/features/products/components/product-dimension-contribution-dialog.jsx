@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Minus } from 'lucide-react';
 
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
@@ -25,10 +27,12 @@ import {
 } from '@/components/ui/select';
 import {
   useContributeProductReferenceMutation,
+  useUndoProductDimensionAdditionMutation,
 } from '@/features/products/api/product-catalog-api';
 import {
   useCreateProductReferenceCharacteristicMutation,
   useCreateProductReferenceVarietyMutation,
+  useUndoProductReferenceDimensionAdditionMutation,
 } from '@/features/products/api/product-reference-api';
 import { getApiErrorMessage } from '@/features/products/lib/product-presentation';
 
@@ -55,7 +59,7 @@ function getSessionStatus(result) {
   }
 
   return {
-    label: 'Disponible',
+    label: 'Ajoutée',
     tone: 'success',
   };
 }
@@ -71,6 +75,8 @@ function ProductDimensionContributionDialog({
 }) {
   const cancelRef = useRef(null);
   const valueRef = useRef(null);
+  const sessionEntrySequenceRef = useRef(0);
+  const removalTimersRef = useRef(new Map());
   const isGlobal = mode === 'global';
   const [selectedType, setSelectedType] = useState(VARIETY);
   const [value, setValue] = useState('');
@@ -79,9 +85,13 @@ function ProductDimensionContributionDialog({
   const [sessionEntries, setSessionEntries] = useState([]);
 
   const [contribute, workspaceState] = useContributeProductReferenceMutation();
+  const [undoWorkspaceDimension, undoWorkspaceState] =
+    useUndoProductDimensionAdditionMutation();
   const [createVariety, varietyState] = useCreateProductReferenceVarietyMutation();
   const [createCharacteristic, characteristicState] =
     useCreateProductReferenceCharacteristicMutation();
+  const [undoGlobalDimension, undoGlobalState] =
+    useUndoProductReferenceDimensionAdditionMutation();
 
   const typeItems = useMemo(() => [
     { value: VARIETY, label: 'Variété' },
@@ -103,12 +113,22 @@ function ProductDimensionContributionDialog({
     setFormError('');
     setConfirmation(null);
     setSessionEntries([]);
+    sessionEntrySequenceRef.current = 0;
   }, [open]);
+
+  useEffect(() => () => {
+    for (const timer of removalTimersRef.current.values()) {
+      globalThis.clearTimeout(timer);
+    }
+    removalTimersRef.current.clear();
+  }, []);
 
   const pending = (
     workspaceState.isLoading
     || varietyState.isLoading
     || characteristicState.isLoading
+    || undoWorkspaceState.isLoading
+    || undoGlobalState.isLoading
   );
   const selectedDefinition = typeItems.find(
     (item) => item.value === selectedType,
@@ -129,11 +149,20 @@ function ProductDimensionContributionDialog({
       ?? null
     );
 
+    sessionEntrySequenceRef.current += 1;
     setSessionEntries((current) => [
       ...current,
       {
+        id: 'session-entry-' + sessionEntrySequenceRef.current,
+        type: isVariety ? VARIETY : CHARACTERISTIC,
         typeLabel: selectedDefinition?.label ?? 'Valeur',
         value: resolvedReference?.name ?? proposedValue,
+        referenceId: resolvedReference?.id ?? null,
+        canUndo: [
+          'AUTO_PUBLISHABLE',
+          'PUBLISHED',
+        ].includes(result.classification),
+        removing: false,
         status,
         detail: (
           result.classification === 'PROVISIONAL'
@@ -229,6 +258,56 @@ function ProductDimensionContributionDialog({
       setFormError(getApiErrorMessage(
         error,
         'Le référentiel n’a pas pu être enrichi.',
+      ));
+    }
+  }
+
+
+  async function undoSessionEntry(entry) {
+    if (!entry.canUndo || !entry.referenceId || entry.removing) return;
+
+    setFormError('');
+
+    try {
+      const payload = {
+        productId: product.id,
+        dimensionType: entry.type,
+        dimensionId: entry.referenceId,
+      };
+      const mutation = isGlobal
+        ? undoGlobalDimension(payload)
+        : undoWorkspaceDimension({
+          workspaceId,
+          ...payload,
+        });
+
+      await mutation.unwrap();
+
+      setSessionEntries((current) => current.map((candidate) => (
+        candidate.id === entry.id
+          ? { ...candidate, removing: true }
+          : candidate
+      )));
+      onResolved?.({
+        classification: 'UNDO',
+        dimensionType: entry.type,
+        dimensionId: entry.referenceId,
+      });
+
+      const timer = globalThis.setTimeout(() => {
+        setSessionEntries((current) => current.filter(
+          (candidate) => candidate.id !== entry.id,
+        ));
+        removalTimersRef.current.delete(entry.id);
+        globalThis.queueMicrotask(() => {
+          valueRef.current?.focus();
+        });
+      }, 180);
+      removalTimersRef.current.set(entry.id, timer);
+    } catch (error) {
+      setFormError(getApiErrorMessage(
+        error,
+        'Cette valeur ne peut pas être retirée.',
       ));
     }
   }
@@ -353,13 +432,19 @@ function ProductDimensionContributionDialog({
 
             {confirmation && (
               <section className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-3">
-                <div>
+                <div className="flex items-center gap-1">
                   <p className="text-sm font-medium">
                     Une valeur proche existe déjà.
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Utilisez une valeur existante si elle correspond, ou confirmez la création de « {confirmation.proposedValue} ».
-                  </p>
+                  <InfoTooltip
+                    content={
+                      'Utilisez une valeur existante si elle correspond, '
+                      + 'ou confirmez la création de « '
+                      + confirmation.proposedValue
+                      + ' ».'
+                    }
+                    label="Aide sur les valeurs proches"
+                  />
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -394,16 +479,17 @@ function ProductDimensionContributionDialog({
                   Valeurs ajoutées dans cette session
                 </p>
                 <ul className="mt-3 space-y-2">
-                  {sessionEntries.map((entry, index) => (
+                  {sessionEntries.map((entry) => (
                     <li
-                      className="flex flex-wrap items-start justify-between gap-3 rounded-md bg-muted/30 px-3 py-2"
-                      key={
-                        entry.typeLabel
-                        + '-'
-                        + entry.value
-                        + '-'
-                        + index
+                      className={
+                        'group flex flex-wrap items-start justify-between gap-3 '
+                        + 'rounded-md bg-muted/30 px-3 py-2 transition-all '
+                        + 'duration-200 ease-out '
+                        + (entry.removing
+                          ? 'translate-x-6 opacity-0'
+                          : 'translate-x-0 opacity-100')
                       }
+                      key={entry.id}
                     >
                       <div>
                         <p className="text-sm font-medium">
@@ -414,9 +500,27 @@ function ProductDimensionContributionDialog({
                           {entry.detail ? ' · ' + entry.detail : ''}
                         </p>
                       </div>
-                      <StatusBadge tone={entry.status.tone}>
-                        {entry.status.label}
-                      </StatusBadge>
+                      <div className="flex items-center gap-2">
+                        <StatusBadge tone={entry.status.tone}>
+                          {entry.status.label}
+                        </StatusBadge>
+                        {entry.canUndo && (
+                          <ActionIconButton
+                            className={
+                              'translate-x-1 opacity-0 transition-all '
+                              + 'duration-150 group-hover:translate-x-0 '
+                              + 'group-hover:opacity-100 focus-visible:translate-x-0 '
+                              + 'focus-visible:opacity-100'
+                            }
+                            disabled={pending || entry.removing}
+                            Icon={Minus}
+                            label={'Retirer ' + entry.value}
+                            onClick={() => undoSessionEntry(entry)}
+                            tooltipLabel="Retirer cette valeur"
+                            variant="ghost"
+                          />
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

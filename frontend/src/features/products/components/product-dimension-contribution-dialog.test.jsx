@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,11 +8,17 @@ const mocks = vi.hoisted(() => ({
   contribute: vi.fn(),
   createVariety: vi.fn(),
   createCharacteristic: vi.fn(),
+  undoWorkspaceDimension: vi.fn(),
+  undoGlobalDimension: vi.fn(),
 }));
 
 vi.mock('@/features/products/api/product-catalog-api', () => ({
   useContributeProductReferenceMutation: () => [
     mocks.contribute,
+    { isLoading: false },
+  ],
+  useUndoProductDimensionAdditionMutation: () => [
+    mocks.undoWorkspaceDimension,
     { isLoading: false },
   ],
 }));
@@ -24,6 +30,10 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
   ],
   useCreateProductReferenceCharacteristicMutation: () => [
     mocks.createCharacteristic,
+    { isLoading: false },
+  ],
+  useUndoProductReferenceDimensionAdditionMutation: () => [
+    mocks.undoGlobalDimension,
     { isLoading: false },
   ],
 }));
@@ -70,6 +80,8 @@ function renderDialog(overrides = {}) {
 describe('ProductDimensionContributionDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.undoWorkspaceDimension.mockReturnValue(resolved({}));
+    mocks.undoGlobalDimension.mockReturnValue(resolved({}));
   });
 
   it('permet plusieurs ajouts successifs de Variétés sans fermer le dialogue', async () => {
@@ -248,6 +260,11 @@ describe('ProductDimensionContributionDialog', () => {
     expect(screen.getByRole('button', {
       name: 'Créer quand même « Galla »',
     })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Aide sur les valeurs proches',
+    })).toBeInTheDocument();
+    expect(screen.queryByText(/Utilisez une valeur existante/i))
+      .not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
       name: 'Créer quand même « Galla »',
@@ -262,6 +279,47 @@ describe('ProductDimensionContributionDialog', () => {
     });
     expect(screen.getByText('Galla')).toBeInTheDocument();
     expect(screen.getByText('À valider')).toBeInTheDocument();
+  });
+
+
+  it('retire réellement une valeur ajoutée et la fait disparaître après l’animation', async () => {
+    const user = userEvent.setup();
+    const props = renderDialog();
+
+    mocks.contribute.mockReturnValue(resolved({
+      classification: 'AUTO_PUBLISHABLE',
+      publishedReference: {
+        id: 'variety-roussillon',
+        type: 'VARIETY',
+        name: 'Roussillon',
+      },
+    }));
+
+    await user.type(screen.getByLabelText('Nom de la variété'), 'Roussillon');
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
+
+    expect(screen.getByText('Roussillon')).toBeInTheDocument();
+    expect(screen.getByText('Ajoutée')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Retirer Roussillon',
+    }));
+
+    expect(mocks.undoWorkspaceDimension).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      productId: 'product-1',
+      dimensionType: 'VARIETY',
+      dimensionId: 'variety-roussillon',
+    });
+    expect(props.onResolved).toHaveBeenLastCalledWith({
+      classification: 'UNDO',
+      dimensionType: 'VARIETY',
+      dimensionId: 'variety-roussillon',
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Roussillon')).not.toBeInTheDocument();
+    });
   });
 
   it('masque Type commercial tant que sa définition métier n est pas validée', async () => {
