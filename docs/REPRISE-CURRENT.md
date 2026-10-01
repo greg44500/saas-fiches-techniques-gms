@@ -1,9 +1,9 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-10-01  
-**Lot courant :** BLOC A — intégration Core post-v1.2.1 de la navigation Platform par sections  
-**Branche :** `core-update/post-v1.2.1-6581e57`  
-**Base produit réalignée :** `main@59aa1492710ec72435338a5640137f5468c45ed1`
+**Lot courant :** stabilisation post-merge du BLOC A  
+**Branche :** `fix/post-merge-test-stability`  
+**Base :** `main@42f91e844974e2d0c6d374f2bb307077210b2614`
 
 ## 1. Autorité
 
@@ -16,22 +16,17 @@ Git/code/DB
 → présente reprise
 ~~~
 
-## 2. M-002 est clôturé
+## 2. BLOC A fusionné
 
-Le correctif/consolidation M-002 est fusionné dans `main` :
+Le BLOC A d’intégration Core post-`v1.2.1` est fusionné :
 
 ~~~text
-PR #29
-merge = 59aa1492710ec72435338a5640137f5468c45ed1
-Core Gate PR #157 = success
-Core Gate post-merge #158 = success
+PR #30
+Core Gate PR #159 = success
+merge = 42f91e844974e2d0c6d374f2bb307077210b2614
 ~~~
 
-M-002 ne doit pas être rouvert sauf régression directement causée par un lot ultérieur.
-
-## 3. Provenance Core du BLOC A
-
-Core source :
+Provenance Core inchangée :
 
 ~~~text
 repository = greg44500/saas-core-api
@@ -40,113 +35,116 @@ tag        = v1.2.1
 commit     = 6581e573c6a6885790b23fe502bd34d8199ea6ba
 ~~~
 
-Le tag `v1.2.1` reste inchangé. Le commit `6581e57...` est un commit post-tag compatible ; le tag ne doit jamais être déplacé.
+Le tag `v1.2.1` reste inchangé et ne doit pas être déplacé.
 
-`core-origin.json` enregistre désormais le SHA exact réellement intégré.
+## 3. Pourquoi le lot de stabilisation est ouvert
 
-## 4. Historique Core préservé
+La Core Gate post-merge #160 a échoué deux fois, sur deux symptômes différents.
 
-La réparation de filiation Core a déjà été effectuée et ne doit pas être rejouée.
-
-Commit de rattachement historique :
+Tentative 1 :
 
 ~~~text
-8af1862ae32aca73f85730fe50fba64a691492af
+2 E2E M-001 en échec
+→ attente du heading « Dossiers » après navigation
+→ 20/22 E2E verts
 ~~~
 
-Commit de merge Core :
+Les deux scénarios M-001 suivants, utilisant le même helper, ont ensuite réussi dans la même exécution.
+
+Tentative 2 :
 
 ~~~text
-57a138d4e80bef560394c13ee1e9a84a8d315bb1
+1 test frontend M-002 en échec
+→ ProductVariantFields
+→ Select « Unité de référence »
+→ option « PCE » non montée après clic
+→ 1079/1080 tests frontend verts
+→ E2E non atteints
 ~~~
 
-Parents :
+Le même test `ProductVariantFields` était vert sur la Core Gate #159 et sur la première tentative post-merge.
+
+La Core Gate PR #161 a ensuite démontré que la première tentative de correction E2E introduite dans cette branche était incorrecte : les 4 scénarios M-001 ont échoué sur le nouveau prérequis de navigation vers un lien `Dossiers`. Cette modification est donc entièrement annulée.
+
+Conclusion opérationnelle : le lot conserve uniquement la correction frontend M-002 démontrée comme compatible avec la suite complète jusqu'aux E2E. Le helper M-001 est restauré exactement à l'état de `main`.
+
+## 4. Correctifs Produit du lot
+
+### Test frontend M-002
+
+Le test `ProductVariantFields` adopte le pattern déjà utilisé par les tests du Select partagé :
 
 ~~~text
-8af1862ae32aca73f85730fe50fba64a691492af
-6581e573c6a6885790b23fe502bd34d8199ea6ba
+trigger Base UI
+→ bounding rect déterministe
+→ clic utilisateur
+→ attente asynchrone findByRole(option)
 ~~~
 
-Le second parent Core `6581e57...` doit rester dans l'histoire Git.
+La valeur canonique `UNIT` et sa présentation `PCE` restent inchangées.
 
-## 5. Réalignement avec le main M-002
+### E2E M-001
 
-Après clôture M-002, la branche Core était 25 commits derrière `main`.
+Aucune modification E2E M-001 n'est conservée dans ce lot.
 
-Le nouveau `main` a été mergé explicitement dans la branche Core, sans rebase :
+La tentative consistant à passer par le Dashboard puis un lien `Dossiers` a été invalidée par la Core Gate PR #161 :
 
 ~~~text
-merge = d3d1c8ab6dae0e2e38311e701acc304cd8bec178
-parent Core-update = 57a138d4e80bef560394c13ee1e9a84a8d315bb1
-parent main        = 59aa1492710ec72435338a5640137f5468c45ed1
+4/4 scénarios M-001
+→ échec identique
+→ lien Dossiers absent
+→ régression introduite par la branche
 ~~~
 
-Le working tree local a été confirmé propre après ce merge, puis la branche distante a été mise à jour.
+`e2e/support/dossier.js` est restauré bit pour bit depuis `main`.
 
-## 6. Primitive Core intégrée
+La cause de l'instabilité post-merge initiale ne sera pas masquée par un nouveau parcours ou un timeout arbitraire. Si elle réapparaît après restauration, elle devra être diagnostiquée à partir d'une preuve exploitable de l'état de page/trace, sans modifier le contrat fonctionnel M-001.
 
-La primitive générique ajoutée est :
+## 5. Frontière Core / Produit
+
+La conservation automatique des screenshots, vidéos et traces Playwright en cas d’échec GitHub Actions est générique et réutilisable.
+
+Elle appartient donc à un futur lot Core :
 
 ~~~text
-type: 'section'
+saas-core-api
+→ workflow Core Gate
+→ upload d’artifacts sur échec
+→ version/test Core
+→ intégration ultérieure dans le produit
 ~~~
 
-Contrat :
+Aucun patch générique du workflow Core n’est introduit directement dans ce produit.
 
-- organisation visuelle non repliable ;
-- `id`, `label`, `items` ;
-- visibilité optionnelle ;
-- suppression d'une section sans enfant visible ;
-- nettoyage des séparateurs ;
-- mode expanded : libellé de section ;
-- mode compact : séparation visuelle sans titre inutile ;
-- compatibilité avec les anciens `item` et `group` ;
-- navigation uniquement, sans autorité de sécurité ;
-- permissions Platform et Application Global toujours distinctes.
+## 6. Validation attendue
 
-Fichiers Core concernés :
+Une seule validation globale est attendue via la PR de ce lot :
 
 ~~~text
-docs/derived-saas/DERIVED-SAAS.md
-docs/derived-saas/EXTENSION-POINTS.md
-frontend/src/app/application-platform-navigation.js
-frontend/src/app/application-platform-navigation.test.js
-frontend/src/components/shared/app-sidebar.jsx
-frontend/src/features/platform/lib/platform-navigation.js
-frontend/src/features/platform/lib/platform-navigation.test.js
-frontend/src/features/workspace/components/workspace-sidebar.test.jsx
+Core Gate PR
+→ npm run release:check complet
+→ backend
+→ frontend
+→ build
+→ 22 E2E
 ~~~
 
-## 7. État du BLOC A
+Ne pas multiplier les relances locales isolées sauf diagnostic nécessaire.
 
-Réalisé :
-
-~~~text
-filiation Core réparée
-→ Core 6581e57 mergé avec second parent réel
-→ main M-002 réaligné dans la branche Core
-→ provenance core-origin mise à jour
-→ documentation de reprise mise à jour
-→ identité visible dérivée alignée sur GMS / Fiches techniques (accueil + sidebar Workspace)
-→ release:check sur face5a41 signalé vert avant cet ajustement d’identité
-~~~
-
-Reste à réaliser :
+## 7. Sortie du lot
 
 ~~~text
-npm run release:check sur le HEAD final après ajustement d’identité
-→ QA visuelle de l’accueil et de la sidebar Workspace
-→ une PR BLOC A
-→ Core Gate PR
+une branche
+→ une PR
+→ Core Gate PR verte
 → merge
-→ Core Gate post-merge
+→ Core Gate post-merge verte
+→ BLOC A définitivement clos
 ~~~
 
-Le BLOC A n'est clos qu'après la Core Gate post-merge verte.
+Le BLOC B ne démarre qu’après cette clôture.
 
-## 8. BLOC B — après clôture du BLOC A uniquement
-
-Créer une branche Produit propre depuis `main`.
+## 8. BLOC B — ensuite uniquement
 
 Objectif :
 
@@ -158,7 +156,7 @@ Page
 → [ Produits | Fournisseurs ]
 ~~~
 
-Règles :
+Règles déjà validées :
 
 - réutiliser les surfaces M-002 et M-003 existantes ;
 - ne pas recréer les écrans Produits/Fournisseurs ;
@@ -166,27 +164,6 @@ Règles :
 - utiliser la primitive Core `section` ;
 - gérer Produits seul / Fournisseurs seul / les deux / aucun droit ;
 - ne donner aucun droit métier implicite au Super Admin Platform ;
-- préserver les routes historiques lorsque nécessaire ;
-- vérifier le Help Center existant ;
+- préserver les routes historiques si nécessaire ;
+- vérifier le Help Center ;
 - une branche, une PR, un merge.
-
-## 9. Lots explicitement séparés
-
-- exports/diffusion M-004 : CSV, XLSX, PDF, impression, e-mail ;
-- enrichissement massif du seed M-002 : nouvelle version de dataset ;
-- dette Core DataTable `GMS-CORE-UX-001` ;
-- production : billing, observabilité, stockage, conformité.
-
-## 10. Discipline de reprise
-
-~~~text
-un lot cohérent
-→ une branche
-→ tests
-→ une PR
-→ une Core Gate
-→ un merge
-→ une Core Gate post-merge
-~~~
-
-Ne pas créer de micro-PR. Ne pas poller les Core Gates : l'utilisateur communique leur résultat.
