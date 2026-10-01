@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; intégration Core post-tag v1.2.1 en cours  
-**Dernière mise à jour :** 2026-09-30
+**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; BLOC A Core post-tag v1.2.1 en validation finale  
+**Dernière mise à jour :** 2026-10-01
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.2.1` intégré jusqu’au commit post-tag `d3b9891bc2a32705a0a99b2ed62bed60caf653ca` ;
+- Core `v1.2.1` intégré sur la branche Core-update jusqu’au commit post-tag `6581e573c6a6885790b23fe502bd34d8199ea6ba`, avec provenance exacte dans `core-origin.json` ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;
@@ -97,7 +97,7 @@ Décisions finales :
 - import dédupliqué par nom exact de Référence ;
 - frontière stricte M-002 / M-003 maintenue.
 
-La dépendance générique Core de navigation Platform est déjà résolue et intégrée.
+La dépendance générique Core de navigation Platform est résolue par le commit post-tag `6581e573c6a6885790b23fe502bd34d8199ea6ba`. Elle est intégrée sur la branche Core-update dédiée et devient effective sur `main` après PR, merge et Core Gate post-merge du BLOC A.
 
 Décision de clôture du 2026-09-25 : le périmètre fonctionnel M-002 est gelé. Les retouches purement visuelles éventuelles sont non bloquantes et suivies comme dette conditionnelle ; elles ne rouvrent pas M-002. La PR finale reste soumise à la Core Gate canonique avant fusion.
 
@@ -579,21 +579,47 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-M-002 est clôturé fonctionnellement. Son intégration dans `main` passe par une unique PR finale protégée par la Core Gate canonique ; GitHub est l'autorité sur le résultat de cette gate et du merge.
+Le correctif/consolidation M-002 est clôturé :
 
-Le prochain lot métier est le **cadrage M-003 — Fournisseurs + Articles + prix/catalogues**. Le premier point à verrouiller est l'identité Fournisseur/Catalogue : un Article importé doit conserver un Fournisseur et une édition/catalogue explicites, puis être rapproché d'une Référence Produit M-002 sans création canonique silencieuse.
+~~~text
+PR #29
+→ merge 59aa1492710ec72435338a5640137f5468c45ed1
+→ Core Gate PR #157 verte
+→ Core Gate post-merge #158 verte
+~~~
 
-```text
-M-002 gelé
-→ PR finale + Core Gate
+Le lot courant est le **BLOC A — intégration Core de la navigation Platform par sections**.
+
+Core cible :
+
+~~~text
+version = 1.2.1
+tag     = v1.2.1
+commit  = 6581e573c6a6885790b23fe502bd34d8199ea6ba
+~~~
+
+État :
+
+~~~text
+filiation Core réparée
+→ merge Core réel conservé
+→ branche Core réalignée avec main@59aa149
+→ core-origin.json mis à jour
+→ validation globale finale à exécuter
+→ une PR BLOC A
+→ Core Gate PR
 → merge
 → Core Gate post-merge
-→ cadrage détaillé M-003
-→ validation du contrat M-003
-→ implémentation M-003 par lot cohérent
-```
+~~~
 
-Les éventuelles retouches visuelles M-002 non bloquantes sont traitées opportunément sous la dette `GMS-UX-001`, sans rouvrir le contrat métier. Ne pas rouvrir M-001 sauf régression démontrée.
-`npm run format:check` reste un sujet Core/tooling séparé s'il est toujours non conforme sur des fichiers Core inchangés.
+Après clôture complète du BLOC A seulement, ouvrir le **BLOC B — Gestion des référentiels Platform** :
 
-La marge semi-nette, la Fiche process, l'historique complet des invitations Core, l'OCR/IA et l'optimiseur détaillé restent différés selon leur module.
+~~~text
+Sidebar Platform
+→ une entrée « Gestion des référentiels »
+
+Page commune
+→ [ Produits | Fournisseurs ]
+~~~
+
+Le BLOC B doit réutiliser les surfaces M-002/M-003 existantes, conserver les permissions Application Global distinctes et utiliser la primitive Core `type: 'section'` sans modifier les fondations Core pour un besoin métier.
