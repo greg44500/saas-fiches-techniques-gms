@@ -15,6 +15,10 @@ const DOSSIER_WRITABLE_FIELDS = Object.freeze([
   'documentEmail',
   'phone',
   'contactName',
+]);
+
+const DOSSIER_CREATE_WRITABLE_FIELDS = Object.freeze([
+  ...DOSSIER_WRITABLE_FIELDS,
   'defaultTargetMarginBasisPoints',
 ]);
 
@@ -28,11 +32,25 @@ function compactDossierQueryParams(params) {
   );
 }
 
-function createDossierRequestBody(payload) {
+function pickDossierRequestBody(payload, fields) {
   return Object.fromEntries(
-    DOSSIER_WRITABLE_FIELDS
+    fields
       .filter((field) => Object.hasOwn(payload, field))
       .map((field) => [field, payload[field]]),
+  );
+}
+
+function createDossierRequestBody(payload) {
+  return pickDossierRequestBody(
+    payload,
+    DOSSIER_CREATE_WRITABLE_FIELDS,
+  );
+}
+
+function updateDossierRequestBody(payload) {
+  return pickDossierRequestBody(
+    payload,
+    DOSSIER_WRITABLE_FIELDS,
   );
 }
 
@@ -131,7 +149,7 @@ const dossierApi = dossierApiBase.injectEndpoints({
       query: ({ workspaceId, dossierId, ...payload }) => ({
         url: `/workspaces/${workspaceId}/dossiers/${dossierId}`,
         method: 'PATCH',
-        body: createDossierRequestBody(payload),
+        body: updateDossierRequestBody(payload),
       }),
       transformResponse: (response) => response?.data?.dossier ?? null,
       invalidatesTags: (_result, _error, { workspaceId, dossierId }) => [
@@ -259,5 +277,6 @@ export {
   compactDossierQueryParams,
   createDossierRequestBody,
   dossierApi,
+  updateDossierRequestBody,
   dossierScopeId,
 };
