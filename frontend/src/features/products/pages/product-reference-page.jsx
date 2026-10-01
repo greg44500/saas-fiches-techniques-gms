@@ -50,7 +50,7 @@ import { useDataPagination } from '@/hooks/use-data-pagination';
 
 const ALL_REFERENCE_CATEGORIES = '__ALL__';
 
-function ProductReferencePage({ canManage }) {
+function ProductReferencePage({ canManage, embedded = false }) {
   const { toast } = useToast();
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
   const [section, setSection] = useState('reference');
@@ -493,11 +493,13 @@ function ProductReferencePage({ canManage }) {
     if (section === 'contributions') contributionsQuery.refetch();
   }
 
+  const Heading = embedded ? 'h2' : 'h1';
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Référentiel Produits</h1>
+          <Heading className="text-2xl font-semibold tracking-tight">Référentiel Produits</Heading>
           <InfoTooltip
             content="Alimentez et maintenez le référentiel Produit commun. Cette autorité métier est indépendante des rôles Platform."
             label="À propos du référentiel Produits"
