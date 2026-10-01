@@ -314,6 +314,10 @@ const updateProductVariety = async ({
     }
 
     const searchKeys = buildSearchKeys(nextName, nextAliases);
+    const wasPendingReview = (
+        variety.qualityReviewStatus
+        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+    );
     variety.name = nextName;
     variety.normalizedName = normalizedName;
     variety.aliases = nextAliases;
@@ -339,6 +343,23 @@ const updateProductVariety = async ({
         metadata: { productId: productId.toString() },
         session,
     });
+
+    if (wasPendingReview) {
+        await createProductReferenceEvent({
+            actorId,
+            action:
+                PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_DIMENSION_REVIEWED,
+            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+            entityId: productId,
+            metadata: {
+                dimensionType: 'VARIETY',
+                dimensionId: variety._id.toString(),
+                dimensionName: variety.name,
+                reviewReason: 'CORRECTED',
+            },
+            session,
+        });
+    }
 
     return serializeVariety(variety);
 });
@@ -387,6 +408,10 @@ const updateProductCharacteristic = async ({
     }
 
     const searchKeys = buildSearchKeys(nextName, nextAliases);
+    const wasPendingReview = (
+        characteristic.qualityReviewStatus
+        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+    );
     characteristic.name = nextName;
     characteristic.normalizedName = normalizedName;
     characteristic.aliases = nextAliases;
@@ -415,6 +440,24 @@ const updateProductCharacteristic = async ({
         },
         session,
     });
+
+    if (wasPendingReview) {
+        await createProductReferenceEvent({
+            actorId,
+            action:
+                PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_DIMENSION_REVIEWED,
+            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+            entityId: productId,
+            metadata: {
+                dimensionType: 'CHARACTERISTIC',
+                dimensionId: characteristic._id.toString(),
+                dimensionName: characteristic.name,
+                kind: characteristic.kind,
+                reviewReason: 'CORRECTED',
+            },
+            session,
+        });
+    }
 
     return serializeCharacteristic(characteristic);
 });
@@ -588,16 +631,35 @@ const deleteProductDimension = async ({
         throw new AppError('Dimension Produit introuvable.', 404);
     }
 
-    const used = await ProductVariant.exists({
+    const usageFilter = {
         canonicalProduct: productId,
         ...(isVariety
             ? { variety: dimension._id }
             : { characteristics: dimension._id }),
-    }).session(session);
+    };
+    const [usageCount, usedReferences] = await Promise.all([
+        ProductVariant.countDocuments(usageFilter).session(session),
+        ProductVariant.find(usageFilter)
+            .select('name')
+            .sort({ normalizedName: 1, _id: 1 })
+            .limit(3)
+            .session(session)
+            .lean(),
+    ]);
 
-    if (used) {
+    if (usageCount > 0) {
+        const names = usedReferences
+            .map(({ name }) => name)
+            .filter(Boolean)
+            .join(', ');
         throw new AppError(
-            'Cette valeur est utilisée par une Référence Produit et ne peut pas être supprimée.',
+            'Cette valeur est utilisée par '
+            + usageCount
+            + ' Référence'
+            + (usageCount > 1 ? 's' : '')
+            + ' Produit'
+            + (usageCount > 1 ? 's' : '')
+            + (names ? ' : ' + names + '.' : '.'),
             409,
         );
     }
