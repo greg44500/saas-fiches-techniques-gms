@@ -1485,9 +1485,9 @@ La baseline fonctionnelle est validée :
 
 - Owner : toutes les permissions métier et tous les Dossiers ;
 - Acheteur : gestion Produits selon baseline, Fournisseurs, Articles, catalogues et Tarifs négociés ;
-- Économe : gestion/validation des Prix facturés, revues tarifaires et revalorisation, sans validation FT par défaut ;
+- Économe : gestion/validation des Prix facturés, revues tarifaires et correction économique, sans validation FT par défaut ;
 - Responsable FT : création, édition, validation, archivage/restauration des Fiches techniques ;
-- Contributeur FT : création et modification de ses DRAFTS, revalorisation de ses fiches, sans administration tarifaire ;
+- Contributeur FT : création et modification de ses DRAFTS avec recalcul automatique, sans administration tarifaire ;
 - Lecteur : consultation des ressources autorisées sans historique commercial détaillé par défaut.
 
 Contributeur et Lecteur peuvent recevoir le Prix applicable nécessaire sans recevoir l'historique commercial confidentiel.
