@@ -32,6 +32,7 @@ async function openDossiersPage(page, dossiersUrl) {
 async function createDossierFromUi(page, {
   dashboardUrl,
   name,
+  defaultTargetMargin = '30',
 }) {
   await openDossiersPage(page, getDossiersUrl(dashboardUrl));
 
@@ -39,6 +40,9 @@ async function createDossierFromUi(page, {
 
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Nom', { exact: true }).fill(name);
+  await dialog
+    .getByLabel('Marge cible par défaut (%)')
+    .fill(defaultTargetMargin);
   await dialog.getByRole('button', { name: 'Créer le dossier' }).click();
 
   await expect(page.getByText('Dossier créé', { exact: true })).toBeVisible();
