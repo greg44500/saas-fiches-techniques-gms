@@ -59,6 +59,7 @@ describe('M-004 calculs Fiche technique', () => {
                 },
             ],
             economatCosts: [],
+            productionQuantity: '10',
             vatRateBasisPoints: 1000,
             targetMarginBasisPoints: 5000,
             finalPriceMode: 'ADVISED',
@@ -68,17 +69,20 @@ describe('M-004 calculs Fiche technique', () => {
             economics.manufacturingCostHt,
         ).toBe('25');
         expect(
+            economics.manufacturingCostPerProductionUnitHt,
+        ).toBe('2.5');
+        expect(
             economics.theoreticalPriceHt,
-        ).toBe('50');
+        ).toBe('5');
         expect(
             economics.theoreticalPriceTtc,
-        ).toBe('55');
+        ).toBe('5.5');
         expect(
             economics.advisedPriceTtcMinor,
-        ).toBe(5500);
+        ).toBe(550);
         expect(
             economics.finalPriceTtcMinor,
-        ).toBe(5500);
+        ).toBe(550);
         expect(
             economics.actualMarginBasisPoints,
         ).toBe(5000);
@@ -93,6 +97,7 @@ describe('M-004 calculs Fiche technique', () => {
                 },
             ],
             economatCosts: [],
+            productionQuantity: '1',
             vatRateBasisPoints: 1000,
             targetMarginBasisPoints: 5000,
             finalPriceMode: 'MANUAL',
