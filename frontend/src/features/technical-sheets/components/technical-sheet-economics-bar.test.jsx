@@ -51,6 +51,7 @@ describe('TechnicalSheetEconomicsBar', () => {
             materialCostHt: '12.5',
             economatCostHt: '1.5',
             manufacturingCostHt: '14',
+            manufacturingCostPerProductionUnitHt: '1.4',
             advisedPriceTtcMinor: 3500,
             finalPriceTtcMinor: 3500,
             actualMarginBasisPoints: 6000,
@@ -68,8 +69,9 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(screen.getByText('CE HT')).toBeInTheDocument();
     expect(screen.getByText('CF HT')).toBeInTheDocument();
     expect(screen.queryByText('%MC')).not.toBeInTheDocument();
-    expect(screen.getByText('PC TTC')).toBeInTheDocument();
-    expect(screen.getByText('PF TTC')).toBeInTheDocument();
+    expect(screen.getByText('CF/U HT')).toBeInTheDocument();
+    expect(screen.getByText('PC TTC/U')).toBeInTheDocument();
+    expect(screen.getByText('PF TTC/U')).toBeInTheDocument();
     expect(screen.getByText('%MR')).toBeInTheDocument();
 
     expect(screen.getByRole('button', {
