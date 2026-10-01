@@ -38,6 +38,10 @@ import {
     PRODUCT_CATALOG_GLOBAL_PERMISSION,
 } from '../../../modules/productCatalog/productCatalogGlobalPermission.registry.js';
 import {
+    createProductCharacteristic,
+    createProductVariety,
+} from '../../../modules/productCatalog/productReferenceDimension.service.js';
+import {
     User,
 } from '../../../modules/users/user.model.js';
 import {
@@ -211,6 +215,105 @@ describe('M-002 global product reference HTTP contract', () => {
                 variants: [],
             }),
         ]);
+    });
+
+    it('signale les nouvelles Dimensions Workspace puis les acquitte sans approuver une contribution', async () => {
+        const workspace = await createWorkspaceOwnerFixture();
+
+        const productResponse = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Abricot revue Platform' });
+
+        expect(productResponse.status).toBe(201);
+        const productId = productResponse.body.data.product.id;
+
+        const variety = await createProductVariety({
+            actorId: workspace.owner._id,
+            workspaceId: workspace.workspace._id,
+            productId,
+            name: 'Bergeron revue',
+        });
+        const characteristic = await createProductCharacteristic({
+            actorId: workspace.owner._id,
+            workspaceId: workspace.workspace._id,
+            productId,
+            kind: 'COLOR',
+            name: 'Rouge revue',
+        });
+
+        const listedBefore = await request(app)
+            .get('/api/product-reference')
+            .query({ q: 'Abricot revue Platform' })
+            .set(bearer(governorToken));
+
+        expect(listedBefore.status).toBe(200);
+        expect(listedBefore.body.data.products[0].dimensionReview)
+            .toMatchObject({
+                pendingCount: 2,
+                reviewedAt: null,
+            });
+
+        const dimensionsBefore = await request(app)
+            .get('/api/product-reference/' + productId + '/dimensions')
+            .set(bearer(governorToken));
+
+        expect(dimensionsBefore.status).toBe(200);
+        expect(dimensionsBefore.body.data.review.pendingCount).toBe(2);
+        expect(dimensionsBefore.body.data.varieties).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: variety.id,
+                    isNew: true,
+                }),
+            ]),
+        );
+        expect(dimensionsBefore.body.data.characteristics).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: characteristic.id,
+                    isNew: true,
+                }),
+            ]),
+        );
+
+        const reviewed = await request(app)
+            .post('/api/product-reference/' + productId + '/dimensions/review')
+            .set(bearer(governorToken));
+
+        expect(reviewed.status).toBe(200);
+        expect(reviewed.body.data.review.pendingCount).toBe(0);
+        expect(reviewed.body.data.review.reviewedAt).toBeTruthy();
+
+        const listedAfter = await request(app)
+            .get('/api/product-reference')
+            .query({ q: 'Abricot revue Platform' })
+            .set(bearer(governorToken));
+
+        expect(listedAfter.body.data.products[0].dimensionReview.pendingCount)
+            .toBe(0);
+
+        const dimensionsAfter = await request(app)
+            .get('/api/product-reference/' + productId + '/dimensions')
+            .set(bearer(governorToken));
+
+        expect(dimensionsAfter.body.data.review.pendingCount).toBe(0);
+        expect(dimensionsAfter.body.data.varieties).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: variety.id,
+                    isNew: false,
+                }),
+            ]),
+        );
+        expect(dimensionsAfter.body.data.characteristics).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: characteristic.id,
+                    isNew: false,
+                }),
+            ]),
+        );
     });
 
     it('permet à la gouvernance de retirer immédiatement une dimension globale inutilisée', async () => {

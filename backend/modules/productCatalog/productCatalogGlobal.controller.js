@@ -49,6 +49,10 @@ import {
     listReferenceContributions,
     reviewReferenceContribution,
 } from './productReferenceContribution.service.js';
+import {
+    getProductDimensionReviewSummary,
+    markProductDimensionsReviewed,
+} from './productReferenceReview.service.js';
 
 const access = async (req, res) => {
     const authorization = await resolveApplicationGlobalAuthorization({
@@ -142,12 +146,47 @@ const reviewContribution = async (req, res) => {
 };
 
 const dimensions = async (req, res) => {
-    const result = await listProductDimensions({
-        productId: req.validated.params.productId,
-        includeArchived: true,
-        includeProvisional: true,
+    const productId = req.validated.params.productId;
+    const [result, review] = await Promise.all([
+        listProductDimensions({
+            productId,
+            includeArchived: true,
+            includeProvisional: true,
+        }),
+        getProductDimensionReviewSummary({ productId }),
+    ]);
+    const newVarietyIds = new Set(review.newVarietyIds);
+    const newCharacteristicIds = new Set(review.newCharacteristicIds);
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            varieties: result.varieties.map((variety) => ({
+                ...variety,
+                isNew: newVarietyIds.has(variety.id),
+            })),
+            characteristics: result.characteristics.map((characteristic) => ({
+                ...characteristic,
+                isNew: newCharacteristicIds.has(characteristic.id),
+            })),
+            review: {
+                pendingCount: review.pendingCount,
+                reviewedAt: review.reviewedAt,
+            },
+        },
     });
-    res.status(200).json({ status: 'success', data: result });
+};
+
+const reviewDimensions = async (req, res) => {
+    const review = await markProductDimensionsReviewed({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { review },
+    });
 };
 
 
@@ -358,6 +397,7 @@ export {
     metadata,
     previewImport,
     reviewContribution,
+    reviewDimensions,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,

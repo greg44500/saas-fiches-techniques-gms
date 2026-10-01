@@ -27,6 +27,7 @@ import {
     metadata,
     previewImport,
     reviewContribution,
+    reviewDimensions,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,
@@ -217,6 +218,13 @@ productCatalogGlobalRouter.get(
     dimensions,
 );
 
+
+productCatalogGlobalRouter.post(
+    '/:productId/dimensions/review',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({ params: globalProductIdParamsSchema }),
+    reviewDimensions,
+);
 
 productCatalogGlobalRouter.post(
     '/:productId/dimensions/:dimensionType/:dimensionId/undo',
