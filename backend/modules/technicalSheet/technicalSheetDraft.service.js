@@ -496,9 +496,13 @@ const createDraftFromValidatedState = async ({
                             order: line.order,
                             note:
                                 line.note ?? null,
-                            selectedSupplierArticleId:
-                                line.supplierArticleId
-                                    .toString(),
+                            ...(line.supplierArticleId
+                                ? {
+                                    selectedSupplierArticleId:
+                                        line.supplierArticleId
+                                            .toString(),
+                                }
+                                : {}),
                         }),
                     ),
                 session,
