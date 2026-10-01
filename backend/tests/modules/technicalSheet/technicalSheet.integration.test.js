@@ -270,6 +270,25 @@ const createValuedDraft = async ({
 };
 
 describe('M-004 services Fiches techniques', () => {
+    it('refuse une création sans paramètres de production', async () => {
+        await expect(
+            createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche incomplète M004',
+                },
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 400,
+        });
+    });
+
     it('liste les Fiches actives par défaut avec sanitizeFilter activé', async () => {
         const created =
             await createTechnicalSheet({
