@@ -48,6 +48,18 @@ const dimensions = {
   ],
 };
 
+async function openSelect(user, label) {
+  const trigger = screen.getByLabelText(label);
+
+  vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
+    DOMRect.fromRect({ x: 24, y: 24, width: 240, height: 40 }),
+  );
+
+  await user.click(trigger);
+
+  return trigger;
+}
+
 function StructuredHarness({
   availableDimensions = dimensions,
   onPayload,
@@ -87,11 +99,11 @@ describe('ProductVariantFields', () => {
 
     await user.type(screen.getByLabelText('Nom de la référence *'), 'Pomme en quartiers');
 
-    await user.click(screen.getByLabelText('Variété'));
-    await user.click(screen.getByRole('option', { name: 'Gala' }));
+    await openSelect(user, 'Variété');
+    await user.click(await screen.findByRole('option', { name: 'Gala' }));
 
-    await user.click(screen.getByLabelText('Présentation'));
-    await user.click(screen.getByRole('option', { name: 'En quartiers' }));
+    await openSelect(user, 'Présentation');
+    await user.click(await screen.findByRole('option', { name: 'En quartiers' }));
 
     await user.click(screen.getByRole('button', { name: 'Exporter' }));
 
@@ -136,9 +148,11 @@ describe('ProductVariantFields', () => {
 
     render(<StructuredHarness onPayload={onPayload} />);
 
-    await user.click(screen.getByLabelText('Unité de référence *'));
+    await openSelect(user, 'Unité de référence *');
 
-    expect(screen.getByRole('option', { name: 'PCE' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('option', { name: 'PCE' }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'unité' })).not.toBeInTheDocument();
   });
 

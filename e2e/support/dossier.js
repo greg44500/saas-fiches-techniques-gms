@@ -14,10 +14,34 @@ function getDossiersUrl(dashboardUrl) {
   return dashboardUrl.replace(/\/dashboard$/, '/dossiers');
 }
 
+function getDashboardUrlFromDossiersUrl(dossiersUrl) {
+  return dossiersUrl.replace(/\/dossiers$/, '/dashboard');
+}
+
 const DOSSIERS_ROUTE_READY_TIMEOUT_MS = 15_000;
 
 async function openDossiersPage(page, dossiersUrl) {
-  await page.goto(dossiersUrl);
+  const dashboardUrl = getDashboardUrlFromDossiersUrl(dossiersUrl);
+  const currentPathname = new URL(page.url()).pathname;
+
+  if (currentPathname !== dashboardUrl) {
+    await page.goto(dashboardUrl);
+  }
+
+  await expect(page).toHaveURL(
+    /\/workspaces\/[^/]+\/dashboard$/,
+    { timeout: DOSSIERS_ROUTE_READY_TIMEOUT_MS },
+  );
+
+  const dossiersLink = page.getByRole('link', {
+    name: 'Dossiers',
+    exact: true,
+  });
+
+  await expect(dossiersLink).toBeVisible({
+    timeout: DOSSIERS_ROUTE_READY_TIMEOUT_MS,
+  });
+  await dossiersLink.click();
 
   await expect(page).toHaveURL(
     /\/workspaces\/[^/]+\/dossiers$/,
