@@ -76,11 +76,8 @@ const applyAutomaticValuation = async ({
 
     draft.lines =
         valuation.lines.map((line) => {
-            const {
-                productVariantSnapshot,
-                ...persisted
-            } = line;
-
+            const persisted = { ...line };
+            delete persisted.productVariantSnapshot;
             return persisted;
         });
     draft.valuationStatus =
