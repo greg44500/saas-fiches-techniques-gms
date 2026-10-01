@@ -932,7 +932,7 @@ Profil de rôle type orienté Fournisseurs, Articles, catalogues, négociations 
 
 ## Économe / Gestionnaire des prix
 
-Profil de rôle type orienté contrôle des prix, validation des Prix facturés, revues tarifaires et revalorisation/correction des fiches selon permissions.
+Profil de rôle type orienté contrôle des prix, validation des Prix facturés, revues tarifaires et correction économique des fiches selon permissions.
 
 ---
 
