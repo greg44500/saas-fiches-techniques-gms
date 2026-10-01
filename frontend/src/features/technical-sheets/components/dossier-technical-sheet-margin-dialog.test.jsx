@@ -72,4 +72,26 @@ describe('DossierTechnicalSheetMarginDialog', () => {
     });
     expect(onClose).toHaveBeenCalled();
   });
+  it('n’autorise pas une marge vide', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <TooltipProvider>
+        <DossierTechnicalSheetMarginDialog
+          dossierId="dossier-1"
+          onClose={vi.fn()}
+          open
+          workspaceId="workspace-1"
+        />
+      </TooltipProvider>,
+    );
+
+    const input = screen.getByLabelText('Marge cible (%)');
+    await user.clear(input);
+
+    expect(
+      screen.getByRole('button', { name: 'Enregistrer' }),
+    ).toBeDisabled();
+  });
+
 });
