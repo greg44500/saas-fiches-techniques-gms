@@ -15,6 +15,7 @@ const DOSSIER_WRITABLE_FIELDS = Object.freeze([
   'documentEmail',
   'phone',
   'contactName',
+  'defaultTargetMarginBasisPoints',
 ]);
 
 function compactDossierQueryParams(params) {
