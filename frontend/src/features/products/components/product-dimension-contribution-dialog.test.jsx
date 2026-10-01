@@ -134,7 +134,7 @@ describe('ProductDimensionContributionDialog', () => {
     expect(props.onResolved).toHaveBeenCalledTimes(2);
     expect(screen.getByText('Gala')).toBeInTheDocument();
     expect(screen.getByText('Golden')).toBeInTheDocument();
-    expect(screen.getAllByText('Disponible')).toHaveLength(2);
+    expect(screen.getAllByText('Ajoutée')).toHaveLength(2);
     expect(props.onClose).not.toHaveBeenCalled();
   });
 
