@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Archive, Pencil, Plus, RotateCcw, Search, X } from 'lucide-react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
@@ -72,6 +72,7 @@ function ProductReferenceDetailsDrawer({
   const [createVariantOpen, setCreateVariantOpen] = useState(false);
   const [createDimensionOpen, setCreateDimensionOpen] = useState(false);
   const [dimensionSearch, setDimensionSearch] = useState('');
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const query = useGetProductReferenceDetailQuery(productId, { skip: !productId });
   const dimensionsQuery = useGetProductReferenceDimensionsQuery(productId, {
@@ -83,6 +84,11 @@ function ProductReferenceDetailsDrawer({
     useUpdateProductReferenceVarietyStatusMutation();
   const [updateCharacteristicStatus, characteristicStatusState] =
     useUpdateProductReferenceCharacteristicStatusMutation();
+
+  useEffect(() => {
+    if (!open) return;
+    setActiveTab(initialTab);
+  }, [initialTab, open, productId]);
 
   if (query.data) retainedRef.current = query.data;
   const detail = query.data ?? retainedRef.current;
@@ -225,7 +231,7 @@ function ProductReferenceDetailsDrawer({
             title="Produit indisponible"
           />
         ) : product ? (
-          <Tabs defaultValue={initialTab}>
+          <Tabs onValueChange={setActiveTab} value={activeTab}>
             <TabsList aria-label="Administration du Produit" variant="section">
               <TabsTrigger value="product" variant="section">Produit</TabsTrigger>
               <TabsTrigger value="dimensions" variant="section">Dimensions ({dimensionCount})</TabsTrigger>
@@ -475,22 +481,20 @@ function ProductReferenceDetailsDrawer({
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex min-w-0 items-center gap-2">
-                              <div className="min-w-0">
-                                <p
-                                  className="truncate font-medium"
-                                  title={
-                                    characteristic.aliases?.length
-                                      ? 'Synonymes : ' + characteristic.aliases.join(', ')
-                                      : undefined
-                                  }
-                                >
-                                  {characteristic.name}
-                                </p>
-                                <p className="truncate text-xs text-muted-foreground">
-                                  {characteristicKindLabels.get(characteristic.kind)
-                                    ?? characteristic.kind}
-                                </p>
-                              </div>
+                              <p
+                                className="truncate font-medium"
+                                title={
+                                  characteristic.aliases?.length
+                                    ? 'Synonymes : ' + characteristic.aliases.join(', ')
+                                    : undefined
+                                }
+                              >
+                                {characteristic.name}
+                              </p>
+                              <span className="shrink-0 text-xs text-muted-foreground">
+                                {characteristicKindLabels.get(characteristic.kind)
+                                  ?? characteristic.kind}
+                              </span>
                               <StatusBadge
                                 className="shrink-0 py-0.5"
                                 tone={getProductStatusTone(characteristic.status)}
