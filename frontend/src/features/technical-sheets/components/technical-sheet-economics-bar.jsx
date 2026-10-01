@@ -176,17 +176,17 @@ function TechnicalSheetEconomicsBar({
           <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4 xl:grid-cols-7">
             <Metric
               label="CM HT"
-              tooltip="Coût matières hors taxe"
+              tooltip="Coût matières total hors taxe de la production"
               value={formatDecimalCurrency(visibleCosts.materialCostHt)}
             />
             <Metric
               label="CE HT"
-              tooltip="Coût économat hors taxe"
+              tooltip="Coût économat total hors taxe de la production"
               value={formatDecimalCurrency(visibleCosts.economatCostHt)}
             />
             <Metric
               label="CF HT"
-              tooltip="Coût de fabrication hors taxe"
+              tooltip="Coût de fabrication total hors taxe de la production"
               value={formatDecimalCurrency(visibleCosts.manufacturingCostHt)}
             />
 
