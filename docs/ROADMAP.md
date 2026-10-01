@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; stabilisation post-merge du BLOC A en cours  
+**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; BLOC B Platform / Gestion des référentiels en cours  
 **Dernière mise à jour :** 2026-10-01
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -579,58 +579,70 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le BLOC A Core post-`v1.2.1` est fusionné dans `main` :
+Le BLOC A est définitivement clôturé :
 
 ~~~text
 PR #30
 → Core Gate PR #159 : success
 → merge 42f91e844974e2d0c6d374f2bb307077210b2614
+
+PR #31
+→ Core Gate PR #163 : success
+→ merge 7c3ae1d4ae5a5600d95198bab0b890d88269d39f
+→ Core Gate post-merge #164 : success
 ~~~
 
-La Core Gate post-merge #160 a révélé deux instabilités de tests sur deux tentatives distinctes :
+Le lot actif est le **BLOC B — Platform / Gestion des référentiels**.
 
-~~~text
-tentative 1
-→ 2 E2E M-001 bloqués sur la disponibilité de la page Dossiers
-→ 20/22 E2E verts
-
-tentative 2
-→ E2E non atteints
-→ 1 test frontend M-002 instable sur l’ouverture d’un Select Base UI
-→ 1079/1080 tests frontend verts
-~~~
-
-Le lot courant est donc un **correctif unique de stabilité post-merge** sur la branche `fix/post-merge-test-stability`.
-
-Périmètre Produit :
-
-- stabiliser les interactions Base UI du test `ProductVariantFields` avec le pattern déjà utilisé par les tests partagés ;
-- restaurer le helper E2E M-001 exactement à l'état de `main` après invalidation de la tentative de navigation intermédiaire par la Core Gate PR #161 ;
-- ne modifier ni les règles métier, ni les permissions, ni les contrats API, ni la provenance Core.
-
-La Core Gate PR #161 a confirmé que la tentative de modification du helper M-001 était une régression : les 4 scénarios M-001 ont échoué sur le nouveau lien `Dossiers`. Cette modification est entièrement annulée.
-
-La conservation automatique des traces/screenshots Playwright dans GitHub Actions est un besoin générique et réutilisable. Elle est donc **candidate Core** et ne doit pas être ajoutée silencieusement dans le produit.
-
-Séquence de sortie :
-
-~~~text
-correctif de stabilité
-→ une PR
-→ Core Gate PR
-→ merge
-→ Core Gate post-merge verte
-→ clôture définitive du BLOC A
-~~~
-
-Après cette clôture seulement, ouvrir le **BLOC B — Gestion des référentiels Platform** :
+Objectif :
 
 ~~~text
 Sidebar Platform
-→ une entrée « Gestion des référentiels »
+→ section GMS
+   → Gestion des référentiels
 
 Page commune
 → [ Produits | Fournisseurs ]
 ~~~
 
-Le BLOC B doit réutiliser les surfaces M-002/M-003 existantes, conserver les permissions Application Global distinctes et utiliser la primitive Core `type: 'section'` sans modifier les fondations Core pour un besoin métier.
+Architecture :
+
+~~~text
+/platform/reference-management/:section?
+→ products
+→ suppliers
+~~~
+
+Règles :
+
+- réutiliser intégralement les pages globales M-002/M-003 existantes ;
+- conserver les routes historiques `/product-reference` et `/supplier-reference` pour ne pas réduire le contrat Application Global hors Platform ;
+- afficher uniquement les onglets autorisés par `product:reference:read` et `supplier:reference:read` ;
+- conserver les droits `*:manage` comme autorité des actions de mutation ;
+- ne donner aucun droit métier implicite à un rôle Platform ;
+- utiliser la primitive Core `type: 'section'` sans modifier le renderer Core ;
+- ne pas créer de backend, modèle, permission ou capability supplémentaire ;
+- le Help Center existant reste valide car il ne dépend pas des anciennes URLs.
+
+État actuel :
+
+~~~text
+branche = feature/platform-reference-management
+base    = main@7c3ae1d4ae5a5600d95198bab0b890d88269d39f
+code    = implémenté
+tests   = ajoutés / adaptés mais pas encore déclarés verts
+QA      = à faire
+PR      = non ouverte
+~~~
+
+Séquence :
+
+~~~text
+QA visuelle
+→ release:check
+→ une PR
+→ Core Gate PR
+→ merge
+→ Core Gate post-merge
+→ clôture BLOC B
+~~~

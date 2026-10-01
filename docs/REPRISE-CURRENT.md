@@ -1,9 +1,9 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-10-01  
-**Lot courant :** stabilisation post-merge du BLOC A  
-**Branche :** `fix/post-merge-test-stability`  
-**Base :** `main@42f91e844974e2d0c6d374f2bb307077210b2614`
+**Lot courant :** BLOC B — Platform / Gestion des référentiels  
+**Branche :** `feature/platform-reference-management`  
+**Base :** `main@7c3ae1d4ae5a5600d95198bab0b890d88269d39f`
 
 ## 1. Autorité
 
@@ -16,17 +16,22 @@ Git/code/DB
 → présente reprise
 ~~~
 
-## 2. BLOC A fusionné
+## 2. BLOC A définitivement clôturé
 
-Le BLOC A d’intégration Core post-`v1.2.1` est fusionné :
+Le BLOC A et son correctif de stabilité sont fusionnés et validés :
 
 ~~~text
 PR #30
-Core Gate PR #159 = success
-merge = 42f91e844974e2d0c6d374f2bb307077210b2614
+→ Core Gate PR #159 : success
+→ merge 42f91e844974e2d0c6d374f2bb307077210b2614
+
+PR #31
+→ Core Gate PR #163 : success
+→ merge 7c3ae1d4ae5a5600d95198bab0b890d88269d39f
+→ Core Gate post-merge #164 : success
 ~~~
 
-Provenance Core inchangée :
+Provenance Core active :
 
 ~~~text
 repository = greg44500/saas-core-api
@@ -35,135 +40,159 @@ tag        = v1.2.1
 commit     = 6581e573c6a6885790b23fe502bd34d8199ea6ba
 ~~~
 
-Le tag `v1.2.1` reste inchangé et ne doit pas être déplacé.
+Le tag `v1.2.1` reste inchangé.
 
-## 3. Pourquoi le lot de stabilisation est ouvert
+## 3. Objectif du BLOC B
 
-La Core Gate post-merge #160 a échoué deux fois, sur deux symptômes différents.
-
-Tentative 1 :
+Unifier dans la surface Platform les deux référentiels globaux déjà implémentés :
 
 ~~~text
-2 E2E M-001 en échec
-→ attente du heading « Dossiers » après navigation
-→ 20/22 E2E verts
-~~~
+avant
+→ Référentiel Produits
+→ Référentiel Fournisseurs
 
-Les deux scénarios M-001 suivants, utilisant le même helper, ont ensuite réussi dans la même exécution.
+cible
+→ section GMS
+   → Gestion des référentiels
 
-Tentative 2 :
-
-~~~text
-1 test frontend M-002 en échec
-→ ProductVariantFields
-→ Select « Unité de référence »
-→ option « PCE » non montée après clic
-→ 1079/1080 tests frontend verts
-→ E2E non atteints
-~~~
-
-Le même test `ProductVariantFields` était vert sur la Core Gate #159 et sur la première tentative post-merge.
-
-La Core Gate PR #161 a ensuite démontré que la première tentative de correction E2E introduite dans cette branche était incorrecte : les 4 scénarios M-001 ont échoué sur le nouveau prérequis de navigation vers un lien `Dossiers`. Cette modification est donc entièrement annulée.
-
-Conclusion opérationnelle : le lot conserve uniquement la correction frontend M-002 démontrée comme compatible avec la suite complète jusqu'aux E2E. Le helper M-001 est restauré exactement à l'état de `main`.
-
-## 4. Correctifs Produit du lot
-
-### Test frontend M-002
-
-Le test `ProductVariantFields` adopte le pattern déjà utilisé par les tests du Select partagé :
-
-~~~text
-trigger Base UI
-→ bounding rect déterministe
-→ clic utilisateur
-→ attente asynchrone findByRole(option)
-~~~
-
-La valeur canonique `UNIT` et sa présentation `PCE` restent inchangées.
-
-### E2E M-001
-
-Aucune modification E2E M-001 n'est conservée dans ce lot.
-
-La tentative consistant à passer par le Dashboard puis un lien `Dossiers` a été invalidée par la Core Gate PR #161 :
-
-~~~text
-4/4 scénarios M-001
-→ échec identique
-→ lien Dossiers absent
-→ régression introduite par la branche
-~~~
-
-`e2e/support/dossier.js` est restauré bit pour bit depuis `main`.
-
-La cause de l'instabilité post-merge initiale ne sera pas masquée par un nouveau parcours ou un timeout arbitraire. Si elle réapparaît après restauration, elle devra être diagnostiquée à partir d'une preuve exploitable de l'état de page/trace, sans modifier le contrat fonctionnel M-001.
-
-## 5. Frontière Core / Produit
-
-La conservation automatique des screenshots, vidéos et traces Playwright en cas d’échec GitHub Actions est générique et réutilisable.
-
-Elle appartient donc à un futur lot Core :
-
-~~~text
-saas-core-api
-→ workflow Core Gate
-→ upload d’artifacts sur échec
-→ version/test Core
-→ intégration ultérieure dans le produit
-~~~
-
-Aucun patch générique du workflow Core n’est introduit directement dans ce produit.
-
-## 6. Validation attendue
-
-Une seule validation globale est attendue via la PR de ce lot :
-
-~~~text
-Core Gate PR
-→ npm run release:check complet
-→ backend
-→ frontend
-→ build
-→ 22 E2E
-~~~
-
-Ne pas multiplier les relances locales isolées sauf diagnostic nécessaire.
-
-## 7. Sortie du lot
-
-~~~text
-une branche
-→ une PR
-→ Core Gate PR verte
-→ merge
-→ Core Gate post-merge verte
-→ BLOC A définitivement clos
-~~~
-
-Le BLOC B ne démarre qu’après cette clôture.
-
-## 8. BLOC B — ensuite uniquement
-
-Objectif :
-
-~~~text
-Sidebar Platform
-→ une seule entrée « Gestion des référentiels »
-
-Page
+page
 → [ Produits | Fournisseurs ]
 ~~~
 
-Règles déjà validées :
+Ce bloc ne recrée ni M-002 ni M-003. Il compose leurs surfaces existantes.
 
-- réutiliser les surfaces M-002 et M-003 existantes ;
-- ne pas recréer les écrans Produits/Fournisseurs ;
-- conserver les permissions Application Global existantes ;
-- utiliser la primitive Core `section` ;
-- gérer Produits seul / Fournisseurs seul / les deux / aucun droit ;
-- ne donner aucun droit métier implicite au Super Admin Platform ;
-- préserver les routes historiques si nécessaire ;
-- vérifier le Help Center ;
-- une branche, une PR, un merge.
+## 4. Architecture retenue
+
+Nouveau module frontend :
+
+~~~text
+frontend/src/features/reference-management/
+├── components/reference-management-route.jsx
+├── components/reference-management-route.test.jsx
+├── reference-management.constants.js
+├── reference-management-platform-navigation.js
+└── reference-management-routes.js
+~~~
+
+Route Platform canonique :
+
+~~~text
+/platform/reference-management/:section?
+~~~
+
+Sections :
+
+~~~text
+products
+suppliers
+~~~
+
+Les routes historiques restent conservées :
+
+~~~text
+/product-reference
+/supplier-reference
+~~~
+
+Motif : elles restent utilisables par une autorité Application Global authentifiée même si elle n'appartient pas à la Platform. Le BLOC B ne réduit pas un contrat d'accès existant.
+
+## 5. Autorisation
+
+La navigation Platform utilise uniquement les permissions Application Global exposées dans le contexte Platform pour décider de la visibilité.
+
+La page commune revalide ensuite l'accès avec les endpoints métier existants :
+
+~~~text
+/product-reference/access
+/supplier-reference/access
+~~~
+
+Règles :
+
+~~~text
+product:reference:read seul
+→ onglet Produits uniquement
+
+supplier:reference:read seul
+→ onglet Fournisseurs uniquement
+
+les deux
+→ deux onglets
+
+aucun
+→ aucune entrée Platform
+→ route métier commune refusée / retour Workspaces
+~~~
+
+Les permissions `*:manage` pilotent uniquement les actions de gestion dans les pages existantes.
+
+Un rôle Platform, y compris élevé, n'accorde aucun droit métier implicite.
+
+## 6. Navigation Core utilisée
+
+Le BLOC B consomme la primitive Core post-`v1.2.1` :
+
+~~~text
+type: 'section'
+~~~
+
+Le renderer Core n'est pas modifié.
+
+La composition Produit fournit :
+
+~~~text
+section : GMS
+item    : Gestion des référentiels
+route   : /platform/reference-management
+~~~
+
+Les anciens descriptors Platform séparés Produits/Fournisseurs sont retirés de la composition afin d'éviter deux chemins de navigation concurrents.
+
+## 7. Centre d'aide
+
+Les modules d'aide M-002/M-003 ont été vérifiés.
+
+Ils :
+
+- filtrent déjà leurs contenus selon les permissions Application Global ;
+- ne codent pas les anciennes URLs en dur ;
+- décrivent les parcours fonctionnels sans dépendre du chemin exact.
+
+Aucune modification du Help Center n'est requise dans ce bloc.
+
+## 8. Validation à effectuer
+
+État actuel :
+
+~~~text
+implémentation frontend : réalisée sur la branche
+tests ajoutés / adaptés : réalisés
+tests exécutés : pas encore déclarés verts
+QA visuelle : à faire
+PR : pas encore ouverte
+~~~
+
+Scénarios à vérifier :
+
+1. Produits seul ;
+2. Fournisseurs seul ;
+3. Produits + Fournisseurs ;
+4. aucun droit Application Global ;
+5. administrateur Platform sans droit métier ;
+6. route racine redirigée vers le premier onglet autorisé ;
+7. tentative d'accès à un onglet non autorisé redirigée vers l'onglet autorisé ;
+8. anciennes routes globales toujours fonctionnelles.
+
+## 9. Séquence de sortie
+
+~~~text
+QA visuelle utilisateur
+→ npm run release:check
+→ une PR BLOC B
+→ Core Gate PR
+→ merge
+→ Core Gate post-merge
+→ clôture BLOC B
+~~~
+
+Ne pas ouvrir de second lot fonctionnel avant cette clôture.
