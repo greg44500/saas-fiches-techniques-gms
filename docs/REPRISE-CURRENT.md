@@ -1,9 +1,10 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-10-01  
-**Lot courant :** BLOC B — Platform / Gestion des référentiels  
-**Branche :** `feature/platform-reference-management`  
-**Base :** `main@7c3ae1d4ae5a5600d95198bab0b890d88269d39f`
+**Lot courant :** stabilisation M-004 — création, quantité produite et calcul économique automatique  
+**Branche :** `feature/m004-valuation-ux-stabilization`  
+**Base :** `main@957438c8f522b9e342158a17a7a4a6aa4bd7d3a2`  
+**PR :** aucune — QA visuelle utilisateur requise avant finalisation
 
 ## 1. Autorité
 
@@ -16,7 +17,64 @@ Git/code/DB
 → présente reprise
 ~~~
 
-## 2. BLOC A définitivement clôturé
+## 2. Stabilisation M-004 en cours
+
+Le lot corrige le parcours observé avant les exports, sans évolution Core.
+
+Décisions actives :
+
+~~~text
+Dossier
+→ nom + marge cible par défaut obligatoires à la création
+
+Nouvelle Fiche
+→ nom
+→ quantité produite
+→ unité de production
+→ TVA
+→ marge cible héritée du Dossier
+→ ouverture du poste de travail seulement avec ces paramètres
+
+Fiche
+→ ancien champ Portions supprimé
+→ quantité produite = dénominateur des résultats unitaires
+→ composition modifiable uniquement avec paramètres complets
+→ sauvegarde automatique du brouillon
+→ recalcul économique automatique après sauvegarde
+→ plus de bouton Valoriser / Revaloriser dans le parcours normal
+
+Prix applicable
+→ résolution M-003 inchangée
+→ les Prix indicatifs Dossier / Workspace restent les fallbacks lorsque les sources commerciales ne sont pas exploitables
+~~~
+
+Le Prix conseillé, le Prix final et le plancher économique sont désormais calculés par unité produite. Les coûts matière, Économat et fabrication totaux restent disponibles pour expliquer le coût complet de la production.
+
+Compatibilité legacy :
+
+~~~text
+migration:m004-production-quantity
+→ reprend portions uniquement si productionQuantity est absente
+→ supprime ensuite le champ portions des brouillons et snapshots historiques
+→ ne remplace jamais une productionQuantity déjà existante
+~~~
+
+État de validation au moment de cette reprise :
+
+~~~text
+main de base                         : 957438c8f522b9e342158a17a7a4a6aa4bd7d3a2
+Core Gate post-merge de cette base   : #167 SUCCESS
+implémentation branche               : réalisée
+tests automatisés de la branche      : NON EXÉCUTÉS / NON REVENDIQUÉS
+QA visuelle utilisateur              : À FAIRE
+PR / merge                           : NON CRÉÉS
+~~~
+
+La prochaine étape est volontairement la QA locale du parcours avant toute PR : création Dossier, création Fiche, ajout d'un Produit avec Prix indicatif, recalcul automatique, modification quantité/marge/TVA et contrôle du menu Actions.
+
+---
+
+## 3. BLOC A définitivement clôturé
 
 Le BLOC A et son correctif de stabilité sont fusionnés et validés :
 
@@ -42,7 +100,7 @@ commit     = 6581e573c6a6885790b23fe502bd34d8199ea6ba
 
 Le tag `v1.2.1` reste inchangé.
 
-## 3. Objectif du BLOC B
+## 4. Objectif du BLOC B
 
 Unifier dans la surface Platform les deux référentiels globaux déjà implémentés :
 
@@ -61,7 +119,7 @@ page
 
 Ce bloc ne recrée ni M-002 ni M-003. Il compose leurs surfaces existantes.
 
-## 4. Architecture retenue
+## 5. Architecture retenue
 
 Nouveau module frontend :
 
@@ -96,7 +154,7 @@ Les routes historiques restent conservées :
 
 Motif : elles restent utilisables par une autorité Application Global authentifiée même si elle n'appartient pas à la Platform. Le BLOC B ne réduit pas un contrat d'accès existant.
 
-## 5. Autorisation
+## 6. Autorisation
 
 La navigation Platform utilise uniquement les permissions Application Global exposées dans le contexte Platform pour décider de la visibilité.
 
@@ -128,7 +186,7 @@ Les permissions `*:manage` pilotent uniquement les actions de gestion dans les p
 
 Un rôle Platform, y compris élevé, n'accorde aucun droit métier implicite.
 
-## 6. Navigation Core utilisée
+## 7. Navigation Core utilisée
 
 Le BLOC B consomme la primitive Core post-`v1.2.1` :
 
@@ -148,7 +206,7 @@ route   : /platform/reference-management
 
 Les anciens descriptors Platform séparés Produits/Fournisseurs sont retirés de la composition afin d'éviter deux chemins de navigation concurrents.
 
-## 7. Centre d'aide métier
+## 8. Centre d'aide métier
 
 Le moteur d'aide reste celui du Core générique. Seule la composition métier du produit est adaptée au BLOC B.
 
@@ -198,7 +256,7 @@ Fournisseurs & prix
 
 Le filtrage serveur par permissions Application Global est conservé. Un utilisateur ne voit donc dans la catégorie commune que les fiches correspondant réellement à ses droits métier.
 
-## 8. Validation finale
+## 9. Validation finale
 
 État du BLOC B avant PR :
 
