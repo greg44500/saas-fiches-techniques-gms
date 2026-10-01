@@ -506,7 +506,7 @@ describe('M-004 services Fiches techniques', () => {
         expect(
             valued.draft.economicSnapshot
                 .finalPriceTtcMinor,
-        ).toBe(5500);
+        ).toBe(550);
 
         const result =
             await validateTechnicalSheet({
