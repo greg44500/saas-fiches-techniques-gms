@@ -46,7 +46,6 @@ import {
   useStartTechnicalSheetDraftMutation,
   useUpdateTechnicalSheetMutation,
   useValidateTechnicalSheetMutation,
-  useValuateTechnicalSheetMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
   TechnicalSheetControlPanel,
@@ -93,7 +92,6 @@ function buildDraftForm(draft) {
   return {
     productionQuantity: draft.productionQuantity ?? '',
     productionUnit: draft.productionUnit ?? '',
-    portions: draft.portions ?? '',
     vatRate: basisPointsToInput(draft.vatRateBasisPoints),
     targetMargin: basisPointsToInput(draft.targetMarginBasisPoints),
     finalPriceMode: draft.finalPriceMode ?? 'ADVISED',
@@ -146,7 +144,6 @@ function buildDraftSaveRequest({
       expectedRevision: revision,
       productionQuantity: draftForm.productionQuantity,
       productionUnit: draftForm.productionUnit,
-      portions: draftForm.portions || null,
       vatRateBasisPoints,
       targetMarginBasisPoints,
       finalPriceMode: draftForm.finalPriceMode,
@@ -218,7 +215,6 @@ function TechnicalSheetWorkspacePage() {
   const [updateSheet, updateSheetState] = useUpdateTechnicalSheetMutation();
   const [startDraft, startDraftState] = useStartTechnicalSheetDraftMutation();
   const [saveDraft] = useSaveTechnicalSheetDraftMutation();
-  const [valuate, valuateState] = useValuateTechnicalSheetMutation();
   const [validateSheet, validateState] = useValidateTechnicalSheetMutation();
   const [archiveSheet, archiveState] = useArchiveTechnicalSheetMutation();
   const [reactivateSheet, reactivateState] = useReactivateTechnicalSheetMutation();
@@ -235,7 +231,6 @@ function TechnicalSheetWorkspacePage() {
   const [draftForm, setDraftForm] = useState({
     productionQuantity: '',
     productionUnit: '',
-    portions: '',
     vatRate: '',
     targetMargin: '',
     finalPriceMode: 'ADVISED',
@@ -315,7 +310,6 @@ function TechnicalSheetWorkspacePage() {
     draftFormRef.current = {
       productionQuantity: '',
       productionUnit: '',
-      portions: '',
       vatRate: '',
       targetMargin: '',
       finalPriceMode: 'ADVISED',
@@ -416,6 +410,20 @@ function TechnicalSheetWorkspacePage() {
     || autosaveIsSaving
     || draftFormRevision === null
   );
+  const parsedVatRate =
+    percentInputToBasisPoints(draftForm.vatRate);
+  const parsedTargetMargin =
+    percentInputToBasisPoints(draftForm.targetMargin);
+  const parametersComplete = Boolean(
+    draftForm.productionQuantity.trim()
+    && draftForm.productionUnit
+    && parsedVatRate !== null
+    && parsedVatRate >= 0
+    && parsedVatRate <= 10000
+    && parsedTargetMargin !== null
+    && parsedTargetMargin >= 0
+    && parsedTargetMargin < 10000
+  );
 
   function handleSourcingPendingChange(pending) {
     setSourcingPendingCount((current) => (
@@ -479,35 +487,11 @@ function TechnicalSheetWorkspacePage() {
       }).unwrap();
       toast({
         title: 'Nouveau brouillon créé',
-        description: 'Les données validées ont été reprises. Une revalorisation sera nécessaire.',
+        description: 'Les données validées ont été reprises et les calculs ont été actualisés.',
         variant: 'success',
       });
     } catch (error) {
       notifyError(error, 'Le brouillon n’a pas pu être créé.');
-    }
-  }
-
-  async function valuateDraft() {
-    try {
-      const result = await valuate({
-        workspaceId: workspace.id,
-        dossierId,
-        technicalSheetId,
-        expectedRevision: draftFormRevision,
-      }).unwrap();
-
-      const ambiguityCount = Object.keys(result.resolutionCandidates ?? {}).length;
-      toast({
-        title: ambiguityCount > 0
-          ? 'Valorisation incomplète'
-          : 'Fiche technique valorisée',
-        description: ambiguityCount > 0
-          ? ambiguityCount + ' ligne(s) nécessitent un choix explicite d’Article fournisseur.'
-          : undefined,
-        variant: ambiguityCount > 0 ? 'info' : 'success',
-      });
-    } catch (error) {
-      notifyError(error, 'La valorisation n’a pas pu être calculée.');
     }
   }
 
@@ -690,7 +674,7 @@ function TechnicalSheetWorkspacePage() {
               <CardHeader className="pb-3">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div className="flex items-center gap-2">
-                    <CardTitle>Indicateurs de production</CardTitle>
+                    <CardTitle>Paramètres</CardTitle>
                     <InfoTooltip
                       content="Regroupe les paramètres de production, la TVA de vente de la Fiche et les principaux indicateurs économiques utilisés pour calculer et piloter sa valorisation."
                       label="À propos des Indicateurs de production"
@@ -733,10 +717,10 @@ function TechnicalSheetWorkspacePage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <Field>
+                <div className="flex flex-wrap items-end gap-3">
+                  <Field className="w-36">
                     <FieldLabel htmlFor="technical-sheet-production-quantity">
-                      Quantité
+                      Quantité produite
                     </FieldLabel>
                     <Input
                       className="h-9"
@@ -754,7 +738,7 @@ function TechnicalSheetWorkspacePage() {
                     />
                   </Field>
 
-                  <Field>
+                  <Field className="w-44">
                     <FieldLabel>Unité</FieldLabel>
                     <Select
                       disabled={!canUpdate || draftSynchronizing}
@@ -783,27 +767,7 @@ function TechnicalSheetWorkspacePage() {
                     </Select>
                   </Field>
 
-                  <Field>
-                    <FieldLabel htmlFor="technical-sheet-portions">
-                      Portion(s)
-                    </FieldLabel>
-                    <Input
-                      className="h-9"
-                      disabled={!canUpdate || draftSynchronizing}
-                      id="technical-sheet-portions"
-                      inputMode="decimal"
-                      onBlur={flushAutosave}
-                      onChange={(event) => {
-                        updateDraftForm((current) => ({
-                          ...current,
-                          portions: event.target.value,
-                        }));
-                      }}
-                      value={draftForm.portions}
-                    />
-                  </Field>
-
-                  <Field>
+                  <Field className="w-28">
                     <FieldLabel htmlFor="technical-sheet-vat">
                       TVA (%)
                     </FieldLabel>
@@ -822,21 +786,37 @@ function TechnicalSheetWorkspacePage() {
                       value={draftForm.vatRate}
                     />
                   </Field>
+
+                  <Field className="w-32">
+                    <FieldLabel htmlFor="technical-sheet-target-margin">
+                      Marge cible (%)
+                    </FieldLabel>
+                    <Input
+                      className="h-9"
+                      disabled={!canUpdate || !canValuate || draftSynchronizing}
+                      id="technical-sheet-target-margin"
+                      inputMode="decimal"
+                      onBlur={flushAutosave}
+                      onChange={(event) => {
+                        updateDraftForm((current) => ({
+                          ...current,
+                          targetMargin: event.target.value,
+                        }));
+                      }}
+                      value={draftForm.targetMargin}
+                    />
+                  </Field>
                 </div>
 
                 <div className="border-t border-border pt-4">
+                  <h3 className="mb-3 text-sm font-semibold">Résultats</h3>
                   <TechnicalSheetEconomicsBar
                     canValuate={canValuate}
                     economicSnapshot={economicSnapshot}
                     editDisabled={!canUpdate || draftSynchronizing}
                     finalPriceInputValue={draftForm.finalPriceTtc}
                     finalPriceMode={draftForm.finalPriceMode}
-                    lines={draft.lines ?? []}
-                    notice={
-                      draftDirty
-                        ? 'Modifications non enregistrées : enregistrez le brouillon avant de revaloriser.'
-                        : null
-                    }
+                    lines={draftForm.lines}
                     onFinalPriceInputChange={(value) => {
                       updateDraftForm((current) => ({
                         ...current,
@@ -849,23 +829,13 @@ function TechnicalSheetWorkspacePage() {
                         finalPriceMode: value,
                       }), { immediate: true });
                     }}
-                    onTargetMarginInputChange={(value) => {
-                      updateDraftForm((current) => ({
-                        ...current,
-                        targetMargin: value,
-                      }));
-                    }}
                     onFieldBlur={flushAutosave}
-                    onValuate={valuateDraft}
-                    targetMarginBasisPoints={draft.targetMarginBasisPoints}
-                    targetMarginInputValue={draftForm.targetMargin}
-                    valuateDisabled={
-                      draftSynchronizing
-                      || draftServerActionDisabled
+                    targetMarginBasisPoints={
+                      parsedTargetMargin
                     }
-                    valuatePending={valuateState.isLoading}
-                    valuationStatus={draft.valuationStatus}
-                    vatRateBasisPoints={draft.vatRateBasisPoints}
+                    vatRateBasisPoints={
+                      parsedVatRate
+                    }
                   />
                 </div>
               </CardContent>
@@ -880,9 +850,19 @@ function TechnicalSheetWorkspacePage() {
               <h2 className="text-sm font-semibold">Composition</h2>
             </div>
             <CardContent className="p-0">
+              {!parametersComplete && (
+                <p className="border-b border-border px-3 py-3 text-sm text-muted-foreground">
+                  Complétez les paramètres de la Fiche avant de modifier sa composition.
+                </p>
+              )}
               <TechnicalSheetLineEditor
                 canManageSourcing={canSource}
-                disabled={!canUpdate || draftSynchronizing}
+                disabled={
+                  !canUpdate
+                  || draftSynchronizing
+                  || !parametersComplete
+                  || draftServerActionDisabled
+                }
                 dossierId={dossierId}
                 draftRevision={draftFormRevision}
                 lines={draftForm.lines}
