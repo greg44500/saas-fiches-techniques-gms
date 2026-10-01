@@ -104,13 +104,36 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data.characteristic,
       invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
-    markProductReferenceDimensionsReviewed: builder.mutation({
-      query: ({ productId }) => ({
-        url: '/product-reference/' + productId + '/dimensions/review',
+    reviewProductReferenceDimension: builder.mutation({
+      query: ({
+        productId,
+        dimensionType,
+        dimensionId,
+      }) => ({
+        url:
+          '/product-reference/' + productId
+          + '/dimensions/' + dimensionType
+          + '/' + dimensionId
+          + '/review',
         method: 'POST',
       }),
-      transformResponse: (response) => response.data.review,
-      invalidatesTags: ['ProductReference'],
+      transformResponse: (response) => response.data.dimension,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    deleteProductReferenceDimension: builder.mutation({
+      query: ({
+        productId,
+        dimensionType,
+        dimensionId,
+      }) => ({
+        url:
+          '/product-reference/' + productId
+          + '/dimensions/' + dimensionType
+          + '/' + dimensionId,
+        method: 'DELETE',
+      }),
+      transformResponse: (response) => response.data.dimension,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
     undoProductReferenceDimensionAddition: builder.mutation({
       query: ({
@@ -294,8 +317,9 @@ export const {
   useLazyGetProductReferenceDetailQuery,
   useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
-  useMarkProductReferenceDimensionsReviewedMutation,
+  useDeleteProductReferenceDimensionMutation,
   usePreviewProductReferenceImportMutation,
+  useReviewProductReferenceDimensionMutation,
   useReviewProductReferenceContributionMutation,
   useUpdateProductReferenceCategoryMutation,
   useUpdateProductReferenceCharacteristicMutation,

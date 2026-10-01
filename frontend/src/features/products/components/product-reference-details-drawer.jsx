@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Archive, Pencil, Plus, RotateCcw, Search, X } from 'lucide-react';
+import {
+  Archive,
+  CircleCheck,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { EntityDetailsDrawer } from '@/components/shared/entity-details-drawer';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
@@ -15,8 +25,10 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
+  useDeleteProductReferenceDimensionMutation,
   useGetProductReferenceDetailQuery,
   useGetProductReferenceDimensionsQuery,
+  useReviewProductReferenceDimensionMutation,
   useUpdateProductReferenceCharacteristicStatusMutation,
   useUpdateProductReferenceStatusMutation,
   useUpdateProductReferenceVarietyStatusMutation,
@@ -39,6 +51,55 @@ import {
 } from '@/features/products/lib/product-presentation';
 
 function AdminDetailRow({ label, value }) {
+  async function markDimensionReviewed(type, dimension) {
+    try {
+      await reviewDimension({
+        productId: product.id,
+        dimensionType: type,
+        dimensionId: dimension.id,
+      }).unwrap();
+      toast({
+        title: 'Valeur marquée comme vérifiée',
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Revue impossible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    }
+  }
+
+  function requestDimensionDeletion(type, dimension) {
+    setDeleteError('');
+    setDeleteDimension({ type, dimension });
+  }
+
+  async function confirmDimensionDeletion() {
+    if (!deleteDimension) return;
+
+    try {
+      await deleteDimensionMutation({
+        productId: product.id,
+        dimensionType: deleteDimension.type,
+        dimensionId: deleteDimension.dimension.id,
+      }).unwrap();
+      setDeleteDimension(null);
+      setDeleteError('');
+      toast({
+        title: 'Valeur supprimée du référentiel',
+        variant: 'success',
+      });
+    } catch (error) {
+      setDeleteError(getApiErrorMessage(
+        error,
+        'Cette valeur ne peut pas être supprimée.',
+      ));
+    }
+  }
+
+
   return (
     <div className="grid gap-1 border-b border-border py-3 last:border-b-0 sm:grid-cols-[160px_1fr]">
       <dt className="text-sm text-muted-foreground">{label}</dt>
@@ -58,6 +119,7 @@ function normalizeDimensionSearch(value) {
 
 function ProductReferenceDetailsDrawer({
   canManage,
+  initialDimensionFilter = 'active',
   initialTab = 'product',
   metadata,
   onClose,
@@ -72,6 +134,11 @@ function ProductReferenceDetailsDrawer({
   const [createVariantOpen, setCreateVariantOpen] = useState(false);
   const [createDimensionOpen, setCreateDimensionOpen] = useState(false);
   const [dimensionSearch, setDimensionSearch] = useState('');
+  const [dimensionFilter, setDimensionFilter] = useState(
+    initialDimensionFilter,
+  );
+  const [deleteDimension, setDeleteDimension] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const query = useGetProductReferenceDetailQuery(productId, { skip: !productId });
@@ -84,11 +151,17 @@ function ProductReferenceDetailsDrawer({
     useUpdateProductReferenceVarietyStatusMutation();
   const [updateCharacteristicStatus, characteristicStatusState] =
     useUpdateProductReferenceCharacteristicStatusMutation();
+  const [reviewDimension, reviewDimensionState] =
+    useReviewProductReferenceDimensionMutation();
+  const [deleteDimensionMutation, deleteDimensionState] =
+    useDeleteProductReferenceDimensionMutation();
 
   useEffect(() => {
     if (!open) return;
     setActiveTab(initialTab);
-  }, [initialTab, open, productId]);
+    setDimensionFilter(initialDimensionFilter);
+    setDimensionSearch('');
+  }, [initialDimensionFilter, initialTab, open, productId]);
 
   if (query.data) retainedRef.current = query.data;
   const detail = query.data ?? retainedRef.current;
@@ -103,9 +176,42 @@ function ProductReferenceDetailsDrawer({
     ),
   );
   const dimensionCount = varieties.length + characteristics.length;
+  const pendingDimensionCount = [
+    ...varieties,
+    ...characteristics,
+  ].filter((dimension) => (
+    dimension.status === 'ACTIVE'
+    && dimension.qualityReviewStatus === 'PENDING'
+  )).length;
+  const activeDimensionCount = [
+    ...varieties,
+    ...characteristics,
+  ].filter((dimension) => dimension.status === 'ACTIVE').length;
+  const archivedDimensionCount = dimensionCount - activeDimensionCount;
+
+  const matchesDimensionFilter = (dimension) => {
+    if (dimensionFilter === 'pending') {
+      return (
+        dimension.status === 'ACTIVE'
+        && dimension.qualityReviewStatus === 'PENDING'
+      );
+    }
+    if (dimensionFilter === 'active') {
+      return dimension.status === 'ACTIVE';
+    }
+    if (dimensionFilter === 'archived') {
+      return dimension.status === 'ARCHIVED';
+    }
+    return true;
+  };
+
+  const visibleVarieties = varieties.filter(matchesDimensionFilter);
+  const visibleCharacteristics = characteristics.filter(matchesDimensionFilter);
+  const visibleDimensionCount =
+    visibleVarieties.length + visibleCharacteristics.length;
   const normalizedDimensionSearch = normalizeDimensionSearch(dimensionSearch);
   const dimensionEntries = [
-    ...varieties.map((variety) => ({
+    ...visibleVarieties.map((variety) => ({
       key: 'VARIETY:' + variety.id,
       name: variety.name,
       typeLabel: 'Variété',
@@ -115,7 +221,7 @@ function ProductReferenceDetailsDrawer({
         'Variété',
       ].join(' ')),
     })),
-    ...characteristics.map((characteristic) => ({
+    ...visibleCharacteristics.map((characteristic) => ({
       key: 'CHARACTERISTIC:' + characteristic.id,
       name: characteristic.name,
       typeLabel:
@@ -138,15 +244,15 @@ function ProductReferenceDetailsDrawer({
     matchingDimensionEntries.map(({ key }) => key),
   );
   const filteredVarieties = normalizedDimensionSearch
-    ? varieties.filter((variety) => (
+    ? visibleVarieties.filter((variety) => (
       matchingDimensionKeys.has('VARIETY:' + variety.id)
     ))
-    : varieties;
+    : visibleVarieties;
   const filteredCharacteristics = normalizedDimensionSearch
-    ? characteristics.filter((characteristic) => (
+    ? visibleCharacteristics.filter((characteristic) => (
       matchingDimensionKeys.has('CHARACTERISTIC:' + characteristic.id)
     ))
-    : characteristics;
+    : visibleCharacteristics;
   const dimensionSuggestions = normalizedDimensionSearch
     ? matchingDimensionEntries.slice(0, 6)
     : [];
@@ -157,8 +263,9 @@ function ProductReferenceDetailsDrawer({
     || variantStatusState.isLoading
     || varietyStatusState.isLoading
     || characteristicStatusState.isLoading
+    || reviewDimensionState.isLoading
+    || deleteDimensionState.isLoading
   );
-
   if (!detail && !open) return null;
 
   async function run(action, successMessage) {
@@ -295,8 +402,8 @@ function ProductReferenceDetailsDrawer({
             </TabsContent>
 
             <TabsContent value="dimensions" variant="section">
-              <div className="space-y-5">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
                   {dimensionCount > 0 && (
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="relative">
@@ -305,10 +412,10 @@ function ProductReferenceDetailsDrawer({
                           className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
                         />
                         <Input
-                          aria-label="Rechercher dans les dimensions"
+                          aria-label="Rechercher une caractéristique"
                           className="pl-9 pr-10"
                           onChange={(event) => setDimensionSearch(event.target.value)}
-                          placeholder="Rechercher une variété ou une caractéristique…"
+                          placeholder="Rechercher une caractéristique"
                           value={dimensionSearch}
                         />
                         {dimensionSearch && (
@@ -323,44 +430,35 @@ function ProductReferenceDetailsDrawer({
                         )}
                       </div>
 
-                      {normalizedDimensionSearch && (
-                        <>
-                          {dimensionSuggestions.length > 0 && (
-                            <ul
-                              aria-label="Suggestions de dimensions"
-                              className="overflow-hidden rounded-lg border border-border bg-background"
-                            >
-                              {dimensionSuggestions.map((suggestion) => (
-                                <li key={suggestion.key}>
-                                  <button
-                                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
-                                    onClick={() => setDimensionSearch(suggestion.name)}
-                                    type="button"
-                                  >
-                                    <span className="font-medium">
-                                      {suggestion.name}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {suggestion.typeLabel}
-                                    </span>
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            {dimensionResultCount}{' '}
-                            {dimensionResultCount > 1 ? 'résultats' : 'résultat'}
-                            {' '}sur {dimensionCount} dimensions
-                          </p>
-                        </>
+                      {normalizedDimensionSearch && dimensionSuggestions.length > 0 && (
+                        <ul
+                          aria-label="Suggestions de dimensions"
+                          className="overflow-hidden rounded-lg border border-border bg-background"
+                        >
+                          {dimensionSuggestions.map((suggestion) => (
+                            <li key={suggestion.key}>
+                              <button
+                                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
+                                onClick={() => setDimensionSearch(suggestion.name)}
+                                type="button"
+                              >
+                                <span className="font-medium">
+                                  {suggestion.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {suggestion.typeLabel}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </div>
                   )}
 
                   {canManage && product.status === 'ACTIVE' && (
                     <Button
-                      className="shrink-0 sm:self-start"
+                      className="shrink-0"
                       onClick={() => setCreateDimensionOpen(true)}
                       type="button"
                       variant="outline"
@@ -371,13 +469,72 @@ function ProductReferenceDetailsDrawer({
                   )}
                 </div>
 
+                <div
+                  aria-label="Filtrer les Dimensions"
+                  className="flex flex-wrap gap-2"
+                  role="group"
+                >
+                  {[
+                    {
+                      value: 'pending',
+                      label: 'À vérifier',
+                      count: pendingDimensionCount,
+                    },
+                    {
+                      value: 'active',
+                      label: 'Actives',
+                      count: activeDimensionCount,
+                    },
+                    {
+                      value: 'archived',
+                      label: 'Archivées',
+                      count: archivedDimensionCount,
+                    },
+                    {
+                      value: 'all',
+                      label: 'Toutes',
+                      count: dimensionCount,
+                    },
+                  ].map((filter) => (
+                    <Button
+                      aria-pressed={dimensionFilter === filter.value}
+                      key={filter.value}
+                      onClick={() => {
+                        setDimensionFilter(filter.value);
+                        setDimensionSearch('');
+                      }}
+                      size="sm"
+                      type="button"
+                      variant={
+                        dimensionFilter === filter.value
+                          ? 'default'
+                          : 'outline'
+                      }
+                    >
+                      {filter.label} ({filter.count})
+                    </Button>
+                  ))}
+                </div>
+
+                {normalizedDimensionSearch && (
+                  <p className="text-xs text-muted-foreground">
+                    {dimensionResultCount}{' '}
+                    {dimensionResultCount > 1 ? 'résultats' : 'résultat'}
+                    {' '}sur {visibleDimensionCount} dimensions
+                  </p>
+                )}
+
                 <section className="space-y-3">
-                  <h3 className="text-sm font-semibold">Variétés ({varieties.length})</h3>
+                  <h3 className="text-sm font-semibold">
+                    Variétés ({visibleVarieties.length})
+                  </h3>
                   {filteredVarieties.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       {normalizedDimensionSearch
                         ? 'Aucune variété ne correspond à cette recherche.'
-                        : 'Aucune variété n’est définie pour ce Produit.'}
+                        : dimensionFilter === 'pending'
+                          ? 'Aucune variété à vérifier.'
+                          : 'Aucune variété dans cette vue.'}
                     </p>
                   ) : (
                     <ul className="space-y-2">
@@ -404,7 +561,8 @@ function ProductReferenceDetailsDrawer({
                               >
                                 {getProductStatusLabel(metadata, variety.status)}
                               </StatusBadge>
-                              {variety.isNew && (
+                              {variety.qualityReviewStatus === 'PENDING'
+                                && variety.status === 'ACTIVE' && (
                                 <StatusBadge
                                   className="shrink-0 py-0.5"
                                   tone="warning"
@@ -415,6 +573,24 @@ function ProductReferenceDetailsDrawer({
                             </div>
                             {canManage && (
                               <div className="flex shrink-0 items-center gap-2">
+                                {variety.qualityReviewStatus === 'PENDING'
+                                  && variety.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={CircleCheck}
+                                    label={
+                                      'Marquer la variété '
+                                      + variety.name
+                                      + ' comme vérifiée'
+                                    }
+                                    onClick={() => markDimensionReviewed(
+                                      'VARIETY',
+                                      variety,
+                                    )}
+                                    tooltipLabel="Marquer comme vérifiée"
+                                    variant="outline"
+                                  />
+                                )}
                                 <ActionIconButton
                                   disabled={pending}
                                   Icon={Pencil}
@@ -455,6 +631,17 @@ function ProductReferenceDetailsDrawer({
                                     variant="outline"
                                   />
                                 )}
+                                <ActionIconButton
+                                  disabled={pending}
+                                  Icon={Trash2}
+                                  label={'Supprimer la variété ' + variety.name}
+                                  onClick={() => requestDimensionDeletion(
+                                    'VARIETY',
+                                    variety,
+                                  )}
+                                  tooltipLabel="Supprimer"
+                                  variant="outline"
+                                />
                               </div>
                             )}
                           </div>
@@ -465,12 +652,16 @@ function ProductReferenceDetailsDrawer({
                 </section>
 
                 <section className="space-y-3">
-                  <h3 className="text-sm font-semibold">Caractéristiques ({characteristics.length})</h3>
+                  <h3 className="text-sm font-semibold">
+                    Caractéristiques ({visibleCharacteristics.length})
+                  </h3>
                   {filteredCharacteristics.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       {normalizedDimensionSearch
                         ? 'Aucune caractéristique ne correspond à cette recherche.'
-                        : 'Aucune caractéristique n’est définie pour ce Produit.'}
+                        : dimensionFilter === 'pending'
+                          ? 'Aucune caractéristique à vérifier.'
+                          : 'Aucune caractéristique dans cette vue.'}
                     </p>
                   ) : (
                     <ul className="space-y-2">
@@ -485,7 +676,8 @@ function ProductReferenceDetailsDrawer({
                                 className="truncate font-medium"
                                 title={
                                   characteristic.aliases?.length
-                                    ? 'Synonymes : ' + characteristic.aliases.join(', ')
+                                    ? 'Synonymes : '
+                                      + characteristic.aliases.join(', ')
                                     : undefined
                                 }
                               >
@@ -499,9 +691,13 @@ function ProductReferenceDetailsDrawer({
                                 className="shrink-0 py-0.5"
                                 tone={getProductStatusTone(characteristic.status)}
                               >
-                                {getProductStatusLabel(metadata, characteristic.status)}
+                                {getProductStatusLabel(
+                                  metadata,
+                                  characteristic.status,
+                                )}
                               </StatusBadge>
-                              {characteristic.isNew && (
+                              {characteristic.qualityReviewStatus === 'PENDING'
+                                && characteristic.status === 'ACTIVE' && (
                                 <StatusBadge
                                   className="shrink-0 py-0.5"
                                   tone="warning"
@@ -512,10 +708,31 @@ function ProductReferenceDetailsDrawer({
                             </div>
                             {canManage && (
                               <div className="flex shrink-0 items-center gap-2">
+                                {characteristic.qualityReviewStatus === 'PENDING'
+                                  && characteristic.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={CircleCheck}
+                                    label={
+                                      'Marquer la caractéristique '
+                                      + characteristic.name
+                                      + ' comme vérifiée'
+                                    }
+                                    onClick={() => markDimensionReviewed(
+                                      'CHARACTERISTIC',
+                                      characteristic,
+                                    )}
+                                    tooltipLabel="Marquer comme vérifiée"
+                                    variant="outline"
+                                  />
+                                )}
                                 <ActionIconButton
                                   disabled={pending}
                                   Icon={Pencil}
-                                  label={'Corriger la caractéristique ' + characteristic.name}
+                                  label={
+                                    'Corriger la caractéristique '
+                                    + characteristic.name
+                                  }
                                   onClick={() => setEditDimension({
                                     type: 'CHARACTERISTIC',
                                     dimension: characteristic,
@@ -527,7 +744,10 @@ function ProductReferenceDetailsDrawer({
                                   <ActionIconButton
                                     disabled={pending}
                                     Icon={Archive}
-                                    label={'Archiver la caractéristique ' + characteristic.name}
+                                    label={
+                                      'Archiver la caractéristique '
+                                      + characteristic.name
+                                    }
                                     onClick={() => changeDimensionStatus(
                                       'CHARACTERISTIC',
                                       characteristic,
@@ -542,7 +762,10 @@ function ProductReferenceDetailsDrawer({
                                   <ActionIconButton
                                     disabled={pending}
                                     Icon={RotateCcw}
-                                    label={'Réactiver la caractéristique ' + characteristic.name}
+                                    label={
+                                      'Réactiver la caractéristique '
+                                      + characteristic.name
+                                    }
                                     onClick={() => changeDimensionStatus(
                                       'CHARACTERISTIC',
                                       characteristic,
@@ -552,6 +775,20 @@ function ProductReferenceDetailsDrawer({
                                     variant="outline"
                                   />
                                 )}
+                                <ActionIconButton
+                                  disabled={pending}
+                                  Icon={Trash2}
+                                  label={
+                                    'Supprimer la caractéristique '
+                                    + characteristic.name
+                                  }
+                                  onClick={() => requestDimensionDeletion(
+                                    'CHARACTERISTIC',
+                                    characteristic,
+                                  )}
+                                  tooltipLabel="Supprimer"
+                                  variant="outline"
+                                />
                               </div>
                             )}
                           </div>
@@ -713,6 +950,28 @@ function ProductReferenceDetailsDrawer({
           open={Boolean(editVariant)}
           productId={product.id}
           variant={editVariant}
+        />
+      )}
+
+      {deleteDimension && (
+        <ConfirmationDialog
+          confirmLabel="Supprimer"
+          description={
+            'Supprimer « '
+            + deleteDimension.dimension.name
+            + ' » ? Cette action retire cette valeur du référentiel actif. '
+            + 'Elle sera refusée si une Référence Produit l’utilise.'
+          }
+          errorMessage={deleteError}
+          onCancel={() => {
+            setDeleteDimension(null);
+            setDeleteError('');
+          }}
+          onConfirm={confirmDimensionDeletion}
+          open
+          pending={deleteDimensionState.isLoading}
+          pendingLabel="Suppression…"
+          title="Supprimer cette valeur ?"
         />
       )}
 

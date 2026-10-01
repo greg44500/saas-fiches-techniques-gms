@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Archive, BadgeCheck, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
+import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { DataTable, DataTableActions } from '@/components/data-display/data-table';
@@ -33,7 +33,6 @@ import {
   useGetProductReferenceMetadataQuery,
   useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
-  useMarkProductReferenceDimensionsReviewedMutation,
   useReviewProductReferenceContributionMutation,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
@@ -65,6 +64,7 @@ function ProductReferencePage({ canManage }) {
     open: false,
     productId: null,
     initialTab: 'product',
+    initialDimensionFilter: 'active',
   });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -95,8 +95,6 @@ function ProductReferencePage({ canManage }) {
     useReviewProductReferenceContributionMutation();
   const [updateCategoryStatus, categoryStatusState] =
     useUpdateProductReferenceCategoryStatusMutation();
-  const [markDimensionsReviewed, markDimensionsReviewedState] =
-    useMarkProductReferenceDimensionsReviewedMutation();
 
   useEffect(() => {
     const totalPages = section === 'contributions'
@@ -143,8 +141,17 @@ function ProductReferencePage({ canManage }) {
     setSearch(searchInput.trim());
   }
 
-  function openProduct(productId, initialTab = 'product') {
-    setDrawerState({ open: true, productId, initialTab });
+  function openProduct(
+    productId,
+    initialTab = 'product',
+    initialDimensionFilter = 'active',
+  ) {
+    setDrawerState({
+      open: true,
+      productId,
+      initialTab,
+      initialDimensionFilter,
+    });
   }
 
   function openCategoryProducts(category) {
@@ -157,25 +164,6 @@ function ProductReferencePage({ canManage }) {
     setPage(1);
   }
 
-
-  async function markProductReviewed(product) {
-    try {
-      await markDimensionsReviewed({
-        productId: product.id,
-      }).unwrap();
-      toast({
-        title: 'Produit marqué comme vérifié',
-        description: product.name,
-        variant: 'success',
-      });
-    } catch (error) {
-      toast({
-        title: 'Revue impossible',
-        description: getApiErrorMessage(error),
-        variant: 'destructive',
-      });
-    }
-  }
 
   async function decideContribution(
     contribution,
@@ -302,7 +290,7 @@ function ProductReferencePage({ canManage }) {
                         + product.name
                       }
                       className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      onClick={() => openProduct(product.id, 'dimensions')}
+                      onClick={() => openProduct(product.id, 'dimensions', 'pending')}
                       type="button"
                     />
                   )}
@@ -343,16 +331,6 @@ function ProductReferencePage({ canManage }) {
             tooltipLabel="Voir"
             variant="outline"
           />
-          {canManage && (product.dimensionReview?.pendingCount ?? 0) > 0 && (
-            <ActionIconButton
-              disabled={markDimensionsReviewedState.isLoading}
-              Icon={BadgeCheck}
-              label={'Marquer ' + product.name + ' comme vérifié'}
-              onClick={() => markProductReviewed(product)}
-              tooltipLabel="Marquer comme vérifié"
-              variant="outline"
-            />
-          )}
         </DataTableActions>
       ),
     },
@@ -819,6 +797,7 @@ function ProductReferencePage({ canManage }) {
       <ProductReferenceDetailsDrawer
         canManage={canManage}
         metadata={metadata}
+        initialDimensionFilter={drawerState.initialDimensionFilter}
         initialTab={drawerState.initialTab}
         onClose={() => setDrawerState((current) => ({ ...current, open: false }))}
         open={drawerState.open}

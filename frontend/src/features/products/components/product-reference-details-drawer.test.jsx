@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   updateVariantStatus: vi.fn(),
   updateVarietyStatus: vi.fn(),
   updateCharacteristicStatus: vi.fn(),
+  reviewDimension: vi.fn(),
+  deleteDimension: vi.fn(),
 }));
 
 vi.mock('@/components/shared/toast-provider', () => ({
@@ -48,8 +50,16 @@ vi.mock('@/components/shared/action-icon-button', () => ({
 }));
 
 vi.mock('@/features/products/api/product-reference-api', () => ({
+  useDeleteProductReferenceDimensionMutation: () => [
+    mocks.deleteDimension,
+    { isLoading: false },
+  ],
   useGetProductReferenceDetailQuery: mocks.detail,
   useGetProductReferenceDimensionsQuery: mocks.dimensions,
+  useReviewProductReferenceDimensionMutation: () => [
+    mocks.reviewDimension,
+    { isLoading: false },
+  ],
   useUpdateProductReferenceStatusMutation: () => [
     mocks.updateProductStatus,
     { isLoading: false },
@@ -166,14 +176,14 @@ describe('ProductReferenceDetailsDrawer', () => {
           name: 'Bergeron',
           aliases: [],
           status: 'ACTIVE',
-          isNew: false,
+          qualityReviewStatus: 'REVIEWED',
         },
         {
           id: 'variety-2',
           name: 'Rouge du Roussillon',
           aliases: ['Roussillon rouge'],
           status: 'ACTIVE',
-          isNew: true,
+          qualityReviewStatus: 'PENDING',
         },
       ],
       characteristics: [
@@ -183,7 +193,7 @@ describe('ProductReferenceDetailsDrawer', () => {
           name: 'Côte',
           aliases: [],
           status: 'ACTIVE',
-          isNew: true,
+          qualityReviewStatus: 'PENDING',
         },
         {
           id: 'characteristic-2',
@@ -191,12 +201,11 @@ describe('ProductReferenceDetailsDrawer', () => {
           name: 'Rouge',
           aliases: [],
           status: 'ARCHIVED',
-          isNew: false,
+          qualityReviewStatus: 'REVIEWED',
         },
       ],
       review: {
         pendingCount: 2,
-        reviewedAt: null,
       },
     }));
 
@@ -207,15 +216,22 @@ describe('ProductReferenceDetailsDrawer', () => {
     mocks.updateVariantStatus.mockReturnValue(resolvedMutation);
     mocks.updateVarietyStatus.mockReturnValue(resolvedMutation);
     mocks.updateCharacteristicStatus.mockReturnValue(resolvedMutation);
+    mocks.reviewDimension.mockReturnValue(resolvedMutation);
+    mocks.deleteDimension.mockReturnValue(resolvedMutation);
   });
 
 
-  it('ouvre directement l’onglet Dimensions depuis une notification Produit', () => {
-    renderDrawer({ initialTab: 'dimensions' });
+  it('ouvre directement les Dimensions à vérifier depuis une notification Produit', () => {
+    renderDrawer({
+      initialDimensionFilter: 'pending',
+      initialTab: 'dimensions',
+    });
 
     expect(screen.getByRole('textbox', {
-      name: 'Rechercher dans les dimensions',
+      name: 'Rechercher une caractéristique',
     })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'À vérifier (2)' }))
+      .toHaveAttribute('aria-pressed', 'true');
   });
 
   it('affiche les compteurs des Dimensions, Références et sous-sections', async () => {
@@ -230,28 +246,59 @@ describe('ProductReferenceDetailsDrawer', () => {
     await user.click(screen.getByRole('tab', { name: 'Dimensions (4)' }));
 
     expect(screen.getByText('Variétés (2)')).toBeInTheDocument();
-    expect(screen.getByText('Caractéristiques (2)')).toBeInTheDocument();
+    expect(screen.getByText('Caractéristiques (1)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'À vérifier (2)' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Archivées (1)' }))
+      .toBeInTheDocument();
   });
 
 
-  it('met en évidence les nouvelles Dimensions Workspace dans une ligne compacte', async () => {
+  it('permet de vérifier une Dimension ligne par ligne', async () => {
     const user = userEvent.setup();
-    renderDrawer();
-
-    await user.click(screen.getByRole('tab', { name: 'Dimensions (4)' }));
+    renderDrawer({
+      initialDimensionFilter: 'pending',
+      initialTab: 'dimensions',
+    });
 
     expect(screen.getAllByText('Nouveau')).toHaveLength(2);
 
     const varietyRow = screen.getByText('Rouge du Roussillon').closest('li');
     expect(varietyRow).not.toBeNull();
-    expect(within(varietyRow).getByText('Actif')).toBeInTheDocument();
-    expect(within(varietyRow).getByText('Nouveau')).toBeInTheDocument();
-    expect(within(varietyRow).getByRole('button', {
-      name: 'Corriger la variété Rouge du Roussillon',
+
+    await user.click(within(varietyRow).getByRole('button', {
+      name: 'Marquer la variété Rouge du Roussillon comme vérifiée',
+    }));
+
+    expect(mocks.reviewDimension).toHaveBeenCalledWith({
+      productId: 'product-1',
+      dimensionType: 'VARIETY',
+      dimensionId: 'variety-2',
+    });
+  });
+
+  it('confirme la suppression d’une Dimension avant l’appel API', async () => {
+    const user = userEvent.setup();
+    renderDrawer({
+      initialDimensionFilter: 'pending',
+      initialTab: 'dimensions',
+    });
+
+    await user.click(screen.getByRole('button', {
+      name: 'Supprimer la caractéristique Côte',
+    }));
+
+    expect(screen.getByRole('heading', {
+      name: 'Supprimer cette valeur ?',
     })).toBeInTheDocument();
-    expect(within(varietyRow).getByRole('button', {
-      name: 'Archiver la variété Rouge du Roussillon',
-    })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
+
+    expect(mocks.deleteDimension).toHaveBeenCalledWith({
+      productId: 'product-1',
+      dimensionType: 'CHARACTERISTIC',
+      dimensionId: 'characteristic-1',
+    });
   });
 
   it('filtre localement les Dimensions et propose des suggestions prédictives', async () => {
@@ -260,7 +307,7 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Dimensions (4)' }));
     await user.type(
-      screen.getByRole('textbox', { name: 'Rechercher dans les dimensions' }),
+      screen.getByRole('textbox', { name: 'Rechercher une caractéristique' }),
       'rou',
     );
 
@@ -270,10 +317,8 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     expect(within(suggestions).getByText('Rouge du Roussillon'))
       .toBeInTheDocument();
-    expect(within(suggestions).getByText('Rouge'))
-      .toBeInTheDocument();
     expect(screen.queryByText('Bergeron')).not.toBeInTheDocument();
-    expect(screen.getByText('2 résultats sur 4 dimensions'))
+    expect(screen.getByText('1 résultat sur 3 dimensions'))
       .toBeInTheDocument();
   });
 

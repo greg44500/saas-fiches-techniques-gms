@@ -10,17 +10,12 @@ const mocks = vi.hoisted(() => ({
   productsQuery: vi.fn(),
   contributionsQuery: vi.fn(),
   reviewContribution: vi.fn(),
-  markDimensionsReviewed: vi.fn(),
   updateCategoryStatus: vi.fn(),
 }));
 
 vi.mock('@/features/products/api/product-reference-api', () => ({
   useGetProductReferenceMetadataQuery: mocks.metadataQuery,
   useListProductReferenceProductsQuery: mocks.productsQuery,
-  useMarkProductReferenceDimensionsReviewedMutation: () => [
-    mocks.markDimensionsReviewed,
-    { isLoading: false },
-  ],
   useListProductReferenceContributionsQuery: mocks.contributionsQuery,
   useReviewProductReferenceContributionMutation: () => [
     mocks.reviewContribution,
@@ -33,8 +28,16 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
 }));
 
 vi.mock('@/features/products/components/product-reference-details-drawer', () => ({
-  ProductReferenceDetailsDrawer: ({ initialTab, open }) => (
-    open ? <div>Détail global ouvert · {initialTab}</div> : null
+  ProductReferenceDetailsDrawer: ({
+    initialDimensionFilter,
+    initialTab,
+    open,
+  }) => (
+    open ? (
+      <div>
+        Détail global ouvert · {initialTab} · {initialDimensionFilter}
+      </div>
+    ) : null
   ),
 }));
 
@@ -102,7 +105,7 @@ const product = {
   aliases: ['Carottes'],
   category: { id: 'category-1', name: 'Légumes', status: 'ACTIVE' },
   status: 'ACTIVE',
-  dimensionReview: { pendingCount: 0, reviewedAt: null },
+  dimensionReview: { pendingCount: 0 },
   updatedAt: '2026-09-23T08:00:00.000Z',
   variants: [{
     id: 'variant-1',
@@ -170,12 +173,6 @@ describe('ProductReferencePage', () => {
     mocks.updateCategoryStatus.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
     });
-    mocks.markDimensionsReviewed.mockReturnValue({
-      unwrap: vi.fn().mockResolvedValue({
-        pendingCount: 0,
-        reviewedAt: '2026-10-01T10:00:00.000Z',
-      }),
-    });
   });
 
   it('ouvre un référentiel Platform sobre sans alias ni colonnes redondantes', () => {
@@ -200,7 +197,7 @@ describe('ProductReferencePage', () => {
   });
 
 
-  it('signale les nouvelles Dimensions et permet de les ouvrir puis de les marquer comme vérifiées', async () => {
+  it('signale les nouvelles Dimensions et ouvre directement les lignes à vérifier', async () => {
     const user = userEvent.setup();
 
     mocks.productsQuery.mockReturnValue({
@@ -209,7 +206,6 @@ describe('ProductReferencePage', () => {
           ...product,
           dimensionReview: {
             pendingCount: 3,
-            reviewedAt: null,
           },
         }],
         pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
@@ -228,16 +224,13 @@ describe('ProductReferencePage', () => {
     expect(notification).toBeInTheDocument();
 
     await user.click(notification);
-    expect(screen.getByText('Détail global ouvert · dimensions'))
-      .toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {
+    expect(screen.getByText(
+      'Détail global ouvert · dimensions · pending',
+    )).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
       name: 'Marquer Carotte comme vérifié',
-    }));
-
-    expect(mocks.markDimensionsReviewed).toHaveBeenCalledWith({
-      productId: 'product-1',
-    });
+    })).not.toBeInTheDocument();
   });
 
   it('rend les Références Produit accessibles au focus clavier', async () => {
@@ -459,6 +452,6 @@ describe('ProductReferencePage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
 
-    expect(screen.getByText('Détail global ouvert · product')).toBeInTheDocument();
+    expect(screen.getByText('Détail global ouvert · product · active')).toBeInTheDocument();
   });
 });
