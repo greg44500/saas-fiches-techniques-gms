@@ -433,6 +433,7 @@ function LineActionsMenu({
   onOpenPricing,
   onOpenSourcing,
   onRemove,
+  sourcingDisabled,
   sourcingLabel,
 }) {
   const [open, setOpen] = useState(false);
@@ -460,6 +461,7 @@ function LineActionsMenu({
         <div className="space-y-1">
           <Button
             className="w-full justify-start"
+            disabled={sourcingDisabled}
             onClick={() => runAction(onOpenSourcing)}
             size="sm"
             type="button"
@@ -852,6 +854,7 @@ function TechnicalSheetLineEditor({
             onOpenPricing={() => onOpenPricing?.(line)}
             onOpenSourcing={() => setSourcingLineKey(key)}
             onRemove={() => removeLine(index)}
+            sourcingDisabled={sourcingDisabled}
             sourcingLabel={sourcingTooltipLabel}
           />
         </div>
