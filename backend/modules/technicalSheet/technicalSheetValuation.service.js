@@ -401,9 +401,6 @@ const buildTechnicalSheetValuation = async ({
                         ?.toString() ?? null,
                 productionUnit:
                     draft.productionUnit,
-                portions:
-                    draft.portions
-                        ?.toString() ?? null,
                 vatRateBasisPoints:
                     draft.vatRateBasisPoints,
                 targetMarginBasisPoints:
