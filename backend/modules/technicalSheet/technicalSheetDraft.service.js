@@ -23,6 +23,9 @@ import {
     prepareTechnicalSheetComposition,
 } from './technicalSheetComposition.service.js';
 import {
+    buildTechnicalSheetValuation,
+} from './technicalSheetValuation.service.js';
+import {
     createTechnicalSheetEvent,
 } from './technicalSheetEvent.service.js';
 import {
@@ -39,6 +42,65 @@ const ECONOMIC_FIELDS = Object.freeze([
     'finalPriceTtcMinor',
     'finalPriceMode',
 ]);
+
+const applyAutomaticValuation = async ({
+    workspaceId,
+    dossierId,
+    draft,
+    actorId,
+    session,
+}) => {
+    if (draft.lines.length === 0) {
+        draft.valuationStatus =
+            TECHNICAL_SHEET_VALUATION_STATUS
+                .NOT_VALUED;
+        draft.valuedAt = null;
+        draft.valuationFingerprint = null;
+        draft.economicSnapshot = null;
+        draft.updatedBy = actorId;
+        await draft.save({ session });
+        return {
+            resolutionCandidates: {},
+        };
+    }
+
+    const valuation =
+        await buildTechnicalSheetValuation({
+            workspaceId,
+            dossierId,
+            draft,
+            session,
+        });
+
+    draft.lines =
+        valuation.lines.map((line) => {
+            const {
+                productVariantSnapshot,
+                ...persisted
+            } = line;
+
+            return persisted;
+        });
+    draft.valuationStatus =
+        valuation.valuationStatus;
+    draft.valuedAt =
+        valuation.valuedAt;
+    draft.valuationFingerprint =
+        valuation.valuationFingerprint;
+    draft.economicSnapshot =
+        valuation.economicSnapshot;
+
+    if (valuation.economicSnapshot) {
+        draft.finalPriceTtcMinor =
+            valuation.economicSnapshot
+                .finalPriceTtcMinor;
+    }
+
+    draft.updatedBy = actorId;
+    await draft.save({ session });
+
+    return valuation;
+};
 
 const saveTechnicalSheetDraft = async ({
     workspaceId,
@@ -139,11 +201,6 @@ const saveTechnicalSheetDraft = async ({
                 )
                     ? data.productionUnit
                     : current.productionUnit,
-            portions:
-                Object.hasOwn(data, 'portions')
-                    ? data.portions
-                    : current.portions
-                        ?.toString() ?? null,
             vatRateBasisPoints:
                 Object.hasOwn(
                     data,
@@ -263,6 +320,15 @@ const saveTechnicalSheetDraft = async ({
             );
         }
 
+        const automaticValuation =
+            await applyAutomaticValuation({
+                workspaceId,
+                dossierId,
+                draft,
+                actorId,
+                session,
+            });
+
         await createTechnicalSheetEvent({
             workspaceId,
             dossierId,
@@ -278,6 +344,14 @@ const saveTechnicalSheetDraft = async ({
                 expectedRevision,
                 nextRevision:
                     draft.revision,
+                valuationStatus:
+                    draft.valuationStatus,
+                resolutionCandidateCount:
+                    Object.keys(
+                        automaticValuation
+                            .resolutionCandidates
+                        ?? {},
+                    ).length,
             },
             session,
         });
@@ -447,12 +521,6 @@ const createDraftFromValidatedState = async ({
                         validation
                             .sheetSnapshot
                             .productionUnit,
-                    portions:
-                        validation
-                            .sheetSnapshot
-                            .portions
-                            ?.toString()
-                        ?? null,
                     vatRateBasisPoints:
                         validation
                             .sheetSnapshot
@@ -575,36 +643,19 @@ const selectTechnicalSheetSupplierArticle = async ({
             );
         }
 
-        for (const draftLine of draft.lines) {
-            if (draftLine.valuation) {
-                draftLine.valuation.materialCostSharePercent = null;
-            }
-        }
-
         line.selectedSupplierArticle =
             article._id;
-        line.valuation = {
-            status: 'STALE',
-            supplierArticleId: null,
-            applicableSource: null,
-            applicableSourceId: null,
-            normalizedAmount: null,
-            normalizedUnit: null,
-            lineCostHt: null,
-            materialCostSharePercent: null,
-            pricedAt: null,
-            sourceFingerprint: null,
-            alerts: [],
-        };
-        draft.valuationStatus =
-            TECHNICAL_SHEET_VALUATION_STATUS.STALE;
-        draft.valuedAt = null;
-        draft.valuationFingerprint = null;
-        draft.economicSnapshot = null;
         draft.updatedBy = actorId;
         draft.revision += 1;
 
-        await draft.save({ session });
+        const automaticValuation =
+            await applyAutomaticValuation({
+                workspaceId,
+                dossierId,
+                draft,
+                actorId,
+                session,
+            });
 
         await createTechnicalSheetEvent({
             workspaceId,
@@ -619,6 +670,14 @@ const selectTechnicalSheetSupplierArticle = async ({
                     line._id.toString(),
                 supplierArticleId:
                     article._id.toString(),
+                valuationStatus:
+                    draft.valuationStatus,
+                resolutionCandidateCount:
+                    Object.keys(
+                        automaticValuation
+                            .resolutionCandidates
+                        ?? {},
+                    ).length,
             },
             session,
         });
