@@ -286,7 +286,7 @@ Décisions établies :
 - changement de Role et changement de périmètre indépendants ;
 - l'état du Dossier participe à l'autorisation effective ;
 - baseline des profils Acheteur, Économe, Responsable FT, Contributeur FT et Lecteur validée ;
-- Économe : validation des Prix facturés, revues et revalorisation, sans validation FT par défaut ;
+- Économe : validation des Prix facturés, revues et correction économique, sans validation FT par défaut ;
 - Contributeur/Lecteur : Prix applicable nécessaire sans historique commercial détaillé ;
 - administration du Dossier et affectations Owner-only par défaut ;
 - les profils Acheteur, Économe, Responsable FT, Contributeur FT et Lecteur métier sont des presets produit destinés à créer des Roles Workspace personnalisés, jamais des rôles système Core ;
