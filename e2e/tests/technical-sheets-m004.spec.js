@@ -273,7 +273,7 @@ test('M-004 une Référence Produit globale non favorite reste composable et val
   });
 });
 
-test('M-004 ambiguïté Article, changement de prix, revalorisation puis validation', async ({ page }) => {
+test('M-004 ambiguïté Article, changement de prix, actualisation automatique puis validation', async ({ page }) => {
   const context =
     await provisionTechnicalSheetWorkspace({
       ambiguous: true,
@@ -349,14 +349,14 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
 
   await expectVisibleToast(
     page,
-    'Les données économiques ont changé. Une revalorisation est obligatoire.',
+    'Les données économiques ont changé. Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.',
   );
 
   await page.reload();
 
   await expect(
     page.getByText(
-      'À revaloriser',
+      'Valorisée',
       { exact: true },
     ).first(),
   ).toBeVisible();
@@ -368,7 +368,7 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
       'Commentaire de validation',
     )
     .fill(
-      'Validation après revalorisation',
+      'Validation après actualisation',
     );
 
   await page.getByRole('button', {
@@ -474,7 +474,7 @@ test('M-004 copie A vers B sans finance source et valorise avec le prix du Dossi
   ).toHaveValue('60');
 
   await expect(
-    page.getByText(/40,00/).first(),
+    page.getByText(/4,00/).first(),
   ).toBeVisible();
 });
 
