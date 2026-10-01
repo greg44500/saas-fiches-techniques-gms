@@ -270,6 +270,11 @@ function TechnicalSheetsPage() {
       </section>
 
       <TechnicalSheetCreateDialog
+        defaultTargetMarginBasisPoints={
+          dossier.technicalSheetSettings
+            ?.defaultTargetMarginBasisPoints
+          ?? null
+        }
         dossierId={dossierId}
         onClose={() => setCreateOpen(false)}
         onCreated={(result) => {
