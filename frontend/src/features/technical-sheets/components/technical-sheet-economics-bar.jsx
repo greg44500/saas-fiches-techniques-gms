@@ -1,5 +1,4 @@
 import {
-  Calculator,
   PanelRightOpen,
   X,
 } from 'lucide-react';
@@ -156,17 +155,10 @@ function TechnicalSheetEconomicsBar({
   finalPriceInputValue = '',
   finalPriceMode = 'ADVISED',
   lines = [],
-  notice = null,
   onFieldBlur,
   onFinalPriceInputChange,
   onFinalPriceModeChange,
-  onTargetMarginInputChange,
-  onValuate,
   targetMarginBasisPoints,
-  targetMarginInputValue = '',
-  valuateDisabled = false,
-  valuatePending = false,
-  valuationStatus = 'NOT_VALUED',
   vatRateBasisPoints,
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -174,21 +166,11 @@ function TechnicalSheetEconomicsBar({
     () => getVisibleCosts(lines, economicSnapshot),
     [economicSnapshot, lines],
   );
-  const valuateLabel = valuationStatus === 'NOT_VALUED'
-    ? 'Valoriser'
-    : 'Revaloriser';
-
   return (
     <>
       <div className="space-y-3">
-        {notice && (
-          <p className="text-xs font-medium text-muted-foreground">
-            {notice}
-          </p>
-        )}
-
         <div className="flex items-end gap-3">
-          <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4 xl:grid-cols-7">
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 xl:grid-cols-6">
             <Metric
               label="CM HT"
               tooltip="Coût matières hors taxe"
@@ -205,18 +187,6 @@ function TechnicalSheetEconomicsBar({
               value={formatDecimalCurrency(visibleCosts.manufacturingCostHt)}
             />
 
-            <div className="min-w-0 space-y-1">
-              <MetricLabel tooltip="Marge cible">%MC</MetricLabel>
-              <Input
-                aria-label="Marge cible (%)"
-                className="h-8 min-w-0 tabular-nums"
-                disabled={editDisabled || !canValuate}
-                inputMode="decimal"
-                onBlur={onFieldBlur}
-                onChange={(event) => onTargetMarginInputChange?.(event.target.value)}
-                value={targetMarginInputValue}
-              />
-            </div>
 
             <Metric
               label="PC TTC"
@@ -278,17 +248,6 @@ function TechnicalSheetEconomicsBar({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            {canValuate && (
-              <ActionIconButton
-                Icon={Calculator}
-                disabled={valuateDisabled || valuatePending}
-                label={valuateLabel}
-                onClick={onValuate}
-                tooltipLabel={valuateLabel}
-                variant="outline"
-              />
-            )}
-
             <ActionIconButton
               Icon={PanelRightOpen}
               label="Afficher le détail de la valorisation"
