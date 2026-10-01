@@ -32,6 +32,33 @@ describe('DossierFormDialog', () => {
     autocomplete.dismiss.mockReset();
   });
 
+  it('désactive la création tant que la marge cible obligatoire manque', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DossierFormDialog
+        onClose={vi.fn()}
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        open
+      />,
+    );
+
+    const createButton = screen.getByRole('button', {
+      name: 'Créer le dossier',
+    });
+
+    expect(createButton).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Nom'), 'Magasin Nantes');
+    expect(createButton).toBeDisabled();
+
+    await user.type(
+      screen.getByLabelText('Marge cible par défaut (%)'),
+      '30',
+    );
+    expect(createButton).toBeEnabled();
+  });
+
   it('crée un payload avec nom et marge cible et efface les champs facultatifs', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
