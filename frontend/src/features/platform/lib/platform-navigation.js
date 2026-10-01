@@ -99,7 +99,12 @@ const corePlatformNavigationSections = Object.freeze([
 function getPlatformNavigationItems(navigationSections) {
   return navigationSections.flatMap((entry) => {
     if (entry.type === 'separator') return [];
-    return entry.type === 'group' ? entry.items : [entry];
+    return (
+      entry.type === 'group'
+      || entry.type === 'section'
+    )
+      ? entry.items
+      : [entry];
   });
 }
 
@@ -189,7 +194,7 @@ function getVisiblePlatformNavigationSections(
       return [entry];
     }
 
-    if (entry.type !== 'group') {
+    if (entry.type !== 'group' && entry.type !== 'section') {
       return canDisplayPlatformNavigationItem(
         entry,
         visibilityContextInput,
@@ -231,7 +236,7 @@ function getPlatformQuickAccessItems(
   ).flatMap((entry) => {
     if (entry.type === 'separator') return [];
 
-    if (entry.type === 'group') {
+    if (entry.type === 'group' || entry.type === 'section') {
       return entry.items.map((item) => ({
         ...item,
         groupLabel: entry.label,
@@ -265,7 +270,10 @@ function getFirstPlatformDestination(
   );
   const firstEntry = entries[0];
 
-  return firstEntry?.type === 'group'
+  return (
+    firstEntry?.type === 'group'
+    || firstEntry?.type === 'section'
+  )
     ? firstEntry.items[0]?.to ?? null
     : firstEntry?.to ?? null;
 }

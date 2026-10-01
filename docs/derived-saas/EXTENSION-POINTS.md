@@ -1068,3 +1068,57 @@ d'autorisation.
 Le composant `PlatformSidebar` accepte l'icône portée par le descriptor. Les
 icônes Core restent gérées par le registre Core existant.
 
+
+---
+
+## Section visuelle de navigation Platform
+
+La navigation Platform applicative accepte désormais une primitive déclarative `section`, distincte d’un `group`.
+
+Exemple générique :
+
+```js
+{
+  type: 'section',
+  id: 'application-management',
+  label: 'Gestion applicative',
+  items: [
+    {
+      id: 'application-reference',
+      label: 'Référentiel',
+      to: '/application/reference',
+      isVisible: ({ applicationGlobalPermissions }) => (
+        applicationGlobalPermissions.has('application:reference:read')
+      ),
+    },
+  ],
+}
+```
+
+Contrat :
+
+```text
+section
+→ organisation visuelle
+→ libellé non interactif
+→ enfants rendus comme entrées directes
+→ jamais de contrôle ouvrir/fermer
+
+group
+→ navigation repliable
+→ contrôle interactif
+```
+
+Le Core garantit :
+
+- filtrage des enfants avant rendu ;
+- disparition totale d’une section sans enfant visible ;
+- absence de séparateur orphelin en tête ou en fin ;
+- prise en charge des enfants par le routing et l’accès rapide ;
+- collisions d’identifiants et de destinations refusées ;
+- mode compact sans libellé de section dans le DOM ; seules les séparations visuelles nécessaires entre sections sont conservées ;
+- compatibilité inchangée des descriptors `item` et `group`.
+
+La visibilité applicative peut utiliser explicitement `applicationGlobalPermissions`. Les permissions Platform ne sont jamais converties implicitement en permissions Application Global.
+
+Le produit dérivé fournit les libellés, routes, icônes et règles `isVisible(context)`. Le Core ne connaît aucun référentiel ni domaine métier.

@@ -135,4 +135,142 @@ describe('application Platform navigation composition', () => {
       'navigationModules[0].sections[0].isVisible must be a function',
     );
   });
+  it('compose des sections visuelles applicatives sans séparateur global redondant', () => {
+    const navigation = composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'section',
+            id: 'derived-management',
+            label: 'Gestion applicative',
+            items: [
+              {
+                id: 'derived-reference',
+                label: 'Référentiel',
+                to: '/derived-reference',
+                isVisible: () => true,
+              },
+            ],
+          },
+          {
+            type: 'section',
+            id: 'derived-operations',
+            label: 'Opérations applicatives',
+            items: [
+              {
+                id: 'derived-jobs',
+                label: 'Traitements',
+                to: '/derived-jobs',
+                isVisible: () => true,
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(navigation.at(corePlatformNavigationSections.length))
+      .toMatchObject({
+        id: 'derived-management',
+        type: 'section',
+        label: 'Gestion applicative',
+      });
+    expect(navigation).not.toContain(PLATFORM_APPLICATION_SEPARATOR);
+    expect(navigation.at(-1)).toMatchObject({
+      id: 'derived-operations',
+      type: 'section',
+    });
+  });
+
+  it('préserve strictement le séparateur historique pour item et group', () => {
+    const navigation = composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'group',
+            id: 'derived-group',
+            label: 'Groupe applicatif',
+            items: [
+              {
+                id: 'derived-item',
+                label: 'Entrée',
+                to: '/derived-item',
+                isVisible: () => true,
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(navigation.at(corePlatformNavigationSections.length))
+      .toEqual(PLATFORM_APPLICATION_SEPARATOR);
+    expect(navigation.at(-1).type).toBe('group');
+  });
+
+  it('refuse les collisions dans les enfants de section', () => {
+    expect(() => composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'section',
+            id: 'derived-management',
+            label: 'Gestion applicative',
+            items: [
+              {
+                id: 'overview',
+                label: 'Collision',
+                to: '/derived-reference',
+                isVisible: () => true,
+              },
+            ],
+          },
+        ],
+      },
+    ])).toThrow('Duplicate Platform navigation id "overview"');
+
+    expect(() => composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'section',
+            id: 'derived-management',
+            label: 'Gestion applicative',
+            items: [
+              {
+                id: 'derived-reference',
+                label: 'Collision',
+                to: '/platform/overview',
+                isVisible: () => true,
+              },
+            ],
+          },
+        ],
+      },
+    ])).toThrow(
+      'Duplicate Platform navigation destination "/platform/overview"',
+    );
+  });
+
+  it('refuse une section dont les enfants ne sont pas des items valides', () => {
+    expect(() => composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'section',
+            id: 'derived-management',
+            label: 'Gestion applicative',
+            items: [
+              {
+                id: 'derived-reference',
+                label: 'Référentiel',
+              },
+            ],
+          },
+        ],
+      },
+    ])).toThrow(
+      'navigationModules[0].sections[0].items[0].to must be a non-empty string',
+    );
+  });
 });

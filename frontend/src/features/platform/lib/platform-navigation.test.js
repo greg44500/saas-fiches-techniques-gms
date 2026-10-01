@@ -23,7 +23,10 @@ function visibleDestinations(
     navigationSections,
   ).flatMap((entry) => {
     if (entry.type === 'separator') return [];
-    return entry.type === 'group'
+    return (
+      entry.type === 'group'
+      || entry.type === 'section'
+    )
       ? entry.items.map((item) => item.to)
       : [entry.to];
   });
@@ -314,5 +317,149 @@ describe('platform navigation policy', () => {
     expect(getFirstPlatformDestination(null)).toBeNull();
     expect(getFirstPlatformDestination({ status: 'suspended', permissions: [] })).toBeNull();
     expect(canAccessPlatformPath('/platform/retention', null)).toBe(false);
+  });
+  it('filtre une section visuelle comme une unité et supprime une section vide', () => {
+    const navigation = composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'section',
+            id: 'derived-management',
+            label: 'Gestion applicative',
+            items: [
+              {
+                id: 'derived-reference',
+                label: 'Référentiel',
+                to: '/derived-reference',
+                isVisible: ({ applicationGlobalPermissions }) => (
+                  applicationGlobalPermissions.has('derived:reference:read')
+                ),
+              },
+              {
+                id: 'derived-admin',
+                label: 'Administration métier',
+                to: '/derived-admin',
+                isVisible: ({ applicationGlobalPermissions }) => (
+                  applicationGlobalPermissions.has('derived:admin:read')
+                ),
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const visible = getVisiblePlatformNavigationSections(
+      {
+        status: 'active',
+        permissions: [],
+        applicationGlobalPermissions: ['derived:reference:read'],
+      },
+      navigation,
+    );
+
+    expect(visible).toHaveLength(1);
+    expect(visible[0]).toMatchObject({
+      id: 'derived-management',
+      type: 'section',
+      label: 'Gestion applicative',
+    });
+    expect(visible[0].items.map(({ id }) => id))
+      .toEqual(['derived-reference']);
+
+    expect(getVisiblePlatformNavigationSections(
+      {
+        status: 'active',
+        permissions: [],
+        applicationGlobalPermissions: [],
+      },
+      navigation,
+    )).toEqual([]);
+  });
+
+  it('résout routing, accès rapide et première destination dans une section', () => {
+    const navigation = composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'section',
+            id: 'derived-management',
+            label: 'Gestion applicative',
+            items: [
+              {
+                id: 'derived-reference',
+                label: 'Référentiel',
+                to: '/derived-reference',
+                isVisible: ({ applicationGlobalPermissions }) => (
+                  applicationGlobalPermissions.has('derived:reference:read')
+                ),
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const context = {
+      status: 'active',
+      permissions: ['platform:placeholder:read'],
+      applicationGlobalPermissions: ['derived:reference:read'],
+    };
+
+    expect(getPlatformNavigationItemForPath(
+      '/derived-reference/items',
+      navigation,
+    )?.id).toBe('derived-reference');
+    expect(canAccessPlatformPath(
+      '/derived-reference/items',
+      context,
+      navigation,
+    )).toBe(true);
+    expect(getFirstPlatformDestination(context, navigation))
+      .toBe('/derived-reference');
+    expect(getPlatformQuickAccessItems(context, navigation))
+      .toEqual([
+        expect.objectContaining({
+          id: 'derived-reference',
+          groupLabel: 'Gestion applicative',
+        }),
+      ]);
+    expect(getActivePlatformNavigationGroupId(
+      navigation,
+      '/derived-reference',
+    )).toBeNull();
+  });
+
+  it('ne rend pas une section Application Global visible avec les seules permissions Platform', () => {
+    const navigation = composeApplicationPlatformNavigation([
+      {
+        sections: [
+          {
+            type: 'section',
+            id: 'derived-management',
+            label: 'Gestion applicative',
+            items: [
+              {
+                id: 'derived-reference',
+                label: 'Référentiel',
+                to: '/derived-reference',
+                isVisible: ({ applicationGlobalPermissions }) => (
+                  applicationGlobalPermissions.has('derived:reference:read')
+                ),
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(visibleDestinations(
+      {
+        status: 'active',
+        permissions: Object.values(PLATFORM_PERMISSION),
+        applicationGlobalPermissions: [],
+      },
+      navigation,
+    )).not.toContain('/derived-reference');
   });
 });

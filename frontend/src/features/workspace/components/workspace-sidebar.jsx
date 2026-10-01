@@ -61,7 +61,7 @@ function WorkspaceSidebar({ navigation = [], workspace }) {
 
   return (
     <AppSidebar
-      eyebrow="Application"
+      eyebrow={APPLICATION_IDENTITY.shortName}
       getHref={getHref}
       getIcon={(entry) => entry.Icon}
       isItemActive={isItemActive}

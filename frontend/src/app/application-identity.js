@@ -1,6 +1,6 @@
 const APPLICATION_IDENTITY = Object.freeze({
-  name: 'SaaS Core',
-  shortName: 'SaaS Core',
+  name: 'Fiches techniques',
+  shortName: 'GMS',
 });
 
 export { APPLICATION_IDENTITY };
