@@ -24,10 +24,6 @@ const sheetSnapshotSchema = new Schema(
             enum: Object.values(PRODUCT_REFERENCE_UNIT),
             required: true,
         },
-        portions: {
-            type: Schema.Types.Decimal128,
-            default: null,
-        },
         vatRateBasisPoints: {
             type: Number,
             min: 0,
