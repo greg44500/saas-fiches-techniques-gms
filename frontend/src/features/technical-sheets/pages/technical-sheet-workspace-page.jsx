@@ -108,6 +108,8 @@ function buildDraftSaveRequest({
   technicalSheetId,
   workspaceId,
 }) {
+  const productionQuantity =
+    draftForm.productionQuantity.trim().replace(',', '.');
   const vatRateBasisPoints = percentInputToBasisPoints(draftForm.vatRate);
   const targetMarginBasisPoints =
     percentInputToBasisPoints(draftForm.targetMargin);
@@ -116,7 +118,8 @@ function buildDraftSaveRequest({
     : null;
 
   if (
-    !draftForm.productionQuantity
+    !/^\d+(?:\.\d+)?$/.test(productionQuantity)
+    || Number(productionQuantity) <= 0
     || !draftForm.productionUnit
     || vatRateBasisPoints === null
     || targetMarginBasisPoints === null
@@ -143,7 +146,7 @@ function buildDraftSaveRequest({
       dossierId,
       technicalSheetId,
       expectedRevision: revision,
-      productionQuantity: draftForm.productionQuantity,
+      productionQuantity,
       productionUnit: draftForm.productionUnit,
       vatRateBasisPoints,
       targetMarginBasisPoints,
@@ -478,8 +481,11 @@ function TechnicalSheetWorkspacePage() {
     percentInputToBasisPoints(draftForm.vatRate);
   const parsedTargetMargin =
     percentInputToBasisPoints(draftForm.targetMargin);
+  const normalizedProductionQuantity =
+    draftForm.productionQuantity.trim().replace(',', '.');
   const parametersComplete = Boolean(
-    draftForm.productionQuantity.trim()
+    /^\d+(?:\.\d+)?$/.test(normalizedProductionQuantity)
+    && Number(normalizedProductionQuantity) > 0
     && draftForm.productionUnit
     && parsedVatRate !== null
     && parsedVatRate >= 0
