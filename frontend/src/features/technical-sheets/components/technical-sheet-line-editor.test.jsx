@@ -280,10 +280,7 @@ describe('TechnicalSheetLineEditor', () => {
     expect(getSupplierArticleActionTooltip({
       canManageSourcing: true,
       line: { ...unresolvedLine, id: undefined },
-      requiresSave: true,
-    })).toBe(
-      'Choisir un Article fournisseur — enregistrez d’abord le brouillon',
-    );
+    })).toBe('Choisir un Article fournisseur');
   });
 
   it('ajoute un Produit directement depuis la ligne de saisie de la section', async () => {
@@ -395,7 +392,7 @@ describe('TechnicalSheetLineEditor', () => {
     })).toBeInTheDocument();
   });
 
-  it('garde l’action Approvisionnement explicable même avant enregistrement', async () => {
+  it('désactive l’approvisionnement tant que la ligne n’est pas enregistrée', async () => {
     const user = userEvent.setup();
     const unsavedLine = {
       ...valuedLine,
@@ -411,20 +408,14 @@ describe('TechnicalSheetLineEditor', () => {
       name: 'Actions pour Carotte râpée',
     });
 
-    expect(actionsButton).toBeEnabled();
     await user.click(actionsButton);
-    await user.click(screen.getByRole('button', {
-      name: /Article fournisseur/,
-    }));
 
-    expect(screen.getByRole('heading', {
-      name: 'Article fournisseur',
-    })).toBeInTheDocument();
-    expect(screen.getByText(
-      'Enregistrez le brouillon avant de modifier l’approvisionnement.',
-    )).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Modifier l’Article fournisseur',
+    })).toBeDisabled();
+    expect(screen.queryByText(/enregistrez d’abord/i))
+      .not.toBeInTheDocument();
   });
-
   it('ouvre le choix Article fournisseur depuis les actions de la ligne', async () => {
     const user = userEvent.setup();
 
