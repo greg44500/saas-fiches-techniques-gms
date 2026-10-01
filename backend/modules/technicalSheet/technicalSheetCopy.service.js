@@ -30,6 +30,9 @@ import {
     TechnicalSheetDraft,
 } from './technicalSheetDraft.model.js';
 import {
+    applyAutomaticValuation,
+} from './technicalSheetDraft.service.js';
+import {
     TechnicalSheetValidation,
 } from './technicalSheetValidation.model.js';
 import {
@@ -302,6 +305,20 @@ const copyTechnicalSheet = async ({
                 }],
                 { session },
             );
+
+        await applyAutomaticValuation({
+            workspaceId,
+            dossierId: targetDossierId,
+            draft,
+            actorId,
+            session,
+        });
+
+        await draft.populate({
+            path: 'lines.productVariant',
+            select:
+                '_id name referenceUnit yieldPercent status',
+        });
 
         await createTechnicalSheetEvent({
             workspaceId,
