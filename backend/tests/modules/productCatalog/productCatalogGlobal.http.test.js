@@ -248,6 +248,23 @@ describe('M-002 global product reference HTTP contract', () => {
             name: 'Roussillon',
             status: 'ARCHIVED',
         });
+
+        const dimensions = await request(app)
+            .get(
+                '/api/product-reference/'
+                + product.body.data.product.id
+                + '/dimensions',
+            )
+            .set(bearer(governorToken));
+
+        expect(dimensions.status).toBe(200);
+        expect(dimensions.body.data.varieties).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: variety.body.data.variety.id,
+                }),
+            ]),
+        );
     });
 
     it('recherche le référentiel global par une dimension CUT seule', async () => {

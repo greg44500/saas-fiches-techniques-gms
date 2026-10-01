@@ -585,6 +585,7 @@ const undoProductDimensionAddition = async ({
     }
 
     dimension.status = PRODUCT_STATUS.ARCHIVED;
+    dimension.identityActive = false;
     dimension.updatedBy = actorId;
     await dimension.save({ session });
 
