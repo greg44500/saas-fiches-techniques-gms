@@ -5,6 +5,15 @@ const optionalText = (max, message) => z
   .trim()
   .max(max, message);
 
+const marginInputSchema = z
+  .string()
+  .trim()
+  .refine((value) => {
+    if (!value) return true;
+    const parsed = Number(value.replace(',', '.'));
+    return Number.isFinite(parsed) && parsed >= 0 && parsed < 100;
+  }, 'La marge cible doit être comprise entre 0 et moins de 100 %.');
+
 const dossierFormSchema = z.object({
   name: z
     .string()
@@ -25,6 +34,7 @@ const dossierFormSchema = z.object({
     ),
   phone: optionalText(40, 'Le téléphone ne peut pas dépasser 40 caractères.'),
   contactName: optionalText(160, 'Le responsable ne peut pas dépasser 160 caractères.'),
+  defaultTargetMargin: marginInputSchema,
 });
 
 function nullableTrimmed(value) {
@@ -42,16 +52,26 @@ function buildDossierFormDefaults(dossier = null) {
     documentEmail: dossier?.documentEmail ?? '',
     phone: dossier?.phone ?? '',
     contactName: dossier?.contactName ?? '',
+    defaultTargetMargin: Number.isInteger(
+      dossier?.technicalSheetSettings?.defaultTargetMarginBasisPoints,
+    )
+      ? String(
+          dossier.technicalSheetSettings.defaultTargetMarginBasisPoints / 100,
+        )
+      : '',
   };
 }
 
-function buildDossierFormPayload(values) {
+function buildDossierFormPayload(
+  values,
+  { includeDefaultTargetMargin = false } = {},
+) {
   const address = nullableTrimmed(values.locationAddress);
   const postalCode = nullableTrimmed(values.locationPostalCode);
   const city = nullableTrimmed(values.locationCity);
   const hasLocation = Boolean(address || postalCode || city);
 
-  return {
+  const payload = {
     name: values.name.trim(),
     brand: nullableTrimmed(values.brand),
     location: hasLocation
@@ -65,6 +85,14 @@ function buildDossierFormPayload(values) {
     phone: nullableTrimmed(values.phone),
     contactName: nullableTrimmed(values.contactName),
   };
+
+  if (includeDefaultTargetMargin) {
+    payload.defaultTargetMarginBasisPoints = Math.round(
+      Number(values.defaultTargetMargin.trim().replace(',', '.')) * 100,
+    );
+  }
+
+  return payload;
 }
 
 export {
