@@ -324,18 +324,6 @@ const validateTechnicalSheet = async ({
             );
         }
 
-        if (
-            draft.valuationStatus
-            !== TECHNICAL_SHEET_VALUATION_STATUS
-                .COMPLETE
-            || !draft.valuationFingerprint
-        ) {
-            throw new AppError(
-                'La Fiche technique doit être complètement valorisée avant validation.',
-                409,
-            );
-        }
-
         const fresh =
             await buildTechnicalSheetValuation({
                 workspaceId,
@@ -349,6 +337,10 @@ const validateTechnicalSheet = async ({
             fresh.valuationStatus
             !== TECHNICAL_SHEET_VALUATION_STATUS
                 .COMPLETE
+            || draft.valuationStatus
+                !== TECHNICAL_SHEET_VALUATION_STATUS
+                    .COMPLETE
+            || !draft.valuationFingerprint
             || fresh.valuationFingerprint
                 !== draft.valuationFingerprint
         ) {
@@ -528,8 +520,8 @@ const validateTechnicalSheet = async ({
         const error = new AppError(
             result.valuationStatus
                 === TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE
-                ? 'Les données économiques ont changé. Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.'
-                : 'Les données économiques ont changé et la Fiche n’est plus complètement valorisable. Les calculs ont été actualisés.',
+                ? 'Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.'
+                : 'La Fiche n’est pas complètement calculable avec les données disponibles. Les calculs ont été actualisés.',
             409,
         );
         error.code =
