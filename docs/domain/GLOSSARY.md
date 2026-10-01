@@ -819,7 +819,7 @@ Résultat des calculs de coût, marge et prix obtenus à partir :
 - des prix applicables ;
 - des paramètres de calcul applicables.
 
-Une même composition peut être revalorisée dans le temps.
+Une même composition peut être recalculée dans le temps à partir des Prix alors applicables.
 
 ---
 
@@ -835,7 +835,7 @@ Elle permet de comprendre pourquoi une fiche affichait un certain coût ou une c
 
 Calcul effectué avec les données actuellement applicables, notamment les prix courants.
 
-Si un tarif devient plus récent ou plus applicable pendant qu'une fiche est en cours d'édition, la fiche n'est pas modifiée silencieusement. Le système signale qu'une revalorisation est disponible ou nécessaire.
+Le brouillon courant est recalculé automatiquement après ses sauvegardes. Si un tarif devient plus récent ou plus applicable sans modification du brouillon, le backend l'actualise lors de la tentative de validation et demande une nouvelle confirmation après vérification. Une version déjà validée reste immuable.
 
 ---
 
@@ -1001,9 +1001,9 @@ Il n'est pas une donnée libre indépendante de l'objectif.
 Prix calculé pour atteindre l'Objectif de marge avant application de la stratégie commerciale d'arrondi.
 
 ```text
-Prix théorique HT
+Prix théorique HT unitaire
 =
-Coût total de fabrication HT × coefficient
+(Coût total de fabrication HT / quantité produite) × coefficient
 ```
 
 ## Prix conseillé
@@ -1014,13 +1014,9 @@ Il ne peut jamais être inférieur au Prix théorique correspondant.
 
 ## Prix définitif
 
-Prix de vente décidé humainement pour la Fiche technique.
+Prix de vente unitaire décidé humainement pour la Fiche technique.
 
-Invariant :
-
-```text
-Prix définitif TTC >= Prix conseillé TTC
-```
+Il peut être inférieur au Prix conseillé, mais jamais inférieur au plancher économique TTC par unité produite.
 
 ## Marge réelle
 
@@ -1029,13 +1025,13 @@ Résultat économique calculé à partir du Prix définitif réellement choisi.
 ```text
 Marge réelle %
 =
-(Prix définitif HT - Coût total de fabrication HT)
+(Prix définitif HT unitaire - Coût de fabrication HT unitaire)
 /
-Prix définitif HT
+Prix définitif HT unitaire
 × 100
 ```
 
-La marge réelle en euros correspond à la différence entre Prix définitif HT et Coût total de fabrication HT.
+La marge réelle en euros correspond à la différence entre Prix définitif HT unitaire et Coût de fabrication HT unitaire.
 
 ## Marge semi-nette
 
