@@ -58,11 +58,7 @@ describe('TechnicalSheetEconomicsBar', () => {
           finalPriceMode="ADVISED"
           lines={[]}
           onFinalPriceModeChange={vi.fn()}
-          onTargetMarginInputChange={vi.fn()}
-          onValuate={vi.fn()}
           targetMarginBasisPoints={7000}
-          targetMarginInputValue="70"
-          valuationStatus="COMPLETE"
           vatRateBasisPoints={1000}
         />
       </TooltipProvider>,
@@ -71,7 +67,7 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(screen.getByText('CM HT')).toBeInTheDocument();
     expect(screen.getByText('CE HT')).toBeInTheDocument();
     expect(screen.getByText('CF HT')).toBeInTheDocument();
-    expect(screen.getByText('%MC')).toBeInTheDocument();
+    expect(screen.queryByText('%MC')).not.toBeInTheDocument();
     expect(screen.getByText('PC TTC')).toBeInTheDocument();
     expect(screen.getByText('PF TTC')).toBeInTheDocument();
     expect(screen.getByText('%MR')).toBeInTheDocument();
@@ -94,11 +90,7 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(screen.getByText('70 %')).toBeInTheDocument();
   });
 
-  it('garde les paramètres économiques éditables tout en verrouillant la revalorisation', async () => {
-    const user = userEvent.setup();
-    const onTargetMarginInputChange = vi.fn();
-    const onValuate = vi.fn();
-
+  it('ne rend aucune action manuelle de valorisation dans les résultats', () => {
     render(
       <TooltipProvider>
         <TechnicalSheetEconomicsBar
@@ -107,26 +99,16 @@ describe('TechnicalSheetEconomicsBar', () => {
           finalPriceMode="ADVISED"
           lines={[]}
           onFinalPriceModeChange={vi.fn()}
-          onTargetMarginInputChange={onTargetMarginInputChange}
-          onValuate={onValuate}
           targetMarginBasisPoints={5000}
-          targetMarginInputValue="50"
-          valuateDisabled
-          valuationStatus="STALE"
           vatRateBasisPoints={1000}
         />
       </TooltipProvider>,
     );
 
-    const margin = screen.getByRole('textbox', {
-      name: 'Marge cible (%)',
-    });
-
-    await user.clear(margin);
-    await user.type(margin, '55');
-
-    expect(onTargetMarginInputChange).toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Revaloriser' })).toBeDisabled();
-    expect(onValuate).not.toHaveBeenCalled();
-  });
-});
+    expect(screen.queryByRole('button', { name: 'Valoriser' }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Revaloriser' }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Marge cible (%)' }))
+      .not.toBeInTheDocument();
+  });});
