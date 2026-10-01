@@ -148,7 +148,7 @@ describe('M-002 catalog index migration', () => {
                 });
             }
         } finally {
-            mongoose.set('sanitizeFilter', previousSanitizeFilter);
+            mongoose.set('sanitizeFilter', previousSanitizeFilter ?? false);
         }
     });
 });
