@@ -265,7 +265,6 @@ const listGlobalProducts = async ({
                 ...product,
                 dimensionReview: {
                     pendingCount: review?.pendingCount ?? 0,
-                    reviewedAt: review?.reviewedAt ?? null,
                 },
             };
         }),
