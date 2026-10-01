@@ -125,6 +125,18 @@ const economicSnapshotSchema = new Schema(
             type: Schema.Types.Decimal128,
             required: true,
         },
+        materialCostPerProductionUnitHt: {
+            type: Schema.Types.Decimal128,
+            required: true,
+        },
+        economatCostPerProductionUnitHt: {
+            type: Schema.Types.Decimal128,
+            required: true,
+        },
+        manufacturingCostPerProductionUnitHt: {
+            type: Schema.Types.Decimal128,
+            required: true,
+        },
         theoreticalPriceHt: {
             type: Schema.Types.Decimal128,
             required: true,
