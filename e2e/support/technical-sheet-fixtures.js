@@ -69,20 +69,36 @@ async function provisionTechnicalSheetWorkspace({
       });
     }
 
-    await Dossier.updateOne(
-      {
-        _id: context.dossierB.id,
-        workspace: workspace._id,
-      },
-      {
-        $set: {
-          'technicalSheetSettings.defaultTargetMarginBasisPoints':
-            targetMarginBasisPoints,
-          updatedBy: ownerId,
+    await Promise.all([
+      Dossier.updateOne(
+        {
+          _id: context.dossierA.id,
+          workspace: workspace._id,
         },
-      },
-      { runValidators: true },
-    );
+        {
+          $set: {
+            'technicalSheetSettings.defaultTargetMarginBasisPoints':
+              5000,
+            updatedBy: ownerId,
+          },
+        },
+        { runValidators: true },
+      ),
+      Dossier.updateOne(
+        {
+          _id: context.dossierB.id,
+          workspace: workspace._id,
+        },
+        {
+          $set: {
+            'technicalSheetSettings.defaultTargetMarginBasisPoints':
+              targetMarginBasisPoints,
+            updatedBy: ownerId,
+          },
+        },
+        { runValidators: true },
+      ),
+    ]);
 
     const startsAt = new Date(Date.now() - 1_000);
 
