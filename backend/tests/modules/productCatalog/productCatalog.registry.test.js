@@ -12,6 +12,7 @@ import {
     PRODUCT_CONSERVATION_TYPE,
     PRODUCT_CONSERVATION_TYPE_REGISTRY,
     PRODUCT_CONTRIBUTION_TYPE,
+    PRODUCT_DIMENSION_REVIEW_STATUS,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
     PRODUCT_GOVERNANCE_STATUS,
@@ -143,6 +144,15 @@ describe('M-002 product catalog registries', () => {
             PENDING_REVIEW: 'PENDING_REVIEW',
             APPROVED: 'APPROVED',
             REJECTED: 'REJECTED',
+        });
+    });
+
+
+    it('sépare la revue qualité des statuts de gouvernance et de lifecycle', () => {
+        expect(PRODUCT_DIMENSION_REVIEW_STATUS).toEqual({
+            NOT_REQUIRED: 'NOT_REQUIRED',
+            PENDING: 'PENDING',
+            REVIEWED: 'REVIEWED',
         });
     });
 

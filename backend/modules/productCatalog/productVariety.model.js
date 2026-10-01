@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 import {
+    PRODUCT_DIMENSION_REVIEW_STATUS,
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
@@ -48,6 +49,18 @@ const productVarietySchema = new Schema(
             default: null,
             immutable: true,
         },
+        qualityReviewStatus: {
+            type: String,
+            enum: Object.values(PRODUCT_DIMENSION_REVIEW_STATUS),
+            default: PRODUCT_DIMENSION_REVIEW_STATUS.NOT_REQUIRED,
+            required: true,
+        },
+        qualityReviewedAt: { type: Date, default: null },
+        qualityReviewedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
+        },
         createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true, immutable: true },
         updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     },
@@ -91,6 +104,16 @@ productVarietySchema.index(
 productVarietySchema.index(
     { governanceStatus: 1, contributedFromWorkspace: 1, canonicalProduct: 1 },
     { name: 'product_variety_governance_workspace_product' },
+);
+
+productVarietySchema.index(
+    {
+        canonicalProduct: 1,
+        qualityReviewStatus: 1,
+        status: 1,
+        identityActive: 1,
+    },
+    { name: 'product_variety_quality_review' },
 );
 
 const ProductVariety = model('ProductVariety', productVarietySchema);

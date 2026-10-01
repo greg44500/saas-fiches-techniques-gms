@@ -9,6 +9,7 @@ import {
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_DIMENSION_REVIEW_STATUS,
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
@@ -92,6 +93,9 @@ const createProductVarietyInSession = async ({
                 status: PRODUCT_STATUS.ACTIVE,
                 governanceStatus,
                 contributedFromWorkspace: workspaceId,
+                qualityReviewStatus: workspaceId
+                    ? PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+                    : PRODUCT_DIMENSION_REVIEW_STATUS.NOT_REQUIRED,
                 createdBy: actorId,
                 updatedBy: actorId,
             },
@@ -169,6 +173,9 @@ const createProductCharacteristicInSession = async ({
                 status: PRODUCT_STATUS.ACTIVE,
                 governanceStatus,
                 contributedFromWorkspace: workspaceId,
+                qualityReviewStatus: workspaceId
+                    ? PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+                    : PRODUCT_DIMENSION_REVIEW_STATUS.NOT_REQUIRED,
                 createdBy: actorId,
                 updatedBy: actorId,
             },
@@ -307,11 +314,24 @@ const updateProductVariety = async ({
     }
 
     const searchKeys = buildSearchKeys(nextName, nextAliases);
+    const wasPendingReview = (
+        variety.qualityReviewStatus
+        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+    );
     variety.name = nextName;
     variety.normalizedName = normalizedName;
     variety.aliases = nextAliases;
     variety.searchKeys = searchKeys;
     variety.searchGrams = buildSearchGrams(searchKeys);
+    if (
+        variety.qualityReviewStatus
+        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+    ) {
+        variety.qualityReviewStatus =
+            PRODUCT_DIMENSION_REVIEW_STATUS.REVIEWED;
+        variety.qualityReviewedAt = new Date();
+        variety.qualityReviewedBy = actorId;
+    }
     variety.updatedBy = actorId;
     await variety.save({ session });
 
@@ -323,6 +343,23 @@ const updateProductVariety = async ({
         metadata: { productId: productId.toString() },
         session,
     });
+
+    if (wasPendingReview) {
+        await createProductReferenceEvent({
+            actorId,
+            action:
+                PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_DIMENSION_REVIEWED,
+            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+            entityId: productId,
+            metadata: {
+                dimensionType: 'VARIETY',
+                dimensionId: variety._id.toString(),
+                dimensionName: variety.name,
+                reviewReason: 'CORRECTED',
+            },
+            session,
+        });
+    }
 
     return serializeVariety(variety);
 });
@@ -371,11 +408,24 @@ const updateProductCharacteristic = async ({
     }
 
     const searchKeys = buildSearchKeys(nextName, nextAliases);
+    const wasPendingReview = (
+        characteristic.qualityReviewStatus
+        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+    );
     characteristic.name = nextName;
     characteristic.normalizedName = normalizedName;
     characteristic.aliases = nextAliases;
     characteristic.searchKeys = searchKeys;
     characteristic.searchGrams = buildSearchGrams(searchKeys);
+    if (
+        characteristic.qualityReviewStatus
+        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+    ) {
+        characteristic.qualityReviewStatus =
+            PRODUCT_DIMENSION_REVIEW_STATUS.REVIEWED;
+        characteristic.qualityReviewedAt = new Date();
+        characteristic.qualityReviewedBy = actorId;
+    }
     characteristic.updatedBy = actorId;
     await characteristic.save({ session });
 
@@ -390,6 +440,24 @@ const updateProductCharacteristic = async ({
         },
         session,
     });
+
+    if (wasPendingReview) {
+        await createProductReferenceEvent({
+            actorId,
+            action:
+                PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_DIMENSION_REVIEWED,
+            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+            entityId: productId,
+            metadata: {
+                dimensionType: 'CHARACTERISTIC',
+                dimensionId: characteristic._id.toString(),
+                dimensionName: characteristic.name,
+                kind: characteristic.kind,
+                reviewReason: 'CORRECTED',
+            },
+            session,
+        });
+    }
 
     return serializeCharacteristic(characteristic);
 });
@@ -532,13 +600,183 @@ const updateProductCharacteristicStatus = async ({
     return serializeCharacteristic(characteristic);
 });
 
+
+
+const deleteProductDimension = async ({
+    actorId,
+    productId,
+    type,
+    dimensionId,
+}) => mongoose.connection.transaction(async (session) => {
+    await assertProductAvailable({
+        productId,
+        session,
+        activeOnly: false,
+    });
+
+    const isVariety = type === 'VARIETY';
+    const isCharacteristic = type === 'CHARACTERISTIC';
+    if (!isVariety && !isCharacteristic) {
+        throw new AppError('Type de dimension invalide.', 400);
+    }
+
+    const model = isVariety ? ProductVariety : ProductCharacteristic;
+    const dimension = await model.findOne({
+        _id: dimensionId,
+        canonicalProduct: productId,
+        identityActive: true,
+    }).session(session);
+
+    if (!dimension) {
+        throw new AppError('Dimension Produit introuvable.', 404);
+    }
+
+    const usageFilter = {
+        canonicalProduct: productId,
+        ...(isVariety
+            ? { variety: dimension._id }
+            : { characteristics: dimension._id }),
+    };
+    const [usageCount, usedReferences] = await Promise.all([
+        ProductVariant.countDocuments(usageFilter).session(session),
+        ProductVariant.find(usageFilter)
+            .select('name')
+            .sort({ normalizedName: 1, _id: 1 })
+            .limit(3)
+            .session(session)
+            .lean(),
+    ]);
+
+    if (usageCount > 0) {
+        const names = usedReferences
+            .map(({ name }) => name)
+            .filter(Boolean)
+            .join(', ');
+        throw new AppError(
+            'Cette valeur est utilisée par '
+            + usageCount
+            + ' Référence'
+            + (usageCount > 1 ? 's' : '')
+            + ' Produit'
+            + (usageCount > 1 ? 's' : '')
+            + (names ? ' : ' + names + '.' : '.'),
+            409,
+        );
+    }
+
+    const previousReviewStatus = dimension.qualityReviewStatus;
+    dimension.status = PRODUCT_STATUS.ARCHIVED;
+    dimension.identityActive = false;
+    dimension.updatedBy = actorId;
+    await dimension.save({ session });
+
+    await createProductReferenceEvent({
+        actorId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_DIMENSION_DELETED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+        entityId: productId,
+        metadata: {
+            dimensionType: type,
+            dimensionId: dimension._id.toString(),
+            dimensionName: dimension.name,
+            previousReviewStatus,
+            ...(isCharacteristic ? { kind: dimension.kind } : {}),
+        },
+        session,
+    });
+
+    return isVariety
+        ? serializeVariety(dimension)
+        : serializeCharacteristic(dimension);
+});
+
+const undoProductDimensionAddition = async ({
+    actorId,
+    workspaceId = null,
+    productId,
+    type,
+    dimensionId,
+}) => mongoose.connection.transaction(async (session) => {
+    await assertProductAvailable({
+        productId,
+        session,
+        activeOnly: false,
+    });
+
+    const isVariety = type === 'VARIETY';
+    const isCharacteristic = type === 'CHARACTERISTIC';
+    if (!isVariety && !isCharacteristic) {
+        throw new AppError('Type de dimension invalide.', 400);
+    }
+
+    const model = isVariety ? ProductVariety : ProductCharacteristic;
+    const dimension = await model.findOne({
+        _id: dimensionId,
+        canonicalProduct: productId,
+        identityActive: true,
+        status: PRODUCT_STATUS.ACTIVE,
+        governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+        createdBy: actorId,
+        contributedFromWorkspace: workspaceId,
+    }).session(session);
+
+    if (!dimension) {
+        throw new AppError(
+            'Cette valeur ne peut plus être retirée.',
+            409,
+        );
+    }
+
+    const used = await ProductVariant.exists({
+        canonicalProduct: productId,
+        ...(isVariety
+            ? { variety: dimension._id }
+            : { characteristics: dimension._id }),
+    }).session(session);
+
+    if (used) {
+        throw new AppError(
+            'Cette valeur est déjà utilisée par une Référence Produit.',
+            409,
+        );
+    }
+
+    dimension.status = PRODUCT_STATUS.ARCHIVED;
+    dimension.identityActive = false;
+    dimension.updatedBy = actorId;
+    await dimension.save({ session });
+
+    await createProductReferenceEvent({
+        actorId,
+        workspaceId,
+        action: isVariety
+            ? PRODUCT_REFERENCE_EVENT_ACTION.VARIETY_ARCHIVED
+            : PRODUCT_REFERENCE_EVENT_ACTION.CHARACTERISTIC_ARCHIVED,
+        entityType: isVariety
+            ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY
+            : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC,
+        entityId: dimension._id,
+        metadata: {
+            productId: productId.toString(),
+            reason: 'IMMEDIATE_UNDO',
+        },
+        session,
+    });
+
+    return isVariety
+        ? serializeVariety(dimension)
+        : serializeCharacteristic(dimension);
+});
+
 export {
     createProductCharacteristic,
     createProductCharacteristicInSession,
     createProductVariety,
     createProductVarietyInSession,
+    deleteProductDimension,
     listProductDimensions,
     updateProductCharacteristic,
+    undoProductDimensionAddition,
     updateProductCharacteristicStatus,
     updateProductVariety,
     updateProductVarietyStatus,

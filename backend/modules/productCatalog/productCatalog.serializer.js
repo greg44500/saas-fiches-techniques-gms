@@ -27,6 +27,8 @@ const serializeVariety = (variety) => {
         aliases: [...(variety.aliases ?? [])],
         status: variety.status,
         governanceStatus: variety.governanceStatus ?? 'APPROVED',
+        qualityReviewStatus: variety.qualityReviewStatus ?? 'NOT_REQUIRED',
+        qualityReviewedAt: variety.qualityReviewedAt ?? null,
     };
 };
 
@@ -42,6 +44,8 @@ const serializeCharacteristic = (characteristic) => {
         aliases: [...(characteristic.aliases ?? [])],
         status: characteristic.status,
         governanceStatus: characteristic.governanceStatus ?? 'APPROVED',
+        qualityReviewStatus: characteristic.qualityReviewStatus ?? 'NOT_REQUIRED',
+        qualityReviewedAt: characteristic.qualityReviewedAt ?? null,
     };
 };
 

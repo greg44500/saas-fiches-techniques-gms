@@ -104,6 +104,53 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data.characteristic,
       invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
+    reviewProductReferenceDimension: builder.mutation({
+      query: ({
+        productId,
+        dimensionType,
+        dimensionId,
+      }) => ({
+        url:
+          '/product-reference/' + productId
+          + '/dimensions/' + dimensionType
+          + '/' + dimensionId
+          + '/review',
+        method: 'POST',
+      }),
+      transformResponse: (response) => response.data.dimension,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    deleteProductReferenceDimension: builder.mutation({
+      query: ({
+        productId,
+        dimensionType,
+        dimensionId,
+      }) => ({
+        url:
+          '/product-reference/' + productId
+          + '/dimensions/' + dimensionType
+          + '/' + dimensionId,
+        method: 'DELETE',
+      }),
+      transformResponse: (response) => response.data.dimension,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    undoProductReferenceDimensionAddition: builder.mutation({
+      query: ({
+        productId,
+        dimensionType,
+        dimensionId,
+      }) => ({
+        url:
+          '/product-reference/' + productId
+          + '/dimensions/' + dimensionType
+          + '/' + dimensionId
+          + '/undo',
+        method: 'POST',
+      }),
+      transformResponse: (response) => response.data.dimension,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
     reviewProductReferenceContribution: builder.mutation({
       query: ({ contributionId, ...body }) => ({
         url: '/product-reference/contributions/' + contributionId + '/decision',
@@ -270,7 +317,9 @@ export const {
   useLazyGetProductReferenceDetailQuery,
   useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
+  useDeleteProductReferenceDimensionMutation,
   usePreviewProductReferenceImportMutation,
+  useReviewProductReferenceDimensionMutation,
   useReviewProductReferenceContributionMutation,
   useUpdateProductReferenceCategoryMutation,
   useUpdateProductReferenceCharacteristicMutation,
@@ -282,6 +331,7 @@ export const {
   useUpdateProductReferenceVarietyMutation,
   useUpdateProductReferenceVarietyStatusMutation,
   useUpdateProductReferenceVariantStatusMutation,
+  useUndoProductReferenceDimensionAdditionMutation,
 } = productReferenceApi;
 
 export { productReferenceApi };

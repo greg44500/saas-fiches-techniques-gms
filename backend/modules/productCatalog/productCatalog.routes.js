@@ -22,6 +22,7 @@ import {
     previewImport,
     search,
     summary,
+    undoDimensionAddition,
 } from './productCatalog.controller.js';
 import {
     cleanupProductImportUploadOnError,
@@ -48,6 +49,7 @@ import {
     productSearchQuerySchema,
     variantIdParamsSchema,
     workspaceIdParamsSchema,
+    workspaceProductDimensionUndoParamsSchema,
 } from './productCatalog.validation.js';
 
 const productCatalogRouter = Router({ mergeParams: true });
@@ -208,6 +210,18 @@ productCatalogRouter.get(
     authorizePermission(PRODUCT_CATALOG_PERMISSION.READ),
     enforceProductReferenceSearchFeature,
     dimensions,
+);
+
+
+productCatalogRouter.post(
+    '/:productId/dimensions/:dimensionType/:dimensionId/undo',
+    authenticate,
+    validateRequest({ params: workspaceProductDimensionUndoParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(PRODUCT_CATALOG_PERMISSION.CONTRIBUTE),
+    enforceWorkspaceAccessMode(),
+    enforceProductContributionFeature,
+    undoDimensionAddition,
 );
 
 productCatalogRouter.get(

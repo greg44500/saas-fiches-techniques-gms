@@ -10,6 +10,9 @@ import {
     ensureM002CatalogIndexes,
 } from './ensureM002CatalogIndexes.migration.js';
 import {
+    backfillM002ProductDimensionQualityReview,
+} from './backfillM002ProductDimensionQualityReview.migration.js';
+import {
     ProductVariant,
 } from '../modules/productCatalog/productVariant.model.js';
 import {
@@ -117,6 +120,8 @@ const run = async () => {
             await reconcileM002LegacyReferenceDuplicates();
         const productReferenceContract =
             await migrateM002ProductReferenceContract();
+        const dimensionQualityReview =
+            await backfillM002ProductDimensionQualityReview();
         const indexes = await ensureM002CatalogIndexes();
         const permissions = await backfillRegisteredSystemRolePermissions();
 
@@ -130,6 +135,7 @@ const run = async () => {
                 legacyReferenceDuplicates,
                 productReferenceContract,
                 bootstrapV6,
+                dimensionQualityReview,
                 indexes,
                 permissions,
             },

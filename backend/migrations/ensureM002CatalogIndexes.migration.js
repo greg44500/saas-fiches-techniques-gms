@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 import {
     CanonicalProduct,
 } from '../modules/productCatalog/canonicalProduct.model.js';
@@ -46,11 +48,13 @@ const M002_INDEX_NAMES = Object.freeze([
     'product_variety_product_status_name',
     'product_variety_search_grams_status',
     'product_variety_governance_workspace_product',
+    'product_variety_quality_review',
     'product_characteristic_approved_product_kind_name_unique',
     'product_characteristic_provisional_workspace_kind_name_unique',
     'product_characteristic_product_kind_status_name',
     'product_characteristic_search_grams_status',
     'product_characteristic_governance_workspace_product_kind',
+    'product_characteristic_quality_review',
     'reference_contribution_status_created_at',
     'reference_contribution_workspace_status_created_at',
     'reference_contribution_product_type_status_created_at',
@@ -110,12 +114,19 @@ const backfillGovernanceStatus = async () => {
     const results = [];
     for (const model of GOVERNED_MODELS) {
         const result = await model.updateMany(
-            { governanceStatus: { $exists: false } },
+            {
+                governanceStatus: mongoose.trusted({
+                    $exists: false,
+                }),
+            },
             {
                 $set: {
                     governanceStatus:
                         PRODUCT_GOVERNANCE_STATUS.APPROVED,
                 },
+            },
+            {
+                timestamps: false,
             },
         );
         results.push({
