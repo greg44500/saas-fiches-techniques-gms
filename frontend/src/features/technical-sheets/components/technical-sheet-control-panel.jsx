@@ -47,7 +47,7 @@ function TechnicalSheetControlPanel({
           ? 'Enregistrement du brouillon requis avant validation'
           : draft.valuationStatus === 'COMPLETE'
           ? 'Valider la Fiche technique'
-          : 'Valorisation complète requise avant validation';
+          : 'Calcul économique complet requis avant validation';
 
   return (
     <div
