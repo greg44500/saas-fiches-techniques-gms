@@ -53,14 +53,18 @@ function DossierTechnicalSheetMarginDialog({
   }, [open, query.data]);
 
   async function saveMargin() {
-    const basisPoints = margin.trim()
-      ? percentInputToBasisPoints(margin)
-      : null;
+    const basisPoints =
+      percentInputToBasisPoints(margin);
 
-    if (margin.trim() && basisPoints === null) {
+    if (
+      !margin.trim()
+      || basisPoints === null
+      || basisPoints < 0
+      || basisPoints >= 10000
+    ) {
       toast({
         title: 'Marge invalide',
-        description: 'Renseignez un pourcentage valide.',
+        description: 'Renseignez une marge comprise entre 0 et moins de 100 %.',
         variant: 'destructive',
       });
       return;
@@ -153,6 +157,7 @@ function DossierTechnicalSheetMarginDialog({
                 updateState.isLoading
                 || query.isLoading
                 || query.isError
+                || !margin.trim()
               }
               onClick={saveMargin}
               type="button"
