@@ -51,7 +51,7 @@ import {
 } from '@/features/suppliers/lib/supplier-presentation';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
-function SupplierReferencePage({ canManage }) {
+function SupplierReferencePage({ canManage, embedded = false }) {
   const { toast } = useToast();
   const {
     page,
@@ -363,13 +363,15 @@ function SupplierReferencePage({ canManage }) {
     }
   }, [currentQuery.data?.pagination?.totalPages, page, setPage]);
 
+  const Heading = embedded ? 'h2' : 'h1';
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <Heading className="text-2xl font-semibold tracking-tight">
             Référentiel Fournisseurs
-          </h1>
+          </Heading>
           <InfoTooltip
             content="Gouvernance des identités et catalogues partagés, indépendante des rôles d’administration de la plateforme."
             label="À propos du référentiel Fournisseurs"
