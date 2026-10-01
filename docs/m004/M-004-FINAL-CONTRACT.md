@@ -14,7 +14,7 @@
 
 ## 1. Objectif
 
-M-004 permet de créer, composer, valoriser, valider, historiser et administrer des Fiches techniques dans le contexte économique d'un Dossier.
+M-004 permet de créer, composer, calculer, valider, historiser et administrer des Fiches techniques dans le contexte économique d'un Dossier.
 
 Le module réutilise les contrats précédents :
 
@@ -29,7 +29,7 @@ M-003
 → comment cette Référence Produit est-elle achetée et à quel prix dans ce Dossier ?
 
 M-004
-→ comment composer, valoriser, valider et historiser une Fiche technique ?
+→ comment composer, calculer, valider et historiser une Fiche technique ?
 ```
 
 M-004 ne recrée ni le référentiel Produits ni la résolution des Articles ou Prix applicables.
