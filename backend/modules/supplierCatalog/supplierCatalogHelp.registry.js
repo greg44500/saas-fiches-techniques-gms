@@ -118,8 +118,8 @@ const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
             prerequisites: [],
             steps: [
                 'Ouvrez la surface Platform.',
-                'Accédez au référentiel Fournisseurs depuis la navigation autorisée.',
-                'Consultez les Fournisseurs, Articles et catalogues partagés disponibles.',
+                'Accédez à Gestion des référentiels depuis la navigation autorisée.',
+                'Ouvrez l’onglet Fournisseurs puis consultez les Fournisseurs, Articles et catalogues partagés disponibles.',
             ],
             outcome: 'Les données globales partagées sont consultées sans exposer les catalogues privés d’un autre Workspace.',
             edgeCases: [],
@@ -150,7 +150,7 @@ const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
             whoCanPerform: 'Un gestionnaire disposant de la permission métier globale de gestion du référentiel Fournisseurs.',
             prerequisites: [],
             steps: [
-                'Ouvrez le référentiel Fournisseurs global.',
+                'Ouvrez Gestion des référentiels puis l’onglet Fournisseurs.',
                 'Sélectionnez l’objet à créer ou corriger.',
                 'Enregistrez ou archivez explicitement selon le besoin.',
             ],
