@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; BLOC A Core post-tag v1.2.1 en validation finale  
+**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; stabilisation post-merge du BLOC A en cours  
 **Dernière mise à jour :** 2026-10-01
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -579,40 +579,49 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le correctif/consolidation M-002 est clôturé :
+Le BLOC A Core post-`v1.2.1` est fusionné dans `main` :
 
 ~~~text
-PR #29
-→ merge 59aa1492710ec72435338a5640137f5468c45ed1
-→ Core Gate PR #157 verte
-→ Core Gate post-merge #158 verte
+PR #30
+→ Core Gate PR #159 : success
+→ merge 42f91e844974e2d0c6d374f2bb307077210b2614
 ~~~
 
-Le lot courant est le **BLOC A — intégration Core de la navigation Platform par sections**.
-
-Core cible :
+La Core Gate post-merge #160 a révélé deux instabilités de tests sur deux tentatives distinctes :
 
 ~~~text
-version = 1.2.1
-tag     = v1.2.1
-commit  = 6581e573c6a6885790b23fe502bd34d8199ea6ba
+tentative 1
+→ 2 E2E M-001 bloqués sur la disponibilité de la page Dossiers
+→ 20/22 E2E verts
+
+tentative 2
+→ E2E non atteints
+→ 1 test frontend M-002 instable sur l’ouverture d’un Select Base UI
+→ 1079/1080 tests frontend verts
 ~~~
 
-État :
+Le lot courant est donc un **correctif unique de stabilité post-merge** sur la branche `fix/post-merge-test-stability`.
+
+Périmètre Produit :
+
+- stabiliser les interactions Base UI du test `ProductVariantFields` avec le pattern déjà utilisé par les tests partagés ;
+- stabiliser l’entrée E2E M-001 dans la page Dossiers en passant d’abord par un Workspace shell chargé puis par la navigation applicative ;
+- ne modifier ni les règles métier, ni les permissions, ni les contrats API, ni la provenance Core.
+
+La conservation automatique des traces/screenshots Playwright dans GitHub Actions est un besoin générique et réutilisable. Elle est donc **candidate Core** et ne doit pas être ajoutée silencieusement dans le produit.
+
+Séquence de sortie :
 
 ~~~text
-filiation Core réparée
-→ merge Core réel conservé
-→ branche Core réalignée avec main@59aa149
-→ core-origin.json mis à jour
-→ validation globale finale à exécuter
-→ une PR BLOC A
+correctif de stabilité
+→ une PR
 → Core Gate PR
 → merge
-→ Core Gate post-merge
+→ Core Gate post-merge verte
+→ clôture définitive du BLOC A
 ~~~
 
-Après clôture complète du BLOC A seulement, ouvrir le **BLOC B — Gestion des référentiels Platform** :
+Après cette clôture seulement, ouvrir le **BLOC B — Gestion des référentiels Platform** :
 
 ~~~text
 Sidebar Platform
