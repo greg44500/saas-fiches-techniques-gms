@@ -51,55 +51,6 @@ import {
 } from '@/features/products/lib/product-presentation';
 
 function AdminDetailRow({ label, value }) {
-  async function markDimensionReviewed(type, dimension) {
-    try {
-      await reviewDimension({
-        productId: product.id,
-        dimensionType: type,
-        dimensionId: dimension.id,
-      }).unwrap();
-      toast({
-        title: 'Valeur marquée comme vérifiée',
-        variant: 'success',
-      });
-    } catch (error) {
-      toast({
-        title: 'Revue impossible',
-        description: getApiErrorMessage(error),
-        variant: 'destructive',
-      });
-    }
-  }
-
-  function requestDimensionDeletion(type, dimension) {
-    setDeleteError('');
-    setDeleteDimension({ type, dimension });
-  }
-
-  async function confirmDimensionDeletion() {
-    if (!deleteDimension) return;
-
-    try {
-      await deleteDimensionMutation({
-        productId: product.id,
-        dimensionType: deleteDimension.type,
-        dimensionId: deleteDimension.dimension.id,
-      }).unwrap();
-      setDeleteDimension(null);
-      setDeleteError('');
-      toast({
-        title: 'Valeur supprimée du référentiel',
-        variant: 'success',
-      });
-    } catch (error) {
-      setDeleteError(getApiErrorMessage(
-        error,
-        'Cette valeur ne peut pas être supprimée.',
-      ));
-    }
-  }
-
-
   return (
     <div className="grid gap-1 border-b border-border py-3 last:border-b-0 sm:grid-cols-[160px_1fr]">
       <dt className="text-sm text-muted-foreground">{label}</dt>
@@ -318,6 +269,54 @@ function ProductReferenceDetailsDrawer({
         ? 'Dimension archivée'
         : 'Dimension réactivée',
     );
+  }
+
+  async function markDimensionReviewed(type, dimension) {
+    try {
+      await reviewDimension({
+        productId: product.id,
+        dimensionType: type,
+        dimensionId: dimension.id,
+      }).unwrap();
+      toast({
+        title: 'Valeur marquée comme vérifiée',
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Revue impossible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    }
+  }
+
+  function requestDimensionDeletion(type, dimension) {
+    setDeleteError('');
+    setDeleteDimension({ type, dimension });
+  }
+
+  async function confirmDimensionDeletion() {
+    if (!deleteDimension) return;
+
+    try {
+      await deleteDimensionMutation({
+        productId: product.id,
+        dimensionType: deleteDimension.type,
+        dimensionId: deleteDimension.dimension.id,
+      }).unwrap();
+      setDeleteDimension(null);
+      setDeleteError('');
+      toast({
+        title: 'Valeur supprimée du référentiel',
+        variant: 'success',
+      });
+    } catch (error) {
+      setDeleteError(getApiErrorMessage(
+        error,
+        'Cette valeur ne peut pas être supprimée.',
+      ));
+    }
   }
 
   return (
