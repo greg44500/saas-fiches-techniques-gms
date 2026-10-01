@@ -10,43 +10,74 @@ import {
   getVisiblePlatformNavigationSections,
 } from '@/features/platform/lib/platform-navigation';
 
+function flattenNavigation(navigation) {
+  return navigation.flatMap((entry) => (
+    entry.type === 'group' ? entry.items : [entry]
+  ));
+}
+
+function getVisibleNavigation(applicationGlobalPermissions) {
+  return getVisiblePlatformNavigationSections(
+    {
+      status: 'active',
+      permissions: ['platform:overview:read'],
+      applicationGlobalPermissions,
+    },
+    APPLICATION_PLATFORM_NAVIGATION,
+  );
+}
+
 describe('application Platform navigation composition', () => {
-  it('ajoute Référentiel Produits uniquement avec la permission globale Produit', () => {
-    const withoutProductPermission = getVisiblePlatformNavigationSections(
-      {
-        status: 'active',
-        permissions: ['platform:overview:read'],
-        applicationGlobalPermissions: [],
-      },
-      APPLICATION_PLATFORM_NAVIGATION,
-    );
+  it('masque Gestion des référentiels sans permission métier globale', () => {
+    const items = flattenNavigation(getVisibleNavigation([]));
 
     expect(
-      withoutProductPermission.flatMap((entry) => (
-        entry.type === 'group' ? entry.items : [entry]
-      )).some(({ id }) => id === 'product-reference'),
+      items.some(({ id }) => id === 'reference-management'),
     ).toBe(false);
+  });
 
-    const withProductPermission = getVisiblePlatformNavigationSections(
-      {
-        status: 'active',
-        permissions: ['platform:overview:read'],
-        applicationGlobalPermissions: ['product:reference:read'],
-      },
-      APPLICATION_PLATFORM_NAVIGATION,
+  it('affiche une seule entrée avec la permission globale Produit', () => {
+    const items = flattenNavigation(
+      getVisibleNavigation(['product:reference:read']),
     );
 
-    expect(
-      withProductPermission.flatMap((entry) => (
-        entry.type === 'group' ? entry.items : [entry]
-      )),
-    ).toEqual(expect.arrayContaining([
+    expect(items).toEqual(expect.arrayContaining([
       expect.objectContaining({
-        id: 'product-reference',
-        label: 'Référentiel Produits',
-        to: '/product-reference',
+        id: 'reference-management',
+        label: 'Gestion des référentiels',
+        to: '/reference-management',
       }),
     ]));
+    expect(
+      items.filter(({ id }) => id === 'reference-management'),
+    ).toHaveLength(1);
+  });
+
+  it('affiche la même entrée avec la permission globale Fournisseurs', () => {
+    const items = flattenNavigation(
+      getVisibleNavigation(['supplier:reference:read']),
+    );
+
+    expect(items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'reference-management',
+        label: 'Gestion des référentiels',
+        to: '/reference-management',
+      }),
+    ]));
+  });
+
+  it('ne duplique pas l’entrée quand les deux permissions sont effectives', () => {
+    const items = flattenNavigation(
+      getVisibleNavigation([
+        'product:reference:read',
+        'supplier:reference:read',
+      ]),
+    );
+
+    expect(
+      items.filter(({ id }) => id === 'reference-management'),
+    ).toHaveLength(1);
   });
 
   it('conserve le Core puis ajoute un séparateur avant les sections applicatives', () => {
