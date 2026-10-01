@@ -27,6 +27,14 @@ const productIdParamsSchema = z.strictObject({
     productId: objectIdSchema,
 });
 
+
+const workspaceProductDimensionUndoParamsSchema = z.strictObject({
+    workspaceId: objectIdSchema,
+    productId: objectIdSchema,
+    dimensionType: z.enum(['VARIETY', 'CHARACTERISTIC']),
+    dimensionId: objectIdSchema,
+});
+
 const variantIdParamsSchema = z.strictObject({
     workspaceId: objectIdSchema,
     variantId: objectIdSchema,
@@ -194,6 +202,13 @@ const globalProductListQuerySchema = z.strictObject({
 
 const globalProductIdParamsSchema = z.strictObject({
     productId: objectIdSchema,
+});
+
+
+const globalProductDimensionParamsSchema = z.strictObject({
+    productId: objectIdSchema,
+    dimensionType: z.enum(['VARIETY', 'CHARACTERISTIC']),
+    dimensionId: objectIdSchema,
 });
 
 const globalProductVariantParamsSchema = z.strictObject({
@@ -370,6 +385,7 @@ export {
     duplicateCheckBodySchema,
     globalCategoryParamsSchema,
     globalProductCharacteristicParamsSchema,
+    globalProductDimensionParamsSchema,
     globalImportIdParamsSchema,
     globalProductIdParamsSchema,
     globalProductVarietyParamsSchema,
@@ -395,4 +411,5 @@ export {
     updateVariantStatusBodySchema,
     variantIdParamsSchema,
     workspaceIdParamsSchema,
+    workspaceProductDimensionUndoParamsSchema,
 };

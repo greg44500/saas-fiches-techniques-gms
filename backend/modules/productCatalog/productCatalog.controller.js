@@ -20,6 +20,7 @@ import {
 } from './productCatalogImportUpload.service.js';
 import {
     listProductDimensions,
+    undoProductDimensionAddition,
 } from './productReferenceDimension.service.js';
 import {
     submitReferenceContribution,
@@ -78,6 +79,22 @@ const dimensions = async (req, res) => {
     res.status(200).json({
         status: 'success',
         data: result,
+    });
+};
+
+
+const undoDimensionAddition = async (req, res) => {
+    const dimension = await undoProductDimensionAddition({
+        actorId: req.user._id,
+        workspaceId: req.workspace._id,
+        productId: req.validated.params.productId,
+        type: req.validated.params.dimensionType,
+        dimensionId: req.validated.params.dimensionId,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { dimension },
     });
 };
 
@@ -227,4 +244,5 @@ export {
     previewImport,
     search,
     summary,
+    undoDimensionAddition,
 };

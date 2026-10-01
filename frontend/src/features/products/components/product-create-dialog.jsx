@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -224,11 +225,19 @@ function ProductCreateDialog({
         <DialogOverlay />
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-2xl overflow-y-auto" initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>Créer un Produit</DialogTitle>
-            <DialogDescription>
-              {isGlobal
-                ? 'Recherchez d’abord l’existant avant de publier une nouvelle identité globale.'
-                : 'Recherchez d’abord l’existant. Une nouvelle identité sera soumise au référentiel global pour revue.'}
+            <div className="flex items-center gap-2">
+              <DialogTitle>Créer un Produit</DialogTitle>
+              <InfoTooltip
+                content={
+                  isGlobal
+                    ? 'Recherchez d’abord l’existant avant de publier une nouvelle identité globale.'
+                    : 'Recherchez d’abord l’existant. Une nouvelle identité sera soumise au référentiel global pour revue.'
+                }
+                label="Aide sur la création d’un Produit"
+              />
+            </div>
+            <DialogDescription className="sr-only">
+              Recherchez l’existant avant de créer un nouveau Produit.
             </DialogDescription>
           </DialogHeader>
 
@@ -289,13 +298,27 @@ function ProductCreateDialog({
               </div>
             )}
 
+            {duplicateResult
+              && !duplicateResult.exactMatch
+              && candidates.length === 0 && (
+              <div
+                className="rounded-lg border border-border bg-muted/20 p-3"
+                role="status"
+              >
+                <p className="text-sm font-medium">
+                  Aucun Produit existant correspondant n’a été trouvé.
+                </p>
+              </div>
+            )}
+
             {candidates.length > 0 && !duplicateResult?.exactMatch && (
               <section className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
-                <div>
+                <div className="flex items-center gap-1">
                   <h3 className="font-medium">Produits proches à examiner</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Confirmez pour chaque candidat qu’il s’agit bien d’un Produit différent.
-                  </p>
+                  <InfoTooltip
+                    content="Confirmez pour chaque candidat qu’il s’agit bien d’un Produit différent."
+                    label="Aide sur les Produits proches"
+                  />
                 </div>
                 <ul className="space-y-2">
                   {candidates.map((candidate) => (
@@ -323,13 +346,16 @@ function ProductCreateDialog({
 
             {duplicateResult && !duplicateResult.exactMatch && everyCandidateReviewed && (
               <section className="space-y-4 border-t border-border pt-5">
-                <div>
+                <div className="flex items-center gap-1">
                   <h3 className="font-medium">Nouvelle identité</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {isGlobal
-                      ? 'Elle sera publiée dans le référentiel global après le dernier contrôle serveur.'
-                      : 'Elle sera utilisable immédiatement dans cet espace de travail avec le statut À valider, puis harmonisée par la gouvernance du référentiel.'}
-                  </p>
+                  <InfoTooltip
+                    content={
+                      isGlobal
+                        ? 'Elle sera publiée dans le référentiel global après le dernier contrôle serveur.'
+                        : 'Elle sera utilisable immédiatement dans cet espace de travail avec le statut À valider, puis harmonisée par la gouvernance du référentiel.'
+                    }
+                    label="Aide sur la nouvelle identité"
+                  />
                 </div>
 
                 <Field>

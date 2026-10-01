@@ -2,6 +2,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/components/shared/info-tooltip', () => ({
+  InfoTooltip: ({ content, label }) => (
+    <button
+      aria-label={label}
+      data-content={content}
+      type="button"
+    />
+  ),
+}));
+
 const mocks = vi.hoisted(() => ({
   duplicateCheck: vi.fn(),
   createProduct: vi.fn(),
@@ -64,6 +74,42 @@ function resolved(value) {
 describe('ProductCreateDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+
+  it('confirme explicitement qu’aucun Produit existant ne correspond avant la création', async () => {
+    const user = userEvent.setup();
+
+    mocks.duplicateCheck.mockReturnValue(resolved({
+      exactMatch: null,
+      candidates: [],
+    }));
+
+    render(
+      <ProductCreateDialog
+        metadata={metadata}
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        onUseExisting={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Nom du Produit'), 'Abricotier');
+    await user.click(screen.getByRole('button', {
+      name: 'Rechercher l’existant',
+    }));
+
+    expect(await screen.findByText(
+      'Aucun Produit existant correspondant n’a été trouvé.',
+    )).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Aide sur la création d’un Produit',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Aide sur la nouvelle identité',
+    })).toBeInTheDocument();
   });
 
   it('privilégie une correspondance exacte au lieu de créer un doublon', async () => {

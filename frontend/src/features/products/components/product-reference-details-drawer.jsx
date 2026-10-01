@@ -1,12 +1,23 @@
-import { useRef, useState } from 'react';
-import { Pencil, Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Archive,
+  CircleCheck,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { EntityDetailsDrawer } from '@/components/shared/entity-details-drawer';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Tabs,
   TabsContent,
@@ -14,8 +25,10 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
+  useDeleteProductReferenceDimensionMutation,
   useGetProductReferenceDetailQuery,
   useGetProductReferenceDimensionsQuery,
+  useReviewProductReferenceDimensionMutation,
   useUpdateProductReferenceCharacteristicStatusMutation,
   useUpdateProductReferenceStatusMutation,
   useUpdateProductReferenceVarietyStatusMutation,
@@ -46,8 +59,19 @@ function AdminDetailRow({ label, value }) {
   );
 }
 
+
+function normalizeDimensionSearch(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLocaleLowerCase('fr-FR');
+}
+
 function ProductReferenceDetailsDrawer({
   canManage,
+  initialDimensionFilter = 'active',
+  initialTab = 'product',
   metadata,
   onClose,
   open,
@@ -60,6 +84,13 @@ function ProductReferenceDetailsDrawer({
   const [editDimension, setEditDimension] = useState(null);
   const [createVariantOpen, setCreateVariantOpen] = useState(false);
   const [createDimensionOpen, setCreateDimensionOpen] = useState(false);
+  const [dimensionSearch, setDimensionSearch] = useState('');
+  const [dimensionFilter, setDimensionFilter] = useState(
+    initialDimensionFilter,
+  );
+  const [deleteDimension, setDeleteDimension] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const query = useGetProductReferenceDetailQuery(productId, { skip: !productId });
   const dimensionsQuery = useGetProductReferenceDimensionsQuery(productId, {
@@ -71,6 +102,17 @@ function ProductReferenceDetailsDrawer({
     useUpdateProductReferenceVarietyStatusMutation();
   const [updateCharacteristicStatus, characteristicStatusState] =
     useUpdateProductReferenceCharacteristicStatusMutation();
+  const [reviewDimension, reviewDimensionState] =
+    useReviewProductReferenceDimensionMutation();
+  const [deleteDimensionMutation, deleteDimensionState] =
+    useDeleteProductReferenceDimensionMutation();
+
+  useEffect(() => {
+    if (!open) return;
+    setActiveTab(initialTab);
+    setDimensionFilter(initialDimensionFilter);
+    setDimensionSearch('');
+  }, [initialDimensionFilter, initialTab, open, productId]);
 
   if (query.data) retainedRef.current = query.data;
   const detail = query.data ?? retainedRef.current;
@@ -84,13 +126,97 @@ function ProductReferenceDetailsDrawer({
       ({ value, label }) => [value, label],
     ),
   );
+  const dimensionCount = varieties.length + characteristics.length;
+  const pendingDimensionCount = [
+    ...varieties,
+    ...characteristics,
+  ].filter((dimension) => (
+    dimension.status === 'ACTIVE'
+    && dimension.qualityReviewStatus === 'PENDING'
+  )).length;
+  const activeDimensionCount = [
+    ...varieties,
+    ...characteristics,
+  ].filter((dimension) => dimension.status === 'ACTIVE').length;
+  const archivedDimensionCount = dimensionCount - activeDimensionCount;
+
+  const matchesDimensionFilter = (dimension) => {
+    if (dimensionFilter === 'pending') {
+      return (
+        dimension.status === 'ACTIVE'
+        && dimension.qualityReviewStatus === 'PENDING'
+      );
+    }
+    if (dimensionFilter === 'active') {
+      return dimension.status === 'ACTIVE';
+    }
+    if (dimensionFilter === 'archived') {
+      return dimension.status === 'ARCHIVED';
+    }
+    return true;
+  };
+
+  const visibleVarieties = varieties.filter(matchesDimensionFilter);
+  const visibleCharacteristics = characteristics.filter(matchesDimensionFilter);
+  const visibleDimensionCount =
+    visibleVarieties.length + visibleCharacteristics.length;
+  const normalizedDimensionSearch = normalizeDimensionSearch(dimensionSearch);
+  const dimensionEntries = [
+    ...visibleVarieties.map((variety) => ({
+      key: 'VARIETY:' + variety.id,
+      name: variety.name,
+      typeLabel: 'Variété',
+      searchText: normalizeDimensionSearch([
+        variety.name,
+        ...(variety.aliases ?? []),
+        'Variété',
+      ].join(' ')),
+    })),
+    ...visibleCharacteristics.map((characteristic) => ({
+      key: 'CHARACTERISTIC:' + characteristic.id,
+      name: characteristic.name,
+      typeLabel:
+        characteristicKindLabels.get(characteristic.kind)
+        ?? characteristic.kind,
+      searchText: normalizeDimensionSearch([
+        characteristic.name,
+        ...(characteristic.aliases ?? []),
+        characteristicKindLabels.get(characteristic.kind)
+          ?? characteristic.kind,
+      ].join(' ')),
+    })),
+  ];
+  const matchingDimensionEntries = normalizedDimensionSearch
+    ? dimensionEntries.filter(({ searchText }) => (
+      searchText.includes(normalizedDimensionSearch)
+    ))
+    : dimensionEntries;
+  const matchingDimensionKeys = new Set(
+    matchingDimensionEntries.map(({ key }) => key),
+  );
+  const filteredVarieties = normalizedDimensionSearch
+    ? visibleVarieties.filter((variety) => (
+      matchingDimensionKeys.has('VARIETY:' + variety.id)
+    ))
+    : visibleVarieties;
+  const filteredCharacteristics = normalizedDimensionSearch
+    ? visibleCharacteristics.filter((characteristic) => (
+      matchingDimensionKeys.has('CHARACTERISTIC:' + characteristic.id)
+    ))
+    : visibleCharacteristics;
+  const dimensionSuggestions = normalizedDimensionSearch
+    ? matchingDimensionEntries.slice(0, 6)
+    : [];
+  const dimensionResultCount =
+    filteredVarieties.length + filteredCharacteristics.length;
   const pending = (
     productStatusState.isLoading
     || variantStatusState.isLoading
     || varietyStatusState.isLoading
     || characteristicStatusState.isLoading
+    || reviewDimensionState.isLoading
+    || deleteDimensionState.isLoading
   );
-
   if (!detail && !open) return null;
 
   async function run(action, successMessage) {
@@ -145,6 +271,54 @@ function ProductReferenceDetailsDrawer({
     );
   }
 
+  async function markDimensionReviewed(type, dimension) {
+    try {
+      await reviewDimension({
+        productId: product.id,
+        dimensionType: type,
+        dimensionId: dimension.id,
+      }).unwrap();
+      toast({
+        title: 'Valeur marquée comme vérifiée',
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Revue impossible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    }
+  }
+
+  function requestDimensionDeletion(type, dimension) {
+    setDeleteError('');
+    setDeleteDimension({ type, dimension });
+  }
+
+  async function confirmDimensionDeletion() {
+    if (!deleteDimension) return;
+
+    try {
+      await deleteDimensionMutation({
+        productId: product.id,
+        dimensionType: deleteDimension.type,
+        dimensionId: deleteDimension.dimension.id,
+      }).unwrap();
+      setDeleteDimension(null);
+      setDeleteError('');
+      toast({
+        title: 'Valeur supprimée du référentiel',
+        variant: 'success',
+      });
+    } catch (error) {
+      setDeleteError(getApiErrorMessage(
+        error,
+        'Cette valeur ne peut pas être supprimée.',
+      ));
+    }
+  }
+
   return (
     <>
       <EntityDetailsDrawer
@@ -163,11 +337,11 @@ function ProductReferenceDetailsDrawer({
             title="Produit indisponible"
           />
         ) : product ? (
-          <Tabs defaultValue="product">
+          <Tabs onValueChange={setActiveTab} value={activeTab}>
             <TabsList aria-label="Administration du Produit" variant="section">
               <TabsTrigger value="product" variant="section">Produit</TabsTrigger>
-              <TabsTrigger value="dimensions" variant="section">Dimensions</TabsTrigger>
-              <TabsTrigger value="variants" variant="section">Références</TabsTrigger>
+              <TabsTrigger value="dimensions" variant="section">Dimensions ({dimensionCount})</TabsTrigger>
+              <TabsTrigger value="variants" variant="section">Références ({variants.length})</TabsTrigger>
               <TabsTrigger value="history" variant="section">Historique</TabsTrigger>
             </TabsList>
 
@@ -178,27 +352,29 @@ function ProductReferenceDetailsDrawer({
                     <ActionIconButton
                       Icon={Pencil}
                       label="Corriger le Produit"
+                      tooltipLabel="Corriger"
                       onClick={() => setEditProductOpen(true)}
                       variant="outline"
                     />
                     {product.status === 'ACTIVE' && (
-                      <Button
+                      <ActionIconButton
                         disabled={pending}
+                        Icon={Archive}
+                        label="Archiver le Produit"
                         onClick={() => changeProductStatus('ARCHIVED')}
-                        type="button"
+                        tooltipLabel="Archiver"
                         variant="outline"
-                      >
-                        Archiver
-                      </Button>
+                      />
                     )}
                     {product.status === 'ARCHIVED' && (
-                      <Button
+                      <ActionIconButton
                         disabled={pending}
+                        Icon={RotateCcw}
+                        label="Réactiver le Produit"
                         onClick={() => changeProductStatus('ACTIVE')}
-                        type="button"
-                      >
-                        Réactiver
-                      </Button>
+                        tooltipLabel="Réactiver"
+                        variant="outline"
+                      />
                     )}
                   </div>
                 )}
@@ -225,10 +401,63 @@ function ProductReferenceDetailsDrawer({
             </TabsContent>
 
             <TabsContent value="dimensions" variant="section">
-              <div className="space-y-5">
-                {canManage && product.status === 'ACTIVE' && (
-                  <div className="flex justify-end">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                  {dimensionCount > 0 && (
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="relative">
+                        <Search
+                          aria-hidden="true"
+                          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                        />
+                        <Input
+                          aria-label="Rechercher une caractéristique"
+                          className="pl-9 pr-10"
+                          onChange={(event) => setDimensionSearch(event.target.value)}
+                          placeholder="Rechercher une caractéristique"
+                          value={dimensionSearch}
+                        />
+                        {dimensionSearch && (
+                          <button
+                            aria-label="Effacer la recherche"
+                            className="absolute right-2 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                            onClick={() => setDimensionSearch('')}
+                            type="button"
+                          >
+                            <X aria-hidden="true" className="size-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      {normalizedDimensionSearch && dimensionSuggestions.length > 0 && (
+                        <ul
+                          aria-label="Suggestions de dimensions"
+                          className="overflow-hidden rounded-lg border border-border bg-background"
+                        >
+                          {dimensionSuggestions.map((suggestion) => (
+                            <li key={suggestion.key}>
+                              <button
+                                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
+                                onClick={() => setDimensionSearch(suggestion.name)}
+                                type="button"
+                              >
+                                <span className="font-medium">
+                                  {suggestion.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {suggestion.typeLabel}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {canManage && product.status === 'ACTIVE' && (
                     <Button
+                      className="shrink-0"
                       onClick={() => setCreateDimensionOpen(true)}
                       type="button"
                       variant="outline"
@@ -236,81 +465,185 @@ function ProductReferenceDetailsDrawer({
                       <Plus aria-hidden="true" className="size-4" />
                       Enrichir le référentiel
                     </Button>
-                  </div>
+                  )}
+                </div>
+
+                <div
+                  aria-label="Filtrer les Dimensions"
+                  className="flex flex-wrap gap-2"
+                  role="group"
+                >
+                  {[
+                    {
+                      value: 'pending',
+                      label: 'À vérifier',
+                      count: pendingDimensionCount,
+                    },
+                    {
+                      value: 'active',
+                      label: 'Actives',
+                      count: activeDimensionCount,
+                    },
+                    {
+                      value: 'archived',
+                      label: 'Archivées',
+                      count: archivedDimensionCount,
+                    },
+                    {
+                      value: 'all',
+                      label: 'Toutes',
+                      count: dimensionCount,
+                    },
+                  ].map((filter) => (
+                    <Button
+                      aria-pressed={dimensionFilter === filter.value}
+                      key={filter.value}
+                      onClick={() => {
+                        setDimensionFilter(filter.value);
+                        setDimensionSearch('');
+                      }}
+                      size="sm"
+                      type="button"
+                      variant={
+                        dimensionFilter === filter.value
+                          ? 'default'
+                          : 'outline'
+                      }
+                    >
+                      {filter.label} ({filter.count})
+                    </Button>
+                  ))}
+                </div>
+
+                {normalizedDimensionSearch && (
+                  <p className="text-xs text-muted-foreground">
+                    {dimensionResultCount}{' '}
+                    {dimensionResultCount > 1 ? 'résultats' : 'résultat'}
+                    {' '}sur {visibleDimensionCount} dimensions
+                  </p>
                 )}
 
                 <section className="space-y-3">
-                  <h3 className="text-sm font-semibold">Variétés</h3>
-                  {varieties.length === 0 ? (
+                  <h3 className="text-sm font-semibold">
+                    Variétés ({visibleVarieties.length})
+                  </h3>
+                  {filteredVarieties.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Aucune variété n’est définie pour ce Produit.
+                      {normalizedDimensionSearch
+                        ? 'Aucune variété ne correspond à cette recherche.'
+                        : dimensionFilter === 'pending'
+                          ? 'Aucune variété à vérifier.'
+                          : 'Aucune variété dans cette vue.'}
                     </p>
                   ) : (
                     <ul className="space-y-2">
-                      {varieties.map((variety) => (
+                      {filteredVarieties.map((variety) => (
                         <li
-                          className="rounded-lg border border-border p-3"
+                          className="rounded-lg border border-border px-3 py-2"
                           key={variety.id}
                         >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <p className="font-medium">{variety.name}</p>
-                              {variety.aliases?.length > 0 && (
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  Synonymes : {variety.aliases.join(', ')}
-                                </p>
-                              )}
-                            </div>
-                            <StatusBadge tone={getProductStatusTone(variety.status)}>
-                              {getProductStatusLabel(metadata, variety.status)}
-                            </StatusBadge>
-                          </div>
-                          {canManage && (
-                            <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-                              <Button
-                                disabled={pending}
-                                onClick={() => setEditDimension({
-                                  type: 'VARIETY',
-                                  dimension: variety,
-                                })}
-                                size="sm"
-                                type="button"
-                                variant="outline"
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p
+                                className="truncate font-medium"
+                                title={
+                                  variety.aliases?.length
+                                    ? 'Synonymes : ' + variety.aliases.join(', ')
+                                    : undefined
+                                }
                               >
-                                Corriger
-                              </Button>
-                              {variety.status === 'ACTIVE' && (
-                                <Button
-                                  disabled={pending}
-                                  onClick={() => changeDimensionStatus(
-                                    'VARIETY',
-                                    variety,
-                                    'ARCHIVED',
-                                  )}
-                                  size="sm"
-                                  type="button"
-                                  variant="outline"
+                                {variety.name}
+                              </p>
+                              <StatusBadge
+                                className="shrink-0 py-0.5"
+                                tone={getProductStatusTone(variety.status)}
+                              >
+                                {getProductStatusLabel(metadata, variety.status)}
+                              </StatusBadge>
+                              {variety.qualityReviewStatus === 'PENDING'
+                                && variety.status === 'ACTIVE' && (
+                                <StatusBadge
+                                  className="shrink-0 py-0.5"
+                                  tone="warning"
                                 >
-                                  Archiver
-                                </Button>
-                              )}
-                              {variety.status === 'ARCHIVED'
-                                && product.status === 'ACTIVE' && (
-                                <Button
-                                  disabled={pending}
-                                  onClick={() => changeDimensionStatus(
-                                    'VARIETY',
-                                    variety,
-                                    'ACTIVE',
-                                  )}
-                                  size="sm"
-                                  type="button"
-                                >
-                                  Réactiver
-                                </Button>
+                                  Nouveau
+                                </StatusBadge>
                               )}
                             </div>
-                          )}
+                            {canManage && (
+                              <div className="flex shrink-0 items-center gap-2">
+                                {variety.qualityReviewStatus === 'PENDING'
+                                  && variety.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={CircleCheck}
+                                    label={
+                                      'Marquer la variété '
+                                      + variety.name
+                                      + ' comme vérifiée'
+                                    }
+                                    onClick={() => markDimensionReviewed(
+                                      'VARIETY',
+                                      variety,
+                                    )}
+                                    tooltipLabel="Marquer comme vérifiée"
+                                    variant="outline"
+                                  />
+                                )}
+                                <ActionIconButton
+                                  disabled={pending}
+                                  Icon={Pencil}
+                                  label={'Corriger la variété ' + variety.name}
+                                  onClick={() => setEditDimension({
+                                    type: 'VARIETY',
+                                    dimension: variety,
+                                  })}
+                                  tooltipLabel="Corriger"
+                                  variant="outline"
+                                />
+                                {variety.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={Archive}
+                                    label={'Archiver la variété ' + variety.name}
+                                    onClick={() => changeDimensionStatus(
+                                      'VARIETY',
+                                      variety,
+                                      'ARCHIVED',
+                                    )}
+                                    tooltipLabel="Archiver"
+                                    variant="outline"
+                                  />
+                                )}
+                                {variety.status === 'ARCHIVED'
+                                  && product.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={RotateCcw}
+                                    label={'Réactiver la variété ' + variety.name}
+                                    onClick={() => changeDimensionStatus(
+                                      'VARIETY',
+                                      variety,
+                                      'ACTIVE',
+                                    )}
+                                    tooltipLabel="Réactiver"
+                                    variant="outline"
+                                  />
+                                )}
+                                <ActionIconButton
+                                  disabled={pending}
+                                  Icon={Trash2}
+                                  label={'Supprimer la variété ' + variety.name}
+                                  onClick={() => requestDimensionDeletion(
+                                    'VARIETY',
+                                    variety,
+                                  )}
+                                  tooltipLabel="Supprimer"
+                                  variant="outline"
+                                />
+                              </div>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -318,79 +651,146 @@ function ProductReferenceDetailsDrawer({
                 </section>
 
                 <section className="space-y-3">
-                  <h3 className="text-sm font-semibold">Caractéristiques</h3>
-                  {characteristics.length === 0 ? (
+                  <h3 className="text-sm font-semibold">
+                    Caractéristiques ({visibleCharacteristics.length})
+                  </h3>
+                  {filteredCharacteristics.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Aucune caractéristique n’est définie pour ce Produit.
+                      {normalizedDimensionSearch
+                        ? 'Aucune caractéristique ne correspond à cette recherche.'
+                        : dimensionFilter === 'pending'
+                          ? 'Aucune caractéristique à vérifier.'
+                          : 'Aucune caractéristique dans cette vue.'}
                     </p>
                   ) : (
                     <ul className="space-y-2">
-                      {characteristics.map((characteristic) => (
+                      {filteredCharacteristics.map((characteristic) => (
                         <li
-                          className="rounded-lg border border-border p-3"
+                          className="rounded-lg border border-border px-3 py-2"
                           key={characteristic.id}
                         >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <p className="font-medium">{characteristic.name}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p
+                                className="truncate font-medium"
+                                title={
+                                  characteristic.aliases?.length
+                                    ? 'Synonymes : '
+                                      + characteristic.aliases.join(', ')
+                                    : undefined
+                                }
+                              >
+                                {characteristic.name}
+                              </p>
+                              <span className="shrink-0 text-xs text-muted-foreground">
                                 {characteristicKindLabels.get(characteristic.kind)
                                   ?? characteristic.kind}
-                                {characteristic.aliases?.length
-                                  ? ' · Synonymes : ' + characteristic.aliases.join(', ')
-                                  : ''}
-                              </p>
-                            </div>
-                            <StatusBadge tone={getProductStatusTone(characteristic.status)}>
-                              {getProductStatusLabel(metadata, characteristic.status)}
-                            </StatusBadge>
-                          </div>
-                          {canManage && (
-                            <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-                              <Button
-                                disabled={pending}
-                                onClick={() => setEditDimension({
-                                  type: 'CHARACTERISTIC',
-                                  dimension: characteristic,
-                                })}
-                                size="sm"
-                                type="button"
-                                variant="outline"
+                              </span>
+                              <StatusBadge
+                                className="shrink-0 py-0.5"
+                                tone={getProductStatusTone(characteristic.status)}
                               >
-                                Corriger
-                              </Button>
-                              {characteristic.status === 'ACTIVE' && (
-                                <Button
-                                  disabled={pending}
-                                  onClick={() => changeDimensionStatus(
-                                    'CHARACTERISTIC',
-                                    characteristic,
-                                    'ARCHIVED',
-                                  )}
-                                  size="sm"
-                                  type="button"
-                                  variant="outline"
+                                {getProductStatusLabel(
+                                  metadata,
+                                  characteristic.status,
+                                )}
+                              </StatusBadge>
+                              {characteristic.qualityReviewStatus === 'PENDING'
+                                && characteristic.status === 'ACTIVE' && (
+                                <StatusBadge
+                                  className="shrink-0 py-0.5"
+                                  tone="warning"
                                 >
-                                  Archiver
-                                </Button>
-                              )}
-                              {characteristic.status === 'ARCHIVED'
-                                && product.status === 'ACTIVE' && (
-                                <Button
-                                  disabled={pending}
-                                  onClick={() => changeDimensionStatus(
-                                    'CHARACTERISTIC',
-                                    characteristic,
-                                    'ACTIVE',
-                                  )}
-                                  size="sm"
-                                  type="button"
-                                >
-                                  Réactiver
-                                </Button>
+                                  Nouveau
+                                </StatusBadge>
                               )}
                             </div>
-                          )}
+                            {canManage && (
+                              <div className="flex shrink-0 items-center gap-2">
+                                {characteristic.qualityReviewStatus === 'PENDING'
+                                  && characteristic.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={CircleCheck}
+                                    label={
+                                      'Marquer la caractéristique '
+                                      + characteristic.name
+                                      + ' comme vérifiée'
+                                    }
+                                    onClick={() => markDimensionReviewed(
+                                      'CHARACTERISTIC',
+                                      characteristic,
+                                    )}
+                                    tooltipLabel="Marquer comme vérifiée"
+                                    variant="outline"
+                                  />
+                                )}
+                                <ActionIconButton
+                                  disabled={pending}
+                                  Icon={Pencil}
+                                  label={
+                                    'Corriger la caractéristique '
+                                    + characteristic.name
+                                  }
+                                  onClick={() => setEditDimension({
+                                    type: 'CHARACTERISTIC',
+                                    dimension: characteristic,
+                                  })}
+                                  tooltipLabel="Corriger"
+                                  variant="outline"
+                                />
+                                {characteristic.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={Archive}
+                                    label={
+                                      'Archiver la caractéristique '
+                                      + characteristic.name
+                                    }
+                                    onClick={() => changeDimensionStatus(
+                                      'CHARACTERISTIC',
+                                      characteristic,
+                                      'ARCHIVED',
+                                    )}
+                                    tooltipLabel="Archiver"
+                                    variant="outline"
+                                  />
+                                )}
+                                {characteristic.status === 'ARCHIVED'
+                                  && product.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={RotateCcw}
+                                    label={
+                                      'Réactiver la caractéristique '
+                                      + characteristic.name
+                                    }
+                                    onClick={() => changeDimensionStatus(
+                                      'CHARACTERISTIC',
+                                      characteristic,
+                                      'ACTIVE',
+                                    )}
+                                    tooltipLabel="Réactiver"
+                                    variant="outline"
+                                  />
+                                )}
+                                <ActionIconButton
+                                  disabled={pending}
+                                  Icon={Trash2}
+                                  label={
+                                    'Supprimer la caractéristique '
+                                    + characteristic.name
+                                  }
+                                  onClick={() => requestDimensionDeletion(
+                                    'CHARACTERISTIC',
+                                    characteristic,
+                                  )}
+                                  tooltipLabel="Supprimer"
+                                  variant="outline"
+                                />
+                              </div>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -438,35 +838,33 @@ function ProductReferenceDetailsDrawer({
 
                       {canManage && (
                         <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-                          <Button
+                          <ActionIconButton
                             disabled={pending}
+                            Icon={Pencil}
+                            label={'Corriger la référence ' + getVariantLabel(variant)}
                             onClick={() => setEditVariant(variant)}
-                            size="sm"
-                            type="button"
+                            tooltipLabel="Corriger"
                             variant="outline"
-                          >
-                            Corriger
-                          </Button>
+                          />
                           {variant.status === 'ACTIVE' && (
-                            <Button
+                            <ActionIconButton
                               disabled={pending}
+                              Icon={Archive}
+                              label={'Archiver la référence ' + getVariantLabel(variant)}
                               onClick={() => changeVariantStatus(variant, 'ARCHIVED')}
-                              size="sm"
-                              type="button"
+                              tooltipLabel="Archiver"
                               variant="outline"
-                            >
-                              Archiver
-                            </Button>
+                            />
                           )}
                           {variant.status === 'ARCHIVED' && product.status === 'ACTIVE' && (
-                            <Button
+                            <ActionIconButton
                               disabled={pending}
+                              Icon={RotateCcw}
+                              label={'Réactiver la référence ' + getVariantLabel(variant)}
                               onClick={() => changeVariantStatus(variant, 'ACTIVE')}
-                              size="sm"
-                              type="button"
-                            >
-                              Réactiver
-                            </Button>
+                              tooltipLabel="Réactiver"
+                              variant="outline"
+                            />
                           )}
                         </div>
                       )}
@@ -551,6 +949,28 @@ function ProductReferenceDetailsDrawer({
           open={Boolean(editVariant)}
           productId={product.id}
           variant={editVariant}
+        />
+      )}
+
+      {deleteDimension && (
+        <ConfirmationDialog
+          confirmLabel="Supprimer"
+          description={
+            'Supprimer « '
+            + deleteDimension.dimension.name
+            + ' » ? Cette action retire cette valeur du référentiel actif. '
+            + 'Elle sera refusée si une Référence Produit l’utilise.'
+          }
+          errorMessage={deleteError}
+          onCancel={() => {
+            setDeleteDimension(null);
+            setDeleteError('');
+          }}
+          onConfirm={confirmDimensionDeletion}
+          open
+          pending={deleteDimensionState.isLoading}
+          pendingLabel="Suppression…"
+          title="Supprimer cette valeur ?"
         />
       )}
 

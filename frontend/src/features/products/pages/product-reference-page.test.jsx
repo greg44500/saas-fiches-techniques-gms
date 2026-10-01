@@ -28,8 +28,16 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
 }));
 
 vi.mock('@/features/products/components/product-reference-details-drawer', () => ({
-  ProductReferenceDetailsDrawer: ({ open }) => (
-    open ? <div>Détail global ouvert</div> : null
+  ProductReferenceDetailsDrawer: ({
+    initialDimensionFilter,
+    initialTab,
+    open,
+  }) => (
+    open ? (
+      <div>
+        Détail global ouvert · {initialTab} · {initialDimensionFilter}
+      </div>
+    ) : null
   ),
 }));
 
@@ -97,6 +105,7 @@ const product = {
   aliases: ['Carottes'],
   category: { id: 'category-1', name: 'Légumes', status: 'ACTIVE' },
   status: 'ACTIVE',
+  dimensionReview: { pendingCount: 0 },
   updatedAt: '2026-09-23T08:00:00.000Z',
   variants: [{
     id: 'variant-1',
@@ -187,6 +196,107 @@ describe('ProductReferencePage', () => {
     );
   });
 
+
+  it('affiche des compteurs d’onglets basés sur les totaux filtrés', async () => {
+    const user = userEvent.setup();
+
+    mocks.productsQuery.mockImplementation((args) => ({
+      data: {
+        products: [product],
+        pagination: {
+          page: 1,
+          limit: args.limit,
+          total: args.categoryId === 'category-1' ? 7 : 264,
+          totalPages: 1,
+        },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    }));
+    mocks.contributionsQuery.mockImplementation((args) => ({
+      data: {
+        contributions: [],
+        pagination: {
+          page: 1,
+          limit: args.limit,
+          total: args.status === 'APPROVED' ? 2 : 4,
+          totalPages: args.status === 'APPROVED' ? 2 : 4,
+        },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    }));
+
+    renderPage();
+
+    expect(screen.getByRole('tab', { name: 'Référentiel (264)' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Contributions (4)' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Catégories (1)' }))
+      .toBeInTheDocument();
+
+    await user.click(screen.getByRole('combobox', {
+      name: 'Filtrer par catégorie',
+    }));
+    await user.click(screen.getByRole('option', { name: 'Légumes' }));
+
+    expect(await screen.findByRole('tab', { name: 'Référentiel (7)' }))
+      .toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', {
+      name: 'Contributions (4)',
+    }));
+    await user.click(screen.getByRole('combobox', {
+      name: 'Filtrer les contributions par statut',
+    }));
+    await user.click(screen.getByRole('option', { name: 'Approuvée' }));
+
+    expect(await screen.findByRole('tab', { name: 'Contributions (2)' }))
+      .toBeInTheDocument();
+  });
+
+
+  it('signale les nouvelles Dimensions et ouvre directement les lignes à vérifier', async () => {
+    const user = userEvent.setup();
+
+    mocks.productsQuery.mockReturnValue({
+      data: {
+        products: [{
+          ...product,
+          dimensionReview: {
+            pendingCount: 3,
+          },
+        }],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+
+    const notification = screen.getByRole('button', {
+      name: 'Vérifier 3 nouvelles valeurs de Carotte',
+    });
+    expect(notification).toBeInTheDocument();
+
+    await user.click(notification);
+
+    expect(screen.getByText(
+      'Détail global ouvert · dimensions · pending',
+    )).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Marquer Carotte comme vérifié',
+    })).not.toBeInTheDocument();
+  });
+
   it('rend les Références Produit accessibles au focus clavier', async () => {
     renderPage();
 
@@ -237,7 +347,7 @@ describe('ProductReferencePage', () => {
     const user = userEvent.setup();
     renderPage({ canManage: false });
 
-    await user.click(screen.getByRole('tab', { name: 'Catégories' }));
+    await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
 
     expect(screen.getByText('Légumes')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Produits actifs' }))
@@ -280,7 +390,7 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('button', { name: 'Importer' }));
     expect(screen.getByText('Import global ouvert')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'Catégories' }));
+    await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
     expect(screen.getByRole('button', { name: 'Créer une catégorie' }))
       .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Renommer Légumes' }))
@@ -307,7 +417,7 @@ describe('ProductReferencePage', () => {
     });
 
     renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Catégories' }));
+    await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
 
     expect(screen.getByText('Archivée')).toBeInTheDocument();
     expect(screen.getByRole('button', {
@@ -341,7 +451,7 @@ describe('ProductReferencePage', () => {
     });
 
     renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Contributions' }));
+    await user.click(screen.getByRole('tab', { name: 'Contributions (1)' }));
 
     expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
     expect(screen.getByText('Caractéristique · Désignation de qualité'))
@@ -385,7 +495,7 @@ describe('ProductReferencePage', () => {
     });
 
     renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Contributions' }));
+    await user.click(screen.getByRole('tab', { name: 'Contributions (1)' }));
 
     expect(screen.getByText(/Valeurs proches : Gala/i)).toBeInTheDocument();
 
@@ -406,6 +516,6 @@ describe('ProductReferencePage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
 
-    expect(screen.getByText('Détail global ouvert')).toBeInTheDocument();
+    expect(screen.getByText('Détail global ouvert · product · active')).toBeInTheDocument();
   });
 });

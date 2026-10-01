@@ -244,6 +244,52 @@ describe('M-002 product catalog HTTP contract', () => {
         expect(otherWorkspaceSearch.body.data.results).toHaveLength(0);
     });
 
+    it('permet de retirer immédiatement une Variété ajoutée par erreur et encore inutilisée', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Abricot undo Workspace',
+        });
+        const headers = bearer(ownerContext.token);
+
+        const created = await request(app)
+            .post(`${basePath()}/contributions`)
+            .set(headers)
+            .send({
+                type: 'VARIETY',
+                productId: reference.product._id.toString(),
+                value: 'Roussillon',
+            });
+
+        expect(created.status).toBe(201);
+        expect(created.body.data.classification).toBe('AUTO_PUBLISHABLE');
+
+        const varietyId = created.body.data.publishedReference.id;
+        const undone = await request(app)
+            .post(
+                `${basePath()}/${reference.product._id.toString()}/dimensions/VARIETY/${varietyId}/undo`,
+            )
+            .set(headers);
+
+        expect(undone.status).toBe(200);
+        expect(undone.body.data.dimension).toMatchObject({
+            id: varietyId,
+            name: 'Roussillon',
+            status: 'ARCHIVED',
+        });
+
+        const dimensions = await request(app)
+            .get(
+                `${basePath()}/${reference.product._id.toString()}/dimensions`,
+            )
+            .set(headers);
+
+        expect(dimensions.status).toBe(200);
+        expect(dimensions.body.data.varieties).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ id: varietyId }),
+            ]),
+        );
+    });
+
     it('applique RBAC et validation des ObjectIds', async () => {
         const member = await createWorkspaceMemberFixture({
             workspaceId: ownerContext.workspace._id,

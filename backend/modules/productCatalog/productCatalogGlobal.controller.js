@@ -38,7 +38,9 @@ import {
 import {
     createProductCharacteristic,
     createProductVariety,
+    deleteProductDimension,
     listProductDimensions,
+    undoProductDimensionAddition,
     updateProductCharacteristic,
     updateProductCharacteristicStatus,
     updateProductVariety,
@@ -48,6 +50,9 @@ import {
     listReferenceContributions,
     reviewReferenceContribution,
 } from './productReferenceContribution.service.js';
+import {
+    markProductDimensionReviewed,
+} from './productReferenceReview.service.js';
 
 const access = async (req, res) => {
     const authorization = await resolveApplicationGlobalAuthorization({
@@ -146,7 +151,64 @@ const dimensions = async (req, res) => {
         includeArchived: true,
         includeProvisional: true,
     });
-    res.status(200).json({ status: 'success', data: result });
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            ...result,
+            review: {
+                pendingCount: [
+                    ...result.varieties,
+                    ...result.characteristics,
+                ].filter((dimension) => (
+                    dimension.status === 'ACTIVE'
+                    && dimension.qualityReviewStatus === 'PENDING'
+                )).length,
+            },
+        },
+    });
+};
+
+const reviewDimension = async (req, res) => {
+    const dimension = await markProductDimensionReviewed({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        type: req.validated.params.dimensionType,
+        dimensionId: req.validated.params.dimensionId,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { dimension },
+    });
+};
+
+const deleteDimension = async (req, res) => {
+    const dimension = await deleteProductDimension({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        type: req.validated.params.dimensionType,
+        dimensionId: req.validated.params.dimensionId,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { dimension },
+    });
+};
+
+const undoDimensionAddition = async (req, res) => {
+    const dimension = await undoProductDimensionAddition({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        type: req.validated.params.dimensionType,
+        dimensionId: req.validated.params.dimensionId,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { dimension },
+    });
 };
 
 const createVarietyController = async (req, res) => {
@@ -335,6 +397,7 @@ export {
     contributions,
     createVariantController,
     detail,
+    deleteDimension,
     dimensions,
     duplicateCheck,
     inspectImport,
@@ -342,12 +405,14 @@ export {
     metadata,
     previewImport,
     reviewContribution,
+    reviewDimension,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,
     updateCategoryStatusController,
     updateProductController,
     updateProductStatusController,
+    undoDimensionAddition,
     updateVariantController,
     updateVarietyController,
     updateVarietyStatusController,

@@ -29,6 +29,9 @@ import {
     listProductReferenceEvents,
 } from './productReferenceEvent.service.js';
 import {
+    getProductDimensionReviewSummaries,
+} from './productReferenceReview.service.js';
+import {
     canonicalProductMatchesSearch,
     compareProductVariants,
     productVariantMatchesSearch,
@@ -251,9 +254,20 @@ const listGlobalProducts = async ({
         (page - 1) * limit,
         page * limit,
     );
+    const reviewSummaries = await getProductDimensionReviewSummaries({
+        productIds: pagedProducts.map(({ id }) => id),
+    });
 
     return {
-        products: pagedProducts,
+        products: pagedProducts.map((product) => {
+            const review = reviewSummaries.get(product.id);
+            return {
+                ...product,
+                dimensionReview: {
+                    pendingCount: review?.pendingCount ?? 0,
+                },
+            };
+        }),
         pagination: {
             page,
             limit,

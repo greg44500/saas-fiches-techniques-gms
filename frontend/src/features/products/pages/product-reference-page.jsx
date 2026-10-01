@@ -60,7 +60,12 @@ function ProductReferencePage({ canManage }) {
   const [referenceStatus, setReferenceStatus] = useState('ACTIVE');
   const [contributionStatus, setContributionStatus] =
     useState('PENDING_REVIEW');
-  const [drawerState, setDrawerState] = useState({ open: false, productId: null });
+  const [drawerState, setDrawerState] = useState({
+    open: false,
+    productId: null,
+    initialTab: 'product',
+    initialDimensionFilter: 'active',
+  });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
@@ -73,18 +78,18 @@ function ProductReferencePage({ canManage }) {
       status: referenceStatus,
       categoryId: categoryId === ALL_REFERENCE_CATEGORIES ? undefined : categoryId,
       q: search || undefined,
-      page,
-      limit: pageSize,
+      page: section === 'reference' ? page : 1,
+      limit: section === 'reference' ? pageSize : 1,
     },
-    { skip: section !== 'reference' },
+    { skip: false },
   );
   const contributionsQuery = useListProductReferenceContributionsQuery(
     {
       status: contributionStatus,
-      page,
-      limit: pageSize,
+      page: section === 'contributions' ? page : 1,
+      limit: section === 'contributions' ? pageSize : 1,
     },
-    { skip: section !== 'contributions' },
+    { skip: false },
   );
   const [reviewContribution, reviewContributionState] =
     useReviewProductReferenceContributionMutation();
@@ -92,9 +97,12 @@ function ProductReferencePage({ canManage }) {
     useUpdateProductReferenceCategoryStatusMutation();
 
   useEffect(() => {
-    const totalPages = section === 'contributions'
-      ? contributionsQuery.data?.pagination?.totalPages
-      : productsQuery.data?.pagination?.totalPages;
+    const totalPages = section === 'reference'
+      ? productsQuery.data?.pagination?.totalPages
+      : section === 'contributions'
+        ? contributionsQuery.data?.pagination?.totalPages
+        : null;
+
     if (totalPages && page > totalPages) setPage(totalPages);
   }, [
     contributionsQuery.data?.pagination?.totalPages,
@@ -120,6 +128,10 @@ function ProductReferencePage({ canManage }) {
     [metadata?.productStatuses],
   );
 
+  const referenceCount = productsQuery.data?.pagination?.total ?? 0;
+  const contributionCount = contributionsQuery.data?.pagination?.total ?? 0;
+  const categoryCount = metadata?.categories?.length ?? 0;
+
   function changeSection(nextSection) {
     setSection(nextSection);
     setPage(1);
@@ -136,8 +148,17 @@ function ProductReferencePage({ canManage }) {
     setSearch(searchInput.trim());
   }
 
-  function openProduct(productId) {
-    setDrawerState({ open: true, productId });
+  function openProduct(
+    productId,
+    initialTab = 'product',
+    initialDimensionFilter = 'active',
+  ) {
+    setDrawerState({
+      open: true,
+      productId,
+      initialTab,
+      initialDimensionFilter,
+    });
   }
 
   function openCategoryProducts(category) {
@@ -149,6 +170,7 @@ function ProductReferencePage({ canManage }) {
     setContributionStatus('PENDING_REVIEW');
     setPage(1);
   }
+
 
   async function decideContribution(
     contribution,
@@ -208,56 +230,96 @@ function ProductReferencePage({ canManage }) {
     {
       id: 'name',
       header: 'Produit',
-      cell: (product) => (
-        <Tooltip>
-          <TooltipTrigger
-            render={(
-              <button
-                aria-label={'Références Produit de ' + product.name}
-                className="rounded-sm text-left font-medium underline decoration-dotted underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                type="button"
-              />
-            )}
-          >
-            {product.name}
-          </TooltipTrigger>
-          <TooltipContent align="start" className="max-w-80">
-            <div className="space-y-2">
-              <p className="font-medium">Références Produit</p>
-              {product.variants?.length ? (
-                <ul className="space-y-1.5">
-                  {product.variants.map((variant) => {
-                    const details = [
-                      variant.conservationType
-                        ? getConservationTypeLabel(
-                          metadata,
-                          variant.conservationType,
-                        )
-                        : null,
-                      variant.status === 'ARCHIVED' ? 'Archivée' : null,
-                    ].filter(Boolean);
+      cell: (product) => {
+        const pendingDimensionCount =
+          product.dimensionReview?.pendingCount ?? 0;
 
-                    return (
-                      <li key={variant.id}>
-                        <span className="font-medium">
-                          {getVariantLabel(variant)}
-                        </span>
-                        {details.length > 0 && (
-                          <span className="opacity-80">
-                            {' · ' + details.join(' · ')}
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p>Aucune Référence Produit exploitable</p>
-              )}
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      ),
+        return (
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger
+                render={(
+                  <button
+                    aria-label={'Références Produit de ' + product.name}
+                    className="rounded-sm text-left font-medium underline decoration-dotted underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    type="button"
+                  />
+                )}
+              >
+                {product.name}
+              </TooltipTrigger>
+              <TooltipContent align="start" className="max-w-80">
+                <div className="space-y-2">
+                  <p className="font-medium">Références Produit</p>
+                  {product.variants?.length ? (
+                    <ul className="space-y-1.5">
+                      {product.variants.map((variant) => {
+                        const details = [
+                          variant.conservationType
+                            ? getConservationTypeLabel(
+                              metadata,
+                              variant.conservationType,
+                            )
+                            : null,
+                          variant.status === 'ARCHIVED' ? 'Archivée' : null,
+                        ].filter(Boolean);
+
+                        return (
+                          <li key={variant.id}>
+                            <span className="font-medium">
+                              {getVariantLabel(variant)}
+                            </span>
+                            {details.length > 0 && (
+                              <span className="opacity-80">
+                                {' · ' + details.join(' · ')}
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p>Aucune Référence Produit exploitable</p>
+                  )}
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            {pendingDimensionCount > 0 && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={(
+                    <button
+                      aria-label={
+                        'Vérifier '
+                        + pendingDimensionCount
+                        + ' nouvelles valeurs de '
+                        + product.name
+                      }
+                      className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => openProduct(product.id, 'dimensions', 'pending')}
+                      type="button"
+                    />
+                  )}
+                >
+                  <StatusBadge
+                    className="min-w-6 justify-center px-1.5 py-0.5"
+                    tone="warning"
+                  >
+                    {pendingDimensionCount}
+                  </StatusBadge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {pendingDimensionCount}{' '}
+                  {pendingDimensionCount > 1
+                    ? 'nouvelles valeurs à vérifier'
+                    : 'nouvelle valeur à vérifier'}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: 'category',
@@ -537,9 +599,15 @@ function ProductReferencePage({ canManage }) {
 
       <Tabs onValueChange={changeSection} value={section}>
         <TabsList aria-label="Administration du référentiel Produits" variant="section">
-          <TabsTrigger value="reference" variant="section">Référentiel</TabsTrigger>
-          <TabsTrigger value="contributions" variant="section">Contributions</TabsTrigger>
-          <TabsTrigger value="categories" variant="section">Catégories</TabsTrigger>
+          <TabsTrigger value="reference" variant="section">
+            Référentiel ({referenceCount})
+          </TabsTrigger>
+          <TabsTrigger value="contributions" variant="section">
+            Contributions ({contributionCount})
+          </TabsTrigger>
+          <TabsTrigger value="categories" variant="section">
+            Catégories ({categoryCount})
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -742,6 +810,8 @@ function ProductReferencePage({ canManage }) {
       <ProductReferenceDetailsDrawer
         canManage={canManage}
         metadata={metadata}
+        initialDimensionFilter={drawerState.initialDimensionFilter}
+        initialTab={drawerState.initialTab}
         onClose={() => setDrawerState((current) => ({ ...current, open: false }))}
         open={drawerState.open}
         productId={drawerState.productId}

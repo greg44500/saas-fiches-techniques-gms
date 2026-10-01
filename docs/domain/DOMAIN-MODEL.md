@@ -302,9 +302,11 @@ CanonicalProduct
 
 ProductVariety
 → variété/cultivar facultatif
+→ revue qualité Platform : NOT_REQUIRED | PENDING | REVIEWED
 
 ProductCharacteristic
 → PRESENTATION | COMMERCIAL_TYPE | SIZE_FORMAT | COLOR | QUALITY_DESIGNATION | CUT
+→ revue qualité Platform : NOT_REQUIRED | PENDING | REVIEWED
 
 ProductVariant
 → rôle métier = Référence Produit
@@ -326,6 +328,8 @@ ReferenceContribution
 ```
 
 `createdBy` et `updatedBy` restent de l'audit. `contributedFromWorkspace` conserve une provenance sans devenir un ownership.
+
+Pour `ProductVariety` et `ProductCharacteristic`, `qualityReviewStatus`, `qualityReviewedAt` et `qualityReviewedBy` portent la revue qualité Platform sans modifier ni le lifecycle ni `governanceStatus`.
 
 ### 5.2 Identité et présentation
 

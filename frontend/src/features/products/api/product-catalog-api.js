@@ -91,6 +91,24 @@ const productCatalogApi = productCatalogApiBase.injectEndpoints({
       transformResponse: (response) => response.data,
       invalidatesTags: ['ProductCatalog', 'ProductReference'],
     }),
+    undoProductDimensionAddition: builder.mutation({
+      query: ({
+        workspaceId,
+        productId,
+        dimensionType,
+        dimensionId,
+      }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/products/' + productId
+          + '/dimensions/' + dimensionType
+          + '/' + dimensionId
+          + '/undo',
+        method: 'POST',
+      }),
+      transformResponse: (response) => response.data.dimension,
+      invalidatesTags: ['ProductCatalog', 'ProductReference'],
+    }),
     createVariant: builder.mutation({
       query: ({ workspaceId, productId, ...body }) => ({
         url: '/workspaces/' + workspaceId + '/products/' + productId + '/variants',
@@ -165,6 +183,7 @@ export const {
   useLazyGetWorkspaceProductDetailQuery,
   usePreviewProductImportMutation,
   useSearchProductsQuery,
+  useUndoProductDimensionAdditionMutation,
 } = productCatalogApi;
 
 export { productCatalogApi };
