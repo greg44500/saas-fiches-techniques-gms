@@ -427,7 +427,7 @@ describe('M-002 global product reference HTTP contract', () => {
 
         expect(deleted.status).toBe(409);
         expect(deleted.body.message).toMatch(
-            /utilisée par une Référence Produit/i,
+            /utilisée par 1 Référence Produit/i,
         );
     });
 

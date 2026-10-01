@@ -334,6 +334,9 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(screen.getByRole('button', {
       name: 'Archiver la variété Bergeron',
     })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {
+      name: 'Archivées (1)',
+    }));
     expect(screen.getByRole('button', {
       name: 'Réactiver la caractéristique Rouge',
     })).toBeInTheDocument();
