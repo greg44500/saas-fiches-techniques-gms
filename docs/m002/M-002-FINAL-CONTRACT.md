@@ -140,26 +140,43 @@ La gouvernance des valeurs est non bloquante : une nouvelle identité nécessita
 
 `Type commercial` reste dans le modèle M-002 et dans les données existantes, mais les nouveaux ajouts Workspace sont temporairement masqués tant que sa définition métier n'est pas validée.
 
-## 6.1. Revue Platform des Dimensions ajoutées depuis un Workspace
+## 6.1. Revue qualité Platform des Dimensions
 
 Extension fonctionnelle validée le 2026-10-01.
 
-La Platform doit pouvoir identifier les Produits dont le référentiel a reçu de nouvelles Variétés ou Caractéristiques depuis un Workspace.
+La Platform doit pouvoir identifier et traiter individuellement les nouvelles Variétés et Caractéristiques ajoutées depuis un Workspace.
+
+La revue qualité est distincte du lifecycle et de la gouvernance :
+
+```text
+Lifecycle
+ACTIVE | ARCHIVED
+
+Gouvernance
+APPROVED | PROVISIONAL | RESOLVED | REJECTED
+
+Revue qualité
+NOT_REQUIRED | PENDING | REVIEWED
+```
 
 Règles :
 
-- seuls les ajouts provenant d'un Workspace déclenchent l'indicateur ;
-- les ajouts directs effectués par l'autorité Platform ne se notifient pas eux-mêmes ;
-- une valeur retirée immédiatement ou devenue non visible par la gouvernance ne reste pas comptée ;
-- le compteur est persistant et calculé depuis les données métier réelles ;
-- la dernière revue Platform est enregistrée dans l'historique immuable via l'événement `PRODUCT_DIMENSIONS_REVIEWED` ;
-- le tableau Platform expose le nombre de nouvelles valeurs à vérifier ;
-- la pastille ouvre directement le drawer du Produit sur l'onglet Dimensions ;
-- les valeurs concernées portent l'indication `Nouveau` jusqu'à la revue ;
-- l'action Platform est libellée `Marquer comme vérifié` ;
-- cette action acquitte uniquement l'indicateur de revue et ne vaut jamais approbation d'une contribution `PROVISIONAL` ou `PENDING_REVIEW`.
+- une Dimension créée directement par la Platform porte `NOT_REQUIRED` ;
+- une Dimension créée depuis un Workspace porte `PENDING` ;
+- la migration historique applique la même règle à partir de `contributedFromWorkspace` ;
+- le tableau Platform expose uniquement un compteur des Dimensions actives encore `PENDING` ;
+- cliquer sur cette pastille ouvre directement le drawer Produit sur `Dimensions > À vérifier` ;
+- aucune action d'acquittement global n'est disponible dans le tableau Produit ;
+- chaque ligne `PENDING` peut être marquée `REVIEWED` indépendamment ;
+- corriger une ligne `PENDING` depuis la Platform vaut revue explicite et la passe à `REVIEWED` ;
+- une Dimension erronée peut être supprimée de l'usage actif uniquement si aucune Référence Produit, active ou historique, ne la référence ;
+- la suppression fonctionnelle préserve l'audit mais retire la Dimension des surfaces actives ;
+- archiver reste distinct de supprimer : l'archivage conserve une valeur métier valide mais indisponible ;
+- une Dimension archivée encore `PENDING` ne compte pas dans la pastille ; si elle est réactivée sans revue, elle redevient à vérifier ;
+- les événements `PRODUCT_DIMENSION_REVIEWED` et `PRODUCT_DIMENSION_DELETED` alimentent l'historique Produit ;
+- la revue qualité ne vaut jamais approbation d'une contribution `PROVISIONAL` ou `PENDING_REVIEW`.
 
-La revue des Dimensions et la gouvernance des Contributions restent donc deux responsabilités distinctes.
+La revue qualité des Dimensions et la gouvernance des Contributions restent deux responsabilités distinctes.
 
 ## 7. UX Workspace
 
