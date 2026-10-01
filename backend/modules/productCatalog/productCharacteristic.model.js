@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 import {
     PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_DIMENSION_REVIEW_STATUS,
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
@@ -55,6 +56,18 @@ const productCharacteristicSchema = new Schema(
             default: null,
             immutable: true,
         },
+        qualityReviewStatus: {
+            type: String,
+            enum: Object.values(PRODUCT_DIMENSION_REVIEW_STATUS),
+            default: PRODUCT_DIMENSION_REVIEW_STATUS.NOT_REQUIRED,
+            required: true,
+        },
+        qualityReviewedAt: { type: Date, default: null },
+        qualityReviewedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
+        },
         createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true, immutable: true },
         updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     },
@@ -104,6 +117,16 @@ productCharacteristicSchema.index(
         kind: 1,
     },
     { name: 'product_characteristic_governance_workspace_product_kind' },
+);
+
+productCharacteristicSchema.index(
+    {
+        canonicalProduct: 1,
+        qualityReviewStatus: 1,
+        status: 1,
+        identityActive: 1,
+    },
+    { name: 'product_characteristic_quality_review' },
 );
 
 const ProductCharacteristic = model(

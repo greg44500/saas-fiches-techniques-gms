@@ -20,6 +20,7 @@ import {
     contributions,
     createVariantController,
     detail,
+    deleteDimension,
     dimensions,
     duplicateCheck,
     inspectImport,
@@ -27,7 +28,7 @@ import {
     metadata,
     previewImport,
     reviewContribution,
-    reviewDimensions,
+    reviewDimension,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,
@@ -53,7 +54,7 @@ import {
     globalCategoryParamsSchema,
     globalImportIdParamsSchema,
     globalProductCharacteristicParamsSchema,
-    globalProductDimensionUndoParamsSchema,
+    globalProductDimensionParamsSchema,
     globalProductIdParamsSchema,
     globalProductVarietyParamsSchema,
     globalProductListQuerySchema,
@@ -220,16 +221,23 @@ productCatalogGlobalRouter.get(
 
 
 productCatalogGlobalRouter.post(
-    '/:productId/dimensions/review',
+    '/:productId/dimensions/:dimensionType/:dimensionId/review',
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
-    validateRequest({ params: globalProductIdParamsSchema }),
-    reviewDimensions,
+    validateRequest({ params: globalProductDimensionParamsSchema }),
+    reviewDimension,
+);
+
+productCatalogGlobalRouter.delete(
+    '/:productId/dimensions/:dimensionType/:dimensionId',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({ params: globalProductDimensionParamsSchema }),
+    deleteDimension,
 );
 
 productCatalogGlobalRouter.post(
     '/:productId/dimensions/:dimensionType/:dimensionId/undo',
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
-    validateRequest({ params: globalProductDimensionUndoParamsSchema }),
+    validateRequest({ params: globalProductDimensionParamsSchema }),
     undoDimensionAddition,
 );
 

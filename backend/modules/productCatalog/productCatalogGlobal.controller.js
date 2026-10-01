@@ -38,6 +38,7 @@ import {
 import {
     createProductCharacteristic,
     createProductVariety,
+    deleteProductDimension,
     listProductDimensions,
     undoProductDimensionAddition,
     updateProductCharacteristic,
@@ -50,8 +51,7 @@ import {
     reviewReferenceContribution,
 } from './productReferenceContribution.service.js';
 import {
-    getProductDimensionReviewSummary,
-    markProductDimensionsReviewed,
+    markProductDimensionReviewed,
 } from './productReferenceReview.service.js';
 
 const access = async (req, res) => {
@@ -146,49 +146,56 @@ const reviewContribution = async (req, res) => {
 };
 
 const dimensions = async (req, res) => {
-    const productId = req.validated.params.productId;
-    const [result, review] = await Promise.all([
-        listProductDimensions({
-            productId,
-            includeArchived: true,
-            includeProvisional: true,
-        }),
-        getProductDimensionReviewSummary({ productId }),
-    ]);
-    const newVarietyIds = new Set(review.newVarietyIds);
-    const newCharacteristicIds = new Set(review.newCharacteristicIds);
+    const result = await listProductDimensions({
+        productId: req.validated.params.productId,
+        includeArchived: true,
+        includeProvisional: true,
+    });
 
     res.status(200).json({
         status: 'success',
         data: {
-            varieties: result.varieties.map((variety) => ({
-                ...variety,
-                isNew: newVarietyIds.has(variety.id),
-            })),
-            characteristics: result.characteristics.map((characteristic) => ({
-                ...characteristic,
-                isNew: newCharacteristicIds.has(characteristic.id),
-            })),
+            ...result,
             review: {
-                pendingCount: review.pendingCount,
-                reviewedAt: review.reviewedAt,
+                pendingCount: [
+                    ...result.varieties,
+                    ...result.characteristics,
+                ].filter((dimension) => (
+                    dimension.status === 'ACTIVE'
+                    && dimension.qualityReviewStatus === 'PENDING'
+                )).length,
             },
         },
     });
 };
 
-const reviewDimensions = async (req, res) => {
-    const review = await markProductDimensionsReviewed({
+const reviewDimension = async (req, res) => {
+    const dimension = await markProductDimensionReviewed({
         actorId: req.user._id,
         productId: req.validated.params.productId,
+        type: req.validated.params.dimensionType,
+        dimensionId: req.validated.params.dimensionId,
     });
 
     res.status(200).json({
         status: 'success',
-        data: { review },
+        data: { dimension },
     });
 };
 
+const deleteDimension = async (req, res) => {
+    const dimension = await deleteProductDimension({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        type: req.validated.params.dimensionType,
+        dimensionId: req.validated.params.dimensionId,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { dimension },
+    });
+};
 
 const undoDimensionAddition = async (req, res) => {
     const dimension = await undoProductDimensionAddition({
@@ -390,6 +397,7 @@ export {
     contributions,
     createVariantController,
     detail,
+    deleteDimension,
     dimensions,
     duplicateCheck,
     inspectImport,
@@ -397,7 +405,7 @@ export {
     metadata,
     previewImport,
     reviewContribution,
-    reviewDimensions,
+    reviewDimension,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,

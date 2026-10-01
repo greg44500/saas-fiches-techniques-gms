@@ -205,7 +205,7 @@ const globalProductIdParamsSchema = z.strictObject({
 });
 
 
-const globalProductDimensionUndoParamsSchema = z.strictObject({
+const globalProductDimensionParamsSchema = z.strictObject({
     productId: objectIdSchema,
     dimensionType: z.enum(['VARIETY', 'CHARACTERISTIC']),
     dimensionId: objectIdSchema,
@@ -385,7 +385,7 @@ export {
     duplicateCheckBodySchema,
     globalCategoryParamsSchema,
     globalProductCharacteristicParamsSchema,
-    globalProductDimensionUndoParamsSchema,
+    globalProductDimensionParamsSchema,
     globalImportIdParamsSchema,
     globalProductIdParamsSchema,
     globalProductVarietyParamsSchema,

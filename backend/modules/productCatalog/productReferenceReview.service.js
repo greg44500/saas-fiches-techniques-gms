@@ -3,15 +3,20 @@ import mongoose from 'mongoose';
 import { AppError } from '../../utils/appError.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import {
+    PRODUCT_DIMENSION_REVIEW_STATUS,
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
+    PRODUCT_STATUS,
 } from './productCatalog.registry.js';
+import {
+    serializeCharacteristic,
+    serializeVariety,
+} from './productCatalog.serializer.js';
 import { ProductCharacteristic } from './productCharacteristic.model.js';
 import {
     createProductReferenceEvent,
 } from './productReferenceEvent.service.js';
-import { ProductReferenceEvent } from './productReferenceEvent.model.js';
 import { ProductVariety } from './productVariety.model.js';
 
 const toObjectId = (value) => (
@@ -20,11 +25,20 @@ const toObjectId = (value) => (
         : new mongoose.Types.ObjectId(value)
 );
 
-const emptyReviewSummary = () => ({
-    pendingCount: 0,
-    reviewedAt: null,
-    newVarietyIds: [],
-    newCharacteristicIds: [],
+const pendingDimensionFilter = (productIds) => ({
+    canonicalProduct: mongoose.trusted({
+        $in: productIds.map(toObjectId),
+    }),
+    identityActive: true,
+    status: PRODUCT_STATUS.ACTIVE,
+    qualityReviewStatus: PRODUCT_DIMENSION_REVIEW_STATUS.PENDING,
+    governanceStatus: mongoose.trusted({
+        $in: [
+            PRODUCT_GOVERNANCE_STATUS.APPROVED,
+            PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+        ],
+    }),
+    contributedFromWorkspace: mongoose.trusted({ $ne: null }),
 });
 
 const getProductDimensionReviewSummaries = async ({
@@ -34,113 +48,40 @@ const getProductDimensionReviewSummaries = async ({
         return new Map();
     }
 
-    const objectIds = productIds.map(toObjectId);
-    const reviewRows = await ProductReferenceEvent.aggregate([
-        {
-            $match: {
-                action:
-                    PRODUCT_REFERENCE_EVENT_ACTION
-                        .PRODUCT_DIMENSIONS_REVIEWED,
-                entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
-                entityId: { $in: objectIds },
-            },
-        },
-        { $sort: { createdAt: -1, _id: -1 } },
-        {
-            $group: {
-                _id: '$entityId',
-                reviewedAt: { $first: '$createdAt' },
-            },
-        },
+    const ids = productIds.map(toObjectId);
+    const filter = pendingDimensionFilter(ids);
+    const [varietyCounts, characteristicCounts] = await Promise.all([
+        ProductVariety.aggregate([
+            { $match: filter },
+            { $group: { _id: '$canonicalProduct', count: { $sum: 1 } } },
+        ]),
+        ProductCharacteristic.aggregate([
+            { $match: filter },
+            { $group: { _id: '$canonicalProduct', count: { $sum: 1 } } },
+        ]),
     ]);
 
-    const reviewedAtByProductId = new Map(
-        reviewRows.map((row) => [
-            row._id.toString(),
-            row.reviewedAt,
-        ]),
+    const counts = new Map(
+        ids.map((id) => [id.toString(), 0]),
     );
-
-    const dimensionFilter = {
-        canonicalProduct: mongoose.trusted({ $in: objectIds }),
-        identityActive: true,
-        governanceStatus: mongoose.trusted({
-            $in: [
-                PRODUCT_GOVERNANCE_STATUS.APPROVED,
-                PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
-            ],
-        }),
-        contributedFromWorkspace: mongoose.trusted({ $ne: null }),
-    };
-
-    const [varieties, characteristics] = await Promise.all([
-        ProductVariety.find(dimensionFilter)
-            .select('_id canonicalProduct createdAt')
-            .lean(),
-        ProductCharacteristic.find(dimensionFilter)
-            .select('_id canonicalProduct createdAt')
-            .lean(),
-    ]);
-
-    const summaries = new Map(
-        objectIds.map((productId) => [
-            productId.toString(),
-            {
-                ...emptyReviewSummary(),
-                reviewedAt:
-                    reviewedAtByProductId.get(productId.toString()) ?? null,
-            },
-        ]),
-    );
-
-    const addDimension = ({
-        dimension,
-        targetKey,
-    }) => {
-        const productId = dimension.canonicalProduct.toString();
-        const summary = summaries.get(productId);
-        if (!summary) return;
-
-        if (
-            summary.reviewedAt
-            && dimension.createdAt <= summary.reviewedAt
-        ) {
-            return;
-        }
-
-        summary[targetKey].push(dimension._id.toString());
-        summary.pendingCount += 1;
-    };
-
-    for (const variety of varieties) {
-        addDimension({
-            dimension: variety,
-            targetKey: 'newVarietyIds',
-        });
-    }
-    for (const characteristic of characteristics) {
-        addDimension({
-            dimension: characteristic,
-            targetKey: 'newCharacteristicIds',
-        });
+    for (const row of [...varietyCounts, ...characteristicCounts]) {
+        const key = row._id.toString();
+        counts.set(key, (counts.get(key) ?? 0) + row.count);
     }
 
-    return summaries;
+    return new Map(
+        [...counts.entries()].map(([productId, pendingCount]) => [
+            productId,
+            { pendingCount },
+        ]),
+    );
 };
 
-const getProductDimensionReviewSummary = async ({
-    productId,
-}) => {
-    const summaries = await getProductDimensionReviewSummaries({
-        productIds: [productId],
-    });
-
-    return summaries.get(productId.toString()) ?? emptyReviewSummary();
-};
-
-const markProductDimensionsReviewed = async ({
+const markProductDimensionReviewed = async ({
     actorId,
     productId,
+    type,
+    dimensionId,
 }) => mongoose.connection.transaction(async (session) => {
     const product = await CanonicalProduct.findOne({
         _id: productId,
@@ -151,26 +92,57 @@ const markProductDimensionsReviewed = async ({
         throw new AppError('Produit introuvable.', 404);
     }
 
-    const event = await createProductReferenceEvent({
-        actorId,
-        action:
-            PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_DIMENSIONS_REVIEWED,
-        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
-        entityId: product._id,
-        metadata: {
-            reviewScope: 'WORKSPACE_DIMENSIONS',
-        },
-        session,
-    });
+    const isVariety = type === 'VARIETY';
+    const isCharacteristic = type === 'CHARACTERISTIC';
+    if (!isVariety && !isCharacteristic) {
+        throw new AppError('Type de dimension invalide.', 400);
+    }
 
-    return {
-        pendingCount: 0,
-        reviewedAt: event.createdAt,
-    };
+    const model = isVariety ? ProductVariety : ProductCharacteristic;
+    const dimension = await model.findOne({
+        _id: dimensionId,
+        canonicalProduct: productId,
+        identityActive: true,
+        status: PRODUCT_STATUS.ACTIVE,
+    }).session(session);
+
+    if (!dimension) {
+        throw new AppError('Dimension Produit introuvable.', 404);
+    }
+
+    if (
+        dimension.qualityReviewStatus
+        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+    ) {
+        dimension.qualityReviewStatus =
+            PRODUCT_DIMENSION_REVIEW_STATUS.REVIEWED;
+        dimension.qualityReviewedAt = new Date();
+        dimension.qualityReviewedBy = actorId;
+        dimension.updatedBy = actorId;
+        await dimension.save({ session });
+
+        await createProductReferenceEvent({
+            actorId,
+            action:
+                PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_DIMENSION_REVIEWED,
+            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+            entityId: product._id,
+            metadata: {
+                dimensionType: type,
+                dimensionId: dimension._id.toString(),
+                dimensionName: dimension.name,
+                ...(isCharacteristic ? { kind: dimension.kind } : {}),
+            },
+            session,
+        });
+    }
+
+    return isVariety
+        ? serializeVariety(dimension)
+        : serializeCharacteristic(dimension);
 });
 
 export {
     getProductDimensionReviewSummaries,
-    getProductDimensionReviewSummary,
-    markProductDimensionsReviewed,
+    markProductDimensionReviewed,
 };

@@ -9,6 +9,7 @@ import {
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CHARACTERISTIC_KIND,
+    PRODUCT_DIMENSION_REVIEW_STATUS,
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
@@ -92,6 +93,9 @@ const createProductVarietyInSession = async ({
                 status: PRODUCT_STATUS.ACTIVE,
                 governanceStatus,
                 contributedFromWorkspace: workspaceId,
+                qualityReviewStatus: workspaceId
+                    ? PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+                    : PRODUCT_DIMENSION_REVIEW_STATUS.NOT_REQUIRED,
                 createdBy: actorId,
                 updatedBy: actorId,
             },
@@ -169,6 +173,9 @@ const createProductCharacteristicInSession = async ({
                 status: PRODUCT_STATUS.ACTIVE,
                 governanceStatus,
                 contributedFromWorkspace: workspaceId,
+                qualityReviewStatus: workspaceId
+                    ? PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+                    : PRODUCT_DIMENSION_REVIEW_STATUS.NOT_REQUIRED,
                 createdBy: actorId,
                 updatedBy: actorId,
             },
@@ -312,6 +319,15 @@ const updateProductVariety = async ({
     variety.aliases = nextAliases;
     variety.searchKeys = searchKeys;
     variety.searchGrams = buildSearchGrams(searchKeys);
+    if (
+        variety.qualityReviewStatus
+        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+    ) {
+        variety.qualityReviewStatus =
+            PRODUCT_DIMENSION_REVIEW_STATUS.REVIEWED;
+        variety.qualityReviewedAt = new Date();
+        variety.qualityReviewedBy = actorId;
+    }
     variety.updatedBy = actorId;
     await variety.save({ session });
 
@@ -376,6 +392,15 @@ const updateProductCharacteristic = async ({
     characteristic.aliases = nextAliases;
     characteristic.searchKeys = searchKeys;
     characteristic.searchGrams = buildSearchGrams(searchKeys);
+    if (
+        characteristic.qualityReviewStatus
+        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+    ) {
+        characteristic.qualityReviewStatus =
+            PRODUCT_DIMENSION_REVIEW_STATUS.REVIEWED;
+        characteristic.qualityReviewedAt = new Date();
+        characteristic.qualityReviewedBy = actorId;
+    }
     characteristic.updatedBy = actorId;
     await characteristic.save({ session });
 
@@ -533,6 +558,76 @@ const updateProductCharacteristicStatus = async ({
 });
 
 
+
+const deleteProductDimension = async ({
+    actorId,
+    productId,
+    type,
+    dimensionId,
+}) => mongoose.connection.transaction(async (session) => {
+    await assertProductAvailable({
+        productId,
+        session,
+        activeOnly: false,
+    });
+
+    const isVariety = type === 'VARIETY';
+    const isCharacteristic = type === 'CHARACTERISTIC';
+    if (!isVariety && !isCharacteristic) {
+        throw new AppError('Type de dimension invalide.', 400);
+    }
+
+    const model = isVariety ? ProductVariety : ProductCharacteristic;
+    const dimension = await model.findOne({
+        _id: dimensionId,
+        canonicalProduct: productId,
+        identityActive: true,
+    }).session(session);
+
+    if (!dimension) {
+        throw new AppError('Dimension Produit introuvable.', 404);
+    }
+
+    const used = await ProductVariant.exists({
+        canonicalProduct: productId,
+        ...(isVariety
+            ? { variety: dimension._id }
+            : { characteristics: dimension._id }),
+    }).session(session);
+
+    if (used) {
+        throw new AppError(
+            'Cette valeur est utilisée par une Référence Produit et ne peut pas être supprimée.',
+            409,
+        );
+    }
+
+    const previousReviewStatus = dimension.qualityReviewStatus;
+    dimension.status = PRODUCT_STATUS.ARCHIVED;
+    dimension.identityActive = false;
+    dimension.updatedBy = actorId;
+    await dimension.save({ session });
+
+    await createProductReferenceEvent({
+        actorId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_DIMENSION_DELETED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+        entityId: productId,
+        metadata: {
+            dimensionType: type,
+            dimensionId: dimension._id.toString(),
+            dimensionName: dimension.name,
+            previousReviewStatus,
+            ...(isCharacteristic ? { kind: dimension.kind } : {}),
+        },
+        session,
+    });
+
+    return isVariety
+        ? serializeVariety(dimension)
+        : serializeCharacteristic(dimension);
+});
+
 const undoProductDimensionAddition = async ({
     actorId,
     workspaceId = null,
@@ -616,6 +711,7 @@ export {
     createProductCharacteristicInSession,
     createProductVariety,
     createProductVarietyInSession,
+    deleteProductDimension,
     listProductDimensions,
     updateProductCharacteristic,
     undoProductDimensionAddition,
