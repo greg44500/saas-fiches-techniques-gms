@@ -42,6 +42,23 @@ async function createTechnicalSheet(page, {
     .getByLabel('Nom')
     .fill(name);
   await dialog
+    .getByLabel('Quantité produite')
+    .fill('10');
+  await dialog
+    .getByRole('combobox', {
+      name: 'Unité de production',
+    })
+    .click();
+  await page
+    .getByRole('option', {
+      name: 'kg',
+      exact: true,
+    })
+    .click();
+  await dialog
+    .getByLabel('TVA (%)')
+    .fill('10');
+  await dialog
     .getByRole('button', {
       name: 'Créer',
       exact: true,
@@ -63,35 +80,6 @@ async function createTechnicalSheet(page, {
 async function composeTechnicalSheet(page, {
   productReferenceName,
 }) {
-  await page
-    .getByRole('textbox', {
-      name: 'Quantité',
-      exact: true,
-    })
-    .fill('10');
-
-  await page
-    .getByRole('combobox', {
-      name: 'Unité de production',
-    })
-    .click();
-  await page
-    .getByRole('option', {
-      name: 'kg',
-      exact: true,
-    })
-    .click();
-
-  await page
-    .getByLabel('Portion(s)')
-    .fill('20');
-  await page
-    .getByLabel('TVA (%)')
-    .fill('10');
-  await page
-    .getByLabel('Marge cible (%)')
-    .fill('50');
-
   const productSearch =
     page.getByRole('combobox', {
       name: 'Ajouter un produit aux Ingrédients',
@@ -205,20 +193,14 @@ async function openInformationDrawer(page) {
   ).toBeVisible();
 }
 
-async function valuateAndValidate(page, {
+async function validateCurrentDraft(page, {
   comment = null,
 }) {
-  const valuateButton =
-    page.getByRole('button', {
-      name: /^(Valoriser|Revaloriser)$/,
-    });
+  const validateButton = page.getByRole('button', {
+    name: 'Valider la Fiche technique',
+  });
 
-  await valuateButton.click();
-
-  await expectVisibleToast(
-    page,
-    'Fiche technique valorisée',
-  );
+  await expect(validateButton).toBeEnabled();
 
   if (comment) {
     await openInformationDrawer(page);
@@ -234,12 +216,7 @@ async function valuateAndValidate(page, {
     }).click();
   }
 
-  await page
-    .getByRole('button', {
-      name:
-        'Valider la Fiche technique',
-    })
-    .click();
+  await validateButton.click();
 
   await expectVisibleToast(
     page,
@@ -248,8 +225,8 @@ async function valuateAndValidate(page, {
 
   await expect(
     page.getByText(
-      'Aucun brouillon n’est ouvert.',
-      { exact: false },
+      'Aucun brouillon n’est ouvert. L’état validé courant reste consultable dans l’historique.',
+      { exact: true },
     ),
   ).toBeVisible();
 }
@@ -290,7 +267,7 @@ test('M-004 une Référence Produit globale non favorite reste composable et val
     ).first(),
   ).toBeVisible();
 
-  await valuateAndValidate(page, {
+  await validateCurrentDraft(page, {
     comment:
       'Référence globale non favorite',
   });
@@ -318,18 +295,6 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     productReferenceName:
       context.productReferenceName,
   });
-
-  await page
-    .getByRole('button', {
-      name: 'Valoriser',
-      exact: true,
-    })
-    .click();
-
-  await expectVisibleToast(
-    page,
-    'Valorisation incomplète',
-  );
 
   await page
     .getByRole('button', {
@@ -364,18 +329,6 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     .first()
     .click();
 
-  await page
-    .getByRole('button', {
-      name: 'Revaloriser',
-      exact: true,
-    })
-    .click();
-
-  await expectVisibleToast(
-    page,
-    'Fiche technique valorisée',
-  );
-
   await replaceDossierNegotiatedPrice({
     workspaceId:
       context.workspaceId,
@@ -407,18 +360,6 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
       { exact: true },
     ).first(),
   ).toBeVisible();
-
-  await page
-    .getByRole('button', {
-      name: 'Revaloriser',
-      exact: true,
-    })
-    .click();
-
-  await expectVisibleToast(
-    page,
-    'Fiche technique valorisée',
-  );
 
   await openInformationDrawer(page);
 
@@ -483,7 +424,7 @@ test('M-004 copie A vers B sans finance source et valorise avec le prix du Dossi
       context.productReferenceName,
   });
 
-  await valuateAndValidate(page, {
+  await validateCurrentDraft(page, {
     comment:
       'Source validée avant copie',
   });
@@ -532,18 +473,6 @@ test('M-004 copie A vers B sans finance source et valorise avec le prix du Dossi
     ),
   ).toHaveValue('60');
 
-  await page
-    .getByRole('button', {
-      name: 'Valoriser',
-      exact: true,
-    })
-    .click();
-
-  await expectVisibleToast(
-    page,
-    'Fiche technique valorisée',
-  );
-
   await expect(
     page.getByText(/40,00/).first(),
   ).toBeVisible();
@@ -573,7 +502,7 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
       context.productReferenceName,
   });
 
-  await valuateAndValidate(page, {
+  await validateCurrentDraft(page, {
     comment:
       'Validation avant contrôle du quota',
   });
