@@ -215,16 +215,21 @@ describe('ProductReferencePage', () => {
       isLoading: false,
       refetch: vi.fn(),
     }));
-    mocks.contributionsQuery.mockReturnValue({
+    mocks.contributionsQuery.mockImplementation((args) => ({
       data: {
         contributions: [],
-        pagination: { page: 1, limit: 1, total: 4, totalPages: 4 },
+        pagination: {
+          page: 1,
+          limit: args.limit,
+          total: args.status === 'APPROVED' ? 2 : 4,
+          totalPages: args.status === 'APPROVED' ? 2 : 4,
+        },
       },
       isError: false,
       isFetching: false,
       isLoading: false,
       refetch: vi.fn(),
-    });
+    }));
 
     renderPage();
 
@@ -241,6 +246,17 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('option', { name: 'Légumes' }));
 
     expect(await screen.findByRole('tab', { name: 'Référentiel (7)' }))
+      .toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', {
+      name: 'Contributions (4)',
+    }));
+    await user.click(screen.getByRole('combobox', {
+      name: 'Filtrer les contributions par statut',
+    }));
+    await user.click(screen.getByRole('option', { name: 'Approuvée' }));
+
+    expect(await screen.findByRole('tab', { name: 'Contributions (2)' }))
       .toBeInTheDocument();
   });
 
