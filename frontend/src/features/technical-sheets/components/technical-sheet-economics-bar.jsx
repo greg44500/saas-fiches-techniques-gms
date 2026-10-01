@@ -80,6 +80,8 @@ function getVisibleCosts(lines, economicSnapshot) {
       materialCostHt: economicSnapshot.materialCostHt,
       economatCostHt: economicSnapshot.economatCostHt,
       manufacturingCostHt: economicSnapshot.manufacturingCostHt,
+      manufacturingCostPerProductionUnitHt:
+        economicSnapshot.manufacturingCostPerProductionUnitHt,
     };
   }
 
@@ -102,6 +104,7 @@ function getVisibleCosts(lines, economicSnapshot) {
     manufacturingCostHt: sumDecimalStrings(
       [materialCostHt, economatCostHt].filter(Boolean),
     ),
+    manufacturingCostPerProductionUnitHt: null,
   };
 }
 
@@ -170,7 +173,7 @@ function TechnicalSheetEconomicsBar({
     <>
       <div className="space-y-3">
         <div className="flex items-end gap-3">
-          <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 xl:grid-cols-6">
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4 xl:grid-cols-7">
             <Metric
               label="CM HT"
               tooltip="Coût matières hors taxe"
@@ -189,14 +192,22 @@ function TechnicalSheetEconomicsBar({
 
 
             <Metric
-              label="PC TTC"
-              tooltip="Prix conseillé toutes taxes comprises"
+              label="CF/U HT"
+              tooltip="Coût de fabrication hors taxe par unité produite"
+              value={formatDecimalCurrency(
+                visibleCosts.manufacturingCostPerProductionUnitHt,
+              )}
+            />
+
+            <Metric
+              label="PC TTC/U"
+              tooltip="Prix conseillé toutes taxes comprises par unité produite"
               value={formatMinorCurrency(economicSnapshot?.advisedPriceTtcMinor)}
             />
 
             <div className="min-w-0 space-y-1">
-              <MetricLabel tooltip="Prix final toutes taxes comprises">
-                PF TTC
+              <MetricLabel tooltip="Prix final toutes taxes comprises par unité produite">
+                PF TTC/U
               </MetricLabel>
               <div className="flex min-w-0 gap-1">
                 {finalPriceMode === 'MANUAL' ? (
@@ -301,23 +312,29 @@ function TechnicalSheetEconomicsBar({
                 value={formatBasisPoints(vatRateBasisPoints)}
               />
               <DetailRow
-                label="Prix théorique HT"
+                label="Coût fabrication HT / unité produite"
+                value={formatDecimalCurrency(
+                  economicSnapshot?.manufacturingCostPerProductionUnitHt,
+                )}
+              />
+              <DetailRow
+                label="Prix théorique HT / unité produite"
                 value={formatDecimalCurrency(economicSnapshot?.theoreticalPriceHt)}
               />
               <DetailRow
-                label="Prix théorique TTC"
+                label="Prix théorique TTC / unité produite"
                 value={formatDecimalCurrency(economicSnapshot?.theoreticalPriceTtc)}
               />
               <DetailRow
-                label="Prix conseillé TTC"
+                label="Prix conseillé TTC / unité produite"
                 value={formatMinorCurrency(economicSnapshot?.advisedPriceTtcMinor)}
               />
               <DetailRow
-                label="Prix final TTC"
+                label="Prix final TTC / unité produite"
                 value={formatMinorCurrency(economicSnapshot?.finalPriceTtcMinor)}
               />
               <DetailRow
-                label="Plancher économique TTC"
+                label="Plancher économique TTC / unité produite"
                 value={formatDecimalCurrency(economicSnapshot?.economicFloorTtc)}
               />
               <DetailRow
