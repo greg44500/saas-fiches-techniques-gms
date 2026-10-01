@@ -61,9 +61,6 @@ import {
     validateTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheetValidation.service.js';
 import {
-    valuateTechnicalSheet,
-} from '../../../modules/technicalSheet/technicalSheetValuation.service.js';
-import {
     getUsageMetricValue,
 } from '../../../modules/usageMetric/usageMetric.service.js';
 
