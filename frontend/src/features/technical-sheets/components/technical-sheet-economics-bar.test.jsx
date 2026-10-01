@@ -31,6 +31,7 @@ describe('TechnicalSheetEconomicsBar', () => {
       materialCostHt: '3.325',
       economatCostHt: '0.75',
       manufacturingCostHt: '4.075',
+      manufacturingCostPerProductionUnitHt: null,
     });
   });
 
