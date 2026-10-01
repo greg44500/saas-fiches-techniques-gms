@@ -626,25 +626,26 @@ Règles :
 - regrouper les aides Platform Produits/Fournisseurs sous une catégorie unique « Gestion des référentiels » tout en conservant leur filtrage Application Global ;
 - conserver séparées les catégories Workspace « Produits » et « Fournisseurs & prix ».
 
-État actuel :
+État avant PR :
 
 ~~~text
 branche = feature/platform-reference-management
 base    = main@7c3ae1d4ae5a5600d95198bab0b890d88269d39f
 code    = implémenté
-tests   = ajoutés / adaptés mais pas encore déclarés verts
-QA      = à faire
-PR      = non ouverte
+aide    = alignée
+tests   = ajoutés / adaptés
+QA      = validée le 2026-10-01
 ~~~
+
+La Core Gate de PR constitue la validation automatisée finale du lot et exécute la commande canonique `npm run release:check`.
 
 Séquence :
 
 ~~~text
-QA visuelle
-→ release:check
-→ une PR
-→ Core Gate PR
-→ merge
+QA visuelle validée
+→ une PR BLOC B
+→ Core Gate PR / release:check
+→ merge si verte
 → Core Gate post-merge
 → clôture BLOC B
 ~~~

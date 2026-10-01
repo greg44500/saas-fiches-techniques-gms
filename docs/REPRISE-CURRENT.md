@@ -198,19 +198,18 @@ Fournisseurs & prix
 
 Le filtrage serveur par permissions Application Global est conservé. Un utilisateur ne voit donc dans la catégorie commune que les fiches correspondant réellement à ses droits métier.
 
-## 8. Validation à effectuer
+## 8. Validation finale
 
-État actuel :
+État du BLOC B avant PR :
 
 ~~~text
-implémentation frontend : réalisée sur la branche
+implémentation frontend : réalisée
+aide métier Platform    : alignée
 tests ajoutés / adaptés : réalisés
-tests exécutés : pas encore déclarés verts
-QA visuelle : à faire
-PR : pas encore ouverte
+QA visuelle utilisateur : validée le 2026-10-01
 ~~~
 
-Scénarios à vérifier :
+Scénarios couverts par le lot :
 
 1. Produits seul ;
 2. Fournisseurs seul ;
@@ -222,14 +221,23 @@ Scénarios à vérifier :
 8. anciennes routes globales toujours fonctionnelles ;
 9. Help Center Platform : une seule catégorie Gestion des référentiels, avec uniquement les fiches autorisées.
 
+La validation automatisée finale est portée par la **Core Gate de la PR**. Le workflow canonique installe ses dépendances d'infrastructure puis exécute :
+
+~~~text
+npm run release:check
+~~~
+
+Cette commande couvre `release:verify`, lint backend, tests backend, lint frontend, tests frontend, build frontend et E2E Playwright.
+
+Aucun résultat vert n'est présumé avant le résultat réel de cette Core Gate.
+
 ## 9. Séquence de sortie
 
 ~~~text
-QA visuelle utilisateur
-→ npm run release:check
-→ une PR BLOC B
-→ Core Gate PR
-→ merge
+QA visuelle utilisateur : validée
+→ PR unique BLOC B
+→ Core Gate PR = npm run release:check
+→ merge si verte
 → Core Gate post-merge
 → clôture BLOC B
 ~~~
