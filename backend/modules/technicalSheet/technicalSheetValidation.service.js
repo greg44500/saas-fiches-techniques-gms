@@ -354,11 +354,8 @@ const validateTechnicalSheet = async ({
         ) {
             const refreshedLines =
                 fresh.lines.map((line) => {
-                    const {
-                        productVariantSnapshot,
-                        ...persisted
-                    } = line;
-
+                    const persisted = { ...line };
+                    delete persisted.productVariantSnapshot;
                     return persisted;
                 });
 
