@@ -116,6 +116,7 @@ const PRODUCT_EVENT_LABELS = Object.freeze({
   PRODUCT_UPDATED: 'Produit corrigé',
   PRODUCT_ARCHIVED: 'Produit archivé',
   PRODUCT_REACTIVATED: 'Produit réactivé',
+  PRODUCT_DIMENSIONS_REVIEWED: 'Dimensions vérifiées',
   VARIANT_CREATED: 'Référence créée',
   VARIANT_APPROVED: 'Référence activée (historique)',
   VARIANT_REJECTED: 'Référence rejetée (historique)',

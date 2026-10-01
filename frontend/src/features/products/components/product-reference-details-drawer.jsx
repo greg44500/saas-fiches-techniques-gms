@@ -58,6 +58,7 @@ function normalizeDimensionSearch(value) {
 
 function ProductReferenceDetailsDrawer({
   canManage,
+  initialTab = 'product',
   metadata,
   onClose,
   open,
@@ -224,7 +225,7 @@ function ProductReferenceDetailsDrawer({
             title="Produit indisponible"
           />
         ) : product ? (
-          <Tabs defaultValue="product">
+          <Tabs defaultValue={initialTab}>
             <TabsList aria-label="Administration du Produit" variant="section">
               <TabsTrigger value="product" variant="section">Produit</TabsTrigger>
               <TabsTrigger value="dimensions" variant="section">Dimensions ({dimensionCount})</TabsTrigger>
@@ -376,66 +377,81 @@ function ProductReferenceDetailsDrawer({
                     <ul className="space-y-2">
                       {filteredVarieties.map((variety) => (
                         <li
-                          className="rounded-lg border border-border p-3"
+                          className="rounded-lg border border-border px-3 py-2"
                           key={variety.id}
                         >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <p className="font-medium">{variety.name}</p>
-                              {variety.aliases?.length > 0 && (
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  Synonymes : {variety.aliases.join(', ')}
-                                </p>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p
+                                className="truncate font-medium"
+                                title={
+                                  variety.aliases?.length
+                                    ? 'Synonymes : ' + variety.aliases.join(', ')
+                                    : undefined
+                                }
+                              >
+                                {variety.name}
+                              </p>
+                              <StatusBadge
+                                className="shrink-0 py-0.5"
+                                tone={getProductStatusTone(variety.status)}
+                              >
+                                {getProductStatusLabel(metadata, variety.status)}
+                              </StatusBadge>
+                              {variety.isNew && (
+                                <StatusBadge
+                                  className="shrink-0 py-0.5"
+                                  tone="warning"
+                                >
+                                  Nouveau
+                                </StatusBadge>
                               )}
                             </div>
-                            <StatusBadge tone={getProductStatusTone(variety.status)}>
-                              {getProductStatusLabel(metadata, variety.status)}
-                            </StatusBadge>
+                            {canManage && (
+                              <div className="flex shrink-0 items-center gap-2">
+                                <ActionIconButton
+                                  disabled={pending}
+                                  Icon={Pencil}
+                                  label={'Corriger la variété ' + variety.name}
+                                  onClick={() => setEditDimension({
+                                    type: 'VARIETY',
+                                    dimension: variety,
+                                  })}
+                                  tooltipLabel="Corriger"
+                                  variant="outline"
+                                />
+                                {variety.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={Archive}
+                                    label={'Archiver la variété ' + variety.name}
+                                    onClick={() => changeDimensionStatus(
+                                      'VARIETY',
+                                      variety,
+                                      'ARCHIVED',
+                                    )}
+                                    tooltipLabel="Archiver"
+                                    variant="outline"
+                                  />
+                                )}
+                                {variety.status === 'ARCHIVED'
+                                  && product.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={RotateCcw}
+                                    label={'Réactiver la variété ' + variety.name}
+                                    onClick={() => changeDimensionStatus(
+                                      'VARIETY',
+                                      variety,
+                                      'ACTIVE',
+                                    )}
+                                    tooltipLabel="Réactiver"
+                                    variant="outline"
+                                  />
+                                )}
+                              </div>
+                            )}
                           </div>
-                          {canManage && (
-                            <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-                              <ActionIconButton
-                                disabled={pending}
-                                Icon={Pencil}
-                                label={'Corriger la variété ' + variety.name}
-                                onClick={() => setEditDimension({
-                                  type: 'VARIETY',
-                                  dimension: variety,
-                                })}
-                                tooltipLabel="Corriger"
-                                variant="outline"
-                              />
-                              {variety.status === 'ACTIVE' && (
-                                <ActionIconButton
-                                  disabled={pending}
-                                  Icon={Archive}
-                                  label={'Archiver la variété ' + variety.name}
-                                  onClick={() => changeDimensionStatus(
-                                    'VARIETY',
-                                    variety,
-                                    'ARCHIVED',
-                                  )}
-                                  tooltipLabel="Archiver"
-                                  variant="outline"
-                                />
-                              )}
-                              {variety.status === 'ARCHIVED'
-                                && product.status === 'ACTIVE' && (
-                                <ActionIconButton
-                                  disabled={pending}
-                                  Icon={RotateCcw}
-                                  label={'Réactiver la variété ' + variety.name}
-                                  onClick={() => changeDimensionStatus(
-                                    'VARIETY',
-                                    variety,
-                                    'ACTIVE',
-                                  )}
-                                  tooltipLabel="Réactiver"
-                                  variant="outline"
-                                />
-                              )}
-                            </div>
-                          )}
                         </li>
                       ))}
                     </ul>
@@ -454,68 +470,87 @@ function ProductReferenceDetailsDrawer({
                     <ul className="space-y-2">
                       {filteredCharacteristics.map((characteristic) => (
                         <li
-                          className="rounded-lg border border-border p-3"
+                          className="rounded-lg border border-border px-3 py-2"
                           key={characteristic.id}
                         >
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <p className="font-medium">{characteristic.name}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {characteristicKindLabels.get(characteristic.kind)
-                                  ?? characteristic.kind}
-                                {characteristic.aliases?.length
-                                  ? ' · Synonymes : ' + characteristic.aliases.join(', ')
-                                  : ''}
-                              </p>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <div className="min-w-0">
+                                <p
+                                  className="truncate font-medium"
+                                  title={
+                                    characteristic.aliases?.length
+                                      ? 'Synonymes : ' + characteristic.aliases.join(', ')
+                                      : undefined
+                                  }
+                                >
+                                  {characteristic.name}
+                                </p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {characteristicKindLabels.get(characteristic.kind)
+                                    ?? characteristic.kind}
+                                </p>
+                              </div>
+                              <StatusBadge
+                                className="shrink-0 py-0.5"
+                                tone={getProductStatusTone(characteristic.status)}
+                              >
+                                {getProductStatusLabel(metadata, characteristic.status)}
+                              </StatusBadge>
+                              {characteristic.isNew && (
+                                <StatusBadge
+                                  className="shrink-0 py-0.5"
+                                  tone="warning"
+                                >
+                                  Nouveau
+                                </StatusBadge>
+                              )}
                             </div>
-                            <StatusBadge tone={getProductStatusTone(characteristic.status)}>
-                              {getProductStatusLabel(metadata, characteristic.status)}
-                            </StatusBadge>
+                            {canManage && (
+                              <div className="flex shrink-0 items-center gap-2">
+                                <ActionIconButton
+                                  disabled={pending}
+                                  Icon={Pencil}
+                                  label={'Corriger la caractéristique ' + characteristic.name}
+                                  onClick={() => setEditDimension({
+                                    type: 'CHARACTERISTIC',
+                                    dimension: characteristic,
+                                  })}
+                                  tooltipLabel="Corriger"
+                                  variant="outline"
+                                />
+                                {characteristic.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={Archive}
+                                    label={'Archiver la caractéristique ' + characteristic.name}
+                                    onClick={() => changeDimensionStatus(
+                                      'CHARACTERISTIC',
+                                      characteristic,
+                                      'ARCHIVED',
+                                    )}
+                                    tooltipLabel="Archiver"
+                                    variant="outline"
+                                  />
+                                )}
+                                {characteristic.status === 'ARCHIVED'
+                                  && product.status === 'ACTIVE' && (
+                                  <ActionIconButton
+                                    disabled={pending}
+                                    Icon={RotateCcw}
+                                    label={'Réactiver la caractéristique ' + characteristic.name}
+                                    onClick={() => changeDimensionStatus(
+                                      'CHARACTERISTIC',
+                                      characteristic,
+                                      'ACTIVE',
+                                    )}
+                                    tooltipLabel="Réactiver"
+                                    variant="outline"
+                                  />
+                                )}
+                              </div>
+                            )}
                           </div>
-                          {canManage && (
-                            <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
-                              <ActionIconButton
-                                disabled={pending}
-                                Icon={Pencil}
-                                label={'Corriger la caractéristique ' + characteristic.name}
-                                onClick={() => setEditDimension({
-                                  type: 'CHARACTERISTIC',
-                                  dimension: characteristic,
-                                })}
-                                tooltipLabel="Corriger"
-                                variant="outline"
-                              />
-                              {characteristic.status === 'ACTIVE' && (
-                                <ActionIconButton
-                                  disabled={pending}
-                                  Icon={Archive}
-                                  label={'Archiver la caractéristique ' + characteristic.name}
-                                  onClick={() => changeDimensionStatus(
-                                    'CHARACTERISTIC',
-                                    characteristic,
-                                    'ARCHIVED',
-                                  )}
-                                  tooltipLabel="Archiver"
-                                  variant="outline"
-                                />
-                              )}
-                              {characteristic.status === 'ARCHIVED'
-                                && product.status === 'ACTIVE' && (
-                                <ActionIconButton
-                                  disabled={pending}
-                                  Icon={RotateCcw}
-                                  label={'Réactiver la caractéristique ' + characteristic.name}
-                                  onClick={() => changeDimensionStatus(
-                                    'CHARACTERISTIC',
-                                    characteristic,
-                                    'ACTIVE',
-                                  )}
-                                  tooltipLabel="Réactiver"
-                                  variant="outline"
-                                />
-                              )}
-                            </div>
-                          )}
                         </li>
                       ))}
                     </ul>

@@ -104,6 +104,14 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data.characteristic,
       invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
+    markProductReferenceDimensionsReviewed: builder.mutation({
+      query: ({ productId }) => ({
+        url: '/product-reference/' + productId + '/dimensions/review',
+        method: 'POST',
+      }),
+      transformResponse: (response) => response.data.review,
+      invalidatesTags: ['ProductReference'],
+    }),
     undoProductReferenceDimensionAddition: builder.mutation({
       query: ({
         productId,
@@ -286,6 +294,7 @@ export const {
   useLazyGetProductReferenceDetailQuery,
   useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
+  useMarkProductReferenceDimensionsReviewedMutation,
   usePreviewProductReferenceImportMutation,
   useReviewProductReferenceContributionMutation,
   useUpdateProductReferenceCategoryMutation,

@@ -165,12 +165,14 @@ describe('ProductReferenceDetailsDrawer', () => {
           name: 'Bergeron',
           aliases: [],
           status: 'ACTIVE',
+          isNew: false,
         },
         {
           id: 'variety-2',
           name: 'Rouge du Roussillon',
           aliases: ['Roussillon rouge'],
           status: 'ACTIVE',
+          isNew: true,
         },
       ],
       characteristics: [
@@ -180,6 +182,7 @@ describe('ProductReferenceDetailsDrawer', () => {
           name: 'Côte',
           aliases: [],
           status: 'ACTIVE',
+          isNew: true,
         },
         {
           id: 'characteristic-2',
@@ -187,8 +190,13 @@ describe('ProductReferenceDetailsDrawer', () => {
           name: 'Rouge',
           aliases: [],
           status: 'ARCHIVED',
+          isNew: false,
         },
       ],
+      review: {
+        pendingCount: 2,
+        reviewedAt: null,
+      },
     }));
 
     const resolvedMutation = {
@@ -213,6 +221,27 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     expect(screen.getByText('Variétés (2)')).toBeInTheDocument();
     expect(screen.getByText('Caractéristiques (2)')).toBeInTheDocument();
+  });
+
+
+  it('met en évidence les nouvelles Dimensions Workspace dans une ligne compacte', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('tab', { name: 'Dimensions (4)' }));
+
+    expect(screen.getAllByText('Nouveau')).toHaveLength(2);
+
+    const varietyRow = screen.getByText('Rouge du Roussillon').closest('li');
+    expect(varietyRow).not.toBeNull();
+    expect(within(varietyRow).getByText('Actif')).toBeInTheDocument();
+    expect(within(varietyRow).getByText('Nouveau')).toBeInTheDocument();
+    expect(within(varietyRow).getByRole('button', {
+      name: 'Corriger la variété Rouge du Roussillon',
+    })).toBeInTheDocument();
+    expect(within(varietyRow).getByRole('button', {
+      name: 'Archiver la variété Rouge du Roussillon',
+    })).toBeInTheDocument();
   });
 
   it('filtre localement les Dimensions et propose des suggestions prédictives', async () => {
