@@ -900,7 +900,6 @@ function TechnicalSheetWorkspacePage() {
                   draftSynchronizing
                   || draftServerActionDisabled
                 }
-                sourcingRequiresSave={draftServerActionDisabled}
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspace.id}
               />
