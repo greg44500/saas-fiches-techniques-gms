@@ -240,6 +240,7 @@ function TechnicalSheetWorkspacePage() {
     lines: [],
   });
   const draftFormRef = useRef(draftForm);
+  const automaticValuationAttemptRef = useRef(null);
   const [draftFormRevision, setDraftFormRevision] = useState(null);
   const [draftDirty, setDraftDirty] = useState(false);
   const [identityDirty, setIdentityDirty] = useState(false);
@@ -353,6 +354,7 @@ function TechnicalSheetWorkspacePage() {
   useEffect(() => {
     if (
       !draft
+      || !can(TECHNICAL_SHEET_PERMISSION.VALUATION_MANAGE)
       || draftDirty
       || autosaveHasUnsavedChanges
       || valuateState.isLoading
@@ -365,6 +367,22 @@ function TechnicalSheetWorkspacePage() {
     ) {
       return;
     }
+
+    const attemptKey = [
+      draft.id,
+      draft.revision,
+      draft.valuationStatus,
+    ].join(':');
+
+    if (
+      automaticValuationAttemptRef.current
+      === attemptKey
+    ) {
+      return;
+    }
+
+    automaticValuationAttemptRef.current =
+      attemptKey;
 
     valuate({
       workspaceId: workspace.id,
@@ -383,6 +401,7 @@ function TechnicalSheetWorkspacePage() {
     });
   }, [
     autosaveHasUnsavedChanges,
+    can,
     dossierId,
     draft,
     draftDirty,
