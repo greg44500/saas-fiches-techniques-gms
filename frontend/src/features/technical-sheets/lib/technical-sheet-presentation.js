@@ -27,7 +27,7 @@ const TECHNICAL_SHEET_VALUATION_PRESENTATION = Object.freeze({
     tone: 'success',
   }),
   STALE: Object.freeze({
-    label: 'À revaloriser',
+    label: 'Calcul à actualiser',
     tone: 'warning',
   }),
 });
@@ -46,7 +46,7 @@ const LINE_VALUATION_PRESENTATION = Object.freeze({
     tone: 'success',
   }),
   STALE: Object.freeze({
-    label: 'À revaloriser',
+    label: 'Calcul à actualiser',
     tone: 'warning',
   }),
 });
