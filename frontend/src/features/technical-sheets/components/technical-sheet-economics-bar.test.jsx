@@ -76,7 +76,7 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(screen.getByText('%MR')).toBeInTheDocument();
 
     expect(screen.getByRole('button', {
-      name: 'Coût matières hors taxe',
+      name: 'Coût matières total hors taxe de la production',
     })).toBeInTheDocument();
     expect(screen.getByRole('button', {
       name: 'Prix conseillé toutes taxes comprises',
