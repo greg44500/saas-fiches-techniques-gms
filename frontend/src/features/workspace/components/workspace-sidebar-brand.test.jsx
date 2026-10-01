@@ -28,8 +28,10 @@ describe('WorkspaceSidebar application identity', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('Application')).toBeInTheDocument();
-    expect(screen.getByText('SaaS Core')).toBeInTheDocument();
+    expect(screen.getByText('GMS')).toBeInTheDocument();
+    expect(screen.getByText('Fiches techniques')).toBeInTheDocument();
+    expect(screen.queryByText('Application')).not.toBeInTheDocument();
+    expect(screen.queryByText('SaaS Core')).not.toBeInTheDocument();
     expect(screen.queryByText('Acme')).not.toBeInTheDocument();
   });
 });

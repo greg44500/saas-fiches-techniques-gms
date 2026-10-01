@@ -48,6 +48,11 @@ describe('App public landing', () => {
   it('expose les accès canoniques vers inscription et connexion', () => {
     renderApp();
 
+    expect(screen.getByText('GMS')).toBeInTheDocument();
+    expect(screen.getByText('Fiches techniques')).toBeInTheDocument();
+    expect(screen.queryByText('SaaS Core')).not.toBeInTheDocument();
+    expect(screen.queryByText('Socle applicatif')).not.toBeInTheDocument();
+
     expect(
       screen.getByRole('heading', {
         name: 'Une base professionnelle pour construire votre application SaaS.',

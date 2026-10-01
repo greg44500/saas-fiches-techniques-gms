@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router';
 
+import { APPLICATION_IDENTITY } from '@/app/application-identity';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Button } from '@/components/ui/button';
 
@@ -36,8 +37,12 @@ function App() {
               <Layers3 aria-hidden="true" className="size-5" />
             </span>
             <div>
-              <p className="text-sm font-semibold tracking-tight">SaaS Core</p>
-              <p className="text-xs text-muted-foreground">Socle applicatif</p>
+              <p className="text-sm font-semibold tracking-tight">
+                {APPLICATION_IDENTITY.shortName}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {APPLICATION_IDENTITY.name}
+              </p>
             </div>
           </Link>
 
