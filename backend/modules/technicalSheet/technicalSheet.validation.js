@@ -312,8 +312,7 @@ const dossierTechnicalSheetSettingsSchema =
             z.number()
                 .int()
                 .min(0)
-                .max(9999)
-                .nullable(),
+                .max(9999),
     });
 
 const trashRetentionSchema =
