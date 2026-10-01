@@ -163,9 +163,7 @@ function getSupplierArticleActionTooltip({
     ? 'Modifier l’Article fournisseur'
     : 'Choisir un Article fournisseur';
 
-  return (!line.id || requiresSave)
-    ? label + ' — enregistrez d’abord le brouillon'
-    : label;
+  return label;
 }
 
 function hasValue(value) {
@@ -421,13 +419,6 @@ function SupplierArticleDialog({
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspaceId}
               />
-              {disabled && canManage && (
-                <p className="text-xs text-muted-foreground">
-                  {!line.id || requiresSave
-                    ? 'Enregistrez le brouillon avant de modifier l’approvisionnement.'
-                    : 'L’approvisionnement est momentanément indisponible.'}
-                </p>
-              )}
             </div>
           )}
         </DialogContent>
