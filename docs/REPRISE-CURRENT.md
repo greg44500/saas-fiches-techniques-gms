@@ -127,13 +127,15 @@ filiation Core réparée
 → main M-002 réaligné dans la branche Core
 → provenance core-origin mise à jour
 → documentation de reprise mise à jour
+→ identité visible dérivée alignée sur GMS / Fiches techniques (accueil + sidebar Workspace)
+→ release:check sur face5a41 signalé vert avant cet ajustement d’identité
 ~~~
 
 Reste à réaliser :
 
 ~~~text
-npm run release:check
-→ QA visuelle éventuelle de la sidebar
+npm run release:check sur le HEAD final après ajustement d’identité
+→ QA visuelle de l’accueil et de la sidebar Workspace
 → une PR BLOC A
 → Core Gate PR
 → merge

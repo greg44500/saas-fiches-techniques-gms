@@ -27,6 +27,7 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 - intégration du Core post-tag `v1.2.1` jusqu’au commit `6581e573c6a6885790b23fe502bd34d8199ea6ba`, sans nouvelle version ni déplacement de tag ;
 - ajout de la primitive générique de navigation Platform `type: 'section'`, non repliable, filtrée selon la visibilité de ses enfants et compatible avec les entrées `item` / `group` existantes ;
+- identité visible du SaaS dérivé alignée sur `GMS` / `Fiches techniques` sur l’accueil public et la sidebar Workspace, sans modification du design ni des identifiants techniques ;
 - shell Workspace modernisé : Tableau de bord en tête, modules métier immédiatement après, statut regroupé avec le nom dans la topbar, rôle dans l’identité utilisateur, puis « Administration de l’espace » ;
 - navigation Platform conservée avec séparation des modules applicatifs et accès rapide aux vues autorisées ;
 - Help Center générique mis à niveau et composé avec l’aide métier M-001 à M-004 ;
