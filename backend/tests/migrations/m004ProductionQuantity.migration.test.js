@@ -23,6 +23,8 @@ describe('M-004 production quantity migration', () => {
             new mongoose.Types.ObjectId();
         const validationId =
             new mongoose.Types.ObjectId();
+        const preservedDraftId =
+            new mongoose.Types.ObjectId();
 
         await TechnicalSheetDraft.collection.insertOne({
             _id: draftId,
@@ -30,6 +32,16 @@ describe('M-004 production quantity migration', () => {
             portions:
                 mongoose.Types.Decimal128
                     .fromString('12'),
+        });
+
+        await TechnicalSheetDraft.collection.insertOne({
+            _id: preservedDraftId,
+            productionQuantity:
+                mongoose.Types.Decimal128
+                    .fromString('5'),
+            portions:
+                mongoose.Types.Decimal128
+                    .fromString('99'),
         });
 
         await TechnicalSheetValidation.collection.insertOne({
@@ -53,11 +65,21 @@ describe('M-004 production quantity migration', () => {
         const validation =
             await TechnicalSheetValidation.collection
                 .findOne({ _id: validationId });
+        const preservedDraft =
+            await TechnicalSheetDraft.collection
+                .findOne({ _id: preservedDraftId });
 
         expect(
             draft.productionQuantity.toString(),
         ).toBe('12');
         expect(draft.portions).toBeUndefined();
+        expect(
+            preservedDraft.productionQuantity
+                .toString(),
+        ).toBe('5');
+        expect(
+            preservedDraft.portions,
+        ).toBeUndefined();
 
         expect(
             validation.sheetSnapshot
