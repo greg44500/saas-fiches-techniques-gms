@@ -58,7 +58,8 @@ Décisions établies :
 
 Décisions finales :
 
-- seul le nom du Dossier / magasin est obligatoire en saisie métier à la création ;
+- le nom du Dossier / magasin et sa marge cible par défaut sont obligatoires à la création ;
+- la marge cible par défaut initialise les nouvelles Fiches techniques sans effet rétroactif ;
 - enseigne, localisation, email documents, téléphone et responsable / interlocuteur restent facultatifs ;
 - l'autocomplétion d'adresse/localisation utilise en V1 la Géoplateforme / IGN, reste facultative et ne bloque jamais la création ou la modification d'un Dossier ; aucun payload fournisseur, identifiant BAN ou coordonnée n'est persisté en M-001 ;
 - les affectations sont portées par une relation métier dédiée `DossierAccessGrant`, distincte du `WorkspaceMember` Core ;
@@ -175,7 +176,7 @@ Le lot UX M-002 `GMS-UX-002` a été traité et fusionné avant l'ouverture de M
 
 ### 2.4 Fiches techniques
 
-**État : CLÔTURÉ HORS EXPORTS — PR #25 fusionnée ; Core Gates #145 et #146 vertes**
+**État : STABILISATION UX/CONTRAT EN COURS — branche `feature/m004-valuation-ux-stabilization`, non fusionnée**
 
 Source canonique :
 
@@ -197,11 +198,12 @@ Décisions fermées :
 - 1 Article = résolution automatique possible, N = choix humain obligatoire ;
 - aucun Article le moins cher sélectionné automatiquement ;
 - absence de Prix applicable distincte de zéro ;
-- Coût matière HT + Économat HT = Coût de fabrication HT ;
-- TVA, marge cible, prix théorique, Prix conseillé, Prix final et marge réelle historisés ;
+- Coût matière HT + Économat HT = Coût de fabrication HT total ;
+- la quantité produite remplace l'ancien champ Portions et sert de dénominateur pour les résultats unitaires ;
+- coût de fabrication unitaire, TVA, marge cible, prix théorique unitaire, Prix conseillé unitaire, Prix final unitaire et marge réelle sont historisés ;
 - arrondi V1 du Prix conseillé = multiple de 0,50 € immédiatement supérieur ou égal ;
-- le Prix final peut être inférieur au Prix conseillé mais jamais au plancher économique ;
-- revalorisation explicite obligatoire si les données tarifaires ont changé avant validation ;
+- le Prix final peut être inférieur au Prix conseillé mais jamais au plancher économique unitaire ;
+- le brouillon est recalculé automatiquement après sauvegarde ; un changement tarifaire détecté à la validation actualise le brouillon puis exige une nouvelle confirmation ;
 - copie inter-Dossier sans aucune donnée financière source ;
 - marge cible d'une copie initialisée depuis le Dossier cible ;
 - archivage, corbeille, restauration et purge portent sur la Fiche entière ;
