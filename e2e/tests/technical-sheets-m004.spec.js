@@ -395,7 +395,7 @@ test('M-004 ambiguïté Article, changement de prix, actualisation automatique p
 
   await expect(
     page.getByText(
-      'Validation après revalorisation',
+      'Validation après actualisation',
       { exact: true },
     ),
   ).toBeVisible();
