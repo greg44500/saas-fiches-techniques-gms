@@ -49,6 +49,7 @@ const applyAutomaticValuation = async ({
     draft,
     actorId,
     session,
+    atDate = new Date(),
 }) => {
     if (draft.lines.length === 0) {
         draft.valuationStatus =
@@ -69,6 +70,7 @@ const applyAutomaticValuation = async ({
             workspaceId,
             dossierId,
             draft,
+            atDate,
             session,
         });
 
@@ -555,6 +557,14 @@ const createDraftFromValidatedState = async ({
                 { session },
             );
 
+        await applyAutomaticValuation({
+            workspaceId,
+            dossierId,
+            draft,
+            actorId,
+            session,
+        });
+
         await createTechnicalSheetEvent({
             workspaceId,
             dossierId,
@@ -695,6 +705,7 @@ const selectTechnicalSheetSupplierArticle = async ({
 );
 
 export {
+    applyAutomaticValuation,
     createDraftFromValidatedState,
     getTechnicalSheetDraft,
     saveTechnicalSheetDraft,
