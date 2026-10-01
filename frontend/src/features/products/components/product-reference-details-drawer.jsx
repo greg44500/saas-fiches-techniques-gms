@@ -289,9 +289,71 @@ function ProductReferenceDetailsDrawer({
 
             <TabsContent value="dimensions" variant="section">
               <div className="space-y-5">
-                {canManage && product.status === 'ACTIVE' && (
-                  <div className="flex justify-end">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  {dimensionCount > 0 && (
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="relative">
+                        <Search
+                          aria-hidden="true"
+                          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                        />
+                        <Input
+                          aria-label="Rechercher dans les dimensions"
+                          className="pl-9 pr-10"
+                          onChange={(event) => setDimensionSearch(event.target.value)}
+                          placeholder="Rechercher une variété ou une caractéristique…"
+                          value={dimensionSearch}
+                        />
+                        {dimensionSearch && (
+                          <button
+                            aria-label="Effacer la recherche"
+                            className="absolute right-2 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                            onClick={() => setDimensionSearch('')}
+                            type="button"
+                          >
+                            <X aria-hidden="true" className="size-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      {normalizedDimensionSearch && (
+                        <>
+                          {dimensionSuggestions.length > 0 && (
+                            <ul
+                              aria-label="Suggestions de dimensions"
+                              className="overflow-hidden rounded-lg border border-border bg-background"
+                            >
+                              {dimensionSuggestions.map((suggestion) => (
+                                <li key={suggestion.key}>
+                                  <button
+                                    className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
+                                    onClick={() => setDimensionSearch(suggestion.name)}
+                                    type="button"
+                                  >
+                                    <span className="font-medium">
+                                      {suggestion.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {suggestion.typeLabel}
+                                    </span>
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {dimensionResultCount}{' '}
+                            {dimensionResultCount > 1 ? 'résultats' : 'résultat'}
+                            {' '}sur {dimensionCount} dimensions
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {canManage && product.status === 'ACTIVE' && (
                     <Button
+                      className="shrink-0 sm:self-start"
                       onClick={() => setCreateDimensionOpen(true)}
                       type="button"
                       variant="outline"
@@ -299,70 +361,8 @@ function ProductReferenceDetailsDrawer({
                       <Plus aria-hidden="true" className="size-4" />
                       Enrichir le référentiel
                     </Button>
-                  </div>
-                )}
-
-
-                {dimensionCount > 0 && (
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Search
-                        aria-hidden="true"
-                        className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                      />
-                      <Input
-                        aria-label="Rechercher dans les dimensions"
-                        className="pl-9 pr-10"
-                        onChange={(event) => setDimensionSearch(event.target.value)}
-                        placeholder="Rechercher une variété ou une caractéristique…"
-                        value={dimensionSearch}
-                      />
-                      {dimensionSearch && (
-                        <button
-                          aria-label="Effacer la recherche"
-                          className="absolute right-2 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                          onClick={() => setDimensionSearch('')}
-                          type="button"
-                        >
-                          <X aria-hidden="true" className="size-4" />
-                        </button>
-                      )}
-                    </div>
-
-                    {normalizedDimensionSearch && (
-                      <>
-                        {dimensionSuggestions.length > 0 && (
-                          <ul
-                            aria-label="Suggestions de dimensions"
-                            className="overflow-hidden rounded-lg border border-border bg-background"
-                          >
-                            {dimensionSuggestions.map((suggestion) => (
-                              <li key={suggestion.key}>
-                                <button
-                                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50"
-                                  onClick={() => setDimensionSearch(suggestion.name)}
-                                  type="button"
-                                >
-                                  <span className="font-medium">
-                                    {suggestion.name}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {suggestion.typeLabel}
-                                  </span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {dimensionResultCount}{' '}
-                          {dimensionResultCount > 1 ? 'résultats' : 'résultat'}
-                          {' '}sur {dimensionCount} dimensions
-                        </p>
-                      </>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
 
                 <section className="space-y-3">
                   <h3 className="text-sm font-semibold">Variétés ({varieties.length})</h3>
