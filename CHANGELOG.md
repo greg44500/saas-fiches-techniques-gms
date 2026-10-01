@@ -8,6 +8,8 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Changed
 
+- administration Platform des référentiels recomposée sous une entrée unique « Gestion des référentiels », avec onglets Produits/Fournisseurs filtrés par permissions Application Global effectives ;
+- les pages et APIs M-002/M-003 existantes sont réutilisées sans nouvelle gouvernance, nouveau modèle ni changement backend ;
 - intégration du Core post-tag `v1.2.1` jusqu’au commit `d3b9891bc2a32705a0a99b2ed62bed60caf653ca`, sans nouvelle version ni tag ;
 - shell Workspace modernisé : Tableau de bord en tête, modules métier immédiatement après, statut regroupé avec le nom dans la topbar, rôle dans l’identité utilisateur, puis « Administration de l’espace » ;
 - navigation Platform conservée avec séparation des modules applicatifs et accès rapide aux vues autorisées ;
