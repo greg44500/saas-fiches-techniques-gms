@@ -117,6 +117,8 @@ coût fabrication HT par unité produite
 
 Le Prix théorique, le Prix conseillé, le Prix final et le plancher économique sont exprimés par unité produite. Les coûts matière, économat et fabrication totaux restent également conservés pour expliquer la recette complète.
 
+Compatibilité des données existantes : la migration `migration:m004-production-quantity` reprend l'ancienne valeur `portions` uniquement lorsque `productionQuantity` est absente, puis supprime le champ obsolète des brouillons et snapshots historiques. Elle n'invente aucune valeur lorsque les deux champs sont absents.
+
 ---
 
 ## 4. Modèle TechnicalSheetDraft
