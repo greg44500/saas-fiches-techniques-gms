@@ -64,7 +64,9 @@ Tentative 2 :
 
 Le même test `ProductVariantFields` était vert sur la Core Gate #159 et sur la première tentative post-merge.
 
-Conclusion opérationnelle : le lot vise la stabilité des tests et non une modification du métier.
+La Core Gate PR #161 a ensuite démontré que la première tentative de correction E2E introduite dans cette branche était incorrecte : les 4 scénarios M-001 ont échoué sur le nouveau prérequis de navigation vers un lien `Dossiers`. Cette modification est donc entièrement annulée.
+
+Conclusion opérationnelle : le lot conserve uniquement la correction frontend M-002 démontrée comme compatible avec la suite complète jusqu'aux E2E. Le helper M-001 est restauré exactement à l'état de `main`.
 
 ## 4. Correctifs Produit du lot
 
@@ -83,19 +85,20 @@ La valeur canonique `UNIT` et sa présentation `PCE` restent inchangées.
 
 ### E2E M-001
 
-Le helper `openDossiersPage()` ne charge plus directement la route métier à froid.
+Aucune modification E2E M-001 n'est conservée dans ce lot.
 
-Le parcours devient :
+La tentative consistant à passer par le Dashboard puis un lien `Dossiers` a été invalidée par la Core Gate PR #161 :
 
 ~~~text
-Workspace dashboard chargé
-→ lien Dossiers visible dans le shell autorisé
-→ navigation applicative
-→ URL /dossiers
-→ heading Dossiers
+4/4 scénarios M-001
+→ échec identique
+→ lien Dossiers absent
+→ régression introduite par la branche
 ~~~
 
-Cela resynchronise explicitement le contexte Workspace et les permissions avant d’entrer dans le module métier, sans augmenter arbitrairement le timeout de 15 secondes.
+`e2e/support/dossier.js` est restauré bit pour bit depuis `main`.
+
+La cause de l'instabilité post-merge initiale ne sera pas masquée par un nouveau parcours ou un timeout arbitraire. Si elle réapparaît après restauration, elle devra être diagnostiquée à partir d'une preuve exploitable de l'état de page/trace, sans modifier le contrat fonctionnel M-001.
 
 ## 5. Frontière Core / Produit
 

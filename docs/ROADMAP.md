@@ -605,8 +605,10 @@ Le lot courant est donc un **correctif unique de stabilité post-merge** sur la 
 Périmètre Produit :
 
 - stabiliser les interactions Base UI du test `ProductVariantFields` avec le pattern déjà utilisé par les tests partagés ;
-- stabiliser l’entrée E2E M-001 dans la page Dossiers en passant d’abord par un Workspace shell chargé puis par la navigation applicative ;
+- restaurer le helper E2E M-001 exactement à l'état de `main` après invalidation de la tentative de navigation intermédiaire par la Core Gate PR #161 ;
 - ne modifier ni les règles métier, ni les permissions, ni les contrats API, ni la provenance Core.
+
+La Core Gate PR #161 a confirmé que la tentative de modification du helper M-001 était une régression : les 4 scénarios M-001 ont échoué sur le nouveau lien `Dossiers`. Cette modification est entièrement annulée.
 
 La conservation automatique des traces/screenshots Playwright dans GitHub Actions est un besoin générique et réutilisable. Elle est donc **candidate Core** et ne doit pas être ajoutée silencieusement dans le produit.
 
