@@ -71,6 +71,21 @@ const createTechnicalSheet = async ({
                 session,
             });
 
+        const defaultTargetMarginBasisPoints =
+            dossier.technicalSheetSettings
+                ?.defaultTargetMarginBasisPoints
+            ?? null;
+
+        if (
+            defaultTargetMarginBasisPoints
+            === null
+        ) {
+            throw new AppError(
+                'Renseignez la marge cible par défaut du Dossier avant de créer une Fiche technique.',
+                409,
+            );
+        }
+
         await enforcePlanLimit({
             workspaceId,
             metricKey:
@@ -102,10 +117,14 @@ const createTechnicalSheet = async ({
                     workspace: workspaceId,
                     dossier: dossierId,
                     technicalSheet: sheet._id,
+                    productionQuantity:
+                        data.productionQuantity,
+                    productionUnit:
+                        data.productionUnit,
+                    vatRateBasisPoints:
+                        data.vatRateBasisPoints,
                     targetMarginBasisPoints:
-                        dossier.technicalSheetSettings
-                            ?.defaultTargetMarginBasisPoints
-                        ?? null,
+                        defaultTargetMarginBasisPoints,
                     createdBy: actorId,
                     updatedBy: actorId,
                 }],
