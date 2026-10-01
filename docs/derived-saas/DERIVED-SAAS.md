@@ -1177,3 +1177,24 @@ lorsqu'elle a été explicitement décidée comme telle. Dans ce cas
 `tag`, tandis que `commit` référence le SHA exact réellement intégré. Le
 champ `tag` ne doit jamais être présenté comme pointant vers ce SHA
 postérieur.
+
+---
+
+## Navigation Platform : sections applicatives
+
+Lorsqu’un SaaS dérivé possède plusieurs surfaces globales d’administration, il peut les organiser dans une `section` Platform sans recopier la Sidebar du Core.
+
+Une `section` est un conteneur visuel non repliable. Ses enfants restent des entrées de navigation ordinaires. Un `group` reste réservé au comportement repliable existant.
+
+```text
+Core Platform
+→ item / group
+
+produit dérivé
+→ item / group historiques si suffisants
+→ section lorsque le besoin est uniquement une séparation visuelle
+```
+
+La composition reste explicite dans `APPLICATION_PLATFORM_NAVIGATION_MODULES`. Il n’existe ni autodécouverte du filesystem ni import métier dans le Core.
+
+Une section dont tous les enfants sont filtrés par les autorisations disparaît entièrement. Les permissions Platform et Application Global restent deux autorités séparées ; la navigation n’est qu’une projection UX et ne remplace jamais les guards backend.
