@@ -38,6 +38,13 @@ describe('technical sheet presentation', () => {
       label: 'Prix indisponible',
       tone: 'destructive',
     });
+
+    expect(
+      getTechnicalSheetValuationPresentation('STALE'),
+    ).toMatchObject({
+      label: 'Calcul à actualiser',
+      tone: 'warning',
+    });
   });
 
   it('désactive la copie tant qu’un brouillon est ouvert', () => {
