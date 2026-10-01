@@ -151,7 +151,6 @@ function getPricingSourceLabel(source) {
 function getSupplierArticleActionTooltip({
   canManageSourcing,
   line,
-  requiresSave = false,
 }) {
   if (!canManageSourcing) return 'Consulter l’Article fournisseur';
 
@@ -369,7 +368,6 @@ function SupplierArticleDialog({
   draftRevision,
   line,
   onClose,
-  requiresSave,
   onError,
   onPendingChange,
   onSelected,
@@ -530,7 +528,6 @@ function TechnicalSheetLineEditor({
   productMetadata,
   productScope = PRODUCT_SOURCE.REFERENCE,
   sourcingDisabled = false,
-  sourcingRequiresSave = false,
   technicalSheetId,
   workspaceId,
 }) {
@@ -678,7 +675,6 @@ function TechnicalSheetLineEditor({
     const sourcingTooltipLabel = getSupplierArticleActionTooltip({
       canManageSourcing,
       line,
-      requiresSave: sourcingRequiresSave,
     });
 
     return (
@@ -977,7 +973,6 @@ function TechnicalSheetLineEditor({
         onError={onSourcingError}
         onPendingChange={onSourcingPendingChange}
         onSelected={onSourcingSelected}
-        requiresSave={sourcingRequiresSave}
         technicalSheetId={technicalSheetId}
         workspaceId={workspaceId}
       />
