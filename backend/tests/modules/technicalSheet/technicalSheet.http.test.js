@@ -227,6 +227,26 @@ describe('M-004 RBAC HTTP', () => {
             },
         ]);
         expect(
+            response.body.data.metadata.statusDefinitions,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: 'ACTIVE',
+                label: 'Active',
+            }),
+        ]));
+        expect(
+            response.body.data.metadata.finalPriceModeDefinitions,
+        ).toEqual([
+            {
+                value: 'ADVISED',
+                label: 'Conseillé',
+            },
+            {
+                value: 'MANUAL',
+                label: 'Manuel',
+            },
+        ]);
+        expect(
             response.body.data.metadata.saleBases,
         ).toEqual([
             {
@@ -238,6 +258,14 @@ describe('M-004 RBAC HTTP', () => {
                 label: 'Portion',
             },
         ]);
+        expect(
+            response.body.data.metadata.defaults,
+        ).toEqual({
+            productionUnit: 'UNIT',
+            portionsPerProductionUnit: '1',
+            saleBasis: 'PIECE',
+            finalPriceMode: 'ADVISED',
+        });
     });
 
     it('masque une Fiche en corbeille des lectures directes ordinaires', async () => {

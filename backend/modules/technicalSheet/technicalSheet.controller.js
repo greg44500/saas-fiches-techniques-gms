@@ -24,13 +24,18 @@ import {
 } from './technicalSheetLifecycle.service.js';
 import {
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
+    TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
     TECHNICAL_SHEET_LINE_KIND,
     TECHNICAL_SHEET_LINE_VALUATION_STATUS,
+    TECHNICAL_SHEET_LINE_VALUATION_STATUS_REGISTRY,
+    TECHNICAL_SHEET_PRODUCTION_DEFAULTS,
     TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY,
     TECHNICAL_SHEET_SALE_BASIS_REGISTRY,
     TECHNICAL_SHEET_STATUS,
+    TECHNICAL_SHEET_STATUS_REGISTRY,
     TECHNICAL_SHEET_TRASH_RETENTION,
     TECHNICAL_SHEET_VALUATION_STATUS,
+    TECHNICAL_SHEET_VALUATION_STATUS_REGISTRY,
 } from './technicalSheet.registry.js';
 import {
     TECHNICAL_SHEET_PERMISSION,
@@ -67,6 +72,10 @@ const metadata = async (req, res) => {
                     Object.values(
                         TECHNICAL_SHEET_STATUS,
                     ),
+                statusDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_STATUS_REGISTRY,
+                    ),
                 lineKinds:
                     Object.values(
                         TECHNICAL_SHEET_LINE_KIND,
@@ -75,13 +84,25 @@ const metadata = async (req, res) => {
                     Object.values(
                         TECHNICAL_SHEET_VALUATION_STATUS,
                     ),
+                valuationStatusDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_VALUATION_STATUS_REGISTRY,
+                    ),
                 lineValuationStatuses:
                     Object.values(
                         TECHNICAL_SHEET_LINE_VALUATION_STATUS,
                     ),
+                lineValuationStatusDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_LINE_VALUATION_STATUS_REGISTRY,
+                    ),
                 finalPriceModes:
                     Object.values(
                         TECHNICAL_SHEET_FINAL_PRICE_MODE,
+                    ),
+                finalPriceModeDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
                     ),
                 units:
                     Object.values(
@@ -95,6 +116,9 @@ const metadata = async (req, res) => {
                     Object.values(
                         TECHNICAL_SHEET_SALE_BASIS_REGISTRY,
                     ),
+                defaults: {
+                    ...TECHNICAL_SHEET_PRODUCTION_DEFAULTS,
+                },
                 trashRetention: {
                     defaultDays:
                         TECHNICAL_SHEET_TRASH_RETENTION
