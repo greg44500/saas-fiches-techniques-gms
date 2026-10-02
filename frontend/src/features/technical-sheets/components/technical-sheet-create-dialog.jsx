@@ -45,6 +45,8 @@ function TechnicalSheetCreateDialog({
   const [description, setDescription] = useState('');
   const [productionQuantity, setProductionQuantity] = useState('');
   const [productionUnit, setProductionUnit] = useState('');
+  const [portionsPerProductionUnit, setPortionsPerProductionUnit] = useState('');
+  const [saleBasis, setSaleBasis] = useState('');
   const [vatRate, setVatRate] = useState('');
   const [targetMargin, setTargetMargin] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -53,10 +55,16 @@ function TechnicalSheetCreateDialog({
     { skip: !open },
   );
   const [createSheet, createState] = useCreateTechnicalSheetMutation();
-  const unitItems = (metadataQuery.data?.units ?? []).map((unit) => ({
+  const unitItems = (
+    metadataQuery.data?.productionUnits
+    ?? metadataQuery.data?.units
+    ?? []
+  ).map((unit) => ({
     value: unit.value,
     label: unit.label,
   }));
+  const saleBasisItems = metadataQuery.data?.saleBases ?? [];
+  const backendDefaults = metadataQuery.data?.defaults;
 
   useEffect(() => {
     if (!open) return;
@@ -64,10 +72,26 @@ function TechnicalSheetCreateDialog({
     setDescription('');
     setProductionQuantity('');
     setProductionUnit('');
+    setPortionsPerProductionUnit('');
+    setSaleBasis('');
     setVatRate('');
     setTargetMargin('');
     setErrorMessage('');
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !backendDefaults) return;
+
+    setProductionUnit((current) => (
+      current || backendDefaults.productionUnit || ''
+    ));
+    setPortionsPerProductionUnit((current) => (
+      current || backendDefaults.portionsPerProductionUnit || ''
+    ));
+    setSaleBasis((current) => (
+      current || backendDefaults.saleBasis || ''
+    ));
+  }, [backendDefaults, open]);
 
   const hasDossierTargetMargin =
     Number.isInteger(defaultTargetMarginBasisPoints);
@@ -87,6 +111,8 @@ function TechnicalSheetCreateDialog({
     const normalizedName = name.trim();
 
     const normalizedQuantity = productionQuantity.trim().replace(',', '.');
+    const normalizedPortions =
+      portionsPerProductionUnit.trim().replace(',', '.');
     const vatRateBasisPoints = percentInputToBasisPoints(vatRate);
 
     if (!normalizedName) {
@@ -104,6 +130,19 @@ function TechnicalSheetCreateDialog({
 
     if (!productionUnit) {
       setErrorMessage('Sélectionnez l’unité de production.');
+      return;
+    }
+
+    if (
+      !/^\d+(?:\.\d+)?$/.test(normalizedPortions)
+      || Number(normalizedPortions) <= 0
+    ) {
+      setErrorMessage('Renseignez un nombre de portions par pièce strictement positif.');
+      return;
+    }
+
+    if (!saleBasis) {
+      setErrorMessage('Sélectionnez la base de vente.');
       return;
     }
 
@@ -131,6 +170,8 @@ function TechnicalSheetCreateDialog({
         description: description.trim() || null,
         productionQuantity: normalizedQuantity,
         productionUnit,
+        portionsPerProductionUnit: normalizedPortions,
+        saleBasis,
         vatRateBasisPoints,
         ...(!hasDossierTargetMargin
           ? {
@@ -224,6 +265,41 @@ function TechnicalSheetCreateDialog({
               </Field>
 
               <Field>
+                <FieldLabel htmlFor="technical-sheet-portions-per-piece">
+                  Portions / pièce
+                </FieldLabel>
+                <Input
+                  disabled={createState.isLoading}
+                  id="technical-sheet-portions-per-piece"
+                  inputMode="decimal"
+                  onChange={(event) => setPortionsPerProductionUnit(event.target.value)}
+                  placeholder="Ex. 8"
+                  value={portionsPerProductionUnit}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel>Base de vente</FieldLabel>
+                <Select
+                  disabled={createState.isLoading || metadataQuery.isLoading}
+                  items={saleBasisItems}
+                  onValueChange={setSaleBasis}
+                  value={saleBasis}
+                >
+                  <SelectTrigger aria-label="Base de vente">
+                    <SelectValue placeholder="Choisir une base" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {saleBasisItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <Field>
                 <FieldLabel htmlFor="technical-sheet-vat">
                   TVA (%)
                 </FieldLabel>
@@ -307,6 +383,8 @@ function TechnicalSheetCreateDialog({
                 || !name.trim()
                 || !productionQuantity.trim()
                 || !productionUnit
+                || !portionsPerProductionUnit.trim()
+                || !saleBasis
                 || !vatRate.trim()
                 || !targetMarginValid
               }

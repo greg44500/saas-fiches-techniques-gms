@@ -92,9 +92,12 @@ function buildDraftForm(draft) {
   return {
     productionQuantity: draft.productionQuantity ?? '',
     productionUnit: draft.productionUnit ?? '',
+    portionsPerProductionUnit:
+      draft.portionsPerProductionUnit ?? '',
+    saleBasis: draft.saleBasis ?? '',
     vatRate: basisPointsToInput(draft.vatRateBasisPoints),
     targetMargin: basisPointsToInput(draft.targetMarginBasisPoints),
-    finalPriceMode: draft.finalPriceMode ?? 'ADVISED',
+    finalPriceMode: draft.finalPriceMode ?? '',
     finalPriceTtc: minorToInput(draft.finalPriceTtcMinor),
     lines: (draft.lines ?? []).map(normalizeDraftLine),
   };
@@ -109,6 +112,8 @@ function buildDraftSaveRequest({
 }) {
   const productionQuantity =
     draftForm.productionQuantity.trim().replace(',', '.');
+  const portionsPerProductionUnit =
+    draftForm.portionsPerProductionUnit.trim().replace(',', '.');
   const vatRateBasisPoints = percentInputToBasisPoints(draftForm.vatRate);
   const targetMarginBasisPoints =
     percentInputToBasisPoints(draftForm.targetMargin);
@@ -120,6 +125,10 @@ function buildDraftSaveRequest({
     !/^\d+(?:\.\d+)?$/.test(productionQuantity)
     || Number(productionQuantity) <= 0
     || !draftForm.productionUnit
+    || !/^\d+(?:\.\d+)?$/.test(portionsPerProductionUnit)
+    || Number(portionsPerProductionUnit) <= 0
+    || !draftForm.saleBasis
+    || !draftForm.finalPriceMode
     || vatRateBasisPoints === null
     || targetMarginBasisPoints === null
   ) {
@@ -147,6 +156,8 @@ function buildDraftSaveRequest({
       expectedRevision: revision,
       productionQuantity,
       productionUnit: draftForm.productionUnit,
+      portionsPerProductionUnit,
+      saleBasis: draftForm.saleBasis,
       vatRateBasisPoints,
       targetMarginBasisPoints,
       finalPriceMode: draftForm.finalPriceMode,
@@ -237,9 +248,11 @@ function TechnicalSheetWorkspacePage() {
   const [draftForm, setDraftForm] = useState({
     productionQuantity: '',
     productionUnit: '',
+    portionsPerProductionUnit: '',
+    saleBasis: '',
     vatRate: '',
     targetMargin: '',
-    finalPriceMode: 'ADVISED',
+    finalPriceMode: '',
     finalPriceTtc: '',
     lines: [],
   });
@@ -317,9 +330,11 @@ function TechnicalSheetWorkspacePage() {
     draftFormRef.current = {
       productionQuantity: '',
       productionUnit: '',
+      portionsPerProductionUnit: '',
+      saleBasis: '',
       vatRate: '',
       targetMargin: '',
-      finalPriceMode: 'ADVISED',
+      finalPriceMode: '',
       finalPriceTtc: '',
       lines: [],
     };
@@ -366,6 +381,8 @@ function TechnicalSheetWorkspacePage() {
       || (draft.lines ?? []).length === 0
       || !draft.productionQuantity
       || !draft.productionUnit
+      || !draft.portionsPerProductionUnit
+      || !draft.saleBasis
       || draft.vatRateBasisPoints === null
       || draft.targetMarginBasisPoints === null
     ) {
@@ -417,12 +434,19 @@ function TechnicalSheetWorkspacePage() {
   ]);
 
   const unitItems = useMemo(
-    () => (metadata?.units ?? []).map((unit) => ({
+    () => (
+      metadata?.productionUnits
+      ?? metadata?.units
+      ?? []
+    ).map((unit) => ({
       value: unit.value,
       label: unit.label,
     })),
-    [metadata?.units],
+    [metadata?.productionUnits, metadata?.units],
   );
+  const saleBasisItems = metadata?.saleBases ?? [];
+  const finalPriceModeItems =
+    metadata?.finalPriceModeDefinitions ?? [];
 
   if (
     (sheetQuery.isLoading && !sheetQuery.data)
@@ -488,10 +512,16 @@ function TechnicalSheetWorkspacePage() {
     percentInputToBasisPoints(draftForm.targetMargin);
   const normalizedProductionQuantity =
     draftForm.productionQuantity.trim().replace(',', '.');
+  const normalizedPortionsPerProductionUnit =
+    draftForm.portionsPerProductionUnit.trim().replace(',', '.');
   const parametersComplete = Boolean(
     /^\d+(?:\.\d+)?$/.test(normalizedProductionQuantity)
     && Number(normalizedProductionQuantity) > 0
     && draftForm.productionUnit
+    && /^\d+(?:\.\d+)?$/.test(normalizedPortionsPerProductionUnit)
+    && Number(normalizedPortionsPerProductionUnit) > 0
+    && draftForm.saleBasis
+    && draftForm.finalPriceMode
     && parsedVatRate !== null
     && parsedVatRate >= 0
     && parsedVatRate <= 10000
@@ -866,6 +896,55 @@ function TechnicalSheetWorkspacePage() {
                     </Select>
                   </Field>
 
+                  <Field className="w-28">
+                    <FieldLabel htmlFor="technical-sheet-portions-per-piece">
+                      Portions / pièce
+                    </FieldLabel>
+                    <Input
+                      className="h-9"
+                      disabled={!canUpdate || draftSynchronizing}
+                      id="technical-sheet-portions-per-piece"
+                      inputMode="decimal"
+                      onBlur={flushAutosave}
+                      onChange={(event) => {
+                        updateDraftForm((current) => ({
+                          ...current,
+                          portionsPerProductionUnit: event.target.value,
+                        }));
+                      }}
+                      value={draftForm.portionsPerProductionUnit}
+                    />
+                  </Field>
+
+                  <Field className="w-28">
+                    <FieldLabel>Base de vente</FieldLabel>
+                    <Select
+                      disabled={!canUpdate || !canValuate || draftSynchronizing}
+                      items={saleBasisItems}
+                      onValueChange={(value) => {
+                        updateDraftForm((current) => ({
+                          ...current,
+                          saleBasis: value,
+                        }), { immediate: true });
+                      }}
+                      value={draftForm.saleBasis}
+                    >
+                      <SelectTrigger
+                        aria-label="Base de vente"
+                        className="h-9 min-h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {saleBasisItems.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
                   <Field className="w-24">
                     <FieldLabel htmlFor="technical-sheet-vat">
                       TVA (%)
@@ -915,6 +994,7 @@ function TechnicalSheetWorkspacePage() {
                     editDisabled={!canUpdate || draftSynchronizing}
                     finalPriceInputValue={draftForm.finalPriceTtc}
                     finalPriceMode={draftForm.finalPriceMode}
+                    finalPriceModeItems={finalPriceModeItems}
                     lines={draftForm.lines}
                     onFinalPriceInputChange={(value) => {
                       updateDraftForm((current) => ({
@@ -929,6 +1009,8 @@ function TechnicalSheetWorkspacePage() {
                       }), { immediate: true });
                     }}
                     onFieldBlur={flushAutosave}
+                    saleBasis={draftForm.saleBasis}
+                    saleBasisItems={saleBasisItems}
                     targetMarginBasisPoints={
                       parsedTargetMargin
                     }

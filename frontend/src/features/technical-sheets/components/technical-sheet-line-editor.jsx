@@ -903,9 +903,9 @@ function TechnicalSheetLineEditor({
               className="block max-w-full truncate text-left text-sm font-medium tabular-nums lg:mx-auto lg:text-center"
               type="button"
             >
-              {hasValue(line.valuation?.normalizedAmount)
-                ? formatDecimalCurrency(line.valuation.normalizedAmount)
-                : '—'}
+              {formatDecimalCurrency(
+                line.valuation?.normalizedAmount,
+              )}
             </TooltipTrigger>
             <TooltipContent>
               {sourceLabel
@@ -925,11 +925,11 @@ function TechnicalSheetLineEditor({
         </div>
 
         <div className="min-w-0 lg:text-center">
-          <MobileLabel>Coût matières unitaire hors taxe</MobileLabel>
+          <MobileLabel>Coût total HT de la ligne</MobileLabel>
           <p className="truncate text-sm font-medium tabular-nums lg:text-center">
-            {hasValue(line.valuation?.lineCostHt)
-              ? formatDecimalCurrency(line.valuation.lineCostHt)
-              : '—'}
+            {formatDecimalCurrency(
+              line.valuation?.lineCostHt,
+            )}
           </p>
         </div>
 
@@ -1063,7 +1063,12 @@ function TechnicalSheetLineEditor({
           <ColumnHeading align="center" tooltip="Quantité nette">Qté</ColumnHeading>
           <ColumnHeading align="center" tooltip="Unité">U</ColumnHeading>
           <ColumnHeading align="center" tooltip="Prix unitaire hors taxe">PUHT</ColumnHeading>
-          <ColumnHeading align="center" tooltip="Coût matières unitaire hors taxe">CMU HT</ColumnHeading>
+          <ColumnHeading
+            align="center"
+            tooltip="Coût total HT de cette ligne dans la production"
+          >
+            Coût HT
+          </ColumnHeading>
           <ColumnHeading
             align="center"
             tooltip="Part de cette ligne Ingrédient dans le coût matière HT total de la Fiche. Disponible après valorisation complète."

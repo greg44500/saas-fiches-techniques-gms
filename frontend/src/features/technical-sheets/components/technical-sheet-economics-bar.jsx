@@ -82,6 +82,10 @@ function getVisibleCosts(lines, economicSnapshot) {
       manufacturingCostHt: economicSnapshot.manufacturingCostHt,
       manufacturingCostPerProductionUnitHt:
         economicSnapshot.manufacturingCostPerProductionUnitHt,
+      materialCostPerPortionHt:
+        economicSnapshot.materialCostPerPortionHt,
+      manufacturingCostPerPortionHt:
+        economicSnapshot.manufacturingCostPerPortionHt,
     };
   }
 
@@ -105,6 +109,8 @@ function getVisibleCosts(lines, economicSnapshot) {
       [materialCostHt, economatCostHt].filter(Boolean),
     ),
     manufacturingCostPerProductionUnitHt: null,
+    materialCostPerPortionHt: null,
+    manufacturingCostPerPortionHt: null,
   };
 }
 
@@ -156,11 +162,14 @@ function TechnicalSheetEconomicsBar({
   economicSnapshot,
   editDisabled = false,
   finalPriceInputValue = '',
-  finalPriceMode = 'ADVISED',
+  finalPriceMode = '',
+  finalPriceModeItems = [],
   lines = [],
   onFieldBlur,
   onFinalPriceInputChange,
   onFinalPriceModeChange,
+  saleBasis,
+  saleBasisItems = [],
   targetMarginBasisPoints,
   vatRateBasisPoints,
 }) {
@@ -169,50 +178,49 @@ function TechnicalSheetEconomicsBar({
     () => getVisibleCosts(lines, economicSnapshot),
     [economicSnapshot, lines],
   );
+  const saleBasisLabel = (
+    saleBasisItems.find((item) => item.value === saleBasis)?.label
+    ?? 'base de vente'
+  );
+
   return (
     <>
       <div className="space-y-3">
         <div className="flex items-end gap-3">
           <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4 xl:grid-cols-7">
             <Metric
-              label="CM HT"
-              tooltip="Coût matières total hors taxe de la production"
-              value={formatDecimalCurrency(visibleCosts.materialCostHt)}
-            />
-            <Metric
-              label="CE HT"
-              tooltip="Coût économat total hors taxe de la production"
-              value={formatDecimalCurrency(visibleCosts.economatCostHt)}
-            />
-            <Metric
               label="CF HT"
-              tooltip="Coût de fabrication total hors taxe de la production"
+              tooltip="Coût de fabrication HT total de la production"
               value={formatDecimalCurrency(visibleCosts.manufacturingCostHt)}
             />
-
-
             <Metric
-              label="CF/U HT"
-              tooltip="Coût de fabrication hors taxe par unité produite"
+              label="CMU HT"
+              tooltip="Coût matière unitaire HT d’une portion"
               value={formatDecimalCurrency(
-                visibleCosts.manufacturingCostPerProductionUnitHt,
+                visibleCosts.materialCostPerPortionHt,
               )}
             />
-
             <Metric
-              label="PC TTC/U"
-              tooltip="Prix conseillé toutes taxes comprises par unité produite"
+              label="CFU HT"
+              tooltip="Coût de fabrication unitaire HT d’une portion"
+              value={formatDecimalCurrency(
+                visibleCosts.manufacturingCostPerPortionHt,
+              )}
+            />
+            <Metric
+              label="PC TTC"
+              tooltip={'Prix conseillé TTC par ' + saleBasisLabel.toLowerCase()}
               value={formatMinorCurrency(economicSnapshot?.advisedPriceTtcMinor)}
             />
 
             <div className="min-w-0 space-y-1">
-              <MetricLabel tooltip="Prix final toutes taxes comprises par unité produite">
-                PF TTC/U
+              <MetricLabel tooltip={'Prix de vente retenu TTC par ' + saleBasisLabel.toLowerCase()}>
+                Prix retenu TTC
               </MetricLabel>
               <div className="flex min-w-0 gap-1">
                 {finalPriceMode === 'MANUAL' ? (
                   <Input
-                    aria-label="Prix final TTC (€)"
+                    aria-label="Prix retenu TTC (€)"
                     className="h-8 min-w-0 flex-1 tabular-nums"
                     disabled={editDisabled || !canValuate}
                     inputMode="decimal"
@@ -230,22 +238,22 @@ function TechnicalSheetEconomicsBar({
 
                 <Select
                   disabled={editDisabled || !canValuate}
-                  items={[
-                    { value: 'ADVISED', label: 'Conseillé' },
-                    { value: 'MANUAL', label: 'Manuel' },
-                  ]}
+                  items={finalPriceModeItems}
                   onValueChange={onFinalPriceModeChange}
                   value={finalPriceMode}
                 >
                   <SelectTrigger
-                    aria-label="Mode de Prix final"
+                    aria-label="Mode de Prix retenu"
                     className="h-8 min-h-8 w-24 shrink-0 px-2 text-xs"
                   >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ADVISED">Conseillé</SelectItem>
-                    <SelectItem value="MANUAL">Manuel</SelectItem>
+                    {finalPriceModeItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -312,29 +320,41 @@ function TechnicalSheetEconomicsBar({
                 value={formatBasisPoints(vatRateBasisPoints)}
               />
               <DetailRow
-                label="Coût fabrication HT / unité produite"
+                label="CF/Pce HT"
                 value={formatDecimalCurrency(
                   economicSnapshot?.manufacturingCostPerProductionUnitHt,
                 )}
               />
               <DetailRow
-                label="Prix théorique HT / unité produite"
+                label="CMU HT"
+                value={formatDecimalCurrency(
+                  economicSnapshot?.materialCostPerPortionHt,
+                )}
+              />
+              <DetailRow
+                label="CFU HT"
+                value={formatDecimalCurrency(
+                  economicSnapshot?.manufacturingCostPerPortionHt,
+                )}
+              />
+              <DetailRow
+                label="Prix de vente calculé HT / base de vente"
                 value={formatDecimalCurrency(economicSnapshot?.theoreticalPriceHt)}
               />
               <DetailRow
-                label="Prix théorique TTC / unité produite"
+                label="Prix de vente calculé TTC / base de vente"
                 value={formatDecimalCurrency(economicSnapshot?.theoreticalPriceTtc)}
               />
               <DetailRow
-                label="Prix conseillé TTC / unité produite"
+                label="Prix conseillé TTC / base de vente"
                 value={formatMinorCurrency(economicSnapshot?.advisedPriceTtcMinor)}
               />
               <DetailRow
-                label="Prix final TTC / unité produite"
+                label="Prix retenu TTC / base de vente"
                 value={formatMinorCurrency(economicSnapshot?.finalPriceTtcMinor)}
               />
               <DetailRow
-                label="Plancher économique TTC / unité produite"
+                label="Plancher économique TTC / base de vente"
                 value={formatDecimalCurrency(economicSnapshot?.economicFloorTtc)}
               />
               <DetailRow

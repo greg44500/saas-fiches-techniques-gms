@@ -62,7 +62,7 @@ function getLineValuationPresentation(
 }
 
 function formatMinorCurrency(value, currency = 'EUR') {
-  if (!Number.isInteger(value)) return 'Non calculé';
+  if (!Number.isInteger(value)) return 'NC';
 
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -72,12 +72,12 @@ function formatMinorCurrency(value, currency = 'EUR') {
 
 function formatDecimalCurrency(value, currency = 'EUR') {
   if (value === null || value === undefined || value === '') {
-    return 'Non calculé';
+    return 'NC';
   }
 
   const parsed = Number(value);
 
-  if (!Number.isFinite(parsed)) return 'Non calculé';
+  if (!Number.isFinite(parsed)) return 'NC';
 
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
