@@ -48,7 +48,13 @@ Fiche
 → CM/Pce et CF/Pce divisés par productionQuantity
 → CMU et CFU divisés par totalPortions
 → titre + badges intégrés au header sticky à la place du libellé « Paramètres »
-→ champs de production compactés
+→ actions Modifier / Analyse / Infos dossier regroupées dans le header
+→ paramètres séparés en groupes compacts Production / Vente
+→ cinq garde-fous économiques visibles : CF HT, CMU HT, CFU HT, Prix retenu TTC, %MR
+→ drawer Analyse de gestion : Synthèse | Coûts | Prix & marge | Historique
+→ drawer Infos dossier : Identité | Prix applicable
+→ nom / description modifiés dans un dialogue compact distinct
+→ commentaire de validation saisi dans le dialogue de validation
 → composition modifiable uniquement avec paramètres complets
 → unité de ligne imposée par ProductVariant.referenceUnit
 → aucun sélecteur d'unité dans une ligne
@@ -83,7 +89,7 @@ migration:m004-production-quantity
 main de base                         : 957438c8f522b9e342158a17a7a4a6aa4bd7d3a2
 Core Gate post-merge de cette base   : #167 SUCCESS
 implémentation branche               : stabilisation Pièce/Portion + metadata backend + UX économique codée
-dernier commit métier avant docs      : 82f2541ebea8d26e8da5da040049b6aa47e63554
+dernier commit métier avant docs      : 898595ca57bf0cab3c8f0bbc49bb4eff98e5d02d
 tests automatisés ajoutés / adaptés  : OUI (backend, frontend et E2E M-004)
 tests automatisés exécutés           : NON EXÉCUTÉS / NON REVENDIQUÉS
 raison                               : Core Gate uniquement sur PR ou push main ; runtime courant sans accès réseau au clone
@@ -102,12 +108,25 @@ création Fiche
 → Base de vente = Pièce par défaut
 
 poste de travail
+→ header compact avec Retour au Dossier, Modifier, Analyse, Infos dossier et actions globales
 → modification Quantité produite / Portions par pièce
 → Total portions affiché depuis la réponse backend
 → bascule Base de vente Pièce ↔ Portion
 → CMU HT / CFU HT distincts du coût par pièce
-→ Prix conseillé / Prix retenu cohérents avec la base de vente
+→ garde-fous visibles sans dashboard lourd
 → valeurs indisponibles affichées NC, jamais 0 inventé
+→ changement de calcul : valeurs précédentes conservées pendant « Actualisation… »
+
+Analyse
+→ Synthèse : CF HT, CFU HT, Prix retenu TTC, marge réelle, production, structure Matières/Économat, cible vs réelle
+→ Coûts : CM, CE, CF, coûts par pièce et par portion
+→ Prix & marge : Prix de vente calculé HT/TTC, conseillé, retenu, plancher, marges
+→ Historique : validations et commentaires
+
+Infos dossier
+→ identité magasin
+→ marge cible par défaut
+→ vérification du Prix applicable M-003
 
 composition
 → sections et sources de prix alimentées par metadata backend

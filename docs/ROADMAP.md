@@ -216,7 +216,9 @@ Décisions fermées :
 - seuil commercial Free définitif à décider ; une limite temporaire de développement, par exemple 10 Fiches, peut être configurée ;
 - RBAC M-004 validé dans le contrat canonique ;
 - contrôle de concurrence optimiste obligatoire ;
-- détails UX ajustables après QA visuelle sans modifier les invariants fonctionnels.
+- détails UX ajustables après QA visuelle sans modifier les invariants fonctionnels ;
+- poste de travail stabilisé autour d'un header compact, groupes Production/Vente, cinq garde-fous économiques et deux drawers mutuellement exclusifs Analyse / Infos dossier ;
+- historique déplacé dans Analyse > Historique ; nom/description et commentaire de validation utilisent des dialogues dédiés.
 
 Périmètre produit V1 :
 
@@ -584,73 +586,32 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le BLOC A est définitivement clôturé :
+Le BLOC B Platform / Gestion des référentiels est clôturé. Le lot actif est la **stabilisation M-004 — poste de travail, analyse économique et contexte Dossier** sur `feature/m004-valuation-ux-stabilization`.
+
+Séquence attendue :
 
 ~~~text
-PR #30
-→ Core Gate PR #159 : success
-→ merge 42f91e844974e2d0c6d374f2bb307077210b2614
-
-PR #31
-→ Core Gate PR #163 : success
-→ merge 7c3ae1d4ae5a5600d95198bab0b890d88269d39f
-→ Core Gate post-merge #164 : success
-~~~
-
-Le lot actif est le **BLOC B — Platform / Gestion des référentiels**.
-
-Objectif :
-
-~~~text
-Sidebar Platform
-→ section GMS
-   → Gestion des référentiels
-
-Page commune
-→ [ Produits | Fournisseurs ]
-~~~
-
-Architecture :
-
-~~~text
-/platform/reference-management/:section?
-→ products
-→ suppliers
-~~~
-
-Règles :
-
-- réutiliser intégralement les pages globales M-002/M-003 existantes ;
-- conserver les routes historiques `/product-reference` et `/supplier-reference` pour ne pas réduire le contrat Application Global hors Platform ;
-- afficher uniquement les onglets autorisés par `product:reference:read` et `supplier:reference:read` ;
-- conserver les droits `*:manage` comme autorité des actions de mutation ;
-- ne donner aucun droit métier implicite à un rôle Platform ;
-- utiliser la primitive Core `type: 'section'` sans modifier le renderer Core ;
-- ne pas créer de backend, modèle, permission ou capability supplémentaire ;
-- conserver le moteur Help Center Core mais aligner la composition métier Platform sur la nouvelle navigation ;
-- regrouper les aides Platform Produits/Fournisseurs sous une catégorie unique « Gestion des référentiels » tout en conservant leur filtrage Application Global ;
-- conserver séparées les catégories Workspace « Produits » et « Fournisseurs & prix ».
-
-État avant PR :
-
-~~~text
-branche = feature/platform-reference-management
-base    = main@7c3ae1d4ae5a5600d95198bab0b890d88269d39f
-code    = implémenté
-aide    = alignée
-tests   = ajoutés / adaptés
-QA      = validée le 2026-10-01
-~~~
-
-La Core Gate de PR constitue la validation automatisée finale du lot et exécute la commande canonique `npm run release:check`.
-
-Séquence :
-
-~~~text
-QA visuelle validée
-→ une PR BLOC B
-→ Core Gate PR / release:check
+code + tests adaptés sur la branche
+→ QA visuelle utilisateur
+→ corrections éventuelles dans le même lot
+→ PR unique M-004
+→ Core Gate PR = npm run release:check
 → merge si verte
 → Core Gate post-merge
-→ clôture BLOC B
+→ mise à jour de reprise
+→ ouverture seulement ensuite du bloc Exports / diffusion
 ~~~
+
+Points de QA prioritaires :
+
+- densité du header sticky et responsive ;
+- groupes Production / Vente et total portions ;
+- garde-fous CF HT / CMU HT / CFU HT / Prix retenu TTC / %MR ;
+- drawer Analyse : Synthèse, Coûts, Prix & marge, Historique ;
+- drawer Infos dossier : identité et Prix applicable M-003 ;
+- dialogue Modifier la Fiche ;
+- dialogue de validation avec commentaire facultatif ;
+- remplacement Produit et retour visuel discret ;
+- absence de conversion legacy implicite vers Pièce.
+
+Aucun résultat de tests n'est présumé tant que les gates du lot courant n'ont pas réellement été exécutées.

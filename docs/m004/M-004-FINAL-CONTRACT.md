@@ -595,7 +595,7 @@ première tentative de validation
 → nouvelle confirmation de validation
 ```
 
-L'historique validé n'est jamais modifié automatiquement. Un Prix final manuel reste protégé et doit être corrigé explicitement s'il devient incompatible avec le plancher économique.
+L'historique validé n'est jamais modifié automatiquement. Un Prix retenu manuel reste protégé et doit être corrigé explicitement s'il devient incompatible avec le plancher économique.
 
 ---
 
@@ -1113,7 +1113,9 @@ L'AuditLog générique ne remplace pas l'historique fonctionnel validé de la Fi
 
 M-004 s'intègre dans la vraie page de travail du Dossier M-001.
 
-Le shell Dossier conserve les outils de contexte utiles pendant la navigation entre les modules. En particulier, lorsqu'un utilisateur possède l'autorité M-003 correspondante, la vérification du Prix applicable reste accessible depuis l'onglet Fiches techniques afin d'aider à choisir ou contrôler un Article fournisseur pendant la composition.
+Le shell Dossier conserve les outils de contexte utiles sur les pages de module et les listes. Sur la page détaillée d'une Fiche, ces cartes ne sont pas répétées au-dessus du poste de travail : le contexte magasin est accessible à la demande dans Infos dossier.
+
+Lorsqu'un utilisateur possède l'autorité M-003 correspondante, ce drawer expose une vue Prix applicable afin de contrôler l'Article et le Prix que M-003 résoudrait pour le Dossier courant. M-004 ne duplique ni la politique ni les libellés de source de Prix de M-003.
 
 Surfaces fonctionnelles :
 
@@ -1295,8 +1297,8 @@ M-004 Fiche technique est fonctionnellement acceptable lorsque :
 7. plusieurs Articles exigent un choix humain ;
 8. un Prix absent n'est jamais transformé en 0 ;
 9. CM, %CM, Économat et coût de fabrication sont calculés séparément ;
-10. TVA, marge cible, prix théorique, conseillé et final sont correctement calculés ;
-11. le Prix final peut différer du conseillé sans passer sous le plancher ;
+10. TVA, marge cible, Prix de vente calculé, Prix conseillé et Prix retenu sont correctement calculés ;
+11. le Prix retenu peut différer du conseillé sans passer sous le plancher ;
 12. la marge réelle est recalculée ;
 13. un changement tarifaire détecté avant validation actualise le brouillon et impose une nouvelle confirmation ;
 14. un état validé est immuable et historiquement explicable ;

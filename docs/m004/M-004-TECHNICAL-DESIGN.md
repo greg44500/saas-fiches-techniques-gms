@@ -177,7 +177,7 @@ createdAt / updatedAt
 - `revision` permet de refuser les écrasements concurrents ;
 - Decimal128 est conservé pour les quantités et calculs non monétaires exacts ;
 - les taux en basis points évitent les flottants pour TVA et marge ;
-- le Prix final TTC est stockable en unité monétaire mineure ;
+- le Prix retenu TTC est stockable en unité monétaire mineure ;
 - `finalPriceMode` permet de préserver explicitement un choix utilisateur lors des recalculs automatiques.
 
 Aucune valeur de TVA ou de marge cible n'est inventée par la conception.
@@ -1133,7 +1133,13 @@ Sections logiques :
 - prix/marge ;
 - historique.
 
-La QA visuelle M-004 retient un poste de travail dense : le titre de la Fiche et ses badges remplacent le libellé générique « Paramètres » dans la zone sticky ; les paramètres de production compacts, sources Produit, état d'autosave et actions globales restent visibles pendant le scroll de la Composition. Informations générales et Historique partagent le drawer droit via deux onglets.
+La stabilisation UX M-004 retient un poste de travail dense mais non transformé en dashboard : le titre de la Fiche et ses badges remplacent le libellé générique « Paramètres » dans la zone sticky ; les actions globales, les paramètres compacts Production/Vente, les sources Produit et l'état d'autosave restent accessibles pendant le scroll de la Composition.
+
+Le poste de travail conserve uniquement cinq garde-fous économiques immédiats : CF HT, CMU HT, CFU HT, Prix retenu TTC et marge réelle. Les détails sont sortis du flux principal dans un EntityDetailsDrawer Analyse de gestion organisé en Synthèse | Coûts | Prix & marge | Historique.
+
+Le contexte Dossier n'est plus répété en grosses cartes au-dessus d'une Fiche détaillée. Il est accessible à la demande via un second EntityDetailsDrawer Infos dossier avec Identité | Prix applicable. Un seul drawer droit est ouvert à la fois.
+
+Le nom et la description de la Fiche sont modifiés dans un dialogue compact distinct. Le commentaire historique de validation est saisi dans le dialogue de validation, au moment où l'utilisateur confirme la création de l'état immuable.
 
 ### État serveur
 
@@ -1279,7 +1285,7 @@ Au minimum :
 - Prix absent ;
 - calcul économique automatique ;
 - actualisation automatique après changement ;
-- prix final manuel ;
+- Prix retenu manuel ;
 - validation ;
 - historique ;
 - lifecycle ;
