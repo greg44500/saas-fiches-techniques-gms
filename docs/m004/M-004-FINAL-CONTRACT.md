@@ -503,7 +503,7 @@ supérieur
 ou inférieur au Prix conseillé
 ```
 
-Le Prix retenu ne peut jamais être inférieur au plancher économique de la base de vente.
+Le plancher économique de la base de vente reste calculé et affiché comme seuil de référence, mais il ne bloque pas la saisie ni l'analyse. Un Prix retenu peut être inférieur à ce plancher afin que la Fiche expose explicitement une situation déficitaire au lieu de la masquer.
 
 Pour une Fiche soumise à TVA :
 
@@ -516,12 +516,45 @@ coût de fabrication HT de la base de vente × (1 + TVA)
 Après choix du Prix retenu, le backend recalcule :
 
 - Prix retenu HT ;
-- marge réelle en valeur ;
-- marge réelle en pourcentage.
+- marge réelle en pourcentage ;
+- Marge sur coût de fabrication HT par unité de vente ;
+- Marge sur coût de fabrication HT de la production ;
+- écart à la marge cible en points ;
+- écart à la marge cible en euros par unité de vente et pour la production.
+
+La **Marge sur coût de fabrication HT** est définie comme :
+
+```text
+Prix retenu HT
+-
+coût de fabrication HT de la base de vente
+```
+
+Cette marge n'est pas un bénéfice comptable : elle ne prétend pas intégrer toutes les charges de l'entreprise.
+
+Lecture métier :
+
+- marge sur coût de fabrication positive et cible atteinte ou dépassée → diagnostic positif ;
+- marge sur coût de fabrication positive mais cible non atteinte → avertissement ;
+- marge sur coût de fabrication négative → diagnostic déficitaire ;
+- le plancher économique reste visible pour expliquer le seuil de couverture du coût.
 
 Un Prix retenu choisi explicitement par l'utilisateur ne doit pas être remplacé silencieusement lors d'un recalcul automatique.
 
-Si un recalcul rend ce Prix retenu inférieur au nouveau plancher économique, l'utilisateur doit le corriger explicitement avant validation.
+---
+
+## 18 bis. TVA de vente
+
+La TVA de vente V1 est un choix contrôlé par le backend :
+
+```text
+5,5 %
+10 %
+```
+
+Le taux par défaut d'une nouvelle Fiche est `5,5 %`.
+
+Le frontend ne propose pas de saisie libre de TVA et consomme les valeurs autorisées et le défaut depuis les metadata M-004.
 
 ---
 
@@ -1298,8 +1331,8 @@ M-004 Fiche technique est fonctionnellement acceptable lorsque :
 8. un Prix absent n'est jamais transformé en 0 ;
 9. CM, %CM, Économat et coût de fabrication sont calculés séparément ;
 10. TVA, marge cible, Prix de vente calculé, Prix conseillé et Prix retenu sont correctement calculés ;
-11. le Prix retenu peut différer du conseillé sans passer sous le plancher ;
-12. la marge réelle est recalculée ;
+11. le Prix retenu peut différer du conseillé et une valeur sous le plancher reste analysable comme situation déficitaire ;
+12. la marge réelle, la Marge sur coût de fabrication et les écarts à la cible sont recalculés ;
 13. un changement tarifaire détecté avant validation actualise le brouillon et impose une nouvelle confirmation ;
 14. un état validé est immuable et historiquement explicable ;
 15. les validations successives n'ajoutent pas de consommation de quota ;

@@ -50,7 +50,11 @@ Fiche
 → titre + badges intégrés au header sticky à la place du libellé « Paramètres »
 → actions Modifier / Analyse / Infos dossier regroupées dans le header
 → paramètres séparés en groupes compacts Production / Vente
+→ TVA métier limitée à 5,5 % ou 10 %, défaut 5,5 %, valeurs exposées par metadata backend
 → cinq garde-fous économiques visibles : CF HT, CMU HT, CFU HT, Prix retenu TTC, %MR
+→ analyse enrichie par la Marge sur coût de fabrication HT, par unité de vente et sur la production
+→ écart à la marge cible exposé en points et en euros
+→ le plancher économique devient un seuil de diagnostic et n'interdit plus d'observer une marge négative
 → drawer Analyse de gestion : Synthèse | Coûts | Prix & marge | Historique
 → drawer Infos dossier : Identité | Prix applicable
 → nom / description modifiés dans un dialogue compact distinct
@@ -74,6 +78,13 @@ Le Prix de vente calculé, le Prix conseillé, le Prix retenu et le plancher éc
 
 Sécurité : `sanitizeFilter` reste activé globalement et les filtres Mongoose du module M-004 sont explicitement approuvés avec `mongoose.trusted(...)`. Les listes métier utilisées par le frontend proviennent des metadata backend.
 
+Dépendance Core identifiée pendant la QA UX :
+
+- un sélecteur segmenté réutilisable basé sur Base UI / shadcn est une primitive générique du Design System ;
+- une variante sémantique `warning` du bouton est également transverse ;
+- ces primitives ne doivent pas rester implémentées silencieusement dans le produit ;
+- le frontend M-004 correspondant est volontairement suspendu jusqu'à leur ajout/versionnement dans `saas-core-api`, puis intégration du Core dans le produit.
+
 Compatibilité legacy :
 
 ~~~text
@@ -89,11 +100,11 @@ migration:m004-production-quantity
 main de base                         : 957438c8f522b9e342158a17a7a4a6aa4bd7d3a2
 Core Gate post-merge de cette base   : #167 SUCCESS
 implémentation branche               : stabilisation Pièce/Portion + metadata backend + UX économique codée
-dernier commit métier avant docs      : 490d6d0a0fee5b10889008e811e4244960a22627
+dernier commit métier avant docs      : fc3447148a81526f36571e6dc367d0728f5d9e50
 tests automatisés ajoutés / adaptés  : OUI (backend, frontend et E2E M-004)
 tests automatisés exécutés           : NON EXÉCUTÉS / NON REVENDIQUÉS
 raison                               : Core Gate uniquement sur PR ou push main ; runtime courant sans accès réseau au clone
-QA visuelle utilisateur              : À FAIRE
+QA visuelle utilisateur              : EN COURS — retours du 2026-10-02 à intégrer après évolution Core
 PR / merge                           : NON CRÉÉS
 ~~~
 

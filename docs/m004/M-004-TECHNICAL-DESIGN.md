@@ -131,7 +131,9 @@ CFU HT
 
 La base de vente décide du coût utilisé pour le Prix de vente calculé, le plancher et la marge réelle : coût par pièce pour `PIECE`, coût par portion pour `PORTION`.
 
-Les listes de production et de vente sont exposées par les metadata backend. Le frontend ne duplique pas ces registries.
+La TVA V1 est contrôlée par registry backend : `550` (5,5 %) ou `1000` (10 %), avec `550` par défaut. Le frontend ne maintient aucune liste TVA parallèle.
+
+Les listes de production, de vente, de TVA et les définitions des indicateurs économiques sont exposées par les metadata backend. Le frontend ne duplique pas ces registries.
 
 Compatibilité des données existantes : la migration `migration:m004-production-quantity` reprend l'ancienne valeur `portions` uniquement lorsque `productionQuantity` est absente, puis supprime le champ obsolète des brouillons et snapshots historiques. Elle n'invente aucune valeur lorsque les deux champs sont absents.
 
@@ -154,7 +156,7 @@ productionQuantity     Decimal128|null
 productionUnit         UNIT|null
 portionsPerProductionUnit Decimal128|null
 saleBasis              PIECE|PORTION|null
-vatRateBasisPoints     integer|null
+vatRateBasisPoints     550|1000|null
 targetMarginBasisPoints integer|null
 
 finalPriceTtcMinor     integer|null
@@ -1136,6 +1138,10 @@ Sections logiques :
 La stabilisation UX M-004 retient un poste de travail dense mais non transformé en dashboard : le titre de la Fiche et ses badges remplacent le libellé générique « Paramètres » dans la zone sticky ; les actions globales, les paramètres compacts Production/Vente, les sources Produit et l'état d'autosave restent accessibles pendant le scroll de la Composition.
 
 Le poste de travail conserve uniquement cinq garde-fous économiques immédiats : CF HT, CMU HT, CFU HT, Prix retenu TTC et marge réelle. Les détails sont sortis du flux principal dans un EntityDetailsDrawer Analyse de gestion organisé en Synthèse | Coûts | Prix & marge | Historique.
+
+L'analyse expose également la Marge sur coût de fabrication HT par unité de vente et sur l'ensemble de la production, ainsi que l'écart à la cible en points et en euros. Une marge positive sous la cible est un warning ; une marge négative est destructive ; une cible atteinte ou dépassée est success. Les graphiques descriptifs utilisent les tokens de palette du Design System, et non des gris codés localement.
+
+Le choix TVA doit utiliser une primitive générique de sélection segmentée issue du Core. Cette primitive Design System n'est pas implémentée durablement dans le module métier : elle doit être ajoutée au Core, versionnée, puis intégrée avant branchement M-004.
 
 Le contexte Dossier n'est plus répété en grosses cartes au-dessus d'une Fiche détaillée. Il est accessible à la demande via un second EntityDetailsDrawer Infos dossier avec Identité | Prix applicable. Un seul drawer droit est ouvert à la fois.
 
