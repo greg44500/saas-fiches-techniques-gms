@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import {
   useGetDossierTechnicalSheetSettingsQuery,
   useGetTechnicalSheetCapacityQuery,
+  useGetTechnicalSheetMetadataQuery,
   useListTechnicalSheetsQuery,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
@@ -71,6 +72,10 @@ function TechnicalSheetsPage() {
     search: search.trim() || undefined,
   });
   const settingsQuery = useGetDossierTechnicalSheetSettingsQuery({
+    workspaceId: workspace.id,
+    dossierId,
+  });
+  const metadataQuery = useGetTechnicalSheetMetadataQuery({
     workspaceId: workspace.id,
     dossierId,
   });
@@ -144,7 +149,10 @@ function TechnicalSheetsPage() {
       id: 'status',
       header: 'Statut',
       cell: (sheet) => {
-        const presentation = getTechnicalSheetStatusPresentation(sheet.status);
+        const presentation = getTechnicalSheetStatusPresentation(
+          sheet.status,
+          metadataQuery.data?.statusDefinitions,
+        );
         return (
           <TechnicalSheetStatusBadge tone={presentation.tone}>
             {presentation.label}

@@ -1,55 +1,17 @@
-const TECHNICAL_SHEET_STATUS_PRESENTATION = Object.freeze({
-  ACTIVE: Object.freeze({
-    label: 'Active',
-    tone: 'success',
-  }),
-  ARCHIVED: Object.freeze({
-    label: 'Archivée',
-    tone: 'archived',
-  }),
-  DELETED: Object.freeze({
-    label: 'Corbeille',
-    tone: 'destructive',
-  }),
-});
+function getBackendPresentation(
+  definitions,
+  value,
+  fallbackLabel,
+) {
+  const definition = (definitions ?? [])
+    .find((entry) => entry.value === value);
 
-const TECHNICAL_SHEET_VALUATION_PRESENTATION = Object.freeze({
-  NOT_VALUED: Object.freeze({
-    label: 'Non valorisée',
-    tone: 'alert',
-  }),
-  PARTIAL: Object.freeze({
-    label: 'Valorisation incomplète',
-    tone: 'warning',
-  }),
-  COMPLETE: Object.freeze({
-    label: 'Valorisée',
-    tone: 'success',
-  }),
-  STALE: Object.freeze({
-    label: 'Calcul à actualiser',
-    tone: 'warning',
-  }),
-});
-
-const LINE_VALUATION_PRESENTATION = Object.freeze({
-  UNRESOLVED: Object.freeze({
-    label: 'Article à choisir',
-    tone: 'warning',
-  }),
-  NO_PRICE: Object.freeze({
-    label: 'Prix indisponible',
-    tone: 'destructive',
-  }),
-  VALUED: Object.freeze({
-    label: 'Valorisée',
-    tone: 'success',
-  }),
-  STALE: Object.freeze({
-    label: 'Calcul à actualiser',
-    tone: 'warning',
-  }),
-});
+  return definition ?? {
+    value,
+    label: value ?? fallbackLabel,
+    tone: 'neutral',
+  };
+}
 
 function getTechnicalSheetActionAvailability({
   status,
@@ -66,25 +28,37 @@ function getTechnicalSheetActionAvailability({
   };
 }
 
-function getTechnicalSheetStatusPresentation(status) {
-  return TECHNICAL_SHEET_STATUS_PRESENTATION[status] ?? {
-    label: status ?? 'Statut inconnu',
-    tone: 'neutral',
-  };
+function getTechnicalSheetStatusPresentation(
+  status,
+  definitions,
+) {
+  return getBackendPresentation(
+    definitions,
+    status,
+    'Statut inconnu',
+  );
 }
 
-function getTechnicalSheetValuationPresentation(status) {
-  return TECHNICAL_SHEET_VALUATION_PRESENTATION[status] ?? {
-    label: status ?? 'État inconnu',
-    tone: 'neutral',
-  };
+function getTechnicalSheetValuationPresentation(
+  status,
+  definitions,
+) {
+  return getBackendPresentation(
+    definitions,
+    status,
+    'État inconnu',
+  );
 }
 
-function getLineValuationPresentation(status) {
-  return LINE_VALUATION_PRESENTATION[status] ?? {
-    label: status ?? 'État inconnu',
-    tone: 'neutral',
-  };
+function getLineValuationPresentation(
+  status,
+  definitions,
+) {
+  return getBackendPresentation(
+    definitions,
+    status,
+    'État inconnu',
+  );
 }
 
 function formatMinorCurrency(value, currency = 'EUR') {
@@ -159,9 +133,6 @@ function getTechnicalSheetApiErrorMessage(
 }
 
 export {
-  LINE_VALUATION_PRESENTATION,
-  TECHNICAL_SHEET_STATUS_PRESENTATION,
-  TECHNICAL_SHEET_VALUATION_PRESENTATION,
   basisPointsToInput,
   formatBasisPoints,
   formatDecimalCurrency,

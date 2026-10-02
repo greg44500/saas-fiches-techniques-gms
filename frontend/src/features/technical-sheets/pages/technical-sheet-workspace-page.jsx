@@ -445,7 +445,10 @@ function TechnicalSheetWorkspacePage() {
     );
   }
 
-  const statusPresentation = getTechnicalSheetStatusPresentation(sheet.status);
+  const statusPresentation = getTechnicalSheetStatusPresentation(
+    sheet.status,
+    metadata?.statusDefinitions,
+  );
   const valuationPresentation = draftDirty
     ? {
         label: 'Modifications non enregistrées',
@@ -453,6 +456,7 @@ function TechnicalSheetWorkspacePage() {
       }
     : getTechnicalSheetValuationPresentation(
         draft?.valuationStatus,
+        metadata?.valuationStatusDefinitions,
       );
   const actionAvailability = getTechnicalSheetActionAvailability({
     status: sheet.status,
@@ -998,6 +1002,7 @@ function TechnicalSheetWorkspacePage() {
                   setDraftDirty(false);
                   resetAutosave(updatedDraft.revision);
                 }}
+                metadata={metadata}
                 productMetadata={productMetadataQuery.data}
                 productScope={productScope}
                 canOpenPricing={canOpenSupplierPricing}

@@ -625,6 +625,7 @@ function TechnicalSheetLineEditor({
   dossierId,
   draftRevision,
   lines,
+  metadata,
   onChange,
   onFieldBlur,
   onOpenPricing,
@@ -798,6 +799,7 @@ function TechnicalSheetLineEditor({
     const editing = editingLineKey === key;
     const valuationPresentation = getLineValuationPresentation(
       line.valuation?.status,
+      metadata?.lineValuationStatusDefinitions,
     );
     const sourceLabel = getPricingSourceLabel(
       line.valuation?.applicableSource,
