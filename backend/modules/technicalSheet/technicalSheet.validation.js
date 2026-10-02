@@ -176,7 +176,7 @@ const technicalSheetLineSchema =
             Object.values(
                 PRODUCT_REFERENCE_UNIT,
             ),
-        ),
+        ).optional(),
         order: z
             .number()
             .int()
