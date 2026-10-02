@@ -1,4 +1,5 @@
 import {
+    calculateTotalPortions,
     convertQuantity,
     fractionToDecimal,
 } from './technicalSheetMath.service.js';
@@ -155,6 +156,34 @@ const serializeLine = (line) => {
     };
 };
 
+const serializeDraftTotalPortions = (draft) => {
+    if (
+        draft.economicSnapshot?.totalPortions
+        !== null
+        && draft.economicSnapshot?.totalPortions
+        !== undefined
+    ) {
+        return draft.economicSnapshot.totalPortions
+            .toString();
+    }
+
+    if (
+        draft.productionQuantity === null
+        || draft.productionQuantity === undefined
+        || draft.portionsPerProductionUnit === null
+        || draft.portionsPerProductionUnit === undefined
+    ) {
+        return null;
+    }
+
+    return calculateTotalPortions({
+        productionQuantity:
+            draft.productionQuantity.toString(),
+        portionsPerProductionUnit:
+            draft.portionsPerProductionUnit.toString(),
+    });
+};
+
 const serializeTechnicalSheetDraft = (draft) => ({
     id: draft._id.toString(),
     technicalSheetId:
@@ -168,9 +197,7 @@ const serializeTechnicalSheetDraft = (draft) => ({
             draft.portionsPerProductionUnit,
         ),
     totalPortions:
-        draft.economicSnapshot
-            ?.totalPortions
-        ?? null,
+        serializeDraftTotalPortions(draft),
     saleBasis: draft.saleBasis ?? null,
     vatRateBasisPoints:
         draft.vatRateBasisPoints ?? null,

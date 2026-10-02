@@ -216,6 +216,32 @@ const ceilPositiveFraction = ({
         + (numerator % denominator === 0n ? 0n : 1n);
 };
 
+const calculateTotalPortions = ({
+    productionQuantity,
+    portionsPerProductionUnit,
+}) => {
+    const productionQuantityFraction =
+        decimalFraction(productionQuantity);
+    const portionsPerProductionUnitFraction =
+        decimalFraction(portionsPerProductionUnit);
+
+    if (
+        productionQuantityFraction.numerator <= 0n
+        || portionsPerProductionUnitFraction.numerator <= 0n
+    ) {
+        throw new TypeError(
+            'La quantité produite et les portions par pièce doivent être strictement positives.',
+        );
+    }
+
+    return fractionToDecimal(
+        multiplyFractions(
+            productionQuantityFraction,
+            portionsPerProductionUnitFraction,
+        ),
+    );
+};
+
 const calculateEconomics = ({
     ingredientCosts,
     economatCosts,
@@ -454,6 +480,7 @@ export {
     addFractions,
     calculateEconomics,
     calculateGrossQuantity,
+    calculateTotalPortions,
     convertQuantity,
     decimalFraction,
     divideFractions,

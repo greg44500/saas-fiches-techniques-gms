@@ -7,11 +7,24 @@ import {
 import {
     calculateEconomics,
     calculateGrossQuantity,
+    calculateTotalPortions,
     convertQuantity,
     fractionToDecimal,
 } from '../../../modules/technicalSheet/technicalSheetMath.service.js';
 
 describe('M-004 calculs Fiche technique', () => {
+    it('dérive exactement le total de portions sans dépendre de la valorisation', () => {
+        expect(calculateTotalPortions({
+            productionQuantity: '10',
+            portionsPerProductionUnit: '8',
+        })).toBe('80');
+
+        expect(calculateTotalPortions({
+            productionQuantity: '1.5',
+            portionsPerProductionUnit: '2',
+        })).toBe('3');
+    });
+
     it('calcule exactement la quantité brute à partir du rendement', () => {
         const result = calculateGrossQuantity({
             netQuantity: '2',
