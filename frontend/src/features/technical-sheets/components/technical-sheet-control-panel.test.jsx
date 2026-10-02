@@ -32,6 +32,7 @@ function renderPanel(overrides = {}) {
     onValidate: vi.fn(),
     pendingLifecycle: false,
     validatePending: false,
+    validationEligible: true,
     ...overrides,
   };
 
@@ -63,7 +64,7 @@ describe('TechnicalSheetControlPanel', () => {
     })).toBeEnabled();
   });
 
-  it('bloque la validation si les informations du drawer ne sont pas enregistrées', () => {
+  it('bloque la validation si les informations de la Fiche ne sont pas enregistrées', () => {
     renderPanel({
       identityDirty: true,
     });
@@ -76,6 +77,16 @@ describe('TechnicalSheetControlPanel', () => {
   it('bloque la validation si le brouillon de composition est modifié', () => {
     renderPanel({
       draftDirty: true,
+    });
+
+    expect(screen.getByRole('button', {
+      name: 'Valider la Fiche technique',
+    })).toBeDisabled();
+  });
+
+  it('bloque la validation lorsque le backend indique que l’état économique ne le permet pas', () => {
+    renderPanel({
+      validationEligible: false,
     });
 
     expect(screen.getByRole('button', {

@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   marginQuery: vi.fn(),
   metadataQuery: vi.fn(),
   activeSheetsQuery: vi.fn(),
+  location: vi.fn(),
   params: vi.fn(),
   workspaceContext: vi.fn(),
 }));
@@ -24,6 +25,7 @@ vi.mock('react-router', async (importOriginal) => {
 
   return {
     ...actual,
+    useLocation: mocks.location,
     useParams: mocks.params,
   };
 });
@@ -69,6 +71,7 @@ function queryResult(data) {
 function renderPage(
   initialEntry = '/workspaces/workspace-1/dossiers/dossier-1',
 ) {
+  mocks.location.mockReturnValue({ pathname: initialEntry });
   return render(
     <MemoryRouter
       initialEntries={[initialEntry]}
@@ -83,6 +86,9 @@ function renderPage(
 describe('DossierWorkspacePage', () => {
   beforeEach(() => {
     mocks.params.mockReturnValue({ dossierId: 'dossier-1' });
+    mocks.location.mockReturnValue({
+      pathname: '/workspaces/workspace-1/dossiers/dossier-1',
+    });
     mocks.workspaceContext.mockReturnValue({
       can: vi.fn((permission) => [
         SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
@@ -193,6 +199,25 @@ describe('DossierWorkspacePage', () => {
       name: 'Nantes Centre',
     }).closest('header');
     expect(identityCard).toHaveClass('lg:h-56');
+  });
+
+  it('masque le shell Dossier volumineux dans le poste de travail d’une Fiche', () => {
+    mocks.detailQuery.mockReturnValue(queryResult({
+      id: 'dossier-1',
+      name: 'Nantes Centre',
+      status: 'ACTIVE',
+    }));
+
+    renderPage(
+      '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1',
+    );
+
+    expect(screen.queryByRole('heading', {
+      name: 'Nantes Centre',
+    })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', {
+      name: 'Carte prix applicable',
+    })).not.toBeInTheDocument();
   });
 
   it('masque les coordonnées absentes et conserve la consultation d’un Dossier non actif', () => {

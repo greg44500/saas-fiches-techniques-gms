@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   loadApplicable: vi.fn(),
   resetApplicable: vi.fn(),
   lazyApplicable: vi.fn(),
+  pricingMetadata: vi.fn(),
 }));
 
 vi.mock('@/features/workspace/components/workspace-context', () => ({
@@ -16,6 +17,7 @@ vi.mock('@/features/workspace/components/workspace-context', () => ({
 }));
 
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useGetSupplierPricingMetadataQuery: mocks.pricingMetadata,
   useListDossierSupplierReferencesQuery: mocks.listReferences,
   useListSupplierArticlesQuery: mocks.listArticles,
   useLazyGetApplicableSupplierPriceQuery: mocks.lazyApplicable,
@@ -69,6 +71,12 @@ describe('DossierApplicablePriceCard', () => {
         permission === SUPPLIER_PERMISSION.ARTICLE_READ
       ),
     });
+    mocks.pricingMetadata.mockReturnValue(queryResult({
+      applicablePriceSources: [
+        { value: 'NEGOTIATED_PRICE', label: 'Tarif négocié' },
+        { value: 'INDICATIVE_WORKSPACE', label: 'Prix indicatif espace de travail' },
+      ],
+    }));
     mocks.listReferences.mockReturnValue(queryResult([]));
     mocks.listArticles.mockReturnValue(queryResult({
       articles: [{
