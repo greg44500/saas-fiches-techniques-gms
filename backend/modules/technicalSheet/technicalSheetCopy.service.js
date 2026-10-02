@@ -45,6 +45,9 @@ import {
     serializeTechnicalSheet,
     serializeTechnicalSheetDraft,
 } from './technicalSheet.serializer.js';
+import {
+    editableProductionFromSnapshot,
+} from './technicalSheetProduction.service.js';
 
 const assertTargetDossierAccess = async ({
     workspaceId,
@@ -126,23 +129,13 @@ const sourceComposition = async ({
         );
     }
 
+    const editableProduction =
+        editableProductionFromSnapshot(
+            validation.sheetSnapshot,
+        );
+
     return {
-        productionQuantity:
-            validation.sheetSnapshot
-                .productionQuantity
-                .toString(),
-        productionUnit:
-            validation.sheetSnapshot
-                .productionUnit,
-        portionsPerProductionUnit:
-            validation.sheetSnapshot
-                .portionsPerProductionUnit
-                ?.toString()
-            ?? null,
-        saleBasis:
-            validation.sheetSnapshot
-                .saleBasis
-            ?? null,
+        ...editableProduction,
         vatRateBasisPoints:
             validation.sheetSnapshot
                 .vatRateBasisPoints,

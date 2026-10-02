@@ -34,6 +34,9 @@ import {
 import {
     assertOperationalDossier,
 } from './technicalSheet.service.js';
+import {
+    editableProductionFromSnapshot,
+} from './technicalSheetProduction.service.js';
 import { AppError } from '../../utils/appError.js';
 
 const ECONOMIC_FIELDS = Object.freeze([
@@ -511,6 +514,11 @@ const createDraftFromValidatedState = async ({
             );
         }
 
+        const editableProduction =
+            editableProductionFromSnapshot(
+                validation.sheetSnapshot,
+            );
+
         const prepared =
             await prepareTechnicalSheetComposition({
                 workspaceId,
@@ -549,25 +557,17 @@ const createDraftFromValidatedState = async ({
                     technicalSheet:
                         technicalSheetId,
                     productionQuantity:
-                        validation
-                            .sheetSnapshot
-                            .productionQuantity
-                            .toString(),
+                        editableProduction
+                            .productionQuantity,
                     productionUnit:
-                        validation
-                            .sheetSnapshot
+                        editableProduction
                             .productionUnit,
                     portionsPerProductionUnit:
-                        validation
-                            .sheetSnapshot
-                            .portionsPerProductionUnit
-                            ?.toString()
-                        ?? null,
+                        editableProduction
+                            .portionsPerProductionUnit,
                     saleBasis:
-                        validation
-                            .sheetSnapshot
-                            .saleBasis
-                        ?? null,
+                        editableProduction
+                            .saleBasis,
                     vatRateBasisPoints:
                         validation
                             .sheetSnapshot
