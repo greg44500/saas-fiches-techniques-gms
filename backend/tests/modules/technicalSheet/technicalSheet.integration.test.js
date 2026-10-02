@@ -289,6 +289,87 @@ describe('M-004 services Fiches techniques', () => {
         });
     });
 
+    it('autorise un Dossier historique sans marge si la Fiche fournit sa propre marge', async () => {
+        const legacyDossier =
+            await Dossier.create({
+                workspace:
+                    owner.workspace._id,
+                name:
+                    'Magasin historique M004',
+                statusChangedBy:
+                    owner.owner._id,
+                createdBy:
+                    owner.owner._id,
+                updatedBy:
+                    owner.owner._id,
+            });
+
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    legacyDossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche avec marge propre',
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                    targetMarginBasisPoints:
+                        3000,
+                },
+            });
+
+        expect(
+            created.draft.targetMarginBasisPoints,
+        ).toBe(3000);
+    });
+
+    it('refuse un Dossier historique sans marge si la Fiche n’en fournit aucune', async () => {
+        const legacyDossier =
+            await Dossier.create({
+                workspace:
+                    owner.workspace._id,
+                name:
+                    'Magasin historique sans marge M004',
+                statusChangedBy:
+                    owner.owner._id,
+                createdBy:
+                    owner.owner._id,
+                updatedBy:
+                    owner.owner._id,
+            });
+
+        await expect(
+            createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    legacyDossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche sans marge',
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 400,
+        });
+    });
+
     it('liste les Fiches actives par défaut avec sanitizeFilter activé', async () => {
         const created =
             await createTechnicalSheet({
