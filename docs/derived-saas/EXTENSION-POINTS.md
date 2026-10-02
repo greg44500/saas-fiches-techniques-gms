@@ -498,9 +498,14 @@ présents dans `User.preferences.dashboard.hiddenWidgetIds` deviennent
 simplement inertes : le registre courant reste l’autorité et aucune migration
 de préférence n’est nécessaire.
 
+Le descriptor `core.subscription` ne fait plus partie du registre Dashboard :
+le plan est déjà exposé dans l’identité utilisateur du shell Workspace et sa
+gestion reste disponible dans la vue Abonnement dédiée. Un ancien identifiant
+`core.subscription` présent dans les préférences devient simplement inerte.
+
 Les widgets Core restants ne doivent être conservés que lorsqu’ils apportent
-une synthèse réellement utile, par exemple abonnement ou activité selon les
-droits disponibles.
+une synthèse réellement utile sans dupliquer le shell, par exemple l’activité
+récente selon les droits disponibles.
 
 Dans un SaaS dérivé, les modules applicatifs sont destinés à déclarer les KPI
 et données opérationnelles pertinentes pour le métier via ce point
