@@ -1164,7 +1164,7 @@ function TechnicalSheetWorkspacePage() {
                     <FieldLabel>TVA</FieldLabel>
                     <SegmentedControl
                       ariaLabel="TVA de vente"
-                      className="h-9 p-0.5"
+                      className="h-9 p-px"
                       disabled={!canUpdate || !canValuate || draftSynchronizing}
                       items={vatRateItems}
                       onValueChange={(value) => {
