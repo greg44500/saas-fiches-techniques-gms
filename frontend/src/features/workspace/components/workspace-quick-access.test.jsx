@@ -8,6 +8,24 @@ import { WORKSPACE_PERMISSION } from '@/features/workspace/constants/workspace-p
 
 const useWorkspaceContextMock = vi.hoisted(() => vi.fn());
 
+vi.mock('@/app/workspace-navigation', () => ({
+  workspaceNavigation: [
+    {
+      id: 'test-allowed',
+      type: 'item',
+      label: 'Vue test',
+      path: 'test-view',
+    },
+    {
+      id: 'test-forbidden',
+      type: 'item',
+      label: 'Vue restreinte',
+      path: 'restricted-view',
+      permission: '__test_forbidden__',
+    },
+  ],
+}));
+
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: useWorkspaceContextMock,
 }));
@@ -52,13 +70,13 @@ describe('WorkspaceQuickAccess', () => {
     });
 
     await user.click(input);
-    await user.type(input, 'fich');
+    await user.type(input, 'vue test');
 
-    const suggestion = await screen.findByText('Fichiers');
+    const suggestion = await screen.findByText('Vue test');
     await user.click(suggestion);
 
     expect(screen.getByLabelText('Route courante'))
-      .toHaveTextContent('/workspaces/workspace-1/files');
+      .toHaveTextContent('/workspaces/workspace-1/test-view');
   });
 
   it('ne propose pas une destination sans permission effective', async () => {
@@ -70,8 +88,8 @@ describe('WorkspaceQuickAccess', () => {
     });
 
     await user.click(input);
-    await user.type(input, 'abonnement');
+    await user.type(input, 'restreinte');
 
-    expect(screen.queryByText('Abonnement')).not.toBeInTheDocument();
+    expect(screen.queryByText('Vue restreinte')).not.toBeInTheDocument();
   });
 });
