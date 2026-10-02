@@ -75,6 +75,9 @@ const createTechnicalSheet = async ({
             dossier.technicalSheetSettings
                 ?.defaultTargetMarginBasisPoints
             ?? null;
+        const targetMarginBasisPoints =
+            data.targetMarginBasisPoints
+            ?? defaultTargetMarginBasisPoints;
 
         if (
             !data.productionQuantity
@@ -90,12 +93,15 @@ const createTechnicalSheet = async ({
         }
 
         if (
-            defaultTargetMarginBasisPoints
-            === null
+            !Number.isInteger(
+                targetMarginBasisPoints,
+            )
+            || targetMarginBasisPoints < 0
+            || targetMarginBasisPoints > 9999
         ) {
             throw new AppError(
-                'Renseignez la marge cible par défaut du Dossier avant de créer une Fiche technique.',
-                409,
+                'Renseignez une marge cible comprise entre 0 et moins de 100 % pour créer la Fiche technique.',
+                400,
             );
         }
 
@@ -136,8 +142,7 @@ const createTechnicalSheet = async ({
                         data.productionUnit,
                     vatRateBasisPoints:
                         data.vatRateBasisPoints,
-                    targetMarginBasisPoints:
-                        defaultTargetMarginBasisPoints,
+                    targetMarginBasisPoints,
                     createdBy: actorId,
                     updatedBy: actorId,
                 }],
