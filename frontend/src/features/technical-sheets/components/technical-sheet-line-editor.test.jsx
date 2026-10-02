@@ -40,6 +40,42 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
         >
           Pomme
         </button>
+        <button
+          aria-label={'Sélectionner Farine grammes depuis ' + props.ariaLabel}
+          onClick={() => props.onSelect({
+            product: {
+              id: 'product-3',
+              name: 'Farine grammes',
+            },
+            variant: {
+              id: 'variant-3',
+              name: 'Farine grammes',
+              referenceUnit: 'G',
+              yieldPercent: '100',
+            },
+          })}
+          type="button"
+        >
+          Farine grammes
+        </button>
+        <button
+          aria-label={'Sélectionner Jus de citron depuis ' + props.ariaLabel}
+          onClick={() => props.onSelect({
+            product: {
+              id: 'product-4',
+              name: 'Jus de citron',
+            },
+            variant: {
+              id: 'variant-4',
+              name: 'Jus de citron',
+              referenceUnit: 'CL',
+              yieldPercent: '100',
+            },
+          })}
+          type="button"
+        >
+          Jus de citron
+        </button>
       </div>
     );
   },
@@ -76,6 +112,29 @@ const metadata = {
   ],
 };
 
+const productMetadata = {
+  referenceUnits: [
+    {
+      value: 'G',
+      label: 'g',
+      dimension: 'MASS',
+      factorToBase: 1,
+    },
+    {
+      value: 'KG',
+      label: 'kg',
+      dimension: 'MASS',
+      factorToBase: 1000,
+    },
+    {
+      value: 'CL',
+      label: 'cl',
+      dimension: 'VOLUME',
+      factorToBase: 10,
+    },
+  ],
+};
+
 const valuedLine = normalizeDraftLine({
   id: 'line-1',
   kind: 'INGREDIENT',
@@ -108,6 +167,7 @@ const valuedLine = normalizeDraftLine({
 
 function renderEditor(overrides = {}) {
   const onChange = vi.fn();
+  const onUnitChangeWarning = vi.fn();
 
   render(
     <TooltipProvider>
@@ -124,7 +184,8 @@ function renderEditor(overrides = {}) {
         onSourcingError={vi.fn()}
         onSourcingPendingChange={vi.fn()}
         onSourcingSelected={vi.fn()}
-        productMetadata={{}}
+        onUnitChangeWarning={onUnitChangeWarning}
+        productMetadata={productMetadata}
         sourcingDisabled={false}
         technicalSheetId="sheet-1"
         workspaceId="workspace-1"
@@ -133,7 +194,10 @@ function renderEditor(overrides = {}) {
     </TooltipProvider>,
   );
 
-  return { onChange };
+  return {
+    onChange,
+    onUnitChangeWarning,
+  };
 }
 
 describe('TechnicalSheetLineEditor', () => {
@@ -213,6 +277,15 @@ describe('TechnicalSheetLineEditor', () => {
     expect(screen.getByText('100 %')).toBeInTheDocument();
     expect(screen.getByText(/2,15/)).toBeInTheDocument();
     expect(screen.getByText(/6,02/)).toBeInTheDocument();
+
+    expect(
+      screen.getByLabelText('Unité ligne 1'),
+    ).toHaveTextContent('kg');
+    expect(
+      screen.queryByRole('combobox', {
+        name: 'Unité ligne 1',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('signale un Prix indicatif comme source de valorisation', () => {
@@ -346,6 +419,69 @@ describe('TechnicalSheetLineEditor', () => {
       ],
       { immediate: true },
     );
+  });
+
+  it('convertit automatiquement la quantité lors d’un remplacement vers une unité compatible', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+
+    expect(screen.getByRole('button', {
+      name: 'Annuler',
+    })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Farine grammes depuis Modifier le produit Carotte râpée',
+    }));
+
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          productVariantId: 'variant-3',
+          productVariantName: 'Farine grammes',
+          netQuantity: '2500',
+          inputUnit: 'G',
+          referenceUnit: 'G',
+        }),
+      ],
+      { immediate: true },
+    );
+  });
+
+  it('conserve la valeur numérique et avertit lorsque le Produit change de dimension', async () => {
+    const user = userEvent.setup();
+    const {
+      onChange,
+      onUnitChangeWarning,
+    } = renderEditor();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Jus de citron depuis Modifier le produit Carotte râpée',
+    }));
+
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          productVariantId: 'variant-4',
+          productVariantName: 'Jus de citron',
+          netQuantity: '2.5',
+          inputUnit: 'CL',
+          referenceUnit: 'CL',
+        }),
+      ],
+      { immediate: true },
+    );
+    expect(onUnitChangeWarning).toHaveBeenCalledWith({
+      previousUnit: 'kg',
+      nextUnit: 'cl',
+    });
   });
 
   it('affiche les informations fournisseur au survol du Produit', async () => {
