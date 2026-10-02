@@ -9,6 +9,7 @@ import {
 import {
     TECHNICAL_SHEET_STATUS,
     TECHNICAL_SHEET_VALUATION_STATUS,
+    TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS,
 } from './technicalSheet.registry.js';
 import {
     TechnicalSheet,
@@ -155,6 +156,26 @@ const saveTechnicalSheetDraft = async ({
             throw new AppError(
                 'Conflit de modification du brouillon.',
                 409,
+            );
+        }
+
+        const vatRateWasRequested =
+            Object.hasOwn(
+                data,
+                'vatRateBasisPoints',
+            );
+
+        if (
+            vatRateWasRequested
+            && data.vatRateBasisPoints !== null
+            && !TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS
+                .includes(data.vatRateBasisPoints)
+            && data.vatRateBasisPoints
+                !== current.vatRateBasisPoints
+        ) {
+            throw new AppError(
+                'TVA non autorisée.',
+                400,
             );
         }
 

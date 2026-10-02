@@ -51,11 +51,20 @@ describe('M-004 validation Fiches techniques', () => {
         ).toBe(true);
 
         expect(
+            createTechnicalSheetSchema.safeParse({
+                name: 'Purée de carottes',
+                productionQuantity: '10',
+                productionUnit: 'UNIT',
+                vatRateBasisPoints: 2000,
+            }).success,
+        ).toBe(false);
+
+        expect(
             saveTechnicalSheetDraftSchema.safeParse({
                 expectedRevision: 0,
                 vatRateBasisPoints: 2000,
             }).success,
-        ).toBe(false);
+        ).toBe(true);
     });
 
     it('accepte une marge propre à la Fiche lors de la création', () => {

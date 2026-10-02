@@ -46,6 +46,12 @@ const vatRateBasisPointsSchema = z
         'TVA non autorisée.',
     );
 
+const legacyCompatibleVatRateBasisPointsSchema = z
+    .number()
+    .int()
+    .min(0)
+    .max(10000);
+
 const paginationQuerySchema = z.strictObject({
     page: z.coerce
         .number()
@@ -241,7 +247,7 @@ const saveTechnicalSheetDraftSchema =
             .nullable()
             .optional(),
         vatRateBasisPoints:
-            vatRateBasisPointsSchema
+            legacyCompatibleVatRateBasisPointsSchema
                 .nullable()
                 .optional(),
         targetMarginBasisPoints: z

@@ -331,6 +331,89 @@ describe('M-004 services Fiches techniques', () => {
         ).toBe(3000);
     });
 
+    it('conserve une TVA historique hors registre sans autoriser un nouveau taux arbitraire', async () => {
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche TVA historique',
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            });
+
+        await TechnicalSheetDraft.updateOne(
+            { _id: created.draft.id },
+            {
+                $set: {
+                    vatRateBasisPoints: 2000,
+                },
+            },
+        );
+
+        const preserved =
+            await saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    created.draft.revision,
+                canManageSourcing:
+                    true,
+                canManageValuation:
+                    true,
+                data: {
+                    vatRateBasisPoints:
+                        2000,
+                },
+            });
+
+        expect(
+            preserved.vatRateBasisPoints,
+        ).toBe(2000);
+
+        await expect(
+            saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    preserved.revision,
+                canManageSourcing:
+                    true,
+                canManageValuation:
+                    true,
+                data: {
+                    vatRateBasisPoints:
+                        1500,
+                },
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 400,
+            message: 'TVA non autorisée.',
+        });
+    });
+
     it('refuse un Dossier historique sans marge si la Fiche n’en fournit aucune', async () => {
         const legacyDossier =
             await Dossier.create({

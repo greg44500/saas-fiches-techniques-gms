@@ -392,6 +392,7 @@ describe('M-004 RBAC HTTP', () => {
             productionUnit: 'UNIT',
             portionsPerProductionUnit: '1',
             saleBasis: 'PIECE',
+            vatRateBasisPoints: 550,
             finalPriceMode: 'ADVISED',
             productSearchScope: 'REFERENCE',
         });
