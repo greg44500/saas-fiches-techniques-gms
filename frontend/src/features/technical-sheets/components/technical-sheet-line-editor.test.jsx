@@ -307,9 +307,9 @@ describe('TechnicalSheetLineEditor', () => {
       </TooltipProvider>,
     );
 
-    const scopeControl = screen.getByRole('group', {
-      name: 'Source des Produits',
-    });
+    const scopeControl = document.querySelector(
+      '[aria-label="Source des Produits"]',
+    );
     const globalButton = screen.getByRole('button', {
       name: 'Tous les produits',
     });

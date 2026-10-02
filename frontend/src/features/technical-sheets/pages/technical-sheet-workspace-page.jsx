@@ -1,8 +1,5 @@
 import {
   ArrowLeft,
-  BarChart3,
-  Building2,
-  Pencil,
   RotateCcw,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -792,7 +789,7 @@ function TechnicalSheetWorkspacePage() {
   );
 
   return (
-    <div className="-mt-4 space-y-6">
+    <div className="space-y-6">
       {!draft && (
         <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 items-start gap-2">
@@ -834,61 +831,40 @@ function TechnicalSheetWorkspacePage() {
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          {canEditIdentity && actionAvailability.update && (
-            <Button
-              onClick={() => setIdentityDialogOpen(true)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Pencil aria-hidden="true" className="size-4" />
-              Modifier
-            </Button>
-          )}
-          <Button
-            onClick={() => setRightPanel('analysis')}
-            size="sm"
-            type="button"
-            variant={rightPanel === 'analysis' ? 'default' : 'outline'}
-          >
-            <BarChart3 aria-hidden="true" className="size-4" />
-            Analyse
-          </Button>
-          <Button
-            onClick={() => setRightPanel('dossier')}
-            size="sm"
-            type="button"
-            variant={rightPanel === 'dossier' ? 'default' : 'outline'}
-          >
-            <Building2 aria-hidden="true" className="size-4" />
-            Infos dossier
-          </Button>
-        <TechnicalSheetControlPanel
-          actionAvailability={actionAvailability}
-          canCopy={canCopy}
-          canDelete={canDelete}
-          canLifecycle={canLifecycle}
-          canValidate={canValidate}
-          copyDisabled={copyDisabled}
-          draft={draft}
-          draftDirty={draftDirty}
-          draftSynchronizing={draftSynchronizing}
-          identityDirty={identityDirty}
-          onArchive={() => setConfirmation({ type: 'archive' })}
-          onCopy={() => setCopyOpen(true)}
-          onDelete={() => setConfirmation({ type: 'delete' })}
-          onReactivate={() => setConfirmation({ type: 'reactivate' })}
-          onValidate={() => setValidationDialogOpen(true)}
-          pendingLifecycle={pendingLifecycle}
-          validatePending={validateState.isLoading}
-          validationEligible={validationEligible}
-        />
+          <TechnicalSheetControlPanel
+            actionAvailability={actionAvailability}
+            canCopy={canCopy}
+            canDelete={canDelete}
+            canEditIdentity={
+              canEditIdentity
+              && actionAvailability.update
+            }
+            canLifecycle={canLifecycle}
+            canValidate={canValidate}
+            copyDisabled={copyDisabled}
+            draft={draft}
+            draftDirty={draftDirty}
+            draftSynchronizing={draftSynchronizing}
+            identityDirty={identityDirty}
+            onArchive={() => setConfirmation({ type: 'archive' })}
+            onCopy={() => setCopyOpen(true)}
+            onDelete={() => setConfirmation({ type: 'delete' })}
+            onEditIdentity={() => setIdentityDialogOpen(true)}
+            onOpenAnalysis={() => setRightPanel('analysis')}
+            onOpenDossier={() => setRightPanel('dossier')}
+            onReactivate={() => setConfirmation({ type: 'reactivate' })}
+            onValidate={() => setValidationDialogOpen(true)}
+            pendingLifecycle={pendingLifecycle}
+            rightPanel={rightPanel}
+            validatePending={validateState.isLoading}
+            validationEligible={validationEligible}
+          />
         </div>
         </header>
       )}
 
-      <div className="space-y-6">
-        {!draft && (
+      {!draft && (
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>État de travail</CardTitle>
@@ -909,8 +885,8 @@ function TechnicalSheetWorkspacePage() {
               )}
             </CardContent>
           </Card>
-        )}
-      </div>
+        </div>
+      )}
 
       {draft && (
         <section className="relative space-y-6">
