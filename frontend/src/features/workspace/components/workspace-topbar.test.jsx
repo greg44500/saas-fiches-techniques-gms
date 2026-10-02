@@ -24,6 +24,13 @@ vi.mock('@/features/workspace/components/workspace-user-identity', () => ({
     </div>
   ),
 }));
+vi.mock('@/features/workspace/components/workspace-quick-access', () => ({
+  WorkspaceQuickAccess: () => (
+    <div aria-label="Accès rapide Workspace" role="search">
+      Recherche Workspace
+    </div>
+  ),
+}));
 vi.mock('@/features/workspace/components/workspace-dashboard-display-preferences', () => ({
   WorkspaceDashboardDisplayPreferences: ({ triggerVariant }) => (
     <button
@@ -114,21 +121,21 @@ describe('WorkspaceTopbar', () => {
     expect(screen.getByText('Plan Free')).toBeInTheDocument();
   });
 
-  it('ne duplique pas les recherches métier dans la topbar Workspace', () => {
+  it('affiche l’accès rapide aux vues dans la topbar Workspace', () => {
     useWorkspaceContextMock.mockReturnValue({ can: () => true });
     useGetWorkspaceSubscriptionQueryMock.mockReturnValue({ data: undefined });
 
     const { unmount } = renderTopbar(workspace);
 
-    expect(screen.queryByRole('search')).not.toBeInTheDocument();
+    expect(screen.getByRole('search', { name: 'Accès rapide Workspace' }))
+      .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Préférences d’affichage' }))
       .toBeInTheDocument();
 
     unmount();
     renderTopbar(workspace, '/workspaces/workspace-1/members');
 
-    expect(screen.queryByRole('search')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Préférences d’affichage' }))
+    expect(screen.getByRole('search', { name: 'Accès rapide Workspace' }))
       .toBeInTheDocument();
   });
 

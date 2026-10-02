@@ -59,6 +59,7 @@ describe('useWorkspaceDashboardWidgets', () => {
     expect(accessibleIds).toEqual(['core.members']);
     expect(accessibleIds).not.toContain('core.workspace-status');
     expect(accessibleIds).not.toContain('core.workspace-role');
+    expect(accessibleIds).not.toContain('core.subscription');
     expect(accessibleIds).not.toContain('core.pending-invitations');
     expect(accessibleIds).not.toContain('core.files');
     expect(accessibleIds).not.toContain('core.recent-activity');
@@ -73,6 +74,7 @@ describe('useWorkspaceDashboardWidgets', () => {
       hiddenWidgetIds: [
         'core.workspace-status',
         'core.workspace-role',
+        'core.subscription',
       ],
     });
 

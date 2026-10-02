@@ -337,6 +337,38 @@ describe('WorkspaceSidebar', () => {
       .toBeGreaterThan(1);
   });
 
+  it('filtre les enfants de section selon permissions et capabilities', () => {
+    renderSidebar(
+      [WORKSPACE_PERMISSION.WORKSPACE_READ],
+      {
+        navigation: [
+          {
+            id: 'application-management',
+            type: 'section',
+            label: 'Gestion applicative',
+            items: [
+              {
+                id: 'allowed',
+                label: 'Vue autorisée',
+                path: 'allowed',
+              },
+              {
+                id: 'forbidden',
+                label: 'Vue interdite',
+                path: 'forbidden',
+                permission: WORKSPACE_PERMISSION.FILE_READ,
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(screen.getByRole('link', { name: 'Vue autorisée' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Vue interdite' }))
+      .not.toBeInTheDocument();
+  });
+
   it('ne rend pas de séparateur de tête pour une section seule', () => {
     renderSidebar(
       [WORKSPACE_PERMISSION.WORKSPACE_READ],

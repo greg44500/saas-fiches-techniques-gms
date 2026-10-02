@@ -2,13 +2,11 @@ import {
   useGetWorkspaceAuditMetadataQuery,
   useListWorkspaceAuditLogsQuery,
 } from '@/features/audit-log/api/audit-log-api';
-import { useGetWorkspaceSubscriptionQuery } from '@/features/subscription/api/subscription-api';
 import {
   useListWorkspaceInvitationsQuery,
   useListWorkspaceMembersQuery,
 } from '@/features/workspace-members/api/workspace-members-api';
 import { DashboardRecentActivity } from '@/features/workspace/components/dashboard-recent-activity';
-import { DashboardSubscriptionSummary } from '@/features/workspace/components/dashboard-subscription-summary';
 import { DashboardSummaryCard } from '@/features/workspace/components/dashboard-summary-card';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { isInitialQueryLoading } from '@/features/workspace/lib/dashboard-query';
@@ -57,20 +55,6 @@ function PendingInvitationsDashboardWidget() {
   );
 }
 
-function SubscriptionDashboardWidget() {
-  const { workspace } = useWorkspaceContext();
-  const query = useGetWorkspaceSubscriptionQuery(workspace.id);
-
-  return (
-    <DashboardSubscriptionSummary
-      isError={query.isError}
-      isLoading={isInitialQueryLoading(query)}
-      subscription={query.data ?? null}
-      workspaceId={workspace.id}
-    />
-  );
-}
-
 function RecentActivityDashboardWidget() {
   const { workspace } = useWorkspaceContext();
   const query = useListWorkspaceAuditLogsQuery({
@@ -101,5 +85,4 @@ export {
   MembersDashboardWidget,
   PendingInvitationsDashboardWidget,
   RecentActivityDashboardWidget,
-  SubscriptionDashboardWidget,
 };

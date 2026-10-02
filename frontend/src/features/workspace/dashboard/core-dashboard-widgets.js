@@ -2,7 +2,6 @@ import {
   MembersDashboardWidget,
   PendingInvitationsDashboardWidget,
   RecentActivityDashboardWidget,
-  SubscriptionDashboardWidget,
 } from '@/features/workspace/components/core-dashboard-widgets';
 import { WORKSPACE_FEATURE } from '@/features/workspace/constants/workspace-features';
 import { WORKSPACE_PERMISSION } from '@/features/workspace/constants/workspace-permissions';
@@ -32,19 +31,6 @@ const coreDashboardWidgets = Object.freeze([
     access: Object.freeze({
       features: Object.freeze([WORKSPACE_FEATURE.TEAM_MANAGEMENT]),
       permissions: Object.freeze([WORKSPACE_PERMISSION.MEMBER_INVITE]),
-    }),
-  }),
-  Object.freeze({
-    id: 'core.subscription',
-    label: 'Abonnement',
-    description: 'Synthèse du plan et de la période d’abonnement du workspace.',
-    component: SubscriptionDashboardWidget,
-    slot: 'summary',
-    order: 500,
-    configurable: true,
-    access: Object.freeze({
-      features: Object.freeze([]),
-      permissions: Object.freeze([WORKSPACE_PERMISSION.SUBSCRIPTION_READ]),
     }),
   }),
   Object.freeze({

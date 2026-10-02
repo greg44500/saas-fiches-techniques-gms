@@ -2,6 +2,7 @@ import { HelpCenterLink } from '@/features/help/components/help-center-link';
 import { useGetWorkspaceSubscriptionQuery } from '@/features/subscription/api/subscription-api';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { WorkspaceDashboardDisplayPreferences } from '@/features/workspace/components/workspace-dashboard-display-preferences';
+import { WorkspaceQuickAccess } from '@/features/workspace/components/workspace-quick-access';
 import { WorkspaceStatusBadge } from '@/features/workspace/components/workspace-status-badge';
 import { WorkspaceSwitcher } from '@/features/workspace/components/workspace-switcher';
 import { WorkspaceUserIdentity } from '@/features/workspace/components/workspace-user-identity';
@@ -37,6 +38,7 @@ function WorkspaceTopbar({ sidebarTrigger = null, workspace }) {
           />
         </div>
         <div className="ml-auto flex min-w-0 items-center gap-3">
+          <WorkspaceQuickAccess workspace={workspace} />
           <WorkspaceUserIdentity
             actions={(
               <>

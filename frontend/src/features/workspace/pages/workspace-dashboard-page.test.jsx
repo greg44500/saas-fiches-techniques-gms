@@ -19,8 +19,8 @@ function MembersWidget() {
   return <div>Membres : 4</div>;
 }
 
-function SubscriptionWidget() {
-  return <div>Abonnement : Free</div>;
+function InvitationsWidget() {
+  return <div>Invitations en attente : 2</div>;
 }
 
 function ActivityWidget() {
@@ -37,12 +37,12 @@ const allWidgets = [
     component: MembersWidget,
   },
   {
-    id: 'core.subscription',
-    label: 'Abonnement',
-    description: 'Synthèse de l’abonnement.',
+    id: 'core.pending-invitations',
+    label: 'Invitations en attente',
+    description: 'Invitations workspace encore en attente de réponse.',
     slot: 'summary',
     configurable: true,
-    component: SubscriptionWidget,
+    component: InvitationsWidget,
   },
   {
     id: 'core.recent-activity',
@@ -92,8 +92,9 @@ describe('WorkspaceDashboardPage', () => {
       screen.getByRole('button', { name: 'À propos du tableau de bord' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Membres : 4')).toBeInTheDocument();
-    expect(screen.getByText('Abonnement : Free')).toBeInTheDocument();
+    expect(screen.getByText('Invitations en attente : 2')).toBeInTheDocument();
     expect(screen.getByText('Activité récente : Workspace modifié')).toBeInTheDocument();
+    expect(screen.queryByText(/Abonnement/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Statut du workspace/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Votre rôle/)).not.toBeInTheDocument();
   });
@@ -128,7 +129,7 @@ describe('WorkspaceDashboardPage', () => {
     renderDashboard();
 
     expect(screen.queryByText('Membres : 4')).not.toBeInTheDocument();
-    expect(screen.getByText('Abonnement : Free')).toBeInTheDocument();
+    expect(screen.getByText('Invitations en attente : 2')).toBeInTheDocument();
   });
 
   it('affiche des skeletons sans monter les widgets configurables pendant le chargement des préférences', () => {
@@ -141,7 +142,7 @@ describe('WorkspaceDashboardPage', () => {
     renderDashboard();
 
     expect(screen.queryByText('Membres : 4')).not.toBeInTheDocument();
-    expect(screen.queryByText('Abonnement : Free')).not.toBeInTheDocument();
+    expect(screen.queryByText('Invitations en attente : 2')).not.toBeInTheDocument();
     expect(screen.getAllByRole('status').length).toBeGreaterThan(0);
   });
 });
