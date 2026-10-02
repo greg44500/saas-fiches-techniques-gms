@@ -396,18 +396,6 @@ const calculateEconomics = ({
         denominator: 100n,
     });
 
-    if (
-        finalTtc.numerator * economicFloorTtc.denominator
-        < economicFloorTtc.numerator * finalTtc.denominator
-    ) {
-        const error = new RangeError(
-            'Le Prix final TTC est inférieur au plancher économique.',
-        );
-        error.code =
-            'TECHNICAL_SHEET_FINAL_PRICE_BELOW_FLOOR';
-        throw error;
-    }
-
     const finalPriceHt =
         divideFractions(finalTtc, vatFactor);
     const actualMarginAmountHt =
@@ -425,6 +413,29 @@ const calculateEconomics = ({
                 actualMarginAmountHt.denominator
                     * finalPriceHt.numerator,
             ));
+    const saleUnitCount =
+        saleBasis
+        === TECHNICAL_SHEET_SALE_BASIS.PORTION
+            ? totalPortions
+            : productionQuantityFraction;
+    const manufacturingMarginProductionHt =
+        multiplyFractions(
+            actualMarginAmountHt,
+            saleUnitCount,
+        );
+    const targetMarginDeltaBasisPoints =
+        actualMarginBasisPoints
+        - targetMarginBasisPoints;
+    const targetMarginDeltaAmountHt =
+        subtractFractions(
+            finalPriceHt,
+            theoreticalPriceHt,
+        );
+    const targetMarginDeltaProductionHt =
+        multiplyFractions(
+            targetMarginDeltaAmountHt,
+            saleUnitCount,
+        );
 
     return {
         materialCostHt:
@@ -470,7 +481,20 @@ const calculateEconomics = ({
         finalPriceTtcMinor: finalMinor,
         actualMarginAmountHt:
             fractionToDecimal(actualMarginAmountHt),
+        manufacturingMarginProductionHt:
+            fractionToDecimal(
+                manufacturingMarginProductionHt,
+            ),
         actualMarginBasisPoints,
+        targetMarginDeltaBasisPoints,
+        targetMarginDeltaAmountHt:
+            fractionToDecimal(
+                targetMarginDeltaAmountHt,
+            ),
+        targetMarginDeltaProductionHt:
+            fractionToDecimal(
+                targetMarginDeltaProductionHt,
+            ),
         economicFloorTtc:
             fractionToDecimal(economicFloorTtc),
     };

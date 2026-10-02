@@ -196,8 +196,24 @@ const economicSnapshotSchema = new Schema(
             type: Schema.Types.Decimal128,
             required: true,
         },
+        manufacturingMarginProductionHt: {
+            type: Schema.Types.Decimal128,
+            required: true,
+        },
         actualMarginBasisPoints: {
             type: Number,
+            required: true,
+        },
+        targetMarginDeltaBasisPoints: {
+            type: Number,
+            required: true,
+        },
+        targetMarginDeltaAmountHt: {
+            type: Schema.Types.Decimal128,
+            required: true,
+        },
+        targetMarginDeltaProductionHt: {
+            type: Schema.Types.Decimal128,
             required: true,
         },
         economicFloorTtc: {

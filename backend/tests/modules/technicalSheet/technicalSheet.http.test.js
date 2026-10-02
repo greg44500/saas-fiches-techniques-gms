@@ -239,6 +239,39 @@ describe('M-004 RBAC HTTP', () => {
             },
         ]);
         expect(
+            response.body.data.metadata.vatRates,
+        ).toEqual([
+            {
+                value: 550,
+                label: '5,5 %',
+            },
+            {
+                value: 1000,
+                label: '10 %',
+            },
+        ]);
+        expect(
+            response.body.data.metadata.defaults
+                .vatRateBasisPoints,
+        ).toBe(550);
+        expect(
+            response.body.data.metadata
+                .economicMetricDefinitions,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: 'manufacturingCostHt',
+                label: 'CF HT',
+            }),
+            expect.objectContaining({
+                value: 'actualMarginAmountHt',
+                label: 'Marge sur coût de fabrication',
+            }),
+            expect.objectContaining({
+                value: 'targetMarginDeltaProductionHt',
+                label: 'Écart production vs cible',
+            }),
+        ]));
+        expect(
             response.body.data.metadata.units,
         ).toEqual([
             {

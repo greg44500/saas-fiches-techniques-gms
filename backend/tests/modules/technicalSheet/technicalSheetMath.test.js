@@ -99,6 +99,21 @@ describe('M-004 calculs Fiche technique', () => {
         expect(
             economics.actualMarginBasisPoints,
         ).toBe(5000);
+        expect(
+            economics.actualMarginAmountHt,
+        ).toBe('2.5');
+        expect(
+            economics.manufacturingMarginProductionHt,
+        ).toBe('25');
+        expect(
+            economics.targetMarginDeltaBasisPoints,
+        ).toBe(0);
+        expect(
+            economics.targetMarginDeltaAmountHt,
+        ).toBe('0');
+        expect(
+            economics.targetMarginDeltaProductionHt,
+        ).toBe('0');
     });
 
     it('distingue coût par pièce et coût par portion pour 1 pièce de 8 portions', () => {
@@ -223,8 +238,8 @@ describe('M-004 calculs Fiche technique', () => {
         })).toThrow('Base de vente invalide.');
     });
 
-    it('refuse un Prix final manuel sous le plancher économique', () => {
-        expect(() => calculateEconomics({
+    it('expose une marge négative au lieu de masquer une production déficitaire', () => {
+        const economics = calculateEconomics({
             ingredientCosts: [
                 {
                     numerator: 10n,
@@ -236,9 +251,16 @@ describe('M-004 calculs Fiche technique', () => {
             vatRateBasisPoints: 1000,
             targetMarginBasisPoints: 5000,
             finalPriceMode: 'MANUAL',
-            finalPriceTtcMinor: 1000,
-        })).toThrow(
-            'Le Prix final TTC est inférieur au plancher économique.',
-        );
+            finalPriceTtcMinor: 550,
+        });
+
+        expect(economics.economicFloorTtc).toBe('11');
+        expect(economics.finalPriceHt).toBe('5');
+        expect(economics.actualMarginAmountHt).toBe('-5');
+        expect(economics.manufacturingMarginProductionHt).toBe('-5');
+        expect(economics.actualMarginBasisPoints).toBe(-10000);
+        expect(economics.targetMarginDeltaBasisPoints).toBe(-15000);
+        expect(economics.targetMarginDeltaAmountHt).toBe('-15');
+        expect(economics.targetMarginDeltaProductionHt).toBe('-15');
     });
 });

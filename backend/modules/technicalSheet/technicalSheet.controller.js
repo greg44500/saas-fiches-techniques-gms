@@ -30,6 +30,7 @@ import {
 } from './technicalSheetLifecycle.service.js';
 import {
     TECHNICAL_SHEET_CHANGE_KIND_REGISTRY,
+    TECHNICAL_SHEET_ECONOMIC_METRIC_REGISTRY,
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
     TECHNICAL_SHEET_LINE_KIND,
@@ -44,6 +45,7 @@ import {
     TECHNICAL_SHEET_TRASH_RETENTION,
     TECHNICAL_SHEET_VALUATION_STATUS,
     TECHNICAL_SHEET_VALUATION_STATUS_REGISTRY,
+    TECHNICAL_SHEET_VAT_RATE_REGISTRY,
 } from './technicalSheet.registry.js';
 import {
     TECHNICAL_SHEET_PERMISSION,
@@ -79,6 +81,10 @@ const metadata = async (req, res) => {
                 changeKindDefinitions:
                     Object.values(
                         TECHNICAL_SHEET_CHANGE_KIND_REGISTRY,
+                    ),
+                economicMetricDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_ECONOMIC_METRIC_REGISTRY,
                     ),
                 statuses:
                     Object.values(
@@ -135,6 +141,10 @@ const metadata = async (req, res) => {
                 saleBases:
                     Object.values(
                         TECHNICAL_SHEET_SALE_BASIS_REGISTRY,
+                    ),
+                vatRates:
+                    Object.values(
+                        TECHNICAL_SHEET_VAT_RATE_REGISTRY,
                     ),
                 defaults: {
                     ...TECHNICAL_SHEET_PRODUCTION_DEFAULTS,

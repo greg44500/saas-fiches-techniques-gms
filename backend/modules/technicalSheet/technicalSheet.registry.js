@@ -152,11 +152,29 @@ const TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY = Object.freeze({
     }),
 });
 
+const TECHNICAL_SHEET_VAT_RATE_REGISTRY = Object.freeze({
+    REDUCED: Object.freeze({
+        value: 550,
+        label: '5,5 %',
+    }),
+    INTERMEDIATE: Object.freeze({
+        value: 1000,
+        label: '10 %',
+    }),
+});
+
+const TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS = Object.freeze(
+    Object.values(TECHNICAL_SHEET_VAT_RATE_REGISTRY)
+        .map((definition) => definition.value),
+);
+
 const TECHNICAL_SHEET_PRODUCTION_DEFAULTS = Object.freeze({
     productionUnit:
         TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY.UNIT.value,
     portionsPerProductionUnit: '1',
     saleBasis: TECHNICAL_SHEET_SALE_BASIS.PIECE,
+    vatRateBasisPoints:
+        TECHNICAL_SHEET_VAT_RATE_REGISTRY.REDUCED.value,
     finalPriceMode:
         TECHNICAL_SHEET_FINAL_PRICE_MODE.ADVISED,
 });
@@ -198,6 +216,93 @@ const TECHNICAL_SHEET_CHANGE_KIND_REGISTRY = Object.freeze({
     }),
 });
 
+const TECHNICAL_SHEET_ECONOMIC_METRIC_REGISTRY = Object.freeze({
+    MATERIAL_COST_HT: Object.freeze({
+        value: 'materialCostHt',
+        label: 'CM HT',
+        description:
+            'Coût matière HT total des Ingrédients pour toute la production.',
+    }),
+    ECONOMAT_COST_HT: Object.freeze({
+        value: 'economatCostHt',
+        label: 'CE HT',
+        description:
+            'Coût Économat HT total pour toute la production.',
+    }),
+    MANUFACTURING_COST_HT: Object.freeze({
+        value: 'manufacturingCostHt',
+        label: 'CF HT',
+        description:
+            'Coût de fabrication HT total pris en compte par la Fiche : Matières + Économat.',
+    }),
+    MATERIAL_COST_PER_PRODUCTION_UNIT_HT: Object.freeze({
+        value: 'materialCostPerProductionUnitHt',
+        label: 'CM/Pce HT',
+        description:
+            'Coût matière HT par pièce fabriquée.',
+    }),
+    MANUFACTURING_COST_PER_PRODUCTION_UNIT_HT: Object.freeze({
+        value: 'manufacturingCostPerProductionUnitHt',
+        label: 'CF/Pce HT',
+        description:
+            'Coût de fabrication HT par pièce fabriquée.',
+    }),
+    MATERIAL_COST_PER_PORTION_HT: Object.freeze({
+        value: 'materialCostPerPortionHt',
+        label: 'CMU HT',
+        description:
+            'Coût matière unitaire HT par portion.',
+    }),
+    ECONOMAT_COST_PER_PORTION_HT: Object.freeze({
+        value: 'economatCostPerPortionHt',
+        label: 'CEU HT',
+        description:
+            'Coût Économat unitaire HT par portion.',
+    }),
+    MANUFACTURING_COST_PER_PORTION_HT: Object.freeze({
+        value: 'manufacturingCostPerPortionHt',
+        label: 'CFU HT',
+        description:
+            'Coût de fabrication unitaire HT par portion.',
+    }),
+    ACTUAL_MARGIN_BASIS_POINTS: Object.freeze({
+        value: 'actualMarginBasisPoints',
+        label: 'Marge réelle',
+        description:
+            'Part du Prix retenu HT restant après déduction du coût de fabrication de la base de vente.',
+    }),
+    ACTUAL_MARGIN_AMOUNT_HT: Object.freeze({
+        value: 'actualMarginAmountHt',
+        label: 'Marge sur coût de fabrication',
+        description:
+            'Différence HT entre le Prix retenu et le coût de fabrication pour une unité de vente. Ce montant ne constitue pas un bénéfice comptable.',
+    }),
+    MANUFACTURING_MARGIN_PRODUCTION_HT: Object.freeze({
+        value: 'manufacturingMarginProductionHt',
+        label: 'Marge sur coût de fabrication · production',
+        description:
+            'Marge sur coût de fabrication HT cumulée sur toutes les unités vendables de la production. Ce montant ne constitue pas un bénéfice comptable.',
+    }),
+    TARGET_MARGIN_DELTA_BASIS_POINTS: Object.freeze({
+        value: 'targetMarginDeltaBasisPoints',
+        label: 'Écart vs cible',
+        description:
+            'Écart en points entre la marge réelle et la marge cible.',
+    }),
+    TARGET_MARGIN_DELTA_AMOUNT_HT: Object.freeze({
+        value: 'targetMarginDeltaAmountHt',
+        label: 'Écart monétaire vs cible',
+        description:
+            'Écart HT par unité de vente entre le Prix retenu et le prix nécessaire pour atteindre exactement la marge cible.',
+    }),
+    TARGET_MARGIN_DELTA_PRODUCTION_HT: Object.freeze({
+        value: 'targetMarginDeltaProductionHt',
+        label: 'Écart production vs cible',
+        description:
+            'Écart HT cumulé sur la production entre la marge obtenue et la marge cible.',
+    }),
+});
+
 const TECHNICAL_SHEET_METRIC = Object.freeze({
     TECHNICAL_SHEETS: 'technical_sheets',
 });
@@ -211,6 +316,7 @@ const TECHNICAL_SHEET_TRASH_RETENTION = Object.freeze({
 export {
     TECHNICAL_SHEET_CHANGE_KIND,
     TECHNICAL_SHEET_CHANGE_KIND_REGISTRY,
+    TECHNICAL_SHEET_ECONOMIC_METRIC_REGISTRY,
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
     TECHNICAL_SHEET_LINE_KIND,
@@ -227,4 +333,6 @@ export {
     TECHNICAL_SHEET_TRASH_RETENTION,
     TECHNICAL_SHEET_VALUATION_STATUS,
     TECHNICAL_SHEET_VALUATION_STATUS_REGISTRY,
+    TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS,
+    TECHNICAL_SHEET_VAT_RATE_REGISTRY,
 };

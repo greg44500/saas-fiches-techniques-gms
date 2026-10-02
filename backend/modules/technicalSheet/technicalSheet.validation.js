@@ -12,6 +12,7 @@ import {
     TECHNICAL_SHEET_SALE_BASIS,
     TECHNICAL_SHEET_STATUS,
     TECHNICAL_SHEET_TRASH_RETENTION,
+    TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS,
 } from './technicalSheet.registry.js';
 
 const decimalStringSchema = z
@@ -34,6 +35,16 @@ const positiveDecimalStringSchema =
 const nullablePositiveDecimal =
     positiveDecimalStringSchema
         .nullable();
+
+const vatRateBasisPointsSchema = z
+    .number()
+    .int()
+    .refine(
+        (value) =>
+            TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS
+                .includes(value),
+        'TVA non autorisée.',
+    );
 
 const paginationQuerySchema = z.strictObject({
     page: z.coerce
@@ -123,11 +134,9 @@ const createTechnicalSheetSchema =
             .default(
                 TECHNICAL_SHEET_SALE_BASIS.PIECE,
             ),
-        vatRateBasisPoints: z
-            .number()
-            .int()
-            .min(0)
-            .max(10000),
+        vatRateBasisPoints:
+            vatRateBasisPointsSchema
+                .default(550),
         targetMarginBasisPoints: z
             .number()
             .int()
@@ -231,13 +240,10 @@ const saveTechnicalSheetDraftSchema =
             )
             .nullable()
             .optional(),
-        vatRateBasisPoints: z
-            .number()
-            .int()
-            .min(0)
-            .max(10000)
-            .nullable()
-            .optional(),
+        vatRateBasisPoints:
+            vatRateBasisPointsSchema
+                .nullable()
+                .optional(),
         targetMarginBasisPoints: z
             .number()
             .int()

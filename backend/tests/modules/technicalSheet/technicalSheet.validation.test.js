@@ -17,7 +17,6 @@ describe('M-004 validation Fiches techniques', () => {
                 name: 'Purée de carottes',
                 productionQuantity: '10',
                 productionUnit: 'UNIT',
-                vatRateBasisPoints: 1000,
             }),
         ).toEqual({
             name: 'Purée de carottes',
@@ -25,12 +24,36 @@ describe('M-004 validation Fiches techniques', () => {
             productionUnit: 'UNIT',
             portionsPerProductionUnit: '1',
             saleBasis: 'PIECE',
-            vatRateBasisPoints: 1000,
+            vatRateBasisPoints: 550,
         });
 
         expect(
             createTechnicalSheetSchema.safeParse({
                 name: 'Purée de carottes',
+            }).success,
+        ).toBe(false);
+    });
+
+    it('limite la TVA aux taux métier exposés par le backend', () => {
+        expect(
+            createTechnicalSheetSchema.parse({
+                name: 'Purée de carottes',
+                productionQuantity: '10',
+                productionUnit: 'UNIT',
+            }).vatRateBasisPoints,
+        ).toBe(550);
+
+        expect(
+            saveTechnicalSheetDraftSchema.safeParse({
+                expectedRevision: 0,
+                vatRateBasisPoints: 1000,
+            }).success,
+        ).toBe(true);
+
+        expect(
+            saveTechnicalSheetDraftSchema.safeParse({
+                expectedRevision: 0,
+                vatRateBasisPoints: 2000,
             }).success,
         ).toBe(false);
     });
