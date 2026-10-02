@@ -742,7 +742,7 @@ function TechnicalSheetWorkspacePage() {
             style={{ top: 'var(--workspace-topbar-height, 4rem)' }}
           >
             <Card className="border-primary/20 bg-background/97 shadow-lg backdrop-blur-md">
-              <CardHeader className="pb-3">
+              <CardHeader className="p-4 pb-2">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                   <div className="flex min-w-0 items-center gap-2">
                     <ActionIconButton
@@ -811,8 +811,8 @@ function TechnicalSheetWorkspacePage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap items-end gap-3">
+              <CardContent className="space-y-3 p-4 pt-2">
+                <div className="flex flex-wrap items-end gap-2">
                   <Field className="w-32">
                     <FieldLabel htmlFor="technical-sheet-production-quantity">
                       Quantité produite
@@ -903,8 +903,8 @@ function TechnicalSheetWorkspacePage() {
                   </Field>
                 </div>
 
-                <div className="border-t border-border pt-4">
-                  <h3 className="mb-3 text-sm font-semibold">Résultats</h3>
+                <div className="border-t border-border pt-3">
+                  <h3 className="mb-2 text-sm font-semibold">Résultats</h3>
                   <TechnicalSheetEconomicsBar
                     canValuate={canValuate}
                     economicSnapshot={economicSnapshot}
