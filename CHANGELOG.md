@@ -28,8 +28,13 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - drawer Platform Produit densifié : recherche et enrichissement alignés, compteurs, filtres À vérifier/Actives/Archivées/Toutes et actions par icônes ;
 - aides secondaires de création/enrichissement déplacées vers des infobulles contextuelles ;
 
-- intégration du Core post-tag `v1.2.1` jusqu’au commit `6581e573c6a6885790b23fe502bd34d8199ea6ba`, sans nouvelle version ni déplacement de tag ;
+- intégration du Core post-tag `v1.2.1` jusqu’au commit `054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3`, sans nouvelle version ni déplacement de tag ;
 - ajout de la primitive générique de navigation Platform `type: 'section'`, non repliable, filtrée selon la visibilité de ses enfants et compatible avec les entrées `item` / `group` existantes ;
+- ajout des primitives Design System Core `ToggleGroup` et `SegmentedControl`, réutilisables par les modules dérivés sans dupliquer de contrôle métier ;
+- ajout de la variante sémantique `warning` du composant `Button` ;
+- unification des accès rapides Platform / Workspace autour de `NavigationQuickAccess` ;
+- ajout de `WorkspaceQuickAccess` dans la topbar Workspace, filtré par permissions et features effectives à partir de la navigation Workspace composée ;
+- retrait du widget générique de résumé d’abonnement du Dashboard Workspace Core ;
 - identité visible du SaaS dérivé alignée sur `GMS` / `Fiches techniques` sur l’accueil public et la sidebar Workspace, sans modification du design ni des identifiants techniques ;
 - shell Workspace modernisé : Tableau de bord en tête, modules métier immédiatement après, statut regroupé avec le nom dans la topbar, rôle dans l’identité utilisateur, puis « Administration de l’espace » ;
 - navigation Platform conservée avec séparation des modules applicatifs et accès rapide aux vues autorisées ;
