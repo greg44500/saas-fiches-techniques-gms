@@ -754,39 +754,41 @@ function TechnicalSheetWorkspacePage() {
     <div className="space-y-6">
       {!draft && (
         <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-start gap-2">
           <ActionIconButton
             Icon={ArrowLeft}
-            label="Retour au Dossier"
+            label="Retour vers Dossiers"
             onClick={() => navigate(
               '/workspaces/' + workspace.id
               + '/dossiers/' + dossierId
               + '/technical-sheets',
             )}
-            tooltipLabel="Retour au Dossier"
+            tooltipLabel="Retour vers Dossiers"
             variant="ghost"
           />
 
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="min-w-0">
             <h1 className="truncate text-3xl font-semibold tracking-tight">
               {sheet.name}
             </h1>
 
-            <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
-              {statusPresentation.label}
-            </TechnicalSheetStatusBadge>
-
-            {draft && (
-              <TechnicalSheetStatusBadge tone="warning">
-                Brouillon
+            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+              <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+                {statusPresentation.label}
               </TechnicalSheetStatusBadge>
-            )}
 
-            {draft && (
-              <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-                {valuationPresentation.label}
-              </TechnicalSheetStatusBadge>
-            )}
+              {draft && (
+                <TechnicalSheetStatusBadge tone="warning">
+                  Brouillon
+                </TechnicalSheetStatusBadge>
+              )}
+
+              {draft && (
+                <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
+                  {valuationPresentation.label}
+                </TechnicalSheetStatusBadge>
+              )}
+            </div>
           </div>
         </div>
 
@@ -878,35 +880,37 @@ function TechnicalSheetWorkspacePage() {
             <Card className="border-primary/20 bg-background/97 shadow-lg backdrop-blur-md">
               <CardHeader className="p-4 pb-2">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="flex min-w-0 items-center gap-2">
+                  <div className="flex min-w-0 items-start gap-2">
                     <ActionIconButton
                       Icon={ArrowLeft}
-                      label="Retour au Dossier"
+                      label="Retour vers Dossiers"
                       onClick={() => navigate(
                         '/workspaces/' + workspace.id
                         + '/dossiers/' + dossierId
                         + '/technical-sheets',
                       )}
-                      tooltipLabel="Retour au Dossier"
+                      tooltipLabel="Retour vers Dossiers"
                       variant="ghost"
                     />
 
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <div className="min-w-0">
                       <h1 className="truncate text-2xl font-semibold tracking-tight">
                         {sheet.name}
                       </h1>
 
-                      <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
-                        {statusPresentation.label}
-                      </TechnicalSheetStatusBadge>
+                      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+                        <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+                          {statusPresentation.label}
+                        </TechnicalSheetStatusBadge>
 
-                      <TechnicalSheetStatusBadge tone="warning">
-                        Brouillon
-                      </TechnicalSheetStatusBadge>
+                        <TechnicalSheetStatusBadge tone="warning">
+                          Brouillon
+                        </TechnicalSheetStatusBadge>
 
-                      <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-                        {valuationPresentation.label}
-                      </TechnicalSheetStatusBadge>
+                        <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
+                          {valuationPresentation.label}
+                        </TechnicalSheetStatusBadge>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">

@@ -48,6 +48,8 @@ Fiche
 → CM/Pce et CF/Pce divisés par productionQuantity
 → CMU et CFU divisés par totalPortions
 → titre + badges intégrés au header sticky à la place du libellé « Paramètres »
+→ titre sur la première ligne et tous les badges regroupés sous le titre
+→ bouton retour aligné devant le titre avec le libellé « Retour vers Dossiers »
 → actions Modifier / Analyse / Infos dossier regroupées dans le header
 → paramètres séparés en groupes compacts Production / Vente
 → TVA métier limitée à 5,5 % ou 10 %, défaut 5,5 %, valeurs exposées par metadata backend
@@ -82,6 +84,8 @@ Dépendance Core identifiée pendant la QA UX :
 
 - un sélecteur segmenté réutilisable basé sur Base UI / shadcn est une primitive générique du Design System ;
 - une variante sémantique `warning` du bouton est également transverse ;
+- un accès rapide aux vues Workspace, équivalent au `PlatformQuickAccess`, appartient également au shell Core ;
+- il doit filtrer les destinations selon les permissions/features effectives et utiliser la navigation Workspace composée par le produit ;
 - ces primitives ne doivent pas rester implémentées silencieusement dans le produit ;
 - le frontend M-004 correspondant est volontairement suspendu jusqu'à leur ajout/versionnement dans `saas-core-api`, puis intégration du Core dans le produit.
 
