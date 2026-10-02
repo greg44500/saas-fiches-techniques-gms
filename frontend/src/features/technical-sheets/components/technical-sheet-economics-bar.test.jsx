@@ -45,7 +45,7 @@ const economicMetricDefinitions = [
   {
     value: 'actualMarginBasisPoints',
     label: 'Marge réelle',
-    description: 'Part du prix retenu HT restant après le coût.',
+    description: 'MR = Marge réelle. Part du Prix retenu HT restant après déduction du coût de fabrication de la base de vente.',
   },
   {
     value: 'targetMarginDeltaProductionHt',
@@ -101,6 +101,13 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(screen.getByRole('button', {
       name: 'Définition : CF HT',
     })).toBeInTheDocument();
+
+    await userEvent.setup().hover(screen.getByRole('button', {
+      name: 'Définition : %MR',
+    }));
+    expect(await screen.findByText(
+      /MR = Marge réelle/,
+    )).toBeInTheDocument();
   });
 
   it('affiche Actualisation sans masquer les anciennes valeurs', () => {

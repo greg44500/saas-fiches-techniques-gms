@@ -269,7 +269,7 @@ const TECHNICAL_SHEET_ECONOMIC_METRIC_REGISTRY = Object.freeze({
         value: 'actualMarginBasisPoints',
         label: 'Marge réelle',
         description:
-            'Part du Prix retenu HT restant après déduction du coût de fabrication de la base de vente.',
+            'MR = Marge réelle. Part du Prix retenu HT restant après déduction du coût de fabrication de la base de vente.',
     }),
     ACTUAL_MARGIN_AMOUNT_HT: Object.freeze({
         value: 'actualMarginAmountHt',

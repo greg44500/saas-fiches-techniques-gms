@@ -263,6 +263,12 @@ describe('M-004 RBAC HTTP', () => {
                 label: 'CF HT',
             }),
             expect.objectContaining({
+                value: 'actualMarginBasisPoints',
+                label: 'Marge réelle',
+                description:
+                    'MR = Marge réelle. Part du Prix retenu HT restant après déduction du coût de fabrication de la base de vente.',
+            }),
+            expect.objectContaining({
                 value: 'actualMarginAmountHt',
                 label: 'Marge sur coût de fabrication HT',
             }),
