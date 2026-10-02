@@ -1,5 +1,8 @@
 import {
   ArrowLeft,
+  BarChart3,
+  Building2,
+  Pencil,
   RotateCcw,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -48,14 +51,23 @@ import {
   useValuateTechnicalSheetMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
+  TechnicalSheetAnalysisDrawer,
+} from '@/features/technical-sheets/components/technical-sheet-analysis-drawer';
+import {
   TechnicalSheetControlPanel,
 } from '@/features/technical-sheets/components/technical-sheet-control-panel';
 import {
   TechnicalSheetCopyDialog,
 } from '@/features/technical-sheets/components/technical-sheet-copy-dialog';
 import {
-  TechnicalSheetInformationDrawer,
-} from '@/features/technical-sheets/components/technical-sheet-information-drawer';
+  TechnicalSheetDossierContextDrawer,
+} from '@/features/technical-sheets/components/technical-sheet-dossier-context-drawer';
+import {
+  TechnicalSheetIdentityDialog,
+} from '@/features/technical-sheets/components/technical-sheet-identity-dialog';
+import {
+  TechnicalSheetValidationDialog,
+} from '@/features/technical-sheets/components/technical-sheet-validation-dialog';
 import {
   TechnicalSheetEconomicsBar,
 } from '@/features/technical-sheets/components/technical-sheet-economics-bar';
@@ -264,7 +276,9 @@ function TechnicalSheetWorkspacePage() {
   const [draftDirty, setDraftDirty] = useState(false);
   const [identityDirty, setIdentityDirty] = useState(false);
   const [identityFormRevision, setIdentityFormRevision] = useState(null);
-  const [informationOpen, setInformationOpen] = useState(false);
+  const [identityDialogOpen, setIdentityDialogOpen] = useState(false);
+  const [rightPanel, setRightPanel] = useState(null);
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
   const [copyOpen, setCopyOpen] = useState(false);
@@ -345,7 +359,9 @@ function TechnicalSheetWorkspacePage() {
     setDraftFormRevision(null);
     setIdentityDirty(false);
     setIdentityFormRevision(null);
-    setInformationOpen(false);
+    setIdentityDialogOpen(false);
+    setRightPanel(null);
+    setValidationDialogOpen(false);
     setProductScope(null);
     resetAutosave(null);
   }, [resetAutosave, technicalSheetId]);
@@ -515,6 +531,22 @@ function TechnicalSheetWorkspacePage() {
   const canDelete = can(TECHNICAL_SHEET_PERMISSION.DELETE);
   const canCopy = can(TECHNICAL_SHEET_PERMISSION.COPY);
   const copyDisabled = !actionAvailability.copy;
+  const validationEligible = Boolean(
+    draft
+    && metadata?.valuationStatusDefinitions
+      ?.find((definition) => (
+        definition.value === draft.valuationStatus
+      ))
+      ?.validationEligible
+  );
+  const validations = historyQuery.data?.validations ?? [];
+  const currentValidation = (
+    validations.find((validation) => (
+      validation.id === sheet.currentValidatedStateId
+    ))
+    ?? validations[0]
+    ?? null
+  );
   const sourcingPending = sourcingPendingCount > 0;
   const draftSynchronizing = sourcingPending;
   const draftServerActionDisabled = (
@@ -589,6 +621,7 @@ function TechnicalSheetWorkspacePage() {
       });
       setIdentityFormRevision(updatedSheet.revision);
       setIdentityDirty(false);
+      setIdentityDialogOpen(false);
       toast({
         title: 'Fiche technique mise à jour',
         variant: 'success',
@@ -627,6 +660,7 @@ function TechnicalSheetWorkspacePage() {
         comment: validationComment.trim() || null,
       }).unwrap();
       setValidationComment('');
+      setValidationDialogOpen(false);
       setDraftDirty(false);
       setDraftFormRevision(null);
       resetAutosave(null);
@@ -691,7 +725,25 @@ function TechnicalSheetWorkspacePage() {
     }
   }
 
-  const economicSnapshot = draft?.economicSnapshot;
+  const economicSnapshot = (
+    draft?.economicSnapshot
+    ?? currentValidation?.economicSnapshot
+    ?? null
+  );
+  const productionSnapshot = (
+    draft
+    ?? currentValidation?.sheetSnapshot
+    ?? null
+  );
+  const economicsUpdating = Boolean(
+    draft
+    && (
+      draftDirty
+      || autosaveIsSaving
+      || autosaveHasUnsavedChanges
+      || valuateState.isLoading
+    )
+  );
   const pendingLifecycle = (
     archiveState.isLoading
     || reactivateState.isLoading
@@ -738,6 +790,36 @@ function TechnicalSheetWorkspacePage() {
           </div>
         </div>
 
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {canEditIdentity && actionAvailability.update && (
+            <Button
+              onClick={() => setIdentityDialogOpen(true)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Pencil aria-hidden="true" className="size-4" />
+              Modifier
+            </Button>
+          )}
+          <Button
+            onClick={() => setRightPanel('analysis')}
+            size="sm"
+            type="button"
+            variant={rightPanel === 'analysis' ? 'default' : 'outline'}
+          >
+            <BarChart3 aria-hidden="true" className="size-4" />
+            Analyse
+          </Button>
+          <Button
+            onClick={() => setRightPanel('dossier')}
+            size="sm"
+            type="button"
+            variant={rightPanel === 'dossier' ? 'default' : 'outline'}
+          >
+            <Building2 aria-hidden="true" className="size-4" />
+            Infos dossier
+          </Button>
         <TechnicalSheetControlPanel
           actionAvailability={actionAvailability}
           canCopy={canCopy}
@@ -753,10 +835,12 @@ function TechnicalSheetWorkspacePage() {
           onCopy={() => setCopyOpen(true)}
           onDelete={() => setConfirmation({ type: 'delete' })}
           onReactivate={() => setConfirmation({ type: 'reactivate' })}
-          onValidate={validateDraft}
+          onValidate={() => setValidationDialogOpen(true)}
           pendingLifecycle={pendingLifecycle}
           validatePending={validateState.isLoading}
+          validationEligible={validationEligible}
         />
+        </div>
         </header>
       )}
 
@@ -826,6 +910,35 @@ function TechnicalSheetWorkspacePage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
+                    {canEditIdentity && actionAvailability.update && (
+                      <Button
+                        onClick={() => setIdentityDialogOpen(true)}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        <Pencil aria-hidden="true" className="size-4" />
+                        Modifier
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => setRightPanel('analysis')}
+                      size="sm"
+                      type="button"
+                      variant={rightPanel === 'analysis' ? 'default' : 'outline'}
+                    >
+                      <BarChart3 aria-hidden="true" className="size-4" />
+                      Analyse
+                    </Button>
+                    <Button
+                      onClick={() => setRightPanel('dossier')}
+                      size="sm"
+                      type="button"
+                      variant={rightPanel === 'dossier' ? 'default' : 'outline'}
+                    >
+                      <Building2 aria-hidden="true" className="size-4" />
+                      Infos dossier
+                    </Button>
                     {canUpdate
                       && productSearchScopes.length > 0
                       && effectiveProductScope
@@ -858,15 +971,21 @@ function TechnicalSheetWorkspacePage() {
                       onCopy={() => setCopyOpen(true)}
                       onDelete={() => setConfirmation({ type: 'delete' })}
                       onReactivate={() => setConfirmation({ type: 'reactivate' })}
-                      onValidate={validateDraft}
+                      onValidate={() => setValidationDialogOpen(true)}
                       pendingLifecycle={pendingLifecycle}
                       validatePending={validateState.isLoading}
+                      validationEligible={validationEligible}
                     />
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 p-4 pt-2">
-                <div className="flex flex-wrap items-end gap-2">
+                <div className="grid gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">
+                  <div className="rounded-lg border border-border bg-muted/15 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Production
+                    </p>
+                    <div className="flex flex-wrap items-end gap-2">
                   <Field className="w-32">
                     <FieldLabel htmlFor="technical-sheet-production-quantity">
                       Quantité produite
@@ -948,6 +1067,14 @@ function TechnicalSheetWorkspacePage() {
                     </div>
                   </Field>
 
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/15 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Vente
+                    </p>
+                    <div className="flex flex-wrap items-end gap-2">
                   <Field className="w-28">
                     <FieldLabel>Base de vente</FieldLabel>
                     <Select
@@ -1016,10 +1143,12 @@ function TechnicalSheetWorkspacePage() {
                       value={draftForm.targetMargin}
                     />
                   </Field>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="border-t border-border pt-3">
-                  <h3 className="mb-2 text-sm font-semibold">Résultats</h3>
+                <div>
+
                   <TechnicalSheetEconomicsBar
                     canValuate={canValuate}
                     economicSnapshot={economicSnapshot}
@@ -1027,7 +1156,6 @@ function TechnicalSheetWorkspacePage() {
                     finalPriceInputValue={draftForm.finalPriceTtc}
                     finalPriceMode={draftForm.finalPriceMode}
                     finalPriceModeItems={finalPriceModeItems}
-                    lines={draftForm.lines}
                     onFinalPriceInputChange={(value) => {
                       updateDraftForm((current) => ({
                         ...current,
@@ -1043,12 +1171,7 @@ function TechnicalSheetWorkspacePage() {
                     onFieldBlur={flushAutosave}
                     saleBasis={draftForm.saleBasis}
                     saleBasisItems={saleBasisItems}
-                    targetMarginBasisPoints={
-                      parsedTargetMargin
-                    }
-                    vatRateBasisPoints={
-                      parsedVatRate
-                    }
+                    updating={economicsUpdating}
                   />
                 </div>
               </CardContent>
@@ -1133,15 +1256,30 @@ function TechnicalSheetWorkspacePage() {
         </section>
       )}
 
-      <TechnicalSheetInformationDrawer
+      <TechnicalSheetAnalysisDrawer
+        economicSnapshot={economicSnapshot}
+        history={validations}
+        historyLoading={historyQuery.isLoading}
+        metadata={metadata}
+        onClose={() => setRightPanel(null)}
+        open={rightPanel === 'analysis'}
+        productionSnapshot={productionSnapshot}
+      />
+
+      <TechnicalSheetDossierContextDrawer
+        dossierId={dossierId}
+        onClose={() => setRightPanel(null)}
+        open={rightPanel === 'dossier'}
+        pricingSources={metadata?.pricingSources ?? []}
+        workspaceId={workspace.id}
+      />
+
+      <TechnicalSheetIdentityDialog
         canEdit={canEditIdentity && actionAvailability.update}
-        canValidate={canValidate}
         description={identity.description}
         dirty={identityDirty}
-        history={historyQuery.data?.validations ?? []}
-        historyLoading={historyQuery.isLoading}
         name={identity.name}
-        onClose={() => setInformationOpen(false)}
+        onClose={() => setIdentityDialogOpen(false)}
         onDescriptionChange={(value) => {
           setIdentityDirty(true);
           setIdentity((current) => ({
@@ -1156,13 +1294,18 @@ function TechnicalSheetWorkspacePage() {
             name: value,
           }));
         }}
-        onOpen={() => setInformationOpen(true)}
         onSave={saveIdentity}
-        onValidationCommentChange={setValidationComment}
-        open={informationOpen}
+        open={identityDialogOpen}
         pending={updateSheetState.isLoading}
-        showValidationComment={Boolean(draft)}
-        validationComment={validationComment}
+      />
+
+      <TechnicalSheetValidationDialog
+        comment={validationComment}
+        onClose={() => setValidationDialogOpen(false)}
+        onCommentChange={setValidationComment}
+        onConfirm={validateDraft}
+        open={validationDialogOpen}
+        pending={validateState.isLoading}
       />
 
       <TechnicalSheetCopyDialog
