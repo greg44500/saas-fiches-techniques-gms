@@ -82,14 +82,45 @@ migration:m004-production-quantity
 ~~~text
 main de base                         : 957438c8f522b9e342158a17a7a4a6aa4bd7d3a2
 Core Gate post-merge de cette base   : #167 SUCCESS
-implémentation branche               : backend production/base de vente en cours de stabilisation
-tests automatisés ajoutés             : OUI
-tests automatisés exécutés            : NON EXÉCUTÉS / NON REVENDIQUÉS
+implémentation branche               : stabilisation Pièce/Portion + metadata backend + UX économique codée
+head branche                         : 82f2541ebea8d26e8da5da040049b6aa47e63554
+tests automatisés ajoutés / adaptés  : OUI (backend, frontend et E2E M-004)
+tests automatisés exécutés           : NON EXÉCUTÉS / NON REVENDIQUÉS
+raison                               : Core Gate uniquement sur PR ou push main ; runtime courant sans accès réseau au clone
 QA visuelle utilisateur              : À FAIRE
 PR / merge                           : NON CRÉÉS
 ~~~
 
-La prochaine étape est volontairement la QA locale du parcours avant toute PR : création Dossier, création Fiche, ajout d'un Produit avec Prix indicatif, recalcul automatique, modification quantité/marge/TVA et contrôle du menu Actions.
+La prochaine étape est volontairement la QA locale du parcours avant toute PR.
+
+Contrôles visuels prioritaires :
+
+~~~text
+création Fiche
+→ Unité de production = Pièce depuis metadata backend
+→ Portions / pièce = 1 par défaut
+→ Base de vente = Pièce par défaut
+
+poste de travail
+→ modification Quantité produite / Portions par pièce
+→ Total portions affiché depuis la réponse backend
+→ bascule Base de vente Pièce ↔ Portion
+→ CMU HT / CFU HT distincts du coût par pièce
+→ Prix conseillé / Prix retenu cohérents avec la base de vente
+→ valeurs indisponibles affichées NC, jamais 0 inventé
+
+composition
+→ sections et sources de prix alimentées par metadata backend
+→ scopes Tous les produits / Favoris alimentés par metadata Produit
+→ ajout/remplacement Produit et conversion d'unité inchangés
+→ Prix indicatif Dossier / Workspace toujours exploitable
+→ menu Actions et sourcing inchangés
+
+legacy
+→ aucune ancienne unité physique n'est convertie implicitement en Pièce
+~~~
+
+Le scénario Playwright M-004 a été adapté au nouveau formulaire, mais il n'a pas été exécuté dans cette session.
 
 ---
 

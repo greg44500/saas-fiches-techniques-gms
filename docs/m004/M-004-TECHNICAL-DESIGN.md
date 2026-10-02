@@ -352,7 +352,31 @@ Le numéro de version n'est pas un concept UX. L'historique est ordonné par `va
 
 Cette règle ne doit jamais être contournée pour simplifier une requête ou un test.
 
-Les valeurs métier sélectionnables (unité de production, base de vente, statuts/modes lorsqu'ils sont exposés à l'UI) ont le backend comme autorité. RTK Query consomme les metadata ; React ne maintient pas de liste métier divergente.
+Les valeurs métier sélectionnables ont le backend comme autorité. RTK Query consomme les metadata ; React ne maintient pas de liste métier divergente.
+
+Contrats exposés au frontend :
+
+~~~text
+GET .../technical-sheets/metadata
+→ productionUnits
+→ saleBases
+→ finalPriceModeDefinitions
+→ statusDefinitions
+→ valuationStatusDefinitions
+→ lineValuationStatusDefinitions
+→ lineKindDefinitions
+→ pricingSources
+→ defaults.productSearchScope
+
+GET .../products/metadata
+→ referenceUnits
+→ productSearchScopes
+→ defaults.activeWorkspaceProductStatus
+~~~
+
+Les définitions backend peuvent porter les indicateurs UX nécessaires : automaticValuationEligible, openPricingEligible, showWorkspaceFavorite, ordre et présentation des types de lignes. Le frontend consomme ces propriétés au lieu de comparer des listes locales de valeurs techniques.
+
+PRODUCT_REFERENCE_UNIT_REGISTRY reste l'autorité M-002 des unités des lignes. Le libellé UNIT utilisé dans la composition est fourni par ce registre (PCE). L'unité de production M-004 est un contrat distinct affiché « Pièce » via TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY.
 
 ---
 
