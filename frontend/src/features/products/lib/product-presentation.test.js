@@ -31,7 +31,7 @@ const metadata = {
   ],
   referenceUnits: [
     { value: 'KG', label: 'kg' },
-    { value: 'UNIT', label: 'PCE' },
+    { value: 'UNIT', label: 'unité' },
   ],
   foodRanges: [
     {

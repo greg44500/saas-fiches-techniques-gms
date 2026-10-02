@@ -190,7 +190,7 @@ const PRODUCT_REFERENCE_UNIT_REGISTRY = Object.freeze({
     ML: Object.freeze({ value: 'ML', label: 'ml', dimension: 'VOLUME', factorToBase: 1 }),
     CL: Object.freeze({ value: 'CL', label: 'cl', dimension: 'VOLUME', factorToBase: 10 }),
     L: Object.freeze({ value: 'L', label: 'l', dimension: 'VOLUME', factorToBase: 1000 }),
-    UNIT: Object.freeze({ value: 'UNIT', label: 'PCE', dimension: 'COUNT', factorToBase: 1 }),
+    UNIT: Object.freeze({ value: 'UNIT', label: 'unité', dimension: 'COUNT', factorToBase: 1 }),
 });
 
 const PRODUCT_REFERENCE_UNIT = Object.freeze(

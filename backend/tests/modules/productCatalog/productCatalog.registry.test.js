@@ -82,7 +82,7 @@ describe('M-002 product catalog registries', () => {
             }),
         );
         expect(PRODUCT_REFERENCE_UNIT_REGISTRY.UNIT.label)
-            .toBe('PCE');
+            .toBe('unité');
     });
 
     it('décrit les scopes de recherche Produit depuis le backend', () => {
