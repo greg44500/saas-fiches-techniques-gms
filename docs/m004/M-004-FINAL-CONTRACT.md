@@ -199,7 +199,7 @@ Chaque ligne peut conserver notamment :
 
 - ProductVariant ;
 - quantité nette ;
-- unité de saisie ;
+- unité de référence du ProductVariant, dérivée automatiquement ;
 - ordre ;
 - note facultative ;
 - Article fournisseur retenu lorsqu'il est résolu ou choisi ;
@@ -239,13 +239,23 @@ Règles V1 :
 
 ## 9. Unités et conversions
 
-Les conversions sont autorisées uniquement entre unités physiquement compatibles.
-
-Exemples :
+L'unité d'une ligne de Fiche n'est pas une préférence utilisateur. Elle est imposée par `ProductVariant.referenceUnit`.
 
 ```text
-kg ↔ g
-L ↔ mL
+ProductVariant.referenceUnit = KG
+→ ligne affichée et persistée en kg
+
+ProductVariant.referenceUnit = UNIT
+→ ligne affichée et persistée en pièce
+```
+
+Le frontend n'expose donc aucun sélecteur d'unité sur une ligne de composition.
+
+Lorsqu'une ancienne ligne ou un remplacement de Produit implique deux unités physiquement compatibles, la quantité peut être convertie de manière déterministe vers l'unité de référence du nouveau Produit :
+
+```text
+1 kg → Produit référencé en g
+→ 1000 g
 ```
 
 Interdit sans donnée métier dédiée :
@@ -255,9 +265,9 @@ kg ↔ L
 pièce ↔ kg
 ```
 
-Le frontend ne doit jamais inventer une conversion physique.
+Lors d'un remplacement entre dimensions incompatibles, aucune conversion physique n'est inventée : la valeur numérique peut être conservée comme point de départ dans la nouvelle unité, mais l'interface doit avertir l'utilisateur qu'il doit vérifier la quantité.
 
-Les conversions nécessaires aux calculs sont réalisées selon des règles backend déterministes.
+Le backend reste l'autorité de normalisation : toute ligne persistée utilise l'unité de référence du ProductVariant. Une ancienne unité compatible reçue par l'API n'est qu'une donnée de transition permettant de convertir la quantité ; elle n'est jamais conservée comme choix local de la Fiche.
 
 ---
 
