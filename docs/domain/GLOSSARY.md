@@ -352,7 +352,28 @@ rendement = poids net égoutté / poids net × 100
 
 Quantité réellement nécessaire et présente dans la recette.
 
-C'est la quantité saisie par l'utilisateur pour une ligne d'ingrédient.
+C'est la quantité saisie par l'utilisateur pour une ligne d'ingrédient. Elle est exprimée dans l'unité de référence du ProductVariant ; l'utilisateur ne choisit pas une unité locale propre à la Fiche.
+
+---
+
+## Unité de référence d'une ligne de Fiche
+
+Unité portée par `ProductVariant.referenceUnit` et utilisée comme unité canonique de saisie et de persistance d'une ligne de Fiche technique.
+
+Elle est distincte du conditionnement ou de l'unité commerciale d'un Article fournisseur.
+
+Exemple :
+
+```text
+Citron référencé en UNIT
+→ la Fiche saisit un nombre de pièces
+
+Article fournisseur
+→ peut être acheté en filet ou en caisse
+→ son prix est normalisé séparément
+```
+
+L'utilisateur d'une Fiche ne choisit pas cette unité.
 
 ---
 
