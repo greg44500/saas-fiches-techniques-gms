@@ -85,7 +85,7 @@ import {
   getTechnicalSheetActionAvailability,
   getTechnicalSheetApiErrorMessage,
   getTechnicalSheetStatusPresentation,
-  getTechnicalSheetValuationPresentation,
+  getTechnicalSheetValuationAttentionPresentation,
   minorToInput,
   percentInputToBasisPoints,
   priceInputToMinor,
@@ -540,15 +540,11 @@ function TechnicalSheetWorkspacePage() {
     sheet.status,
     metadata?.statusDefinitions,
   );
-  const valuationPresentation = draftDirty
-    ? {
-        label: 'Modifications non enregistrées',
-        tone: 'warning',
-      }
-    : getTechnicalSheetValuationPresentation(
-        draft?.valuationStatus,
-        metadata?.valuationStatusDefinitions,
-      );
+  const valuationAttentionPresentation =
+    getTechnicalSheetValuationAttentionPresentation(
+      draft?.valuationStatus,
+      metadata?.valuationStatusDefinitions,
+    );
   const actionAvailability = getTechnicalSheetActionAvailability({
     status: sheet.status,
     hasDraft: Boolean(draft),
@@ -899,16 +895,11 @@ function TechnicalSheetWorkspacePage() {
               <CardHeader className="p-4 pb-2">
                 <div
                   className={
-                    'grid items-center gap-x-4 gap-y-2 '
-                    + 'xl:grid-cols-[minmax(0,1fr)_auto]'
+                    'flex flex-wrap items-center justify-between gap-3 '
+                    + 'xl:flex-nowrap'
                   }
                 >
-                  <div
-                    className={
-                      'grid min-w-0 grid-cols-[auto_minmax(0,1fr)] '
-                      + 'items-center gap-x-2 xl:col-start-1 xl:row-start-1'
-                    }
-                  >
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
                     <ActionIconButton
                       Icon={ArrowLeft}
                       label="Retour vers Dossiers"
@@ -921,24 +912,11 @@ function TechnicalSheetWorkspacePage() {
                       variant="ghost"
                     />
 
-                    <h1 className="truncate text-2xl font-semibold tracking-tight">
+                    <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">
                       {sheet.name}
                     </h1>
-                  </div>
 
-                  <div
-                    className={
-                      'grid min-w-0 grid-cols-[2.25rem_minmax(0,1fr)] '
-                      + 'gap-x-2 xl:col-start-1 xl:row-start-2'
-                    }
-                  >
-                    <span aria-hidden="true" />
-                    <div
-                      className={
-                        'flex min-h-6 min-w-0 flex-wrap items-center gap-2 '
-                        + '2xl:flex-nowrap'
-                      }
-                    >
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
                         {statusPresentation.label}
                       </TechnicalSheetStatusBadge>
@@ -947,16 +925,20 @@ function TechnicalSheetWorkspacePage() {
                         Brouillon
                       </TechnicalSheetStatusBadge>
 
-                      <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-                        {valuationPresentation.label}
-                      </TechnicalSheetStatusBadge>
+                      {valuationAttentionPresentation && (
+                        <TechnicalSheetStatusBadge
+                          tone={valuationAttentionPresentation.tone}
+                        >
+                          {valuationAttentionPresentation.label}
+                        </TechnicalSheetStatusBadge>
+                      )}
                     </div>
                   </div>
 
                   <div
                     className={
-                      'flex min-h-11 flex-wrap items-center justify-end gap-2 '
-                      + 'xl:col-start-2 xl:row-span-2 xl:row-start-1'
+                      'flex min-h-11 shrink-0 flex-wrap items-center '
+                      + 'justify-end gap-2'
                     }
                   >
                     {canUpdate && (

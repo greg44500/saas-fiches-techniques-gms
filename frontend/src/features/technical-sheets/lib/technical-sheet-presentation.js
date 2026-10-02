@@ -50,6 +50,25 @@ function getTechnicalSheetValuationPresentation(
   );
 }
 
+function getTechnicalSheetValuationAttentionPresentation(
+  status,
+  definitions,
+) {
+  if (!status) return null;
+
+  const definition = (definitions ?? [])
+    .find((entry) => entry.value === status);
+
+  if (definition?.validationEligible === true) {
+    return null;
+  }
+
+  return getTechnicalSheetValuationPresentation(
+    status,
+    definitions,
+  );
+}
+
 function getLineValuationPresentation(
   status,
   definitions,
@@ -156,5 +175,6 @@ export {
   getTechnicalSheetActionAvailability,
   getTechnicalSheetApiErrorMessage,
   getTechnicalSheetStatusPresentation,
+  getTechnicalSheetValuationAttentionPresentation,
   getTechnicalSheetValuationPresentation,
 };

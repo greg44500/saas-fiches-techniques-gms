@@ -13,6 +13,7 @@ import {
   getLineValuationPresentation,
   getTechnicalSheetActionAvailability,
   getTechnicalSheetStatusPresentation,
+  getTechnicalSheetValuationAttentionPresentation,
   getTechnicalSheetValuationPresentation,
   percentInputToBasisPoints,
   priceInputToMinor,
@@ -54,6 +55,56 @@ describe('technical sheet presentation', () => {
 
     expect(
       getTechnicalSheetValuationPresentation('STALE', valuationDefinitions),
+    ).toMatchObject({
+      label: 'Calcul à actualiser',
+      tone: 'warning',
+    });
+  });
+
+  it('masque la valorisation complète et conserve uniquement les états nécessitant une attention', () => {
+    const definitions = [
+      {
+        value: 'COMPLETE',
+        label: 'Valorisée',
+        tone: 'success',
+        validationEligible: true,
+      },
+      {
+        value: 'PARTIAL',
+        label: 'Valorisation incomplète',
+        tone: 'warning',
+        validationEligible: false,
+      },
+      {
+        value: 'STALE',
+        label: 'Calcul à actualiser',
+        tone: 'warning',
+        validationEligible: false,
+      },
+    ];
+
+    expect(
+      getTechnicalSheetValuationAttentionPresentation(
+        'COMPLETE',
+        definitions,
+      ),
+    ).toBeNull();
+
+    expect(
+      getTechnicalSheetValuationAttentionPresentation(
+        'PARTIAL',
+        definitions,
+      ),
+    ).toMatchObject({
+      label: 'Valorisation incomplète',
+      tone: 'warning',
+    });
+
+    expect(
+      getTechnicalSheetValuationAttentionPresentation(
+        'STALE',
+        definitions,
+      ),
     ).toMatchObject({
       label: 'Calcul à actualiser',
       tone: 'warning',
