@@ -117,6 +117,12 @@ const createTechnicalSheetSchema =
             .int()
             .min(0)
             .max(10000),
+        targetMarginBasisPoints: z
+            .number()
+            .int()
+            .min(0)
+            .max(9999)
+            .optional(),
     });
 
 const updateTechnicalSheetSchema =
