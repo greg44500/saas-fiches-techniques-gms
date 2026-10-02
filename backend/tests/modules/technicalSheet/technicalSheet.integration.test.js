@@ -909,6 +909,8 @@ describe('M-004 services Fiches techniques', () => {
             statusCode: 409,
             code:
                 'TECHNICAL_SHEET_VALUATION_REFRESHED',
+            message:
+                'Les données économiques ont changé. Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.',
         });
 
         const refreshed =

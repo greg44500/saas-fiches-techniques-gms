@@ -549,7 +549,7 @@ const validateTechnicalSheet = async ({
         const error = new AppError(
             result.valuationStatus
                 === TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE
-                ? 'Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.'
+                ? 'Les données économiques ont changé. Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.'
                 : 'La Fiche n’est pas complètement calculable avec les données disponibles. Les calculs ont été actualisés.',
             409,
         );
