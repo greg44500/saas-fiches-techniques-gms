@@ -1,17 +1,22 @@
 import {
   Archive,
+  BarChart3,
+  Building2,
   CheckCircle2,
   Copy,
+  Pencil,
   RotateCcw,
   Trash2,
 } from 'lucide-react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { Button } from '@/components/ui/button';
 
 function TechnicalSheetControlPanel({
   actionAvailability,
   canCopy,
   canDelete,
+  canEditIdentity,
   canLifecycle,
   canValidate,
   copyDisabled,
@@ -23,9 +28,13 @@ function TechnicalSheetControlPanel({
   onArchive,
   onCopy,
   onDelete,
+  onEditIdentity,
+  onOpenAnalysis,
+  onOpenDossier,
   onReactivate,
   onValidate,
   pendingLifecycle,
+  rightPanel,
   validatePending,
 }) {
   const validationDisabled = (
@@ -53,12 +62,47 @@ function TechnicalSheetControlPanel({
   return (
     <div
       aria-label="Panneau de contrôle"
-      className="flex shrink-0 items-center gap-1 rounded-lg border border-border bg-card/80 p-1 shadow-sm"
+      className={
+        'flex shrink-0 items-center gap-1 rounded-lg border '
+        + 'border-border bg-card/80 p-1 shadow-sm'
+      }
       role="group"
     >
-      <span className="hidden px-2 text-xs font-medium text-muted-foreground 2xl:inline">
-        Panneau de contrôle
-      </span>
+      <Button
+        disabled={!canEditIdentity}
+        onClick={onEditIdentity}
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        <Pencil aria-hidden="true" className="size-4" />
+        Modifier
+      </Button>
+
+      <Button
+        onClick={onOpenAnalysis}
+        size="sm"
+        type="button"
+        variant={rightPanel === 'analysis' ? 'secondary' : 'ghost'}
+      >
+        <BarChart3 aria-hidden="true" className="size-4" />
+        Analyse
+      </Button>
+
+      <Button
+        onClick={onOpenDossier}
+        size="sm"
+        type="button"
+        variant={rightPanel === 'dossier' ? 'secondary' : 'ghost'}
+      >
+        <Building2 aria-hidden="true" className="size-4" />
+        Infos dossier
+      </Button>
+
+      <span
+        aria-hidden="true"
+        className="mx-1 h-6 w-px shrink-0 bg-border"
+      />
 
       {canCopy && (
         <ActionIconButton

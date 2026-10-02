@@ -319,6 +319,21 @@ describe('TechnicalSheetLineEditor', () => {
     expect(onChange).toHaveBeenCalledWith('WORKSPACE');
   });
 
+  it('maintient l’en-tête du tableau sous le cockpit sticky', () => {
+    renderEditor({
+      compositionHeaderOffset: 240,
+    });
+
+    const header = document.querySelector(
+      '[data-slot="composition-table-header"]',
+    );
+
+    expect(header).toHaveClass('sticky');
+    expect(header).toHaveStyle({
+      top: 'calc(var(--workspace-topbar-height, 4rem) + 240px)',
+    });
+  });
+
   it('affiche le tableau métier compact sans quantité brute ni colonne fournisseur', () => {
     renderEditor();
 

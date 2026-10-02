@@ -52,6 +52,37 @@ function formatSignedCurrencyDelta(value) {
   return arrow + ' ' + formatDecimalCurrency(Math.abs(parsed));
 }
 
+function getDeltaToneClass(value, { decimal = false } = {}) {
+  const parsed = decimal
+    ? decimalNumber(value)
+    : Number.isInteger(value)
+      ? value
+      : null;
+
+  if (parsed === null || parsed === 0) {
+    return 'text-muted-foreground';
+  }
+
+  return parsed > 0 ? 'text-success' : 'text-destructive';
+}
+
+function DeltaValue({
+  decimal = false,
+  formattedValue,
+  value,
+}) {
+  return (
+    <span
+      className={cn(
+        'font-semibold tabular-nums',
+        getDeltaToneClass(value, { decimal }),
+      )}
+    >
+      {formattedValue}
+    </span>
+  );
+}
+
 function getMarginDiagnostic(economicSnapshot) {
   const marginAmount = decimalNumber(
     economicSnapshot?.actualMarginAmountHt,
@@ -127,10 +158,17 @@ const diagnosticBarClasses = {
   neutral: 'bg-muted-foreground',
 };
 
-function DetailRow({ label, value }) {
+function DetailRow({ hint, label, value }) {
   return (
     <div className="grid gap-1 border-b border-border py-3 last:border-b-0 sm:grid-cols-[1fr_auto] sm:items-center">
-      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dt className="text-sm text-muted-foreground">
+        <div>{label}</div>
+        {hint ? (
+          <div className="mt-0.5 text-xs text-muted-foreground/80">
+            {hint}
+          </div>
+        ) : null}
+      </dt>
       <dd className="text-sm font-semibold tabular-nums sm:text-right">
         {value}
       </dd>
@@ -248,7 +286,13 @@ function MarginComparison({
         </span>
       </div>
       <p className="text-xs text-muted-foreground">
-        Écart backend : {formatSignedBasisPointDelta(targetDeltaBasisPoints)}
+        Écart :{' '}
+        <DeltaValue
+          formattedValue={formatSignedBasisPointDelta(
+            targetDeltaBasisPoints,
+          )}
+          value={targetDeltaBasisPoints}
+        />
       </p>
     </div>
   );
@@ -409,8 +453,13 @@ function TechnicalSheetAnalysisDrawer({
                     'targetMarginDeltaBasisPoints',
                     'Écart vs cible',
                   )}
-                  value={formatSignedBasisPointDelta(
-                    targetDeltaBasisPoints,
+                  value={(
+                    <DeltaValue
+                      formattedValue={formatSignedBasisPointDelta(
+                        targetDeltaBasisPoints,
+                      )}
+                      value={targetDeltaBasisPoints}
+                    />
                   )}
                 />
                 <MetricCard
@@ -419,8 +468,14 @@ function TechnicalSheetAnalysisDrawer({
                     'targetMarginDeltaAmountHt',
                     'Écart monétaire vs cible',
                   )}
-                  value={formatSignedCurrencyDelta(
-                    economicSnapshot?.targetMarginDeltaAmountHt,
+                  value={(
+                    <DeltaValue
+                      decimal
+                      formattedValue={formatSignedCurrencyDelta(
+                        economicSnapshot?.targetMarginDeltaAmountHt,
+                      )}
+                      value={economicSnapshot?.targetMarginDeltaAmountHt}
+                    />
                   )}
                 />
                 <MetricCard
@@ -429,8 +484,14 @@ function TechnicalSheetAnalysisDrawer({
                     'targetMarginDeltaProductionHt',
                     'Écart production vs cible',
                   )}
-                  value={formatSignedCurrencyDelta(
-                    economicSnapshot?.targetMarginDeltaProductionHt,
+                  value={(
+                    <DeltaValue
+                      decimal
+                      formattedValue={formatSignedCurrencyDelta(
+                        economicSnapshot?.targetMarginDeltaProductionHt,
+                      )}
+                      value={economicSnapshot?.targetMarginDeltaProductionHt}
+                    />
                   )}
                 />
               </div>
@@ -486,24 +547,28 @@ function TechnicalSheetAnalysisDrawer({
         <TabsContent value="costs" variant="section">
           <dl className="rounded-lg border border-border px-4">
             <DetailRow
+              hint="Matières · production"
               label={metricLabel('materialCostHt', 'CM HT')}
               value={formatDecimalCurrency(
                 decimalValue(economicSnapshot?.materialCostHt),
               )}
             />
             <DetailRow
+              hint="Économat · production"
               label={metricLabel('economatCostHt', 'CE HT')}
               value={formatDecimalCurrency(
                 decimalValue(economicSnapshot?.economatCostHt),
               )}
             />
             <DetailRow
+              hint="Fabrication · production"
               label={metricLabel('manufacturingCostHt', 'CF HT')}
               value={formatDecimalCurrency(
                 decimalValue(economicSnapshot?.manufacturingCostHt),
               )}
             />
             <DetailRow
+              hint="Matières · pièce"
               label={metricLabel(
                 'materialCostPerProductionUnitHt',
                 'CM/Pce HT',
@@ -515,6 +580,7 @@ function TechnicalSheetAnalysisDrawer({
               )}
             />
             <DetailRow
+              hint="Fabrication · pièce"
               label={metricLabel(
                 'manufacturingCostPerProductionUnitHt',
                 'CF/Pce HT',
@@ -527,6 +593,7 @@ function TechnicalSheetAnalysisDrawer({
               )}
             />
             <DetailRow
+              hint="Matières · portion"
               label={metricLabel(
                 'materialCostPerPortionHt',
                 'CMU HT',
@@ -538,6 +605,7 @@ function TechnicalSheetAnalysisDrawer({
               )}
             />
             <DetailRow
+              hint="Économat · portion"
               label={metricLabel(
                 'economatCostPerPortionHt',
                 'CEU HT',
@@ -549,6 +617,7 @@ function TechnicalSheetAnalysisDrawer({
               )}
             />
             <DetailRow
+              hint="Fabrication · portion"
               label={metricLabel(
                 'manufacturingCostPerPortionHt',
                 'CFU HT',

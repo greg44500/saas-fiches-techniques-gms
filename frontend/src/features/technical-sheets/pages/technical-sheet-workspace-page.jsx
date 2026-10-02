@@ -253,6 +253,7 @@ function TechnicalSheetWorkspacePage() {
 
   const sheet = sheetQuery.data?.sheet;
   const draft = sheetQuery.data?.draft;
+  const draftId = draft?.id ?? null;
   const metadata = metadataQuery.data;
 
   const [identity, setIdentity] = useState({
@@ -285,6 +286,8 @@ function TechnicalSheetWorkspacePage() {
   const [copyOpen, setCopyOpen] = useState(false);
   const [productScope, setProductScope] = useState(null);
   const [sourcingPendingCount, setSourcingPendingCount] = useState(0);
+  const stickyControlsRef = useRef(null);
+  const [stickyControlsHeight, setStickyControlsHeight] = useState(0);
 
   const {
     blockedReason: autosaveBlockedReason,
@@ -325,6 +328,36 @@ function TechnicalSheetWorkspacePage() {
     },
     save: saveDraft,
   });
+
+  useEffect(() => {
+    const element = stickyControlsRef.current;
+
+    if (!draftId || !element) {
+      setStickyControlsHeight(0);
+      return undefined;
+    }
+
+    const syncHeight = () => {
+      const nextHeight = Math.ceil(
+        element.getBoundingClientRect().height,
+      );
+
+      setStickyControlsHeight((current) => (
+        current === nextHeight ? current : nextHeight
+      ));
+    };
+
+    syncHeight();
+
+    if (typeof window.ResizeObserver !== 'function') {
+      return undefined;
+    }
+
+    const observer = new window.ResizeObserver(syncHeight);
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [draftId]);
 
   useEffect(() => {
     if (!sheet || identityDirty) return;
@@ -883,6 +916,7 @@ function TechnicalSheetWorkspacePage() {
         <section className="relative space-y-6">
           <div
             className="sticky z-30"
+            ref={stickyControlsRef}
             style={{ top: 'var(--workspace-topbar-height, 4rem)' }}
           >
             <Card className="border-primary/20 bg-background/97 shadow-lg backdrop-blur-md">
@@ -945,58 +979,10 @@ function TechnicalSheetWorkspacePage() {
 
                   <div
                     className={
-                      'flex flex-wrap items-center justify-end gap-2 '
-                      + 'xl:col-start-2 xl:row-start-1'
-                    }
-                  >
-                    {canEditIdentity && actionAvailability.update && (
-                      <Button
-                        onClick={() => setIdentityDialogOpen(true)}
-                        size="sm"
-                        type="button"
-                        variant="outline"
-                      >
-                        <Pencil aria-hidden="true" className="size-4" />
-                        Modifier
-                      </Button>
-                    )}
-                    <Button
-                      onClick={() => setRightPanel('analysis')}
-                      size="sm"
-                      type="button"
-                      variant={rightPanel === 'analysis' ? 'default' : 'outline'}
-                    >
-                      <BarChart3 aria-hidden="true" className="size-4" />
-                      Analyse
-                    </Button>
-                    <Button
-                      onClick={() => setRightPanel('dossier')}
-                      size="sm"
-                      type="button"
-                      variant={rightPanel === 'dossier' ? 'default' : 'outline'}
-                    >
-                      <Building2 aria-hidden="true" className="size-4" />
-                      Infos dossier
-                    </Button>
-                  </div>
-
-                  <div
-                    className={
                       'flex min-h-11 flex-wrap items-center justify-end gap-2 '
-                      + 'xl:col-start-2 xl:row-start-2'
+                      + 'xl:col-start-2 xl:row-span-2 xl:row-start-1'
                     }
                   >
-                    {canUpdate
-                      && productSearchScopes.length > 0
-                      && effectiveProductScope
-                      && (
-                        <TechnicalSheetProductScopeControls
-                          items={productSearchScopes}
-                          onChange={setProductScope}
-                          productScope={effectiveProductScope}
-                        />
-                      )}
-
                     {canUpdate && (
                       <div
                         className={
@@ -1016,6 +1002,10 @@ function TechnicalSheetWorkspacePage() {
                       actionAvailability={actionAvailability}
                       canCopy={canCopy}
                       canDelete={canDelete}
+                      canEditIdentity={
+                        canEditIdentity
+                        && actionAvailability.update
+                      }
                       canLifecycle={canLifecycle}
                       canValidate={canValidate}
                       copyDisabled={copyDisabled}
@@ -1026,9 +1016,13 @@ function TechnicalSheetWorkspacePage() {
                       onArchive={() => setConfirmation({ type: 'archive' })}
                       onCopy={() => setCopyOpen(true)}
                       onDelete={() => setConfirmation({ type: 'delete' })}
+                      onEditIdentity={() => setIdentityDialogOpen(true)}
+                      onOpenAnalysis={() => setRightPanel('analysis')}
+                      onOpenDossier={() => setRightPanel('dossier')}
                       onReactivate={() => setConfirmation({ type: 'reactivate' })}
                       onValidate={() => setValidationDialogOpen(true)}
                       pendingLifecycle={pendingLifecycle}
+                      rightPanel={rightPanel}
                       validatePending={validateState.isLoading}
                       validationEligible={validationEligible}
                     />
@@ -1036,12 +1030,17 @@ function TechnicalSheetWorkspacePage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 p-4 pt-2">
-                <div className="grid gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">
+                <div
+                  className={
+                    'grid gap-3 '
+                    + 'xl:grid-cols-[minmax(0,1.15fr)_minmax(12rem,0.5fr)_minmax(0,0.9fr)]'
+                  }
+                >
                   <div className="rounded-lg border border-border bg-muted/15 p-3">
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Production
                     </p>
-                    <div className="flex flex-wrap items-end gap-2">
+                    <div className="flex flex-wrap items-end gap-3">
                   <Field className="w-32">
                     <FieldLabel htmlFor="technical-sheet-production-quantity">
                       Quantité produite
@@ -1123,6 +1122,23 @@ function TechnicalSheetWorkspacePage() {
                     </div>
                   </Field>
 
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/15 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Produits
+                    </p>
+                    <div className="flex min-h-16 items-end">
+                      {productSearchScopes.length > 0
+                        && effectiveProductScope
+                        && (
+                          <TechnicalSheetProductScopeControls
+                            items={productSearchScopes}
+                            onChange={setProductScope}
+                            productScope={effectiveProductScope}
+                          />
+                        )}
                     </div>
                   </div>
 
@@ -1242,7 +1258,7 @@ function TechnicalSheetWorkspacePage() {
               className="pointer-events-none absolute inset-x-2 -bottom-10 h-10 bg-linear-to-b from-background via-background/90 to-transparent"
             />
           </div>
-          <Card className="overflow-hidden">
+          <Card>
             <div className="border-b border-border px-3 py-2">
               <h2 className="text-sm font-semibold">Composition</h2>
             </div>
@@ -1254,6 +1270,7 @@ function TechnicalSheetWorkspacePage() {
               )}
               <TechnicalSheetLineEditor
                 canManageSourcing={canSource}
+                compositionHeaderOffset={stickyControlsHeight}
                 disabled={
                   !canUpdate
                   || draftSynchronizing

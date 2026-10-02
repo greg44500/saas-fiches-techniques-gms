@@ -139,10 +139,12 @@ describe('TechnicalSheetAnalysisDrawer', () => {
     })).toBeInTheDocument();
     expect(screen.getByText('Marge positive, objectif non atteint'))
       .toBeInTheDocument();
-    expect(screen.getAllByText('↓ 10 points').length)
-      .toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/↓ 0,10/)).toBeInTheDocument();
-    expect(screen.getByText(/↓ 8,00/)).toBeInTheDocument();
+    const negativeDeltas = screen.getAllByText('↓ 10 points');
+    expect(negativeDeltas.length).toBeGreaterThanOrEqual(1);
+    expect(negativeDeltas[0]).toHaveClass('text-destructive');
+    expect(screen.getByText(/↓ 0,10/)).toHaveClass('text-destructive');
+    expect(screen.getByText(/↓ 8,00/)).toHaveClass('text-destructive');
+    expect(screen.queryByText(/backend/i)).not.toBeInTheDocument();
 
     await user.hover(screen.getAllByRole('button', {
       name: 'Définition : CF HT',
@@ -155,6 +157,10 @@ describe('TechnicalSheetAnalysisDrawer', () => {
     await user.click(screen.getByRole('tab', { name: 'Coûts' }));
     expect(screen.getByText('CM/Pce HT')).toBeInTheDocument();
     expect(screen.getByText('CFU HT')).toBeInTheDocument();
+    expect(screen.getByText('Matières · production')).toBeInTheDocument();
+    expect(screen.getByText('Économat · production')).toBeInTheDocument();
+    expect(screen.getByText('Fabrication · pièce')).toBeInTheDocument();
+    expect(screen.getByText('Fabrication · portion')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', { name: 'Prix & marge' }));
     expect(screen.getByText('Prix conseillé TTC')).toBeInTheDocument();
@@ -167,6 +173,30 @@ describe('TechnicalSheetAnalysisDrawer', () => {
     expect(screen.getByRole('columnheader', {
       name: 'Prix retenu TTC',
     })).toBeInTheDocument();
+  });
+
+  it('affiche un écart positif en vert avec une flèche montante', () => {
+    render(
+      <TechnicalSheetAnalysisDrawer
+        economicSnapshot={{
+          ...economicSnapshot,
+          actualMarginBasisPoints: 8045,
+          targetMarginDeltaBasisPoints: 1045,
+          targetMarginDeltaAmountHt: { $numberDecimal: '0.2036' },
+          targetMarginDeltaProductionHt: { $numberDecimal: '2.0364' },
+        }}
+        metadata={metadata}
+        onClose={vi.fn()}
+        open
+        productionSnapshot={{
+          ...productionSnapshot,
+          targetMarginBasisPoints: 7000,
+        }}
+      />,
+    );
+
+    const positiveDelta = screen.getAllByText('↑ 10,45 points')[0];
+    expect(positiveDelta).toHaveClass('text-success');
   });
 
   it('signale un prix retenu sous le coût de fabrication sans bloquer l’analyse', () => {

@@ -609,6 +609,7 @@ function LineActionsMenu({
 function TechnicalSheetLineEditor({
   canManageSourcing = false,
   canOpenPricing = false,
+  compositionHeaderOffset = 0,
   disabled,
   dossierId,
   draftRevision,
@@ -1129,8 +1130,21 @@ function TechnicalSheetLineEditor({
         </p>
       )}
 
-      <div className="overflow-hidden border-y border-border">
-        <div className={COMPOSITION_GRID_CLASS + ' hidden border-b border-border bg-muted/20 px-2 py-2 lg:grid'}>
+      <div className="border-y border-border">
+        <div
+          className={
+            COMPOSITION_GRID_CLASS
+            + ' sticky z-20 hidden border-b border-border '
+            + 'bg-background/97 px-2 py-2 shadow-sm backdrop-blur-md lg:grid'
+          }
+          data-slot="composition-table-header"
+          style={{
+            top:
+              'calc(var(--workspace-topbar-height, 4rem) + '
+              + Math.max(0, compositionHeaderOffset)
+              + 'px)',
+          }}
+        >
           <ColumnHeading
             tooltip={
               primaryLineKindDefinition
