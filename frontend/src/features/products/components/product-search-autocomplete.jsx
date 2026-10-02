@@ -218,7 +218,7 @@ function ProductSearchAutocomplete({
                       ].filter(Boolean).join(' · ')}
                     </span>
                     {showWorkspaceFavorite
-                    && result.workspaceEntry?.status === 'ACTIVE' && (
+                    && isWorkspaceFavorite(result, metadata) && (
                       <Tooltip>
                         <TooltipTrigger
                           aria-label="Favori"

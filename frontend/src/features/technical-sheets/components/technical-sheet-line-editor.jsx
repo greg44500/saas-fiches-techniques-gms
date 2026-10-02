@@ -1036,10 +1036,10 @@ function TechnicalSheetLineEditor({
             placeholder="Ajouter un produit"
             scope={productScope}
             showWorkspaceFavorite={Boolean(
-                    productScopeDefinition?.showWorkspaceFavorite
-                  )}
+              productScopeDefinition?.showWorkspaceFavorite
+            )}
             status={activeWorkspaceProductStatus}
-            value={addSearch[kind]}
+            value={addSearch[kind] ?? ''}
             workspaceId={workspaceId}
           />
         </div>

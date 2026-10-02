@@ -457,6 +457,7 @@ describe('TechnicalSheetLineEditor', () => {
       .find((props) => props.ariaLabel === 'Ajouter un produit aux Ingrédients');
 
     expect(ingredientSearch.clearOnSelect).toBe(true);
+    expect(ingredientSearch.value).toBe('');
   });
 
   it('remplace un Produit sans conserver son ancien sourcing ni sa valorisation', async () => {
