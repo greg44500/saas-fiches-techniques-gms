@@ -994,7 +994,12 @@ Le système récupère ou calcule unité, rendement, quantité brute, pourcentag
 
 ### 11.2 Quantité nette
 
-La quantité saisie représente la quantité nette réellement présente dans la recette.
+La quantité saisie représente la quantité nette réellement présente dans la recette et s'exprime toujours dans l'unité de référence du ProductVariant.
+
+Lors d'un remplacement de Produit :
+- même unité : la valeur est conservée ;
+- unités compatibles d'une même dimension : la quantité est convertie ;
+- dimensions incompatibles : aucune conversion métier n'est inventée et l'utilisateur doit vérifier la valeur numérique conservée.
 
 ### 11.3 Quantité brute
 
@@ -1507,7 +1512,7 @@ Les rôles personnalisés combinent les permissions lorsque plusieurs responsabi
 - le Workspace Owner possède implicitement tous les dossiers ;
 - un dossier PAUSED / ARCHIVED / DELETED restreint ou coupe les actions indépendamment du Role ;
 - la suppression logique d'un dossier coupe les accès sans réécrire l'état historique de ses ressources ;
-- quantité nette saisie, quantité brute calculée ;
+- quantité nette saisie dans l'unité de référence du ProductVariant, quantité brute calculée ;
 - composition recette calculée sur le net ;
 - CM HT + Économat HT = Coût total de fabrication HT ;
 - TVA distincte du coût de fabrication HT ;
