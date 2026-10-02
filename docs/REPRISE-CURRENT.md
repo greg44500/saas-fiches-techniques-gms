@@ -1,10 +1,10 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-10-02  
-**Lot courant :** stabilisation M-004 — production par pièce/portion, base de vente et analyse économique  
+**Lot courant :** finalisation M-004 — stabilisation UX/UI du poste de travail de valorisation  
 **Branche :** `feature/m004-valuation-ux-stabilization`  
-**Base :** `main@957438c8f522b9e342158a17a7a4a6aa4bd7d3a2`  
-**PR :** aucune — QA visuelle utilisateur requise avant finalisation
+**Base :** `main@514462ace3de29fe9f858de53405e9cd8b901275`  
+**PR :** à ouvrir — QA visuelle utilisateur validée le 2026-10-02
 
 ## 1. Autorité
 
@@ -17,9 +17,9 @@ Git/code/DB
 → présente reprise
 ~~~
 
-## 2. Stabilisation M-004 en cours
+## 2. Stabilisation M-004 finalisée avant PR
 
-Le lot corrige le parcours observé avant les exports, sans évolution Core.
+Le lot corrige le parcours observé avant les exports. Les primitives génériques nécessaires ont été intégrées depuis le Core v1.2.1 actif ; les ajustements restants sont strictement métier/UX produit.
 
 Décisions actives :
 
@@ -47,15 +47,20 @@ Fiche
 → base de vente = PIECE | PORTION
 → CM/Pce et CF/Pce divisés par productionQuantity
 → CMU et CFU divisés par totalPortions
-→ titre + badges intégrés au header sticky à la place du libellé « Paramètres »
-→ titre sur la première ligne et tous les badges regroupés sous le titre
+→ titre, badges utiles, autosave et panneau de contrôle alignés sur la même ligne du header sticky
+→ le badge positif « Valorisée » est masqué ; seuls les états de valorisation nécessitant une attention restent visibles
 → bouton retour aligné devant le titre avec le libellé « Retour vers Dossiers »
-→ actions Modifier / Analyse / Infos dossier regroupées dans le header
-→ paramètres séparés en groupes compacts Production / Vente
+→ actions Modifier / Analyse / Infos dossier intégrées au panneau de contrôle stable
+→ paramètres séparés en groupes compacts Production / Produits / Vente
+→ scope Favoris / Tous les produits rendu avec le SegmentedControl Core
 → TVA métier limitée à 5,5 % ou 10 %, défaut 5,5 %, valeurs exposées par metadata backend
-→ cinq garde-fous économiques visibles : CF HT, CMU HT, CFU HT, Prix retenu TTC, %MR
+→ six garde-fous économiques visibles : CF HT, CMU HT, CFU HT, Prix retenu TTC, %MR, Écart € vs cible
+→ %MR vert au-dessus de la marge cible, rouge en dessous, neutre à l'équilibre ; tooltip explicitant MR = Marge réelle
+→ Écart € vs cible = écart HT cumulé sur la production, fourni par le snapshot backend
+→ Prix retenu TTC compacté pour préserver la densité du cockpit
+→ header du tableau Composition sticky sous le cockpit, avec offset mesuré dynamiquement
 → analyse enrichie par la Marge sur coût de fabrication HT, par unité de vente et sur la production
-→ écart à la marge cible exposé en points et en euros
+→ écart à la marge cible conservé en points et en euros dans le drawer Analyse
 → le plancher économique devient un seuil de diagnostic et n'interdit plus d'observer une marge négative
 → drawer Analyse de gestion : Synthèse | Coûts | Prix & marge | Historique
 → drawer Infos dossier : Identité | Prix applicable
@@ -80,14 +85,12 @@ Le Prix de vente calculé, le Prix conseillé, le Prix retenu et le plancher éc
 
 Sécurité : `sanitizeFilter` reste activé globalement et les filtres Mongoose du module M-004 sont explicitement approuvés avec `mongoose.trusted(...)`. Les listes métier utilisées par le frontend proviennent des metadata backend.
 
-Dépendance Core identifiée pendant la QA UX :
+Dépendances Core issues de la QA UX : intégrées.
 
-- un sélecteur segmenté réutilisable basé sur Base UI / shadcn est une primitive générique du Design System ;
-- une variante sémantique `warning` du bouton est également transverse ;
-- un accès rapide aux vues Workspace, équivalent au `PlatformQuickAccess`, appartient également au shell Core ;
-- il doit filtrer les destinations selon les permissions/features effectives et utiliser la navigation Workspace composée par le produit ;
-- ces primitives ne doivent pas rester implémentées silencieusement dans le produit ;
-- le frontend M-004 correspondant est volontairement suspendu jusqu'à leur ajout/versionnement dans `saas-core-api`, puis intégration du Core dans le produit.
+- `SegmentedControl` est consommé depuis la primitive Core ;
+- la variante sémantique `warning` du bouton est consommée depuis le Core ;
+- `WorkspaceQuickAccess` reste fourni par le shell Core et filtré selon les permissions/features effectives ;
+- aucune duplication produit de ces primitives génériques n'est conservée.
 
 Compatibilité legacy :
 
@@ -101,20 +104,20 @@ migration:m004-production-quantity
 État de validation au moment de cette reprise :
 
 ~~~text
-main de base                         : 957438c8f522b9e342158a17a7a4a6aa4bd7d3a2
-Core Gate post-merge de cette base   : #167 SUCCESS
-implémentation branche               : stabilisation Pièce/Portion + metadata backend + UX économique codée
-dernier commit métier avant docs      : 8d77d4f129dea1af8ec000cab988a83f34718b78
+main de base                         : 514462ace3de29fe9f858de53405e9cd8b901275
+Core actif                           : v1.2.1 @ 054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3
+implémentation branche               : stabilisation Pièce/Portion + cockpit sticky + analyse économique + QA UX/UI
+dernier commit métier avant docs     : 5a9da267fe41a3ff7605cf30b35af6a0f198f8aa
 tests automatisés ajoutés / adaptés  : OUI (backend, frontend et E2E M-004)
 tests automatisés exécutés           : NON EXÉCUTÉS / NON REVENDIQUÉS
-raison                               : Core Gate uniquement sur PR ou push main ; runtime courant sans accès réseau au clone
-QA visuelle utilisateur              : EN COURS — retours du 2026-10-02 à intégrer après évolution Core
-PR / merge                           : NON CRÉÉS
+raison                               : validation finale portée par la Core Gate de la PR (`npm run release:check`)
+QA visuelle utilisateur              : VALIDÉE le 2026-10-02
+PR / merge                           : PR à ouvrir ; merge en attente de Core Gate
 ~~~
 
-La prochaine étape est volontairement la QA locale du parcours avant toute PR.
+La prochaine étape est l'ouverture de la PR unique M-004, puis l'attente de la Core Gate avant merge. Après validation GitHub et merge, une nouvelle amorce de reprise doit être générée avant d'ouvrir le lot suivant.
 
-Contrôles visuels prioritaires :
+Contrôles visuels validés :
 
 ~~~text
 création Fiche
@@ -179,7 +182,7 @@ Provenance Core active :
 repository = greg44500/saas-core-api
 version    = 1.2.1
 tag        = v1.2.1
-commit     = 6581e573c6a6885790b23fe502bd34d8199ea6ba
+commit     = 054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3
 ~~~
 
 Le tag `v1.2.1` reste inchangé.
