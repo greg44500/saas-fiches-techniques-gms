@@ -26,6 +26,29 @@ const saleBasisItems = [
   { value: 'PORTION', label: 'Portion' },
 ];
 
+const economicMetricDefinitions = [
+  {
+    value: 'manufacturingCostHt',
+    label: 'CF HT',
+    description: 'Coût de fabrication HT total de la production.',
+  },
+  {
+    value: 'materialCostPerPortionHt',
+    label: 'CMU HT',
+    description: 'Coût matière unitaire HT par portion.',
+  },
+  {
+    value: 'manufacturingCostPerPortionHt',
+    label: 'CFU HT',
+    description: 'Coût de fabrication unitaire HT par portion.',
+  },
+  {
+    value: 'actualMarginBasisPoints',
+    label: 'Marge réelle',
+    description: 'Part du prix retenu HT restant après le coût.',
+  },
+];
+
 describe('TechnicalSheetEconomicsBar', () => {
   it('compacte les valeurs non disponibles en NC dans le cockpit', () => {
     expect(compactMetricValue('Non calculé')).toBe('NC');
@@ -39,6 +62,7 @@ describe('TechnicalSheetEconomicsBar', () => {
       <TooltipProvider>
         <TechnicalSheetEconomicsBar
           canValuate
+          economicMetricDefinitions={economicMetricDefinitions}
           economicSnapshot={{
             manufacturingCostHt: '14',
             materialCostPerPortionHt: '0.625',
@@ -64,6 +88,9 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(screen.queryByRole('button', {
       name: 'Afficher le détail de la valorisation',
     })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Définition : CF HT',
+    })).toBeInTheDocument();
   });
 
   it('affiche Actualisation sans masquer les anciennes valeurs', () => {

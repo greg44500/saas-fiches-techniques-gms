@@ -501,7 +501,7 @@ describe('TechnicalSheetLineEditor', () => {
 
     expect(screen.getByRole('button', {
       name: 'Annuler',
-    })).toBeInTheDocument();
+    })).toHaveClass('bg-warning/85');
 
     await user.click(screen.getByRole('button', {
       name: 'Sélectionner Farine grammes depuis Modifier le produit Carotte râpée',

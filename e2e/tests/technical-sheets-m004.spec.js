@@ -57,9 +57,16 @@ async function createTechnicalSheet(page, {
       name: 'Base de vente',
     }),
   ).toHaveText('Pièce');
+  await expect(
+    dialog.getByRole('button', {
+      name: '5,5 %',
+    }),
+  ).toHaveAttribute('aria-pressed', 'true');
   await dialog
-    .getByLabel('TVA (%)')
-    .fill('10');
+    .getByRole('button', {
+      name: '10 %',
+    })
+    .click();
   await dialog
     .getByRole('button', {
       name: 'Créer',
@@ -72,6 +79,11 @@ async function createTechnicalSheet(page, {
       name,
     }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: '10 %',
+    }),
+  ).toHaveAttribute('aria-pressed', 'true');
 
   return {
     detailUrl:

@@ -38,10 +38,15 @@ describe('TechnicalSheetCreateDialog', () => {
           { value: 'PIECE', label: 'Pièce' },
           { value: 'PORTION', label: 'Portion' },
         ],
+        vatRates: [
+          { value: 550, label: '5,5 %' },
+          { value: 1000, label: '10 %' },
+        ],
         defaults: {
           productionUnit: 'UNIT',
           portionsPerProductionUnit: '1',
           saleBasis: 'PIECE',
+          vatRateBasisPoints: 550,
           finalPriceMode: 'ADVISED',
         },
       },
@@ -80,9 +85,12 @@ describe('TechnicalSheetCreateDialog', () => {
       '10',
     );
 
-    await user.type(
-      screen.getByLabelText('TVA (%)'),
-      '10',
+    expect(
+      screen.getByRole('button', { name: '5,5 %' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(
+      screen.getByRole('button', { name: '10 %' }),
     );
 
     expect(
@@ -151,11 +159,6 @@ describe('TechnicalSheetCreateDialog', () => {
       screen.getByLabelText('Quantité produite'),
       '20',
     );
-    await user.type(
-      screen.getByLabelText('TVA (%)'),
-      '10',
-    );
-
     const createButton = screen.getByRole('button', {
       name: 'Créer',
       exact: true,
@@ -181,7 +184,7 @@ describe('TechnicalSheetCreateDialog', () => {
       productionUnit: 'UNIT',
       portionsPerProductionUnit: '1',
       saleBasis: 'PIECE',
-      vatRateBasisPoints: 1000,
+      vatRateBasisPoints: 550,
       targetMarginBasisPoints: 3000,
     });
     expect(onCreated).toHaveBeenCalled();
@@ -207,7 +210,7 @@ describe('TechnicalSheetCreateDialog', () => {
     await user.type(screen.getByLabelText('Portions / pièce'), '8');
     await user.click(screen.getByRole('combobox', { name: 'Base de vente' }));
     await user.click(screen.getByRole('option', { name: 'Portion' }));
-    await user.type(screen.getByLabelText('TVA (%)'), '10');
+    await user.click(screen.getByRole('button', { name: '10 %' }));
     await user.click(screen.getByRole('button', { name: 'Créer', exact: true }));
 
     expect(mocks.createSheet).toHaveBeenCalledWith(
