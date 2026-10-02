@@ -7,6 +7,7 @@ import {
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_LINE_KIND,
     TECHNICAL_SHEET_LINE_VALUATION_STATUS,
+    TECHNICAL_SHEET_SALE_BASIS,
     TECHNICAL_SHEET_VALUATION_STATUS,
 } from './technicalSheet.registry.js';
 
@@ -165,7 +166,16 @@ const technicalSheetDraftSchema = new Schema(
         },
         productionUnit: {
             type: String,
-            enum: Object.values(PRODUCT_REFERENCE_UNIT),
+            enum: [PRODUCT_REFERENCE_UNIT.UNIT],
+            default: null,
+        },
+        portionsPerProductionUnit: {
+            type: Schema.Types.Decimal128,
+            default: null,
+        },
+        saleBasis: {
+            type: String,
+            enum: Object.values(TECHNICAL_SHEET_SALE_BASIS),
             default: null,
         },
         vatRateBasisPoints: {

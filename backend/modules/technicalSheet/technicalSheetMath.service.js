@@ -5,6 +5,9 @@ import {
     parseDecimalFraction,
     rationalToDecimal128String,
 } from '../supplierCatalog/supplierPriceMath.service.js';
+import {
+    TECHNICAL_SHEET_SALE_BASIS,
+} from './technicalSheet.registry.js';
 
 const absBigInt = (value) => (
     value < 0n ? -value : value
@@ -217,6 +220,8 @@ const calculateEconomics = ({
     ingredientCosts,
     economatCosts,
     productionQuantity,
+    portionsPerProductionUnit = '1',
+    saleBasis = TECHNICAL_SHEET_SALE_BASIS.PIECE,
     vatRateBasisPoints,
     targetMarginBasisPoints,
     finalPriceTtcMinor = null,
@@ -244,12 +249,38 @@ const calculateEconomics = ({
         addFractions(materialCostHt, economatCostHt);
     const productionQuantityFraction =
         decimalFraction(productionQuantity);
+    const portionsPerProductionUnitFraction =
+        decimalFraction(portionsPerProductionUnit);
 
     if (productionQuantityFraction.numerator <= 0n) {
         throw new TypeError(
             'La quantité produite doit être strictement positive.',
         );
     }
+
+    if (
+        portionsPerProductionUnitFraction.numerator <= 0n
+    ) {
+        throw new TypeError(
+            'Le nombre de portions par pièce doit être strictement positif.',
+        );
+    }
+
+    if (
+        !Object.values(
+            TECHNICAL_SHEET_SALE_BASIS,
+        ).includes(saleBasis)
+    ) {
+        throw new TypeError(
+            'Base de vente invalide.',
+        );
+    }
+
+    const totalPortions =
+        multiplyFractions(
+            productionQuantityFraction,
+            portionsPerProductionUnitFraction,
+        );
 
     const materialCostPerProductionUnitHt =
         divideFractions(
@@ -266,9 +297,29 @@ const calculateEconomics = ({
             manufacturingCostHt,
             productionQuantityFraction,
         );
+    const materialCostPerPortionHt =
+        divideFractions(
+            materialCostHt,
+            totalPortions,
+        );
+    const economatCostPerPortionHt =
+        divideFractions(
+            economatCostHt,
+            totalPortions,
+        );
+    const manufacturingCostPerPortionHt =
+        divideFractions(
+            manufacturingCostHt,
+            totalPortions,
+        );
+    const saleCostHt =
+        saleBasis
+        === TECHNICAL_SHEET_SALE_BASIS.PORTION
+            ? manufacturingCostPerPortionHt
+            : manufacturingCostPerProductionUnitHt;
 
     const theoreticalPriceHt = multiplyFractions(
-        manufacturingCostPerProductionUnitHt,
+        saleCostHt,
         {
             numerator: 10000n,
             denominator:
@@ -299,7 +350,7 @@ const calculateEconomics = ({
 
     const economicFloorTtc =
         multiplyFractions(
-            manufacturingCostPerProductionUnitHt,
+            saleCostHt,
             vatFactor,
         );
 
@@ -336,7 +387,7 @@ const calculateEconomics = ({
     const actualMarginAmountHt =
         subtractFractions(
             finalPriceHt,
-            manufacturingCostPerProductionUnitHt,
+            saleCostHt,
         );
     const actualMarginBasisPoints =
         finalPriceHt.numerator === 0n
@@ -368,6 +419,21 @@ const calculateEconomics = ({
             fractionToDecimal(
                 manufacturingCostPerProductionUnitHt,
             ),
+        totalPortions:
+            fractionToDecimal(totalPortions),
+        materialCostPerPortionHt:
+            fractionToDecimal(
+                materialCostPerPortionHt,
+            ),
+        economatCostPerPortionHt:
+            fractionToDecimal(
+                economatCostPerPortionHt,
+            ),
+        manufacturingCostPerPortionHt:
+            fractionToDecimal(
+                manufacturingCostPerPortionHt,
+            ),
+        saleBasis,
         theoreticalPriceHt:
             fractionToDecimal(theoreticalPriceHt),
         theoreticalPriceTtc:

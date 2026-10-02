@@ -2,9 +2,6 @@ import {
     SYSTEM_ROLE_KEY,
 } from '../../constants/role.constants.js';
 import {
-    PRODUCT_REFERENCE_UNIT_REGISTRY,
-} from '../productCatalog/productCatalog.registry.js';
-import {
     createDraftFromValidatedState,
     getTechnicalSheetDraft,
     saveTechnicalSheetDraft,
@@ -29,6 +26,8 @@ import {
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_LINE_KIND,
     TECHNICAL_SHEET_LINE_VALUATION_STATUS,
+    TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY,
+    TECHNICAL_SHEET_SALE_BASIS_REGISTRY,
     TECHNICAL_SHEET_STATUS,
     TECHNICAL_SHEET_TRASH_RETENTION,
     TECHNICAL_SHEET_VALUATION_STATUS,
@@ -86,7 +85,15 @@ const metadata = async (req, res) => {
                     ),
                 units:
                     Object.values(
-                        PRODUCT_REFERENCE_UNIT_REGISTRY,
+                        TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY,
+                    ),
+                productionUnits:
+                    Object.values(
+                        TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY,
+                    ),
+                saleBases:
+                    Object.values(
+                        TECHNICAL_SHEET_SALE_BASIS_REGISTRY,
                     ),
                 trashRetention: {
                     defaultDays:

@@ -9,6 +9,7 @@ import {
 import {
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_LINE_KIND,
+    TECHNICAL_SHEET_SALE_BASIS,
     TECHNICAL_SHEET_STATUS,
     TECHNICAL_SHEET_TRASH_RETENTION,
 } from './technicalSheet.registry.js';
@@ -107,11 +108,21 @@ const createTechnicalSheetSchema =
             .optional(),
         productionQuantity:
             positiveDecimalStringSchema,
-        productionUnit: z.enum(
-            Object.values(
-                PRODUCT_REFERENCE_UNIT,
-            ),
+        productionUnit: z.literal(
+            PRODUCT_REFERENCE_UNIT.UNIT,
         ),
+        portionsPerProductionUnit:
+            positiveDecimalStringSchema
+                .default('1'),
+        saleBasis: z
+            .enum(
+                Object.values(
+                    TECHNICAL_SHEET_SALE_BASIS,
+                ),
+            )
+            .default(
+                TECHNICAL_SHEET_SALE_BASIS.PIECE,
+            ),
         vatRateBasisPoints: z
             .number()
             .int()
@@ -204,9 +215,18 @@ const saveTechnicalSheetDraftSchema =
             nullablePositiveDecimal
                 .optional(),
         productionUnit: z
+            .literal(
+                PRODUCT_REFERENCE_UNIT.UNIT,
+            )
+            .nullable()
+            .optional(),
+        portionsPerProductionUnit:
+            nullablePositiveDecimal
+                .optional(),
+        saleBasis: z
             .enum(
                 Object.values(
-                    PRODUCT_REFERENCE_UNIT,
+                    TECHNICAL_SHEET_SALE_BASIS,
                 ),
             )
             .nullable()

@@ -7,6 +7,7 @@ import {
     TECHNICAL_SHEET_CHANGE_KIND,
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_LINE_KIND,
+    TECHNICAL_SHEET_SALE_BASIS,
 } from './technicalSheet.registry.js';
 
 const { Schema, model } = mongoose;
@@ -23,6 +24,15 @@ const sheetSnapshotSchema = new Schema(
             type: String,
             enum: Object.values(PRODUCT_REFERENCE_UNIT),
             required: true,
+        },
+        portionsPerProductionUnit: {
+            type: Schema.Types.Decimal128,
+            default: null,
+        },
+        saleBasis: {
+            type: String,
+            enum: Object.values(TECHNICAL_SHEET_SALE_BASIS),
+            default: null,
         },
         vatRateBasisPoints: {
             type: Number,
@@ -134,6 +144,22 @@ const economicSnapshotSchema = new Schema(
             required: true,
         },
         manufacturingCostPerProductionUnitHt: {
+            type: Schema.Types.Decimal128,
+            required: true,
+        },
+        totalPortions: {
+            type: Schema.Types.Decimal128,
+            required: true,
+        },
+        materialCostPerPortionHt: {
+            type: Schema.Types.Decimal128,
+            required: true,
+        },
+        economatCostPerPortionHt: {
+            type: Schema.Types.Decimal128,
+            required: true,
+        },
+        manufacturingCostPerPortionHt: {
             type: Schema.Types.Decimal128,
             required: true,
         },
