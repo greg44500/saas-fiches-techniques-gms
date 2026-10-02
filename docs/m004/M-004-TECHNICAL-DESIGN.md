@@ -98,14 +98,14 @@ createdAt / updatedAt
 
 ## 3 bis. Paramètres obligatoires à l'entrée dans le poste de travail
 
-Un nouveau Dossier doit posséder une marge cible par défaut. Une nouvelle Fiche est créée uniquement lorsque les données suivantes sont disponibles :
+Un nouveau Dossier doit posséder une marge cible par défaut. Pour un Dossier historique sans marge, la création reste possible si l'utilisateur renseigne une marge cible propre à la nouvelle Fiche. Une nouvelle Fiche est créée uniquement lorsque les données suivantes sont disponibles :
 
 ~~~text
 nom
 quantité produite
 unité de production
 TVA
-marge cible héritée du Dossier
+marge cible héritée du Dossier ou saisie explicitement pour la Fiche si le Dossier historique n'en possède pas
 ~~~
 
 La quantité produite remplace l'ancien champ `portions`. Elle représente le nombre d'unités produites dans `productionUnit` et sert de dénominateur économique :
