@@ -328,7 +328,7 @@ describe('TechnicalSheetLineEditor', () => {
       '[data-slot="composition-table-header"]',
     );
 
-    expect(header).toHaveClass('sticky');
+    expect(header).toHaveClass('sticky', 'z-40');
     expect(header).toHaveStyle({
       top: 'calc(var(--workspace-topbar-height, 4rem) + 240px)',
     });

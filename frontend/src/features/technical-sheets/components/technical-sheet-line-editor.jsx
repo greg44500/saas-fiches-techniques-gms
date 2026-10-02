@@ -1134,7 +1134,7 @@ function TechnicalSheetLineEditor({
         <div
           className={
             COMPOSITION_GRID_CLASS
-            + ' sticky z-20 hidden border-b border-border '
+            + ' sticky z-40 hidden border-b border-border '
             + 'bg-background/97 px-2 py-2 shadow-sm backdrop-blur-md lg:grid'
           }
           data-slot="composition-table-header"
