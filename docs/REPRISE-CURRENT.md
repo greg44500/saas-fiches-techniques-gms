@@ -32,8 +32,10 @@ Nouvelle Fiche
 → quantité produite
 → unité de production
 → TVA
-→ marge cible héritée du Dossier lorsqu'elle existe
-→ sinon marge saisie pour la Fiche en création
+→ marge cible lue depuis le réglage M-004 courant du Dossier lorsqu'elle existe
+→ affichage explicite « Marge du Dossier »
+→ sinon marge saisie pour la Fiche en création sans modifier le Dossier
+→ l'explication de consommation de capacité est portée par une infobulle
 → ouverture du poste de travail seulement avec ces paramètres
 
 Fiche
