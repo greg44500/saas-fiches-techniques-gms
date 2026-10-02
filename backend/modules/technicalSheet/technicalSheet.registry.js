@@ -131,10 +131,12 @@ const TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY = Object.freeze({
     ADVISED: Object.freeze({
         value: TECHNICAL_SHEET_FINAL_PRICE_MODE.ADVISED,
         label: 'Conseillé',
+        requiresManualPrice: false,
     }),
     MANUAL: Object.freeze({
         value: TECHNICAL_SHEET_FINAL_PRICE_MODE.MANUAL,
         label: 'Manuel',
+        requiresManualPrice: true,
     }),
 });
 

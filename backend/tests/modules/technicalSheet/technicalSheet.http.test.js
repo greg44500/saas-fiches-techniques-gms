@@ -333,10 +333,12 @@ describe('M-004 RBAC HTTP', () => {
             {
                 value: 'ADVISED',
                 label: 'Conseillé',
+                requiresManualPrice: false,
             },
             {
                 value: 'MANUAL',
                 label: 'Manuel',
+                requiresManualPrice: true,
             },
         ]);
         expect(
