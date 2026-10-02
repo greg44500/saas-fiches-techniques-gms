@@ -33,6 +33,20 @@ describe('M-004 validation Fiches techniques', () => {
         ).toBe(false);
     });
 
+    it('accepte une marge propre à la Fiche lors de la création', () => {
+        expect(
+            createTechnicalSheetSchema.parse({
+                name: 'Purée de carottes',
+                productionQuantity: '10',
+                productionUnit: 'KG',
+                vatRateBasisPoints: 1000,
+                targetMarginBasisPoints: 3000,
+            }),
+        ).toMatchObject({
+            targetMarginBasisPoints: 3000,
+        });
+    });
+
     it('refuse le champ portions supprimé du contrat', () => {
         expect(
             createTechnicalSheetSchema.safeParse({
