@@ -125,6 +125,26 @@ function formatSignedBasisPointDelta(value) {
   }) + ' point' + (points > 1 ? 's' : '');
 }
 
+function formatSignedCurrencyDelta(value) {
+  const normalized = value?.$numberDecimal ?? value;
+
+  if (
+    normalized === null
+    || normalized === undefined
+    || normalized === ''
+  ) {
+    return 'NC';
+  }
+
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed)) return 'NC';
+
+  const arrow = parsed > 0 ? '↑' : parsed < 0 ? '↓' : '—';
+
+  return arrow + ' ' + formatDecimalCurrency(Math.abs(parsed));
+}
+
 function basisPointsToInput(value) {
   if (!Number.isInteger(value)) return '';
   return String(value / 100);
@@ -167,6 +187,7 @@ export {
   formatBasisPoints,
   formatDecimalCurrency,
   formatSignedBasisPointDelta,
+  formatSignedCurrencyDelta,
   formatMinorCurrency,
   minorToInput,
   percentInputToBasisPoints,

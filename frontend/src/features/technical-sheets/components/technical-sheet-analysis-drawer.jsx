@@ -16,6 +16,7 @@ import {
   formatDecimalCurrency,
   formatMinorCurrency,
   formatSignedBasisPointDelta,
+  formatSignedCurrencyDelta,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 import { cn } from '@/lib/utils';
 
@@ -32,14 +33,6 @@ function definitionLabel(definitions, value, fallback = 'NC') {
   return (definitions ?? [])
     .find((definition) => definition.value === value)
     ?.label ?? fallback;
-}
-
-function formatSignedCurrencyDelta(value) {
-  const parsed = decimalNumber(value);
-  if (parsed === null) return 'NC';
-
-  const arrow = parsed > 0 ? '↑' : parsed < 0 ? '↓' : '—';
-  return arrow + ' ' + formatDecimalCurrency(Math.abs(parsed));
 }
 
 function getDeltaToneClass(value, { decimal = false } = {}) {

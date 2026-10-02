@@ -10,6 +10,7 @@ import {
   formatDecimalCurrency,
   formatMinorCurrency,
   formatSignedBasisPointDelta,
+  formatSignedCurrencyDelta,
   getLineValuationPresentation,
   getTechnicalSheetActionAvailability,
   getTechnicalSheetStatusPresentation,
@@ -155,6 +156,19 @@ describe('technical sheet presentation', () => {
     expect(formatSignedBasisPointDelta(-420)).toBe('↓ 4,2 points');
     expect(formatSignedBasisPointDelta(0)).toBe('— 0 point');
     expect(formatSignedBasisPointDelta(null)).toBe('NC');
+  });
+
+  it('formate les écarts monétaires avec un sens visuel', () => {
+    expect(formatSignedCurrencyDelta('2.0364')).toMatch(
+      /↑ 2,0364/,
+    );
+    expect(formatSignedCurrencyDelta('-3.18')).toMatch(
+      /↓ 3,18/,
+    );
+    expect(formatSignedCurrencyDelta({
+      $numberDecimal: '1.25',
+    })).toMatch(/↑ 1,25/);
+    expect(formatSignedCurrencyDelta(null)).toBe('NC');
   });
 
   it('distingue les montants non calculables d’un vrai zéro', () => {

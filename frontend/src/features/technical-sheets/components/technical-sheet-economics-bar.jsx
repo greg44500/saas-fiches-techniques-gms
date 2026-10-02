@@ -16,7 +16,7 @@ import {
   formatBasisPoints,
   formatDecimalCurrency,
   formatMinorCurrency,
-  formatSignedBasisPointDelta,
+  formatSignedCurrencyDelta,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 import { cn } from '@/lib/utils';
 
@@ -82,7 +82,7 @@ function snapshotKey(snapshot) {
     snapshot.manufacturingCostPerPortionHt,
     snapshot.finalPriceTtcMinor,
     snapshot.actualMarginBasisPoints,
-    snapshot.targetMarginDeltaBasisPoints,
+    snapshot.targetMarginDeltaProductionHt,
   ].map((value) => (
     value?.$numberDecimal ?? value ?? 'null'
   )).join('|');
@@ -114,13 +114,17 @@ function TechnicalSheetEconomicsBar({
     ?? 'base de vente'
   );
 
-  const targetMarginDeltaBasisPoints =
-    economicSnapshot?.targetMarginDeltaBasisPoints;
-  const targetDeltaClassName = !Number.isInteger(
-    targetMarginDeltaBasisPoints,
-  ) || targetMarginDeltaBasisPoints === 0
+  const targetMarginDeltaProductionHt =
+    economicSnapshot?.targetMarginDeltaProductionHt;
+  const parsedTargetMarginDeltaProduction = Number(
+    targetMarginDeltaProductionHt?.$numberDecimal
+    ?? targetMarginDeltaProductionHt,
+  );
+  const targetDeltaClassName = !Number.isFinite(
+    parsedTargetMarginDeltaProduction,
+  ) || parsedTargetMarginDeltaProduction === 0
     ? 'text-muted-foreground'
-    : targetMarginDeltaBasisPoints > 0
+    : parsedTargetMarginDeltaProduction > 0
       ? 'text-success'
       : 'text-destructive';
 
@@ -269,11 +273,11 @@ function TechnicalSheetEconomicsBar({
 
           <Metric
             definitions={economicMetricDefinitions}
-            displayLabel="Écart cible"
-            fallbackLabel="Écart vs cible"
-            metricKey="targetMarginDeltaBasisPoints"
-            value={formatSignedBasisPointDelta(
-              targetMarginDeltaBasisPoints,
+            displayLabel="Écart € vs cible"
+            fallbackLabel="Écart production vs cible"
+            metricKey="targetMarginDeltaProductionHt"
+            value={formatSignedCurrencyDelta(
+              targetMarginDeltaProductionHt,
             )}
             valueClassName={targetDeltaClassName}
           />
