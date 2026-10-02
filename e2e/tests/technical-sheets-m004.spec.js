@@ -405,8 +405,19 @@ test('M-004 ambiguïté Article, changement de prix, actualisation automatique p
     page.getByText(
       'Valorisée',
       { exact: true },
-    ).first(),
-  ).toBeVisible();
+    ),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText(
+      'Calcul à actualiser',
+      { exact: true },
+    ),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', {
+      name: 'Valider la Fiche technique',
+    }),
+  ).toBeEnabled();
 
   await validateCurrentDraft(page, {
     comment:
