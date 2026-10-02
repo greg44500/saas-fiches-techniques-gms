@@ -34,10 +34,12 @@ const getDossierTechnicalSheetSettings = async ({
     workspaceId,
     dossierId,
 }) => {
-    const dossier = await Dossier.findOne({
-        _id: dossierId,
-        workspace: workspaceId,
-    }).select(
+    const dossier = await Dossier.findOne(
+        mongoose.trusted({
+            _id: dossierId,
+            workspace: workspaceId,
+        }),
+    ).select(
         '_id technicalSheetSettings',
     );
 
@@ -62,14 +64,14 @@ const updateDossierTechnicalSheetSettings = async ({
     async (session) => {
         const dossier =
             await Dossier.findOneAndUpdate(
-                {
+                mongoose.trusted({
                     _id: dossierId,
                     workspace: workspaceId,
                     status: mongoose.trusted({
                         $in:
                             SETTINGS_MUTABLE_DOSSIER_STATUSES,
                     }),
-                },
+                }),
                 {
                     $set: {
                         'technicalSheetSettings.defaultTargetMarginBasisPoints':

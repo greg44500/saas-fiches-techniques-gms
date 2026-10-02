@@ -235,11 +235,32 @@ const createDossier = async ({
         }
     }
 
+    const {
+        defaultTargetMarginBasisPoints,
+        ...dossierData
+    } = data;
+
+    if (
+        !Number.isInteger(
+            defaultTargetMarginBasisPoints,
+        )
+        || defaultTargetMarginBasisPoints < 0
+        || defaultTargetMarginBasisPoints > 9999
+    ) {
+        throw new AppError(
+            'La marge cible par défaut du Dossier est obligatoire et doit être comprise entre 0 et moins de 100 %.',
+            400,
+        );
+    }
+
     const [dossier] = await Dossier.create(
         [
             {
                 workspace: workspaceId,
-                ...data,
+                ...dossierData,
+                technicalSheetSettings: {
+                    defaultTargetMarginBasisPoints,
+                },
                 status: DOSSIER_STATUS.ACTIVE,
                 statusChangedBy: actorId,
                 createdBy: actorId,

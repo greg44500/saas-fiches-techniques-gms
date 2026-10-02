@@ -2,6 +2,7 @@ import {
     INDICATIVE_PRICE_STATUS,
     INVOICED_PRICE_STATUS,
     NEGOTIATED_PRICE_STATUS,
+    SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY,
     SUPPLIER_PRICE_BASIS,
     SUPPLIER_PRICING_POLICY_MODE,
 } from './supplierCatalog.registry.js';
@@ -47,6 +48,10 @@ const metadata = async (req, res) => {
                 pricingPolicyModes:
                     Object.values(
                         SUPPLIER_PRICING_POLICY_MODE,
+                    ),
+                applicablePriceSources:
+                    Object.values(
+                        SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY,
                     ),
             },
         },

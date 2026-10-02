@@ -1,55 +1,17 @@
-const TECHNICAL_SHEET_STATUS_PRESENTATION = Object.freeze({
-  ACTIVE: Object.freeze({
-    label: 'Active',
-    tone: 'success',
-  }),
-  ARCHIVED: Object.freeze({
-    label: 'Archivée',
-    tone: 'archived',
-  }),
-  DELETED: Object.freeze({
-    label: 'Corbeille',
-    tone: 'destructive',
-  }),
-});
+function getBackendPresentation(
+  definitions,
+  value,
+  fallbackLabel,
+) {
+  const definition = (definitions ?? [])
+    .find((entry) => entry.value === value);
 
-const TECHNICAL_SHEET_VALUATION_PRESENTATION = Object.freeze({
-  NOT_VALUED: Object.freeze({
-    label: 'Non valorisée',
-    tone: 'alert',
-  }),
-  PARTIAL: Object.freeze({
-    label: 'Valorisation incomplète',
-    tone: 'warning',
-  }),
-  COMPLETE: Object.freeze({
-    label: 'Valorisée',
-    tone: 'success',
-  }),
-  STALE: Object.freeze({
-    label: 'À revaloriser',
-    tone: 'warning',
-  }),
-});
-
-const LINE_VALUATION_PRESENTATION = Object.freeze({
-  UNRESOLVED: Object.freeze({
-    label: 'Article à choisir',
-    tone: 'warning',
-  }),
-  NO_PRICE: Object.freeze({
-    label: 'Prix indisponible',
-    tone: 'destructive',
-  }),
-  VALUED: Object.freeze({
-    label: 'Valorisée',
-    tone: 'success',
-  }),
-  STALE: Object.freeze({
-    label: 'À revaloriser',
-    tone: 'warning',
-  }),
-});
+  return definition ?? {
+    value,
+    label: value ?? fallbackLabel,
+    tone: 'neutral',
+  };
+}
 
 function getTechnicalSheetActionAvailability({
   status,
@@ -66,29 +28,60 @@ function getTechnicalSheetActionAvailability({
   };
 }
 
-function getTechnicalSheetStatusPresentation(status) {
-  return TECHNICAL_SHEET_STATUS_PRESENTATION[status] ?? {
-    label: status ?? 'Statut inconnu',
-    tone: 'neutral',
-  };
+function getTechnicalSheetStatusPresentation(
+  status,
+  definitions,
+) {
+  return getBackendPresentation(
+    definitions,
+    status,
+    'Statut inconnu',
+  );
 }
 
-function getTechnicalSheetValuationPresentation(status) {
-  return TECHNICAL_SHEET_VALUATION_PRESENTATION[status] ?? {
-    label: status ?? 'État inconnu',
-    tone: 'neutral',
-  };
+function getTechnicalSheetValuationPresentation(
+  status,
+  definitions,
+) {
+  return getBackendPresentation(
+    definitions,
+    status,
+    'État inconnu',
+  );
 }
 
-function getLineValuationPresentation(status) {
-  return LINE_VALUATION_PRESENTATION[status] ?? {
-    label: status ?? 'État inconnu',
-    tone: 'neutral',
-  };
+function getTechnicalSheetValuationAttentionPresentation(
+  status,
+  definitions,
+) {
+  if (!status) return null;
+
+  const definition = (definitions ?? [])
+    .find((entry) => entry.value === status);
+
+  if (definition?.validationEligible === true) {
+    return null;
+  }
+
+  return getTechnicalSheetValuationPresentation(
+    status,
+    definitions,
+  );
+}
+
+function getLineValuationPresentation(
+  status,
+  definitions,
+) {
+  return getBackendPresentation(
+    definitions,
+    status,
+    'État inconnu',
+  );
 }
 
 function formatMinorCurrency(value, currency = 'EUR') {
-  if (!Number.isInteger(value)) return 'Non calculé';
+  if (!Number.isInteger(value)) return 'NC';
 
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -98,12 +91,12 @@ function formatMinorCurrency(value, currency = 'EUR') {
 
 function formatDecimalCurrency(value, currency = 'EUR') {
   if (value === null || value === undefined || value === '') {
-    return 'Non calculé';
+    return 'NC';
   }
 
   const parsed = Number(value);
 
-  if (!Number.isFinite(parsed)) return 'Non calculé';
+  if (!Number.isFinite(parsed)) return 'NC';
 
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -119,6 +112,37 @@ function formatBasisPoints(value) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }) + ' %';
+}
+
+function formatSignedBasisPointDelta(value) {
+  if (!Number.isInteger(value)) return 'NC';
+
+  const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '—';
+  const points = Math.abs(value) / 100;
+
+  return arrow + ' ' + points.toLocaleString('fr-FR', {
+    maximumFractionDigits: 2,
+  }) + ' point' + (points > 1 ? 's' : '');
+}
+
+function formatSignedCurrencyDelta(value) {
+  const normalized = value?.$numberDecimal ?? value;
+
+  if (
+    normalized === null
+    || normalized === undefined
+    || normalized === ''
+  ) {
+    return 'NC';
+  }
+
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed)) return 'NC';
+
+  const arrow = parsed > 0 ? '↑' : parsed < 0 ? '↓' : '—';
+
+  return arrow + ' ' + formatDecimalCurrency(Math.abs(parsed));
 }
 
 function basisPointsToInput(value) {
@@ -159,12 +183,11 @@ function getTechnicalSheetApiErrorMessage(
 }
 
 export {
-  LINE_VALUATION_PRESENTATION,
-  TECHNICAL_SHEET_STATUS_PRESENTATION,
-  TECHNICAL_SHEET_VALUATION_PRESENTATION,
   basisPointsToInput,
   formatBasisPoints,
   formatDecimalCurrency,
+  formatSignedBasisPointDelta,
+  formatSignedCurrencyDelta,
   formatMinorCurrency,
   minorToInput,
   percentInputToBasisPoints,
@@ -173,5 +196,6 @@ export {
   getTechnicalSheetActionAvailability,
   getTechnicalSheetApiErrorMessage,
   getTechnicalSheetStatusPresentation,
+  getTechnicalSheetValuationAttentionPresentation,
   getTechnicalSheetValuationPresentation,
 };

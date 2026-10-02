@@ -352,7 +352,28 @@ rendement = poids net égoutté / poids net × 100
 
 Quantité réellement nécessaire et présente dans la recette.
 
-C'est la quantité saisie par l'utilisateur pour une ligne d'ingrédient.
+C'est la quantité saisie par l'utilisateur pour une ligne d'ingrédient. Elle est exprimée dans l'unité de référence du ProductVariant ; l'utilisateur ne choisit pas une unité locale propre à la Fiche.
+
+---
+
+## Unité de référence d'une ligne de Fiche
+
+Unité portée par `ProductVariant.referenceUnit` et utilisée comme unité canonique de saisie et de persistance d'une ligne de Fiche technique.
+
+Elle est distincte du conditionnement ou de l'unité commerciale d'un Article fournisseur.
+
+Exemple :
+
+```text
+Citron référencé en UNIT
+→ la Fiche saisit un nombre de pièces
+
+Article fournisseur
+→ peut être acheté en filet ou en caisse
+→ son prix est normalisé séparément
+```
+
+L'utilisateur d'une Fiche ne choisit pas cette unité.
 
 ---
 
@@ -819,7 +840,7 @@ Résultat des calculs de coût, marge et prix obtenus à partir :
 - des prix applicables ;
 - des paramètres de calcul applicables.
 
-Une même composition peut être revalorisée dans le temps.
+Une même composition peut être recalculée dans le temps à partir des Prix alors applicables.
 
 ---
 
@@ -835,7 +856,7 @@ Elle permet de comprendre pourquoi une fiche affichait un certain coût ou une c
 
 Calcul effectué avec les données actuellement applicables, notamment les prix courants.
 
-Si un tarif devient plus récent ou plus applicable pendant qu'une fiche est en cours d'édition, la fiche n'est pas modifiée silencieusement. Le système signale qu'une revalorisation est disponible ou nécessaire.
+Le brouillon courant est recalculé automatiquement après ses sauvegardes. Si un tarif devient plus récent ou plus applicable sans modification du brouillon, le backend l'actualise lors de la tentative de validation et demande une nouvelle confirmation après vérification. Une version déjà validée reste immuable.
 
 ---
 
@@ -932,7 +953,7 @@ Profil de rôle type orienté Fournisseurs, Articles, catalogues, négociations 
 
 ## Économe / Gestionnaire des prix
 
-Profil de rôle type orienté contrôle des prix, validation des Prix facturés, revues tarifaires et revalorisation/correction des fiches selon permissions.
+Profil de rôle type orienté contrôle des prix, validation des Prix facturés, revues tarifaires et correction économique des fiches selon permissions.
 
 ---
 
@@ -996,15 +1017,56 @@ coefficient = 1 / (1 - objectif de marge)
 
 Il n'est pas une donnée libre indépendante de l'objectif.
 
-## Prix théorique
+## Pièce fabriquée
+
+Une unité dénombrable réellement produite par la Fiche. Côté technique, l'unité de production M-004 est `UNIT` ; côté interface française elle est présentée comme « Pièce ».
+
+## Portions / pièce
+
+Nombre de portions contenues dans une pièce fabriquée.
+
+```text
+totalPortions
+=
+productionQuantity × portionsPerProductionUnit
+```
+
+Le total de portions est dérivé et n'est jamais saisi directement.
+
+## Base de vente
+
+Référence commerciale utilisée pour calculer le prix, le plancher économique et la marge réelle d'une Fiche.
+
+Valeurs V1 :
+
+```text
+PIECE
+PORTION
+```
+
+## CMU HT
+
+Coût Matière Unitaire HT d'une portion :
+
+```text
+CMU HT
+=
+Coût matière HT total / totalPortions
+```
+
+Il est distinct du coût matière d'une pièce fabriquée.
+
+## Prix de vente calculé
 
 Prix calculé pour atteindre l'Objectif de marge avant application de la stratégie commerciale d'arrondi.
 
 ```text
-Prix théorique HT
+Prix de vente calculé HT
 =
-Coût total de fabrication HT × coefficient
+coût de fabrication HT de la base de vente × coefficient
 ```
+
+Le terme historique « Prix théorique » peut encore apparaître dans certains noms techniques internes pendant la stabilisation M-004, mais n'est plus la terminologie UI cible.
 
 ## Prix conseillé
 
@@ -1012,30 +1074,26 @@ Prix minimum proposé par le SaaS après application au Prix théorique TTC de l
 
 Il ne peut jamais être inférieur au Prix théorique correspondant.
 
-## Prix définitif
+## Prix retenu
 
-Prix de vente décidé humainement pour la Fiche technique.
+Prix de vente unitaire décidé humainement pour la Fiche technique.
 
-Invariant :
-
-```text
-Prix définitif TTC >= Prix conseillé TTC
-```
+Il peut être inférieur au Prix conseillé, mais jamais inférieur au plancher économique TTC par unité produite.
 
 ## Marge réelle
 
-Résultat économique calculé à partir du Prix définitif réellement choisi.
+Résultat économique calculé à partir du Prix retenu réellement choisi.
 
 ```text
 Marge réelle %
 =
-(Prix définitif HT - Coût total de fabrication HT)
+(Prix retenu HT unitaire - Coût de fabrication HT unitaire)
 /
-Prix définitif HT
+Prix retenu HT unitaire
 × 100
 ```
 
-La marge réelle en euros correspond à la différence entre Prix définitif HT et Coût total de fabrication HT.
+La marge réelle en euros correspond à la différence entre Prix retenu HT unitaire et Coût de fabrication HT unitaire.
 
 ## Marge semi-nette
 

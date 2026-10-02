@@ -48,6 +48,16 @@ function DossierFormDialog({
   });
 
   const addressValue = watch('locationAddress');
+  const nameValue = watch('name') ?? '';
+  const defaultTargetMarginValue =
+    watch('defaultTargetMargin') ?? '';
+  const createRequiredFieldsMissing = (
+    !editing
+    && (
+      !nameValue.trim()
+      || !defaultTargetMarginValue.trim()
+    )
+  );
   const addressAutocomplete = useAddressAutocomplete(addressValue, {
     enabled: open,
   });
@@ -74,8 +84,18 @@ function DossierFormDialog({
   }
 
   async function submit(values) {
+    if (!editing && !values.defaultTargetMargin.trim()) {
+      setError('defaultTargetMargin', {
+        type: 'required',
+        message: 'La marge cible par défaut est obligatoire.',
+      });
+      return;
+    }
+
     try {
-      await onSubmit(buildDossierFormPayload(values));
+      await onSubmit(buildDossierFormPayload(values, {
+        includeDefaultTargetMargin: !editing,
+      }));
     } catch (error) {
       setError('root.server', {
         type: 'server',
@@ -100,7 +120,9 @@ function DossierFormDialog({
               {editing ? 'Modifier le dossier' : 'Créer un dossier'}
             </DialogTitle>
             <DialogDescription>
-              Seul le nom est obligatoire. Les autres informations peuvent être complétées plus tard.
+              {editing
+                ? 'Modifiez les informations générales du dossier.'
+                : 'Le nom et la marge cible par défaut sont obligatoires. Les autres informations peuvent être complétées plus tard.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -124,6 +146,21 @@ function DossierFormDialog({
                   {...register('name')}
                 />
               </FormField>
+
+              {!editing && (
+                <FormField
+                  error={errors.defaultTargetMargin?.message}
+                  id="dossier-default-target-margin"
+                  label="Marge cible par défaut (%)"
+                >
+                  <Input
+                    id="dossier-default-target-margin"
+                    inputMode="decimal"
+                    placeholder="Ex. 30"
+                    {...register('defaultTargetMargin')}
+                  />
+                </FormField>
+              )}
 
               <FormField
                 error={errors.brand?.message}
@@ -265,7 +302,11 @@ function DossierFormDialog({
             >
               Annuler
             </DialogClose>
-            <Button disabled={pending} form="dossier-form" type="submit">
+            <Button
+              disabled={pending || createRequiredFieldsMissing}
+              form="dossier-form"
+              type="submit"
+            >
               {pending
                 ? 'Enregistrement…'
                 : editing

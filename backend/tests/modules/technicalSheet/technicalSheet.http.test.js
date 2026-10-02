@@ -62,6 +62,10 @@ beforeEach(async () => {
             owner.workspace._id,
         name:
             'Magasin RBAC M004',
+        technicalSheetSettings: {
+            defaultTargetMarginBasisPoints:
+                5000,
+        },
         statusChangedBy:
             owner.owner._id,
         createdBy:
@@ -125,6 +129,12 @@ beforeEach(async () => {
             data: {
                 name:
                     'Fiche RBAC M004',
+                productionQuantity:
+                    '1',
+                productionUnit:
+                    'UNIT',
+                vatRateBasisPoints:
+                    1000,
             },
         });
 
@@ -196,6 +206,204 @@ const basePath = () =>
     + sheet.id;
 
 describe('M-004 RBAC HTTP', () => {
+    it('expose les unités de production et bases de vente depuis le backend', async () => {
+        const response = await request(app)
+            .get(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/dossiers/'
+                + dossier._id.toString()
+                + '/technical-sheets/metadata',
+            )
+            .set(bearer(owner.token))
+            .expect(200);
+
+        expect(
+            response.body.data.metadata.changeKindDefinitions,
+        ).toEqual([
+            {
+                value: 'IDENTITY',
+                label: 'Identité',
+            },
+            {
+                value: 'COMPOSITION',
+                label: 'Composition',
+            },
+            {
+                value: 'SOURCING',
+                label: 'Approvisionnement',
+            },
+            {
+                value: 'ECONOMICS',
+                label: 'Économie',
+            },
+        ]);
+        expect(
+            response.body.data.metadata.vatRates,
+        ).toEqual([
+            {
+                value: 550,
+                label: '5,5 %',
+            },
+            {
+                value: 1000,
+                label: '10 %',
+            },
+        ]);
+        expect(
+            response.body.data.metadata.defaults
+                .vatRateBasisPoints,
+        ).toBe(550);
+        expect(
+            response.body.data.metadata
+                .economicMetricDefinitions,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: 'manufacturingCostHt',
+                label: 'CF HT',
+            }),
+            expect.objectContaining({
+                value: 'actualMarginBasisPoints',
+                label: 'Marge réelle',
+                description:
+                    'MR = Marge réelle. Part du Prix retenu HT restant après déduction du coût de fabrication de la base de vente.',
+            }),
+            expect.objectContaining({
+                value: 'actualMarginAmountHt',
+                label: 'Marge sur coût de fabrication HT',
+            }),
+            expect.objectContaining({
+                value: 'targetMarginDeltaProductionHt',
+                label: 'Écart production vs cible',
+            }),
+        ]));
+        expect(
+            response.body.data.metadata.units,
+        ).toEqual([
+            {
+                value: 'UNIT',
+                label: 'Pièce',
+            },
+        ]);
+        expect(
+            response.body.data.metadata.statusDefinitions,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: 'ACTIVE',
+                label: 'Active',
+            }),
+        ]));
+        expect(
+            response.body.data.metadata.valuationStatusDefinitions,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: 'NOT_VALUED',
+                automaticValuationEligible: true,
+            }),
+            expect.objectContaining({
+                value: 'PARTIAL',
+                automaticValuationEligible: false,
+            }),
+            expect.objectContaining({
+                value: 'COMPLETE',
+                automaticValuationEligible: false,
+                validationEligible: true,
+            }),
+            expect.objectContaining({
+                value: 'STALE',
+                automaticValuationEligible: true,
+            }),
+        ]));
+        expect(
+            response.body.data.metadata.lineValuationStatusDefinitions,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: 'NO_PRICE',
+                openPricingEligible: true,
+            }),
+            expect.objectContaining({
+                value: 'VALUED',
+                openPricingEligible: false,
+            }),
+        ]));
+        expect(
+            response.body.data.metadata.lineKindDefinitions,
+        ).toEqual([
+            expect.objectContaining({
+                value: 'INGREDIENT',
+                label: 'Ingrédients',
+                materialCostShareEligible: true,
+                primary: true,
+            }),
+            expect.objectContaining({
+                value: 'ECONOMAT',
+                label: 'Économat',
+                materialCostShareEligible: false,
+                primary: false,
+            }),
+        ]);
+        expect(
+            response.body.data.metadata.pricingSources,
+        ).toEqual([
+            {
+                value: 'SUPPLIER_TARIFF',
+                label: 'Tarif fournisseur',
+            },
+            {
+                value: 'NEGOTIATED_PRICE',
+                label: 'Tarif négocié',
+            },
+            {
+                value: 'INVOICED_PRICE',
+                label: 'Prix facturé',
+            },
+            {
+                value: 'INDICATIVE_DOSSIER',
+                label: 'Prix indicatif Dossier',
+            },
+            {
+                value: 'INDICATIVE_WORKSPACE',
+                label: 'Prix indicatif espace de travail',
+            },
+        ]);
+        expect(
+            response.body.data.metadata.finalPriceModeDefinitions,
+        ).toEqual([
+            {
+                value: 'ADVISED',
+                label: 'Conseillé',
+                requiresManualPrice: false,
+            },
+            {
+                value: 'MANUAL',
+                label: 'Manuel',
+                requiresManualPrice: true,
+            },
+        ]);
+        expect(
+            response.body.data.metadata.saleBases,
+        ).toEqual([
+            {
+                value: 'PIECE',
+                label: 'Pièce',
+            },
+            {
+                value: 'PORTION',
+                label: 'Portion',
+            },
+        ]);
+        expect(
+            response.body.data.metadata.defaults,
+        ).toEqual({
+            productionUnit: 'UNIT',
+            portionsPerProductionUnit: '1',
+            saleBasis: 'PIECE',
+            vatRateBasisPoints: 550,
+            finalPriceMode: 'ADVISED',
+            productSearchScope: 'REFERENCE',
+        });
+    });
+
     it('masque une Fiche en corbeille des lectures directes ordinaires', async () => {
         const deleted =
             await deleteTechnicalSheet({

@@ -37,12 +37,14 @@ const TECHNICAL_SHEET_HELP_MODULE = Object.freeze({
             whoCanPerform: 'Un membre autorisé à créer des Fiches techniques.',
             prerequisites: [
                 'Un Dossier accessible doit être sélectionné pour porter la Fiche.',
+                'Le Dossier doit posséder une marge cible par défaut.',
             ],
             steps: [
                 'Ouvrez les Fiches techniques du Dossier.',
-                'Créez une nouvelle Fiche.',
+                'Créez une nouvelle Fiche en renseignant le nom, la quantité produite, l’unité de production et la TVA.',
+                'Vérifiez la marge cible héritée du Dossier.',
                 'Ajoutez les lignes Ingrédients et Économat à partir des Références Produit.',
-                'Enregistrez le brouillon.',
+                'Les modifications sont enregistrées et recalculées automatiquement.',
             ],
             outcome: 'La Fiche durable possède un brouillon modifiable dans le Dossier courant.',
             edgeCases: [
@@ -56,12 +58,12 @@ const TECHNICAL_SHEET_HELP_MODULE = Object.freeze({
             id: 'workspace.technical_sheets.valuation',
             context: HELP_CONTEXT.WORKSPACE,
             categoryId: 'workspace_technical_sheets',
-            title: 'Valoriser une Fiche technique',
-            summary: 'Résoudre les Articles et prix du Dossier puis calculer la valorisation économique.',
+            title: 'Comprendre les calculs d’une Fiche technique',
+            summary: 'Les coûts et prix sont recalculés automatiquement à partir des paramètres, de la composition et des prix du Dossier.',
             search: {
                 keywords: ['fiche technique', 'valorisation', 'prix', 'coût', 'marge'],
                 questions: [
-                    'Comment valoriser une Fiche technique ?',
+                    'Comment sont calculés les coûts d’une Fiche technique ?',
                     'Pourquoi une ligne n’est-elle pas valorisée ?',
                 ],
             },
@@ -77,15 +79,16 @@ const TECHNICAL_SHEET_HELP_MODULE = Object.freeze({
                 'Les sources de prix sont résolues dans le contexte du Dossier via M-003.',
             ],
             steps: [
-                'Ouvrez la Fiche à valoriser.',
+                'Ouvrez la Fiche technique.',
+                'Vérifiez les paramètres de production, la TVA et la marge cible.',
+                'Ajoutez ou modifiez les lignes Ingrédients et Économat.',
                 'Résolvez les éventuelles ambiguïtés d’Article fournisseur.',
-                'Lancez ou actualisez la valorisation.',
-                'Vérifiez les coûts, la marge cible et le prix final.',
+                'Vérifiez les coûts et prix recalculés automatiquement.',
             ],
             outcome: 'La Fiche dispose d’une valorisation explicable à partir des données économiques du Dossier.',
             edgeCases: [
                 'Un prix absent n’est jamais remplacé par 0 €.',
-                'Si les prix ont changé, une revalorisation explicite est requise avant validation.',
+                'Si un prix a changé avant validation, les calculs sont actualisés et la validation doit être confirmée à nouveau après vérification.',
             ],
             sensitiveConsequences: [],
             relatedEntryIds: [],

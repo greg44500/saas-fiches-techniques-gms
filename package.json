@@ -61,7 +61,8 @@
     "migration:m004-plan-limit": "node backend/migrations/runAddM004TechnicalSheetPlanLimitMigration.js",
     "migration:m004-usage-reconcile": "node backend/migrations/runReconcileM004TechnicalSheetUsageMetricMigration.js",
     "migration:m004-workspace-business-settings": "node backend/migrations/runEnsureM004WorkspaceBusinessSettingsMigration.js",
-    "job:purge-technical-sheets": "node backend/jobs/technicalSheets/runPurgeDeletedTechnicalSheetsJob.js"
+    "job:purge-technical-sheets": "node backend/jobs/technicalSheets/runPurgeDeletedTechnicalSheetsJob.js",
+    "migration:m004-production-quantity": "node backend/migrations/runMigrateM004ProductionQuantityMigration.js"
   },
   "license": "UNLICENSED",
   "dependencies": {

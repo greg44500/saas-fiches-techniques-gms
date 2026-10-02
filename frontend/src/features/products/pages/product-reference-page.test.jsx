@@ -1,4 +1,9 @@
-import { act, render, screen } from '@testing-library/react';
+import {
+  act,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -137,6 +142,34 @@ function renderPage({ canManage = false } = {}) {
   );
 }
 
+async function selectOption(user, triggerName, optionName) {
+  const trigger = screen.getByRole('combobox', {
+    name: triggerName,
+  });
+
+  vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
+    DOMRect.fromRect({
+      x: 24,
+      y: 24,
+      width: 240,
+      height: 40,
+    }),
+  );
+
+  await user.click(trigger);
+  await waitFor(() => {
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  await user.click(await screen.findByRole('option', {
+    name: optionName,
+  }));
+
+  await waitFor(() => {
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+}
+
 describe('ProductReferencePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -240,10 +273,11 @@ describe('ProductReferencePage', () => {
     expect(screen.getByRole('tab', { name: 'Catégories (1)' }))
       .toBeInTheDocument();
 
-    await user.click(screen.getByRole('combobox', {
-      name: 'Filtrer par catégorie',
-    }));
-    await user.click(screen.getByRole('option', { name: 'Légumes' }));
+    await selectOption(
+      user,
+      'Filtrer par catégorie',
+      'Légumes',
+    );
 
     expect(await screen.findByRole('tab', { name: 'Référentiel (7)' }))
       .toBeInTheDocument();
@@ -251,10 +285,11 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('tab', {
       name: 'Contributions (4)',
     }));
-    await user.click(screen.getByRole('combobox', {
-      name: 'Filtrer les contributions par statut',
-    }));
-    await user.click(screen.getByRole('option', { name: 'Approuvée' }));
+    await selectOption(
+      user,
+      'Filtrer les contributions par statut',
+      'Approuvée',
+    );
 
     expect(await screen.findByRole('tab', { name: 'Contributions (2)' }))
       .toBeInTheDocument();

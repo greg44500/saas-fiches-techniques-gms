@@ -321,6 +321,27 @@ const PRODUCT_IMPORT_SCOPE = Object.freeze({
     GLOBAL: 'GLOBAL',
 });
 
+const PRODUCT_SEARCH_SCOPE_REGISTRY = Object.freeze({
+    WORKSPACE: Object.freeze({
+        value: 'WORKSPACE',
+        label: 'Favoris',
+        showWorkspaceFavorite: false,
+    }),
+    REFERENCE: Object.freeze({
+        value: 'REFERENCE',
+        label: 'Tous les produits',
+        showWorkspaceFavorite: true,
+    }),
+});
+
+const PRODUCT_SEARCH_SCOPE = Object.freeze(
+    Object.fromEntries(
+        Object.entries(PRODUCT_SEARCH_SCOPE_REGISTRY).map(
+            ([key, definition]) => [key, definition.value],
+        ),
+    ),
+);
+
 const PRODUCT_IMPORT_STATUS = Object.freeze({
     INSPECTED: 'INSPECTED',
     PREVIEWED: 'PREVIEWED',
@@ -361,6 +382,8 @@ export {
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
+    PRODUCT_SEARCH_SCOPE,
+    PRODUCT_SEARCH_SCOPE_REGISTRY,
     PRODUCT_REJECTION_REASON,
     PRODUCT_REJECTION_REASON_REGISTRY,
     PRODUCT_STATUS,

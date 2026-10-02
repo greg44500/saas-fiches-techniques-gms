@@ -30,6 +30,9 @@ import {
     TechnicalSheetDraft,
 } from './technicalSheetDraft.model.js';
 import {
+    applyAutomaticValuation,
+} from './technicalSheetDraft.service.js';
+import {
     TechnicalSheetValidation,
 } from './technicalSheetValidation.model.js';
 import {
@@ -42,6 +45,9 @@ import {
     serializeTechnicalSheet,
     serializeTechnicalSheetDraft,
 } from './technicalSheet.serializer.js';
+import {
+    editableProductionFromSnapshot,
+} from './technicalSheetProduction.service.js';
 
 const assertTargetDossierAccess = async ({
     workspaceId,
@@ -50,11 +56,13 @@ const assertTargetDossierAccess = async ({
     isOwner,
     session,
 }) => {
-    const dossier = await Dossier.findOne({
-        _id: targetDossierId,
-        workspace: workspaceId,
-        status: DOSSIER_STATUS.ACTIVE,
-    }).session(session);
+    const dossier = await Dossier.findOne(
+        mongoose.trusted({
+            _id: targetDossierId,
+            workspace: workspaceId,
+            status: DOSSIER_STATUS.ACTIVE,
+        }),
+    ).session(session);
 
     if (!dossier) {
         throw new AppError(
@@ -65,14 +73,16 @@ const assertTargetDossierAccess = async ({
 
     if (!isOwner) {
         const grant =
-            await DossierAccessGrant.findOne({
-                workspace: workspaceId,
-                dossier: dossier._id,
-                workspaceMember:
-                    membershipId,
-                status:
-                    DOSSIER_ACCESS_GRANT_STATUS.ACTIVE,
-            }).session(session);
+            await DossierAccessGrant.findOne(
+                mongoose.trusted({
+                    workspace: workspaceId,
+                    dossier: dossier._id,
+                    workspaceMember:
+                        membershipId,
+                    status:
+                        DOSSIER_ACCESS_GRANT_STATUS.ACTIVE,
+                }),
+            ).session(session);
 
         if (!grant) {
             throw new AppError(
@@ -100,14 +110,16 @@ const sourceComposition = async ({
 
     const validation =
         await TechnicalSheetValidation
-            .findOne({
-                _id:
-                    sheet.currentValidatedState,
-                technicalSheet:
-                    sheet._id,
-                workspace: workspaceId,
-                dossier: dossierId,
-            })
+            .findOne(
+                mongoose.trusted({
+                    _id:
+                        sheet.currentValidatedState,
+                    technicalSheet:
+                        sheet._id,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                }),
+            )
             .session(session);
 
     if (!validation) {
@@ -117,18 +129,13 @@ const sourceComposition = async ({
         );
     }
 
+    const editableProduction =
+        editableProductionFromSnapshot(
+            validation.sheetSnapshot,
+        );
+
     return {
-        productionQuantity:
-            validation.sheetSnapshot
-                .productionQuantity
-                .toString(),
-        productionUnit:
-            validation.sheetSnapshot
-                .productionUnit,
-        portions:
-            validation.sheetSnapshot
-                .portions
-                ?.toString() ?? null,
+        ...editableProduction,
         vatRateBasisPoints:
             validation.sheetSnapshot
                 .vatRateBasisPoints,
@@ -163,17 +170,19 @@ const copyTechnicalSheet = async ({
 }) => mongoose.connection.transaction(
     async (session) => {
         const source =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: sourceDossierId,
-                status: mongoose.trusted({
-                    $in: [
-                        TECHNICAL_SHEET_STATUS.ACTIVE,
-                        TECHNICAL_SHEET_STATUS.ARCHIVED,
-                    ],
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: sourceDossierId,
+                    status: mongoose.trusted({
+                        $in: [
+                            TECHNICAL_SHEET_STATUS.ACTIVE,
+                            TECHNICAL_SHEET_STATUS.ARCHIVED,
+                        ],
+                    }),
                 }),
-            }).session(session);
+            ).session(session);
 
         if (!source) {
             throw new AppError(
@@ -183,14 +192,16 @@ const copyTechnicalSheet = async ({
         }
 
         const openDraft =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet:
-                    source._id,
-                workspace:
-                    workspaceId,
-                dossier:
-                    sourceDossierId,
-            })
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet:
+                        source._id,
+                    workspace:
+                        workspaceId,
+                    dossier:
+                        sourceDossierId,
+                }),
+            )
                 .select('_id')
                 .session(session)
                 .lean();
@@ -213,6 +224,20 @@ const copyTechnicalSheet = async ({
                 isOwner,
                 session,
             });
+
+        if (
+            target.technicalSheetSettings
+                ?.defaultTargetMarginBasisPoints
+            === null
+            || target.technicalSheetSettings
+                ?.defaultTargetMarginBasisPoints
+            === undefined
+        ) {
+            throw new AppError(
+                'Renseignez la marge cible par défaut du Dossier cible avant de copier une Fiche technique.',
+                409,
+            );
+        }
 
         await enforcePlanLimit({
             workspaceId,
@@ -282,8 +307,12 @@ const copyTechnicalSheet = async ({
                     productionUnit:
                         composition
                             .productionUnit,
-                    portions:
-                        composition.portions,
+                    portionsPerProductionUnit:
+                        composition
+                            .portionsPerProductionUnit,
+                    saleBasis:
+                        composition
+                            .saleBasis,
                     vatRateBasisPoints:
                         composition
                             .vatRateBasisPoints,
@@ -308,6 +337,20 @@ const copyTechnicalSheet = async ({
                 }],
                 { session },
             );
+
+        await applyAutomaticValuation({
+            workspaceId,
+            dossierId: targetDossierId,
+            draft,
+            actorId,
+            session,
+        });
+
+        await draft.populate({
+            path: 'lines.productVariant',
+            select:
+                '_id name referenceUnit yieldPercent status',
+        });
 
         await createTechnicalSheetEvent({
             workspaceId,

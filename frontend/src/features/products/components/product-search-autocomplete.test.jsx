@@ -21,6 +21,9 @@ import {
 } from '@/features/products/components/product-search-autocomplete';
 
 const metadata = {
+  defaults: {
+    activeWorkspaceProductStatus: 'ACTIVE',
+  },
   conservationTypes: [{ value: 'FRAIS', label: 'Frais' }],
   foodRanges: [{
     value: 1,
@@ -124,7 +127,6 @@ describe('ProductSearchAutocomplete', () => {
           workspaceId: 'workspace-1',
           scope: 'REFERENCE',
           q: 'car',
-          sort: 'NAME',
           page: 1,
           limit: 6,
         }),

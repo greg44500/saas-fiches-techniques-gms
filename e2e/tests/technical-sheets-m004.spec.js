@@ -42,6 +42,32 @@ async function createTechnicalSheet(page, {
     .getByLabel('Nom')
     .fill(name);
   await dialog
+    .getByLabel('Quantité produite')
+    .fill('10');
+  await expect(
+    dialog.getByRole('combobox', {
+      name: 'Unité de production',
+    }),
+  ).toHaveText('Pièce');
+  await expect(
+    dialog.getByLabel('Portions / pièce'),
+  ).toHaveValue('1');
+  await expect(
+    dialog.getByRole('combobox', {
+      name: 'Base de vente',
+    }),
+  ).toHaveText('Pièce');
+  await expect(
+    dialog.getByRole('button', {
+      name: '5,5 %',
+    }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await dialog
+    .getByRole('button', {
+      name: '10 %',
+    })
+    .click();
+  await dialog
     .getByRole('button', {
       name: 'Créer',
       exact: true,
@@ -53,6 +79,11 @@ async function createTechnicalSheet(page, {
       name,
     }),
   ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: '10 %',
+    }),
+  ).toHaveAttribute('aria-pressed', 'true');
 
   return {
     detailUrl:
@@ -63,35 +94,6 @@ async function createTechnicalSheet(page, {
 async function composeTechnicalSheet(page, {
   productReferenceName,
 }) {
-  await page
-    .getByRole('textbox', {
-      name: 'Quantité',
-      exact: true,
-    })
-    .fill('10');
-
-  await page
-    .getByRole('combobox', {
-      name: 'Unité de production',
-    })
-    .click();
-  await page
-    .getByRole('option', {
-      name: 'kg',
-      exact: true,
-    })
-    .click();
-
-  await page
-    .getByLabel('Portion(s)')
-    .fill('20');
-  await page
-    .getByLabel('TVA (%)')
-    .fill('10');
-  await page
-    .getByLabel('Marge cible (%)')
-    .fill('50');
-
   const productSearch =
     page.getByRole('combobox', {
       name: 'Ajouter un produit aux Ingrédients',
@@ -189,55 +191,34 @@ async function expectTechnicalSheetCapacity(page, {
   return capacityRegion;
 }
 
-async function openInformationDrawer(page) {
-  const openButton = page.getByRole('button', {
-    name: 'Ouvrir les informations de la Fiche',
-  });
-
-  if (await openButton.isVisible().catch(() => false)) {
-    await openButton.click();
-  }
-
-  await expect(
-    page.getByRole('heading', {
-      name: 'Informations de la Fiche',
-    }),
-  ).toBeVisible();
-}
-
-async function valuateAndValidate(page, {
+async function validateCurrentDraft(page, {
   comment = null,
 }) {
-  const valuateButton =
-    page.getByRole('button', {
-      name: /^(Valoriser|Revaloriser)$/,
-    });
+  const validateButton = page.getByRole('button', {
+    name: 'Valider la Fiche technique',
+  });
 
-  await valuateButton.click();
+  await expect(validateButton).toBeEnabled();
+  await validateButton.click();
 
-  await expectVisibleToast(
-    page,
-    'Fiche technique valorisée',
-  );
+  const dialog = page.getByRole('dialog');
+
+  await expect(
+    dialog.getByRole('heading', {
+      name: 'Valider la Fiche technique',
+    }),
+  ).toBeVisible();
 
   if (comment) {
-    await openInformationDrawer(page);
-
-    await page
-      .getByLabel(
-        'Commentaire de validation',
-      )
+    await dialog
+      .getByLabel('Commentaire de validation')
       .fill(comment);
-
-    await page.getByRole('button', {
-      name: 'Fermer',
-    }).click();
   }
 
-  await page
+  await dialog
     .getByRole('button', {
-      name:
-        'Valider la Fiche technique',
+      name: 'Valider',
+      exact: true,
     })
     .click();
 
@@ -248,8 +229,8 @@ async function valuateAndValidate(page, {
 
   await expect(
     page.getByText(
-      'Aucun brouillon n’est ouvert.',
-      { exact: false },
+      'Aucun brouillon n’est ouvert. L’état validé courant reste consultable dans l’historique.',
+      { exact: true },
     ),
   ).toBeVisible();
 }
@@ -274,6 +255,39 @@ test('M-004 une Référence Produit globale non favorite reste composable et val
 
   await expect(
     page.getByRole('button', {
+      name: 'Analyse',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: 'Infos dossier',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: 'Modifier',
+    }),
+  ).toBeVisible();
+
+  await page.getByRole('button', {
+    name: 'Analyse',
+  }).click();
+  await expect(
+    page.getByRole('heading', {
+      name: 'Analyse de gestion',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('tab', {
+      name: 'Synthèse',
+    }),
+  ).toBeVisible();
+  await page.getByRole('button', {
+    name: 'Fermer',
+  }).click();
+
+  await expect(
+    page.getByRole('button', {
       name: 'Tous les produits',
     }),
   ).toHaveAttribute('aria-pressed', 'true');
@@ -290,13 +304,13 @@ test('M-004 une Référence Produit globale non favorite reste composable et val
     ).first(),
   ).toBeVisible();
 
-  await valuateAndValidate(page, {
+  await validateCurrentDraft(page, {
     comment:
       'Référence globale non favorite',
   });
 });
 
-test('M-004 ambiguïté Article, changement de prix, revalorisation puis validation', async ({ page }) => {
+test('M-004 ambiguïté Article, changement de prix, actualisation automatique puis validation', async ({ page }) => {
   const context =
     await provisionTechnicalSheetWorkspace({
       ambiguous: true,
@@ -318,18 +332,6 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     productReferenceName:
       context.productReferenceName,
   });
-
-  await page
-    .getByRole('button', {
-      name: 'Valoriser',
-      exact: true,
-    })
-    .click();
-
-  await expectVisibleToast(
-    page,
-    'Valorisation incomplète',
-  );
 
   await page
     .getByRole('button', {
@@ -364,18 +366,6 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     .first()
     .click();
 
-  await page
-    .getByRole('button', {
-      name: 'Revaloriser',
-      exact: true,
-    })
-    .click();
-
-  await expectVisibleToast(
-    page,
-    'Fiche technique valorisée',
-  );
-
   await replaceDossierNegotiatedPrice({
     workspaceId:
       context.workspaceId,
@@ -394,59 +384,55 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
     })
     .click();
 
-  await expectVisibleToast(
-    page,
-    'Les données économiques ont changé. Une revalorisation est obligatoire.',
-  );
+  const staleValidationDialog =
+    page.getByRole('dialog');
 
-  await page.reload();
-
-  await expect(
-    page.getByText(
-      'À revaloriser',
-      { exact: true },
-    ).first(),
-  ).toBeVisible();
-
-  await page
+  await staleValidationDialog
     .getByRole('button', {
-      name: 'Revaloriser',
+      name: 'Valider',
       exact: true,
     })
     .click();
 
   await expectVisibleToast(
     page,
-    'Fiche technique valorisée',
+    'Les données économiques ont changé. Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.',
   );
 
-  await openInformationDrawer(page);
+  await page.reload();
 
-  await page
-    .getByLabel(
-      'Commentaire de validation',
-    )
-    .fill(
-      'Validation après revalorisation',
-    );
+  await expect(
+    page.getByText(
+      'Valorisée',
+      { exact: true },
+    ),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText(
+      'Calcul à actualiser',
+      { exact: true },
+    ),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', {
+      name: 'Valider la Fiche technique',
+    }),
+  ).toBeEnabled();
+
+  await validateCurrentDraft(page, {
+    comment:
+      'Validation après actualisation',
+  });
 
   await page.getByRole('button', {
-    name: 'Fermer',
+    name: 'Analyse',
   }).click();
 
-  await page
-    .getByRole('button', {
-      name:
-        'Valider la Fiche technique',
-    })
-    .click();
-
-  await expectVisibleToast(
-    page,
-    'Fiche technique validée',
-  );
-
-  await openInformationDrawer(page);
+  await expect(
+    page.getByRole('heading', {
+      name: 'Analyse de gestion',
+    }),
+  ).toBeVisible();
 
   await page.getByRole('tab', {
     name: 'Historique',
@@ -454,7 +440,7 @@ test('M-004 ambiguïté Article, changement de prix, revalorisation puis validat
 
   await expect(
     page.getByText(
-      'Validation après revalorisation',
+      'Validation après actualisation',
       { exact: true },
     ),
   ).toBeVisible();
@@ -483,7 +469,7 @@ test('M-004 copie A vers B sans finance source et valorise avec le prix du Dossi
       context.productReferenceName,
   });
 
-  await valuateAndValidate(page, {
+  await validateCurrentDraft(page, {
     comment:
       'Source validée avant copie',
   });
@@ -532,20 +518,12 @@ test('M-004 copie A vers B sans finance source et valorise avec le prix du Dossi
     ),
   ).toHaveValue('60');
 
-  await page
-    .getByRole('button', {
-      name: 'Valoriser',
-      exact: true,
-    })
-    .click();
-
-  await expectVisibleToast(
-    page,
-    'Fiche technique valorisée',
-  );
-
   await expect(
     page.getByText(/40,00/).first(),
+  ).toBeVisible();
+
+  await expect(
+    page.getByText(/11,00/).first(),
   ).toBeVisible();
 });
 
@@ -573,25 +551,31 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
       context.productReferenceName,
   });
 
-  await valuateAndValidate(page, {
+  await validateCurrentDraft(page, {
     comment:
       'Validation avant contrôle du quota',
   });
 
-  await openInformationDrawer(page);
-
   await page
+    .getByRole('button', {
+      name: 'Modifier',
+    })
+    .click();
+
+  const identityDialog =
+    page.getByRole('dialog');
+
+  await identityDialog
     .getByLabel(
-      'Description',
+      'Description / notes',
     )
     .fill(
       'Modification autorisée à la limite',
     );
 
-  await page
+  await identityDialog
     .getByRole('button', {
-      name:
-        'Enregistrer les informations',
+      name: 'Enregistrer',
     })
     .click();
 

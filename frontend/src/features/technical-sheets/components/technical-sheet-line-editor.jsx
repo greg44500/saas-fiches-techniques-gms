@@ -1,18 +1,17 @@
 import {
   ArrowDownUp,
   ArrowUpRight,
-  Globe2,
   MoreHorizontal,
   PackageSearch,
-  Star,
   Trash2,
   X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import {
   Popover,
   PopoverContent,
@@ -26,13 +25,6 @@ import {
   DialogRoot,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Tooltip,
   TooltipContent,
@@ -58,35 +50,9 @@ import {
   getLineValuationPresentation,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 
-const PRODUCT_SOURCE = Object.freeze({
-  REFERENCE: 'REFERENCE',
-  FAVORITES: 'WORKSPACE',
-});
-
-const PRICING_SOURCE_LABEL = Object.freeze({
-  SUPPLIER_TARIFF: 'Tarif fournisseur',
-  NEGOTIATED_PRICE: 'Tarif négocié',
-  INVOICED_PRICE: 'Prix facturé',
-  INDICATIVE_DOSSIER: 'Prix indicatif Dossier',
-  INDICATIVE_WORKSPACE: 'Prix indicatif espace de travail',
-});
-
-const SECTION_PRESENTATION = Object.freeze({
-  INGREDIENT: Object.freeze({
-    label: 'Ingrédients',
-    opposite: 'ECONOMAT',
-    oppositeLabel: 'Économat',
-  }),
-  ECONOMAT: Object.freeze({
-    label: 'Économat',
-    opposite: 'INGREDIENT',
-    oppositeLabel: 'Ingrédients',
-  }),
-});
-
 const COMPOSITION_GRID_CLASS = [
   'grid gap-x-2 gap-y-2',
-  'lg:grid-cols-[minmax(0,2fr)_4.25rem_4.5rem_5rem_5.25rem_5.5rem_4.25rem_minmax(0,1.25fr)_3.25rem]',
+  'lg:grid-cols-[minmax(0,2fr)_4.25rem_3.5rem_5rem_5.25rem_5.5rem_4.25rem_minmax(0,1.25fr)_3.25rem]',
   'lg:items-center',
 ].join(' ');
 
@@ -104,7 +70,7 @@ function normalizeDraftLine(line, index) {
       ?? line.id
       ?? 'technical-sheet-existing-' + line.productVariantId + '-' + index,
     id: line.id,
-    kind: line.kind ?? 'INGREDIENT',
+    kind: line.kind,
     productVariantId:
       line.productVariantId
       ?? line.productVariant?.id,
@@ -144,14 +110,141 @@ function normalizeDraftLine(line, index) {
   };
 }
 
-function getPricingSourceLabel(source) {
-  return PRICING_SOURCE_LABEL[source] ?? null;
+function getMetadataDefinition(definitions, value) {
+  return (definitions ?? [])
+    .find((definition) => definition.value === value)
+    ?? null;
 }
+
+function getPricingSourceLabel(metadata, source) {
+  return getMetadataDefinition(
+    metadata?.pricingSources,
+    source,
+  )?.label ?? null;
+}
+
+function getLineKindDefinition(metadata, kind) {
+  return getMetadataDefinition(
+    metadata?.lineKindDefinitions,
+    kind,
+  );
+}
+
+function getReferenceUnitDefinition(metadata, unit) {
+  return (metadata?.referenceUnits ?? [])
+    .find((definition) => definition.value === unit)
+    ?? null;
+}
+
+function convertDecimalQuantity({
+  value,
+  fromFactor,
+  toFactor,
+}) {
+  const normalized =
+    String(value).trim().replace(',', '.');
+  const match =
+    /^(\d+)(?:\.(\d+))?$/.exec(normalized);
+
+  if (
+    !match
+    || !Number.isInteger(fromFactor)
+    || !Number.isInteger(toFactor)
+    || fromFactor <= 0
+    || toFactor <= 0
+  ) {
+    return null;
+  }
+
+  const fractionDigits =
+    match[2] ?? '';
+  const scale =
+    10n ** BigInt(fractionDigits.length);
+  const numeric =
+    BigInt(match[1] + fractionDigits);
+  const numerator =
+    numeric * BigInt(fromFactor);
+  const denominator =
+    scale * BigInt(toFactor);
+  const integerPart =
+    numerator / denominator;
+  let remainder =
+    numerator % denominator;
+
+  if (remainder === 0n) {
+    return integerPart.toString();
+  }
+
+  let decimals = '';
+
+  for (
+    let index = 0;
+    index < 12 && remainder !== 0n;
+    index += 1
+  ) {
+    remainder *= 10n;
+    decimals += (
+      remainder / denominator
+    ).toString();
+    remainder %= denominator;
+  }
+
+  const trimmed =
+    decimals.replace(/0+$/, '');
+
+  return trimmed
+    ? integerPart.toString() + '.' + trimmed
+    : integerPart.toString();
+}
+
+function adaptQuantityToReplacementUnit({
+  metadata,
+  netQuantity,
+  previousUnit,
+  nextUnit,
+}) {
+  if (!previousUnit || previousUnit === nextUnit) {
+    return {
+      netQuantity,
+      reviewRequired: false,
+    };
+  }
+
+  const previousDefinition =
+    getReferenceUnitDefinition(metadata, previousUnit);
+  const nextDefinition =
+    getReferenceUnitDefinition(metadata, nextUnit);
+
+  if (
+    !previousDefinition
+    || !nextDefinition
+    || previousDefinition.dimension
+      !== nextDefinition.dimension
+  ) {
+    return {
+      netQuantity,
+      reviewRequired: true,
+    };
+  }
+
+  return {
+    netQuantity:
+      convertDecimalQuantity({
+        value: netQuantity,
+        fromFactor:
+          previousDefinition.factorToBase,
+        toFactor:
+          nextDefinition.factorToBase,
+      })
+      ?? netQuantity,
+    reviewRequired: false,
+  };
+}
+
 
 function getSupplierArticleActionTooltip({
   canManageSourcing,
   line,
-  requiresSave = false,
 }) {
   if (!canManageSourcing) return 'Consulter l’Article fournisseur';
 
@@ -163,17 +256,20 @@ function getSupplierArticleActionTooltip({
     ? 'Modifier l’Article fournisseur'
     : 'Choisir un Article fournisseur';
 
-  return (!line.id || requiresSave)
-    ? label + ' — enregistrez d’abord le brouillon'
-    : label;
+  return label;
 }
 
 function hasValue(value) {
   return value !== null && value !== undefined && value !== '';
 }
 
-function formatMaterialCostSharePercent(line) {
-  if (line.kind !== 'INGREDIENT') return '—';
+function formatMaterialCostSharePercent(line, metadata) {
+  const kindDefinition =
+    getLineKindDefinition(metadata, line.kind);
+
+  if (!kindDefinition?.materialCostShareEligible) {
+    return '—';
+  }
 
   const value = line.valuation?.materialCostSharePercent;
   if (!hasValue(value)) return '—';
@@ -221,40 +317,19 @@ function ColumnHeading({ align = 'left', children, tooltip }) {
 }
 
 function TechnicalSheetProductScopeControls({
+  items = [],
   onChange,
   productScope,
 }) {
   return (
-    <div
-      aria-label="Source des Produits"
-      className="flex items-center gap-1 rounded-lg border border-border bg-card/70 p-1"
-      role="group"
-    >
-      <ActionIconButton
-        Icon={Globe2}
-        aria-pressed={productScope === PRODUCT_SOURCE.REFERENCE}
-        label="Tous les produits"
-        onClick={() => onChange(PRODUCT_SOURCE.REFERENCE)}
-        tooltipLabel="Tous les produits"
-        variant={
-          productScope === PRODUCT_SOURCE.REFERENCE
-            ? 'default'
-            : 'ghost'
-        }
-      />
-      <ActionIconButton
-        Icon={Star}
-        aria-pressed={productScope === PRODUCT_SOURCE.FAVORITES}
-        label="Favoris"
-        onClick={() => onChange(PRODUCT_SOURCE.FAVORITES)}
-        tooltipLabel="Favoris"
-        variant={
-          productScope === PRODUCT_SOURCE.FAVORITES
-            ? 'default'
-            : 'ghost'
-        }
-      />
-    </div>
+    <SegmentedControl
+      ariaLabel="Source des Produits"
+      className="h-9 p-px"
+      items={items}
+      onValueChange={onChange}
+      size="sm"
+      value={productScope}
+    />
   );
 }
 
@@ -371,7 +446,6 @@ function SupplierArticleDialog({
   draftRevision,
   line,
   onClose,
-  requiresSave,
   onError,
   onPendingChange,
   onSelected,
@@ -421,13 +495,6 @@ function SupplierArticleDialog({
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspaceId}
               />
-              {disabled && canManage && (
-                <p className="text-xs text-muted-foreground">
-                  {!line.id || requiresSave
-                    ? 'Enregistrez le brouillon avant de modifier l’approvisionnement.'
-                    : 'L’approvisionnement est momentanément indisponible.'}
-                </p>
-              )}
             </div>
           )}
         </DialogContent>
@@ -440,10 +507,13 @@ function LineActionsMenu({
   canOpenPricing,
   disabled,
   line,
+  moveTargetLabel,
   onMove,
   onOpenPricing,
   onOpenSourcing,
   onRemove,
+  showPricingAction,
+  sourcingDisabled,
   sourcingLabel,
 }) {
   const [open, setOpen] = useState(false);
@@ -471,6 +541,7 @@ function LineActionsMenu({
         <div className="space-y-1">
           <Button
             className="w-full justify-start"
+            disabled={sourcingDisabled}
             onClick={() => runAction(onOpenSourcing)}
             size="sm"
             type="button"
@@ -480,7 +551,7 @@ function LineActionsMenu({
             {sourcingLabel}
           </Button>
 
-          {canOpenPricing && line.valuation?.status === 'NO_PRICE' && (
+          {canOpenPricing && showPricingAction && (
             <Button
               className="w-full justify-start"
               onClick={() => runAction(onOpenPricing)}
@@ -502,7 +573,7 @@ function LineActionsMenu({
             variant="ghost"
           >
             <ArrowDownUp aria-hidden="true" className="size-4" />
-            Déplacer vers {SECTION_PRESENTATION[line.kind].oppositeLabel}
+            Déplacer vers {moveTargetLabel}
           </Button>
 
           <Button
@@ -525,6 +596,7 @@ function LineActionsMenu({
 function TechnicalSheetLineEditor({
   canManageSourcing = false,
   canOpenPricing = false,
+  compositionHeaderOffset = 0,
   disabled,
   dossierId,
   draftRevision,
@@ -535,30 +607,45 @@ function TechnicalSheetLineEditor({
   onOpenPricing,
   onSourcingError,
   onSourcingPendingChange,
+  onUnitChangeWarning,
   onSourcingSelected,
   productMetadata,
-  productScope = PRODUCT_SOURCE.REFERENCE,
+  productScope = null,
   sourcingDisabled = false,
-  sourcingRequiresSave = false,
   technicalSheetId,
   workspaceId,
 }) {
-  const [addSearch, setAddSearch] = useState({
-    INGREDIENT: '',
-    ECONOMAT: '',
-  });
+  const [addSearch, setAddSearch] = useState({});
   const [editingLineKey, setEditingLineKey] = useState(null);
   const [editSearch, setEditSearch] = useState('');
   const [sourcingLineKey, setSourcingLineKey] = useState(null);
+  const [recentlyReplacedLineKey, setRecentlyReplacedLineKey] = useState(null);
+  const replacementHighlightTimeoutRef = useRef(null);
   const [addError, setAddError] = useState('');
 
-  const unitItems = useMemo(
-    () => (metadata?.units ?? []).map((unit) => ({
-      value: unit.value,
-      label: getReferenceUnitLabel(productMetadata, unit.value),
-    })),
-    [metadata?.units, productMetadata],
-  );
+  useEffect(() => () => {
+    if (replacementHighlightTimeoutRef.current) {
+      window.clearTimeout(
+        replacementHighlightTimeoutRef.current,
+      );
+    }
+  }, []);
+  const lineKindDefinitions =
+    metadata?.lineKindDefinitions ?? [];
+  const primaryLineKindDefinition =
+    lineKindDefinitions.find(
+      (definition) => definition.primary,
+    )
+    ?? lineKindDefinitions[0]
+    ?? null;
+  const productScopeDefinition =
+    getMetadataDefinition(
+      productMetadata?.productSearchScopes,
+      productScope,
+    );
+  const activeWorkspaceProductStatus =
+    productMetadata?.defaults
+      ?.activeWorkspaceProductStatus;
 
   function lineKey(line, index) {
     return line.clientKey ?? line.id ?? line.productVariantId + ':' + index;
@@ -586,10 +673,13 @@ function TechnicalSheetLineEditor({
 
   function moveLine(index) {
     const line = lines[index];
-    const presentation = SECTION_PRESENTATION[line.kind];
+    const definition =
+      getLineKindDefinition(metadata, line.kind);
+
+    if (!definition?.opposite) return;
 
     updateLine(index, {
-      kind: presentation.opposite,
+      kind: definition.opposite,
     }, { immediate: true });
   }
 
@@ -651,9 +741,25 @@ function TechnicalSheetLineEditor({
       return;
     }
 
+    const previousUnit =
+      line.referenceUnit
+      ?? line.inputUnit;
+    const nextUnit =
+      result.variant.referenceUnit;
+    const adaptedQuantity =
+      adaptQuantityToReplacementUnit({
+        metadata: productMetadata,
+        netQuantity: line.netQuantity,
+        previousUnit,
+        nextUnit,
+      });
+
     setAddError('');
+    const replacementClientKey =
+      createLocalLineClientKey();
+
     updateLine(index, {
-      clientKey: createLocalLineClientKey(),
+      clientKey: replacementClientKey,
       id: undefined,
       productVariantId: result.variant.id,
       productVariantName:
@@ -661,14 +767,48 @@ function TechnicalSheetLineEditor({
         ?? result.product?.name
         ?? 'Référence Produit',
       productVariant: result.variant,
-      referenceUnit: result.variant.referenceUnit,
-      inputUnit: result.variant.referenceUnit,
+      referenceUnit: nextUnit,
+      netQuantity:
+        adaptedQuantity.netQuantity,
+      inputUnit: nextUnit,
       selectedSupplierArticleId: null,
       calculation: null,
       valuation: null,
     }, { immediate: true });
+
+    if (adaptedQuantity.reviewRequired) {
+      onUnitChangeWarning?.({
+        previousUnit:
+          getReferenceUnitLabel(
+            productMetadata,
+            previousUnit,
+          ),
+        nextUnit:
+          getReferenceUnitLabel(
+            productMetadata,
+            nextUnit,
+          ),
+      });
+    }
+
     setEditingLineKey(null);
     setEditSearch('');
+    setRecentlyReplacedLineKey(
+      replacementClientKey,
+    );
+
+    if (replacementHighlightTimeoutRef.current) {
+      window.clearTimeout(
+        replacementHighlightTimeoutRef.current,
+      );
+    }
+
+    replacementHighlightTimeoutRef.current =
+      window.setTimeout(() => {
+        setRecentlyReplacedLineKey(null);
+        replacementHighlightTimeoutRef.current =
+          null;
+      }, 900);
   }
 
   const sourcingLine = lines.find(
@@ -680,28 +820,41 @@ function TechnicalSheetLineEditor({
     const editing = editingLineKey === key;
     const valuationPresentation = getLineValuationPresentation(
       line.valuation?.status,
+      metadata?.lineValuationStatusDefinitions,
     );
     const sourceLabel = getPricingSourceLabel(
+      metadata,
       line.valuation?.applicableSource,
     );
+    const lineKindDefinition =
+      getLineKindDefinition(metadata, line.kind);
+    const oppositeLineKindDefinition =
+      getLineKindDefinition(
+        metadata,
+        lineKindDefinition?.opposite,
+      );
     const sourcingTooltipLabel = getSupplierArticleActionTooltip({
       canManageSourcing,
       line,
-      requiresSave: sourcingRequiresSave,
     });
 
     return (
       <div
         className={
           COMPOSITION_GRID_CLASS
-          + ' border-b border-border px-2 py-2 transition-colors hover:bg-muted/20'
+          + ' border-b border-border px-2 py-2 transition-[background-color,box-shadow] duration-300 hover:bg-muted/20'
+          + (
+            recentlyReplacedLineKey === key
+              ? ' bg-primary/5 shadow-[inset_3px_0_0_var(--primary)]'
+              : ''
+          )
         }
         key={key}
       >
         <div className="min-w-0">
           <MobileLabel>Produit</MobileLabel>
           {editing ? (
-            <div className="flex min-w-0 items-center gap-1">
+            <div className="flex min-w-0 items-center gap-2 transition-all duration-200 ease-out">
               <div className="min-w-0 flex-1">
                 <ProductSearchAutocomplete
                   ariaLabel={'Modifier le produit ' + line.productVariantName}
@@ -711,22 +864,26 @@ function TechnicalSheetLineEditor({
                   onValueChange={setEditSearch}
                   placeholder="Rechercher un produit…"
                   scope={productScope}
-                  showWorkspaceFavorite={productScope === PRODUCT_SOURCE.REFERENCE}
-                  status="ACTIVE"
+                  showWorkspaceFavorite={Boolean(
+                    productScopeDefinition?.showWorkspaceFavorite
+                  )}
+                  status={activeWorkspaceProductStatus}
                   value={editSearch}
                   workspaceId={workspaceId}
                 />
               </div>
-              <ActionIconButton
-                Icon={X}
-                label="Annuler le remplacement du Produit"
+              <Button
+                className="h-8 shrink-0 px-2 text-xs"
                 onClick={() => {
                   setEditingLineKey(null);
                   setEditSearch('');
                 }}
-                tooltipLabel="Annuler"
-                variant="ghost"
-              />
+                size="sm"
+                type="button"
+                variant="warning"
+              >
+                Annuler
+              </Button>
             </div>
           ) : (
             <ProductDetailsTrigger
@@ -758,30 +915,16 @@ function TechnicalSheetLineEditor({
 
         <div className="min-w-0 lg:text-center">
           <MobileLabel>Unité</MobileLabel>
-          <Select
-            disabled={disabled}
-            items={unitItems}
-            onValueChange={(value) => updateLine(
-              index,
-              { inputUnit: value },
-              { immediate: true },
-            )}
-            value={line.inputUnit}
+          <p
+            aria-label={'Unité ligne ' + (index + 1)}
+            className="truncate text-sm font-medium text-muted-foreground lg:text-center"
           >
-            <SelectTrigger
-              aria-label={'Unité ligne ' + (index + 1)}
-              className="h-8 min-h-8 min-w-0 justify-center px-2 text-center"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {unitItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {getReferenceUnitLabel(
+              productMetadata,
+              line.referenceUnit
+              ?? line.inputUnit,
+            )}
+          </p>
         </div>
 
         <div className="min-w-0 lg:text-center">
@@ -796,9 +939,9 @@ function TechnicalSheetLineEditor({
               className="block max-w-full truncate text-left text-sm font-medium tabular-nums lg:mx-auto lg:text-center"
               type="button"
             >
-              {hasValue(line.valuation?.normalizedAmount)
-                ? formatDecimalCurrency(line.valuation.normalizedAmount)
-                : '—'}
+              {formatDecimalCurrency(
+                line.valuation?.normalizedAmount,
+              )}
             </TooltipTrigger>
             <TooltipContent>
               {sourceLabel
@@ -818,18 +961,21 @@ function TechnicalSheetLineEditor({
         </div>
 
         <div className="min-w-0 lg:text-center">
-          <MobileLabel>Coût matières unitaire hors taxe</MobileLabel>
+          <MobileLabel>Coût total HT de la ligne</MobileLabel>
           <p className="truncate text-sm font-medium tabular-nums lg:text-center">
-            {hasValue(line.valuation?.lineCostHt)
-              ? formatDecimalCurrency(line.valuation.lineCostHt)
-              : '—'}
+            {formatDecimalCurrency(
+              line.valuation?.lineCostHt,
+            )}
           </p>
         </div>
 
         <div className="min-w-0 lg:text-center">
           <MobileLabel>Part du coût matière</MobileLabel>
           <p className="truncate text-sm font-medium tabular-nums lg:text-center">
-            {formatMaterialCostSharePercent(line)}
+            {formatMaterialCostSharePercent(
+              line,
+              metadata,
+            )}
           </p>
         </div>
 
@@ -861,10 +1007,20 @@ function TechnicalSheetLineEditor({
             canOpenPricing={canOpenPricing}
             disabled={disabled}
             line={line}
+            moveTargetLabel={
+              oppositeLineKindDefinition?.label
+              ?? lineKindDefinition?.opposite
+              ?? ''
+            }
             onMove={() => moveLine(index)}
             onOpenPricing={() => onOpenPricing?.(line)}
             onOpenSourcing={() => setSourcingLineKey(key)}
             onRemove={() => removeLine(index)}
+            showPricingAction={Boolean(
+              valuationPresentation
+                ?.openPricingEligible,
+            )}
+            sourcingDisabled={sourcingDisabled}
             sourcingLabel={sourcingTooltipLabel}
           />
         </div>
@@ -873,6 +1029,9 @@ function TechnicalSheetLineEditor({
   }
 
   function renderAddRow(kind, sectionLineCount) {
+    const definition =
+      getLineKindDefinition(metadata, kind);
+
     return (
       <div
         className={
@@ -883,7 +1042,10 @@ function TechnicalSheetLineEditor({
       >
         <div className="min-w-0">
           <ProductSearchAutocomplete
-            ariaLabel={'Ajouter un produit aux ' + SECTION_PRESENTATION[kind].label}
+            ariaLabel={
+              'Ajouter un produit aux '
+              + (definition?.label ?? kind)
+            }
             clearOnSelect
             compact
             key={'add-product-' + kind + '-' + sectionLineCount}
@@ -895,9 +1057,11 @@ function TechnicalSheetLineEditor({
             }))}
             placeholder="Ajouter un produit"
             scope={productScope}
-            showWorkspaceFavorite={productScope === PRODUCT_SOURCE.REFERENCE}
-            status="ACTIVE"
-            value={addSearch[kind]}
+            showWorkspaceFavorite={Boolean(
+              productScopeDefinition?.showWorkspaceFavorite
+            )}
+            status={activeWorkspaceProductStatus}
+            value={addSearch[kind] ?? ''}
             workspaceId={workspaceId}
           />
         </div>
@@ -906,17 +1070,18 @@ function TechnicalSheetLineEditor({
     );
   }
 
-  function renderSection(kind) {
+  function renderSection(definition) {
+    const kind = definition.value;
     const sectionLines = lines
       .map((line, index) => ({ line, index }))
       .filter(({ line }) => line.kind === kind);
 
     return (
       <section key={kind}>
-        {kind === 'ECONOMAT' && (
+        {definition.showSectionHeader && (
           <div className="border-y-2 border-primary/35 bg-muted/45 px-2 py-2.5">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
-              Économat
+              {definition.sectionLabel ?? definition.label}
               <span className="ml-1 text-muted-foreground">
                 ({sectionLines.length})
               </span>
@@ -935,9 +1100,14 @@ function TechnicalSheetLineEditor({
     );
   }
 
-  const ingredientCount = lines.filter(
-    (line) => line.kind === 'INGREDIENT',
-  ).length;
+  const primaryLineCount = primaryLineKindDefinition
+    ? lines.filter(
+        (line) => (
+          line.kind
+          === primaryLineKindDefinition.value
+        ),
+      ).length
+    : 0;
 
   return (
     <div>
@@ -947,15 +1117,44 @@ function TechnicalSheetLineEditor({
         </p>
       )}
 
-      <div className="overflow-hidden border-y border-border">
-        <div className={COMPOSITION_GRID_CLASS + ' hidden border-b border-border bg-muted/20 px-2 py-2 lg:grid'}>
-          <ColumnHeading tooltip="Produits ingrédients">
-            INGRÉDIENTS <span className="text-muted-foreground">({ingredientCount})</span>
+      <div className="border-y border-border">
+        <div
+          className={
+            COMPOSITION_GRID_CLASS
+            + ' sticky z-40 hidden border-b border-border '
+            + 'bg-background/97 px-2 py-2 shadow-sm backdrop-blur-md lg:grid'
+          }
+          data-slot="composition-table-header"
+          style={{
+            top:
+              'calc(var(--workspace-topbar-height, 4rem) + '
+              + Math.max(0, compositionHeaderOffset)
+              + 'px)',
+          }}
+        >
+          <ColumnHeading
+            tooltip={
+              primaryLineKindDefinition
+                ? 'Produits '
+                  + primaryLineKindDefinition.label.toLowerCase()
+                : 'Produits'
+            }
+          >
+            {primaryLineKindDefinition?.sectionLabel ?? 'PRODUITS'}
+            {' '}
+            <span className="text-muted-foreground">
+              ({primaryLineCount})
+            </span>
           </ColumnHeading>
           <ColumnHeading align="center" tooltip="Quantité nette">Qté</ColumnHeading>
           <ColumnHeading align="center" tooltip="Unité">U</ColumnHeading>
           <ColumnHeading align="center" tooltip="Prix unitaire hors taxe">PUHT</ColumnHeading>
-          <ColumnHeading align="center" tooltip="Coût matières unitaire hors taxe">CMU HT</ColumnHeading>
+          <ColumnHeading
+            align="center"
+            tooltip="Coût total HT de cette ligne dans la production"
+          >
+            Coût HT
+          </ColumnHeading>
           <ColumnHeading
             align="center"
             tooltip="Part de cette ligne Ingrédient dans le coût matière HT total de la Fiche. Disponible après valorisation complète."
@@ -967,8 +1166,7 @@ function TechnicalSheetLineEditor({
           <ColumnHeading align="center" tooltip="Actions">Actions</ColumnHeading>
         </div>
 
-        {renderSection('INGREDIENT')}
-        {renderSection('ECONOMAT')}
+        {lineKindDefinitions.map(renderSection)}
       </div>
 
       <SupplierArticleDialog
@@ -986,7 +1184,6 @@ function TechnicalSheetLineEditor({
         onError={onSourcingError}
         onPendingChange={onSourcingPendingChange}
         onSelected={onSourcingSelected}
-        requiresSave={sourcingRequiresSave}
         technicalSheetId={technicalSheetId}
         workspaceId={workspaceId}
       />
@@ -995,7 +1192,6 @@ function TechnicalSheetLineEditor({
 }
 
 export {
-  PRODUCT_SOURCE,
   TechnicalSheetLineEditor,
   TechnicalSheetProductScopeControls,
   getPricingSourceLabel,

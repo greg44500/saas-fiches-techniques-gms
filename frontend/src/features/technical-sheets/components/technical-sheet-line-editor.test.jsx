@@ -40,6 +40,42 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
         >
           Pomme
         </button>
+        <button
+          aria-label={'Sélectionner Farine grammes depuis ' + props.ariaLabel}
+          onClick={() => props.onSelect({
+            product: {
+              id: 'product-3',
+              name: 'Farine grammes',
+            },
+            variant: {
+              id: 'variant-3',
+              name: 'Farine grammes',
+              referenceUnit: 'G',
+              yieldPercent: '100',
+            },
+          })}
+          type="button"
+        >
+          Farine grammes
+        </button>
+        <button
+          aria-label={'Sélectionner Jus de citron depuis ' + props.ariaLabel}
+          onClick={() => props.onSelect({
+            product: {
+              id: 'product-4',
+              name: 'Jus de citron',
+            },
+            variant: {
+              id: 'variant-4',
+              name: 'Jus de citron',
+              referenceUnit: 'CL',
+              yieldPercent: '100',
+            },
+          })}
+          type="button"
+        >
+          Jus de citron
+        </button>
       </div>
     );
   },
@@ -62,7 +98,6 @@ vi.mock('@/features/technical-sheets/components/technical-sheet-sourcing-select'
 }));
 
 import {
-  PRODUCT_SOURCE,
   TechnicalSheetLineEditor,
   TechnicalSheetProductScopeControls,
   getSupplierArticleActionTooltip,
@@ -70,9 +105,99 @@ import {
 } from '@/features/technical-sheets/components/technical-sheet-line-editor';
 
 const metadata = {
-  units: [
-    { value: 'KG', label: 'kg' },
-    { value: 'UNIT', label: 'unité' },
+  lineKindDefinitions: [
+    {
+      value: 'INGREDIENT',
+      label: 'Ingrédients',
+      sectionLabel: 'INGRÉDIENTS',
+      opposite: 'ECONOMAT',
+      materialCostShareEligible: true,
+      primary: true,
+      showSectionHeader: false,
+    },
+    {
+      value: 'ECONOMAT',
+      label: 'Économat',
+      sectionLabel: 'Économat',
+      opposite: 'INGREDIENT',
+      materialCostShareEligible: false,
+      primary: false,
+      showSectionHeader: true,
+    },
+  ],
+  lineValuationStatusDefinitions: [
+    {
+      value: 'UNRESOLVED',
+      label: 'Article à choisir',
+      tone: 'warning',
+      openPricingEligible: false,
+    },
+    {
+      value: 'NO_PRICE',
+      label: 'Prix indisponible',
+      tone: 'destructive',
+      openPricingEligible: true,
+    },
+    {
+      value: 'VALUED',
+      label: 'Valorisée',
+      tone: 'success',
+      openPricingEligible: false,
+    },
+    {
+      value: 'STALE',
+      label: 'Calcul à actualiser',
+      tone: 'warning',
+      openPricingEligible: false,
+    },
+  ],
+  pricingSources: [
+    {
+      value: 'NEGOTIATED_PRICE',
+      label: 'Tarif négocié',
+    },
+    {
+      value: 'INDICATIVE_WORKSPACE',
+      label: 'Prix indicatif espace de travail',
+    },
+  ],
+};
+
+const productMetadata = {
+  productSearchScopes: [
+    {
+      value: 'WORKSPACE',
+      label: 'Favoris',
+      showWorkspaceFavorite: false,
+    },
+    {
+      value: 'REFERENCE',
+      label: 'Tous les produits',
+      showWorkspaceFavorite: true,
+    },
+  ],
+  defaults: {
+    activeWorkspaceProductStatus: 'ACTIVE',
+  },
+  referenceUnits: [
+    {
+      value: 'G',
+      label: 'g',
+      dimension: 'MASS',
+      factorToBase: 1,
+    },
+    {
+      value: 'KG',
+      label: 'kg',
+      dimension: 'MASS',
+      factorToBase: 1000,
+    },
+    {
+      value: 'CL',
+      label: 'cl',
+      dimension: 'VOLUME',
+      factorToBase: 10,
+    },
   ],
 };
 
@@ -108,6 +233,7 @@ const valuedLine = normalizeDraftLine({
 
 function renderEditor(overrides = {}) {
   const onChange = vi.fn();
+  const onUnitChangeWarning = vi.fn();
 
   render(
     <TooltipProvider>
@@ -124,7 +250,9 @@ function renderEditor(overrides = {}) {
         onSourcingError={vi.fn()}
         onSourcingPendingChange={vi.fn()}
         onSourcingSelected={vi.fn()}
-        productMetadata={{}}
+        onUnitChangeWarning={onUnitChangeWarning}
+        productMetadata={productMetadata}
+        productScope="REFERENCE"
         sourcingDisabled={false}
         technicalSheetId="sheet-1"
         workspaceId="workspace-1"
@@ -133,7 +261,10 @@ function renderEditor(overrides = {}) {
     </TooltipProvider>,
   );
 
-  return { onChange };
+  return {
+    onChange,
+    onUnitChangeWarning,
+  };
 }
 
 describe('TechnicalSheetLineEditor', () => {
@@ -169,12 +300,16 @@ describe('TechnicalSheetLineEditor', () => {
     render(
       <TooltipProvider>
         <TechnicalSheetProductScopeControls
+          items={productMetadata.productSearchScopes}
           onChange={onChange}
-          productScope={PRODUCT_SOURCE.REFERENCE}
+          productScope="REFERENCE"
         />
       </TooltipProvider>,
     );
 
+    const scopeControl = document.querySelector(
+      '[aria-label="Source des Produits"]',
+    );
     const globalButton = screen.getByRole('button', {
       name: 'Tous les produits',
     });
@@ -182,9 +317,25 @@ describe('TechnicalSheetLineEditor', () => {
       name: 'Favoris',
     });
 
+    expect(scopeControl).toHaveClass('h-9', 'p-px');
     expect(globalButton).toHaveAttribute('aria-pressed', 'true');
     await user.click(favoritesButton);
-    expect(onChange).toHaveBeenCalledWith(PRODUCT_SOURCE.FAVORITES);
+    expect(onChange).toHaveBeenCalledWith('WORKSPACE');
+  });
+
+  it('maintient l’en-tête du tableau sous le cockpit sticky', () => {
+    renderEditor({
+      compositionHeaderOffset: 240,
+    });
+
+    const header = document.querySelector(
+      '[data-slot="composition-table-header"]',
+    );
+
+    expect(header).toHaveClass('sticky', 'z-40');
+    expect(header).toHaveStyle({
+      top: 'calc(var(--workspace-topbar-height, 4rem) + 240px)',
+    });
   });
 
   it('affiche le tableau métier compact sans quantité brute ni colonne fournisseur', () => {
@@ -197,7 +348,7 @@ describe('TechnicalSheetLineEditor', () => {
       name: 'Part de cette ligne Ingrédient dans le coût matière HT total de la Fiche. Disponible après valorisation complète.',
     })).toBeInTheDocument();
     expect(screen.getByText('PUHT')).toBeInTheDocument();
-    expect(screen.getByText('CMU HT')).toBeInTheDocument();
+    expect(screen.getByText('Coût HT')).toBeInTheDocument();
     expect(screen.getByText('%TR')).toBeInTheDocument();
 
     expect(screen.queryByText('Qté brute')).not.toBeInTheDocument();
@@ -213,6 +364,16 @@ describe('TechnicalSheetLineEditor', () => {
     expect(screen.getByText('100 %')).toBeInTheDocument();
     expect(screen.getByText(/2,15/)).toBeInTheDocument();
     expect(screen.getByText(/6,02/)).toBeInTheDocument();
+    expect(screen.queryByText('CMU HT')).not.toBeInTheDocument();
+
+    expect(
+      screen.getByLabelText('Unité ligne 1'),
+    ).toHaveTextContent('kg');
+    expect(
+      screen.queryByRole('combobox', {
+        name: 'Unité ligne 1',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('signale un Prix indicatif comme source de valorisation', () => {
@@ -280,10 +441,7 @@ describe('TechnicalSheetLineEditor', () => {
     expect(getSupplierArticleActionTooltip({
       canManageSourcing: true,
       line: { ...unresolvedLine, id: undefined },
-      requiresSave: true,
-    })).toBe(
-      'Choisir un Article fournisseur — enregistrez d’abord le brouillon',
-    );
+    })).toBe('Choisir un Article fournisseur');
   });
 
   it('ajoute un Produit directement depuis la ligne de saisie de la section', async () => {
@@ -318,6 +476,7 @@ describe('TechnicalSheetLineEditor', () => {
       .find((props) => props.ariaLabel === 'Ajouter un produit aux Ingrédients');
 
     expect(ingredientSearch.clearOnSelect).toBe(true);
+    expect(ingredientSearch.value).toBe('');
   });
 
   it('remplace un Produit sans conserver son ancien sourcing ni sa valorisation', async () => {
@@ -349,6 +508,69 @@ describe('TechnicalSheetLineEditor', () => {
       ],
       { immediate: true },
     );
+  });
+
+  it('convertit automatiquement la quantité lors d’un remplacement vers une unité compatible', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+
+    expect(screen.getByRole('button', {
+      name: 'Annuler',
+    })).toHaveClass('bg-warning/85');
+
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Farine grammes depuis Modifier le produit Carotte râpée',
+    }));
+
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          productVariantId: 'variant-3',
+          productVariantName: 'Farine grammes',
+          netQuantity: '2500',
+          inputUnit: 'G',
+          referenceUnit: 'G',
+        }),
+      ],
+      { immediate: true },
+    );
+  });
+
+  it('conserve la valeur numérique et avertit lorsque le Produit change de dimension', async () => {
+    const user = userEvent.setup();
+    const {
+      onChange,
+      onUnitChangeWarning,
+    } = renderEditor();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Jus de citron depuis Modifier le produit Carotte râpée',
+    }));
+
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          productVariantId: 'variant-4',
+          productVariantName: 'Jus de citron',
+          netQuantity: '2.5',
+          inputUnit: 'CL',
+          referenceUnit: 'CL',
+        }),
+      ],
+      { immediate: true },
+    );
+    expect(onUnitChangeWarning).toHaveBeenCalledWith({
+      previousUnit: 'kg',
+      nextUnit: 'cl',
+    });
   });
 
   it('affiche les informations fournisseur au survol du Produit', async () => {
@@ -395,7 +617,7 @@ describe('TechnicalSheetLineEditor', () => {
     })).toBeInTheDocument();
   });
 
-  it('garde l’action Approvisionnement explicable même avant enregistrement', async () => {
+  it('désactive l’approvisionnement tant que la ligne n’est pas enregistrée', async () => {
     const user = userEvent.setup();
     const unsavedLine = {
       ...valuedLine,
@@ -411,20 +633,14 @@ describe('TechnicalSheetLineEditor', () => {
       name: 'Actions pour Carotte râpée',
     });
 
-    expect(actionsButton).toBeEnabled();
     await user.click(actionsButton);
-    await user.click(screen.getByRole('button', {
-      name: /Article fournisseur/,
-    }));
 
-    expect(screen.getByRole('heading', {
-      name: 'Article fournisseur',
-    })).toBeInTheDocument();
-    expect(screen.getByText(
-      'Enregistrez le brouillon avant de modifier l’approvisionnement.',
-    )).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Modifier l’Article fournisseur',
+    })).toBeDisabled();
+    expect(screen.queryByText(/enregistrez d’abord/i))
+      .not.toBeInTheDocument();
   });
-
   it('ouvre le choix Article fournisseur depuis les actions de la ligne', async () => {
     const user = userEvent.setup();
 

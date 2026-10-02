@@ -38,14 +38,16 @@ const resolveProductVariants = async ({
         ),
     ];
 
-    let query = ProductVariant.find({
-        _id: mongoose.trusted({
-            $in: ids.map(toObjectId),
+    let query = ProductVariant.find(
+        mongoose.trusted({
+            _id: mongoose.trusted({
+                $in: ids.map(toObjectId),
+            }),
+            status: PRODUCT_STATUS.ACTIVE,
+            identityActive: true,
+            ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
         }),
-        status: PRODUCT_STATUS.ACTIVE,
-        identityActive: true,
-        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
-    }).select(
+    ).select(
         '_id name referenceUnit yieldPercent status identityActive',
     );
 
@@ -71,25 +73,47 @@ const resolveProductVariants = async ({
     return byId;
 };
 
-const assertCompatibleUnit = (
+const normalizeLineQuantity = ({
+    netQuantity,
     inputUnit,
     referenceUnit,
-) => {
-    const input =
-        PRODUCT_REFERENCE_UNIT_REGISTRY[inputUnit];
+}) => {
+    const sourceUnit =
+        inputUnit ?? referenceUnit;
+    const source =
+        PRODUCT_REFERENCE_UNIT_REGISTRY[sourceUnit];
     const reference =
         PRODUCT_REFERENCE_UNIT_REGISTRY[referenceUnit];
 
     if (
-        !input
+        !source
         || !reference
-        || input.dimension !== reference.dimension
+        || source.dimension !== reference.dimension
     ) {
         throw new AppError(
-            'Conversion impossible entre les unités de la ligne et de la Référence Produit.',
+            'Conversion impossible entre l’unité historique de la ligne et l’unité de référence du Produit.',
             409,
         );
     }
+
+    if (sourceUnit === referenceUnit) {
+        return netQuantity.toString();
+    }
+
+    const converted = convertQuantity({
+        quantity: netQuantity,
+        fromUnit: sourceUnit,
+        toUnit: referenceUnit,
+    });
+
+    if (!converted) {
+        throw new AppError(
+            'La quantité de la ligne ne peut pas être normalisée dans l’unité de référence du Produit.',
+            409,
+        );
+    }
+
+    return fractionToDecimal(converted);
 };
 
 const prepareTechnicalSheetComposition = async ({
@@ -110,14 +134,20 @@ const prepareTechnicalSheetComposition = async ({
         const variant =
             variants.get(productVariantId.toString());
 
-        assertCompatibleUnit(
-            line.inputUnit,
-            variant.referenceUnit,
-        );
+        const normalizedNetQuantity =
+            normalizeLineQuantity({
+                netQuantity:
+                    line.netQuantity,
+                inputUnit:
+                    line.inputUnit,
+                referenceUnit:
+                    variant.referenceUnit,
+            });
 
         const gross =
             calculateGrossQuantity({
-                netQuantity: line.netQuantity,
+                netQuantity:
+                    normalizedNetQuantity,
                 yieldPercent:
                     variant.yieldPercent ?? null,
             });
@@ -130,8 +160,9 @@ const prepareTechnicalSheetComposition = async ({
             kind: line.kind,
             productVariant: variant._id,
             netQuantity:
-                line.netQuantity.toString(),
-            inputUnit: line.inputUnit,
+                normalizedNetQuantity,
+            inputUnit:
+                variant.referenceUnit,
             order: line.order ?? index,
             note: line.note ?? null,
             selectedSupplierArticle:
@@ -149,7 +180,8 @@ const prepareTechnicalSheetComposition = async ({
                     fractionToDecimal(
                         gross.grossQuantity,
                     ),
-                grossUnit: line.inputUnit,
+                grossUnit:
+                    variant.referenceUnit,
             },
             valuation:
                 line.valuation?.toObject?.()

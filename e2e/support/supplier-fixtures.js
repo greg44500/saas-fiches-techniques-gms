@@ -173,6 +173,7 @@ async function provisionSupplierPricingWorkspace() {
       actorId: ownerId,
       data: {
         name: 'Magasin Prix A ' + suffix,
+        defaultTargetMarginBasisPoints: 5000,
       },
     });
 
@@ -183,6 +184,7 @@ async function provisionSupplierPricingWorkspace() {
       actorId: ownerId,
       data: {
         name: 'Magasin Prix B ' + suffix,
+        defaultTargetMarginBasisPoints: 5000,
       },
     });
 

@@ -14,7 +14,7 @@
 
 ## 1. Objectif
 
-M-004 permet de créer, composer, valoriser, valider, historiser et administrer des Fiches techniques dans le contexte économique d'un Dossier.
+M-004 permet de créer, composer, calculer, valider, historiser et administrer des Fiches techniques dans le contexte économique d'un Dossier.
 
 Le module réutilise les contrats précédents :
 
@@ -29,7 +29,7 @@ M-003
 → comment cette Référence Produit est-elle achetée et à quel prix dans ce Dossier ?
 
 M-004
-→ comment composer, valoriser, valider et historiser une Fiche technique ?
+→ comment composer, calculer, valider et historiser une Fiche technique ?
 ```
 
 M-004 ne recrée ni le référentiel Produits ni la résolution des Articles ou Prix applicables.
@@ -122,8 +122,8 @@ L'utilisateur travaille toujours sur la même Fiche :
 ```text
 Ouvrir
 → Modifier
-→ Enregistrer autant de fois que nécessaire
-→ Valoriser / Revaloriser
+→ Enregistrement automatique
+→ Recalcul économique automatique
 → Valider
 ```
 
@@ -158,17 +158,53 @@ L'utilisateur ne gère pas une nomenclature V1/V2/V3. L'interface présente un H
 
 ## 6. Base de production
 
-Chaque brouillon et chaque état validé possède une base de production :
+Chaque brouillon et chaque état validé possède une base de production dénombrable :
 
 ```text
 quantité produite
 +
-unité de production
+unité de production = UNIT
++
+portions par pièce
++
+base de vente = PIECE | PORTION
 ```
 
-Le nombre de portions est facultatif et distinct de la base de production.
+Dans l'interface française, `UNIT` est présenté comme « Pièce ». Une nouvelle Fiche M-004 ne choisit plus arbitrairement une unité de production physique telle que kg ou L.
 
-Les unités devront provenir de registries backend contrôlés.
+`portionsPerProductionUnit` représente le nombre de portions contenues dans UNE pièce fabriquée. Il est distinct de l'ancien champ ambigu `portions`, qui reste supprimé.
+
+Exemples :
+
+```text
+1 quiche de 8 parts
+→ quantité produite = 1
+→ unité = Pièce
+→ portions / pièce = 8
+→ total portions = 8
+
+10 quiches de 8 parts
+→ quantité produite = 10
+→ portions / pièce = 8
+→ total portions = 80
+
+80 quiches individuelles
+→ quantité produite = 80
+→ portions / pièce = 1
+→ total portions = 80
+```
+
+Le total de portions est une donnée dérivée, jamais saisie directement :
+
+```text
+totalPortions
+=
+productionQuantity × portionsPerProductionUnit
+```
+
+Les unités, bases de vente et libellés sélectionnables proviennent exclusivement de registries backend contrôlés. Le frontend ne maintient aucune liste métier parallèle.
+
+Compatibilité : les anciens snapshots peuvent conserver leur ancienne unité de production pour lecture historique. Aucune conversion implicite d'une ancienne unité physique vers « Pièce » n'est autorisée.
 
 ---
 
@@ -189,7 +225,7 @@ Chaque ligne peut conserver notamment :
 
 - ProductVariant ;
 - quantité nette ;
-- unité de saisie ;
+- unité de référence du ProductVariant, dérivée automatiquement ;
 - ordre ;
 - note facultative ;
 - Article fournisseur retenu lorsqu'il est résolu ou choisi ;
@@ -229,13 +265,23 @@ Règles V1 :
 
 ## 9. Unités et conversions
 
-Les conversions sont autorisées uniquement entre unités physiquement compatibles.
-
-Exemples :
+L'unité d'une ligne de Fiche n'est pas une préférence utilisateur. Elle est imposée par `ProductVariant.referenceUnit`.
 
 ```text
-kg ↔ g
-L ↔ mL
+ProductVariant.referenceUnit = KG
+→ ligne affichée et persistée en kg
+
+ProductVariant.referenceUnit = UNIT
+→ ligne affichée et persistée en pièce
+```
+
+Le frontend n'expose donc aucun sélecteur d'unité sur une ligne de composition.
+
+Lorsqu'une ancienne ligne ou un remplacement de Produit implique deux unités physiquement compatibles, la quantité peut être convertie de manière déterministe vers l'unité de référence du nouveau Produit :
+
+```text
+1 kg → Produit référencé en g
+→ 1000 g
 ```
 
 Interdit sans donnée métier dédiée :
@@ -245,9 +291,9 @@ kg ↔ L
 pièce ↔ kg
 ```
 
-Le frontend ne doit jamais inventer une conversion physique.
+Lors d'un remplacement entre dimensions incompatibles, aucune conversion physique n'est inventée : la valeur numérique peut être conservée comme point de départ dans la nouvelle unité, mais l'interface doit avertir l'utilisateur qu'il doit vérifier la quantité.
 
-Les conversions nécessaires aux calculs sont réalisées selon des règles backend déterministes.
+Le backend reste l'autorité de normalisation : toute ligne persistée utilise l'unité de référence du ProductVariant. Une ancienne unité compatible reçue par l'API n'est qu'une donnée de transition permettant de convertir la quantité ; elle n'est jamais conservée comme choix local de la Fiche.
 
 ---
 
@@ -306,7 +352,7 @@ plusieurs Articles exploitables
 
 Il est interdit de sélectionner automatiquement l'Article le moins cher.
 
-Un changement d'Article constitue une modification d'approvisionnement distincte d'une simple revalorisation.
+Un changement d'Article constitue une modification d'approvisionnement distincte d'un simple recalcul tarifaire.
 
 ---
 
@@ -379,10 +425,22 @@ Le passage HT → TTC utilise la TVA de la Fiche.
 
 ## 16. Marge cible
 
-La marge cible représente :
+La marge cible s'applique à la base de vente sélectionnée :
 
 ```text
-(PV HT - coût fabrication HT) / PV HT
+(PV HT - coût de fabrication HT de la base de vente)
+/
+PV HT
+```
+
+Le coût servant au calcul dépend de `saleBasis` :
+
+```text
+PIECE
+→ CF/Pce HT = CF HT / productionQuantity
+
+PORTION
+→ CFU HT = CF HT / totalPortions
 ```
 
 Pour une marge cible strictement inférieure à 100 % :
@@ -395,17 +453,20 @@ coefficient
 Puis :
 
 ```text
-Prix théorique HT
-= Coût fabrication HT × coefficient
+Prix de vente calculé HT
+=
+coût de fabrication HT de la base de vente × coefficient
 ```
 
 Le backend valide les bornes admissibles. Une marge cible rendant le calcul impossible est refusée.
 
 ---
 
-## 17. Prix théorique et prix conseillé
+## 17. Prix de vente calculé et prix conseillé
 
-Le Prix théorique TTC est obtenu après application de la TVA au Prix théorique HT.
+Le Prix de vente calculé TTC est obtenu après application de la TVA au Prix de vente calculé HT. Le Prix conseillé et le Prix retenu sont exprimés selon la base de vente choisie : pièce ou portion.
+
+Les noms techniques historiques `theoreticalPrice...` peuvent subsister transitoirement dans le code tant que l'API et l'UX convergent vers cette terminologie métier sans casser les snapshots historiques.
 
 Règle d'arrondi V1 :
 
@@ -430,11 +491,11 @@ Le Prix conseillé est une aide à la décision, pas un plancher commercial obli
 
 ---
 
-## 18. Prix final et marge réelle
+## 18. Prix retenu et marge réelle
 
-Par défaut, le Prix conseillé TTC est proposé comme Prix final TTC.
+Par défaut, le Prix conseillé TTC est proposé comme Prix de vente retenu TTC.
 
-L'utilisateur autorisé peut ensuite choisir un Prix final :
+L'utilisateur autorisé peut ensuite retenir un prix :
 
 ```text
 supérieur
@@ -442,36 +503,76 @@ supérieur
 ou inférieur au Prix conseillé
 ```
 
-Le Prix final ne peut jamais être inférieur au plancher économique correspondant au coût total.
+Le plancher économique de la base de vente reste calculé et affiché comme seuil de référence, mais il ne bloque pas la saisie ni l'analyse. Un Prix retenu peut être inférieur à ce plancher afin que la Fiche expose explicitement une situation déficitaire au lieu de la masquer.
 
 Pour une Fiche soumise à TVA :
 
 ```text
 plancher TTC
-= Coût de fabrication HT × (1 + TVA)
+=
+coût de fabrication HT de la base de vente × (1 + TVA)
 ```
 
-Après choix du Prix final, le backend recalcule :
+Après choix du Prix retenu, le backend recalcule :
 
-- Prix final HT ;
-- marge réelle en valeur ;
-- marge réelle en pourcentage.
+- Prix retenu HT ;
+- marge réelle en pourcentage ;
+- Marge sur coût de fabrication HT par unité de vente ;
+- Marge sur coût de fabrication HT de la production ;
+- écart à la marge cible en points ;
+- écart à la marge cible en euros par unité de vente et pour la production.
 
-Un Prix final choisi explicitement par l'utilisateur ne doit pas être remplacé silencieusement lors d'une revalorisation.
+La **Marge sur coût de fabrication HT** est définie comme :
 
-Si une nouvelle valorisation rend ce Prix final inférieur au nouveau plancher économique, la validation est refusée jusqu'à correction explicite.
+```text
+Prix retenu HT
+-
+coût de fabrication HT de la base de vente
+```
+
+Cette marge n'est pas un bénéfice comptable : elle ne prétend pas intégrer toutes les charges de l'entreprise.
+
+Lecture métier :
+
+- marge sur coût de fabrication positive et cible atteinte ou dépassée → diagnostic positif ;
+- marge sur coût de fabrication positive mais cible non atteinte → avertissement ;
+- marge sur coût de fabrication négative → diagnostic déficitaire ;
+- le plancher économique reste visible pour expliquer le seuil de couverture du coût.
+
+Un Prix retenu choisi explicitement par l'utilisateur ne doit pas être remplacé silencieusement lors d'un recalcul automatique.
+
+---
+
+## 18 bis. TVA de vente
+
+La TVA de vente V1 est un choix contrôlé par le backend :
+
+```text
+5,5 %
+10 %
+```
+
+Le taux par défaut d'une nouvelle Fiche est `5,5 %`.
+
+Le frontend ne propose pas de saisie libre de TVA et consomme les valeurs autorisées et le défaut depuis les metadata M-004.
 
 ---
 
 ## 19. Marge cible par défaut du Dossier
 
-Chaque Dossier porte un paramètre métier :
+Chaque Dossier porte obligatoirement un paramètre métier :
 
 ```text
 taux de marge cible par défaut
 ```
 
-Ce paramètre sert uniquement à initialiser les nouvelles Fiches.
+Ce paramètre est obligatoire à la création d'un nouveau Dossier.
+
+Pour un Dossier historique dont la valeur est absente, la création d'une nouvelle Fiche reste possible à condition de saisir explicitement une marge cible propre à cette Fiche. Cette saisie ne modifie pas silencieusement le Dossier.
+
+La copie vers un Dossier cible continue en revanche d'exiger une marge par défaut sur ce Dossier cible, car aucune étape de saisie interactive n'existe dans ce parcours.
+
+Lorsqu'elle existe, la marge du Dossier initialise la marge cible propre aux nouvelles Fiches.
 
 Exemple :
 
@@ -515,14 +616,19 @@ Avant validation, le backend revérifie notamment :
 - fraîcheur de la valorisation ;
 - concurrence.
 
-Si un prix M-003 a changé depuis la valorisation :
+La valorisation du brouillon est recalculée automatiquement après l'enregistrement d'une modification de paramètres, de composition ou d'Article fournisseur.
+
+Si un prix M-003 a changé sans modification du brouillon, le backend le détecte au moment de la validation :
 
 ```text
-validation refusée
-→ revalorisation explicite obligatoire
+première tentative de validation
+→ calculs du brouillon actualisés
+→ validation refusée une fois
+→ vérification humaine
+→ nouvelle confirmation de validation
 ```
 
-Aucune modification économique silencieuse n'est admise.
+L'historique validé n'est jamais modifié automatiquement. Un Prix retenu manuel reste protégé et doit être corrigé explicitement s'il devient incompatible avec le plancher économique.
 
 ---
 
@@ -536,8 +642,11 @@ Il conserve au minimum, selon pertinence :
 
 - nom ;
 - description ;
-- base de production ;
-- portions ;
+- quantité produite ;
+- unité de production ;
+- portions par pièce ;
+- total de portions dérivable ;
+- base de vente ;
 - TVA ;
 - marge cible ;
 - coûts agrégés ;
@@ -685,7 +794,7 @@ Une suppression ne détruit jamais individuellement un ancien état validé.
 
 Une Fiche en corbeille reste comptée dans le quota tant qu'elle est restaurable.
 
-La restauration remet la Fiche dans son dernier état métier pertinent antérieur à la suppression, sans revalorisation ni validation silencieuse.
+La restauration remet la Fiche dans son dernier état métier pertinent antérieur à la suppression, sans recalcul économique ni validation silencieuse.
 
 La purge définitive détruit la Fiche complète et libère alors seulement son unité de capacité.
 
@@ -754,7 +863,6 @@ Notamment :
 - nom ;
 - description ;
 - base de production ;
-- portions ;
 - composition ;
 - ProductVariants ;
 - quantités nettes ;
@@ -849,7 +957,7 @@ Matrice fonctionnelle validée :
 | Modifier identité/base | Oui | Oui | Oui | Non | Non |
 | Modifier composition | Oui | Oui | Oui | Non | Non |
 | Choisir/changer l'Article fournisseur | Oui | Oui | Oui | Oui | Non |
-| Valoriser / revaloriser | Oui | Oui | Oui | Oui | Non |
+| Modifier les paramètres économiques | Oui | Oui | Oui | Oui | Non |
 | Valider | Oui | Oui | Non | Non | Non |
 | Archiver | Oui | Oui | Non | Non | Non |
 | Réactiver | Oui | Oui | Non | Non | Non |
@@ -860,7 +968,7 @@ Matrice fonctionnelle validée :
 | Modifier la durée de corbeille du Workspace | Oui | Non | Non | Non | Non |
 | Purger définitivement | Oui | Non | Non | Non | Non |
 
-Un Économe/Acheteur peut modifier l'Article retenu et revaloriser sans obtenir le droit de modifier la recette.
+Un Économe/Acheteur peut modifier l'Article retenu ; le recalcul correspondant est automatique sans lui donner le droit de modifier la recette.
 
 Un Contributeur peut résoudre une ambiguïté d'Article nécessaire à la valorisation sans obtenir les permissions d'administration M-003.
 
@@ -882,7 +990,7 @@ Indépendamment :
 
 - de son statut ;
 - de son nombre de sauvegardes ;
-- de son nombre de revalorisations ;
+- de son nombre de recalculs économiques ;
 - de son nombre de validations ;
 - de la taille de son historique.
 
@@ -893,7 +1001,7 @@ nouvelle Fiche = +1
 copie = +1
 
 modifier = +0
-revaloriser = +0
+recalculer = +0
 valider à nouveau = +0
 historique supplémentaire = +0
 archiver = +0
@@ -917,7 +1025,7 @@ Les actions normales ne sont pas séparées en capabilities commerciales :
 
 - créer ;
 - modifier ;
-- valoriser ;
+- calculer automatiquement ;
 - valider ;
 - archiver ;
 - historiser ;
@@ -969,7 +1077,7 @@ Restent autorisées selon RBAC :
 - consultation ;
 - modification d'une Fiche existante ;
 - valorisation ;
-- revalorisation ;
+- recalcul automatique ;
 - validation ;
 - archivage ;
 - suppression vers corbeille ;
@@ -1020,7 +1128,7 @@ Les actions significatives doivent être auditables, notamment :
 - modification ;
 - changement de composition ;
 - changement d'Article ;
-- valorisation / revalorisation ;
+- recalcul économique automatique ;
 - validation ;
 - archivage ;
 - réactivation ;
@@ -1038,7 +1146,9 @@ L'AuditLog générique ne remplace pas l'historique fonctionnel validé de la Fi
 
 M-004 s'intègre dans la vraie page de travail du Dossier M-001.
 
-Le shell Dossier conserve les outils de contexte utiles pendant la navigation entre les modules. En particulier, lorsqu'un utilisateur possède l'autorité M-003 correspondante, la vérification du Prix applicable reste accessible depuis l'onglet Fiches techniques afin d'aider à choisir ou contrôler un Article fournisseur pendant la composition.
+Le shell Dossier conserve les outils de contexte utiles sur les pages de module et les listes. Sur la page détaillée d'une Fiche, ces cartes ne sont pas répétées au-dessus du poste de travail : le contexte magasin est accessible à la demande dans Infos dossier.
+
+Lorsqu'un utilisateur possède l'autorité M-003 correspondante, ce drawer expose une vue Prix applicable afin de contrôler l'Article et le Prix que M-003 résoudrait pour le Dossier courant. M-004 ne duplique ni la politique ni les libellés de source de Prix de M-003.
 
 Surfaces fonctionnelles :
 
@@ -1048,7 +1158,7 @@ Surfaces fonctionnelles :
 - édition ;
 - composition ;
 - valorisation ;
-- revalorisation ;
+- recalcul automatique ;
 - validation ;
 - historique ;
 - archivage ;
@@ -1220,10 +1330,10 @@ M-004 Fiche technique est fonctionnellement acceptable lorsque :
 7. plusieurs Articles exigent un choix humain ;
 8. un Prix absent n'est jamais transformé en 0 ;
 9. CM, %CM, Économat et coût de fabrication sont calculés séparément ;
-10. TVA, marge cible, prix théorique, conseillé et final sont correctement calculés ;
-11. le Prix final peut différer du conseillé sans passer sous le plancher ;
-12. la marge réelle est recalculée ;
-13. une valorisation devenue obsolète bloque la validation ;
+10. TVA, marge cible, Prix de vente calculé, Prix conseillé et Prix retenu sont correctement calculés ;
+11. le Prix retenu peut différer du conseillé et une valeur sous le plancher reste analysable comme situation déficitaire ;
+12. la marge réelle, la Marge sur coût de fabrication et les écarts à la cible sont recalculés ;
+13. un changement tarifaire détecté avant validation actualise le brouillon et impose une nouvelle confirmation ;
 14. un état validé est immuable et historiquement explicable ;
 15. les validations successives n'ajoutent pas de consommation de quota ;
 16. la copie A → B ne transporte aucune donnée financière du Dossier A ;
@@ -1274,7 +1384,7 @@ Prévoir notamment :
 - snapshot historique ;
 - immutabilité historique ;
 - Prix modifié avant validation ;
-- revalorisation ;
+- recalcul automatique ;
 - changement d'Article ;
 - copie inter-Dossier ;
 - prix cible ;
@@ -1300,7 +1410,7 @@ Prévoir notamment :
 - warnings ;
 - validation ;
 - historique ;
-- revalorisation ;
+- recalcul automatique ;
 - archivage ;
 - copie ;
 - corbeille ;
@@ -1314,14 +1424,15 @@ Prévoir notamment :
 ### E2E critiques
 
 ```text
-créer → composer → valoriser → valider
+créer avec paramètres → composer → calcul automatique → valider
 
 ambiguïté Article
 → choix humain
 
 Prix modifié
-→ validation refusée
-→ revalorisation
+→ tentative de validation
+→ calculs actualisés automatiquement
+→ nouvelle confirmation
 → validation
 
 isolation de deux Dossiers

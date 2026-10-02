@@ -32,7 +32,34 @@ describe('DossierFormDialog', () => {
     autocomplete.dismiss.mockReset();
   });
 
-  it('crée un payload nom seul et efface les champs facultatifs avec null', async () => {
+  it('désactive la création tant que la marge cible obligatoire manque', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DossierFormDialog
+        onClose={vi.fn()}
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        open
+      />,
+    );
+
+    const createButton = screen.getByRole('button', {
+      name: 'Créer le dossier',
+    });
+
+    expect(createButton).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Nom'), 'Magasin Nantes');
+    expect(createButton).toBeDisabled();
+
+    await user.type(
+      screen.getByLabelText('Marge cible par défaut (%)'),
+      '30',
+    );
+    expect(createButton).toBeEnabled();
+  });
+
+  it('crée un payload avec nom et marge cible et efface les champs facultatifs', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 
@@ -45,6 +72,10 @@ describe('DossierFormDialog', () => {
     );
 
     await user.type(screen.getByLabelText('Nom'), 'Magasin Nantes');
+    await user.type(
+      screen.getByLabelText('Marge cible par défaut (%)'),
+      '30',
+    );
     await user.click(screen.getByRole('button', { name: 'Créer le dossier' }));
 
     await waitFor(() => {
@@ -55,6 +86,7 @@ describe('DossierFormDialog', () => {
         documentEmail: null,
         phone: null,
         contactName: null,
+        defaultTargetMarginBasisPoints: 3000,
       });
     });
   });
@@ -101,6 +133,10 @@ describe('DossierFormDialog', () => {
     );
 
     await user.type(screen.getByLabelText('Nom'), 'Magasin Nantes');
+    await user.type(
+      screen.getByLabelText('Marge cible par défaut (%)'),
+      '30',
+    );
     await user.click(screen.getByRole('button', { name: 'Créer le dossier' }));
 
     expect(

@@ -18,19 +18,28 @@ import {
 
 
 describe('dossier request validation', () => {
-    it('accepte une création avec le seul nom métier obligatoire', () => {
+    it('exige le nom et la marge cible par défaut à la création', () => {
         expect(
             createDossierSchema.parse({
                 name: 'Magasin Nantes',
+                defaultTargetMarginBasisPoints: 3000,
             }),
         ).toEqual({
             name: 'Magasin Nantes',
+            defaultTargetMarginBasisPoints: 3000,
         });
+
+        expect(
+            createDossierSchema.safeParse({
+                name: 'Magasin Nantes',
+            }).success,
+        ).toBe(false);
     });
 
     it('refuse les champs système fournis par le client', () => {
         const result = createDossierSchema.safeParse({
             name: 'Magasin Nantes',
+            defaultTargetMarginBasisPoints: 3000,
             status: 'ACTIVE',
         });
 

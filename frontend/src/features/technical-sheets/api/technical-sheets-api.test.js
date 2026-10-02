@@ -95,6 +95,9 @@ describe('technicalSheetsApi', () => {
           dossierId: 'dossier-1',
           name: 'Bœuf bourguignon',
           description: null,
+          productionQuantity: '10',
+          productionUnit: 'UNIT',
+          vatRateBasisPoints: 1000,
         }),
     ).toEqual({
       url:
@@ -105,6 +108,9 @@ describe('technicalSheetsApi', () => {
       body: {
         name: 'Bœuf bourguignon',
         description: null,
+        productionQuantity: '10',
+        productionUnit: 'UNIT',
+        vatRateBasisPoints: 1000,
       },
     });
 

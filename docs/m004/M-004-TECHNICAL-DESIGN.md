@@ -96,6 +96,49 @@ createdAt / updatedAt
 
 ---
 
+## 3 bis. Paramètres obligatoires à l'entrée dans le poste de travail
+
+Un nouveau Dossier doit posséder une marge cible par défaut. Pour un Dossier historique sans marge, la création reste possible si l'utilisateur renseigne une marge cible propre à la nouvelle Fiche. Une nouvelle Fiche est créée uniquement lorsque les données suivantes sont disponibles :
+
+~~~text
+nom
+quantité produite
+unité de production = UNIT (UI : Pièce)
+portions par pièce
+base de vente = PIECE | PORTION
+TVA
+marge cible héritée du Dossier ou saisie explicitement pour la Fiche si le Dossier historique n'en possède pas
+~~~
+
+Le modèle sépare explicitement pièce fabriquée et portion :
+
+~~~text
+totalPortions
+= productionQuantity × portionsPerProductionUnit
+
+CM/Pce HT
+= materialCostHt / productionQuantity
+
+CF/Pce HT
+= manufacturingCostHt / productionQuantity
+
+CMU HT
+= materialCostHt / totalPortions
+
+CFU HT
+= manufacturingCostHt / totalPortions
+~~~
+
+La base de vente décide du coût utilisé pour le Prix de vente calculé, le plancher et la marge réelle : coût par pièce pour `PIECE`, coût par portion pour `PORTION`.
+
+La TVA V1 est contrôlée par registry backend : `550` (5,5 %) ou `1000` (10 %), avec `550` par défaut. Le frontend ne maintient aucune liste TVA parallèle.
+
+Les listes de production, de vente, de TVA et les définitions des indicateurs économiques sont exposées par les metadata backend. Le frontend ne duplique pas ces registries.
+
+Compatibilité des données existantes : la migration `migration:m004-production-quantity` reprend l'ancienne valeur `portions` uniquement lorsque `productionQuantity` est absente, puis supprime le champ obsolète des brouillons et snapshots historiques. Elle n'invente aucune valeur lorsque les deux champs sont absents.
+
+---
+
 ## 4. Modèle TechnicalSheetDraft
 
 Rôle : unique état de travail mutable d'une Fiche.
@@ -110,10 +153,10 @@ technicalSheet         ObjectId unique
 revision               integer >= 0
 
 productionQuantity     Decimal128|null
-productionUnit         unité M-002|null
-portions               Decimal128|null
-
-vatRateBasisPoints     integer|null
+productionUnit         UNIT|null
+portionsPerProductionUnit Decimal128|null
+saleBasis              PIECE|PORTION|null
+vatRateBasisPoints     550|1000|null
 targetMarginBasisPoints integer|null
 
 finalPriceTtcMinor     integer|null
@@ -136,8 +179,8 @@ createdAt / updatedAt
 - `revision` permet de refuser les écrasements concurrents ;
 - Decimal128 est conservé pour les quantités et calculs non monétaires exacts ;
 - les taux en basis points évitent les flottants pour TVA et marge ;
-- le Prix final TTC est stockable en unité monétaire mineure ;
-- `finalPriceMode` permet de préserver explicitement un choix utilisateur lors d'une revalorisation.
+- le Prix retenu TTC est stockable en unité monétaire mineure ;
+- `finalPriceMode` permet de préserver explicitement un choix utilisateur lors des recalculs automatiques.
 
 Aucune valeur de TVA ou de marge cible n'est inventée par la conception.
 
@@ -152,7 +195,7 @@ lineId                  ObjectId de sous-document
 kind                    INGREDIENT | ECONOMAT
 productVariant          ObjectId ProductVariant
 netQuantity             Decimal128
-inputUnit               unité M-002
+inputUnit               unité de référence M-002 normalisée par le backend
 order                   integer
 note                    String|null
 
@@ -180,6 +223,26 @@ valuation               {
 ~~~
 
 Les libellés Produit/Fournisseur/Article ne constituent pas la source de vérité du brouillon : ils sont résolus pour l'affichage. Les états validés, eux, en conservent un snapshot historique.
+
+Invariant d'unité de ligne :
+
+~~~text
+UI
+→ affiche ProductVariant.referenceUnit
+→ aucun sélecteur d'unité de ligne
+
+API
+→ peut accepter une ancienne inputUnit compatible pour transition
+
+service de composition
+→ convertit la quantité si nécessaire
+→ persiste toujours inputUnit = ProductVariant.referenceUnit
+→ persiste grossUnit = ProductVariant.referenceUnit
+~~~
+
+Un remplacement de Produit conserve les autres données de la ligne autant que possible. Si l'ancienne et la nouvelle unité appartiennent à la même dimension, la quantité est convertie. Si les dimensions diffèrent, aucune conversion n'est inventée et l'UI demande de vérifier la quantité.
+
+Compatibilité : les brouillons historiques qui stockent encore une unité compatible différente sont sérialisés dans l'unité de référence pour l'affichage puis normalisés en persistance au prochain enregistrement. Les snapshots VALIDATED restent immuables ; lorsqu'ils sont repris en nouveau DRAFT ou copiés, le service de composition normalise la quantité vers l'unité de référence courante du ProductVariant.
 
 `materialCostSharePercent` est une donnée financière dérivée de la valorisation :
 
@@ -219,7 +282,8 @@ sheetSnapshot           {
     description
     productionQuantity
     productionUnit
-    portions
+    portionsPerProductionUnit
+    saleBasis
     vatRateBasisPoints
     targetMarginBasisPoints
 }
@@ -229,7 +293,7 @@ linesSnapshot[]         {
     productVariantId
     productVariantName
     netQuantity
-    inputUnit
+    inputUnit           snapshot de l'unité de référence utilisée
     yieldPercentUsed
     grossQuantity
     grossUnit
@@ -252,6 +316,14 @@ economicSnapshot        {
     materialCostHt
     economatCostHt
     manufacturingCostHt
+    materialCostPerProductionUnitHt
+    economatCostPerProductionUnitHt
+    manufacturingCostPerProductionUnitHt
+    totalPortions
+    materialCostPerPortionHt
+    economatCostPerPortionHt
+    manufacturingCostPerPortionHt
+    saleBasis
     theoreticalPriceHt
     theoreticalPriceTtc
     advisedPriceTtc
@@ -273,6 +345,40 @@ createdAt
 - suppression uniquement dans le cadre de la purge de la Fiche entière.
 
 Le numéro de version n'est pas un concept UX. L'historique est ordonné par `validatedAt` puis `_id`.
+
+---
+
+## 6 bis. Sécurité des filtres Mongoose et autorité backend
+
+`mongoose.set('sanitizeFilter', true)` reste activé globalement. Toute requête M-004 construite avec un filtre applicatif passe explicitement par `mongoose.trusted(...)`; les objets contenant des opérateurs MongoDB contrôlés par l'application (`$in`, `$ne`, `$gt`, `$lte`, etc.) sont eux aussi explicitement approuvés.
+
+Cette règle ne doit jamais être contournée pour simplifier une requête ou un test.
+
+Les valeurs métier sélectionnables ont le backend comme autorité. RTK Query consomme les metadata ; React ne maintient pas de liste métier divergente.
+
+Contrats exposés au frontend :
+
+~~~text
+GET .../technical-sheets/metadata
+→ productionUnits
+→ saleBases
+→ finalPriceModeDefinitions
+→ statusDefinitions
+→ valuationStatusDefinitions
+→ lineValuationStatusDefinitions
+→ lineKindDefinitions
+→ pricingSources
+→ defaults.productSearchScope
+
+GET .../products/metadata
+→ referenceUnits
+→ productSearchScopes
+→ defaults.activeWorkspaceProductStatus
+~~~
+
+Les définitions backend peuvent porter les indicateurs UX nécessaires : automaticValuationEligible, openPricingEligible, showWorkspaceFavorite, ordre et présentation des types de lignes. Le frontend consomme ces propriétés au lieu de comparer des listes locales de valeurs techniques.
+
+PRODUCT_REFERENCE_UNIT_REGISTRY reste l'autorité M-002 des unités des lignes. Le libellé UNIT utilisé dans la composition est fourni par ce registre (PCE). L'unité de production M-004 est un contrat distinct affiché « Pièce » via TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY.
 
 ---
 
@@ -434,10 +540,10 @@ Le draft conserve ensuite un `valuationFingerprint` global dérivé de :
 1. recharger ProductVariants et Articles ;
 2. relancer la résolution M-003 des Prix applicables ;
 3. recalculer le fingerprint ;
-4. refuser avec `409` si le fingerprint économique a changé ;
-5. exiger une revalorisation explicite.
+4. si le fingerprint économique a changé, persister la valorisation actualisée dans le brouillon et refuser cette tentative avec `409` ;
+5. demander une nouvelle confirmation après vérification humaine.
 
-Le frontend ne décide jamais de la fraîcheur.
+Le frontend ne décide jamais de la fraîcheur et n'expose plus d'action manuelle « Valoriser / Revaloriser » dans le parcours normal.
 
 ---
 
@@ -1022,14 +1128,24 @@ Réutiliser :
 Sections logiques :
 
 - identité ;
-- Indicateurs de production ;
+- Paramètres de production ;
+- Résultats économiques ;
 - Ingrédients ;
 - Économat ;
-- valorisation ;
 - prix/marge ;
 - historique.
 
-La QA visuelle M-004 retient un poste de travail dense : les Indicateurs, sources Produit, état d'autosave et actions globales restent dans la zone sticky ; Composition reste dans le flux ; Informations générales et Historique partagent le drawer droit via deux onglets.
+La stabilisation UX M-004 retient un poste de travail dense mais non transformé en dashboard : le titre de la Fiche et ses badges remplacent le libellé générique « Paramètres » dans la zone sticky ; les actions globales, les paramètres compacts Production/Vente, les sources Produit et l'état d'autosave restent accessibles pendant le scroll de la Composition.
+
+Le poste de travail conserve uniquement cinq garde-fous économiques immédiats : CF HT, CMU HT, CFU HT, Prix retenu TTC et marge réelle. Les détails sont sortis du flux principal dans un EntityDetailsDrawer Analyse de gestion organisé en Synthèse | Coûts | Prix & marge | Historique.
+
+L'analyse expose également la Marge sur coût de fabrication HT par unité de vente et sur l'ensemble de la production, ainsi que l'écart à la cible en points et en euros. Une marge positive sous la cible est un warning ; une marge négative est destructive ; une cible atteinte ou dépassée est success. Les graphiques descriptifs utilisent les tokens de palette du Design System, et non des gris codés localement.
+
+Le choix TVA doit utiliser une primitive générique de sélection segmentée issue du Core. Cette primitive Design System n'est pas implémentée durablement dans le module métier : elle doit être ajoutée au Core, versionnée, puis intégrée avant branchement M-004.
+
+Le contexte Dossier n'est plus répété en grosses cartes au-dessus d'une Fiche détaillée. Il est accessible à la demande via un second EntityDetailsDrawer Infos dossier avec Identité | Prix applicable. Un seul drawer droit est ouvert à la fois.
+
+Le nom et la description de la Fiche sont modifiés dans un dialogue compact distinct. Le commentaire historique de validation est saisi dans le dialogue de validation, au moment où l'utilisateur confirme la création de l'état immuable.
 
 ### État serveur
 
@@ -1057,7 +1173,9 @@ Le poste de travail M-004 utilise un autosave frontend du brouillon sans modifie
 - les modifications saisies pendant une requête restent locales et sont rejouées ensuite avec la nouvelle `TechnicalSheetDraft.revision` renvoyée par le serveur ;
 - un échec laisse le brouillon local non enregistré, l'affiche explicitement et permet une nouvelle tentative ;
 - les opérations serveur dépendantes du brouillon restent bloquées tant qu'une sauvegarde est en attente ou en échec ;
-- l'autosave ne déclenche jamais automatiquement Valoriser/Revaloriser ; le backend reste l'autorité économique.
+- chaque sauvegarde persistée recalcule automatiquement la valorisation du brouillon lorsque sa composition contient des lignes ;
+- le backend reste l'unique autorité économique ;
+- un brouillon historique `NOT_VALUED` ou `STALE` complet est recalculé automatiquement au chargement pour compatibilité.
 
 Le contrôle optimiste décrit en section 11 reste donc inchangé : l'autosave sérialise les écritures côté client au lieu de contourner `expectedRevision`.
 
@@ -1108,10 +1226,11 @@ Pour un `409` de concurrence :
 - proposer de recharger l'état courant ;
 - conserver localement les données non envoyées seulement si le composant peut le faire sans ambiguïté.
 
-Pour un `409` de prix obsolète :
+Pour un `409` dû à un prix devenu différent :
 
-- message distinct ;
-- action principale « Revaloriser ».
+- le backend actualise d'abord le brouillon ;
+- le frontend affiche un message distinct ;
+- l'utilisateur vérifie les nouveaux résultats puis confirme à nouveau la validation.
 
 Pour `SUPPLIER_ARTICLE_SELECTION_REQUIRED` :
 
@@ -1170,9 +1289,9 @@ Au minimum :
 - composition ;
 - choix Article ambigu ;
 - Prix absent ;
-- valorisation ;
-- revalorisation ;
-- prix final manuel ;
+- calcul économique automatique ;
+- actualisation automatique après changement ;
+- Prix retenu manuel ;
 - validation ;
 - historique ;
 - lifecycle ;
@@ -1191,13 +1310,14 @@ Au minimum :
 Conserver le périmètre contractuel :
 
 ~~~text
-créer → composer → valoriser → valider
+créer avec paramètres → composer → calcul automatique → valider
 
 ambiguïté Article → choix humain
 
 prix modifié
-→ validation refusée
-→ revalorisation
+→ tentative de validation
+→ calculs actualisés
+→ nouvelle confirmation
 → validation
 
 Dossier A ≠ Dossier B

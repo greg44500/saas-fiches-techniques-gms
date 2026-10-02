@@ -58,6 +58,39 @@ const SUPPLIER_PRICING_POLICY_MODE = Object.freeze({
     INVOICED_PRICE: 'INVOICED_PRICE',
 });
 
+const SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY = Object.freeze({
+    SUPPLIER_TARIFF: Object.freeze({
+        value: 'SUPPLIER_TARIFF',
+        label: 'Tarif fournisseur',
+    }),
+    NEGOTIATED_PRICE: Object.freeze({
+        value: 'NEGOTIATED_PRICE',
+        label: 'Tarif négocié',
+    }),
+    INVOICED_PRICE: Object.freeze({
+        value: 'INVOICED_PRICE',
+        label: 'Prix facturé',
+    }),
+    INDICATIVE_DOSSIER: Object.freeze({
+        value: 'INDICATIVE_DOSSIER',
+        label: 'Prix indicatif Dossier',
+    }),
+    INDICATIVE_WORKSPACE: Object.freeze({
+        value: 'INDICATIVE_WORKSPACE',
+        label: 'Prix indicatif espace de travail',
+    }),
+});
+
+const SUPPLIER_APPLICABLE_PRICE_SOURCE = Object.freeze(
+    Object.fromEntries(
+        Object.entries(
+            SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY,
+        ).map(
+            ([key, definition]) => [key, definition.value],
+        ),
+    ),
+);
+
 const SUPPLIER_PRICE_BASIS = Object.freeze({
     PACKAGE: 'PACKAGE',
     ...PRODUCT_REFERENCE_UNIT,
@@ -110,6 +143,8 @@ export {
     SUPPLIER_CATALOG_EVENT_ACTION,
     SUPPLIER_CATALOG_EVENT_ENTITY_TYPE,
     SUPPLIER_CATALOG_IMPORT_STATUS,
+    SUPPLIER_APPLICABLE_PRICE_SOURCE,
+    SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY,
     SUPPLIER_CATALOG_MATCH_STATUS,
     SUPPLIER_INVOICED_PRICE_FRESHNESS_MONTHS,
     SUPPLIER_PRICE_BASIS,

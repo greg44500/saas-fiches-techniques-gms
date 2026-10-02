@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  useGetSupplierPricingMetadataQuery,
   useLazyGetApplicableSupplierPriceQuery,
   useListDossierSupplierReferencesQuery,
   useListSupplierArticlesQuery,
@@ -33,14 +34,10 @@ function normalizeArticle(article) {
   };
 }
 
-function getPricingSourceLabel(source) {
-  return {
-    SUPPLIER_TARIFF: 'Tarif fournisseur',
-    NEGOTIATED_PRICE: 'Tarif négocié',
-    INVOICED_PRICE: 'Prix facturé',
-    INDICATIVE_DOSSIER: 'Prix indicatif Dossier',
-    INDICATIVE_WORKSPACE: 'Prix indicatif espace de travail',
-  }[source] ?? 'Source non disponible';
+function getPricingSourceLabel(definitions, source) {
+  return (definitions ?? [])
+    .find((definition) => definition.value === source)
+    ?.label ?? 'Source non disponible';
 }
 
 function DossierApplicablePriceCard({
@@ -49,6 +46,15 @@ function DossierApplicablePriceCard({
 }) {
   const { can } = useWorkspaceContext();
   const [selectedArticleId, setSelectedArticleId] = useState(NONE);
+  const pricingMetadataQuery =
+    useGetSupplierPricingMetadataQuery(
+      { workspaceId, dossierId },
+      {
+        skip: !can(
+          SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
+        ),
+      },
+    );
 
   const referencesQuery = useListDossierSupplierReferencesQuery(
     { workspaceId, dossierId },
@@ -171,7 +177,11 @@ function DossierApplicablePriceCard({
                 : 'Aucun prix applicable'}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Source : {getPricingSourceLabel(applicable.resolvedSource)}
+              Source : {getPricingSourceLabel(
+                pricingMetadataQuery.data
+                  ?.applicablePriceSources,
+                applicable.resolvedSource,
+              )}
             </p>
           </>
         )}

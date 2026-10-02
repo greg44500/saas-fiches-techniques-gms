@@ -66,6 +66,7 @@ describe('M-001 dossier HTTP contract', () => {
             .set(ownerHeaders)
             .send({
                 name: 'Magasin Nantes',
+                defaultTargetMarginBasisPoints: 3000,
             });
 
         expect(createResponse.status).toBe(201);
@@ -147,6 +148,7 @@ describe('M-001 dossier HTTP contract', () => {
             .set(ownerHeaders)
             .send({
                 name: 'Dossier privé',
+                defaultTargetMarginBasisPoints: 3000,
             });
 
         const dossierId =
@@ -183,6 +185,7 @@ describe('M-001 dossier HTTP contract', () => {
                 )
                 .send({
                     name: 'Interdit',
+                    defaultTargetMarginBasisPoints: 3000,
                 });
 
         expect(forbiddenCreate.status).toBe(403);

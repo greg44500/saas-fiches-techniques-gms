@@ -65,11 +65,32 @@ const createOwnerDossier = (name = 'Magasin Nantes') =>
         actorId: ownerContext.owner._id,
         data: {
             name,
+            defaultTargetMarginBasisPoints:
+                3000,
         },
     });
 
 
 describe('M-001 dossier services', () => {
+    it('refuse une création sans marge cible par défaut', async () => {
+        await expect(
+            createDossier({
+                workspaceId:
+                    ownerContext.workspace._id,
+                membershipId:
+                    ownerContext.membership._id,
+                isOwner: true,
+                actorId:
+                    ownerContext.owner._id,
+                data: {
+                    name: 'Dossier sans marge',
+                },
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 400,
+        });
+    });
+
     it('crée un Dossier Owner sans faux grant et journalise la création', async () => {
         const dossier = await createOwnerDossier();
 
@@ -108,6 +129,8 @@ describe('M-001 dossier services', () => {
             actorId: member.user._id,
             data: {
                 name: 'Magasin Saint-Nazaire',
+                defaultTargetMarginBasisPoints:
+                    3000,
             },
         });
 

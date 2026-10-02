@@ -159,6 +159,8 @@ ACTIVE
 
 Le client ne choisit pas le statut initial.
 
+Extension M-004 active sur le produit : le body de création doit aussi fournir `defaultTargetMarginBasisPoints` (entier de 0 à 9999). Cette valeur initialise `technicalSheetSettings.defaultTargetMarginBasisPoints` sur le Dossier et n'est pas modifiable via le PATCH général M-001 ; son endpoint métier M-004 reste l'autorité pour les modifications ultérieures.
+
 Workspace Owner :
 
 ```text

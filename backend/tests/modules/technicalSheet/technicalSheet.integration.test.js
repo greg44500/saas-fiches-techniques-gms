@@ -61,9 +61,6 @@ import {
     validateTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheetValidation.service.js';
 import {
-    valuateTechnicalSheet,
-} from '../../../modules/technicalSheet/technicalSheetValuation.service.js';
-import {
     getUsageMetricValue,
 } from '../../../modules/usageMetric/usageMetric.service.js';
 
@@ -85,6 +82,10 @@ beforeEach(async () => {
             owner.workspace._id,
         name:
             'Magasin M004',
+        technicalSheetSettings: {
+            defaultTargetMarginBasisPoints:
+                5000,
+        },
         statusChangedBy:
             owner.owner._id,
         createdBy:
@@ -206,6 +207,12 @@ const createValuedDraft = async ({
                     'Purée de carottes',
                 description:
                     'Test M-004',
+                productionQuantity:
+                    '10',
+                productionUnit:
+                    'UNIT',
+                vatRateBasisPoints:
+                    1000,
             },
         });
 
@@ -227,9 +234,7 @@ const createValuedDraft = async ({
                 productionQuantity:
                     '10',
                 productionUnit:
-                    'KG',
-                portions:
-                    '20',
+                    'UNIT',
                 vatRateBasisPoints:
                     1000,
                 targetMarginBasisPoints:
@@ -255,29 +260,199 @@ const createValuedDraft = async ({
             },
         });
 
-    const valued =
-        await valuateTechnicalSheet({
-            workspaceId:
-                owner.workspace._id,
-            dossierId:
-                dossier._id,
-            technicalSheetId:
-                created.sheet.id,
-            actorId:
-                owner.owner._id,
-            expectedRevision:
-                saved.revision,
-            atDate,
-        });
-
     return {
         created,
         saved,
-        valued,
+        valued: {
+            draft: saved,
+        },
     };
 };
 
 describe('M-004 services Fiches techniques', () => {
+    it('refuse une création sans paramètres de production', async () => {
+        await expect(
+            createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche incomplète M004',
+                },
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 400,
+        });
+    });
+
+    it('autorise un Dossier historique sans marge si la Fiche fournit sa propre marge', async () => {
+        const legacyDossier =
+            await Dossier.create({
+                workspace:
+                    owner.workspace._id,
+                name:
+                    'Magasin historique M004',
+                statusChangedBy:
+                    owner.owner._id,
+                createdBy:
+                    owner.owner._id,
+                updatedBy:
+                    owner.owner._id,
+            });
+
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    legacyDossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche avec marge propre',
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                    targetMarginBasisPoints:
+                        3000,
+                },
+            });
+
+        expect(
+            created.draft.targetMarginBasisPoints,
+        ).toBe(3000);
+    });
+
+    it('conserve une TVA historique hors registre sans autoriser un nouveau taux arbitraire', async () => {
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche TVA historique',
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            });
+
+        await TechnicalSheetDraft.updateOne(
+            { _id: created.draft.id },
+            {
+                $set: {
+                    vatRateBasisPoints: 2000,
+                },
+            },
+        );
+
+        const preserved =
+            await saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    created.draft.revision,
+                canManageSourcing:
+                    true,
+                canManageValuation:
+                    true,
+                data: {
+                    vatRateBasisPoints:
+                        2000,
+                },
+            });
+
+        expect(
+            preserved.vatRateBasisPoints,
+        ).toBe(2000);
+
+        await expect(
+            saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    preserved.revision,
+                canManageSourcing:
+                    true,
+                canManageValuation:
+                    true,
+                data: {
+                    vatRateBasisPoints:
+                        1500,
+                },
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 400,
+            message: 'TVA non autorisée.',
+        });
+    });
+
+    it('refuse un Dossier historique sans marge si la Fiche n’en fournit aucune', async () => {
+        const legacyDossier =
+            await Dossier.create({
+                workspace:
+                    owner.workspace._id,
+                name:
+                    'Magasin historique sans marge M004',
+                statusChangedBy:
+                    owner.owner._id,
+                createdBy:
+                    owner.owner._id,
+                updatedBy:
+                    owner.owner._id,
+            });
+
+        await expect(
+            createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    legacyDossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche sans marge',
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 400,
+        });
+    });
+
     it('liste les Fiches actives par défaut avec sanitizeFilter activé', async () => {
         const created =
             await createTechnicalSheet({
@@ -290,6 +465,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche liste M004',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 
@@ -343,6 +524,129 @@ describe('M-004 services Fiches techniques', () => {
             ),
         ).toEqual(['25', '75', null]);
     });
+    it('normalise une ancienne unité de ligne vers l’unité de référence du Produit', async () => {
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche normalisation unité',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            });
+
+        const saved =
+            await saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    created.draft.revision,
+                canManageSourcing: true,
+                canManageValuation: true,
+                data: {
+                    targetMarginBasisPoints:
+                        5000,
+                    lines: [{
+                        kind:
+                            'INGREDIENT',
+                        productVariantId:
+                            reference.variant._id
+                                .toString(),
+                        netQuantity:
+                            '1000',
+                        inputUnit:
+                            'G',
+                        order: 0,
+                    }],
+                },
+            });
+
+        expect(
+            saved.lines[0].netQuantity,
+        ).toBe('1');
+        expect(
+            saved.lines[0].inputUnit,
+        ).toBe('KG');
+        expect(
+            saved.lines[0].calculation.grossUnit,
+        ).toBe('KG');
+    });
+
+    it('dérive l’unité de ligne lorsque le client ne l’envoie pas', async () => {
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche unité dérivée',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            });
+
+        const saved =
+            await saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    created.draft.revision,
+                canManageSourcing: true,
+                canManageValuation: true,
+                data: {
+                    targetMarginBasisPoints:
+                        5000,
+                    lines: [{
+                        kind:
+                            'INGREDIENT',
+                        productVariantId:
+                            reference.variant._id
+                                .toString(),
+                        netQuantity:
+                            '2',
+                        order: 0,
+                    }],
+                },
+            });
+
+        expect(
+            saved.lines[0].inputUnit,
+        ).toBe('KG');
+        expect(
+            saved.lines[0].netQuantity,
+        ).toBe('2');
+    });
+
     it('valorise et valide une Référence Produit sans Article grâce au Prix indicatif Workspace', async () => {
         const indicativeReference =
             await createActiveProductReference({
@@ -384,6 +688,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche prix indicatif',
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 
@@ -405,9 +715,7 @@ describe('M-004 services Fiches techniques', () => {
                     productionQuantity:
                         '10',
                     productionUnit:
-                        'KG',
-                    portions:
-                        '10',
+                        'UNIT',
                     vatRateBasisPoints:
                         1000,
                     targetMarginBasisPoints:
@@ -429,20 +737,9 @@ describe('M-004 services Fiches techniques', () => {
                 },
             });
 
-        const valued =
-            await valuateTechnicalSheet({
-                workspaceId:
-                    owner.workspace._id,
-                dossierId:
-                    dossier._id,
-                technicalSheetId:
-                    created.sheet.id,
-                actorId:
-                    owner.owner._id,
-                expectedRevision:
-                    saved.revision,
-                atDate,
-            });
+        const valued = {
+            draft: saved,
+        };
 
         expect(
             valued.draft.valuationStatus,
@@ -521,7 +818,7 @@ describe('M-004 services Fiches techniques', () => {
         expect(
             valued.draft.economicSnapshot
                 .finalPriceTtcMinor,
-        ).toBe(5500);
+        ).toBe(550);
 
         const result =
             await validateTechnicalSheet({
@@ -567,7 +864,7 @@ describe('M-004 services Fiches techniques', () => {
         ).toBe(1);
     });
 
-    it('refuse la validation si le Prix applicable change et persiste STALE avant revalorisation', async () => {
+    it('actualise automatiquement les calculs si le Prix applicable change avant validation', async () => {
         const {
             created,
             valued,
@@ -611,43 +908,26 @@ describe('M-004 services Fiches techniques', () => {
         ).rejects.toMatchObject({
             statusCode: 409,
             code:
-                'TECHNICAL_SHEET_REVALUATION_REQUIRED',
+                'TECHNICAL_SHEET_VALUATION_REFRESHED',
+            message:
+                'Les données économiques ont changé. Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.',
         });
 
-        const stale =
+        const refreshed =
             await TechnicalSheetDraft.findOne({
                 technicalSheet:
                     created.sheet.id,
             });
 
         expect(
-            stale.valuationStatus,
+            refreshed.valuationStatus,
         ).toBe(
-            TECHNICAL_SHEET_VALUATION_STATUS.STALE,
+            TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE,
         );
         expect(
-            stale.lines[0]
-                .valuation.materialCostSharePercent,
-        ).toBeNull();
-
-        const revalued =
-            await valuateTechnicalSheet({
-                workspaceId:
-                    owner.workspace._id,
-                dossierId:
-                    dossier._id,
-                technicalSheetId:
-                    created.sheet.id,
-                actorId:
-                    owner.owner._id,
-                expectedRevision:
-                    stale.revision,
-                atDate,
-            });
-
-        expect(
-            revalued.draft.lines[0]
-                .valuation.lineCostHt,
+            refreshed.lines[0]
+                .valuation.lineCostHt
+                .toString(),
         ).toBe('30');
 
         await expect(
@@ -663,7 +943,7 @@ describe('M-004 services Fiches techniques', () => {
                 expectedSheetRevision:
                     created.sheet.revision,
                 expectedDraftRevision:
-                    revalued.draft.revision,
+                    refreshed.revision,
                 atDate,
             }),
         ).resolves.toMatchObject({
@@ -683,6 +963,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche brouillon non copiable',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 
@@ -735,6 +1021,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche rétention M004',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 
@@ -801,6 +1093,12 @@ describe('M-004 services Fiches techniques', () => {
                 data: {
                     name:
                         'Fiche quota M004',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
                 },
             });
 

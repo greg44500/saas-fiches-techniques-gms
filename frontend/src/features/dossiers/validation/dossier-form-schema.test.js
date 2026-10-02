@@ -6,17 +6,22 @@ import {
   dossierFormSchema,
 } from '@/features/dossiers/validation/dossier-form-schema';
 
+const emptyOptionalFields = {
+  brand: '',
+  locationAddress: '',
+  locationPostalCode: '',
+  locationCity: '',
+  documentEmail: '',
+  phone: '',
+  contactName: '',
+};
+
 describe('dossier form contract', () => {
   it('normalise les champs optionnels vides en null et conserve le nom', () => {
     expect(buildDossierFormPayload({
       name: '  Nantes Centre  ',
-      brand: ' ',
-      locationAddress: '',
-      locationPostalCode: '',
-      locationCity: '',
-      documentEmail: '',
-      phone: '',
-      contactName: '',
+      ...emptyOptionalFields,
+      defaultTargetMargin: '',
     })).toEqual({
       name: 'Nantes Centre',
       brand: null,
@@ -27,16 +32,31 @@ describe('dossier form contract', () => {
     });
   });
 
+  it('ajoute la marge cible en points de base lors de la création', () => {
+    expect(buildDossierFormPayload({
+      name: 'Nantes Centre',
+      ...emptyOptionalFields,
+      defaultTargetMargin: '30,5',
+    }, {
+      includeDefaultTargetMargin: true,
+    })).toEqual({
+      name: 'Nantes Centre',
+      brand: null,
+      location: null,
+      documentEmail: null,
+      phone: null,
+      contactName: null,
+      defaultTargetMarginBasisPoints: 3050,
+    });
+  });
+
   it('construit une localisation partielle compatible avec le backend', () => {
     expect(buildDossierFormPayload({
       name: 'Nantes',
-      brand: '',
+      ...emptyOptionalFields,
       locationAddress: '1 rue Exemple',
-      locationPostalCode: '',
       locationCity: 'Nantes',
-      documentEmail: '',
-      phone: '',
-      contactName: '',
+      defaultTargetMargin: '',
     }).location).toEqual({
       address: '1 rue Exemple',
       postalCode: null,
@@ -56,6 +76,9 @@ describe('dossier form contract', () => {
       documentEmail: null,
       phone: '0200000000',
       contactName: null,
+      technicalSheetSettings: {
+        defaultTargetMarginBasisPoints: 3000,
+      },
     })).toEqual({
       name: 'Saint-Nazaire',
       brand: 'Leclerc',
@@ -65,21 +88,24 @@ describe('dossier form contract', () => {
       documentEmail: '',
       phone: '0200000000',
       contactName: '',
+      defaultTargetMargin: '30',
     });
   });
 
-  it('refuse un nom vide et un email invalide', () => {
-    const result = dossierFormSchema.safeParse({
+  it('refuse un nom vide, un email invalide ou une marge hors bornes', () => {
+    const invalidIdentity = dossierFormSchema.safeParse({
       name: '',
-      brand: '',
-      locationAddress: '',
-      locationPostalCode: '',
-      locationCity: '',
+      ...emptyOptionalFields,
       documentEmail: 'incorrect',
-      phone: '',
-      contactName: '',
+      defaultTargetMargin: '100',
     });
 
-    expect(result.success).toBe(false);
+    expect(invalidIdentity.success).toBe(false);
+
+    expect(dossierFormSchema.safeParse({
+      name: 'Nantes',
+      ...emptyOptionalFields,
+      defaultTargetMargin: '30',
+    }).success).toBe(true);
   });
 });

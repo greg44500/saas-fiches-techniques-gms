@@ -30,7 +30,9 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
+  useGetDossierTechnicalSheetSettingsQuery,
   useGetTechnicalSheetCapacityQuery,
+  useGetTechnicalSheetMetadataQuery,
   useListTechnicalSheetsQuery,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
@@ -68,6 +70,14 @@ function TechnicalSheetsPage() {
     page,
     limit: pageSize,
     search: search.trim() || undefined,
+  });
+  const settingsQuery = useGetDossierTechnicalSheetSettingsQuery({
+    workspaceId: workspace.id,
+    dossierId,
+  });
+  const metadataQuery = useGetTechnicalSheetMetadataQuery({
+    workspaceId: workspace.id,
+    dossierId,
   });
   const capacityQuery = useGetTechnicalSheetCapacityQuery(workspace.id);
 
@@ -111,6 +121,11 @@ function TechnicalSheetsPage() {
     && !capacity.unlimited
     && capacity.current >= capacity.limit,
   );
+  const defaultTargetMarginBasisPoints =
+    settingsQuery.data?.defaultTargetMarginBasisPoints
+    ?? dossier.technicalSheetSettings
+      ?.defaultTargetMarginBasisPoints
+    ?? null;
   const operational = dossier.status === 'ACTIVE';
   const canCreate = can(TECHNICAL_SHEET_PERMISSION.CREATE)
     && operational
@@ -134,7 +149,10 @@ function TechnicalSheetsPage() {
       id: 'status',
       header: 'Statut',
       cell: (sheet) => {
-        const presentation = getTechnicalSheetStatusPresentation(sheet.status);
+        const presentation = getTechnicalSheetStatusPresentation(
+          sheet.status,
+          metadataQuery.data?.statusDefinitions,
+        );
         return (
           <TechnicalSheetStatusBadge tone={presentation.tone}>
             {presentation.label}
@@ -270,6 +288,9 @@ function TechnicalSheetsPage() {
       </section>
 
       <TechnicalSheetCreateDialog
+        defaultTargetMarginBasisPoints={
+          defaultTargetMarginBasisPoints
+        }
         dossierId={dossierId}
         onClose={() => setCreateOpen(false)}
         onCreated={(result) => {

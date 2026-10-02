@@ -18,6 +18,8 @@ import {
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_IMPORT_SCOPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
+    PRODUCT_SEARCH_SCOPE,
+    PRODUCT_SEARCH_SCOPE_REGISTRY,
     PRODUCT_STATUS,
     PRODUCT_STATUS_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
@@ -79,6 +81,28 @@ describe('M-002 product catalog registries', () => {
                 factorToBase: 1000,
             }),
         );
+        expect(PRODUCT_REFERENCE_UNIT_REGISTRY.UNIT.label)
+            .toBe('unité');
+    });
+
+    it('décrit les scopes de recherche Produit depuis le backend', () => {
+        expect(PRODUCT_SEARCH_SCOPE).toEqual({
+            WORKSPACE: 'WORKSPACE',
+            REFERENCE: 'REFERENCE',
+        });
+        expect(Object.values(PRODUCT_SEARCH_SCOPE_REGISTRY))
+            .toEqual([
+                {
+                    value: 'WORKSPACE',
+                    label: 'Favoris',
+                    showWorkspaceFavorite: false,
+                },
+                {
+                    value: 'REFERENCE',
+                    label: 'Tous les produits',
+                    showWorkspaceFavorite: true,
+                },
+            ]);
     });
 
     it('décrit les conservations et les six gammes du contrat actif', () => {

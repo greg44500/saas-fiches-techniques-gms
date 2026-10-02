@@ -8,7 +8,6 @@ import { useNavigate, useParams } from 'react-router';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { ErrorState } from '@/components/shared/error-state';
-import { InfoTooltip } from '@/components/shared/info-tooltip';
 import {
   TechnicalSheetAutosaveStatus,
 } from '@/features/technical-sheets/components/technical-sheet-autosave-status';
@@ -25,6 +24,7 @@ import {
 } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import {
   Select,
   SelectContent,
@@ -49,19 +49,27 @@ import {
   useValuateTechnicalSheetMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
+  TechnicalSheetAnalysisDrawer,
+} from '@/features/technical-sheets/components/technical-sheet-analysis-drawer';
+import {
   TechnicalSheetControlPanel,
 } from '@/features/technical-sheets/components/technical-sheet-control-panel';
 import {
   TechnicalSheetCopyDialog,
 } from '@/features/technical-sheets/components/technical-sheet-copy-dialog';
 import {
-  TechnicalSheetInformationDrawer,
-} from '@/features/technical-sheets/components/technical-sheet-information-drawer';
+  TechnicalSheetDossierContextDrawer,
+} from '@/features/technical-sheets/components/technical-sheet-dossier-context-drawer';
+import {
+  TechnicalSheetIdentityDialog,
+} from '@/features/technical-sheets/components/technical-sheet-identity-dialog';
+import {
+  TechnicalSheetValidationDialog,
+} from '@/features/technical-sheets/components/technical-sheet-validation-dialog';
 import {
   TechnicalSheetEconomicsBar,
 } from '@/features/technical-sheets/components/technical-sheet-economics-bar';
 import {
-  PRODUCT_SOURCE,
   TechnicalSheetLineEditor,
   TechnicalSheetProductScopeControls,
   normalizeDraftLine,
@@ -77,7 +85,7 @@ import {
   getTechnicalSheetActionAvailability,
   getTechnicalSheetApiErrorMessage,
   getTechnicalSheetStatusPresentation,
-  getTechnicalSheetValuationPresentation,
+  getTechnicalSheetValuationAttentionPresentation,
   minorToInput,
   percentInputToBasisPoints,
   priceInputToMinor,
@@ -93,10 +101,13 @@ function buildDraftForm(draft) {
   return {
     productionQuantity: draft.productionQuantity ?? '',
     productionUnit: draft.productionUnit ?? '',
-    portions: draft.portions ?? '',
+    portionsPerProductionUnit:
+      draft.portionsPerProductionUnit ?? '',
+    totalPortions: draft.totalPortions ?? null,
+    saleBasis: draft.saleBasis ?? '',
     vatRate: basisPointsToInput(draft.vatRateBasisPoints),
     targetMargin: basisPointsToInput(draft.targetMarginBasisPoints),
-    finalPriceMode: draft.finalPriceMode ?? 'ADVISED',
+    finalPriceMode: draft.finalPriceMode ?? '',
     finalPriceTtc: minorToInput(draft.finalPriceTtcMinor),
     lines: (draft.lines ?? []).map(normalizeDraftLine),
   };
@@ -109,6 +120,10 @@ function buildDraftSaveRequest({
   technicalSheetId,
   workspaceId,
 }) {
+  const productionQuantity =
+    draftForm.productionQuantity.trim().replace(',', '.');
+  const portionsPerProductionUnit =
+    draftForm.portionsPerProductionUnit.trim().replace(',', '.');
   const vatRateBasisPoints = percentInputToBasisPoints(draftForm.vatRate);
   const targetMarginBasisPoints =
     percentInputToBasisPoints(draftForm.targetMargin);
@@ -117,8 +132,13 @@ function buildDraftSaveRequest({
     : null;
 
   if (
-    !draftForm.productionQuantity
+    !/^\d+(?:\.\d+)?$/.test(productionQuantity)
+    || Number(productionQuantity) <= 0
     || !draftForm.productionUnit
+    || !/^\d+(?:\.\d+)?$/.test(portionsPerProductionUnit)
+    || Number(portionsPerProductionUnit) <= 0
+    || !draftForm.saleBasis
+    || !draftForm.finalPriceMode
     || vatRateBasisPoints === null
     || targetMarginBasisPoints === null
   ) {
@@ -134,7 +154,7 @@ function buildDraftSaveRequest({
   ) {
     return {
       request: null,
-      reason: 'Renseignez un Prix final TTC valide.',
+      reason: 'Renseignez un Prix retenu TTC valide.',
     };
   }
 
@@ -144,9 +164,10 @@ function buildDraftSaveRequest({
       dossierId,
       technicalSheetId,
       expectedRevision: revision,
-      productionQuantity: draftForm.productionQuantity,
+      productionQuantity,
       productionUnit: draftForm.productionUnit,
-      portions: draftForm.portions || null,
+      portionsPerProductionUnit,
+      saleBasis: draftForm.saleBasis,
       vatRateBasisPoints,
       targetMarginBasisPoints,
       finalPriceMode: draftForm.finalPriceMode,
@@ -156,7 +177,9 @@ function buildDraftSaveRequest({
         kind: line.kind,
         productVariantId: line.productVariantId,
         netQuantity: line.netQuantity,
-        inputUnit: line.inputUnit,
+        inputUnit:
+          line.referenceUnit
+          ?? line.inputUnit,
         order: index,
         note: line.note.trim() || null,
       })),
@@ -183,6 +206,7 @@ function mergeSavedLineIds(currentForm, snapshotForm, savedDraft) {
 
   return {
     ...currentForm,
+    totalPortions: savedForm.totalPortions,
     lines: currentForm.lines.map((line) => (
       idsByClientKey.has(line.clientKey)
         ? { ...line, id: idsByClientKey.get(line.clientKey) }
@@ -226,6 +250,7 @@ function TechnicalSheetWorkspacePage() {
 
   const sheet = sheetQuery.data?.sheet;
   const draft = sheetQuery.data?.draft;
+  const draftId = draft?.id ?? null;
   const metadata = metadataQuery.data;
 
   const [identity, setIdentity] = useState({
@@ -235,24 +260,31 @@ function TechnicalSheetWorkspacePage() {
   const [draftForm, setDraftForm] = useState({
     productionQuantity: '',
     productionUnit: '',
-    portions: '',
+    portionsPerProductionUnit: '',
+    totalPortions: null,
+    saleBasis: '',
     vatRate: '',
     targetMargin: '',
-    finalPriceMode: 'ADVISED',
+    finalPriceMode: '',
     finalPriceTtc: '',
     lines: [],
   });
   const draftFormRef = useRef(draftForm);
+  const automaticValuationAttemptRef = useRef(null);
   const [draftFormRevision, setDraftFormRevision] = useState(null);
   const [draftDirty, setDraftDirty] = useState(false);
   const [identityDirty, setIdentityDirty] = useState(false);
   const [identityFormRevision, setIdentityFormRevision] = useState(null);
-  const [informationOpen, setInformationOpen] = useState(false);
+  const [identityDialogOpen, setIdentityDialogOpen] = useState(false);
+  const [rightPanel, setRightPanel] = useState(null);
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
   const [copyOpen, setCopyOpen] = useState(false);
-  const [productScope, setProductScope] = useState(PRODUCT_SOURCE.REFERENCE);
+  const [productScope, setProductScope] = useState(null);
   const [sourcingPendingCount, setSourcingPendingCount] = useState(0);
+  const stickyControlsRef = useRef(null);
+  const [stickyControlsHeight, setStickyControlsHeight] = useState(0);
 
   const {
     blockedReason: autosaveBlockedReason,
@@ -295,6 +327,36 @@ function TechnicalSheetWorkspacePage() {
   });
 
   useEffect(() => {
+    const element = stickyControlsRef.current;
+
+    if (!draftId || !element) {
+      setStickyControlsHeight(0);
+      return undefined;
+    }
+
+    const syncHeight = () => {
+      const nextHeight = Math.ceil(
+        element.getBoundingClientRect().height,
+      );
+
+      setStickyControlsHeight((current) => (
+        current === nextHeight ? current : nextHeight
+      ));
+    };
+
+    syncHeight();
+
+    if (typeof window.ResizeObserver !== 'function') {
+      return undefined;
+    }
+
+    const observer = new window.ResizeObserver(syncHeight);
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [draftId]);
+
+  useEffect(() => {
     if (!sheet || identityDirty) return;
 
     if (
@@ -315,10 +377,12 @@ function TechnicalSheetWorkspacePage() {
     draftFormRef.current = {
       productionQuantity: '',
       productionUnit: '',
-      portions: '',
+      portionsPerProductionUnit: '',
+      totalPortions: null,
+      saleBasis: '',
       vatRate: '',
       targetMargin: '',
-      finalPriceMode: 'ADVISED',
+      finalPriceMode: '',
       finalPriceTtc: '',
       lines: [],
     };
@@ -326,8 +390,10 @@ function TechnicalSheetWorkspacePage() {
     setDraftFormRevision(null);
     setIdentityDirty(false);
     setIdentityFormRevision(null);
-    setInformationOpen(false);
-    setProductScope(PRODUCT_SOURCE.REFERENCE);
+    setIdentityDialogOpen(false);
+    setRightPanel(null);
+    setValidationDialogOpen(false);
+    setProductScope(null);
     resetAutosave(null);
   }, [resetAutosave, technicalSheetId]);
 
@@ -354,13 +420,100 @@ function TechnicalSheetWorkspacePage() {
     draftFormRevision,
   ]);
 
+  useEffect(() => {
+    if (
+      !draft
+      || !can(TECHNICAL_SHEET_PERMISSION.VALUATION_MANAGE)
+      || draftDirty
+      || autosaveHasUnsavedChanges
+      || valuateState.isLoading
+      || !metadata?.valuationStatusDefinitions
+        ?.find((definition) => (
+          definition.value === draft.valuationStatus
+        ))
+        ?.automaticValuationEligible
+      || (draft.lines ?? []).length === 0
+      || !draft.productionQuantity
+      || !draft.productionUnit
+      || !draft.portionsPerProductionUnit
+      || !draft.saleBasis
+      || draft.vatRateBasisPoints === null
+      || draft.targetMarginBasisPoints === null
+    ) {
+      return;
+    }
+
+    const attemptKey = [
+      draft.id,
+      draft.revision,
+      draft.valuationStatus,
+    ].join(':');
+
+    if (
+      automaticValuationAttemptRef.current
+      === attemptKey
+    ) {
+      return;
+    }
+
+    automaticValuationAttemptRef.current =
+      attemptKey;
+
+    valuate({
+      workspaceId: workspace.id,
+      dossierId,
+      technicalSheetId,
+      expectedRevision: draft.revision,
+    }).unwrap().catch((error) => {
+      toast({
+        title: 'Calcul impossible',
+        description: getTechnicalSheetApiErrorMessage(
+          error,
+          'Les calculs automatiques de la Fiche n’ont pas pu être actualisés.',
+        ),
+        variant: 'destructive',
+      });
+    });
+  }, [
+    autosaveHasUnsavedChanges,
+    can,
+    dossierId,
+    draft,
+    draftDirty,
+    metadata?.valuationStatusDefinitions,
+    technicalSheetId,
+    toast,
+    valuate,
+    valuateState.isLoading,
+    workspace.id,
+  ]);
+
   const unitItems = useMemo(
-    () => (metadata?.units ?? []).map((unit) => ({
+    () => (
+      metadata?.productionUnits
+      ?? metadata?.units
+      ?? []
+    ).map((unit) => ({
       value: unit.value,
       label: unit.label,
     })),
-    [metadata?.units],
+    [metadata?.productionUnits, metadata?.units],
   );
+  const saleBasisItems = metadata?.saleBases ?? [];
+  const vatRateItems = (metadata?.vatRates ?? []).map((item) => ({
+    value: basisPointsToInput(item.value),
+    label: item.label,
+  }));
+  const finalPriceModeItems =
+    metadata?.finalPriceModeDefinitions ?? [];
+  const productSearchScopes =
+    productMetadataQuery.data
+      ?.productSearchScopes ?? [];
+  const effectiveProductScope =
+    productScope
+    ?? metadata?.defaults
+      ?.productSearchScope
+    ?? null;
 
   if (
     (sheetQuery.isLoading && !sheetQuery.data)
@@ -383,15 +536,15 @@ function TechnicalSheetWorkspacePage() {
     );
   }
 
-  const statusPresentation = getTechnicalSheetStatusPresentation(sheet.status);
-  const valuationPresentation = draftDirty
-    ? {
-        label: 'Modifications non enregistrées',
-        tone: 'warning',
-      }
-    : getTechnicalSheetValuationPresentation(
-        draft?.valuationStatus,
-      );
+  const statusPresentation = getTechnicalSheetStatusPresentation(
+    sheet.status,
+    metadata?.statusDefinitions,
+  );
+  const valuationAttentionPresentation =
+    getTechnicalSheetValuationAttentionPresentation(
+      draft?.valuationStatus,
+      metadata?.valuationStatusDefinitions,
+    );
   const actionAvailability = getTechnicalSheetActionAvailability({
     status: sheet.status,
     hasDraft: Boolean(draft),
@@ -409,12 +562,54 @@ function TechnicalSheetWorkspacePage() {
   const canDelete = can(TECHNICAL_SHEET_PERMISSION.DELETE);
   const canCopy = can(TECHNICAL_SHEET_PERMISSION.COPY);
   const copyDisabled = !actionAvailability.copy;
+  const validationEligible = Boolean(
+    draft
+    && metadata?.valuationStatusDefinitions
+      ?.find((definition) => (
+        definition.value === draft.valuationStatus
+      ))
+      ?.validationEligible
+  );
+  const validations = historyQuery.data?.validations ?? [];
+  const currentValidation = (
+    validations.find((validation) => (
+      validation.id === sheet.currentValidatedStateId
+    ))
+    ?? validations[0]
+    ?? null
+  );
   const sourcingPending = sourcingPendingCount > 0;
   const draftSynchronizing = sourcingPending;
   const draftServerActionDisabled = (
     draftDirty
     || autosaveIsSaving
     || draftFormRevision === null
+  );
+  const parsedVatRate =
+    percentInputToBasisPoints(draftForm.vatRate);
+  const vatRateIsRegistered = vatRateItems.some(
+    (item) => item.value === draftForm.vatRate,
+  );
+  const parsedTargetMargin =
+    percentInputToBasisPoints(draftForm.targetMargin);
+  const normalizedProductionQuantity =
+    draftForm.productionQuantity.trim().replace(',', '.');
+  const normalizedPortionsPerProductionUnit =
+    draftForm.portionsPerProductionUnit.trim().replace(',', '.');
+  const parametersComplete = Boolean(
+    /^\d+(?:\.\d+)?$/.test(normalizedProductionQuantity)
+    && Number(normalizedProductionQuantity) > 0
+    && draftForm.productionUnit
+    && /^\d+(?:\.\d+)?$/.test(normalizedPortionsPerProductionUnit)
+    && Number(normalizedPortionsPerProductionUnit) > 0
+    && draftForm.saleBasis
+    && draftForm.finalPriceMode
+    && parsedVatRate !== null
+    && parsedVatRate >= 0
+    && parsedVatRate <= 10000
+    && parsedTargetMargin !== null
+    && parsedTargetMargin >= 0
+    && parsedTargetMargin < 10000
   );
 
   function handleSourcingPendingChange(pending) {
@@ -460,6 +655,7 @@ function TechnicalSheetWorkspacePage() {
       });
       setIdentityFormRevision(updatedSheet.revision);
       setIdentityDirty(false);
+      setIdentityDialogOpen(false);
       toast({
         title: 'Fiche technique mise à jour',
         variant: 'success',
@@ -479,35 +675,11 @@ function TechnicalSheetWorkspacePage() {
       }).unwrap();
       toast({
         title: 'Nouveau brouillon créé',
-        description: 'Les données validées ont été reprises. Une revalorisation sera nécessaire.',
+        description: 'Les données validées ont été reprises et les calculs ont été actualisés.',
         variant: 'success',
       });
     } catch (error) {
       notifyError(error, 'Le brouillon n’a pas pu être créé.');
-    }
-  }
-
-  async function valuateDraft() {
-    try {
-      const result = await valuate({
-        workspaceId: workspace.id,
-        dossierId,
-        technicalSheetId,
-        expectedRevision: draftFormRevision,
-      }).unwrap();
-
-      const ambiguityCount = Object.keys(result.resolutionCandidates ?? {}).length;
-      toast({
-        title: ambiguityCount > 0
-          ? 'Valorisation incomplète'
-          : 'Fiche technique valorisée',
-        description: ambiguityCount > 0
-          ? ambiguityCount + ' ligne(s) nécessitent un choix explicite d’Article fournisseur.'
-          : undefined,
-        variant: ambiguityCount > 0 ? 'info' : 'success',
-      });
-    } catch (error) {
-      notifyError(error, 'La valorisation n’a pas pu être calculée.');
     }
   }
 
@@ -522,6 +694,7 @@ function TechnicalSheetWorkspacePage() {
         comment: validationComment.trim() || null,
       }).unwrap();
       setValidationComment('');
+      setValidationDialogOpen(false);
       setDraftDirty(false);
       setDraftFormRevision(null);
       resetAutosave(null);
@@ -586,7 +759,25 @@ function TechnicalSheetWorkspacePage() {
     }
   }
 
-  const economicSnapshot = draft?.economicSnapshot;
+  const economicSnapshot = (
+    draft?.economicSnapshot
+    ?? currentValidation?.economicSnapshot
+    ?? null
+  );
+  const productionSnapshot = (
+    draft
+    ?? currentValidation?.sheetSnapshot
+    ?? null
+  );
+  const economicsUpdating = Boolean(
+    draft
+    && (
+      draftDirty
+      || autosaveIsSaving
+      || autosaveHasUnsavedChanges
+      || valuateState.isLoading
+    )
+  );
   const pendingLifecycle = (
     archiveState.isLoading
     || reactivateState.isLoading
@@ -595,48 +786,44 @@ function TechnicalSheetWorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 items-center gap-2">
+      {!draft && (
+        <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex min-w-0 items-start gap-2">
           <ActionIconButton
             Icon={ArrowLeft}
-            label="Retour aux Fiches techniques"
+            label="Retour vers Dossiers"
             onClick={() => navigate(
               '/workspaces/' + workspace.id
               + '/dossiers/' + dossierId
               + '/technical-sheets',
             )}
-            tooltipLabel="Retour aux Fiches techniques"
+            tooltipLabel="Retour vers Dossiers"
             variant="ghost"
           />
 
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="min-w-0">
             <h1 className="truncate text-3xl font-semibold tracking-tight">
               {sheet.name}
             </h1>
 
-            <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
-              {statusPresentation.label}
-            </TechnicalSheetStatusBadge>
-
-            {draft && (
-              <TechnicalSheetStatusBadge tone="warning">
-                Brouillon
+            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+              <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+                {statusPresentation.label}
               </TechnicalSheetStatusBadge>
-            )}
 
-            {draft && (
-              <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-                {valuationPresentation.label}
-              </TechnicalSheetStatusBadge>
-            )}
+            </div>
           </div>
         </div>
 
-        {!draft && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <TechnicalSheetControlPanel
             actionAvailability={actionAvailability}
             canCopy={canCopy}
             canDelete={canDelete}
+            canEditIdentity={
+              canEditIdentity
+              && actionAvailability.update
+            }
             canLifecycle={canLifecycle}
             canValidate={canValidate}
             copyDisabled={copyDisabled}
@@ -647,16 +834,22 @@ function TechnicalSheetWorkspacePage() {
             onArchive={() => setConfirmation({ type: 'archive' })}
             onCopy={() => setCopyOpen(true)}
             onDelete={() => setConfirmation({ type: 'delete' })}
+            onEditIdentity={() => setIdentityDialogOpen(true)}
+            onOpenAnalysis={() => setRightPanel('analysis')}
+            onOpenDossier={() => setRightPanel('dossier')}
             onReactivate={() => setConfirmation({ type: 'reactivate' })}
-            onValidate={validateDraft}
+            onValidate={() => setValidationDialogOpen(true)}
             pendingLifecycle={pendingLifecycle}
+            rightPanel={rightPanel}
             validatePending={validateState.isLoading}
+            validationEligible={validationEligible}
           />
-        )}
-      </header>
+        </div>
+        </header>
+      )}
 
-      <div className="space-y-6">
-        {!draft && (
+      {!draft && (
+        <div className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>État de travail</CardTitle>
@@ -677,43 +870,89 @@ function TechnicalSheetWorkspacePage() {
               )}
             </CardContent>
           </Card>
-        )}
-      </div>
+        </div>
+      )}
 
       {draft && (
         <section className="relative space-y-6">
           <div
             className="sticky z-30"
+            ref={stickyControlsRef}
             style={{ top: 'var(--workspace-topbar-height, 4rem)' }}
           >
             <Card className="border-primary/20 bg-background/97 shadow-lg backdrop-blur-md">
-              <CardHeader className="pb-3">
-                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="flex items-center gap-2">
-                    <CardTitle>Indicateurs de production</CardTitle>
-                    <InfoTooltip
-                      content="Regroupe les paramètres de production, la TVA de vente de la Fiche et les principaux indicateurs économiques utilisés pour calculer et piloter sa valorisation."
-                      label="À propos des Indicateurs de production"
+              <CardHeader className="p-4 pb-2">
+                <div
+                  className={
+                    'grid items-center gap-3 '
+                    + '2xl:grid-cols-[minmax(0,1fr)_auto]'
+                  }
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <ActionIconButton
+                      Icon={ArrowLeft}
+                      label="Retour vers Dossiers"
+                      onClick={() => navigate(
+                        '/workspaces/' + workspace.id
+                        + '/dossiers/' + dossierId
+                        + '/technical-sheets',
+                      )}
+                      tooltipLabel="Retour vers Dossiers"
+                      variant="ghost"
                     />
+
+                    <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">
+                      {sheet.name}
+                    </h1>
+
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+                        {statusPresentation.label}
+                      </TechnicalSheetStatusBadge>
+
+                      <TechnicalSheetStatusBadge tone="warning">
+                        Brouillon
+                      </TechnicalSheetStatusBadge>
+
+                      {valuationAttentionPresentation && (
+                        <TechnicalSheetStatusBadge
+                          tone={valuationAttentionPresentation.tone}
+                        >
+                          {valuationAttentionPresentation.label}
+                        </TechnicalSheetStatusBadge>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
+
+                  <div
+                    className={
+                      'flex min-h-11 flex-wrap items-center justify-end '
+                      + 'gap-2 2xl:justify-self-end'
+                    }
+                  >
                     {canUpdate && (
-                      <TechnicalSheetProductScopeControls
-                        onChange={setProductScope}
-                        productScope={productScope}
-                      />
+                      <div
+                        className={
+                          'flex h-9 w-60 shrink-0 items-center '
+                          + 'justify-end whitespace-nowrap'
+                        }
+                      >
+                        <TechnicalSheetAutosaveStatus
+                          blockedReason={autosaveBlockedReason}
+                          onRetry={retryAutosave}
+                          status={autosaveStatus}
+                        />
+                      </div>
                     )}
-                    {canUpdate && (
-                      <TechnicalSheetAutosaveStatus
-                        blockedReason={autosaveBlockedReason}
-                        onRetry={retryAutosave}
-                        status={autosaveStatus}
-                      />
-                    )}
+
                     <TechnicalSheetControlPanel
                       actionAvailability={actionAvailability}
                       canCopy={canCopy}
                       canDelete={canDelete}
+                      canEditIdentity={
+                        canEditIdentity
+                        && actionAvailability.update
+                      }
                       canLifecycle={canLifecycle}
                       canValidate={canValidate}
                       copyDisabled={copyDisabled}
@@ -724,19 +963,34 @@ function TechnicalSheetWorkspacePage() {
                       onArchive={() => setConfirmation({ type: 'archive' })}
                       onCopy={() => setCopyOpen(true)}
                       onDelete={() => setConfirmation({ type: 'delete' })}
+                      onEditIdentity={() => setIdentityDialogOpen(true)}
+                      onOpenAnalysis={() => setRightPanel('analysis')}
+                      onOpenDossier={() => setRightPanel('dossier')}
                       onReactivate={() => setConfirmation({ type: 'reactivate' })}
-                      onValidate={validateDraft}
+                      onValidate={() => setValidationDialogOpen(true)}
                       pendingLifecycle={pendingLifecycle}
+                      rightPanel={rightPanel}
                       validatePending={validateState.isLoading}
+                      validationEligible={validationEligible}
                     />
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <Field>
+              <CardContent className="space-y-3 p-4 pt-2">
+                <div
+                  className={
+                    'grid gap-3 '
+                    + 'xl:grid-cols-[minmax(0,1.15fr)_minmax(12rem,0.5fr)_minmax(0,0.9fr)]'
+                  }
+                >
+                  <div className="rounded-lg border border-border bg-muted/15 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Production
+                    </p>
+                    <div className="flex flex-wrap items-end gap-3">
+                  <Field className="w-32">
                     <FieldLabel htmlFor="technical-sheet-production-quantity">
-                      Quantité
+                      Quantité produite
                     </FieldLabel>
                     <Input
                       className="h-9"
@@ -754,7 +1008,7 @@ function TechnicalSheetWorkspacePage() {
                     />
                   </Field>
 
-                  <Field>
+                  <Field className="w-32">
                     <FieldLabel>Unité</FieldLabel>
                     <Select
                       disabled={!canUpdate || draftSynchronizing}
@@ -783,60 +1037,149 @@ function TechnicalSheetWorkspacePage() {
                     </Select>
                   </Field>
 
-                  <Field>
-                    <FieldLabel htmlFor="technical-sheet-portions">
-                      Portion(s)
+                  <Field className="w-28">
+                    <FieldLabel htmlFor="technical-sheet-portions-per-piece">
+                      Portions / pièce
                     </FieldLabel>
                     <Input
                       className="h-9"
                       disabled={!canUpdate || draftSynchronizing}
-                      id="technical-sheet-portions"
+                      id="technical-sheet-portions-per-piece"
                       inputMode="decimal"
                       onBlur={flushAutosave}
                       onChange={(event) => {
                         updateDraftForm((current) => ({
                           ...current,
-                          portions: event.target.value,
+                          portionsPerProductionUnit: event.target.value,
                         }));
                       }}
-                      value={draftForm.portions}
+                      value={draftForm.portionsPerProductionUnit}
                     />
                   </Field>
 
-                  <Field>
-                    <FieldLabel htmlFor="technical-sheet-vat">
-                      TVA (%)
+                  <Field className="w-28">
+                    <FieldLabel>Total portions</FieldLabel>
+                    <div
+                      aria-label="Total portions"
+                      className="flex h-9 items-center rounded-md border border-input bg-muted/30 px-3 text-sm font-medium tabular-nums"
+                    >
+                      {draftDirty || autosaveHasUnsavedChanges
+                        ? 'Actualisation…'
+                        : draftForm.totalPortions ?? 'NC'}
+                    </div>
+                  </Field>
+
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/15 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Produits
+                    </p>
+                    <div className="flex min-h-16 items-end">
+                      {productSearchScopes.length > 0
+                        && effectiveProductScope
+                        && (
+                          <TechnicalSheetProductScopeControls
+                            items={productSearchScopes}
+                            onChange={setProductScope}
+                            productScope={effectiveProductScope}
+                          />
+                        )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-muted/15 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Vente
+                    </p>
+                    <div className="flex flex-wrap items-end gap-3">
+                  <Field className="w-28">
+                    <FieldLabel>Base de vente</FieldLabel>
+                    <Select
+                      disabled={!canUpdate || !canValuate || draftSynchronizing}
+                      items={saleBasisItems}
+                      onValueChange={(value) => {
+                        updateDraftForm((current) => ({
+                          ...current,
+                          saleBasis: value,
+                        }), { immediate: true });
+                      }}
+                      value={draftForm.saleBasis}
+                    >
+                      <SelectTrigger
+                        aria-label="Base de vente"
+                        className="h-9 min-h-9"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {saleBasisItems.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <Field className="w-28">
+                    <FieldLabel>TVA</FieldLabel>
+                    <SegmentedControl
+                      ariaLabel="TVA de vente"
+                      className="h-9 p-px"
+                      disabled={!canUpdate || !canValuate || draftSynchronizing}
+                      items={vatRateItems}
+                      onValueChange={(value) => {
+                        updateDraftForm((current) => ({
+                          ...current,
+                          vatRate: value,
+                        }), { immediate: true });
+                      }}
+                      size="sm"
+                      value={draftForm.vatRate}
+                    />
+                    {parsedVatRate !== null && !vatRateIsRegistered && (
+                      <p className="max-w-60 text-xs text-warning">
+                        Taux historique {draftForm.vatRate.replace('.', ',')} % conservé.
+                        Choisissez un taux autorisé pour le modifier.
+                      </p>
+                    )}
+                  </Field>
+
+                  <Field className="w-28">
+                    <FieldLabel htmlFor="technical-sheet-target-margin">
+                      Marge cible (%)
                     </FieldLabel>
                     <Input
                       className="h-9"
                       disabled={!canUpdate || !canValuate || draftSynchronizing}
-                      id="technical-sheet-vat"
+                      id="technical-sheet-target-margin"
                       inputMode="decimal"
                       onBlur={flushAutosave}
                       onChange={(event) => {
                         updateDraftForm((current) => ({
                           ...current,
-                          vatRate: event.target.value,
+                          targetMargin: event.target.value,
                         }));
                       }}
-                      value={draftForm.vatRate}
+                      value={draftForm.targetMargin}
                     />
                   </Field>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="border-t border-border pt-4">
+                <div>
+
                   <TechnicalSheetEconomicsBar
                     canValuate={canValuate}
+                    economicMetricDefinitions={metadata?.economicMetricDefinitions}
                     economicSnapshot={economicSnapshot}
                     editDisabled={!canUpdate || draftSynchronizing}
                     finalPriceInputValue={draftForm.finalPriceTtc}
                     finalPriceMode={draftForm.finalPriceMode}
-                    lines={draft.lines ?? []}
-                    notice={
-                      draftDirty
-                        ? 'Modifications non enregistrées : enregistrez le brouillon avant de revaloriser.'
-                        : null
-                    }
+                    finalPriceModeItems={finalPriceModeItems}
                     onFinalPriceInputChange={(value) => {
                       updateDraftForm((current) => ({
                         ...current,
@@ -849,23 +1192,10 @@ function TechnicalSheetWorkspacePage() {
                         finalPriceMode: value,
                       }), { immediate: true });
                     }}
-                    onTargetMarginInputChange={(value) => {
-                      updateDraftForm((current) => ({
-                        ...current,
-                        targetMargin: value,
-                      }));
-                    }}
                     onFieldBlur={flushAutosave}
-                    onValuate={valuateDraft}
-                    targetMarginBasisPoints={draft.targetMarginBasisPoints}
-                    targetMarginInputValue={draftForm.targetMargin}
-                    valuateDisabled={
-                      draftSynchronizing
-                      || draftServerActionDisabled
-                    }
-                    valuatePending={valuateState.isLoading}
-                    valuationStatus={draft.valuationStatus}
-                    vatRateBasisPoints={draft.vatRateBasisPoints}
+                    saleBasis={draftForm.saleBasis}
+                    saleBasisItems={saleBasisItems}
+                    updating={economicsUpdating}
                   />
                 </div>
               </CardContent>
@@ -875,18 +1205,27 @@ function TechnicalSheetWorkspacePage() {
               className="pointer-events-none absolute inset-x-2 -bottom-10 h-10 bg-linear-to-b from-background via-background/90 to-transparent"
             />
           </div>
-          <Card className="overflow-hidden">
+          <Card>
             <div className="border-b border-border px-3 py-2">
               <h2 className="text-sm font-semibold">Composition</h2>
             </div>
             <CardContent className="p-0">
+              {!parametersComplete && (
+                <p className="border-b border-border px-3 py-3 text-sm text-muted-foreground">
+                  Complétez les paramètres de la Fiche avant de modifier sa composition.
+                </p>
+              )}
               <TechnicalSheetLineEditor
                 canManageSourcing={canSource}
-                disabled={!canUpdate || draftSynchronizing}
+                compositionHeaderOffset={stickyControlsHeight}
+                disabled={
+                  !canUpdate
+                  || draftSynchronizing
+                  || !parametersComplete
+                }
                 dossierId={dossierId}
                 draftRevision={draftFormRevision}
                 lines={draftForm.lines}
-                metadata={metadata}
                 onChange={(lines, { immediate = false } = {}) => {
                   updateDraftForm((current) => ({
                     ...current,
@@ -905,6 +1244,18 @@ function TechnicalSheetWorkspacePage() {
                   variant: 'destructive',
                 })}
                 onSourcingPendingChange={handleSourcingPendingChange}
+                onUnitChangeWarning={({ previousUnit, nextUnit }) => {
+                  toast({
+                    title: 'Unité du Produit modifiée',
+                    description:
+                      'La ligne utilise désormais '
+                      + nextUnit
+                      + ' au lieu de '
+                      + previousUnit
+                      + '. Vérifiez la quantité conservée.',
+                    variant: 'info',
+                  });
+                }}
                 onSourcingSelected={(updatedDraft) => {
                   const nextForm = buildDraftForm(updatedDraft);
                   draftFormRef.current = nextForm;
@@ -913,14 +1264,14 @@ function TechnicalSheetWorkspacePage() {
                   setDraftDirty(false);
                   resetAutosave(updatedDraft.revision);
                 }}
+                metadata={metadata}
                 productMetadata={productMetadataQuery.data}
-                productScope={productScope}
+                productScope={effectiveProductScope}
                 canOpenPricing={canOpenSupplierPricing}
                 sourcingDisabled={
                   draftSynchronizing
                   || draftServerActionDisabled
                 }
-                sourcingRequiresSave={draftServerActionDisabled}
                 technicalSheetId={technicalSheetId}
                 workspaceId={workspace.id}
               />
@@ -930,15 +1281,29 @@ function TechnicalSheetWorkspacePage() {
         </section>
       )}
 
-      <TechnicalSheetInformationDrawer
+      <TechnicalSheetAnalysisDrawer
+        economicSnapshot={economicSnapshot}
+        history={validations}
+        historyLoading={historyQuery.isLoading}
+        metadata={metadata}
+        onClose={() => setRightPanel(null)}
+        open={rightPanel === 'analysis'}
+        productionSnapshot={productionSnapshot}
+      />
+
+      <TechnicalSheetDossierContextDrawer
+        dossierId={dossierId}
+        onClose={() => setRightPanel(null)}
+        open={rightPanel === 'dossier'}
+        workspaceId={workspace.id}
+      />
+
+      <TechnicalSheetIdentityDialog
         canEdit={canEditIdentity && actionAvailability.update}
-        canValidate={canValidate}
         description={identity.description}
         dirty={identityDirty}
-        history={historyQuery.data?.validations ?? []}
-        historyLoading={historyQuery.isLoading}
         name={identity.name}
-        onClose={() => setInformationOpen(false)}
+        onClose={() => setIdentityDialogOpen(false)}
         onDescriptionChange={(value) => {
           setIdentityDirty(true);
           setIdentity((current) => ({
@@ -953,13 +1318,18 @@ function TechnicalSheetWorkspacePage() {
             name: value,
           }));
         }}
-        onOpen={() => setInformationOpen(true)}
         onSave={saveIdentity}
-        onValidationCommentChange={setValidationComment}
-        open={informationOpen}
+        open={identityDialogOpen}
         pending={updateSheetState.isLoading}
-        showValidationComment={Boolean(draft)}
-        validationComment={validationComment}
+      />
+
+      <TechnicalSheetValidationDialog
+        comment={validationComment}
+        onClose={() => setValidationDialogOpen(false)}
+        onCommentChange={setValidationComment}
+        onConfirm={validateDraft}
+        open={validationDialogOpen}
+        pending={validateState.isLoading}
       />
 
       <TechnicalSheetCopyDialog

@@ -9,6 +9,7 @@ import {
 import {
     TECHNICAL_SHEET_STATUS,
     TECHNICAL_SHEET_VALUATION_STATUS,
+    TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS,
 } from './technicalSheet.registry.js';
 import {
     TechnicalSheet,
@@ -23,6 +24,9 @@ import {
     prepareTechnicalSheetComposition,
 } from './technicalSheetComposition.service.js';
 import {
+    buildTechnicalSheetValuation,
+} from './technicalSheetValuation.service.js';
+import {
     createTechnicalSheetEvent,
 } from './technicalSheetEvent.service.js';
 import {
@@ -31,14 +35,77 @@ import {
 import {
     assertOperationalDossier,
 } from './technicalSheet.service.js';
+import {
+    editableProductionFromSnapshot,
+} from './technicalSheetProduction.service.js';
 import { AppError } from '../../utils/appError.js';
 
 const ECONOMIC_FIELDS = Object.freeze([
+    'portionsPerProductionUnit',
+    'saleBasis',
     'vatRateBasisPoints',
     'targetMarginBasisPoints',
     'finalPriceTtcMinor',
     'finalPriceMode',
 ]);
+
+const applyAutomaticValuation = async ({
+    workspaceId,
+    dossierId,
+    draft,
+    actorId,
+    session,
+    atDate = new Date(),
+}) => {
+    if (draft.lines.length === 0) {
+        draft.valuationStatus =
+            TECHNICAL_SHEET_VALUATION_STATUS
+                .NOT_VALUED;
+        draft.valuedAt = null;
+        draft.valuationFingerprint = null;
+        draft.economicSnapshot = null;
+        draft.updatedBy = actorId;
+        await draft.save({ session });
+        return {
+            resolutionCandidates: {},
+        };
+    }
+
+    const valuation =
+        await buildTechnicalSheetValuation({
+            workspaceId,
+            dossierId,
+            draft,
+            atDate,
+            session,
+        });
+
+    draft.lines =
+        valuation.lines.map((line) => {
+            const persisted = { ...line };
+            delete persisted.productVariantSnapshot;
+            return persisted;
+        });
+    draft.valuationStatus =
+        valuation.valuationStatus;
+    draft.valuedAt =
+        valuation.valuedAt;
+    draft.valuationFingerprint =
+        valuation.valuationFingerprint;
+    draft.economicSnapshot =
+        valuation.economicSnapshot;
+
+    if (valuation.economicSnapshot) {
+        draft.finalPriceTtcMinor =
+            valuation.economicSnapshot
+                .finalPriceTtcMinor;
+    }
+
+    draft.updatedBy = actorId;
+    await draft.save({ session });
+
+    return valuation;
+};
 
 const saveTechnicalSheetDraft = async ({
     workspaceId,
@@ -58,12 +125,15 @@ const saveTechnicalSheetDraft = async ({
         });
 
         const sheet =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                status: 'ACTIVE',
-            }).session(session);
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    status:
+                        TECHNICAL_SHEET_STATUS.ACTIVE,
+                }),
+            ).session(session);
 
         if (!sheet) {
             throw new AppError(
@@ -73,17 +143,39 @@ const saveTechnicalSheetDraft = async ({
         }
 
         const current =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                revision: expectedRevision,
-            }).session(session);
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    revision: expectedRevision,
+                }),
+            ).session(session);
 
         if (!current) {
             throw new AppError(
                 'Conflit de modification du brouillon.',
                 409,
+            );
+        }
+
+        const vatRateWasRequested =
+            Object.hasOwn(
+                data,
+                'vatRateBasisPoints',
+            );
+
+        if (
+            vatRateWasRequested
+            && data.vatRateBasisPoints !== null
+            && !TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS
+                .includes(data.vatRateBasisPoints)
+            && data.vatRateBasisPoints
+                !== current.vatRateBasisPoints
+        ) {
+            throw new AppError(
+                'TVA non autorisée.',
+                400,
             );
         }
 
@@ -139,11 +231,21 @@ const saveTechnicalSheetDraft = async ({
                 )
                     ? data.productionUnit
                     : current.productionUnit,
-            portions:
-                Object.hasOwn(data, 'portions')
-                    ? data.portions
-                    : current.portions
+            portionsPerProductionUnit:
+                Object.hasOwn(
+                    data,
+                    'portionsPerProductionUnit',
+                )
+                    ? data.portionsPerProductionUnit
+                    : current.portionsPerProductionUnit
                         ?.toString() ?? null,
+            saleBasis:
+                Object.hasOwn(
+                    data,
+                    'saleBasis',
+                )
+                    ? data.saleBasis
+                    : current.saleBasis,
             vatRateBasisPoints:
                 Object.hasOwn(
                     data,
@@ -233,10 +335,10 @@ const saveTechnicalSheetDraft = async ({
 
         const draft =
             await TechnicalSheetDraft.findOneAndUpdate(
-                {
+                mongoose.trusted({
                     _id: current._id,
                     revision: expectedRevision,
-                },
+                }),
                 {
                     $set: {
                         ...merged,
@@ -263,6 +365,15 @@ const saveTechnicalSheetDraft = async ({
             );
         }
 
+        const automaticValuation =
+            await applyAutomaticValuation({
+                workspaceId,
+                dossierId,
+                draft,
+                actorId,
+                session,
+            });
+
         await createTechnicalSheetEvent({
             workspaceId,
             dossierId,
@@ -278,6 +389,14 @@ const saveTechnicalSheetDraft = async ({
                 expectedRevision,
                 nextRevision:
                     draft.revision,
+                valuationStatus:
+                    draft.valuationStatus,
+                resolutionCandidateCount:
+                    Object.keys(
+                        automaticValuation
+                            .resolutionCandidates
+                        ?? {},
+                    ).length,
             },
             session,
         });
@@ -300,15 +419,17 @@ const getTechnicalSheetDraft = async ({
     technicalSheetId,
 }) => {
     const sheet =
-        await TechnicalSheet.findOne({
-            _id: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            status: mongoose.trusted({
-                $ne:
-                    TECHNICAL_SHEET_STATUS.DELETED,
+        await TechnicalSheet.findOne(
+            mongoose.trusted({
+                _id: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                status: mongoose.trusted({
+                    $ne:
+                        TECHNICAL_SHEET_STATUS.DELETED,
+                }),
             }),
-        })
+        )
             .select('_id')
             .lean();
 
@@ -320,11 +441,13 @@ const getTechnicalSheetDraft = async ({
     }
 
     const draft =
-        await TechnicalSheetDraft.findOne({
-            technicalSheet: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-        }).populate({
+        await TechnicalSheetDraft.findOne(
+            mongoose.trusted({
+                technicalSheet: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+            }),
+        ).populate({
             path: 'lines.productVariant',
             select:
                 '_id name referenceUnit yieldPercent status',
@@ -350,14 +473,17 @@ const createDraftFromValidatedState = async ({
         });
 
         const sheet =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                status: 'ACTIVE',
-                revision:
-                    expectedSheetRevision,
-            }).session(session);
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    status:
+                        TECHNICAL_SHEET_STATUS.ACTIVE,
+                    revision:
+                        expectedSheetRevision,
+                }),
+            ).session(session);
 
         if (!sheet) {
             throw new AppError(
@@ -367,12 +493,14 @@ const createDraftFromValidatedState = async ({
         }
 
         const existing =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet:
-                    technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-            }).session(session);
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet:
+                        technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                }),
+            ).session(session);
 
         if (existing) {
             throw new AppError(
@@ -389,14 +517,16 @@ const createDraftFromValidatedState = async ({
         }
 
         const validation =
-            await TechnicalSheetValidation.findOne({
-                _id:
-                    sheet.currentValidatedState,
-                technicalSheet:
-                    technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-            }).session(session);
+            await TechnicalSheetValidation.findOne(
+                mongoose.trusted({
+                    _id:
+                        sheet.currentValidatedState,
+                    technicalSheet:
+                        technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                }),
+            ).session(session);
 
         if (!validation) {
             throw new AppError(
@@ -404,6 +534,11 @@ const createDraftFromValidatedState = async ({
                 409,
             );
         }
+
+        const editableProduction =
+            editableProductionFromSnapshot(
+                validation.sheetSnapshot,
+            );
 
         const prepared =
             await prepareTechnicalSheetComposition({
@@ -423,9 +558,13 @@ const createDraftFromValidatedState = async ({
                             order: line.order,
                             note:
                                 line.note ?? null,
-                            selectedSupplierArticleId:
-                                line.supplierArticleId
-                                    .toString(),
+                            ...(line.supplierArticleId
+                                ? {
+                                    selectedSupplierArticleId:
+                                        line.supplierArticleId
+                                            .toString(),
+                                }
+                                : {}),
                         }),
                     ),
                 session,
@@ -439,20 +578,17 @@ const createDraftFromValidatedState = async ({
                     technicalSheet:
                         technicalSheetId,
                     productionQuantity:
-                        validation
-                            .sheetSnapshot
-                            .productionQuantity
-                            .toString(),
+                        editableProduction
+                            .productionQuantity,
                     productionUnit:
-                        validation
-                            .sheetSnapshot
+                        editableProduction
                             .productionUnit,
-                    portions:
-                        validation
-                            .sheetSnapshot
-                            .portions
-                            ?.toString()
-                        ?? null,
+                    portionsPerProductionUnit:
+                        editableProduction
+                            .portionsPerProductionUnit,
+                    saleBasis:
+                        editableProduction
+                            .saleBasis,
                     vatRateBasisPoints:
                         validation
                             .sheetSnapshot
@@ -486,6 +622,14 @@ const createDraftFromValidatedState = async ({
                 }],
                 { session },
             );
+
+        await applyAutomaticValuation({
+            workspaceId,
+            dossierId,
+            draft,
+            actorId,
+            session,
+        });
 
         await createTechnicalSheetEvent({
             workspaceId,
@@ -531,12 +675,14 @@ const selectTechnicalSheetSupplierArticle = async ({
         });
 
         const draft =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                revision: expectedRevision,
-            }).session(session);
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    revision: expectedRevision,
+                }),
+            ).session(session);
 
         if (!draft) {
             throw new AppError(
@@ -575,36 +721,19 @@ const selectTechnicalSheetSupplierArticle = async ({
             );
         }
 
-        for (const draftLine of draft.lines) {
-            if (draftLine.valuation) {
-                draftLine.valuation.materialCostSharePercent = null;
-            }
-        }
-
         line.selectedSupplierArticle =
             article._id;
-        line.valuation = {
-            status: 'STALE',
-            supplierArticleId: null,
-            applicableSource: null,
-            applicableSourceId: null,
-            normalizedAmount: null,
-            normalizedUnit: null,
-            lineCostHt: null,
-            materialCostSharePercent: null,
-            pricedAt: null,
-            sourceFingerprint: null,
-            alerts: [],
-        };
-        draft.valuationStatus =
-            TECHNICAL_SHEET_VALUATION_STATUS.STALE;
-        draft.valuedAt = null;
-        draft.valuationFingerprint = null;
-        draft.economicSnapshot = null;
         draft.updatedBy = actorId;
         draft.revision += 1;
 
-        await draft.save({ session });
+        const automaticValuation =
+            await applyAutomaticValuation({
+                workspaceId,
+                dossierId,
+                draft,
+                actorId,
+                session,
+            });
 
         await createTechnicalSheetEvent({
             workspaceId,
@@ -619,6 +748,14 @@ const selectTechnicalSheetSupplierArticle = async ({
                     line._id.toString(),
                 supplierArticleId:
                     article._id.toString(),
+                valuationStatus:
+                    draft.valuationStatus,
+                resolutionCandidateCount:
+                    Object.keys(
+                        automaticValuation
+                            .resolutionCandidates
+                        ?? {},
+                    ).length,
             },
             session,
         });
@@ -636,6 +773,7 @@ const selectTechnicalSheetSupplierArticle = async ({
 );
 
 export {
+    applyAutomaticValuation,
     createDraftFromValidatedState,
     getTechnicalSheetDraft,
     saveTechnicalSheetDraft,

@@ -16,6 +16,7 @@ function renderPanel(overrides = {}) {
     },
     canCopy: true,
     canDelete: true,
+    canEditIdentity: true,
     canLifecycle: true,
     canValidate: true,
     copyDisabled: false,
@@ -28,10 +29,15 @@ function renderPanel(overrides = {}) {
     onArchive: vi.fn(),
     onCopy: vi.fn(),
     onDelete: vi.fn(),
+    onEditIdentity: vi.fn(),
+    onOpenAnalysis: vi.fn(),
+    onOpenDossier: vi.fn(),
     onReactivate: vi.fn(),
     onValidate: vi.fn(),
     pendingLifecycle: false,
+    rightPanel: null,
     validatePending: false,
+    validationEligible: true,
     ...overrides,
   };
 
@@ -54,16 +60,41 @@ describe('TechnicalSheetControlPanel', () => {
     })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
+      name: 'Modifier',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Analyse',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Infos dossier',
+    }));
+    await user.click(screen.getByRole('button', {
       name: 'Copier vers un autre Dossier',
     }));
 
+    expect(props.onEditIdentity).toHaveBeenCalledTimes(1);
+    expect(props.onOpenAnalysis).toHaveBeenCalledTimes(1);
+    expect(props.onOpenDossier).toHaveBeenCalledTimes(1);
     expect(props.onCopy).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', {
       name: 'Valider la Fiche technique',
     })).toBeEnabled();
   });
 
-  it('bloque la validation si les informations du drawer ne sont pas enregistrées', () => {
+  it('conserve la position des actions et marque le panneau actif', () => {
+    renderPanel({
+      rightPanel: 'analysis',
+    });
+
+    expect(screen.getByRole('button', {
+      name: 'Analyse',
+    })).toHaveClass('bg-secondary');
+    expect(screen.getByRole('button', {
+      name: 'Réactiver la Fiche',
+    })).toBeDisabled();
+  });
+
+  it('bloque la validation si les informations de la Fiche ne sont pas enregistrées', () => {
     renderPanel({
       identityDirty: true,
     });
@@ -76,6 +107,16 @@ describe('TechnicalSheetControlPanel', () => {
   it('bloque la validation si le brouillon de composition est modifié', () => {
     renderPanel({
       draftDirty: true,
+    });
+
+    expect(screen.getByRole('button', {
+      name: 'Valider la Fiche technique',
+    })).toBeDisabled();
+  });
+
+  it('bloque la validation lorsque le backend indique que l’état économique ne le permet pas', () => {
+    renderPanel({
+      validationEligible: false,
     });
 
     expect(screen.getByRole('button', {

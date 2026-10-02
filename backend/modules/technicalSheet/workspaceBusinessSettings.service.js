@@ -32,9 +32,11 @@ const getWorkspaceBusinessSettings = async ({
     session = null,
 }) => {
     let query =
-        WorkspaceBusinessSettings.findOne({
-            workspace: workspaceId,
-        });
+        WorkspaceBusinessSettings.findOne(
+            mongoose.trusted({
+                workspace: workspaceId,
+            }),
+        );
 
     if (session) {
         query = query.session(session);
@@ -69,7 +71,9 @@ const updateTrashRetentionDays = async ({
         const settings =
             await WorkspaceBusinessSettings
                 .findOneAndUpdate(
-                    { workspace: workspaceId },
+                    mongoose.trusted({
+                        workspace: workspaceId,
+                    }),
                     {
                         $set: {
                             trashRetentionDays,

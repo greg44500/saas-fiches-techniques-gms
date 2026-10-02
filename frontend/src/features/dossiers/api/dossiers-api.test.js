@@ -111,6 +111,7 @@ describe('dossierApi', () => {
       documentEmail: 'docs@example.test',
       phone: null,
       contactName: 'Responsable',
+      defaultTargetMarginBasisPoints: 3000,
       status: 'DELETED',
       workspace: 'other-workspace',
     };
@@ -122,6 +123,7 @@ describe('dossierApi', () => {
       documentEmail: 'docs@example.test',
       phone: null,
       contactName: 'Responsable',
+      defaultTargetMarginBasisPoints: 3000,
     });
 
     expect(captured.endpointDefinitions.createDossier.query({

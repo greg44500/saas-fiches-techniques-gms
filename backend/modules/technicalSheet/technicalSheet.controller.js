@@ -2,8 +2,11 @@ import {
     SYSTEM_ROLE_KEY,
 } from '../../constants/role.constants.js';
 import {
-    PRODUCT_REFERENCE_UNIT_REGISTRY,
+    PRODUCT_SEARCH_SCOPE,
 } from '../productCatalog/productCatalog.registry.js';
+import {
+    SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY,
+} from '../supplierCatalog/supplierCatalog.registry.js';
 import {
     createDraftFromValidatedState,
     getTechnicalSheetDraft,
@@ -26,12 +29,23 @@ import {
     restoreTechnicalSheet,
 } from './technicalSheetLifecycle.service.js';
 import {
+    TECHNICAL_SHEET_CHANGE_KIND_REGISTRY,
+    TECHNICAL_SHEET_ECONOMIC_METRIC_REGISTRY,
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
+    TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
     TECHNICAL_SHEET_LINE_KIND,
+    TECHNICAL_SHEET_LINE_KIND_REGISTRY,
     TECHNICAL_SHEET_LINE_VALUATION_STATUS,
+    TECHNICAL_SHEET_LINE_VALUATION_STATUS_REGISTRY,
+    TECHNICAL_SHEET_PRODUCTION_DEFAULTS,
+    TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY,
+    TECHNICAL_SHEET_SALE_BASIS_REGISTRY,
     TECHNICAL_SHEET_STATUS,
+    TECHNICAL_SHEET_STATUS_REGISTRY,
     TECHNICAL_SHEET_TRASH_RETENTION,
     TECHNICAL_SHEET_VALUATION_STATUS,
+    TECHNICAL_SHEET_VALUATION_STATUS_REGISTRY,
+    TECHNICAL_SHEET_VAT_RATE_REGISTRY,
 } from './technicalSheet.registry.js';
 import {
     TECHNICAL_SHEET_PERMISSION,
@@ -64,30 +78,79 @@ const metadata = async (req, res) => {
         status: 'success',
         data: {
             metadata: {
+                changeKindDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_CHANGE_KIND_REGISTRY,
+                    ),
+                economicMetricDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_ECONOMIC_METRIC_REGISTRY,
+                    ),
                 statuses:
                     Object.values(
                         TECHNICAL_SHEET_STATUS,
+                    ),
+                statusDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_STATUS_REGISTRY,
                     ),
                 lineKinds:
                     Object.values(
                         TECHNICAL_SHEET_LINE_KIND,
                     ),
+                lineKindDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_LINE_KIND_REGISTRY,
+                    ),
+                pricingSources:
+                    Object.values(
+                        SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY,
+                    ),
                 valuationStatuses:
                     Object.values(
                         TECHNICAL_SHEET_VALUATION_STATUS,
+                    ),
+                valuationStatusDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_VALUATION_STATUS_REGISTRY,
                     ),
                 lineValuationStatuses:
                     Object.values(
                         TECHNICAL_SHEET_LINE_VALUATION_STATUS,
                     ),
+                lineValuationStatusDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_LINE_VALUATION_STATUS_REGISTRY,
+                    ),
                 finalPriceModes:
                     Object.values(
                         TECHNICAL_SHEET_FINAL_PRICE_MODE,
                     ),
+                finalPriceModeDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
+                    ),
                 units:
                     Object.values(
-                        PRODUCT_REFERENCE_UNIT_REGISTRY,
+                        TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY,
                     ),
+                productionUnits:
+                    Object.values(
+                        TECHNICAL_SHEET_PRODUCTION_UNIT_REGISTRY,
+                    ),
+                saleBases:
+                    Object.values(
+                        TECHNICAL_SHEET_SALE_BASIS_REGISTRY,
+                    ),
+                vatRates:
+                    Object.values(
+                        TECHNICAL_SHEET_VAT_RATE_REGISTRY,
+                    ),
+                defaults: {
+                    ...TECHNICAL_SHEET_PRODUCTION_DEFAULTS,
+                    productSearchScope:
+                        PRODUCT_SEARCH_SCOPE.REFERENCE,
+                },
                 trashRetention: {
                     defaultDays:
                         TECHNICAL_SHEET_TRASH_RETENTION

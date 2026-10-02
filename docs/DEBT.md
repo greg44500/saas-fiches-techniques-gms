@@ -220,7 +220,7 @@ Checkpoint M-001 validé : les quatre parcours métier sont intégrés au corpus
 
 M-002 conserve ses deux parcours Playwright critiques : (1) contribution Workspace puis revue/approbation par l’autorité Application Global ; (2) création directe par une autorité Application Global explicitement habilitée.
 
-M-004 ajoute cinq parcours Playwright critiques : (1) Référence Produit globale non favorite composable/valorisable ; (2) ambiguïté Article, changement de prix, revalorisation puis validation ; (3) copie inter-Dossier sans finance source ; (4) quota bloquant création/copie sans bloquer la modification ; (5) corbeille, restauration et purge avec quota conservé jusqu’à la purge.
+M-004 ajoute cinq parcours Playwright critiques : (1) Référence Produit globale non favorite composable et calculable ; (2) ambiguïté Article, changement de prix, actualisation automatique puis validation ; (3) copie inter-Dossier sans finance source ; (4) quota bloquant création/copie sans bloquer la modification ; (5) corbeille, restauration et purge avec quota conservé jusqu’à la purge.
 
 Checkpoint de clôture M-002 à M-004 du 2026-09-30 :
 

@@ -72,6 +72,7 @@ La validation technique M-001 est acquise. Le head final de la PR #10 (`91bab9f8
 
 - [ ] ownership Workspace explicite ;
 - [ ] nom obligatoire ;
+- [ ] extension M-004 : marge cible par défaut obligatoire à la création ;
 - [ ] enseigne/localisation/email/téléphone/contact facultatifs ;
 - [ ] statut initial ACTIVE backend-owned ;
 - [ ] lifecycle conforme au contrat ;
@@ -135,7 +136,7 @@ Les erreurs cross-workspace / hors scope Dossier ne permettent pas l'énumérati
 
 ## 6. Création / modification
 
-- [ ] un nom seul permet la création ;
+- [ ] création produit actuelle : nom + marge cible par défaut sont obligatoires ;
 - [ ] le client ne choisit pas le statut initial ;
 - [ ] un Owner ne reçoit jamais de grant individuel ;
 - [ ] un non-owner explicitement autorisé à créer reçoit atomiquement son grant ACTIVE ;

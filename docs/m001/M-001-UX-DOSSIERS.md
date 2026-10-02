@@ -158,10 +158,11 @@ DossierForm
 → édition
 ```
 
-Champs M-001 :
+Champs du formulaire Dossier après extension M-004 :
 
 ```text
 Nom *
+Marge cible par défaut (%) *   [création]
 Enseigne
 Adresse
 Code postal
@@ -170,6 +171,8 @@ Email documents
 Téléphone
 Responsable / interlocuteur
 ```
+
+La marge cible par défaut est une extension métier M-004 portée par le Dossier : elle est obligatoire lors d'une nouvelle création et initialise les futures Fiches techniques. Les autres champs historiques M-001 restent inchangés.
 
 La validation frontend améliore l'UX mais le backend reste autorité.
 

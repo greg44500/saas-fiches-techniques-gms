@@ -152,6 +152,11 @@ const inferChangeKinds = ({
             draft.vatRateBasisPoints,
         targetMarginBasisPoints:
             draft.targetMarginBasisPoints,
+        portionsPerProductionUnit:
+            draft.portionsPerProductionUnit
+                ?.toString() ?? null,
+        saleBasis:
+            draft.saleBasis,
     };
 
     if (
@@ -164,6 +169,17 @@ const inferChangeKinds = ({
             targetMarginBasisPoints:
                 previousSheet
                     ?.targetMarginBasisPoints,
+            portionsPerProductionUnit:
+                previousSheet
+                    ?.portionsPerProductionUnit
+                    ?.toString?.()
+                ?? previousSheet
+                    ?.portionsPerProductionUnit
+                ?? null,
+            saleBasis:
+                previousSheet
+                    ?.saleBasis
+                ?? null,
         })
     ) {
         changes.push(
@@ -291,15 +307,17 @@ const validateTechnicalSheet = async ({
         });
 
         const sheet =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                status:
-                    TECHNICAL_SHEET_STATUS.ACTIVE,
-                revision:
-                    expectedSheetRevision,
-            }).session(session);
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    status:
+                        TECHNICAL_SHEET_STATUS.ACTIVE,
+                    revision:
+                        expectedSheetRevision,
+                }),
+            ).session(session);
 
         if (!sheet) {
             throw new AppError(
@@ -309,29 +327,19 @@ const validateTechnicalSheet = async ({
         }
 
         const draft =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                revision:
-                    expectedDraftRevision,
-            }).session(session);
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    revision:
+                        expectedDraftRevision,
+                }),
+            ).session(session);
 
         if (!draft) {
             throw new AppError(
                 'Conflit de modification du brouillon.',
-                409,
-            );
-        }
-
-        if (
-            draft.valuationStatus
-            !== TECHNICAL_SHEET_VALUATION_STATUS
-                .COMPLETE
-            || !draft.valuationFingerprint
-        ) {
-            throw new AppError(
-                'La Fiche technique doit être complètement valorisée avant validation.',
                 409,
             );
         }
@@ -349,26 +357,44 @@ const validateTechnicalSheet = async ({
             fresh.valuationStatus
             !== TECHNICAL_SHEET_VALUATION_STATUS
                 .COMPLETE
+            || draft.valuationStatus
+                !== TECHNICAL_SHEET_VALUATION_STATUS
+                    .COMPLETE
+            || !draft.valuationFingerprint
             || fresh.valuationFingerprint
                 !== draft.valuationFingerprint
         ) {
+            const refreshedLines =
+                fresh.lines.map((line) => {
+                    const persisted = { ...line };
+                    delete persisted.productVariantSnapshot;
+                    return persisted;
+                });
+
             await TechnicalSheetDraft.updateOne(
-                {
+                mongoose.trusted({
                     _id: draft._id,
                     revision:
                         expectedDraftRevision,
-                },
+                }),
                 {
                     $set: {
+                        lines: refreshedLines,
                         valuationStatus:
-                            TECHNICAL_SHEET_VALUATION_STATUS
-                                .STALE,
-                        valuedAt: null,
+                            fresh.valuationStatus,
+                        valuedAt:
+                            fresh.valuedAt,
                         valuationFingerprint:
-                            null,
-                        economicSnapshot: null,
-                        'lines.$[].valuation.materialCostSharePercent':
-                            null,
+                            fresh.valuationFingerprint,
+                        economicSnapshot:
+                            fresh.economicSnapshot,
+                        ...(fresh.economicSnapshot
+                            ? {
+                                finalPriceTtcMinor:
+                                    fresh.economicSnapshot
+                                        .finalPriceTtcMinor,
+                            }
+                            : {}),
                         updatedBy: actorId,
                     },
                     $inc: { revision: 1 },
@@ -377,21 +403,25 @@ const validateTechnicalSheet = async ({
             );
 
             return {
-                revaluationRequired: true,
+                valuationRefreshed: true,
+                valuationStatus:
+                    fresh.valuationStatus,
             };
         }
 
         const previousValidation =
             sheet.currentValidatedState
                 ? await TechnicalSheetValidation
-                    .findOne({
-                        _id:
-                            sheet.currentValidatedState,
-                        technicalSheet:
-                            sheet._id,
-                        workspace: workspaceId,
-                        dossier: dossierId,
-                    })
+                    .findOne(
+                        mongoose.trusted({
+                            _id:
+                                sheet.currentValidatedState,
+                            technicalSheet:
+                                sheet._id,
+                            workspace: workspaceId,
+                            dossier: dossierId,
+                        }),
+                    )
                     .session(session)
                 : null;
 
@@ -424,10 +454,11 @@ const validateTechnicalSheet = async ({
                                 .toString(),
                         productionUnit:
                             draft.productionUnit,
-                        portions:
-                            draft.portions
-                                ?.toString()
-                            ?? null,
+                        portionsPerProductionUnit:
+                            draft.portionsPerProductionUnit
+                                .toString(),
+                        saleBasis:
+                            draft.saleBasis,
                         vatRateBasisPoints:
                             draft.vatRateBasisPoints,
                         targetMarginBasisPoints:
@@ -451,13 +482,13 @@ const validateTechnicalSheet = async ({
 
         const updatedSheet =
             await TechnicalSheet.findOneAndUpdate(
-                {
+                mongoose.trusted({
                     _id: sheet._id,
                     revision:
                         expectedSheetRevision,
                     status:
                         TECHNICAL_SHEET_STATUS.ACTIVE,
-                },
+                }),
                 {
                     $set: {
                         currentValidatedState:
@@ -480,7 +511,9 @@ const validateTechnicalSheet = async ({
         }
 
         await TechnicalSheetDraft.deleteOne(
-            { _id: draft._id },
+            mongoose.trusted({
+                _id: draft._id,
+            }),
             { session },
         );
 
@@ -512,13 +545,16 @@ const validateTechnicalSheet = async ({
         },
     );
 
-    if (result.revaluationRequired) {
+    if (result.valuationRefreshed) {
         const error = new AppError(
-            'Les données économiques ont changé. Une revalorisation est obligatoire.',
+            result.valuationStatus
+                === TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE
+                ? 'Les données économiques ont changé. Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.'
+                : 'La Fiche n’est pas complètement calculable avec les données disponibles. Les calculs ont été actualisés.',
             409,
         );
         error.code =
-            'TECHNICAL_SHEET_REVALUATION_REQUIRED';
+            'TECHNICAL_SHEET_VALUATION_REFRESHED';
         throw error;
     }
 
@@ -533,15 +569,17 @@ const listTechnicalSheetHistory = async ({
     limit = 20,
 }) => {
     const sheetExists =
-        await TechnicalSheet.exists({
-            _id: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            status: mongoose.trusted({
-                $ne:
-                    TECHNICAL_SHEET_STATUS.DELETED,
+        await TechnicalSheet.exists(
+            mongoose.trusted({
+                _id: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                status: mongoose.trusted({
+                    $ne:
+                        TECHNICAL_SHEET_STATUS.DELETED,
+                }),
             }),
-        });
+        );
 
     if (!sheetExists) {
         throw new AppError(
@@ -551,11 +589,11 @@ const listTechnicalSheetHistory = async ({
     }
 
     const skip = (page - 1) * limit;
-    const filter = {
+    const filter = mongoose.trusted({
         workspace: workspaceId,
         dossier: dossierId,
         technicalSheet: technicalSheetId,
-    };
+    });
 
     const [validations, total] =
         await Promise.all([
@@ -592,15 +630,17 @@ const getTechnicalSheetValidation = async ({
     validationId,
 }) => {
     const sheetExists =
-        await TechnicalSheet.exists({
-            _id: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            status: mongoose.trusted({
-                $ne:
-                    TECHNICAL_SHEET_STATUS.DELETED,
+        await TechnicalSheet.exists(
+            mongoose.trusted({
+                _id: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                status: mongoose.trusted({
+                    $ne:
+                        TECHNICAL_SHEET_STATUS.DELETED,
+                }),
             }),
-        });
+        );
 
     if (!sheetExists) {
         throw new AppError(
@@ -610,12 +650,14 @@ const getTechnicalSheetValidation = async ({
     }
 
     const validation =
-        await TechnicalSheetValidation.findOne({
-            _id: validationId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            technicalSheet: technicalSheetId,
-        });
+        await TechnicalSheetValidation.findOne(
+            mongoose.trusted({
+                _id: validationId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                technicalSheet: technicalSheetId,
+            }),
+        );
 
     if (!validation) {
         throw new AppError(

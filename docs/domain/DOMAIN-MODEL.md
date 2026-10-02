@@ -882,7 +882,7 @@ Un Article explicitement sélectionné reste attaché à la version concernée.
 
 S'il n'existe qu'un seul candidat exploitable, le backend peut le résoudre automatiquement. S'il existe plusieurs candidats sans décision explicite, une sélection utilisateur est requise.
 
-Un changement de prix du même Article est une revalorisation ; un changement d'Article est une modification d'approvisionnement distincte.
+Un changement de prix du même Article déclenche un recalcul économique ; un changement d'Article est une modification d'approvisionnement distincte.
 
 ### 9.11 Références du magasin
 
@@ -994,7 +994,12 @@ Le système récupère ou calcule unité, rendement, quantité brute, pourcentag
 
 ### 11.2 Quantité nette
 
-La quantité saisie représente la quantité nette réellement présente dans la recette.
+La quantité saisie représente la quantité nette réellement présente dans la recette et s'exprime toujours dans l'unité de référence du ProductVariant.
+
+Lors d'un remplacement de Produit :
+- même unité : la valeur est conservée ;
+- unités compatibles d'une même dimension : la quantité est convertie ;
+- dimensions incompatibles : aucune conversion métier n'est inventée et l'utilisateur doit vérifier la valeur numérique conservée.
 
 ### 11.3 Quantité brute
 
@@ -1044,12 +1049,28 @@ L'énergie est exclue.
 
 Le Coût Matière, l'Économat et le Coût total de fabrication restent calculés en HT.
 
+La Fiche porte une quantité produite en pièces, un nombre de portions par pièce et une base de vente `PIECE | PORTION`. Les coûts de recette restent totaux.
+
+```text
+totalPortions
+=
+productionQuantity × portionsPerProductionUnit
+
+CF/Pce HT
+=
+Coût total de fabrication HT / productionQuantity
+
+CFU HT
+=
+Coût total de fabrication HT / totalPortions
+```
+
 Convention d'Objectif de marge :
 
 ```text
 Objectif de marge
 =
-(Prix de vente HT - Coût total de fabrication HT)
+(Prix de vente HT - coût de fabrication HT de la base de vente)
 /
 Prix de vente HT
 ```
@@ -1060,15 +1081,15 @@ Coefficient :
 coefficient = 1 / (1 - objectif de marge)
 ```
 
-Prix théorique :
+Prix de vente calculé :
 
 ```text
-Prix théorique HT
+Prix de vente calculé HT
 =
-Coût total de fabrication HT × coefficient
+coût de fabrication HT de la base de vente × coefficient
 ```
 
-Le Prix théorique TTC est calculé avec la TVA de la fiche.
+Le Prix de vente calculé TTC est calculé avec la TVA de la fiche.
 
 La règle d'arrondi effective du Workspace produit ensuite le Prix conseillé TTC.
 
@@ -1078,33 +1099,33 @@ Règle standard :
 Prix conseillé TTC
 =
 multiple de 0,50 € immédiatement supérieur ou égal
-au Prix théorique TTC
+au Prix de vente calculé TTC
 ```
 
 Invariants :
 
 ```text
-Prix conseillé TTC >= Prix théorique TTC
-Prix définitif TTC >= Prix conseillé TTC
+Prix conseillé TTC unitaire >= Prix de vente calculé TTC unitaire
+Prix retenu TTC unitaire >= plancher économique TTC unitaire
 ```
 
-Le Prix définitif reste une décision humaine.
+Le Prix retenu reste une décision humaine.
 
 Marge réelle :
 
 ```text
 Marge réelle %
 =
-(Prix définitif HT - Coût total de fabrication HT)
+(Prix retenu HT unitaire - Coût de fabrication HT unitaire)
 /
-Prix définitif HT
+Prix retenu HT unitaire
 × 100
 ```
 
 ```text
 Marge réelle €
 =
-Prix définitif HT - Coût total de fabrication HT
+Prix retenu HT unitaire - Coût de fabrication HT unitaire
 ```
 
 La marge semi-nette reste non définie et explicitement différée.
@@ -1113,13 +1134,11 @@ Une version VALIDATED conserve le snapshot nécessaire à l'explication de cette
 
 ## 12. Composition, valorisation et concurrence
 
-Composition et valorisation sont distinctes.
+Composition et calcul économique restent des concepts distincts, mais le brouillon courant est recalculé automatiquement après sauvegarde d'une modification.
 
-Une mise à jour tarifaire ne modifie jamais silencieusement une fiche ouverte ou une version déjà validée.
+Une mise à jour tarifaire ne modifie jamais une version déjà validée. Avant validation, le backend recontrôle les Prix applicables ; si un prix a changé, il actualise le brouillon courant et refuse cette tentative afin de laisser l'utilisateur vérifier les nouveaux résultats avant de confirmer à nouveau.
 
-Avant validation, le backend recontrôle les Prix applicables. Si un prix a changé, une revalorisation explicite est requise.
-
-Un changement d'Article est distingué d'une revalorisation du même Article.
+Un changement d'Article reste distingué d'un simple changement tarifaire du même Article.
 
 ## 12.1 Copie inter-magasin
 
@@ -1141,7 +1160,7 @@ Une version VALIDATED est historiquement immuable.
 
 Modifier une fiche validée ouvre/crée une nouvelle version DRAFT.
 
-Une revalorisation peut produire un nouveau DRAFT avec composition identique et valorisation courante.
+Un changement tarifaire peut produire un nouveau calcul du DRAFT avec composition identique.
 
 Chaque version validée conserve le snapshot économique nécessaire à sa reproductibilité.
 
@@ -1477,9 +1496,9 @@ La baseline fonctionnelle est validée :
 
 - Owner : toutes les permissions métier et tous les Dossiers ;
 - Acheteur : gestion Produits selon baseline, Fournisseurs, Articles, catalogues et Tarifs négociés ;
-- Économe : gestion/validation des Prix facturés, revues tarifaires et revalorisation, sans validation FT par défaut ;
+- Économe : gestion/validation des Prix facturés, revues tarifaires et correction économique, sans validation FT par défaut ;
 - Responsable FT : création, édition, validation, archivage/restauration des Fiches techniques ;
-- Contributeur FT : création et modification de ses DRAFTS, revalorisation de ses fiches, sans administration tarifaire ;
+- Contributeur FT : création et modification de ses DRAFTS avec recalcul automatique, sans administration tarifaire ;
 - Lecteur : consultation des ressources autorisées sans historique commercial détaillé par défaut.
 
 Contributeur et Lecteur peuvent recevoir le Prix applicable nécessaire sans recevoir l'historique commercial confidentiel.
@@ -1499,7 +1518,7 @@ Les rôles personnalisés combinent les permissions lorsque plusieurs responsabi
 - le Workspace Owner possède implicitement tous les dossiers ;
 - un dossier PAUSED / ARCHIVED / DELETED restreint ou coupe les actions indépendamment du Role ;
 - la suppression logique d'un dossier coupe les accès sans réécrire l'état historique de ses ressources ;
-- quantité nette saisie, quantité brute calculée ;
+- quantité nette saisie dans l'unité de référence du ProductVariant, quantité brute calculée ;
 - composition recette calculée sur le net ;
 - CM HT + Économat HT = Coût total de fabrication HT ;
 - TVA distincte du coût de fabrication HT ;

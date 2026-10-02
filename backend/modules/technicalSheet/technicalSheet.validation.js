@@ -9,8 +9,10 @@ import {
 import {
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_LINE_KIND,
+    TECHNICAL_SHEET_SALE_BASIS,
     TECHNICAL_SHEET_STATUS,
     TECHNICAL_SHEET_TRASH_RETENTION,
+    TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS,
 } from './technicalSheet.registry.js';
 
 const decimalStringSchema = z
@@ -33,6 +35,22 @@ const positiveDecimalStringSchema =
 const nullablePositiveDecimal =
     positiveDecimalStringSchema
         .nullable();
+
+const vatRateBasisPointsSchema = z
+    .number()
+    .int()
+    .refine(
+        (value) =>
+            TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS
+                .includes(value),
+        'TVA non autorisée.',
+    );
+
+const legacyCompatibleVatRateBasisPointsSchema = z
+    .number()
+    .int()
+    .min(0)
+    .max(10000);
 
 const paginationQuerySchema = z.strictObject({
     page: z.coerce
@@ -105,6 +123,32 @@ const createTechnicalSheetSchema =
             .max(2000)
             .nullable()
             .optional(),
+        productionQuantity:
+            positiveDecimalStringSchema,
+        productionUnit: z.literal(
+            PRODUCT_REFERENCE_UNIT.UNIT,
+        ),
+        portionsPerProductionUnit:
+            positiveDecimalStringSchema
+                .default('1'),
+        saleBasis: z
+            .enum(
+                Object.values(
+                    TECHNICAL_SHEET_SALE_BASIS,
+                ),
+            )
+            .default(
+                TECHNICAL_SHEET_SALE_BASIS.PIECE,
+            ),
+        vatRateBasisPoints:
+            vatRateBasisPointsSchema
+                .default(550),
+        targetMarginBasisPoints: z
+            .number()
+            .int()
+            .min(0)
+            .max(9999)
+            .optional(),
     });
 
 const updateTechnicalSheetSchema =
@@ -158,7 +202,7 @@ const technicalSheetLineSchema =
             Object.values(
                 PRODUCT_REFERENCE_UNIT,
             ),
-        ),
+        ).optional(),
         order: z
             .number()
             .int()
@@ -186,23 +230,26 @@ const saveTechnicalSheetDraftSchema =
             nullablePositiveDecimal
                 .optional(),
         productionUnit: z
+            .literal(
+                PRODUCT_REFERENCE_UNIT.UNIT,
+            )
+            .nullable()
+            .optional(),
+        portionsPerProductionUnit:
+            nullablePositiveDecimal
+                .optional(),
+        saleBasis: z
             .enum(
                 Object.values(
-                    PRODUCT_REFERENCE_UNIT,
+                    TECHNICAL_SHEET_SALE_BASIS,
                 ),
             )
             .nullable()
             .optional(),
-        portions:
-            nullablePositiveDecimal
+        vatRateBasisPoints:
+            legacyCompatibleVatRateBasisPointsSchema
+                .nullable()
                 .optional(),
-        vatRateBasisPoints: z
-            .number()
-            .int()
-            .min(0)
-            .max(10000)
-            .nullable()
-            .optional(),
         targetMarginBasisPoints: z
             .number()
             .int()
@@ -303,8 +350,7 @@ const dossierTechnicalSheetSettingsSchema =
             z.number()
                 .int()
                 .min(0)
-                .max(9999)
-                .nullable(),
+                .max(9999),
     });
 
 const trashRetentionSchema =

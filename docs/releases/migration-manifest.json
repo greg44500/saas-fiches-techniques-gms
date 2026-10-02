@@ -142,6 +142,14 @@
       "dependsOn": []
     },
     {
+      "id": "m004-production-quantity",
+      "script": "migration:m004-production-quantity",
+      "runner": "backend/migrations/runMigrateM004ProductionQuantityMigration.js",
+      "dependsOn": [
+        "m004-technical-sheets"
+      ]
+    },
+    {
       "id": "m004-plan-limit",
       "script": "migration:m004-plan-limit",
       "runner": "backend/migrations/runAddM004TechnicalSheetPlanLimitMigration.js",

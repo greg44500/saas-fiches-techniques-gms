@@ -1,3 +1,9 @@
+import {
+    calculateTotalPortions,
+    convertQuantity,
+    fractionToDecimal,
+} from './technicalSheetMath.service.js';
+
 const decimalToString = (value) => (
     value === null || value === undefined
         ? null
@@ -32,74 +38,151 @@ const serializeTechnicalSheet = (sheet) => ({
     updatedAt: sheet.updatedAt,
 });
 
-const serializeLine = (line) => ({
-    id: line._id.toString(),
-    kind: line.kind,
-    productVariantId:
-        (
-            line.productVariant?._id
-            ?? line.productVariant
-        ).toString(),
-    productVariant:
-        line.productVariant?._id
-            ? {
-                id: line.productVariant._id.toString(),
-                name: line.productVariant.name,
-                referenceUnit:
-                    line.productVariant.referenceUnit,
-                yieldPercent:
-                    line.productVariant.yieldPercent ?? null,
-                status: line.productVariant.status,
-            }
-            : null,
-    netQuantity: decimalToString(line.netQuantity),
-    inputUnit: line.inputUnit,
-    order: line.order,
-    note: line.note ?? null,
-    selectedSupplierArticleId:
-        line.selectedSupplierArticle?.toString() ?? null,
-    calculation: {
-        yieldPercentUsed:
-            decimalToString(
-                line.calculation?.yieldPercentUsed,
-            ),
-        grossQuantity:
-            decimalToString(
+const normalizeSerializedQuantity = ({
+    quantity,
+    fromUnit,
+    toUnit,
+}) => {
+    const serialized =
+        decimalToString(quantity);
+
+    if (
+        serialized === null
+        || !fromUnit
+        || !toUnit
+        || fromUnit === toUnit
+    ) {
+        return serialized;
+    }
+
+    const converted = convertQuantity({
+        quantity: serialized,
+        fromUnit,
+        toUnit,
+    });
+
+    return converted
+        ? fractionToDecimal(converted)
+        : serialized;
+};
+
+const serializeLine = (line) => {
+    const referenceUnit =
+        line.productVariant?.referenceUnit
+        ?? line.inputUnit;
+    const serializedNetQuantity =
+        normalizeSerializedQuantity({
+            quantity: line.netQuantity,
+            fromUnit: line.inputUnit,
+            toUnit: referenceUnit,
+        });
+    const serializedGrossQuantity =
+        normalizeSerializedQuantity({
+            quantity:
                 line.calculation?.grossQuantity,
-            ),
-        grossUnit:
-            line.calculation?.grossUnit ?? null,
-    },
-    valuation: {
-        status: line.valuation?.status,
-        supplierArticleId:
-            line.valuation?.supplierArticleId
-                ?.toString() ?? null,
-        applicableSource:
-            line.valuation?.applicableSource ?? null,
-        applicableSourceId:
-            line.valuation?.applicableSourceId ?? null,
-        normalizedAmount:
-            decimalToString(
-                line.valuation?.normalizedAmount,
-            ),
-        normalizedUnit:
-            line.valuation?.normalizedUnit ?? null,
-        lineCostHt:
-            decimalToString(
-                line.valuation?.lineCostHt,
-            ),
-        materialCostSharePercent:
-            decimalToString(
-                line.valuation
-                    ?.materialCostSharePercent,
-            ),
-        pricedAt:
-            line.valuation?.pricedAt ?? null,
-        alerts:
-            line.valuation?.alerts ?? [],
-    },
-});
+            fromUnit:
+                line.calculation?.grossUnit
+                ?? line.inputUnit,
+            toUnit: referenceUnit,
+        });
+
+    return {
+        id: line._id.toString(),
+        kind: line.kind,
+        productVariantId:
+            (
+                line.productVariant?._id
+                ?? line.productVariant
+            ).toString(),
+        productVariant:
+            line.productVariant?._id
+                ? {
+                    id: line.productVariant._id.toString(),
+                    name: line.productVariant.name,
+                    referenceUnit:
+                        line.productVariant.referenceUnit,
+                    yieldPercent:
+                        line.productVariant.yieldPercent ?? null,
+                    status: line.productVariant.status,
+                }
+                : null,
+        netQuantity:
+            serializedNetQuantity,
+        inputUnit:
+            referenceUnit,
+        order: line.order,
+        note: line.note ?? null,
+        selectedSupplierArticleId:
+            line.selectedSupplierArticle?.toString() ?? null,
+        calculation: {
+            yieldPercentUsed:
+                decimalToString(
+                    line.calculation?.yieldPercentUsed,
+                ),
+            grossQuantity:
+                serializedGrossQuantity,
+            grossUnit:
+                referenceUnit ?? null,
+        },
+        valuation: {
+            status: line.valuation?.status,
+            supplierArticleId:
+                line.valuation?.supplierArticleId
+                    ?.toString() ?? null,
+            applicableSource:
+                line.valuation?.applicableSource ?? null,
+            applicableSourceId:
+                line.valuation?.applicableSourceId ?? null,
+            normalizedAmount:
+                decimalToString(
+                    line.valuation?.normalizedAmount,
+                ),
+            normalizedUnit:
+                line.valuation?.normalizedUnit ?? null,
+            lineCostHt:
+                decimalToString(
+                    line.valuation?.lineCostHt,
+                ),
+            materialCostSharePercent:
+                decimalToString(
+                    line.valuation
+                        ?.materialCostSharePercent,
+                ),
+            pricedAt:
+                line.valuation?.pricedAt ?? null,
+            alerts:
+                line.valuation?.alerts ?? [],
+        },
+    };
+};
+
+const serializeDraftTotalPortions = (draft) => {
+    if (
+        draft.economicSnapshot?.totalPortions
+        !== null
+        && draft.economicSnapshot?.totalPortions
+        !== undefined
+    ) {
+        return draft.economicSnapshot.totalPortions
+            .toString();
+    }
+
+    if (
+        draft.productionQuantity === null
+        || draft.productionQuantity === undefined
+        || draft.portionsPerProductionUnit === null
+        || draft.portionsPerProductionUnit === undefined
+    ) {
+        return null;
+    }
+
+    return calculateTotalPortions({
+        productionQuantity:
+            draft.productionQuantity.toString(),
+        portionsPerProductionUnit:
+            draft.portionsPerProductionUnit.toString(),
+    });
+};
 
 const serializeTechnicalSheetDraft = (draft) => ({
     id: draft._id.toString(),
@@ -109,7 +192,13 @@ const serializeTechnicalSheetDraft = (draft) => ({
     productionQuantity:
         decimalToString(draft.productionQuantity),
     productionUnit: draft.productionUnit ?? null,
-    portions: decimalToString(draft.portions),
+    portionsPerProductionUnit:
+        decimalToString(
+            draft.portionsPerProductionUnit,
+        ),
+    totalPortions:
+        serializeDraftTotalPortions(draft),
+    saleBasis: draft.saleBasis ?? null,
     vatRateBasisPoints:
         draft.vatRateBasisPoints ?? null,
     targetMarginBasisPoints:

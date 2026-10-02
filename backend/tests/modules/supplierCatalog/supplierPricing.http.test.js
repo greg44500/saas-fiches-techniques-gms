@@ -125,6 +125,42 @@ beforeEach(async () => {
 });
 
 describe('M-003 dossier pricing HTTP', () => {
+    it('expose les sources de Prix applicable depuis le backend', async () => {
+        const response = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/metadata',
+            )
+            .set(bearer(owner.token));
+
+        expect(response.status).toBe(200);
+        expect(
+            response.body.data.metadata
+                .applicablePriceSources,
+        ).toEqual([
+            {
+                value: 'SUPPLIER_TARIFF',
+                label: 'Tarif fournisseur',
+            },
+            {
+                value: 'NEGOTIATED_PRICE',
+                label: 'Tarif négocié',
+            },
+            {
+                value: 'INVOICED_PRICE',
+                label: 'Prix facturé',
+            },
+            {
+                value: 'INDICATIVE_DOSSIER',
+                label: 'Prix indicatif Dossier',
+            },
+            {
+                value: 'INDICATIVE_WORKSPACE',
+                label: 'Prix indicatif espace de travail',
+            },
+        ]);
+    });
+
     it('refuse les périodes négociées qui se chevauchent dans un même Dossier', async () => {
         const first = await request(app)
             .post(

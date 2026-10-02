@@ -8,6 +8,7 @@ import {
     PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
+    PRODUCT_SEARCH_SCOPE,
     PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS,
 } from './productCatalog.registry.js';
@@ -126,7 +127,9 @@ const createGlobalVariantBodySchema = structuredVariantBodySchema;
 
 const productSearchQuerySchema = z.strictObject({
     q: z.string().trim().min(2).max(120).optional(),
-    scope: z.enum(['WORKSPACE', 'REFERENCE']).default('WORKSPACE'),
+    scope: z.enum(
+        Object.values(PRODUCT_SEARCH_SCOPE),
+    ).default(PRODUCT_SEARCH_SCOPE.WORKSPACE),
     categoryId: objectIdSchema.optional(),
     status: z.enum(Object.values(WORKSPACE_PRODUCT_STATUS)).optional(),
     conservationType: conservationTypeSchema.optional(),

@@ -152,7 +152,6 @@ function getApiErrorMessage(error, fallback = 'Une erreur est survenue.') {
 export {
   IMPORT_CLASSIFICATION_PRESENTATION,
   PRODUCT_EVENT_LABELS,
-  PRODUCT_REFERENCE_UNIT_PRESENTATION,
   createValueLabelMap,
   formatYield,
   getApiErrorMessage,
