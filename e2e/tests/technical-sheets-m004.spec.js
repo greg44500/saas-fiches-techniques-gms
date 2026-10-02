@@ -372,6 +372,16 @@ test('M-004 ambiguïté Article, changement de prix, actualisation automatique p
     })
     .click();
 
+  const staleValidationDialog =
+    page.getByRole('dialog');
+
+  await staleValidationDialog
+    .getByRole('button', {
+      name: 'Valider',
+      exact: true,
+    })
+    .click();
+
   await expectVisibleToast(
     page,
     'Les données économiques ont changé. Les calculs ont été actualisés ; vérifiez-les puis validez à nouveau.',
@@ -386,33 +396,20 @@ test('M-004 ambiguïté Article, changement de prix, actualisation automatique p
     ).first(),
   ).toBeVisible();
 
-  await openInformationDrawer(page);
-
-  await page
-    .getByLabel(
-      'Commentaire de validation',
-    )
-    .fill(
+  await validateCurrentDraft(page, {
+    comment:
       'Validation après actualisation',
-    );
+  });
 
   await page.getByRole('button', {
-    name: 'Fermer',
+    name: 'Analyse',
   }).click();
 
-  await page
-    .getByRole('button', {
-      name:
-        'Valider la Fiche technique',
-    })
-    .click();
-
-  await expectVisibleToast(
-    page,
-    'Fiche technique validée',
-  );
-
-  await openInformationDrawer(page);
+  await expect(
+    page.getByRole('heading', {
+      name: 'Analyse de gestion',
+    }),
+  ).toBeVisible();
 
   await page.getByRole('tab', {
     name: 'Historique',
@@ -536,20 +533,26 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
       'Validation avant contrôle du quota',
   });
 
-  await openInformationDrawer(page);
-
   await page
+    .getByRole('button', {
+      name: 'Modifier',
+    })
+    .click();
+
+  const identityDialog =
+    page.getByRole('dialog');
+
+  await identityDialog
     .getByLabel(
-      'Description',
+      'Description / notes',
     )
     .fill(
       'Modification autorisée à la limite',
     );
 
-  await page
+  await identityDialog
     .getByRole('button', {
-      name:
-        'Enregistrer les informations',
+      name: 'Enregistrer',
     })
     .click();
 

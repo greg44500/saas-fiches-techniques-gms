@@ -73,11 +73,22 @@ function DossierWorkspacePage() {
   const location = useLocation();
   const { can, canAny, workspace } = useWorkspaceContext();
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
-  const dossierQuery = useGetDossierByIdQuery({
-    workspaceId: workspace.id,
-    dossierId,
-  });
-  const metadataQuery = useGetDossierMetadataQuery(workspace.id);
+  const isTechnicalSheetDetail = new RegExp(
+    '/dossiers/' + dossierId
+    + '/technical-sheets/[^/]+/?$',
+  ).test(location.pathname);
+
+  const dossierQuery = useGetDossierByIdQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+    },
+    { skip: isTechnicalSheetDetail },
+  );
+  const metadataQuery = useGetDossierMetadataQuery(
+    workspace.id,
+    { skip: isTechnicalSheetDetail },
+  );
   const activeSheetsQuery = useListTechnicalSheetsQuery(
     {
       workspaceId: workspace.id,
@@ -87,7 +98,10 @@ function DossierWorkspacePage() {
       status: 'ACTIVE',
     },
     {
-      skip: !can(TECHNICAL_SHEET_PERMISSION.READ),
+      skip: (
+        isTechnicalSheetDetail
+        || !can(TECHNICAL_SHEET_PERMISSION.READ)
+      ),
     },
   );
   const marginQuery = useGetDossierTechnicalSheetSettingsQuery(
@@ -96,14 +110,12 @@ function DossierWorkspacePage() {
       dossierId,
     },
     {
-      skip: !can(TECHNICAL_SHEET_PERMISSION.READ),
+      skip: (
+        isTechnicalSheetDetail
+        || !can(TECHNICAL_SHEET_PERMISSION.READ)
+      ),
     },
   );
-
-  const isTechnicalSheetDetail = new RegExp(
-    '/dossiers/' + dossierId
-    + '/technical-sheets/[^/]+/?$',
-  ).test(location.pathname);
 
   if (isTechnicalSheetDetail) {
     return <Outlet />;

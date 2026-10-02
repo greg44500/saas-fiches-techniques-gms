@@ -1,5 +1,4 @@
 import { EntityDetailsDrawer } from '@/components/shared/entity-details-drawer';
-import { StatusBadge } from '@/components/shared/status-badge';
 import {
   Tabs,
   TabsContent,
