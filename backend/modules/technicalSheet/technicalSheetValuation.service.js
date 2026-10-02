@@ -13,6 +13,7 @@ import {
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_LINE_KIND,
     TECHNICAL_SHEET_LINE_VALUATION_STATUS,
+    TECHNICAL_SHEET_STATUS,
     TECHNICAL_SHEET_VALUATION_STATUS,
 } from './technicalSheet.registry.js';
 import {
@@ -308,6 +309,8 @@ const buildTechnicalSheetValuation = async ({
     const requiredDraftFieldsPresent =
         draft.productionQuantity !== null
         && draft.productionUnit !== null
+        && draft.portionsPerProductionUnit !== null
+        && draft.saleBasis !== null
         && draft.vatRateBasisPoints !== null
         && draft.targetMarginBasisPoints !== null
         && lines.length > 0;
@@ -332,6 +335,11 @@ const buildTechnicalSheetValuation = async ({
                 productionQuantity:
                     draft.productionQuantity
                         .toString(),
+                portionsPerProductionUnit:
+                    draft.portionsPerProductionUnit
+                        .toString(),
+                saleBasis:
+                    draft.saleBasis,
                 vatRateBasisPoints:
                     draft.vatRateBasisPoints,
                 targetMarginBasisPoints:
@@ -404,6 +412,11 @@ const buildTechnicalSheetValuation = async ({
                         ?.toString() ?? null,
                 productionUnit:
                     draft.productionUnit,
+                portionsPerProductionUnit:
+                    draft.portionsPerProductionUnit
+                        ?.toString() ?? null,
+                saleBasis:
+                    draft.saleBasis,
                 vatRateBasisPoints:
                     draft.vatRateBasisPoints,
                 targetMarginBasisPoints:
@@ -486,12 +499,15 @@ const valuateTechnicalSheet = async ({
     });
 
     const sheet =
-        await TechnicalSheet.findOne({
-            _id: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            status: 'ACTIVE',
-        });
+        await TechnicalSheet.findOne(
+            mongoose.trusted({
+                _id: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                status:
+                    TECHNICAL_SHEET_STATUS.ACTIVE,
+            }),
+        );
 
     if (!sheet) {
         throw new AppError(
@@ -501,12 +517,14 @@ const valuateTechnicalSheet = async ({
     }
 
     const current =
-        await TechnicalSheetDraft.findOne({
-            technicalSheet: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            revision: expectedRevision,
-        });
+        await TechnicalSheetDraft.findOne(
+            mongoose.trusted({
+                technicalSheet: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                revision: expectedRevision,
+            }),
+        );
 
     if (!current) {
         throw new AppError(
@@ -544,11 +562,11 @@ const valuateTechnicalSheet = async ({
                 const updated =
                     await TechnicalSheetDraft
                         .findOneAndUpdate(
-                            {
+                            mongoose.trusted({
                                 _id: current._id,
                                 revision:
                                     expectedRevision,
-                            },
+                            }),
                             {
                                 $set: {
                                     lines:

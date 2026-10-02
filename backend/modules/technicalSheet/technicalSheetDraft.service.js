@@ -37,6 +37,8 @@ import {
 import { AppError } from '../../utils/appError.js';
 
 const ECONOMIC_FIELDS = Object.freeze([
+    'portionsPerProductionUnit',
+    'saleBasis',
     'vatRateBasisPoints',
     'targetMarginBasisPoints',
     'finalPriceTtcMinor',
@@ -119,12 +121,15 @@ const saveTechnicalSheetDraft = async ({
         });
 
         const sheet =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                status: 'ACTIVE',
-            }).session(session);
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    status:
+                        TECHNICAL_SHEET_STATUS.ACTIVE,
+                }),
+            ).session(session);
 
         if (!sheet) {
             throw new AppError(
@@ -134,12 +139,14 @@ const saveTechnicalSheetDraft = async ({
         }
 
         const current =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                revision: expectedRevision,
-            }).session(session);
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    revision: expectedRevision,
+                }),
+            ).session(session);
 
         if (!current) {
             throw new AppError(
@@ -200,6 +207,21 @@ const saveTechnicalSheetDraft = async ({
                 )
                     ? data.productionUnit
                     : current.productionUnit,
+            portionsPerProductionUnit:
+                Object.hasOwn(
+                    data,
+                    'portionsPerProductionUnit',
+                )
+                    ? data.portionsPerProductionUnit
+                    : current.portionsPerProductionUnit
+                        ?.toString() ?? null,
+            saleBasis:
+                Object.hasOwn(
+                    data,
+                    'saleBasis',
+                )
+                    ? data.saleBasis
+                    : current.saleBasis,
             vatRateBasisPoints:
                 Object.hasOwn(
                     data,
@@ -289,10 +311,10 @@ const saveTechnicalSheetDraft = async ({
 
         const draft =
             await TechnicalSheetDraft.findOneAndUpdate(
-                {
+                mongoose.trusted({
                     _id: current._id,
                     revision: expectedRevision,
-                },
+                }),
                 {
                     $set: {
                         ...merged,
@@ -373,15 +395,17 @@ const getTechnicalSheetDraft = async ({
     technicalSheetId,
 }) => {
     const sheet =
-        await TechnicalSheet.findOne({
-            _id: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            status: mongoose.trusted({
-                $ne:
-                    TECHNICAL_SHEET_STATUS.DELETED,
+        await TechnicalSheet.findOne(
+            mongoose.trusted({
+                _id: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                status: mongoose.trusted({
+                    $ne:
+                        TECHNICAL_SHEET_STATUS.DELETED,
+                }),
             }),
-        })
+        )
             .select('_id')
             .lean();
 
@@ -393,11 +417,13 @@ const getTechnicalSheetDraft = async ({
     }
 
     const draft =
-        await TechnicalSheetDraft.findOne({
-            technicalSheet: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-        }).populate({
+        await TechnicalSheetDraft.findOne(
+            mongoose.trusted({
+                technicalSheet: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+            }),
+        ).populate({
             path: 'lines.productVariant',
             select:
                 '_id name referenceUnit yieldPercent status',
@@ -524,6 +550,17 @@ const createDraftFromValidatedState = async ({
                         validation
                             .sheetSnapshot
                             .productionUnit,
+                    portionsPerProductionUnit:
+                        validation
+                            .sheetSnapshot
+                            .portionsPerProductionUnit
+                            ?.toString()
+                        ?? null,
+                    saleBasis:
+                        validation
+                            .sheetSnapshot
+                            .saleBasis
+                        ?? null,
                     vatRateBasisPoints:
                         validation
                             .sheetSnapshot

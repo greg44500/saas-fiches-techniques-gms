@@ -15,6 +15,7 @@ import {
 import { AppError } from '../../utils/appError.js';
 import {
     TECHNICAL_SHEET_METRIC,
+    TECHNICAL_SHEET_SALE_BASIS,
     TECHNICAL_SHEET_STATUS,
 } from './technicalSheet.registry.js';
 import {
@@ -41,11 +42,13 @@ const assertOperationalDossier = async ({
     dossierId,
     session,
 }) => {
-    const dossier = await Dossier.findOne({
-        _id: dossierId,
-        workspace: workspaceId,
-        status: DOSSIER_STATUS.ACTIVE,
-    }).session(session);
+    const dossier = await Dossier.findOne(
+        mongoose.trusted({
+            _id: dossierId,
+            workspace: workspaceId,
+            status: DOSSIER_STATUS.ACTIVE,
+        }),
+    ).session(session);
 
     if (!dossier) {
         throw new AppError(
@@ -140,6 +143,13 @@ const createTechnicalSheet = async ({
                         data.productionQuantity,
                     productionUnit:
                         data.productionUnit,
+                    portionsPerProductionUnit:
+                        data.portionsPerProductionUnit
+                        ?? '1',
+                    saleBasis:
+                        data.saleBasis
+                        ?? TECHNICAL_SHEET_SALE_BASIS
+                            .PIECE,
                     vatRateBasisPoints:
                         data.vatRateBasisPoints,
                     targetMarginBasisPoints,
@@ -180,13 +190,13 @@ const listTechnicalSheets = async ({
     search = null,
     status = null,
 }) => {
-    const filter = {
+    const filter = mongoose.trusted({
         workspace: workspaceId,
         dossier: dossierId,
         status: status ?? mongoose.trusted({
             $in: DEFAULT_LIST_STATUSES,
         }),
-    };
+    });
 
     if (search) {
         filter.$or = mongoose.trusted([
@@ -241,11 +251,11 @@ const getTechnicalSheet = async ({
     technicalSheetId,
     includeDeleted = false,
 }) => {
-    const filter = {
+    const filter = mongoose.trusted({
         _id: technicalSheetId,
         workspace: workspaceId,
         dossier: dossierId,
-    };
+    });
 
     if (!includeDeleted) {
         filter.status = mongoose.trusted({
@@ -256,11 +266,13 @@ const getTechnicalSheet = async ({
     const [sheet, draft] =
         await Promise.all([
             TechnicalSheet.findOne(filter),
-            TechnicalSheetDraft.findOne({
-                technicalSheet: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-            }).populate({
+            TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                }),
+            ).populate({
                 path: 'lines.productVariant',
                 select:
                     '_id name referenceUnit yieldPercent status',
@@ -315,14 +327,14 @@ const updateTechnicalSheet = async ({
 
         const sheet =
             await TechnicalSheet.findOneAndUpdate(
-                {
+                mongoose.trusted({
                     _id: technicalSheetId,
                     workspace: workspaceId,
                     dossier: dossierId,
                     status:
                         TECHNICAL_SHEET_STATUS.ACTIVE,
                     revision: expectedRevision,
-                },
+                }),
                 {
                     $set: set,
                     $inc: { revision: 1 },

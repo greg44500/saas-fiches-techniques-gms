@@ -152,6 +152,11 @@ const inferChangeKinds = ({
             draft.vatRateBasisPoints,
         targetMarginBasisPoints:
             draft.targetMarginBasisPoints,
+        portionsPerProductionUnit:
+            draft.portionsPerProductionUnit
+                ?.toString() ?? null,
+        saleBasis:
+            draft.saleBasis,
     };
 
     if (
@@ -164,6 +169,17 @@ const inferChangeKinds = ({
             targetMarginBasisPoints:
                 previousSheet
                     ?.targetMarginBasisPoints,
+            portionsPerProductionUnit:
+                previousSheet
+                    ?.portionsPerProductionUnit
+                    ?.toString?.()
+                ?? previousSheet
+                    ?.portionsPerProductionUnit
+                ?? null,
+            saleBasis:
+                previousSheet
+                    ?.saleBasis
+                ?? null,
         })
     ) {
         changes.push(
@@ -291,15 +307,17 @@ const validateTechnicalSheet = async ({
         });
 
         const sheet =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                status:
-                    TECHNICAL_SHEET_STATUS.ACTIVE,
-                revision:
-                    expectedSheetRevision,
-            }).session(session);
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    status:
+                        TECHNICAL_SHEET_STATUS.ACTIVE,
+                    revision:
+                        expectedSheetRevision,
+                }),
+            ).session(session);
 
         if (!sheet) {
             throw new AppError(
@@ -309,13 +327,15 @@ const validateTechnicalSheet = async ({
         }
 
         const draft =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                revision:
-                    expectedDraftRevision,
-            }).session(session);
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    revision:
+                        expectedDraftRevision,
+                }),
+            ).session(session);
 
         if (!draft) {
             throw new AppError(
@@ -432,6 +452,11 @@ const validateTechnicalSheet = async ({
                                 .toString(),
                         productionUnit:
                             draft.productionUnit,
+                        portionsPerProductionUnit:
+                            draft.portionsPerProductionUnit
+                                .toString(),
+                        saleBasis:
+                            draft.saleBasis,
                         vatRateBasisPoints:
                             draft.vatRateBasisPoints,
                         targetMarginBasisPoints:
@@ -455,13 +480,13 @@ const validateTechnicalSheet = async ({
 
         const updatedSheet =
             await TechnicalSheet.findOneAndUpdate(
-                {
+                mongoose.trusted({
                     _id: sheet._id,
                     revision:
                         expectedSheetRevision,
                     status:
                         TECHNICAL_SHEET_STATUS.ACTIVE,
-                },
+                }),
                 {
                     $set: {
                         currentValidatedState:

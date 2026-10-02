@@ -163,6 +163,15 @@ const serializeTechnicalSheetDraft = (draft) => ({
     productionQuantity:
         decimalToString(draft.productionQuantity),
     productionUnit: draft.productionUnit ?? null,
+    portionsPerProductionUnit:
+        decimalToString(
+            draft.portionsPerProductionUnit,
+        ),
+    totalPortions:
+        draft.economicSnapshot
+            ?.totalPortions
+        ?? null,
+    saleBasis: draft.saleBasis ?? null,
     vatRateBasisPoints:
         draft.vatRateBasisPoints ?? null,
     targetMarginBasisPoints:

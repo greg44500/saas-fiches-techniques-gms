@@ -53,11 +53,13 @@ const assertTargetDossierAccess = async ({
     isOwner,
     session,
 }) => {
-    const dossier = await Dossier.findOne({
-        _id: targetDossierId,
-        workspace: workspaceId,
-        status: DOSSIER_STATUS.ACTIVE,
-    }).session(session);
+    const dossier = await Dossier.findOne(
+        mongoose.trusted({
+            _id: targetDossierId,
+            workspace: workspaceId,
+            status: DOSSIER_STATUS.ACTIVE,
+        }),
+    ).session(session);
 
     if (!dossier) {
         throw new AppError(
@@ -68,14 +70,16 @@ const assertTargetDossierAccess = async ({
 
     if (!isOwner) {
         const grant =
-            await DossierAccessGrant.findOne({
-                workspace: workspaceId,
-                dossier: dossier._id,
-                workspaceMember:
-                    membershipId,
-                status:
-                    DOSSIER_ACCESS_GRANT_STATUS.ACTIVE,
-            }).session(session);
+            await DossierAccessGrant.findOne(
+                mongoose.trusted({
+                    workspace: workspaceId,
+                    dossier: dossier._id,
+                    workspaceMember:
+                        membershipId,
+                    status:
+                        DOSSIER_ACCESS_GRANT_STATUS.ACTIVE,
+                }),
+            ).session(session);
 
         if (!grant) {
             throw new AppError(
@@ -103,14 +107,16 @@ const sourceComposition = async ({
 
     const validation =
         await TechnicalSheetValidation
-            .findOne({
-                _id:
-                    sheet.currentValidatedState,
-                technicalSheet:
-                    sheet._id,
-                workspace: workspaceId,
-                dossier: dossierId,
-            })
+            .findOne(
+                mongoose.trusted({
+                    _id:
+                        sheet.currentValidatedState,
+                    technicalSheet:
+                        sheet._id,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                }),
+            )
             .session(session);
 
     if (!validation) {
@@ -128,6 +134,15 @@ const sourceComposition = async ({
         productionUnit:
             validation.sheetSnapshot
                 .productionUnit,
+        portionsPerProductionUnit:
+            validation.sheetSnapshot
+                .portionsPerProductionUnit
+                ?.toString()
+            ?? null,
+        saleBasis:
+            validation.sheetSnapshot
+                .saleBasis
+            ?? null,
         vatRateBasisPoints:
             validation.sheetSnapshot
                 .vatRateBasisPoints,
@@ -162,17 +177,19 @@ const copyTechnicalSheet = async ({
 }) => mongoose.connection.transaction(
     async (session) => {
         const source =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: sourceDossierId,
-                status: mongoose.trusted({
-                    $in: [
-                        TECHNICAL_SHEET_STATUS.ACTIVE,
-                        TECHNICAL_SHEET_STATUS.ARCHIVED,
-                    ],
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: sourceDossierId,
+                    status: mongoose.trusted({
+                        $in: [
+                            TECHNICAL_SHEET_STATUS.ACTIVE,
+                            TECHNICAL_SHEET_STATUS.ARCHIVED,
+                        ],
+                    }),
                 }),
-            }).session(session);
+            ).session(session);
 
         if (!source) {
             throw new AppError(
@@ -182,14 +199,16 @@ const copyTechnicalSheet = async ({
         }
 
         const openDraft =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet:
-                    source._id,
-                workspace:
-                    workspaceId,
-                dossier:
-                    sourceDossierId,
-            })
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet:
+                        source._id,
+                    workspace:
+                        workspaceId,
+                    dossier:
+                        sourceDossierId,
+                }),
+            )
                 .select('_id')
                 .session(session)
                 .lean();
@@ -295,6 +314,12 @@ const copyTechnicalSheet = async ({
                     productionUnit:
                         composition
                             .productionUnit,
+                    portionsPerProductionUnit:
+                        composition
+                            .portionsPerProductionUnit,
+                    saleBasis:
+                        composition
+                            .saleBasis,
                     vatRateBasisPoints:
                         composition
                             .vatRateBasisPoints,
