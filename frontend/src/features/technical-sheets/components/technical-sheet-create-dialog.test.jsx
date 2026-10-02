@@ -31,10 +31,19 @@ describe('TechnicalSheetCreateDialog', () => {
 
     mocks.metadata.mockReturnValue({
       data: {
-        units: [
-          { value: 'KG', label: 'kg' },
-          { value: 'UNIT', label: 'unité' },
+        productionUnits: [
+          { value: 'UNIT', label: 'Pièce' },
         ],
+        saleBases: [
+          { value: 'PIECE', label: 'Pièce' },
+          { value: 'PORTION', label: 'Portion' },
+        ],
+        defaults: {
+          productionUnit: 'UNIT',
+          portionsPerProductionUnit: '1',
+          saleBasis: 'PIECE',
+          finalPriceMode: 'ADVISED',
+        },
       },
       isLoading: false,
     });
@@ -71,18 +80,6 @@ describe('TechnicalSheetCreateDialog', () => {
       '10',
     );
 
-    await user.click(
-      screen.getByRole('combobox', {
-        name: 'Unité de production',
-      }),
-    );
-    await user.click(
-      screen.getByRole('option', {
-        name: 'kg',
-        exact: true,
-      }),
-    );
-
     await user.type(
       screen.getByLabelText('TVA (%)'),
       '10',
@@ -95,8 +92,13 @@ describe('TechnicalSheetCreateDialog', () => {
       screen.getByText('Marge du Dossier', { exact: true }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByLabelText('Portion(s)'),
-    ).not.toBeInTheDocument();
+      screen.getByLabelText('Portions / pièce'),
+    ).toHaveValue(1);
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Base de vente',
+      }),
+    ).toHaveTextContent('Pièce');
 
     await user.click(
       screen.getByRole('button', {
@@ -111,7 +113,9 @@ describe('TechnicalSheetCreateDialog', () => {
       name: 'Purée de carottes',
       description: null,
       productionQuantity: '10',
-      productionUnit: 'KG',
+      productionUnit: 'UNIT',
+      portionsPerProductionUnit: '1',
+      saleBasis: 'PIECE',
       vatRateBasisPoints: 1000,
     });
     expect(onCreated).toHaveBeenCalled();
@@ -147,17 +151,6 @@ describe('TechnicalSheetCreateDialog', () => {
       screen.getByLabelText('Quantité produite'),
       '20',
     );
-    await user.click(
-      screen.getByRole('combobox', {
-        name: 'Unité de production',
-      }),
-    );
-    await user.click(
-      screen.getByRole('option', {
-        name: 'unité',
-        exact: true,
-      }),
-    );
     await user.type(
       screen.getByLabelText('TVA (%)'),
       '10',
@@ -186,10 +179,45 @@ describe('TechnicalSheetCreateDialog', () => {
       description: null,
       productionQuantity: '20',
       productionUnit: 'UNIT',
+      portionsPerProductionUnit: '1',
+      saleBasis: 'PIECE',
       vatRateBasisPoints: 1000,
       targetMarginBasisPoints: 3000,
     });
     expect(onCreated).toHaveBeenCalled();
+  });
+
+  it('permet de choisir une vente à la portion depuis les metadata backend', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <TechnicalSheetCreateDialog
+        defaultTargetMarginBasisPoints={3000}
+        dossierId="dossier-1"
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Nom'), 'Quiche');
+    await user.type(screen.getByLabelText('Quantité produite'), '10');
+    await user.clear(screen.getByLabelText('Portions / pièce'));
+    await user.type(screen.getByLabelText('Portions / pièce'), '8');
+    await user.click(screen.getByRole('combobox', { name: 'Base de vente' }));
+    await user.click(screen.getByRole('option', { name: 'Portion' }));
+    await user.type(screen.getByLabelText('TVA (%)'), '10');
+    await user.click(screen.getByRole('button', { name: 'Créer', exact: true }));
+
+    expect(mocks.createSheet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productionQuantity: '10',
+        productionUnit: 'UNIT',
+        portionsPerProductionUnit: '8',
+        saleBasis: 'PORTION',
+      }),
+    );
   });
 
   it('place l’explication de capacité dans une infobulle', async () => {

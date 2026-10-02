@@ -106,9 +106,11 @@ import {
 } from '@/features/technical-sheets/components/technical-sheet-line-editor';
 
 const metadata = {
-  units: [
-    { value: 'KG', label: 'kg' },
-    { value: 'UNIT', label: 'unité' },
+  lineValuationStatusDefinitions: [
+    { value: 'UNRESOLVED', label: 'Article à choisir', tone: 'warning' },
+    { value: 'NO_PRICE', label: 'Prix indisponible', tone: 'destructive' },
+    { value: 'VALUED', label: 'Valorisée', tone: 'success' },
+    { value: 'STALE', label: 'Calcul à actualiser', tone: 'warning' },
   ],
 };
 
@@ -261,7 +263,7 @@ describe('TechnicalSheetLineEditor', () => {
       name: 'Part de cette ligne Ingrédient dans le coût matière HT total de la Fiche. Disponible après valorisation complète.',
     })).toBeInTheDocument();
     expect(screen.getByText('PUHT')).toBeInTheDocument();
-    expect(screen.getByText('CMU HT')).toBeInTheDocument();
+    expect(screen.getByText('Coût HT')).toBeInTheDocument();
     expect(screen.getByText('%TR')).toBeInTheDocument();
 
     expect(screen.queryByText('Qté brute')).not.toBeInTheDocument();
@@ -277,6 +279,7 @@ describe('TechnicalSheetLineEditor', () => {
     expect(screen.getByText('100 %')).toBeInTheDocument();
     expect(screen.getByText(/2,15/)).toBeInTheDocument();
     expect(screen.getByText(/6,02/)).toBeInTheDocument();
+    expect(screen.queryByText('CMU HT')).not.toBeInTheDocument();
 
     expect(
       screen.getByLabelText('Unité ligne 1'),

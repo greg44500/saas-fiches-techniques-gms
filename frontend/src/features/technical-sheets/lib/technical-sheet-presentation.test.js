@@ -7,6 +7,7 @@ import {
 import {
   basisPointsToInput,
   formatBasisPoints,
+  formatDecimalCurrency,
   formatMinorCurrency,
   getLineValuationPresentation,
   getTechnicalSheetActionAvailability,
@@ -17,33 +18,53 @@ import {
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 
 describe('technical sheet presentation', () => {
-  it('traduit les statuts techniques sans exposer leur valeur brute', () => {
+  it('traduit les statuts techniques depuis les définitions backend', () => {
+    const statusDefinitions = [
+      { value: 'ARCHIVED', label: 'Archivée', tone: 'archived' },
+    ];
+    const valuationDefinitions = [
+      { value: 'NOT_VALUED', label: 'Non valorisée', tone: 'alert' },
+      { value: 'STALE', label: 'Calcul à actualiser', tone: 'warning' },
+    ];
+    const lineDefinitions = [
+      { value: 'NO_PRICE', label: 'Prix indisponible', tone: 'destructive' },
+    ];
+
     expect(
-      getTechnicalSheetStatusPresentation('ARCHIVED'),
+      getTechnicalSheetStatusPresentation('ARCHIVED', statusDefinitions),
     ).toMatchObject({
       label: 'Archivée',
       tone: 'archived',
     });
 
     expect(
-      getTechnicalSheetValuationPresentation('NOT_VALUED'),
+      getTechnicalSheetValuationPresentation('NOT_VALUED', valuationDefinitions),
     ).toMatchObject({
       label: 'Non valorisée',
       tone: 'alert',
     });
 
     expect(
-      getLineValuationPresentation('NO_PRICE'),
+      getLineValuationPresentation('NO_PRICE', lineDefinitions),
     ).toMatchObject({
       label: 'Prix indisponible',
       tone: 'destructive',
     });
 
     expect(
-      getTechnicalSheetValuationPresentation('STALE'),
+      getTechnicalSheetValuationPresentation('STALE', valuationDefinitions),
     ).toMatchObject({
       label: 'Calcul à actualiser',
       tone: 'warning',
+    });
+  });
+
+  it('retombe sur la valeur technique si une définition backend manque', () => {
+    expect(
+      getTechnicalSheetStatusPresentation('UNKNOWN', []),
+    ).toMatchObject({
+      label: 'UNKNOWN',
+      tone: 'neutral',
     });
   });
 
@@ -75,6 +96,13 @@ describe('technical sheet presentation', () => {
     expect(basisPointsToInput(7250)).toBe('72.5');
     expect(percentInputToBasisPoints('72,5')).toBe(7250);
     expect(formatBasisPoints(7250)).toBe('72,5 %');
+  });
+
+  it('distingue les montants non calculables d’un vrai zéro', () => {
+    expect(formatDecimalCurrency(null)).toBe('NC');
+    expect(formatMinorCurrency(null)).toBe('NC');
+    expect(formatDecimalCurrency('0')).toMatch(/0,00/);
+    expect(formatMinorCurrency(0)).toMatch(/0,00/);
   });
 
   it('convertit le Prix utilisateur en unité monétaire mineure', () => {

@@ -10,6 +10,16 @@ import {
   sumDecimalStrings,
 } from '@/features/technical-sheets/components/technical-sheet-economics-bar';
 
+const finalPriceModeItems = [
+  { value: 'ADVISED', label: 'Conseillé' },
+  { value: 'MANUAL', label: 'Manuel' },
+];
+
+const saleBasisItems = [
+  { value: 'PIECE', label: 'Pièce' },
+  { value: 'PORTION', label: 'Portion' },
+];
+
 describe('TechnicalSheetEconomicsBar', () => {
   it('additionne exactement les coûts partiels sans flottants métier', () => {
     expect(sumDecimalStrings(['0.1', '0.2', '1.25'])).toBe('1.55');
@@ -32,16 +42,19 @@ describe('TechnicalSheetEconomicsBar', () => {
       economatCostHt: '0.75',
       manufacturingCostHt: '4.075',
       manufacturingCostPerProductionUnitHt: null,
+      materialCostPerPortionHt: null,
+      manufacturingCostPerPortionHt: null,
     });
   });
 
   it('compacte les valeurs non disponibles en NC dans le cockpit', () => {
     expect(compactMetricValue('Non calculé')).toBe('NC');
     expect(compactMetricValue('Non renseignée')).toBe('NC');
+    expect(compactMetricValue('NC')).toBe('NC');
     expect(compactMetricValue('12,50 €')).toBe('12,50 €');
   });
 
-  it('affiche les KPI sous forme de sigles accessibles et ouvre le détail', async () => {
+  it('affiche les garde-fous économiques sans confondre pièce et portion', async () => {
     const user = userEvent.setup();
 
     render(
@@ -53,33 +66,38 @@ describe('TechnicalSheetEconomicsBar', () => {
             economatCostHt: '1.5',
             manufacturingCostHt: '14',
             manufacturingCostPerProductionUnitHt: '1.4',
-            advisedPriceTtcMinor: 3500,
-            finalPriceTtcMinor: 3500,
+            materialCostPerPortionHt: '0.625',
+            manufacturingCostPerPortionHt: '0.7',
+            advisedPriceTtcMinor: 350,
+            finalPriceTtcMinor: 350,
             actualMarginBasisPoints: 6000,
           }}
           finalPriceMode="ADVISED"
+          finalPriceModeItems={finalPriceModeItems}
           lines={[]}
           onFinalPriceModeChange={vi.fn()}
+          saleBasis="PORTION"
+          saleBasisItems={saleBasisItems}
           targetMarginBasisPoints={7000}
           vatRateBasisPoints={1000}
         />
       </TooltipProvider>,
     );
 
-    expect(screen.getByText('CM HT')).toBeInTheDocument();
-    expect(screen.getByText('CE HT')).toBeInTheDocument();
+    expect(screen.queryByText('CM HT')).not.toBeInTheDocument();
+    expect(screen.queryByText('CE HT')).not.toBeInTheDocument();
     expect(screen.getByText('CF HT')).toBeInTheDocument();
-    expect(screen.queryByText('%MC')).not.toBeInTheDocument();
-    expect(screen.getByText('CF/U HT')).toBeInTheDocument();
-    expect(screen.getByText('PC TTC/U')).toBeInTheDocument();
-    expect(screen.getByText('PF TTC/U')).toBeInTheDocument();
+    expect(screen.getByText('CMU HT')).toBeInTheDocument();
+    expect(screen.getByText('CFU HT')).toBeInTheDocument();
+    expect(screen.getByText('PC TTC')).toBeInTheDocument();
+    expect(screen.getByText('Prix retenu TTC')).toBeInTheDocument();
     expect(screen.getByText('%MR')).toBeInTheDocument();
 
     expect(screen.getByRole('button', {
-      name: 'Coût matières total hors taxe de la production',
+      name: 'Coût matière unitaire HT d’une portion',
     })).toBeInTheDocument();
     expect(screen.getByRole('button', {
-      name: 'Prix conseillé toutes taxes comprises',
+      name: 'Prix conseillé TTC par portion',
     })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
@@ -100,8 +118,11 @@ describe('TechnicalSheetEconomicsBar', () => {
           canValuate
           economicSnapshot={null}
           finalPriceMode="ADVISED"
+          finalPriceModeItems={finalPriceModeItems}
           lines={[]}
           onFinalPriceModeChange={vi.fn()}
+          saleBasis="PIECE"
+          saleBasisItems={saleBasisItems}
           targetMarginBasisPoints={5000}
           vatRateBasisPoints={1000}
         />
@@ -114,4 +135,5 @@ describe('TechnicalSheetEconomicsBar', () => {
       .not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Marge cible (%)' }))
       .not.toBeInTheDocument();
-  });});
+  });
+});
