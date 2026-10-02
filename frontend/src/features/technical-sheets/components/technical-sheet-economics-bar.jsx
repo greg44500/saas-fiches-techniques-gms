@@ -82,6 +82,7 @@ function snapshotKey(snapshot) {
     snapshot.manufacturingCostPerPortionHt,
     snapshot.finalPriceTtcMinor,
     snapshot.actualMarginBasisPoints,
+    snapshot.targetMarginDeltaBasisPoints,
     snapshot.targetMarginDeltaProductionHt,
   ].map((value) => (
     value?.$numberDecimal ?? value ?? 'null'
@@ -113,6 +114,16 @@ function TechnicalSheetEconomicsBar({
     saleBasisItems.find((item) => item.value === saleBasis)?.label
     ?? 'base de vente'
   );
+
+  const targetMarginDeltaBasisPoints =
+    economicSnapshot?.targetMarginDeltaBasisPoints;
+  const marginClassName = !Number.isInteger(
+    targetMarginDeltaBasisPoints,
+  ) || targetMarginDeltaBasisPoints === 0
+    ? 'text-muted-foreground'
+    : targetMarginDeltaBasisPoints > 0
+      ? 'text-success'
+      : 'text-destructive';
 
   const targetMarginDeltaProductionHt =
     economicSnapshot?.targetMarginDeltaProductionHt;
@@ -269,6 +280,7 @@ function TechnicalSheetEconomicsBar({
             value={formatBasisPoints(
               economicSnapshot?.actualMarginBasisPoints,
             )}
+            valueClassName={marginClassName}
           />
 
           <Metric

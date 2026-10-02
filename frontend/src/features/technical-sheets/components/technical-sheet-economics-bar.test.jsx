@@ -74,6 +74,7 @@ describe('TechnicalSheetEconomicsBar', () => {
             manufacturingCostPerPortionHt: '0.7',
             finalPriceTtcMinor: 350,
             actualMarginBasisPoints: 6000,
+            targetMarginDeltaBasisPoints: 1000,
             targetMarginDeltaProductionHt: '2.0364',
           }}
           finalPriceMode="ADVISED"
@@ -90,6 +91,7 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(screen.getByText('CFU HT')).toBeInTheDocument();
     expect(screen.getByText('Prix retenu TTC')).toBeInTheDocument();
     expect(screen.getByText('%MR')).toBeInTheDocument();
+    expect(screen.getByText('60 %')).toHaveClass('text-success');
     expect(screen.getByText('Écart € vs cible')).toBeInTheDocument();
     expect(screen.getByText(/↑ 2,0364/))
       .toHaveClass('text-success');
@@ -108,6 +110,28 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(await screen.findByText(
       /MR = Marge réelle/,
     )).toBeInTheDocument();
+  });
+
+  it('affiche la Marge réelle en rouge lorsqu’elle reste sous la cible', () => {
+    render(
+      <TooltipProvider>
+        <TechnicalSheetEconomicsBar
+          economicMetricDefinitions={economicMetricDefinitions}
+          economicSnapshot={{
+            actualMarginBasisPoints: 2861,
+            targetMarginDeltaBasisPoints: -139,
+            targetMarginDeltaProductionHt: '-0.2256',
+          }}
+          finalPriceMode="ADVISED"
+          finalPriceModeItems={finalPriceModeItems}
+          saleBasis="PIECE"
+          saleBasisItems={saleBasisItems}
+        />
+      </TooltipProvider>,
+    );
+
+    expect(screen.getByText('28,61 %'))
+      .toHaveClass('text-destructive');
   });
 
   it('affiche Actualisation sans masquer les anciennes valeurs', () => {
