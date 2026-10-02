@@ -441,6 +441,129 @@ describe('M-004 services Fiches techniques', () => {
             ),
         ).toEqual(['25', '75', null]);
     });
+    it('normalise une ancienne unité de ligne vers l’unité de référence du Produit', async () => {
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche normalisation unité',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'KG',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            });
+
+        const saved =
+            await saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    created.draft.revision,
+                canManageSourcing: true,
+                canManageValuation: true,
+                data: {
+                    targetMarginBasisPoints:
+                        5000,
+                    lines: [{
+                        kind:
+                            'INGREDIENT',
+                        productVariantId:
+                            reference.variant._id
+                                .toString(),
+                        netQuantity:
+                            '1000',
+                        inputUnit:
+                            'G',
+                        order: 0,
+                    }],
+                },
+            });
+
+        expect(
+            saved.lines[0].netQuantity,
+        ).toBe('1');
+        expect(
+            saved.lines[0].inputUnit,
+        ).toBe('KG');
+        expect(
+            saved.lines[0].calculation.grossUnit,
+        ).toBe('KG');
+    });
+
+    it('dérive l’unité de ligne lorsque le client ne l’envoie pas', async () => {
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche unité dérivée',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'KG',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            });
+
+        const saved =
+            await saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    created.draft.revision,
+                canManageSourcing: true,
+                canManageValuation: true,
+                data: {
+                    targetMarginBasisPoints:
+                        5000,
+                    lines: [{
+                        kind:
+                            'INGREDIENT',
+                        productVariantId:
+                            reference.variant._id
+                                .toString(),
+                        netQuantity:
+                            '2',
+                        order: 0,
+                    }],
+                },
+            });
+
+        expect(
+            saved.lines[0].inputUnit,
+        ).toBe('KG');
+        expect(
+            saved.lines[0].netQuantity,
+        ).toBe('2');
+    });
+
     it('valorise et valide une Référence Produit sans Article grâce au Prix indicatif Workspace', async () => {
         const indicativeReference =
             await createActiveProductReference({
