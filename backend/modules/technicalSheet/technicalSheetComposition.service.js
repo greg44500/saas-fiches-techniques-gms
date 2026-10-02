@@ -38,14 +38,16 @@ const resolveProductVariants = async ({
         ),
     ];
 
-    let query = ProductVariant.find({
-        _id: mongoose.trusted({
-            $in: ids.map(toObjectId),
+    let query = ProductVariant.find(
+        mongoose.trusted({
+            _id: mongoose.trusted({
+                $in: ids.map(toObjectId),
+            }),
+            status: PRODUCT_STATUS.ACTIVE,
+            identityActive: true,
+            ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
         }),
-        status: PRODUCT_STATUS.ACTIVE,
-        identityActive: true,
-        ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
-    }).select(
+    ).select(
         '_id name referenceUnit yieldPercent status identityActive',
     );
 

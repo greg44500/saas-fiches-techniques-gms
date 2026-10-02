@@ -49,13 +49,13 @@ const transitionTechnicalSheet = async ({
     async (session) => {
         const sheet =
             await TechnicalSheet.findOneAndUpdate(
-                {
+                mongoose.trusted({
                     _id: technicalSheetId,
                     workspace: workspaceId,
                     dossier: dossierId,
                     status: fromStatus,
                     revision: expectedRevision,
-                },
+                }),
                 {
                     $set: {
                         status: toStatus,
@@ -139,18 +139,20 @@ const deleteTechnicalSheet = async ({
             });
 
         const sheet =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                status: mongoose.trusted({
-                    $in: [
-                        TECHNICAL_SHEET_STATUS.ACTIVE,
-                        TECHNICAL_SHEET_STATUS.ARCHIVED,
-                    ],
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    status: mongoose.trusted({
+                        $in: [
+                            TECHNICAL_SHEET_STATUS.ACTIVE,
+                            TECHNICAL_SHEET_STATUS.ARCHIVED,
+                        ],
+                    }),
+                    revision: expectedRevision,
                 }),
-                revision: expectedRevision,
-            }).session(session);
+            ).session(session);
 
         if (!sheet) {
             throw new AppError(
@@ -210,18 +212,20 @@ const restoreTechnicalSheet = async ({
 }) => mongoose.connection.transaction(
     async (session) => {
         const sheet =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                status:
-                    TECHNICAL_SHEET_STATUS.DELETED,
-                purgeScheduledAt:
-                    mongoose.trusted({
-                        $gt: now,
-                    }),
-                revision: expectedRevision,
-            }).session(session);
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    status:
+                        TECHNICAL_SHEET_STATUS.DELETED,
+                    purgeScheduledAt:
+                        mongoose.trusted({
+                            $gt: now,
+                        }),
+                    revision: expectedRevision,
+                }),
+            ).session(session);
 
         if (!sheet) {
             throw new AppError(
@@ -276,12 +280,12 @@ const purgeTechnicalSheet = async ({
     now = new Date(),
 }) => mongoose.connection.transaction(
     async (session) => {
-        const filter = {
+        const filter = mongoose.trusted({
             _id: technicalSheetId,
             workspace: workspaceId,
             status:
                 TECHNICAL_SHEET_STATUS.DELETED,
-        };
+        });
 
         if (expectedRevision !== null) {
             filter.revision =
@@ -327,32 +331,32 @@ const purgeTechnicalSheet = async ({
 
         await Promise.all([
             TechnicalSheetDraft.deleteMany(
-                {
+                mongoose.trusted({
                     technicalSheet:
                         sheet._id,
                     workspace: workspaceId,
-                },
+                }),
                 { session },
             ),
             TechnicalSheetValidation
                 .deleteMany(
-                    {
+                    mongoose.trusted({
                         technicalSheet:
                             sheet._id,
                         workspace: workspaceId,
-                    },
+                    }),
                     { session },
                 ),
         ]);
 
         const deletion =
             await TechnicalSheet.deleteOne(
-                {
+                mongoose.trusted({
                     _id: sheet._id,
                     workspace: workspaceId,
                     status:
                         TECHNICAL_SHEET_STATUS.DELETED,
-                },
+                }),
                 { session },
             );
 
@@ -385,11 +389,11 @@ const listTechnicalSheetTrash = async ({
     page = 1,
     limit = 20,
 }) => {
-    const filter = {
+    const filter = mongoose.trusted({
         workspace: workspaceId,
         status:
             TECHNICAL_SHEET_STATUS.DELETED,
-    };
+    });
     const skip = (page - 1) * limit;
 
     const [sheets, total] =
@@ -425,14 +429,14 @@ const purgeExpiredTechnicalSheets = async ({
     now = new Date(),
     batchSize = 100,
 }) => {
-    const filter = {
+    const filter = mongoose.trusted({
         status:
             TECHNICAL_SHEET_STATUS.DELETED,
         purgeScheduledAt:
             mongoose.trusted({
                 $lte: now,
             }),
-    };
+    });
 
     if (workspaceId) {
         filter.workspace = workspaceId;

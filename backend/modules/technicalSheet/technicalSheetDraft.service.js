@@ -449,14 +449,17 @@ const createDraftFromValidatedState = async ({
         });
 
         const sheet =
-            await TechnicalSheet.findOne({
-                _id: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                status: 'ACTIVE',
-                revision:
-                    expectedSheetRevision,
-            }).session(session);
+            await TechnicalSheet.findOne(
+                mongoose.trusted({
+                    _id: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    status:
+                        TECHNICAL_SHEET_STATUS.ACTIVE,
+                    revision:
+                        expectedSheetRevision,
+                }),
+            ).session(session);
 
         if (!sheet) {
             throw new AppError(
@@ -466,12 +469,14 @@ const createDraftFromValidatedState = async ({
         }
 
         const existing =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet:
-                    technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-            }).session(session);
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet:
+                        technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                }),
+            ).session(session);
 
         if (existing) {
             throw new AppError(
@@ -488,14 +493,16 @@ const createDraftFromValidatedState = async ({
         }
 
         const validation =
-            await TechnicalSheetValidation.findOne({
-                _id:
-                    sheet.currentValidatedState,
-                technicalSheet:
-                    technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-            }).session(session);
+            await TechnicalSheetValidation.findOne(
+                mongoose.trusted({
+                    _id:
+                        sheet.currentValidatedState,
+                    technicalSheet:
+                        technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                }),
+            ).session(session);
 
         if (!validation) {
             throw new AppError(
@@ -647,12 +654,14 @@ const selectTechnicalSheetSupplierArticle = async ({
         });
 
         const draft =
-            await TechnicalSheetDraft.findOne({
-                technicalSheet: technicalSheetId,
-                workspace: workspaceId,
-                dossier: dossierId,
-                revision: expectedRevision,
-            }).session(session);
+            await TechnicalSheetDraft.findOne(
+                mongoose.trusted({
+                    technicalSheet: technicalSheetId,
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    revision: expectedRevision,
+                }),
+            ).session(session);
 
         if (!draft) {
             throw new AppError(

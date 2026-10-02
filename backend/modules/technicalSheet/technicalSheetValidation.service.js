@@ -372,11 +372,11 @@ const validateTechnicalSheet = async ({
                 });
 
             await TechnicalSheetDraft.updateOne(
-                {
+                mongoose.trusted({
                     _id: draft._id,
                     revision:
                         expectedDraftRevision,
-                },
+                }),
                 {
                     $set: {
                         lines: refreshedLines,
@@ -412,14 +412,16 @@ const validateTechnicalSheet = async ({
         const previousValidation =
             sheet.currentValidatedState
                 ? await TechnicalSheetValidation
-                    .findOne({
-                        _id:
-                            sheet.currentValidatedState,
-                        technicalSheet:
-                            sheet._id,
-                        workspace: workspaceId,
-                        dossier: dossierId,
-                    })
+                    .findOne(
+                        mongoose.trusted({
+                            _id:
+                                sheet.currentValidatedState,
+                            technicalSheet:
+                                sheet._id,
+                            workspace: workspaceId,
+                            dossier: dossierId,
+                        }),
+                    )
                     .session(session)
                 : null;
 
@@ -509,7 +511,9 @@ const validateTechnicalSheet = async ({
         }
 
         await TechnicalSheetDraft.deleteOne(
-            { _id: draft._id },
+            mongoose.trusted({
+                _id: draft._id,
+            }),
             { session },
         );
 
@@ -565,15 +569,17 @@ const listTechnicalSheetHistory = async ({
     limit = 20,
 }) => {
     const sheetExists =
-        await TechnicalSheet.exists({
-            _id: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            status: mongoose.trusted({
-                $ne:
-                    TECHNICAL_SHEET_STATUS.DELETED,
+        await TechnicalSheet.exists(
+            mongoose.trusted({
+                _id: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                status: mongoose.trusted({
+                    $ne:
+                        TECHNICAL_SHEET_STATUS.DELETED,
+                }),
             }),
-        });
+        );
 
     if (!sheetExists) {
         throw new AppError(
@@ -583,11 +589,11 @@ const listTechnicalSheetHistory = async ({
     }
 
     const skip = (page - 1) * limit;
-    const filter = {
+    const filter = mongoose.trusted({
         workspace: workspaceId,
         dossier: dossierId,
         technicalSheet: technicalSheetId,
-    };
+    });
 
     const [validations, total] =
         await Promise.all([
@@ -624,15 +630,17 @@ const getTechnicalSheetValidation = async ({
     validationId,
 }) => {
     const sheetExists =
-        await TechnicalSheet.exists({
-            _id: technicalSheetId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            status: mongoose.trusted({
-                $ne:
-                    TECHNICAL_SHEET_STATUS.DELETED,
+        await TechnicalSheet.exists(
+            mongoose.trusted({
+                _id: technicalSheetId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                status: mongoose.trusted({
+                    $ne:
+                        TECHNICAL_SHEET_STATUS.DELETED,
+                }),
             }),
-        });
+        );
 
     if (!sheetExists) {
         throw new AppError(
@@ -642,12 +650,14 @@ const getTechnicalSheetValidation = async ({
     }
 
     const validation =
-        await TechnicalSheetValidation.findOne({
-            _id: validationId,
-            workspace: workspaceId,
-            dossier: dossierId,
-            technicalSheet: technicalSheetId,
-        });
+        await TechnicalSheetValidation.findOne(
+            mongoose.trusted({
+                _id: validationId,
+                workspace: workspaceId,
+                dossier: dossierId,
+                technicalSheet: technicalSheetId,
+            }),
+        );
 
     if (!validation) {
         throw new AppError(
