@@ -884,11 +884,11 @@ function TechnicalSheetWorkspacePage() {
               <CardHeader className="p-4 pb-2">
                 <div
                   className={
-                    'flex flex-wrap items-center justify-between gap-3 '
-                    + 'xl:flex-nowrap'
+                    'grid items-center gap-3 '
+                    + '2xl:grid-cols-[minmax(0,1fr)_auto]'
                   }
                 >
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <ActionIconButton
                       Icon={ArrowLeft}
                       label="Retour vers Dossiers"
@@ -926,8 +926,8 @@ function TechnicalSheetWorkspacePage() {
 
                   <div
                     className={
-                      'flex min-h-11 shrink-0 flex-wrap items-center '
-                      + 'justify-end gap-2'
+                      'flex min-h-11 flex-wrap items-center justify-end '
+                      + 'gap-2 2xl:justify-self-end'
                     }
                   >
                     {canUpdate && (
