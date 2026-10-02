@@ -219,6 +219,26 @@ describe('M-004 RBAC HTTP', () => {
             .expect(200);
 
         expect(
+            response.body.data.metadata.changeKindDefinitions,
+        ).toEqual([
+            {
+                value: 'IDENTITY',
+                label: 'Identité',
+            },
+            {
+                value: 'COMPOSITION',
+                label: 'Composition',
+            },
+            {
+                value: 'SOURCING',
+                label: 'Approvisionnement',
+            },
+            {
+                value: 'ECONOMICS',
+                label: 'Économie',
+            },
+        ]);
+        expect(
             response.body.data.metadata.units,
         ).toEqual([
             {
@@ -248,6 +268,7 @@ describe('M-004 RBAC HTTP', () => {
             expect.objectContaining({
                 value: 'COMPLETE',
                 automaticValuationEligible: false,
+                validationEligible: true,
             }),
             expect.objectContaining({
                 value: 'STALE',

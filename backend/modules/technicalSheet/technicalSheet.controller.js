@@ -29,6 +29,7 @@ import {
     restoreTechnicalSheet,
 } from './technicalSheetLifecycle.service.js';
 import {
+    TECHNICAL_SHEET_CHANGE_KIND_REGISTRY,
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
     TECHNICAL_SHEET_LINE_KIND,
@@ -75,6 +76,10 @@ const metadata = async (req, res) => {
         status: 'success',
         data: {
             metadata: {
+                changeKindDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_CHANGE_KIND_REGISTRY,
+                    ),
                 statuses:
                     Object.values(
                         TECHNICAL_SHEET_STATUS,

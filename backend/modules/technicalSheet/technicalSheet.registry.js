@@ -63,24 +63,28 @@ const TECHNICAL_SHEET_VALUATION_STATUS_REGISTRY = Object.freeze({
         label: 'Non valorisée',
         tone: 'alert',
         automaticValuationEligible: true,
+        validationEligible: false,
     }),
     PARTIAL: Object.freeze({
         value: TECHNICAL_SHEET_VALUATION_STATUS.PARTIAL,
         label: 'Valorisation incomplète',
         tone: 'warning',
         automaticValuationEligible: false,
+        validationEligible: false,
     }),
     COMPLETE: Object.freeze({
         value: TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE,
         label: 'Valorisée',
         tone: 'success',
         automaticValuationEligible: false,
+        validationEligible: true,
     }),
     STALE: Object.freeze({
         value: TECHNICAL_SHEET_VALUATION_STATUS.STALE,
         label: 'Calcul à actualiser',
         tone: 'warning',
         automaticValuationEligible: true,
+        validationEligible: false,
     }),
 });
 
@@ -173,6 +177,25 @@ const TECHNICAL_SHEET_CHANGE_KIND = Object.freeze({
     ECONOMICS: 'ECONOMICS',
 });
 
+const TECHNICAL_SHEET_CHANGE_KIND_REGISTRY = Object.freeze({
+    IDENTITY: Object.freeze({
+        value: TECHNICAL_SHEET_CHANGE_KIND.IDENTITY,
+        label: 'Identité',
+    }),
+    COMPOSITION: Object.freeze({
+        value: TECHNICAL_SHEET_CHANGE_KIND.COMPOSITION,
+        label: 'Composition',
+    }),
+    SOURCING: Object.freeze({
+        value: TECHNICAL_SHEET_CHANGE_KIND.SOURCING,
+        label: 'Approvisionnement',
+    }),
+    ECONOMICS: Object.freeze({
+        value: TECHNICAL_SHEET_CHANGE_KIND.ECONOMICS,
+        label: 'Économie',
+    }),
+});
+
 const TECHNICAL_SHEET_METRIC = Object.freeze({
     TECHNICAL_SHEETS: 'technical_sheets',
 });
@@ -185,6 +208,7 @@ const TECHNICAL_SHEET_TRASH_RETENTION = Object.freeze({
 
 export {
     TECHNICAL_SHEET_CHANGE_KIND,
+    TECHNICAL_SHEET_CHANGE_KIND_REGISTRY,
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
     TECHNICAL_SHEET_LINE_KIND,
