@@ -158,27 +158,53 @@ L'utilisateur ne gère pas une nomenclature V1/V2/V3. L'interface présente un H
 
 ## 6. Base de production
 
-Chaque brouillon et chaque état validé possède une base de production :
+Chaque brouillon et chaque état validé possède une base de production dénombrable :
 
 ```text
 quantité produite
 +
-unité de production
+unité de production = UNIT
++
+portions par pièce
++
+base de vente = PIECE | PORTION
 ```
 
-Il n'existe plus de champ métier séparé « portions » en V1 : la quantité produite porte directement le nombre d'unités obtenues dans l'unité de production choisie.
+Dans l'interface française, `UNIT` est présenté comme « Pièce ». Une nouvelle Fiche M-004 ne choisit plus arbitrairement une unité de production physique telle que kg ou L.
+
+`portionsPerProductionUnit` représente le nombre de portions contenues dans UNE pièce fabriquée. Il est distinct de l'ancien champ ambigu `portions`, qui reste supprimé.
 
 Exemples :
 
 ```text
-10 + unité
-→ 10 unités produites
+1 quiche de 8 parts
+→ quantité produite = 1
+→ unité = Pièce
+→ portions / pièce = 8
+→ total portions = 8
 
-5 + kg
-→ 5 kg produits
+10 quiches de 8 parts
+→ quantité produite = 10
+→ portions / pièce = 8
+→ total portions = 80
+
+80 quiches individuelles
+→ quantité produite = 80
+→ portions / pièce = 1
+→ total portions = 80
 ```
 
-Les unités devront provenir de registries backend contrôlés.
+Le total de portions est une donnée dérivée, jamais saisie directement :
+
+```text
+totalPortions
+=
+productionQuantity × portionsPerProductionUnit
+```
+
+Les unités, bases de vente et libellés sélectionnables proviennent exclusivement de registries backend contrôlés. Le frontend ne maintient aucune liste métier parallèle.
+
+Compatibilité : les anciens snapshots peuvent conserver leur ancienne unité de production pour lecture historique. Aucune conversion implicite d'une ancienne unité physique vers « Pièce » n'est autorisée.
 
 ---
 
@@ -399,17 +425,22 @@ Le passage HT → TTC utilise la TVA de la Fiche.
 
 ## 16. Marge cible
 
-La marge cible représente, pour une unité produite :
+La marge cible s'applique à la base de vente sélectionnée :
 
 ```text
-(PV HT unitaire - coût fabrication HT unitaire) / PV HT unitaire
+(PV HT - coût de fabrication HT de la base de vente)
+/
+PV HT
 ```
 
-Le coût de fabrication HT unitaire est :
+Le coût servant au calcul dépend de `saleBasis` :
 
 ```text
-Coût fabrication HT total
-÷ quantité produite
+PIECE
+→ CF/Pce HT = CF HT / productionQuantity
+
+PORTION
+→ CFU HT = CF HT / totalPortions
 ```
 
 Pour une marge cible strictement inférieure à 100 % :
@@ -422,17 +453,20 @@ coefficient
 Puis :
 
 ```text
-Prix théorique HT par unité produite
-= Coût fabrication HT par unité produite × coefficient
+Prix de vente calculé HT
+=
+coût de fabrication HT de la base de vente × coefficient
 ```
 
 Le backend valide les bornes admissibles. Une marge cible rendant le calcul impossible est refusée.
 
 ---
 
-## 17. Prix théorique et prix conseillé
+## 17. Prix de vente calculé et prix conseillé
 
-Le Prix théorique TTC est obtenu après application de la TVA au Prix théorique HT par unité produite. Le Prix conseillé et le Prix final sont donc exprimés par unité produite.
+Le Prix de vente calculé TTC est obtenu après application de la TVA au Prix de vente calculé HT. Le Prix conseillé et le Prix retenu sont exprimés selon la base de vente choisie : pièce ou portion.
+
+Les noms techniques historiques `theoreticalPrice...` peuvent subsister transitoirement dans le code tant que l'API et l'UX convergent vers cette terminologie métier sans casser les snapshots historiques.
 
 Règle d'arrondi V1 :
 
@@ -457,11 +491,11 @@ Le Prix conseillé est une aide à la décision, pas un plancher commercial obli
 
 ---
 
-## 18. Prix final et marge réelle
+## 18. Prix retenu et marge réelle
 
-Par défaut, le Prix conseillé TTC est proposé comme Prix final TTC.
+Par défaut, le Prix conseillé TTC est proposé comme Prix de vente retenu TTC.
 
-L'utilisateur autorisé peut ensuite choisir un Prix final :
+L'utilisateur autorisé peut ensuite retenir un prix :
 
 ```text
 supérieur
@@ -469,24 +503,25 @@ supérieur
 ou inférieur au Prix conseillé
 ```
 
-Le Prix final ne peut jamais être inférieur au plancher économique par unité produite.
+Le Prix retenu ne peut jamais être inférieur au plancher économique de la base de vente.
 
 Pour une Fiche soumise à TVA :
 
 ```text
-plancher TTC par unité produite
-= Coût de fabrication HT par unité produite × (1 + TVA)
+plancher TTC
+=
+coût de fabrication HT de la base de vente × (1 + TVA)
 ```
 
-Après choix du Prix final, le backend recalcule :
+Après choix du Prix retenu, le backend recalcule :
 
-- Prix final HT ;
+- Prix retenu HT ;
 - marge réelle en valeur ;
 - marge réelle en pourcentage.
 
-Un Prix final choisi explicitement par l'utilisateur ne doit pas être remplacé silencieusement lors d'un recalcul automatique.
+Un Prix retenu choisi explicitement par l'utilisateur ne doit pas être remplacé silencieusement lors d'un recalcul automatique.
 
-Si un recalcul rend ce Prix final inférieur au nouveau plancher économique, l'utilisateur doit corriger explicitement le Prix final avant validation.
+Si un recalcul rend ce Prix retenu inférieur au nouveau plancher économique, l'utilisateur doit le corriger explicitement avant validation.
 
 ---
 
@@ -574,7 +609,11 @@ Il conserve au minimum, selon pertinence :
 
 - nom ;
 - description ;
-- base de production ;
+- quantité produite ;
+- unité de production ;
+- portions par pièce ;
+- total de portions dérivable ;
+- base de vente ;
 - TVA ;
 - marge cible ;
 - coûts agrégés ;

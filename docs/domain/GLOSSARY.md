@@ -1017,15 +1017,56 @@ coefficient = 1 / (1 - objectif de marge)
 
 Il n'est pas une donnée libre indépendante de l'objectif.
 
-## Prix théorique
+## Pièce fabriquée
+
+Une unité dénombrable réellement produite par la Fiche. Côté technique, l'unité de production M-004 est `UNIT` ; côté interface française elle est présentée comme « Pièce ».
+
+## Portions / pièce
+
+Nombre de portions contenues dans une pièce fabriquée.
+
+```text
+totalPortions
+=
+productionQuantity × portionsPerProductionUnit
+```
+
+Le total de portions est dérivé et n'est jamais saisi directement.
+
+## Base de vente
+
+Référence commerciale utilisée pour calculer le prix, le plancher économique et la marge réelle d'une Fiche.
+
+Valeurs V1 :
+
+```text
+PIECE
+PORTION
+```
+
+## CMU HT
+
+Coût Matière Unitaire HT d'une portion :
+
+```text
+CMU HT
+=
+Coût matière HT total / totalPortions
+```
+
+Il est distinct du coût matière d'une pièce fabriquée.
+
+## Prix de vente calculé
 
 Prix calculé pour atteindre l'Objectif de marge avant application de la stratégie commerciale d'arrondi.
 
 ```text
-Prix théorique HT unitaire
+Prix de vente calculé HT
 =
-(Coût total de fabrication HT / quantité produite) × coefficient
+coût de fabrication HT de la base de vente × coefficient
 ```
+
+Le terme historique « Prix théorique » peut encore apparaître dans certains noms techniques internes pendant la stabilisation M-004, mais n'est plus la terminologie UI cible.
 
 ## Prix conseillé
 
@@ -1033,7 +1074,7 @@ Prix minimum proposé par le SaaS après application au Prix théorique TTC de l
 
 Il ne peut jamais être inférieur au Prix théorique correspondant.
 
-## Prix définitif
+## Prix retenu
 
 Prix de vente unitaire décidé humainement pour la Fiche technique.
 
@@ -1041,18 +1082,18 @@ Il peut être inférieur au Prix conseillé, mais jamais inférieur au plancher 
 
 ## Marge réelle
 
-Résultat économique calculé à partir du Prix définitif réellement choisi.
+Résultat économique calculé à partir du Prix retenu réellement choisi.
 
 ```text
 Marge réelle %
 =
-(Prix définitif HT unitaire - Coût de fabrication HT unitaire)
+(Prix retenu HT unitaire - Coût de fabrication HT unitaire)
 /
-Prix définitif HT unitaire
+Prix retenu HT unitaire
 × 100
 ```
 
-La marge réelle en euros correspond à la différence entre Prix définitif HT unitaire et Coût de fabrication HT unitaire.
+La marge réelle en euros correspond à la différence entre Prix retenu HT unitaire et Coût de fabrication HT unitaire.
 
 ## Marge semi-nette
 

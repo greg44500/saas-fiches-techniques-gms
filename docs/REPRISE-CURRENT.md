@@ -1,7 +1,7 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-10-01  
-**Lot courant :** stabilisation M-004 — création, quantité produite et calcul économique automatique  
+**Date :** 2026-10-02  
+**Lot courant :** stabilisation M-004 — production par pièce/portion, base de vente et analyse économique  
 **Branche :** `feature/m004-valuation-ux-stabilization`  
 **Base :** `main@957438c8f522b9e342158a17a7a4a6aa4bd7d3a2`  
 **PR :** aucune — QA visuelle utilisateur requise avant finalisation
@@ -39,8 +39,14 @@ Nouvelle Fiche
 → ouverture du poste de travail seulement avec ces paramètres
 
 Fiche
-→ ancien champ Portions supprimé
-→ quantité produite = dénominateur des résultats unitaires
+→ ancien champ ambigu Portions reste supprimé
+→ productionQuantity = nombre de pièces fabriquées
+→ productionUnit = UNIT, présenté « Pièce »
+→ portionsPerProductionUnit = portions contenues dans une pièce
+→ totalPortions = productionQuantity × portionsPerProductionUnit
+→ base de vente = PIECE | PORTION
+→ CM/Pce et CF/Pce divisés par productionQuantity
+→ CMU et CFU divisés par totalPortions
 → titre + badges intégrés au header sticky à la place du libellé « Paramètres »
 → champs de production compactés
 → composition modifiable uniquement avec paramètres complets
@@ -58,7 +64,9 @@ Prix applicable
 → les Prix indicatifs Dossier / Workspace restent les fallbacks lorsque les sources commerciales ne sont pas exploitables
 ~~~
 
-Le Prix conseillé, le Prix final et le plancher économique sont désormais calculés par unité produite. Les coûts matière, Économat et fabrication totaux restent disponibles pour expliquer le coût complet de la production.
+Le Prix de vente calculé, le Prix conseillé, le Prix retenu et le plancher économique sont calculés selon la base de vente choisie : pièce ou portion. Les coûts matière, Économat et fabrication totaux restent disponibles pour expliquer le coût complet de la production.
+
+Sécurité : `sanitizeFilter` reste activé globalement et les filtres Mongoose du module M-004 sont explicitement approuvés avec `mongoose.trusted(...)`. Les listes métier utilisées par le frontend proviennent des metadata backend.
 
 Compatibilité legacy :
 
@@ -74,8 +82,9 @@ migration:m004-production-quantity
 ~~~text
 main de base                         : 957438c8f522b9e342158a17a7a4a6aa4bd7d3a2
 Core Gate post-merge de cette base   : #167 SUCCESS
-implémentation branche               : réalisée
-tests automatisés de la branche      : NON EXÉCUTÉS / NON REVENDIQUÉS
+implémentation branche               : backend production/base de vente en cours de stabilisation
+tests automatisés ajoutés             : OUI
+tests automatisés exécutés            : NON EXÉCUTÉS / NON REVENDIQUÉS
 QA visuelle utilisateur              : À FAIRE
 PR / merge                           : NON CRÉÉS
 ~~~

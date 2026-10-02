@@ -199,10 +199,13 @@ Décisions fermées :
 - aucun Article le moins cher sélectionné automatiquement ;
 - absence de Prix applicable distincte de zéro ;
 - Coût matière HT + Économat HT = Coût de fabrication HT total ;
-- la quantité produite remplace l'ancien champ Portions et sert de dénominateur pour les résultats unitaires ;
-- coût de fabrication unitaire, TVA, marge cible, prix théorique unitaire, Prix conseillé unitaire, Prix final unitaire et marge réelle sont historisés ;
+- l'ancien champ ambigu Portions reste supprimé ; `productionQuantity` représente les pièces fabriquées et `portionsPerProductionUnit` le nombre de portions par pièce ;
+- `totalPortions = productionQuantity × portionsPerProductionUnit` est dérivé par le backend ;
+- la base de vente est explicitement `PIECE | PORTION` ;
+- CM/Pce et CF/Pce sont calculés sur les pièces ; CMU et CFU sur les portions ;
+- coût de fabrication, TVA, marge cible, Prix de vente calculé, Prix conseillé, Prix retenu et marge réelle sont historisés selon la base de vente ;
 - arrondi V1 du Prix conseillé = multiple de 0,50 € immédiatement supérieur ou égal ;
-- le Prix final peut être inférieur au Prix conseillé mais jamais au plancher économique unitaire ;
+- le Prix retenu peut être inférieur au Prix conseillé mais jamais au plancher économique de la base de vente ;
 - le brouillon est recalculé automatiquement après sauvegarde ; un changement tarifaire détecté à la validation actualise le brouillon puis exige une nouvelle confirmation ;
 - copie inter-Dossier sans aucune donnée financière source ;
 - marge cible d'une copie initialisée depuis le Dossier cible ;

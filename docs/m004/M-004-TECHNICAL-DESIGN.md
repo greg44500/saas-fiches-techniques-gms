@@ -103,19 +103,35 @@ Un nouveau Dossier doit posséder une marge cible par défaut. Pour un Dossier h
 ~~~text
 nom
 quantité produite
-unité de production
+unité de production = UNIT (UI : Pièce)
+portions par pièce
+base de vente = PIECE | PORTION
 TVA
 marge cible héritée du Dossier ou saisie explicitement pour la Fiche si le Dossier historique n'en possède pas
 ~~~
 
-La quantité produite remplace l'ancien champ `portions`. Elle représente le nombre d'unités produites dans `productionUnit` et sert de dénominateur économique :
+Le modèle sépare explicitement pièce fabriquée et portion :
 
 ~~~text
-coût fabrication HT par unité produite
-= coût fabrication HT total / quantité produite
+totalPortions
+= productionQuantity × portionsPerProductionUnit
+
+CM/Pce HT
+= materialCostHt / productionQuantity
+
+CF/Pce HT
+= manufacturingCostHt / productionQuantity
+
+CMU HT
+= materialCostHt / totalPortions
+
+CFU HT
+= manufacturingCostHt / totalPortions
 ~~~
 
-Le Prix théorique, le Prix conseillé, le Prix final et le plancher économique sont exprimés par unité produite. Les coûts matière, économat et fabrication totaux restent également conservés pour expliquer la recette complète.
+La base de vente décide du coût utilisé pour le Prix de vente calculé, le plancher et la marge réelle : coût par pièce pour `PIECE`, coût par portion pour `PORTION`.
+
+Les listes de production et de vente sont exposées par les metadata backend. Le frontend ne duplique pas ces registries.
 
 Compatibilité des données existantes : la migration `migration:m004-production-quantity` reprend l'ancienne valeur `portions` uniquement lorsque `productionQuantity` est absente, puis supprime le champ obsolète des brouillons et snapshots historiques. Elle n'invente aucune valeur lorsque les deux champs sont absents.
 
@@ -135,7 +151,9 @@ technicalSheet         ObjectId unique
 revision               integer >= 0
 
 productionQuantity     Decimal128|null
-productionUnit         unité M-002|null
+productionUnit         UNIT|null
+portionsPerProductionUnit Decimal128|null
+saleBasis              PIECE|PORTION|null
 vatRateBasisPoints     integer|null
 targetMarginBasisPoints integer|null
 
@@ -262,6 +280,8 @@ sheetSnapshot           {
     description
     productionQuantity
     productionUnit
+    portionsPerProductionUnit
+    saleBasis
     vatRateBasisPoints
     targetMarginBasisPoints
 }
@@ -297,6 +317,11 @@ economicSnapshot        {
     materialCostPerProductionUnitHt
     economatCostPerProductionUnitHt
     manufacturingCostPerProductionUnitHt
+    totalPortions
+    materialCostPerPortionHt
+    economatCostPerPortionHt
+    manufacturingCostPerPortionHt
+    saleBasis
     theoreticalPriceHt
     theoreticalPriceTtc
     advisedPriceTtc
@@ -318,6 +343,16 @@ createdAt
 - suppression uniquement dans le cadre de la purge de la Fiche entière.
 
 Le numéro de version n'est pas un concept UX. L'historique est ordonné par `validatedAt` puis `_id`.
+
+---
+
+## 6 bis. Sécurité des filtres Mongoose et autorité backend
+
+`mongoose.set('sanitizeFilter', true)` reste activé globalement. Toute requête M-004 construite avec un filtre applicatif passe explicitement par `mongoose.trusted(...)`; les objets contenant des opérateurs MongoDB contrôlés par l'application (`$in`, `$ne`, `$gt`, `$lte`, etc.) sont eux aussi explicitement approuvés.
+
+Cette règle ne doit jamais être contournée pour simplifier une requête ou un test.
+
+Les valeurs métier sélectionnables (unité de production, base de vente, statuts/modes lorsqu'ils sont exposés à l'UI) ont le backend comme autorité. RTK Query consomme les metadata ; React ne maintient pas de liste métier divergente.
 
 ---
 

@@ -1049,14 +1049,20 @@ L'énergie est exclue.
 
 Le Coût Matière, l'Économat et le Coût total de fabrication restent calculés en HT.
 
-La Fiche porte une quantité produite et une unité de production. Les coûts de recette restent totaux ; les prix de vente sont calculés par unité produite.
+La Fiche porte une quantité produite en pièces, un nombre de portions par pièce et une base de vente `PIECE | PORTION`. Les coûts de recette restent totaux.
 
 ```text
-Coût de fabrication HT / unité produite
+totalPortions
 =
-Coût total de fabrication HT
-/
-quantité produite
+productionQuantity × portionsPerProductionUnit
+
+CF/Pce HT
+=
+Coût total de fabrication HT / productionQuantity
+
+CFU HT
+=
+Coût total de fabrication HT / totalPortions
 ```
 
 Convention d'Objectif de marge :
@@ -1064,9 +1070,9 @@ Convention d'Objectif de marge :
 ```text
 Objectif de marge
 =
-(Prix de vente HT unitaire - Coût de fabrication HT unitaire)
+(Prix de vente HT - coût de fabrication HT de la base de vente)
 /
-Prix de vente HT unitaire
+Prix de vente HT
 ```
 
 Coefficient :
@@ -1075,15 +1081,15 @@ Coefficient :
 coefficient = 1 / (1 - objectif de marge)
 ```
 
-Prix théorique :
+Prix de vente calculé :
 
 ```text
-Prix théorique HT unitaire
+Prix de vente calculé HT
 =
-Coût de fabrication HT unitaire × coefficient
+coût de fabrication HT de la base de vente × coefficient
 ```
 
-Le Prix théorique TTC est calculé avec la TVA de la fiche.
+Le Prix de vente calculé TTC est calculé avec la TVA de la fiche.
 
 La règle d'arrondi effective du Workspace produit ensuite le Prix conseillé TTC.
 
@@ -1093,33 +1099,33 @@ Règle standard :
 Prix conseillé TTC
 =
 multiple de 0,50 € immédiatement supérieur ou égal
-au Prix théorique TTC
+au Prix de vente calculé TTC
 ```
 
 Invariants :
 
 ```text
-Prix conseillé TTC unitaire >= Prix théorique TTC unitaire
-Prix définitif TTC unitaire >= plancher économique TTC unitaire
+Prix conseillé TTC unitaire >= Prix de vente calculé TTC unitaire
+Prix retenu TTC unitaire >= plancher économique TTC unitaire
 ```
 
-Le Prix définitif reste une décision humaine.
+Le Prix retenu reste une décision humaine.
 
 Marge réelle :
 
 ```text
 Marge réelle %
 =
-(Prix définitif HT unitaire - Coût de fabrication HT unitaire)
+(Prix retenu HT unitaire - Coût de fabrication HT unitaire)
 /
-Prix définitif HT unitaire
+Prix retenu HT unitaire
 × 100
 ```
 
 ```text
 Marge réelle €
 =
-Prix définitif HT unitaire - Coût de fabrication HT unitaire
+Prix retenu HT unitaire - Coût de fabrication HT unitaire
 ```
 
 La marge semi-nette reste non définie et explicitement différée.
