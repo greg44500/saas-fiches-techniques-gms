@@ -25,9 +25,14 @@ describe('M-004 production quantity migration', () => {
             new mongoose.Types.ObjectId();
         const preservedDraftId =
             new mongoose.Types.ObjectId();
+        const legacyTechnicalSheetId =
+            new mongoose.Types.ObjectId();
+        const preservedTechnicalSheetId =
+            new mongoose.Types.ObjectId();
 
         await TechnicalSheetDraft.collection.insertOne({
             _id: draftId,
+            technicalSheet: legacyTechnicalSheetId,
             productionQuantity: null,
             portions:
                 mongoose.Types.Decimal128
@@ -36,6 +41,7 @@ describe('M-004 production quantity migration', () => {
 
         await TechnicalSheetDraft.collection.insertOne({
             _id: preservedDraftId,
+            technicalSheet: preservedTechnicalSheetId,
             productionQuantity:
                 mongoose.Types.Decimal128
                     .fromString('5'),
