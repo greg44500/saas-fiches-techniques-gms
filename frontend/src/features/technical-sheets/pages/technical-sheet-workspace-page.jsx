@@ -887,8 +887,18 @@ function TechnicalSheetWorkspacePage() {
           >
             <Card className="border-primary/20 bg-background/97 shadow-lg backdrop-blur-md">
               <CardHeader className="p-4 pb-2">
-                <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="flex min-w-0 items-start gap-2">
+                <div
+                  className={
+                    'grid items-center gap-x-4 gap-y-2 '
+                    + 'xl:grid-cols-[minmax(0,1fr)_auto]'
+                  }
+                >
+                  <div
+                    className={
+                      'grid min-w-0 grid-cols-[auto_minmax(0,1fr)] '
+                      + 'items-center gap-x-2 xl:col-start-1 xl:row-start-1'
+                    }
+                  >
                     <ActionIconButton
                       Icon={ArrowLeft}
                       label="Retour vers Dossiers"
@@ -901,27 +911,44 @@ function TechnicalSheetWorkspacePage() {
                       variant="ghost"
                     />
 
-                    <div className="min-w-0">
-                      <h1 className="truncate text-2xl font-semibold tracking-tight">
-                        {sheet.name}
-                      </h1>
+                    <h1 className="truncate text-2xl font-semibold tracking-tight">
+                      {sheet.name}
+                    </h1>
+                  </div>
 
-                      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
-                        <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
-                          {statusPresentation.label}
-                        </TechnicalSheetStatusBadge>
+                  <div
+                    className={
+                      'grid min-w-0 grid-cols-[2.25rem_minmax(0,1fr)] '
+                      + 'gap-x-2 xl:col-start-1 xl:row-start-2'
+                    }
+                  >
+                    <span aria-hidden="true" />
+                    <div
+                      className={
+                        'flex min-h-6 min-w-0 flex-wrap items-center gap-2 '
+                        + '2xl:flex-nowrap'
+                      }
+                    >
+                      <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+                        {statusPresentation.label}
+                      </TechnicalSheetStatusBadge>
 
-                        <TechnicalSheetStatusBadge tone="warning">
-                          Brouillon
-                        </TechnicalSheetStatusBadge>
+                      <TechnicalSheetStatusBadge tone="warning">
+                        Brouillon
+                      </TechnicalSheetStatusBadge>
 
-                        <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-                          {valuationPresentation.label}
-                        </TechnicalSheetStatusBadge>
-                      </div>
+                      <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
+                        {valuationPresentation.label}
+                      </TechnicalSheetStatusBadge>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center justify-end gap-2">
+
+                  <div
+                    className={
+                      'flex flex-wrap items-center justify-end gap-2 '
+                      + 'xl:col-start-2 xl:row-start-1'
+                    }
+                  >
                     {canEditIdentity && actionAvailability.update && (
                       <Button
                         onClick={() => setIdentityDialogOpen(true)}
@@ -951,6 +978,14 @@ function TechnicalSheetWorkspacePage() {
                       <Building2 aria-hidden="true" className="size-4" />
                       Infos dossier
                     </Button>
+                  </div>
+
+                  <div
+                    className={
+                      'flex min-h-11 flex-wrap items-center justify-end gap-2 '
+                      + 'xl:col-start-2 xl:row-start-2'
+                    }
+                  >
                     {canUpdate
                       && productSearchScopes.length > 0
                       && effectiveProductScope
@@ -961,13 +996,22 @@ function TechnicalSheetWorkspacePage() {
                           productScope={effectiveProductScope}
                         />
                       )}
+
                     {canUpdate && (
-                      <TechnicalSheetAutosaveStatus
-                        blockedReason={autosaveBlockedReason}
-                        onRetry={retryAutosave}
-                        status={autosaveStatus}
-                      />
+                      <div
+                        className={
+                          'flex h-9 w-60 shrink-0 items-center '
+                          + 'justify-end whitespace-nowrap'
+                        }
+                      >
+                        <TechnicalSheetAutosaveStatus
+                          blockedReason={autosaveBlockedReason}
+                          onRetry={retryAutosave}
+                          status={autosaveStatus}
+                        />
+                      </div>
                     )}
+
                     <TechnicalSheetControlPanel
                       actionAvailability={actionAvailability}
                       canCopy={canCopy}
@@ -1086,7 +1130,7 @@ function TechnicalSheetWorkspacePage() {
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Vente
                     </p>
-                    <div className="flex flex-wrap items-end gap-2">
+                    <div className="flex flex-wrap items-end gap-3">
                   <Field className="w-28">
                     <FieldLabel>Base de vente</FieldLabel>
                     <Select
@@ -1116,10 +1160,11 @@ function TechnicalSheetWorkspacePage() {
                     </Select>
                   </Field>
 
-                  <Field className="min-w-40">
+                  <Field className="w-28">
                     <FieldLabel>TVA</FieldLabel>
                     <SegmentedControl
                       ariaLabel="TVA de vente"
+                      className="h-9 p-0.5"
                       disabled={!canUpdate || !canValuate || draftSynchronizing}
                       items={vatRateItems}
                       onValueChange={(value) => {
