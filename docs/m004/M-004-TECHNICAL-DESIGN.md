@@ -175,7 +175,7 @@ lineId                  ObjectId de sous-document
 kind                    INGREDIENT | ECONOMAT
 productVariant          ObjectId ProductVariant
 netQuantity             Decimal128
-inputUnit               unité M-002
+inputUnit               unité de référence M-002 normalisée par le backend
 order                   integer
 note                    String|null
 
@@ -203,6 +203,24 @@ valuation               {
 ~~~
 
 Les libellés Produit/Fournisseur/Article ne constituent pas la source de vérité du brouillon : ils sont résolus pour l'affichage. Les états validés, eux, en conservent un snapshot historique.
+
+Invariant d'unité de ligne :
+
+~~~text
+UI
+→ affiche ProductVariant.referenceUnit
+→ aucun sélecteur d'unité de ligne
+
+API
+→ peut accepter une ancienne inputUnit compatible pour transition
+
+service de composition
+→ convertit la quantité si nécessaire
+→ persiste toujours inputUnit = ProductVariant.referenceUnit
+→ persiste grossUnit = ProductVariant.referenceUnit
+~~~
+
+Un remplacement de Produit conserve les autres données de la ligne autant que possible. Si l'ancienne et la nouvelle unité appartiennent à la même dimension, la quantité est convertie. Si les dimensions diffèrent, aucune conversion n'est inventée et l'UI demande de vérifier la quantité.
 
 `materialCostSharePercent` est une donnée financière dérivée de la valorisation :
 
@@ -251,7 +269,7 @@ linesSnapshot[]         {
     productVariantId
     productVariantName
     netQuantity
-    inputUnit
+    inputUnit           snapshot de l'unité de référence utilisée
     yieldPercentUsed
     grossQuantity
     grossUnit
@@ -1054,7 +1072,7 @@ Sections logiques :
 - prix/marge ;
 - historique.
 
-La QA visuelle M-004 retient un poste de travail dense : les Indicateurs, sources Produit, état d'autosave et actions globales restent dans la zone sticky ; Composition reste dans le flux ; Informations générales et Historique partagent le drawer droit via deux onglets.
+La QA visuelle M-004 retient un poste de travail dense : le titre de la Fiche et ses badges remplacent le libellé générique « Paramètres » dans la zone sticky ; les paramètres de production compacts, sources Produit, état d'autosave et actions globales restent visibles pendant le scroll de la Composition. Informations générales et Historique partagent le drawer droit via deux onglets.
 
 ### État serveur
 
