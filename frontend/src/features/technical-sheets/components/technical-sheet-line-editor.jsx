@@ -857,7 +857,7 @@ function TechnicalSheetLineEditor({
           + ' border-b border-border px-2 py-2 transition-[background-color,box-shadow] duration-300 hover:bg-muted/20'
           + (
             recentlyReplacedLineKey === key
-              ? ' bg-primary/5 shadow-[inset_3px_0_0_hsl(var(--primary))]'
+              ? ' bg-primary/5 shadow-[inset_3px_0_0_var(--primary)]'
               : ''
           )
         }
