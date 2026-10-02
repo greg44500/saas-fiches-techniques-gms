@@ -162,6 +162,16 @@ function TechnicalSheetAnalysisDrawer({
     metadata?.productionUnits ?? metadata?.units,
     productionSnapshot?.productionUnit,
   );
+  const productionQuantity =
+    decimalValue(productionSnapshot?.productionQuantity);
+  const portionsPerProductionUnit =
+    decimalValue(
+      productionSnapshot?.portionsPerProductionUnit,
+    );
+  const totalPortions = (
+    decimalValue(productionSnapshot?.totalPortions)
+    ?? decimalValue(economicSnapshot?.totalPortions)
+  );
   const targetMarginBasisPoints =
     productionSnapshot?.targetMarginBasisPoints ?? null;
   const actualMarginBasisPoints =
@@ -218,22 +228,20 @@ function TechnicalSheetAnalysisDrawer({
                 <DetailRow
                   label="Quantité produite"
                   value={
-                    productionSnapshot?.productionQuantity
-                    ? productionSnapshot.productionQuantity + ' ' + productionUnitLabel.toLowerCase()
-                    : 'NC'
+                    productionQuantity
+                      ? productionQuantity
+                        + ' '
+                        + productionUnitLabel.toLowerCase()
+                      : 'NC'
                   }
                 />
                 <DetailRow
                   label="Portions / pièce"
-                  value={productionSnapshot?.portionsPerProductionUnit ?? 'NC'}
+                  value={portionsPerProductionUnit ?? 'NC'}
                 />
                 <DetailRow
                   label="Total portions"
-                  value={
-                    productionSnapshot?.totalPortions
-                    ?? decimalValue(economicSnapshot?.totalPortions)
-                    ?? 'NC'
-                  }
+                  value={totalPortions ?? 'NC'}
                 />
                 <DetailRow label="Base de vente" value={saleBasisLabel} />
               </dl>
