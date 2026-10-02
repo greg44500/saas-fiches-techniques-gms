@@ -222,6 +222,8 @@ service de composition
 
 Un remplacement de Produit conserve les autres données de la ligne autant que possible. Si l'ancienne et la nouvelle unité appartiennent à la même dimension, la quantité est convertie. Si les dimensions diffèrent, aucune conversion n'est inventée et l'UI demande de vérifier la quantité.
 
+Compatibilité : les brouillons historiques qui stockent encore une unité compatible différente sont sérialisés dans l'unité de référence pour l'affichage puis normalisés en persistance au prochain enregistrement. Les snapshots VALIDATED restent immuables ; lorsqu'ils sont repris en nouveau DRAFT ou copiés, le service de composition normalise la quantité vers l'unité de référence courante du ProductVariant.
+
 `materialCostSharePercent` est une donnée financière dérivée de la valorisation :
 
 ~~~text
