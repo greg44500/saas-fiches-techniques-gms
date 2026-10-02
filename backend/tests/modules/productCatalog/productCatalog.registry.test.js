@@ -95,10 +95,12 @@ describe('M-002 product catalog registries', () => {
                 {
                     value: 'WORKSPACE',
                     label: 'Favoris',
+                    showWorkspaceFavorite: false,
                 },
                 {
                     value: 'REFERENCE',
                     label: 'Tous les produits',
+                    showWorkspaceFavorite: true,
                 },
             ]);
     });

@@ -325,10 +325,12 @@ const PRODUCT_SEARCH_SCOPE_REGISTRY = Object.freeze({
     WORKSPACE: Object.freeze({
         value: 'WORKSPACE',
         label: 'Favoris',
+        showWorkspaceFavorite: false,
     }),
     REFERENCE: Object.freeze({
         value: 'REFERENCE',
         label: 'Tous les produits',
+        showWorkspaceFavorite: true,
     }),
 });
 

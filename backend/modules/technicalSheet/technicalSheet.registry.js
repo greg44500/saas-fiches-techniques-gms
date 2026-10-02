@@ -96,21 +96,25 @@ const TECHNICAL_SHEET_LINE_VALUATION_STATUS_REGISTRY = Object.freeze({
         value: TECHNICAL_SHEET_LINE_VALUATION_STATUS.UNRESOLVED,
         label: 'Article à choisir',
         tone: 'warning',
+        openPricingEligible: false,
     }),
     NO_PRICE: Object.freeze({
         value: TECHNICAL_SHEET_LINE_VALUATION_STATUS.NO_PRICE,
         label: 'Prix indisponible',
         tone: 'destructive',
+        openPricingEligible: true,
     }),
     VALUED: Object.freeze({
         value: TECHNICAL_SHEET_LINE_VALUATION_STATUS.VALUED,
         label: 'Valorisée',
         tone: 'success',
+        openPricingEligible: false,
     }),
     STALE: Object.freeze({
         value: TECHNICAL_SHEET_LINE_VALUATION_STATUS.STALE,
         label: 'Calcul à actualiser',
         tone: 'warning',
+        openPricingEligible: false,
     }),
 });
 
