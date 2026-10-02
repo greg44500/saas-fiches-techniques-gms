@@ -265,7 +265,7 @@ function DiagnosticPanel({ diagnostic }) {
       role="status"
     >
       <p className="text-sm font-semibold">{diagnostic.title}</p>
-      <p className="mt-1 text-xs text-current/80">
+      <p className="mt-1 text-xs opacity-80">
         {diagnostic.description}
       </p>
     </div>
@@ -383,7 +383,7 @@ function TechnicalSheetAnalysisDrawer({
                   hint={'Par ' + saleBasisLower}
                   label={metricLabel(
                     'actualMarginAmountHt',
-                    'Marge sur coût de fabrication',
+                    'Marge sur coût de fabrication HT',
                   )}
                   value={formatDecimalCurrency(
                     decimalValue(
@@ -395,7 +395,7 @@ function TechnicalSheetAnalysisDrawer({
                   hint="Production complète"
                   label={metricLabel(
                     'manufacturingMarginProductionHt',
-                    'Marge sur coût de fabrication · production',
+                    'Marge sur coût de fabrication HT · production',
                   )}
                   value={formatDecimalCurrency(
                     decimalValue(
@@ -616,7 +616,7 @@ function TechnicalSheetAnalysisDrawer({
               <DetailRow
                 label={metricLabel(
                   'actualMarginAmountHt',
-                  'Marge sur coût de fabrication',
+                  'Marge sur coût de fabrication HT',
                 )}
                 value={formatDecimalCurrency(
                   decimalValue(
@@ -627,7 +627,7 @@ function TechnicalSheetAnalysisDrawer({
               <DetailRow
                 label={metricLabel(
                   'manufacturingMarginProductionHt',
-                  'Marge sur coût de fabrication · production',
+                  'Marge sur coût de fabrication HT · production',
                 )}
                 value={formatDecimalCurrency(
                   decimalValue(

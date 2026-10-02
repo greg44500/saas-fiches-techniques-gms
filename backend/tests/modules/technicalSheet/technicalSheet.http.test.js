@@ -264,7 +264,7 @@ describe('M-004 RBAC HTTP', () => {
             }),
             expect.objectContaining({
                 value: 'actualMarginAmountHt',
-                label: 'Marge sur coût de fabrication',
+                label: 'Marge sur coût de fabrication HT',
             }),
             expect.objectContaining({
                 value: 'targetMarginDeltaProductionHt',

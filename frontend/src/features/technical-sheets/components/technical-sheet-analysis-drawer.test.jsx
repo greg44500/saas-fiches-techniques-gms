@@ -44,12 +44,12 @@ const metadata = {
     },
     {
       value: 'actualMarginAmountHt',
-      label: 'Marge sur coût de fabrication',
+      label: 'Marge sur coût de fabrication HT',
       description: 'Écart HT après déduction du coût de fabrication.',
     },
     {
       value: 'manufacturingMarginProductionHt',
-      label: 'Marge sur coût de fabrication · production',
+      label: 'Marge sur coût de fabrication HT · production',
       description: 'Marge HT cumulée sur la production.',
     },
     {

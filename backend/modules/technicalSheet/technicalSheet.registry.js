@@ -273,13 +273,13 @@ const TECHNICAL_SHEET_ECONOMIC_METRIC_REGISTRY = Object.freeze({
     }),
     ACTUAL_MARGIN_AMOUNT_HT: Object.freeze({
         value: 'actualMarginAmountHt',
-        label: 'Marge sur coût de fabrication',
+        label: 'Marge sur coût de fabrication HT',
         description:
             'Différence HT entre le Prix retenu et le coût de fabrication pour une unité de vente. Ce montant ne constitue pas un bénéfice comptable.',
     }),
     MANUFACTURING_MARGIN_PRODUCTION_HT: Object.freeze({
         value: 'manufacturingMarginProductionHt',
-        label: 'Marge sur coût de fabrication · production',
+        label: 'Marge sur coût de fabrication HT · production',
         description:
             'Marge sur coût de fabrication HT cumulée sur toutes les unités vendables de la production. Ce montant ne constitue pas un bénéfice comptable.',
     }),
