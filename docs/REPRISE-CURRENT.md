@@ -32,7 +32,8 @@ Nouvelle Fiche
 → quantité produite
 → unité de production
 → TVA
-→ marge cible héritée du Dossier
+→ marge cible héritée du Dossier lorsqu'elle existe
+→ sinon marge saisie pour la Fiche en création
 → ouverture du poste de travail seulement avec ces paramètres
 
 Fiche
