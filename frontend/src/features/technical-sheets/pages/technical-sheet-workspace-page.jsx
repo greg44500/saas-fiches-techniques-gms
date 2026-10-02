@@ -156,7 +156,7 @@ function buildDraftSaveRequest({
   ) {
     return {
       request: null,
-      reason: 'Renseignez un Prix final TTC valide.',
+      reason: 'Renseignez un Prix retenu TTC valide.',
     };
   }
 
@@ -757,13 +757,13 @@ function TechnicalSheetWorkspacePage() {
         <div className="flex min-w-0 items-center gap-2">
           <ActionIconButton
             Icon={ArrowLeft}
-            label="Retour aux Fiches techniques"
+            label="Retour au Dossier"
             onClick={() => navigate(
               '/workspaces/' + workspace.id
               + '/dossiers/' + dossierId
               + '/technical-sheets',
             )}
-            tooltipLabel="Retour aux Fiches techniques"
+            tooltipLabel="Retour au Dossier"
             variant="ghost"
           />
 
@@ -881,13 +881,13 @@ function TechnicalSheetWorkspacePage() {
                   <div className="flex min-w-0 items-center gap-2">
                     <ActionIconButton
                       Icon={ArrowLeft}
-                      label="Retour aux Fiches techniques"
+                      label="Retour au Dossier"
                       onClick={() => navigate(
                         '/workspaces/' + workspace.id
                         + '/dossiers/' + dossierId
                         + '/technical-sheets',
                       )}
-                      tooltipLabel="Retour aux Fiches techniques"
+                      tooltipLabel="Retour au Dossier"
                       variant="ghost"
                     />
 
