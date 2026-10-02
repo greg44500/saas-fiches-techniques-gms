@@ -488,9 +488,13 @@ Chaque Dossier porte obligatoirement un paramètre métier :
 taux de marge cible par défaut
 ```
 
-Ce paramètre est obligatoire à la création d'un nouveau Dossier. Les Dossiers historiques dont la valeur est absente doivent être complétés avant de créer ou recevoir par copie une nouvelle Fiche.
+Ce paramètre est obligatoire à la création d'un nouveau Dossier.
 
-Il sert à initialiser la marge cible propre aux nouvelles Fiches.
+Pour un Dossier historique dont la valeur est absente, la création d'une nouvelle Fiche reste possible à condition de saisir explicitement une marge cible propre à cette Fiche. Cette saisie ne modifie pas silencieusement le Dossier.
+
+La copie vers un Dossier cible continue en revanche d'exiger une marge par défaut sur ce Dossier cible, car aucune étape de saisie interactive n'existe dans ce parcours.
+
+Lorsqu'elle existe, la marge du Dossier initialise la marge cible propre aux nouvelles Fiches.
 
 Exemple :
 
