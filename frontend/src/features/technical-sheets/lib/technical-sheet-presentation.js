@@ -75,7 +75,9 @@ function formatDecimalCurrency(value, currency = 'EUR') {
     return 'NC';
   }
 
-  const parsed = Number(value);
+  const normalizedValue =
+    value?.$numberDecimal ?? value;
+  const parsed = Number(normalizedValue);
 
   if (!Number.isFinite(parsed)) return 'NC';
 

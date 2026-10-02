@@ -118,6 +118,7 @@ function buildDraftForm(draft) {
 function buildDraftSaveRequest({
   dossierId,
   draftForm,
+  finalPriceModeDefinitions = [],
   revision,
   technicalSheetId,
   workspaceId,
@@ -129,7 +130,18 @@ function buildDraftSaveRequest({
   const vatRateBasisPoints = percentInputToBasisPoints(draftForm.vatRate);
   const targetMarginBasisPoints =
     percentInputToBasisPoints(draftForm.targetMargin);
-  const finalPriceTtcMinor = draftForm.finalPriceMode === 'MANUAL'
+  const finalPriceModeDefinition =
+    finalPriceModeDefinitions.find(
+      (definition) => (
+        definition.value
+        === draftForm.finalPriceMode
+      ),
+    );
+  const requiresManualPrice = Boolean(
+    finalPriceModeDefinition
+      ?.requiresManualPrice,
+  );
+  const finalPriceTtcMinor = requiresManualPrice
     ? priceInputToMinor(draftForm.finalPriceTtc)
     : null;
 
@@ -151,12 +163,12 @@ function buildDraftSaveRequest({
   }
 
   if (
-    draftForm.finalPriceMode === 'MANUAL'
+    requiresManualPrice
     && finalPriceTtcMinor === null
   ) {
     return {
       request: null,
-      reason: 'Renseignez un Prix final TTC valide.',
+      reason: 'Renseignez un Prix retenu TTC valide.',
     };
   }
 
@@ -300,6 +312,8 @@ function TechnicalSheetWorkspacePage() {
       dossierId,
       technicalSheetId,
       draftForm: form,
+      finalPriceModeDefinitions:
+        metadata?.finalPriceModeDefinitions,
       revision,
     }),
     enabled: Boolean(draft) && can(TECHNICAL_SHEET_PERMISSION.UPDATE),

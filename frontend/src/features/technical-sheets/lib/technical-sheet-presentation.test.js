@@ -102,6 +102,11 @@ describe('technical sheet presentation', () => {
     expect(formatDecimalCurrency(null)).toBe('NC');
     expect(formatMinorCurrency(null)).toBe('NC');
     expect(formatDecimalCurrency('0')).toMatch(/0,00/);
+    expect(
+      formatDecimalCurrency({
+        $numberDecimal: '12.5',
+      }),
+    ).toMatch(/12,50/);
     expect(formatMinorCurrency(0)).toMatch(/0,00/);
   });
 
