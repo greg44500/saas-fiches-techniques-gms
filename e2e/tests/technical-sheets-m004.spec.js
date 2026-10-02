@@ -44,17 +44,19 @@ async function createTechnicalSheet(page, {
   await dialog
     .getByLabel('Quantité produite')
     .fill('10');
-  await dialog
-    .getByRole('combobox', {
+  await expect(
+    dialog.getByRole('combobox', {
       name: 'Unité de production',
-    })
-    .click();
-  await page
-    .getByRole('option', {
-      name: 'kg',
-      exact: true,
-    })
-    .click();
+    }),
+  ).toHaveText('Pièce');
+  await expect(
+    dialog.getByLabel('Portions / pièce'),
+  ).toHaveValue('1');
+  await expect(
+    dialog.getByRole('combobox', {
+      name: 'Base de vente',
+    }),
+  ).toHaveText('Pièce');
   await dialog
     .getByLabel('TVA (%)')
     .fill('10');
