@@ -15,6 +15,7 @@ import {
   formatBasisPoints,
   formatDecimalCurrency,
   formatMinorCurrency,
+  formatSignedBasisPointDelta,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 import { cn } from '@/lib/utils';
 
@@ -31,17 +32,6 @@ function definitionLabel(definitions, value, fallback = 'NC') {
   return (definitions ?? [])
     .find((definition) => definition.value === value)
     ?.label ?? fallback;
-}
-
-function formatSignedBasisPointDelta(value) {
-  if (!Number.isInteger(value)) return 'NC';
-
-  const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '—';
-  const points = Math.abs(value) / 100;
-
-  return arrow + ' ' + points.toLocaleString('fr-FR', {
-    maximumFractionDigits: 2,
-  }) + ' point' + (points > 1 ? 's' : '');
 }
 
 function formatSignedCurrencyDelta(value) {

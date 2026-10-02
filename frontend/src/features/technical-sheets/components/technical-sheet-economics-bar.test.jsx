@@ -47,6 +47,11 @@ const economicMetricDefinitions = [
     label: 'Marge réelle',
     description: 'Part du prix retenu HT restant après le coût.',
   },
+  {
+    value: 'targetMarginDeltaBasisPoints',
+    label: 'Écart vs cible',
+    description: 'Écart en points entre la marge réelle et la cible.',
+  },
 ];
 
 describe('TechnicalSheetEconomicsBar', () => {
@@ -57,7 +62,7 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(compactMetricValue('12,50 €')).toBe('12,50 €');
   });
 
-  it('affiche uniquement les cinq repères économiques du poste de travail', () => {
+  it('affiche les six repères économiques du poste de travail', () => {
     render(
       <TooltipProvider>
         <TechnicalSheetEconomicsBar
@@ -69,6 +74,7 @@ describe('TechnicalSheetEconomicsBar', () => {
             manufacturingCostPerPortionHt: '0.7',
             finalPriceTtcMinor: 350,
             actualMarginBasisPoints: 6000,
+            targetMarginDeltaBasisPoints: 1045,
           }}
           finalPriceMode="ADVISED"
           finalPriceModeItems={finalPriceModeItems}
@@ -84,6 +90,9 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(screen.getByText('CFU HT')).toBeInTheDocument();
     expect(screen.getByText('Prix retenu TTC')).toBeInTheDocument();
     expect(screen.getByText('%MR')).toBeInTheDocument();
+    expect(screen.getByText('Écart cible')).toBeInTheDocument();
+    expect(screen.getByText('↑ 10,45 points'))
+      .toHaveClass('text-success');
     expect(screen.queryByText('PC TTC')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', {
       name: 'Afficher le détail de la valorisation',
@@ -140,6 +149,7 @@ describe('TechnicalSheetEconomicsBar', () => {
     );
 
     const input = screen.getByLabelText('Prix retenu TTC (€)');
+    expect(input).toHaveClass('w-24');
     await user.clear(input);
     await user.type(input, '5');
 

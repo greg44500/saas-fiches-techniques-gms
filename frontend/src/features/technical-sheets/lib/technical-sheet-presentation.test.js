@@ -9,6 +9,7 @@ import {
   formatBasisPoints,
   formatDecimalCurrency,
   formatMinorCurrency,
+  formatSignedBasisPointDelta,
   getLineValuationPresentation,
   getTechnicalSheetActionAvailability,
   getTechnicalSheetStatusPresentation,
@@ -96,6 +97,13 @@ describe('technical sheet presentation', () => {
     expect(basisPointsToInput(7250)).toBe('72.5');
     expect(percentInputToBasisPoints('72,5')).toBe(7250);
     expect(formatBasisPoints(7250)).toBe('72,5 %');
+  });
+
+  it('formate les écarts de marge en points avec un sens visuel', () => {
+    expect(formatSignedBasisPointDelta(1045)).toBe('↑ 10,45 points');
+    expect(formatSignedBasisPointDelta(-420)).toBe('↓ 4,2 points');
+    expect(formatSignedBasisPointDelta(0)).toBe('— 0 point');
+    expect(formatSignedBasisPointDelta(null)).toBe('NC');
   });
 
   it('distingue les montants non calculables d’un vrai zéro', () => {

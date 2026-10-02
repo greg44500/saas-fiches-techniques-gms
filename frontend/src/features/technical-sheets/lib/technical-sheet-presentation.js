@@ -95,6 +95,17 @@ function formatBasisPoints(value) {
   }) + ' %';
 }
 
+function formatSignedBasisPointDelta(value) {
+  if (!Number.isInteger(value)) return 'NC';
+
+  const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '—';
+  const points = Math.abs(value) / 100;
+
+  return arrow + ' ' + points.toLocaleString('fr-FR', {
+    maximumFractionDigits: 2,
+  }) + ' point' + (points > 1 ? 's' : '');
+}
+
 function basisPointsToInput(value) {
   if (!Number.isInteger(value)) return '';
   return String(value / 100);
@@ -136,6 +147,7 @@ export {
   basisPointsToInput,
   formatBasisPoints,
   formatDecimalCurrency,
+  formatSignedBasisPointDelta,
   formatMinorCurrency,
   minorToInput,
   percentInputToBasisPoints,

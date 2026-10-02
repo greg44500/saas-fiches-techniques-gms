@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import {
   Popover,
   PopoverContent,
@@ -321,28 +322,14 @@ function TechnicalSheetProductScopeControls({
   productScope,
 }) {
   return (
-    <div
-      aria-label="Source des Produits"
-      className="flex items-center gap-1 rounded-lg border border-border bg-card/70 p-1"
-      role="group"
-    >
-      {items.map((item) => (
-        <Button
-          aria-pressed={productScope === item.value}
-          key={item.value}
-          onClick={() => onChange(item.value)}
-          size="sm"
-          type="button"
-          variant={
-            productScope === item.value
-              ? 'default'
-              : 'ghost'
-          }
-        >
-          {item.label}
-        </Button>
-      ))}
-    </div>
+    <SegmentedControl
+      ariaLabel="Source des Produits"
+      className="h-9 p-px"
+      items={items}
+      onValueChange={onChange}
+      size="sm"
+      value={productScope}
+    />
   );
 }
 

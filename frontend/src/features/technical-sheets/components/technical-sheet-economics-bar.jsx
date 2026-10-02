@@ -16,6 +16,7 @@ import {
   formatBasisPoints,
   formatDecimalCurrency,
   formatMinorCurrency,
+  formatSignedBasisPointDelta,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +50,7 @@ function Metric({
   fallbackLabel,
   metricKey,
   value,
+  valueClassName,
 }) {
   return (
     <div className="min-w-0 space-y-1 rounded-md px-2 py-1.5">
@@ -59,7 +61,12 @@ function Metric({
         fallbackLabel={fallbackLabel}
         metricKey={metricKey}
       />
-      <p className="truncate text-sm font-semibold tabular-nums">
+      <p
+        className={cn(
+          'truncate text-sm font-semibold tabular-nums',
+          valueClassName,
+        )}
+      >
         {compactMetricValue(value)}
       </p>
     </div>
@@ -75,6 +82,7 @@ function snapshotKey(snapshot) {
     snapshot.manufacturingCostPerPortionHt,
     snapshot.finalPriceTtcMinor,
     snapshot.actualMarginBasisPoints,
+    snapshot.targetMarginDeltaBasisPoints,
   ].map((value) => (
     value?.$numberDecimal ?? value ?? 'null'
   )).join('|');
@@ -105,6 +113,16 @@ function TechnicalSheetEconomicsBar({
     saleBasisItems.find((item) => item.value === saleBasis)?.label
     ?? 'base de vente'
   );
+
+  const targetMarginDeltaBasisPoints =
+    economicSnapshot?.targetMarginDeltaBasisPoints;
+  const targetDeltaClassName = !Number.isInteger(
+    targetMarginDeltaBasisPoints,
+  ) || targetMarginDeltaBasisPoints === 0
+    ? 'text-muted-foreground'
+    : targetMarginDeltaBasisPoints > 0
+      ? 'text-success'
+      : 'text-destructive';
 
   useEffect(() => {
     if (
@@ -143,7 +161,12 @@ function TechnicalSheetEconomicsBar({
           </p>
         </div>
 
-        <div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 md:grid-cols-3 xl:grid-cols-[0.8fr_0.8fr_0.8fr_minmax(240px,1.4fr)_0.7fr]">
+        <div
+          className={
+            'grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 md:grid-cols-3 '
+            + 'xl:grid-cols-[0.75fr_0.75fr_0.75fr_minmax(212px,0.9fr)_0.65fr_0.85fr]'
+          }
+        >
           <Metric
             definitions={economicMetricDefinitions}
             fallbackLabel="CF HT"
@@ -187,7 +210,7 @@ function TechnicalSheetEconomicsBar({
               ) ? (
                 <Input
                   aria-label="Prix retenu TTC (€)"
-                  className="h-8 min-w-0 flex-1 tabular-nums"
+                  className="h-8 w-24 shrink-0 tabular-nums"
                   disabled={editDisabled || !canValuate}
                   inputMode="decimal"
                   onBlur={onFieldBlur}
@@ -199,7 +222,7 @@ function TechnicalSheetEconomicsBar({
                   value={finalPriceInputValue}
                 />
               ) : (
-                <p className="flex h-8 min-w-0 flex-1 items-center truncate rounded-md border border-border bg-muted/20 px-2 text-sm font-semibold tabular-nums">
+                <p className="flex h-8 w-24 shrink-0 items-center truncate rounded-md border border-border bg-muted/20 px-2 text-sm font-semibold tabular-nums">
                   {compactMetricValue(
                     formatMinorCurrency(
                       economicSnapshot?.finalPriceTtcMinor,
@@ -242,6 +265,17 @@ function TechnicalSheetEconomicsBar({
             value={formatBasisPoints(
               economicSnapshot?.actualMarginBasisPoints,
             )}
+          />
+
+          <Metric
+            definitions={economicMetricDefinitions}
+            displayLabel="Écart cible"
+            fallbackLabel="Écart vs cible"
+            metricKey="targetMarginDeltaBasisPoints"
+            value={formatSignedBasisPointDelta(
+              targetMarginDeltaBasisPoints,
+            )}
+            valueClassName={targetDeltaClassName}
           />
         </div>
       </div>

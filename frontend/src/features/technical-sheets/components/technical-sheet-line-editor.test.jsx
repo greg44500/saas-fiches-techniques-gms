@@ -307,6 +307,9 @@ describe('TechnicalSheetLineEditor', () => {
       </TooltipProvider>,
     );
 
+    const scopeControl = screen.getByRole('group', {
+      name: 'Source des Produits',
+    });
     const globalButton = screen.getByRole('button', {
       name: 'Tous les produits',
     });
@@ -314,6 +317,7 @@ describe('TechnicalSheetLineEditor', () => {
       name: 'Favoris',
     });
 
+    expect(scopeControl).toHaveClass('h-9', 'p-px');
     expect(globalButton).toHaveAttribute('aria-pressed', 'true');
     await user.click(favoritesButton);
     expect(onChange).toHaveBeenCalledWith('WORKSPACE');

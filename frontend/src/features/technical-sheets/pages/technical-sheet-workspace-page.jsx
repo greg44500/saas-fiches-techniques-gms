@@ -792,7 +792,7 @@ function TechnicalSheetWorkspacePage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="-mt-4 space-y-6">
       {!draft && (
         <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 items-start gap-2">
