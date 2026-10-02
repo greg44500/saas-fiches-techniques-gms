@@ -78,6 +78,15 @@ describe('M-004 technical sheet serializer', () => {
             serializeTechnicalSheetDraft(draft);
 
         expect(
+            serialized,
+        ).toMatchObject({
+            productionUnit: 'KG',
+            portionsPerProductionUnit: null,
+            totalPortions: null,
+            saleBasis: null,
+        });
+
+        expect(
             serialized.lines[0],
         ).toMatchObject({
             netQuantity: '1',

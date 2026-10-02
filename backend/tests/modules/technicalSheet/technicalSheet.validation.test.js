@@ -16,13 +16,15 @@ describe('M-004 validation Fiches techniques', () => {
             createTechnicalSheetSchema.parse({
                 name: 'Purée de carottes',
                 productionQuantity: '10',
-                productionUnit: 'KG',
+                productionUnit: 'UNIT',
                 vatRateBasisPoints: 1000,
             }),
         ).toEqual({
             name: 'Purée de carottes',
             productionQuantity: '10',
-            productionUnit: 'KG',
+            productionUnit: 'UNIT',
+            portionsPerProductionUnit: '1',
+            saleBasis: 'PIECE',
             vatRateBasisPoints: 1000,
         });
 
@@ -38,12 +40,43 @@ describe('M-004 validation Fiches techniques', () => {
             createTechnicalSheetSchema.parse({
                 name: 'Purée de carottes',
                 productionQuantity: '10',
-                productionUnit: 'KG',
+                productionUnit: 'UNIT',
                 vatRateBasisPoints: 1000,
                 targetMarginBasisPoints: 3000,
             }),
         ).toMatchObject({
             targetMarginBasisPoints: 3000,
+        });
+    });
+
+    it('refuse une unité de production autre que Pièce', () => {
+        expect(
+            createTechnicalSheetSchema.safeParse({
+                name: 'Purée de carottes',
+                productionQuantity: '10',
+                productionUnit: 'KG',
+                vatRateBasisPoints: 1000,
+            }).success,
+        ).toBe(false);
+
+        expect(
+            saveTechnicalSheetDraftSchema.safeParse({
+                expectedRevision: 0,
+                productionUnit: 'KG',
+            }).success,
+        ).toBe(false);
+    });
+
+    it('accepte les portions par pièce et la base de vente contrôlée par le backend', () => {
+        expect(
+            saveTechnicalSheetDraftSchema.parse({
+                expectedRevision: 0,
+                portionsPerProductionUnit: '8',
+                saleBasis: 'PORTION',
+            }),
+        ).toMatchObject({
+            portionsPerProductionUnit: '8',
+            saleBasis: 'PORTION',
         });
     });
 
@@ -65,12 +98,12 @@ describe('M-004 validation Fiches techniques', () => {
         ).toBeUndefined();
     });
 
-    it('refuse le champ portions supprimé du contrat', () => {
+    it('refuse encore l’ancien champ ambigu portions', () => {
         expect(
             createTechnicalSheetSchema.safeParse({
                 name: 'Purée de carottes',
                 productionQuantity: '10',
-                productionUnit: 'KG',
+                productionUnit: 'UNIT',
                 vatRateBasisPoints: 1000,
                 portions: '10',
             }).success,

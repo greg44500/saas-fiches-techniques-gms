@@ -88,6 +88,128 @@ describe('M-004 calculs Fiche technique', () => {
         ).toBe(5000);
     });
 
+    it('distingue coût par pièce et coût par portion pour 1 pièce de 8 portions', () => {
+        const economics = calculateEconomics({
+            ingredientCosts: [{
+                numerator: 12n,
+                denominator: 1n,
+            }],
+            economatCosts: [{
+                numerator: 4n,
+                denominator: 1n,
+            }],
+            productionQuantity: '1',
+            portionsPerProductionUnit: '8',
+            saleBasis: 'PORTION',
+            vatRateBasisPoints: 0,
+            targetMarginBasisPoints: 0,
+            finalPriceMode: 'ADVISED',
+        });
+
+        expect(economics.totalPortions).toBe('8');
+        expect(
+            economics.materialCostPerProductionUnitHt,
+        ).toBe('12');
+        expect(
+            economics.materialCostPerPortionHt,
+        ).toBe('1.5');
+        expect(
+            economics.manufacturingCostPerProductionUnitHt,
+        ).toBe('16');
+        expect(
+            economics.manufacturingCostPerPortionHt,
+        ).toBe('2');
+        expect(economics.theoreticalPriceHt).toBe('2');
+        expect(economics.saleBasis).toBe('PORTION');
+    });
+
+    it('calcule 80 portions pour 10 pièces de 8 portions', () => {
+        const economics = calculateEconomics({
+            ingredientCosts: [{
+                numerator: 80n,
+                denominator: 1n,
+            }],
+            economatCosts: [{
+                numerator: 20n,
+                denominator: 1n,
+            }],
+            productionQuantity: '10',
+            portionsPerProductionUnit: '8',
+            saleBasis: 'PIECE',
+            vatRateBasisPoints: 0,
+            targetMarginBasisPoints: 0,
+            finalPriceMode: 'ADVISED',
+        });
+
+        expect(economics.totalPortions).toBe('80');
+        expect(
+            economics.materialCostPerProductionUnitHt,
+        ).toBe('8');
+        expect(
+            economics.manufacturingCostPerProductionUnitHt,
+        ).toBe('10');
+        expect(
+            economics.materialCostPerPortionHt,
+        ).toBe('1');
+        expect(
+            economics.manufacturingCostPerPortionHt,
+        ).toBe('1.25');
+        expect(economics.theoreticalPriceHt).toBe('10');
+    });
+
+    it('fait coïncider pièce et portion lorsque portions par pièce vaut 1', () => {
+        const economics = calculateEconomics({
+            ingredientCosts: [{
+                numerator: 120n,
+                denominator: 1n,
+            }],
+            economatCosts: [],
+            productionQuantity: '80',
+            portionsPerProductionUnit: '1',
+            saleBasis: 'PORTION',
+            vatRateBasisPoints: 0,
+            targetMarginBasisPoints: 0,
+            finalPriceMode: 'ADVISED',
+        });
+
+        expect(economics.totalPortions).toBe('80');
+        expect(
+            economics.materialCostPerProductionUnitHt,
+        ).toBe('1.5');
+        expect(
+            economics.materialCostPerPortionHt,
+        ).toBe('1.5');
+        expect(economics.economatCostHt).toBe('0');
+    });
+
+    it('refuse une base de vente inconnue et un nombre de portions nul', () => {
+        const common = {
+            ingredientCosts: [{
+                numerator: 10n,
+                denominator: 1n,
+            }],
+            economatCosts: [],
+            productionQuantity: '1',
+            vatRateBasisPoints: 0,
+            targetMarginBasisPoints: 0,
+            finalPriceMode: 'ADVISED',
+        };
+
+        expect(() => calculateEconomics({
+            ...common,
+            portionsPerProductionUnit: '0',
+            saleBasis: 'PIECE',
+        })).toThrow(
+            'Le nombre de portions par pièce doit être strictement positif.',
+        );
+
+        expect(() => calculateEconomics({
+            ...common,
+            portionsPerProductionUnit: '1',
+            saleBasis: 'UNKNOWN',
+        })).toThrow('Base de vente invalide.');
+    });
+
     it('refuse un Prix final manuel sous le plancher économique', () => {
         expect(() => calculateEconomics({
             ingredientCosts: [

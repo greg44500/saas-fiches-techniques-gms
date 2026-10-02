@@ -210,7 +210,7 @@ const createValuedDraft = async ({
                 productionQuantity:
                     '10',
                 productionUnit:
-                    'KG',
+                    'UNIT',
                 vatRateBasisPoints:
                     1000,
             },
@@ -234,7 +234,7 @@ const createValuedDraft = async ({
                 productionQuantity:
                     '10',
                 productionUnit:
-                    'KG',
+                    'UNIT',
                 vatRateBasisPoints:
                     1000,
                 targetMarginBasisPoints:
@@ -385,7 +385,7 @@ describe('M-004 services Fiches techniques', () => {
                     productionQuantity:
                         '1',
                     productionUnit:
-                        'KG',
+                        'UNIT',
                     vatRateBasisPoints:
                         1000,
                 },
@@ -456,7 +456,7 @@ describe('M-004 services Fiches techniques', () => {
                     productionQuantity:
                         '1',
                     productionUnit:
-                        'KG',
+                        'UNIT',
                     vatRateBasisPoints:
                         1000,
                 },
@@ -520,7 +520,7 @@ describe('M-004 services Fiches techniques', () => {
                     productionQuantity:
                         '1',
                     productionUnit:
-                        'KG',
+                        'UNIT',
                     vatRateBasisPoints:
                         1000,
                 },
@@ -608,7 +608,7 @@ describe('M-004 services Fiches techniques', () => {
                     productionQuantity:
                         '10',
                     productionUnit:
-                        'KG',
+                        'UNIT',
                     vatRateBasisPoints:
                         1000,
                 },
@@ -632,7 +632,7 @@ describe('M-004 services Fiches techniques', () => {
                     productionQuantity:
                         '10',
                     productionUnit:
-                        'KG',
+                        'UNIT',
                     vatRateBasisPoints:
                         1000,
                     targetMarginBasisPoints:
@@ -881,7 +881,7 @@ describe('M-004 services Fiches techniques', () => {
                     productionQuantity:
                         '1',
                     productionUnit:
-                        'KG',
+                        'UNIT',
                     vatRateBasisPoints:
                         1000,
                 },
@@ -939,7 +939,7 @@ describe('M-004 services Fiches techniques', () => {
                     productionQuantity:
                         '1',
                     productionUnit:
-                        'KG',
+                        'UNIT',
                     vatRateBasisPoints:
                         1000,
                 },
@@ -1011,7 +1011,7 @@ describe('M-004 services Fiches techniques', () => {
                     productionQuantity:
                         '1',
                     productionUnit:
-                        'KG',
+                        'UNIT',
                     vatRateBasisPoints:
                         1000,
                 },

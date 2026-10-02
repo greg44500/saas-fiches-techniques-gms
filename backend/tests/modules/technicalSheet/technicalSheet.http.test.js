@@ -132,7 +132,7 @@ beforeEach(async () => {
                 productionQuantity:
                     '1',
                 productionUnit:
-                    'KG',
+                    'UNIT',
                 vatRateBasisPoints:
                     1000,
             },
@@ -206,6 +206,40 @@ const basePath = () =>
     + sheet.id;
 
 describe('M-004 RBAC HTTP', () => {
+    it('expose les unités de production et bases de vente depuis le backend', async () => {
+        const response = await request(app)
+            .get(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/dossiers/'
+                + dossier._id.toString()
+                + '/technical-sheets/metadata',
+            )
+            .set(bearer(owner.token))
+            .expect(200);
+
+        expect(
+            response.body.data.metadata.units,
+        ).toEqual([
+            {
+                value: 'UNIT',
+                label: 'Pièce',
+            },
+        ]);
+        expect(
+            response.body.data.metadata.saleBases,
+        ).toEqual([
+            {
+                value: 'PIECE',
+                label: 'Pièce',
+            },
+            {
+                value: 'PORTION',
+                label: 'Portion',
+            },
+        ]);
+    });
+
     it('masque une Fiche en corbeille des lectures directes ordinaires', async () => {
         const deleted =
             await deleteTechnicalSheet({
