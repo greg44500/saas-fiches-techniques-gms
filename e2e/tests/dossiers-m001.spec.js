@@ -20,8 +20,19 @@ async function createOwnerWorkspaceWithDossier(page, dossierName) {
   const workspace = await provisionDossierOwnerWorkspace();
 
   await loginWithIdentity(page, workspace.identity);
-  await page.goto(workspace.dashboardUrl);
 
+  /*
+   * Le login E2E est réalisé via API et dépose uniquement le refresh cookie.
+   * La première navigation navigateur déclenche ensuite SessionBootstrap, qui
+   * consomme ce refresh token par rotation. Une navigation document
+   * intermédiaire vers le Dashboard avant d'ouvrir Dossiers redémarrerait
+   * SessionBootstrap et peut provoquer deux rotations concurrentes de la même
+   * famille de session.
+   *
+   * Le scénario ouvre donc directement la première route fonctionnelle qu'il
+   * doit tester. openDossiersPage() reste responsable d'attendre la route et
+   * son signal fonctionnel réel sans affaiblir les assertions M-001.
+   */
   const dossier = await createDossierFromUi(page, {
     dashboardUrl: workspace.dashboardUrl,
     name: dossierName,
