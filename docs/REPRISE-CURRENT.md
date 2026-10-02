@@ -104,7 +104,7 @@ migration:m004-production-quantity
 main de base                         : 957438c8f522b9e342158a17a7a4a6aa4bd7d3a2
 Core Gate post-merge de cette base   : #167 SUCCESS
 implémentation branche               : stabilisation Pièce/Portion + metadata backend + UX économique codée
-dernier commit métier avant docs      : fc3447148a81526f36571e6dc367d0728f5d9e50
+dernier commit métier avant docs      : 8d77d4f129dea1af8ec000cab988a83f34718b78
 tests automatisés ajoutés / adaptés  : OUI (backend, frontend et E2E M-004)
 tests automatisés exécutés           : NON EXÉCUTÉS / NON REVENDIQUÉS
 raison                               : Core Gate uniquement sur PR ou push main ; runtime courant sans accès réseau au clone
