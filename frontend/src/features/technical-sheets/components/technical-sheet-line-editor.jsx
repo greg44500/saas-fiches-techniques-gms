@@ -147,11 +147,65 @@ function getReferenceUnitDefinition(metadata, unit) {
     ?? null;
 }
 
-function formatConvertedQuantity(value) {
-  if (!Number.isFinite(value)) return null;
+function convertDecimalQuantity({
+  value,
+  fromFactor,
+  toFactor,
+}) {
+  const normalized =
+    String(value).trim().replace(',', '.');
+  const match =
+    /^(\d+)(?:\.(\d+))?$/.exec(normalized);
 
-  const rounded = Number(value.toFixed(6));
-  return String(rounded);
+  if (
+    !match
+    || !Number.isInteger(fromFactor)
+    || !Number.isInteger(toFactor)
+    || fromFactor <= 0
+    || toFactor <= 0
+  ) {
+    return null;
+  }
+
+  const fractionDigits =
+    match[2] ?? '';
+  const scale =
+    10n ** BigInt(fractionDigits.length);
+  const numeric =
+    BigInt(match[1] + fractionDigits);
+  const numerator =
+    numeric * BigInt(fromFactor);
+  const denominator =
+    scale * BigInt(toFactor);
+  const integerPart =
+    numerator / denominator;
+  let remainder =
+    numerator % denominator;
+
+  if (remainder === 0n) {
+    return integerPart.toString();
+  }
+
+  let decimals = '';
+
+  for (
+    let index = 0;
+    index < 12 && remainder !== 0n;
+    index += 1
+  ) {
+    remainder *= 10n;
+    decimals += (
+      remainder / denominator
+    ).toString();
+    remainder %= denominator;
+  }
+
+  const trimmed =
+    decimals.replace(/0+$/, '');
+
+  return trimmed
+    ? integerPart.toString() + '.' + trimmed
+    : integerPart.toString();
 }
 
 function adaptQuantityToReplacementUnit({
@@ -184,26 +238,15 @@ function adaptQuantityToReplacementUnit({
     };
   }
 
-  const parsed = Number(
-    String(netQuantity).trim().replace(',', '.'),
-  );
-
-  if (!Number.isFinite(parsed)) {
-    return {
-      netQuantity,
-      reviewRequired: false,
-    };
-  }
-
-  const converted = (
-    parsed
-    * previousDefinition.factorToBase
-    / nextDefinition.factorToBase
-  );
-
   return {
     netQuantity:
-      formatConvertedQuantity(converted)
+      convertDecimalQuantity({
+        value: netQuantity,
+        fromFactor:
+          previousDefinition.factorToBase,
+        toFactor:
+          nextDefinition.factorToBase,
+      })
       ?? netQuantity,
     reviewRequired: false,
   };
