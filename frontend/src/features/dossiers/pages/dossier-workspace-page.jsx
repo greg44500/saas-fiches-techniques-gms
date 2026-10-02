@@ -11,6 +11,7 @@ import {
   Link,
   NavLink,
   Outlet,
+  useLocation,
   useParams,
 } from 'react-router';
 
@@ -69,6 +70,7 @@ import { cn } from '@/lib/utils';
 
 function DossierWorkspacePage() {
   const { dossierId } = useParams();
+  const location = useLocation();
   const { can, canAny, workspace } = useWorkspaceContext();
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
   const dossierQuery = useGetDossierByIdQuery({
@@ -97,6 +99,15 @@ function DossierWorkspacePage() {
       skip: !can(TECHNICAL_SHEET_PERMISSION.READ),
     },
   );
+
+  const isTechnicalSheetDetail = new RegExp(
+    '/dossiers/' + dossierId
+    + '/technical-sheets/[^/]+/?$',
+  ).test(location.pathname);
+
+  if (isTechnicalSheetDetail) {
+    return <Outlet />;
+  }
 
   if (
     (dossierQuery.isLoading && dossierQuery.data === undefined)

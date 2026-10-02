@@ -41,7 +41,6 @@ function TechnicalSheetDossierContextDrawer({
   dossierId,
   onClose,
   open,
-  pricingSources = [],
   workspaceId,
 }) {
   const dossierQuery = useGetDossierByIdQuery(
@@ -122,7 +121,6 @@ function TechnicalSheetDossierContextDrawer({
           <TabsContent value="price" variant="section">
             <DossierApplicablePriceCard
               dossierId={dossierId}
-              pricingSources={pricingSources}
               workspaceId={workspaceId}
             />
           </TabsContent>

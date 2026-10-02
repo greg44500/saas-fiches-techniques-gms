@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  useGetSupplierPricingMetadataQuery,
   useLazyGetApplicableSupplierPriceQuery,
   useListDossierSupplierReferencesQuery,
   useListSupplierArticlesQuery,
@@ -41,11 +42,19 @@ function getPricingSourceLabel(definitions, source) {
 
 function DossierApplicablePriceCard({
   dossierId,
-  pricingSources = [],
   workspaceId,
 }) {
   const { can } = useWorkspaceContext();
   const [selectedArticleId, setSelectedArticleId] = useState(NONE);
+  const pricingMetadataQuery =
+    useGetSupplierPricingMetadataQuery(
+      { workspaceId, dossierId },
+      {
+        skip: !can(
+          SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
+        ),
+      },
+    );
 
   const referencesQuery = useListDossierSupplierReferencesQuery(
     { workspaceId, dossierId },
@@ -169,7 +178,8 @@ function DossierApplicablePriceCard({
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Source : {getPricingSourceLabel(
-                pricingSources,
+                pricingMetadataQuery.data
+                  ?.applicablePriceSources,
                 applicable.resolvedSource,
               )}
             </p>
