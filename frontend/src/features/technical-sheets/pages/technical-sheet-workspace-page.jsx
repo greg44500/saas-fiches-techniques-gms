@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import {
   Select,
   SelectContent,
@@ -469,6 +470,10 @@ function TechnicalSheetWorkspacePage() {
     [metadata?.productionUnits, metadata?.units],
   );
   const saleBasisItems = metadata?.saleBases ?? [];
+  const vatRateItems = (metadata?.vatRates ?? []).map((item) => ({
+    value: basisPointsToInput(item.value),
+    label: item.label,
+  }));
   const finalPriceModeItems =
     metadata?.finalPriceModeDefinitions ?? [];
   const productSearchScopes =
@@ -556,6 +561,9 @@ function TechnicalSheetWorkspacePage() {
   );
   const parsedVatRate =
     percentInputToBasisPoints(draftForm.vatRate);
+  const vatRateIsRegistered = vatRateItems.some(
+    (item) => item.value === draftForm.vatRate,
+  );
   const parsedTargetMargin =
     percentInputToBasisPoints(draftForm.targetMargin);
   const normalizedProductionQuantity =
@@ -1108,24 +1116,27 @@ function TechnicalSheetWorkspacePage() {
                     </Select>
                   </Field>
 
-                  <Field className="w-24">
-                    <FieldLabel htmlFor="technical-sheet-vat">
-                      TVA (%)
-                    </FieldLabel>
-                    <Input
-                      className="h-9"
+                  <Field className="min-w-40">
+                    <FieldLabel>TVA</FieldLabel>
+                    <SegmentedControl
+                      ariaLabel="TVA de vente"
                       disabled={!canUpdate || !canValuate || draftSynchronizing}
-                      id="technical-sheet-vat"
-                      inputMode="decimal"
-                      onBlur={flushAutosave}
-                      onChange={(event) => {
+                      items={vatRateItems}
+                      onValueChange={(value) => {
                         updateDraftForm((current) => ({
                           ...current,
-                          vatRate: event.target.value,
-                        }));
+                          vatRate: value,
+                        }), { immediate: true });
                       }}
+                      size="sm"
                       value={draftForm.vatRate}
                     />
+                    {parsedVatRate !== null && !vatRateIsRegistered && (
+                      <p className="max-w-60 text-xs text-warning">
+                        Taux historique {draftForm.vatRate.replace('.', ',')} % conservé.
+                        Choisissez un taux autorisé pour le modifier.
+                      </p>
+                    )}
                   </Field>
 
                   <Field className="w-28">
@@ -1155,6 +1166,7 @@ function TechnicalSheetWorkspacePage() {
 
                   <TechnicalSheetEconomicsBar
                     canValuate={canValuate}
+                    economicMetricDefinitions={metadata?.economicMetricDefinitions}
                     economicSnapshot={economicSnapshot}
                     editDisabled={!canUpdate || draftSynchronizing}
                     finalPriceInputValue={draftForm.finalPriceTtc}

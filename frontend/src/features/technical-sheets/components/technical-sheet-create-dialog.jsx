@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import {
   Select,
   SelectContent,
@@ -47,7 +48,7 @@ function TechnicalSheetCreateDialog({
   const [productionUnit, setProductionUnit] = useState('');
   const [portionsPerProductionUnit, setPortionsPerProductionUnit] = useState('');
   const [saleBasis, setSaleBasis] = useState('');
-  const [vatRate, setVatRate] = useState('');
+  const [vatRateBasisPoints, setVatRateBasisPoints] = useState(null);
   const [targetMargin, setTargetMargin] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const metadataQuery = useGetTechnicalSheetMetadataQuery(
@@ -64,7 +65,11 @@ function TechnicalSheetCreateDialog({
     label: unit.label,
   }));
   const saleBasisItems = metadataQuery.data?.saleBases ?? [];
+  const vatRateItems = metadataQuery.data?.vatRates ?? [];
   const backendDefaults = metadataQuery.data?.defaults;
+  const vatRateValid = vatRateItems.some(
+    (item) => item.value === vatRateBasisPoints,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -74,7 +79,7 @@ function TechnicalSheetCreateDialog({
     setProductionUnit('');
     setPortionsPerProductionUnit('');
     setSaleBasis('');
-    setVatRate('');
+    setVatRateBasisPoints(null);
     setTargetMargin('');
     setErrorMessage('');
   }, [open]);
@@ -90,6 +95,9 @@ function TechnicalSheetCreateDialog({
     ));
     setSaleBasis((current) => (
       current || backendDefaults.saleBasis || ''
+    ));
+    setVatRateBasisPoints((current) => (
+      current ?? backendDefaults.vatRateBasisPoints ?? null
     ));
   }, [backendDefaults, open]);
 
@@ -113,8 +121,6 @@ function TechnicalSheetCreateDialog({
     const normalizedQuantity = productionQuantity.trim().replace(',', '.');
     const normalizedPortions =
       portionsPerProductionUnit.trim().replace(',', '.');
-    const vatRateBasisPoints = percentInputToBasisPoints(vatRate);
-
     if (!normalizedName) {
       setErrorMessage('Renseignez le nom de la Fiche technique.');
       return;
@@ -146,12 +152,8 @@ function TechnicalSheetCreateDialog({
       return;
     }
 
-    if (
-      vatRateBasisPoints === null
-      || vatRateBasisPoints < 0
-      || vatRateBasisPoints > 10000
-    ) {
-      setErrorMessage('Renseignez une TVA comprise entre 0 et 100 %.');
+    if (!vatRateValid) {
+      setErrorMessage('Sélectionnez un taux de TVA autorisé.');
       return;
     }
 
@@ -300,16 +302,13 @@ function TechnicalSheetCreateDialog({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="technical-sheet-vat">
-                  TVA (%)
-                </FieldLabel>
-                <Input
-                  disabled={createState.isLoading}
-                  id="technical-sheet-vat"
-                  inputMode="decimal"
-                  onChange={(event) => setVatRate(event.target.value)}
-                  placeholder="Ex. 10"
-                  value={vatRate}
+                <FieldLabel>TVA</FieldLabel>
+                <SegmentedControl
+                  ariaLabel="TVA de vente"
+                  disabled={createState.isLoading || metadataQuery.isLoading}
+                  items={vatRateItems}
+                  onValueChange={setVatRateBasisPoints}
+                  value={vatRateBasisPoints}
                 />
               </Field>
 
@@ -385,7 +384,7 @@ function TechnicalSheetCreateDialog({
                 || !productionUnit
                 || !portionsPerProductionUnit.trim()
                 || !saleBasis
-                || !vatRate.trim()
+                || !vatRateValid
                 || !targetMarginValid
               }
               onClick={submit}

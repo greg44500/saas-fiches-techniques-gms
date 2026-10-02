@@ -892,7 +892,7 @@ function TechnicalSheetLineEditor({
                 }}
                 size="sm"
                 type="button"
-                variant="ghost"
+                variant="warning"
               >
                 Annuler
               </Button>

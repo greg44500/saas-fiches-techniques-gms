@@ -6,6 +6,9 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
+  TechnicalSheetEconomicMetricLabel,
+} from '@/features/technical-sheets/components/technical-sheet-economic-metric-label';
+import {
   TechnicalSheetHistory,
 } from '@/features/technical-sheets/components/technical-sheet-history';
 import {
@@ -13,9 +16,15 @@ import {
   formatDecimalCurrency,
   formatMinorCurrency,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
+import { cn } from '@/lib/utils';
 
 function decimalValue(value) {
   return value?.$numberDecimal ?? value ?? null;
+}
+
+function decimalNumber(value) {
+  const parsed = Number(decimalValue(value));
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function definitionLabel(definitions, value, fallback = 'NC') {
@@ -23,6 +32,100 @@ function definitionLabel(definitions, value, fallback = 'NC') {
     .find((definition) => definition.value === value)
     ?.label ?? fallback;
 }
+
+function formatSignedBasisPointDelta(value) {
+  if (!Number.isInteger(value)) return 'NC';
+
+  const arrow = value > 0 ? '↑' : value < 0 ? '↓' : '—';
+  const points = Math.abs(value) / 100;
+
+  return arrow + ' ' + points.toLocaleString('fr-FR', {
+    maximumFractionDigits: 2,
+  }) + ' point' + (points > 1 ? 's' : '');
+}
+
+function formatSignedCurrencyDelta(value) {
+  const parsed = decimalNumber(value);
+  if (parsed === null) return 'NC';
+
+  const arrow = parsed > 0 ? '↑' : parsed < 0 ? '↓' : '—';
+  return arrow + ' ' + formatDecimalCurrency(Math.abs(parsed));
+}
+
+function getMarginDiagnostic(economicSnapshot) {
+  const marginAmount = decimalNumber(
+    economicSnapshot?.actualMarginAmountHt,
+  );
+  const targetDelta =
+    economicSnapshot?.targetMarginDeltaBasisPoints;
+
+  if (marginAmount === null) {
+    return {
+      tone: 'neutral',
+      title: 'Diagnostic indisponible',
+      description:
+        'La valorisation doit être complète pour analyser la marge.',
+    };
+  }
+
+  if (marginAmount < 0) {
+    return {
+      tone: 'destructive',
+      title: 'Prix retenu sous le coût de fabrication',
+      description:
+        'Le Prix retenu HT ne couvre pas le coût de fabrication de la base de vente.',
+    };
+  }
+
+  if (marginAmount === 0) {
+    return {
+      tone: 'warning',
+      title: 'Coût de fabrication couvert sans marge positive',
+      description:
+        'Le Prix retenu HT couvre exactement le coût de fabrication de la base de vente.',
+    };
+  }
+
+  if (Number.isInteger(targetDelta) && targetDelta >= 0) {
+    return {
+      tone: 'success',
+      title: 'Marge positive et objectif atteint',
+      description:
+        'La marge sur coût de fabrication est positive et atteint la marge cible.',
+    };
+  }
+
+  if (Number.isInteger(targetDelta) && targetDelta < 0) {
+    return {
+      tone: 'warning',
+      title: 'Marge positive, objectif non atteint',
+      description:
+        'Le coût de fabrication est couvert, mais la marge réelle reste sous la marge cible.',
+    };
+  }
+
+  return {
+    tone: 'warning',
+    title: 'Marge positive',
+    description:
+      'Le coût de fabrication est couvert, mais la comparaison à la cible est indisponible.',
+  };
+}
+
+const diagnosticToneClasses = {
+  success: 'border-success/35 bg-success/10 text-success',
+  warning: 'border-warning/35 bg-warning/10 text-warning',
+  destructive:
+    'border-destructive/35 bg-destructive/10 text-destructive',
+  neutral: 'border-border bg-muted/20 text-foreground',
+};
+
+const diagnosticBarClasses = {
+  success: 'bg-success',
+  warning: 'bg-warning',
+  destructive: 'bg-destructive',
+  neutral: 'bg-muted-foreground',
+};
 
 function DetailRow({ label, value }) {
   return (
@@ -35,10 +138,12 @@ function DetailRow({ label, value }) {
   );
 }
 
-function MetricCard({ label, value, hint }) {
+function MetricCard({ hint, label, value }) {
   return (
     <div className="rounded-lg border border-border bg-card px-3 py-3">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="text-xs font-medium text-muted-foreground">
+        {label}
+      </div>
       <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
       {hint ? (
         <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
@@ -75,11 +180,11 @@ function RatioBar({ firstLabel, firstValue, secondLabel, secondValue }) {
         role="img"
       >
         <div
-          className="bg-foreground/75 transition-[width] duration-300"
+          className="bg-primary transition-[width] duration-300"
           style={{ width: firstPercent + '%' }}
         />
         <div
-          className="bg-muted-foreground/35 transition-[width] duration-300"
+          className="bg-secondary transition-[width] duration-300"
           style={{ width: secondPercent + '%' }}
         />
       </div>
@@ -91,7 +196,12 @@ function RatioBar({ firstLabel, firstValue, secondLabel, secondValue }) {
   );
 }
 
-function MarginComparison({ targetBasisPoints, actualBasisPoints }) {
+function MarginComparison({
+  actualBasisPoints,
+  diagnosticTone = 'neutral',
+  targetBasisPoints,
+  targetDeltaBasisPoints,
+}) {
   if (
     !Number.isInteger(targetBasisPoints)
     || !Number.isInteger(actualBasisPoints)
@@ -103,10 +213,9 @@ function MarginComparison({ targetBasisPoints, actualBasisPoints }) {
     );
   }
 
-  const target = targetBasisPoints / 100;
-  const actual = actualBasisPoints / 100;
+  const target = Math.max(0, targetBasisPoints / 100);
+  const actual = Math.max(0, actualBasisPoints / 100);
   const max = Math.max(target, actual, 1);
-  const difference = (actualBasisPoints - targetBasisPoints) / 100;
 
   return (
     <div className="space-y-3">
@@ -114,7 +223,7 @@ function MarginComparison({ targetBasisPoints, actualBasisPoints }) {
         <span className="text-muted-foreground">Cible</span>
         <div className="h-2 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full bg-foreground/55"
+            className="h-full bg-primary/65"
             style={{ width: Math.min(100, (target / max) * 100) + '%' }}
           />
         </div>
@@ -126,7 +235,11 @@ function MarginComparison({ targetBasisPoints, actualBasisPoints }) {
         <span className="text-muted-foreground">Réelle</span>
         <div className="h-2 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full bg-foreground"
+            className={cn(
+              'h-full',
+              diagnosticBarClasses[diagnosticTone]
+              ?? diagnosticBarClasses.neutral,
+            )}
             style={{ width: Math.min(100, (actual / max) * 100) + '%' }}
           />
         </div>
@@ -135,10 +248,25 @@ function MarginComparison({ targetBasisPoints, actualBasisPoints }) {
         </span>
       </div>
       <p className="text-xs text-muted-foreground">
-        Écart : {difference > 0 ? '+' : ''}
-        {difference.toLocaleString('fr-FR', {
-          maximumFractionDigits: 2,
-        })} point{Math.abs(difference) > 1 ? 's' : ''}
+        Écart backend : {formatSignedBasisPointDelta(targetDeltaBasisPoints)}
+      </p>
+    </div>
+  );
+}
+
+function DiagnosticPanel({ diagnostic }) {
+  return (
+    <div
+      className={cn(
+        'rounded-lg border px-4 py-3',
+        diagnosticToneClasses[diagnostic.tone]
+        ?? diagnosticToneClasses.neutral,
+      )}
+      role="status"
+    >
+      <p className="text-sm font-semibold">{diagnostic.title}</p>
+      <p className="mt-1 text-xs text-current/80">
+        {diagnostic.description}
       </p>
     </div>
   );
@@ -153,6 +281,8 @@ function TechnicalSheetAnalysisDrawer({
   open,
   productionSnapshot,
 }) {
+  const metricDefinitions =
+    metadata?.economicMetricDefinitions ?? [];
   const saleBasisLabel = definitionLabel(
     metadata?.saleBases,
     productionSnapshot?.saleBasis,
@@ -175,6 +305,19 @@ function TechnicalSheetAnalysisDrawer({
     productionSnapshot?.targetMarginBasisPoints ?? null;
   const actualMarginBasisPoints =
     economicSnapshot?.actualMarginBasisPoints ?? null;
+  const targetDeltaBasisPoints =
+    economicSnapshot?.targetMarginDeltaBasisPoints ?? null;
+  const diagnostic = getMarginDiagnostic(economicSnapshot);
+  const saleBasisLower = saleBasisLabel.toLowerCase();
+
+  const metricLabel = (metricKey, fallbackLabel, displayLabel) => (
+    <TechnicalSheetEconomicMetricLabel
+      definitions={metricDefinitions}
+      displayLabel={displayLabel}
+      fallbackLabel={fallbackLabel}
+      metricKey={metricKey}
+    />
+  );
 
   return (
     <EntityDetailsDrawer
@@ -196,30 +339,102 @@ function TechnicalSheetAnalysisDrawer({
             <div className="grid gap-3 sm:grid-cols-2">
               <MetricCard
                 hint="Production complète"
-                label="CF HT"
+                label={metricLabel('manufacturingCostHt', 'CF HT')}
                 value={formatDecimalCurrency(
                   decimalValue(economicSnapshot?.manufacturingCostHt),
                 )}
               />
               <MetricCard
                 hint="Par portion"
-                label="CFU HT"
+                label={metricLabel(
+                  'manufacturingCostPerPortionHt',
+                  'CFU HT',
+                )}
                 value={formatDecimalCurrency(
-                  decimalValue(economicSnapshot?.manufacturingCostPerPortionHt),
+                  decimalValue(
+                    economicSnapshot?.manufacturingCostPerPortionHt,
+                  ),
                 )}
               />
               <MetricCard
-                hint={'Par ' + saleBasisLabel.toLowerCase()}
+                hint={'Par ' + saleBasisLower}
                 label="Prix retenu TTC"
                 value={formatMinorCurrency(
                   economicSnapshot?.finalPriceTtcMinor,
                 )}
               />
               <MetricCard
-                label="Marge réelle"
+                label={metricLabel(
+                  'actualMarginBasisPoints',
+                  'Marge réelle',
+                )}
                 value={formatBasisPoints(actualMarginBasisPoints)}
               />
             </div>
+
+            <DiagnosticPanel diagnostic={diagnostic} />
+
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold">
+                Diagnostic de marge
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <MetricCard
+                  hint={'Par ' + saleBasisLower}
+                  label={metricLabel(
+                    'actualMarginAmountHt',
+                    'Marge sur coût de fabrication',
+                  )}
+                  value={formatDecimalCurrency(
+                    decimalValue(
+                      economicSnapshot?.actualMarginAmountHt,
+                    ),
+                  )}
+                />
+                <MetricCard
+                  hint="Production complète"
+                  label={metricLabel(
+                    'manufacturingMarginProductionHt',
+                    'Marge sur coût de fabrication · production',
+                  )}
+                  value={formatDecimalCurrency(
+                    decimalValue(
+                      economicSnapshot?.manufacturingMarginProductionHt,
+                    ),
+                  )}
+                />
+                <MetricCard
+                  hint="Écart en points"
+                  label={metricLabel(
+                    'targetMarginDeltaBasisPoints',
+                    'Écart vs cible',
+                  )}
+                  value={formatSignedBasisPointDelta(
+                    targetDeltaBasisPoints,
+                  )}
+                />
+                <MetricCard
+                  hint={'Par ' + saleBasisLower}
+                  label={metricLabel(
+                    'targetMarginDeltaAmountHt',
+                    'Écart monétaire vs cible',
+                  )}
+                  value={formatSignedCurrencyDelta(
+                    economicSnapshot?.targetMarginDeltaAmountHt,
+                  )}
+                />
+                <MetricCard
+                  hint="Production complète"
+                  label={metricLabel(
+                    'targetMarginDeltaProductionHt',
+                    'Écart production vs cible',
+                  )}
+                  value={formatSignedCurrencyDelta(
+                    economicSnapshot?.targetMarginDeltaProductionHt,
+                  )}
+                />
+              </div>
+            </section>
 
             <section className="space-y-3">
               <h3 className="text-sm font-semibold">Production</h3>
@@ -260,7 +475,9 @@ function TechnicalSheetAnalysisDrawer({
               <h3 className="text-sm font-semibold">Objectif de marge</h3>
               <MarginComparison
                 actualBasisPoints={actualMarginBasisPoints}
+                diagnosticTone={diagnostic.tone}
                 targetBasisPoints={targetMarginBasisPoints}
+                targetDeltaBasisPoints={targetDeltaBasisPoints}
               />
             </section>
           </div>
@@ -269,36 +486,78 @@ function TechnicalSheetAnalysisDrawer({
         <TabsContent value="costs" variant="section">
           <dl className="rounded-lg border border-border px-4">
             <DetailRow
-              label="CM HT · Matières, production"
-              value={formatDecimalCurrency(decimalValue(economicSnapshot?.materialCostHt))}
+              label={metricLabel('materialCostHt', 'CM HT')}
+              value={formatDecimalCurrency(
+                decimalValue(economicSnapshot?.materialCostHt),
+              )}
             />
             <DetailRow
-              label="CE HT · Économat, production"
-              value={formatDecimalCurrency(decimalValue(economicSnapshot?.economatCostHt))}
+              label={metricLabel('economatCostHt', 'CE HT')}
+              value={formatDecimalCurrency(
+                decimalValue(economicSnapshot?.economatCostHt),
+              )}
             />
             <DetailRow
-              label="CF HT · Fabrication, production"
-              value={formatDecimalCurrency(decimalValue(economicSnapshot?.manufacturingCostHt))}
+              label={metricLabel('manufacturingCostHt', 'CF HT')}
+              value={formatDecimalCurrency(
+                decimalValue(economicSnapshot?.manufacturingCostHt),
+              )}
             />
             <DetailRow
-              label="CM/Pce HT"
-              value={formatDecimalCurrency(decimalValue(economicSnapshot?.materialCostPerProductionUnitHt))}
+              label={metricLabel(
+                'materialCostPerProductionUnitHt',
+                'CM/Pce HT',
+              )}
+              value={formatDecimalCurrency(
+                decimalValue(
+                  economicSnapshot?.materialCostPerProductionUnitHt,
+                ),
+              )}
             />
             <DetailRow
-              label="CF/Pce HT"
-              value={formatDecimalCurrency(decimalValue(economicSnapshot?.manufacturingCostPerProductionUnitHt))}
+              label={metricLabel(
+                'manufacturingCostPerProductionUnitHt',
+                'CF/Pce HT',
+              )}
+              value={formatDecimalCurrency(
+                decimalValue(
+                  economicSnapshot
+                    ?.manufacturingCostPerProductionUnitHt,
+                ),
+              )}
             />
             <DetailRow
-              label="CMU HT · Matière / portion"
-              value={formatDecimalCurrency(decimalValue(economicSnapshot?.materialCostPerPortionHt))}
+              label={metricLabel(
+                'materialCostPerPortionHt',
+                'CMU HT',
+              )}
+              value={formatDecimalCurrency(
+                decimalValue(
+                  economicSnapshot?.materialCostPerPortionHt,
+                ),
+              )}
             />
             <DetailRow
-              label="CEU HT · Économat / portion"
-              value={formatDecimalCurrency(decimalValue(economicSnapshot?.economatCostPerPortionHt))}
+              label={metricLabel(
+                'economatCostPerPortionHt',
+                'CEU HT',
+              )}
+              value={formatDecimalCurrency(
+                decimalValue(
+                  economicSnapshot?.economatCostPerPortionHt,
+                ),
+              )}
             />
             <DetailRow
-              label="CFU HT · Fabrication / portion"
-              value={formatDecimalCurrency(decimalValue(economicSnapshot?.manufacturingCostPerPortionHt))}
+              label={metricLabel(
+                'manufacturingCostPerPortionHt',
+                'CFU HT',
+              )}
+              value={formatDecimalCurrency(
+                decimalValue(
+                  economicSnapshot?.manufacturingCostPerPortionHt,
+                ),
+              )}
             />
           </dl>
         </TabsContent>
@@ -308,37 +567,108 @@ function TechnicalSheetAnalysisDrawer({
             <dl className="rounded-lg border border-border px-4">
               <DetailRow label="Base de vente" value={saleBasisLabel} />
               <DetailRow
+                label="TVA de vente"
+                value={formatBasisPoints(
+                  productionSnapshot?.vatRateBasisPoints,
+                )}
+              />
+              <DetailRow
                 label="Marge cible"
                 value={formatBasisPoints(targetMarginBasisPoints)}
               />
               <DetailRow
                 label="Prix de vente calculé HT"
-                value={formatDecimalCurrency(decimalValue(economicSnapshot?.theoreticalPriceHt))}
+                value={formatDecimalCurrency(
+                  decimalValue(economicSnapshot?.theoreticalPriceHt),
+                )}
               />
               <DetailRow
                 label="Prix de vente calculé TTC"
-                value={formatDecimalCurrency(decimalValue(economicSnapshot?.theoreticalPriceTtc))}
+                value={formatDecimalCurrency(
+                  decimalValue(economicSnapshot?.theoreticalPriceTtc),
+                )}
               />
               <DetailRow
                 label="Prix conseillé TTC"
-                value={formatMinorCurrency(economicSnapshot?.advisedPriceTtcMinor)}
+                value={formatMinorCurrency(
+                  economicSnapshot?.advisedPriceTtcMinor,
+                )}
               />
               <DetailRow
                 label="Prix retenu TTC"
-                value={formatMinorCurrency(economicSnapshot?.finalPriceTtcMinor)}
+                value={formatMinorCurrency(
+                  economicSnapshot?.finalPriceTtcMinor,
+                )}
               />
               <DetailRow
                 label="Plancher économique TTC"
-                value={formatDecimalCurrency(decimalValue(economicSnapshot?.economicFloorTtc))}
+                value={formatDecimalCurrency(
+                  decimalValue(economicSnapshot?.economicFloorTtc),
+                )}
               />
               <DetailRow
-                label="Marge réelle"
+                label={metricLabel(
+                  'actualMarginBasisPoints',
+                  'Marge réelle',
+                )}
                 value={formatBasisPoints(actualMarginBasisPoints)}
               />
+              <DetailRow
+                label={metricLabel(
+                  'actualMarginAmountHt',
+                  'Marge sur coût de fabrication',
+                )}
+                value={formatDecimalCurrency(
+                  decimalValue(
+                    economicSnapshot?.actualMarginAmountHt,
+                  ),
+                )}
+              />
+              <DetailRow
+                label={metricLabel(
+                  'manufacturingMarginProductionHt',
+                  'Marge sur coût de fabrication · production',
+                )}
+                value={formatDecimalCurrency(
+                  decimalValue(
+                    economicSnapshot?.manufacturingMarginProductionHt,
+                  ),
+                )}
+              />
+              <DetailRow
+                label={metricLabel(
+                  'targetMarginDeltaBasisPoints',
+                  'Écart vs cible',
+                )}
+                value={formatSignedBasisPointDelta(
+                  targetDeltaBasisPoints,
+                )}
+              />
+              <DetailRow
+                label={metricLabel(
+                  'targetMarginDeltaAmountHt',
+                  'Écart monétaire vs cible',
+                )}
+                value={formatSignedCurrencyDelta(
+                  economicSnapshot?.targetMarginDeltaAmountHt,
+                )}
+              />
+              <DetailRow
+                label={metricLabel(
+                  'targetMarginDeltaProductionHt',
+                  'Écart production vs cible',
+                )}
+                value={formatSignedCurrencyDelta(
+                  economicSnapshot?.targetMarginDeltaProductionHt,
+                )}
+              />
             </dl>
+            <DiagnosticPanel diagnostic={diagnostic} />
             <MarginComparison
               actualBasisPoints={actualMarginBasisPoints}
+              diagnosticTone={diagnostic.tone}
               targetBasisPoints={targetMarginBasisPoints}
+              targetDeltaBasisPoints={targetDeltaBasisPoints}
             />
           </div>
         </TabsContent>
@@ -361,6 +691,9 @@ function TechnicalSheetAnalysisDrawer({
 }
 
 export {
+  formatSignedBasisPointDelta,
+  formatSignedCurrencyDelta,
+  getMarginDiagnostic,
   MarginComparison,
   RatioBar,
   TechnicalSheetAnalysisDrawer,

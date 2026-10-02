@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -9,10 +10,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+  TechnicalSheetEconomicMetricLabel,
+} from '@/features/technical-sheets/components/technical-sheet-economic-metric-label';
 import {
   formatBasisPoints,
   formatDecimalCurrency,
@@ -31,25 +30,35 @@ function compactMetricValue(value) {
   return value;
 }
 
-function MetricLabel({ children, tooltip }) {
+function LocalMetricLabel({ children, tooltip }) {
   return (
-    <Tooltip>
-      <TooltipTrigger
-        aria-label={tooltip}
-        className="w-fit cursor-help text-xs font-medium text-muted-foreground underline decoration-dotted underline-offset-4"
-        type="button"
-      >
-        {children}
-      </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
-    </Tooltip>
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+      <span>{children}</span>
+      <InfoTooltip
+        className="size-5"
+        content={tooltip}
+        label={'Définition : ' + children}
+      />
+    </span>
   );
 }
 
-function Metric({ label, tooltip, value }) {
+function Metric({
+  definitions,
+  displayLabel,
+  fallbackLabel,
+  metricKey,
+  value,
+}) {
   return (
     <div className="min-w-0 space-y-1 rounded-md px-2 py-1.5">
-      <MetricLabel tooltip={tooltip}>{label}</MetricLabel>
+      <TechnicalSheetEconomicMetricLabel
+        className="text-xs font-medium text-muted-foreground"
+        definitions={definitions}
+        displayLabel={displayLabel}
+        fallbackLabel={fallbackLabel}
+        metricKey={metricKey}
+      />
       <p className="truncate text-sm font-semibold tabular-nums">
         {compactMetricValue(value)}
       </p>
@@ -73,6 +82,7 @@ function snapshotKey(snapshot) {
 
 function TechnicalSheetEconomicsBar({
   canValuate = false,
+  economicMetricDefinitions = [],
   economicSnapshot,
   editDisabled = false,
   finalPriceInputValue = '',
@@ -135,36 +145,39 @@ function TechnicalSheetEconomicsBar({
 
         <div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 md:grid-cols-3 xl:grid-cols-[0.8fr_0.8fr_0.8fr_minmax(240px,1.4fr)_0.7fr]">
           <Metric
-            label="CF HT"
-            tooltip="Coût de fabrication HT total de la production"
+            definitions={economicMetricDefinitions}
+            fallbackLabel="CF HT"
+            metricKey="manufacturingCostHt"
             value={formatDecimalCurrency(
               economicSnapshot?.manufacturingCostHt,
             )}
           />
           <Metric
-            label="CMU HT"
-            tooltip="Coût matière unitaire HT d’une portion"
+            definitions={economicMetricDefinitions}
+            fallbackLabel="CMU HT"
+            metricKey="materialCostPerPortionHt"
             value={formatDecimalCurrency(
               economicSnapshot?.materialCostPerPortionHt,
             )}
           />
           <Metric
-            label="CFU HT"
-            tooltip="Coût de fabrication unitaire HT d’une portion"
+            definitions={economicMetricDefinitions}
+            fallbackLabel="CFU HT"
+            metricKey="manufacturingCostPerPortionHt"
             value={formatDecimalCurrency(
               economicSnapshot?.manufacturingCostPerPortionHt,
             )}
           />
 
           <div className="min-w-0 space-y-1 rounded-md px-2 py-1.5">
-            <MetricLabel
+            <LocalMetricLabel
               tooltip={
                 'Prix de vente retenu TTC par '
                 + saleBasisLabel.toLowerCase()
               }
             >
               Prix retenu TTC
-            </MetricLabel>
+            </LocalMetricLabel>
             <div className="flex min-w-0 gap-1">
               {finalPriceModeItems.find(
                 (item) => (
@@ -222,8 +235,10 @@ function TechnicalSheetEconomicsBar({
           </div>
 
           <Metric
-            label="%MR"
-            tooltip="Marge réelle"
+            definitions={economicMetricDefinitions}
+            displayLabel="%MR"
+            fallbackLabel="Marge réelle"
+            metricKey="actualMarginBasisPoints"
             value={formatBasisPoints(
               economicSnapshot?.actualMarginBasisPoints,
             )}
@@ -235,7 +250,7 @@ function TechnicalSheetEconomicsBar({
 }
 
 export {
-  MetricLabel,
+  LocalMetricLabel,
   compactMetricValue,
   TechnicalSheetEconomicsBar,
 };
