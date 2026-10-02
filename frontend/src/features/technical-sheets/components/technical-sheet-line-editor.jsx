@@ -6,7 +6,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { Button } from '@/components/ui/button';
@@ -631,7 +631,17 @@ function TechnicalSheetLineEditor({
   const [editingLineKey, setEditingLineKey] = useState(null);
   const [editSearch, setEditSearch] = useState('');
   const [sourcingLineKey, setSourcingLineKey] = useState(null);
+  const [recentlyReplacedLineKey, setRecentlyReplacedLineKey] = useState(null);
+  const replacementHighlightTimeoutRef = useRef(null);
   const [addError, setAddError] = useState('');
+
+  useEffect(() => () => {
+    if (replacementHighlightTimeoutRef.current) {
+      window.clearTimeout(
+        replacementHighlightTimeoutRef.current,
+      );
+    }
+  }, []);
   const lineKindDefinitions =
     metadata?.lineKindDefinitions ?? [];
   const primaryLineKindDefinition =
@@ -757,8 +767,11 @@ function TechnicalSheetLineEditor({
       });
 
     setAddError('');
+    const replacementClientKey =
+      createLocalLineClientKey();
+
     updateLine(index, {
-      clientKey: createLocalLineClientKey(),
+      clientKey: replacementClientKey,
       id: undefined,
       productVariantId: result.variant.id,
       productVariantName:
@@ -792,6 +805,22 @@ function TechnicalSheetLineEditor({
 
     setEditingLineKey(null);
     setEditSearch('');
+    setRecentlyReplacedLineKey(
+      replacementClientKey,
+    );
+
+    if (replacementHighlightTimeoutRef.current) {
+      window.clearTimeout(
+        replacementHighlightTimeoutRef.current,
+      );
+    }
+
+    replacementHighlightTimeoutRef.current =
+      window.setTimeout(() => {
+        setRecentlyReplacedLineKey(null);
+        replacementHighlightTimeoutRef.current =
+          null;
+      }, 900);
   }
 
   const sourcingLine = lines.find(
@@ -825,7 +854,12 @@ function TechnicalSheetLineEditor({
       <div
         className={
           COMPOSITION_GRID_CLASS
-          + ' border-b border-border px-2 py-2 transition-colors hover:bg-muted/20'
+          + ' border-b border-border px-2 py-2 transition-[background-color,box-shadow] duration-300 hover:bg-muted/20'
+          + (
+            recentlyReplacedLineKey === key
+              ? ' bg-primary/5 shadow-[inset_3px_0_0_hsl(var(--primary))]'
+              : ''
+          )
         }
         key={key}
       >

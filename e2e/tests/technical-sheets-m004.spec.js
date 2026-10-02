@@ -179,22 +179,6 @@ async function expectTechnicalSheetCapacity(page, {
   return capacityRegion;
 }
 
-async function openInformationDrawer(page) {
-  const openButton = page.getByRole('button', {
-    name: 'Ouvrir les informations de la Fiche',
-  });
-
-  if (await openButton.isVisible().catch(() => false)) {
-    await openButton.click();
-  }
-
-  await expect(
-    page.getByRole('heading', {
-      name: 'Informations de la Fiche',
-    }),
-  ).toBeVisible();
-}
-
 async function validateCurrentDraft(page, {
   comment = null,
 }) {
@@ -203,22 +187,28 @@ async function validateCurrentDraft(page, {
   });
 
   await expect(validateButton).toBeEnabled();
+  await validateButton.click();
+
+  const dialog = page.getByRole('dialog');
+
+  await expect(
+    dialog.getByRole('heading', {
+      name: 'Valider la Fiche technique',
+    }),
+  ).toBeVisible();
 
   if (comment) {
-    await openInformationDrawer(page);
-
-    await page
-      .getByLabel(
-        'Commentaire de validation',
-      )
+    await dialog
+      .getByLabel('Commentaire de validation')
       .fill(comment);
-
-    await page.getByRole('button', {
-      name: 'Fermer',
-    }).click();
   }
 
-  await validateButton.click();
+  await dialog
+    .getByRole('button', {
+      name: 'Valider',
+      exact: true,
+    })
+    .click();
 
   await expectVisibleToast(
     page,
@@ -250,6 +240,39 @@ test('M-004 une Référence Produit globale non favorite reste composable et val
     technicalSheetsUrl:
       context.dossierATechnicalSheetsUrl,
   });
+
+  await expect(
+    page.getByRole('button', {
+      name: 'Analyse',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: 'Infos dossier',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: 'Modifier',
+    }),
+  ).toBeVisible();
+
+  await page.getByRole('button', {
+    name: 'Analyse',
+  }).click();
+  await expect(
+    page.getByRole('heading', {
+      name: 'Analyse de gestion',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('tab', {
+      name: 'Synthèse',
+    }),
+  ).toBeVisible();
+  await page.getByRole('button', {
+    name: 'Fermer',
+  }).click();
 
   await expect(
     page.getByRole('button', {

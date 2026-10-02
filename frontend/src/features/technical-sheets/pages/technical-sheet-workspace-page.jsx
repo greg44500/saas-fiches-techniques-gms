@@ -1270,7 +1270,6 @@ function TechnicalSheetWorkspacePage() {
         dossierId={dossierId}
         onClose={() => setRightPanel(null)}
         open={rightPanel === 'dossier'}
-        pricingSources={metadata?.pricingSources ?? []}
         workspaceId={workspace.id}
       />
 
