@@ -60,7 +60,6 @@ import {
   TechnicalSheetEconomicsBar,
 } from '@/features/technical-sheets/components/technical-sheet-economics-bar';
 import {
-  PRODUCT_SOURCE,
   TechnicalSheetLineEditor,
   TechnicalSheetProductScopeControls,
   normalizeDraftLine,
@@ -269,7 +268,7 @@ function TechnicalSheetWorkspacePage() {
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
   const [copyOpen, setCopyOpen] = useState(false);
-  const [productScope, setProductScope] = useState(PRODUCT_SOURCE.REFERENCE);
+  const [productScope, setProductScope] = useState(null);
   const [sourcingPendingCount, setSourcingPendingCount] = useState(0);
 
   const {
@@ -347,7 +346,7 @@ function TechnicalSheetWorkspacePage() {
     setIdentityDirty(false);
     setIdentityFormRevision(null);
     setInformationOpen(false);
-    setProductScope(PRODUCT_SOURCE.REFERENCE);
+    setProductScope(null);
     resetAutosave(null);
   }, [resetAutosave, technicalSheetId]);
 
@@ -456,6 +455,14 @@ function TechnicalSheetWorkspacePage() {
   const saleBasisItems = metadata?.saleBases ?? [];
   const finalPriceModeItems =
     metadata?.finalPriceModeDefinitions ?? [];
+  const productSearchScopes =
+    productMetadataQuery.data
+      ?.productSearchScopes ?? [];
+  const effectiveProductScope =
+    productScope
+    ?? metadata?.defaults
+      ?.productSearchScope
+    ?? null;
 
   if (
     (sheetQuery.isLoading && !sheetQuery.data)
@@ -819,12 +826,16 @@ function TechnicalSheetWorkspacePage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
-                    {canUpdate && (
-                      <TechnicalSheetProductScopeControls
-                        onChange={setProductScope}
-                        productScope={productScope}
-                      />
-                    )}
+                    {canUpdate
+                      && productSearchScopes.length > 0
+                      && effectiveProductScope
+                      && (
+                        <TechnicalSheetProductScopeControls
+                          items={productSearchScopes}
+                          onChange={setProductScope}
+                          productScope={effectiveProductScope}
+                        />
+                      )}
                     {canUpdate && (
                       <TechnicalSheetAutosaveStatus
                         blockedReason={autosaveBlockedReason}
@@ -1107,7 +1118,7 @@ function TechnicalSheetWorkspacePage() {
                 }}
                 metadata={metadata}
                 productMetadata={productMetadataQuery.data}
-                productScope={productScope}
+                productScope={effectiveProductScope}
                 canOpenPricing={canOpenSupplierPricing}
                 sourcingDisabled={
                   draftSynchronizing

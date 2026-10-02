@@ -98,7 +98,6 @@ vi.mock('@/features/technical-sheets/components/technical-sheet-sourcing-select'
 }));
 
 import {
-  PRODUCT_SOURCE,
   TechnicalSheetLineEditor,
   TechnicalSheetProductScopeControls,
   getSupplierArticleActionTooltip,
@@ -106,15 +105,80 @@ import {
 } from '@/features/technical-sheets/components/technical-sheet-line-editor';
 
 const metadata = {
+  lineKindDefinitions: [
+    {
+      value: 'INGREDIENT',
+      label: 'Ingrédients',
+      sectionLabel: 'INGRÉDIENTS',
+      opposite: 'ECONOMAT',
+      materialCostShareEligible: true,
+      primary: true,
+      showSectionHeader: false,
+    },
+    {
+      value: 'ECONOMAT',
+      label: 'Économat',
+      sectionLabel: 'Économat',
+      opposite: 'INGREDIENT',
+      materialCostShareEligible: false,
+      primary: false,
+      showSectionHeader: true,
+    },
+  ],
   lineValuationStatusDefinitions: [
-    { value: 'UNRESOLVED', label: 'Article à choisir', tone: 'warning' },
-    { value: 'NO_PRICE', label: 'Prix indisponible', tone: 'destructive' },
-    { value: 'VALUED', label: 'Valorisée', tone: 'success' },
-    { value: 'STALE', label: 'Calcul à actualiser', tone: 'warning' },
+    {
+      value: 'UNRESOLVED',
+      label: 'Article à choisir',
+      tone: 'warning',
+      openPricingEligible: false,
+    },
+    {
+      value: 'NO_PRICE',
+      label: 'Prix indisponible',
+      tone: 'destructive',
+      openPricingEligible: true,
+    },
+    {
+      value: 'VALUED',
+      label: 'Valorisée',
+      tone: 'success',
+      openPricingEligible: false,
+    },
+    {
+      value: 'STALE',
+      label: 'Calcul à actualiser',
+      tone: 'warning',
+      openPricingEligible: false,
+    },
+  ],
+  pricingSources: [
+    {
+      value: 'NEGOTIATED_PRICE',
+      label: 'Tarif négocié',
+    },
+    {
+      value: 'INDICATIVE_WORKSPACE',
+      label: 'Prix indicatif espace de travail',
+    },
   ],
 };
 
 const productMetadata = {
+  productSearchScopes: [
+    {
+      value: 'WORKSPACE',
+      label: 'Favoris',
+      showWorkspaceFavorite: false,
+    },
+    {
+      value: 'REFERENCE',
+      label: 'Tous les produits',
+      showWorkspaceFavorite: true,
+    },
+  ],
+  defaults: {
+    activeWorkspaceProductStatus: 'ACTIVE',
+  },
   referenceUnits: [
     {
       value: 'G',
@@ -188,6 +252,7 @@ function renderEditor(overrides = {}) {
         onSourcingSelected={vi.fn()}
         onUnitChangeWarning={onUnitChangeWarning}
         productMetadata={productMetadata}
+        productScope="REFERENCE"
         sourcingDisabled={false}
         technicalSheetId="sheet-1"
         workspaceId="workspace-1"
@@ -235,8 +300,9 @@ describe('TechnicalSheetLineEditor', () => {
     render(
       <TooltipProvider>
         <TechnicalSheetProductScopeControls
+          items={productMetadata.productSearchScopes}
           onChange={onChange}
-          productScope={PRODUCT_SOURCE.REFERENCE}
+          productScope="REFERENCE"
         />
       </TooltipProvider>,
     );
@@ -250,7 +316,7 @@ describe('TechnicalSheetLineEditor', () => {
 
     expect(globalButton).toHaveAttribute('aria-pressed', 'true');
     await user.click(favoritesButton);
-    expect(onChange).toHaveBeenCalledWith(PRODUCT_SOURCE.FAVORITES);
+    expect(onChange).toHaveBeenCalledWith('WORKSPACE');
   });
 
   it('affiche le tableau métier compact sans quantité brute ni colonne fournisseur', () => {
