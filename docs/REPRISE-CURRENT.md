@@ -41,7 +41,14 @@ Nouvelle Fiche
 Fiche
 → ancien champ Portions supprimé
 → quantité produite = dénominateur des résultats unitaires
+→ titre + badges intégrés au header sticky à la place du libellé « Paramètres »
+→ champs de production compactés
 → composition modifiable uniquement avec paramètres complets
+→ unité de ligne imposée par ProductVariant.referenceUnit
+→ aucun sélecteur d'unité dans une ligne
+→ remplacement Produit : conversion automatique si unités compatibles, avertissement si dimension différente
+→ remplacement inline avec action « Annuler » distincte de la croix d'effacement de recherche
+→ suppression destructive réservée à la ligne entière
 → sauvegarde automatique du brouillon
 → recalcul économique automatique après sauvegarde
 → plus de bouton Valoriser / Revaloriser dans le parcours normal
