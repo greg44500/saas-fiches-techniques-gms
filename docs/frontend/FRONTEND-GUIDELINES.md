@@ -870,3 +870,33 @@ module formation
 Il ne doit pas créer un deuxième design system, une deuxième DataTable, une deuxième stratégie de toast, un deuxième cache serveur ou une deuxième architecture de navigation.
 
 Cette discipline est une condition directe de la future maintenabilité du Core et de la possibilité d'appliquer ses mises à jour aux applications dérivées.
+
+
+---
+
+## Primitives de choix segmenté et actions warning
+
+Le Design System Core expose désormais :
+
+```text
+components/ui/toggle-group.jsx
+components/ui/segmented-control.jsx
+```
+
+`ToggleGroup` est la primitive Base UI générique. `SegmentedControl` est
+l'abstraction recommandée lorsqu'une feature doit proposer un choix exclusif
+compact parmi un petit nombre d'options.
+
+Règles :
+
+- le composant reste métier-agnostique ;
+- les valeurs et libellés sont fournis par la feature consommatrice ;
+- une valeur contrôlée active ne peut pas être désélectionnée en cliquant à
+  nouveau dessus ;
+- la navigation clavier et l'état `aria-pressed` proviennent de Base UI ;
+- les styles utilisent uniquement les tokens sémantiques du Design System ;
+- `Button variant="warning"` est réservé aux actions d'attention
+  non destructives, distinctes de `destructive`.
+
+Ces primitives doivent être réutilisées par les SaaS dérivés plutôt que
+recopiées localement.
