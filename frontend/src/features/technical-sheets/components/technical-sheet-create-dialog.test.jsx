@@ -93,7 +93,7 @@ describe('TechnicalSheetCreateDialog', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('Portions / pièce'),
-    ).toHaveValue(1);
+    ).toHaveValue('1');
     expect(
       screen.getByRole('combobox', {
         name: 'Base de vente',

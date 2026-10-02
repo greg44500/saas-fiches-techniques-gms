@@ -94,6 +94,7 @@ function buildDraftForm(draft) {
     productionUnit: draft.productionUnit ?? '',
     portionsPerProductionUnit:
       draft.portionsPerProductionUnit ?? '',
+    totalPortions: draft.totalPortions ?? null,
     saleBasis: draft.saleBasis ?? '',
     vatRate: basisPointsToInput(draft.vatRateBasisPoints),
     targetMargin: basisPointsToInput(draft.targetMarginBasisPoints),
@@ -196,6 +197,7 @@ function mergeSavedLineIds(currentForm, snapshotForm, savedDraft) {
 
   return {
     ...currentForm,
+    totalPortions: savedForm.totalPortions,
     lines: currentForm.lines.map((line) => (
       idsByClientKey.has(line.clientKey)
         ? { ...line, id: idsByClientKey.get(line.clientKey) }
@@ -249,6 +251,7 @@ function TechnicalSheetWorkspacePage() {
     productionQuantity: '',
     productionUnit: '',
     portionsPerProductionUnit: '',
+    totalPortions: null,
     saleBasis: '',
     vatRate: '',
     targetMargin: '',
@@ -331,6 +334,7 @@ function TechnicalSheetWorkspacePage() {
       productionQuantity: '',
       productionUnit: '',
       portionsPerProductionUnit: '',
+      totalPortions: null,
       saleBasis: '',
       vatRate: '',
       targetMargin: '',
@@ -377,7 +381,11 @@ function TechnicalSheetWorkspacePage() {
       || draftDirty
       || autosaveHasUnsavedChanges
       || valuateState.isLoading
-      || !['NOT_VALUED', 'STALE'].includes(draft.valuationStatus)
+      || !metadata?.valuationStatusDefinitions
+        ?.find((definition) => (
+          definition.value === draft.valuationStatus
+        ))
+        ?.automaticValuationEligible
       || (draft.lines ?? []).length === 0
       || !draft.productionQuantity
       || !draft.productionUnit
@@ -426,6 +434,7 @@ function TechnicalSheetWorkspacePage() {
     dossierId,
     draft,
     draftDirty,
+    metadata?.valuationStatusDefinitions,
     technicalSheetId,
     toast,
     valuate,
@@ -914,6 +923,18 @@ function TechnicalSheetWorkspacePage() {
                       }}
                       value={draftForm.portionsPerProductionUnit}
                     />
+                  </Field>
+
+                  <Field className="w-28">
+                    <FieldLabel>Total portions</FieldLabel>
+                    <div
+                      aria-label="Total portions"
+                      className="flex h-9 items-center rounded-md border border-input bg-muted/30 px-3 text-sm font-medium tabular-nums"
+                    >
+                      {draftDirty || autosaveHasUnsavedChanges
+                        ? 'Actualisation…'
+                        : draftForm.totalPortions ?? 'NC'}
+                    </div>
                   </Field>
 
                   <Field className="w-28">

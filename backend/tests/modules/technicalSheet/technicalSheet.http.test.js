@@ -235,6 +235,26 @@ describe('M-004 RBAC HTTP', () => {
             }),
         ]));
         expect(
+            response.body.data.metadata.valuationStatusDefinitions,
+        ).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: 'NOT_VALUED',
+                automaticValuationEligible: true,
+            }),
+            expect.objectContaining({
+                value: 'PARTIAL',
+                automaticValuationEligible: false,
+            }),
+            expect.objectContaining({
+                value: 'COMPLETE',
+                automaticValuationEligible: false,
+            }),
+            expect.objectContaining({
+                value: 'STALE',
+                automaticValuationEligible: true,
+            }),
+        ]));
+        expect(
             response.body.data.metadata.finalPriceModeDefinitions,
         ).toEqual([
             {

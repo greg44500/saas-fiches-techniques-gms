@@ -39,21 +39,25 @@ const TECHNICAL_SHEET_VALUATION_STATUS_REGISTRY = Object.freeze({
         value: TECHNICAL_SHEET_VALUATION_STATUS.NOT_VALUED,
         label: 'Non valorisée',
         tone: 'alert',
+        automaticValuationEligible: true,
     }),
     PARTIAL: Object.freeze({
         value: TECHNICAL_SHEET_VALUATION_STATUS.PARTIAL,
         label: 'Valorisation incomplète',
         tone: 'warning',
+        automaticValuationEligible: false,
     }),
     COMPLETE: Object.freeze({
         value: TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE,
         label: 'Valorisée',
         tone: 'success',
+        automaticValuationEligible: false,
     }),
     STALE: Object.freeze({
         value: TECHNICAL_SHEET_VALUATION_STATUS.STALE,
         label: 'Calcul à actualiser',
         tone: 'warning',
+        automaticValuationEligible: true,
     }),
 });
 
