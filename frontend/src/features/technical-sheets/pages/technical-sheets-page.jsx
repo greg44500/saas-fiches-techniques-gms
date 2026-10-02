@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
+  useGetDossierTechnicalSheetSettingsQuery,
   useGetTechnicalSheetCapacityQuery,
   useListTechnicalSheetsQuery,
 } from '@/features/technical-sheets/api/technical-sheets-api';
@@ -68,6 +69,10 @@ function TechnicalSheetsPage() {
     page,
     limit: pageSize,
     search: search.trim() || undefined,
+  });
+  const settingsQuery = useGetDossierTechnicalSheetSettingsQuery({
+    workspaceId: workspace.id,
+    dossierId,
   });
   const capacityQuery = useGetTechnicalSheetCapacityQuery(workspace.id);
 
@@ -111,6 +116,11 @@ function TechnicalSheetsPage() {
     && !capacity.unlimited
     && capacity.current >= capacity.limit,
   );
+  const defaultTargetMarginBasisPoints =
+    settingsQuery.data?.defaultTargetMarginBasisPoints
+    ?? dossier.technicalSheetSettings
+      ?.defaultTargetMarginBasisPoints
+    ?? null;
   const operational = dossier.status === 'ACTIVE';
   const canCreate = can(TECHNICAL_SHEET_PERMISSION.CREATE)
     && operational
@@ -271,9 +281,7 @@ function TechnicalSheetsPage() {
 
       <TechnicalSheetCreateDialog
         defaultTargetMarginBasisPoints={
-          dossier.technicalSheetSettings
-            ?.defaultTargetMarginBasisPoints
-          ?? null
+          defaultTargetMarginBasisPoints
         }
         dossierId={dossierId}
         onClose={() => setCreateOpen(false)}
