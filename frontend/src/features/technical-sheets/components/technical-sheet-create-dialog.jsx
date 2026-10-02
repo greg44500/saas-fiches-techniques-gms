@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogOverlay,
@@ -46,6 +46,7 @@ function TechnicalSheetCreateDialog({
   const [productionQuantity, setProductionQuantity] = useState('');
   const [productionUnit, setProductionUnit] = useState('');
   const [vatRate, setVatRate] = useState('');
+  const [targetMargin, setTargetMargin] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const metadataQuery = useGetTechnicalSheetMetadataQuery(
     { workspaceId, dossierId },
@@ -64,8 +65,23 @@ function TechnicalSheetCreateDialog({
     setProductionQuantity('');
     setProductionUnit('');
     setVatRate('');
+    setTargetMargin('');
     setErrorMessage('');
   }, [open]);
+
+  const hasDossierTargetMargin =
+    Number.isInteger(defaultTargetMarginBasisPoints);
+  const enteredTargetMarginBasisPoints =
+    percentInputToBasisPoints(targetMargin);
+  const effectiveTargetMarginBasisPoints =
+    hasDossierTargetMargin
+      ? defaultTargetMarginBasisPoints
+      : enteredTargetMarginBasisPoints;
+  const targetMarginValid = (
+    Number.isInteger(effectiveTargetMarginBasisPoints)
+    && effectiveTargetMarginBasisPoints >= 0
+    && effectiveTargetMarginBasisPoints < 10000
+  );
 
   async function submit() {
     const normalizedName = name.trim();
@@ -100,8 +116,8 @@ function TechnicalSheetCreateDialog({
       return;
     }
 
-    if (!Number.isInteger(defaultTargetMarginBasisPoints)) {
-      setErrorMessage('Renseignez la marge cible par défaut du Dossier avant de créer une Fiche technique.');
+    if (!targetMarginValid) {
+      setErrorMessage('Renseignez une marge cible comprise entre 0 et moins de 100 %.');
       return;
     }
 
@@ -116,6 +132,12 @@ function TechnicalSheetCreateDialog({
         productionQuantity: normalizedQuantity,
         productionUnit,
         vatRateBasisPoints,
+        ...(!hasDossierTargetMargin
+          ? {
+              targetMarginBasisPoints:
+                effectiveTargetMarginBasisPoints,
+            }
+          : {}),
       }).unwrap();
 
       onCreated(result);
@@ -141,10 +163,13 @@ function TechnicalSheetCreateDialog({
         <DialogOverlay />
         <DialogContent initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>Créer une Fiche technique</DialogTitle>
-            <DialogDescription>
-              La Fiche est créée dans ce Dossier et consomme une unité de capacité du Workspace.
-            </DialogDescription>
+            <div className="flex items-center gap-2">
+              <DialogTitle>Créer une Fiche technique</DialogTitle>
+              <InfoTooltip
+                content="La Fiche est créée dans ce Dossier et consomme une unité de capacité du Workspace."
+                label="À propos de la création d’une Fiche technique"
+              />
+            </div>
           </DialogHeader>
 
           <div className="mt-5 space-y-4">
@@ -213,11 +238,36 @@ function TechnicalSheetCreateDialog({
               </Field>
 
               <Field>
-                <FieldLabel>Marge cible (%)</FieldLabel>
-                <div className="flex h-10 items-center rounded-md border border-border bg-muted/20 px-3 text-sm font-medium tabular-nums">
-                  {basisPointsToInput(defaultTargetMarginBasisPoints) || 'À renseigner dans le Dossier'}
-                  {Number.isInteger(defaultTargetMarginBasisPoints) ? ' %' : ''}
-                </div>
+                <FieldLabel htmlFor="technical-sheet-target-margin">
+                  Marge cible (%)
+                </FieldLabel>
+                {hasDossierTargetMargin ? (
+                  <div
+                    className="flex h-10 items-center gap-2 rounded-md border border-border bg-muted/20 px-3 text-sm"
+                    id="technical-sheet-target-margin"
+                  >
+                    <span className="font-semibold tabular-nums">
+                      {basisPointsToInput(defaultTargetMarginBasisPoints)} %
+                    </span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      Marge du Dossier
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      disabled={createState.isLoading}
+                      id="technical-sheet-target-margin"
+                      inputMode="decimal"
+                      onChange={(event) => setTargetMargin(event.target.value)}
+                      placeholder="Ex. 30"
+                      value={targetMargin}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Aucune marge n’est définie dans ce Dossier. Cette valeur sera utilisée pour cette Fiche.
+                    </p>
+                  </>
+                )}
               </Field>
             </div>
 
@@ -258,7 +308,7 @@ function TechnicalSheetCreateDialog({
                 || !productionQuantity.trim()
                 || !productionUnit
                 || !vatRate.trim()
-                || !Number.isInteger(defaultTargetMarginBasisPoints)
+                || !targetMarginValid
               }
               onClick={submit}
               type="button"
