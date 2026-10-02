@@ -27,6 +27,29 @@ const TECHNICAL_SHEET_LINE_KIND = Object.freeze({
     ECONOMAT: 'ECONOMAT',
 });
 
+const TECHNICAL_SHEET_LINE_KIND_REGISTRY = Object.freeze({
+    INGREDIENT: Object.freeze({
+        value: TECHNICAL_SHEET_LINE_KIND.INGREDIENT,
+        label: 'Ingrédients',
+        sectionLabel: 'INGRÉDIENTS',
+        opposite:
+            TECHNICAL_SHEET_LINE_KIND.ECONOMAT,
+        materialCostShareEligible: true,
+        primary: true,
+        showSectionHeader: false,
+    }),
+    ECONOMAT: Object.freeze({
+        value: TECHNICAL_SHEET_LINE_KIND.ECONOMAT,
+        label: 'Économat',
+        sectionLabel: 'Économat',
+        opposite:
+            TECHNICAL_SHEET_LINE_KIND.INGREDIENT,
+        materialCostShareEligible: false,
+        primary: false,
+        showSectionHeader: true,
+    }),
+});
+
 const TECHNICAL_SHEET_VALUATION_STATUS = Object.freeze({
     NOT_VALUED: 'NOT_VALUED',
     PARTIAL: 'PARTIAL',
@@ -161,6 +184,7 @@ export {
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
     TECHNICAL_SHEET_LINE_KIND,
+    TECHNICAL_SHEET_LINE_KIND_REGISTRY,
     TECHNICAL_SHEET_LINE_VALUATION_STATUS,
     TECHNICAL_SHEET_LINE_VALUATION_STATUS_REGISTRY,
     TECHNICAL_SHEET_METRIC,

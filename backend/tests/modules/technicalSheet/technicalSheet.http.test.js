@@ -255,6 +255,46 @@ describe('M-004 RBAC HTTP', () => {
             }),
         ]));
         expect(
+            response.body.data.metadata.lineKindDefinitions,
+        ).toEqual([
+            expect.objectContaining({
+                value: 'INGREDIENT',
+                label: 'Ingrédients',
+                materialCostShareEligible: true,
+                primary: true,
+            }),
+            expect.objectContaining({
+                value: 'ECONOMAT',
+                label: 'Économat',
+                materialCostShareEligible: false,
+                primary: false,
+            }),
+        ]);
+        expect(
+            response.body.data.metadata.pricingSources,
+        ).toEqual([
+            {
+                value: 'SUPPLIER_TARIFF',
+                label: 'Tarif fournisseur',
+            },
+            {
+                value: 'NEGOTIATED_PRICE',
+                label: 'Tarif négocié',
+            },
+            {
+                value: 'INVOICED_PRICE',
+                label: 'Prix facturé',
+            },
+            {
+                value: 'INDICATIVE_DOSSIER',
+                label: 'Prix indicatif Dossier',
+            },
+            {
+                value: 'INDICATIVE_WORKSPACE',
+                label: 'Prix indicatif espace de travail',
+            },
+        ]);
+        expect(
             response.body.data.metadata.finalPriceModeDefinitions,
         ).toEqual([
             {
@@ -285,6 +325,7 @@ describe('M-004 RBAC HTTP', () => {
             portionsPerProductionUnit: '1',
             saleBasis: 'PIECE',
             finalPriceMode: 'ADVISED',
+            productSearchScope: 'REFERENCE',
         });
     });
 

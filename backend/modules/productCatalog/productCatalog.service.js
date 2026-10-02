@@ -36,6 +36,8 @@ import {
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
+    PRODUCT_SEARCH_SCOPE,
+    PRODUCT_SEARCH_SCOPE_REGISTRY,
     PRODUCT_STATUS,
     PRODUCT_STATUS_REGISTRY,
     WORKSPACE_PRODUCT_STATUS,
@@ -442,6 +444,13 @@ const getProductMetadata = async ({
             PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
         ),
         referenceUnits: Object.values(PRODUCT_REFERENCE_UNIT_REGISTRY),
+        productSearchScopes: Object.values(PRODUCT_SEARCH_SCOPE_REGISTRY),
+        defaults: {
+            productSearchScope:
+                PRODUCT_SEARCH_SCOPE.WORKSPACE,
+            activeWorkspaceProductStatus:
+                WORKSPACE_PRODUCT_STATUS.ACTIVE,
+        },
         conservationTypes: Object.values(PRODUCT_CONSERVATION_TYPE_REGISTRY),
         foodRanges: Object.values(PRODUCT_FOOD_RANGE_REGISTRY).map(
             (definition) => ({
@@ -572,7 +581,7 @@ const serializeProductSearchReference = ({
 
 const listProductSearch = async ({
     workspaceId,
-    scope = 'WORKSPACE',
+    scope = PRODUCT_SEARCH_SCOPE.WORKSPACE,
     q = null,
     categoryId = null,
     status = null,
@@ -636,7 +645,7 @@ const listProductSearch = async ({
         })
     ));
 
-    if (scope === 'WORKSPACE') {
+    if (scope === PRODUCT_SEARCH_SCOPE.WORKSPACE) {
         const entries = matchingVariants.length > 0
             ? await WorkspaceProduct.find({
                 workspace: workspaceId,

@@ -190,7 +190,7 @@ const PRODUCT_REFERENCE_UNIT_REGISTRY = Object.freeze({
     ML: Object.freeze({ value: 'ML', label: 'ml', dimension: 'VOLUME', factorToBase: 1 }),
     CL: Object.freeze({ value: 'CL', label: 'cl', dimension: 'VOLUME', factorToBase: 10 }),
     L: Object.freeze({ value: 'L', label: 'l', dimension: 'VOLUME', factorToBase: 1000 }),
-    UNIT: Object.freeze({ value: 'UNIT', label: 'unité', dimension: 'COUNT', factorToBase: 1 }),
+    UNIT: Object.freeze({ value: 'UNIT', label: 'PCE', dimension: 'COUNT', factorToBase: 1 }),
 });
 
 const PRODUCT_REFERENCE_UNIT = Object.freeze(
@@ -321,6 +321,25 @@ const PRODUCT_IMPORT_SCOPE = Object.freeze({
     GLOBAL: 'GLOBAL',
 });
 
+const PRODUCT_SEARCH_SCOPE_REGISTRY = Object.freeze({
+    WORKSPACE: Object.freeze({
+        value: 'WORKSPACE',
+        label: 'Favoris',
+    }),
+    REFERENCE: Object.freeze({
+        value: 'REFERENCE',
+        label: 'Tous les produits',
+    }),
+});
+
+const PRODUCT_SEARCH_SCOPE = Object.freeze(
+    Object.fromEntries(
+        Object.entries(PRODUCT_SEARCH_SCOPE_REGISTRY).map(
+            ([key, definition]) => [key, definition.value],
+        ),
+    ),
+);
+
 const PRODUCT_IMPORT_STATUS = Object.freeze({
     INSPECTED: 'INSPECTED',
     PREVIEWED: 'PREVIEWED',
@@ -361,6 +380,8 @@ export {
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
+    PRODUCT_SEARCH_SCOPE,
+    PRODUCT_SEARCH_SCOPE_REGISTRY,
     PRODUCT_REJECTION_REASON,
     PRODUCT_REJECTION_REASON_REGISTRY,
     PRODUCT_STATUS,

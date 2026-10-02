@@ -2,6 +2,12 @@ import {
     SYSTEM_ROLE_KEY,
 } from '../../constants/role.constants.js';
 import {
+    PRODUCT_SEARCH_SCOPE,
+} from '../productCatalog/productCatalog.registry.js';
+import {
+    SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY,
+} from '../supplierCatalog/supplierCatalog.registry.js';
+import {
     createDraftFromValidatedState,
     getTechnicalSheetDraft,
     saveTechnicalSheetDraft,
@@ -26,6 +32,7 @@ import {
     TECHNICAL_SHEET_FINAL_PRICE_MODE,
     TECHNICAL_SHEET_FINAL_PRICE_MODE_REGISTRY,
     TECHNICAL_SHEET_LINE_KIND,
+    TECHNICAL_SHEET_LINE_KIND_REGISTRY,
     TECHNICAL_SHEET_LINE_VALUATION_STATUS,
     TECHNICAL_SHEET_LINE_VALUATION_STATUS_REGISTRY,
     TECHNICAL_SHEET_PRODUCTION_DEFAULTS,
@@ -80,6 +87,14 @@ const metadata = async (req, res) => {
                     Object.values(
                         TECHNICAL_SHEET_LINE_KIND,
                     ),
+                lineKindDefinitions:
+                    Object.values(
+                        TECHNICAL_SHEET_LINE_KIND_REGISTRY,
+                    ),
+                pricingSources:
+                    Object.values(
+                        SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY,
+                    ),
                 valuationStatuses:
                     Object.values(
                         TECHNICAL_SHEET_VALUATION_STATUS,
@@ -118,6 +133,8 @@ const metadata = async (req, res) => {
                     ),
                 defaults: {
                     ...TECHNICAL_SHEET_PRODUCTION_DEFAULTS,
+                    productSearchScope:
+                        PRODUCT_SEARCH_SCOPE.REFERENCE,
                 },
                 trashRetention: {
                     defaultDays:
