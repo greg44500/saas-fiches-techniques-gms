@@ -811,17 +811,6 @@ function TechnicalSheetWorkspacePage() {
                 {statusPresentation.label}
               </TechnicalSheetStatusBadge>
 
-              {draft && (
-                <TechnicalSheetStatusBadge tone="warning">
-                  Brouillon
-                </TechnicalSheetStatusBadge>
-              )}
-
-              {draft && (
-                <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
-                  {valuationPresentation.label}
-                </TechnicalSheetStatusBadge>
-              )}
             </div>
           </div>
         </div>

@@ -62,7 +62,7 @@ describe('TechnicalSheetEconomicsBar', () => {
     expect(compactMetricValue('12,50 €')).toBe('12,50 €');
   });
 
-  it('affiche les six repères économiques du poste de travail', () => {
+  it('affiche les six repères économiques du poste de travail', async () => {
     render(
       <TooltipProvider>
         <TechnicalSheetEconomicsBar
