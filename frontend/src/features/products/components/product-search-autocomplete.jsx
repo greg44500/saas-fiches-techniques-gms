@@ -31,6 +31,18 @@ const PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH = 3;
 const PRODUCT_SEARCH_AUTOCOMPLETE_DEBOUNCE_MS = 300;
 const PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT = 6;
 
+function isWorkspaceFavorite(result, metadata) {
+  const activeStatus =
+    metadata?.defaults
+      ?.activeWorkspaceProductStatus;
+
+  return Boolean(
+    activeStatus
+    && result.workspaceEntry?.status
+      === activeStatus
+  );
+}
+
 function ProductSearchAutocomplete({
   ariaLabel = 'Rechercher un Produit',
   categoryId,
@@ -72,7 +84,6 @@ function ProductSearchAutocomplete({
       categoryId,
       status,
       conservationType,
-      sort: 'NAME',
       page: 1,
       limit: PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT,
     },
@@ -181,7 +192,7 @@ function ProductSearchAutocomplete({
                     getReferenceLabel(metadata, result.product, result.variant),
                     result.product.category?.name,
                     result.variant ? 'Référence Produit' : 'À enrichir',
-                    showWorkspaceFavorite && result.workspaceEntry?.status === 'ACTIVE'
+                    showWorkspaceFavorite && isWorkspaceFavorite(result, metadata)
                       ? 'Favori'
                       : null,
                   ].filter(Boolean).join('. ')}

@@ -40,7 +40,7 @@ describe('productCatalogApi', () => {
     expect(productCatalogApi.endpoints).toBe(captured.endpointDefinitions);
   });
 
-  it('transmet les filtres actifs et le tri alphabétique du catalogue opérationnel', () => {
+  it('transmet les filtres fournis et laisse les defaults métier au backend', () => {
     expect(
       captured.endpointDefinitions.searchProducts.query({
         workspaceId: 'workspace-1',
@@ -59,7 +59,7 @@ describe('productCatalogApi', () => {
         categoryId: 'category-1',
         status: undefined,
         conservationType: 'FRAIS',
-        sort: 'NAME',
+        sort: undefined,
         page: 2,
         limit: 20,
       },

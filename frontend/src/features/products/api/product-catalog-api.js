@@ -24,12 +24,12 @@ const productCatalogApi = productCatalogApiBase.injectEndpoints({
     searchProducts: builder.query({
       query: ({
         workspaceId,
-        scope = 'WORKSPACE',
+        scope,
         q,
         categoryId,
         status,
         conservationType,
-        sort = 'NAME',
+        sort,
         page = 1,
         limit = 20,
       }) => ({
