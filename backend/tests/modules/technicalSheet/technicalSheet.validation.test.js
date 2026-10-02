@@ -47,6 +47,24 @@ describe('M-004 validation Fiches techniques', () => {
         });
     });
 
+    it('autorise une ligne sans unité saisie car elle est dérivée du Produit', () => {
+        const parsed =
+            saveTechnicalSheetDraftSchema.parse({
+                expectedRevision: 0,
+                lines: [{
+                    kind: 'INGREDIENT',
+                    productVariantId:
+                        '507f1f77bcf86cd799439011',
+                    netQuantity: '1',
+                    order: 0,
+                }],
+            });
+
+        expect(
+            parsed.lines[0].inputUnit,
+        ).toBeUndefined();
+    });
+
     it('refuse le champ portions supprimé du contrat', () => {
         expect(
             createTechnicalSheetSchema.safeParse({
