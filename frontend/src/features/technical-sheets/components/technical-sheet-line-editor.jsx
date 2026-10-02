@@ -8,7 +8,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { Button } from '@/components/ui/button';
@@ -26,13 +26,6 @@ import {
   DialogRoot,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Tooltip,
   TooltipContent,
@@ -86,7 +79,7 @@ const SECTION_PRESENTATION = Object.freeze({
 
 const COMPOSITION_GRID_CLASS = [
   'grid gap-x-2 gap-y-2',
-  'lg:grid-cols-[minmax(0,2fr)_4.25rem_4.5rem_5rem_5.25rem_5.5rem_4.25rem_minmax(0,1.25fr)_3.25rem]',
+  'lg:grid-cols-[minmax(0,2fr)_4.25rem_3.5rem_5rem_5.25rem_5.5rem_4.25rem_minmax(0,1.25fr)_3.25rem]',
   'lg:items-center',
 ].join(' ');
 
@@ -147,6 +140,75 @@ function normalizeDraftLine(line, index) {
 function getPricingSourceLabel(source) {
   return PRICING_SOURCE_LABEL[source] ?? null;
 }
+
+function getReferenceUnitDefinition(metadata, unit) {
+  return (metadata?.referenceUnits ?? [])
+    .find((definition) => definition.value === unit)
+    ?? null;
+}
+
+function formatConvertedQuantity(value) {
+  if (!Number.isFinite(value)) return null;
+
+  const rounded = Number(value.toFixed(6));
+  return String(rounded);
+}
+
+function adaptQuantityToReplacementUnit({
+  metadata,
+  netQuantity,
+  previousUnit,
+  nextUnit,
+}) {
+  if (!previousUnit || previousUnit === nextUnit) {
+    return {
+      netQuantity,
+      reviewRequired: false,
+    };
+  }
+
+  const previousDefinition =
+    getReferenceUnitDefinition(metadata, previousUnit);
+  const nextDefinition =
+    getReferenceUnitDefinition(metadata, nextUnit);
+
+  if (
+    !previousDefinition
+    || !nextDefinition
+    || previousDefinition.dimension
+      !== nextDefinition.dimension
+  ) {
+    return {
+      netQuantity,
+      reviewRequired: true,
+    };
+  }
+
+  const parsed = Number(
+    String(netQuantity).trim().replace(',', '.'),
+  );
+
+  if (!Number.isFinite(parsed)) {
+    return {
+      netQuantity,
+      reviewRequired: false,
+    };
+  }
+
+  const converted = (
+    parsed
+    * previousDefinition.factorToBase
+    / nextDefinition.factorToBase
+  );
+
+  return {
+    netQuantity:
+      formatConvertedQuantity(converted)
+      ?? netQuantity,
+    reviewRequired: false,
+  };
+}
+
 
 function getSupplierArticleActionTooltip({
   canManageSourcing,
@@ -520,12 +582,12 @@ function TechnicalSheetLineEditor({
   dossierId,
   draftRevision,
   lines,
-  metadata,
   onChange,
   onFieldBlur,
   onOpenPricing,
   onSourcingError,
   onSourcingPendingChange,
+  onUnitChangeWarning,
   onSourcingSelected,
   productMetadata,
   productScope = PRODUCT_SOURCE.REFERENCE,
@@ -541,14 +603,6 @@ function TechnicalSheetLineEditor({
   const [editSearch, setEditSearch] = useState('');
   const [sourcingLineKey, setSourcingLineKey] = useState(null);
   const [addError, setAddError] = useState('');
-
-  const unitItems = useMemo(
-    () => (metadata?.units ?? []).map((unit) => ({
-      value: unit.value,
-      label: getReferenceUnitLabel(productMetadata, unit.value),
-    })),
-    [metadata?.units, productMetadata],
-  );
 
   function lineKey(line, index) {
     return line.clientKey ?? line.id ?? line.productVariantId + ':' + index;
@@ -641,6 +695,19 @@ function TechnicalSheetLineEditor({
       return;
     }
 
+    const previousUnit =
+      line.referenceUnit
+      ?? line.inputUnit;
+    const nextUnit =
+      result.variant.referenceUnit;
+    const adaptedQuantity =
+      adaptQuantityToReplacementUnit({
+        metadata: productMetadata,
+        netQuantity: line.netQuantity,
+        previousUnit,
+        nextUnit,
+      });
+
     setAddError('');
     updateLine(index, {
       clientKey: createLocalLineClientKey(),
@@ -651,12 +718,30 @@ function TechnicalSheetLineEditor({
         ?? result.product?.name
         ?? 'Référence Produit',
       productVariant: result.variant,
-      referenceUnit: result.variant.referenceUnit,
-      inputUnit: result.variant.referenceUnit,
+      referenceUnit: nextUnit,
+      netQuantity:
+        adaptedQuantity.netQuantity,
+      inputUnit: nextUnit,
       selectedSupplierArticleId: null,
       calculation: null,
       valuation: null,
     }, { immediate: true });
+
+    if (adaptedQuantity.reviewRequired) {
+      onUnitChangeWarning?.({
+        previousUnit:
+          getReferenceUnitLabel(
+            productMetadata,
+            previousUnit,
+          ),
+        nextUnit:
+          getReferenceUnitLabel(
+            productMetadata,
+            nextUnit,
+          ),
+      });
+    }
+
     setEditingLineKey(null);
     setEditSearch('');
   }
@@ -690,7 +775,7 @@ function TechnicalSheetLineEditor({
         <div className="min-w-0">
           <MobileLabel>Produit</MobileLabel>
           {editing ? (
-            <div className="flex min-w-0 items-center gap-1">
+            <div className="flex min-w-0 items-center gap-2 transition-all duration-200 ease-out">
               <div className="min-w-0 flex-1">
                 <ProductSearchAutocomplete
                   ariaLabel={'Modifier le produit ' + line.productVariantName}
@@ -706,16 +791,18 @@ function TechnicalSheetLineEditor({
                   workspaceId={workspaceId}
                 />
               </div>
-              <ActionIconButton
-                Icon={X}
-                label="Annuler le remplacement du Produit"
+              <Button
+                className="h-8 shrink-0 px-2 text-xs"
                 onClick={() => {
                   setEditingLineKey(null);
                   setEditSearch('');
                 }}
-                tooltipLabel="Annuler"
+                size="sm"
+                type="button"
                 variant="ghost"
-              />
+              >
+                Annuler
+              </Button>
             </div>
           ) : (
             <ProductDetailsTrigger
@@ -747,30 +834,16 @@ function TechnicalSheetLineEditor({
 
         <div className="min-w-0 lg:text-center">
           <MobileLabel>Unité</MobileLabel>
-          <Select
-            disabled={disabled}
-            items={unitItems}
-            onValueChange={(value) => updateLine(
-              index,
-              { inputUnit: value },
-              { immediate: true },
-            )}
-            value={line.inputUnit}
+          <p
+            aria-label={'Unité ligne ' + (index + 1)}
+            className="truncate text-sm font-medium text-muted-foreground lg:text-center"
           >
-            <SelectTrigger
-              aria-label={'Unité ligne ' + (index + 1)}
-              className="h-8 min-h-8 min-w-0 justify-center px-2 text-center"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {unitItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {getReferenceUnitLabel(
+              productMetadata,
+              line.referenceUnit
+              ?? line.inputUnit,
+            )}
+          </p>
         </div>
 
         <div className="min-w-0 lg:text-center">
