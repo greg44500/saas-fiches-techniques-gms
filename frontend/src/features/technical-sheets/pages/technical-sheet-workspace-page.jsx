@@ -8,7 +8,6 @@ import { useNavigate, useParams } from 'react-router';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { ErrorState } from '@/components/shared/error-state';
-import { InfoTooltip } from '@/components/shared/info-tooltip';
 import {
   TechnicalSheetAutosaveStatus,
 } from '@/features/technical-sheets/components/technical-sheet-autosave-status';
@@ -157,7 +156,9 @@ function buildDraftSaveRequest({
         kind: line.kind,
         productVariantId: line.productVariantId,
         netQuantity: line.netQuantity,
-        inputUnit: line.inputUnit,
+        inputUnit:
+          line.referenceUnit
+          ?? line.inputUnit,
         order: index,
         note: line.note.trim() || null,
       })),
@@ -649,7 +650,8 @@ function TechnicalSheetWorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+      {!draft && (
+        <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex min-w-0 items-center gap-2">
           <ActionIconButton
             Icon={ArrowLeft}
@@ -686,28 +688,27 @@ function TechnicalSheetWorkspacePage() {
           </div>
         </div>
 
-        {!draft && (
-          <TechnicalSheetControlPanel
-            actionAvailability={actionAvailability}
-            canCopy={canCopy}
-            canDelete={canDelete}
-            canLifecycle={canLifecycle}
-            canValidate={canValidate}
-            copyDisabled={copyDisabled}
-            draft={draft}
-            draftDirty={draftDirty}
-            draftSynchronizing={draftSynchronizing}
-            identityDirty={identityDirty}
-            onArchive={() => setConfirmation({ type: 'archive' })}
-            onCopy={() => setCopyOpen(true)}
-            onDelete={() => setConfirmation({ type: 'delete' })}
-            onReactivate={() => setConfirmation({ type: 'reactivate' })}
-            onValidate={validateDraft}
-            pendingLifecycle={pendingLifecycle}
-            validatePending={validateState.isLoading}
-          />
-        )}
-      </header>
+        <TechnicalSheetControlPanel
+          actionAvailability={actionAvailability}
+          canCopy={canCopy}
+          canDelete={canDelete}
+          canLifecycle={canLifecycle}
+          canValidate={canValidate}
+          copyDisabled={copyDisabled}
+          draft={draft}
+          draftDirty={draftDirty}
+          draftSynchronizing={draftSynchronizing}
+          identityDirty={identityDirty}
+          onArchive={() => setConfirmation({ type: 'archive' })}
+          onCopy={() => setCopyOpen(true)}
+          onDelete={() => setConfirmation({ type: 'delete' })}
+          onReactivate={() => setConfirmation({ type: 'reactivate' })}
+          onValidate={validateDraft}
+          pendingLifecycle={pendingLifecycle}
+          validatePending={validateState.isLoading}
+        />
+        </header>
+      )}
 
       <div className="space-y-6">
         {!draft && (
@@ -743,12 +744,36 @@ function TechnicalSheetWorkspacePage() {
             <Card className="border-primary/20 bg-background/97 shadow-lg backdrop-blur-md">
               <CardHeader className="pb-3">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                  <div className="flex items-center gap-2">
-                    <CardTitle>Paramètres</CardTitle>
-                    <InfoTooltip
-                      content="Regroupe les paramètres de production, la TVA de vente de la Fiche et les principaux indicateurs économiques utilisés pour calculer et piloter sa valorisation."
-                      label="À propos des Indicateurs de production"
+                  <div className="flex min-w-0 items-center gap-2">
+                    <ActionIconButton
+                      Icon={ArrowLeft}
+                      label="Retour aux Fiches techniques"
+                      onClick={() => navigate(
+                        '/workspaces/' + workspace.id
+                        + '/dossiers/' + dossierId
+                        + '/technical-sheets',
+                      )}
+                      tooltipLabel="Retour aux Fiches techniques"
+                      variant="ghost"
                     />
+
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <h1 className="truncate text-2xl font-semibold tracking-tight">
+                        {sheet.name}
+                      </h1>
+
+                      <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+                        {statusPresentation.label}
+                      </TechnicalSheetStatusBadge>
+
+                      <TechnicalSheetStatusBadge tone="warning">
+                        Brouillon
+                      </TechnicalSheetStatusBadge>
+
+                      <TechnicalSheetStatusBadge tone={valuationPresentation.tone}>
+                        {valuationPresentation.label}
+                      </TechnicalSheetStatusBadge>
+                    </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-2">
                     {canUpdate && (
@@ -788,7 +813,7 @@ function TechnicalSheetWorkspacePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap items-end gap-3">
-                  <Field className="w-36">
+                  <Field className="w-32">
                     <FieldLabel htmlFor="technical-sheet-production-quantity">
                       Quantité produite
                     </FieldLabel>
@@ -808,7 +833,7 @@ function TechnicalSheetWorkspacePage() {
                     />
                   </Field>
 
-                  <Field className="w-44">
+                  <Field className="w-32">
                     <FieldLabel>Unité</FieldLabel>
                     <Select
                       disabled={!canUpdate || draftSynchronizing}
@@ -837,7 +862,7 @@ function TechnicalSheetWorkspacePage() {
                     </Select>
                   </Field>
 
-                  <Field className="w-28">
+                  <Field className="w-24">
                     <FieldLabel htmlFor="technical-sheet-vat">
                       TVA (%)
                     </FieldLabel>
@@ -857,7 +882,7 @@ function TechnicalSheetWorkspacePage() {
                     />
                   </Field>
 
-                  <Field className="w-32">
+                  <Field className="w-28">
                     <FieldLabel htmlFor="technical-sheet-target-margin">
                       Marge cible (%)
                     </FieldLabel>
@@ -935,7 +960,6 @@ function TechnicalSheetWorkspacePage() {
                 dossierId={dossierId}
                 draftRevision={draftFormRevision}
                 lines={draftForm.lines}
-                metadata={metadata}
                 onChange={(lines, { immediate = false } = {}) => {
                   updateDraftForm((current) => ({
                     ...current,
@@ -954,6 +978,18 @@ function TechnicalSheetWorkspacePage() {
                   variant: 'destructive',
                 })}
                 onSourcingPendingChange={handleSourcingPendingChange}
+                onUnitChangeWarning={({ previousUnit, nextUnit }) => {
+                  toast({
+                    title: 'Unité du Produit modifiée',
+                    description:
+                      'La ligne utilise désormais '
+                      + nextUnit
+                      + ' au lieu de '
+                      + previousUnit
+                      + '. Vérifiez la quantité conservée.',
+                    variant: 'info',
+                  });
+                }}
                 onSourcingSelected={(updatedDraft) => {
                   const nextForm = buildDraftForm(updatedDraft);
                   draftFormRef.current = nextForm;
