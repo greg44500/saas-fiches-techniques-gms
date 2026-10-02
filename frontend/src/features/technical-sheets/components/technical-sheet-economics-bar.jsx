@@ -1,18 +1,5 @@
-import {
-  PanelRightOpen,
-  X,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ActionIconButton } from '@/components/shared/action-icon-button';
-import {
-  DialogContent,
-  DialogHeader,
-  DialogOverlay,
-  DialogPortal,
-  DialogRoot,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -31,91 +18,13 @@ import {
   formatDecimalCurrency,
   formatMinorCurrency,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
-
-function toScaledDecimal(value) {
-  const normalized = String(value ?? '').trim();
-
-  if (!/^\d+(?:\.\d+)?$/.test(normalized)) return null;
-
-  const [integer, fraction = ''] = normalized.split('.');
-
-  return {
-    digits: BigInt(integer + fraction),
-    scale: fraction.length,
-  };
-}
-
-function scaledToDecimal({ digits, scale }) {
-  if (scale === 0) return digits.toString();
-
-  const padded = digits.toString().padStart(scale + 1, '0');
-  const integer = padded.slice(0, -scale);
-  const fraction = padded.slice(-scale).replace(/0+$/, '');
-
-  return fraction ? integer + '.' + fraction : integer;
-}
-
-function sumDecimalStrings(values) {
-  const decimals = values
-    .map(toScaledDecimal)
-    .filter(Boolean);
-
-  if (decimals.length === 0) return null;
-
-  const scale = Math.max(...decimals.map((entry) => entry.scale));
-  const digits = decimals.reduce(
-    (total, entry) => (
-      total
-      + entry.digits * (10n ** BigInt(scale - entry.scale))
-    ),
-    0n,
-  );
-
-  return scaledToDecimal({ digits, scale });
-}
-
-function getVisibleCosts(lines, economicSnapshot) {
-  if (economicSnapshot) {
-    return {
-      materialCostHt: economicSnapshot.materialCostHt,
-      economatCostHt: economicSnapshot.economatCostHt,
-      manufacturingCostHt: economicSnapshot.manufacturingCostHt,
-      manufacturingCostPerProductionUnitHt:
-        economicSnapshot.manufacturingCostPerProductionUnitHt,
-      materialCostPerPortionHt:
-        economicSnapshot.materialCostPerPortionHt,
-      manufacturingCostPerPortionHt:
-        economicSnapshot.manufacturingCostPerPortionHt,
-    };
-  }
-
-  const materialCostHt = sumDecimalStrings(
-    lines
-      .filter((line) => line.kind === 'INGREDIENT')
-      .map((line) => line.valuation?.lineCostHt)
-      .filter(Boolean),
-  );
-  const economatCostHt = sumDecimalStrings(
-    lines
-      .filter((line) => line.kind === 'ECONOMAT')
-      .map((line) => line.valuation?.lineCostHt)
-      .filter(Boolean),
-  );
-
-  return {
-    materialCostHt,
-    economatCostHt,
-    manufacturingCostHt: sumDecimalStrings(
-      [materialCostHt, economatCostHt].filter(Boolean),
-    ),
-    manufacturingCostPerProductionUnitHt: null,
-    materialCostPerPortionHt: null,
-    manufacturingCostPerPortionHt: null,
-  };
-}
+import { cn } from '@/lib/utils';
 
 function compactMetricValue(value) {
-  if (value === 'Non calculé' || value === 'Non renseignée') {
+  if (
+    value === 'Non calculé'
+    || value === 'Non renseignée'
+  ) {
     return 'NC';
   }
 
@@ -139,7 +48,7 @@ function MetricLabel({ children, tooltip }) {
 
 function Metric({ label, tooltip, value }) {
   return (
-    <div className="min-w-0 space-y-1">
+    <div className="min-w-0 space-y-1 rounded-md px-2 py-1.5">
       <MetricLabel tooltip={tooltip}>{label}</MetricLabel>
       <p className="truncate text-sm font-semibold tabular-nums">
         {compactMetricValue(value)}
@@ -148,13 +57,18 @@ function Metric({ label, tooltip, value }) {
   );
 }
 
-function DetailRow({ label, value }) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b border-border py-3 last:border-b-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-right text-sm font-semibold tabular-nums">{value}</span>
-    </div>
-  );
+function snapshotKey(snapshot) {
+  if (!snapshot) return 'none';
+
+  return [
+    snapshot.manufacturingCostHt,
+    snapshot.materialCostPerPortionHt,
+    snapshot.manufacturingCostPerPortionHt,
+    snapshot.finalPriceTtcMinor,
+    snapshot.actualMarginBasisPoints,
+  ].map((value) => (
+    value?.$numberDecimal ?? value ?? 'null'
+  )).join('|');
 }
 
 function TechnicalSheetEconomicsBar({
@@ -164,208 +78,159 @@ function TechnicalSheetEconomicsBar({
   finalPriceInputValue = '',
   finalPriceMode = '',
   finalPriceModeItems = [],
-  lines = [],
   onFieldBlur,
   onFinalPriceInputChange,
   onFinalPriceModeChange,
   saleBasis,
   saleBasisItems = [],
-  targetMarginBasisPoints,
-  vatRateBasisPoints,
+  updating = false,
 }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const visibleCosts = useMemo(
-    () => getVisibleCosts(lines, economicSnapshot),
-    [economicSnapshot, lines],
+  const currentSnapshotKey = useMemo(
+    () => snapshotKey(economicSnapshot),
+    [economicSnapshot],
   );
+  const previousSnapshotKeyRef = useRef(currentSnapshotKey);
+  const [recentlyUpdated, setRecentlyUpdated] = useState(false);
   const saleBasisLabel = (
     saleBasisItems.find((item) => item.value === saleBasis)?.label
     ?? 'base de vente'
   );
 
+  useEffect(() => {
+    if (
+      previousSnapshotKeyRef.current === currentSnapshotKey
+    ) {
+      return undefined;
+    }
+
+    previousSnapshotKeyRef.current = currentSnapshotKey;
+    setRecentlyUpdated(true);
+
+    const timeoutId = window.setTimeout(() => {
+      setRecentlyUpdated(false);
+    }, 900);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [currentSnapshotKey]);
+
   return (
-    <>
-      <div className="space-y-3">
-        <div className="flex items-end gap-3">
-          <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4 xl:grid-cols-7">
-            <Metric
-              label="CF HT"
-              tooltip="Coût de fabrication HT total de la production"
-              value={formatDecimalCurrency(visibleCosts.manufacturingCostHt)}
-            />
-            <Metric
-              label="CMU HT"
-              tooltip="Coût matière unitaire HT d’une portion"
-              value={formatDecimalCurrency(
-                visibleCosts.materialCostPerPortionHt,
-              )}
-            />
-            <Metric
-              label="CFU HT"
-              tooltip="Coût de fabrication unitaire HT d’une portion"
-              value={formatDecimalCurrency(
-                visibleCosts.manufacturingCostPerPortionHt,
-              )}
-            />
-            <Metric
-              label="PC TTC"
-              tooltip={'Prix conseillé TTC par ' + saleBasisLabel.toLowerCase()}
-              value={formatMinorCurrency(economicSnapshot?.advisedPriceTtcMinor)}
-            />
+    <div
+      className={cn(
+        'rounded-lg border border-border bg-card/70 px-2 py-2 transition-colors duration-300',
+        recentlyUpdated && 'border-primary/30 bg-primary/5',
+      )}
+    >
+      <div className="flex flex-col gap-2">
+        <div className="flex min-h-5 items-center justify-between gap-3 px-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Repères économiques
+          </p>
+          <p
+            aria-live="polite"
+            className="text-xs text-muted-foreground"
+          >
+            {updating ? 'Actualisation…' : 'À jour'}
+          </p>
+        </div>
 
-            <div className="min-w-0 space-y-1">
-              <MetricLabel tooltip={'Prix de vente retenu TTC par ' + saleBasisLabel.toLowerCase()}>
-                Prix retenu TTC
-              </MetricLabel>
-              <div className="flex min-w-0 gap-1">
-                {finalPriceMode === 'MANUAL' ? (
-                  <Input
-                    aria-label="Prix retenu TTC (€)"
-                    className="h-8 min-w-0 flex-1 tabular-nums"
-                    disabled={editDisabled || !canValuate}
-                    inputMode="decimal"
-                    onBlur={onFieldBlur}
-                    onChange={(event) => onFinalPriceInputChange?.(event.target.value)}
-                    value={finalPriceInputValue}
-                  />
-                ) : (
-                  <p className="flex h-8 min-w-0 flex-1 items-center truncate rounded-md border border-border bg-muted/20 px-2 text-sm font-semibold tabular-nums">
-                    {compactMetricValue(
-                      formatMinorCurrency(economicSnapshot?.finalPriceTtcMinor),
-                    )}
-                  </p>
-                )}
+        <div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 md:grid-cols-3 xl:grid-cols-[0.8fr_0.8fr_0.8fr_minmax(240px,1.4fr)_0.7fr]">
+          <Metric
+            label="CF HT"
+            tooltip="Coût de fabrication HT total de la production"
+            value={formatDecimalCurrency(
+              economicSnapshot?.manufacturingCostHt,
+            )}
+          />
+          <Metric
+            label="CMU HT"
+            tooltip="Coût matière unitaire HT d’une portion"
+            value={formatDecimalCurrency(
+              economicSnapshot?.materialCostPerPortionHt,
+            )}
+          />
+          <Metric
+            label="CFU HT"
+            tooltip="Coût de fabrication unitaire HT d’une portion"
+            value={formatDecimalCurrency(
+              economicSnapshot?.manufacturingCostPerPortionHt,
+            )}
+          />
 
-                <Select
+          <div className="min-w-0 space-y-1 rounded-md px-2 py-1.5">
+            <MetricLabel
+              tooltip={
+                'Prix de vente retenu TTC par '
+                + saleBasisLabel.toLowerCase()
+              }
+            >
+              Prix retenu TTC
+            </MetricLabel>
+            <div className="flex min-w-0 gap-1">
+              {finalPriceModeItems.find(
+                (item) => (
+                  item.value === finalPriceMode
+                  && item.requiresManualPrice
+                ),
+              ) ? (
+                <Input
+                  aria-label="Prix retenu TTC (€)"
+                  className="h-8 min-w-0 flex-1 tabular-nums"
                   disabled={editDisabled || !canValuate}
-                  items={finalPriceModeItems}
-                  onValueChange={onFinalPriceModeChange}
-                  value={finalPriceMode}
+                  inputMode="decimal"
+                  onBlur={onFieldBlur}
+                  onChange={(event) => (
+                    onFinalPriceInputChange?.(
+                      event.target.value,
+                    )
+                  )}
+                  value={finalPriceInputValue}
+                />
+              ) : (
+                <p className="flex h-8 min-w-0 flex-1 items-center truncate rounded-md border border-border bg-muted/20 px-2 text-sm font-semibold tabular-nums">
+                  {compactMetricValue(
+                    formatMinorCurrency(
+                      economicSnapshot?.finalPriceTtcMinor,
+                    ),
+                  )}
+                </p>
+              )}
+
+              <Select
+                disabled={editDisabled || !canValuate}
+                items={finalPriceModeItems}
+                onValueChange={onFinalPriceModeChange}
+                value={finalPriceMode}
+              >
+                <SelectTrigger
+                  aria-label="Mode de Prix retenu"
+                  className="h-8 min-h-8 w-24 shrink-0 px-2 text-xs"
                 >
-                  <SelectTrigger
-                    aria-label="Mode de Prix retenu"
-                    className="h-8 min-h-8 w-24 shrink-0 px-2 text-xs"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {finalPriceModeItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {finalPriceModeItems.map((item) => (
+                    <SelectItem
+                      key={item.value}
+                      value={item.value}
+                    >
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-
-            <Metric
-              label="%MR"
-              tooltip="Marge réelle"
-              value={formatBasisPoints(economicSnapshot?.actualMarginBasisPoints)}
-            />
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <ActionIconButton
-              Icon={PanelRightOpen}
-              label="Afficher le détail de la valorisation"
-              onClick={() => setDetailsOpen(true)}
-              tooltipLabel="Détail de la valorisation"
-              variant="outline"
-            />
-          </div>
+          <Metric
+            label="%MR"
+            tooltip="Marge réelle"
+            value={formatBasisPoints(
+              economicSnapshot?.actualMarginBasisPoints,
+            )}
+          />
         </div>
       </div>
-
-      <DialogRoot
-        onOpenChange={setDetailsOpen}
-        open={detailsOpen}
-      >
-        <DialogPortal>
-          <DialogOverlay />
-          <DialogContent className="left-auto! right-0! top-0! h-dvh! w-full! max-w-md! translate-x-0! translate-y-0! overflow-y-auto rounded-none! border-y-0! border-r-0!">
-            <DialogHeader>
-              <div className="flex items-center justify-between gap-3">
-                <DialogTitle>Détail de la valorisation</DialogTitle>
-                <ActionIconButton
-                  Icon={X}
-                  label="Fermer le détail de la valorisation"
-                  onClick={() => setDetailsOpen(false)}
-                  tooltipLabel="Fermer"
-                  variant="ghost"
-                />
-              </div>
-            </DialogHeader>
-
-            <div className="mt-5">
-              <DetailRow
-                label="Coût matières HT"
-                value={formatDecimalCurrency(visibleCosts.materialCostHt)}
-              />
-              <DetailRow
-                label="Économat HT"
-                value={formatDecimalCurrency(visibleCosts.economatCostHt)}
-              />
-              <DetailRow
-                label="Coût fabrication HT"
-                value={formatDecimalCurrency(visibleCosts.manufacturingCostHt)}
-              />
-              <DetailRow
-                label="Marge cible"
-                value={formatBasisPoints(targetMarginBasisPoints)}
-              />
-              <DetailRow
-                label="TVA"
-                value={formatBasisPoints(vatRateBasisPoints)}
-              />
-              <DetailRow
-                label="CF/Pce HT"
-                value={formatDecimalCurrency(
-                  economicSnapshot?.manufacturingCostPerProductionUnitHt,
-                )}
-              />
-              <DetailRow
-                label="CMU HT"
-                value={formatDecimalCurrency(
-                  economicSnapshot?.materialCostPerPortionHt,
-                )}
-              />
-              <DetailRow
-                label="CFU HT"
-                value={formatDecimalCurrency(
-                  economicSnapshot?.manufacturingCostPerPortionHt,
-                )}
-              />
-              <DetailRow
-                label="Prix de vente calculé HT / base de vente"
-                value={formatDecimalCurrency(economicSnapshot?.theoreticalPriceHt)}
-              />
-              <DetailRow
-                label="Prix de vente calculé TTC / base de vente"
-                value={formatDecimalCurrency(economicSnapshot?.theoreticalPriceTtc)}
-              />
-              <DetailRow
-                label="Prix conseillé TTC / base de vente"
-                value={formatMinorCurrency(economicSnapshot?.advisedPriceTtcMinor)}
-              />
-              <DetailRow
-                label="Prix retenu TTC / base de vente"
-                value={formatMinorCurrency(economicSnapshot?.finalPriceTtcMinor)}
-              />
-              <DetailRow
-                label="Plancher économique TTC / base de vente"
-                value={formatDecimalCurrency(economicSnapshot?.economicFloorTtc)}
-              />
-              <DetailRow
-                label="Marge réelle"
-                value={formatBasisPoints(economicSnapshot?.actualMarginBasisPoints)}
-              />
-            </div>
-          </DialogContent>
-        </DialogPortal>
-      </DialogRoot>
-    </>
+    </div>
   );
 }
 
@@ -373,6 +238,4 @@ export {
   MetricLabel,
   compactMetricValue,
   TechnicalSheetEconomicsBar,
-  getVisibleCosts,
-  sumDecimalStrings,
 };

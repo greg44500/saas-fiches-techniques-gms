@@ -6,14 +6,20 @@ import {
   formatMinorCurrency,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 
-const CHANGE_KIND_LABELS = Object.freeze({
-  IDENTITY: 'Identité',
-  COMPOSITION: 'Composition',
-  SOURCING: 'Approvisionnement',
-  ECONOMICS: 'Économie',
-});
+function changeKindLabel(definitions, value) {
+  return (definitions ?? [])
+    .find((definition) => definition.value === value)
+    ?.label ?? value;
+}
 
-function TechnicalSheetHistory({ validations }) {
+function decimalValue(value) {
+  return value?.$numberDecimal ?? value ?? null;
+}
+
+function TechnicalSheetHistory({
+  changeKindDefinitions = [],
+  validations,
+}) {
   const columns = [
     {
       id: 'date',
@@ -36,7 +42,7 @@ function TechnicalSheetHistory({ validations }) {
         <div className="flex flex-wrap gap-1">
           {(validation.changeKinds ?? []).map((kind) => (
             <StatusBadge key={kind} tone="neutral">
-              {CHANGE_KIND_LABELS[kind] ?? kind}
+              {changeKindLabel(changeKindDefinitions, kind)}
             </StatusBadge>
           ))}
         </div>
@@ -44,15 +50,16 @@ function TechnicalSheetHistory({ validations }) {
     },
     {
       id: 'cost',
-      header: 'Coût HT',
+      header: 'CF HT',
       cell: (validation) => formatDecimalCurrency(
-        validation.economicSnapshot?.manufacturingCostHt?.$numberDecimal
-        ?? validation.economicSnapshot?.manufacturingCostHt,
+        decimalValue(
+          validation.economicSnapshot?.manufacturingCostHt,
+        ),
       ),
     },
     {
       id: 'price',
-      header: 'PU TTC',
+      header: 'Prix retenu TTC',
       cell: (validation) => formatMinorCurrency(
         validation.economicSnapshot?.finalPriceTtcMinor,
       ),

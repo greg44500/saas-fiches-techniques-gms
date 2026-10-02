@@ -33,18 +33,15 @@ function normalizeArticle(article) {
   };
 }
 
-function getPricingSourceLabel(source) {
-  return {
-    SUPPLIER_TARIFF: 'Tarif fournisseur',
-    NEGOTIATED_PRICE: 'Tarif négocié',
-    INVOICED_PRICE: 'Prix facturé',
-    INDICATIVE_DOSSIER: 'Prix indicatif Dossier',
-    INDICATIVE_WORKSPACE: 'Prix indicatif espace de travail',
-  }[source] ?? 'Source non disponible';
+function getPricingSourceLabel(definitions, source) {
+  return (definitions ?? [])
+    .find((definition) => definition.value === source)
+    ?.label ?? 'Source non disponible';
 }
 
 function DossierApplicablePriceCard({
   dossierId,
+  pricingSources = [],
   workspaceId,
 }) {
   const { can } = useWorkspaceContext();
@@ -171,7 +168,10 @@ function DossierApplicablePriceCard({
                 : 'Aucun prix applicable'}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Source : {getPricingSourceLabel(applicable.resolvedSource)}
+              Source : {getPricingSourceLabel(
+                pricingSources,
+                applicable.resolvedSource,
+              )}
             </p>
           </>
         )}

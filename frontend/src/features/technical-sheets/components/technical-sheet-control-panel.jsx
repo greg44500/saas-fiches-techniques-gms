@@ -17,6 +17,7 @@ function TechnicalSheetControlPanel({
   copyDisabled,
   draft,
   draftDirty,
+  validationEligible = false,
   draftSynchronizing,
   identityDirty,
   onArchive,
@@ -34,7 +35,7 @@ function TechnicalSheetControlPanel({
     || draftSynchronizing
     || draftDirty
     || identityDirty
-    || draft?.valuationStatus !== 'COMPLETE'
+    || !validationEligible
   );
 
   const validationTooltip = !canValidate
@@ -45,9 +46,9 @@ function TechnicalSheetControlPanel({
         ? 'Enregistrer les informations avant validation'
         : draftDirty
           ? 'Enregistrement du brouillon requis avant validation'
-          : draft.valuationStatus === 'COMPLETE'
-          ? 'Valider la Fiche technique'
-          : 'Calcul économique complet requis avant validation';
+          : validationEligible
+            ? 'Valider la Fiche technique'
+            : 'Calcul économique complet requis avant validation';
 
   return (
     <div
