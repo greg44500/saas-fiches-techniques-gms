@@ -123,16 +123,16 @@ Le dataset actif sur la branche est désormais :
 m002-reference-v8
 16 catégories
 381 Produits
-490 Références Produit
+488 Références Produit
 ~~~
 
 Delta par rapport au v7 :
 
 ~~~text
 +61 Produits
-+128 nouvelles Références Produit
++126 nouvelles Références Produit
 -6 anciennes Références génériques de fonds de tarte
-+122 Références nettes
++120 Références nettes
 ~~~
 
 Domaines complétés :
@@ -204,14 +204,14 @@ Le corpus actif sur la branche est :
 ~~~text
 m003-global-indicative-prices.v3.json
 362 Prix repères hérités
-490 Références v8
-128 nouvelles Références volontairement sans Prix repère
+488 Références v8
+126 nouvelles Références volontairement sans Prix repère
 6 anciennes entrées de prix génériques retirées
 ~~~
 
 Les datasets v1 et v2 restent historiques et immuables.
 
-Aucun nouveau montant n'a été inventé pour les 128 Références v8. Les 362 valeurs conservées restent explicitement fictives / indicatives de démonstration, sans attribution à un fournisseur ni prétention d'observation de marché.
+Aucun nouveau montant n'a été inventé pour les 126 Références v8. Les 362 valeurs conservées restent explicitement fictives / indicatives de démonstration, sans attribution à un fournisseur ni prétention d'observation de marché.
 
 La commande opérationnelle reste :
 
@@ -229,13 +229,13 @@ Contrôles structurels déjà effectués directement sur la branche :
 - v8 parseable comme dataset JSON ;
 - 16 catégories ;
 - 381 Produits ;
-- 490 Références ;
-- 128 nouvelles Références vs v7 ;
+- 488 Références ;
+- 126 nouvelles Références vs v7 ;
 - 6 anciennes Références génériques de fonds de tarte explicitement retirées ;
 - aucun doublon de nom normalisé détecté ;
 - aucune catégorie vide ;
 - 362 Prix repères v3 compatibles avec les Références v8 conservées ;
-- 128 nouvelles Références sans montant inventé ;
+- 126 nouvelles Références sans montant inventé ;
 - aucune unité M-002 / M-003 incohérente sur les 362 prix conservés ;
 - bootstrap M-002 par défaut pointant sur v8 ;
 - bootstrap M-003 par défaut pointant sur v3 ;
