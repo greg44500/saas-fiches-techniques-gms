@@ -6,7 +6,6 @@ import {
 } from 'react';
 import {
   Euro,
-  Minus,
   PackagePlus,
   Plus,
   Star,
@@ -78,8 +77,6 @@ function FavoriteToggleIcon({
   label,
   onClick,
 }) {
-  const Icon = favorite ? FilledStarIcon : Star;
-  const HoverIcon = favorite ? Minus : Plus;
   const tooltipLabel = favorite
     ? 'Retirer des favoris'
     : 'Ajouter aux favoris';
@@ -97,14 +94,33 @@ function FavoriteToggleIcon({
           />
         )}
       >
-        <Icon aria-hidden="true" className="size-4" />
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-2.5 items-center justify-center rounded-full bg-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-          data-favorite-hover-icon={favorite ? 'remove' : 'add'}
-        >
-          <HoverIcon className="size-2.5" strokeWidth={3} />
-        </span>
+        {favorite ? (
+          <>
+            <FilledStarIcon
+              aria-hidden="true"
+              className="size-4 transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0"
+              data-favorite-state-icon="filled"
+            />
+            <Star
+              aria-hidden="true"
+              className="absolute size-4 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              data-favorite-hover-icon="outline"
+            />
+          </>
+        ) : (
+          <>
+            <Star
+              aria-hidden="true"
+              className="size-4 transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0"
+              data-favorite-state-icon="outline"
+            />
+            <FilledStarIcon
+              aria-hidden="true"
+              className="absolute size-4 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              data-favorite-hover-icon="filled"
+            />
+          </>
+        )}
       </TooltipTrigger>
       <TooltipContent>{tooltipLabel}</TooltipContent>
     </Tooltip>
@@ -273,7 +289,6 @@ function ProductDetailsDrawer({
           workspaceId,
           variantId: variant.id,
         }).unwrap();
-        setSection('catalog');
         toast({
           title: 'Référence ajoutée aux favoris',
           description:
