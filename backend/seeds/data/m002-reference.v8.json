@@ -2810,12 +2810,6 @@
       "varieties": [],
       "characteristics": [
         {
-          "key": "d85",
-          "kind": "SIZE_FORMAT",
-          "name": "Ø 8,5 cm",
-          "aliases": []
-        },
-        {
           "key": "d11",
           "kind": "SIZE_FORMAT",
           "name": "Ø 11 cm",
@@ -2834,18 +2828,6 @@
           "foodRange": null,
           "referenceUnit": "UNIT",
           "yieldPercent": null
-        },
-        {
-          "name": "Fond de tartelette sablé prêt à garnir Ø 8,5 cm",
-          "varietyKey": null,
-          "characteristicKeys": [
-            "d85"
-          ],
-          "processingState": null,
-          "conservationType": "SEC",
-          "foodRange": null,
-          "referenceUnit": "UNIT",
-          "yieldPercent": null
         }
       ]
     },
@@ -2856,9 +2838,9 @@
       "varieties": [],
       "characteristics": [
         {
-          "key": "d42",
+          "key": "d10",
           "kind": "SIZE_FORMAT",
-          "name": "Ø 4,2 cm",
+          "name": "Ø 10 cm",
           "aliases": []
         },
         {
@@ -2876,7 +2858,19 @@
       ],
       "variants": [
         {
-          "name": "Fond de tarte brisé salé cru surgelé Ø 12 cm",
+          "name": "Fond de tartelette brisé salé cru surgelé Ø 10 cm",
+          "varietyKey": null,
+          "characteristicKeys": [
+            "d10"
+          ],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        },
+        {
+          "name": "Fond de tartelette brisé salé cru surgelé Ø 12 cm",
           "varietyKey": null,
           "characteristicKeys": [
             "d12"
@@ -2898,18 +2892,6 @@
           "foodRange": null,
           "referenceUnit": "UNIT",
           "yieldPercent": null
-        },
-        {
-          "name": "Mini tartelette salée prête à garnir Ø 4,2 cm",
-          "varietyKey": null,
-          "characteristicKeys": [
-            "d42"
-          ],
-          "processingState": null,
-          "conservationType": "SEC",
-          "foodRange": null,
-          "referenceUnit": "UNIT",
-          "yieldPercent": null
         }
       ]
     },
@@ -2920,21 +2902,21 @@
       "varieties": [],
       "characteristics": [
         {
-          "key": "d85",
-          "kind": "SIZE_FORMAT",
-          "name": "Ø 8,5 cm",
-          "aliases": []
-        },
-        {
           "key": "d10",
           "kind": "SIZE_FORMAT",
           "name": "Ø 10 cm",
           "aliases": []
         },
         {
-          "key": "d22",
+          "key": "d247",
           "kind": "SIZE_FORMAT",
-          "name": "Ø 22 cm",
+          "name": "Ø 24,7 cm",
+          "aliases": []
+        },
+        {
+          "key": "d27",
+          "kind": "SIZE_FORMAT",
+          "name": "Ø 27 cm",
           "aliases": []
         },
         {
@@ -2970,10 +2952,22 @@
           "yieldPercent": null
         },
         {
-          "name": "Fond de tarte sucré cru surgelé Ø 22 cm",
+          "name": "Fond de tarte sucré cru surgelé Ø 24,7 cm",
           "varietyKey": null,
           "characteristicKeys": [
-            "d22"
+            "d247"
+          ],
+          "processingState": null,
+          "conservationType": "SURGELE",
+          "foodRange": null,
+          "referenceUnit": "UNIT",
+          "yieldPercent": null
+        },
+        {
+          "name": "Fond de tarte sucré cru surgelé Ø 27 cm",
+          "varietyKey": null,
+          "characteristicKeys": [
+            "d27"
           ],
           "processingState": null,
           "conservationType": "SURGELE",
@@ -3006,34 +3000,10 @@
           "yieldPercent": null
         },
         {
-          "name": "Fond de tartelette sucré cru surgelé Ø 8,5 cm",
-          "varietyKey": null,
-          "characteristicKeys": [
-            "d85"
-          ],
-          "processingState": null,
-          "conservationType": "SURGELE",
-          "foodRange": null,
-          "referenceUnit": "UNIT",
-          "yieldPercent": null
-        },
-        {
           "name": "Fond de tartelette sucré prêt à garnir Ø 10,3 cm",
           "varietyKey": null,
           "characteristicKeys": [
             "d103"
-          ],
-          "processingState": null,
-          "conservationType": "SEC",
-          "foodRange": null,
-          "referenceUnit": "UNIT",
-          "yieldPercent": null
-        },
-        {
-          "name": "Fond de tartelette sucré prêt à garnir Ø 8,5 cm",
-          "varietyKey": null,
-          "characteristicKeys": [
-            "d85"
           ],
           "processingState": null,
           "conservationType": "SEC",
