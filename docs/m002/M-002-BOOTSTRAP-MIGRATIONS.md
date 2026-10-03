@@ -151,8 +151,8 @@ Baseline courante :
 
 - 16 catégories ;
 - 381 Produits ;
-- 490 Références Produit ;
-- 128 nouvelles Références par rapport au v7 ;
+- 488 Références Produit ;
+- 126 nouvelles Références par rapport au v7 ;
 - retrait explicite des 6 fonds de tarte génériques v7 remplacés par des formats exploitables ;
 - poudres d'amande/noisette/pistache préservées et fruits secs génériques complétés ;
 - racines multi-références exploitées pour les différences techniques réelles ;
