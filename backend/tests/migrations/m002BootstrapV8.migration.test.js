@@ -35,7 +35,7 @@ describe('M-002 bootstrap v8 reconciliation', () => {
         expect(
             contract.targetReferenceToProduct.get(
                 normalizeProductText(
-                    'Fond de tartelette sucré cru surgelé Ø 8,5 cm',
+                    'Fond de tarte sucré cru surgelé Ø 10 cm',
                 ),
             ),
         ).toBe(normalizeProductText('Fond de tarte sucré'));
