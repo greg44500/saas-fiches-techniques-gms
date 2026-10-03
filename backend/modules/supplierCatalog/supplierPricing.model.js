@@ -174,7 +174,7 @@ const indicativePriceSchema = new Schema(
         workspace: {
             type: Schema.Types.ObjectId,
             ref: 'Workspace',
-            required: true,
+            default: null,
             immutable: true,
         },
         dossier: {
@@ -240,6 +240,14 @@ const indicativePriceSchema = new Schema(
     },
     { timestamps: true },
 );
+
+indicativePriceSchema.pre('validate', function validateIndicativePriceScope() {
+    if (this.dossier && !this.workspace) {
+        throw new Error(
+            'Un Prix indicatif Dossier doit appartenir à un Workspace.',
+        );
+    }
+});
 
 indicativePriceSchema.index(
     { workspace: 1, dossier: 1, productVariant: 1, status: 1 },
