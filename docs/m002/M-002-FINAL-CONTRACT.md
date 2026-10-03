@@ -138,6 +138,8 @@ Une référence reste exploitable sans devoir renseigner toutes ces dimensions.
 
 La gouvernance des valeurs est non bloquante : une nouvelle identité nécessitant contrôle peut être créée en `PROVISIONAL`, immédiatement exploitable dans le Workspace d'origine, puis validée, corrigée, fusionnée ou rejetée par la gouvernance Platform. Une proximité lexicale produit une confirmation utilisateur explicite et jamais une fusion automatique silencieuse.
 
+Cette règle couvre désormais aussi une **Référence Produit** créée depuis un Workspace sous un Produit global existant : le `ProductVariant` est créé en `PROVISIONAL`, une `ReferenceContribution` de type `VARIANT` porte la demande de contrôle, et le moteur de rapprochement M-002 est réutilisé avant création puis lors de la gouvernance Platform. Une correspondance exacte réutilise l'existant ; une proximité telle que `Galla / Gala` reste une suggestion et nécessite une décision humaine explicite.
+
 `Type commercial` reste dans le modèle M-002 et dans les données existantes, mais les nouveaux ajouts Workspace sont temporairement masqués tant que sa définition métier n'est pas validée.
 
 ## 6.1. Revue qualité Platform des Dimensions
@@ -165,7 +167,7 @@ Règles :
 - une Dimension créée depuis un Workspace porte `PENDING` ;
 - la migration historique applique la même règle à partir de `contributedFromWorkspace` ;
 - le tableau Platform expose uniquement un compteur des Dimensions actives encore `PENDING` ;
-- cliquer sur cette pastille ouvre directement le drawer Produit sur `Dimensions > À vérifier` ;
+- cliquer sur cette pastille ouvre directement le drawer Produit sur `Dimensions > À contrôler` ;
 - aucune action d'acquittement global n'est disponible dans le tableau Produit ;
 - chaque ligne `PENDING` peut être marquée `REVIEWED` indépendamment ;
 - corriger une ligne `PENDING` depuis la Platform vaut revue explicite et la passe à `REVIEWED` ;
@@ -174,9 +176,10 @@ Règles :
 - archiver reste distinct de supprimer : l'archivage conserve une valeur métier valide mais indisponible ;
 - une Dimension archivée encore `PENDING` ne compte pas dans la pastille ; si elle est réactivée sans revue, elle redevient à vérifier ;
 - les événements `PRODUCT_DIMENSION_REVIEWED` et `PRODUCT_DIMENSION_DELETED` alimentent l'historique Produit ;
-- la revue qualité ne vaut jamais approbation d'une contribution `PROVISIONAL` ou `PENDING_REVIEW`.
+- une revue qualité directe ne vaut jamais, à elle seule, approbation d'une identité `PROVISIONAL` ;
+- lorsqu'une Dimension `PROVISIONAL` est elle-même l'objet d'une décision de gouvernance `APPROVE`, cette décision humaine clôt également sa revue qualité en la passant à `REVIEWED`, afin de ne jamais demander un second contrôle sur la même donnée.
 
-La revue qualité des Dimensions et la gouvernance des Contributions restent deux responsabilités distinctes.
+La revue qualité et la gouvernance restent deux responsabilités backend distinctes ; une même décision humaine peut toutefois satisfaire les deux lorsqu'elles portent exactement sur la même Dimension provisoire.
 
 ## 6.2. Surface Platform unifiée « À contrôler »
 
@@ -187,21 +190,67 @@ global dispose d'une file de travail unifiée :
 ReferenceContribution PENDING_REVIEW
 +
 ProductVariety / ProductCharacteristic PENDING
-→ À contrôler
+→ read model « À contrôler »
 ```
 
-La file est un read model agrégé et paginé côté serveur. Elle ne constitue ni
-une nouvelle collection MongoDB, ni un nouveau lifecycle.
+La file est agrégée et paginée côté serveur. Elle ne constitue ni une nouvelle
+collection MongoDB, ni un nouveau lifecycle.
+
+Le gestionnaire ne manipule pas le concept technique de Contribution. La vue
+présente des **données métier à contrôler** :
+
+```text
+Type
+→ Produit
+→ Référence
+→ Dimension · Variété / type de Caractéristique
+
+Donnée à valider
+Contexte Produit
+Rapprochement éventuel
+Action → Examiner
+```
+
+L'origine Workspace et l'auteur restent disponibles pour l'audit mais ne sont
+pas affichés dans la file principale.
 
 Une Dimension provisoire déjà liée à une `ReferenceContribution` en attente
-n'apparaît qu'une seule fois dans la file, sous la forme de sa Contribution.
+n'apparaît qu'une seule fois. Une Contribution dont la cible provisoire
+n'existe plus ou n'est plus `PROVISIONAL` est exclue de la file active afin
+de ne jamais proposer une action vouée à échouer.
 
-La file expose l'origine Workspace, le Produit, la nature de l'élément et sa
-date de création. Les décisions réutilisent les mutations existantes.
+`Examiner` ouvre le drawer sur la cible exacte :
 
-L'historique est distinct de la file active. Une Contribution traitée expose
-une décision dérivée `APPROVE | MERGE | REJECT` sans modifier les événements
-historiques immuables.
+```text
+Produit
+→ onglet Produit
+
+Référence
+→ onglet Références
+→ filtre À contrôler
+→ focus sur la Référence
+
+Dimension
+→ onglet Dimensions
+→ filtre À contrôler
+→ focus sur la Dimension
+```
+
+La décision est prise dans le drawer avec le contexte nécessaire :
+
+```text
+Modifier
+Valider
+Fusionner avec une valeur proche
+Refuser
+```
+
+La fusion reste toujours explicite. Le score ou la distance Levenshtein ne sont
+jamais exposés comme une décision automatique.
+
+L'historique est distinct de la file active et présente les décisions métier
+`Approuvée | Fusionnée | Refusée` avec la donnée, son type, les
+rapprochements éventuels et le gestionnaire ayant traité l'élément.
 
 Aucune nouvelle permission n'est créée : lecture par
 `product:reference:read`, traitement par `product:reference:manage`.
