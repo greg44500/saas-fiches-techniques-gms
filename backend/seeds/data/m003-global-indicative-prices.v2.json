@@ -1,0 +1,1849 @@
+{
+  "version": "m003-global-indicative-v2",
+  "ready": true,
+  "source": "Référentiel de démonstration — prix repère global — corpus professionnel v7 — octobre 2026",
+  "currency": "EUR",
+  "note": "Valeurs fictives et indicatives destinées à l'onboarding, aux démonstrations et aux tests de valorisation. Elles ne représentent aucun tarif fournisseur ni une observation de marché.",
+  "prices": [
+    {
+      "reference": "Abricot",
+      "amount": "3.19",
+      "unit": "KG"
+    },
+    {
+      "reference": "Ail",
+      "amount": "5.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Artichaut",
+      "amount": "3.07",
+      "unit": "KG"
+    },
+    {
+      "reference": "Aubergine",
+      "amount": "3.19",
+      "unit": "KG"
+    },
+    {
+      "reference": "Avocat",
+      "amount": "4.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Baba savarin",
+      "amount": "0.75",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Barre de chocolat au lait",
+      "amount": "0.51",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Barre de chocolat noir 43 % cacao",
+      "amount": "0.48",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Betterave",
+      "amount": "3.04",
+      "unit": "KG"
+    },
+    {
+      "reference": "Blé entier précuit",
+      "amount": "2.86",
+      "unit": "KG"
+    },
+    {
+      "reference": "Blette",
+      "amount": "2.95",
+      "unit": "KG"
+    },
+    {
+      "reference": "Bordeaux AOP blanc",
+      "amount": "8.00",
+      "unit": "L"
+    },
+    {
+      "reference": "Bouchée hôtelière",
+      "amount": "0.85",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Boudoir",
+      "amount": "6.62",
+      "unit": "KG"
+    },
+    {
+      "reference": "Bouillon de légumes en granulés",
+      "amount": "9.01",
+      "unit": "KG"
+    },
+    {
+      "reference": "Boulette de bœuf",
+      "amount": "12.70",
+      "unit": "KG"
+    },
+    {
+      "reference": "Boulgour",
+      "amount": "2.91",
+      "unit": "KG"
+    },
+    {
+      "reference": "Briochette aux pépites de chocolat",
+      "amount": "0.65",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Brownie",
+      "amount": "0.43",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Brugnon",
+      "amount": "3.16",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cœur de blé",
+      "amount": "3.08",
+      "unit": "KG"
+    },
+    {
+      "reference": "Café moulu 50 % arabica",
+      "amount": "12.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Café moulu 70 % arabica",
+      "amount": "15.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Café soluble",
+      "amount": "23.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cake aux fruits",
+      "amount": "0.42",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Cake aux pépites de chocolat",
+      "amount": "0.45",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Cantal",
+      "amount": "13.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Carotte",
+      "amount": "2.88",
+      "unit": "KG"
+    },
+    {
+      "reference": "Carottes en dés",
+      "amount": "2.88",
+      "unit": "KG"
+    },
+    {
+      "reference": "Carottes en lamelles",
+      "amount": "3.29",
+      "unit": "KG"
+    },
+    {
+      "reference": "Carottes râpées",
+      "amount": "6.12",
+      "unit": "KG"
+    },
+    {
+      "reference": "Céleri",
+      "amount": "2.85",
+      "unit": "KG"
+    },
+    {
+      "reference": "Céleri râpé",
+      "amount": "6.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Champagne brut",
+      "amount": "32.00",
+      "unit": "L"
+    },
+    {
+      "reference": "Champignons à la grecque",
+      "amount": "6.87",
+      "unit": "KG"
+    },
+    {
+      "reference": "Chardonnay blanc IGP Pays d'Oc",
+      "amount": "6.75",
+      "unit": "L"
+    },
+    {
+      "reference": "Chili en poudre",
+      "amount": "18.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Chocolat au lait 24 % cacao",
+      "amount": "8.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Chocolat noir 40 % cacao",
+      "amount": "9.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Chou à garnir",
+      "amount": "0.32",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Chou-fleur",
+      "amount": "3.32",
+      "unit": "KG"
+    },
+    {
+      "reference": "Chou rouge",
+      "amount": "2.85",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cinsault rosé IGP Pays d'Oc",
+      "amount": "7.42",
+      "unit": "L"
+    },
+    {
+      "reference": "Citron",
+      "amount": "3.04",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cocktail de fruits au sirop léger",
+      "amount": "4.19",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cognac salé poivré",
+      "amount": "13.00",
+      "unit": "L"
+    },
+    {
+      "reference": "Compote de pommes allégée en sucre",
+      "amount": "4.54",
+      "unit": "KG"
+    },
+    {
+      "reference": "Compote pomme-banane",
+      "amount": "4.32",
+      "unit": "KG"
+    },
+    {
+      "reference": "Comté",
+      "amount": "17.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Concombre",
+      "amount": "2.79",
+      "unit": "KG"
+    },
+    {
+      "reference": "Confiture d'abricots",
+      "amount": "6.56",
+      "unit": "KG"
+    },
+    {
+      "reference": "Confiture de fraises",
+      "amount": "7.56",
+      "unit": "KG"
+    },
+    {
+      "reference": "Coquillettes",
+      "amount": "2.86",
+      "unit": "KG"
+    },
+    {
+      "reference": "Coriandre moulue",
+      "amount": "15.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cornichon",
+      "amount": "2.91",
+      "unit": "KG"
+    },
+    {
+      "reference": "Côtes-du-Rhône rouge AOC",
+      "amount": "8.50",
+      "unit": "L"
+    },
+    {
+      "reference": "Courge",
+      "amount": "3.38",
+      "unit": "KG"
+    },
+    {
+      "reference": "Courgette",
+      "amount": "3.38",
+      "unit": "KG"
+    },
+    {
+      "reference": "Couscous moyen",
+      "amount": "2.97",
+      "unit": "KG"
+    },
+    {
+      "reference": "Crémant d'Alsace brut",
+      "amount": "11.00",
+      "unit": "L"
+    },
+    {
+      "reference": "Crème dessert caramel",
+      "amount": "4.66",
+      "unit": "KG"
+    },
+    {
+      "reference": "Crème dessert chocolat",
+      "amount": "5.18",
+      "unit": "KG"
+    },
+    {
+      "reference": "Crème dessert vanille",
+      "amount": "5.23",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cresson",
+      "amount": "9.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cube de saumon Atlantique",
+      "amount": "16.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cumin moulu",
+      "amount": "16.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Duo de carottes orange et jaune",
+      "amount": "3.29",
+      "unit": "KG"
+    },
+    {
+      "reference": "Échalote",
+      "amount": "3.01",
+      "unit": "KG"
+    },
+    {
+      "reference": "Égrainé végétal",
+      "amount": "6.51",
+      "unit": "KG"
+    },
+    {
+      "reference": "Émincé végétal",
+      "amount": "7.49",
+      "unit": "KG"
+    },
+    {
+      "reference": "Emmental",
+      "amount": "10.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Emmental râpé",
+      "amount": "9.10",
+      "unit": "KG"
+    },
+    {
+      "reference": "Emmental en tranches",
+      "amount": "10.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Endive",
+      "amount": "2.98",
+      "unit": "KG"
+    },
+    {
+      "reference": "Épinard",
+      "amount": "3.41",
+      "unit": "KG"
+    },
+    {
+      "reference": "Épinards en branches",
+      "amount": "2.91",
+      "unit": "KG"
+    },
+    {
+      "reference": "Extrait de vanille de Madagascar",
+      "amount": "34.00",
+      "unit": "L"
+    },
+    {
+      "reference": "Farfalle",
+      "amount": "2.97",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fenouil",
+      "amount": "3.32",
+      "unit": "KG"
+    },
+    {
+      "reference": "Feuille de génoise nature",
+      "amount": "4.42",
+      "unit": "KG"
+    },
+    {
+      "reference": "Feuilleté au comté",
+      "amount": "1.70",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Figue",
+      "amount": "6.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Filet de colin d'Alaska",
+      "amount": "8.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Filet de poulet",
+      "amount": "9.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fond blanc de volaille",
+      "amount": "8.24",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fond brun lié",
+      "amount": "8.59",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fourme d'Ambert",
+      "amount": "13.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fraise des bois",
+      "amount": "15.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fromage blanc",
+      "amount": "3.69",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fruit de la passion",
+      "amount": "8.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fumet de poisson",
+      "amount": "9.01",
+      "unit": "KG"
+    },
+    {
+      "reference": "Galette bio pur beurre",
+      "amount": "0.50",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Galette d'épeautre aux légumes",
+      "amount": "1.50",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Galette tout beurre",
+      "amount": "0.46",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Garniture pour taboulé",
+      "amount": "6.73",
+      "unit": "KG"
+    },
+    {
+      "reference": "Gélatine porcine",
+      "amount": "14.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Gigot d'agneau",
+      "amount": "18.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Gouda",
+      "amount": "9.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Gouda en tranches",
+      "amount": "9.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Goûter chocolat",
+      "amount": "0.45",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Graines de sésame blanc",
+      "amount": "8.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Granola lait",
+      "amount": "6.70",
+      "unit": "KG"
+    },
+    {
+      "reference": "Gruyère",
+      "amount": "15.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Haricot vert",
+      "amount": "2.85",
+      "unit": "KG"
+    },
+    {
+      "reference": "Haricots verts très fins",
+      "amount": "3.41",
+      "unit": "KG"
+    },
+    {
+      "reference": "Huile olive et tournesol",
+      "amount": "5.80",
+      "unit": "L"
+    },
+    {
+      "reference": "Ice tea pêche",
+      "amount": "1.87",
+      "unit": "L"
+    },
+    {
+      "reference": "Jurançon AOC doux",
+      "amount": "10.00",
+      "unit": "L"
+    },
+    {
+      "reference": "Jus d'orange bio à base de concentré",
+      "amount": "2.12",
+      "unit": "L"
+    },
+    {
+      "reference": "Jus d'orange pulpé à base de concentré",
+      "amount": "1.74",
+      "unit": "L"
+    },
+    {
+      "reference": "Jus de poulet",
+      "amount": "9.10",
+      "unit": "KG"
+    },
+    {
+      "reference": "Jus de veau lié",
+      "amount": "11.12",
+      "unit": "KG"
+    },
+    {
+      "reference": "Jus multifruits à base de concentré",
+      "amount": "1.91",
+      "unit": "L"
+    },
+    {
+      "reference": "Ketchup",
+      "amount": "4.41",
+      "unit": "L"
+    },
+    {
+      "reference": "Kiwi",
+      "amount": "2.85",
+      "unit": "KG"
+    },
+    {
+      "reference": "Langue de chat",
+      "amount": "7.70",
+      "unit": "KG"
+    },
+    {
+      "reference": "Lasagnes aux légumes",
+      "amount": "6.37",
+      "unit": "KG"
+    },
+    {
+      "reference": "Lentilles cuites",
+      "amount": "2.69",
+      "unit": "KG"
+    },
+    {
+      "reference": "Lentilles vertes",
+      "amount": "2.52",
+      "unit": "KG"
+    },
+    {
+      "reference": "Litchis dénoyautés au sirop léger",
+      "amount": "4.49",
+      "unit": "KG"
+    },
+    {
+      "reference": "Macédoine de légumes",
+      "amount": "7.41",
+      "unit": "KG"
+    },
+    {
+      "reference": "Madeleine aux pépites de chocolat",
+      "amount": "0.44",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Madeleine de Commercy",
+      "amount": "0.43",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Madère salé poivré",
+      "amount": "8.00",
+      "unit": "L"
+    },
+    {
+      "reference": "Maïs",
+      "amount": "3.35",
+      "unit": "KG"
+    },
+    {
+      "reference": "Maïs doux en grains",
+      "amount": "3.38",
+      "unit": "KG"
+    },
+    {
+      "reference": "Manchons de canard confits",
+      "amount": "12.56",
+      "unit": "KG"
+    },
+    {
+      "reference": "Mandarine",
+      "amount": "3.16",
+      "unit": "KG"
+    },
+    {
+      "reference": "Mangue",
+      "amount": "4.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Mayonnaise",
+      "amount": "4.06",
+      "unit": "L"
+    },
+    {
+      "reference": "Mayonnaise légère",
+      "amount": "4.06",
+      "unit": "L"
+    },
+    {
+      "reference": "Mélange d'épices à la coréenne",
+      "amount": "9.27",
+      "unit": "KG"
+    },
+    {
+      "reference": "Mélange de céréales",
+      "amount": "3.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Melon",
+      "amount": "3.16",
+      "unit": "KG"
+    },
+    {
+      "reference": "Merlot rouge IGP Pays d'Oc",
+      "amount": "7.95",
+      "unit": "L"
+    },
+    {
+      "reference": "Miel de fleurs liquide",
+      "amount": "6.77",
+      "unit": "KG"
+    },
+    {
+      "reference": "Mini roulé chocolat",
+      "amount": "0.50",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Mini roulé framboise",
+      "amount": "0.49",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Mirabelle",
+      "amount": "3.07",
+      "unit": "KG"
+    },
+    {
+      "reference": "Moelleux chocolat",
+      "amount": "0.48",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Moelleux marbré",
+      "amount": "0.42",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Mousse de foie de porc",
+      "amount": "6.66",
+      "unit": "KG"
+    },
+    {
+      "reference": "Moutarde de Dijon",
+      "amount": "3.93",
+      "unit": "L"
+    },
+    {
+      "reference": "Mûre",
+      "amount": "11.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Myrtille",
+      "amount": "10.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Navet",
+      "amount": "3.07",
+      "unit": "KG"
+    },
+    {
+      "reference": "Nectarine",
+      "amount": "3.38",
+      "unit": "KG"
+    },
+    {
+      "reference": "Noix de joue de porc",
+      "amount": "12.42",
+      "unit": "KG"
+    },
+    {
+      "reference": "Oignon",
+      "amount": "2.88",
+      "unit": "KG"
+    },
+    {
+      "reference": "Olives noires dénoyautées",
+      "amount": "9.18",
+      "unit": "KG"
+    },
+    {
+      "reference": "Olives vertes dénoyautées",
+      "amount": "7.82",
+      "unit": "KG"
+    },
+    {
+      "reference": "Omelette nature",
+      "amount": "0.75",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Orange",
+      "amount": "3.38",
+      "unit": "KG"
+    },
+    {
+      "reference": "Oseille",
+      "amount": "10.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pain au chocolat",
+      "amount": "0.75",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pamplemousse",
+      "amount": "2.95",
+      "unit": "KG"
+    },
+    {
+      "reference": "Panais",
+      "amount": "3.01",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pané de colin d'Alaska",
+      "amount": "7.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pastèque",
+      "amount": "3.16",
+      "unit": "KG"
+    },
+    {
+      "reference": "Patate douce",
+      "amount": "2.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâte à tartiner",
+      "amount": "7.70",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâté de campagne",
+      "amount": "7.34",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâtisson",
+      "amount": "2.95",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pêche",
+      "amount": "3.35",
+      "unit": "KG"
+    },
+    {
+      "reference": "Penne rigate",
+      "amount": "2.83",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pesto vert",
+      "amount": "9.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Petit beurre bio",
+      "amount": "8.79",
+      "unit": "KG"
+    },
+    {
+      "reference": "Petit fourré abricot",
+      "amount": "0.43",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Petit fourré cerise",
+      "amount": "0.43",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Petit fourré chocolat-noisettes",
+      "amount": "0.47",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Petit fourré fraise",
+      "amount": "0.50",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Petits dés de pêche",
+      "amount": "4.66",
+      "unit": "KG"
+    },
+    {
+      "reference": "Petits pois doux très fins",
+      "amount": "3.19",
+      "unit": "KG"
+    },
+    {
+      "reference": "Petits pois extra-fins",
+      "amount": "3.16",
+      "unit": "KG"
+    },
+    {
+      "reference": "Poêlée maraîchère",
+      "amount": "2.54",
+      "unit": "KG"
+    },
+    {
+      "reference": "Poêlée villageoise",
+      "amount": "3.01",
+      "unit": "KG"
+    },
+    {
+      "reference": "Poire",
+      "amount": "2.82",
+      "unit": "KG"
+    },
+    {
+      "reference": "Poireau",
+      "amount": "2.98",
+      "unit": "KG"
+    },
+    {
+      "reference": "Poires Williams au sirop léger",
+      "amount": "3.89",
+      "unit": "KG"
+    },
+    {
+      "reference": "Poivron",
+      "amount": "2.79",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pomme",
+      "amount": "3.26",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pomme de terre",
+      "amount": "1.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pomme golden",
+      "amount": "3.38",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pomme granny",
+      "amount": "2.85",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pommes entières",
+      "amount": "2.82",
+      "unit": "KG"
+    },
+    {
+      "reference": "Porto rouge salé poivré",
+      "amount": "9.00",
+      "unit": "L"
+    },
+    {
+      "reference": "Pot de crème caramel beurre salé",
+      "amount": "4.51",
+      "unit": "KG"
+    },
+    {
+      "reference": "Potage de légumes",
+      "amount": "2.88",
+      "unit": "L"
+    },
+    {
+      "reference": "Potimarron",
+      "amount": "3.19",
+      "unit": "KG"
+    },
+    {
+      "reference": "Potiron",
+      "amount": "2.82",
+      "unit": "KG"
+    },
+    {
+      "reference": "Poudre de tomate",
+      "amount": "18.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Préparation de légumes pour taboulé à l'huile d'olive",
+      "amount": "8.21",
+      "unit": "KG"
+    },
+    {
+      "reference": "Préparation pour coleslaw chou blanc et carottes",
+      "amount": "7.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Préparation pour flan à la vanille",
+      "amount": "4.75",
+      "unit": "KG"
+    },
+    {
+      "reference": "Préparation pour mousse au chocolat blanc",
+      "amount": "5.23",
+      "unit": "KG"
+    },
+    {
+      "reference": "Préparation pour mousse au chocolat sans gluten",
+      "amount": "4.51",
+      "unit": "KG"
+    },
+    {
+      "reference": "Préparation pour panna cotta",
+      "amount": "4.94",
+      "unit": "KG"
+    },
+    {
+      "reference": "Prune",
+      "amount": "2.88",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pruneaux dénoyautés au sirop",
+      "amount": "3.93",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pur jus d'orange",
+      "amount": "1.80",
+      "unit": "L"
+    },
+    {
+      "reference": "Purée de brocolis",
+      "amount": "2.57",
+      "unit": "KG"
+    },
+    {
+      "reference": "Purée de haricots verts",
+      "amount": "2.99",
+      "unit": "KG"
+    },
+    {
+      "reference": "Quatre-quarts pur beurre",
+      "amount": "7.92",
+      "unit": "KG"
+    },
+    {
+      "reference": "Quiche lorraine",
+      "amount": "1.80",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Quinoa gourmand",
+      "amount": "6.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Radis noir",
+      "amount": "2.91",
+      "unit": "KG"
+    },
+    {
+      "reference": "Rillettes de thon",
+      "amount": "11.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Riz au lait à la vanille",
+      "amount": "4.85",
+      "unit": "KG"
+    },
+    {
+      "reference": "Riz étuvé long grain Indica",
+      "amount": "2.52",
+      "unit": "KG"
+    },
+    {
+      "reference": "Rognons de bœuf",
+      "amount": "14.08",
+      "unit": "KG"
+    },
+    {
+      "reference": "Rôti de bœuf",
+      "amount": "17.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Rôti de porc cuit",
+      "amount": "12.08",
+      "unit": "KG"
+    },
+    {
+      "reference": "Rôti de veau",
+      "amount": "18.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Roulé de surimi",
+      "amount": "10.37",
+      "unit": "KG"
+    },
+    {
+      "reference": "Roux blanc",
+      "amount": "7.74",
+      "unit": "KG"
+    },
+    {
+      "reference": "Salade",
+      "amount": "4.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Salade exotique",
+      "amount": "7.41",
+      "unit": "KG"
+    },
+    {
+      "reference": "Saladière de riz au thon",
+      "amount": "6.87",
+      "unit": "KG"
+    },
+    {
+      "reference": "Saladière niçoise au thon",
+      "amount": "7.41",
+      "unit": "KG"
+    },
+    {
+      "reference": "Saladière pasta au thon",
+      "amount": "6.39",
+      "unit": "KG"
+    },
+    {
+      "reference": "Salsifi",
+      "amount": "3.32",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sauce bolognaise végétale",
+      "amount": "5.67",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sauce salade légère",
+      "amount": "4.71",
+      "unit": "L"
+    },
+    {
+      "reference": "Sauce soja salée",
+      "amount": "4.32",
+      "unit": "L"
+    },
+    {
+      "reference": "Sauce soja sucrée",
+      "amount": "4.23",
+      "unit": "L"
+    },
+    {
+      "reference": "Sauce tomate et oignons",
+      "amount": "4.41",
+      "unit": "L"
+    },
+    {
+      "reference": "Saucisse de Strasbourg",
+      "amount": "11.15",
+      "unit": "KG"
+    },
+    {
+      "reference": "Saucisse de Toulouse",
+      "amount": "12.19",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sauté de bœuf",
+      "amount": "13.39",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sauté de canard",
+      "amount": "14.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sauté de poulet",
+      "amount": "12.19",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sauté de veau",
+      "amount": "15.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sauvignon blanc IGP Pays d'Oc",
+      "amount": "8.10",
+      "unit": "L"
+    },
+    {
+      "reference": "Semoule au lait à la vanille",
+      "amount": "5.18",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sirop d'orange sans sucre",
+      "amount": "1.86",
+      "unit": "L"
+    },
+    {
+      "reference": "Sirop de cassis",
+      "amount": "2.10",
+      "unit": "L"
+    },
+    {
+      "reference": "Sirop de cassis sans sucre",
+      "amount": "1.78",
+      "unit": "L"
+    },
+    {
+      "reference": "Sirop de citron sans sucre",
+      "amount": "1.88",
+      "unit": "L"
+    },
+    {
+      "reference": "Sirop de fraise sans sucre",
+      "amount": "1.82",
+      "unit": "L"
+    },
+    {
+      "reference": "Sirop de grenadine sans sucre",
+      "amount": "2.06",
+      "unit": "L"
+    },
+    {
+      "reference": "Sirop de menthe sans sucre",
+      "amount": "1.92",
+      "unit": "L"
+    },
+    {
+      "reference": "Sirop de pêche",
+      "amount": "2.02",
+      "unit": "L"
+    },
+    {
+      "reference": "Spaghetti bio",
+      "amount": "3.04",
+      "unit": "KG"
+    },
+    {
+      "reference": "Spaghetti qualité supérieure",
+      "amount": "3.02",
+      "unit": "KG"
+    },
+    {
+      "reference": "Spécialité pomme biscuit",
+      "amount": "5.23",
+      "unit": "KG"
+    },
+    {
+      "reference": "Spécialité pomme fraise",
+      "amount": "5.04",
+      "unit": "KG"
+    },
+    {
+      "reference": "Taboulé oriental",
+      "amount": "6.46",
+      "unit": "KG"
+    },
+    {
+      "reference": "Tartelette salée",
+      "amount": "0.90",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Thé aux fruits rouges",
+      "amount": "22.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Thé noir",
+      "amount": "18.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Thé vert menthe",
+      "amount": "20.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Tomate",
+      "amount": "3.16",
+      "unit": "KG"
+    },
+    {
+      "reference": "Topinambour",
+      "amount": "3.19",
+      "unit": "KG"
+    },
+    {
+      "reference": "Tortellini tomate mozzarella",
+      "amount": "6.79",
+      "unit": "KG"
+    },
+    {
+      "reference": "Torti",
+      "amount": "3.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Trio de légumes et carottes",
+      "amount": "3.16",
+      "unit": "KG"
+    },
+    {
+      "reference": "Œuf dur écalé",
+      "amount": "0.38",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Velouté aux 7 légumes",
+      "amount": "3.24",
+      "unit": "L"
+    },
+    {
+      "reference": "Velouté d'asperges",
+      "amount": "3.24",
+      "unit": "L"
+    },
+    {
+      "reference": "Velouté de poireaux et pommes de terre",
+      "amount": "2.88",
+      "unit": "L"
+    },
+    {
+      "reference": "Velouté de potiron",
+      "amount": "3.06",
+      "unit": "L"
+    },
+    {
+      "reference": "Velouté tomate et pâtes",
+      "amount": "3.15",
+      "unit": "L"
+    },
+    {
+      "reference": "Yaourt à la framboise",
+      "amount": "3.13",
+      "unit": "KG"
+    },
+    {
+      "reference": "Yaourt à la vanille",
+      "amount": "3.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Yaourt brassé fraise",
+      "amount": "3.44",
+      "unit": "KG"
+    },
+    {
+      "reference": "Yaourt brassé nature",
+      "amount": "3.75",
+      "unit": "KG"
+    },
+    {
+      "reference": "Yaourt litchi rose",
+      "amount": "3.38",
+      "unit": "KG"
+    },
+    {
+      "reference": "Farine de blé T45 pâtissière",
+      "amount": "1.55",
+      "unit": "KG"
+    },
+    {
+      "reference": "Farine de gruau T00",
+      "amount": "2.10",
+      "unit": "KG"
+    },
+    {
+      "reference": "Farine de blé T55",
+      "amount": "1.30",
+      "unit": "KG"
+    },
+    {
+      "reference": "Farine de blé T65 panifiable",
+      "amount": "1.45",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sucre semoule",
+      "amount": "1.35",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sucre cristal",
+      "amount": "1.25",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sucre glace",
+      "amount": "1.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cassonade",
+      "amount": "2.05",
+      "unit": "KG"
+    },
+    {
+      "reference": "Vergeoise blonde",
+      "amount": "2.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Vergeoise brune",
+      "amount": "2.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sirop de glucose",
+      "amount": "2.90",
+      "unit": "KG"
+    },
+    {
+      "reference": "Sucre inverti",
+      "amount": "3.40",
+      "unit": "KG"
+    },
+    {
+      "reference": "Dextrose",
+      "amount": "2.65",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fondant pâtissier blanc",
+      "amount": "3.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Levure chimique",
+      "amount": "6.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Levure boulangère sèche",
+      "amount": "8.40",
+      "unit": "KG"
+    },
+    {
+      "reference": "Levure boulangère fraîche",
+      "amount": "4.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Gélatine en feuilles 200 Bloom",
+      "amount": "22.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Gélatine en poudre 200 Bloom",
+      "amount": "25.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Couverture noire 55 % cacao",
+      "amount": "14.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Couverture noire 64 % cacao",
+      "amount": "15.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Couverture noire 70 % cacao",
+      "amount": "17.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Couverture lait 35 % cacao",
+      "amount": "15.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Couverture lait 40 % cacao",
+      "amount": "16.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Couverture blanche",
+      "amount": "15.40",
+      "unit": "KG"
+    },
+    {
+      "reference": "Couverture blonde caramélisée",
+      "amount": "17.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cacao en poudre maigre",
+      "amount": "10.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cacao en poudre riche en matière grasse",
+      "amount": "13.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Beurre de cacao",
+      "amount": "18.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pépites de chocolat noir pour cuisson",
+      "amount": "12.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pépites de chocolat au lait",
+      "amount": "13.40",
+      "unit": "KG"
+    },
+    {
+      "reference": "Amande entière blanchie",
+      "amount": "12.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Amande en poudre blanche",
+      "amount": "11.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Amande en poudre brute",
+      "amount": "10.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Amande effilée",
+      "amount": "13.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Noisette entière",
+      "amount": "14.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Noisette en poudre",
+      "amount": "15.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Noisette concassée",
+      "amount": "14.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pistache décortiquée",
+      "amount": "29.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pistache en poudre",
+      "amount": "31.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâte pure de noisette",
+      "amount": "18.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâte pure de pistache",
+      "amount": "34.00",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâte pure d'amande",
+      "amount": "15.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Praliné noisette",
+      "amount": "17.40",
+      "unit": "KG"
+    },
+    {
+      "reference": "Praliné amande",
+      "amount": "15.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Praliné amande-noisette",
+      "amount": "16.90",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâte d'amande 33 %",
+      "amount": "9.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâte d'amande 50 %",
+      "amount": "11.90",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâte feuilletée pur beurre surgelée",
+      "amount": "7.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Pâte feuilletée margarine surgelée",
+      "amount": "4.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fond de tarte sucré cru surgelé",
+      "amount": "0.72",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Fond de tarte sucré cuit",
+      "amount": "0.88",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Fond de tarte sablé cru surgelé",
+      "amount": "0.72",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Fond de tarte sablé cuit",
+      "amount": "0.88",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Fond de tarte salé cru surgelé",
+      "amount": "0.72",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Fond de tarte salé cuit",
+      "amount": "0.88",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Feuilletine",
+      "amount": "10.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Nappage neutre",
+      "amount": "4.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Glaçage miroir neutre",
+      "amount": "5.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Beurre doux 82 % MG",
+      "amount": "8.90",
+      "unit": "KG"
+    },
+    {
+      "reference": "Beurre demi-sel",
+      "amount": "9.10",
+      "unit": "KG"
+    },
+    {
+      "reference": "Beurre de tourage 82 % MG",
+      "amount": "10.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Beurre extra-sec de tourage 84 % MG",
+      "amount": "11.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Crème liquide UHT 30 % MG",
+      "amount": "4.30",
+      "unit": "L"
+    },
+    {
+      "reference": "Crème liquide UHT 35 % MG",
+      "amount": "4.80",
+      "unit": "L"
+    },
+    {
+      "reference": "Crème fleurette 35 % MG",
+      "amount": "5.60",
+      "unit": "L"
+    },
+    {
+      "reference": "Crème fraîche épaisse 30 % MG",
+      "amount": "4.90",
+      "unit": "KG"
+    },
+    {
+      "reference": "Lait entier UHT",
+      "amount": "1.35",
+      "unit": "L"
+    },
+    {
+      "reference": "Lait demi-écrémé UHT",
+      "amount": "1.20",
+      "unit": "L"
+    },
+    {
+      "reference": "Lait écrémé UHT",
+      "amount": "1.15",
+      "unit": "L"
+    },
+    {
+      "reference": "Lait entier en poudre",
+      "amount": "9.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Lait écrémé en poudre",
+      "amount": "8.40",
+      "unit": "KG"
+    },
+    {
+      "reference": "Mascarpone",
+      "amount": "8.90",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cream cheese",
+      "amount": "9.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cheddar râpé",
+      "amount": "10.80",
+      "unit": "KG"
+    },
+    {
+      "reference": "Cheddar en tranches",
+      "amount": "11.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fromage fondu au cheddar en tranches",
+      "amount": "11.60",
+      "unit": "KG"
+    },
+    {
+      "reference": "Mozzarella râpée",
+      "amount": "8.40",
+      "unit": "KG"
+    },
+    {
+      "reference": "Mozzarella en tranches",
+      "amount": "9.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Parmesan râpé",
+      "amount": "17.50",
+      "unit": "KG"
+    },
+    {
+      "reference": "Fromage à raclette en tranches",
+      "amount": "11.20",
+      "unit": "KG"
+    },
+    {
+      "reference": "Bun classique surgelé",
+      "amount": "0.52",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Bun brioché surgelé",
+      "amount": "0.62",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Bun multigraines surgelé",
+      "amount": "0.64",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Potato bun surgelé",
+      "amount": "0.68",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Focaccia surgelée",
+      "amount": "0.82",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain burger focaccia",
+      "amount": "0.82",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Ciabatta surgelée",
+      "amount": "0.58",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain panini surgelé",
+      "amount": "0.69",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain pita surgelé",
+      "amount": "0.48",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Bagel nature surgelé",
+      "amount": "0.72",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain bruschetta surgelé",
+      "amount": "0.78",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain de mie sandwich",
+      "amount": "0.34",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain polaire surgelé",
+      "amount": "0.66",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain bagnat surgelé",
+      "amount": "0.64",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain nordique surgelé",
+      "amount": "0.72",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Baguette sandwich surgelée",
+      "amount": "0.62",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Baguette rustique sandwich surgelée",
+      "amount": "0.74",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain hot-dog surgelé",
+      "amount": "0.44",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Pain kebab surgelé",
+      "amount": "0.56",
+      "unit": "UNIT"
+    },
+    {
+      "reference": "Tortilla de blé pour wrap",
+      "amount": "0.36",
+      "unit": "UNIT"
+    }
+  ]
+}
