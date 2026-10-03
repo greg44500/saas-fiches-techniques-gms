@@ -664,7 +664,7 @@ describe('ProductReferencePage', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Historique' }));
 
-    expect(screen.getByText('Historique des contributions'))
+    expect(screen.getByText('Historique des contrôles'))
       .toBeInTheDocument();
     expect(screen.getByText('Aucun historique')).toBeInTheDocument();
     expect(screen.queryByText('Produits indisponibles'))
