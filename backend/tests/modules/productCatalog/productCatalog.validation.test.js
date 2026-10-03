@@ -147,6 +147,11 @@ describe('M-002 product request validation', () => {
             type: 'CANONICAL_PRODUCT',
             value: 'Betterave',
         }).success).toBe(false);
+
+        expect(createReferenceContributionBodySchema.safeParse({
+            type: 'VARIANT',
+            value: 'Betterave séchée',
+        }).success).toBe(false);
     });
 
     it('applique pagination, tri et filtres du nouveau contrat', () => {
