@@ -674,8 +674,9 @@ describe('M-002 global product reference HTTP contract', () => {
         expect(response.status).toBe(200);
         expect(response.body.data.summary).toMatchObject({
             total: 1,
-            contributionCount: 0,
-            dimensionReviewCount: 1,
+            productCount: 0,
+            referenceCount: 0,
+            dimensionCount: 1,
         });
         expect(response.body.data.origins).toEqual([]);
         expect(response.body.data.items).toEqual([
