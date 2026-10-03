@@ -37,6 +37,42 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListGlobalIndicativePricesQuery: mocks.globalPricesQuery,
 }));
 
+vi.mock('@/features/products/components/product-reference-search-autocomplete', () => ({
+  ProductReferenceSearchAutocomplete: ({
+    onSelect,
+    onValueChange,
+    value,
+  }) => (
+    <div>
+      <input
+        aria-label="Rechercher un Produit global"
+        onChange={(event) => onValueChange(event.target.value)}
+        placeholder="Rechercher un produit…"
+        role="combobox"
+        value={value}
+      />
+      <button
+        onClick={() => onSelect(
+          {
+            product: {
+              id: 'product-puree',
+              name: 'Pomme de terre',
+            },
+            variant: {
+              id: 'variant-puree',
+              name: 'Purée de pomme de terre',
+            },
+          },
+          'Purée de pomme de terre',
+        )}
+        type="button"
+      >
+        Choisir Purée de pomme de terre
+      </button>
+    </div>
+  ),
+}));
+
 vi.mock('@/features/products/components/product-reference-details-drawer', () => ({
   ProductReferenceDetailsDrawer: ({
     initialDimensionFilter,
@@ -259,6 +295,31 @@ describe('ProductReferencePage', () => {
     );
   });
 
+
+  it('applique immédiatement une suggestion prédictive au tableau', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Choisir Purée de pomme de terre',
+    }));
+
+    expect(screen.getByRole('combobox', {
+      name: 'Rechercher un Produit global',
+    })).toHaveValue('Purée de pomme de terre');
+
+    await waitFor(() => {
+      expect(mocks.productsQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          q: 'Purée de pomme de terre',
+          status: 'ACTIVE',
+          page: 1,
+        }),
+        { skip: false },
+      );
+    });
+  });
 
   it('affiche des compteurs d’onglets basés sur les totaux filtrés', async () => {
     const user = userEvent.setup();
