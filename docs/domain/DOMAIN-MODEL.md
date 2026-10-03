@@ -450,13 +450,22 @@ Datasets historiques immuables :
 m002-reference-v1
 m002-reference-v2
 m002-reference-v3
-```
-
-Dataset actif :
-
-```text
+m002-reference-v4
+m002-reference-v5
 m002-reference-v6
 ```
+
+Dataset actif sur la branche Produits globaux :
+
+```text
+m002-reference-v7
+16 catégories
+320 Produits
+368 Références Produit
+```
+
+Le v7 reprend toutes les Références v6 puis ajoute le corpus professionnel
+pâtisserie / crémerie / snacking. Il ne modifie pas la frontière M-002 / M-003.
 
 La migration du contrat Référence Produit est fail-closed lorsqu'un nom ou une conservation ne peut pas être déterminé sans invention.
 
