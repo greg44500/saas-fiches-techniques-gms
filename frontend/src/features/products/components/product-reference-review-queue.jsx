@@ -1,5 +1,9 @@
 import { CircleCheck, Eye } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import {
@@ -55,6 +59,23 @@ function ProductReferenceReviewQueue({
     useReviewProductReferenceContributionMutation();
   const [reviewDimension, reviewDimensionState] =
     useReviewProductReferenceDimensionMutation();
+
+  useEffect(() => {
+    const totalPages = query.data?.pagination?.totalPages ?? 0;
+
+    if (totalPages === 0 && page !== 1) {
+      setPage(1);
+      return;
+    }
+
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [
+    page,
+    query.data?.pagination?.totalPages,
+    setPage,
+  ]);
 
   const typeItems = useMemo(() => [
     { value: ALL_REVIEW_TYPES, label: 'Tous les types' },
