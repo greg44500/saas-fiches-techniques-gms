@@ -365,6 +365,10 @@ describe('M-004 RBAC HTTP', () => {
                 value: 'INDICATIVE_WORKSPACE',
                 label: 'Prix indicatif espace de travail',
             },
+            {
+                value: 'INDICATIVE_GLOBAL',
+                label: 'Prix repère global',
+            },
         ]);
         expect(
             response.body.data.metadata.finalPriceModeDefinitions,
