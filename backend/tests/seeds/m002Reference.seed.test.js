@@ -95,20 +95,20 @@ beforeEach(async () => {
 });
 
 describe('M-002 reference bootstrap', () => {
-    it('valide le dataset v7 professionnel sans données commerciales', async () => {
+    it('valide le dataset v8 professionnel sans données commerciales', async () => {
         const dataset = await loadDefaultDataset();
         const parsed = m002ReferenceDatasetSchema.parse(dataset);
 
         expect(parsed.ready).toBe(true);
-        expect(parsed.version).toBe('m002-reference-v7');
+        expect(parsed.version).toBe('m002-reference-v8');
         expect(parsed.categories).toHaveLength(16);
-        expect(parsed.products).toHaveLength(320);
+        expect(parsed.products).toHaveLength(381);
         expect(
             parsed.products.reduce(
                 (total, product) => total + product.variants.length,
                 0,
             ),
-        ).toBe(368);
+        ).toBe(488);
 
         expect(parsed.sources).toEqual(expect.arrayContaining([
             expect.objectContaining({
@@ -131,6 +131,12 @@ describe('M-002 reference bootstrap', () => {
             'Beurre de tourage 82 % MG',
             'Crème liquide UHT 35 % MG',
             'Pâte pure de pistache',
+            'Amande en poudre blanche',
+            'Noisette en poudre',
+            'Œuf entier liquide pasteurisé',
+            'Purée de mangue surgelée',
+            'Sauce barbecue',
+            'Fond de tarte sucré cru surgelé Ø 10 cm',
             'Bun brioché surgelé',
             'Pain pita surgelé',
         ]));
@@ -140,8 +146,8 @@ describe('M-002 reference bootstrap', () => {
 
         for (const product of parsed.products) {
             expect(product.variants.length).toBeGreaterThan(0);
-            expect(product.varieties).toEqual([]);
-            expect(product.characteristics).toEqual([]);
+            expect(Array.isArray(product.varieties)).toBe(true);
+            expect(Array.isArray(product.characteristics)).toBe(true);
             expect(product).not.toHaveProperty('supplier');
             expect(product).not.toHaveProperty('price');
             expect(product).not.toHaveProperty('packaging');
@@ -152,6 +158,16 @@ describe('M-002 reference bootstrap', () => {
                 expect(variant.foodRange).toBeNull();
                 expect(variant.yieldPercent).toBeNull();
                 expect(variant).not.toHaveProperty('usageType');
+
+                const characteristicKeys = new Set(
+                    product.characteristics.map(({ key }) =>
+                        normalizeProductText(key)),
+                );
+                for (const key of variant.characteristicKeys) {
+                    expect(characteristicKeys.has(
+                        normalizeProductText(key),
+                    )).toBe(true);
+                }
             }
         }
 
