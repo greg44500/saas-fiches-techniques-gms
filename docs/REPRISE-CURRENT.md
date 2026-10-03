@@ -412,6 +412,7 @@ Backend :
 - origine Workspace ;
 - disparition après revue/décision ;
 - séparation READ / MANAGE ;
+- concurrence sur les décisions terminales ;
 - registre backend-driven de la file.
 
 Frontend :
