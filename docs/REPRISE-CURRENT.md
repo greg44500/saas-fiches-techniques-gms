@@ -1,7 +1,7 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-10-03  
-**Lot courant :** Produits globaux — corpus professionnel v7 + Prix repères v2  
+**Lot courant :** Produits globaux — corpus professionnel v7 + gouvernance Produit unifiée  
 **Branche de travail :** `feature/a2-professional-reference-corpus`  
 **Base vérifiée :** `main@3634b9b76c4b019f9458f3827cd6d29d20cf6e3f`  
 **Version produit :** `0.1.0` — channel `development`
@@ -285,16 +285,166 @@ Points visuels à vérifier :
    valorisation par `Prix repère global` lorsqu'aucune source locale plus
    précise n'existe.
 
-## 8. Suite du lot après QA
+## 8. Bloc B — Gouvernance Produit unifiée
+
+Le Bloc B est implémenté sur la même branche, sans PR intermédiaire.
+
+Contrat :
+
+~~~text
+docs/m002/M-002-GOVERNANCE-REVIEW-QUEUE.md
+~~~
+
+Surface Platform cible :
+
+~~~text
+Référentiel
+À contrôler
+Historique
+Catégories
+~~~
+
+### 8.1 File « À contrôler »
+
+Read model serveur :
+
+~~~text
+ReferenceContribution PENDING_REVIEW
++
+ProductVariety / ProductCharacteristic
+qualityReviewStatus = PENDING
+status = ACTIVE
+identityActive = true
+~~~
+
+Règle anti-double traitement :
+
+- une Dimension provisoire déjà portée par une Contribution en attente
+  n'apparaît pas une seconde fois comme Dimension à vérifier.
+
+Fonctions :
+
+- compteur global dans l'onglet ;
+- pagination serveur ;
+- filtre par nature `Contribution | Valeur à vérifier` ;
+- filtre par Workspace d'origine ;
+- origine et auteur visibles ;
+- ancienneté visible ;
+- accès direct au Produit ;
+- Contribution : approuver / fusionner / refuser ;
+- Dimension : marquer comme vérifiée puis accès au drawer pour correction,
+  archivage ou suppression selon le contrat existant.
+
+### 8.2 Historique
+
+Les Contributions déjà traitées quittent la file active et restent
+consultables dans l'onglet Historique.
+
+La décision visible est dérivée sans modifier les événements immuables :
+
+~~~text
+APPROVE → Approuvée
+MERGE   → Fusionnée
+REJECT  → Refusée
+~~~
+
+L'historique détaillé des Dimensions continue d'être porté par
+`ProductReferenceEvent` dans le drawer Produit.
+
+### 8.3 RBAC
+
+Aucune permission supplémentaire :
+
+~~~text
+product:reference:read
+→ lecture Référentiel / À contrôler / Historique
+
+product:reference:manage
+→ traitement des Contributions
+→ revue / correction des Dimensions
+~~~
+
+Les tests HTTP couvrent explicitement la lecture de la file avec READ seul et
+le refus d'une mutation de revue sans MANAGE.
+
+### 8.4 Performance
+
+Deux indexes dédiés complètent M-002 :
+
+~~~text
+product_variety_global_review_queue
+product_characteristic_global_review_queue
+~~~
+
+Ils sont vérifiés par `npm run migration:m002-catalog`.
+
+Le frontend ne charge pas exhaustivement les Contributions ou Dimensions pour
+constituer la file.
+
+### 8.5 Notifications
+
+Audit Core v1.2.1 :
+
+- aucune primitive générique de notification applicative persistée n'est
+  disponible ;
+- D-008 reste la dette Core conditionnelle correspondante.
+
+Décision :
+
+- le compteur `À contrôler` est le signal in-app du lot ;
+- aucun modèle Notification spécifique GMS n'est créé ;
+- une notification persistée/lue-non-lue éventuelle doit être traitée dans
+  `saas-core-api` avant réintégration.
+
+### 8.6 Couverture ajoutée
+
+Backend :
+
+- agrégation Contributions + Dimensions ;
+- déduplication d'une Dimension provisoire ;
+- pagination et filtres ;
+- origine Workspace ;
+- disparition après revue/décision ;
+- séparation READ / MANAGE ;
+- registre backend-driven de la file.
+
+Frontend :
+
+- composant `ProductReferenceReviewQueue` ;
+- compteurs ;
+- filtres type/origine ;
+- actions Contribution / Dimension ;
+- lecture seule ;
+- onglet Historique ;
+- RTK Query dédié.
+
+E2E :
+
+~~~text
+Workspace propose un Produit
+→ gestionnaire global le voit dans À contrôler
+→ approuve
+→ l'élément quitte À contrôler
+→ apparaît dans Historique
+→ Produit publié retrouvable globalement
+→ Workspace peut ensuite l'utiliser / le mettre en favori
+~~~
+
+Aucun de ces tests n'est déclaré vert dans cette conversation tant qu'il n'a
+pas été réellement exécuté localement ou par la Core Gate.
+
+## 9. Suite du lot après QA
 
 Aucune PR intermédiaire ne doit être créée.
 
-Après validation visuelle :
+Après récupération locale du Bloc B :
 
 ~~~text
-retours QA éventuels
-→ corrections sur la même branche
+npm run migration:m002-catalog
 → tests ciblés
+→ QA visuelle Platform Produits
+→ retours utilisateur
+→ corrections éventuelles sur la même branche
 → release:check
 → PR unique
 → Core Gate PR
@@ -303,11 +453,10 @@ retours QA éventuels
 → documentation finale
 ~~~
 
-Le prochain bloc fonctionnel après stabilisation du corpus professionnel reste
-à traiter sur cette même PR selon le cadrage validé. Le bloc Exports et
-diffusion M-004 reste ultérieur et séparé fonctionnellement.
+Le bloc Exports et diffusion M-004 reste ultérieur et séparé
+fonctionnellement.
 
-## 9. Exports et diffusion — ordre ultérieur
+## 10. Exports et diffusion — ordre ultérieur
 
 Périmètre V1 à cadrer séparément :
 
