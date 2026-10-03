@@ -317,7 +317,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
         params: { productId, productVariantId, status },
       }),
       transformResponse: (response) => response.data.prices,
-      providesTags: ['SupplierPricing', 'ProductReference'],
+      providesTags: ['SupplierPricing'],
     }),
     setGlobalIndicativePrice: builder.mutation({
       query: ({ productVariantId, ...body }) => ({
@@ -328,7 +328,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
         body,
       }),
       transformResponse: (response) => response.data.price,
-      invalidatesTags: ['SupplierPricing', 'ProductReference'],
+      invalidatesTags: ['SupplierPricing'],
     }),
     archiveGlobalIndicativePrice: builder.mutation({
       query: ({ productVariantId }) => ({
@@ -338,7 +338,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
         method: 'DELETE',
       }),
       transformResponse: (response) => response.data.price,
-      invalidatesTags: ['SupplierPricing', 'ProductReference'],
+      invalidatesTags: ['SupplierPricing'],
     }),
     listWorkspaceIndicativePrices: builder.query({
       query: ({
