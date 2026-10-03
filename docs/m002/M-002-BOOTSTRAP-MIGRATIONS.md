@@ -4,7 +4,7 @@
 
 > **RECARDAGE QA 2026-09-24** — `docs/m002/M-002-RECARDAGE-QA.md` est désormais prioritaire pour `CUT`, CanonicalProduct sans variante, Gammes 1..5, PAI/PAE séparé, seed v3, liste groupée et dépendance Core de navigation Platform. Les contrats techniques ci-dessous doivent être réalignés pendant le prochain bloc d'implémentation avant d'être considérés définitifs.
 
-**Statut : ACTIF — bootstrap v7 et réconciliation v1-v6 → v7 documentés**
+**Statut : ACTIF — bootstrap v8 et réconciliation v1-v7 → v8 documentés**
 
 ## 1. Backfill M-002 legacy
 
@@ -69,7 +69,7 @@ Responsabilités :
 
 1. normaliser les anciens statuts M-002 vers `ACTIVE/ARCHIVED` ;
 2. migrer la sémantique des anciennes déclinaisons (`form/preservation`, Gamme et État) ;
-3. réconcilier les bootstraps historiques v1 à v6 contre le corpus cible v7 sans supprimer les données utilisateur ;
+3. réconcilier les bootstraps historiques v1 à v7 contre le corpus cible v8 sans supprimer les données utilisateur ;
 4. convertir la Présentation historique en `ProductCharacteristic(PRESENTATION)`, renseigner `characteristics[]`, conserver `variety=null` et recalculer la signature structurée ;
 5. créer/vérifier les indexes M-002 ;
 6. synchroniser les permissions système Workspace enregistrées.
@@ -110,11 +110,11 @@ Le bootstrap M-002 est versionné et idempotent.
 Fichiers actifs :
 
 ```text
-backend/seeds/data/m002-reference.v7.json
+backend/seeds/data/m002-reference.v8.json
 backend/seeds/seedM002Reference.js
 ```
 
-Les datasets v1 à v6 restent versionnés et immuables pour la traçabilité et
+Les datasets v1 à v7 restent versionnés et immuables pour la traçabilité et
 les migrations historiques.
 
 Structure :
@@ -145,18 +145,19 @@ products[]
     yieldPercent
 ```
 
-Le dataset actif est `m002-reference-v7`.
+Le dataset actif est `m002-reference-v8`.
 
 Baseline courante :
 
 - 16 catégories ;
-- 320 Produits ;
-- 368 Références Produit ;
-- reprise intégrale des 264 Références v6 ;
-- 104 Références professionnelles supplémentaires ;
+- 381 Produits ;
+- 490 Références Produit ;
+- 128 nouvelles Références par rapport au v7 ;
+- retrait explicite des 6 fonds de tarte génériques v7 remplacés par des formats exploitables ;
+- poudres d'amande/noisette/pistache préservées et fruits secs génériques complétés ;
 - racines multi-références exploitées pour les différences techniques réelles ;
 - aucun fournisseur, prix ou conditionnement commercial dans M-002 ;
-- corpus et provenance détaillés dans `docs/m002/M-002-SEED-V7-SOURCE.md`.
+- corpus et provenance détaillés dans `docs/m002/M-002-SEED-V8-SOURCE.md`.
 
 Commande :
 
