@@ -231,7 +231,7 @@ function ProductReferencePage({ canManage }) {
     setSearchInput('');
     setCategoryId(category.id);
     setReferenceStatus('ACTIVE');
-    setContributionStatus('APPROVED');
+    setContributionStatus(ALL_REVIEWED_CONTRIBUTIONS);
     setPage(1);
   }
 
