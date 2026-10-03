@@ -198,6 +198,7 @@ describe('ProductReferenceDetailsDrawer', () => {
       normalizedUnit: 'KG',
       currency: 'EUR',
       source: 'Référentiel de démonstration',
+      updatedAt: '2026-10-03T10:00:00.000Z',
       status: 'ACTIVE',
     }]));
 
@@ -362,8 +363,10 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     expect(screen.getByText(/Prix repère global : 3,250 \/ KG/))
       .toBeInTheDocument();
-    expect(screen.getByText('Référentiel de démonstration'))
+    expect(screen.getByText('Mis à jour le 03/10/2026'))
       .toBeInTheDocument();
+    expect(screen.queryByText('Référentiel de démonstration'))
+      .not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
       name: 'Modifier le Prix repère global de Abricot frais',
