@@ -388,6 +388,12 @@ function ProductReferencePage({ canManage }) {
       .find(({ value }) => value === status)?.label
     ?? status
   );
+  const contributionDecisionLabel = (contribution) => {
+    if (contribution.decision === 'MERGE') return 'Fusionnée';
+    if (contribution.decision === 'REJECT') return 'Refusée';
+    if (contribution.decision === 'APPROVE') return 'Approuvée';
+    return contributionStatusLabel(contribution.status);
+  };
   const characteristicKindLabel = (kind) => (
     (metadata?.productCharacteristicKinds ?? [])
       .find(({ value }) => value === kind)?.label
@@ -428,13 +434,11 @@ function ProductReferencePage({ canManage }) {
       ),
     },
     {
-      id: 'status',
-      header: 'Statut',
+      id: 'decision',
+      header: 'Décision',
       cell: (contribution) => (
-        <StatusBadge
-          tone={contribution.status === 'PENDING_REVIEW' ? 'warning' : 'neutral'}
-        >
-          {contributionStatusLabel(contribution.status)}
+        <StatusBadge tone="neutral">
+          {contributionDecisionLabel(contribution)}
         </StatusBadge>
       ),
     },
