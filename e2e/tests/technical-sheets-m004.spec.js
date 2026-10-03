@@ -7,8 +7,10 @@ import {
   loginWithIdentity,
 } from '../support/auth.js';
 import {
+  provisionGlobalPriceTechnicalSheetWorkspace,
   provisionTechnicalSheetWorkspace,
   replaceDossierNegotiatedPrice,
+  setWorkspaceIndicativePriceForE2e,
 } from '../support/technical-sheet-fixtures.js';
 import {
   expectVisibleToast,
@@ -234,6 +236,73 @@ async function validateCurrentDraft(page, {
     ),
   ).toBeVisible();
 }
+
+test('M-004 un Prix repère global valorise sans fournisseur puis le Prix Workspace devient prioritaire', async ({ page }) => {
+  const context =
+    await provisionGlobalPriceTechnicalSheetWorkspace();
+
+  await loginWithIdentity(
+    page,
+    context.identity,
+  );
+
+  await createTechnicalSheet(page, {
+    name:
+      'Fiche M004 Prix repère global',
+    technicalSheetsUrl:
+      context.technicalSheetsUrl,
+  });
+
+  await composeTechnicalSheet(page, {
+    productReferenceName:
+      context.productReferenceName,
+  });
+
+  await expect(
+    page.getByRole('button', {
+      name:
+        'Prix unitaire hors taxe — Prix repère global',
+    }),
+  ).toBeVisible();
+
+  await validateCurrentDraft(page, {
+    comment:
+      'Valorisation par Prix repère global',
+  });
+
+  await setWorkspaceIndicativePriceForE2e({
+    workspaceId:
+      context.workspaceId,
+    productVariantId:
+      context.productVariantId,
+    sourceAmount:
+      '3.1',
+  });
+
+  await createTechnicalSheet(page, {
+    name:
+      'Fiche M004 Prix Workspace prioritaire',
+    technicalSheetsUrl:
+      context.technicalSheetsUrl,
+  });
+
+  await composeTechnicalSheet(page, {
+    productReferenceName:
+      context.productReferenceName,
+  });
+
+  await expect(
+    page.getByRole('button', {
+      name:
+        'Prix unitaire hors taxe — Prix indicatif espace de travail',
+    }),
+  ).toBeVisible();
+
+  await validateCurrentDraft(page, {
+    comment:
+      'Prix Workspace prioritaire sur le Prix repère global',
+  });
+});
 
 test('M-004 une Référence Produit globale non favorite reste composable et valorisable', async ({ page }) => {
   const context =
