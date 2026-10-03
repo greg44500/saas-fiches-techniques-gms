@@ -401,22 +401,16 @@ existait dans le premier workflow.
 Les alias/synonymes restent disponibles pour la normalisation et la recherche,
 mais ne sont plus affichés dans les drawers Produit utilisateur/Platform.
 
-### 8.5 Historique
+### 8.5 Traçabilité après contrôle
 
-La surface est renommée fonctionnellement `Historique des contrôles`.
+L'onglet global `Historique` est retiré de la navigation Platform.
 
-Colonnes :
+Les décisions restent persistées dans les modèles/audits backend existants
+pour support, diagnostic et traçabilité. Aucun bouton de vidange manuelle
+n'est ajouté en V1.
 
-~~~text
-Type
-Donnée
-Décision
-Rapprochement
-Traitée le / gestionnaire
-~~~
-
-L'origine Workspace/auteur n'est plus affichée. Elle reste conservée en base
-pour l'audit.
+Une donnée validée, fusionnée ou refusée disparaît simplement de
+`À contrôler`.
 
 ### 8.6 RBAC / Core
 
@@ -424,7 +418,7 @@ Aucune nouvelle permission :
 
 ~~~text
 product:reference:read
-→ lecture Référentiel / À contrôler / Historique
+→ lecture Référentiel / À contrôler / Catégories
 
 product:reference:manage
 → correction et décision de gouvernance
@@ -454,11 +448,13 @@ Frontend :
 - file métier simplifiée ;
 - routage `Examiner` ;
 - filtre Références `À contrôler` ;
-- badges et focus ciblé ;
+- badge `À contrôler` uniquement dans les contextes généralistes, pas dans
+  les lignes de la file déjà filtrée ;
 - correction / validation / fusion / refus dans le drawer ;
 - confirmation d'une Référence proche côté Workspace ;
 - alias absent du détail ;
-- Historique des contrôles.
+- boutons Favoris en étoile vide/pleine ;
+- Historique global absent de la navigation ; traçabilité backend conservée.
 
 E2E existant M-002 adapté au nouveau principe :
 
@@ -469,7 +465,6 @@ Workspace propose un Produit
 → drawer ciblé
 → Valider
 → disparition de la file
-→ Historique
 → Produit global exploitable
 ~~~
 
@@ -494,9 +489,11 @@ Scénarios prioritaires :
 8. vérifier `Modifier`, `Valider`, `Fusionner avec …`, `Refuser` selon le
    contexte ;
 9. après validation/fusion/refus, vérifier la disparition de `À contrôler` ;
-10. vérifier l'Historique des contrôles et les décisions
-    `Approuvée / Fusionnée / Refusée` ;
-11. vérifier une Dimension : une seule validation doit suffire.
+10. vérifier l'absence de l'onglet Historique dans la navigation Platform ;
+11. vérifier une Dimension : une seule validation doit suffire ;
+12. vérifier les étoiles Favoris : vide pour ajouter, pleine pour retirer ;
+13. vérifier qu'aucun badge `À contrôler` n'est répété dans les lignes de la
+    file `À contrôler`.
 
 Après validation visuelle utilisateur :
 
