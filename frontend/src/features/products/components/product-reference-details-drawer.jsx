@@ -866,14 +866,12 @@ function ProductReferenceDetailsDrawer({
                                 : 'Non renseigné'
                             }
                           </p>
-                          {globalPrice && (
+                          {globalPrice?.updatedAt && (
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {globalPrice.source ?? 'Provenance non renseignée'}
-                              {globalPrice.updatedAt
-                                ? ' · Mis à jour le '
-                                  + new Date(globalPrice.updatedAt)
-                                    .toLocaleDateString('fr-FR')
-                                : ''}
+                              Mis à jour le {
+                                new Date(globalPrice.updatedAt)
+                                  .toLocaleDateString('fr-FR')
+                              }
                             </p>
                           )}
                         </div>
