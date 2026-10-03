@@ -377,7 +377,7 @@ function ProductReferencePage({ canManage }) {
         return pricedCount
           + ' / '
           + activeVariants.length
-          + ' références valorisées';
+          + ' avec prix repère';
       },
     },
     {
