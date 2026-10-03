@@ -288,8 +288,9 @@ describe('ProductReferencePage', () => {
         items: [],
         summary: {
           total: 0,
-          contributionCount: 0,
-          dimensionReviewCount: 0,
+          productCount: 0,
+          referenceCount: 0,
+          dimensionCount: 0,
         },
         origins: [],
         pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
