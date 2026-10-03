@@ -73,13 +73,33 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
     hasText: context.productName,
   });
   await expect(contributionRow).toBeVisible();
-  await contributionRow.getByRole('button', { name: 'Approuver' }).click();
+  await contributionRow.getByRole('button', {
+    name: `Examiner ${context.productName}`,
+  }).click();
+
+  await expect(
+    page.getByRole('heading', {
+      name: context.productName,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('À contrôler', { exact: true }).first(),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Valider', exact: true }).click();
 
   await expectVisibleToast(
     page,
-    'Contribution approuvée',
+    'Produit validé',
   );
 
+  const closeGlobalProductDrawer = page.getByRole('button', {
+    name: 'Fermer',
+    exact: true,
+  });
+  await closeGlobalProductDrawer.click();
+  await expect(closeGlobalProductDrawer).toBeHidden();
   await expect(contributionRow).toBeHidden();
 
   await page.getByRole('tab', { name: 'Historique' }).click();
