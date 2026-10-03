@@ -86,10 +86,13 @@ INDICATIVE_GLOBAL
 
 ## 5. Corpus initial
 
-Le corpus initial couvre les Références Produit du bootstrap actif `m002-reference-v6`.
+Le corpus actif couvre les Références Produit du bootstrap `m002-reference-v7`.
 
 Règles :
 
+- dataset actif : `m003-global-indicative-prices.v2.json` ;
+- 368 Prix repères pour 368 Références Produit v7 ;
+- conservation historique de `m003-global-indicative-prices.v1.json` pour le corpus v6 ;
 - valeurs explicitement fictives / indicatives ;
 - valeurs cohérentes avec l'unité de référence de chaque `ProductVariant` ;
 - devise V1 = EUR ;
@@ -179,7 +182,7 @@ La migration doit :
 1. rendre `IndicativePrice.workspace` nullable pour la portée globale ;
 2. préserver tous les Prix indicatifs Workspace et Dossier existants ;
 3. conserver les indexes d'unicité compatibles avec les trois portées ;
-4. installer le corpus global initial de façon idempotente ;
+4. installer le corpus global actif de façon idempotente ;
 5. ne jamais écraser une valeur globale déjà maintenue ;
 6. rester compatible replica set / transactions.
 
