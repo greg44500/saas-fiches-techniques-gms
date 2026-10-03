@@ -11,7 +11,7 @@ import {
 } from '../../modules/productCatalog/productCatalog.normalization.js';
 import {
     loadLegacyReferenceDataset,
-    loadProfessionalReferenceDataset,
+    loadV7ReferenceDataset,
     m002ReferenceDatasetSchema,
     seedM002Reference,
 } from '../../seeds/seedM002Reference.js';
@@ -34,7 +34,7 @@ describe('M-002 professional reference corpus v7', () => {
     it('conserve intégralement le corpus v6 et ajoute le référentiel professionnel', async () => {
         const [legacy, candidate] = await Promise.all([
             loadLegacyReferenceDataset(),
-            loadProfessionalReferenceDataset(),
+            loadV7ReferenceDataset(),
         ]);
 
         const parsed =
@@ -64,7 +64,7 @@ describe('M-002 professional reference corpus v7', () => {
         });
         const [legacy, candidate] = await Promise.all([
             loadLegacyReferenceDataset(),
-            loadProfessionalReferenceDataset(),
+            loadV7ReferenceDataset(),
         ]);
 
         const v6 = await seedM002Reference({
@@ -107,7 +107,7 @@ describe('M-002 professional reference corpus v7', () => {
     it('couvre les trois domaines professionnels attendus', async () => {
         const dataset =
             m002ReferenceDatasetSchema.parse(
-                await loadProfessionalReferenceDataset(),
+                await loadV7ReferenceDataset(),
             );
 
         const categories = new Map(
@@ -151,7 +151,7 @@ describe('M-002 professional reference corpus v7', () => {
     it('utilise les racines Produit pour regrouper les Références techniquement distinctes', async () => {
         const dataset =
             m002ReferenceDatasetSchema.parse(
-                await loadProfessionalReferenceDataset(),
+                await loadV7ReferenceDataset(),
             );
 
         const productByName = new Map(
@@ -184,7 +184,7 @@ describe('M-002 professional reference corpus v7', () => {
     it('reste non commercial et sans doublon de Référence normalisée', async () => {
         const dataset =
             m002ReferenceDatasetSchema.parse(
-                await loadProfessionalReferenceDataset(),
+                await loadV7ReferenceDataset(),
             );
         const names = referenceNames(dataset);
         const normalized = names.map(normalizeProductText);
@@ -207,7 +207,7 @@ describe('M-002 professional reference corpus v7', () => {
     it('trace les sources professionnelles sans les transformer en marques Produit', async () => {
         const dataset =
             m002ReferenceDatasetSchema.parse(
-                await loadProfessionalReferenceDataset(),
+                await loadV7ReferenceDataset(),
             );
 
         const professionalSources = dataset.sources.filter(
