@@ -6,6 +6,7 @@ import {
 } from 'react';
 import {
   Euro,
+  Minus,
   PackagePlus,
   Plus,
   Star,
@@ -17,6 +18,11 @@ import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   Tabs,
   TabsContent,
@@ -73,18 +79,35 @@ function FavoriteToggleIcon({
   onClick,
 }) {
   const Icon = favorite ? FilledStarIcon : Star;
+  const HoverIcon = favorite ? Minus : Plus;
+  const tooltipLabel = favorite
+    ? 'Retirer des favoris'
+    : 'Ajouter aux favoris';
 
   return (
-    <button
-      aria-label={label}
-      className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-      disabled={disabled}
-      onClick={onClick}
-      title={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-      type="button"
-    >
-      <Icon aria-hidden="true" className="size-4" />
-    </button>
+    <Tooltip>
+      <TooltipTrigger
+        render={(
+          <button
+            aria-label={label}
+            className="group relative inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            disabled={disabled}
+            onClick={onClick}
+            type="button"
+          />
+        )}
+      >
+        <Icon aria-hidden="true" className="size-4" />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-2.5 items-center justify-center rounded-full bg-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          data-favorite-hover-icon={favorite ? 'remove' : 'add'}
+        >
+          <HoverIcon className="size-2.5" strokeWidth={3} />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{tooltipLabel}</TooltipContent>
+    </Tooltip>
   );
 }
 
