@@ -498,7 +498,8 @@ suivants :
 - Favori dans l'onglet Références représenté par une étoile compacte à côté
   du nom, sans augmentation de hauteur ;
 - étoile vide = non favori ; étoile pleine = favori ;
-- survol/focus : `+` pour ajouter, `−` pour retirer ;
+- ajouter/retirer un favori depuis `Références` ne change jamais automatiquement d'onglet ; le compteur `Favoris (n)` se met à jour sans interrompre la sélection successive ;
+- survol/focus : l'étoile vide se remplit pour ajouter et l'étoile pleine se vide pour retirer ;
 - tooltip visuel conservé ;
 - dans l'onglet Favoris, le bouton étoile encadré reste aligné avec les autres
   actions.
