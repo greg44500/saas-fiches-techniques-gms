@@ -256,3 +256,149 @@ Workspace crée une contribution
 - nouvelle permission ;
 - nouvelle collection de gouvernance ;
 - modification des invariants M-002.
+
+
+## 12. UX de contrôle ciblé — décision validée le 2026-10-03
+
+Le gestionnaire métier ne doit pas manipuler le concept technique de
+« Contribution ». Il contrôle des données métier du référentiel.
+
+La file `À contrôler` présente donc :
+
+```text
+Type
+→ Produit
+→ Référence
+→ Dimension · <type>
+
+Donnée à valider
+→ valeur exacte créée
+
+Contexte
+→ Produit parent lorsque nécessaire
+
+Rapprochement
+→ aucun
+→ ou candidat(s) proche(s) déjà détecté(s)
+
+Action
+→ Examiner
+```
+
+L'origine Workspace, l'auteur et les identifiants techniques restent
+disponibles pour l'audit backend mais ne sont plus affichés dans la file
+principale.
+
+### 12.1 Références Produit créées depuis un Workspace
+
+Une nouvelle Référence Produit créée sous un Produit global existant devient
+désormais une identité `PROVISIONAL` du Workspace d'origine et génère une
+demande de contrôle de type `VARIANT`.
+
+Elle reste immédiatement exploitable dans le Workspace d'origine, mais n'est
+pas publiée aux autres Workspaces avant validation globale.
+
+Le moteur de rapprochement utilisé à la création Workspace est réutilisé pour
+la gouvernance Platform :
+
+```text
+exact
+→ réutiliser l'existant
+
+proximité lexicale / Levenshtein
+→ proposer les candidats
+→ l'utilisateur peut confirmer une création distincte
+
+création confirmée
+→ Référence PROVISIONAL
+→ candidat(s) conservé(s) dans la demande de contrôle
+
+gestionnaire Platform
+→ corriger
+→ valider comme nouvelle Référence
+OU
+→ fusionner avec une Référence existante proche
+```
+
+Aucune proximité lexicale ne provoque de fusion automatique.
+
+### 12.2 Drawer contextualisé
+
+`Examiner` ouvre directement le drawer sur l'objet qui demande une décision :
+
+```text
+Produit
+→ onglet Produit
+
+Référence
+→ onglet Références
+→ filtre À contrôler
+→ focus sur la Référence concernée
+
+Dimension
+→ onglet Dimensions
+→ filtre À contrôler
+→ focus sur la Dimension concernée
+```
+
+Pour les Références, le drawer expose :
+
+```text
+Références (N)   À contrôler (M)
+
+[Toutes] [À contrôler]
+```
+
+Une Référence `PROVISIONAL` porte le badge warning `À contrôler`.
+Une Référence `APPROVED` porte le badge positif `Validée` dans son détail.
+
+Même principe pour les Dimensions : `À contrôler` avant revue puis
+`Validée` après revue lorsque la valeur reste affichée.
+
+### 12.3 Actions de décision
+
+La table `À contrôler` ne prend plus de décision hors contexte. Son action
+principale est `Examiner`.
+
+Dans le drawer :
+
+```text
+Modifier
+→ corriger l'orthographe ou la donnée métier
+→ ne remplace pas l'acte explicite de validation d'une Contribution
+
+Valider
+→ approuver la donnée
+
+Fusionner avec <candidat>
+→ résoudre explicitement un rapprochement
+
+Refuser
+→ action secondaire lorsque la donnée ne doit pas rejoindre le référentiel
+```
+
+Après succès :
+
+- toast explicite `Produit/Référence/Dimension validé(e)` ;
+- compteur `À contrôler` décrémenté ;
+- disparition de la vue filtrée `À contrôler` ;
+- donnée toujours accessible dans la vue complète ;
+- décision visible dans l'Historique.
+
+### 12.4 Données orphelines
+
+Une `ReferenceContribution PENDING_REVIEW` dont la cible provisoire n'existe
+plus ou n'est plus `PROVISIONAL` ne doit pas être présentée comme une action
+valide au gestionnaire.
+
+Le read model de la file doit exclure ces demandes incohérentes. Elles restent
+traçables en base pour diagnostic/audit mais ne peuvent produire un bouton de
+décision qui échoue au clic.
+
+### 12.5 Alias
+
+Les alias/synonymes restent des données techniques utiles à la recherche,
+normalisation et déduplication.
+
+Ils ne sont plus affichés dans le drawer Produit ou dans la file de contrôle,
+sauf futur besoin métier explicitement validé.
