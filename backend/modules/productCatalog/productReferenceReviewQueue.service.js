@@ -140,6 +140,7 @@ const contributionStages = ({
     {
         $project: {
             sourceId: '$_id',
+            targetId: '$provisionalEntityId',
             type: { $literal: PRODUCT_REVIEW_QUEUE_TYPE.CONTRIBUTION },
             dataType: {
                 $switch: {
@@ -278,6 +279,7 @@ const dimensionStages = ({
         {
             $project: {
                 sourceId: '$_id',
+                targetId: '$_id',
                 type: {
                     $literal:
                         PRODUCT_REVIEW_QUEUE_TYPE.DIMENSION_REVIEW,
@@ -407,6 +409,7 @@ const enrichReviewQueueItems = async (items) => {
         return {
             id: item.type + ':' + item.sourceId.toString(),
             sourceId: item.sourceId.toString(),
+            targetId: item.targetId?.toString() ?? null,
             type: item.type,
             dataType: item.dataType,
             value: item.value,
