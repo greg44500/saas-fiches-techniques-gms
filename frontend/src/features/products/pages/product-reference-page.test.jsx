@@ -331,6 +331,32 @@ describe('ProductReferencePage', () => {
       .not.toBeInTheDocument();
   });
 
+  it('conserve la recherche libre par soumission du formulaire', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    const search = screen.getByRole('combobox', {
+      name: 'Rechercher un Produit global',
+    });
+
+    await user.type(search, 'abricot');
+    await user.click(screen.getByRole('button', {
+      name: 'Rechercher',
+    }));
+
+    await waitFor(() => {
+      expect(mocks.productsQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          q: 'abricot',
+          status: 'ACTIVE',
+          page: 1,
+        }),
+        { skip: false },
+      );
+    });
+  });
+
   it('applique immédiatement une suggestion prédictive au tableau', async () => {
     const user = userEvent.setup();
 
