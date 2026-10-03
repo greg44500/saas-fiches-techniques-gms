@@ -50,6 +50,7 @@ vi.mock('@/components/shared/entity-details-drawer', () => ({
 vi.mock('@/components/shared/action-icon-button', () => ({
   ActionIconButton: ({
     disabled,
+    Icon,
     label,
     onClick,
   }) => (
@@ -58,7 +59,9 @@ vi.mock('@/components/shared/action-icon-button', () => ({
       disabled={disabled}
       onClick={onClick}
       type="button"
-    />
+    >
+      <Icon aria-hidden="true" />
+    </button>
   ),
 }));
 
@@ -275,6 +278,26 @@ describe('ProductDetailsDrawer', () => {
     expect(approvedRow).not.toBeNull();
     expect(within(approvedRow).queryByText('À contrôler'))
       .not.toBeInTheDocument();
+  });
+
+  it('utilise une étoile vide pour ajouter et pleine pour retirer des favoris', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('tab', {
+      name: 'Références (2)',
+    }));
+
+    const addButton = screen.getByRole('button', {
+      name: 'Ajouter Purée d’abricots aux favoris',
+    });
+    const removeButton = screen.getByRole('button', {
+      name: 'Retirer Abricot des favoris',
+    });
+
+    expect(addButton.querySelector('svg')).toHaveAttribute('fill', 'none');
+    expect(removeButton.querySelector('svg'))
+      .toHaveAttribute('fill', 'currentColor');
   });
 
   it('affiche les compteurs et réserve Favoris aux Références actives du Workspace', async () => {
