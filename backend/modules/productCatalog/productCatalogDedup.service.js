@@ -13,8 +13,14 @@ import {
     isNearDuplicateKey,
     productSearchValueContainedInQuery,
 } from './productCatalog.normalization.js';
-import { PRODUCT_STATUS } from './productCatalog.registry.js';
-import { serializeProduct } from './productCatalog.serializer.js';
+import {
+    PRODUCT_GOVERNANCE_STATUS,
+    PRODUCT_STATUS,
+} from './productCatalog.registry.js';
+import {
+    serializeProduct,
+    serializeVariant,
+} from './productCatalog.serializer.js';
 
 const queryWithSession = (query, session) => (
     session ? query.session(session) : query
@@ -177,6 +183,136 @@ const findProductDuplicateCandidates = async ({
     };
 };
 
+const serializeVariantCandidate = (variant) => ({
+    ...serializeVariant(variant),
+    rootName: variant.canonicalProduct?.name ?? null,
+    source: 'PRODUCT_VARIANT',
+});
+
+const findVariantDuplicateCandidates = async ({
+    name,
+    canonicalProductId,
+    workspaceId = null,
+    excludeVariantId = null,
+    session = null,
+}) => {
+    const normalizedName = buildSearchKeys(name, [])[0] ?? '';
+    const baseFilter = {
+        identityActive: true,
+        status: mongoose.trusted({
+            $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
+        }),
+        canonicalProduct: canonicalProductId,
+        ...(excludeVariantId
+            ? {
+                _id: mongoose.trusted({
+                    $ne: new mongoose.Types.ObjectId(
+                        excludeVariantId.toString(),
+                    ),
+                }),
+            }
+            : {}),
+        ...buildDuplicateGovernanceVisibilityFilter(workspaceId),
+    };
+
+    let exactQuery = ProductVariant.findOne({
+        ...baseFilter,
+        normalizedName,
+    })
+        .populate('canonicalProduct', 'name')
+        .populate('variety')
+        .populate('characteristics')
+        .lean();
+    exactQuery = queryWithSession(exactQuery, session);
+    const exactMatch = await exactQuery;
+
+    const grams = buildSearchGrams([normalizedName]);
+    let candidates = [];
+
+    if (!exactMatch && grams.length > 0) {
+        let query = ProductVariant.find({
+            ...baseFilter,
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
+            searchGrams: mongoose.trusted({ $in: grams }),
+        })
+            .populate('canonicalProduct', 'name')
+            .populate('variety')
+            .populate('characteristics')
+            .limit(50)
+            .lean();
+        query = queryWithSession(query, session);
+
+        const matches = await query;
+        candidates = matches
+            .map((variant) => ({
+                variant,
+                score: scoreNearCandidate(
+                    [normalizedName],
+                    [variant.normalizedName],
+                ),
+            }))
+            .filter(({ score }) => Number.isFinite(score))
+            .sort((left, right) => (
+                left.score - right.score
+                || left.variant.name.localeCompare(
+                    right.variant.name,
+                    'fr',
+                )
+            ))
+            .slice(0, 5)
+            .map(({ variant }) => serializeVariantCandidate(variant));
+    }
+
+    return {
+        exactMatch: exactMatch
+            ? serializeVariantCandidate(exactMatch)
+            : null,
+        candidates,
+    };
+};
+
+const assertVariantCreationReviewed = async ({
+    name,
+    canonicalProductId,
+    workspaceId,
+    reviewedCandidateIds = [],
+    session = null,
+}) => {
+    const duplicateCheck = await findVariantDuplicateCandidates({
+        name,
+        canonicalProductId,
+        workspaceId,
+        session,
+    });
+
+    if (duplicateCheck.exactMatch) {
+        const error = new AppError(
+            'Cette Référence Produit existe déjà.',
+            409,
+        );
+        error.code = 'PRODUCT_VARIANT_EXACT_DUPLICATE';
+        error.duplicateCheck = duplicateCheck;
+        throw error;
+    }
+
+    const reviewedSet = new Set(reviewedCandidateIds.map(String));
+    const missingCandidate = duplicateCheck.candidates.find(
+        ({ id }) => !reviewedSet.has(id),
+    );
+
+    if (missingCandidate) {
+        const error = new AppError(
+            'Des Références proches doivent être examinées avant création.',
+            409,
+        );
+        error.code = 'PRODUCT_VARIANT_DUPLICATE_REVIEW_REQUIRED';
+        error.duplicateCheck = duplicateCheck;
+        throw error;
+    }
+
+    return duplicateCheck;
+};
+
 const assertProductCreationReviewed = async ({
     name,
     aliases = [],
@@ -220,6 +356,8 @@ const assertProductCreationReviewed = async ({
 
 export {
     assertProductCreationReviewed,
+    assertVariantCreationReviewed,
     findProductDuplicateCandidates,
+    findVariantDuplicateCandidates,
     productVisibleInReference,
 };
