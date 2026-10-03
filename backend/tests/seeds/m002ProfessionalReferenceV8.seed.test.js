@@ -31,7 +31,7 @@ const referenceNames = (dataset) => (
 );
 
 describe('M-002 professional reference corpus v8', () => {
-    it('versionne un enrichissement de 128 nouvelles Références avec 6 retraits explicites', async () => {
+    it('versionne un enrichissement de 126 nouvelles Références avec 6 retraits explicites', async () => {
         const [v7, candidate] = await Promise.all([
             loadV7ReferenceDataset(),
             loadDefaultDataset(),
@@ -43,7 +43,7 @@ describe('M-002 professional reference corpus v8', () => {
         expect(parsed.version).toBe('m002-reference-v8');
         expect(parsed.categories).toHaveLength(16);
         expect(parsed.products).toHaveLength(381);
-        expect(referenceNames(parsed)).toHaveLength(490);
+        expect(referenceNames(parsed)).toHaveLength(488);
 
         const v7References = new Set(referenceNames(v7));
         const v8References = new Set(referenceNames(parsed));
@@ -55,7 +55,7 @@ describe('M-002 professional reference corpus v8', () => {
             (name) => !v8References.has(name),
         );
 
-        expect(additions).toHaveLength(128);
+        expect(additions).toHaveLength(126);
         expect(removals).toEqual(expect.arrayContaining([
             'Fond de tarte sucré cru surgelé',
             'Fond de tarte sucré cuit',
@@ -158,27 +158,28 @@ describe('M-002 professional reference corpus v8', () => {
         const sweet = productByName.get('Fond de tarte sucré');
         expect(sweet.variants.map(({ name }) => name))
             .toEqual(expect.arrayContaining([
-                'Fond de tartelette sucré cru surgelé Ø 8,5 cm',
                 'Fond de tarte sucré cru surgelé Ø 10 cm',
-                'Fond de tarte sucré cru surgelé Ø 22 cm',
+                'Fond de tarte sucré cru surgelé Ø 24,7 cm',
+                'Fond de tarte sucré cru surgelé Ø 27 cm',
                 'Fond de tartelette sucré cru surgelé carré 7 × 7 cm',
-                'Fond de tartelette sucré prêt à garnir Ø 8,5 cm',
+                'Fond de tartelette sucré cru surgelé format stick',
+                'Fond de tartelette sucré prêt à garnir Ø 10,3 cm',
             ]));
         expect(sweet.characteristics.map(({ kind, name }) => ({
             kind,
             name,
         }))).toEqual(expect.arrayContaining([
-            { kind: 'SIZE_FORMAT', name: 'Ø 8,5 cm' },
             { kind: 'SIZE_FORMAT', name: 'Ø 10 cm' },
-            { kind: 'SIZE_FORMAT', name: 'Ø 22 cm' },
+            { kind: 'SIZE_FORMAT', name: 'Ø 24,7 cm' },
+            { kind: 'SIZE_FORMAT', name: 'Ø 27 cm' },
             { kind: 'SIZE_FORMAT', name: '7 × 7 cm' },
         ]));
 
         const savory = productByName.get('Fond de tarte salé');
         expect(savory.variants.map(({ name }) => name))
             .toEqual(expect.arrayContaining([
-                'Mini tartelette salée prête à garnir Ø 4,2 cm',
-                'Fond de tarte brisé salé cru surgelé Ø 12 cm',
+                'Fond de tartelette brisé salé cru surgelé Ø 10 cm',
+                'Fond de tartelette brisé salé cru surgelé Ø 12 cm',
                 'Fond de tarte brisé salé cru surgelé Ø 27 cm',
             ]));
     });
@@ -223,7 +224,7 @@ describe('M-002 professional reference corpus v8', () => {
         expect(first).toMatchObject({
             version: 'm002-reference-v8',
             productCount: 381,
-            variantCount: 490,
+            variantCount: 488,
             skipped: false,
         });
         expect(replay.skipped).toBe(true);
@@ -235,6 +236,6 @@ describe('M-002 professional reference corpus v8', () => {
         expect(await ProductVariant.countDocuments({
             status: 'ACTIVE',
             identityActive: true,
-        })).toBe(490);
+        })).toBe(488);
     });
 });
