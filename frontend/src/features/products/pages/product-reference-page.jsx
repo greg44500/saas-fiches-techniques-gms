@@ -451,11 +451,6 @@ function ProductReferencePage({ canManage }) {
     },
   ];
 
-  const contributionTypeLabel = (type) => (
-    (metadata?.productContributionTypes ?? [])
-      .find(({ value }) => value === type)?.label
-    ?? type
-  );
   const contributionStatusLabel = (status) => (
     (metadata?.productContributionStatuses ?? [])
       .find(({ value }) => value === status)?.label
