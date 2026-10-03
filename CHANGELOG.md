@@ -8,8 +8,11 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Added
 
+- ajout du corpus professionnel M-002 `m002-reference-v7` : 16 catégories, 320 Produits et 368 Références Produit, avec +104 Références pâtisserie / crémerie / snacking par rapport au v6 ;
+- ajout du corpus M-003 `m003-global-indicative-prices.v2` aligné sur les 368 Références v7, avec valeurs explicitement fictives / indicatives et sans Fournisseur fictif ;
+- ajout de la réconciliation bootstrap M-002 v1-v6 → v7 et de ses tests dédiés ;
 - ajout du **Prix repère global** M-003 comme dernier fallback de valorisation des Références Produit, sans Fournisseur fictif ;
-- ajout d'un corpus initial versionné de 264 prix fictifs/indicatifs alignés sur `m002-reference-v6`, installé de façon idempotente sans écraser les corrections gestionnaire ;
+- conservation historique du corpus de 264 prix v1 lié à `m002-reference-v6`, remplacé comme défaut par le corpus v2 de 368 prix lié à `m002-reference-v7` ;
 - maintenance Application Global des Prix repères depuis le Référentiel Produits ;
 - parcours E2E sans fournisseur validant la valorisation par Prix repère global puis la priorité d'un Prix indicatif Workspace ;
 
@@ -27,6 +30,8 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Changed
 
+- bootstrap M-002 par défaut basculé de `m002-reference-v6` vers `m002-reference-v7` sans changer le contrat `CanonicalProduct / ProductVariant` ;
+- bootstrap Prix repère global par défaut basculé de `m003-global-indicative-prices.v1.json` vers `v2` ;
 - extension de `IndicativePrice` aux portées GLOBAL / WORKSPACE / DOSSIER tout en conservant le même modèle et l'historisation par remplacement ;
 - ordre du Prix applicable complété par `INDICATIVE_GLOBAL` après les Prix indicatifs Dossier et Workspace ;
 - tableau et détail Platform du Référentiel Produits enrichis avec le Prix repère global et sa maintenance ;
