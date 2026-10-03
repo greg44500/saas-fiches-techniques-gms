@@ -20,7 +20,6 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - signalement chiffré des Produits ayant des Dimensions Workspace à vérifier et ouverture directe du drawer filtré ;
 - suppression fonctionnelle contrôlée d'une Dimension erronée lorsqu'aucune Référence Produit ne l'utilise ;
 - file Platform `À contrôler` agrégeant les demandes de gouvernance et les Dimensions à revoir, avec compteur, pagination serveur, classification métier Produit / Référence / Dimension et ouverture sur la cible exacte ;
-- historique Platform distinct des éléments encore à traiter, avec décision Approuvée / Fusionnée / Refusée et présentation métier sans origine Workspace dans la surface principale ;
 - indexes M-002 dédiés à la revue globale des Variétés/Caractéristiques et au rapprochement des Dimensions provisoires avec leur Contribution ;
 - compteurs dynamiques des onglets Référentiel, À contrôler et Catégories.
 - gouvernance des nouvelles Références Produit Workspace : détection des doublons exacts, rapprochements lexicaux non bloquants, création `PROVISIONAL`, contrôle Platform ciblé et fusion explicite ;
@@ -40,7 +39,7 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Changed
 
-- gouvernance Produit Platform réorganisée en `Référentiel | À contrôler | Historique | Catégories` sans nouveau modèle de gouvernance ni nouvelle permission ;
+- gouvernance Produit Platform simplifiée en `Référentiel | À contrôler | Catégories` ; les décisions passées restent conservées uniquement dans la traçabilité backend/audit ;
 - signalement in-app des interventions Produit via le compteur `À contrôler` ; aucune notification persistée parallèle n'est créée dans le produit faute de primitive Core générique validée ;
 - bootstrap M-002 par défaut basculé de `m002-reference-v6` vers `m002-reference-v7` sans changer le contrat `CanonicalProduct / ProductVariant` ;
 - bootstrap Prix repère global par défaut basculé de `m003-global-indicative-prices.v1.json` vers `v2` ;
@@ -54,6 +53,8 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - aide métier Platform alignée sur cette navigation avec une catégorie unique « Gestion des référentiels », sans modifier le moteur d’aide Core ni les catégories Workspace ;
 
 - drawer Platform Produit densifié : recherche et enrichissement alignés, compteurs, filtres À contrôler/Actives/Archivées/Toutes, filtre Références À contrôler et actions contextualisées par donnée ;
+- drawer Workspace Produit : actions Favoris représentées par une étoile vide pour ajouter et une étoile pleine pour retirer ;
+- file Platform `À contrôler` allégée : suppression du badge `À contrôler` redondant dans chaque ligne ;
 - aides secondaires de création/enrichissement déplacées vers des infobulles contextuelles ;
 
 - intégration du Core post-tag `v1.2.1` jusqu’au commit `054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3`, sans nouvelle version ni déplacement de tag ;
