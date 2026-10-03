@@ -314,7 +314,6 @@ const loadReviewQueueOrigins = async ({ type = null }) => {
                 _id: 1,
             },
         },
-        { $limit: 200 },
     ]);
 
     const ids = rows.map(({ _id }) => _id);
@@ -342,6 +341,7 @@ const loadReviewQueueOrigins = async ({ type = null }) => {
 const listProductReviewQueue = async ({
     type = null,
     workspaceId = null,
+    origins = 'include',
     page = 1,
     limit = 20,
 }) => {
@@ -411,9 +411,11 @@ const listProductReviewQueue = async ({
         dimensionReviewCount: 0,
     };
 
-    const [items, origins] = await Promise.all([
+    const [items, originOptions] = await Promise.all([
         enrichReviewQueueItems(rawItems),
-        loadReviewQueueOrigins({ type }),
+        origins === 'omit'
+            ? Promise.resolve([])
+            : loadReviewQueueOrigins({ type }),
     ]);
 
     return {
@@ -423,7 +425,7 @@ const listProductReviewQueue = async ({
             contributionCount: summary.contributionCount ?? 0,
             dimensionReviewCount: summary.dimensionReviewCount ?? 0,
         },
-        origins,
+        origins: originOptions,
         pagination: {
             page,
             limit,
