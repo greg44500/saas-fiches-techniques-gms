@@ -365,7 +365,7 @@ describe('ProductReferenceDetailsDrawer', () => {
       .toBeInTheDocument();
     expect(screen.getByText('Mis à jour le 03/10/2026'))
       .toBeInTheDocument();
-    expect(screen.queryByText(/Référentiel de démonstration/)
+    expect(screen.queryByText(/Référentiel de démonstration/))
       .not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
