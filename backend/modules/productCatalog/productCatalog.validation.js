@@ -275,9 +275,11 @@ const createReferenceContributionBodySchema = z.strictObject({
 });
 
 const referenceContributionListQuerySchema = z.strictObject({
-    status: z.enum(Object.values(PRODUCT_CONTRIBUTION_STATUS))
+    status: z.enum(Object.values(PRODUCT_CONTRIBUTION_STATUS)).optional(),
+    reviewedOnly: z.enum(['true', 'false'])
         .optional()
-        .default(PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW),
+        .default('false')
+        .transform((value) => value === 'true'),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
 });
