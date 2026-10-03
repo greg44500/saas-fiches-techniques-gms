@@ -1264,7 +1264,7 @@ const findApplicableSupplierTariff = async ({
 
 const serializeIndicativePrice = (price) => ({
     id: price._id.toString(),
-    workspaceId: price.workspace.toString(),
+    workspaceId: price.workspace?.toString() ?? null,
     dossierId: price.dossier?.toString() ?? null,
     productVariant:
         price.productVariant?._id
@@ -1282,10 +1282,10 @@ const serializeIndicativePrice = (price) => ({
 });
 
 const indicativeScopeFilter = ({
-    workspaceId,
+    workspaceId = null,
     dossierId = null,
 }) => ({
-    workspace: workspaceId,
+    workspace: workspaceId ?? null,
     dossier: dossierId ?? null,
 });
 
@@ -1301,7 +1301,7 @@ const populateIndicativeProductVariant = (query) =>
     });
 
 const listIndicativePrices = async ({
-    workspaceId,
+    workspaceId = null,
     dossierId = null,
     productId = null,
     productVariantId = null,
@@ -1352,7 +1352,7 @@ const listIndicativePrices = async ({
 };
 
 const findActiveIndicativePrice = async ({
-    workspaceId,
+    workspaceId = null,
     dossierId = null,
     productVariantId,
     session = null,
@@ -1376,20 +1376,18 @@ const findActiveIndicativePrice = async ({
 };
 
 const buildIndicativePriceLockKey = ({
-    workspaceId,
+    workspaceId = null,
     dossierId = null,
     productVariantId,
 }) => [
     'indicative-price',
-    workspaceId.toString(),
-    dossierId
-        ? 'dossier:' + dossierId.toString()
-        : 'workspace',
+    workspaceId ? 'workspace:' + workspaceId.toString() : 'global',
+    dossierId ? 'dossier:' + dossierId.toString() : 'no-dossier',
     productVariantId.toString(),
 ].join(':');
 
 const setIndicativePrice = async ({
-    workspaceId,
+    workspaceId = null,
     dossierId = null,
     productVariantId,
     actorId,
@@ -1481,7 +1479,9 @@ const setIndicativePrice = async ({
             ], { session });
 
         await createSupplierCatalogEvent({
-            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            scope: workspaceId
+                ? SUPPLIER_SCOPE.WORKSPACE_PRIVATE
+                : SUPPLIER_SCOPE.GLOBAL_SHARED,
             workspaceId,
             dossierId: dossierId ?? null,
             actorId,
@@ -1498,7 +1498,9 @@ const setIndicativePrice = async ({
                 scope:
                     dossierId
                         ? 'DOSSIER'
-                        : 'WORKSPACE',
+                        : workspaceId
+                            ? 'WORKSPACE'
+                            : 'GLOBAL',
             },
             session,
         });
@@ -1518,7 +1520,7 @@ const setIndicativePrice = async ({
 );
 
 const archiveIndicativePrice = async ({
-    workspaceId,
+    workspaceId = null,
     dossierId = null,
     productVariantId,
     actorId,
@@ -1567,7 +1569,9 @@ const archiveIndicativePrice = async ({
         await price.save({ session });
 
         await createSupplierCatalogEvent({
-            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            scope: workspaceId
+                ? SUPPLIER_SCOPE.WORKSPACE_PRIVATE
+                : SUPPLIER_SCOPE.GLOBAL_SHARED,
             workspaceId,
             dossierId: dossierId ?? null,
             actorId,
@@ -1584,7 +1588,9 @@ const archiveIndicativePrice = async ({
                 scope:
                     dossierId
                         ? 'DOSSIER'
-                        : 'WORKSPACE',
+                        : workspaceId
+                            ? 'WORKSPACE'
+                            : 'GLOBAL',
             },
             session,
         });
@@ -1969,6 +1975,37 @@ const resolveApplicablePrice = async ({
     }
 
     alerts.push('NO_WORKSPACE_INDICATIVE_PRICE');
+
+    attempted.push('INDICATIVE_GLOBAL');
+    const globalIndicative =
+        await findActiveIndicativePrice({
+            workspaceId: null,
+            dossierId: null,
+            productVariantId: productVariant._id,
+            session,
+        });
+
+    if (globalIndicative) {
+        return {
+            article: null,
+            productVariant:
+                serializeProductVariantSummary(productVariant),
+            policy,
+            requestedMode: policy.mode,
+            resolvedSource: 'INDICATIVE_GLOBAL',
+            fallbackApplied: true,
+            fallbackReason:
+                alerts[0] ?? 'NO_COMMERCIAL_PRICE',
+            price: serializeApplicableSource({
+                source: 'INDICATIVE_GLOBAL',
+                price: globalIndicative,
+            }),
+            alerts,
+            atDate,
+        };
+    }
+
+    alerts.push('NO_GLOBAL_INDICATIVE_PRICE');
 
     if (!article) {
         throw new AppError(

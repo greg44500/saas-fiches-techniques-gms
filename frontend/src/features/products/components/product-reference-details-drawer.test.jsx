@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   updateCharacteristicStatus: vi.fn(),
   reviewDimension: vi.fn(),
   deleteDimension: vi.fn(),
+  globalPrices: vi.fn(),
 }));
 
 vi.mock('@/components/shared/toast-provider', () => ({
@@ -76,6 +77,20 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
     mocks.updateCharacteristicStatus,
     { isLoading: false },
   ],
+}));
+
+vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useListGlobalIndicativePricesQuery: mocks.globalPrices,
+}));
+
+vi.mock('@/features/suppliers/components/global-indicative-price-dialog', () => ({
+  GlobalIndicativePriceDialog: ({ open, variant }) => (
+    open ? (
+      <div>
+        Prix repère ouvert · {variant?.name}
+      </div>
+    ) : null
+  ),
 }));
 
 vi.mock('@/features/products/components/product-dimension-contribution-dialog', () => ({
@@ -168,6 +183,23 @@ describe('ProductReferenceDetailsDrawer', () => {
       ],
       events: [],
     }));
+
+    mocks.globalPrices.mockReturnValue(queryResult([{
+      id: 'global-price-1',
+      workspaceId: null,
+      dossierId: null,
+      productVariant: {
+        id: 'variant-1',
+        name: 'Abricot frais',
+        referenceUnit: 'KG',
+      },
+      sourceAmount: '3.25',
+      normalizedAmount: '3.25',
+      normalizedUnit: 'KG',
+      currency: 'EUR',
+      source: 'Référentiel de démonstration',
+      status: 'ACTIVE',
+    }]));
 
     mocks.dimensions.mockReturnValue(queryResult({
       varieties: [
@@ -320,6 +352,41 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(screen.queryByText('Bergeron')).not.toBeInTheDocument();
     expect(screen.getByText('1 résultat sur 3 dimensions'))
       .toBeInTheDocument();
+  });
+
+  it('affiche et ouvre la maintenance du Prix repère global par Référence Produit', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
+
+    expect(screen.getByText(/Prix repère global : 3,250 \/ KG/))
+      .toBeInTheDocument();
+    expect(screen.getByText('Référentiel de démonstration'))
+      .toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Modifier le Prix repère global de Abricot frais',
+    }));
+
+    expect(screen.getByText('Prix repère ouvert · Abricot frais'))
+      .toBeInTheDocument();
+  });
+
+  it('masque la maintenance du Prix repère sans droit de gestion', async () => {
+    const user = userEvent.setup();
+    renderDrawer({ canManage: false });
+
+    await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
+
+    expect(screen.getByText(/Prix repère global : 3,250 \/ KG/))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Modifier le Prix repère global de Abricot frais',
+    })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Ajouter le Prix repère global de Abricot archivé',
+    })).not.toBeInTheDocument();
   });
 
   it('expose les actions du drawer sous forme de boutons icônes accessibles', async () => {

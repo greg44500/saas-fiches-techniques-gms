@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors exports clôturés ; BLOC B Platform / Gestion des référentiels en cours  
-**Dernière mise à jour :** 2026-10-01
+**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; Bloc A Prix repère global M-003 en implémentation  
+**Dernière mise à jour :** 2026-10-02
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -72,7 +72,7 @@ Décisions finales :
 
 ### 2.2 Référentiel Produit
 
-**État : CLÔTURÉ FONCTIONNELLEMENT — contrat et UX métier validés le 2026-09-25 ; intégration protégée par la Core Gate de la PR finale**
+**État : CONTRAT EXISTANT CLÔTURÉ — audit/cadrage des Produits globaux rouvert le 2026-10-02 avant toute nouvelle implémentation**
 
 Contrat canonique :
 
@@ -100,7 +100,7 @@ Décisions finales :
 
 La dépendance générique Core de navigation Platform est résolue par le commit post-tag `6581e573c6a6885790b23fe502bd34d8199ea6ba`. Elle est intégrée sur la branche Core-update dédiée et devient effective sur `main` après PR, merge et Core Gate post-merge du BLOC A.
 
-Décision de clôture du 2026-09-25 : le périmètre fonctionnel M-002 est gelé. Les retouches purement visuelles éventuelles sont non bloquantes et suivies comme dette conditionnelle ; elles ne rouvrent pas M-002. La PR finale reste soumise à la Core Gate canonique avant fusion.
+Décision de clôture du 2026-09-25 : le contrat M-002 reste l'autorité pour l'existant. Le 2026-10-02, un audit/cadrage des **Produits globaux** est ouvert avant le bloc Exports et diffusion afin de confronter ce modèle à l'usage cible. Cet audit ne constitue ni une réouverture automatique de M-002, ni une implémentation. Aucun invariant, modèle, endpoint ou écran Produit ne doit être modifié avant validation explicite du nouveau périmètre.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
@@ -176,7 +176,7 @@ Le lot UX M-002 `GMS-UX-002` a été traité et fusionné avant l'ouverture de M
 
 ### 2.4 Fiches techniques
 
-**État : STABILISATION UX/CONTRAT EN COURS — branche `feature/m004-valuation-ux-stabilization`, non fusionnée**
+**État : CLÔTURÉ HORS EXPORTS ET DIFFUSION — stabilisation UX fusionnée et Core Gate post-merge verte le 2026-10-02**
 
 Source canonique :
 
@@ -217,7 +217,7 @@ Décisions fermées :
 - RBAC M-004 validé dans le contrat canonique ;
 - contrôle de concurrence optimiste obligatoire ;
 - détails UX ajustables après QA visuelle sans modifier les invariants fonctionnels ;
-- poste de travail stabilisé autour d'un header compact, groupes Production/Vente, cinq garde-fous économiques et deux drawers mutuellement exclusifs Analyse / Infos dossier ;
+- poste de travail stabilisé autour d'un cockpit/header compact, groupes Production/Vente, six garde-fous économiques (CF HT, CMU HT, CFU HT, Prix retenu TTC, %MR, Écart € vs cible) et deux drawers mutuellement exclusifs Analyse / Infos dossier ;
 - historique déplacé dans Analyse > Historique ; nom/description et commentaire de validation utilisent des dialogues dédiés.
 
 Périmètre produit V1 :
@@ -260,7 +260,18 @@ Clôture technique confirmée le 2026-09-30 :
 - merge : `588612ba987c4a91951d4939231f9f44881c50d8` ;
 - Core Gate post-merge #146 : success.
 
-Les exports et la diffusion restent un bloc V1 séparé et ne sont pas implicitement ouverts par cette clôture.
+Stabilisation finale confirmée le 2026-10-02 :
+
+- PR #34 `fix(m004): finalize technical sheet valuation UX` fusionnée dans `main` ;
+- merge : `0562ff94506b7715fd848b89691c0a001b1cadd7` ;
+- Core Gate PR #177 : success ;
+- Core Gate post-merge #178 : échec isolé dans le bootstrap E2E M-001, avant le lifecycle métier testé ;
+- PR #35 `test(m001): stabilize dossier E2E session bootstrap` fusionnée sans modification des règles métier M-001 ;
+- merge : `ca222ff0a4ba8759ffb35109616456dcb2f51f71` ;
+- Core Gate PR #179 : success ;
+- Core Gate post-merge #180 : success.
+
+Les exports et la diffusion restent un bloc V1 séparé et ne sont pas implicitement ouverts par cette clôture. La priorité suivante est l'audit/cadrage des Produits globaux ; le bloc Exports et diffusion reprend ensuite.
 
 
 ### 2.5 Fiches process
@@ -586,32 +597,40 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le BLOC B Platform / Gestion des référentiels est clôturé. Le lot actif est la **stabilisation M-004 — poste de travail, analyse économique et contexte Dossier** sur `feature/m004-valuation-ux-stabilization`.
+Le BLOC B Platform / Gestion des référentiels est clôturé. M-004 Fiches techniques + valorisation est également clôturé pour son périmètre hors Exports et diffusion après les Core Gates #179 et #180.
+
+Le lot actif est désormais **Bloc A — Référentiel global valorisable / Prix repère global M-003**. Le cadrage est validé et l'implémentation est soumise aux gates avant fusion.
 
 Séquence attendue :
 
 ~~~text
-code + tests adaptés sur la branche
-→ QA visuelle utilisateur
-→ corrections éventuelles dans le même lot
-→ PR unique M-004
-→ Core Gate PR = npm run release:check
+extension IndicativePrice avec portée globale
+→ corpus initial versionné de Prix repères
+→ maintenance par la gouvernance Produit
+→ fallback M-004 après Dossier / Workspace
+→ tests backend / frontend / E2E
+→ Core Gate PR
 → merge si verte
 → Core Gate post-merge
-→ mise à jour de reprise
-→ ouverture seulement ensuite du bloc Exports / diffusion
+→ Bloc B gouvernance Produit unifiée
+→ puis reprise ultérieure du bloc Exports / diffusion M-004
 ~~~
 
-Points de QA prioritaires :
+Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité tant qu'un nouveau périmètre n'a pas été validé.
 
-- densité du header sticky et responsive ;
-- groupes Production / Vente et total portions ;
-- garde-fous CF HT / CMU HT / CFU HT / Prix retenu TTC / %MR ;
-- drawer Analyse : Synthèse, Coûts, Prix & marge, Historique ;
-- drawer Infos dossier : identité et Prix applicable M-003 ;
-- dialogue Modifier la Fiche ;
-- dialogue de validation avec commentaire facultatif ;
-- remplacement Produit et retour visuel discret ;
-- absence de conversion legacy implicite vers Pièce.
+Points à instruire pendant l'audit :
 
-Aucun résultat de tests n'est présumé tant que les gates du lot courant n'ont pas réellement été exécutées.
+- sens métier exact de « Produit global » ;
+- pertinence et visibilité de la séparation `CanonicalProduct / ProductVariant` ;
+- informations visibles et modifiables ;
+- catégories, variantes/états, dimensions et unités ;
+- déduplication et gestion des doublons ;
+- création, contribution, validation, archivage et réactivation ;
+- rôles Workspace et autorité Application Global ;
+- recherche, filtres et administration Platform ;
+- impacts des références et seeds existants ;
+- compatibilité M-003 Fournisseurs / Articles / Prix ;
+- compatibilité M-004 Fiches techniques ;
+- dettes UX Produit déjà documentées dans `docs/DEBT.md`.
+
+Aucune évolution Produit ne doit être codée avant validation de ce cadrage. Le lot ne doit pas être nommé arbitrairement `M-002.1`, nouveau module ou refonte avant que la nature réelle du besoin soit décidée.

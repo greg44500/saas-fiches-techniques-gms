@@ -215,6 +215,7 @@ const buildValidationLines = ({
         const indicativeSource = [
             'INDICATIVE_DOSSIER',
             'INDICATIVE_WORKSPACE',
+            'INDICATIVE_GLOBAL',
         ].includes(source.price.source);
 
         if (

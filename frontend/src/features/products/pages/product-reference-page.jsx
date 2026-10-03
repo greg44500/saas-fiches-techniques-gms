@@ -16,7 +16,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -41,11 +40,20 @@ import { ProductImportDialog } from '@/features/products/components/product-impo
 import { ProductReferenceCategoryDialog } from '@/features/products/components/product-reference-category-dialog';
 import { ProductReferenceDetailsDrawer } from '@/features/products/components/product-reference-details-drawer';
 import {
+  ProductReferenceSearchAutocomplete,
+} from '@/features/products/components/product-reference-search-autocomplete';
+import {
   getApiErrorMessage,
   getCategoryStatusLabel,
   getConservationTypeLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
+import {
+  useListGlobalIndicativePricesQuery,
+} from '@/features/suppliers/api/supplier-api';
+import {
+  formatPrice,
+} from '@/features/suppliers/lib/supplier-presentation';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
 const ALL_REFERENCE_CATEGORIES = '__ALL__';
@@ -83,6 +91,19 @@ function ProductReferencePage({ canManage }) {
     },
     { skip: false },
   );
+  const globalPricesQuery = useListGlobalIndicativePricesQuery({
+    status: 'ACTIVE',
+  });
+  const globalPriceByVariantId = useMemo(
+    () => new Map(
+      (globalPricesQuery.data ?? []).map((price) => [
+        price.productVariant.id,
+        price,
+      ]),
+    ),
+    [globalPricesQuery.data],
+  );
+
   const contributionsQuery = useListProductReferenceContributionsQuery(
     {
       status: contributionStatus,
@@ -146,6 +167,12 @@ function ProductReferencePage({ canManage }) {
     event.preventDefault();
     setPage(1);
     setSearch(searchInput.trim());
+  }
+
+  function selectSearchSuggestion(_result, nextSearch) {
+    setSearchInput(nextSearch);
+    setSearch(nextSearch);
+    setPage(1);
   }
 
   function openProduct(
@@ -325,6 +352,33 @@ function ProductReferencePage({ canManage }) {
       id: 'category',
       header: 'Catégorie',
       cell: (product) => product.category?.name ?? 'Catégorie non renseignée',
+    },
+    {
+      id: 'referencePrice',
+      header: 'Prix repère',
+      cell: (product) => {
+        const activeVariants = (product.variants ?? []).filter(
+          (variant) => variant.status === 'ACTIVE',
+        );
+
+        if (activeVariants.length === 0) return '—';
+
+        if (activeVariants.length === 1) {
+          const price = globalPriceByVariantId.get(activeVariants[0].id);
+          return price
+            ? formatPrice(price, { hideDefaultCurrency: true })
+            : 'Non renseigné';
+        }
+
+        const pricedCount = activeVariants.filter(
+          (variant) => globalPriceByVariantId.has(variant.id),
+        ).length;
+
+        return pricedCount
+          + ' / '
+          + activeVariants.length
+          + ' avec prix repère';
+      },
     },
     {
       id: 'actions',
@@ -534,6 +588,7 @@ function ProductReferencePage({ canManage }) {
 
   const initialLoading = (
     metadataQuery.isLoading
+    || (globalPricesQuery.isLoading && globalPricesQuery.data === undefined)
     || (
       section === 'reference'
       && productsQuery.isLoading
@@ -546,11 +601,13 @@ function ProductReferencePage({ canManage }) {
     )
   );
   const hasError = metadataQuery.isError
+    || globalPricesQuery.isError
     || (section === 'reference' && productsQuery.isError)
     || (section === 'contributions' && contributionsQuery.isError);
 
   function retry() {
     metadataQuery.refetch();
+    globalPricesQuery.refetch();
     if (section === 'reference') productsQuery.refetch();
     if (section === 'contributions') contributionsQuery.refetch();
   }
@@ -615,13 +672,20 @@ function ProductReferencePage({ canManage }) {
         <section className="rounded-xl border border-border bg-card">
           <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(260px,1fr)_240px_220px]">
             <form className="flex gap-2" onSubmit={applySearch}>
-              <Input
-                aria-label="Rechercher un Produit global"
-                maxLength={120}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Rechercher un produit…"
-                value={searchInput}
-              />
+              <div className="min-w-0 flex-1">
+                <ProductReferenceSearchAutocomplete
+                  categoryId={
+                    categoryId === ALL_REFERENCE_CATEGORIES
+                      ? undefined
+                      : categoryId
+                  }
+                  metadata={metadata}
+                  onSelect={selectSearchSuggestion}
+                  onValueChange={setSearchInput}
+                  status={referenceStatus}
+                  value={searchInput}
+                />
+              </div>
               <Button type="submit" variant="outline">Rechercher</Button>
             </form>
 

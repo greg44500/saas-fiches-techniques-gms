@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Archive,
   CircleCheck,
+  Euro,
   Pencil,
   Plus,
   RotateCcw,
@@ -39,6 +40,15 @@ import { ProductDimensionEditDialog } from '@/features/products/components/produ
 import { ProductReferenceEditDialog } from '@/features/products/components/product-reference-edit-dialog';
 import { ProductReferenceVariantEditDialog } from '@/features/products/components/product-reference-variant-edit-dialog';
 import { ProductVariantCreateDialog } from '@/features/products/components/product-variant-create-dialog';
+import {
+  GlobalIndicativePriceDialog,
+} from '@/features/suppliers/components/global-indicative-price-dialog';
+import {
+  useListGlobalIndicativePricesQuery,
+} from '@/features/suppliers/api/supplier-api';
+import {
+  formatPrice,
+} from '@/features/suppliers/lib/supplier-presentation';
 import {
   formatYield,
   getApiErrorMessage,
@@ -91,11 +101,16 @@ function ProductReferenceDetailsDrawer({
   const [deleteDimension, setDeleteDimension] = useState(null);
   const [deleteError, setDeleteError] = useState('');
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [priceVariant, setPriceVariant] = useState(null);
 
   const query = useGetProductReferenceDetailQuery(productId, { skip: !productId });
   const dimensionsQuery = useGetProductReferenceDimensionsQuery(productId, {
     skip: !productId,
   });
+  const globalPricesQuery = useListGlobalIndicativePricesQuery(
+    { productId, status: 'ACTIVE' },
+    { skip: !productId },
+  );
   const [updateProductStatus, productStatusState] = useUpdateProductReferenceStatusMutation();
   const [updateVariantStatus, variantStatusState] = useUpdateProductReferenceVariantStatusMutation();
   const [updateVarietyStatus, varietyStatusState] =
@@ -112,6 +127,7 @@ function ProductReferenceDetailsDrawer({
     setActiveTab(initialTab);
     setDimensionFilter(initialDimensionFilter);
     setDimensionSearch('');
+    setPriceVariant(null);
   }, [initialDimensionFilter, initialTab, open, productId]);
 
   if (query.data) retainedRef.current = query.data;
@@ -119,6 +135,12 @@ function ProductReferenceDetailsDrawer({
   const product = detail?.product;
   const variants = detail?.variants ?? [];
   const events = detail?.events ?? [];
+  const globalPriceByVariantId = new Map(
+    (globalPricesQuery.data ?? []).map((price) => [
+      price.productVariant.id,
+      price,
+    ]),
+  );
   const varieties = dimensionsQuery.data?.varieties ?? [];
   const characteristics = dimensionsQuery.data?.characteristics ?? [];
   const characteristicKindLabels = new Map(
@@ -815,7 +837,11 @@ function ProductReferenceDetailsDrawer({
                 )}
 
                 <ul className="space-y-3">
-                  {variants.map((variant) => (
+                  {variants.map((variant) => {
+                    const globalPrice =
+                      globalPriceByVariantId.get(variant.id) ?? null;
+
+                    return (
                     <li className="rounded-lg border border-border p-4" key={variant.id}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -830,6 +856,26 @@ function ProductReferenceDetailsDrawer({
                               ? ' · Rendement : ' + formatYield(variant.yieldPercent)
                               : ''}
                           </p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Prix repère global : {
+                              globalPrice
+                                ? formatPrice(
+                                  globalPrice,
+                                  { hideDefaultCurrency: true },
+                                )
+                                : 'Non renseigné'
+                            }
+                          </p>
+                          {globalPrice && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {globalPrice.source ?? 'Provenance non renseignée'}
+                              {globalPrice.updatedAt
+                                ? ' · Mis à jour le '
+                                  + new Date(globalPrice.updatedAt)
+                                    .toLocaleDateString('fr-FR')
+                                : ''}
+                            </p>
+                          )}
                         </div>
                         <StatusBadge tone={getProductStatusTone(variant.status)}>
                           {getProductStatusLabel(metadata, variant.status)}
@@ -838,6 +884,24 @@ function ProductReferenceDetailsDrawer({
 
                       {canManage && (
                         <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
+                          {variant.status === 'ACTIVE' && (
+                            <ActionIconButton
+                              disabled={pending}
+                              Icon={Euro}
+                              label={
+                                (globalPrice ? 'Modifier' : 'Ajouter')
+                                + ' le Prix repère global de '
+                                + getVariantLabel(variant)
+                              }
+                              onClick={() => setPriceVariant(variant)}
+                              tooltipLabel={
+                                globalPrice
+                                  ? 'Modifier le Prix repère'
+                                  : 'Ajouter un Prix repère'
+                              }
+                              variant="outline"
+                            />
+                          )}
                           <ActionIconButton
                             disabled={pending}
                             Icon={Pencil}
@@ -869,7 +933,8 @@ function ProductReferenceDetailsDrawer({
                         </div>
                       )}
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </div>
             </TabsContent>
@@ -973,6 +1038,19 @@ function ProductReferenceDetailsDrawer({
           title="Supprimer cette valeur ?"
         />
       )}
+
+      <GlobalIndicativePriceDialog
+        onClose={() => setPriceVariant(null)}
+        onSaved={() => {
+          setPriceVariant(null);
+          toast({
+            title: 'Prix repère global actualisé',
+            variant: 'success',
+          });
+        }}
+        open={Boolean(priceVariant)}
+        variant={priceVariant}
+      />
 
       {product && (
         <ProductVariantCreateDialog

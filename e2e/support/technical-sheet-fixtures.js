@@ -7,6 +7,9 @@ import {
   Dossier,
 } from '../../backend/modules/dossier/dossier.model.js';
 import {
+  createDossier,
+} from '../../backend/modules/dossier/dossier.service.js';
+import {
   attachVariantToWorkspace,
 } from '../../backend/modules/productCatalog/productCatalog.service.js';
 import {
@@ -19,6 +22,7 @@ import {
 import {
   archiveNegotiatedPrice,
   createNegotiatedPrice,
+  setIndicativePrice,
 } from '../../backend/modules/supplierCatalog/supplierPricing.service.js';
 import {
   createSupplier,
@@ -28,6 +32,7 @@ import {
   Workspace,
 } from '../../backend/modules/workspace/workspace.model.js';
 import {
+  provisionSupplierOwnerWorkspace,
   provisionSupplierPricingWorkspace,
 } from './supplier-fixtures.js';
 import {
@@ -223,6 +228,119 @@ async function provisionTechnicalSheetWorkspace({
   };
 }
 
+async function provisionGlobalPriceTechnicalSheetWorkspace() {
+  const context = await provisionSupplierOwnerWorkspace({
+    enableImport: false,
+    withProductReference: true,
+  });
+
+  let dossier;
+
+  await withE2eDatabase(async () => {
+    const workspace = await Workspace.findById(
+      context.workspaceId,
+    );
+
+    if (!workspace) {
+      throw new Error(
+        'E2E global price workspace not found',
+      );
+    }
+
+    const ownerId = workspace.createdBy;
+
+    dossier = await createDossier({
+      workspaceId: workspace._id,
+      membershipId: null,
+      isOwner: true,
+      actorId: ownerId,
+      data: {
+        name:
+          'Magasin Prix repère global E2E '
+          + randomUUID().replaceAll('-', '').slice(0, 8),
+        defaultTargetMarginBasisPoints: 5000,
+      },
+    });
+
+    const startsAt = new Date(Date.now() - 1_000);
+
+    await EntitlementOverride.create([
+      {
+        workspace: workspace._id,
+        targetType: 'feature',
+        featureKey: 'product_reference_access',
+        featureEnabled: true,
+        source: 'support',
+        startsAt,
+        reason:
+          'E2E M-004 global price product access fixture',
+        grantedBy: ownerId,
+        updatedBy: ownerId,
+      },
+      {
+        workspace: workspace._id,
+        targetType: 'limit',
+        metricKey: 'technical_sheets',
+        limitValue: 10,
+        source: 'support',
+        startsAt,
+        reason:
+          'E2E M-004 global price technical sheet fixture',
+        grantedBy: ownerId,
+        updatedBy: ownerId,
+      },
+    ]);
+
+    await setIndicativePrice({
+      workspaceId: null,
+      dossierId: null,
+      productVariantId: context.productVariantId,
+      actorId: ownerId,
+      sourceAmount: '2.5',
+      sourceBasis: 'KG',
+      source:
+        'Référentiel de démonstration E2E',
+    });
+  });
+
+  return {
+    ...context,
+    dossier,
+    technicalSheetsUrl:
+      '/workspaces/'
+      + context.workspaceId
+      + '/dossiers/'
+      + dossier.id
+      + '/technical-sheets',
+  };
+}
+
+async function setWorkspaceIndicativePriceForE2e({
+  workspaceId,
+  productVariantId,
+  sourceAmount,
+}) {
+  return withE2eDatabase(async () => {
+    const workspace = await Workspace.findById(workspaceId);
+
+    if (!workspace) {
+      throw new Error(
+        'E2E global price workspace not found',
+      );
+    }
+
+    return setIndicativePrice({
+      workspaceId: workspace._id,
+      dossierId: null,
+      productVariantId,
+      actorId: workspace.createdBy,
+      sourceAmount,
+      sourceBasis: 'KG',
+      source: 'Estimation Workspace E2E',
+    });
+  });
+}
+
 async function replaceDossierNegotiatedPrice({
   articleId,
   dossierId,
@@ -278,6 +396,8 @@ async function replaceDossierNegotiatedPrice({
 }
 
 export {
+  provisionGlobalPriceTechnicalSheetWorkspace,
   provisionTechnicalSheetWorkspace,
   replaceDossierNegotiatedPrice,
+  setWorkspaceIndicativePriceForE2e,
 };

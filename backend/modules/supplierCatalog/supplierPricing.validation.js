@@ -190,6 +190,11 @@ const indicativePriceScopeParamsSchema =
         productVariantId: objectIdSchema,
     });
 
+const globalIndicativePriceScopeParamsSchema =
+    z.strictObject({
+        productVariantId: objectIdSchema,
+    });
+
 const dossierIndicativePriceScopeParamsSchema =
     z.strictObject({
         workspaceId: objectIdSchema,
@@ -237,6 +242,7 @@ export {
     createInvoicedPriceBodySchema,
     createNegotiatedPriceBodySchema,
     dossierIndicativePriceScopeParamsSchema,
+    globalIndicativePriceScopeParamsSchema,
     dossierParamsSchema,
     dossierReferenceParamsSchema,
     indicativePriceBodySchema,

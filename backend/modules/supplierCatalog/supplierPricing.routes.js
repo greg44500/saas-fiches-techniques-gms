@@ -4,6 +4,9 @@ import {
     authenticate,
 } from '../../middlewares/authenticate.js';
 import {
+    authorizeApplicationGlobalPermission,
+} from '../../middlewares/authorizeApplicationGlobalPermission.js';
+import {
     authorizePermission,
 } from '../../middlewares/authorizePermission.js';
 import {
@@ -23,12 +26,16 @@ import {
     enforceDossierStatePolicy,
 } from '../dossier/dossierState.middleware.js';
 import {
+    PRODUCT_CATALOG_GLOBAL_PERMISSION,
+} from '../productCatalog/productCatalogGlobalPermission.registry.js';
+import {
     SUPPLIER_CATALOG_PERMISSION,
 } from './supplierCatalogPermission.registry.js';
 import {
     addReference,
     applicable,
     archiveDossierIndicative,
+    archiveGlobalIndicative,
     archiveNegotiated,
     archiveWorkspaceIndicative,
     createInvoiced,
@@ -36,6 +43,7 @@ import {
     decideInvoiced,
     getPolicy,
     listDossierIndicative,
+    listGlobalIndicative,
     listInvoiced,
     listNegotiated,
     listReferences,
@@ -43,6 +51,7 @@ import {
     metadata,
     removeReference,
     setDossierIndicative,
+    setGlobalIndicative,
     setWorkspaceIndicative,
     updatePolicy,
 } from './supplierPricing.controller.js';
@@ -52,6 +61,7 @@ import {
     createNegotiatedPriceBodySchema,
     dossierIndicativePriceScopeParamsSchema,
     dossierParamsSchema,
+    globalIndicativePriceScopeParamsSchema,
     dossierReferenceParamsSchema,
     indicativePriceBodySchema,
     indicativePriceScopeParamsSchema,
@@ -67,6 +77,8 @@ import {
 
 const dossierSupplierPricingRouter =
     Router({ mergeParams: true });
+
+const globalIndicativePricingRouter = Router();
 
 const supplierPricingPolicyRouter =
     Router({ mergeParams: true });
@@ -88,6 +100,42 @@ const mutableDossierScope = [
         DOSSIER_STATE_POLICY.UPDATE,
     ),
 ];
+
+globalIndicativePricingRouter.use(authenticate);
+
+globalIndicativePricingRouter.get(
+    '/indicative-prices',
+    authorizeApplicationGlobalPermission(
+        PRODUCT_CATALOG_GLOBAL_PERMISSION.READ,
+    ),
+    validateRequest({
+        query: listIndicativePriceQuerySchema,
+    }),
+    listGlobalIndicative,
+);
+
+globalIndicativePricingRouter.put(
+    '/indicative-prices/:productVariantId',
+    authorizeApplicationGlobalPermission(
+        PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE,
+    ),
+    validateRequest({
+        params: globalIndicativePriceScopeParamsSchema,
+        body: indicativePriceBodySchema,
+    }),
+    setGlobalIndicative,
+);
+
+globalIndicativePricingRouter.delete(
+    '/indicative-prices/:productVariantId',
+    authorizeApplicationGlobalPermission(
+        PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE,
+    ),
+    validateRequest({
+        params: globalIndicativePriceScopeParamsSchema,
+    }),
+    archiveGlobalIndicative,
+);
 
 dossierSupplierPricingRouter.get(
     '/metadata',
@@ -392,6 +440,7 @@ supplierPricingPolicyRouter.put(
 
 export {
     dossierSupplierPricingRouter,
+    globalIndicativePricingRouter,
     supplierPricingPolicyRouter,
     workspaceSupplierPricingRouter,
 };

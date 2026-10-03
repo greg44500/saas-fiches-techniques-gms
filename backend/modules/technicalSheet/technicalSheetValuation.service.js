@@ -172,6 +172,7 @@ const buildTechnicalSheetValuation = async ({
         const indicativePrice = [
             'INDICATIVE_DOSSIER',
             'INDICATIVE_WORKSPACE',
+            'INDICATIVE_GLOBAL',
         ].includes(
             applicable.resolvedSource,
         );

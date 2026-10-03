@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   contributionsQuery: vi.fn(),
   reviewContribution: vi.fn(),
   updateCategoryStatus: vi.fn(),
+  globalPricesQuery: vi.fn(),
 }));
 
 vi.mock('@/features/products/api/product-reference-api', () => ({
@@ -30,6 +31,46 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
     mocks.updateCategoryStatus,
     { isLoading: false },
   ],
+}));
+
+vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useListGlobalIndicativePricesQuery: mocks.globalPricesQuery,
+}));
+
+vi.mock('@/features/products/components/product-reference-search-autocomplete', () => ({
+  ProductReferenceSearchAutocomplete: ({
+    onSelect,
+    onValueChange,
+    value,
+  }) => (
+    <div>
+      <input
+        aria-label="Rechercher un Produit global"
+        onChange={(event) => onValueChange(event.target.value)}
+        placeholder="Rechercher un produit…"
+        role="combobox"
+        value={value}
+      />
+      <button
+        onClick={() => onSelect(
+          {
+            product: {
+              id: 'product-puree',
+              name: 'Pomme de terre',
+            },
+            variant: {
+              id: 'variant-puree',
+              name: 'Purée de pomme de terre',
+            },
+          },
+          'Purée de pomme de terre',
+        )}
+        type="button"
+      >
+        Choisir Purée de pomme de terre
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock('@/features/products/components/product-reference-details-drawer', () => ({
@@ -190,6 +231,28 @@ describe('ProductReferencePage', () => {
       isLoading: false,
       refetch: vi.fn(),
     });
+    mocks.globalPricesQuery.mockReturnValue({
+      data: [{
+        id: 'global-price-1',
+        workspaceId: null,
+        dossierId: null,
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte entière',
+          referenceUnit: 'KG',
+        },
+        sourceAmount: '2.75',
+        normalizedAmount: '2.75',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
+        source: 'Référentiel de démonstration',
+        status: 'ACTIVE',
+      }],
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
     mocks.contributionsQuery.mockReturnValue({
       data: {
         contributions: [],
@@ -212,6 +275,9 @@ describe('ProductReferencePage', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Prix repère' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('2,750 / KG')).toBeInTheDocument();
     expect(screen.queryByText('Carottes')).not.toBeInTheDocument();
     expect(screen.queryByText(/Gamme 1/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Références' }))
@@ -229,6 +295,92 @@ describe('ProductReferencePage', () => {
     );
   });
 
+
+  it('distingue la couverture des Prix repères de la valorisation M-004', () => {
+    mocks.productsQuery.mockReturnValue({
+      data: {
+        products: [{
+          ...product,
+          variants: [
+            product.variants[0],
+            {
+              ...product.variants[0],
+              id: 'variant-2',
+              name: 'Carotte purée',
+            },
+          ],
+        }],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 1,
+          totalPages: 1,
+        },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByText('1 / 2 avec prix repère'))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/références valorisées/i))
+      .not.toBeInTheDocument();
+  });
+
+  it('conserve la recherche libre par soumission du formulaire', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    const search = screen.getByRole('combobox', {
+      name: 'Rechercher un Produit global',
+    });
+
+    await user.type(search, 'abricot');
+    await user.click(screen.getByRole('button', {
+      name: 'Rechercher',
+    }));
+
+    await waitFor(() => {
+      expect(mocks.productsQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          q: 'abricot',
+          status: 'ACTIVE',
+          page: 1,
+        }),
+        { skip: false },
+      );
+    });
+  });
+
+  it('applique immédiatement une suggestion prédictive au tableau', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Choisir Purée de pomme de terre',
+    }));
+
+    expect(screen.getByRole('combobox', {
+      name: 'Rechercher un Produit global',
+    })).toHaveValue('Purée de pomme de terre');
+
+    await waitFor(() => {
+      expect(mocks.productsQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          q: 'Purée de pomme de terre',
+          status: 'ACTIVE',
+          page: 1,
+        }),
+        { skip: false },
+      );
+    });
+  });
 
   it('affiche des compteurs d’onglets basés sur les totaux filtrés', async () => {
     const user = userEvent.setup();

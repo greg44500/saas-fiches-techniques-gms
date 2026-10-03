@@ -12,6 +12,10 @@ import {
   provisionProductOwnerWorkspace,
 } from '../support/product-fixtures.js';
 import {
+  selectGlobalProductReference,
+  selectWorkspaceProductReference,
+} from '../support/product.js';
+import {
   expectVisibleToast,
 } from '../support/toast.js';
 
@@ -77,11 +81,10 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
   );
 
   await page.getByRole('tab', { name: 'Référentiel' }).click();
-  const globalSearch = page.getByRole('textbox', {
-    name: 'Rechercher un Produit global',
-  });
-  await globalSearch.fill(context.productName);
-  await page.getByRole('button', { name: 'Rechercher' }).click();
+  await selectGlobalProductReference(
+    page,
+    context.productName,
+  );
   await expect(
     page.getByText(context.productName, { exact: true }).first(),
   ).toBeVisible();
@@ -89,14 +92,10 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
   await loginWithIdentity(page, context.identity);
   await page.goto(context.productsUrl);
 
-  await page.getByRole('combobox', { name: 'Rechercher un Produit' })
-    .fill(context.productName);
-
-  const predictiveResult = page.getByRole('option').filter({
-    hasText: context.productName,
-  }).first();
-  await expect(predictiveResult).toBeVisible();
-  await predictiveResult.click();
+  await selectWorkspaceProductReference(
+    page,
+    context.productName,
+  );
 
   await page.getByRole('button', {
     name: `Ajouter ${context.productName} aux favoris`,

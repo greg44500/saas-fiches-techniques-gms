@@ -160,6 +160,10 @@ const metadata = {
       value: 'INDICATIVE_WORKSPACE',
       label: 'Prix indicatif espace de travail',
     },
+    {
+      value: 'INDICATIVE_GLOBAL',
+      label: 'Prix repère global',
+    },
   ],
 };
 
@@ -391,6 +395,24 @@ describe('TechnicalSheetLineEditor', () => {
 
     expect(screen.getByRole('button', {
       name: 'Prix unitaire hors taxe — Prix indicatif espace de travail',
+    })).toBeInTheDocument();
+  });
+
+  it('identifie explicitement le Prix repère global dans la valorisation', () => {
+    renderEditor({
+      lines: [{
+        ...valuedLine,
+        selectedSupplierArticleId: null,
+        valuation: {
+          ...valuedLine.valuation,
+          supplierArticleId: null,
+          applicableSource: 'INDICATIVE_GLOBAL',
+        },
+      }],
+    });
+
+    expect(screen.getByRole('button', {
+      name: 'Prix unitaire hors taxe — Prix repère global',
     })).toBeInTheDocument();
   });
 

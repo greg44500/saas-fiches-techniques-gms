@@ -16,6 +16,7 @@ import {
 import {
     INDICATIVE_PRICE_STATUS,
     INVOICED_PRICE_STATUS,
+    SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY,
     SUPPLIER_PRICING_POLICY_MODE,
     SUPPLIER_RESOURCE_STATUS,
     SUPPLIER_SCOPE,
@@ -51,6 +52,13 @@ describe('M-003 supplier catalog registries', () => {
         });
         expect(SUPPLIER_PRICING_POLICY_MODE.NEGOTIATED_PRICE)
             .toBe('NEGOTIATED_PRICE');
+        expect(
+            SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY
+                .INDICATIVE_GLOBAL,
+        ).toEqual({
+            value: 'INDICATIVE_GLOBAL',
+            label: 'Prix repère global',
+        });
     });
 
     it('donne toutes les permissions M-003 au rôle système owner', () => {

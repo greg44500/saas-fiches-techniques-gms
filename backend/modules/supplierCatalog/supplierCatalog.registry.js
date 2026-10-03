@@ -79,6 +79,10 @@ const SUPPLIER_APPLICABLE_PRICE_SOURCE_REGISTRY = Object.freeze({
         value: 'INDICATIVE_WORKSPACE',
         label: 'Prix indicatif espace de travail',
     }),
+    INDICATIVE_GLOBAL: Object.freeze({
+        value: 'INDICATIVE_GLOBAL',
+        label: 'Prix repère global',
+    }),
 });
 
 const SUPPLIER_APPLICABLE_PRICE_SOURCE = Object.freeze(

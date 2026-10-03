@@ -1296,3 +1296,40 @@ branche feature/m003-suppliers-catalogs-pricing
 ~~~
 
 Le lot M-003 reste un lot cohérent unique. Les ajustements issus des tests métier sont intégrés dans cette même trajectoire tant qu'ils appartiennent au périmètre M-003.
+
+
+---
+
+## Extension 2026-10-03 — Prix repère global
+
+Le contrat complémentaire suivant fait désormais partie du cadrage M-003 :
+
+~~~text
+docs/m003/M-003-GLOBAL-INDICATIVE-PRICING.md
+~~~
+
+Il étend le `Prix indicatif` existant avec une portée globale sans modifier l'identité Produit M-002.
+
+Ordre de résolution complété :
+
+~~~text
+Prix facturé valide selon la politique
+→ Tarif négocié valide
+→ Tarif fournisseur applicable
+→ Prix indicatif Dossier
+→ Prix indicatif Workspace
+→ Prix repère global
+→ aucun prix
+~~~
+
+Le `Prix repère global` :
+
+- référence un `ProductVariant` M-002 ;
+- reste une donnée économique M-003 ;
+- ne crée aucun Fournisseur ni Article fournisseur fictif ;
+- sert de dernier fallback pour l'onboarding et la démonstration ;
+- est maintenable par l'autorité Application Global Produit ;
+- est historisé par remplacement comme les Prix indicatifs existants ;
+- ne prime jamais sur une donnée commerciale ou locale plus précise.
+
+Le corpus initial est versionné séparément du seed M-002. Les conditionnements génériques ne sont pas introduits par cette extension.

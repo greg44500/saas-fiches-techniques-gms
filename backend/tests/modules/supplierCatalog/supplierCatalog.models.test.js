@@ -81,13 +81,32 @@ describe('M-003 supplier catalog models', () => {
         }
     });
 
-    it('autorise un Prix indicatif Workspace ou Dossier sans Article fournisseur', () => {
+    it('autorise les Prix indicatifs Global, Workspace ou Dossier sans Article fournisseur', async () => {
         expect(IndicativePrice.schema.path('workspace').options.required)
-            .toBe(true);
+            .not.toBe(true);
+        expect(IndicativePrice.schema.path('workspace').options.default)
+            .toBeNull();
         expect(IndicativePrice.schema.path('dossier').options.default)
             .toBeNull();
         expect(IndicativePrice.schema.path('productVariant').options.required)
             .toBe(true);
+
+        const actorId = new mongoose.Types.ObjectId();
+        const variantId = new mongoose.Types.ObjectId();
+
+        await expect(new IndicativePrice({
+            workspace: null,
+            dossier: new mongoose.Types.ObjectId(),
+            productVariant: variantId,
+            sourceAmount: '1.5',
+            sourceBasis: 'KG',
+            normalizedAmount: '1.5',
+            normalizedUnit: 'KG',
+            createdBy: actorId,
+            updatedBy: actorId,
+        }).validate()).rejects.toThrow(
+            /Dossier doit appartenir à un Workspace/,
+        );
 
         const activeIndex = IndicativePrice.schema.indexes().find(
             ([, options]) =>
