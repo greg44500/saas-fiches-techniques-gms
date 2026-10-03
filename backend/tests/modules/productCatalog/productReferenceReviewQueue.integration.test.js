@@ -103,6 +103,45 @@ describe('M-002 unified product review queue', () => {
         ]));
     });
 
+    it('relie une proposition de nouveau Produit à son Produit provisoire', async () => {
+        const categoryReference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Produit témoin file nouveau Produit',
+        });
+
+        const submitted = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CANONICAL_PRODUCT',
+            value: 'Betterave file provisoire',
+            categoryId: categoryReference.category._id,
+            variant: {
+                name: 'Betterave file provisoire',
+                conservationType: 'FRAIS',
+                foodRange: 1,
+                referenceUnit: 'KG',
+            },
+        });
+
+        const result = await listProductReviewQueue({
+            type: PRODUCT_REVIEW_QUEUE_TYPE.CONTRIBUTION,
+        });
+
+        expect(result.items).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    sourceId: submitted.contribution.id,
+                    value: 'Betterave file provisoire',
+                    productId: submitted.provisionalReference.id,
+                    product: expect.objectContaining({
+                        id: submitted.provisionalReference.id,
+                        name: 'Betterave file provisoire',
+                    }),
+                }),
+            ]),
+        );
+    });
+
     it('filtre par type et Workspace avec une pagination serveur', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,
