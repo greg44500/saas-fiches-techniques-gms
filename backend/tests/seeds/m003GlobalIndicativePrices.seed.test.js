@@ -69,9 +69,9 @@ describe('M-003 global indicative price bootstrap', () => {
 
         expect(parsed.ready).toBe(true);
         expect(parsed.version)
-            .toBe('m003-global-indicative-v1');
+            .toBe('m003-global-indicative-v2');
         expect(parsed.currency).toBe('EUR');
-        expect(parsed.prices).toHaveLength(264);
+        expect(parsed.prices).toHaveLength(368);
         expect(parsed.note).toMatch(/fictives et indicatives/i);
 
         for (const price of parsed.prices) {
