@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; corpus professionnel v7 implémenté et gouvernance Produit unifiée en cours sur branche unique  
+**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; corpus professionnel v8 implémenté et gouvernance Produit unifiée en cours sur branche unique  
 **Dernière mise à jour :** 2026-10-03
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -72,7 +72,7 @@ Décisions finales :
 
 ### 2.2 Référentiel Produit
 
-**État : CONTRAT EXISTANT CONSERVÉ — corpus professionnel v7 en implémentation, sans changement des invariants M-002**
+**État : CONTRAT EXISTANT CONSERVÉ — corpus professionnel v8 en implémentation, sans changement des invariants M-002**
 
 Contrat canonique :
 
@@ -93,16 +93,16 @@ Décisions finales :
 - dimensions avancées facultatives ;
 - `WorkspaceProduct` présenté comme Favori ;
 - liste Workspace `Produit | Conservation | Actions` ;
-- seed actif sur la branche : `m002-reference-v7`, 16 catégories, 320 Produits et 368 Références Produit ;
-- v7 reprend intégralement les 264 Références v6 puis ajoute 104 Références professionnelles pâtisserie / crémerie / snacking ;
-- migration de réconciliation v1-v6 → v7, sans suppression des données utilisateur ;
+- seed actif sur la branche : `m002-reference-v8`, 16 catégories, 381 Produits et 488 Références Produit ;
+- v8 ajoute 126 Références professionnelles par rapport au v7, retire 6 fonds de tarte génériques et les remplace par des Références portant un diamètre ou format exploitable ;
+- migration de réconciliation v1-v7 → v8, sans suppression physique des données utilisateur ;
 - migration additionnelle fail-closed ;
 - import dédupliqué par nom exact de Référence ;
 - frontière stricte M-002 / M-003 maintenue.
 
 La dépendance générique Core de navigation Platform est résolue par le commit post-tag `6581e573c6a6885790b23fe502bd34d8199ea6ba`. Elle est intégrée sur la branche Core-update dédiée et devient effective sur `main` après PR, merge et Core Gate post-merge du BLOC A.
 
-Décision de clôture du 2026-09-25 : le contrat M-002 reste l'autorité. L'audit Produit du 2026-10-03 a validé un enrichissement de données sans refonte du modèle : la séparation `CanonicalProduct / ProductVariant` est conservée, M-003 reste propriétaire des données commerciales et le corpus v7 exploite les racines multi-références lorsque la distinction technique est utile. L'implémentation reste sur une branche et une PR uniques jusqu'à validation visuelle et Core Gate.
+Décision de clôture du 2026-09-25 : le contrat M-002 reste l'autorité. L'audit Produit du 2026-10-03 a validé un enrichissement de données sans refonte du modèle : la séparation `CanonicalProduct / ProductVariant` est conservée, M-003 reste propriétaire des données commerciales et le corpus v8 exploite les racines multi-références lorsque la distinction technique est utile, notamment pour les formats de fonds de tartes. L'implémentation reste sur une branche et une PR uniques jusqu'à validation visuelle et Core Gate.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
