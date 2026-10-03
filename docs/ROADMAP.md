@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; audit/cadrage des Produits globaux en cours  
+**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; Bloc A Prix repère global M-003 en implémentation  
 **Dernière mise à jour :** 2026-10-02
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -599,20 +599,21 @@ développement immédiat
 
 Le BLOC B Platform / Gestion des référentiels est clôturé. M-004 Fiches techniques + valorisation est également clôturé pour son périmètre hors Exports et diffusion après les Core Gates #179 et #180.
 
-Le lot actif est désormais **l'audit et le cadrage des Produits globaux**.
+Le lot actif est désormais **Bloc A — Référentiel global valorisable / Prix repère global M-003**. Le cadrage est validé et l'implémentation est soumise aux gates avant fusion.
 
 Séquence attendue :
 
 ~~~text
-audit du code, DB, API, migrations, seeds, frontend et tests existants
-→ restitution de l'existant
-→ identification des écarts avec le besoin utilisateur
-→ questions de cadrage
-→ décisions utilisateur
-→ formalisation du périmètre
-→ validation explicite
-→ seulement ensuite éventuelle implémentation
-→ reprise ultérieure du bloc Exports / diffusion M-004
+extension IndicativePrice avec portée globale
+→ corpus initial versionné de Prix repères
+→ maintenance par la gouvernance Produit
+→ fallback M-004 après Dossier / Workspace
+→ tests backend / frontend / E2E
+→ Core Gate PR
+→ merge si verte
+→ Core Gate post-merge
+→ Bloc B gouvernance Produit unifiée
+→ puis reprise ultérieure du bloc Exports / diffusion M-004
 ~~~
 
 Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité tant qu'un nouveau périmètre n'a pas été validé.
