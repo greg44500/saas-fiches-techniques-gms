@@ -29,6 +29,7 @@ import {
     previewImport,
     reviewContribution,
     reviewDimension,
+    reviewQueue,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,
@@ -64,6 +65,7 @@ import {
     referenceContributionDecisionBodySchema,
     referenceContributionListQuerySchema,
     referenceContributionParamsSchema,
+    productReviewQueueListQuerySchema,
     updateCategoryBodySchema,
     updateCharacteristicBodySchema,
     updateCategoryStatusBodySchema,
@@ -152,6 +154,13 @@ productCatalogGlobalRouter.post(
         body: importCommitBodySchema,
     }),
     commitImport,
+);
+
+productCatalogGlobalRouter.get(
+    '/review-queue',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.READ),
+    validateRequest({ query: productReviewQueueListQuerySchema }),
+    reviewQueue,
 );
 
 productCatalogGlobalRouter.get(
