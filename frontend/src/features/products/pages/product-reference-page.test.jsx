@@ -762,7 +762,7 @@ describe('ProductReferencePage', () => {
             message: 'Ce type nécessite une revue.',
           }],
         }],
-        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+        pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
       },
       isError: false,
       isFetching: false,
@@ -779,7 +779,7 @@ describe('ProductReferencePage', () => {
           status: undefined,
           reviewedOnly: true,
           page: 1,
-          limit: 20,
+          limit: 10,
         },
         { skip: false },
       );
@@ -814,7 +814,7 @@ describe('ProductReferencePage', () => {
           status: 'REJECTED',
           reviewedOnly: false,
           page: 1,
-          limit: 20,
+          limit: 10,
         },
         { skip: false },
       );
