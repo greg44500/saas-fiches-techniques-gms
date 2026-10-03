@@ -64,7 +64,7 @@ const m003GlobalIndicativePriceDatasetSchema = z.strictObject({
 
 const loadDefaultGlobalIndicativePriceDataset = async () => {
     const datasetUrl = new URL(
-        './data/m003-global-indicative-prices.v1.json',
+        './data/m003-global-indicative-prices.v2.json',
         import.meta.url,
     );
     return JSON.parse(await readFile(datasetUrl, 'utf8'));
