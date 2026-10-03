@@ -57,6 +57,7 @@ import {
   SUPPLIER_API_TAG_TYPES,
   supplierApi,
   useSetDossierIndicativePriceMutation,
+  useSetGlobalIndicativePriceMutation,
   useSetWorkspaceIndicativePriceMutation,
   useUpdateSupplierCatalogStatusMutation,
 } from '@/features/suppliers/api/supplier-api';
@@ -176,6 +177,40 @@ describe('supplierApi', () => {
     ).toEqual({
       url: '/workspaces/workspace-1/supplier-catalogs/imports/import-1/commit',
       method: 'POST',
+    });
+  });
+
+  it('expose le Prix repère global sur une route de gouvernance Produit', () => {
+    expect(useSetGlobalIndicativePriceMutation).toBeTypeOf('function');
+
+    expect(
+      captured.endpointDefinitions.listGlobalIndicativePrices.query({
+        productId: 'product-1',
+      }),
+    ).toEqual({
+      url: '/product-reference-pricing/indicative-prices',
+      params: {
+        productId: 'product-1',
+        productVariantId: undefined,
+        status: 'ACTIVE',
+      },
+    });
+
+    expect(
+      captured.endpointDefinitions.setGlobalIndicativePrice.query({
+        productVariantId: 'variant-1',
+        sourceAmount: '2.5',
+        sourceBasis: 'KG',
+        currency: 'EUR',
+      }),
+    ).toEqual({
+      url: '/product-reference-pricing/indicative-prices/variant-1',
+      method: 'PUT',
+      body: {
+        sourceAmount: '2.5',
+        sourceBasis: 'KG',
+        currency: 'EUR',
+      },
     });
   });
 
