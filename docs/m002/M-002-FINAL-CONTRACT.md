@@ -260,17 +260,39 @@ L'import M-002 reste temporaire et sécurisé ; il ne constitue pas un stockage 
 
 ## 11. Seed
 
-Les datasets v1 à v5 sont historiques et restent immuables.
+Les datasets v1 à v6 sont historiques et restent immuables.
 
-Le dataset actif est :
+Le dataset actif sur la branche du lot Produits globaux est :
 
 ```text
-m002-reference-v6
+m002-reference-v7
 ```
 
-Les v1 à v5 sont historiques. Le v6 est le dataset actif et sa source unique est le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf`. Il ne contient que des denrées alimentaires présentes dans ce document ; aucune Référence des anciens seeds n'est conservée si elle n'est pas présente dans le PDF. Marques, références fournisseur, prix et colisages restent hors M-002.
+Le v7 reprend intégralement les 264 Références du v6 puis ajoute le corpus
+professionnel validé autour de la pâtisserie / boulangerie, de la crémerie et
+des pains / snacking.
 
-Le PDF fourni sert de source unique au bootstrap v6. Les imports fournisseur complets et les données commerciales restent traités séparément selon la frontière M-002 / M-003.
+État du corpus :
+
+```text
+16 catégories
+320 Produits
+368 Références Produit
++104 Références par rapport au v6
+```
+
+Le v6 conserve sa provenance propre et reste immuable. Le v7 ajoute des
+sources professionnelles documentées dans
+`docs/m002/M-002-SEED-V7-SOURCE.md` sans transformer les marques, références
+fournisseur, prix ou conditionnements en identité M-002.
+
+Le v7 exploite explicitement la structure
+`CanonicalProduct → plusieurs ProductVariant` lorsque plusieurs Références
+techniquement distinctes appartiennent au même concept Produit, par exemple
+Farine de blé, Beurre ou Pain burger.
+
+Les imports fournisseur complets et les données commerciales restent traités
+séparément selon la frontière M-002 / M-003.
 
 ## 12. Migration et remise à zéro locale pré-release
 
@@ -317,7 +339,7 @@ Le lot final doit prouver au minimum :
 - recherche par nom et dimensions ;
 - import sans doublon ;
 - migration fail-closed ;
-- seed v6 idempotent et réconciliation des anciens seeds ;
+- seed v7 idempotent et réconciliation des anciens seeds v1 à v6 ;
 - permissions Workspace et Application Global ;
 - E2E création/contribution/favoris.
 
@@ -349,7 +371,7 @@ Aucune nouvelle primitive Core n'est requise pour :
 - Conservation ;
 - Gamme 6 ;
 - Favoris Produit ;
-- seed v6 ;
+- seed v7 ;
 - déduplication Produit.
 
 Toute évolution générique découverte ultérieurement doit continuer à être traitée dans `saas-core-api` puis intégrée par une branche `core-update/*`.
