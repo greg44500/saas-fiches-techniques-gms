@@ -1,5 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+import { TooltipProvider } from '@/components/ui/tooltip';
+
 import {
   beforeEach,
   describe,
@@ -131,15 +134,17 @@ describe('ProductVariantCreateDialog', () => {
       .mockReturnValueOnce(secondResult);
 
     render(
-      <ProductVariantCreateDialog
-        existingVariants={[]}
-        metadata={metadata}
-        onClose={vi.fn()}
-        onCreated={onCreated}
-        open
-        product={{ id: 'product-pomme', name: 'Pomme' }}
-        workspaceId="workspace-1"
-      />,
+      <TooltipProvider>
+        <ProductVariantCreateDialog
+          existingVariants={[]}
+          metadata={metadata}
+          onClose={vi.fn()}
+          onCreated={onCreated}
+          open
+          product={{ id: 'product-pomme', name: 'Pomme' }}
+          workspaceId="workspace-1"
+        />
+      </TooltipProvider>,
     );
 
     await user.type(
