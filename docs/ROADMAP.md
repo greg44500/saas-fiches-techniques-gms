@@ -1,6 +1,6 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; enrichissement du Référentiel global professionnel en cours sur branche unique  
+**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; corpus professionnel v7 implémenté et gouvernance Produit unifiée en cours sur branche unique  
 **Dernière mise à jour :** 2026-10-03
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
@@ -599,40 +599,85 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le BLOC B Platform / Gestion des référentiels est clôturé. M-004 Fiches techniques + valorisation est également clôturé pour son périmètre hors Exports et diffusion après les Core Gates #179 et #180.
-
-Le lot actif est désormais **Enrichissement du Référentiel global professionnel** sur la branche `feature/a2-professional-reference-corpus`. Le corpus v7 et l'alignement des Prix repères v2 sont implémentés sur la branche et restent soumis à la validation locale, aux tests et à la Core Gate avant fusion.
-
-Séquence attendue :
+Le corpus professionnel A2 est implémenté sur la branche
+`feature/a2-professional-reference-corpus` :
 
 ~~~text
-extension IndicativePrice avec portée globale
-→ corpus initial versionné de Prix repères
-→ maintenance par la gouvernance Produit
-→ fallback M-004 après Dossier / Workspace
-→ tests backend / frontend / E2E
-→ Core Gate PR
-→ merge si verte
-→ Core Gate post-merge
-→ Bloc B gouvernance Produit unifiée
-→ puis reprise ultérieure du bloc Exports / diffusion M-004
+m002-reference-v7
+→ 16 catégories
+→ 320 Produits
+→ 368 Références Produit
+
+m003-global-indicative-prices.v2
+→ 368 Prix repères
+→ couverture exacte du corpus v7
 ~~~
 
-Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité tant qu'un nouveau périmètre n'a pas été validé.
+Le lot actif est désormais le **Bloc B — Gouvernance Produit unifiée**.
 
-Points à instruire pendant l'audit :
+Cible validée :
 
-- sens métier exact de « Produit global » ;
-- pertinence et visibilité de la séparation `CanonicalProduct / ProductVariant` ;
-- informations visibles et modifiables ;
-- catégories, variantes/états, dimensions et unités ;
-- déduplication et gestion des doublons ;
-- création, contribution, validation, archivage et réactivation ;
-- rôles Workspace et autorité Application Global ;
-- recherche, filtres et administration Platform ;
-- impacts des références et seeds existants ;
-- compatibilité M-003 Fournisseurs / Articles / Prix ;
-- compatibilité M-004 Fiches techniques ;
-- dettes UX Produit déjà documentées dans `docs/DEBT.md`.
+~~~text
+Référentiel
+→ consultation / maintenance des Produits
 
-Aucune évolution Produit ne doit être codée avant validation de ce cadrage. Le lot ne doit pas être nommé arbitrairement `M-002.1`, nouveau module ou refonte avant que la nature réelle du besoin soit décidée.
+À contrôler
+→ Contributions PENDING_REVIEW
++ Dimensions Workspace PENDING
+→ file agrégée et paginée côté serveur
+→ aucune double tâche pour une Dimension déjà portée par une Contribution
+
+Historique
+→ Contributions déjà traitées
+→ décision Approuvée / Fusionnée / Refusée
+
+Catégories
+→ taxonomie Produit
+~~~
+
+La file `À contrôler` réutilise les modèles et mutations M-002 existants.
+Aucune nouvelle collection de gouvernance ni nouvelle permission n'est créée.
+
+RBAC :
+
+~~~text
+product:reference:read
+→ consulter la file et l'historique
+
+product:reference:manage
+→ approuver / fusionner / refuser
+→ vérifier / corriger les Dimensions
+~~~
+
+L'audit du Core v1.2.1 ne montre pas de primitive générique de notification
+applicative persistée. Le signal du lot reste donc le compteur in-app
+`À contrôler`. Une notification générique persistée éventuelle relève de
+la dette Core D-008 et ne doit pas être recréée dans le produit dérivé.
+
+Source contractuelle du Bloc B :
+
+~~~text
+docs/m002/M-002-GOVERNANCE-REVIEW-QUEUE.md
+~~~
+
+Séquence de sortie du lot unique :
+
+~~~text
+A2 corpus professionnel
+→ Bloc B gouvernance Produit unifiée
+→ tests backend / frontend / E2E
+→ QA visuelle utilisateur
+→ corrections éventuelles sur la même branche
+→ release:check
+→ PR unique
+→ Core Gate PR
+→ merge
+→ Core Gate post-merge
+→ puis seulement reprise M-004 Exports / diffusion
+~~~
+
+Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité pour les
+invariants Produit. Le Bloc B unifie la surface de travail du gestionnaire sans
+réouvrir la séparation `CanonicalProduct / ProductVariant`, la frontière
+M-002 / M-003 ni les règles de tenancy.
+
