@@ -51,38 +51,38 @@ Cela évite qu'un gestionnaire traite deux fois la même information.
 
 ## 3. Types d'éléments
 
-Types de file :
+La file expose des types métier, pas les sources techniques internes :
 
 ```text
-CONTRIBUTION
-→ proposition Workspace soumise à gouvernance
+Produit
+Référence
+Dimension · Variété
+Dimension · <kind Caractéristique>
+```
 
+Le read model continue en interne à agréger :
+
+```text
+ReferenceContribution
++
 DIMENSION_REVIEW
-→ Variété ou Caractéristique déjà publiée mais à vérifier
 ```
 
-Une Dimension précise ensuite :
-
-```text
-VARIETY
-CHARACTERISTIC
-```
-
-Pour une Caractéristique, le `kind` M-002 reste exposé.
+mais ces termes techniques ne structurent pas l'interface gestionnaire.
 
 ## 4. Données visibles
 
 Chaque élément expose au minimum :
 
-- nature de l'élément ;
-- valeur proposée / valeur à vérifier ;
-- Produit concerné lorsque disponible ;
-- Workspace d'origine ;
-- auteur d'origine lorsque disponible ;
-- motif métier lorsqu'il existe ;
-- date depuis laquelle l'action est nécessaire.
+- type métier ;
+- donnée exacte à contrôler ;
+- Produit parent lorsque nécessaire ;
+- rapprochement(s) éventuel(s) ;
+- action `Examiner`.
 
-La provenance technique interne n'est pas transformée en bruit utilisateur.
+Le Workspace d'origine, l'auteur, les identifiants techniques et les données
+d'audit restent persistés mais ne sont pas affichés dans la file principale.
+La provenance ne doit pas devenir du bruit pour le gestionnaire métier.
 
 Pour une contribution de type `CANONICAL_PRODUCT`, le contexte Produit
 correspond au Produit provisoire créé pour le Workspace. Le service de
@@ -94,29 +94,35 @@ incomplètes. L'utilisateur Platform peut ainsi ouvrir directement le Produit
 
 ## 5. Actions
 
-### Contribution
+La table `À contrôler` ne décide pas hors contexte.
 
-Réutiliser strictement les actions existantes :
+Action de ligne :
 
 ```text
-Approuver
-Fusionner
+Examiner
+```
+
+Le drawer ciblé porte la décision :
+
+```text
+Modifier
+→ corriger la donnée métier
+
+Valider
+→ publier / approuver la donnée
+
+Fusionner avec <candidat>
+→ uniquement lorsqu'une valeur existante pertinente est proposée
+
 Refuser
+→ action secondaire lorsque la donnée ne doit pas rejoindre le référentiel
 ```
 
-La correction reste portée par le workflow de gouvernance existant lorsque le
-contrat de la contribution l'autorise.
+Pour une Dimension automatiquement publiée et soumise uniquement à revue
+qualité, le drawer propose `Modifier` et `Valider`.
 
-### Dimension à vérifier
-
-Actions :
-
-```text
-Marquer comme vérifiée
-Ouvrir le Produit pour corriger / archiver / supprimer
-```
-
-Aucune seconde mutation de revue n'est créée.
+Une Dimension provisoire portée par une Contribution ne subit pas deux
+contrôles successifs : sa validation de gouvernance clôt aussi sa revue qualité.
 
 ## 6. UX Platform
 
@@ -132,39 +138,55 @@ Catégories
 ### À contrôler
 
 - compteur global ;
-- filtre par type ;
-- filtre par Workspace d'origine ;
+- colonnes `Type / Donnée à valider / Contexte / Rapprochement / Action` ;
 - pagination serveur ;
-- accès direct au Produit ;
-- actions disponibles selon le type ;
+- action unique `Examiner` ;
+- ouverture du drawer sur la cible exacte ;
+- aucun affichage Workspace/auteur ;
 - états chargement / erreur / vide.
 
 La file est ordonnée par ancienneté afin de rendre visibles en premier les
 éléments en attente depuis le plus longtemps.
 
-Le filtre « statut » étudié pendant le cadrage n'est pas retenu dans la file
-active : toutes les lignes y ont, par définition, le même statut fonctionnel
-« intervention requise ». Pour les Contributions, `PENDING_REVIEW` est la
-condition d'entrée ; pour les Dimensions, `PENDING` est la condition
-d'entrée. Les statuts terminaux sont consultés dans Historique. Un troisième
-filtre dupliquerait donc le filtre de type sans apporter de décision
-supplémentaire.
+Aucun filtre d'origine n'est retenu : l'origine Workspace n'aide pas la
+décision métier. Le besoin de filtre de type pourra être réévalué avec le
+volume réel, sans modifier le contrat de gouvernance.
 
-Le regroupement visuel strict par Produit n'est pas retenu en V1 afin de
-préserver une pagination serveur simple, stable et ordonnée par ancienneté.
-La colonne Produit et l'accès direct au drawer fournissent le contexte sans
-charger toutes les lignes d'un Produit côté frontend.
+Le drawer porte les filtres opérationnels nécessaires :
+
+```text
+Références
+→ Toutes
+→ À contrôler
+
+Dimensions
+→ À contrôler
+→ Actives
+→ Archivées
+→ Toutes
+```
 
 ### Historique
 
 L'historique reste distinct de la file active.
 
-Dans ce bloc, la surface globale Historique réutilise l'historique des
-`ReferenceContribution` déjà persisté. Par défaut elle charge ensemble les
-Contributions `APPROVED` et `REJECTED`, puis permet de filtrer le résultat.
-Une fusion reste persistée avec le statut `APPROVED`, mais la décision
-fonctionnelle affichée est dérivée de la résolution et rendue comme
-`Fusionnée`.
+Dans ce bloc, la surface globale Historique réutilise les décisions persistées
+sur `ReferenceContribution`. Le terme technique Contribution n'est pas exposé
+comme concept principal dans l'interface.
+
+L'Historique affiche :
+
+```text
+Type
+Donnée
+Décision
+Rapprochement
+Traitée le / gestionnaire
+```
+
+Par défaut il charge ensemble les décisions approuvées/fusionnées et refusées,
+puis permet de filtrer le résultat. Une fusion reste persistée avec le statut
+`APPROVED`, mais la décision fonctionnelle affichée est `Fusionnée`.
 
 L'historique détaillé des Dimensions reste disponible dans l'onglet Historique
 du Produit via `ProductReferenceEvent`.
@@ -215,36 +237,44 @@ Décision de ce bloc :
 
 Backend :
 
-- agrégation Contribution + Dimension ;
-- déduplication Contribution / Dimension provisoire ;
+- agrégation des demandes de gouvernance et revues qualité ;
+- exclusion des Contributions orphelines ;
+- absence de doublon Contribution / Dimension ;
 - pagination ;
-- filtres type / Workspace ;
-- origine Workspace / auteur ;
-- ordre ancienneté ;
-- permissions HTTP ;
-- revue d'une Dimension et disparition de la file ;
-- décision Contribution et disparition de la file ;
-- concurrence : une seule décision terminale peut gagner sur une même Contribution.
+- classement métier Produit / Référence / Dimension ;
+- rapprochement Référence avec le moteur existant ;
+- scénario `Galla → Gala` sans fusion automatique ;
+- correction de la donnée avant décision ;
+- validation / fusion / refus et disparition de la file ;
+- une validation de Dimension provisoire clôt aussi la revue qualité ;
+- concurrence : une seule décision terminale gagne ;
+- permissions HTTP.
 
 Frontend :
 
-- compteur « À contrôler » ;
-- filtres ;
-- pagination ;
-- actions Contribution ;
-- validation directe d'une Dimension ;
-- ouverture directe du Produit ;
-- états vide / erreur / chargement ;
-- lecture seule sans `product:reference:manage`.
+- tableau métier sans origine/auteur ;
+- compteur `À contrôler` ;
+- `Examiner` uniquement dans la table ;
+- routage vers la cible exacte ;
+- filtre `À contrôler` dans le drawer Références ;
+- focus warning ;
+- badges `À contrôler` / `Validée` ;
+- `Modifier / Valider / Fusionner / Refuser` dans le drawer ;
+- rapprochements visibles sans score technique ;
+- Alias absent du détail utilisateur ;
+- Historique métier sans origine Workspace.
 
 E2E critique :
 
 ```text
-Workspace crée une contribution
-→ gestionnaire global la voit dans « À contrôler »
-→ il la traite
-→ l'élément quitte la file
-→ la Référence globale résultante reste exploitable
+Workspace crée une donnée nouvelle
+→ rapprochement éventuel proposé
+→ l'utilisateur peut confirmer une création distincte
+→ la donnée devient utilisable localement et À contrôler
+→ gestionnaire ouvre la cible exacte
+→ corrige / valide / fusionne
+→ la donnée quitte À contrôler
+→ décision visible dans Historique
 ```
 
 ## 11. Hors périmètre
