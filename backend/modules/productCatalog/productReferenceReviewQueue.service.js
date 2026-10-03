@@ -5,12 +5,15 @@ import { User } from '../users/user.model.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import {
     PRODUCT_CONTRIBUTION_STATUS,
+    PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_DIMENSION_REVIEW_STATUS,
+    PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REVIEW_QUEUE_TYPE,
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
 import { ProductCharacteristic } from './productCharacteristic.model.js';
+import { ProductVariant } from './productVariant.model.js';
 import { ProductVariety } from './productVariety.model.js';
 import { ReferenceContribution } from './referenceContribution.model.js';
 
@@ -24,6 +27,30 @@ const impossibleMatch = Object.freeze({
     _id: { $exists: false },
 });
 
+const provisionalTargetLookup = ({
+    collection,
+    as,
+}) => ({
+    $lookup: {
+        from: collection,
+        let: { targetId: '$provisionalEntityId' },
+        pipeline: [
+            {
+                $match: {
+                    $expr: {
+                        $eq: ['$_id', '$$targetId'],
+                    },
+                    identityActive: true,
+                    governanceStatus:
+                        PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+                },
+            },
+            { $limit: 1 },
+        ],
+        as,
+    },
+});
+
 const contributionStages = ({
     include,
     workspaceId = null,
@@ -32,27 +59,143 @@ const contributionStages = ({
         $match: include
             ? {
                 status: PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
+                provisionalEntityId: { $ne: null },
                 ...(workspaceId
                     ? { workspace: toObjectId(workspaceId) }
                     : {}),
             }
             : impossibleMatch,
     },
+    provisionalTargetLookup({
+        collection: CanonicalProduct.collection.name,
+        as: 'productTarget',
+    }),
+    provisionalTargetLookup({
+        collection: ProductVariant.collection.name,
+        as: 'variantTarget',
+    }),
+    provisionalTargetLookup({
+        collection: ProductVariety.collection.name,
+        as: 'varietyTarget',
+    }),
+    provisionalTargetLookup({
+        collection: ProductCharacteristic.collection.name,
+        as: 'characteristicTarget',
+    }),
+    {
+        $match: {
+            $expr: {
+                $switch: {
+                    branches: [
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT,
+                                ],
+                            },
+                            then: {
+                                $gt: [{ $size: '$productTarget' }, 0],
+                            },
+                        },
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.VARIANT,
+                                ],
+                            },
+                            then: {
+                                $gt: [{ $size: '$variantTarget' }, 0],
+                            },
+                        },
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.VARIETY,
+                                ],
+                            },
+                            then: {
+                                $gt: [{ $size: '$varietyTarget' }, 0],
+                            },
+                        },
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC,
+                                ],
+                            },
+                            then: {
+                                $gt: [{ $size: '$characteristicTarget' }, 0],
+                            },
+                        },
+                    ],
+                    default: false,
+                },
+            },
+        },
+    },
     {
         $project: {
             sourceId: '$_id',
             type: { $literal: PRODUCT_REVIEW_QUEUE_TYPE.CONTRIBUTION },
-            productId: {
-                $ifNull: [
-                    '$canonicalProduct',
-                    '$provisionalEntityId',
-                ],
+            dataType: {
+                $switch: {
+                    branches: [
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT,
+                                ],
+                            },
+                            then: 'PRODUCT',
+                        },
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.VARIANT,
+                                ],
+                            },
+                            then: 'REFERENCE',
+                        },
+                    ],
+                    default: 'DIMENSION',
+                },
             },
+            productId: '$canonicalProduct',
             workspaceId: '$workspace',
             authorId: '$author',
             value: '$proposedValue',
             contributionType: '$type',
-            dimensionType: { $literal: null },
+            dimensionType: {
+                $switch: {
+                    branches: [
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.VARIETY,
+                                ],
+                            },
+                            then: 'VARIETY',
+                        },
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC,
+                                ],
+                            },
+                            then: 'CHARACTERISTIC',
+                        },
+                    ],
+                    default: null,
+                },
+            },
             characteristicKind: '$characteristicKind',
             reasons: { $ifNull: ['$reasons', []] },
             candidates: { $ifNull: ['$payload.candidates', []] },
@@ -139,6 +282,7 @@ const dimensionStages = ({
                     $literal:
                         PRODUCT_REVIEW_QUEUE_TYPE.DIMENSION_REVIEW,
                 },
+                dataType: { $literal: 'DIMENSION' },
                 productId: '$canonicalProduct',
                 workspaceId: '$contributedFromWorkspace',
                 authorId: '$createdBy',
@@ -264,6 +408,7 @@ const enrichReviewQueueItems = async (items) => {
             id: item.type + ':' + item.sourceId.toString(),
             sourceId: item.sourceId.toString(),
             type: item.type,
+            dataType: item.dataType,
             value: item.value,
             contributionType: item.contributionType ?? null,
             dimensionType: item.dimensionType ?? null,
@@ -372,31 +517,28 @@ const listProductReviewQueue = async ({
                         $group: {
                             _id: null,
                             total: { $sum: 1 },
-                            contributionCount: {
+                            productCount: {
                                 $sum: {
                                     $cond: [
-                                        {
-                                            $eq: [
-                                                '$type',
-                                                PRODUCT_REVIEW_QUEUE_TYPE
-                                                    .CONTRIBUTION,
-                                            ],
-                                        },
+                                        { $eq: ['$dataType', 'PRODUCT'] },
                                         1,
                                         0,
                                     ],
                                 },
                             },
-                            dimensionReviewCount: {
+                            referenceCount: {
                                 $sum: {
                                     $cond: [
-                                        {
-                                            $eq: [
-                                                '$type',
-                                                PRODUCT_REVIEW_QUEUE_TYPE
-                                                    .DIMENSION_REVIEW,
-                                            ],
-                                        },
+                                        { $eq: ['$dataType', 'REFERENCE'] },
+                                        1,
+                                        0,
+                                    ],
+                                },
+                            },
+                            dimensionCount: {
+                                $sum: {
+                                    $cond: [
+                                        { $eq: ['$dataType', 'DIMENSION'] },
                                         1,
                                         0,
                                     ],
@@ -412,8 +554,9 @@ const listProductReviewQueue = async ({
     const rawItems = result?.items ?? [];
     const summary = result?.summary?.[0] ?? {
         total: 0,
-        contributionCount: 0,
-        dimensionReviewCount: 0,
+        productCount: 0,
+        referenceCount: 0,
+        dimensionCount: 0,
     };
 
     const [items, originOptions] = await Promise.all([
@@ -427,8 +570,9 @@ const listProductReviewQueue = async ({
         items,
         summary: {
             total: summary.total ?? 0,
-            contributionCount: summary.contributionCount ?? 0,
-            dimensionReviewCount: summary.dimensionReviewCount ?? 0,
+            productCount: summary.productCount ?? 0,
+            referenceCount: summary.referenceCount ?? 0,
+            dimensionCount: summary.dimensionCount ?? 0,
         },
         origins: originOptions,
         pagination: {
