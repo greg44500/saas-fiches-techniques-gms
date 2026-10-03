@@ -762,6 +762,18 @@ describe('M-002 global product reference HTTP contract', () => {
         ]);
     });
 
+    it('refuse de combiner un statut explicite avec reviewedOnly=true', async () => {
+        const response = await request(app)
+            .get('/api/product-reference/contributions')
+            .query({
+                status: 'APPROVED',
+                reviewedOnly: 'true',
+            })
+            .set(bearer(governorToken));
+
+        expect(response.status).toBe(400);
+    });
+
     it('sépare lecture et traitement de la file À contrôler par permission', async () => {
         const workspace = await createWorkspaceOwnerFixture();
         const productResponse = await request(app)
