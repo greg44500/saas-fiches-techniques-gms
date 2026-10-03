@@ -77,9 +77,19 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       providesTags: ['ProductReference'],
     }),
     listProductReferenceContributions: builder.query({
-      query: ({ status = 'PENDING_REVIEW', page = 1, limit = 20 } = {}) => ({
+      query: ({
+        status,
+        reviewedOnly = false,
+        page = 1,
+        limit = 20,
+      } = {}) => ({
         url: '/product-reference/contributions',
-        params: { status, page, limit },
+        params: {
+          status: status ?? (reviewedOnly ? undefined : 'PENDING_REVIEW'),
+          reviewedOnly: reviewedOnly ? 'true' : undefined,
+          page,
+          limit,
+        },
       }),
       transformResponse: (response) => ({
         contributions: response.data.contributions,
