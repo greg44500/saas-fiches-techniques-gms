@@ -296,6 +296,41 @@ describe('ProductReferencePage', () => {
   });
 
 
+  it('distingue la couverture des Prix repères de la valorisation M-004', () => {
+    mocks.productsQuery.mockReturnValue({
+      data: {
+        products: [{
+          ...product,
+          variants: [
+            product.variants[0],
+            {
+              ...product.variants[0],
+              id: 'variant-2',
+              name: 'Carotte purée',
+            },
+          ],
+        }],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 1,
+          totalPages: 1,
+        },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByText('1 / 2 avec prix repère'))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/références valorisées/i))
+      .not.toBeInTheDocument();
+  });
+
   it('applique immédiatement une suggestion prédictive au tableau', async () => {
     const user = userEvent.setup();
 
