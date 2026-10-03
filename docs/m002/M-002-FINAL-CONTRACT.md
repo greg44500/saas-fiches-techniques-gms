@@ -248,9 +248,10 @@ Refuser
 La fusion reste toujours explicite. Le score ou la distance Levenshtein ne sont
 jamais exposés comme une décision automatique.
 
-L'historique est distinct de la file active et présente les décisions métier
-`Approuvée | Fusionnée | Refusée` avec la donnée, son type, les
-rapprochements éventuels et le gestionnaire ayant traité l'élément.
+Les décisions restent persistées dans les primitives backend de gouvernance et
+d'audit, mais ne sont plus exposées comme onglet principal de la surface
+Platform. Une donnée traitée disparaît de `À contrôler` ; la traçabilité reste
+disponible pour audit, support et diagnostic.
 
 Aucune nouvelle permission n'est créée : lecture par
 `product:reference:read`, traitement par `product:reference:manage`.
