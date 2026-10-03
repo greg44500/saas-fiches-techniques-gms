@@ -197,7 +197,7 @@ describe('ProductReferenceDetailsDrawer', () => {
       normalizedAmount: '3.25',
       normalizedUnit: 'KG',
       currency: 'EUR',
-      source: 'Référentiel de démonstration',
+      source: 'Référentiel de démonstration — prix repère global — corpus professionnel v7 — octobre 2026 · m003-global-indicative-v2',
       updatedAt: '2026-10-03T10:00:00.000Z',
       status: 'ACTIVE',
     }]));
@@ -365,7 +365,7 @@ describe('ProductReferenceDetailsDrawer', () => {
       .toBeInTheDocument();
     expect(screen.getByText('Mis à jour le 03/10/2026'))
       .toBeInTheDocument();
-    expect(screen.queryByText('Référentiel de démonstration'))
+    expect(screen.queryByText(/Référentiel de démonstration/)
       .not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
