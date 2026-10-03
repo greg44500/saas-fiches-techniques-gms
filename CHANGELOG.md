@@ -19,10 +19,11 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - revue qualité Platform ligne par ligne des Variétés et Caractéristiques M-002 avec états `NOT_REQUIRED / PENDING / REVIEWED` ;
 - signalement chiffré des Produits ayant des Dimensions Workspace à vérifier et ouverture directe du drawer filtré ;
 - suppression fonctionnelle contrôlée d'une Dimension erronée lorsqu'aucune Référence Produit ne l'utilise ;
-- file Platform `À contrôler` agrégeant les Contributions en attente et les Dimensions Workspace à vérifier, avec compteur, filtres type/origine, pagination serveur et accès direct au Produit ;
-- historique Platform distinct des éléments encore à traiter, avec décision Approuvée / Fusionnée / Refusée ;
+- file Platform `À contrôler` agrégeant les demandes de gouvernance et les Dimensions à revoir, avec compteur, pagination serveur, classification métier Produit / Référence / Dimension et ouverture sur la cible exacte ;
+- historique Platform distinct des éléments encore à traiter, avec décision Approuvée / Fusionnée / Refusée et présentation métier sans origine Workspace dans la surface principale ;
 - indexes M-002 dédiés à la revue globale des Variétés/Caractéristiques et au rapprochement des Dimensions provisoires avec leur Contribution ;
 - compteurs dynamiques des onglets Référentiel, À contrôler et Catégories.
+- gouvernance des nouvelles Références Produit Workspace : détection des doublons exacts, rapprochements lexicaux non bloquants, création `PROVISIONAL`, contrôle Platform ciblé et fusion explicite ;
 
 ### Fixed
 
@@ -32,6 +33,10 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - restauration de la visibilité Workspace des Produits historiques ;
 - feedback anti-doublon explicite lors de la création d'un Produit ;
 - retrait immédiat sécurisé d'une Dimension fraîchement ajoutée.
+- suppression du double contrôle d'une Dimension provisoire : une approbation de gouvernance clôt aussi sa revue qualité lorsqu'il s'agit de la même donnée ;
+- retrait des alias techniques des drawers Produit utilisateur/Platform ;
+- exclusion des demandes de contrôle orphelines dont la cible provisoire n'est plus actionnable ;
+- conservation de l'acteur lors du repointage des Favoris pendant une fusion de Références.
 
 ### Changed
 
@@ -48,7 +53,7 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - navigation Platform GMS unifiée sous « Gestion des référentiels », avec onglets Produits/Fournisseurs filtrés par permissions Application Global ;
 - aide métier Platform alignée sur cette navigation avec une catégorie unique « Gestion des référentiels », sans modifier le moteur d’aide Core ni les catégories Workspace ;
 
-- drawer Platform Produit densifié : recherche et enrichissement alignés, compteurs, filtres À vérifier/Actives/Archivées/Toutes et actions par icônes ;
+- drawer Platform Produit densifié : recherche et enrichissement alignés, compteurs, filtres À contrôler/Actives/Archivées/Toutes, filtre Références À contrôler et actions contextualisées par donnée ;
 - aides secondaires de création/enrichissement déplacées vers des infobulles contextuelles ;
 
 - intégration du Core post-tag `v1.2.1` jusqu’au commit `054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3`, sans nouvelle version ni déplacement de tag ;
