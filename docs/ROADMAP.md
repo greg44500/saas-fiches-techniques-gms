@@ -603,19 +603,20 @@ Le corpus professionnel A2 est implémenté sur la branche
 `feature/a2-professional-reference-corpus` :
 
 ~~~text
-m002-reference-v7
+m002-reference-v8
 → 16 catégories
-→ 320 Produits
-→ 368 Références Produit
+→ 381 Produits
+→ 488 Références Produit
+→ 126 nouvelles Références vs v7
+→ 6 fonds de tarte génériques remplacés par des formats exploitables
 
-m003-global-indicative-prices.v2
-→ 368 Prix repères
-→ couverture exacte du corpus v7
+m003-global-indicative-prices.v3
+→ 362 Prix repères historiques compatibles
+→ 126 nouvelles Références v8 volontairement sans Prix repère
+→ aucun montant ajouté sans calibration validée
 ~~~
 
-Le lot actif est désormais le **Bloc B — Gouvernance Produit unifiée**, dont
-l'implémentation métier est consolidée sur la branche et attend la validation
-locale/visuelle avant PR.
+Le lot actif regroupe désormais le **Bloc B — Gouvernance Produit unifiée** et l'enrichissement complémentaire du corpus professionnel v8. L'ensemble reste consolidé sur la même branche et attend la validation locale/visuelle avant PR unique.
 
 Cible implémentée :
 
