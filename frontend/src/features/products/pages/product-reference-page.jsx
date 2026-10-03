@@ -95,9 +95,14 @@ function ProductReferencePage({ canManage }) {
     },
     { skip: false },
   );
-  const globalPricesQuery = useListGlobalIndicativePricesQuery({
-    status: 'ACTIVE',
-  });
+  const globalPricesQuery = useListGlobalIndicativePricesQuery(
+    {
+      status: 'ACTIVE',
+    },
+    {
+      skip: section !== 'reference',
+    },
+  );
   const globalPriceByVariantId = useMemo(
     () => new Map(
       (globalPricesQuery.data ?? []).map((price) => [
@@ -580,11 +585,18 @@ function ProductReferencePage({ canManage }) {
 
   const initialLoading = (
     metadataQuery.isLoading
-    || (globalPricesQuery.isLoading && globalPricesQuery.data === undefined)
     || (
       section === 'reference'
-      && productsQuery.isLoading
-      && productsQuery.data === undefined
+      && (
+        (
+          globalPricesQuery.isLoading
+          && globalPricesQuery.data === undefined
+        )
+        || (
+          productsQuery.isLoading
+          && productsQuery.data === undefined
+        )
+      )
     )
     || (
       section === 'history'
@@ -593,14 +605,21 @@ function ProductReferencePage({ canManage }) {
     )
   );
   const hasError = metadataQuery.isError
-    || globalPricesQuery.isError
-    || (section === 'reference' && productsQuery.isError)
+    || (
+      section === 'reference'
+      && (
+        globalPricesQuery.isError
+        || productsQuery.isError
+      )
+    )
     || (section === 'history' && contributionsQuery.isError);
 
   function retry() {
     metadataQuery.refetch();
-    globalPricesQuery.refetch();
-    if (section === 'reference') productsQuery.refetch();
+    if (section === 'reference') {
+      globalPricesQuery.refetch();
+      productsQuery.refetch();
+    }
     if (section === 'history') contributionsQuery.refetch();
   }
 
