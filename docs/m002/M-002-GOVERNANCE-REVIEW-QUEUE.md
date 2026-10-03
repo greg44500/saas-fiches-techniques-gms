@@ -131,7 +131,6 @@ La page Produits devient :
 ```text
 Référentiel
 À contrôler
-Historique
 Catégories
 ```
 
@@ -166,32 +165,23 @@ Dimensions
 → Toutes
 ```
 
-### Historique
+### Traçabilité après décision
 
-L'historique reste distinct de la file active.
+Les décisions de gouvernance restent persistées dans les primitives backend
+existantes (`ReferenceContribution`, `ProductReferenceEvent`, audit Core)
+mais ne sont plus exposées comme onglet principal.
 
-Dans ce bloc, la surface globale Historique réutilise les décisions persistées
-sur `ReferenceContribution`. Le terme technique Contribution n'est pas exposé
-comme concept principal dans l'interface.
+Décision UX V1 :
 
-L'Historique affiche :
+- une donnée traitée disparaît de `À contrôler` ;
+- aucune action utilisateur de vidange de l'historique n'est ajoutée ;
+- la traçabilité reste disponible pour audit, support et diagnostic ;
+- une surface d'activité contextuelle pourra être ajoutée ultérieurement si
+  un besoin métier concret le justifie.
 
-```text
-Type
-Donnée
-Décision
-Rapprochement
-Traitée le / gestionnaire
-```
+L'absence d'onglet Historique ne supprime ni ne réécrit aucune donnée
+persistée.
 
-Par défaut il charge ensemble les décisions approuvées/fusionnées et refusées,
-puis permet de filtrer le résultat. Une fusion reste persistée avec le statut
-`APPROVED`, mais la décision fonctionnelle affichée est `Fusionnée`.
-
-L'historique détaillé des Dimensions reste disponible dans l'onglet Historique
-du Produit via `ProductReferenceEvent`.
-
-Aucun événement existant n'est réécrit.
 
 ## 7. Pagination et performance
 
@@ -210,7 +200,7 @@ Aucune nouvelle permission n'est créée.
 
 ```text
 product:reference:read
-→ lire Référentiel / À contrôler / Historique
+→ lire Référentiel / À contrôler / Catégories
 
 product:reference:manage
 → traiter une Contribution
@@ -253,6 +243,7 @@ Backend :
 Frontend :
 
 - tableau métier sans origine/auteur ;
+- aucun badge `À contrôler` redondant dans les lignes de la file ;
 - compteur `À contrôler` ;
 - `Examiner` uniquement dans la table ;
 - routage vers la cible exacte ;
@@ -262,7 +253,8 @@ Frontend :
 - `Modifier / Valider / Fusionner / Refuser` dans le drawer ;
 - rapprochements visibles sans score technique ;
 - Alias absent du détail utilisateur ;
-- Historique métier sans origine Workspace.
+- Historique global absent de la navigation principale ;
+- traçabilité backend conservée.
 
 E2E critique :
 
@@ -274,7 +266,7 @@ Workspace crée une donnée nouvelle
 → gestionnaire ouvre la cible exacte
 → corrige / valide / fusionne
 → la donnée quitte À contrôler
-→ décision visible dans Historique
+→ décision conservée en traçabilité backend
 ```
 
 ## 11. Hors périmètre
@@ -413,7 +405,7 @@ Après succès :
 - compteur `À contrôler` décrémenté ;
 - disparition de la vue filtrée `À contrôler` ;
 - donnée toujours accessible dans la vue complète ;
-- décision visible dans l'Historique.
+- décision conservée dans la traçabilité backend.
 
 ### 12.4 Données orphelines
 
