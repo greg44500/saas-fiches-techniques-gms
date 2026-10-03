@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   metadataQuery: vi.fn(),
   productsQuery: vi.fn(),
   contributionsQuery: vi.fn(),
-  reviewContribution: vi.fn(),
+  reviewQueueQuery: vi.fn(),
   updateCategoryStatus: vi.fn(),
   globalPricesQuery: vi.fn(),
 }));
@@ -23,10 +23,7 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
   useGetProductReferenceMetadataQuery: mocks.metadataQuery,
   useListProductReferenceProductsQuery: mocks.productsQuery,
   useListProductReferenceContributionsQuery: mocks.contributionsQuery,
-  useReviewProductReferenceContributionMutation: () => [
-    mocks.reviewContribution,
-    { isLoading: false },
-  ],
+  useListProductReferenceReviewQueueQuery: mocks.reviewQueueQuery,
   useUpdateProductReferenceCategoryStatusMutation: () => [
     mocks.updateCategoryStatus,
     { isLoading: false },
@@ -87,6 +84,12 @@ vi.mock('@/features/products/components/product-reference-details-drawer', () =>
   ),
 }));
 
+vi.mock('@/features/products/components/product-reference-review-queue', () => ({
+  ProductReferenceReviewQueue: () => (
+    <div>File Produit à contrôler ouverte</div>
+  ),
+}));
+
 vi.mock('@/features/products/components/product-reference-category-dialog', () => ({
   ProductReferenceCategoryDialog: ({ open }) => (
     open ? <div>Catégorie globale ouverte</div> : null
@@ -128,6 +131,10 @@ const metadata = {
   productContributionTypes: [
     { value: 'CANONICAL_PRODUCT', label: 'Produit' },
     { value: 'CHARACTERISTIC', label: 'Caractéristique' },
+  ],
+  productReviewQueueTypes: [
+    { value: 'CONTRIBUTION', label: 'Contribution' },
+    { value: 'DIMENSION_REVIEW', label: 'Valeur à vérifier' },
   ],
   conservationTypes: [{ value: 'FRAIS', label: 'Frais' }],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
@@ -253,6 +260,22 @@ describe('ProductReferencePage', () => {
       isLoading: false,
       refetch: vi.fn(),
     });
+    mocks.reviewQueueQuery.mockReturnValue({
+      data: {
+        items: [],
+        summary: {
+          total: 0,
+          contributionCount: 0,
+          dimensionReviewCount: 0,
+        },
+        origins: [],
+        pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
     mocks.contributionsQuery.mockReturnValue({
       data: {
         contributions: [],
@@ -262,9 +285,6 @@ describe('ProductReferencePage', () => {
       isFetching: false,
       isLoading: false,
       refetch: vi.fn(),
-    });
-    mocks.reviewContribution.mockReturnValue({
-      unwrap: vi.fn().mockResolvedValue({}),
     });
     mocks.updateCategoryStatus.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
@@ -382,7 +402,7 @@ describe('ProductReferencePage', () => {
     });
   });
 
-  it('affiche des compteurs d’onglets basés sur les totaux filtrés', async () => {
+  it('affiche les compteurs du Référentiel et de la file À contrôler', async () => {
     const user = userEvent.setup();
 
     mocks.productsQuery.mockImplementation((args) => ({
@@ -391,7 +411,7 @@ describe('ProductReferencePage', () => {
         pagination: {
           page: 1,
           limit: args.limit,
-          total: args.categoryId === 'category-1' ? 7 : 264,
+          total: args.categoryId === 'category-1' ? 7 : 368,
           totalPages: 1,
         },
       },
@@ -400,27 +420,30 @@ describe('ProductReferencePage', () => {
       isLoading: false,
       refetch: vi.fn(),
     }));
-    mocks.contributionsQuery.mockImplementation((args) => ({
+    mocks.reviewQueueQuery.mockReturnValue({
       data: {
-        contributions: [],
-        pagination: {
-          page: 1,
-          limit: args.limit,
-          total: args.status === 'APPROVED' ? 2 : 4,
-          totalPages: args.status === 'APPROVED' ? 2 : 4,
+        items: [],
+        summary: {
+          total: 4,
+          contributionCount: 2,
+          dimensionReviewCount: 2,
         },
+        origins: [],
+        pagination: { page: 1, limit: 1, total: 4, totalPages: 4 },
       },
       isError: false,
       isFetching: false,
       isLoading: false,
       refetch: vi.fn(),
-    }));
+    });
 
     renderPage();
 
-    expect(screen.getByRole('tab', { name: 'Référentiel (264)' }))
+    expect(screen.getByRole('tab', { name: 'Référentiel (368)' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Contributions (4)' }))
+    expect(screen.getByRole('tab', { name: 'À contrôler (4)' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Historique' }))
       .toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Catégories (1)' }))
       .toBeInTheDocument();
@@ -433,20 +456,7 @@ describe('ProductReferencePage', () => {
 
     expect(await screen.findByRole('tab', { name: 'Référentiel (7)' }))
       .toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {
-      name: 'Contributions (4)',
-    }));
-    await selectOption(
-      user,
-      'Filtrer les contributions par statut',
-      'Approuvée',
-    );
-
-    expect(await screen.findByRole('tab', { name: 'Contributions (2)' }))
-      .toBeInTheDocument();
   });
-
 
   it('signale les nouvelles Dimensions et ouvre directement les lignes à vérifier', async () => {
     const user = userEvent.setup();
@@ -612,18 +622,49 @@ describe('ProductReferencePage', () => {
     })).toBeInTheDocument();
   });
 
-  it('examine les contributions séparément du lifecycle des références', async () => {
+  it('ouvre la file unifiée depuis l’onglet À contrôler', async () => {
     const user = userEvent.setup();
+
+    mocks.reviewQueueQuery.mockReturnValue({
+      data: {
+        items: [],
+        summary: {
+          total: 1,
+          contributionCount: 1,
+          dimensionReviewCount: 0,
+        },
+        origins: [],
+        pagination: { page: 1, limit: 1, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+
+    await user.click(screen.getByRole('tab', {
+      name: 'À contrôler (1)',
+    }));
+
+    expect(screen.getByText('File Produit à contrôler ouverte'))
+      .toBeInTheDocument();
+  });
+
+  it('conserve les Contributions traitées dans un Historique séparé', async () => {
+    const user = userEvent.setup();
+
     mocks.contributionsQuery.mockReturnValue({
       data: {
         contributions: [{
-          id: 'contribution-1',
+          id: 'contribution-history-1',
           type: 'CHARACTERISTIC',
           characteristicKind: 'QUALITY_DESIGNATION',
           proposedValue: 'Carottes des sables',
           workspace: { id: 'workspace-1', name: 'Atelier pilote' },
           author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
-          status: 'PENDING_REVIEW',
+          status: 'APPROVED',
           reasons: [{
             code: 'CHARACTERISTIC_REQUIRES_GOVERNANCE',
             message: 'Ce type nécessite une revue.',
@@ -638,63 +679,13 @@ describe('ProductReferencePage', () => {
     });
 
     renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Contributions (1)' }));
+    await user.click(screen.getByRole('tab', { name: 'Historique' }));
 
     expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
-    expect(screen.getByText('Caractéristique · Désignation de qualité'))
-      .toBeInTheDocument();
     expect(screen.getByText('Atelier pilote')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Approuver' }));
-
-    expect(mocks.reviewContribution).toHaveBeenCalledWith({
-      contributionId: 'contribution-1',
-      decision: 'APPROVE',
-    });
-  });
-
-  it('propose une fusion explicite avec les candidats de gouvernance', async () => {
-    const user = userEvent.setup();
-    mocks.contributionsQuery.mockReturnValue({
-      data: {
-        contributions: [{
-          id: 'contribution-merge',
-          type: 'VARIETY',
-          proposedValue: 'Galla',
-          workspace: { id: 'workspace-1', name: 'Atelier pilote' },
-          author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
-          status: 'PENDING_REVIEW',
-          reasons: [{
-            code: 'TYPO_CANDIDATE',
-            message: 'Une valeur proche existe.',
-          }],
-          candidates: [{
-            id: 'variety-gala',
-            name: 'Gala',
-          }],
-        }],
-        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
-      },
-      isError: false,
-      isFetching: false,
-      isLoading: false,
-      refetch: vi.fn(),
-    });
-
-    renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Contributions (1)' }));
-
-    expect(screen.getByText(/Valeurs proches : Gala/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', {
-      name: 'Fusionner avec Gala',
-    }));
-
-    expect(mocks.reviewContribution).toHaveBeenCalledWith({
-      contributionId: 'contribution-merge',
-      decision: 'MERGE',
-      targetReferenceId: 'variety-gala',
-    });
+    expect(screen.getByText('Approuvée')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Approuver' }))
+      .not.toBeInTheDocument();
   });
 
   it('ouvre le détail global depuis la liste', async () => {
