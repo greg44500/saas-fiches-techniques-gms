@@ -46,6 +46,12 @@ import {
   getConservationTypeLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
+import {
+  useListGlobalIndicativePricesQuery,
+} from '@/features/suppliers/api/supplier-api';
+import {
+  formatPrice,
+} from '@/features/suppliers/lib/supplier-presentation';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
 const ALL_REFERENCE_CATEGORIES = '__ALL__';
@@ -83,6 +89,19 @@ function ProductReferencePage({ canManage }) {
     },
     { skip: false },
   );
+  const globalPricesQuery = useListGlobalIndicativePricesQuery({
+    status: 'ACTIVE',
+  });
+  const globalPriceByVariantId = useMemo(
+    () => new Map(
+      (globalPricesQuery.data ?? []).map((price) => [
+        price.productVariant.id,
+        price,
+      ]),
+    ),
+    [globalPricesQuery.data],
+  );
+
   const contributionsQuery = useListProductReferenceContributionsQuery(
     {
       status: contributionStatus,
@@ -327,6 +346,33 @@ function ProductReferencePage({ canManage }) {
       cell: (product) => product.category?.name ?? 'Catégorie non renseignée',
     },
     {
+      id: 'referencePrice',
+      header: 'Prix repère',
+      cell: (product) => {
+        const activeVariants = (product.variants ?? []).filter(
+          (variant) => variant.status === 'ACTIVE',
+        );
+
+        if (activeVariants.length === 0) return '—';
+
+        if (activeVariants.length === 1) {
+          const price = globalPriceByVariantId.get(activeVariants[0].id);
+          return price
+            ? formatPrice(price, { hideDefaultCurrency: true })
+            : 'Non renseigné';
+        }
+
+        const pricedCount = activeVariants.filter(
+          (variant) => globalPriceByVariantId.has(variant.id),
+        ).length;
+
+        return pricedCount
+          + ' / '
+          + activeVariants.length
+          + ' références valorisées';
+      },
+    },
+    {
       id: 'actions',
       header: 'Actions',
       cell: (product) => (
@@ -534,6 +580,7 @@ function ProductReferencePage({ canManage }) {
 
   const initialLoading = (
     metadataQuery.isLoading
+    || (globalPricesQuery.isLoading && globalPricesQuery.data === undefined)
     || (
       section === 'reference'
       && productsQuery.isLoading
@@ -546,11 +593,13 @@ function ProductReferencePage({ canManage }) {
     )
   );
   const hasError = metadataQuery.isError
+    || globalPricesQuery.isError
     || (section === 'reference' && productsQuery.isError)
     || (section === 'contributions' && contributionsQuery.isError);
 
   function retry() {
     metadataQuery.refetch();
+    globalPricesQuery.refetch();
     if (section === 'reference') productsQuery.refetch();
     if (section === 'contributions') contributionsQuery.refetch();
   }
