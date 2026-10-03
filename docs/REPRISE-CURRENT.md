@@ -509,7 +509,7 @@ Branche courante :
 ~~~text
 feature/a2-professional-reference-corpus
 HEAD vérifié avant mise à jour de cette reprise :
-265e5935380958f9cdeaa5b16aa04f2c438e7d3b
+085783cb46f553e0d1633f7ebd8debb434846384
 main de base : 3634b9b76c4b019f9458f3827cd6d29d20cf6e3f
 PR ouverte : aucune
 ~~~
