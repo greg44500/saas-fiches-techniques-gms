@@ -273,10 +273,6 @@ function ProductDetailsDrawer({
               <div className="rounded-lg border border-border px-4">
                 <dl>
                   <DetailRow label="Nom" value={product.name} />
-                  <DetailRow
-                    label="Alias"
-                    value={product.aliases?.length ? product.aliases.join(', ') : null}
-                  />
                   <DetailRow label="Catégorie" value={product.category?.name} />
                   <div className="grid gap-1 py-3 sm:grid-cols-[160px_1fr]">
                     <dt className="text-sm text-muted-foreground">Statut</dt>
