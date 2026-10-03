@@ -688,6 +688,21 @@ describe('ProductReferencePage', () => {
     renderPage({ canManage: true });
     await user.click(screen.getByRole('tab', { name: 'Historique' }));
 
+    await waitFor(() => {
+      expect(mocks.contributionsQuery).toHaveBeenLastCalledWith(
+        {
+          status: undefined,
+          reviewedOnly: true,
+          page: 1,
+          limit: 20,
+        },
+        { skip: false },
+      );
+    });
+
+    expect(screen.getByRole('combobox', {
+      name: 'Filtrer l’historique par décision',
+    })).toHaveTextContent('Toutes les décisions');
     expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
     expect(screen.getByText('Atelier pilote')).toBeInTheDocument();
     expect(screen.getByText('Approuvée')).toBeInTheDocument();
