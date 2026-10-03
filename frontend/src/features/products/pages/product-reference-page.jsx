@@ -30,7 +30,6 @@ import {
 } from '@/components/ui/tabs';
 import {
   useGetProductReferenceMetadataQuery,
-  useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
   useUpdateProductReferenceCategoryStatusMutation,
@@ -60,7 +59,6 @@ import {
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
 const ALL_REFERENCE_CATEGORIES = '__ALL__';
-const ALL_REVIEWED_CONTRIBUTIONS = '__ALL_REVIEWED__';
 
 function ProductReferencePage({ canManage }) {
   const { toast } = useToast();
@@ -70,8 +68,6 @@ function ProductReferencePage({ canManage }) {
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(ALL_REFERENCE_CATEGORIES);
   const [referenceStatus, setReferenceStatus] = useState('ACTIVE');
-  const [contributionStatus, setContributionStatus] =
-    useState(ALL_REVIEWED_CONTRIBUTIONS);
   const [drawerState, setDrawerState] = useState({
     open: false,
     productId: null,
@@ -124,27 +120,13 @@ function ProductReferencePage({ canManage }) {
     { skip: false },
   );
 
-  const contributionsQuery = useListProductReferenceContributionsQuery(
-    {
-      status: contributionStatus === ALL_REVIEWED_CONTRIBUTIONS
-        ? undefined
-        : contributionStatus,
-      reviewedOnly:
-        contributionStatus === ALL_REVIEWED_CONTRIBUTIONS,
-      page: section === 'history' ? page : 1,
-      limit: section === 'history' ? pageSize : 1,
-    },
-    { skip: section !== 'history' },
-  );
   const [updateCategoryStatus, categoryStatusState] =
     useUpdateProductReferenceCategoryStatusMutation();
 
   useEffect(() => {
     const totalPages = section === 'reference'
       ? productsQuery.data?.pagination?.totalPages
-      : section === 'history'
-        ? contributionsQuery.data?.pagination?.totalPages
-        : null;
+      : null;
 
     if (totalPages === 0 && page !== 1) {
       setPage(1);
@@ -153,7 +135,6 @@ function ProductReferencePage({ canManage }) {
 
     if (totalPages && page > totalPages) setPage(totalPages);
   }, [
-    contributionsQuery.data?.pagination?.totalPages,
     page,
     productsQuery.data?.pagination?.totalPages,
     section,
@@ -176,23 +157,6 @@ function ProductReferencePage({ canManage }) {
     [metadata?.productStatuses],
   );
 
-  const historyStatusItems = useMemo(() => [
-    {
-      value: ALL_REVIEWED_CONTRIBUTIONS,
-      label: 'Toutes les décisions',
-    },
-    ...(metadata?.productContributionStatuses ?? [])
-      .filter(({ value }) => value !== 'PENDING_REVIEW')
-      .map((item) => (
-        item.value === 'APPROVED'
-          ? {
-              ...item,
-              label: 'Approuvées ou fusionnées',
-            }
-          : item
-      )),
-  ], [metadata?.productContributionStatuses]);
-
   const referenceCount = productsQuery.data?.pagination?.total ?? 0;
   const reviewCount = reviewQueueCountQuery.data?.summary?.total ?? 0;
   const categoryCount = metadata?.categories?.length ?? 0;
@@ -204,7 +168,6 @@ function ProductReferencePage({ canManage }) {
     setSearchInput('');
     setCategoryId(ALL_REFERENCE_CATEGORIES);
     setReferenceStatus('ACTIVE');
-    setContributionStatus(ALL_REVIEWED_CONTRIBUTIONS);
   }
 
   function applySearch(event) {
@@ -276,7 +239,6 @@ function ProductReferencePage({ canManage }) {
     setSearchInput('');
     setCategoryId(category.id);
     setReferenceStatus('ACTIVE');
-    setContributionStatus(ALL_REVIEWED_CONTRIBUTIONS);
     setPage(1);
   }
 
@@ -451,107 +413,6 @@ function ProductReferencePage({ canManage }) {
     },
   ];
 
-  const contributionStatusLabel = (status) => (
-    (metadata?.productContributionStatuses ?? [])
-      .find(({ value }) => value === status)?.label
-    ?? status
-  );
-  const contributionDecisionLabel = (contribution) => {
-    if (contribution.decision === 'MERGE') return 'Fusionnée';
-    if (contribution.decision === 'REJECT') return 'Refusée';
-    if (contribution.decision === 'APPROVE') return 'Approuvée';
-    return contributionStatusLabel(contribution.status);
-  };
-  const characteristicKindLabel = (kind) => (
-    (metadata?.productCharacteristicKinds ?? [])
-      .find(({ value }) => value === kind)?.label
-    ?? kind
-  );
-
-  const historyContributionColumns = [
-    {
-      id: 'type',
-      header: 'Type',
-      cell: (contribution) => (
-        <span className="font-medium">
-          {contribution.type === 'CANONICAL_PRODUCT'
-            ? 'Produit'
-            : contribution.type === 'VARIANT'
-              ? 'Référence'
-              : contribution.type === 'VARIETY'
-                ? 'Dimension · Variété'
-                : contribution.characteristicKind
-                  ? 'Dimension · '
-                    + characteristicKindLabel(
-                      contribution.characteristicKind,
-                    )
-                  : 'Dimension'}
-        </span>
-      ),
-    },
-    {
-      id: 'value',
-      header: 'Donnée',
-      cell: (contribution) => (
-        <p className="font-medium">{contribution.proposedValue}</p>
-      ),
-    },
-    {
-      id: 'decision',
-      header: 'Décision',
-      cell: (contribution) => (
-        <StatusBadge
-          tone={
-            contribution.decision === 'REJECT'
-              ? 'destructive'
-              : 'success'
-          }
-        >
-          {contributionDecisionLabel(contribution)}
-        </StatusBadge>
-      ),
-    },
-    {
-      id: 'matching',
-      header: 'Rapprochement',
-      cell: (contribution) => (
-        (contribution.candidates ?? []).length > 0 ? (
-          <span className="text-sm">
-            {(contribution.candidates ?? [])
-              .map((candidate) => candidate.name)
-              .join(', ')}
-          </span>
-        ) : (
-          <span className="text-sm text-muted-foreground">
-            Aucun
-          </span>
-        )
-      ),
-    },
-    {
-      id: 'reviewedAt',
-      header: 'Traitée le',
-      cell: (contribution) => (
-        <div>
-          <p>
-            {contribution.reviewedAt
-              ? new Date(contribution.reviewedAt)
-                .toLocaleDateString('fr-FR')
-              : 'Date indisponible'}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {[
-              contribution.reviewer?.firstName,
-              contribution.reviewer?.lastName,
-            ].filter(Boolean).join(' ')
-              || contribution.reviewer?.email
-              || 'Gestionnaire non disponible'}
-          </p>
-        </div>
-      ),
-    },
-  ];
-
   const categoryColumns = [
     {
       id: 'name',
@@ -635,11 +496,6 @@ function ProductReferencePage({ canManage }) {
         )
       )
     )
-    || (
-      section === 'history'
-      && contributionsQuery.isLoading
-      && contributionsQuery.data === undefined
-    )
   );
   const hasError = metadataQuery.isError
     || (
@@ -648,8 +504,7 @@ function ProductReferencePage({ canManage }) {
         globalPricesQuery.isError
         || productsQuery.isError
       )
-    )
-    || (section === 'history' && contributionsQuery.isError);
+    );
 
   function retry() {
     metadataQuery.refetch();
@@ -657,7 +512,6 @@ function ProductReferencePage({ canManage }) {
       globalPricesQuery.refetch();
       productsQuery.refetch();
     }
-    if (section === 'history') contributionsQuery.refetch();
   }
 
   return (
@@ -709,9 +563,6 @@ function ProductReferencePage({ canManage }) {
           </TabsTrigger>
           <TabsTrigger value="review" variant="section">
             À contrôler ({reviewCount})
-          </TabsTrigger>
-          <TabsTrigger value="history" variant="section">
-            Historique
           </TabsTrigger>
           <TabsTrigger value="categories" variant="section">
             Catégories ({categoryCount})
@@ -830,78 +681,6 @@ function ProductReferencePage({ canManage }) {
           setPage={setPage}
           setPageSize={setPageSize}
         />
-      )}
-
-      {section === 'history' && (
-        <section className="rounded-xl border border-border bg-card">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
-            <div>
-              <h2 className="font-semibold">Historique des contrôles</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Consultez les décisions déjà prises sur les données du référentiel.
-              </p>
-            </div>
-            <Select
-              items={historyStatusItems}
-              onValueChange={(value) => {
-                setContributionStatus(value);
-                setPage(1);
-              }}
-              value={contributionStatus}
-            >
-              <SelectTrigger aria-label="Filtrer l’historique par décision">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {historyStatusItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {initialLoading ? (
-            <p className="p-5 text-sm text-muted-foreground">
-              Chargement de l’historique…
-            </p>
-          ) : hasError ? (
-            <ErrorState
-              description="L’historique des contrôles n’a pas pu être chargé."
-              onRetry={retry}
-              title="Historique indisponible"
-            />
-          ) : (
-            <>
-              <DataTable
-                caption="Historique des contrôles du référentiel Produit"
-                columns={historyContributionColumns}
-                data={contributionsQuery.data?.contributions ?? []}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucune donnée contrôlée ne correspond à cette décision."
-                    title="Aucun historique"
-                  />
-                )}
-                getRowKey={(contribution) => contribution.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
-              <div className="px-5 pb-5">
-                <DataPagination
-                  ariaLabel="Pagination de l’historique des contrôles"
-                  disabled={contributionsQuery.isFetching}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                  page={page}
-                  pageSize={pageSize}
-                  pagination={contributionsQuery.data?.pagination}
-                />
-              </div>
-            </>
-          )}
-        </section>
       )}
 
       {section === 'categories' && (
