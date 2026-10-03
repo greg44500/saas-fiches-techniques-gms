@@ -126,6 +126,14 @@ referenceContributionSchema.index(
     { canonicalProduct: 1, type: 1, status: 1, createdAt: -1 },
     { name: 'reference_contribution_product_type_status_created_at' },
 );
+referenceContributionSchema.index(
+    {
+        status: 1,
+        provisionalEntityType: 1,
+        provisionalEntityId: 1,
+    },
+    { name: 'reference_contribution_provisional_review_lookup' },
+);
 
 const ReferenceContribution = model(
     'ReferenceContribution',
