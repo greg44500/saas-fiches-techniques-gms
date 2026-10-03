@@ -178,6 +178,37 @@ Règles :
 
 La revue qualité des Dimensions et la gouvernance des Contributions restent deux responsabilités distinctes.
 
+### 6.1 Surface Platform unifiée « À contrôler »
+
+La séparation des responsabilités backend est conservée, mais le gestionnaire
+global dispose d'une file de travail unifiée :
+
+```text
+ReferenceContribution PENDING_REVIEW
++
+ProductVariety / ProductCharacteristic PENDING
+→ À contrôler
+```
+
+La file est un read model agrégé et paginé côté serveur. Elle ne constitue ni
+une nouvelle collection MongoDB, ni un nouveau lifecycle.
+
+Une Dimension provisoire déjà liée à une `ReferenceContribution` en attente
+n'apparaît qu'une seule fois dans la file, sous la forme de sa Contribution.
+
+La file expose l'origine Workspace, le Produit, la nature de l'élément et sa
+date de création. Les décisions réutilisent les mutations existantes.
+
+L'historique est distinct de la file active. Une Contribution traitée expose
+une décision dérivée `APPROVE | MERGE | REJECT` sans modifier les événements
+historiques immuables.
+
+Aucune nouvelle permission n'est créée : lecture par
+`product:reference:read`, traitement par `product:reference:manage`.
+
+Le contrat détaillé est
+`docs/m002/M-002-GOVERNANCE-REVIEW-QUEUE.md`.
+
 ## 7. UX Workspace
 
 Deux vues :
