@@ -710,6 +710,24 @@ describe('ProductReferencePage', () => {
     expect(screen.getByText('Gestionnaire Produit')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Approuver' }))
       .not.toBeInTheDocument();
+
+    await selectOption(
+      user,
+      'Filtrer l’historique par décision',
+      'Refusée',
+    );
+
+    await waitFor(() => {
+      expect(mocks.contributionsQuery).toHaveBeenLastCalledWith(
+        {
+          status: 'REJECTED',
+          reviewedOnly: false,
+          page: 1,
+          limit: 20,
+        },
+        { skip: false },
+      );
+    });
   });
 
   it('distingue une Contribution fusionnée dans l’Historique', async () => {
