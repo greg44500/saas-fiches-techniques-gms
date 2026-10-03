@@ -95,27 +95,29 @@ beforeEach(async () => {
 });
 
 describe('M-002 reference bootstrap', () => {
-    it('valide le dataset v6 construit uniquement depuis le PDF alimentaire', async () => {
+    it('valide le dataset v7 professionnel sans données commerciales', async () => {
         const dataset = await loadDefaultDataset();
         const parsed = m002ReferenceDatasetSchema.parse(dataset);
 
         expect(parsed.ready).toBe(true);
-        expect(parsed.version).toBe('m002-reference-v6');
-        expect(parsed.categories).toHaveLength(14);
-        expect(parsed.products).toHaveLength(264);
+        expect(parsed.version).toBe('m002-reference-v7');
+        expect(parsed.categories).toHaveLength(16);
+        expect(parsed.products).toHaveLength(320);
         expect(
             parsed.products.reduce(
                 (total, product) => total + product.variants.length,
                 0,
             ),
-        ).toBe(264);
+        ).toBe(368);
 
-        expect(parsed.sources).toEqual([
+        expect(parsed.sources).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 name: 'SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf',
-                scope: 'Denrées alimentaires présentes dans le PDF uniquement',
             }),
-        ]);
+            expect.objectContaining({
+                type: 'professional-web-catalog',
+            }),
+        ]));
 
         const referenceNames = parsed.products.flatMap(
             (product) => product.variants.map((variant) => variant.name),
@@ -124,32 +126,33 @@ describe('M-002 reference bootstrap', () => {
         expect(referenceNames).toEqual(expect.arrayContaining([
             'Cumin moulu',
             'Carottes râpées',
-            'Roulé de surimi',
-            'Gigot d\'agneau',
-            'Quinoa gourmand',
             'Crème dessert chocolat',
-            'Jus multifruits à base de concentré',
+            'Farine de blé T45 pâtissière',
+            'Beurre de tourage 82 % MG',
+            'Crème liquide UHT 35 % MG',
+            'Pâte pure de pistache',
+            'Bun brioché surgelé',
+            'Pain pita surgelé',
         ]));
 
         expect(referenceNames).not.toContain('Moule');
         expect(referenceNames).not.toContain('Banane');
-        expect(referenceNames).not.toContain('Farine de blé');
-        expect(referenceNames).not.toContain('Paleron de bœuf');
 
         for (const product of parsed.products) {
-            expect(product.variants).toHaveLength(1);
-            expect(product.name).toBe(product.variants[0].name);
+            expect(product.variants.length).toBeGreaterThan(0);
             expect(product.varieties).toEqual([]);
             expect(product.characteristics).toEqual([]);
             expect(product).not.toHaveProperty('supplier');
             expect(product).not.toHaveProperty('price');
             expect(product).not.toHaveProperty('packaging');
 
-            const variant = product.variants[0];
-            expect(variant.conservationType).toEqual(expect.any(String));
-            expect(variant.foodRange).toBeNull();
-            expect(variant.yieldPercent).toBeNull();
-            expect(variant).not.toHaveProperty('usageType');
+            for (const variant of product.variants) {
+                expect(variant.conservationType)
+                    .toEqual(expect.any(String));
+                expect(variant.foodRange).toBeNull();
+                expect(variant.yieldPercent).toBeNull();
+                expect(variant).not.toHaveProperty('usageType');
+            }
         }
 
         const representedCategoryKeys = new Set(
