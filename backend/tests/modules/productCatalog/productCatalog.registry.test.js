@@ -163,6 +163,7 @@ describe('M-002 product catalog registries', () => {
         });
         expect(PRODUCT_CONTRIBUTION_TYPE).toEqual({
             CANONICAL_PRODUCT: 'CANONICAL_PRODUCT',
+            VARIANT: 'VARIANT',
             VARIETY: 'VARIETY',
             CHARACTERISTIC: 'CHARACTERISTIC',
         });
