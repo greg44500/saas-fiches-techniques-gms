@@ -134,6 +134,19 @@ Catégories
 La file est ordonnée par ancienneté afin de rendre visibles en premier les
 éléments en attente depuis le plus longtemps.
 
+Le filtre « statut » étudié pendant le cadrage n'est pas retenu dans la file
+active : toutes les lignes y ont, par définition, le même statut fonctionnel
+« intervention requise ». Pour les Contributions, `PENDING_REVIEW` est la
+condition d'entrée ; pour les Dimensions, `PENDING` est la condition
+d'entrée. Les statuts terminaux sont consultés dans Historique. Un troisième
+filtre dupliquerait donc le filtre de type sans apporter de décision
+supplémentaire.
+
+Le regroupement visuel strict par Produit n'est pas retenu en V1 afin de
+préserver une pagination serveur simple, stable et ordonnée par ancienneté.
+La colonne Produit et l'accès direct au drawer fournissent le contexte sans
+charger toutes les lignes d'un Produit côté frontend.
+
 ### Historique
 
 L'historique reste distinct de la file active.
