@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; Bloc A Prix repère global M-003 en implémentation  
-**Dernière mise à jour :** 2026-10-02
+**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; enrichissement du Référentiel global professionnel en cours sur branche unique  
+**Dernière mise à jour :** 2026-10-03
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -72,7 +72,7 @@ Décisions finales :
 
 ### 2.2 Référentiel Produit
 
-**État : CONTRAT EXISTANT CLÔTURÉ — audit/cadrage des Produits globaux rouvert le 2026-10-02 avant toute nouvelle implémentation**
+**État : CONTRAT EXISTANT CONSERVÉ — corpus professionnel v7 en implémentation, sans changement des invariants M-002**
 
 Contrat canonique :
 
@@ -93,14 +93,16 @@ Décisions finales :
 - dimensions avancées facultatives ;
 - `WorkspaceProduct` présenté comme Favori ;
 - liste Workspace `Produit | Conservation | Actions` ;
-- seed actif `m002-reference-v6`, source unique = PDF alimentaire fourni, 264 Références exploitables ;\n- migration de réconciliation supprimant du référentiel actif les anciennes références bootstrap absentes du v6 ;
+- seed actif sur la branche : `m002-reference-v7`, 16 catégories, 320 Produits et 368 Références Produit ;
+- v7 reprend intégralement les 264 Références v6 puis ajoute 104 Références professionnelles pâtisserie / crémerie / snacking ;
+- migration de réconciliation v1-v6 → v7, sans suppression des données utilisateur ;
 - migration additionnelle fail-closed ;
 - import dédupliqué par nom exact de Référence ;
 - frontière stricte M-002 / M-003 maintenue.
 
 La dépendance générique Core de navigation Platform est résolue par le commit post-tag `6581e573c6a6885790b23fe502bd34d8199ea6ba`. Elle est intégrée sur la branche Core-update dédiée et devient effective sur `main` après PR, merge et Core Gate post-merge du BLOC A.
 
-Décision de clôture du 2026-09-25 : le contrat M-002 reste l'autorité pour l'existant. Le 2026-10-02, un audit/cadrage des **Produits globaux** est ouvert avant le bloc Exports et diffusion afin de confronter ce modèle à l'usage cible. Cet audit ne constitue ni une réouverture automatique de M-002, ni une implémentation. Aucun invariant, modèle, endpoint ou écran Produit ne doit être modifié avant validation explicite du nouveau périmètre.
+Décision de clôture du 2026-09-25 : le contrat M-002 reste l'autorité. L'audit Produit du 2026-10-03 a validé un enrichissement de données sans refonte du modèle : la séparation `CanonicalProduct / ProductVariant` est conservée, M-003 reste propriétaire des données commerciales et le corpus v7 exploite les racines multi-références lorsque la distinction technique est utile. L'implémentation reste sur une branche et une PR uniques jusqu'à validation visuelle et Core Gate.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
@@ -599,7 +601,7 @@ développement immédiat
 
 Le BLOC B Platform / Gestion des référentiels est clôturé. M-004 Fiches techniques + valorisation est également clôturé pour son périmètre hors Exports et diffusion après les Core Gates #179 et #180.
 
-Le lot actif est désormais **Bloc A — Référentiel global valorisable / Prix repère global M-003**. Le cadrage est validé et l'implémentation est soumise aux gates avant fusion.
+Le lot actif est désormais **Enrichissement du Référentiel global professionnel** sur la branche `feature/a2-professional-reference-corpus`. Le corpus v7 et l'alignement des Prix repères v2 sont implémentés sur la branche et restent soumis à la validation locale, aux tests et à la Core Gate avant fusion.
 
 Séquence attendue :
 
