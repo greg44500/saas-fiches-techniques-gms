@@ -170,7 +170,89 @@ const contributionStages = ({
             productId: '$canonicalProduct',
             workspaceId: '$workspace',
             authorId: '$author',
-            value: '$proposedValue',
+            value: {
+                $switch: {
+                    branches: [
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT,
+                                ],
+                            },
+                            then: {
+                                $ifNull: [
+                                    {
+                                        $arrayElemAt: [
+                                            '$productTarget.name',
+                                            0,
+                                        ],
+                                    },
+                                    '$proposedValue',
+                                ],
+                            },
+                        },
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.VARIANT,
+                                ],
+                            },
+                            then: {
+                                $ifNull: [
+                                    {
+                                        $arrayElemAt: [
+                                            '$variantTarget.name',
+                                            0,
+                                        ],
+                                    },
+                                    '$proposedValue',
+                                ],
+                            },
+                        },
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.VARIETY,
+                                ],
+                            },
+                            then: {
+                                $ifNull: [
+                                    {
+                                        $arrayElemAt: [
+                                            '$varietyTarget.name',
+                                            0,
+                                        ],
+                                    },
+                                    '$proposedValue',
+                                ],
+                            },
+                        },
+                        {
+                            case: {
+                                $eq: [
+                                    '$type',
+                                    PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC,
+                                ],
+                            },
+                            then: {
+                                $ifNull: [
+                                    {
+                                        $arrayElemAt: [
+                                            '$characteristicTarget.name',
+                                            0,
+                                        ],
+                                    },
+                                    '$proposedValue',
+                                ],
+                            },
+                        },
+                    ],
+                    default: '$proposedValue',
+                },
+            },
             contributionType: '$type',
             dimensionType: {
                 $switch: {
