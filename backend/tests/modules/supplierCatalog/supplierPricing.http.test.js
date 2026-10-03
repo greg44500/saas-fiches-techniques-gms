@@ -10,6 +10,15 @@ import {
 
 import { app } from '../../../app.js';
 import {
+    bootstrapApplicationGlobalMember,
+} from '../../../modules/applicationGlobalAuthorization/applicationGlobalMember.service.js';
+import {
+    syncApplicationGlobalSystemRole,
+} from '../../../modules/applicationGlobalAuthorization/applicationGlobalRole.service.js';
+import {
+    PRODUCT_CATALOG_GLOBAL_PERMISSION,
+} from '../../../modules/productCatalog/productCatalogGlobalPermission.registry.js';
+import {
     Dossier,
 } from '../../../modules/dossier/dossier.model.js';
 import {
@@ -26,6 +35,9 @@ import {
 import {
     DossierSupplierReference,
 } from '../../../modules/supplierCatalog/supplierPricing.model.js';
+import {
+    setIndicativePrice,
+} from '../../../modules/supplierCatalog/supplierPricing.service.js';
 import {
     createActiveProductReference,
 } from '../../helpers/productCatalogTest.fixtures.js';
@@ -158,7 +170,190 @@ describe('M-003 dossier pricing HTTP', () => {
                 value: 'INDICATIVE_WORKSPACE',
                 label: 'Prix indicatif espace de travail',
             },
+            {
+                value: 'INDICATIVE_GLOBAL',
+                label: 'Prix repère global',
+            },
         ]);
+    });
+
+    it('protège la maintenance du Prix repère global par l’autorisation Application Global Produit', async () => {
+        const variantId =
+            productReference.variant._id.toString();
+
+        await request(app)
+            .get('/api/product-reference-pricing/indicative-prices')
+            .set(bearer(owner.token))
+            .expect(403);
+
+        const role = await syncApplicationGlobalSystemRole({
+            roleData: {
+                key: 'pricing-product-governor',
+                name: 'Gouvernance Produit et Prix repère',
+                description:
+                    'Administration des Prix repères globaux Produit.',
+                permissions: [
+                    PRODUCT_CATALOG_GLOBAL_PERMISSION.READ,
+                    PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE,
+                ],
+            },
+            actorId: owner.owner._id,
+        });
+
+        await bootstrapApplicationGlobalMember({
+            userId: owner.owner._id,
+            roleId: role.id,
+            actorId: owner.owner._id,
+        });
+
+        const created = await request(app)
+            .put(
+                '/api/product-reference-pricing/indicative-prices/'
+                + variantId,
+            )
+            .set(bearer(owner.token))
+            .send({
+                sourceAmount: '3.25',
+                sourceBasis: 'KG',
+                source:
+                    'Référentiel de démonstration',
+            });
+
+        expect(created.status).toBe(200);
+        expect(created.body.data.price).toMatchObject({
+            workspaceId: null,
+            dossierId: null,
+            sourceAmount: '3.25',
+            normalizedAmount: '3.25',
+            normalizedUnit: 'KG',
+        });
+
+        const listed = await request(app)
+            .get('/api/product-reference-pricing/indicative-prices')
+            .query({ productVariantId: variantId })
+            .set(bearer(owner.token));
+
+        expect(listed.status).toBe(200);
+        expect(listed.body.data.prices).toHaveLength(1);
+
+        await request(app)
+            .delete(
+                '/api/product-reference-pricing/indicative-prices/'
+                + variantId,
+            )
+            .set(bearer(owner.token))
+            .expect(200);
+    });
+
+    it('utilise le Prix repère global en dernier recours sans Article fournisseur', async () => {
+        const orphanReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Produit Prix repère global M003',
+                referenceName:
+                    'Produit Prix repère global M003',
+                referenceUnit:
+                    'KG',
+            });
+
+        await setIndicativePrice({
+            workspaceId: null,
+            dossierId: null,
+            productVariantId:
+                orphanReference.variant._id,
+            actorId:
+                owner.owner._id,
+            sourceAmount: '2.75',
+            sourceBasis: 'KG',
+            source:
+                'Référentiel de démonstration',
+        });
+
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/applicable',
+            )
+            .query({
+                productVariantId:
+                    orphanReference.variant._id.toString(),
+            })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(200);
+        expect(
+            resolved.body.data.applicablePrice,
+        ).toEqual(
+            expect.objectContaining({
+                article: null,
+                resolvedSource:
+                    'INDICATIVE_GLOBAL',
+                fallbackApplied: true,
+            }),
+        );
+        expect(
+            resolved.body.data.applicablePrice
+                .price.normalizedAmount,
+        ).toBe('2.75');
+    });
+
+    it('préfère le Prix indicatif Workspace au Prix repère global', async () => {
+        const orphanReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Produit priorité Workspace global M003',
+                referenceName:
+                    'Produit priorité Workspace global M003',
+                referenceUnit:
+                    'KG',
+            });
+        const variantId =
+            orphanReference.variant._id.toString();
+
+        await setIndicativePrice({
+            workspaceId: null,
+            dossierId: null,
+            productVariantId:
+                orphanReference.variant._id,
+            actorId:
+                owner.owner._id,
+            sourceAmount: '2.5',
+            sourceBasis: 'KG',
+        });
+
+        await request(app)
+            .put(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/supplier-pricing/indicative-prices/'
+                + variantId,
+            )
+            .set(bearer(owner.token))
+            .send({
+                sourceAmount: '3.1',
+                sourceBasis: 'KG',
+            })
+            .expect(200);
+
+        const resolved = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/applicable',
+            )
+            .query({ productVariantId: variantId })
+            .set(bearer(owner.token));
+
+        expect(resolved.status).toBe(200);
+        expect(
+            resolved.body.data.applicablePrice.resolvedSource,
+        ).toBe('INDICATIVE_WORKSPACE');
+        expect(
+            resolved.body.data.applicablePrice.price.normalizedAmount,
+        ).toBe('3.1');
     });
 
     it('refuse les périodes négociées qui se chevauchent dans un même Dossier', async () => {
