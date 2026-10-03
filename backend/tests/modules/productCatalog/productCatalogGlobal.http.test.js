@@ -695,6 +695,69 @@ describe('M-002 global product reference HTTP contract', () => {
         });
     });
 
+    it('sépare lecture et traitement de la file À contrôler par permission', async () => {
+        const workspace = await createWorkspaceOwnerFixture();
+        const productResponse = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Produit file lecture seule' });
+        const productId = productResponse.body.data.product.id;
+
+        const variety = await createProductVariety({
+            actorId: workspace.owner._id,
+            workspaceId: workspace.workspace._id,
+            productId,
+            name: 'Variété lecture seule',
+        });
+
+        const reader = await createUserToken({
+            email: 'product-reference-reader@example.test',
+        });
+        const readerRole = await syncApplicationGlobalSystemRole({
+            roleData: {
+                key: 'product_reference_reader_test',
+                name: 'Lecture référentiel Produits test',
+                description: 'Lecture seule du référentiel Produit.',
+                permissions: [
+                    PRODUCT_CATALOG_GLOBAL_PERMISSION.READ,
+                ],
+            },
+            actorId: governor._id,
+        });
+
+        await bootstrapApplicationGlobalMember({
+            userId: reader.user._id,
+            roleId: readerRole.id,
+            actorId: governor._id,
+        });
+
+        const listed = await request(app)
+            .get('/api/product-reference/review-queue')
+            .set(bearer(reader.token));
+
+        expect(listed.status).toBe(200);
+        expect(listed.body.data.items).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    sourceId: variety.id,
+                    type: 'DIMENSION_REVIEW',
+                }),
+            ]),
+        );
+
+        const review = await request(app)
+            .post(
+                '/api/product-reference/'
+                + productId
+                + '/dimensions/VARIETY/'
+                + variety.id
+                + '/review',
+            )
+            .set(bearer(reader.token));
+
+        expect(review.status).toBe(403);
+    });
+
     it('ne donne aucun droit métier global implicite à un Super Admin Platform', async () => {
         const platformAdmin = await createUserToken({
             email: 'platform-only@example.test',
