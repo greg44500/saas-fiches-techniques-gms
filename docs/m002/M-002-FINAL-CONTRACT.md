@@ -178,7 +178,7 @@ Règles :
 
 La revue qualité des Dimensions et la gouvernance des Contributions restent deux responsabilités distinctes.
 
-### 6.1 Surface Platform unifiée « À contrôler »
+## 6.2. Surface Platform unifiée « À contrôler »
 
 La séparation des responsabilités backend est conservée, mais le gestionnaire
 global dispose d'une file de travail unifiée :
