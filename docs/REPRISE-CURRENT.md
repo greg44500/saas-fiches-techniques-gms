@@ -338,7 +338,12 @@ Fonctions :
 ### 8.2 Historique
 
 Les Contributions déjà traitées quittent la file active et restent
-consultables dans l'onglet Historique.
+consultables dans l'onglet Historique. Par défaut, l'Historique charge ensemble
+les Contributions approuvées/fusionnées et refusées ; un filtre permet ensuite
+de limiter la vue.
+
+Pour une proposition de nouveau Produit, la file rattache explicitement la
+ligne au Produit provisoire afin de permettre son ouverture directe.
 
 La décision visible est dérivée sans modifier les événements immuables :
 
