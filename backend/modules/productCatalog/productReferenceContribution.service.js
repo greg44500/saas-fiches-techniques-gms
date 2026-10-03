@@ -921,7 +921,6 @@ const reviewReferenceContribution = async ({
 
 export {
     classifyReferenceContributionInSession,
-    deriveReferenceContributionDecision,
     listReferenceContributions,
     reviewReferenceContribution,
     serializeReferenceContribution,
