@@ -1,6 +1,5 @@
 import { Pencil } from 'lucide-react';
 
-import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 
 function ProductReferenceGovernanceReviewPanel({
@@ -18,18 +17,11 @@ function ProductReferenceGovernanceReviewPanel({
 
   return (
     <section className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge tone="warning">
-          {hasCandidates
-            ? 'Rapprochement à vérifier'
-            : 'À contrôler'}
-        </StatusBadge>
-        <p className="text-sm text-muted-foreground">
-          {context.type === 'DIMENSION_REVIEW'
-            ? 'Vérifiez cette donnée du référentiel.'
-            : 'Vérifiez cette donnée avant sa publication globale.'}
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        {context.type === 'DIMENSION_REVIEW'
+          ? 'Vérifiez cette donnée du référentiel.'
+          : 'Vérifiez cette donnée avant sa publication globale.'}
+      </p>
 
       {hasCandidates && (
         <div>
