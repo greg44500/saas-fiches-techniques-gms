@@ -629,10 +629,6 @@ Référentiel
 → drawer ouvert sur la cible exacte
 → Modifier / Valider / Fusionner / Refuser selon le contexte
 
-Historique
-→ décisions Approuvée / Fusionnée / Refusée
-→ sans bruit Workspace/auteur dans la surface principale
-
 Catégories
 → taxonomie Produit
 ~~~
@@ -671,15 +667,17 @@ RBAC :
 
 ~~~text
 product:reference:read
-→ consulter Référentiel / À contrôler / Historique
+→ consulter Référentiel / À contrôler / Catégories
 
 product:reference:manage
 → traiter les données à contrôler
 → corriger les Produits, Références et Dimensions
 ~~~
 
-L'origine Workspace et l'auteur restent disponibles pour l'audit backend mais
-ne sont pas affichés dans la file de travail du gestionnaire.
+L'origine Workspace, l'auteur et les décisions passées restent disponibles
+pour l'audit/support backend mais ne sont pas affichés dans la surface de
+travail principale du gestionnaire. Une donnée traitée disparaît de
+`À contrôler` sans onglet Historique dédié.
 
 L'audit du Core v1.2.1 ne montre pas de primitive générique de notification
 applicative persistée. Le signal du lot reste donc le compteur in-app
