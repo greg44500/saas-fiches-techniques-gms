@@ -36,6 +36,11 @@ describe('application backend route composition', () => {
                     router: expect.any(Function),
                 }),
                 expect.objectContaining({
+                    key: 'global-indicative-pricing',
+                    mountPath: '/api/product-reference-pricing',
+                    router: expect.any(Function),
+                }),
+                expect.objectContaining({
                     key: 'technical-sheets-dossier',
                     mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/technical-sheets',
                     router: expect.any(Function),
