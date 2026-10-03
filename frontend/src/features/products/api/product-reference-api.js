@@ -55,6 +55,7 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       query: ({
         type,
         workspaceId,
+        origins,
         page = 1,
         limit = 20,
       } = {}) => ({
@@ -62,6 +63,7 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
         params: {
           type,
           workspaceId,
+          origins,
           page,
           limit,
         },
