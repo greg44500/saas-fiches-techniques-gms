@@ -682,12 +682,30 @@ const submitReferenceContribution = async ({
 });
 
 const listReferenceContributions = async ({
-    status = PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
+    status = null,
+    reviewedOnly = false,
     page = 1,
     limit = 20,
 }) => {
-    const filter = status ? { status } : {};
-    const sort = status === PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW
+    const filter = reviewedOnly
+        ? {
+            status: mongoose.trusted({
+                $in: [
+                    PRODUCT_CONTRIBUTION_STATUS.APPROVED,
+                    PRODUCT_CONTRIBUTION_STATUS.REJECTED,
+                ],
+            }),
+        }
+        : status
+            ? { status }
+            : {
+                status: PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
+            };
+    const sort = (
+        !reviewedOnly
+        && (status ?? PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW)
+            === PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW
+    )
         ? { createdAt: 1, _id: 1 }
         : { reviewedAt: -1, _id: -1 };
 
