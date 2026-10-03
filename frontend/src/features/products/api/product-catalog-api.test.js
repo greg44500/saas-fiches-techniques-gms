@@ -86,6 +86,8 @@ describe('productCatalogApi', () => {
         characteristicIds: ['characteristic-1'],
         processingState: 'Produit frais',
         referenceUnit: 'KG',
+        forceCreate: true,
+        reviewedCandidateIds: ['variant-gala'],
       }),
     ).toEqual({
       url: '/workspaces/workspace-1/products/product-1/variants',
@@ -95,6 +97,8 @@ describe('productCatalogApi', () => {
         characteristicIds: ['characteristic-1'],
         processingState: 'Produit frais',
         referenceUnit: 'KG',
+        forceCreate: true,
+        reviewedCandidateIds: ['variant-gala'],
       },
     });
 
