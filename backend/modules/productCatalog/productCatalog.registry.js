@@ -143,6 +143,10 @@ const PRODUCT_CONTRIBUTION_TYPE_REGISTRY = Object.freeze({
         value: 'CANONICAL_PRODUCT',
         label: 'Produit',
     }),
+    VARIANT: Object.freeze({
+        value: 'VARIANT',
+        label: 'Référence',
+    }),
     VARIETY: Object.freeze({
         value: 'VARIETY',
         label: 'Variété',
