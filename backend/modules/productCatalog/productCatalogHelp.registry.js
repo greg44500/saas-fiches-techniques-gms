@@ -124,7 +124,7 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
                 'Ouvrez la surface Platform.',
                 'Dans la section GMS, ouvrez Gestion des référentiels.',
                 'Sélectionnez l’onglet Produits.',
-                'Consultez le Référentiel, la file À contrôler, l’Historique et les Catégories.',
+                'Consultez le Référentiel, la file À contrôler et les Catégories.',
             ],
             outcome: 'Le référentiel global est consulté sans élévation implicite liée au rôle Platform.',
             edgeCases: [],
@@ -146,12 +146,10 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
                     'valider',
                     'fusionner',
                     'refuser',
-                    'historique',
                 ],
                 questions: [
                     'Comment traiter un élément Produit à contrôler ?',
                     'Comment valider une contribution Produit ?',
-                    'Où retrouver les décisions déjà prises ?',
                 ],
             },
             audience: {
@@ -169,11 +167,10 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
             steps: [
                 'Dans la section GMS, ouvrez Gestion des référentiels puis l’onglet Produits.',
                 'Sélectionnez À contrôler.',
-                'Filtrez si nécessaire par type ou espace de travail d’origine.',
                 'Examinez la valeur, le Produit concerné et son contexte.',
-                'Pour une contribution, approuvez, fusionnez ou refusez explicitement.',
-                'Pour une nouvelle Dimension, marquez-la comme vérifiée ou ouvrez le Produit pour la corriger.',
-                'Consultez Historique pour retrouver les Contributions déjà traitées.',
+                'Examinez la donnée dans le drawer ciblé avant toute décision.',
+                'Validez, fusionnez ou refusez explicitement une donnée soumise à gouvernance.',
+                'Pour une nouvelle Dimension, validez-la ou corrigez-la depuis le Produit concerné.'
             ],
             outcome: 'Le référentiel partagé est harmonisé tout en conservant les snapshots historiques validés.',
             edgeCases: [
