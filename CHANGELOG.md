@@ -21,7 +21,7 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - suppression fonctionnelle contrôlée d'une Dimension erronée lorsqu'aucune Référence Produit ne l'utilise ;
 - file Platform `À contrôler` agrégeant les Contributions en attente et les Dimensions Workspace à vérifier, avec compteur, filtres type/origine, pagination serveur et accès direct au Produit ;
 - historique Platform distinct des éléments encore à traiter, avec décision Approuvée / Fusionnée / Refusée ;
-- indexes M-002 dédiés à la revue globale des Variétés et Caractéristiques ;
+- indexes M-002 dédiés à la revue globale des Variétés/Caractéristiques et au rapprochement des Dimensions provisoires avec leur Contribution ;
 - compteurs dynamiques des onglets Référentiel, À contrôler et Catégories.
 
 ### Fixed
