@@ -77,6 +77,23 @@ function ProductReferenceReviewQueue({
     setPage,
   ]);
 
+  useEffect(() => {
+    if (
+      workspaceId !== ALL_REVIEW_ORIGINS
+      && query.data?.origins
+      && !query.data.origins.some(
+        (origin) => origin.id === workspaceId,
+      )
+    ) {
+      setWorkspaceId(ALL_REVIEW_ORIGINS);
+      setPage(1);
+    }
+  }, [
+    query.data?.origins,
+    setPage,
+    workspaceId,
+  ]);
+
   const typeItems = useMemo(() => [
     { value: ALL_REVIEW_TYPES, label: 'Tous les types' },
     ...(metadata?.productReviewQueueTypes ?? []),
