@@ -327,6 +327,11 @@ function ProductDetailsDrawer({
                             <StatusBadge tone={getProductStatusTone(variant.status)}>
                               {getProductStatusLabel(metadata, variant.status)}
                             </StatusBadge>
+                            {variant.governanceStatus === 'PROVISIONAL' && (
+                              <StatusBadge tone="warning">
+                                À contrôler
+                              </StatusBadge>
+                            )}
 
                             {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
                               inCatalog ? (
@@ -408,6 +413,11 @@ function ProductDetailsDrawer({
                               </div>
 
                               <div className="flex items-center gap-2">
+                                {variant.governanceStatus === 'PROVISIONAL' && (
+                                  <StatusBadge tone="warning">
+                                    À contrôler
+                                  </StatusBadge>
+                                )}
                                 {canManageIndicativePrices && (
                                   <ActionIconButton
                                     Icon={Euro}
@@ -530,13 +540,25 @@ function ProductDetailsDrawer({
           existingVariants={variants}
           metadata={metadata}
           onClose={() => setVariantDialogOpen(false)}
-          onCreated={() => {
+          onCreated={(result) => {
             setVariantDialogOpen(false);
-            setSection('catalog');
+
+            if (result?.classification === 'EXISTING') {
+              setSection('catalog');
+              toast({
+                title: 'Référence existante utilisée',
+                description:
+                  'La Référence a été ajoutée à vos favoris sans créer de doublon.',
+                variant: 'success',
+              });
+              return;
+            }
+
+            setSection('variants');
             toast({
-              title: 'Référence créée',
+              title: 'Référence créée · À contrôler',
               description:
-                'Elle a été ajoutée aux favoris. Vous pouvez maintenant compléter son prix ou son approvisionnement.',
+                'Elle est utilisable dans cet espace de travail et attend la validation du référentiel global.',
               variant: 'success',
             });
           }}
