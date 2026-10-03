@@ -687,12 +687,16 @@ const listReferenceContributions = async ({
     limit = 20,
 }) => {
     const filter = status ? { status } : {};
+    const sort = status === PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW
+        ? { createdAt: 1, _id: 1 }
+        : { reviewedAt: -1, _id: -1 };
+
     const [items, total] = await Promise.all([
         ReferenceContribution.find(filter)
             .populate('workspace', 'name')
             .populate('author', 'firstName lastName email')
             .populate('reviewer', 'firstName lastName email')
-            .sort({ createdAt: 1, _id: 1 })
+            .sort(sort)
             .skip((page - 1) * limit)
             .limit(limit)
             .lean(),
