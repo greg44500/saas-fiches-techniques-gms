@@ -92,8 +92,8 @@ Règles :
 
 - dataset actif : `m003-global-indicative-prices.v3.json` ;
 - 362 Prix repères hérités des Références v7 toujours présentes dans le v8 ;
-- 490 Références Produit dans le corpus M-002 v8 ;
-- 128 nouvelles Références v8 volontairement sans Prix repère global faute de valeur économique validée ;
+- 488 Références Produit dans le corpus M-002 v8 ;
+- 126 nouvelles Références v8 volontairement sans Prix repère global faute de valeur économique validée ;
 - retrait des 6 entrées de prix correspondant aux anciens fonds de tarte génériques retirés du v8 ;
 - conservation historique de `m003-global-indicative-prices.v1.json` et `m003-global-indicative-prices.v2.json` ;
 - valeurs explicitement fictives / indicatives ;
@@ -106,7 +106,7 @@ Règles :
 - le bootstrap ne remplace jamais un Prix repère global déjà maintenu par un gestionnaire ;
 - les Références sans valeur exploitable peuvent rester sans Prix repère plutôt que recevoir une valeur incohérente.
 
-Le v3 applique explicitement cette règle : aucune estimation n'a été créée pour les 128 nouvelles Références v8. Leur valorisation globale reste absente jusqu'à calibration documentée.
+Le v3 applique explicitement cette règle : aucune estimation n'a été créée pour les 126 nouvelles Références v8. Leur valorisation globale reste absente jusqu'à calibration documentée.
 
 ## 6. Maintenance par le gestionnaire métier global
 
