@@ -67,9 +67,6 @@ describe('M-002 professional reference corpus v7', () => {
 
         const names = new Set(referenceNames(dataset));
 
-        expect(names).toEqual(expect.objectContaining
-            ? names
-            : names);
         expect([
             'Farine de blé T45 pâtissière',
             'Farine de gruau T00',
