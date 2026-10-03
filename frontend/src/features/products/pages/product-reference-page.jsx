@@ -60,6 +60,7 @@ import {
 import { useDataPagination } from '@/hooks/use-data-pagination';
 
 const ALL_REFERENCE_CATEGORIES = '__ALL__';
+const ALL_REVIEWED_CONTRIBUTIONS = '__ALL_REVIEWED__';
 
 function ProductReferencePage({ canManage }) {
   const { toast } = useToast();
@@ -70,7 +71,7 @@ function ProductReferencePage({ canManage }) {
   const [categoryId, setCategoryId] = useState(ALL_REFERENCE_CATEGORIES);
   const [referenceStatus, setReferenceStatus] = useState('ACTIVE');
   const [contributionStatus, setContributionStatus] =
-    useState('APPROVED');
+    useState(ALL_REVIEWED_CONTRIBUTIONS);
   const [drawerState, setDrawerState] = useState({
     open: false,
     productId: null,
@@ -118,7 +119,11 @@ function ProductReferencePage({ canManage }) {
 
   const contributionsQuery = useListProductReferenceContributionsQuery(
     {
-      status: contributionStatus,
+      status: contributionStatus === ALL_REVIEWED_CONTRIBUTIONS
+        ? undefined
+        : contributionStatus,
+      reviewedOnly:
+        contributionStatus === ALL_REVIEWED_CONTRIBUTIONS,
       page: section === 'history' ? page : 1,
       limit: section === 'history' ? pageSize : 1,
     },
@@ -159,6 +164,16 @@ function ProductReferencePage({ canManage }) {
     [metadata?.productStatuses],
   );
 
+  const historyStatusItems = useMemo(() => [
+    {
+      value: ALL_REVIEWED_CONTRIBUTIONS,
+      label: 'Toutes les décisions',
+    },
+    ...(metadata?.productContributionStatuses ?? []).filter(
+      ({ value }) => value !== 'PENDING_REVIEW',
+    ),
+  ], [metadata?.productContributionStatuses]);
+
   const referenceCount = productsQuery.data?.pagination?.total ?? 0;
   const reviewCount = reviewQueueCountQuery.data?.summary?.total ?? 0;
   const categoryCount = metadata?.categories?.length ?? 0;
@@ -170,7 +185,7 @@ function ProductReferencePage({ canManage }) {
     setSearchInput('');
     setCategoryId(ALL_REFERENCE_CATEGORIES);
     setReferenceStatus('ACTIVE');
-    setContributionStatus('APPROVED');
+    setContributionStatus(ALL_REVIEWED_CONTRIBUTIONS);
   }
 
   function applySearch(event) {
@@ -760,9 +775,7 @@ function ProductReferencePage({ canManage }) {
               </p>
             </div>
             <Select
-              items={(metadata?.productContributionStatuses ?? []).filter(
-                ({ value }) => value !== 'PENDING_REVIEW',
-              )}
+              items={historyStatusItems}
               onValueChange={(value) => {
                 setContributionStatus(value);
                 setPage(1);
@@ -773,9 +786,7 @@ function ProductReferencePage({ canManage }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(metadata?.productContributionStatuses ?? [])
-                  .filter(({ value }) => value !== 'PENDING_REVIEW')
-                  .map((item) => (
+                {historyStatusItems.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
                       {item.label}
                     </SelectItem>
