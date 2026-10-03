@@ -106,6 +106,15 @@ cette forme sèche :
 
 https://www.transgourmet.fr/restauration-commerciale/produit/blanc-oeuf-en-poudre--052414.html
 
+Igreca, fabricant français spécialisé dans les ovoproduits, documente
+explicitement les trois familles sèches retenues par le v8 : blanc d'œuf,
+jaune d'œuf et œuf entier en poudre. Ces sources confirment la distinction
+fonctionnelle des trois Références sans importer leurs conditionnements B2B :
+
+https://www.igreca.fr/oeuf-en-poudre/
+https://www.igreca.fr/oeuf-en-poudre/jaune-doeuf-en-poudre/
+https://www.igreca.fr/oeuf-en-poudre/oeuf-entier-en-poudre/
+
 ### METRO France — boulangerie / pâtisserie
 
 https://www.metro.fr/conseil-service/metro/univers-produits/epicerie/boulangerie-patisserie
