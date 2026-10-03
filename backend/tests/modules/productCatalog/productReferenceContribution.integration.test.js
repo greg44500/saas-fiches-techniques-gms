@@ -316,6 +316,47 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
             });
     });
 
+    it('n’autorise qu’une seule décision concurrente sur une Contribution', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Produit contribution concurrence',
+        });
+        const submitted = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: 'QUALITY_DESIGNATION',
+            value: 'Qualité concurrence',
+        });
+
+        const results = await Promise.allSettled([
+            reviewReferenceContribution({
+                contributionId: submitted.contribution.id,
+                actorId: ownerContext.owner._id,
+                decision: 'APPROVE',
+            }),
+            reviewReferenceContribution({
+                contributionId: submitted.contribution.id,
+                actorId: ownerContext.owner._id,
+                decision: 'REJECT',
+            }),
+        ]);
+
+        expect(results.filter(({ status }) => status === 'fulfilled'))
+            .toHaveLength(1);
+        expect(results.filter(({ status }) => status === 'rejected'))
+            .toHaveLength(1);
+
+        const persisted = await ReferenceContribution.findById(
+            submitted.contribution.id,
+        ).lean();
+
+        expect(['APPROVED', 'REJECTED']).toContain(persisted.status);
+        expect(persisted.reviewedAt).toBeTruthy();
+        expect(persisted.reviewer.toString())
+            .toBe(ownerContext.owner._id.toString());
+    });
+
     it('liste ensemble les Contributions déjà traitées pour l’Historique', async () => {
         const reference = await createActiveProductReference({
             name: 'Produit historique complet',
