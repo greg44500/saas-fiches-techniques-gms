@@ -628,7 +628,6 @@ function ProductDetailsDrawer({
             setVariantDialogOpen(false);
 
             if (result?.classification === 'EXISTING') {
-              setSection('catalog');
               toast({
                 title: 'Référence existante utilisée',
                 description:
