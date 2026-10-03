@@ -6,9 +6,9 @@ import {
 } from 'react';
 import {
   Euro,
-  Minus,
   PackagePlus,
   Plus,
+  Star,
 } from 'lucide-react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
@@ -61,6 +61,10 @@ import {
   formatPrice,
 } from '@/features/suppliers/lib/supplier-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
+
+function FilledStarIcon(props) {
+  return <Star {...props} fill="currentColor" />;
+}
 
 function DetailRow({ label, value }) {
   return (
@@ -336,7 +340,7 @@ function ProductDetailsDrawer({
                             {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
                               inCatalog ? (
                                 <ActionIconButton
-                                  Icon={Minus}
+                                  Icon={FilledStarIcon}
                                   disabled={mutationPending}
                                   label={
                                     'Retirer '
@@ -349,7 +353,7 @@ function ProductDetailsDrawer({
                                 />
                               ) : canAttach ? (
                                 <ActionIconButton
-                                  Icon={Plus}
+                                  Icon={Star}
                                   disabled={mutationPending}
                                   label={
                                     'Ajouter '
@@ -447,7 +451,7 @@ function ProductDetailsDrawer({
 
                                 {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
                                   <ActionIconButton
-                                    Icon={Minus}
+                                    Icon={FilledStarIcon}
                                     disabled={mutationPending}
                                     label={
                                       'Retirer '
