@@ -120,7 +120,7 @@ D-020 validation terrain invitation commerciale / onboarding bêta
 D-023 demande gouvernée de capacité exceptionnelle de transfert de propriété — cible Core 1.1
 D-024 console d’administration Platform contextualisée du Workspace — cible Core 1.1
 GMS-TAX-001 TVA Produit / fiscalité d’achat — à cadrer avant tout besoin comptable/fiscal avancé
-GMS-PRICING-002 calibration des Prix repères des 128 nouvelles Références M-002 v8 — DIFFÉRÉ
+GMS-PRICING-002 calibration des Prix repères des 126 nouvelles Références M-002 v8 — DIFFÉRÉ
 ```
 
 ---
@@ -721,7 +721,7 @@ conclusion : success
 ```text
 HEAD validé : bbf8c79bd803b9f31dd504388f8c7e98068b8a2e
 workflow : Core Gate
-run : 35242912831
+run : 35242912631
 run number : 10
 conclusion : success
 ```
@@ -744,14 +744,14 @@ Run canonical Core gate : success
 **Périmètre :** produit dérivé — M-003 Prix repère global  
 **Création :** 2026-10-03
 
-Le corpus M-002 v8 ajoute 128 nouvelles Références Produit et retire 6 anciennes
+Le corpus M-002 v8 ajoute 126 nouvelles Références Produit et retire 6 anciennes
 Références génériques de fonds de tarte.
 
 Le dataset économique `m003-global-indicative-prices.v3.json` conserve
 uniquement les 362 Prix repères historiques compatibles avec les Références v8
 restantes.
 
-Les 128 nouvelles Références restent volontairement sans Prix repère global :
+Les 126 nouvelles Références restent volontairement sans Prix repère global :
 aucun montant n'est inventé en l'absence d'une calibration économique validée.
 
 **Critère de clôture :**
