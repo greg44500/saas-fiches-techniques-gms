@@ -34,8 +34,8 @@ import {
     reconcileM002LegacyReferenceDuplicates,
 } from './reconcileM002LegacyReferenceDuplicates.migration.js';
 import {
-    reconcileM002BootstrapToV7,
-} from './reconcileM002BootstrapToV7.migration.js';
+    reconcileM002BootstrapToV8,
+} from './reconcileM002BootstrapToV8.migration.js';
 
 const run = async () => {
     try {
@@ -113,7 +113,7 @@ const run = async () => {
                 skipped: true,
             };
         // Réconcilier les anciens bootstraps avant les migrations sémantiques.
-        // Le corpus v7 reprend tout le v6 et ajoute le référentiel professionnel.
+        // Le corpus v8 reprend le v7, retire les fonds de tarte génériques et ajoute les références professionnelles détaillées.
         const bootstrapV7 = await reconcileM002BootstrapToV7();
         const legacyReferenceDuplicates =
             await reconcileM002LegacyReferenceDuplicates();
@@ -133,7 +133,7 @@ const run = async () => {
                 foodRangeUsageType,
                 legacyReferenceDuplicates,
                 productReferenceContract,
-                bootstrapV7,
+                bootstrapV8,
                 dimensionQualityReview,
                 indexes,
                 permissions,
