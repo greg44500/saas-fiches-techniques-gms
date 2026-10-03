@@ -8,11 +8,11 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Added
 
-- ajout du corpus professionnel M-002 `m002-reference-v7` : 16 catégories, 320 Produits et 368 Références Produit, avec +104 Références pâtisserie / crémerie / snacking par rapport au v6 ;
-- ajout du corpus M-003 `m003-global-indicative-prices.v2` aligné sur les 368 Références v7, avec valeurs explicitement fictives / indicatives et sans Fournisseur fictif ;
-- ajout de la réconciliation bootstrap M-002 v1-v6 → v7 et de ses tests dédiés ;
+- ajout du corpus professionnel M-002 `m002-reference-v8` : 16 catégories, 381 Produits et 488 Références Produit, avec 126 nouvelles Références par rapport au v7, 6 anciennes Références génériques de fonds de tarte retirées et remplacées par des formats exploitables ;
+- ajout du corpus M-003 `m003-global-indicative-prices.v3` : 362 Prix repères historiques compatibles avec le v8 ; les 126 nouvelles Références v8 restent volontairement sans Prix repère jusqu'à calibration documentée, sans montant inventé ;
+- ajout de la réconciliation bootstrap M-002 v1-v7 → v8, du retrait contrôlé des 6 fonds de tarte génériques et de la réconciliation M-003 archivant uniquement leurs anciens Prix repères bootstrap v2 ;
 - ajout du **Prix repère global** M-003 comme dernier fallback de valorisation des Références Produit, sans Fournisseur fictif ;
-- conservation historique du corpus de 264 prix v1 lié à `m002-reference-v6`, remplacé comme défaut par le corpus v2 de 368 prix lié à `m002-reference-v7` ;
+- conservation historique des corpus de Prix repères v1 (264) et v2 (368) ; le corpus v3 devient le défaut avec 362 valeurs héritées compatibles avec `m002-reference-v8` ;
 - maintenance Application Global des Prix repères depuis le Référentiel Produits ;
 - parcours E2E sans fournisseur validant la valorisation par Prix repère global puis la priorité d'un Prix indicatif Workspace ;
 
@@ -41,8 +41,8 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 - gouvernance Produit Platform simplifiée en `Référentiel | À contrôler | Catégories` ; les décisions passées restent conservées uniquement dans la traçabilité backend/audit ;
 - signalement in-app des interventions Produit via le compteur `À contrôler` ; aucune notification persistée parallèle n'est créée dans le produit faute de primitive Core générique validée ;
-- bootstrap M-002 par défaut basculé de `m002-reference-v6` vers `m002-reference-v7` sans changer le contrat `CanonicalProduct / ProductVariant` ;
-- bootstrap Prix repère global par défaut basculé de `m003-global-indicative-prices.v1.json` vers `v2` ;
+- bootstrap M-002 par défaut basculé vers `m002-reference-v8` sans changer le contrat `CanonicalProduct / ProductVariant` ;
+- bootstrap Prix repère global par défaut basculé vers `m003-global-indicative-prices.v3.json` ;
 - extension de `IndicativePrice` aux portées GLOBAL / WORKSPACE / DOSSIER tout en conservant le même modèle et l'historisation par remplacement ;
 - ordre du Prix applicable complété par `INDICATIVE_GLOBAL` après les Prix indicatifs Dossier et Workspace ;
 - tableau et détail Platform du Référentiel Produits enrichis avec le Prix repère global et sa maintenance ;
