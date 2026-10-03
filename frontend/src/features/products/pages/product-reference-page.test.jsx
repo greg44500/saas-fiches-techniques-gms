@@ -665,6 +665,13 @@ describe('ProductReferencePage', () => {
           workspace: { id: 'workspace-1', name: 'Atelier pilote' },
           author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
           status: 'APPROVED',
+          decision: 'APPROVE',
+          reviewer: {
+            id: 'reviewer-1',
+            firstName: 'Gestionnaire',
+            lastName: 'Produit',
+          },
+          reviewedAt: '2026-10-03T11:00:00.000Z',
           reasons: [{
             code: 'CHARACTERISTIC_REQUIRES_GOVERNANCE',
             message: 'Ce type nécessite une revue.',
@@ -684,8 +691,42 @@ describe('ProductReferencePage', () => {
     expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
     expect(screen.getByText('Atelier pilote')).toBeInTheDocument();
     expect(screen.getByText('Approuvée')).toBeInTheDocument();
+    expect(screen.getByText('03/10/2026')).toBeInTheDocument();
+    expect(screen.getByText('Gestionnaire Produit')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Approuver' }))
       .not.toBeInTheDocument();
+  });
+
+  it('distingue une Contribution fusionnée dans l’Historique', async () => {
+    const user = userEvent.setup();
+
+    mocks.contributionsQuery.mockReturnValue({
+      data: {
+        contributions: [{
+          id: 'contribution-history-merge',
+          type: 'CHARACTERISTIC',
+          characteristicKind: 'QUALITY_DESIGNATION',
+          proposedValue: 'Carotte sable',
+          workspace: { id: 'workspace-1', name: 'Atelier pilote' },
+          author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
+          status: 'APPROVED',
+          decision: 'MERGE',
+          reviewer: null,
+          reviewedAt: '2026-10-03T11:00:00.000Z',
+          reasons: [],
+        }],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Historique' }));
+
+    expect(screen.getByText('Fusionnée')).toBeInTheDocument();
   });
 
   it('ouvre le détail global depuis la liste', async () => {
