@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   updateVariantStatus: vi.fn(),
   updateVarietyStatus: vi.fn(),
   updateCharacteristicStatus: vi.fn(),
+  reviewContribution: vi.fn(),
   reviewDimension: vi.fn(),
   deleteDimension: vi.fn(),
   globalPrices: vi.fn(),
@@ -57,6 +58,10 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
   ],
   useGetProductReferenceDetailQuery: mocks.detail,
   useGetProductReferenceDimensionsQuery: mocks.dimensions,
+  useReviewProductReferenceContributionMutation: () => [
+    mocks.reviewContribution,
+    { isLoading: false },
+  ],
   useReviewProductReferenceDimensionMutation: () => [
     mocks.reviewDimension,
     { isLoading: false },
@@ -161,9 +166,10 @@ describe('ProductReferenceDetailsDrawer', () => {
       product: {
         id: 'product-1',
         name: 'Abricot',
-        aliases: [],
+        aliases: ['Abricots'],
         category: { id: 'category-1', name: 'Fruits' },
         status: 'ACTIVE',
+        governanceStatus: 'APPROVED',
       },
       variants: [
         {
@@ -172,6 +178,7 @@ describe('ProductReferenceDetailsDrawer', () => {
           conservationType: 'FRAIS',
           referenceUnit: 'KG',
           status: 'ACTIVE',
+          governanceStatus: 'APPROVED',
         },
         {
           id: 'variant-2',
@@ -179,6 +186,7 @@ describe('ProductReferenceDetailsDrawer', () => {
           conservationType: 'FRAIS',
           referenceUnit: 'KG',
           status: 'ARCHIVED',
+          governanceStatus: 'APPROVED',
         },
       ],
       events: [],
@@ -210,6 +218,7 @@ describe('ProductReferenceDetailsDrawer', () => {
           aliases: [],
           status: 'ACTIVE',
           qualityReviewStatus: 'REVIEWED',
+          governanceStatus: 'APPROVED',
         },
         {
           id: 'variety-2',
@@ -217,6 +226,7 @@ describe('ProductReferenceDetailsDrawer', () => {
           aliases: ['Roussillon rouge'],
           status: 'ACTIVE',
           qualityReviewStatus: 'PENDING',
+          governanceStatus: 'APPROVED',
         },
       ],
       characteristics: [
@@ -227,6 +237,7 @@ describe('ProductReferenceDetailsDrawer', () => {
           aliases: [],
           status: 'ACTIVE',
           qualityReviewStatus: 'PENDING',
+          governanceStatus: 'APPROVED',
         },
         {
           id: 'characteristic-2',
@@ -235,6 +246,7 @@ describe('ProductReferenceDetailsDrawer', () => {
           aliases: [],
           status: 'ARCHIVED',
           qualityReviewStatus: 'REVIEWED',
+          governanceStatus: 'APPROVED',
         },
       ],
       review: {
@@ -249,6 +261,7 @@ describe('ProductReferenceDetailsDrawer', () => {
     mocks.updateVariantStatus.mockReturnValue(resolvedMutation);
     mocks.updateVarietyStatus.mockReturnValue(resolvedMutation);
     mocks.updateCharacteristicStatus.mockReturnValue(resolvedMutation);
+    mocks.reviewContribution.mockReturnValue(resolvedMutation);
     mocks.reviewDimension.mockReturnValue(resolvedMutation);
     mocks.deleteDimension.mockReturnValue(resolvedMutation);
   });
@@ -263,8 +276,113 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(screen.getByRole('textbox', {
       name: 'Rechercher une caractéristique',
     })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'À vérifier (2)' }))
+    expect(screen.getByRole('button', { name: 'À contrôler (2)' }))
       .toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('masque les alias techniques dans le détail Produit', () => {
+    renderDrawer();
+
+    expect(screen.queryByText('Synonymes métier')).not.toBeInTheDocument();
+    expect(screen.queryByText('Abricots')).not.toBeInTheDocument();
+    expect(screen.getByText('Validé')).toBeInTheDocument();
+  });
+
+  it('ouvre une Référence provisoire directement dans la vue À contrôler', async () => {
+    const user = userEvent.setup();
+
+    mocks.detail.mockReturnValue(queryResult({
+      product: {
+        id: 'product-1',
+        name: 'Abricot',
+        aliases: [],
+        category: { id: 'category-1', name: 'Fruits' },
+        status: 'ACTIVE',
+        governanceStatus: 'APPROVED',
+      },
+      variants: [
+        {
+          id: 'variant-new',
+          name: 'Abricot sec',
+          conservationType: 'FRAIS',
+          referenceUnit: 'KG',
+          status: 'ACTIVE',
+          governanceStatus: 'PROVISIONAL',
+        },
+        {
+          id: 'variant-existing',
+          name: 'Abricot frais',
+          conservationType: 'FRAIS',
+          referenceUnit: 'KG',
+          status: 'ACTIVE',
+          governanceStatus: 'APPROVED',
+        },
+      ],
+      events: [],
+    }));
+
+    renderDrawer({
+      initialReferenceFilter: 'pending',
+      initialTab: 'variants',
+      reviewContext: {
+        sourceId: 'contribution-variant',
+        targetId: 'variant-new',
+        type: 'CONTRIBUTION',
+        dataType: 'REFERENCE',
+        value: 'Abricot sec',
+        candidates: [{
+          id: 'variant-candidate',
+          name: 'Abricot séché',
+        }],
+      },
+    });
+
+    expect(screen.getByRole('button', { name: 'À contrôler (1)' }))
+      .toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Abricot sec')).toBeInTheDocument();
+    expect(screen.queryByText('Abricot frais')).not.toBeInTheDocument();
+    expect(screen.getByText('Rapprochement à vérifier')).toBeInTheDocument();
+    expect(screen.getByText('Abricot séché')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Valider' }));
+
+    expect(mocks.reviewContribution).toHaveBeenCalledWith({
+      contributionId: 'contribution-variant',
+      decision: 'APPROVE',
+      targetReferenceId: null,
+    });
+  });
+
+  it('valide une Dimension ciblée depuis son détail sans seconde décision', async () => {
+    const user = userEvent.setup();
+
+    renderDrawer({
+      initialDimensionFilter: 'pending',
+      initialTab: 'dimensions',
+      reviewContext: {
+        sourceId: 'variety-2',
+        targetId: 'variety-2',
+        type: 'DIMENSION_REVIEW',
+        dataType: 'DIMENSION',
+        value: 'Rouge du Roussillon',
+        dimensionType: 'VARIETY',
+        candidates: [],
+      },
+    });
+
+    const target = screen.getByText('Rouge du Roussillon').closest('li');
+    expect(target).not.toBeNull();
+    expect(within(target).getByText('À contrôler')).toBeInTheDocument();
+
+    await user.click(within(target).getByRole('button', {
+      name: 'Valider',
+    }));
+
+    expect(mocks.reviewDimension).toHaveBeenCalledWith({
+      productId: 'product-1',
+      dimensionType: 'VARIETY',
+      dimensionId: 'variety-2',
+    });
   });
 
   it('affiche les compteurs des Dimensions, Références et sous-sections', async () => {
@@ -280,7 +398,7 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     expect(screen.getByText('Variétés (2)')).toBeInTheDocument();
     expect(screen.getByText('Caractéristiques (1)')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'À vérifier (2)' }))
+    expect(screen.getByRole('button', { name: 'À contrôler (2)' }))
       .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Archivées (1)' }))
       .toBeInTheDocument();
@@ -294,7 +412,7 @@ describe('ProductReferenceDetailsDrawer', () => {
       initialTab: 'dimensions',
     });
 
-    expect(screen.getAllByText('Nouveau')).toHaveLength(2);
+    expect(screen.getAllByText('À contrôler')).toHaveLength(2);
 
     const varietyRow = screen.getByText('Rouge du Roussillon').closest('li');
     expect(varietyRow).not.toBeNull();
