@@ -82,6 +82,23 @@ describe('productReferenceApi', () => {
     });
 
     expect(
+      captured.endpointDefinitions.listProductReferenceReviewQueue.query({
+        type: 'DIMENSION_REVIEW',
+        workspaceId: 'workspace-1',
+        page: 2,
+        limit: 10,
+      }),
+    ).toEqual({
+      url: '/product-reference/review-queue',
+      params: {
+        type: 'DIMENSION_REVIEW',
+        workspaceId: 'workspace-1',
+        page: 2,
+        limit: 10,
+      },
+    });
+
+    expect(
       captured.endpointDefinitions.reviewProductReferenceContribution.query({
         contributionId: 'contribution-1',
         decision: 'APPROVE',
