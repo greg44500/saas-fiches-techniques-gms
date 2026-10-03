@@ -295,6 +295,8 @@ describe('ProductDetailsDrawer', () => {
       name: 'Retirer Abricot des favoris',
     });
 
+    expect(addButton).toHaveClass('size-5');
+    expect(removeButton).toHaveClass('size-5');
     expect(addButton.querySelector('svg')).toHaveAttribute('fill', 'none');
     expect(removeButton.querySelector('svg'))
       .toHaveAttribute('fill', 'currentColor');
