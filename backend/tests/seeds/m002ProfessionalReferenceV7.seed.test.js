@@ -13,7 +13,17 @@ import {
     loadLegacyReferenceDataset,
     loadProfessionalReferenceDataset,
     m002ReferenceDatasetSchema,
+    seedM002Reference,
 } from '../../seeds/seedM002Reference.js';
+import {
+    CanonicalProduct,
+} from '../../modules/productCatalog/canonicalProduct.model.js';
+import {
+    ProductVariant,
+} from '../../modules/productCatalog/productVariant.model.js';
+import {
+    createTestUser,
+} from '../helpers/dossierTest.fixtures.js';
 
 const referenceNames = (dataset) => (
     dataset.products.flatMap((product) =>
@@ -45,6 +55,53 @@ describe('M-002 professional reference corpus v7', () => {
         for (const name of legacyReferences) {
             expect(candidateReferences.has(name)).toBe(true);
         }
+    });
+
+
+    it('met à niveau un bootstrap v6 vers v7 puis rejoue v7 sans doublon', async () => {
+        const actor = await createTestUser({
+            email: 'seed-m002-v7-upgrade@example.test',
+        });
+        const [legacy, candidate] = await Promise.all([
+            loadLegacyReferenceDataset(),
+            loadProfessionalReferenceDataset(),
+        ]);
+
+        const v6 = await seedM002Reference({
+            dataset: legacy,
+            actorId: actor._id,
+        });
+        const v7 = await seedM002Reference({
+            dataset: candidate,
+            actorId: actor._id,
+        });
+        const replay = await seedM002Reference({
+            dataset: candidate,
+            actorId: actor._id,
+        });
+
+        expect(v6).toMatchObject({
+            version: 'm002-reference-v6',
+            productCount: 264,
+            variantCount: 264,
+            skipped: false,
+        });
+        expect(v7).toMatchObject({
+            version: 'm002-reference-v7',
+            productCount: 320,
+            variantCount: 368,
+            skipped: false,
+        });
+        expect(replay.skipped).toBe(true);
+
+        expect(await CanonicalProduct.countDocuments({
+            status: 'ACTIVE',
+            identityActive: true,
+        })).toBe(320);
+        expect(await ProductVariant.countDocuments({
+            status: 'ACTIVE',
+            identityActive: true,
+        })).toBe(368);
     });
 
     it('couvre les trois domaines professionnels attendus', async () => {
