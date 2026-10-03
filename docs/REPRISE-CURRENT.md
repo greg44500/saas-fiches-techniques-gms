@@ -471,43 +471,136 @@ Workspace propose un Produit
 Aucune de ces suites n'est déclarée verte ici tant qu'elle n'a pas été
 réellement exécutée localement ou par la Core Gate.
 
-## 9. QA visuelle attendue avant la prochaine conversation
+## 9. Point de reprise validé — avant demande complémentaire Produits globaux
 
-Scénarios prioritaires :
-
-1. vérifier qu'aucune ligne `Alias` n'apparaît dans le drawer Produit
-   Workspace ;
-2. créer une Référence nouvelle sous un Produit existant ;
-3. vérifier qu'elle reste utilisable dans le Workspace et porte `À contrôler` ;
-4. si une Référence proche existe, vérifier la proposition de rapprochement
-   et la confirmation explicite d'une création distincte ;
-5. Platform → `À contrôler` : vérifier les colonnes
-   `Type | Donnée à valider | Contexte | Rapprochement | Action` ;
-6. vérifier l'absence d'Origine/Workspace/auteur ;
-7. cliquer `Examiner` sur une Référence et vérifier que seule la vue
-   `Références > À contrôler` est affichée, avec focus sur la bonne ligne ;
-8. vérifier `Modifier`, `Valider`, `Fusionner avec …`, `Refuser` selon le
-   contexte ;
-9. après validation/fusion/refus, vérifier la disparition de `À contrôler` ;
-10. vérifier l'absence de l'onglet Historique dans la navigation Platform ;
-11. vérifier une Dimension : une seule validation doit suffire ;
-12. vérifier les étoiles Favoris : dans Références, étoile compacte sans cadre sur la ligne du nom (sans augmenter la hauteur), avec `+` au survol/focus pour ajouter et `−` pour retirer, tooltip conservé ; dans Favoris, bouton étoile encadré conservé avec les autres actions ;
-13. vérifier qu'aucun badge `À contrôler` n'est répété dans les lignes de la
-    file `À contrôler`.
-
-Après validation visuelle utilisateur :
+Branche courante :
 
 ~~~text
-ne pas créer de PR
-→ mettre à jour l'amorce de reprise
-→ ouvrir une nouvelle conversation
-→ traiter la demande spécifique d'ajout de Produits au référentiel global
-→ rester sur feature/a2-professional-reference-corpus
-→ conserver la future PR unique
+feature/a2-professional-reference-corpus
+HEAD vérifié avant mise à jour de cette reprise :
+d3556ef84236c16eda57134880081ef72933fac9
+main de base : 3634b9b76c4b019f9458f3827cd6d29d20cf6e3f
+PR ouverte : aucune
 ~~~
 
-Le `release:check`, la PR et le merge ne viennent qu'après ce lot
-complémentaire demandé par l'utilisateur.
+Le Bloc B a été validé visuellement par itérations utilisateur sur les points
+suivants :
+
+- Alias retiré du drawer Produit utilisateur ;
+- nouvelles Références Workspace identifiables comme provisoires ;
+- file Platform `À contrôler` simplifiée en
+  `Type | Donnée à valider | Contexte | Rapprochement | Action` ;
+- absence d'Origine/Workspace/auteur dans la file ;
+- décision déplacée dans le drawer ciblé ;
+- rapprochement/fusion explicite conservés ;
+- Historique global retiré de la navigation Platform ;
+- badge `À contrôler` retiré des lignes de la file déjà filtrée ;
+- Favori dans l'onglet Références représenté par une étoile compacte à côté
+  du nom, sans augmentation de hauteur ;
+- étoile vide = non favori ; étoile pleine = favori ;
+- survol/focus : `+` pour ajouter, `−` pour retirer ;
+- tooltip visuel conservé ;
+- dans l'onglet Favoris, le bouton étoile encadré reste aligné avec les autres
+  actions.
+
+État de preuve tests à préserver :
+
+- une suite frontend ciblée antérieure a été explicitement déclarée verte par
+  l'utilisateur ;
+- le backend ciblé avait initialement 67 tests verts / 1 échec de fixture ;
+  l'échec a été corrigé car le nom de test déclenchait légitimement le moteur
+  de rapprochement ;
+- plusieurs micro-ajustements UX ont été ajoutés après ces preuves ;
+- le résultat final automatisé du HEAD courant n'a pas été explicitement
+  fourni dans cette conversation ;
+- ne jamais déclarer les suites finales vertes sans nouvelle preuve locale ou
+  Core Gate.
+
+Avant de commencer le prochain bloc, vérifier le dépôt réel puis, seulement si
+nécessaire pour sécuriser le HEAD courant, exécuter les tests ciblés impactés
+par les derniers ajustements :
+
+~~~text
+npx vitest run backend/tests/help/applicationHelp.registry.test.js
+
+npm --prefix frontend run test -- \
+  src/features/products/components/product-details-drawer.test.jsx \
+  src/features/products/components/product-reference-review-queue.test.jsx \
+  src/features/products/pages/product-reference-page.test.jsx
+~~~
+
+Ne pas lancer de PR, de merge ni de `release:check` avant la demande
+complémentaire Produits globaux.
+
+### 9.1 Prochain bloc obligatoire — demande complémentaire Produits globaux
+
+L'utilisateur veut poursuivre immédiatement sur une demande spécifique liée à
+l'ajout de Produits dans le référentiel global.
+
+Contraintes déjà validées :
+
+~~~text
+même branche
+→ feature/a2-professional-reference-corpus
+
+même future PR unique
+→ pas de PR intermédiaire
+→ pas de micro-version
+→ pas de merge avant ce bloc complémentaire
+~~~
+
+Les directives exactes de ce nouveau besoin doivent être données/confirmées
+par l'utilisateur dans la nouvelle conversation. Ne rien inventer avant ce
+cadrage.
+
+Avant toute implémentation :
+
+1. lire `KB-START-HERE.md` ;
+2. lire cette reprise ;
+3. vérifier GitHub, le HEAD réel et l'absence de divergence avec `main` ;
+4. auditer l'existant M-002 pour l'ajout global (UI, API, permissions,
+   déduplication, gouvernance, seeds) ;
+5. reformuler la demande exacte de l'utilisateur et faire valider le périmètre
+   si nécessaire ;
+6. classer chaque besoin entre données de bootstrap, création manuelle globale,
+   Référence Produit et Dimension ;
+7. réutiliser le moteur de rapprochement/déduplication existant ;
+8. ne jamais créer un doublon exact ni fusionner automatiquement une proximité ;
+9. préserver le contrat `CanonicalProduct → ProductVariant → WorkspaceProduct` ;
+10. ne pas dupliquer une primitive Core.
+
+Si la demande modifie le corpus bootstrap :
+
+- ne pas réécrire silencieusement `m002-reference.v7.json` ;
+- versionner le nouveau corpus après validation du périmètre ;
+- préserver l'historique des datasets précédents ;
+- prévoir la réconciliation idempotente vers la nouvelle version ;
+- vérifier catégories, Produits, Références, noms normalisés et unités ;
+- si de nouvelles Références deviennent exploitables par M-003, vérifier la
+  couverture du corpus de Prix repères sans écraser les prix déjà maintenus ;
+- ne jamais inventer de fournisseur ni présenter un prix fictif comme
+  observation de marché.
+
+Si la demande porte sur l'ajout manuel par le gestionnaire métier :
+
+- réutiliser `product:reference:manage` et les surfaces M-002 existantes ;
+- ne pas créer une nouvelle couche Platform générique ;
+- appliquer la même déduplication / proximité / gouvernance que pour les autres
+  créations de référentiel ;
+- conserver la séparation Produit racine / Référence exploitable / Dimensions.
+
+Après implémentation du bloc Produits globaux :
+
+~~~text
+tests ciblés
+→ QA visuelle utilisateur
+→ corrections éventuelles sur la même branche
+→ release:check unique
+→ PR unique
+→ Core Gate PR
+→ merge
+→ Core Gate post-merge
+~~~
 
 ## 10. Exports et diffusion — ordre ultérieur
 
