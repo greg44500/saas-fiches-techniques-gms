@@ -24,6 +24,9 @@ import {
     m003GlobalIndicativePriceDatasetSchema,
     seedM003GlobalIndicativePrices,
 } from '../../seeds/seedM003GlobalIndicativePrices.js';
+import {
+    loadDefaultDataset,
+} from '../../seeds/seedM002Reference.js';
 
 let actor;
 
@@ -79,6 +82,35 @@ describe('M-003 global indicative price bootstrap', () => {
         }
     });
 
+    it('couvre exactement les Références Produit du bootstrap M-002 actif', async () => {
+        const [prices, products] = await Promise.all([
+            loadDefaultGlobalIndicativePriceDataset(),
+            loadDefaultDataset(),
+        ]);
+
+        const expected = new Map(
+            products.products.flatMap((product) =>
+                product.variants.map((variant) => [
+                    variant.name,
+                    variant.referenceUnit,
+                ])),
+        );
+        const actual = new Map(
+            prices.prices.map(({ reference, unit }) => [
+                reference,
+                unit,
+            ]),
+        );
+
+        expect(actual.size).toBe(expected.size);
+        expect([...actual.keys()].sort())
+            .toEqual([...expected.keys()].sort());
+
+        for (const [reference, unit] of expected) {
+            expect(actual.get(reference)).toBe(unit);
+        }
+    });
+
     it('installe uniquement les Prix repères globaux absents', async () => {
         const dataset = buildDataset();
 
@@ -109,7 +141,7 @@ describe('M-003 global indicative price bootstrap', () => {
         }).lean();
 
         expect(prices).toHaveLength(1);
-        expect(prices[0].sourceAmount.toString()).toBe('2.50');
+        expect(Number(prices[0].sourceAmount.toString())).toBe(2.5);
     });
 
     it('ne réécrase jamais une correction du gestionnaire', async () => {
