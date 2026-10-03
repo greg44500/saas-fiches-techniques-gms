@@ -152,6 +152,14 @@ const serializeReferenceContribution = (contribution) => {
         decision: deriveReferenceContributionDecision(contribution),
         candidates: contribution.payload?.candidates ?? [],
         reviewerId,
+        reviewer: contribution.reviewer?._id
+            ? {
+                id: reviewerId,
+                firstName: contribution.reviewer.firstName ?? null,
+                lastName: contribution.reviewer.lastName ?? null,
+                email: contribution.reviewer.email ?? null,
+            }
+            : null,
         reviewedAt: contribution.reviewedAt ?? null,
         provisionalEntityType: contribution.provisionalEntityType ?? null,
         provisionalEntityId:
