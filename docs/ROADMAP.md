@@ -700,13 +700,15 @@ A2 corpus professionnel
 → tests ciblés
 → QA visuelle utilisateur
 → corrections éventuelles sur la même branche
+→ amorce de reprise vers une nouvelle conversation
+→ demande spécifique d'ajout au référentiel global
+→ poursuite sur la même branche
+→ tests / QA du lot complémentaire
 → release:check
 → PR unique
 → Core Gate PR
 → merge
 → Core Gate post-merge
-→ amorce de reprise
-→ demande spécifique d'ajout au référentiel global dans la même PR si validée avant PR
 ~~~
 
 Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité pour les
