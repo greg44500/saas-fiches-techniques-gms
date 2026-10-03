@@ -191,6 +191,7 @@ const repointVariantDependencies = async ({
     await repointWorkspaceProducts({
         sourceVariantId,
         targetVariantId,
+        actorId,
         session,
     });
 
