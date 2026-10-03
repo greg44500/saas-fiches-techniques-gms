@@ -369,11 +369,12 @@ le refus d'une mutation de revue sans MANAGE.
 
 ### 8.4 Performance
 
-Deux indexes dédiés complètent M-002 :
+Trois indexes dédiés complètent M-002 :
 
 ~~~text
 product_variety_global_review_queue
 product_characteristic_global_review_queue
+reference_contribution_provisional_review_lookup
 ~~~
 
 Ils sont vérifiés par `npm run migration:m002-catalog`.
