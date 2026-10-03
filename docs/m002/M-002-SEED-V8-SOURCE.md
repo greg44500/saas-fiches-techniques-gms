@@ -151,7 +151,7 @@ Exemples actuels vérifiés :
 - coulis de fruits rouges surgelé :
   https://www.transgourmet.fr/restauration-commerciale/produit/coulis-fruits-rouges--300984.html
 - coulis de framboise surgelé :
-  https://www.transgourmet.fr/restauration-commerciale/produit/coulis-framboises--488094.html
+  https://www.transgourmet.fr/restauration-commerciale/produit/coulis-framboises--490094.html
 
 ## 4. Références structurantes ajoutées
 
