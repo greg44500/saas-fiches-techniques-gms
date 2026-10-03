@@ -116,6 +116,17 @@ productVarietySchema.index(
     { name: 'product_variety_quality_review' },
 );
 
+productVarietySchema.index(
+    {
+        qualityReviewStatus: 1,
+        status: 1,
+        identityActive: 1,
+        contributedFromWorkspace: 1,
+        createdAt: 1,
+    },
+    { name: 'product_variety_global_review_queue' },
+);
+
 const ProductVariety = model('ProductVariety', productVarietySchema);
 
 export { ProductVariety };
