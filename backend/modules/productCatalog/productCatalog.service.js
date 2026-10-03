@@ -36,6 +36,7 @@ import {
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
+    PRODUCT_REVIEW_QUEUE_TYPE_REGISTRY,
     PRODUCT_SEARCH_SCOPE,
     PRODUCT_SEARCH_SCOPE_REGISTRY,
     PRODUCT_STATUS,
@@ -444,6 +445,9 @@ const getProductMetadata = async ({
             PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
         ),
         referenceUnits: Object.values(PRODUCT_REFERENCE_UNIT_REGISTRY),
+        productReviewQueueTypes: Object.values(
+            PRODUCT_REVIEW_QUEUE_TYPE_REGISTRY,
+        ),
         productSearchScopes: Object.values(PRODUCT_SEARCH_SCOPE_REGISTRY),
         defaults: {
             productSearchScope:
