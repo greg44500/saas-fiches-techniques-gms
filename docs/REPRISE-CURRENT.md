@@ -249,65 +249,61 @@ exécuter les suites. Aucun test local n'est donc déclaré vert à ce stade.
 La validation automatisée réelle devra être fournie par les tests locaux
 utilisateur puis la Core Gate de la future PR.
 
-## 7. Ordre local pour la QA visuelle
+## 7. Reprise locale du Bloc B
 
-Sur une base de développement déjà utilisée avec le v6 :
+Le corpus A2/v7 et les Prix repères ont déjà été vérifiés visuellement avant
+ce sous-bloc. Les changements actuels portent sur la gouvernance
+`À contrôler`, les nouvelles Références Workspace et le drawer ciblé.
+
+**Aucune nouvelle migration n'a été ajoutée par ce sous-bloc.**
+
+Pour récupérer uniquement le travail courant :
 
 ~~~text
+git status --short
 git fetch origin
 git switch feature/a2-professional-reference-corpus
 git pull --ff-only origin feature/a2-professional-reference-corpus
-
-npm run migration:m002-catalog
-npm run seed:m002-reference
-npm run migration:m003-indicative-pricing
 ~~~
 
-Puis lancer l'application selon les deux processus de développement :
+Si `git status --short` est vide après le pull, lancer les contrôles ciblés
+avant la QA visuelle.
+
+Backend ciblé :
 
 ~~~text
-# terminal backend — racine du dépôt
+npx vitest run \
+  backend/tests/modules/productCatalog/productCatalog.validation.test.js \
+  backend/tests/modules/productCatalog/productReferenceContribution.integration.test.js \
+  backend/tests/modules/productCatalog/productReferenceReviewQueue.integration.test.js \
+  backend/tests/modules/productCatalog/productCatalogGlobal.http.test.js
+~~~
+
+Frontend ciblé :
+
+~~~text
+npm --prefix frontend exec -- vitest run \
+  src/features/products/api/product-catalog-api.test.js \
+  src/features/products/components/product-variant-create-dialog.test.jsx \
+  src/features/products/components/product-details-drawer.test.jsx \
+  src/features/products/components/product-reference-review-queue.test.jsx \
+  src/features/products/components/product-reference-details-drawer.test.jsx \
+  src/features/products/pages/product-reference-page.test.jsx
+~~~
+
+Puis lancer l'application :
+
+~~~text
+# terminal backend — racine
 npm run dev
 
 # terminal frontend
 npm --prefix frontend run dev
 ~~~
 
-Points visuels à vérifier — corpus A2 :
-
-1. Platform → Gestion des référentiels → Produits ;
-2. recherche de `Farine de blé`, `Beurre`, `Pâte pure de pistache`,
-   `Pain burger`, `Pain pita` ;
-3. ouverture d'une racine multi-références et présence de toutes ses
-   Références ;
-4. présence du Prix repère global sur les nouvelles Références ;
-5. Workspace / Fiche technique : sélection d'une nouvelle Référence et
-   valorisation par `Prix repère global` lorsqu'aucune source locale plus
-   précise n'existe.
-
-Points visuels à vérifier — Bloc B :
-
-1. Platform → Produits expose bien
-   `Référentiel | À contrôler | Historique | Catégories` ;
-2. le compteur `À contrôler` correspond aux éléments réellement en attente ;
-3. une Contribution Workspace affiche sa valeur, son Produit, son Workspace,
-   son auteur et sa date ;
-4. le filtre Type puis le filtre Origine réduisent la file sans recharger
-   toutes les données côté frontend ;
-5. une proposition de nouveau Produit ouvre bien son Produit provisoire ;
-6. après approbation/refus/fusion, la Contribution disparaît de
-   `À contrôler` et apparaît dans `Historique` ;
-7. l'Historique s'ouvre par défaut sur `Toutes les décisions` et distingue
-   `Approuvée`, `Fusionnée` et `Refusée` ;
-8. une nouvelle Variété/Caractéristique Workspace à vérifier apparaît comme
-   `Valeur à vérifier`, ouvre directement les Dimensions et disparaît après
-   revue ;
-9. avec une autorité globale en lecture seule, les actions de décision/revue
-   ne sont pas proposées.
-
 ## 8. Bloc B — Gouvernance Produit unifiée
 
-Le Bloc B est implémenté sur la même branche, sans PR intermédiaire.
+Le Bloc B reste sur la même branche, sans PR intermédiaire.
 
 Contrat :
 
@@ -315,173 +311,203 @@ Contrat :
 docs/m002/M-002-GOVERNANCE-REVIEW-QUEUE.md
 ~~~
 
-Surface Platform cible :
-
-~~~text
-Référentiel
-À contrôler
-Historique
-Catégories
-~~~
-
 ### 8.1 File « À contrôler »
 
-Read model serveur :
+Le backend agrège toujours les sources techniques existantes :
 
 ~~~text
 ReferenceContribution PENDING_REVIEW
 +
 ProductVariety / ProductCharacteristic
 qualityReviewStatus = PENDING
-status = ACTIVE
-identityActive = true
 ~~~
 
-Règle anti-double traitement :
-
-- une Dimension provisoire déjà portée par une Contribution en attente
-  n'apparaît pas une seconde fois comme Dimension à vérifier.
-
-Fonctions :
-
-- compteur global dans l'onglet ;
-- pagination serveur ;
-- filtre par nature `Contribution | Valeur à vérifier` ;
-- filtre par Workspace d'origine ;
-- origine et auteur visibles ;
-- ancienneté visible ;
-- accès direct au Produit ;
-- Contribution : approuver / fusionner / refuser ;
-- Dimension : marquer comme vérifiée puis accès au drawer pour correction,
-  archivage ou suppression selon le contrat existant.
-
-### 8.2 Historique
-
-Les Contributions déjà traitées quittent la file active et restent
-consultables dans l'onglet Historique. Par défaut, l'Historique charge ensemble
-les Contributions approuvées/fusionnées et refusées ; un filtre permet ensuite
-de limiter la vue.
-
-Pour une proposition de nouveau Produit, la file rattache explicitement la
-ligne au Produit provisoire afin de permettre son ouverture directe.
-
-La décision visible est dérivée sans modifier les événements immuables :
+Mais l'interface gestionnaire expose uniquement des données métier :
 
 ~~~text
-APPROVE → Approuvée
-MERGE   → Fusionnée
-REJECT  → Refusée
+Type
+→ Produit
+→ Référence
+→ Dimension
+
+Donnée à valider
+Contexte
+Rapprochement
+Action → Examiner
 ~~~
 
-L'historique détaillé des Dimensions continue d'être porté par
-`ProductReferenceEvent` dans le drawer Produit.
+Décisions validées :
 
-### 8.3 RBAC
+- aucune colonne Origine/Workspace/auteur dans la file principale ;
+- avec `origins=omit`, l'API ne renvoie plus inutilement ces données dans les
+  lignes de la file ;
+- une demande orpheline dont la cible provisoire n'est plus actionnable est
+  exclue ;
+- `Examiner` ouvre la cible exacte dans le drawer ;
+- Référence → filtre `À contrôler` + focus warning ;
+- Dimension → filtre `À contrôler` + focus warning ;
+- le tableau ne valide/refuse/fusionne plus hors contexte.
 
-Aucune permission supplémentaire :
+### 8.2 Nouvelle Référence Workspace
+
+Workflow :
+
+~~~text
+Workspace saisit une Référence
+→ doublon exact : réutilisation de l'existant
+→ proximité lexicale : proposition de rapprochement
+→ utilisateur confirme éventuellement une création distincte
+→ ProductVariant PROVISIONAL
+→ utilisable immédiatement dans son Workspace
+→ ReferenceContribution VARIANT PENDING_REVIEW
+→ gestionnaire Platform contrôle la Référence
+~~~
+
+Le cas `Galla` alors que `Gala` existe est couvert :
+
+- rapprochement proposé ;
+- aucune fusion automatique ;
+- l'utilisateur peut confirmer que la Référence est différente ;
+- le gestionnaire peut ensuite la corriger, la valider ou la fusionner avec
+  `Gala`.
+
+### 8.3 Drawer ciblé
+
+Pour la donnée exacte examinée :
+
+~~~text
+badge warning → À contrôler
+
+Modifier
+Valider
+Fusionner avec <candidat> si rapprochement
+Refuser si décision de gouvernance
+~~~
+
+Après validation, le badge devient `Validée` lorsque la donnée est réellement
+passée par un contrôle humain.
+
+Une Dimension `NOT_REQUIRED` n'est pas présentée comme validée par un humain.
+
+Une Dimension provisoire approuvée par la gouvernance passe aussi
+`qualityReviewStatus = REVIEWED`, ce qui supprime le double contrôle qui
+existait dans le premier workflow.
+
+### 8.4 Alias
+
+Les alias/synonymes restent disponibles pour la normalisation et la recherche,
+mais ne sont plus affichés dans les drawers Produit utilisateur/Platform.
+
+### 8.5 Historique
+
+La surface est renommée fonctionnellement `Historique des contrôles`.
+
+Colonnes :
+
+~~~text
+Type
+Donnée
+Décision
+Rapprochement
+Traitée le / gestionnaire
+~~~
+
+L'origine Workspace/auteur n'est plus affichée. Elle reste conservée en base
+pour l'audit.
+
+### 8.6 RBAC / Core
+
+Aucune nouvelle permission :
 
 ~~~text
 product:reference:read
 → lecture Référentiel / À contrôler / Historique
 
 product:reference:manage
-→ traitement des Contributions
-→ revue / correction des Dimensions
+→ correction et décision de gouvernance
 ~~~
 
-Les tests HTTP couvrent explicitement la lecture de la file avec READ seul et
-le refus d'une mutation de revue sans MANAGE.
+Aucune primitive Notification métier parallèle n'a été créée. Le compteur
+`À contrôler` reste le signal in-app. Une notification générique persistée
+reste un sujet Core éventuel.
 
-### 8.4 Performance
-
-Trois indexes dédiés complètent M-002 :
-
-~~~text
-product_variety_global_review_queue
-product_characteristic_global_review_queue
-reference_contribution_provisional_review_lookup
-~~~
-
-Ils sont vérifiés par `npm run migration:m002-catalog`.
-
-Le frontend ne charge pas exhaustivement les Contributions ou Dimensions pour
-constituer la file.
-
-### 8.5 Notifications
-
-Audit Core v1.2.1 :
-
-- aucune primitive générique de notification applicative persistée n'est
-  disponible ;
-- D-008 reste la dette Core conditionnelle correspondante.
-
-Décision :
-
-- le compteur `À contrôler` est le signal in-app du lot ;
-- aucun modèle Notification spécifique GMS n'est créé ;
-- une notification persistée/lue-non-lue éventuelle doit être traitée dans
-  `saas-core-api` avant réintégration.
-
-### 8.6 Couverture ajoutée
+### 8.7 Couverture ajoutée mais non encore exécutée dans cette conversation
 
 Backend :
 
-- agrégation Contributions + Dimensions ;
-- déduplication d'une Dimension provisoire ;
-- pagination et filtres ;
-- origine Workspace ;
-- disparition après revue/décision ;
-- séparation READ / MANAGE ;
-- concurrence sur les décisions terminales ;
-- registre backend-driven de la file.
+- validation Zod du contexte de rapprochement Référence ;
+- file Produit / Référence / Dimension ;
+- cible exacte ;
+- exclusion des demandes orphelines ;
+- validation de Référence provisoire ;
+- fusion de Références et repointage des dépendances ;
+- scénario `Galla → Gala` ;
+- correction avant décision ;
+- validation de Dimension en une seule décision ;
+- permission HTTP et réponse sans origine lorsque `origins=omit`.
 
 Frontend :
 
-- composant `ProductReferenceReviewQueue` ;
-- compteurs ;
-- filtres type/origine ;
-- actions Contribution / Dimension ;
-- lecture seule ;
-- onglet Historique ;
-- RTK Query dédié.
+- file métier simplifiée ;
+- routage `Examiner` ;
+- filtre Références `À contrôler` ;
+- badges et focus ciblé ;
+- correction / validation / fusion / refus dans le drawer ;
+- confirmation d'une Référence proche côté Workspace ;
+- alias absent du détail ;
+- Historique des contrôles.
 
-E2E :
+E2E existant M-002 adapté au nouveau principe :
 
 ~~~text
 Workspace propose un Produit
-→ gestionnaire global le voit dans À contrôler
-→ approuve
-→ l'élément quitte À contrôler
-→ apparaît dans Historique
-→ Produit publié retrouvable globalement
-→ Workspace peut ensuite l'utiliser / le mettre en favori
+→ Platform le voit dans À contrôler
+→ Examiner
+→ drawer ciblé
+→ Valider
+→ disparition de la file
+→ Historique
+→ Produit global exploitable
 ~~~
 
-Aucun de ces tests n'est déclaré vert dans cette conversation tant qu'il n'a
-pas été réellement exécuté localement ou par la Core Gate.
+Aucune de ces suites n'est déclarée verte ici tant qu'elle n'a pas été
+réellement exécutée localement ou par la Core Gate.
 
-## 9. Suite du lot après QA
+## 9. QA visuelle attendue avant la prochaine conversation
 
-Aucune PR intermédiaire ne doit être créée.
+Scénarios prioritaires :
 
-Après récupération locale du Bloc B :
+1. vérifier qu'aucune ligne `Alias` n'apparaît dans le drawer Produit
+   Workspace ;
+2. créer une Référence nouvelle sous un Produit existant ;
+3. vérifier qu'elle reste utilisable dans le Workspace et porte `À contrôler` ;
+4. si une Référence proche existe, vérifier la proposition de rapprochement
+   et la confirmation explicite d'une création distincte ;
+5. Platform → `À contrôler` : vérifier les colonnes
+   `Type | Donnée à valider | Contexte | Rapprochement | Action` ;
+6. vérifier l'absence d'Origine/Workspace/auteur ;
+7. cliquer `Examiner` sur une Référence et vérifier que seule la vue
+   `Références > À contrôler` est affichée, avec focus sur la bonne ligne ;
+8. vérifier `Modifier`, `Valider`, `Fusionner avec …`, `Refuser` selon le
+   contexte ;
+9. après validation/fusion/refus, vérifier la disparition de `À contrôler` ;
+10. vérifier l'Historique des contrôles et les décisions
+    `Approuvée / Fusionnée / Refusée` ;
+11. vérifier une Dimension : une seule validation doit suffire.
+
+Après validation visuelle utilisateur :
 
 ~~~text
-npm run migration:m002-catalog
-→ tests ciblés
-→ QA visuelle Platform Produits
-→ retours utilisateur
-→ corrections éventuelles sur la même branche
-→ release:check
-→ PR unique
-→ Core Gate PR
-→ merge
-→ Core Gate post-merge
-→ documentation finale
+ne pas créer de PR
+→ mettre à jour l'amorce de reprise
+→ ouvrir une nouvelle conversation
+→ traiter la demande spécifique d'ajout de Produits au référentiel global
+→ rester sur feature/a2-professional-reference-corpus
+→ conserver la future PR unique
 ~~~
 
-Le bloc Exports et diffusion M-004 reste ultérieur et séparé
-fonctionnellement.
+Le `release:check`, la PR et le merge ne viennent qu'après ce lot
+complémentaire demandé par l'utilisateur.
 
 ## 10. Exports et diffusion — ordre ultérieur
 
