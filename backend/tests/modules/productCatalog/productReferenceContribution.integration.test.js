@@ -316,6 +316,60 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
             });
     });
 
+    it('liste ensemble les Contributions déjà traitées pour l’Historique', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Produit historique complet',
+        });
+
+        const approved = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: 'QUALITY_DESIGNATION',
+            value: 'Qualité approuvée historique',
+        });
+        const rejected = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: 'COLOR',
+            value: 'Couleur refusée historique',
+        });
+
+        await reviewReferenceContribution({
+            contributionId: approved.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+        await reviewReferenceContribution({
+            contributionId: rejected.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'REJECT',
+        });
+
+        const result = await listReferenceContributions({
+            reviewedOnly: true,
+        });
+
+        expect(result.pagination.total).toBe(2);
+        expect(result.contributions).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: approved.contribution.id,
+                    status: 'APPROVED',
+                    decision: 'APPROVE',
+                }),
+                expect.objectContaining({
+                    id: rejected.contribution.id,
+                    status: 'REJECTED',
+                    decision: 'REJECT',
+                }),
+            ]),
+        );
+    });
+
     it('liste les contributions même si le Workspace ou l’auteur référencé n’existe plus', async () => {
         await ReferenceContribution.create({
             type: 'CANONICAL_PRODUCT',
