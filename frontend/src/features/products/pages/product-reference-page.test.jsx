@@ -13,7 +13,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const mocks = vi.hoisted(() => ({
   metadataQuery: vi.fn(),
   productsQuery: vi.fn(),
-  contributionsQuery: vi.fn(),
   reviewQueueQuery: vi.fn(),
   updateCategoryStatus: vi.fn(),
   globalPricesQuery: vi.fn(),
@@ -22,7 +21,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/features/products/api/product-reference-api', () => ({
   useGetProductReferenceMetadataQuery: mocks.metadataQuery,
   useListProductReferenceProductsQuery: mocks.productsQuery,
-  useListProductReferenceContributionsQuery: mocks.contributionsQuery,
   useListProductReferenceReviewQueueQuery: mocks.reviewQueueQuery,
   useUpdateProductReferenceCategoryStatusMutation: () => [
     mocks.updateCategoryStatus,
@@ -300,16 +298,6 @@ describe('ProductReferencePage', () => {
       isLoading: false,
       refetch: vi.fn(),
     });
-    mocks.contributionsQuery.mockReturnValue({
-      data: {
-        contributions: [],
-        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
-      },
-      isError: false,
-      isFetching: false,
-      isLoading: false,
-      refetch: vi.fn(),
-    });
     mocks.updateCategoryStatus.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
     });
@@ -468,8 +456,8 @@ describe('ProductReferencePage', () => {
       .toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'À contrôler (4)' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Historique' }))
-      .toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Historique' }))
+      .not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Catégories (1)' }))
       .toBeInTheDocument();
 
@@ -647,30 +635,6 @@ describe('ProductReferencePage', () => {
     })).toBeInTheDocument();
   });
 
-  it('n’empêche pas l’Historique de fonctionner si les Prix repères sont indisponibles', async () => {
-    const user = userEvent.setup();
-
-    mocks.globalPricesQuery.mockReturnValue({
-      data: undefined,
-      isError: true,
-      isFetching: false,
-      isLoading: false,
-      refetch: vi.fn(),
-    });
-
-    renderPage({ canManage: true });
-
-    expect(screen.getByText('Produits indisponibles')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: 'Historique' }));
-
-    expect(screen.getByText('Historique des contrôles'))
-      .toBeInTheDocument();
-    expect(screen.getByText('Aucun historique')).toBeInTheDocument();
-    expect(screen.queryByText('Produits indisponibles'))
-      .not.toBeInTheDocument();
-  });
-
   it('ouvre la file unifiée depuis l’onglet À contrôler', async () => {
     const user = userEvent.setup();
 
@@ -735,122 +699,6 @@ describe('ProductReferencePage', () => {
     expect(screen.getByText(
       'Détail global ouvert · variants · active · pending · cible variant-pending-1',
     )).toBeInTheDocument();
-  });
-
-  it('conserve les Contributions traitées dans un Historique séparé', async () => {
-    const user = userEvent.setup();
-
-    mocks.contributionsQuery.mockReturnValue({
-      data: {
-        contributions: [{
-          id: 'contribution-history-1',
-          type: 'CHARACTERISTIC',
-          characteristicKind: 'QUALITY_DESIGNATION',
-          proposedValue: 'Carottes des sables',
-          workspace: { id: 'workspace-1', name: 'Atelier pilote' },
-          author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
-          status: 'APPROVED',
-          decision: 'APPROVE',
-          reviewer: {
-            id: 'reviewer-1',
-            firstName: 'Gestionnaire',
-            lastName: 'Produit',
-          },
-          reviewedAt: '2026-10-03T11:00:00.000Z',
-          reasons: [{
-            code: 'CHARACTERISTIC_REQUIRES_GOVERNANCE',
-            message: 'Ce type nécessite une revue.',
-          }],
-        }],
-        pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
-      },
-      isError: false,
-      isFetching: false,
-      isLoading: false,
-      refetch: vi.fn(),
-    });
-
-    renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Historique' }));
-
-    await waitFor(() => {
-      expect(mocks.contributionsQuery).toHaveBeenLastCalledWith(
-        {
-          status: undefined,
-          reviewedOnly: true,
-          page: 1,
-          limit: 10,
-        },
-        { skip: false },
-      );
-    });
-
-    expect(screen.getByRole('combobox', {
-      name: 'Filtrer l’historique par décision',
-    })).toHaveTextContent('Toutes les décisions');
-    expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Type' }))
-      .toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Donnée' }))
-      .toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Rapprochement' }))
-      .toBeInTheDocument();
-    expect(screen.queryByText('Atelier pilote')).not.toBeInTheDocument();
-    expect(screen.getByText('Approuvée')).toBeInTheDocument();
-    expect(screen.getByText('03/10/2026')).toBeInTheDocument();
-    expect(screen.getByText('Gestionnaire Produit')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Approuver' }))
-      .not.toBeInTheDocument();
-
-    await selectOption(
-      user,
-      'Filtrer l’historique par décision',
-      'Refusée',
-    );
-
-    await waitFor(() => {
-      expect(mocks.contributionsQuery).toHaveBeenLastCalledWith(
-        {
-          status: 'REJECTED',
-          reviewedOnly: false,
-          page: 1,
-          limit: 10,
-        },
-        { skip: false },
-      );
-    });
-  });
-
-  it('distingue une Contribution fusionnée dans l’Historique', async () => {
-    const user = userEvent.setup();
-
-    mocks.contributionsQuery.mockReturnValue({
-      data: {
-        contributions: [{
-          id: 'contribution-history-merge',
-          type: 'CHARACTERISTIC',
-          characteristicKind: 'QUALITY_DESIGNATION',
-          proposedValue: 'Carotte sable',
-          workspace: { id: 'workspace-1', name: 'Atelier pilote' },
-          author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
-          status: 'APPROVED',
-          decision: 'MERGE',
-          reviewer: null,
-          reviewedAt: '2026-10-03T11:00:00.000Z',
-          reasons: [],
-        }],
-        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
-      },
-      isError: false,
-      isFetching: false,
-      isLoading: false,
-      refetch: vi.fn(),
-    });
-
-    renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Historique' }));
-
-    expect(screen.getByText('Fusionnée')).toBeInTheDocument();
   });
 
   it('ouvre le détail global depuis la liste', async () => {
