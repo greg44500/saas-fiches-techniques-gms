@@ -241,9 +241,14 @@ Contrôles structurels déjà effectués directement sur la branche :
 - aucune unité M-002 / M-003 incohérente sur les 362 prix conservés ;
 - bootstrap M-002 par défaut pointant sur v8 ;
 - bootstrap M-003 par défaut pointant sur v3 ;
-- réconciliation pointant sur v8 avec v1-v7 dans l'historique.
+- réconciliation pointant sur v8 avec v1-v7 dans l'historique ;
+- réconciliation M-003 v3 présente et câblée avant le seed v3 ;
+- aucun Prix v3 orphelin ou avec unité incohérente lors du contrôle statique ;
+- Références demandées (ovoproduits, purées/coulis, sauces, poudres/fruits secs,
+  fonds de tartes dimensionnés) présentes dans le dataset final.
 
-Ces contrôles ne remplacent pas l'exécution Vitest/Supertest/Playwright.
+Ces contrôles ont été recalculés directement depuis les fichiers du HEAD GitHub
+le 2026-10-03. Ils ne remplacent pas l'exécution Vitest/Supertest/Playwright.
 
 L'environnement de cette conversation ne permet pas de cloner le dépôt pour
 exécuter les suites. Aucun test local n'est donc déclaré vert à ce stade.
@@ -253,11 +258,23 @@ utilisateur puis la Core Gate de la future PR.
 
 ## 7. Reprise locale du Bloc B
 
-Le corpus A2/v7 et les Prix repères ont déjà été vérifiés visuellement avant
-ce sous-bloc. Les changements actuels portent sur la gouvernance
-`À contrôler`, les nouvelles Références Workspace et le drawer ciblé.
+Le corpus A2/v8 complète désormais le référentiel professionnel avant la PR
+unique du lot. Les changements du sous-bloc Produits globaux portent sur le
+dataset v8, la réconciliation bootstrap v1-v7 → v8, le corpus économique v3
+et l'archivage contrôlé des anciens Prix repères bootstrap attachés aux
+6 fonds de tarte génériques retirés.
 
-**Aucune nouvelle migration n'a été ajoutée par ce sous-bloc.**
+Deux réconciliations produit sont désormais câblées dans les commandes
+existantes, sans créer de nouvelle commande opératoire :
+
+~~~text
+npm run migration:m002-catalog
+→ reconcileM002BootstrapToV8
+
+npm run migration:m003-indicative-pricing
+→ reconcileM003GlobalIndicativePricesToV3
+→ seed m003-global-indicative-prices.v3
+~~~
 
 Pour récupérer uniquement le travail courant :
 
@@ -271,7 +288,19 @@ git pull --ff-only origin feature/a2-professional-reference-corpus
 Si `git status --short` est vide après le pull, lancer les contrôles ciblés
 avant la QA visuelle.
 
-Backend ciblé :
+Backend corpus v8 / Prix repères v3 à exécuter en priorité :
+
+~~~text
+npx vitest run \
+  backend/tests/seeds/m002Reference.seed.test.js \
+  backend/tests/seeds/m002ProfessionalReferenceV7.seed.test.js \
+  backend/tests/seeds/m002ProfessionalReferenceV8.seed.test.js \
+  backend/tests/migrations/m002BootstrapV8.migration.test.js \
+  backend/tests/seeds/m003GlobalIndicativePrices.seed.test.js \
+  backend/tests/migrations/m003GlobalIndicativePricesV3.migration.test.js
+~~~
+
+Backend gouvernance ciblé :
 
 ~~~text
 npx vitest run \
@@ -480,7 +509,7 @@ Branche courante :
 ~~~text
 feature/a2-professional-reference-corpus
 HEAD vérifié avant mise à jour de cette reprise :
-d3556ef84236c16eda57134880081ef72933fac9
+265e5935380958f9cdeaa5b16aa04f2c438e7d3b
 main de base : 3634b9b76c4b019f9458f3827cd6d29d20cf6e3f
 PR ouverte : aucune
 ~~~
