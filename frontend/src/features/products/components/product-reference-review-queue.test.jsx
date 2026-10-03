@@ -156,12 +156,14 @@ describe('ProductReferenceReviewQueue', () => {
       name: /Rouge/,
     });
 
-    expect(within(productRow).getByText('Rapprochement à vérifier'))
+    expect(within(productRow).getByText('Sauce tomate'))
       .toBeInTheDocument();
-    expect(within(referenceRow).getByText('À contrôler'))
-      .toBeInTheDocument();
-    expect(within(dimensionRow).getByText('À contrôler'))
-      .toBeInTheDocument();
+    expect(within(referenceRow).queryByText('À contrôler'))
+      .not.toBeInTheDocument();
+    expect(within(dimensionRow).queryByText('À contrôler'))
+      .not.toBeInTheDocument();
+    expect(screen.queryByText('Rapprochement à vérifier'))
+      .not.toBeInTheDocument();
     expect(screen.queryByText('Atelier pilote')).not.toBeInTheDocument();
   });
 
