@@ -9,6 +9,13 @@ import {
 import {
     ensureM003SupplierCatalogIndexes,
 } from './ensureM003SupplierCatalogIndexes.migration.js';
+import {
+    loadDefaultGlobalIndicativePriceDataset,
+    seedM003GlobalIndicativePrices,
+} from '../seeds/seedM003GlobalIndicativePrices.js';
+import {
+    resolveBootstrapActorId,
+} from '../seeds/seedM002Reference.js';
 
 const run = async () => {
     try {
@@ -18,10 +25,23 @@ const run = async () => {
             await ensureM003SupplierCatalogIndexes();
         const permissions =
             await backfillRegisteredSystemRolePermissions();
+        const [dataset, actorId] = await Promise.all([
+            loadDefaultGlobalIndicativePriceDataset(),
+            resolveBootstrapActorId(),
+        ]);
+        const globalIndicativePrices =
+            await seedM003GlobalIndicativePrices({
+                dataset,
+                actorId,
+            });
 
         console.log(
             'Migration M-003 Prix indicatifs terminée :',
-            { indexes, permissions },
+            {
+                indexes,
+                permissions,
+                globalIndicativePrices,
+            },
         );
     } catch (error) {
         console.error(
