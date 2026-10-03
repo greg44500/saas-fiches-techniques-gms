@@ -66,6 +66,28 @@ function FilledStarIcon(props) {
   return <Star {...props} fill="currentColor" />;
 }
 
+function FavoriteToggleIcon({
+  disabled,
+  favorite,
+  label,
+  onClick,
+}) {
+  const Icon = favorite ? FilledStarIcon : Star;
+
+  return (
+    <button
+      aria-label={label}
+      className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+      disabled={disabled}
+      onClick={onClick}
+      title={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+      type="button"
+    >
+      <Icon aria-hidden="true" className="size-4" />
+    </button>
+  );
+}
+
 function DetailRow({ label, value }) {
   return (
     <div className="grid gap-1 border-b border-border py-3 last:border-b-0 sm:grid-cols-[160px_1fr]">
@@ -75,10 +97,17 @@ function DetailRow({ label, value }) {
   );
 }
 
-function VariantIdentity({ metadata, variant }) {
+function VariantIdentity({
+  metadata,
+  nameAction = null,
+  variant,
+}) {
   return (
     <>
-      <p className="font-medium">{getVariantLabel(variant)}</p>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <p className="truncate font-medium">{getVariantLabel(variant)}</p>
+        {nameAction}
+      </div>
       <p className="mt-1 text-sm text-muted-foreground">
         Conservation : {getConservationTypeLabel(
           metadata,
@@ -323,8 +352,49 @@ function ProductDetailsDrawer({
                         key={variant.id}
                       >
                         <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <VariantIdentity metadata={metadata} variant={variant} />
+                          <div className="min-w-0">
+                            <VariantIdentity
+                              metadata={metadata}
+                              nameAction={
+                                can(PRODUCT_PERMISSION.CATALOG_MANAGE)
+                                && (
+                                  inCatalog
+                                    ? (
+                                      <FavoriteToggleIcon
+                                        disabled={mutationPending}
+                                        favorite
+                                        label={
+                                          'Retirer '
+                                          + getVariantLabel(variant)
+                                          + ' des favoris'
+                                        }
+                                        onClick={() => changeCatalog(
+                                          variant,
+                                          false,
+                                        )}
+                                      />
+                                    )
+                                    : canAttach
+                                      ? (
+                                        <FavoriteToggleIcon
+                                          disabled={mutationPending}
+                                          favorite={false}
+                                          label={
+                                            'Ajouter '
+                                            + getVariantLabel(variant)
+                                            + ' aux favoris'
+                                          }
+                                          onClick={() => changeCatalog(
+                                            variant,
+                                            true,
+                                          )}
+                                        />
+                                      )
+                                      : null
+                                )
+                              }
+                              variant={variant}
+                            />
                           </div>
 
                           <div className="flex items-center gap-2">
@@ -337,34 +407,6 @@ function ProductDetailsDrawer({
                               </StatusBadge>
                             )}
 
-                            {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
-                              inCatalog ? (
-                                <ActionIconButton
-                                  Icon={FilledStarIcon}
-                                  disabled={mutationPending}
-                                  label={
-                                    'Retirer '
-                                    + getVariantLabel(variant)
-                                    + ' des favoris'
-                                  }
-                                  onClick={() => changeCatalog(variant, false)}
-                                  tooltipLabel="Retirer des favoris"
-                                  variant="outline"
-                                />
-                              ) : canAttach ? (
-                                <ActionIconButton
-                                  Icon={Star}
-                                  disabled={mutationPending}
-                                  label={
-                                    'Ajouter '
-                                    + getVariantLabel(variant)
-                                    + ' aux favoris'
-                                  }
-                                  onClick={() => changeCatalog(variant, true)}
-                                  tooltipLabel="Ajouter aux favoris"
-                                />
-                              ) : null
-                            )}
                           </div>
                         </div>
                       </li>
