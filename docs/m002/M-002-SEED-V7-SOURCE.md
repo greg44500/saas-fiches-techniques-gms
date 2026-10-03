@@ -1,6 +1,6 @@
 # M-002 — Source et règles du corpus professionnel v7
 
-**Statut : CANDIDAT — Bloc A2.1, non activé comme bootstrap par défaut**  
+**Statut : ACTIF SUR LA BRANCHE — Bloc A2.1, activation soumise à validation visuelle et à la PR finale**  
 **Date de constitution :** 2026-10-03  
 **Dataset :** `backend/seeds/data/m002-reference.v7.json`
 
@@ -26,9 +26,11 @@ Article fournisseur / marque / référence commerciale / conditionnement / prix
 → M-003
 ```
 
-Le v7 est volontairement **staged** dans ce bloc. Le bootstrap actif reste v6
-tant que les impacts M-003, migrations et Prix repères du nouveau corpus ne
-sont pas traités dans les blocs suivants de la même branche / PR.
+Le v7 est désormais le bootstrap M-002 par défaut sur la branche de travail.
+L'activation est accompagnée du corpus M-003 `m003-global-indicative-v2`,
+aligné exactement sur les 368 Références Produit, et de la réconciliation
+v1-v6 → v7. Le changement reste non fusionné tant que la validation visuelle,
+les tests et la Core Gate de la PR finale ne sont pas terminés.
 
 ## 2. Composition
 
@@ -213,19 +215,34 @@ Le bloc A2.1 doit vérifier au minimum :
 - absence de données commerciales M-003 ;
 - traçabilité des sources professionnelles.
 
-## 8. Activation différée
+## 8. Activation sur la branche
 
-Ce fichier n'autorise pas encore à remplacer automatiquement le bootstrap v6.
+Le bootstrap par défaut charge désormais `m002-reference.v7.json`.
 
-Avant activation du v7 comme dataset par défaut, la même branche doit encore
-traiter :
+La migration M-002 utilise `reconcileM002BootstrapToV7` et traite les
+datasets v1 à v6 comme historiques. Le v7 reprend l'intégralité des 264
+Références v6 et ajoute 104 Références professionnelles.
 
-1. comportement de réconciliation v6 → v7 ;
-2. idempotence du bootstrap après v7 ;
-3. cohérence du corpus de Prix repères M-003 ;
-4. éventuelles références sans Prix repère assumées explicitement ;
-5. tests backend concernés ;
-6. documentation opérationnelle et commande de migration/seed.
+Le corpus économique correspondant est :
 
-Aucune PR intermédiaire n'est créée : tous ces blocs appartiennent à la même
-future PR.
+```text
+backend/seeds/data/m003-global-indicative-prices.v2.json
+368 Références
+368 Prix repères
+0 Référence manquante
+0 unité incohérente
+```
+
+Ordre opérationnel pour une base de développement existante :
+
+```text
+npm run migration:m002-catalog
+→ npm run seed:m002-reference
+→ npm run migration:m003-indicative-pricing
+```
+
+Le seed M-002 et le bootstrap de Prix repères sont idempotents. Les Prix
+repères déjà maintenus par un gestionnaire ne sont jamais remplacés.
+
+Aucune PR intermédiaire n'est créée : ce bloc reste dans la branche unique du
+lot Produits globaux jusqu'à la validation finale.
