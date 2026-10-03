@@ -16,7 +16,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -40,6 +39,9 @@ import { ProductCreateDialog } from '@/features/products/components/product-crea
 import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
 import { ProductReferenceCategoryDialog } from '@/features/products/components/product-reference-category-dialog';
 import { ProductReferenceDetailsDrawer } from '@/features/products/components/product-reference-details-drawer';
+import {
+  ProductReferenceSearchAutocomplete,
+} from '@/features/products/components/product-reference-search-autocomplete';
 import {
   getApiErrorMessage,
   getCategoryStatusLabel,
@@ -165,6 +167,12 @@ function ProductReferencePage({ canManage }) {
     event.preventDefault();
     setPage(1);
     setSearch(searchInput.trim());
+  }
+
+  function selectSearchSuggestion(_result, nextSearch) {
+    setSearchInput(nextSearch);
+    setSearch(nextSearch);
+    setPage(1);
   }
 
   function openProduct(
@@ -664,13 +672,20 @@ function ProductReferencePage({ canManage }) {
         <section className="rounded-xl border border-border bg-card">
           <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(260px,1fr)_240px_220px]">
             <form className="flex gap-2" onSubmit={applySearch}>
-              <Input
-                aria-label="Rechercher un Produit global"
-                maxLength={120}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Rechercher un produit…"
-                value={searchInput}
-              />
+              <div className="min-w-0 flex-1">
+                <ProductReferenceSearchAutocomplete
+                  categoryId={
+                    categoryId === ALL_REFERENCE_CATEGORIES
+                      ? undefined
+                      : categoryId
+                  }
+                  metadata={metadata}
+                  onSelect={selectSearchSuggestion}
+                  onValueChange={setSearchInput}
+                  status={referenceStatus}
+                  value={searchInput}
+                />
+              </div>
               <Button type="submit" variant="outline">Rechercher</Button>
             </form>
 
