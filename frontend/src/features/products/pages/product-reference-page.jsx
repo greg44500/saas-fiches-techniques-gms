@@ -77,6 +77,8 @@ function ProductReferencePage({ canManage }) {
     productId: null,
     initialTab: 'product',
     initialDimensionFilter: 'active',
+    initialReferenceFilter: 'all',
+    reviewContext: null,
   });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -221,13 +223,51 @@ function ProductReferencePage({ canManage }) {
     productId,
     initialTab = 'product',
     initialDimensionFilter = 'active',
+    initialReferenceFilter = 'all',
+    reviewContext = null,
   ) {
     setDrawerState({
       open: true,
       productId,
       initialTab,
       initialDimensionFilter,
+      initialReferenceFilter,
+      reviewContext,
     });
+  }
+
+  function examineReviewItem(item) {
+    if (!item.productId) return;
+
+    if (item.dataType === 'REFERENCE') {
+      openProduct(
+        item.productId,
+        'variants',
+        'active',
+        'pending',
+        item,
+      );
+      return;
+    }
+
+    if (item.dataType === 'DIMENSION') {
+      openProduct(
+        item.productId,
+        'dimensions',
+        'pending',
+        'all',
+        item,
+      );
+      return;
+    }
+
+    openProduct(
+      item.productId,
+      'product',
+      'active',
+      'all',
+      item,
+    );
   }
 
   function openCategoryProducts(category) {
@@ -786,9 +826,8 @@ function ProductReferencePage({ canManage }) {
 
       {section === 'review' && (
         <ProductReferenceReviewQueue
-          canManage={canManage}
           metadata={metadata}
-          onOpenProduct={openProduct}
+          onExamine={examineReviewItem}
           page={page}
           pageSize={pageSize}
           setPage={setPage}
@@ -901,8 +940,14 @@ function ProductReferencePage({ canManage }) {
         canManage={canManage}
         metadata={metadata}
         initialDimensionFilter={drawerState.initialDimensionFilter}
+        initialReferenceFilter={drawerState.initialReferenceFilter}
         initialTab={drawerState.initialTab}
-        onClose={() => setDrawerState((current) => ({ ...current, open: false }))}
+        reviewContext={drawerState.reviewContext}
+        onClose={() => setDrawerState((current) => ({
+          ...current,
+          open: false,
+          reviewContext: null,
+        }))}
         open={drawerState.open}
         productId={drawerState.productId}
       />
