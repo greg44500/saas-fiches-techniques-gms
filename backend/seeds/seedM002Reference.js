@@ -195,7 +195,7 @@ const m002ReferenceDatasetSchema = z.strictObject({
         }
 
         if (
-            ['m002-reference-v5', 'm002-reference-v6'].includes(dataset.version)
+            ['m002-reference-v5', 'm002-reference-v6', 'm002-reference-v7'].includes(dataset.version)
             && product.variants.length === 0
         ) {
             context.addIssue({
@@ -626,13 +626,15 @@ const loadReferenceDataset = async (filename) => {
     return JSON.parse(await readFile(datasetUrl, 'utf8'));
 };
 
-const loadDefaultDataset = async () => (
+const loadLegacyReferenceDataset = async () => (
     loadReferenceDataset('m002-reference.v6.json')
 );
 
-const loadProfessionalReferenceDataset = async () => (
+const loadDefaultDataset = async () => (
     loadReferenceDataset('m002-reference.v7.json')
 );
+
+const loadProfessionalReferenceDataset = loadDefaultDataset;
 
 const runSeedM002Reference = async () => {
     await connectDB(env.MONGODB_URI);
@@ -666,6 +668,7 @@ if (isExecutedDirectly) {
 export {
     hashDataset,
     loadDefaultDataset,
+    loadLegacyReferenceDataset,
     loadProfessionalReferenceDataset,
     m002ReferenceDatasetSchema,
     resolveBootstrapActorId,
