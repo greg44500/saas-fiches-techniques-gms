@@ -129,14 +129,22 @@ const createProduct = async (req, res) => {
 };
 
 const createVariant = async (req, res) => {
+    const {
+        forceCreate,
+        reviewedCandidateIds,
+        ...variant
+    } = req.validated.body;
+
     const result = await createWorkspaceVariant({
         workspaceId: req.workspace._id,
         actorId: req.user._id,
         productId: req.validated.params.productId,
-        variant: req.validated.body,
+        variant,
+        forceCreate,
+        reviewedCandidateIds,
     });
 
-    res.status(201).json({
+    res.status(result.contribution ? 201 : 200).json({
         status: 'success',
         data: result,
     });
