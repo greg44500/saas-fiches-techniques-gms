@@ -768,9 +768,11 @@ const reviewReferenceContribution = async ({
             ? (
                 current.type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT
                     ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT
-                    : current.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
-                        ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY
-                        : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC
+                    : current.type === PRODUCT_CONTRIBUTION_TYPE.VARIANT
+                        ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT
+                        : current.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
+                            ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY
+                            : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC
             )
             : null;
         current.resolutionEntityId = approved
