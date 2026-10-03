@@ -841,9 +841,9 @@ function ProductReferencePage({ canManage }) {
         <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
             <div>
-              <h2 className="font-semibold">Historique des contributions</h2>
+              <h2 className="font-semibold">Historique des contrôles</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Consultez les décisions déjà prises sur les contributions Produit.
+                Consultez les décisions déjà prises sur les données du référentiel.
               </p>
             </div>
             <Select
@@ -873,20 +873,20 @@ function ProductReferencePage({ canManage }) {
             </p>
           ) : hasError ? (
             <ErrorState
-              description="L’historique des contributions n’a pas pu être chargé."
+              description="L’historique des contrôles n’a pas pu être chargé."
               onRetry={retry}
               title="Historique indisponible"
             />
           ) : (
             <>
               <DataTable
-                caption="Historique des contributions Produit"
+                caption="Historique des contrôles du référentiel Produit"
                 columns={historyContributionColumns}
                 data={contributionsQuery.data?.contributions ?? []}
                 emptyContent={(
                   <EmptyState
                     className="p-0"
-                    description="Aucune contribution ne correspond à cette décision."
+                    description="Aucune donnée contrôlée ne correspond à cette décision."
                     title="Aucun historique"
                   />
                 )}
@@ -895,7 +895,7 @@ function ProductReferencePage({ canManage }) {
               />
               <div className="px-5 pb-5">
                 <DataPagination
-                  ariaLabel="Pagination de l’historique des contributions"
+                  ariaLabel="Pagination de l’historique des contrôles"
                   disabled={contributionsQuery.isFetching}
                   onPageChange={setPage}
                   onPageSizeChange={setPageSize}
