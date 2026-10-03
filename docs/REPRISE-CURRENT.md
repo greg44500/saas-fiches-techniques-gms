@@ -491,7 +491,7 @@ Scénarios prioritaires :
 9. après validation/fusion/refus, vérifier la disparition de `À contrôler` ;
 10. vérifier l'absence de l'onglet Historique dans la navigation Platform ;
 11. vérifier une Dimension : une seule validation doit suffire ;
-12. vérifier les étoiles Favoris : vide pour ajouter, pleine pour retirer ;
+12. vérifier les étoiles Favoris : dans Références, étoile compacte sans cadre sur la ligne du nom (sans augmenter la hauteur) ; dans Favoris, bouton étoile encadré conservé avec les autres actions ;
 13. vérifier qu'aucun badge `À contrôler` n'est répété dans les lignes de la
     file `À contrôler`.
 
