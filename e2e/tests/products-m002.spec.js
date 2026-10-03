@@ -80,6 +80,15 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
     'Contribution approuvée',
   );
 
+  await expect(contributionRow).toBeHidden();
+
+  await page.getByRole('tab', { name: 'Historique' }).click();
+  const historyRow = page.getByRole('row').filter({
+    hasText: context.productName,
+  });
+  await expect(historyRow).toBeVisible();
+  await expect(historyRow).toContainText('Approuvée');
+
   await page.getByRole('tab', { name: 'Référentiel' }).click();
   await selectGlobalProductReference(
     page,
