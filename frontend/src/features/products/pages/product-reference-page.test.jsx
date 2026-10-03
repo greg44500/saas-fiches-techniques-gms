@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   contributionsQuery: vi.fn(),
   reviewContribution: vi.fn(),
   updateCategoryStatus: vi.fn(),
+  globalPricesQuery: vi.fn(),
 }));
 
 vi.mock('@/features/products/api/product-reference-api', () => ({
@@ -30,6 +31,10 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
     mocks.updateCategoryStatus,
     { isLoading: false },
   ],
+}));
+
+vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useListGlobalIndicativePricesQuery: mocks.globalPricesQuery,
 }));
 
 vi.mock('@/features/products/components/product-reference-details-drawer', () => ({
@@ -190,6 +195,28 @@ describe('ProductReferencePage', () => {
       isLoading: false,
       refetch: vi.fn(),
     });
+    mocks.globalPricesQuery.mockReturnValue({
+      data: [{
+        id: 'global-price-1',
+        workspaceId: null,
+        dossierId: null,
+        productVariant: {
+          id: 'variant-1',
+          name: 'Carotte entière',
+          referenceUnit: 'KG',
+        },
+        sourceAmount: '2.75',
+        normalizedAmount: '2.75',
+        normalizedUnit: 'KG',
+        currency: 'EUR',
+        source: 'Référentiel de démonstration',
+        status: 'ACTIVE',
+      }],
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
     mocks.contributionsQuery.mockReturnValue({
       data: {
         contributions: [],
@@ -212,6 +239,9 @@ describe('ProductReferencePage', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Prix repère' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('2,750 / kg')).toBeInTheDocument();
     expect(screen.queryByText('Carottes')).not.toBeInTheDocument();
     expect(screen.queryByText(/Gamme 1/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Références' }))
