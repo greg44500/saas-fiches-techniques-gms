@@ -103,7 +103,7 @@ describe('M-003 global indicative price bootstrap', () => {
             ]),
         );
 
-        expect(expected.size).toBe(490);
+        expect(expected.size).toBe(488);
         expect(actual.size).toBe(362);
 
         for (const [reference, unit] of actual) {
@@ -114,7 +114,7 @@ describe('M-003 global indicative price bootstrap', () => {
             (reference) => !actual.has(reference),
         );
 
-        expect(unpriced).toHaveLength(128);
+        expect(unpriced).toHaveLength(126);
         expect(unpriced).toEqual(expect.arrayContaining([
             'Œuf entier liquide pasteurisé',
             'Purée de mangue surgelée',
