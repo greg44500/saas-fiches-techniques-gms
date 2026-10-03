@@ -42,7 +42,12 @@ const contributionStages = ({
         $project: {
             sourceId: '$_id',
             type: { $literal: PRODUCT_REVIEW_QUEUE_TYPE.CONTRIBUTION },
-            productId: '$canonicalProduct',
+            productId: {
+                $ifNull: [
+                    '$canonicalProduct',
+                    '$provisionalEntityId',
+                ],
+            },
             workspaceId: '$workspace',
             authorId: '$author',
             value: '$proposedValue',
