@@ -223,7 +223,8 @@ Backend :
 - ordre ancienneté ;
 - permissions HTTP ;
 - revue d'une Dimension et disparition de la file ;
-- décision Contribution et disparition de la file.
+- décision Contribution et disparition de la file ;
+- concurrence : une seule décision terminale peut gagner sur une même Contribution.
 
 Frontend :
 
