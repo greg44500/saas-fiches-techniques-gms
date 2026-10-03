@@ -47,13 +47,13 @@ v7
 v8
 16 catégories
 381 Produits
-490 Références Produit
+488 Références Produit
 
 écart v8 / v7
 +61 Produits
-+128 nouvelles Références
++126 nouvelles Références
 -6 anciennes Références génériques de fonds de tarte
-+122 Références nettes
++120 Références nettes
 ```
 
 Aucune catégorie supplémentaire n'est créée.
@@ -151,7 +151,7 @@ Exemples actuels vérifiés :
 - coulis de fruits rouges surgelé :
   https://www.transgourmet.fr/restauration-commerciale/produit/coulis-fruits-rouges--300984.html
 - coulis de framboise surgelé :
-  https://www.transgourmet.fr/restauration-commerciale/produit/coulis-framboises--490094.html
+  https://www.transgourmet.fr/restauration-commerciale/produit/coulis-framboises--488094.html
 
 ## 4. Références structurantes ajoutées
 
@@ -292,8 +292,8 @@ Dataset économique actif :
 ```text
 m003-global-indicative-prices.v3.json
 362 Prix repères hérités du corpus v7
-490 Références Produit v8
-128 nouvelles Références volontairement sans Prix repère
+488 Références Produit v8
+126 nouvelles Références volontairement sans Prix repère
 ```
 
 Les six Prix repères correspondant aux six fonds de tarte génériques retirés
