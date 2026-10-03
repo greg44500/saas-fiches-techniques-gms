@@ -16,6 +16,7 @@ import {
 } from '../modules/supplierCatalog/supplierCatalog.routes.js';
 import {
     dossierSupplierPricingRouter,
+    globalIndicativePricingRouter,
     supplierPricingPolicyRouter,
     workspaceSupplierPricingRouter,
 } from '../modules/supplierCatalog/supplierPricing.routes.js';
@@ -179,6 +180,11 @@ const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
         key: 'supplier-catalog-governance',
         mountPath: '/api/supplier-reference/catalogs',
         router: supplierCatalogGlobalRouter,
+    }),
+    Object.freeze({
+        key: 'global-indicative-pricing',
+        mountPath: '/api/product-reference-pricing',
+        router: globalIndicativePricingRouter,
     }),
     Object.freeze({
         key: 'dossier-supplier-pricing',
