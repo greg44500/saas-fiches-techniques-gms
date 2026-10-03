@@ -109,6 +109,7 @@ function ProductReferencePage({ canManage }) {
 
   const reviewQueueCountQuery = useListProductReferenceReviewQueueQuery(
     {
+      origins: 'omit',
       page: 1,
       limit: 1,
     },
