@@ -662,6 +662,7 @@ describe('M-002 global product reference HTTP contract', () => {
             .query({
                 type: 'DIMENSION_REVIEW',
                 workspaceId: workspace.workspace._id.toString(),
+                origins: 'omit',
                 page: 1,
                 limit: 10,
             })
@@ -673,6 +674,7 @@ describe('M-002 global product reference HTTP contract', () => {
             contributionCount: 0,
             dimensionReviewCount: 1,
         });
+        expect(response.body.data.origins).toEqual([]);
         expect(response.body.data.items).toEqual([
             expect.objectContaining({
                 type: 'DIMENSION_REVIEW',
