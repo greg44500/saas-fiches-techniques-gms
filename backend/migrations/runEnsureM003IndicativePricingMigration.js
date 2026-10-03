@@ -16,6 +16,9 @@ import {
 import {
     resolveBootstrapActorId,
 } from '../seeds/seedM002Reference.js';
+import {
+    reconcileM003GlobalIndicativePricesToV3,
+} from './reconcileM003GlobalIndicativePricesToV3.migration.js';
 
 const run = async () => {
     try {
@@ -29,6 +32,10 @@ const run = async () => {
             loadDefaultGlobalIndicativePriceDataset(),
             resolveBootstrapActorId(),
         ]);
+        const globalIndicativePriceReconciliation =
+            await reconcileM003GlobalIndicativePricesToV3({
+                actorId,
+            });
         const globalIndicativePrices =
             await seedM003GlobalIndicativePrices({
                 dataset,
@@ -40,6 +47,7 @@ const run = async () => {
             {
                 indexes,
                 permissions,
+                globalIndicativePriceReconciliation,
                 globalIndicativePrices,
             },
         );
