@@ -297,21 +297,37 @@ describe('ProductDetailsDrawer', () => {
 
     expect(addButton).toHaveClass('size-5');
     expect(removeButton).toHaveClass('size-5');
-    expect(addButton.querySelector('svg')).toHaveAttribute('fill', 'none');
-    expect(removeButton.querySelector('svg'))
-      .toHaveAttribute('fill', 'currentColor');
 
+    const addDefaultIcon = addButton.querySelector(
+      '[data-favorite-state-icon="outline"]',
+    );
     const addHoverIcon = addButton.querySelector(
-      '[data-favorite-hover-icon="add"]',
+      '[data-favorite-hover-icon="filled"]',
+    );
+    const removeDefaultIcon = removeButton.querySelector(
+      '[data-favorite-state-icon="filled"]',
     );
     const removeHoverIcon = removeButton.querySelector(
-      '[data-favorite-hover-icon="remove"]',
+      '[data-favorite-hover-icon="outline"]',
     );
 
+    expect(addDefaultIcon).toHaveAttribute('fill', 'none');
+    expect(addHoverIcon).toHaveAttribute('fill', 'currentColor');
+    expect(removeDefaultIcon).toHaveAttribute('fill', 'currentColor');
+    expect(removeHoverIcon).toHaveAttribute('fill', 'none');
+
+    expect(addDefaultIcon).toHaveClass(
+      'group-hover:opacity-0',
+      'group-focus-visible:opacity-0',
+    );
     expect(addHoverIcon).toHaveClass(
       'opacity-0',
       'group-hover:opacity-100',
       'group-focus-visible:opacity-100',
+    );
+    expect(removeDefaultIcon).toHaveClass(
+      'group-hover:opacity-0',
+      'group-focus-visible:opacity-0',
     );
     expect(removeHoverIcon).toHaveClass(
       'opacity-0',
@@ -327,6 +343,30 @@ describe('ProductDetailsDrawer', () => {
     await user.hover(removeButton);
     expect(await screen.findByText('Retirer des favoris'))
       .toBeInTheDocument();
+  });
+
+  it('reste dans Références lors de l’ajout successif aux favoris', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    const referencesTab = screen.getByRole('tab', {
+      name: 'Références (2)',
+    });
+    await user.click(referencesTab);
+
+    const addButton = screen.getByRole('button', {
+      name: 'Ajouter Purée d’abricots aux favoris',
+    });
+    await user.click(addButton);
+
+    expect(mocks.attachVariant).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      variantId: 'variant-2',
+    });
+    expect(referencesTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', {
+      name: 'Favoris (1)',
+    })).toHaveAttribute('aria-selected', 'false');
   });
 
   it('affiche les compteurs et réserve Favoris aux Références actives du Workspace', async () => {
