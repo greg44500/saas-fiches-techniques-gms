@@ -53,7 +53,8 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - aide métier Platform alignée sur cette navigation avec une catégorie unique « Gestion des référentiels », sans modifier le moteur d’aide Core ni les catégories Workspace ;
 
 - drawer Platform Produit densifié : recherche et enrichissement alignés, compteurs, filtres À contrôler/Actives/Archivées/Toutes, filtre Références À contrôler et actions contextualisées par donnée ;
-- drawer Workspace Produit : dans Références, Favori devient une étoile compacte sans cadre placée sur la ligne du nom, sans augmentation de hauteur, avec signe `+` / `−` au survol ou focus et tooltip visuel conservé ; dans Favoris, le bouton étoile encadré reste aligné avec les autres actions ;
+- drawer Workspace Produit : dans Références, Favori devient une étoile compacte sans cadre placée sur la ligne du nom, sans augmentation de hauteur, avec remplissage de l’étoile au survol/focus pour ajouter, évidement pour retirer et tooltip visuel conservé ; dans Favoris, le bouton étoile encadré reste aligné avec les autres actions ;
+- ajout/retrait de Favori depuis Références sans basculer automatiquement vers l’onglet Favoris, afin de permettre une sélection successive fluide ;
 - file Platform `À contrôler` allégée : suppression du badge `À contrôler` redondant dans chaque ligne ;
 - aides secondaires de création/enrichissement déplacées vers des infobulles contextuelles ;
 
