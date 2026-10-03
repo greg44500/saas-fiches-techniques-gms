@@ -8,6 +8,11 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Added
 
+- ajout du **Prix repère global** M-003 comme dernier fallback de valorisation des Références Produit, sans Fournisseur fictif ;
+- ajout d'un corpus initial versionné de 264 prix fictifs/indicatifs alignés sur `m002-reference-v6`, installé de façon idempotente sans écraser les corrections gestionnaire ;
+- maintenance Application Global des Prix repères depuis le Référentiel Produits ;
+- parcours E2E sans fournisseur validant la valorisation par Prix repère global puis la priorité d'un Prix indicatif Workspace ;
+
 - revue qualité Platform ligne par ligne des Variétés et Caractéristiques M-002 avec états `NOT_REQUIRED / PENDING / REVIEWED` ;
 - signalement chiffré des Produits ayant des Dimensions Workspace à vérifier et ouverture directe du drawer filtré ;
 - suppression fonctionnelle contrôlée d'une Dimension erronée lorsqu'aucune Référence Produit ne l'utilise ;
@@ -21,6 +26,10 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - retrait immédiat sécurisé d'une Dimension fraîchement ajoutée.
 
 ### Changed
+
+- extension de `IndicativePrice` aux portées GLOBAL / WORKSPACE / DOSSIER tout en conservant le même modèle et l'historisation par remplacement ;
+- ordre du Prix applicable complété par `INDICATIVE_GLOBAL` après les Prix indicatifs Dossier et Workspace ;
+- tableau et détail Platform du Référentiel Produits enrichis avec le Prix repère global et sa maintenance ;
 
 - navigation Platform GMS unifiée sous « Gestion des référentiels », avec onglets Produits/Fournisseurs filtrés par permissions Application Global ;
 - aide métier Platform alignée sur cette navigation avec une catégorie unique « Gestion des référentiels », sans modifier le moteur d’aide Core ni les catégories Workspace ;
