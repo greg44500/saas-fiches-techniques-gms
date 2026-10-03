@@ -156,7 +156,7 @@ describe('ProductDetailsDrawer', () => {
       product: {
         id: 'product-1',
         name: 'Abricot',
-        aliases: [],
+        aliases: ['Abricots'],
         category: { id: 'category-1', name: 'Fruits' },
         status: 'ACTIVE',
       },
@@ -168,6 +168,7 @@ describe('ProductDetailsDrawer', () => {
           referenceUnit: 'KG',
           yieldPercent: null,
           status: 'ACTIVE',
+          governanceStatus: 'APPROVED',
           workspaceEntry: {
             id: 'workspace-product-1',
             status: 'ACTIVE',
@@ -180,6 +181,7 @@ describe('ProductDetailsDrawer', () => {
           referenceUnit: 'KG',
           yieldPercent: 100,
           status: 'ACTIVE',
+          governanceStatus: 'PROVISIONAL',
           workspaceEntry: null,
         },
       ],
@@ -240,6 +242,34 @@ describe('ProductDetailsDrawer', () => {
     mocks.archiveVariant.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
     });
+  });
+
+  it('masque les alias techniques du détail utilisateur', () => {
+    renderDrawer();
+
+    expect(screen.queryByText('Alias')).not.toBeInTheDocument();
+    expect(screen.queryByText('Abricots')).not.toBeInTheDocument();
+  });
+
+  it('signale une Référence provisoire comme À contrôler', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('tab', {
+      name: 'Références (2)',
+    }));
+
+    const provisionalRow = screen
+      .getByText('Purée d’abricots')
+      .closest('li');
+    expect(provisionalRow).not.toBeNull();
+    expect(within(provisionalRow).getByText('À contrôler'))
+      .toBeInTheDocument();
+
+    const approvedRow = screen.getByText('Abricot').closest('li');
+    expect(approvedRow).not.toBeNull();
+    expect(within(approvedRow).queryByText('À contrôler'))
+      .not.toBeInTheDocument();
   });
 
   it('affiche les compteurs et réserve Favoris aux Références actives du Workspace', async () => {
