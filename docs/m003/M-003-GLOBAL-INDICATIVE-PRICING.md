@@ -86,13 +86,16 @@ INDICATIVE_GLOBAL
 
 ## 5. Corpus initial
 
-Le corpus actif couvre les Références Produit du bootstrap `m002-reference-v7`.
+Le corpus économique actif reste compatible avec le bootstrap Produit `m002-reference-v8` sans inventer de nouveaux montants.
 
 Règles :
 
-- dataset actif : `m003-global-indicative-prices.v2.json` ;
-- 368 Prix repères pour 368 Références Produit v7 ;
-- conservation historique de `m003-global-indicative-prices.v1.json` pour le corpus v6 ;
+- dataset actif : `m003-global-indicative-prices.v3.json` ;
+- 362 Prix repères hérités des Références v7 toujours présentes dans le v8 ;
+- 490 Références Produit dans le corpus M-002 v8 ;
+- 128 nouvelles Références v8 volontairement sans Prix repère global faute de valeur économique validée ;
+- retrait des 6 entrées de prix correspondant aux anciens fonds de tarte génériques retirés du v8 ;
+- conservation historique de `m003-global-indicative-prices.v1.json` et `m003-global-indicative-prices.v2.json` ;
 - valeurs explicitement fictives / indicatives ;
 - valeurs cohérentes avec l'unité de référence de chaque `ProductVariant` ;
 - devise V1 = EUR ;
@@ -102,6 +105,8 @@ Règles :
 - dataset versionné et contrôlé ;
 - le bootstrap ne remplace jamais un Prix repère global déjà maintenu par un gestionnaire ;
 - les Références sans valeur exploitable peuvent rester sans Prix repère plutôt que recevoir une valeur incohérente.
+
+Le v3 applique explicitement cette règle : aucune estimation n'a été créée pour les 128 nouvelles Références v8. Leur valorisation globale reste absente jusqu'à calibration documentée.
 
 ## 6. Maintenance par le gestionnaire métier global
 
@@ -196,7 +201,7 @@ Le runner existant :
 
 - vérifie les indexes M-003 ;
 - réconcilie les permissions système M-003 existantes ;
-- charge le dataset `m003-global-indicative-prices.v1.json` ;
+- charge le dataset `m003-global-indicative-prices.v3.json` ;
 - installe uniquement les Prix repères globaux absents ;
 - conserve toute valeur active déjà maintenue par le gestionnaire.
 
