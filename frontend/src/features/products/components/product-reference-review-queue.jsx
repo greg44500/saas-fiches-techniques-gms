@@ -89,16 +89,7 @@ function ProductReferenceReviewQueue({
       id: 'value',
       header: 'Donnée à valider',
       cell: (item) => (
-        <div className="space-y-1.5">
-          <p className="font-medium">{item.value}</p>
-          <StatusBadge
-            tone="warning"
-          >
-            {(item.candidates ?? []).length > 0
-              ? 'Rapprochement à vérifier'
-              : 'À contrôler'}
-          </StatusBadge>
-        </div>
+        <p className="font-medium">{item.value}</p>
       ),
     },
     {
