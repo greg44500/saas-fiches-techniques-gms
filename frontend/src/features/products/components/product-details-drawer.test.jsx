@@ -361,7 +361,7 @@ describe('ProductDetailsDrawer', () => {
 
     expect(mocks.attachVariant).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
-      variantId: 'variant-2',
+      variantId: 'variant-puree',
     });
     expect(referencesTab).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', {
