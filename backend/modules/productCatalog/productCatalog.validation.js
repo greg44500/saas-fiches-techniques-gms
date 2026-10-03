@@ -123,7 +123,10 @@ const createGlobalProductBodySchema = z.strictObject({
     variant: newProductVariantBodySchema.optional(),
 });
 
-const createWorkspaceVariantBodySchema = structuredVariantBodySchema;
+const createWorkspaceVariantBodySchema = structuredVariantBodySchema.extend({
+    forceCreate: z.boolean().optional().default(false),
+    reviewedCandidateIds: z.array(objectIdSchema).max(20).optional().default([]),
+});
 const createGlobalVariantBodySchema = structuredVariantBodySchema;
 
 const productSearchQuerySchema = z.strictObject({
