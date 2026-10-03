@@ -25,7 +25,9 @@ function ProductReferenceGovernanceReviewPanel({
             : 'À contrôler'}
         </StatusBadge>
         <p className="text-sm text-muted-foreground">
-          Vérifiez cette donnée avant sa publication globale.
+          {context.type === 'DIMENSION_REVIEW'
+            ? 'Vérifiez cette donnée du référentiel.'
+            : 'Vérifiez cette donnée avant sa publication globale.'}
         </p>
       </div>
 
