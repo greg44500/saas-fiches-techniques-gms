@@ -84,6 +84,12 @@ Chaque élément expose au minimum :
 
 La provenance technique interne n'est pas transformée en bruit utilisateur.
 
+Pour une contribution de type `CANONICAL_PRODUCT`, le contexte Produit
+correspond au Produit provisoire créé pour le Workspace. La file doit donc
+pointer vers `provisionalEntityId` lorsque `canonicalProduct` n'existe pas
+encore. L'utilisateur Platform peut ainsi ouvrir directement le Produit à
+examiner au lieu d'obtenir un contexte « Produit indisponible ».
+
 ## 5. Actions
 
 ### Contribution
@@ -152,9 +158,14 @@ charger toutes les lignes d'un Produit côté frontend.
 L'historique reste distinct de la file active.
 
 Dans ce bloc, la surface globale Historique réutilise l'historique des
-`ReferenceContribution` déjà persisté. L'historique détaillé des Dimensions
-reste disponible dans l'onglet Historique du Produit via
-`ProductReferenceEvent`.
+`ReferenceContribution` déjà persisté. Par défaut elle charge ensemble les
+Contributions `APPROVED` et `REJECTED`, puis permet de filtrer le résultat.
+Une fusion reste persistée avec le statut `APPROVED`, mais la décision
+fonctionnelle affichée est dérivée de la résolution et rendue comme
+`Fusionnée`.
+
+L'historique détaillé des Dimensions reste disponible dans l'onglet Historique
+du Produit via `ProductReferenceEvent`.
 
 Aucun événement existant n'est réécrit.
 
