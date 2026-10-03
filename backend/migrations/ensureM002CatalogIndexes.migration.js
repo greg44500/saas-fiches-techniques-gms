@@ -60,6 +60,7 @@ const M002_INDEX_NAMES = Object.freeze([
     'reference_contribution_status_created_at',
     'reference_contribution_workspace_status_created_at',
     'reference_contribution_product_type_status_created_at',
+    'reference_contribution_provisional_review_lookup',
     'product_variant_approved_normalized_name_unique',
     'product_variant_provisional_workspace_name_unique',
     'product_variant_approved_identity_unique',
