@@ -622,6 +622,30 @@ describe('ProductReferencePage', () => {
     })).toBeInTheDocument();
   });
 
+  it('n’empêche pas l’Historique de fonctionner si les Prix repères sont indisponibles', async () => {
+    const user = userEvent.setup();
+
+    mocks.globalPricesQuery.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+
+    expect(screen.getByText('Produits indisponibles')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'Historique' }));
+
+    expect(screen.getByText('Historique des contributions'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Aucun historique')).toBeInTheDocument();
+    expect(screen.queryByText('Produits indisponibles'))
+      .not.toBeInTheDocument();
+  });
+
   it('ouvre la file unifiée depuis l’onglet À contrôler', async () => {
     const user = userEvent.setup();
 
