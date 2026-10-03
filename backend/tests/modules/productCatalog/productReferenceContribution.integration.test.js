@@ -266,6 +266,7 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
 
         expect(approved).toMatchObject({
             status: 'APPROVED',
+            decision: 'APPROVE',
             resolutionEntityType: 'CHARACTERISTIC',
             resolutionEntityId: provisionalId,
         });
@@ -304,6 +305,7 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
 
         expect(merged).toMatchObject({
             status: 'APPROVED',
+            decision: 'MERGE',
             resolutionEntityType: 'VARIETY',
             resolutionEntityId: canonical.id,
         });
