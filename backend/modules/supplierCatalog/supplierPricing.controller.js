@@ -230,6 +230,50 @@ const removeReference = async (req, res) => {
     });
 };
 
+const listGlobalIndicative = async (req, res) => {
+    const prices = await listIndicativePrices({
+        workspaceId: null,
+        dossierId: null,
+        ...req.validated.query,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { prices },
+    });
+};
+
+const setGlobalIndicative = async (req, res) => {
+    const price = await setIndicativePrice({
+        workspaceId: null,
+        dossierId: null,
+        productVariantId:
+            req.validated.params.productVariantId,
+        actorId: req.user._id,
+        ...req.validated.body,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { price },
+    });
+};
+
+const archiveGlobalIndicative = async (req, res) => {
+    const price = await archiveIndicativePrice({
+        workspaceId: null,
+        dossierId: null,
+        productVariantId:
+            req.validated.params.productVariantId,
+        actorId: req.user._id,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { price },
+    });
+};
+
 const listWorkspaceIndicative = async (req, res) => {
     const prices = await listIndicativePrices({
         workspaceId: req.workspace._id,
@@ -372,6 +416,7 @@ export {
     addReference,
     applicable,
     archiveDossierIndicative,
+    archiveGlobalIndicative,
     archiveWorkspaceIndicative,
     archiveNegotiated,
     createInvoiced,
@@ -379,6 +424,7 @@ export {
     decideInvoiced,
     getPolicy,
     listDossierIndicative,
+    listGlobalIndicative,
     listInvoiced,
     listNegotiated,
     listWorkspaceIndicative,
@@ -386,6 +432,7 @@ export {
     metadata,
     removeReference,
     setDossierIndicative,
+    setGlobalIndicative,
     setWorkspaceIndicative,
     updatePolicy,
 };
