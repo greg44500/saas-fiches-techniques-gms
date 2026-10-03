@@ -282,6 +282,15 @@ const referenceContributionListQuerySchema = z.strictObject({
         .transform((value) => value === 'true'),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
+}).superRefine((query, context) => {
+    if (query.reviewedOnly && query.status) {
+        context.addIssue({
+            code: 'custom',
+            path: ['status'],
+            message:
+                'status ne peut pas être combiné avec reviewedOnly=true.',
+        });
+    }
 });
 
 const productReviewQueueListQuerySchema = z.strictObject({
