@@ -443,6 +443,28 @@ function ProductReferencePage({ canManage }) {
       ),
     },
     {
+      id: 'reviewedAt',
+      header: 'Traitée le',
+      cell: (contribution) => (
+        <div>
+          <p>
+            {contribution.reviewedAt
+              ? new Date(contribution.reviewedAt)
+                .toLocaleDateString('fr-FR')
+              : 'Date indisponible'}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {[
+              contribution.reviewer?.firstName,
+              contribution.reviewer?.lastName,
+            ].filter(Boolean).join(' ')
+              || contribution.reviewer?.email
+              || 'Gestionnaire non disponible'}
+          </p>
+        </div>
+      ),
+    },
+    {
       id: 'reason',
       header: 'Motif',
       cell: (contribution) => (
