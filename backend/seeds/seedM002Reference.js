@@ -612,10 +612,27 @@ const seedM002Reference = async ({ dataset, actorId }) => {
     });
 };
 
-const loadDefaultDataset = async () => {
-    const datasetUrl = new URL('./data/m002-reference.v6.json', import.meta.url);
+const loadReferenceDataset = async (filename) => {
+    const allowed = new Set([
+        'm002-reference.v6.json',
+        'm002-reference.v7.json',
+    ]);
+
+    if (!allowed.has(filename)) {
+        throw new TypeError('Unsupported M-002 reference dataset.');
+    }
+
+    const datasetUrl = new URL('./data/' + filename, import.meta.url);
     return JSON.parse(await readFile(datasetUrl, 'utf8'));
 };
+
+const loadDefaultDataset = async () => (
+    loadReferenceDataset('m002-reference.v6.json')
+);
+
+const loadProfessionalReferenceDataset = async () => (
+    loadReferenceDataset('m002-reference.v7.json')
+);
 
 const runSeedM002Reference = async () => {
     await connectDB(env.MONGODB_URI);
@@ -649,6 +666,7 @@ if (isExecutedDirectly) {
 export {
     hashDataset,
     loadDefaultDataset,
+    loadProfessionalReferenceDataset,
     m002ReferenceDatasetSchema,
     resolveBootstrapActorId,
     runSeedM002Reference,
