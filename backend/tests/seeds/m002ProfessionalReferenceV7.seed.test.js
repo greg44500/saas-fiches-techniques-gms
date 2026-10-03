@@ -166,12 +166,10 @@ describe('M-002 professional reference corpus v7', () => {
                 expect.stringMatching(/Sysco France/),
             ]));
 
-        const productNames = dataset.products.map(({ name }) => name);
-        expect(productNames).not.toEqual(expect.arrayContaining([
-            expect.stringMatching(/^METRO\b/i),
-            expect.stringMatching(/^Sysco\b/i),
-            expect.stringMatching(/^Valrhona\b/i),
-            expect.stringMatching(/^Transgourmet\b/i),
-        ]));
+        for (const { name } of dataset.products) {
+            expect(name).not.toMatch(
+                /^(?:METRO|Sysco|Valrhona|Transgourmet)\\b/i,
+            );
+        }
     });
 });
