@@ -116,7 +116,7 @@ describe('M-002 product catalog services', () => {
             actorId: ownerContext.owner._id,
             productId: reference.product._id,
             variant: {
-                name: 'Pomme visibilité provisoire séchée',
+                name: 'Lamelles déshydratées',
                 conservationType: 'SEC',
                 foodRange: 1,
                 referenceUnit: 'KG',
