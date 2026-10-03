@@ -615,38 +615,82 @@ m003-global-indicative-prices.v2
 
 Le lot actif est désormais le **Bloc B — Gouvernance Produit unifiée**.
 
-Cible validée :
+Cible validée et implémentée sur la branche :
 
 ~~~text
 Référentiel
 → consultation / maintenance des Produits
 
 À contrôler
-→ Contributions PENDING_REVIEW
-+ Dimensions Workspace PENDING
-→ file agrégée et paginée côté serveur
-→ aucune double tâche pour une Dimension déjà portée par une Contribution
+→ read model serveur des données nécessitant une intervention
+→ types métier : Produit / Référence / Dimension
+→ donnée exacte à contrôler
+→ contexte Produit
+→ rapprochements éventuels
+→ action unique : Examiner
+→ ouverture ciblée du drawer
+→ aucune origine Workspace / auteur affichés
+
+Drawer ciblé
+→ badge À contrôler / Rapprochement à vérifier
+→ Modifier
+→ Valider
+→ Fusionner explicitement avec un candidat proche
+→ Refuser lorsque nécessaire
+→ filtre Références : Toutes / À contrôler
+→ filtre Dimensions : À contrôler / Actives / Archivées / Toutes
 
 Historique
-→ Contributions déjà traitées
-→ décision Approuvée / Fusionnée / Refusée
+→ décisions déjà traitées
+→ Type / Donnée / Décision / Rapprochement / Traitée le
+→ Approuvée / Fusionnée / Refusée
 
 Catégories
 → taxonomie Produit
 ~~~
 
+Les nouvelles Références créées depuis un Workspace sous un Produit global
+existant sont désormais gouvernées comme les autres identités M-002 :
+
+~~~text
+correspondance exacte
+→ réutilisation de la Référence existante
+
+proximité lexicale
+→ proposition de rapprochement à l'utilisateur
+→ possibilité de confirmer une création distincte
+
+création distincte confirmée
+→ ProductVariant PROVISIONAL
+→ utilisable immédiatement dans le Workspace d'origine
+→ invisible comme identité globale approuvée ailleurs
+→ demande de contrôle Platform de type VARIANT
+
+gestionnaire
+→ corriger
+→ valider comme nouvelle Référence
+OU
+→ fusionner explicitement avec une Référence existante
+~~~
+
 La file `À contrôler` réutilise les modèles et mutations M-002 existants.
 Aucune nouvelle collection de gouvernance ni nouvelle permission n'est créée.
+Une demande orpheline dont la cible provisoire a disparu est conservée pour
+l'audit mais exclue de la file active.
+
+Une Dimension provisoire portée par une Contribution n'est plus soumise à deux
+décisions humaines successives : son approbation de gouvernance clôt également
+sa revue qualité.
 
 RBAC :
 
 ~~~text
 product:reference:read
-→ consulter la file et l'historique
+→ consulter le Référentiel, la file et l'Historique
 
 product:reference:manage
-→ approuver / fusionner / refuser
-→ vérifier / corriger les Dimensions
+→ corriger / valider / fusionner / refuser
+→ revoir les Dimensions
 ~~~
 
 L'audit du Core v1.2.1 ne montre pas de primitive générique de notification
@@ -667,13 +711,14 @@ A2 corpus professionnel
 → Bloc B gouvernance Produit unifiée
 → tests backend / frontend / E2E
 → QA visuelle utilisateur
-→ corrections éventuelles sur la même branche
+→ demande spécifique utilisateur sur l'ajout de Produits globaux
+→ corrections / évolution sur la même branche
 → release:check
 → PR unique
 → Core Gate PR
 → merge
 → Core Gate post-merge
-→ puis seulement reprise M-004 Exports / diffusion
+→ amorce de reprise
 ~~~
 
 Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité pour les
