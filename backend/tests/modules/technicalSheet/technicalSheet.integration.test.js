@@ -792,6 +792,147 @@ describe('M-004 services Fiches techniques', () => {
         ).toBe('INDICATIVE_WORKSPACE');
     });
 
+    it('valorise et valide une Référence Produit sans Article grâce au Prix repère global', async () => {
+        const globalReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Produit repère global M004',
+                referenceName:
+                    'Produit repère global M004',
+                referenceUnit:
+                    'KG',
+                yieldPercent:
+                    '100',
+            });
+
+        await setIndicativePrice({
+            workspaceId: null,
+            dossierId: null,
+            productVariantId:
+                globalReference.variant._id,
+            actorId:
+                owner.owner._id,
+            sourceAmount:
+                '3.25',
+            sourceBasis:
+                'KG',
+            source:
+                'Référentiel de démonstration',
+        });
+
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche prix repère global',
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            });
+
+        const saved =
+            await saveTechnicalSheetDraft({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedRevision:
+                    created.draft.revision,
+                canManageSourcing: true,
+                canManageValuation: true,
+                data: {
+                    productionQuantity:
+                        '10',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                    targetMarginBasisPoints:
+                        5000,
+                    finalPriceMode:
+                        'ADVISED',
+                    lines: [{
+                        kind:
+                            'INGREDIENT',
+                        productVariantId:
+                            globalReference.variant
+                                ._id.toString(),
+                        netQuantity:
+                            '2',
+                        inputUnit:
+                            'KG',
+                        order: 0,
+                    }],
+                },
+            });
+
+        expect(
+            saved.valuationStatus,
+        ).toBe(
+            TECHNICAL_SHEET_VALUATION_STATUS.COMPLETE,
+        );
+        expect(
+            saved.lines[0]
+                .valuation.applicableSource,
+        ).toBe('INDICATIVE_GLOBAL');
+        expect(
+            saved.lines[0]
+                .valuation.supplierArticleId,
+        ).toBeNull();
+        expect(
+            saved.lines[0]
+                .valuation.lineCostHt,
+        ).toBe('6.5');
+
+        const validated =
+            await validateTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedSheetRevision:
+                    created.sheet.revision,
+                expectedDraftRevision:
+                    saved.revision,
+                comment:
+                    'Validation sur Prix repère global',
+                atDate,
+            });
+
+        expect(
+            validated.validation.linesSnapshot[0]
+                .supplierArticleId,
+        ).toBeNull();
+        expect(
+            validated.validation.linesSnapshot[0]
+                .supplierName,
+        ).toBeNull();
+        expect(
+            validated.validation.linesSnapshot[0]
+                .applicableSource,
+        ).toBe('INDICATIVE_GLOBAL');
+    });
+
     it('crée, compose, valorise et valide un snapshot historique immuable', async () => {
         const {
             created,
