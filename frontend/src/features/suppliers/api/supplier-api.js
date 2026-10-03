@@ -307,6 +307,39 @@ const supplierApi = supplierApiBase.injectEndpoints({
       transformResponse: (response) => response.data.applicablePrice,
       providesTags: ['SupplierPricing'],
     }),
+    listGlobalIndicativePrices: builder.query({
+      query: ({
+        productId,
+        productVariantId,
+        status = 'ACTIVE',
+      } = {}) => ({
+        url: '/product-reference-pricing/indicative-prices',
+        params: { productId, productVariantId, status },
+      }),
+      transformResponse: (response) => response.data.prices,
+      providesTags: ['SupplierPricing', 'ProductReference'],
+    }),
+    setGlobalIndicativePrice: builder.mutation({
+      query: ({ productVariantId, ...body }) => ({
+        url:
+          '/product-reference-pricing/indicative-prices/'
+          + productVariantId,
+        method: 'PUT',
+        body,
+      }),
+      transformResponse: (response) => response.data.price,
+      invalidatesTags: ['SupplierPricing', 'ProductReference'],
+    }),
+    archiveGlobalIndicativePrice: builder.mutation({
+      query: ({ productVariantId }) => ({
+        url:
+          '/product-reference-pricing/indicative-prices/'
+          + productVariantId,
+        method: 'DELETE',
+      }),
+      transformResponse: (response) => response.data.price,
+      invalidatesTags: ['SupplierPricing', 'ProductReference'],
+    }),
     listWorkspaceIndicativePrices: builder.query({
       query: ({
         workspaceId,
@@ -532,6 +565,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
 export const {
   useAddDossierSupplierReferenceMutation,
   useArchiveDossierIndicativePriceMutation,
+  useArchiveGlobalIndicativePriceMutation,
   useArchiveNegotiatedPriceMutation,
   useArchiveWorkspaceIndicativePriceMutation,
   useCommitGlobalSupplierCatalogImportMutation,
@@ -556,6 +590,7 @@ export const {
   useInspectGlobalSupplierCatalogImportMutation,
   useInspectSupplierCatalogImportMutation,
   useListDossierIndicativePricesQuery,
+  useListGlobalIndicativePricesQuery,
   useListDossierSupplierReferencesQuery,
   useListGlobalSupplierArticlesQuery,
   useListGlobalSupplierCatalogLinesQuery,
@@ -579,6 +614,7 @@ export const {
   useUpdateGlobalSupplierMutation,
   useUpdateGlobalSupplierStatusMutation,
   useSetDossierIndicativePriceMutation,
+  useSetGlobalIndicativePriceMutation,
   useSetWorkspaceIndicativePriceMutation,
   useUpdatePricingPolicyMutation,
   useUpdateSupplierArticleMutation,
