@@ -75,11 +75,11 @@ describe('M-002 bootstrap v8 reconciliation', () => {
         expect((await WorkspaceProduct.findById(favorite._id)).status)
             .toBe('ARCHIVED');
 
-        const archivedProduct = await CanonicalProduct.findById(
+        const keptProduct = await CanonicalProduct.findById(
             legacy.product._id,
         ).lean();
-        expect(archivedProduct.identityActive).toBe(false);
-        expect(archivedProduct.status).toBe('ARCHIVED');
+        expect(keptProduct.identityActive).toBe(true);
+        expect(keptProduct.status).toBe('ACTIVE');
     });
 
     it('conserve une Référence v7 toujours présente dans le v8', async () => {
