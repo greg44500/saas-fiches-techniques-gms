@@ -100,6 +100,12 @@ https://www.metro.fr/metro/univers-metiers/Boulangerie-patisserie
 
 Les conditionnements (bidons, cartons, nombre d'œufs) restent M-003.
 
+Transgourmet expose aussi actuellement un blanc d'œuf de poule en poudre
+pasteurisé, ce qui confirme l'intérêt d'une Référence M-002 distincte pour
+cette forme sèche :
+
+https://www.transgourmet.fr/restauration-commerciale/produit/blanc-oeuf-en-poudre--052414.html
+
 ### METRO France — boulangerie / pâtisserie
 
 https://www.metro.fr/conseil-service/metro/univers-produits/epicerie/boulangerie-patisserie
@@ -123,25 +129,27 @@ génériques utiles à une fiche technique.
 
 Exemples actuels vérifiés :
 
-- fond de tarte sucré cru surgelé Ø 10 cm :
-  https://transgourmet.fr/le-groupe/livraison/transgourmet/nos-partenaires/mademoiselle-desserts/fond-de-tarte-sucre-pur-beurre-diametre
-- fond de tarte sucré cru surgelé Ø 22 cm :
-  https://www.transgourmet.fr/restauration-commerciale/produit/fond-tarte-sucre-beurre-cru-diametre-22-cm--247946.html
-- fond de tartelette sucré cru surgelé Ø 8,5 cm :
-  https://www.transgourmet.fr/restauration-commerciale/produit/fond-tartelette-sucre-cru-diametre-8-5-cm--248670.html
-- fond de tartelette sucré carré 7 × 7 cm :
+- fond de tarte sucré pur beurre cru surgelé Ø 10 cm :
+  https://www.transgourmet.fr/restauration-commerciale/produit/fond-tarte-sucre-pur-beurre-diametre-10-cm--300696.html
+- fond de tarte sucré pur beurre cru surgelé Ø 27 cm :
+  https://www.transgourmet.fr/restauration-commerciale/produit/fond-tarte-sucre-pur-beurre-diametre-27-cm--300697.html
+- gamme professionnelle récente avec fonds sucrés Ø 10 / 24,7 / 27 cm et fonds brisés Ø 10 / 12 / 27 cm :
+  https://www.transgourmet.fr/le-groupe/file/35137/download
+- fond de tartelette sucré carré 7 × 7 cm, cru surgelé :
   https://www.transgourmet.fr/restauration-commerciale/produit/fond-tartellette-sucre-carre-7-x-7-cm--800585.html
-- mini tartelette salée ronde Ø 4,2 cm :
-  https://www.transgourmet.fr/restauration-commerciale/produit/mini-tartelette-salee-ronde-diametre-4-2cm--245867.html
-- fond brisé cru surgelé Ø 12 cm :
-  https://transgourmet.fr/le-groupe/livraison/transgourmet/nos-partenaires/mademoiselle-desserts-france/fond-de-tartelette-brise-pur
-- tartelette sablée prête à garnir Ø 8,5 cm :
-  https://www.transgourmet.fr/restauration-commerciale/produit/tartelette-sablee-standard-diam-8-5-cm--070003.html
+- fond de tartelette sucré format stick, cru surgelé :
+  https://www.transgourmet.fr/restauration-commerciale/produit/fond-tartelette-sucre-format-stick--232283.html
+- fond de tartelette brisé pur beurre Ø 10 cm, cru surgelé :
+  https://transgourmet.fr/restauration-commerciale/produit/fond-tartelette-brise-pur-beurre-diametre-10-cm--300701.html
+- fond de tarte brisé pur beurre Ø 27 cm, cru surgelé :
+  https://transgourmet.fr/restauration-commerciale/produit/fond-tarte-brise-pur-beurre-diametre-27-cm--300700.html
 - tartelette sablée prête à garnir Ø 11 cm :
   https://www.transgourmet.fr/restauration-commerciale/produit/tartelette-sablee-standard-diam-11-cm--486860.html
+- tartelette sucrée prête à garnir annoncée Ø 11 cm et décrite Ø 10,3 cm :
+  https://www.transgourmet.fr/restauration-commerciale/produit/fond-tartelette-sucree-mgv-bord-lisse-mgv-diametre--302061.html
 
 Cette vérification justifie que la taille soit portée par la Référence Produit :
-pour une production donnée, une tartelette individuelle et un fond de 22 cm ne
+pour une production donnée, une tartelette individuelle et un fond de 27 cm ne
 représentent pas le même nombre d'unités à utiliser.
 
 ### Transgourmet France — coulis
@@ -257,11 +265,17 @@ Exemples :
 
 ```text
 Fond de tarte sucré
-├─ Fond de tartelette sucré cru surgelé Ø 8,5 cm
 ├─ Fond de tarte sucré cru surgelé Ø 10 cm
-├─ Fond de tarte sucré cru surgelé Ø 22 cm
+├─ Fond de tarte sucré cru surgelé Ø 24,7 cm
+├─ Fond de tarte sucré cru surgelé Ø 27 cm
 ├─ Fond de tartelette sucré cru surgelé carré 7 × 7 cm
-└─ Fond de tartelette sucré prêt à garnir Ø 8,5 cm
+├─ Fond de tartelette sucré cru surgelé format stick
+└─ Fond de tartelette sucré prêt à garnir Ø 10,3 cm
+
+Fond de tarte salé
+├─ Fond de tartelette brisé salé cru surgelé Ø 10 cm
+├─ Fond de tartelette brisé salé cru surgelé Ø 12 cm
+└─ Fond de tarte brisé salé cru surgelé Ø 27 cm
 ```
 
 Le diamètre / format est aussi une Caractéristique `SIZE_FORMAT`, mais le nom
