@@ -517,7 +517,12 @@ function ProductReferenceDetailsDrawer({
                           }
                         >
                           {product.governanceStatus === 'PROVISIONAL'
-                            ? 'À contrôler'
+                            ? (
+                              reviewContext?.dataType === 'PRODUCT'
+                              && (reviewContext.candidates ?? []).length > 0
+                                ? 'Rapprochement à vérifier'
+                                : 'À contrôler'
+                            )
                             : 'Validé'}
                         </StatusBadge>
                       </dd>
@@ -715,7 +720,11 @@ function ProductReferenceDetailsDrawer({
                                   className="shrink-0 py-0.5"
                                   tone="warning"
                                 >
-                                  À contrôler
+                                  {reviewContext?.dataType === 'DIMENSION'
+                                    && reviewContext.targetId === variety.id
+                                    && (reviewContext.candidates ?? []).length > 0
+                                    ? 'Rapprochement à vérifier'
+                                    : 'À contrôler'}
                                 </StatusBadge>
                               )}
                               {variety.qualityReviewStatus === 'REVIEWED'
@@ -890,7 +899,11 @@ function ProductReferenceDetailsDrawer({
                                   className="shrink-0 py-0.5"
                                   tone="warning"
                                 >
-                                  À contrôler
+                                  {reviewContext?.dataType === 'DIMENSION'
+                                    && reviewContext.targetId === characteristic.id
+                                    && (reviewContext.candidates ?? []).length > 0
+                                    ? 'Rapprochement à vérifier'
+                                    : 'À contrôler'}
                                 </StatusBadge>
                               )}
                               {characteristic.qualityReviewStatus === 'REVIEWED'
@@ -1145,7 +1158,13 @@ function ProductReferenceDetailsDrawer({
                             }
                           >
                             {variant.governanceStatus === 'PROVISIONAL'
-                              ? 'À contrôler'
+                              ? (
+                                reviewContext?.dataType === 'REFERENCE'
+                                && reviewContext.targetId === variant.id
+                                && (reviewContext.candidates ?? []).length > 0
+                                  ? 'Rapprochement à vérifier'
+                                  : 'À contrôler'
+                              )
                               : 'Validée'}
                           </StatusBadge>
                         </div>
