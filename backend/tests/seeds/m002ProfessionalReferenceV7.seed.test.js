@@ -168,7 +168,7 @@ describe('M-002 professional reference corpus v7', () => {
 
         for (const { name } of dataset.products) {
             expect(name).not.toMatch(
-                /^(?:METRO|Sysco|Valrhona|Transgourmet)\\b/i,
+                /^(?:METRO|Sysco|Valrhona|Transgourmet)\b/i,
             );
         }
     });
