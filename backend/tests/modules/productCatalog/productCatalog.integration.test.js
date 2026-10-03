@@ -13,9 +13,13 @@ import {
 import {
     archiveVariantFromWorkspace,
     attachVariantToWorkspace,
+    createWorkspaceVariant,
     getWorkspaceProductDetail,
     listProductSearch,
 } from '../../../modules/productCatalog/productCatalog.service.js';
+import {
+    reviewReferenceContribution,
+} from '../../../modules/productCatalog/productReferenceContribution.service.js';
 import {
     WorkspaceProduct,
 } from '../../../modules/productCatalog/workspaceProduct.model.js';
@@ -98,6 +102,68 @@ describe('M-002 product catalog services', () => {
         });
 
         expect(restored.status).toBe('ACTIVE');
+    });
+
+    it('limite une nouvelle Référence provisoire au Workspace créateur jusqu’à sa validation', async () => {
+        const other = await createWorkspaceOwnerFixture();
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Pomme visibilité provisoire',
+        });
+
+        const created = await createWorkspaceVariant({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variant: {
+                name: 'Pomme visibilité provisoire séchée',
+                conservationType: 'SEC',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+            },
+        });
+
+        expect(created.classification).toBe('PROVISIONAL');
+
+        const ownerDetail = await getWorkspaceProductDetail({
+            workspaceId: ownerContext.workspace._id,
+            productId: reference.product._id,
+        });
+        const otherDetailBefore = await getWorkspaceProductDetail({
+            workspaceId: other.workspace._id,
+            productId: reference.product._id,
+        });
+
+        expect(ownerDetail.variants).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: created.variant.id,
+                governanceStatus: 'PROVISIONAL',
+            }),
+        ]));
+        expect(otherDetailBefore.variants).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: created.variant.id,
+            }),
+        ]));
+
+        await reviewReferenceContribution({
+            contributionId: created.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+
+        const otherDetailAfter = await getWorkspaceProductDetail({
+            workspaceId: other.workspace._id,
+            productId: reference.product._id,
+        });
+
+        expect(otherDetailAfter.variants).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                id: created.variant.id,
+                governanceStatus: 'APPROVED',
+            }),
+        ]));
     });
 
     it('conserve une référence archivée en historique sans l afficher dans les listes opérationnelles', async () => {
