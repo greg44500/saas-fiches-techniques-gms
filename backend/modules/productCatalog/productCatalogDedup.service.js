@@ -226,19 +226,18 @@ const findVariantDuplicateCandidates = async ({
     exactQuery = queryWithSession(exactQuery, session);
     const exactMatch = await exactQuery;
 
-    const grams = buildSearchGrams([normalizedName]);
     let candidates = [];
 
-    if (!exactMatch && grams.length > 0) {
+    if (!exactMatch) {
         let query = ProductVariant.find({
             ...baseFilter,
             governanceStatus: PRODUCT_GOVERNANCE_STATUS.APPROVED,
-            searchGrams: mongoose.trusted({ $in: grams }),
         })
             .populate('canonicalProduct', 'name')
             .populate('variety')
             .populate('characteristics')
-            .limit(50)
+            .sort({ updatedAt: -1 })
+            .limit(200)
             .lean();
         query = queryWithSession(query, session);
 
