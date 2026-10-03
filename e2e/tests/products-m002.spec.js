@@ -67,7 +67,7 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
 
   await loginWithIdentity(page, E2E_FOUNDER);
   await page.goto('/product-reference');
-  await page.getByRole('tab', { name: 'Contributions' }).click();
+  await page.getByRole('tab', { name: /À contrôler \(\d+\)/ }).click();
 
   const contributionRow = page.getByRole('row').filter({
     hasText: context.productName,
@@ -156,6 +156,9 @@ test('M-002 autorité Application Global alimente directement le référentiel',
   await page.getByRole('button', { name: 'Fermer' }).click();
 
   await expect(
-    page.getByRole('tab', { name: 'Contributions' }),
+    page.getByRole('tab', { name: /À contrôler \(\d+\)/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('tab', { name: 'Historique' }),
   ).toBeVisible();
 });
