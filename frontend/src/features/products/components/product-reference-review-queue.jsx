@@ -112,6 +112,33 @@ function ProductReferenceReviewQueue({
     || 'Auteur non disponible'
   );
 
+  const productTarget = (item) => {
+    const opensDimensions = (
+      item.type === 'DIMENSION_REVIEW'
+      || (
+        item.type === 'CONTRIBUTION'
+        && ['VARIETY', 'CHARACTERISTIC'].includes(
+          item.contributionType,
+        )
+      )
+    );
+
+    return {
+      tab: opensDimensions ? 'dimensions' : 'product',
+      dimensionFilter: opensDimensions ? 'pending' : 'active',
+    };
+  };
+
+  const openRelatedProduct = (item) => {
+    if (!item.product?.id) return;
+    const target = productTarget(item);
+    onOpenProduct(
+      item.product.id,
+      target.tab,
+      target.dimensionFilter,
+    );
+  };
+
   async function decideContribution(
     item,
     decision,
@@ -182,11 +209,7 @@ function ProductReferenceReviewQueue({
         item.product ? (
           <button
             className="rounded-sm text-left font-medium underline underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => onOpenProduct(
-              item.product.id,
-              item.type === 'DIMENSION_REVIEW' ? 'dimensions' : 'product',
-              item.type === 'DIMENSION_REVIEW' ? 'pending' : 'active',
-            )}
+            onClick={() => openRelatedProduct(item)}
             type="button"
           >
             {item.product.name}
@@ -294,15 +317,7 @@ function ProductReferenceReviewQueue({
             <ActionIconButton
               Icon={Eye}
               label={'Examiner ' + item.value}
-              onClick={() => onOpenProduct(
-                item.product.id,
-                item.type === 'DIMENSION_REVIEW'
-                  ? 'dimensions'
-                  : 'product',
-                item.type === 'DIMENSION_REVIEW'
-                  ? 'pending'
-                  : 'active',
-              )}
+              onClick={() => openRelatedProduct(item)}
               tooltipLabel="Examiner"
               variant="outline"
             />
