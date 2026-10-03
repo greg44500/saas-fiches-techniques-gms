@@ -248,11 +248,13 @@ describe('ProductReferenceReviewQueue', () => {
       'Atelier pilote (1)',
     );
 
-    expect(mocks.queue).toHaveBeenLastCalledWith({
-      type: undefined,
-      workspaceId: 'workspace-1',
-      page: 1,
-      limit: 20,
+    await waitFor(() => {
+      expect(mocks.queue).toHaveBeenLastCalledWith({
+        type: undefined,
+        workspaceId: 'workspace-1',
+        page: 1,
+        limit: 20,
+      });
     });
 
     mocks.queue.mockReturnValue(queryResult({
