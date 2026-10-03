@@ -266,7 +266,12 @@ describe('ProductDetailsDrawer', () => {
     expect(within(provisionalRow).getByText('À contrôler'))
       .toBeInTheDocument();
 
-    const approvedRow = screen.getByText('Abricot').closest('li');
+    const referenceList = screen.getByRole('list', {
+      name: 'Références Produit',
+    });
+    const approvedRow = within(referenceList)
+      .getByText('Abricot')
+      .closest('li');
     expect(approvedRow).not.toBeNull();
     expect(within(approvedRow).queryByText('À contrôler'))
       .not.toBeInTheDocument();
