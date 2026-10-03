@@ -300,6 +300,33 @@ describe('ProductDetailsDrawer', () => {
     expect(addButton.querySelector('svg')).toHaveAttribute('fill', 'none');
     expect(removeButton.querySelector('svg'))
       .toHaveAttribute('fill', 'currentColor');
+
+    const addHoverIcon = addButton.querySelector(
+      '[data-favorite-hover-icon="add"]',
+    );
+    const removeHoverIcon = removeButton.querySelector(
+      '[data-favorite-hover-icon="remove"]',
+    );
+
+    expect(addHoverIcon).toHaveClass(
+      'opacity-0',
+      'group-hover:opacity-100',
+      'group-focus-visible:opacity-100',
+    );
+    expect(removeHoverIcon).toHaveClass(
+      'opacity-0',
+      'group-hover:opacity-100',
+      'group-focus-visible:opacity-100',
+    );
+
+    await user.hover(addButton);
+    expect(await screen.findByText('Ajouter aux favoris'))
+      .toBeInTheDocument();
+
+    await user.unhover(addButton);
+    await user.hover(removeButton);
+    expect(await screen.findByText('Retirer des favoris'))
+      .toBeInTheDocument();
   });
 
   it('affiche les compteurs et réserve Favoris aux Références actives du Workspace', async () => {
