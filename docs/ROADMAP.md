@@ -613,85 +613,73 @@ m003-global-indicative-prices.v2
 → couverture exacte du corpus v7
 ~~~
 
-Le lot actif est désormais le **Bloc B — Gouvernance Produit unifiée**.
+Le lot actif est désormais le **Bloc B — Gouvernance Produit unifiée**, dont
+l'implémentation métier est consolidée sur la branche et attend la validation
+locale/visuelle avant PR.
 
-Cible validée et implémentée sur la branche :
+Cible implémentée :
 
 ~~~text
 Référentiel
 → consultation / maintenance des Produits
 
 À contrôler
-→ read model serveur des données nécessitant une intervention
-→ types métier : Produit / Référence / Dimension
-→ donnée exacte à contrôler
-→ contexte Produit
-→ rapprochements éventuels
-→ action unique : Examiner
-→ ouverture ciblée du drawer
-→ aucune origine Workspace / auteur affichés
-
-Drawer ciblé
-→ badge À contrôler / Rapprochement à vérifier
-→ Modifier
-→ Valider
-→ Fusionner explicitement avec un candidat proche
-→ Refuser lorsque nécessaire
-→ filtre Références : Toutes / À contrôler
-→ filtre Dimensions : À contrôler / Actives / Archivées / Toutes
+→ file métier Produit / Référence / Dimension
+→ action unique Examiner dans la table
+→ drawer ouvert sur la cible exacte
+→ Modifier / Valider / Fusionner / Refuser selon le contexte
 
 Historique
-→ décisions déjà traitées
-→ Type / Donnée / Décision / Rapprochement / Traitée le
-→ Approuvée / Fusionnée / Refusée
+→ décisions Approuvée / Fusionnée / Refusée
+→ sans bruit Workspace/auteur dans la surface principale
 
 Catégories
 → taxonomie Produit
 ~~~
 
-Les nouvelles Références créées depuis un Workspace sous un Produit global
-existant sont désormais gouvernées comme les autres identités M-002 :
+Pour une nouvelle Référence créée depuis un Workspace :
 
 ~~~text
-correspondance exacte
+doublon exact
 → réutilisation de la Référence existante
 
 proximité lexicale
-→ proposition de rapprochement à l'utilisateur
-→ possibilité de confirmer une création distincte
+→ suggestion à l'utilisateur
+→ aucune fusion automatique
 
-création distincte confirmée
+création confirmée distincte
 → ProductVariant PROVISIONAL
-→ utilisable immédiatement dans le Workspace d'origine
-→ invisible comme identité globale approuvée ailleurs
-→ demande de contrôle Platform de type VARIANT
+→ utilisable dans le Workspace d'origine
+→ demande de contrôle globale VARIANT
 
-gestionnaire
+gestionnaire Platform
 → corriger
-→ valider comme nouvelle Référence
+→ valider
 OU
-→ fusionner explicitement avec une Référence existante
+→ fusionner avec une Référence existante
+OU
+→ refuser
 ~~~
+
+Le scénario de référence proche `Galla / Gala` est couvert dans les tests
+d'intégration ajoutés à la branche.
 
 La file `À contrôler` réutilise les modèles et mutations M-002 existants.
 Aucune nouvelle collection de gouvernance ni nouvelle permission n'est créée.
-Une demande orpheline dont la cible provisoire a disparu est conservée pour
-l'audit mais exclue de la file active.
-
-Une Dimension provisoire portée par une Contribution n'est plus soumise à deux
-décisions humaines successives : son approbation de gouvernance clôt également
-sa revue qualité.
 
 RBAC :
 
 ~~~text
 product:reference:read
-→ consulter le Référentiel, la file et l'Historique
+→ consulter Référentiel / À contrôler / Historique
 
 product:reference:manage
-→ corriger / valider / fusionner / refuser
-→ revoir les Dimensions
+→ traiter les données à contrôler
+→ corriger les Produits, Références et Dimensions
 ~~~
+
+L'origine Workspace et l'auteur restent disponibles pour l'audit backend mais
+ne sont pas affichés dans la file de travail du gestionnaire.
 
 L'audit du Core v1.2.1 ne montre pas de primitive générique de notification
 applicative persistée. Le signal du lot reste donc le compteur in-app
@@ -709,16 +697,16 @@ Séquence de sortie du lot unique :
 ~~~text
 A2 corpus professionnel
 → Bloc B gouvernance Produit unifiée
-→ tests backend / frontend / E2E
+→ tests ciblés
 → QA visuelle utilisateur
-→ demande spécifique utilisateur sur l'ajout de Produits globaux
-→ corrections / évolution sur la même branche
+→ corrections éventuelles sur la même branche
 → release:check
 → PR unique
 → Core Gate PR
 → merge
 → Core Gate post-merge
 → amorce de reprise
+→ demande spécifique d'ajout au référentiel global dans la même PR si validée avant PR
 ~~~
 
 Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité pour les
