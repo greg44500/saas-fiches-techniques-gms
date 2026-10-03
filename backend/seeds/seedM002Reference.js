@@ -617,7 +617,6 @@ const loadReferenceDataset = async (filename) => {
         'm002-reference.v6.json',
         'm002-reference.v7.json',
         'm002-reference.v8.json',
-        'm002-reference.v8.json',
     ]);
 
     if (!allowed.has(filename)) {
