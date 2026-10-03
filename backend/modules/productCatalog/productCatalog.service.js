@@ -13,6 +13,7 @@ import { listProductCategories } from './productCategoryProjection.service.js';
 import { ProductCharacteristic } from './productCharacteristic.model.js';
 import {
     findProductDuplicateCandidates,
+    findVariantDuplicateCandidates,
 } from './productCatalogDedup.service.js';
 import {
     buildSearchGrams,
@@ -24,10 +25,13 @@ import {
     PRODUCT_CATEGORY_STATUS_REGISTRY,
     PRODUCT_CHARACTERISTIC_KIND,
     PRODUCT_CHARACTERISTIC_KIND_REGISTRY,
+    PRODUCT_CONTRIBUTION_CLASSIFICATION,
     PRODUCT_CONTRIBUTION_CLASSIFICATION_REGISTRY,
+    PRODUCT_CONTRIBUTION_STATUS,
     PRODUCT_CONTRIBUTION_STATUS_REGISTRY,
     PRODUCT_CONSERVATION_TYPE,
     PRODUCT_CONSERVATION_TYPE_REGISTRY,
+    PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_CONTRIBUTION_TYPE_REGISTRY,
     PRODUCT_FOOD_RANGE_REGISTRY,
     PRODUCT_FOOD_RANGES,
@@ -58,6 +62,7 @@ import {
 } from './productReferenceGovernance.service.js';
 import { ProductVariant } from './productVariant.model.js';
 import { ProductVariety } from './productVariety.model.js';
+import { ReferenceContribution } from './referenceContribution.model.js';
 import { WorkspaceProduct } from './workspaceProduct.model.js';
 import {
     compareProductVariants,
@@ -824,6 +829,8 @@ const createWorkspaceVariant = async ({
     actorId,
     productId,
     variant,
+    forceCreate = false,
+    reviewedCandidateIds = [],
 }) => mongoose.connection.transaction(async (session) => {
     const product = await CanonicalProduct.findOne({
         _id: productId,
@@ -836,14 +843,58 @@ const createWorkspaceVariant = async ({
         throw new AppError('Produit actif introuvable.', 404);
     }
 
+    const duplicateCheck = await findVariantDuplicateCandidates({
+        name: variant.name,
+        canonicalProductId: product._id,
+        workspaceId,
+        session,
+    });
+
+    if (duplicateCheck.exactMatch) {
+        const { entry } = await attachVariantToWorkspaceInSession({
+            workspaceId,
+            variantId: duplicateCheck.exactMatch.id,
+            actorId,
+            session,
+        });
+
+        return {
+            classification: PRODUCT_CONTRIBUTION_CLASSIFICATION.EXISTING,
+            candidates: [],
+            existingReference: duplicateCheck.exactMatch,
+            product: serializeProduct(product),
+            variant: duplicateCheck.exactMatch,
+            workspaceEntry: {
+                id: entry._id.toString(),
+                status: entry.status,
+            },
+        };
+    }
+
+    const reviewedSet = new Set(reviewedCandidateIds.map(String));
+    const allCandidatesReviewed = duplicateCheck.candidates.every(
+        ({ id }) => reviewedSet.has(String(id)),
+    );
+
+    if (
+        duplicateCheck.candidates.length > 0
+        && (!forceCreate || !allCandidatesReviewed)
+    ) {
+        return {
+            classification:
+                PRODUCT_CONTRIBUTION_CLASSIFICATION
+                    .USER_CONFIRMATION_REQUIRED,
+            candidates: duplicateCheck.candidates,
+            existingReference: null,
+        };
+    }
+
     const createdVariant = await createProductVariantInSession({
         canonicalProductId: product._id,
         workspaceId,
         actorId,
         variant,
-        governanceStatus: product.governanceStatus === PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
-            ? PRODUCT_GOVERNANCE_STATUS.PROVISIONAL
-            : null,
+        governanceStatus: PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
         session,
     });
 
@@ -854,13 +905,58 @@ const createWorkspaceVariant = async ({
         session,
     });
 
+    const [contribution] = await ReferenceContribution.create([
+        {
+            type: PRODUCT_CONTRIBUTION_TYPE.VARIANT,
+            canonicalProduct: product._id,
+            workspace: workspaceId,
+            author: actorId,
+            proposedValue: createdVariant.name,
+            normalizedValue: createdVariant.normalizedName,
+            payload: {
+                candidates: duplicateCheck.candidates,
+            },
+            classification:
+                PRODUCT_CONTRIBUTION_CLASSIFICATION.PROVISIONAL,
+            reasons: [{
+                code: duplicateCheck.candidates.length > 0
+                    ? 'VARIANT_USER_CONFIRMED_NEW'
+                    : 'NEW_VARIANT_PROVISIONAL',
+                message: duplicateCheck.candidates.length > 0
+                    ? 'La Référence a été créée malgré un rapprochement existant et doit être contrôlée.'
+                    : 'La nouvelle Référence doit être contrôlée avant publication globale.',
+            }],
+            status: PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
+            provisionalEntityType:
+                PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
+            provisionalEntityId: createdVariant._id,
+        },
+    ], { session });
+
     await createProductReferenceEvent({
         actorId,
         workspaceId,
         action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_CREATED,
         entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
         entityId: createdVariant._id,
-        metadata: { productId: product._id.toString() },
+        metadata: {
+            productId: product._id.toString(),
+            governanceStatus: PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
+        },
+        session,
+    });
+
+    await createProductReferenceEvent({
+        actorId,
+        workspaceId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.CONTRIBUTION_SUBMITTED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CONTRIBUTION,
+        entityId: contribution._id,
+        metadata: {
+            contributionType: PRODUCT_CONTRIBUTION_TYPE.VARIANT,
+            productId: product._id.toString(),
+            variantId: createdVariant._id.toString(),
+        },
         session,
     });
 
@@ -877,11 +973,18 @@ const createWorkspaceVariant = async ({
     }, { session });
 
     return {
+        classification: PRODUCT_CONTRIBUTION_CLASSIFICATION.PROVISIONAL,
+        candidates: duplicateCheck.candidates,
         product: serializeProduct(product),
         variant: serializeVariant(createdVariant),
         workspaceEntry: {
             id: entry._id.toString(),
             status: entry.status,
+        },
+        contribution: {
+            id: contribution._id.toString(),
+            status: contribution.status,
+            type: contribution.type,
         },
     };
 });
