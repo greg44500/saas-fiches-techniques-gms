@@ -285,6 +285,7 @@ const referenceContributionListQuerySchema = z.strictObject({
 const productReviewQueueListQuerySchema = z.strictObject({
     type: z.enum(Object.values(PRODUCT_REVIEW_QUEUE_TYPE)).optional(),
     workspaceId: objectIdSchema.optional(),
+    origins: z.enum(['include', 'omit']).optional().default('include'),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
 });
