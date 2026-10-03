@@ -295,7 +295,7 @@ const enrichReviewQueueItems = async (items) => {
 };
 
 const loadReviewQueueOrigins = async ({ type = null }) => {
-    const [result] = await ReferenceContribution.aggregate([
+    const rows = await ReferenceContribution.aggregate([
         ...buildUnifiedReviewQueuePipeline({ type }),
         {
             $match: {
@@ -317,52 +317,26 @@ const loadReviewQueueOrigins = async ({ type = null }) => {
         { $limit: 200 },
     ]);
 
-    if (!result) {
-        const rows = await ReferenceContribution.aggregate([
-            ...buildUnifiedReviewQueuePipeline({ type }),
-            {
-                $match: {
-                    workspaceId: { $ne: null },
-                },
-            },
-            {
-                $group: {
-                    _id: '$workspaceId',
-                    count: { $sum: 1 },
-                },
-            },
-            {
-                $sort: {
-                    count: -1,
-                    _id: 1,
-                },
-            },
-            { $limit: 200 },
-        ]);
+    const ids = rows.map(({ _id }) => _id);
+    const workspaces = ids.length
+        ? await Workspace.find({
+            _id: mongoose.trusted({ $in: ids }),
+        }).select('_id name').lean()
+        : [];
+    const workspaceById = new Map(
+        workspaces.map((workspace) => [
+            workspace._id.toString(),
+            workspace,
+        ]),
+    );
 
-        const ids = rows.map(({ _id }) => _id);
-        const workspaces = ids.length
-            ? await Workspace.find({
-                _id: mongoose.trusted({ $in: ids }),
-            }).select('_id name').lean()
-            : [];
-        const workspaceById = new Map(
-            workspaces.map((workspace) => [
-                workspace._id.toString(),
-                workspace,
-            ]),
-        );
-
-        return rows.map(({ _id, count }) => ({
-            id: _id.toString(),
-            name:
-                workspaceById.get(_id.toString())?.name
-                ?? 'Espace de travail indisponible',
-            count,
-        }));
-    }
-
-    return [];
+    return rows.map(({ _id, count }) => ({
+        id: _id.toString(),
+        name:
+            workspaceById.get(_id.toString())?.name
+            ?? 'Espace de travail indisponible',
+        count,
+    }));
 };
 
 const listProductReviewQueue = async ({
