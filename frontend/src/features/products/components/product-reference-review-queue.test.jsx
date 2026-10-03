@@ -12,25 +12,14 @@ import {
   vi,
 } from 'vitest';
 
-import { ToastProvider } from '@/components/shared/toast-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
   queue: vi.fn(),
-  reviewContribution: vi.fn(),
-  reviewDimension: vi.fn(),
 }));
 
 vi.mock('@/features/products/api/product-reference-api', () => ({
   useListProductReferenceReviewQueueQuery: mocks.queue,
-  useReviewProductReferenceContributionMutation: () => [
-    mocks.reviewContribution,
-    { isLoading: false },
-  ],
-  useReviewProductReferenceDimensionMutation: () => [
-    mocks.reviewDimension,
-    { isLoading: false },
-  ],
 }));
 
 import {
@@ -38,68 +27,52 @@ import {
 } from '@/features/products/components/product-reference-review-queue';
 
 const metadata = {
-  productReviewQueueTypes: [
-    { value: 'CONTRIBUTION', label: 'Contribution' },
-    { value: 'DIMENSION_REVIEW', label: 'Valeur à vérifier' },
-  ],
-  productContributionTypes: [
-    { value: 'CHARACTERISTIC', label: 'Caractéristique' },
-  ],
   productCharacteristicKinds: [
-    { value: 'QUALITY_DESIGNATION', label: 'Désignation de qualité' },
+    { value: 'COLOR', label: 'Couleur' },
   ],
 };
 
 const items = [
   {
-    id: 'CONTRIBUTION:contribution-1',
-    sourceId: 'contribution-1',
+    id: 'CONTRIBUTION:product-contribution',
+    sourceId: 'product-contribution',
+    targetId: 'product-new',
     type: 'CONTRIBUTION',
-    value: 'Carottes des sables',
-    contributionType: 'CHARACTERISTIC',
-    dimensionType: null,
-    characteristicKind: 'QUALITY_DESIGNATION',
-    productId: 'product-1',
-    product: { id: 'product-1', name: 'Carotte' },
-    workspaceId: 'workspace-1',
-    workspace: { id: 'workspace-1', name: 'Atelier pilote' },
-    author: {
-      id: 'user-1',
-      firstName: 'Alice',
-      lastName: 'Martin',
-      email: 'alice@example.test',
-    },
-    reasons: [{
-      code: 'CHARACTERISTIC_PROVISIONAL',
-      message: 'Cette valeur nécessite une revue.',
-    }],
+    dataType: 'PRODUCT',
+    value: 'Sauce tomatte',
+    contributionType: 'CANONICAL_PRODUCT',
+    productId: 'product-new',
+    product: { id: 'product-new', name: 'Sauce tomatte' },
     candidates: [{
-      id: 'candidate-1',
-      name: 'Carotte des sables',
+      id: 'product-existing',
+      name: 'Sauce tomate',
     }],
-    createdAt: '2026-10-01T08:00:00.000Z',
   },
   {
-    id: 'DIMENSION_REVIEW:variety-1',
-    sourceId: 'variety-1',
-    type: 'DIMENSION_REVIEW',
-    value: 'Gala',
-    contributionType: null,
-    dimensionType: 'VARIETY',
-    characteristicKind: null,
-    productId: 'product-2',
-    product: { id: 'product-2', name: 'Pomme' },
-    workspaceId: 'workspace-2',
-    workspace: { id: 'workspace-2', name: 'Cuisine centrale' },
-    author: {
-      id: 'user-2',
-      firstName: 'Bruno',
-      lastName: 'Durand',
-      email: 'bruno@example.test',
-    },
-    reasons: [],
+    id: 'CONTRIBUTION:variant-contribution',
+    sourceId: 'variant-contribution',
+    targetId: 'variant-new',
+    type: 'CONTRIBUTION',
+    dataType: 'REFERENCE',
+    value: 'Abricot sec',
+    contributionType: 'VARIANT',
+    productId: 'product-apricot',
+    product: { id: 'product-apricot', name: 'Abricot' },
     candidates: [],
-    createdAt: '2026-10-02T08:00:00.000Z',
+  },
+  {
+    id: 'DIMENSION_REVIEW:color-new',
+    sourceId: 'color-new',
+    targetId: 'color-new',
+    type: 'DIMENSION_REVIEW',
+    dataType: 'DIMENSION',
+    value: 'Rouge',
+    contributionType: null,
+    dimensionType: 'CHARACTERISTIC',
+    characteristicKind: 'COLOR',
+    productId: 'product-apricot',
+    product: { id: 'product-apricot', name: 'Abricot' },
+    candidates: [],
   },
 ];
 
@@ -113,51 +86,18 @@ function queryResult(data) {
   };
 }
 
-function mutationResult(data = {}) {
-  return {
-    unwrap: vi.fn().mockResolvedValue(data),
-  };
-}
-
-async function selectOption(user, triggerName, optionName) {
-  const trigger = screen.getByRole('combobox', {
-    name: triggerName,
-  });
-
-  vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
-    DOMRect.fromRect({
-      x: 24,
-      y: 24,
-      width: 240,
-      height: 40,
-    }),
-  );
-
-  await user.click(trigger);
-  await waitFor(() => {
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  await user.click(await screen.findByRole('option', {
-    name: optionName,
-  }));
-}
-
 function renderQueue(overrides = {}) {
   return render(
     <TooltipProvider>
-      <ToastProvider>
-        <ProductReferenceReviewQueue
-          canManage
-          metadata={metadata}
-          onOpenProduct={vi.fn()}
-          page={1}
-          pageSize={20}
-          setPage={vi.fn()}
-          setPageSize={vi.fn()}
-          {...overrides}
-        />
-      </ToastProvider>
+      <ProductReferenceReviewQueue
+        metadata={metadata}
+        onExamine={vi.fn()}
+        page={1}
+        pageSize={20}
+        setPage={vi.fn()}
+        setPageSize={vi.fn()}
+        {...overrides}
+      />
     </TooltipProvider>,
   );
 }
@@ -165,151 +105,89 @@ function renderQueue(overrides = {}) {
 describe('ProductReferenceReviewQueue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+
     mocks.queue.mockReturnValue(queryResult({
       items,
       summary: {
-        total: 2,
-        contributionCount: 1,
-        dimensionReviewCount: 1,
+        total: 3,
+        productCount: 1,
+        referenceCount: 1,
+        dimensionCount: 1,
       },
-      origins: [
-        { id: 'workspace-1', name: 'Atelier pilote', count: 1 },
-        { id: 'workspace-2', name: 'Cuisine centrale', count: 1 },
-      ],
+      origins: [],
       pagination: {
         page: 1,
         limit: 20,
-        total: 2,
+        total: 3,
         totalPages: 1,
       },
     }));
-    mocks.reviewContribution.mockReturnValue(mutationResult());
-    mocks.reviewDimension.mockReturnValue(mutationResult());
   });
 
-  it('affiche une file unifiée avec compteur, origine et ancienneté', () => {
+  it('présente la file comme une liste de données métier à contrôler', () => {
     renderQueue();
 
-    expect(screen.getByRole('heading', { name: 'À contrôler' }))
+    expect(screen.getByRole('columnheader', { name: 'Type' }))
       .toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
-    expect(screen.getByText('Gala')).toBeInTheDocument();
-    expect(screen.getByText('Atelier pilote')).toBeInTheDocument();
-    expect(screen.getByText('Cuisine centrale')).toBeInTheDocument();
-    expect(screen.getByText('01/10/2026')).toBeInTheDocument();
-    expect(screen.getByText('02/10/2026')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Donnée à valider' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Contexte' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Rapprochement' }))
+      .toBeInTheDocument();
+
+    expect(screen.getByText('Produit')).toBeInTheDocument();
+    expect(screen.getByText('Référence')).toBeInTheDocument();
+    expect(screen.getByText('Dimension · Couleur')).toBeInTheDocument();
+
+    expect(screen.getByText('Sauce tomatte')).toBeInTheDocument();
+    expect(screen.getByText('Sauce tomate')).toBeInTheDocument();
+    expect(screen.getByText('Abricot sec')).toBeInTheDocument();
+    expect(screen.getAllByText('Abricot')).toHaveLength(2);
+
+    expect(screen.getByText('Rapprochement à vérifier'))
+      .toBeInTheDocument();
+    expect(screen.getAllByText('À contrôler')).toHaveLength(2);
+    expect(screen.queryByText('Atelier pilote')).not.toBeInTheDocument();
   });
 
-  it('filtre côté serveur par type puis origine Workspace', async () => {
-    const user = userEvent.setup();
+  it('charge une file légère sans origine Workspace', () => {
     renderQueue();
 
-    await selectOption(
-      user,
-      'Filtrer les éléments à contrôler par type',
-      'Valeur à vérifier',
-    );
-
-    await waitFor(() => {
-      expect(mocks.queue).toHaveBeenLastCalledWith({
-        type: 'DIMENSION_REVIEW',
-        workspaceId: undefined,
-        page: 1,
-        limit: 20,
-      });
-    });
-
-    await selectOption(
-      user,
-      'Filtrer les éléments à contrôler par origine',
-      'Atelier pilote (1)',
-    );
-
-    await waitFor(() => {
-      expect(mocks.queue).toHaveBeenLastCalledWith({
-        type: 'DIMENSION_REVIEW',
-        workspaceId: 'workspace-1',
-        page: 1,
-        limit: 20,
-      });
+    expect(mocks.queue).toHaveBeenCalledWith({
+      origins: 'omit',
+      page: 1,
+      limit: 20,
     });
   });
 
-  it('retire un filtre origine devenu sans résultat', async () => {
+  it('ouvre exactement la donnée demandée sans décider dans le tableau', async () => {
     const user = userEvent.setup();
-    const setPage = vi.fn();
+    const onExamine = vi.fn();
 
-    const view = renderQueue({ setPage });
+    renderQueue({ onExamine });
 
-    await selectOption(
-      user,
-      'Filtrer les éléments à contrôler par origine',
-      'Atelier pilote (1)',
-    );
-
-    await waitFor(() => {
-      expect(mocks.queue).toHaveBeenLastCalledWith({
-        type: undefined,
-        workspaceId: 'workspace-1',
-        page: 1,
-        limit: 20,
-      });
-    });
-
-    mocks.queue.mockReturnValue(queryResult({
-      items: [],
-      summary: {
-        total: 0,
-        contributionCount: 0,
-        dimensionReviewCount: 0,
-      },
-      origins: [
-        { id: 'workspace-2', name: 'Cuisine centrale', count: 1 },
-      ],
-      pagination: {
-        page: 1,
-        limit: 20,
-        total: 0,
-        totalPages: 0,
-      },
+    await user.click(screen.getByRole('button', {
+      name: 'Examiner Abricot sec',
     }));
 
-    view.rerender(
-      <TooltipProvider>
-        <ToastProvider>
-          <ProductReferenceReviewQueue
-            canManage
-            metadata={metadata}
-            onOpenProduct={vi.fn()}
-            page={1}
-            pageSize={20}
-            setPage={setPage}
-            setPageSize={vi.fn()}
-          />
-        </ToastProvider>
-      </TooltipProvider>,
-    );
-
-    await waitFor(() => {
-      expect(mocks.queue).toHaveBeenLastCalledWith({
-        type: undefined,
-        workspaceId: undefined,
-        page: 1,
-        limit: 20,
-      });
-    });
-    expect(setPage).toHaveBeenCalledWith(1);
+    expect(onExamine).toHaveBeenCalledWith(items[1]);
+    expect(screen.queryByRole('button', { name: 'Valider' }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Refuser' }))
+      .not.toBeInTheDocument();
   });
 
   it('recale la pagination lorsque la dernière page disparaît', async () => {
     const setPage = vi.fn();
+
     mocks.queue.mockReturnValue(queryResult({
       items: [],
       summary: {
         total: 1,
-        contributionCount: 1,
-        dimensionReviewCount: 0,
+        productCount: 0,
+        referenceCount: 1,
+        dimensionCount: 0,
       },
       origins: [],
       pagination: {
@@ -328,66 +206,5 @@ describe('ProductReferenceReviewQueue', () => {
     await waitFor(() => {
       expect(setPage).toHaveBeenCalledWith(1);
     });
-  });
-
-  it('traite une Contribution avec les mutations existantes', async () => {
-    const user = userEvent.setup();
-    renderQueue();
-
-    await user.click(screen.getByRole('button', { name: 'Approuver' }));
-
-    expect(mocks.reviewContribution).toHaveBeenCalledWith({
-      contributionId: 'contribution-1',
-      decision: 'APPROVE',
-    });
-
-    await user.click(screen.getByRole('button', {
-      name: 'Fusionner avec Carotte des sables',
-    }));
-
-    expect(mocks.reviewContribution).toHaveBeenCalledWith({
-      contributionId: 'contribution-1',
-      decision: 'MERGE',
-      targetReferenceId: 'candidate-1',
-    });
-  });
-
-  it('valide directement une Dimension puis conserve l’accès au Produit', async () => {
-    const user = userEvent.setup();
-    const onOpenProduct = vi.fn();
-    renderQueue({ onOpenProduct });
-
-    await user.click(screen.getByRole('button', {
-      name: 'Marquer Gala comme vérifiée',
-    }));
-
-    expect(mocks.reviewDimension).toHaveBeenCalledWith({
-      productId: 'product-2',
-      dimensionType: 'VARIETY',
-      dimensionId: 'variety-1',
-    });
-
-    await user.click(screen.getByRole('button', {
-      name: 'Examiner Gala',
-    }));
-
-    expect(onOpenProduct).toHaveBeenCalledWith(
-      'product-2',
-      'dimensions',
-      'pending',
-    );
-  });
-
-  it('reste consultable sans droit de gestion mais masque les décisions', () => {
-    renderQueue({ canManage: false });
-
-    expect(screen.queryByRole('button', { name: 'Approuver' }))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole('button', {
-      name: 'Marquer Gala comme vérifiée',
-    })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', {
-      name: 'Examiner Carottes des sables',
-    })).toBeInTheDocument();
   });
 });
