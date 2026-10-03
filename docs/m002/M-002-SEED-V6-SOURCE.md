@@ -1,6 +1,6 @@
 # M-002 — Source et règles du seed alimentaire v6
 
-**Statut : ACTIF — source canonique du bootstrap M-002**  
+**Statut : HISTORIQUE — source canonique du bootstrap M-002 v6, remplacé par v7 sur la branche Produits globaux**  
 **Source unique :** `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf`  
 **Date source :** septembre 2026
 
