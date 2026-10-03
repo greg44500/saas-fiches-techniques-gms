@@ -2,6 +2,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -145,9 +146,22 @@ describe('ProductReferenceReviewQueue', () => {
     expect(screen.getByText('Abricot sec')).toBeInTheDocument();
     expect(screen.getAllByText('Abricot')).toHaveLength(2);
 
-    expect(screen.getByText('Rapprochement à vérifier'))
+    const productRow = screen.getByRole('row', {
+      name: /Sauce tomatte/,
+    });
+    const referenceRow = screen.getByRole('row', {
+      name: /Abricot sec/,
+    });
+    const dimensionRow = screen.getByRole('row', {
+      name: /Rouge/,
+    });
+
+    expect(within(productRow).getByText('Rapprochement à vérifier'))
       .toBeInTheDocument();
-    expect(screen.getAllByText('À contrôler')).toHaveLength(2);
+    expect(within(referenceRow).getByText('À contrôler'))
+      .toBeInTheDocument();
+    expect(within(dimensionRow).getByText('À contrôler'))
+      .toBeInTheDocument();
     expect(screen.queryByText('Atelier pilote')).not.toBeInTheDocument();
   });
 
