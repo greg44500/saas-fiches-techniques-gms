@@ -426,22 +426,33 @@ const buildUnifiedReviewQueuePipeline = ({
     ];
 };
 
-const enrichReviewQueueItems = async (items) => {
+const enrichReviewQueueItems = async (
+    items,
+    { includeOrigin = true } = {},
+) => {
     const productIds = [
         ...new Set(
             items.map(({ productId }) => productId?.toString()).filter(Boolean),
         ),
     ];
-    const workspaceIds = [
-        ...new Set(
-            items.map(({ workspaceId }) => workspaceId?.toString()).filter(Boolean),
-        ),
-    ];
-    const authorIds = [
-        ...new Set(
-            items.map(({ authorId }) => authorId?.toString()).filter(Boolean),
-        ),
-    ];
+    const workspaceIds = includeOrigin
+        ? [
+            ...new Set(
+                items
+                    .map(({ workspaceId }) => workspaceId?.toString())
+                    .filter(Boolean),
+            ),
+        ]
+        : [];
+    const authorIds = includeOrigin
+        ? [
+            ...new Set(
+                items
+                    .map(({ authorId }) => authorId?.toString())
+                    .filter(Boolean),
+            ),
+        ]
+        : [];
 
     const [products, workspaces, authors] = await Promise.all([
         productIds.length
@@ -505,15 +516,19 @@ const enrichReviewQueueItems = async (items) => {
                     name: product.name,
                 }
                 : null,
-            workspaceId: item.workspaceId?.toString() ?? null,
-            workspace: workspace
+            workspaceId: includeOrigin
+                ? item.workspaceId?.toString() ?? null
+                : null,
+            workspace: includeOrigin && workspace
                 ? {
                     id: workspace._id.toString(),
                     name: workspace.name,
                 }
                 : null,
-            authorId: item.authorId?.toString() ?? null,
-            author: author
+            authorId: includeOrigin
+                ? item.authorId?.toString() ?? null
+                : null,
+            author: includeOrigin && author
                 ? {
                     id: author._id.toString(),
                     firstName: author.firstName ?? null,
@@ -645,7 +660,9 @@ const listProductReviewQueue = async ({
     };
 
     const [items, originOptions] = await Promise.all([
-        enrichReviewQueueItems(rawItems),
+        enrichReviewQueueItems(rawItems, {
+            includeOrigin: origins !== 'omit',
+        }),
         origins === 'omit'
             ? Promise.resolve([])
             : loadReviewQueueOrigins({ type }),
