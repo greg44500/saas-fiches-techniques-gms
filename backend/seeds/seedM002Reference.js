@@ -195,7 +195,7 @@ const m002ReferenceDatasetSchema = z.strictObject({
         }
 
         if (
-            ['m002-reference-v5', 'm002-reference-v6', 'm002-reference-v7'].includes(dataset.version)
+            ['m002-reference-v5', 'm002-reference-v6', 'm002-reference-v7', 'm002-reference-v8'].includes(dataset.version)
             && product.variants.length === 0
         ) {
             context.addIssue({
@@ -616,6 +616,7 @@ const loadReferenceDataset = async (filename) => {
     const allowed = new Set([
         'm002-reference.v6.json',
         'm002-reference.v7.json',
+        'm002-reference.v8.json',
     ]);
 
     if (!allowed.has(filename)) {
@@ -630,8 +631,12 @@ const loadLegacyReferenceDataset = async () => (
     loadReferenceDataset('m002-reference.v6.json')
 );
 
-const loadDefaultDataset = async () => (
+const loadV7ReferenceDataset = async () => (
     loadReferenceDataset('m002-reference.v7.json')
+);
+
+const loadDefaultDataset = async () => (
+    loadReferenceDataset('m002-reference.v8.json')
 );
 
 const loadProfessionalReferenceDataset = loadDefaultDataset;
@@ -669,6 +674,7 @@ export {
     hashDataset,
     loadDefaultDataset,
     loadLegacyReferenceDataset,
+    loadV7ReferenceDataset,
     loadProfessionalReferenceDataset,
     m002ReferenceDatasetSchema,
     resolveBootstrapActorId,
