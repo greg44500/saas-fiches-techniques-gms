@@ -85,6 +85,7 @@ describe('productReferenceApi', () => {
       captured.endpointDefinitions.listProductReferenceReviewQueue.query({
         type: 'DIMENSION_REVIEW',
         workspaceId: 'workspace-1',
+        origins: 'omit',
         page: 2,
         limit: 10,
       }),
@@ -93,6 +94,7 @@ describe('productReferenceApi', () => {
       params: {
         type: 'DIMENSION_REVIEW',
         workspaceId: 'workspace-1',
+        origins: 'omit',
         page: 2,
         limit: 10,
       },
