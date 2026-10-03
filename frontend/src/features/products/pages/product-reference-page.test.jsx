@@ -73,20 +73,43 @@ vi.mock('@/features/products/components/product-reference-search-autocomplete', 
 vi.mock('@/features/products/components/product-reference-details-drawer', () => ({
   ProductReferenceDetailsDrawer: ({
     initialDimensionFilter,
+    initialReferenceFilter,
     initialTab,
     open,
+    reviewContext,
   }) => (
     open ? (
       <div>
         Détail global ouvert · {initialTab} · {initialDimensionFilter}
+        {' · '}{initialReferenceFilter}
+        {reviewContext?.targetId
+          ? ' · cible ' + reviewContext.targetId
+          : ''}
       </div>
     ) : null
   ),
 }));
 
 vi.mock('@/features/products/components/product-reference-review-queue', () => ({
-  ProductReferenceReviewQueue: () => (
-    <div>File Produit à contrôler ouverte</div>
+  ProductReferenceReviewQueue: ({ onExamine }) => (
+    <div>
+      <span>File Produit à contrôler ouverte</span>
+      <button
+        onClick={() => onExamine({
+          sourceId: 'contribution-reference-1',
+          targetId: 'variant-pending-1',
+          type: 'CONTRIBUTION',
+          dataType: 'REFERENCE',
+          value: 'Abricot sec',
+          productId: 'product-1',
+          product: { id: 'product-1', name: 'Carotte' },
+          candidates: [],
+        })}
+        type="button"
+      >
+        Examiner une Référence
+      </button>
+    </div>
   ),
 }));
 
@@ -425,8 +448,9 @@ describe('ProductReferencePage', () => {
         items: [],
         summary: {
           total: 4,
-          contributionCount: 2,
-          dimensionReviewCount: 2,
+          productCount: 1,
+          referenceCount: 1,
+          dimensionCount: 2,
         },
         origins: [],
         pagination: { page: 1, limit: 1, total: 4, totalPages: 4 },
@@ -487,7 +511,7 @@ describe('ProductReferencePage', () => {
     await user.click(notification);
 
     expect(screen.getByText(
-      'Détail global ouvert · dimensions · pending',
+      'Détail global ouvert · dimensions · pending · all',
     )).toBeInTheDocument();
     expect(screen.queryByRole('button', {
       name: 'Marquer Carotte comme vérifié',
@@ -654,8 +678,9 @@ describe('ProductReferencePage', () => {
         items: [],
         summary: {
           total: 1,
-          contributionCount: 1,
-          dimensionReviewCount: 0,
+          productCount: 0,
+          referenceCount: 1,
+          dimensionCount: 0,
         },
         origins: [],
         pagination: { page: 1, limit: 1, total: 1, totalPages: 1 },
@@ -674,6 +699,41 @@ describe('ProductReferencePage', () => {
 
     expect(screen.getByText('File Produit à contrôler ouverte'))
       .toBeInTheDocument();
+  });
+
+  it('route une Référence à contrôler vers son filtre et sa cible exacte', async () => {
+    const user = userEvent.setup();
+
+    mocks.reviewQueueQuery.mockReturnValue({
+      data: {
+        items: [],
+        summary: {
+          total: 1,
+          productCount: 0,
+          referenceCount: 1,
+          dimensionCount: 0,
+        },
+        origins: [],
+        pagination: { page: 1, limit: 1, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+
+    await user.click(screen.getByRole('tab', {
+      name: 'À contrôler (1)',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Examiner une Référence',
+    }));
+
+    expect(screen.getByText(
+      'Détail global ouvert · variants · active · pending · cible variant-pending-1',
+    )).toBeInTheDocument();
   });
 
   it('conserve les Contributions traitées dans un Historique séparé', async () => {
@@ -728,7 +788,13 @@ describe('ProductReferencePage', () => {
       name: 'Filtrer l’historique par décision',
     })).toHaveTextContent('Toutes les décisions');
     expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
-    expect(screen.getByText('Atelier pilote')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Type' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Donnée' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Rapprochement' }))
+      .toBeInTheDocument();
+    expect(screen.queryByText('Atelier pilote')).not.toBeInTheDocument();
     expect(screen.getByText('Approuvée')).toBeInTheDocument();
     expect(screen.getByText('03/10/2026')).toBeInTheDocument();
     expect(screen.getByText('Gestionnaire Produit')).toBeInTheDocument();
@@ -792,6 +858,6 @@ describe('ProductReferencePage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
 
-    expect(screen.getByText('Détail global ouvert · product · active')).toBeInTheDocument();
+    expect(screen.getByText('Détail global ouvert · product · active · all')).toBeInTheDocument();
   });
 });
