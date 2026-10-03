@@ -32,13 +32,16 @@ import {
   useGetProductReferenceMetadataQuery,
   useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
-  useReviewProductReferenceContributionMutation,
+  useListProductReferenceReviewQueueQuery,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
 import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
 import { ProductReferenceCategoryDialog } from '@/features/products/components/product-reference-category-dialog';
 import { ProductReferenceDetailsDrawer } from '@/features/products/components/product-reference-details-drawer';
+import {
+  ProductReferenceReviewQueue,
+} from '@/features/products/components/product-reference-review-queue';
 import {
   ProductReferenceSearchAutocomplete,
 } from '@/features/products/components/product-reference-search-autocomplete';
@@ -67,7 +70,7 @@ function ProductReferencePage({ canManage }) {
   const [categoryId, setCategoryId] = useState(ALL_REFERENCE_CATEGORIES);
   const [referenceStatus, setReferenceStatus] = useState('ACTIVE');
   const [contributionStatus, setContributionStatus] =
-    useState('PENDING_REVIEW');
+    useState('APPROVED');
   const [drawerState, setDrawerState] = useState({
     open: false,
     productId: null,
@@ -104,23 +107,29 @@ function ProductReferencePage({ canManage }) {
     [globalPricesQuery.data],
   );
 
-  const contributionsQuery = useListProductReferenceContributionsQuery(
+  const reviewQueueCountQuery = useListProductReferenceReviewQueueQuery(
     {
-      status: contributionStatus,
-      page: section === 'contributions' ? page : 1,
-      limit: section === 'contributions' ? pageSize : 1,
+      page: 1,
+      limit: 1,
     },
     { skip: false },
   );
-  const [reviewContribution, reviewContributionState] =
-    useReviewProductReferenceContributionMutation();
+
+  const contributionsQuery = useListProductReferenceContributionsQuery(
+    {
+      status: contributionStatus,
+      page: section === 'history' ? page : 1,
+      limit: section === 'history' ? pageSize : 1,
+    },
+    { skip: section !== 'history' },
+  );
   const [updateCategoryStatus, categoryStatusState] =
     useUpdateProductReferenceCategoryStatusMutation();
 
   useEffect(() => {
     const totalPages = section === 'reference'
       ? productsQuery.data?.pagination?.totalPages
-      : section === 'contributions'
+      : section === 'history'
         ? contributionsQuery.data?.pagination?.totalPages
         : null;
 
@@ -150,7 +159,7 @@ function ProductReferencePage({ canManage }) {
   );
 
   const referenceCount = productsQuery.data?.pagination?.total ?? 0;
-  const contributionCount = contributionsQuery.data?.pagination?.total ?? 0;
+  const reviewCount = reviewQueueCountQuery.data?.summary?.total ?? 0;
   const categoryCount = metadata?.categories?.length ?? 0;
 
   function changeSection(nextSection) {
@@ -160,7 +169,7 @@ function ProductReferencePage({ canManage }) {
     setSearchInput('');
     setCategoryId(ALL_REFERENCE_CATEGORIES);
     setReferenceStatus('ACTIVE');
-    setContributionStatus('PENDING_REVIEW');
+    setContributionStatus('APPROVED');
   }
 
   function applySearch(event) {
@@ -194,38 +203,10 @@ function ProductReferencePage({ canManage }) {
     setSearchInput('');
     setCategoryId(category.id);
     setReferenceStatus('ACTIVE');
-    setContributionStatus('PENDING_REVIEW');
+    setContributionStatus('APPROVED');
     setPage(1);
   }
 
-
-  async function decideContribution(
-    contribution,
-    decision,
-    targetReferenceId = null,
-  ) {
-    try {
-      await reviewContribution({
-        contributionId: contribution.id,
-        decision,
-        ...(targetReferenceId ? { targetReferenceId } : {}),
-      }).unwrap();
-      toast({
-        title: decision === 'APPROVE'
-          ? 'Contribution approuvée'
-          : decision === 'MERGE'
-            ? 'Contribution fusionnée'
-            : 'Contribution refusée',
-        variant: 'success',
-      });
-    } catch (error) {
-      toast({
-        title: 'Décision impossible',
-        description: getApiErrorMessage(error),
-        variant: 'destructive',
-      });
-    }
-  }
 
   async function confirmCategoryLifecycle() {
     const category = categoryLifecycle;
@@ -413,7 +394,7 @@ function ProductReferencePage({ canManage }) {
     ?? kind
   );
 
-  const contributionColumns = [
+  const historyContributionColumns = [
     {
       id: 'value',
       header: 'Proposition',
@@ -471,49 +452,6 @@ function ProductReferencePage({ canManage }) {
             </p>
           )}
         </div>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (contribution) => (
-        contribution.status === 'PENDING_REVIEW' && canManage ? (
-          <DataTableActions>
-            <Button
-              disabled={reviewContributionState.isLoading}
-              onClick={() => decideContribution(contribution, 'APPROVE')}
-              size="sm"
-              type="button"
-            >
-              Approuver
-            </Button>
-            {(contribution.candidates ?? []).map((candidate) => (
-              <Button
-                disabled={reviewContributionState.isLoading}
-                key={candidate.id}
-                onClick={() => decideContribution(
-                  contribution,
-                  'MERGE',
-                  candidate.id,
-                )}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Fusionner avec {candidate.name}
-              </Button>
-            ))}
-            <Button
-              disabled={reviewContributionState.isLoading}
-              onClick={() => decideContribution(contribution, 'REJECT')}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              Refuser
-            </Button>
-          </DataTableActions>
-        ) : null
       ),
     },
   ];
@@ -595,7 +533,7 @@ function ProductReferencePage({ canManage }) {
       && productsQuery.data === undefined
     )
     || (
-      section === 'contributions'
+      section === 'history'
       && contributionsQuery.isLoading
       && contributionsQuery.data === undefined
     )
@@ -603,13 +541,13 @@ function ProductReferencePage({ canManage }) {
   const hasError = metadataQuery.isError
     || globalPricesQuery.isError
     || (section === 'reference' && productsQuery.isError)
-    || (section === 'contributions' && contributionsQuery.isError);
+    || (section === 'history' && contributionsQuery.isError);
 
   function retry() {
     metadataQuery.refetch();
     globalPricesQuery.refetch();
     if (section === 'reference') productsQuery.refetch();
-    if (section === 'contributions') contributionsQuery.refetch();
+    if (section === 'history') contributionsQuery.refetch();
   }
 
   return (
@@ -659,8 +597,11 @@ function ProductReferencePage({ canManage }) {
           <TabsTrigger value="reference" variant="section">
             Référentiel ({referenceCount})
           </TabsTrigger>
-          <TabsTrigger value="contributions" variant="section">
-            Contributions ({contributionCount})
+          <TabsTrigger value="review" variant="section">
+            À contrôler ({reviewCount})
+          </TabsTrigger>
+          <TabsTrigger value="history" variant="section">
+            Historique
           </TabsTrigger>
           <TabsTrigger value="categories" variant="section">
             Catégories ({categoryCount})
@@ -770,57 +711,73 @@ function ProductReferencePage({ canManage }) {
         </section>
       )}
 
-      {section === 'contributions' && (
+      {section === 'review' && (
+        <ProductReferenceReviewQueue
+          canManage={canManage}
+          metadata={metadata}
+          onOpenProduct={openProduct}
+          page={page}
+          pageSize={pageSize}
+          setPage={setPage}
+          setPageSize={setPageSize}
+        />
+      )}
+
+      {section === 'history' && (
         <section className="rounded-xl border border-border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
             <div>
-              <h2 className="font-semibold">Contributions au référentiel</h2>
+              <h2 className="font-semibold">Historique des contributions</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Examinez les propositions qui ne peuvent pas être publiées automatiquement.
+                Consultez les décisions déjà prises sur les contributions Produit.
               </p>
             </div>
             <Select
-              items={metadata?.productContributionStatuses ?? []}
+              items={(metadata?.productContributionStatuses ?? []).filter(
+                ({ value }) => value !== 'PENDING_REVIEW',
+              )}
               onValueChange={(value) => {
                 setContributionStatus(value);
                 setPage(1);
               }}
               value={contributionStatus}
             >
-              <SelectTrigger aria-label="Filtrer les contributions par statut">
+              <SelectTrigger aria-label="Filtrer l’historique par décision">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(metadata?.productContributionStatuses ?? []).map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
+                {(metadata?.productContributionStatuses ?? [])
+                  .filter(({ value }) => value !== 'PENDING_REVIEW')
+                  .map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
 
           {initialLoading ? (
             <p className="p-5 text-sm text-muted-foreground">
-              Chargement des contributions…
+              Chargement de l’historique…
             </p>
           ) : hasError ? (
             <ErrorState
-              description="Les contributions n’ont pas pu être chargées."
+              description="L’historique des contributions n’a pas pu être chargé."
               onRetry={retry}
-              title="Contributions indisponibles"
+              title="Historique indisponible"
             />
           ) : (
             <>
               <DataTable
-                caption="Contributions au référentiel Produits"
-                columns={contributionColumns}
+                caption="Historique des contributions Produit"
+                columns={historyContributionColumns}
                 data={contributionsQuery.data?.contributions ?? []}
                 emptyContent={(
                   <EmptyState
                     className="p-0"
-                    description="Aucune contribution ne correspond à ce statut."
-                    title="Aucune contribution"
+                    description="Aucune contribution ne correspond à cette décision."
+                    title="Aucun historique"
                   />
                 )}
                 getRowKey={(contribution) => contribution.id}
@@ -828,7 +785,7 @@ function ProductReferencePage({ canManage }) {
               />
               <div className="px-5 pb-5">
                 <DataPagination
-                  ariaLabel="Pagination des contributions"
+                  ariaLabel="Pagination de l’historique des contributions"
                   disabled={contributionsQuery.isFetching}
                   onPageChange={setPage}
                   onPageSizeChange={setPageSize}
