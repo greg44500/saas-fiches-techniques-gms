@@ -42,6 +42,9 @@ import {
     createProductVariety,
 } from '../../../modules/productCatalog/productReferenceDimension.service.js';
 import {
+    ReferenceContribution,
+} from '../../../modules/productCatalog/referenceContribution.model.js';
+import {
     User,
 } from '../../../modules/users/user.model.js';
 import {
@@ -695,6 +698,68 @@ describe('M-002 global product reference HTTP contract', () => {
             total: 1,
             totalPages: 1,
         });
+    });
+
+    it('retourne ensemble les Contributions traitées dans l’Historique', async () => {
+        const workspace = await createWorkspaceOwnerFixture();
+
+        await ReferenceContribution.create([
+            {
+                type: 'CANONICAL_PRODUCT',
+                workspace: workspace.workspace._id,
+                author: workspace.owner._id,
+                proposedValue: 'Produit historique approuvé',
+                normalizedValue: 'produit historique approuve',
+                classification: 'PROVISIONAL',
+                status: 'APPROVED',
+                reviewer: governor._id,
+                reviewedAt: new Date('2026-10-03T10:00:00.000Z'),
+            },
+            {
+                type: 'CANONICAL_PRODUCT',
+                workspace: workspace.workspace._id,
+                author: workspace.owner._id,
+                proposedValue: 'Produit historique refusé',
+                normalizedValue: 'produit historique refuse',
+                classification: 'PROVISIONAL',
+                status: 'REJECTED',
+                reviewer: governor._id,
+                reviewedAt: new Date('2026-10-03T11:00:00.000Z'),
+            },
+            {
+                type: 'CANONICAL_PRODUCT',
+                workspace: workspace.workspace._id,
+                author: workspace.owner._id,
+                proposedValue: 'Produit encore à traiter',
+                normalizedValue: 'produit encore a traiter',
+                classification: 'PROVISIONAL',
+                status: 'PENDING_REVIEW',
+            },
+        ]);
+
+        const response = await request(app)
+            .get('/api/product-reference/contributions')
+            .query({
+                reviewedOnly: 'true',
+                page: 1,
+                limit: 20,
+            })
+            .set(bearer(governorToken));
+
+        expect(response.status).toBe(200);
+        expect(response.body.meta.total).toBe(2);
+        expect(response.body.data.contributions).toEqual([
+            expect.objectContaining({
+                proposedValue: 'Produit historique refusé',
+                status: 'REJECTED',
+                decision: 'REJECT',
+            }),
+            expect.objectContaining({
+                proposedValue: 'Produit historique approuvé',
+                status: 'APPROVED',
+                decision: 'APPROVE',
+            }),
+        ]);
     });
 
     it('sépare lecture et traitement de la file À contrôler par permission', async () => {
