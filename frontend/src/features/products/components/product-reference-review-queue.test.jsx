@@ -236,6 +236,34 @@ describe('ProductReferenceReviewQueue', () => {
     });
   });
 
+  it('recale la pagination lorsque la dernière page disparaît', async () => {
+    const setPage = vi.fn();
+    mocks.queue.mockReturnValue(queryResult({
+      items: [],
+      summary: {
+        total: 1,
+        contributionCount: 1,
+        dimensionReviewCount: 0,
+      },
+      origins: [],
+      pagination: {
+        page: 2,
+        limit: 20,
+        total: 1,
+        totalPages: 1,
+      },
+    }));
+
+    renderQueue({
+      page: 2,
+      setPage,
+    });
+
+    await waitFor(() => {
+      expect(setPage).toHaveBeenCalledWith(1);
+    });
+  });
+
   it('traite une Contribution avec les mutations existantes', async () => {
     const user = userEvent.setup();
     renderQueue();
