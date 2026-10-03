@@ -222,6 +222,8 @@ npm run migration:m003-indicative-pricing
 Le bootstrap conserve la règle existante : un Prix repère actif déjà maintenu
 par le gestionnaire n'est jamais écrasé.
 
+La migration M-003 exécute aussi `reconcileM003GlobalIndicativePricesToV3` : elle archive uniquement les anciens Prix repères bootstrap v2 des 6 fonds de tarte génériques retirés du v8 et préserve les corrections manuelles.
+
 ## 6. Validation du bloc avant PR
 
 Contrôles structurels déjà effectués directement sur la branche :
