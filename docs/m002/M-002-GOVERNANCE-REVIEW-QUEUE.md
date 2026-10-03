@@ -85,10 +85,12 @@ Chaque élément expose au minimum :
 La provenance technique interne n'est pas transformée en bruit utilisateur.
 
 Pour une contribution de type `CANONICAL_PRODUCT`, le contexte Produit
-correspond au Produit provisoire créé pour le Workspace. La file doit donc
-pointer vers `provisionalEntityId` lorsque `canonicalProduct` n'existe pas
-encore. L'utilisateur Platform peut ainsi ouvrir directement le Produit à
-examiner au lieu d'obtenir un contexte « Produit indisponible ».
+correspond au Produit provisoire créé pour le Workspace. Le service de
+contribution renseigne aujourd'hui `canonicalProduct` avec cette identité
+provisoire ; le read model conserve néanmoins un fallback sur
+`provisionalEntityId` pour rester robuste face aux données historiques ou
+incomplètes. L'utilisateur Platform peut ainsi ouvrir directement le Produit
+à examiner au lieu d'obtenir un contexte « Produit indisponible ».
 
 ## 5. Actions
 
