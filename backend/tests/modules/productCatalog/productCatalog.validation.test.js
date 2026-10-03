@@ -98,6 +98,16 @@ describe('M-002 product request validation', () => {
     });
 
     it('valide une référence structurée avec dimensions facultatives', () => {
+        expect(createWorkspaceVariantBodySchema.parse({
+            ...minimalReference,
+        })).toEqual({
+            ...minimalReference,
+            foodRange: null,
+            characteristicIds: [],
+            reviewedCandidateIds: [],
+            forceCreate: false,
+        });
+
         expect(createWorkspaceVariantBodySchema.safeParse({
             ...minimalReference,
             varietyId: '507f1f77bcf86cd799439012',
@@ -114,6 +124,12 @@ describe('M-002 product request validation', () => {
                 '507f1f77bcf86cd799439013',
                 '507f1f77bcf86cd799439013',
             ],
+        }).success).toBe(false);
+
+        expect(createWorkspaceVariantBodySchema.safeParse({
+            ...minimalReference,
+            forceCreate: true,
+            reviewedCandidateIds: ['not-an-object-id'],
         }).success).toBe(false);
     });
 
