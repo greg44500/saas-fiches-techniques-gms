@@ -273,7 +273,7 @@ npm run dev
 npm --prefix frontend run dev
 ~~~
 
-Points visuels à vérifier :
+Points visuels à vérifier — corpus A2 :
 
 1. Platform → Gestion des référentiels → Produits ;
 2. recherche de `Farine de blé`, `Beurre`, `Pâte pure de pistache`,
@@ -284,6 +284,26 @@ Points visuels à vérifier :
 5. Workspace / Fiche technique : sélection d'une nouvelle Référence et
    valorisation par `Prix repère global` lorsqu'aucune source locale plus
    précise n'existe.
+
+Points visuels à vérifier — Bloc B :
+
+1. Platform → Produits expose bien
+   `Référentiel | À contrôler | Historique | Catégories` ;
+2. le compteur `À contrôler` correspond aux éléments réellement en attente ;
+3. une Contribution Workspace affiche sa valeur, son Produit, son Workspace,
+   son auteur et sa date ;
+4. le filtre Type puis le filtre Origine réduisent la file sans recharger
+   toutes les données côté frontend ;
+5. une proposition de nouveau Produit ouvre bien son Produit provisoire ;
+6. après approbation/refus/fusion, la Contribution disparaît de
+   `À contrôler` et apparaît dans `Historique` ;
+7. l'Historique s'ouvre par défaut sur `Toutes les décisions` et distingue
+   `Approuvée`, `Fusionnée` et `Refusée` ;
+8. une nouvelle Variété/Caractéristique Workspace à vérifier apparaît comme
+   `Valeur à vérifier`, ouvre directement les Dimensions et disparaît après
+   revue ;
+9. avec une autorité globale en lecture seule, les actions de décision/revue
+   ne sont pas proposées.
 
 ## 8. Bloc B — Gouvernance Produit unifiée
 
