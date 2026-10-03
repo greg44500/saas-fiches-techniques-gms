@@ -19,6 +19,9 @@ import {
     ProductVariety,
 } from '../../../modules/productCatalog/productVariety.model.js';
 import {
+    ProductVariant,
+} from '../../../modules/productCatalog/productVariant.model.js';
+import {
     ReferenceContribution,
 } from '../../../modules/productCatalog/referenceContribution.model.js';
 import {
@@ -26,6 +29,9 @@ import {
     reviewReferenceContribution,
     submitReferenceContribution,
 } from '../../../modules/productCatalog/productReferenceContribution.service.js';
+import {
+    createWorkspaceVariant,
+} from '../../../modules/productCatalog/productCatalog.service.js';
 import {
     createProductCharacteristic,
     createProductVariety,
@@ -271,6 +277,56 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
             resolutionEntityId: provisionalId,
         });
         expect(await ProductCharacteristic.findById(provisionalId).lean())
+            .toMatchObject({
+                governanceStatus: 'APPROVED',
+                identityActive: true,
+                qualityReviewStatus: 'REVIEWED',
+                qualityReviewedBy: ownerContext.owner._id,
+            });
+    });
+
+    it('valide une Référence Workspace provisoire comme identité globale distincte', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Pomme contribution Référence',
+        });
+
+        const created = await createWorkspaceVariant({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variant: {
+                name: 'Pomme séchée contribution',
+                conservationType: 'SEC',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+            },
+        });
+
+        expect(created).toMatchObject({
+            classification: 'PROVISIONAL',
+            variant: {
+                governanceStatus: 'PROVISIONAL',
+            },
+            contribution: {
+                type: 'VARIANT',
+                status: 'PENDING_REVIEW',
+            },
+        });
+
+        const approved = await reviewReferenceContribution({
+            contributionId: created.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+
+        expect(approved).toMatchObject({
+            status: 'APPROVED',
+            decision: 'APPROVE',
+            resolutionEntityType: 'VARIANT',
+            resolutionEntityId: created.variant.id,
+        });
+        expect(await ProductVariant.findById(created.variant.id).lean())
             .toMatchObject({
                 governanceStatus: 'APPROVED',
                 identityActive: true,
