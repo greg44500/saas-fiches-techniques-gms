@@ -237,7 +237,6 @@ const findVariantDuplicateCandidates = async ({
             .populate('variety')
             .populate('characteristics')
             .sort({ updatedAt: -1 })
-            .limit(200)
             .lean();
         query = queryWithSession(query, session);
 
