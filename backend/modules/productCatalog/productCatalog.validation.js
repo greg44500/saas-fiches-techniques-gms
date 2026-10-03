@@ -8,6 +8,7 @@ import {
     PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
+    PRODUCT_REVIEW_QUEUE_TYPE,
     PRODUCT_SEARCH_SCOPE,
     PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS,
@@ -281,6 +282,13 @@ const referenceContributionListQuerySchema = z.strictObject({
     limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+const productReviewQueueListQuerySchema = z.strictObject({
+    type: z.enum(Object.values(PRODUCT_REVIEW_QUEUE_TYPE)).optional(),
+    workspaceId: objectIdSchema.optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 const referenceContributionParamsSchema = z.strictObject({
     contributionId: objectIdSchema,
 });
@@ -400,6 +408,7 @@ export {
     objectIdSchema,
     productIdParamsSchema,
     productSearchQuerySchema,
+    productReviewQueueListQuerySchema,
     productVariantParamsSchema,
     referenceContributionDecisionBodySchema,
     referenceContributionListQuerySchema,
