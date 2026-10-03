@@ -273,7 +273,10 @@ Backend ciblé :
 
 ~~~text
 npx vitest run \
+  backend/tests/modules/productCatalog/productCatalog.registry.test.js \
   backend/tests/modules/productCatalog/productCatalog.validation.test.js \
+  backend/tests/modules/productCatalog/productCatalog.integration.test.js \
+  backend/tests/modules/productCatalog/productCatalog.http.test.js \
   backend/tests/modules/productCatalog/productReferenceContribution.integration.test.js \
   backend/tests/modules/productCatalog/productReferenceReviewQueue.integration.test.js \
   backend/tests/modules/productCatalog/productCatalogGlobal.http.test.js
