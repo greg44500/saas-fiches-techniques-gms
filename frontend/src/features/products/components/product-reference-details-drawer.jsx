@@ -330,7 +330,7 @@ function ProductReferenceDetailsDrawer({
         dimensionId: dimension.id,
       }).unwrap();
       toast({
-        title: 'Valeur marquée comme vérifiée',
+        title: 'Dimension validée',
         variant: 'success',
       });
     } catch (error) {
@@ -361,10 +361,10 @@ function ProductReferenceDetailsDrawer({
           ? 'Référence'
           : 'Dimension';
       const actionLabel = decision === 'MERGE'
-        ? 'fusionnée'
+        ? (subject === 'Produit' ? 'fusionné' : 'fusionnée')
         : decision === 'REJECT'
-          ? 'refusée'
-          : 'validée';
+          ? (subject === 'Produit' ? 'refusé' : 'refusée')
+          : (subject === 'Produit' ? 'validé' : 'validée');
 
       toast({
         title: subject + ' ' + actionLabel,
