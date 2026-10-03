@@ -139,6 +139,11 @@ function ProductReferencePage({ canManage }) {
         ? contributionsQuery.data?.pagination?.totalPages
         : null;
 
+    if (totalPages === 0 && page !== 1) {
+      setPage(1);
+      return;
+    }
+
     if (totalPages && page > totalPages) setPage(totalPages);
   }, [
     contributionsQuery.data?.pagination?.totalPages,
@@ -169,9 +174,16 @@ function ProductReferencePage({ canManage }) {
       value: ALL_REVIEWED_CONTRIBUTIONS,
       label: 'Toutes les décisions',
     },
-    ...(metadata?.productContributionStatuses ?? []).filter(
-      ({ value }) => value !== 'PENDING_REVIEW',
-    ),
+    ...(metadata?.productContributionStatuses ?? [])
+      .filter(({ value }) => value !== 'PENDING_REVIEW')
+      .map((item) => (
+        item.value === 'APPROVED'
+          ? {
+              ...item,
+              label: 'Approuvées ou fusionnées',
+            }
+          : item
+      )),
   ], [metadata?.productContributionStatuses]);
 
   const referenceCount = productsQuery.data?.pagination?.total ?? 0;
