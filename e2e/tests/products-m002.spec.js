@@ -102,12 +102,9 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
   await expect(closeGlobalProductDrawer).toBeHidden();
   await expect(contributionRow).toBeHidden();
 
-  await page.getByRole('tab', { name: 'Historique' }).click();
-  const historyRow = page.getByRole('row').filter({
-    hasText: context.productName,
-  });
-  await expect(historyRow).toBeVisible();
-  await expect(historyRow).toContainText('Approuvée');
+  await expect(
+    page.getByRole('tab', { name: 'Historique' }),
+  ).toHaveCount(0);
 
   await page.getByRole('tab', { name: 'Référentiel' }).click();
   await selectGlobalProductReference(
@@ -189,5 +186,5 @@ test('M-002 autorité Application Global alimente directement le référentiel',
   ).toBeVisible();
   await expect(
     page.getByRole('tab', { name: 'Historique' }),
-  ).toBeVisible();
+  ).toHaveCount(0);
 });
