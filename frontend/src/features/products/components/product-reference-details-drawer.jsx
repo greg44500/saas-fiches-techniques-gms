@@ -29,6 +29,7 @@ import {
   useDeleteProductReferenceDimensionMutation,
   useGetProductReferenceDetailQuery,
   useGetProductReferenceDimensionsQuery,
+  useReviewProductReferenceContributionMutation,
   useReviewProductReferenceDimensionMutation,
   useUpdateProductReferenceCharacteristicStatusMutation,
   useUpdateProductReferenceStatusMutation,
@@ -38,6 +39,9 @@ import {
 import { ProductDimensionContributionDialog } from '@/features/products/components/product-dimension-contribution-dialog';
 import { ProductDimensionEditDialog } from '@/features/products/components/product-dimension-edit-dialog';
 import { ProductReferenceEditDialog } from '@/features/products/components/product-reference-edit-dialog';
+import {
+  ProductReferenceGovernanceReviewPanel,
+} from '@/features/products/components/product-reference-governance-review-panel';
 import { ProductReferenceVariantEditDialog } from '@/features/products/components/product-reference-variant-edit-dialog';
 import { ProductVariantCreateDialog } from '@/features/products/components/product-variant-create-dialog';
 import {
@@ -81,11 +85,13 @@ function normalizeDimensionSearch(value) {
 function ProductReferenceDetailsDrawer({
   canManage,
   initialDimensionFilter = 'active',
+  initialReferenceFilter = 'all',
   initialTab = 'product',
   metadata,
   onClose,
   open,
   productId,
+  reviewContext = null,
 }) {
   const { toast } = useToast();
   const retainedRef = useRef(null);
@@ -97,6 +103,9 @@ function ProductReferenceDetailsDrawer({
   const [dimensionSearch, setDimensionSearch] = useState('');
   const [dimensionFilter, setDimensionFilter] = useState(
     initialDimensionFilter,
+  );
+  const [referenceFilter, setReferenceFilter] = useState(
+    initialReferenceFilter,
   );
   const [deleteDimension, setDeleteDimension] = useState(null);
   const [deleteError, setDeleteError] = useState('');
@@ -117,6 +126,8 @@ function ProductReferenceDetailsDrawer({
     useUpdateProductReferenceVarietyStatusMutation();
   const [updateCharacteristicStatus, characteristicStatusState] =
     useUpdateProductReferenceCharacteristicStatusMutation();
+  const [reviewContribution, reviewContributionState] =
+    useReviewProductReferenceContributionMutation();
   const [reviewDimension, reviewDimensionState] =
     useReviewProductReferenceDimensionMutation();
   const [deleteDimensionMutation, deleteDimensionState] =
@@ -126,9 +137,16 @@ function ProductReferenceDetailsDrawer({
     if (!open) return;
     setActiveTab(initialTab);
     setDimensionFilter(initialDimensionFilter);
+    setReferenceFilter(initialReferenceFilter);
     setDimensionSearch('');
     setPriceVariant(null);
-  }, [initialDimensionFilter, initialTab, open, productId]);
+  }, [
+    initialDimensionFilter,
+    initialReferenceFilter,
+    initialTab,
+    open,
+    productId,
+  ]);
 
   if (query.data) retainedRef.current = query.data;
   const detail = query.data ?? retainedRef.current;
@@ -161,6 +179,16 @@ function ProductReferenceDetailsDrawer({
     ...characteristics,
   ].filter((dimension) => dimension.status === 'ACTIVE').length;
   const archivedDimensionCount = dimensionCount - activeDimensionCount;
+  const pendingReferenceCount = variants.filter((variant) => (
+    variant.status === 'ACTIVE'
+    && variant.governanceStatus === 'PROVISIONAL'
+  )).length;
+  const visibleVariants = referenceFilter === 'pending'
+    ? variants.filter((variant) => (
+      variant.status === 'ACTIVE'
+      && variant.governanceStatus === 'PROVISIONAL'
+    ))
+    : variants;
 
   const matchesDimensionFilter = (dimension) => {
     if (dimensionFilter === 'pending') {
@@ -236,6 +264,7 @@ function ProductReferenceDetailsDrawer({
     || variantStatusState.isLoading
     || varietyStatusState.isLoading
     || characteristicStatusState.isLoading
+    || reviewContributionState.isLoading
     || reviewDimensionState.isLoading
     || deleteDimensionState.isLoading
   );
@@ -311,6 +340,69 @@ function ProductReferenceDetailsDrawer({
         variant: 'destructive',
       });
     }
+  }
+
+  async function decideContribution(
+    decision,
+    targetReferenceId = null,
+  ) {
+    if (!reviewContext?.sourceId) return;
+
+    try {
+      await reviewContribution({
+        contributionId: reviewContext.sourceId,
+        decision,
+        targetReferenceId,
+      }).unwrap();
+
+      const subject = reviewContext.dataType === 'PRODUCT'
+        ? 'Produit'
+        : reviewContext.dataType === 'REFERENCE'
+          ? 'Référence'
+          : 'Dimension';
+      const actionLabel = decision === 'MERGE'
+        ? 'fusionnée'
+        : decision === 'REJECT'
+          ? 'refusée'
+          : 'validée';
+
+      toast({
+        title: subject + ' ' + actionLabel,
+        description: reviewContext.value,
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Décision impossible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    }
+  }
+
+  function approveReviewTarget() {
+    if (reviewContext?.type === 'DIMENSION_REVIEW') {
+      const dimension = reviewContext.dimensionType === 'VARIETY'
+        ? varieties.find(({ id }) => id === reviewContext.targetId)
+        : characteristics.find(({ id }) => id === reviewContext.targetId);
+
+      if (dimension) {
+        markDimensionReviewed(reviewContext.dimensionType, dimension);
+      }
+      return;
+    }
+
+    decideContribution('APPROVE');
+  }
+
+  function rejectReviewTarget() {
+    if (reviewContext?.type === 'DIMENSION_REVIEW') return;
+    decideContribution('REJECT');
+  }
+
+  function mergeReviewTarget(candidate) {
+    if (reviewContext?.type === 'DIMENSION_REVIEW') return;
+    decideContribution('MERGE', candidate.id);
   }
 
   function requestDimensionDeletion(type, dimension) {
@@ -404,11 +496,25 @@ function ProductReferenceDetailsDrawer({
                 <div className="rounded-lg border border-border px-4">
                   <dl>
                     <AdminDetailRow label="Nom" value={product.name} />
-                    <AdminDetailRow
-                      label="Synonymes métier"
-                      value={product.aliases?.length ? product.aliases.join(', ') : null}
-                    />
                     <AdminDetailRow label="Catégorie" value={product.category?.name} />
+                    <div className="grid gap-1 border-b border-border py-3 sm:grid-cols-[160px_1fr]">
+                      <dt className="text-sm text-muted-foreground">
+                        Contrôle
+                      </dt>
+                      <dd className="sm:text-right">
+                        <StatusBadge
+                          tone={
+                            product.governanceStatus === 'PROVISIONAL'
+                              ? 'warning'
+                              : 'success'
+                          }
+                        >
+                          {product.governanceStatus === 'PROVISIONAL'
+                            ? 'À contrôler'
+                            : 'Validé'}
+                        </StatusBadge>
+                      </dd>
+                    </div>
                     <div className="grid gap-1 py-3 sm:grid-cols-[160px_1fr]">
                       <dt className="text-sm text-muted-foreground">Statut</dt>
                       <dd className="sm:text-right">
@@ -419,6 +525,19 @@ function ProductReferenceDetailsDrawer({
                     </div>
                   </dl>
                 </div>
+
+                {canManage
+                  && reviewContext?.dataType === 'PRODUCT'
+                  && product.governanceStatus === 'PROVISIONAL' && (
+                  <ProductReferenceGovernanceReviewPanel
+                    context={reviewContext}
+                    onApprove={approveReviewTarget}
+                    onEdit={() => setEditProductOpen(true)}
+                    onMerge={mergeReviewTarget}
+                    onReject={rejectReviewTarget}
+                    pending={pending}
+                  />
+                )}
               </div>
             </TabsContent>
 
@@ -498,7 +617,7 @@ function ProductReferenceDetailsDrawer({
                   {[
                     {
                       value: 'pending',
-                      label: 'À vérifier',
+                      label: 'À contrôler',
                       count: pendingDimensionCount,
                     },
                     {
@@ -554,7 +673,7 @@ function ProductReferenceDetailsDrawer({
                       {normalizedDimensionSearch
                         ? 'Aucune variété ne correspond à cette recherche.'
                         : dimensionFilter === 'pending'
-                          ? 'Aucune variété à vérifier.'
+                          ? 'Aucune variété à contrôler.'
                           : 'Aucune variété dans cette vue.'}
                     </p>
                   ) : (
@@ -588,7 +707,16 @@ function ProductReferenceDetailsDrawer({
                                   className="shrink-0 py-0.5"
                                   tone="warning"
                                 >
-                                  Nouveau
+                                  À contrôler
+                                </StatusBadge>
+                              )}
+                              {variety.qualityReviewStatus !== 'PENDING'
+                                && variety.status === 'ACTIVE' && (
+                                <StatusBadge
+                                  className="shrink-0 py-0.5"
+                                  tone="success"
+                                >
+                                  Validée
                                 </StatusBadge>
                               )}
                             </div>
@@ -681,7 +809,7 @@ function ProductReferenceDetailsDrawer({
                       {normalizedDimensionSearch
                         ? 'Aucune caractéristique ne correspond à cette recherche.'
                         : dimensionFilter === 'pending'
-                          ? 'Aucune caractéristique à vérifier.'
+                          ? 'Aucune caractéristique à contrôler.'
                           : 'Aucune caractéristique dans cette vue.'}
                     </p>
                   ) : (
@@ -723,7 +851,16 @@ function ProductReferenceDetailsDrawer({
                                   className="shrink-0 py-0.5"
                                   tone="warning"
                                 >
-                                  Nouveau
+                                  À contrôler
+                                </StatusBadge>
+                              )}
+                              {variety.qualityReviewStatus !== 'PENDING'
+                                && variety.status === 'ACTIVE' && (
+                                <StatusBadge
+                                  className="shrink-0 py-0.5"
+                                  tone="success"
+                                >
+                                  Validée
                                 </StatusBadge>
                               )}
                             </div>
@@ -836,13 +973,64 @@ function ProductReferenceDetailsDrawer({
                   </div>
                 )}
 
+                <div
+                  aria-label="Filtrer les Références"
+                  className="flex flex-wrap items-center gap-2"
+                  role="group"
+                >
+                  <Button
+                    aria-pressed={referenceFilter === 'pending'}
+                    onClick={() => setReferenceFilter('pending')}
+                    size="sm"
+                    type="button"
+                    variant={
+                      referenceFilter === 'pending'
+                        ? 'default'
+                        : 'outline'
+                    }
+                  >
+                    À contrôler ({pendingReferenceCount})
+                  </Button>
+                  <Button
+                    aria-pressed={referenceFilter === 'all'}
+                    onClick={() => setReferenceFilter('all')}
+                    size="sm"
+                    type="button"
+                    variant={
+                      referenceFilter === 'all'
+                        ? 'default'
+                        : 'outline'
+                    }
+                  >
+                    Toutes ({variants.length})
+                  </Button>
+                </div>
+
+                {visibleVariants.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {referenceFilter === 'pending'
+                      ? 'Aucune Référence à contrôler.'
+                      : 'Aucune Référence Produit.'}
+                  </p>
+                ) : (
                 <ul className="space-y-3">
-                  {variants.map((variant) => {
+                  {visibleVariants.map((variant) => {
                     const globalPrice =
                       globalPriceByVariantId.get(variant.id) ?? null;
 
                     return (
-                    <li className="rounded-lg border border-border p-4" key={variant.id}>
+                    <li
+                      className={
+                        'rounded-lg border p-4 '
+                        + (
+                          reviewContext?.dataType === 'REFERENCE'
+                          && reviewContext.targetId === variant.id
+                            ? 'border-warning/50 bg-warning/5'
+                            : 'border-border'
+                        )
+                      }
+                      key={variant.id}
+                    >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <p className="font-medium">{getVariantLabel(variant)}</p>
@@ -875,10 +1063,39 @@ function ProductReferenceDetailsDrawer({
                             </p>
                           )}
                         </div>
-                        <StatusBadge tone={getProductStatusTone(variant.status)}>
-                          {getProductStatusLabel(metadata, variant.status)}
-                        </StatusBadge>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StatusBadge tone={getProductStatusTone(variant.status)}>
+                            {getProductStatusLabel(metadata, variant.status)}
+                          </StatusBadge>
+                          <StatusBadge
+                            tone={
+                              variant.governanceStatus === 'PROVISIONAL'
+                                ? 'warning'
+                                : 'success'
+                            }
+                          >
+                            {variant.governanceStatus === 'PROVISIONAL'
+                              ? 'À contrôler'
+                              : 'Validée'}
+                          </StatusBadge>
+                        </div>
                       </div>
+
+                      {canManage
+                        && reviewContext?.dataType === 'REFERENCE'
+                        && reviewContext.targetId === variant.id
+                        && variant.governanceStatus === 'PROVISIONAL' && (
+                        <div className="mt-4 border-t border-border pt-4">
+                          <ProductReferenceGovernanceReviewPanel
+                            context={reviewContext}
+                            onApprove={approveReviewTarget}
+                            onEdit={() => setEditVariant(variant)}
+                            onMerge={mergeReviewTarget}
+                            onReject={rejectReviewTarget}
+                            pending={pending}
+                          />
+                        </div>
+                      )}
 
                       {canManage && (
                         <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-border pt-3">
@@ -934,6 +1151,7 @@ function ProductReferenceDetailsDrawer({
                     );
                   })}
                 </ul>
+                )}
               </div>
             </TabsContent>
 
