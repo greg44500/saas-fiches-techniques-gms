@@ -25,11 +25,11 @@ const HISTORICAL_DATASET_URLS = Object.freeze([
     new URL('../seeds/data/m002-reference.v4.json', import.meta.url),
     new URL('../seeds/data/m002-reference.v5.json', import.meta.url),
     new URL('../seeds/data/m002-reference.v6.json', import.meta.url),
-    new URL('../seeds/data/m002-reference.v8.json', import.meta.url),
+    new URL('../seeds/data/m002-reference.v7.json', import.meta.url),
 ]);
 
 const TARGET_DATASET_URL = new URL(
-    '../seeds/data/m002-reference.v7.json',
+    '../seeds/data/m002-reference.v8.json',
     import.meta.url,
 );
 
