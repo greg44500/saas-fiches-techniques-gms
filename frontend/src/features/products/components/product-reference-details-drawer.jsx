@@ -371,6 +371,13 @@ function ProductReferenceDetailsDrawer({
         description: reviewContext.value,
         variant: 'success',
       });
+
+      if (
+        reviewContext.dataType === 'PRODUCT'
+        && decision !== 'APPROVE'
+      ) {
+        onClose();
+      }
     } catch (error) {
       toast({
         title: 'Décision impossible',
@@ -680,19 +687,20 @@ function ProductReferenceDetailsDrawer({
                     <ul className="space-y-2">
                       {filteredVarieties.map((variety) => (
                         <li
-                          className="rounded-lg border border-border px-3 py-2"
+                          className={
+                            'rounded-lg border px-3 py-2 '
+                            + (
+                              reviewContext?.dataType === 'DIMENSION'
+                              && reviewContext.targetId === variety.id
+                                ? 'border-warning/50 bg-warning/5'
+                                : 'border-border'
+                            )
+                          }
                           key={variety.id}
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex min-w-0 items-center gap-2">
-                              <p
-                                className="truncate font-medium"
-                                title={
-                                  variety.aliases?.length
-                                    ? 'Synonymes : ' + variety.aliases.join(', ')
-                                    : undefined
-                                }
-                              >
+                              <p className="truncate font-medium">
                                 {variety.name}
                               </p>
                               <StatusBadge
@@ -720,7 +728,11 @@ function ProductReferenceDetailsDrawer({
                                 </StatusBadge>
                               )}
                             </div>
-                            {canManage && (
+                            {canManage
+                              && !(
+                                reviewContext?.dataType === 'DIMENSION'
+                                && reviewContext.targetId === variety.id
+                              ) && (
                               <div className="flex shrink-0 items-center gap-2">
                                 {variety.qualityReviewStatus === 'PENDING'
                                   && variety.status === 'ACTIVE' && (
@@ -794,6 +806,33 @@ function ProductReferenceDetailsDrawer({
                               </div>
                             )}
                           </div>
+
+                          {canManage
+                            && reviewContext?.dataType === 'DIMENSION'
+                            && reviewContext.targetId === variety.id
+                            && variety.qualityReviewStatus === 'PENDING' && (
+                            <div className="mt-3 border-t border-border pt-3">
+                              <ProductReferenceGovernanceReviewPanel
+                                context={reviewContext}
+                                onApprove={approveReviewTarget}
+                                onEdit={() => setEditDimension({
+                                  type: 'VARIETY',
+                                  dimension: variety,
+                                })}
+                                onMerge={
+                                  reviewContext.type === 'CONTRIBUTION'
+                                    ? mergeReviewTarget
+                                    : undefined
+                                }
+                                onReject={
+                                  reviewContext.type === 'CONTRIBUTION'
+                                    ? rejectReviewTarget
+                                    : undefined
+                                }
+                                pending={pending}
+                              />
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -816,20 +855,20 @@ function ProductReferenceDetailsDrawer({
                     <ul className="space-y-2">
                       {filteredCharacteristics.map((characteristic) => (
                         <li
-                          className="rounded-lg border border-border px-3 py-2"
+                          className={
+                            'rounded-lg border px-3 py-2 '
+                            + (
+                              reviewContext?.dataType === 'DIMENSION'
+                              && reviewContext.targetId === characteristic.id
+                                ? 'border-warning/50 bg-warning/5'
+                                : 'border-border'
+                            )
+                          }
                           key={characteristic.id}
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex min-w-0 items-center gap-2">
-                              <p
-                                className="truncate font-medium"
-                                title={
-                                  characteristic.aliases?.length
-                                    ? 'Synonymes : '
-                                      + characteristic.aliases.join(', ')
-                                    : undefined
-                                }
-                              >
+                              <p className="truncate font-medium">
                                 {characteristic.name}
                               </p>
                               <span className="shrink-0 text-xs text-muted-foreground">
@@ -854,8 +893,8 @@ function ProductReferenceDetailsDrawer({
                                   À contrôler
                                 </StatusBadge>
                               )}
-                              {variety.qualityReviewStatus !== 'PENDING'
-                                && variety.status === 'ACTIVE' && (
+                              {characteristic.qualityReviewStatus !== 'PENDING'
+                                && characteristic.status === 'ACTIVE' && (
                                 <StatusBadge
                                   className="shrink-0 py-0.5"
                                   tone="success"
@@ -864,7 +903,11 @@ function ProductReferenceDetailsDrawer({
                                 </StatusBadge>
                               )}
                             </div>
-                            {canManage && (
+                            {canManage
+                              && !(
+                                reviewContext?.dataType === 'DIMENSION'
+                                && reviewContext.targetId === characteristic.id
+                              ) && (
                               <div className="flex shrink-0 items-center gap-2">
                                 {characteristic.qualityReviewStatus === 'PENDING'
                                   && characteristic.status === 'ACTIVE' && (
@@ -950,6 +993,33 @@ function ProductReferenceDetailsDrawer({
                               </div>
                             )}
                           </div>
+
+                          {canManage
+                            && reviewContext?.dataType === 'DIMENSION'
+                            && reviewContext.targetId === characteristic.id
+                            && characteristic.qualityReviewStatus === 'PENDING' && (
+                            <div className="mt-3 border-t border-border pt-3">
+                              <ProductReferenceGovernanceReviewPanel
+                                context={reviewContext}
+                                onApprove={approveReviewTarget}
+                                onEdit={() => setEditDimension({
+                                  type: 'CHARACTERISTIC',
+                                  dimension: characteristic,
+                                })}
+                                onMerge={
+                                  reviewContext.type === 'CONTRIBUTION'
+                                    ? mergeReviewTarget
+                                    : undefined
+                                }
+                                onReject={
+                                  reviewContext.type === 'CONTRIBUTION'
+                                    ? rejectReviewTarget
+                                    : undefined
+                                }
+                                pending={pending}
+                              />
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>
