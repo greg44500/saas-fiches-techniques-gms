@@ -181,6 +181,36 @@ describe('M-002 unified product review queue', () => {
         expect((await listProductReviewQueue({})).summary.total).toBe(0);
     });
 
+    it('refuse une seconde décision sur une Contribution déjà traitée', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Produit décision terminale',
+        });
+        const submitted = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind:
+                PRODUCT_CHARACTERISTIC_KIND.QUALITY_DESIGNATION,
+            value: 'Qualité terminale',
+        });
+
+        await reviewReferenceContribution({
+            contributionId: submitted.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+
+        await expect(
+            reviewReferenceContribution({
+                contributionId: submitted.contribution.id,
+                actorId: ownerContext.owner._id,
+                decision: 'REJECT',
+            }),
+        ).rejects.toThrow(/Contribution à examiner introuvable/);
+    });
+
     it('retire une Contribution de la file après décision', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,
