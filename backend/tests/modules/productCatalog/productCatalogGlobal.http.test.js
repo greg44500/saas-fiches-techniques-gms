@@ -640,6 +640,61 @@ describe('M-002 global product reference HTTP contract', () => {
         expect(preview.body.data.counts.CREATE_PRODUCT).toBe(1);
     });
 
+    it('expose la file À contrôler paginée sous la permission globale de lecture', async () => {
+        const workspace = await createWorkspaceOwnerFixture();
+
+        const productResponse = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Produit file HTTP' });
+
+        const productId = productResponse.body.data.product.id;
+
+        await createProductVariety({
+            actorId: workspace.owner._id,
+            workspaceId: workspace.workspace._id,
+            productId,
+            name: 'Valeur file HTTP',
+        });
+
+        const response = await request(app)
+            .get('/api/product-reference/review-queue')
+            .query({
+                type: 'DIMENSION_REVIEW',
+                workspaceId: workspace.workspace._id.toString(),
+                page: 1,
+                limit: 10,
+            })
+            .set(bearer(governorToken));
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.summary).toMatchObject({
+            total: 1,
+            contributionCount: 0,
+            dimensionReviewCount: 1,
+        });
+        expect(response.body.data.items).toEqual([
+            expect.objectContaining({
+                type: 'DIMENSION_REVIEW',
+                dimensionType: 'VARIETY',
+                value: 'Valeur file HTTP',
+                product: expect.objectContaining({
+                    id: productId,
+                    name: 'Produit file HTTP',
+                }),
+                workspace: expect.objectContaining({
+                    id: workspace.workspace._id.toString(),
+                }),
+            }),
+        ]);
+        expect(response.body.meta).toEqual({
+            page: 1,
+            limit: 10,
+            total: 1,
+            totalPages: 1,
+        });
+    });
+
     it('ne donne aucun droit métier global implicite à un Super Admin Platform', async () => {
         const platformAdmin = await createUserToken({
             email: 'platform-only@example.test',
