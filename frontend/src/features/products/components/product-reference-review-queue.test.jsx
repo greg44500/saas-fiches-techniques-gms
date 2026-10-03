@@ -1,4 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   beforeEach,
@@ -115,6 +119,30 @@ function mutationResult(data = {}) {
   };
 }
 
+async function selectOption(user, triggerName, optionName) {
+  const trigger = screen.getByRole('combobox', {
+    name: triggerName,
+  });
+
+  vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
+    DOMRect.fromRect({
+      x: 24,
+      y: 24,
+      width: 240,
+      height: 40,
+    }),
+  );
+
+  await user.click(trigger);
+  await waitFor(() => {
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  await user.click(await screen.findByRole('option', {
+    name: optionName,
+  }));
+}
+
 function renderQueue(overrides = {}) {
   return render(
     <TooltipProvider>
@@ -171,6 +199,41 @@ describe('ProductReferenceReviewQueue', () => {
     expect(screen.getByText('Cuisine centrale')).toBeInTheDocument();
     expect(screen.getByText('01/10/2026')).toBeInTheDocument();
     expect(screen.getByText('02/10/2026')).toBeInTheDocument();
+  });
+
+  it('filtre côté serveur par type puis origine Workspace', async () => {
+    const user = userEvent.setup();
+    renderQueue();
+
+    await selectOption(
+      user,
+      'Filtrer les éléments à contrôler par type',
+      'Valeur à vérifier',
+    );
+
+    await waitFor(() => {
+      expect(mocks.queue).toHaveBeenLastCalledWith({
+        type: 'DIMENSION_REVIEW',
+        workspaceId: undefined,
+        page: 1,
+        limit: 20,
+      });
+    });
+
+    await selectOption(
+      user,
+      'Filtrer les éléments à contrôler par origine',
+      'Atelier pilote (1)',
+    );
+
+    await waitFor(() => {
+      expect(mocks.queue).toHaveBeenLastCalledWith({
+        type: 'DIMENSION_REVIEW',
+        workspaceId: 'workspace-1',
+        page: 1,
+        limit: 20,
+      });
+    });
   });
 
   it('traite une Contribution avec les mutations existantes', async () => {
