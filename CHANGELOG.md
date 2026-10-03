@@ -19,10 +19,15 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - revue qualité Platform ligne par ligne des Variétés et Caractéristiques M-002 avec états `NOT_REQUIRED / PENDING / REVIEWED` ;
 - signalement chiffré des Produits ayant des Dimensions Workspace à vérifier et ouverture directe du drawer filtré ;
 - suppression fonctionnelle contrôlée d'une Dimension erronée lorsqu'aucune Référence Produit ne l'utilise ;
-- compteurs dynamiques des onglets Référentiel, Contributions et Catégories.
+- file Platform `À contrôler` agrégeant les Contributions en attente et les Dimensions Workspace à vérifier, avec compteur, filtres type/origine, pagination serveur et accès direct au Produit ;
+- historique Platform distinct des éléments encore à traiter, avec décision Approuvée / Fusionnée / Refusée ;
+- indexes M-002 dédiés à la revue globale des Variétés et Caractéristiques ;
+- compteurs dynamiques des onglets Référentiel, À contrôler et Catégories.
 
 ### Fixed
 
+- masquage de la provenance technique du Prix repère dans la Référence Produit au profit du seul libellé utilisateur « Mis à jour le JJ/MM/AAAA » ;
+- déduplication de la file `À contrôler` : une Dimension provisoire déjà couverte par une Contribution en attente n'est pas proposée une seconde fois ;
 - backfill M-002 des références historiques dépourvues de `governanceStatus`, compatible avec `sanitizeFilter=true` ;
 - restauration de la visibilité Workspace des Produits historiques ;
 - feedback anti-doublon explicite lors de la création d'un Produit ;
@@ -30,6 +35,8 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Changed
 
+- gouvernance Produit Platform réorganisée en `Référentiel | À contrôler | Historique | Catégories` sans nouveau modèle de gouvernance ni nouvelle permission ;
+- signalement in-app des interventions Produit via le compteur `À contrôler` ; aucune notification persistée parallèle n'est créée dans le produit faute de primitive Core générique validée ;
 - bootstrap M-002 par défaut basculé de `m002-reference-v6` vers `m002-reference-v7` sans changer le contrat `CanonicalProduct / ProductVariant` ;
 - bootstrap Prix repère global par défaut basculé de `m003-global-indicative-prices.v1.json` vers `v2` ;
 - extension de `IndicativePrice` aux portées GLOBAL / WORKSPACE / DOSSIER tout en conservant le même modèle et l'historisation par remplacement ;
