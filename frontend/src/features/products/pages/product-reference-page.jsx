@@ -475,44 +475,62 @@ function ProductReferencePage({ canManage }) {
 
   const historyContributionColumns = [
     {
-      id: 'value',
-      header: 'Proposition',
+      id: 'type',
+      header: 'Type',
       cell: (contribution) => (
-        <div>
-          <p className="font-medium">{contribution.proposedValue}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {contributionTypeLabel(contribution.type)}
-            {contribution.characteristicKind
-              ? ' · ' + characteristicKindLabel(contribution.characteristicKind)
-              : ''}
-          </p>
-        </div>
+        <span className="font-medium">
+          {contribution.type === 'CANONICAL_PRODUCT'
+            ? 'Produit'
+            : contribution.type === 'VARIANT'
+              ? 'Référence'
+              : contribution.type === 'VARIETY'
+                ? 'Dimension · Variété'
+                : contribution.characteristicKind
+                  ? 'Dimension · '
+                    + characteristicKindLabel(
+                      contribution.characteristicKind,
+                    )
+                  : 'Dimension'}
+        </span>
       ),
     },
     {
-      id: 'origin',
-      header: 'Origine',
+      id: 'value',
+      header: 'Donnée',
       cell: (contribution) => (
-        <div>
-          <p>{contribution.workspace?.name ?? 'Workspace'}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {[
-              contribution.author?.firstName,
-              contribution.author?.lastName,
-            ].filter(Boolean).join(' ')
-              || contribution.author?.email
-              || 'Auteur non disponible'}
-          </p>
-        </div>
+        <p className="font-medium">{contribution.proposedValue}</p>
       ),
     },
     {
       id: 'decision',
       header: 'Décision',
       cell: (contribution) => (
-        <StatusBadge tone="neutral">
+        <StatusBadge
+          tone={
+            contribution.decision === 'REJECT'
+              ? 'destructive'
+              : 'success'
+          }
+        >
           {contributionDecisionLabel(contribution)}
         </StatusBadge>
+      ),
+    },
+    {
+      id: 'matching',
+      header: 'Rapprochement',
+      cell: (contribution) => (
+        (contribution.candidates ?? []).length > 0 ? (
+          <span className="text-sm">
+            {(contribution.candidates ?? [])
+              .map((candidate) => candidate.name)
+              .join(', ')}
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            Aucun
+          </span>
+        )
       ),
     },
     {
@@ -534,22 +552,6 @@ function ProductReferencePage({ canManage }) {
               || contribution.reviewer?.email
               || 'Gestionnaire non disponible'}
           </p>
-        </div>
-      ),
-    },
-    {
-      id: 'reason',
-      header: 'Motif',
-      cell: (contribution) => (
-        <div className="space-y-1 text-sm text-muted-foreground">
-          <p>{contribution.reasons?.[0]?.message ?? 'Aucun motif'}</p>
-          {(contribution.candidates ?? []).length > 0 && (
-            <p className="text-xs">
-              Valeurs proches : {(contribution.candidates ?? [])
-                .map((candidate) => candidate.name)
-                .join(', ')}
-            </p>
-          )}
         </div>
       ),
     },
