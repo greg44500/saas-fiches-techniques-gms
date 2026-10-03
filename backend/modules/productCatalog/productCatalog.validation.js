@@ -228,7 +228,11 @@ const globalCategoryParamsSchema = z.strictObject({
 });
 
 const createReferenceContributionBodySchema = z.strictObject({
-    type: z.enum(Object.values(PRODUCT_CONTRIBUTION_TYPE)),
+    type: z.enum([
+        PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT,
+        PRODUCT_CONTRIBUTION_TYPE.VARIETY,
+        PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC,
+    ]),
     productId: objectIdSchema.optional(),
     characteristicKind: z.enum(
         Object.values(PRODUCT_CHARACTERISTIC_KIND),
