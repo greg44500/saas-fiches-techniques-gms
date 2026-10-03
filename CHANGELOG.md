@@ -30,6 +30,8 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - extension de `IndicativePrice` aux portées GLOBAL / WORKSPACE / DOSSIER tout en conservant le même modèle et l'historisation par remplacement ;
 - ordre du Prix applicable complété par `INDICATIVE_GLOBAL` après les Prix indicatifs Dossier et Workspace ;
 - tableau et détail Platform du Référentiel Produits enrichis avec le Prix repère global et sa maintenance ;
+- recherche Platform du Référentiel Produits enrichie d'une autocomplétion prédictive sur les Produits et Références Produit, avec application immédiate de la suggestion ;
+- libellé de couverture du Prix repère clarifié en « x / y avec prix repère » afin de ne pas le confondre avec la valorisation M-004 ;
 
 - navigation Platform GMS unifiée sous « Gestion des référentiels », avec onglets Produits/Fournisseurs filtrés par permissions Application Global ;
 - aide métier Platform alignée sur cette navigation avec une catégorie unique « Gestion des référentiels », sans modifier le moteur d’aide Core ni les catégories Workspace ;
