@@ -183,6 +183,24 @@ La migration doit :
 5. ne jamais écraser une valeur globale déjà maintenue ;
 6. rester compatible replica set / transactions.
 
+Commande opérationnelle après intégration :
+
+~~~bash
+npm run migration:m003-indicative-pricing
+~~~
+
+Le runner existant :
+
+- vérifie les indexes M-003 ;
+- réconcilie les permissions système M-003 existantes ;
+- charge le dataset `m003-global-indicative-prices.v1.json` ;
+- installe uniquement les Prix repères globaux absents ;
+- conserve toute valeur active déjà maintenue par le gestionnaire.
+
+MongoDB ne requiert pas de migration destructive du champ `workspace` : la compatibilité est portée par le schéma Mongoose nullable et l'index composé existant. Les anciens documents Workspace/Dossier restent inchangés.
+
+Le bootstrap suppose que le référentiel M-002 actif et un acteur d'audit Fondateur/Super administrateur existent déjà ; il échoue explicitement sinon.
+
 ## 11. Tests obligatoires
 
 Backend :
