@@ -688,9 +688,10 @@ describe('M-002 global product reference HTTP contract', () => {
                     id: productId,
                     name: 'Produit file HTTP',
                 }),
-                workspace: expect.objectContaining({
-                    id: workspace.workspace._id.toString(),
-                }),
+                workspaceId: null,
+                workspace: null,
+                authorId: null,
+                author: null,
             }),
         ]);
         expect(response.body.meta).toEqual({
