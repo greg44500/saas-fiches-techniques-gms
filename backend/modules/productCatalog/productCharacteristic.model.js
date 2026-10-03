@@ -129,6 +129,17 @@ productCharacteristicSchema.index(
     { name: 'product_characteristic_quality_review' },
 );
 
+productCharacteristicSchema.index(
+    {
+        qualityReviewStatus: 1,
+        status: 1,
+        identityActive: 1,
+        contributedFromWorkspace: 1,
+        createdAt: 1,
+    },
+    { name: 'product_characteristic_global_review_queue' },
+);
+
 const ProductCharacteristic = model(
     'ProductCharacteristic',
     productCharacteristicSchema,
