@@ -114,7 +114,7 @@ const run = async () => {
             };
         // Réconcilier les anciens bootstraps avant les migrations sémantiques.
         // Le corpus v8 reprend le v7, retire les fonds de tarte génériques et ajoute les références professionnelles détaillées.
-        const bootstrapV7 = await reconcileM002BootstrapToV7();
+        const bootstrapV8 = await reconcileM002BootstrapToV8();
         const legacyReferenceDuplicates =
             await reconcileM002LegacyReferenceDuplicates();
         const productReferenceContract =
