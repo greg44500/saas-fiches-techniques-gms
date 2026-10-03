@@ -1498,7 +1498,9 @@ const setIndicativePrice = async ({
                 scope:
                     dossierId
                         ? 'DOSSIER'
-                        : 'WORKSPACE',
+                        : workspaceId
+                            ? 'WORKSPACE'
+                            : 'GLOBAL',
             },
             session,
         });
@@ -1586,7 +1588,9 @@ const archiveIndicativePrice = async ({
                 scope:
                     dossierId
                         ? 'DOSSIER'
-                        : 'WORKSPACE',
+                        : workspaceId
+                            ? 'WORKSPACE'
+                            : 'GLOBAL',
             },
             session,
         });
