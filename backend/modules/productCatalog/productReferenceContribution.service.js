@@ -83,6 +83,37 @@ const serializeReferenceId = (reference) => (
     ?? null
 );
 
+const deriveReferenceContributionDecision = (contribution) => {
+    if (
+        contribution.status
+        === PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW
+    ) {
+        return null;
+    }
+
+    if (
+        contribution.status
+        === PRODUCT_CONTRIBUTION_STATUS.REJECTED
+    ) {
+        return 'REJECT';
+    }
+
+    const provisionalId =
+        contribution.provisionalEntityId?.toString?.() ?? null;
+    const resolutionId =
+        contribution.resolutionEntityId?.toString?.() ?? null;
+
+    if (
+        provisionalId
+        && resolutionId
+        && provisionalId !== resolutionId
+    ) {
+        return 'MERGE';
+    }
+
+    return 'APPROVE';
+};
+
 const serializeReferenceContribution = (contribution) => {
     const workspaceId = serializeReferenceId(contribution.workspace);
     const authorId = serializeReferenceId(contribution.author);
@@ -118,6 +149,7 @@ const serializeReferenceContribution = (contribution) => {
             message,
         })),
         status: contribution.status,
+        decision: deriveReferenceContributionDecision(contribution),
         candidates: contribution.payload?.candidates ?? [],
         reviewerId,
         reviewedAt: contribution.reviewedAt ?? null,
@@ -877,6 +909,7 @@ const reviewReferenceContribution = async ({
 
 export {
     classifyReferenceContributionInSession,
+    deriveReferenceContributionDecision,
     listReferenceContributions,
     reviewReferenceContribution,
     serializeReferenceContribution,
