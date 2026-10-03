@@ -12,6 +12,13 @@ import {
     PRODUCT_REVIEW_QUEUE_TYPE,
 } from '../../../modules/productCatalog/productCatalog.registry.js';
 import {
+    createGlobalVariant,
+    updateVariant,
+} from '../../../modules/productCatalog/productCatalogGovernance.service.js';
+import {
+    createWorkspaceVariant,
+} from '../../../modules/productCatalog/productCatalog.service.js';
+import {
     createProductVariety,
 } from '../../../modules/productCatalog/productReferenceDimension.service.js';
 import {
@@ -69,8 +76,9 @@ describe('M-002 unified product review queue', () => {
 
         expect(result.summary).toEqual({
             total: 2,
-            contributionCount: 1,
-            dimensionReviewCount: 1,
+            productCount: 0,
+            referenceCount: 0,
+            dimensionCount: 2,
         });
         expect(result.items).toHaveLength(2);
 
@@ -78,6 +86,8 @@ describe('M-002 unified product review queue', () => {
             expect.objectContaining({
                 type: PRODUCT_REVIEW_QUEUE_TYPE.DIMENSION_REVIEW,
                 sourceId: variety.id,
+                targetId: variety.id,
+                dataType: 'DIMENSION',
                 dimensionType: 'VARIETY',
                 value: 'Gala locale',
                 product: expect.objectContaining({
@@ -90,6 +100,8 @@ describe('M-002 unified product review queue', () => {
             expect.objectContaining({
                 type: PRODUCT_REVIEW_QUEUE_TYPE.CONTRIBUTION,
                 sourceId: contribution.contribution.id,
+                targetId: contribution.provisionalReference.id,
+                dataType: 'DIMENSION',
                 contributionType: 'CHARACTERISTIC',
                 value: 'Qualité pilote',
             }),
@@ -131,6 +143,8 @@ describe('M-002 unified product review queue', () => {
             expect.arrayContaining([
                 expect.objectContaining({
                     sourceId: submitted.contribution.id,
+                    targetId: submitted.provisionalReference.id,
+                    dataType: 'PRODUCT',
                     value: 'Betterave file provisoire',
                     productId: submitted.provisionalReference.id,
                     product: expect.objectContaining({
@@ -140,6 +154,123 @@ describe('M-002 unified product review queue', () => {
                 }),
             ]),
         );
+    });
+
+    it('présente une nouvelle Référence Workspace comme donnée à contrôler avec son rapprochement', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Pomme gouvernance Référence',
+        });
+
+        const gala = await createGlobalVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variant: {
+                name: 'Gala',
+                conservationType: 'FRAIS',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+            },
+        });
+
+        const warning = await createWorkspaceVariant({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variant: {
+                name: 'Galla',
+                conservationType: 'FRAIS',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+            },
+        });
+
+        expect(warning).toMatchObject({
+            classification: 'USER_CONFIRMATION_REQUIRED',
+            candidates: [
+                expect.objectContaining({
+                    id: gala.id,
+                    name: 'Gala',
+                }),
+            ],
+        });
+
+        const created = await createWorkspaceVariant({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            forceCreate: true,
+            reviewedCandidateIds: [gala.id],
+            variant: {
+                name: 'Galla',
+                conservationType: 'FRAIS',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+            },
+        });
+
+        expect(created).toMatchObject({
+            classification: 'PROVISIONAL',
+            variant: {
+                name: 'Galla',
+                governanceStatus: 'PROVISIONAL',
+            },
+            contribution: {
+                type: 'VARIANT',
+                status: 'PENDING_REVIEW',
+            },
+        });
+
+        const queue = await listProductReviewQueue({});
+        expect(queue.items).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceId: created.contribution.id,
+                targetId: created.variant.id,
+                dataType: 'REFERENCE',
+                value: 'Galla',
+                productId: reference.product._id.toString(),
+                candidates: [
+                    expect.objectContaining({
+                        id: gala.id,
+                        name: 'Gala',
+                    }),
+                ],
+            }),
+        ]));
+
+        await updateVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variantId: created.variant.id,
+            changes: {
+                name: 'Galla corrigée',
+            },
+        });
+
+        const correctedQueue = await listProductReviewQueue({});
+        expect(correctedQueue.items).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                sourceId: created.contribution.id,
+                value: 'Galla corrigée',
+            }),
+        ]));
+
+        await reviewReferenceContribution({
+            contributionId: created.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'MERGE',
+            targetReferenceId: gala.id,
+        });
+
+        expect((await listProductReviewQueue({})).items)
+            .not.toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    sourceId: created.contribution.id,
+                }),
+            ]));
     });
 
     it('filtre par type et Workspace avec une pagination serveur', async () => {
@@ -170,8 +301,9 @@ describe('M-002 unified product review queue', () => {
 
         expect(result.summary).toMatchObject({
             total: 1,
-            contributionCount: 0,
-            dimensionReviewCount: 1,
+            productCount: 0,
+            referenceCount: 0,
+            dimensionCount: 1,
         });
         expect(result.pagination).toEqual({
             page: 1,
