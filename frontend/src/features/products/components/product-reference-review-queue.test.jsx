@@ -236,6 +236,70 @@ describe('ProductReferenceReviewQueue', () => {
     });
   });
 
+  it('retire un filtre origine devenu sans résultat', async () => {
+    const user = userEvent.setup();
+    const setPage = vi.fn();
+
+    const view = renderQueue({ setPage });
+
+    await selectOption(
+      user,
+      'Filtrer les éléments à contrôler par origine',
+      'Atelier pilote (1)',
+    );
+
+    expect(mocks.queue).toHaveBeenLastCalledWith({
+      type: undefined,
+      workspaceId: 'workspace-1',
+      page: 1,
+      limit: 20,
+    });
+
+    mocks.queue.mockReturnValue(queryResult({
+      items: [],
+      summary: {
+        total: 0,
+        contributionCount: 0,
+        dimensionReviewCount: 0,
+      },
+      origins: [
+        { id: 'workspace-2', name: 'Cuisine centrale', count: 1 },
+      ],
+      pagination: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+      },
+    }));
+
+    view.rerender(
+      <TooltipProvider>
+        <ToastProvider>
+          <ProductReferenceReviewQueue
+            canManage
+            metadata={metadata}
+            onOpenProduct={vi.fn()}
+            page={1}
+            pageSize={20}
+            setPage={setPage}
+            setPageSize={vi.fn()}
+          />
+        </ToastProvider>
+      </TooltipProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mocks.queue).toHaveBeenLastCalledWith({
+        type: undefined,
+        workspaceId: undefined,
+        page: 1,
+        limit: 20,
+      });
+    });
+    expect(setPage).toHaveBeenCalledWith(1);
+  });
+
   it('recale la pagination lorsque la dernière page disparaît', async () => {
     const setPage = vi.fn();
     mocks.queue.mockReturnValue(queryResult({
