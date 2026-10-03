@@ -1,7 +1,7 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-10-02  
-**Lot courant :** audit et cadrage des Produits globaux avant toute nouvelle implémentation  
+**Lot courant :** Bloc A — Référentiel global valorisable / Prix repère global M-003  
 **Branche de travail :** `docs/product-global-audit-and-reprise`  
 **Base vérifiée :** `main@ca222ff0a4ba8759ffb35109616456dcb2f51f71`  
 **Version produit :** `0.1.0` — channel `development`
@@ -242,4 +242,23 @@ audit réel
 → documentation
 ~~~
 
-Le lot courant est donc un lot de gouvernance et de cadrage. Aucun modèle Mongoose, endpoint ou écran Produit ne doit être modifié avant validation du périmètre.
+Le cadrage du Prix repère global a été validé le 2026-10-03 et son implémentation est en cours sur la branche courante. La livraison reste soumise à la Core Gate canonique avant fusion.
+
+Décisions fermées du Bloc A :
+
+- conserver `CanonicalProduct / ProductVariant` sans champ prix M-002 ;
+- étendre l'objet M-003 `IndicativePrice` avec la portée globale ;
+- conserver l'unité de référence portée par `ProductVariant` ;
+- dernier fallback = `INDICATIVE_GLOBAL` / « Prix repère global » ;
+- aucun Fournisseur ou Article fournisseur fictif ;
+- corpus initial de 264 prix fictifs/indicatifs clairement identifié comme démonstration ;
+- maintenance Platform via `product:reference:manage` ;
+- le bootstrap ne réécrase jamais une correction du gestionnaire ;
+- conditionnements génériques différés ;
+- gouvernance unifiée Contributions / À contrôler = Bloc B séparé après validation du Bloc A.
+
+Source contractuelle :
+
+~~~text
+docs/m003/M-003-GLOBAL-INDICATIVE-PRICING.md
+~~~
