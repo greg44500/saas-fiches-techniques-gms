@@ -10,7 +10,7 @@ import {
     normalizeProductText,
 } from '../../modules/productCatalog/productCatalog.normalization.js';
 import {
-    loadDefaultDataset,
+    loadLegacyReferenceDataset,
     loadProfessionalReferenceDataset,
     m002ReferenceDatasetSchema,
 } from '../../seeds/seedM002Reference.js';
@@ -23,7 +23,7 @@ const referenceNames = (dataset) => (
 describe('M-002 professional reference corpus v7', () => {
     it('conserve intégralement le corpus v6 et ajoute le référentiel professionnel', async () => {
         const [legacy, candidate] = await Promise.all([
-            loadDefaultDataset(),
+            loadLegacyReferenceDataset(),
             loadProfessionalReferenceDataset(),
         ]);
 
