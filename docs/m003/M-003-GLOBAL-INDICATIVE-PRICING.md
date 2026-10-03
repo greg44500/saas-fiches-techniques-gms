@@ -202,6 +202,9 @@ Le runner existant :
 - vérifie les indexes M-003 ;
 - réconcilie les permissions système M-003 existantes ;
 - charge le dataset `m003-global-indicative-prices.v3.json` ;
+- exécute `reconcileM003GlobalIndicativePricesToV3` avant le seed v3 ;
+- archive uniquement les Prix repères globaux bootstrap v2 des 6 Références de fonds de tarte retirées du v8 ;
+- préserve toute correction manuelle du gestionnaire même si elle cible une ancienne Référence ;
 - installe uniquement les Prix repères globaux absents ;
 - conserve toute valeur active déjà maintenue par le gestionnaire.
 
