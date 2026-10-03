@@ -75,8 +75,11 @@ describe('application Help registry', () => {
         expect(entry.title)
             .toBe('Traiter les éléments Produit à contrôler');
         expect(entry.steps).toContain('Sélectionnez À contrôler.');
-        expect(entry.steps).toContain(
+        expect(entry.steps).not.toContain(
             'Consultez Historique pour retrouver les Contributions déjà traitées.',
+        );
+        expect(entry.steps).toContain(
+            'Examinez la donnée dans le drawer ciblé avant toute décision.',
         );
     });
 
