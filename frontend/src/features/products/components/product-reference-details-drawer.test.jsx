@@ -373,6 +373,21 @@ describe('ProductReferenceDetailsDrawer', () => {
       .toBeInTheDocument();
   });
 
+  it('masque la maintenance du Prix repère sans droit de gestion', async () => {
+    const user = userEvent.setup();
+    renderDrawer({ canManage: false });
+
+    await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
+
+    expect(screen.getByText('3,250 / kg')).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Modifier le Prix repère global de Abricot frais',
+    })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Ajouter le Prix repère global de Abricot archivé',
+    })).not.toBeInTheDocument();
+  });
+
   it('expose les actions du drawer sous forme de boutons icônes accessibles', async () => {
     const user = userEvent.setup();
     renderDrawer();
