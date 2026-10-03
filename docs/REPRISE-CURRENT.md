@@ -1,7 +1,7 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
 **Date :** 2026-10-03  
-**Lot courant :** Produits globaux — corpus professionnel v7 + gouvernance Produit unifiée  
+**Lot courant :** Produits globaux — corpus professionnel v8 + gouvernance Produit unifiée  
 **Branche de travail :** `feature/a2-professional-reference-corpus`  
 **Base vérifiée :** `main@3634b9b76c4b019f9458f3827cd6d29d20cf6e3f`  
 **Version produit :** `0.1.0` — channel `development`
@@ -115,31 +115,34 @@ Branche :
 feature/a2-professional-reference-corpus
 ~~~
 
-### 5.1 M-002 — corpus professionnel v7
+### 5.1 M-002 — corpus professionnel v8
 
 Le dataset actif sur la branche est désormais :
 
 ~~~text
-m002-reference-v7
+m002-reference-v8
 16 catégories
-320 Produits
-368 Références Produit
+381 Produits
+490 Références Produit
 ~~~
 
-Delta par rapport au v6 :
+Delta par rapport au v7 :
 
 ~~~text
-+2 catégories
-+56 Produits
-+104 Références Produit
-0 Référence v6 retirée
++61 Produits
++128 nouvelles Références Produit
+-6 anciennes Références génériques de fonds de tarte
++122 Références nettes
 ~~~
 
-Domaines ajoutés :
+Domaines complétés :
 
-- matières premières de pâtisserie / boulangerie ;
-- crémerie professionnelle ;
-- pains et snacking.
+- œufs et ovoproduits ;
+- matières premières de pâtisserie / glacerie ;
+- purées et coulis de fruits ;
+- sauces de snacking ;
+- fruits secs / fruits à coque ;
+- fonds de tartes et tartelettes avec diamètre ou format explicite.
 
 Le modèle reste inchangé :
 
@@ -154,17 +157,15 @@ WorkspaceProduct
 → Favori Workspace
 ~~~
 
-Le v7 exploite réellement plusieurs Références sous une même racine lorsque
-la distinction est technique, par exemple Farine de blé, Beurre et Pain
-burger.
+Le v8 conserve les racines multi-Références du v7 et pousse la distinction technique jusqu'aux formats qui modifient réellement la production, notamment les fonds de tartes et tartelettes.
 
 Sources et règles :
 
 ~~~text
-docs/m002/M-002-SEED-V7-SOURCE.md
+docs/m002/M-002-SEED-V8-SOURCE.md
 ~~~
 
-### 5.2 Réconciliation v1-v6 → v7
+### 5.2 Réconciliation v1-v7 → v8
 
 La migration canonique reste :
 
@@ -175,13 +176,13 @@ npm run migration:m002-catalog
 Le runner utilise désormais :
 
 ~~~text
-reconcileM002BootstrapToV7
+reconcileM002BootstrapToV8
 ~~~
 
 Règles :
 
-- datasets v1 à v6 historiques ;
-- cible v7 ;
+- datasets v1 à v7 historiques ;
+- cible v8 ;
 - aucune suppression physique ;
 - Favoris archivés uniquement lorsqu'une ancienne Référence bootstrap est
   réellement retirée ;
@@ -194,25 +195,23 @@ Le seed actif reste :
 npm run seed:m002-reference
 ~~~
 
-et charge désormais v7.
+et charge désormais v8.
 
-### 5.3 M-003 — Prix repères v2
+### 5.3 M-003 — Prix repères v3
 
 Le corpus actif sur la branche est :
 
 ~~~text
-m003-global-indicative-prices.v2.json
-368 Prix repères
-368 Références v7
-0 Référence manquante
-0 unité incohérente
+m003-global-indicative-prices.v3.json
+362 Prix repères hérités
+490 Références v8
+128 nouvelles Références volontairement sans Prix repère
+6 anciennes entrées de prix génériques retirées
 ~~~
 
-Le v1 de 264 prix reste historique et immuable.
+Les datasets v1 et v2 restent historiques et immuables.
 
-Les 104 nouvelles valeurs sont explicitement fictives / indicatives de
-démonstration. Elles ne sont attribuées à aucun fournisseur et ne constituent
-pas des observations de marché.
+Aucun nouveau montant n'a été inventé pour les 128 Références v8. Les 362 valeurs conservées restent explicitement fictives / indicatives de démonstration, sans attribution à un fournisseur ni prétention d'observation de marché.
 
 La commande opérationnelle reste :
 
@@ -227,19 +226,20 @@ par le gestionnaire n'est jamais écrasé.
 
 Contrôles structurels déjà effectués directement sur la branche :
 
-- v7 parseable comme dataset JSON ;
+- v8 parseable comme dataset JSON ;
 - 16 catégories ;
-- 320 Produits ;
-- 368 Références ;
-- aucune Référence v6 perdue ;
+- 381 Produits ;
+- 490 Références ;
+- 128 nouvelles Références vs v7 ;
+- 6 anciennes Références génériques de fonds de tarte explicitement retirées ;
 - aucun doublon de nom normalisé détecté ;
 - aucune catégorie vide ;
-- 368 Prix repères v2 pour 368 Références v7 ;
-- aucune Référence de prix supplémentaire ;
-- aucune unité M-002 / M-003 incohérente ;
-- bootstrap M-002 par défaut pointant sur v7 ;
-- bootstrap M-003 par défaut pointant sur v2 ;
-- réconciliation pointant sur v7 avec v6 dans l'historique.
+- 362 Prix repères v3 compatibles avec les Références v8 conservées ;
+- 128 nouvelles Références sans montant inventé ;
+- aucune unité M-002 / M-003 incohérente sur les 362 prix conservés ;
+- bootstrap M-002 par défaut pointant sur v8 ;
+- bootstrap M-003 par défaut pointant sur v3 ;
+- réconciliation pointant sur v8 avec v1-v7 dans l'historique.
 
 Ces contrôles ne remplacent pas l'exécution Vitest/Supertest/Playwright.
 
