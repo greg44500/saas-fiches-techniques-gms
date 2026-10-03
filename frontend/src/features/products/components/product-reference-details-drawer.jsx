@@ -718,7 +718,7 @@ function ProductReferenceDetailsDrawer({
                                   À contrôler
                                 </StatusBadge>
                               )}
-                              {variety.qualityReviewStatus !== 'PENDING'
+                              {variety.qualityReviewStatus === 'REVIEWED'
                                 && variety.status === 'ACTIVE' && (
                                 <StatusBadge
                                   className="shrink-0 py-0.5"
@@ -893,7 +893,7 @@ function ProductReferenceDetailsDrawer({
                                   À contrôler
                                 </StatusBadge>
                               )}
-                              {characteristic.qualityReviewStatus !== 'PENDING'
+                              {characteristic.qualityReviewStatus === 'REVIEWED'
                                 && characteristic.status === 'ACTIVE' && (
                                 <StatusBadge
                                   className="shrink-0 py-0.5"
