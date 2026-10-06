@@ -63,8 +63,10 @@ import {
 import {
     createTechnicalSheet,
     listTechnicalSheets,
+    updateTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheet.service.js';
 import {
+    createDraftFromValidatedState,
     saveTechnicalSheetDraft,
 } from '../../../modules/technicalSheet/technicalSheetDraft.service.js';
 import {
@@ -1148,6 +1150,105 @@ describe('M-004 services Fiches techniques', () => {
             remaining: 7,
             unlimited: false,
         });
+    });
+
+    it('exporte toujours le dernier snapshot validé lorsqu’un nouveau brouillon existe', async () => {
+        const plan =
+            await Plan.findOne({
+                systemRole:
+                    PLAN_SYSTEM_ROLE.BASELINE,
+            });
+
+        plan.features = [
+            ...new Set([
+                ...(plan.features ?? []),
+                TECHNICAL_SHEET_FEATURE.EXPORT,
+            ]),
+        ];
+        plan.limits.set(
+            TECHNICAL_SHEET_METRIC
+                .EXPORTS_MONTHLY,
+            10,
+        );
+        await plan.save();
+
+        const {
+            created,
+            valued,
+        } = await createValuedDraft();
+
+        const validated =
+            await validateTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedSheetRevision:
+                    created.sheet.revision,
+                expectedDraftRevision:
+                    valued.draft.revision,
+                atDate,
+            });
+
+        await createDraftFromValidatedState({
+            workspaceId:
+                owner.workspace._id,
+            dossierId:
+                dossier._id,
+            technicalSheetId:
+                created.sheet.id,
+            actorId:
+                owner.owner._id,
+            expectedSheetRevision:
+                validated.sheetRevision,
+        });
+
+        await updateTechnicalSheet({
+            workspaceId:
+                owner.workspace._id,
+            dossierId:
+                dossier._id,
+            technicalSheetId:
+                created.sheet.id,
+            actorId:
+                owner.owner._id,
+            expectedRevision:
+                validated.sheetRevision,
+            data: {
+                name:
+                    'Titre de brouillon non validé',
+            },
+        });
+
+        const artifact =
+            await exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'CSV',
+                at: atDate,
+            });
+
+        const exported =
+            artifact.buffer.toString('utf8');
+
+        expect(exported)
+            .toContain(
+                'Purée de carottes',
+            );
+        expect(exported)
+            .not.toContain(
+                'Titre de brouillon non validé',
+            );
     });
 
     it('refuse l’export tant que la Fiche ne possède aucune version validée', async () => {

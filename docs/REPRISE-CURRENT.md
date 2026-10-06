@@ -39,3 +39,8 @@ Couverture E2E ajoutée (non exécutée ici) :
 - téléchargement réel Playwright ;
 - KPI `Exports ce mois` passant à `1 / 10` ;
 - masquage du KPI via `Personnaliser le tableau de bord`.
+
+
+Invariant supplémentaire couvert (non exécuté ici) :
+- une Fiche déjà validée peut rouvrir un nouveau brouillon ;
+- même si son identité de travail change ensuite, l'export reste construit depuis le dernier snapshot validé et n'expose aucune donnée non validée.

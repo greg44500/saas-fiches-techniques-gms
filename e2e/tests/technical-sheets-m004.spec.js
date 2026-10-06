@@ -459,14 +459,18 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
     context.dashboardUrl,
   );
 
-  await expect(
+  const exportCard =
     page.getByText(
       'Exports ce mois',
       { exact: true },
-    ),
+    )
+      .locator('..');
+
+  await expect(
+    exportCard,
   ).toBeVisible();
   await expect(
-    page.getByText(
+    exportCard.getByText(
       '1 / 10',
       { exact: true },
     ),
