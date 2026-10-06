@@ -156,6 +156,14 @@
       "dependsOn": []
     },
     {
+      "id": "m004-export-plan-limit",
+      "script": "migration:m004-export-plan-limit",
+      "runner": "backend/migrations/runAddM004TechnicalSheetExportPlanLimitMigration.js",
+      "dependsOn": [
+        "m004-plan-limit"
+      ]
+    },
+    {
       "id": "m004-workspace-business-settings",
       "script": "migration:m004-workspace-business-settings",
       "runner": "backend/migrations/runEnsureM004WorkspaceBusinessSettingsMigration.js",

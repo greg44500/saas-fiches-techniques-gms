@@ -7,10 +7,33 @@ import {
 import {
     createTechnicalSheetSchema,
     dossierTechnicalSheetSettingsSchema,
+    exportTechnicalSheetSchema,
     saveTechnicalSheetDraftSchema,
 } from '../../../modules/technicalSheet/technicalSheet.validation.js';
 
 describe('M-004 validation Fiches techniques', () => {
+    it('accepte uniquement les trois formats d’export validés', () => {
+        expect(
+            exportTechnicalSheetSchema.parse({
+                format: 'PDF',
+            }),
+        ).toEqual({ format: 'PDF' });
+        expect(
+            exportTechnicalSheetSchema.parse({
+                format: 'XLSX',
+            }),
+        ).toEqual({ format: 'XLSX' });
+        expect(
+            exportTechnicalSheetSchema.parse({
+                format: 'CSV',
+            }),
+        ).toEqual({ format: 'CSV' });
+        expect(
+            exportTechnicalSheetSchema.safeParse({
+                format: 'XLS',
+            }).success,
+        ).toBe(false);
+    });
     it('exige les paramètres de production à la création', () => {
         expect(
             createTechnicalSheetSchema.parse({

@@ -63,7 +63,8 @@
     "migration:m004-workspace-business-settings": "node backend/migrations/runEnsureM004WorkspaceBusinessSettingsMigration.js",
     "job:purge-technical-sheets": "node backend/jobs/technicalSheets/runPurgeDeletedTechnicalSheetsJob.js",
     "migration:m004-production-quantity": "node backend/migrations/runMigrateM004ProductionQuantityMigration.js",
-    "seed:m003-global-indicative-prices": "node backend/seeds/seedM003GlobalIndicativePrices.js"
+    "seed:m003-global-indicative-prices": "node backend/seeds/seedM003GlobalIndicativePrices.js",
+    "migration:m004-export-plan-limit": "node backend/migrations/runAddM004TechnicalSheetExportPlanLimitMigration.js"
   },
   "license": "UNLICENSED",
   "dependencies": {

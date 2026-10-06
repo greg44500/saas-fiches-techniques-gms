@@ -14,6 +14,9 @@ import {
     TECHNICAL_SHEET_TRASH_RETENTION,
     TECHNICAL_SHEET_VAT_RATE_BASIS_POINTS,
 } from './technicalSheet.registry.js';
+import {
+    TECHNICAL_SHEET_EXPORT_FORMAT,
+} from './technicalSheetExport.registry.js';
 
 const decimalStringSchema = z
     .string()
@@ -374,11 +377,21 @@ const purgeWorkspaceTrashSchema =
             z.literal('PURGE_EXPIRED'),
     });
 
+const exportTechnicalSheetSchema =
+    z.strictObject({
+        format: z.enum(
+            Object.values(
+                TECHNICAL_SHEET_EXPORT_FORMAT,
+            ),
+        ),
+    });
+
 export {
     copyTechnicalSheetSchema,
     createDraftFromValidationSchema,
     createTechnicalSheetSchema,
     dossierTechnicalSheetSettingsSchema,
+    exportTechnicalSheetSchema,
     paginationQuerySchema,
     purgeTechnicalSheetSchema,
     purgeWorkspaceTrashSchema,

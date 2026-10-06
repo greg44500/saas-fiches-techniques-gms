@@ -18,6 +18,7 @@ import {
     SUPPLIER_CATALOG_FEATURE,
 } from '../../modules/supplierCatalog/supplierCatalogCapability.registry.js';
 import {
+    TECHNICAL_SHEET_FEATURE,
     TECHNICAL_SHEET_METRIC,
 } from '../../modules/technicalSheet/technicalSheet.registry.js';
 
@@ -65,8 +66,18 @@ describe('Application plan capability registry', () => {
         ).toBe(true);
 
         expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.features.has(
+                TECHNICAL_SHEET_FEATURE.EXPORT,
+            ),
+        ).toBe(true);
+        expect(
             ACTIVE_PLAN_CAPABILITY_REGISTRY.metrics.has(
                 TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS,
+            ),
+        ).toBe(true);
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.metrics.has(
+                TECHNICAL_SHEET_METRIC.EXPORTS_MONTHLY,
             ),
         ).toBe(true);
         expect(
@@ -75,6 +86,15 @@ describe('Application plan capability registry', () => {
             ),
         ).toEqual(expect.objectContaining({
             label: 'Fiches techniques',
+            category: 'technical_sheets',
+            unit: 'count',
+        }));
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.getMetricPresentation(
+                TECHNICAL_SHEET_METRIC.EXPORTS_MONTHLY,
+            ),
+        ).toEqual(expect.objectContaining({
+            label: 'Exports mensuels de Fiches techniques',
             category: 'technical_sheets',
             unit: 'count',
         }));

@@ -11,6 +11,10 @@ import {
 import {
     createPlanCapabilityRegistry,
 } from '../../modules/plan/planCapability.registry.js';
+import {
+    TECHNICAL_SHEET_FEATURE,
+    TECHNICAL_SHEET_METRIC,
+} from '../../modules/technicalSheet/technicalSheet.registry.js';
 
 
 describe('application feature metric relations', () => {
@@ -24,6 +28,16 @@ describe('application feature metric relations', () => {
 
         expect(getPlanFeatureMetricKeys('team_management')).toEqual([
             'members',
+        ]);
+    });
+
+    it('relie l’export de Fiches à son quota mensuel partagé', () => {
+        expect(
+            getPlanFeatureMetricKeys(
+                TECHNICAL_SHEET_FEATURE.EXPORT,
+            ),
+        ).toEqual([
+            TECHNICAL_SHEET_METRIC.EXPORTS_MONTHLY,
         ]);
     });
 
