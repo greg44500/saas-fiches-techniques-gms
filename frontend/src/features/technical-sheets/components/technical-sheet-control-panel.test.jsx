@@ -17,6 +17,7 @@ function renderPanel(overrides = {}) {
     canCopy: true,
     canDelete: true,
     canEditIdentity: true,
+    canExport: true,
     canLifecycle: true,
     canValidate: true,
     copyDisabled: false,
@@ -25,11 +26,14 @@ function renderPanel(overrides = {}) {
     },
     draftDirty: false,
     draftSynchronizing: false,
+    exportDisabledReason: null,
+    exportingFormat: null,
     identityDirty: false,
     onArchive: vi.fn(),
     onCopy: vi.fn(),
     onDelete: vi.fn(),
     onEditIdentity: vi.fn(),
+    onExport: vi.fn(),
     onOpenAnalysis: vi.fn(),
     onOpenDossier: vi.fn(),
     onReactivate: vi.fn(),
@@ -41,13 +45,16 @@ function renderPanel(overrides = {}) {
     ...overrides,
   };
 
-  render(
+  const view = render(
     <TooltipProvider>
       <TechnicalSheetControlPanel {...props} />
     </TooltipProvider>,
   );
 
-  return props;
+  return {
+    ...props,
+    ...view,
+  };
 }
 
 describe('TechnicalSheetControlPanel', () => {
@@ -112,6 +119,28 @@ describe('TechnicalSheetControlPanel', () => {
     expect(screen.getByRole('button', {
       name: 'Valider la Fiche technique',
     })).toBeDisabled();
+  });
+
+  it('affiche l’action Exports uniquement lorsqu’elle est commercialement accessible', () => {
+    const { unmount } = renderPanel();
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Exports',
+      }),
+    ).toBeInTheDocument();
+
+    unmount();
+
+    renderPanel({
+      canExport: false,
+    });
+
+    expect(
+      screen.queryByRole('button', {
+        name: 'Exports',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('bloque la validation lorsque le backend indique que l’état économique ne le permet pas', () => {

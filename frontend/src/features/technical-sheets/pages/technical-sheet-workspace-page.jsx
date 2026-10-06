@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { downloadBlob } from '@/features/files/lib/download-blob';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { ErrorState } from '@/components/shared/error-state';
 import {
@@ -38,6 +39,8 @@ import {
 import {
   useArchiveTechnicalSheetMutation,
   useDeleteTechnicalSheetMutation,
+  useExportTechnicalSheetMutation,
+  useGetTechnicalSheetExportUsageQuery,
   useGetTechnicalSheetMetadataQuery,
   useGetTechnicalSheetQuery,
   useListTechnicalSheetHistoryQuery,
@@ -77,6 +80,9 @@ import {
 import {
   DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
 } from '@/features/suppliers/constants/supplier-permissions';
+import {
+  TECHNICAL_SHEET_FEATURE,
+} from '@/features/technical-sheets/constants/technical-sheet-features';
 import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
@@ -219,7 +225,12 @@ function TechnicalSheetWorkspacePage() {
   const { dossierId, technicalSheetId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { can, canAny, workspace } = useWorkspaceContext();
+  const {
+    can,
+    canAny,
+    hasFeature,
+    workspace,
+  } = useWorkspaceContext();
 
   const sheetQuery = useGetTechnicalSheetQuery({
     workspaceId: workspace.id,
@@ -238,6 +249,18 @@ function TechnicalSheetWorkspacePage() {
     page: 1,
     limit: 20,
   });
+  const canExport =
+    hasFeature(
+      TECHNICAL_SHEET_FEATURE.EXPORT,
+    )
+    && can(
+      TECHNICAL_SHEET_PERMISSION.EXPORT,
+    );
+  const exportUsageQuery =
+    useGetTechnicalSheetExportUsageQuery(
+      workspace.id,
+      { skip: !canExport },
+    );
 
   const [updateSheet, updateSheetState] = useUpdateTechnicalSheetMutation();
   const [startDraft, startDraftState] = useStartTechnicalSheetDraftMutation();
@@ -247,6 +270,7 @@ function TechnicalSheetWorkspacePage() {
   const [archiveSheet, archiveState] = useArchiveTechnicalSheetMutation();
   const [reactivateSheet, reactivateState] = useReactivateTechnicalSheetMutation();
   const [deleteSheet, deleteState] = useDeleteTechnicalSheetMutation();
+  const [exportSheet] = useExportTechnicalSheetMutation();
 
   const sheet = sheetQuery.data?.sheet;
   const draft = sheetQuery.data?.draft;
@@ -281,6 +305,7 @@ function TechnicalSheetWorkspacePage() {
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
   const [copyOpen, setCopyOpen] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState(null);
   const [productScope, setProductScope] = useState(null);
   const [sourcingPendingCount, setSourcingPendingCount] = useState(0);
   const stickyControlsRef = useRef(null);
@@ -393,6 +418,7 @@ function TechnicalSheetWorkspacePage() {
     setIdentityDialogOpen(false);
     setRightPanel(null);
     setValidationDialogOpen(false);
+    setExportingFormat(null);
     setProductScope(null);
     resetAutosave(null);
   }, [resetAutosave, technicalSheetId]);
@@ -562,6 +588,13 @@ function TechnicalSheetWorkspacePage() {
   const canDelete = can(TECHNICAL_SHEET_PERMISSION.DELETE);
   const canCopy = can(TECHNICAL_SHEET_PERMISSION.COPY);
   const copyDisabled = !actionAvailability.copy;
+  const exportDisabledReason = !sheet.currentValidatedStateId
+    ? 'Validez la Fiche technique pour l’exporter'
+    : exportUsageQuery.data
+      && !exportUsageQuery.data.unlimited
+      && exportUsageQuery.data.remaining <= 0
+      ? 'Quota mensuel d’exports atteint'
+      : null;
   const validationEligible = Boolean(
     draft
     && metadata?.valuationStatusDefinitions
@@ -636,6 +669,39 @@ function TechnicalSheetWorkspacePage() {
       description: getTechnicalSheetApiErrorMessage(error, fallback),
       variant: 'destructive',
     });
+  }
+
+  async function exportValidatedSheet(format) {
+    setExportingFormat(format);
+
+    try {
+      const artifact = await exportSheet({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        format,
+      }).unwrap();
+
+      downloadBlob(
+        artifact.blob,
+        artifact.fileName,
+      );
+
+      toast({
+        title:
+          'Export '
+          + format
+          + ' généré',
+        variant: 'success',
+      });
+    } catch (error) {
+      notifyError(
+        error,
+        'L’export de la Fiche technique a échoué.',
+      );
+    } finally {
+      setExportingFormat(null);
+    }
   }
 
   async function saveIdentity() {
@@ -824,17 +890,21 @@ function TechnicalSheetWorkspacePage() {
               canEditIdentity
               && actionAvailability.update
             }
+            canExport={canExport}
             canLifecycle={canLifecycle}
             canValidate={canValidate}
             copyDisabled={copyDisabled}
             draft={draft}
             draftDirty={draftDirty}
             draftSynchronizing={draftSynchronizing}
+            exportDisabledReason={exportDisabledReason}
+            exportingFormat={exportingFormat}
             identityDirty={identityDirty}
             onArchive={() => setConfirmation({ type: 'archive' })}
             onCopy={() => setCopyOpen(true)}
             onDelete={() => setConfirmation({ type: 'delete' })}
             onEditIdentity={() => setIdentityDialogOpen(true)}
+            onExport={exportValidatedSheet}
             onOpenAnalysis={() => setRightPanel('analysis')}
             onOpenDossier={() => setRightPanel('dossier')}
             onReactivate={() => setConfirmation({ type: 'reactivate' })}
@@ -953,17 +1023,21 @@ function TechnicalSheetWorkspacePage() {
                         canEditIdentity
                         && actionAvailability.update
                       }
+                      canExport={canExport}
                       canLifecycle={canLifecycle}
                       canValidate={canValidate}
                       copyDisabled={copyDisabled}
                       draft={draft}
                       draftDirty={draftDirty}
                       draftSynchronizing={draftSynchronizing}
+                      exportDisabledReason={exportDisabledReason}
+                      exportingFormat={exportingFormat}
                       identityDirty={identityDirty}
                       onArchive={() => setConfirmation({ type: 'archive' })}
                       onCopy={() => setCopyOpen(true)}
                       onDelete={() => setConfirmation({ type: 'delete' })}
                       onEditIdentity={() => setIdentityDialogOpen(true)}
+                      onExport={exportValidatedSheet}
                       onOpenAnalysis={() => setRightPanel('analysis')}
                       onOpenDossier={() => setRightPanel('dossier')}
                       onReactivate={() => setConfirmation({ type: 'reactivate' })}

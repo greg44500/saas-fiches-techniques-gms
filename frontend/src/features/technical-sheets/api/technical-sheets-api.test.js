@@ -70,7 +70,9 @@ vi.mock('@/services/api/base-api', () => {
 
 import {
   TECHNICAL_SHEET_API_TAG_TYPES,
+  parseDownloadFileName,
   technicalSheetsApi,
+  useExportTechnicalSheetMutation,
   useValuateTechnicalSheetMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 
@@ -189,6 +191,61 @@ describe('technicalSheetsApi', () => {
         ]),
       );
     }
+  });
+
+  it('configure l’export binaire et le KPI d’usage mensuel', () => {
+    expect(
+      captured.endpointDefinitions
+        .exportTechnicalSheet
+        .query({
+          workspaceId: 'workspace-1',
+          dossierId: 'dossier-1',
+          technicalSheetId: 'sheet-1',
+          format: 'PDF',
+        }),
+    ).toMatchObject({
+      url:
+        '/workspaces/workspace-1'
+        + '/dossiers/dossier-1'
+        + '/technical-sheets/sheet-1'
+        + '/exports',
+      method: 'POST',
+      body: {
+        format: 'PDF',
+      },
+    });
+
+    expect(
+      captured.endpointDefinitions
+        .getTechnicalSheetExportUsage
+        .query('workspace-1'),
+    ).toEqual({
+      url:
+        '/workspaces/workspace-1'
+        + '/technical-sheets/exports/usage',
+    });
+
+    expect(
+      useExportTechnicalSheetMutation,
+    ).toBeTypeOf('function');
+  });
+
+  it('extrait le nom de fichier RFC 5987 renvoyé par le backend', () => {
+    expect(
+      parseDownloadFileName(
+        "attachment; filename*=UTF-8''fiche-technique-tartine-auvergnate.pdf",
+        'fallback.pdf',
+      ),
+    ).toBe(
+      'fiche-technique-tartine-auvergnate.pdf',
+    );
+
+    expect(
+      parseDownloadFileName(
+        null,
+        'fallback.pdf',
+      ),
+    ).toBe('fallback.pdf');
   });
 
   it('exporte le hook de valorisation', () => {

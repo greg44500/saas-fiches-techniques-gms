@@ -11,12 +11,16 @@ import {
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { Button } from '@/components/ui/button';
+import {
+  TechnicalSheetExportMenu,
+} from '@/features/technical-sheets/components/technical-sheet-export-menu';
 
 function TechnicalSheetControlPanel({
   actionAvailability,
   canCopy,
   canDelete,
   canEditIdentity,
+  canExport,
   canLifecycle,
   canValidate,
   copyDisabled,
@@ -24,11 +28,14 @@ function TechnicalSheetControlPanel({
   draftDirty,
   validationEligible = false,
   draftSynchronizing,
+  exportDisabledReason,
+  exportingFormat,
   identityDirty,
   onArchive,
   onCopy,
   onDelete,
   onEditIdentity,
+  onExport,
   onOpenAnalysis,
   onOpenDossier,
   onReactivate,
@@ -103,6 +110,14 @@ function TechnicalSheetControlPanel({
         aria-hidden="true"
         className="mx-1 h-6 w-px shrink-0 bg-border"
       />
+
+      {canExport && (
+        <TechnicalSheetExportMenu
+          disabledReason={exportDisabledReason}
+          exportingFormat={exportingFormat}
+          onExport={onExport}
+        />
+      )}
 
       {canCopy && (
         <ActionIconButton

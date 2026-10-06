@@ -10,6 +10,7 @@ const TECHNICAL_SHEET_PERMISSION = Object.freeze({
   RESTORE: 'technical-sheet:restore',
   PURGE: 'technical-sheet:purge',
   COPY: 'technical-sheet:copy',
+  EXPORT: 'technical-sheet:export',
   SETTINGS_MANAGE: 'technical-sheet:settings:manage',
 });
 
