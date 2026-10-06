@@ -31,3 +31,11 @@ Durcissements ajoutés avant validation locale :
 - tests HTTP Free/capability, RBAC, absence de validation, téléchargement et quota cumulé ;
 - tests des garde-fous de dérogation commerciale ;
 - neutralisation XLSX étendue aux libellés d'unités métier.
+
+
+Couverture E2E ajoutée (non exécutée ici) :
+- capability export activée par dérogation sur un Workspace de test ;
+- export CSV depuis une Fiche validée ;
+- téléchargement réel Playwright ;
+- KPI `Exports ce mois` passant à `1 / 10` ;
+- masquage du KPI via `Personnaliser le tableau de bord`.

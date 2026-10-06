@@ -41,6 +41,8 @@ import {
 
 async function provisionTechnicalSheetWorkspace({
   ambiguous = false,
+  exportEnabled = false,
+  exportLimit = 10,
   favoriteProduct = true,
   technicalSheetLimit = 10,
   targetMarginBasisPoints = 6000,
@@ -107,7 +109,7 @@ async function provisionTechnicalSheetWorkspace({
 
     const startsAt = new Date(Date.now() - 1_000);
 
-    await EntitlementOverride.create([
+    const entitlementOverrides = [
       {
         workspace: workspace._id,
         targetType: 'feature',
@@ -132,7 +134,42 @@ async function provisionTechnicalSheetWorkspace({
         grantedBy: ownerId,
         updatedBy: ownerId,
       },
-    ]);
+    ];
+
+    if (exportEnabled) {
+      entitlementOverrides.push(
+        {
+          workspace: workspace._id,
+          targetType: 'feature',
+          featureKey:
+            'technical_sheet_export',
+          featureEnabled: true,
+          source: 'support',
+          startsAt,
+          reason:
+            'E2E M-004 export feature fixture',
+          grantedBy: ownerId,
+          updatedBy: ownerId,
+        },
+        {
+          workspace: workspace._id,
+          targetType: 'limit',
+          metricKey:
+            'technical_sheet_exports_monthly',
+          limitValue: exportLimit,
+          source: 'support',
+          startsAt,
+          reason:
+            'E2E M-004 export quota fixture',
+          grantedBy: ownerId,
+          updatedBy: ownerId,
+        },
+      );
+    }
+
+    await EntitlementOverride.create(
+      entitlementOverrides,
+    );
 
     await createNegotiatedPrice({
       workspaceId: workspace._id,
@@ -223,6 +260,8 @@ async function provisionTechnicalSheetWorkspace({
       secondArticle?.supplierReference ?? null,
     secondSupplierName:
       secondSupplier?.name ?? null,
+    exportEnabled,
+    exportLimit,
     targetMarginBasisPoints,
     technicalSheetLimit,
   };

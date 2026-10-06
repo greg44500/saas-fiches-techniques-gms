@@ -379,6 +379,141 @@ test('M-004 une Référence Produit globale non favorite reste composable et val
   });
 });
 
+test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', async ({ page }) => {
+  const context =
+    await provisionTechnicalSheetWorkspace({
+      exportEnabled: true,
+      exportLimit: 10,
+    });
+
+  await loginWithIdentity(
+    page,
+    context.identity,
+  );
+
+  await createTechnicalSheet(page, {
+    name:
+      'Fiche M004 Exports',
+    technicalSheetsUrl:
+      context.dossierATechnicalSheetsUrl,
+  });
+
+  await composeTechnicalSheet(page, {
+    productReferenceName:
+      context.productReferenceName,
+  });
+
+  await validateCurrentDraft(page, {
+    comment:
+      'Version officielle à exporter',
+  });
+
+  const exportButton =
+    page.getByRole('button', {
+      name: 'Exports',
+    });
+
+  await expect(
+    exportButton,
+  ).toBeEnabled();
+  await exportButton.click();
+
+  await expect(
+    page.getByRole('button', {
+      name: '.pdf',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: '.xlsx',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: '.csv',
+    }),
+  ).toBeVisible();
+
+  const downloadPromise =
+    page.waitForEvent('download');
+
+  await page
+    .getByRole('button', {
+      name: '.csv',
+    })
+    .click();
+
+  const download =
+    await downloadPromise;
+
+  expect(
+    download.suggestedFilename(),
+  ).toMatch(/\.csv$/);
+
+  await expectVisibleToast(
+    page,
+    'Export CSV généré',
+  );
+
+  await page.goto(
+    context.dashboardUrl,
+  );
+
+  await expect(
+    page.getByText(
+      'Exports ce mois',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      '1 / 10',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  await page
+    .getByRole('button', {
+      name:
+        'Personnaliser le tableau de bord',
+    })
+    .click();
+
+  const preferences =
+    page.getByRole('dialog');
+
+  const exportSwitch =
+    preferences.getByRole('switch', {
+      name:
+        'Afficher Exports ce mois',
+    });
+
+  await expect(
+    exportSwitch,
+  ).toBeChecked();
+
+  await exportSwitch.click();
+
+  await preferences
+    .getByRole('button', {
+      name: 'Enregistrer',
+      exact: true,
+    })
+    .click();
+
+  await expectVisibleToast(
+    page,
+    'Affichage du tableau de bord enregistré',
+  );
+
+  await expect(
+    page.getByText(
+      'Exports ce mois',
+      { exact: true },
+    ),
+  ).toHaveCount(0);
+});
+
 test('M-004 ambiguïté Article, changement de prix, actualisation automatique puis validation', async ({ page }) => {
   const context =
     await provisionTechnicalSheetWorkspace({
