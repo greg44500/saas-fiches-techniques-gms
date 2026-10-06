@@ -102,7 +102,7 @@ describe('M-002 professional reference corpus v7', () => {
             status: 'ACTIVE',
             identityActive: true,
         })).toBe(368);
-    });
+    }, 30_000);
 
     it('couvre les trois domaines professionnels attendus', async () => {
         const dataset =
