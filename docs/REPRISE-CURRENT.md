@@ -24,3 +24,10 @@ Contrats :
 - `docs/m004/M-004-EXPORTS-TECHNICAL-DESIGN.md`
 
 Les tests sont exécutés localement par l'utilisateur. Aucune PR ni fusion ne doit être faite avant sa validation.
+
+
+Durcissements ajoutés avant validation locale :
+- migration explicite de la nouvelle permission sur les rôles Owner système déjà persistés ;
+- tests HTTP Free/capability, RBAC, absence de validation, téléchargement et quota cumulé ;
+- tests des garde-fous de dérogation commerciale ;
+- neutralisation XLSX étendue aux libellés d'unités métier.

@@ -288,8 +288,10 @@ const buildTechnicalSheetXlsx = (
         ],
         [
             'Unité de production',
-            projection.production
-                .unitLabel,
+            neutralizeSpreadsheetText(
+                projection.production
+                    .unitLabel,
+            ),
         ],
         [
             'Portions / pièce',
@@ -339,18 +341,24 @@ const buildTechnicalSheetXlsx = (
             toFiniteNumber(
                 line.netQuantity,
             ),
-            line.netUnitLabel,
+            neutralizeSpreadsheetText(
+                line.netUnitLabel,
+            ),
             toFiniteNumber(
                 line.yieldPercent,
             ),
             toFiniteNumber(
                 line.grossQuantity,
             ),
-            line.grossUnitLabel,
+            neutralizeSpreadsheetText(
+                line.grossUnitLabel,
+            ),
             toFiniteNumber(
                 line.normalizedPriceHt,
             ),
-            line.normalizedUnitLabel,
+            neutralizeSpreadsheetText(
+                line.normalizedUnitLabel,
+            ),
             toFiniteNumber(
                 line.lineCostHt,
             ),

@@ -164,6 +164,14 @@
       ]
     },
     {
+      "id": "m004-export-permission",
+      "script": "migration:m004-export-permission",
+      "runner": "backend/migrations/runBackfillM004TechnicalSheetExportPermissionMigration.js",
+      "dependsOn": [
+        "m004-technical-sheets"
+      ]
+    },
+    {
       "id": "m004-workspace-business-settings",
       "script": "migration:m004-workspace-business-settings",
       "runner": "backend/migrations/runEnsureM004WorkspaceBusinessSettingsMigration.js",

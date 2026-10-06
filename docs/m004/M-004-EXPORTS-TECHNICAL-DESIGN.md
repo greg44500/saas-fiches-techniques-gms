@@ -54,3 +54,10 @@ La génération invalide ne consomme donc pas de quota. Le moteur Core existant 
 RTK Query récupère le Blob et invalide le tag du KPI d'usage. Le helper de téléchargement existant est réutilisé.
 
 Le composant d'export utilise `components/ui/popover.jsx`, déjà basé sur Base UI, et les primitives Button/Tooltip existantes.
+
+
+## Migration RBAC
+
+La permission `technical-sheet:export` est déclarée par le module M-004. Les nouveaux rôles système Owner l'obtiennent via le registre applicatif. Les rôles Owner déjà persistés sont mis à niveau par `migration:m004-export-permission`, qui réutilise la primitive Core générique `backfillRegisteredSystemRolePermissions`.
+
+Aucune permission n'est ajoutée automatiquement aux rôles personnalisés.
