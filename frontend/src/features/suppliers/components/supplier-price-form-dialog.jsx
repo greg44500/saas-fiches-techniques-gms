@@ -31,6 +31,7 @@ import {
 } from '@/features/suppliers/api/supplier-api';
 import {
   getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
 } from '@/features/products/lib/product-presentation';
 import {
   getApiErrorMessage,
@@ -57,6 +58,9 @@ function SupplierPriceFormDialog({
   const [validTo, setValidTo] = useState('');
   const [source, setSource] = useState('');
   const [error, setError] = useState('');
+  const selectedArticle = articles.find(
+    ({ id }) => id === articleId,
+  ) ?? null;
 
   const [createNegotiated, negotiatedState] =
     useCreateNegotiatedPriceMutation();
@@ -98,14 +102,17 @@ function SupplierPriceFormDialog({
       return;
     }
 
-    const article = articles.find(({ id }) => id === articleId);
+    if (!selectedArticle) {
+      setError('Article fournisseur introuvable.');
+      return;
+    }
 
     try {
       const result = isInvoice
         ? await createInvoice({
           workspaceId,
           dossierId,
-          supplierId: article.supplierId,
+          supplierId: selectedArticle.supplierId,
           articleId,
           invoiceDate: new Date(date).toISOString(),
           sourceAmount: amount,
@@ -134,6 +141,31 @@ function SupplierPriceFormDialog({
           : 'Le Tarif négocié n’a pas pu être enregistré.',
       ));
     }
+  }
+
+  function selectArticle(nextArticleId) {
+    setArticleId(nextArticleId);
+
+    const nextArticle = articles.find(
+      ({ id }) => id === nextArticleId,
+    );
+
+    setBasis(
+      nextArticle?.productVariant?.referenceUnit
+      ?? 'KG',
+    );
+  }
+
+  function getPriceBaseLabel(value) {
+    if (value !== 'UNIT') {
+      return getReferenceUnitLabel(null, value);
+    }
+
+    return getVariantReferenceUnitLabel(
+      null,
+      selectedArticle?.productVariant
+      ?? { referenceUnit: 'UNIT' },
+    );
   }
 
   return (
@@ -173,7 +205,7 @@ function SupplierPriceFormDialog({
                       + article.supplierReference,
                   })),
                 ]}
-                onValueChange={setArticleId}
+                onValueChange={selectArticle}
                 value={articleId}
               >
                 <SelectTrigger aria-label="Article fournisseur">
@@ -208,7 +240,7 @@ function SupplierPriceFormDialog({
                 <Select
                   items={PRICE_BASES.map((value) => ({
                     value,
-                    label: getReferenceUnitLabel(null, value),
+                    label: getPriceBaseLabel(value),
                   }))}
                   onValueChange={setBasis}
                   value={basis}
@@ -219,7 +251,7 @@ function SupplierPriceFormDialog({
                   <SelectContent>
                     {PRICE_BASES.map((value) => (
                       <SelectItem key={value} value={value}>
-                        {getReferenceUnitLabel(null, value)}
+                        {getPriceBaseLabel(value)}
                       </SelectItem>
                     ))}
                   </SelectContent>

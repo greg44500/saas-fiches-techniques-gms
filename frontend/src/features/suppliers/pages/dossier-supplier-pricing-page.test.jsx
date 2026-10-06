@@ -76,6 +76,7 @@ import {
 } from '@/features/suppliers/constants/supplier-permissions';
 import {
   DossierSupplierPricingPage,
+  normalizeArticle,
 } from '@/features/suppliers/pages/dossier-supplier-pricing-page';
 
 function queryResult(data) {
@@ -97,6 +98,33 @@ function renderPage() {
     </MemoryRouter>,
   );
 }
+
+describe('normalizeArticle', () => {
+  it('conserve le contexte unité métier de la Référence Produit', () => {
+    const productVariant = {
+      id: 'variant-unit',
+      name: 'Pain bruschetta surgelé',
+      referenceUnit: 'UNIT',
+      countUnitLabelSingular: 'tranche',
+      countUnitLabelPlural: 'tranches',
+    };
+
+    expect(normalizeArticle({
+      id: 'article-unit',
+      supplier: {
+        id: 'supplier-1',
+        name: 'Sysco',
+      },
+      supplierReference: 'BRU-001',
+      productVariant,
+    })).toMatchObject({
+      id: 'article-unit',
+      supplierId: 'supplier-1',
+      productVariant,
+      productVariantName: 'Pain bruschetta surgelé',
+    });
+  });
+});
 
 describe('DossierSupplierPricingPage', () => {
   beforeEach(() => {

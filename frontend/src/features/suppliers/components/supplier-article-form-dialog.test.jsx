@@ -221,6 +221,10 @@ describe('SupplierArticleFormDialog', () => {
       'Sélectionner le Fournisseur',
       'Sysco',
     );
+
+    expect(screen.getByRole('combobox', {
+      name: 'Unité du conditionnement',
+    })).toHaveTextContent('tranche');
     await user.type(
       screen.getByLabelText('Référence fournisseur'),
       'BRU-032',
