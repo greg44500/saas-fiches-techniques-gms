@@ -947,8 +947,12 @@ describe('M-004 services Fiches techniques', () => {
             normalizedUnit: 'UNIT',
             countUnitLabelSingular: 'tranche',
             countUnitLabelPlural: 'tranches',
-            lineCostHt: '6.5',
         });
+        expect(
+            validated.validation.linesSnapshot[0]
+                .lineCostHt
+                .toString(),
+        ).toBe('6.5');
     });
 
     it('crée, compose, valorise et valide un snapshot historique immuable', async () => {

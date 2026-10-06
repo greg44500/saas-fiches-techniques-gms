@@ -227,6 +227,10 @@ describe('M-002 recherche structurée Produit', () => {
                 foodRange: 1,
                 referenceUnit: 'KG',
             },
+            forceCreate: true,
+            reviewedCandidateIds: [
+                aubergine.variant._id.toString(),
+            ],
         });
         await createActiveProductReference({
             name: 'Betterave pagination',
