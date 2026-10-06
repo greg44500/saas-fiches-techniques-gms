@@ -17,6 +17,10 @@ import {
     getTechnicalSheetCapacity,
 } from './technicalSheetCapacity.service.js';
 import {
+    exportCurrentValidatedTechnicalSheet,
+    getTechnicalSheetExportUsage,
+} from './technicalSheetExport.service.js';
+import {
     copyTechnicalSheet,
 } from './technicalSheetCopy.service.js';
 import {
@@ -422,6 +426,60 @@ const historyById = async (req, res) => {
     });
 };
 
+const exportCurrent = async (req, res) => {
+    const artifact =
+        await exportCurrentValidatedTechnicalSheet({
+            workspaceId:
+                req.workspace._id,
+            dossierId:
+                req.dossier._id,
+            technicalSheetId:
+                req.validated.params
+                    .technicalSheetId,
+            actorId:
+                req.user._id,
+            format:
+                req.validated.body.format,
+        });
+
+    res.setHeader(
+        'Cache-Control',
+        'no-store',
+    );
+    res.setHeader(
+        'Content-Type',
+        artifact.mimeType,
+    );
+    res.setHeader(
+        'Content-Disposition',
+        "attachment; filename*=UTF-8''"
+        + encodeURIComponent(
+            artifact.fileName,
+        ),
+    );
+    res.setHeader(
+        'Content-Length',
+        artifact.buffer.length,
+    );
+
+    res.status(200).send(
+        artifact.buffer,
+    );
+};
+
+const exportUsage = async (req, res) => {
+    const usage =
+        await getTechnicalSheetExportUsage({
+            workspaceId:
+                req.workspace._id,
+        });
+
+    res.status(200).json({
+        status: 'success',
+        data: { usage },
+    });
+};
+
 const lifecycleResponse = (
     action,
 ) => async (req, res) => {
@@ -642,6 +700,8 @@ export {
     capacity,
     copy,
     create,
+    exportCurrent,
+    exportUsage,
     getById,
     getDossierSettings,
     getDraft,

@@ -9,6 +9,10 @@ import {
 } from 'vitest';
 
 import {
+    PLAN_SYSTEM_ROLE,
+} from '../../../constants/plan.constants.js';
+
+import {
     Dossier,
 } from '../../../modules/dossier/dossier.model.js';
 import {
@@ -33,6 +37,7 @@ import {
     createSupplierArticle,
 } from '../../../modules/supplierCatalog/supplierReference.service.js';
 import {
+    TECHNICAL_SHEET_FEATURE,
     TECHNICAL_SHEET_METRIC,
     TECHNICAL_SHEET_VALUATION_STATUS,
 } from '../../../modules/technicalSheet/technicalSheet.registry.js';
@@ -45,6 +50,11 @@ import {
 import {
     copyTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheetCopy.service.js';
+import {
+    exportCurrentValidatedTechnicalSheet,
+    getTechnicalSheetExportUsage,
+} from '../../../modules/technicalSheet/technicalSheetExport.service.js';
+import { Plan } from '../../../modules/plan/plan.model.js';
 import {
     deleteTechnicalSheet,
     purgeTechnicalSheet,
@@ -1025,6 +1035,190 @@ describe('M-004 services Fiches techniques', () => {
                     created.sheet.id,
             }),
         ).toBe(1);
+    });
+
+    it('exporte la version validée dans les trois formats et cumule le quota mensuel', async () => {
+        const plan =
+            await Plan.findOne({
+                systemRole:
+                    PLAN_SYSTEM_ROLE.BASELINE,
+            });
+
+        plan.features = [
+            ...new Set([
+                ...(plan.features ?? []),
+                TECHNICAL_SHEET_FEATURE.EXPORT,
+            ]),
+        ];
+        plan.limits.set(
+            TECHNICAL_SHEET_METRIC
+                .EXPORTS_MONTHLY,
+            10,
+        );
+        await plan.save();
+
+        const {
+            created,
+            valued,
+        } = await createValuedDraft();
+
+        await validateTechnicalSheet({
+            workspaceId:
+                owner.workspace._id,
+            dossierId:
+                dossier._id,
+            technicalSheetId:
+                created.sheet.id,
+            actorId:
+                owner.owner._id,
+            expectedSheetRevision:
+                created.sheet.revision,
+            expectedDraftRevision:
+                valued.draft.revision,
+            atDate,
+        });
+
+        const csv =
+            await exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'CSV',
+                at: atDate,
+            });
+        const xlsx =
+            await exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'XLSX',
+                at: atDate,
+            });
+        const pdf =
+            await exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'PDF',
+                at: atDate,
+            });
+
+        expect(csv.mimeType)
+            .toContain('text/csv');
+        expect(csv.fileName)
+            .toMatch(/\.csv$/);
+        expect(xlsx.fileName)
+            .toMatch(/\.xlsx$/);
+        expect(pdf.mimeType)
+            .toBe('application/pdf');
+        expect(
+            pdf.buffer
+                .toString(
+                    'latin1',
+                    0,
+                    8,
+                ),
+        ).toBe('%PDF-1.4');
+
+        const usage =
+            await getTechnicalSheetExportUsage({
+                workspaceId:
+                    owner.workspace._id,
+                at: atDate,
+            });
+
+        expect(usage).toMatchObject({
+            current: 3,
+            limit: 10,
+            remaining: 7,
+            unlimited: false,
+        });
+    });
+
+    it('refuse l’export tant que la Fiche ne possède aucune version validée', async () => {
+        const plan =
+            await Plan.findOne({
+                systemRole:
+                    PLAN_SYSTEM_ROLE.BASELINE,
+            });
+
+        plan.features = [
+            ...new Set([
+                ...(plan.features ?? []),
+                TECHNICAL_SHEET_FEATURE.EXPORT,
+            ]),
+        ];
+        plan.limits.set(
+            TECHNICAL_SHEET_METRIC
+                .EXPORTS_MONTHLY,
+            10,
+        );
+        await plan.save();
+
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche non validée',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            });
+
+        await expect(
+            exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'PDF',
+                at: atDate,
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 409,
+            message:
+                'Validez la Fiche technique avant de l’exporter.',
+        });
+
+        expect(
+            await getUsageMetricValue({
+                workspaceId:
+                    owner.workspace._id,
+                metricKey:
+                    TECHNICAL_SHEET_METRIC
+                        .EXPORTS_MONTHLY,
+                at: atDate,
+            }),
+        ).toBe(0);
     });
 
     it('actualise automatiquement les calculs si le Prix applicable change avant validation', async () => {
