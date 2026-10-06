@@ -92,6 +92,12 @@ describe('DossierApplicablePriceCard', () => {
       mocks.loadApplicable,
       {
         data: {
+          productVariant: {
+            id: 'variant-1',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'tranche',
+            countUnitLabelPlural: 'tranches',
+          },
           resolvedSource: 'NEGOTIATED_PRICE',
           fallbackApplied: true,
           price: {
@@ -124,7 +130,7 @@ describe('DossierApplicablePriceCard', () => {
       dossierId: 'dossier-1',
       articleId: 'article-1',
     });
-    expect(screen.getByText('12,500 / PCE')).toBeInTheDocument();
+    expect(screen.getByText('12,500 / tranche')).toBeInTheDocument();
     expect(screen.getByText(/Tarif négocié/)).toBeInTheDocument();
     expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();
   });
@@ -159,7 +165,7 @@ describe('DossierApplicablePriceCard', () => {
 
     await selectArticleOption(user, 'Sysco · Ali321');
 
-    expect(screen.getByText('3,100 / KG')).toBeInTheDocument();
+    expect(screen.getByText('3,100 / kg')).toBeInTheDocument();
     expect(screen.getByText(/Prix indicatif espace de travail/))
       .toBeInTheDocument();
     expect(screen.queryByText(/source de remplacement/))
@@ -178,14 +184,14 @@ describe('DossierApplicablePriceCard', () => {
 
     await selectArticleOption(user, 'Sysco · Ali321');
 
-    expect(screen.getByText('12,500 / PCE')).toBeInTheDocument();
+    expect(screen.getByText('12,500 / tranche')).toBeInTheDocument();
 
     const trigger = await selectArticleOption(user, 'Sélectionner');
 
     expect(mocks.resetApplicable).toHaveBeenCalledTimes(1);
     expect(trigger).toHaveTextContent('Sélectionner');
     expect(mocks.loadApplicable).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText('12,500 / PCE')).not.toBeInTheDocument();
+    expect(screen.queryByText('12,500 / tranche')).not.toBeInTheDocument();
     expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();
   });
 });

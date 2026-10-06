@@ -22,6 +22,7 @@ import {
 } from './productCatalog.normalization.js';
 import {
     PRODUCT_CONTRIBUTION_TYPE,
+    PRODUCT_DIMENSION_REVIEW_STATUS,
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS,
@@ -38,6 +39,9 @@ const conflict = (message) => {
 const referenceModelForType = (type) => {
     if (type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT) {
         return CanonicalProduct;
+    }
+    if (type === PRODUCT_CONTRIBUTION_TYPE.VARIANT) {
+        return ProductVariant;
     }
     if (type === PRODUCT_CONTRIBUTION_TYPE.VARIETY) {
         return ProductVariety;
@@ -74,6 +78,9 @@ const assertApprovedTarget = async ({
         status: mongoose.trusted({
             $in: [PRODUCT_STATUS.ACTIVE, PRODUCT_STATUS.ARCHIVED],
         }),
+        ...(type === PRODUCT_CONTRIBUTION_TYPE.VARIANT
+            ? { canonicalProduct: source.canonicalProduct }
+            : {}),
         ...(type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
             ? { canonicalProduct: source.canonicalProduct }
             : {}),
@@ -184,6 +191,7 @@ const repointVariantDependencies = async ({
     await repointWorkspaceProducts({
         sourceVariantId,
         targetVariantId,
+        actorId,
         session,
     });
 
@@ -376,6 +384,9 @@ const affectedVariantIds = async ({
             identityActive: true,
         }).distinct('_id').session(session);
     }
+    if (type === PRODUCT_CONTRIBUTION_TYPE.VARIANT) {
+        return [referenceId];
+    }
     if (type === PRODUCT_CONTRIBUTION_TYPE.VARIETY) {
         return ProductVariant.find({
             variety: referenceId,
@@ -436,6 +447,64 @@ const promoteProvisionalReference = async ({
     correctedValue = null,
     session,
 }) => {
+    if (type === PRODUCT_CONTRIBUTION_TYPE.VARIANT) {
+        const variant = await loadVariantIdentity({
+            variantId: reference._id,
+            session,
+        });
+
+        if (!variant || !variant.identityActive) {
+            throw new AppError('Référence Produit provisoire introuvable.', 409);
+        }
+
+        if (!(await variantCanBeApproved({ variant, session }))) {
+            conflict(
+                'Cette Référence dépend encore de valeurs à contrôler. '
+                + 'Validez d’abord ses Dimensions.',
+            );
+        }
+
+        if (correctedValue) {
+            const name = String(correctedValue).trim();
+            const normalizedName = normalizeProductText(name);
+            if (!normalizedName) {
+                throw new AppError(
+                    'Le nom corrigé de la Référence est invalide.',
+                    400,
+                );
+            }
+            variant.name = name;
+            variant.normalizedName = normalizedName;
+        }
+
+        variant.normalizedSignature = buildVariantSignature({
+            name: variant.name,
+            varietyId: variant.variety?._id ?? variant.variety,
+            characteristics: (variant.characteristics ?? []).map(
+                (characteristic) => ({
+                    id: characteristic._id ?? characteristic,
+                    kind: characteristic.kind ?? '_',
+                }),
+            ),
+        });
+        variant.governanceStatus = PRODUCT_GOVERNANCE_STATUS.APPROVED;
+        variant.updatedBy = actorId;
+
+        try {
+            await variant.save({ session });
+        } catch (error) {
+            if (error?.code === 11000) {
+                conflict(
+                    'Une Référence Produit équivalente existe déjà. '
+                    + 'Utilisez la fusion.',
+                );
+            }
+            throw error;
+        }
+
+        return variant;
+    }
+
     await correctReferenceValue({
         reference,
         correctedValue,
@@ -444,6 +513,15 @@ const promoteProvisionalReference = async ({
     });
 
     reference.governanceStatus = PRODUCT_GOVERNANCE_STATUS.APPROVED;
+    if (
+        type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
+        || type === PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC
+    ) {
+        reference.qualityReviewStatus =
+            PRODUCT_DIMENSION_REVIEW_STATUS.REVIEWED;
+        reference.qualityReviewedAt = new Date();
+        reference.qualityReviewedBy = actorId;
+    }
     reference.updatedBy = actorId;
     try {
         await reference.save({ session });
@@ -668,6 +746,28 @@ const mergeCanonicalProduct = async ({
     return target;
 };
 
+const mergeVariantReference = async ({
+    source,
+    target,
+    actorId,
+    session,
+}) => {
+    await repointVariantDependencies({
+        sourceVariantId: source._id,
+        targetVariantId: target._id,
+        actorId,
+        session,
+    });
+
+    source.governanceStatus = PRODUCT_GOVERNANCE_STATUS.RESOLVED;
+    source.identityActive = false;
+    source.replacementVariant = target._id;
+    source.updatedBy = actorId;
+    await source.save({ session });
+
+    return target;
+};
+
 const mergeProvisionalReference = async ({
     type,
     reference,
@@ -691,6 +791,15 @@ const mergeProvisionalReference = async ({
         });
     }
 
+    if (type === PRODUCT_CONTRIBUTION_TYPE.VARIANT) {
+        return mergeVariantReference({
+            source: reference,
+            target,
+            actorId,
+            session,
+        });
+    }
+
     return mergeDimensionReference({
         type,
         source: reference,
@@ -706,6 +815,144 @@ const rejectProvisionalReference = async ({
     actorId,
     session,
 }) => {
+    if (type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT) {
+        const variants = await ProductVariant.find({
+            canonicalProduct: reference._id,
+            identityActive: true,
+        }).session(session);
+        const variantIds = variants.map(({ _id }) => _id);
+
+        if (variantIds.length > 0) {
+            const durableUse = await Promise.all([
+                SupplierArticle.exists({
+                    productVariant: mongoose.trusted({ $in: variantIds }),
+                }).session(session),
+                SupplierCatalogLine.exists({
+                    productVariant: mongoose.trusted({ $in: variantIds }),
+                }).session(session),
+                IndicativePrice.exists({
+                    productVariant: mongoose.trusted({ $in: variantIds }),
+                }).session(session),
+                TechnicalSheetDraft.exists({
+                    'lines.productVariant': mongoose.trusted({
+                        $in: variantIds,
+                    }),
+                }).session(session),
+            ]);
+
+            if (durableUse.some(Boolean)) {
+                conflict(
+                    'Ce Produit provisoire est déjà utilisé. '
+                    + 'Fusionnez-le avec un Produit validé plutôt que de le refuser.',
+                );
+            }
+
+            await WorkspaceProduct.updateMany(
+                {
+                    productVariant: mongoose.trusted({
+                        $in: variantIds,
+                    }),
+                },
+                {
+                    $set: {
+                        status: WORKSPACE_PRODUCT_STATUS.ARCHIVED,
+                        updatedBy: actorId,
+                    },
+                },
+                { session },
+            );
+
+            await ProductVariant.updateMany(
+                { _id: mongoose.trusted({ $in: variantIds }) },
+                {
+                    $set: {
+                        governanceStatus:
+                            PRODUCT_GOVERNANCE_STATUS.REJECTED,
+                        identityActive: false,
+                        updatedBy: actorId,
+                    },
+                },
+                { session },
+            );
+        }
+
+        await ProductVariety.updateMany(
+            {
+                canonicalProduct: reference._id,
+                identityActive: true,
+            },
+            {
+                $set: {
+                    governanceStatus: PRODUCT_GOVERNANCE_STATUS.REJECTED,
+                    identityActive: false,
+                    updatedBy: actorId,
+                },
+            },
+            { session },
+        );
+        await ProductCharacteristic.updateMany(
+            {
+                canonicalProduct: reference._id,
+                identityActive: true,
+            },
+            {
+                $set: {
+                    governanceStatus: PRODUCT_GOVERNANCE_STATUS.REJECTED,
+                    identityActive: false,
+                    updatedBy: actorId,
+                },
+            },
+            { session },
+        );
+
+        reference.governanceStatus = PRODUCT_GOVERNANCE_STATUS.REJECTED;
+        reference.identityActive = false;
+        reference.updatedBy = actorId;
+        await reference.save({ session });
+        return reference;
+    }
+
+    if (type === PRODUCT_CONTRIBUTION_TYPE.VARIANT) {
+        const durableUse = await Promise.all([
+            SupplierArticle.exists({
+                productVariant: reference._id,
+            }).session(session),
+            SupplierCatalogLine.exists({
+                productVariant: reference._id,
+            }).session(session),
+            IndicativePrice.exists({
+                productVariant: reference._id,
+            }).session(session),
+            TechnicalSheetDraft.exists({
+                'lines.productVariant': reference._id,
+            }).session(session),
+        ]);
+
+        if (durableUse.some(Boolean)) {
+            conflict(
+                'Cette Référence provisoire est déjà utilisée. '
+                + 'Fusionnez-la avec une Référence validée plutôt que de la refuser.',
+            );
+        }
+
+        await WorkspaceProduct.updateMany(
+            { productVariant: reference._id },
+            {
+                $set: {
+                    status: WORKSPACE_PRODUCT_STATUS.ARCHIVED,
+                    updatedBy: actorId,
+                },
+            },
+            { session },
+        );
+
+        reference.governanceStatus = PRODUCT_GOVERNANCE_STATUS.REJECTED;
+        reference.identityActive = false;
+        reference.updatedBy = actorId;
+        await reference.save({ session });
+        return reference;
+    }
+
     const used = type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT
         ? await ProductVariant.exists({
             canonicalProduct: reference._id,

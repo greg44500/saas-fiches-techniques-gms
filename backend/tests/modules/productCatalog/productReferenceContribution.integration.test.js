@@ -19,6 +19,9 @@ import {
     ProductVariety,
 } from '../../../modules/productCatalog/productVariety.model.js';
 import {
+    ProductVariant,
+} from '../../../modules/productCatalog/productVariant.model.js';
+import {
     ReferenceContribution,
 } from '../../../modules/productCatalog/referenceContribution.model.js';
 import {
@@ -26,6 +29,9 @@ import {
     reviewReferenceContribution,
     submitReferenceContribution,
 } from '../../../modules/productCatalog/productReferenceContribution.service.js';
+import {
+    createWorkspaceVariant,
+} from '../../../modules/productCatalog/productCatalog.service.js';
 import {
     createProductCharacteristic,
     createProductVariety,
@@ -266,10 +272,61 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
 
         expect(approved).toMatchObject({
             status: 'APPROVED',
+            decision: 'APPROVE',
             resolutionEntityType: 'CHARACTERISTIC',
             resolutionEntityId: provisionalId,
         });
         expect(await ProductCharacteristic.findById(provisionalId).lean())
+            .toMatchObject({
+                governanceStatus: 'APPROVED',
+                identityActive: true,
+                qualityReviewStatus: 'REVIEWED',
+                qualityReviewedBy: ownerContext.owner._id,
+            });
+    });
+
+    it('valide une Référence Workspace provisoire comme identité globale distincte', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Pomme contribution Référence',
+        });
+
+        const created = await createWorkspaceVariant({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variant: {
+                name: 'Pomme séchée contribution',
+                conservationType: 'SEC',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+            },
+        });
+
+        expect(created).toMatchObject({
+            classification: 'PROVISIONAL',
+            variant: {
+                governanceStatus: 'PROVISIONAL',
+            },
+            contribution: {
+                type: 'VARIANT',
+                status: 'PENDING_REVIEW',
+            },
+        });
+
+        const approved = await reviewReferenceContribution({
+            contributionId: created.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+
+        expect(approved).toMatchObject({
+            status: 'APPROVED',
+            decision: 'APPROVE',
+            resolutionEntityType: 'VARIANT',
+            resolutionEntityId: created.variant.id,
+        });
+        expect(await ProductVariant.findById(created.variant.id).lean())
             .toMatchObject({
                 governanceStatus: 'APPROVED',
                 identityActive: true,
@@ -304,6 +361,7 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
 
         expect(merged).toMatchObject({
             status: 'APPROVED',
+            decision: 'MERGE',
             resolutionEntityType: 'VARIETY',
             resolutionEntityId: canonical.id,
         });
@@ -312,6 +370,101 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
                 governanceStatus: 'RESOLVED',
                 identityActive: false,
             });
+    });
+
+    it('n’autorise qu’une seule décision concurrente sur une Contribution', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Produit contribution concurrence',
+        });
+        const submitted = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: 'QUALITY_DESIGNATION',
+            value: 'Qualité concurrence',
+        });
+
+        const results = await Promise.allSettled([
+            reviewReferenceContribution({
+                contributionId: submitted.contribution.id,
+                actorId: ownerContext.owner._id,
+                decision: 'APPROVE',
+            }),
+            reviewReferenceContribution({
+                contributionId: submitted.contribution.id,
+                actorId: ownerContext.owner._id,
+                decision: 'REJECT',
+            }),
+        ]);
+
+        expect(results.filter(({ status }) => status === 'fulfilled'))
+            .toHaveLength(1);
+        expect(results.filter(({ status }) => status === 'rejected'))
+            .toHaveLength(1);
+
+        const persisted = await ReferenceContribution.findById(
+            submitted.contribution.id,
+        ).lean();
+
+        expect(['APPROVED', 'REJECTED']).toContain(persisted.status);
+        expect(persisted.reviewedAt).toBeTruthy();
+        expect(persisted.reviewer.toString())
+            .toBe(ownerContext.owner._id.toString());
+    });
+
+    it('liste ensemble les Contributions déjà traitées pour l’Historique', async () => {
+        const reference = await createActiveProductReference({
+            name: 'Produit historique complet',
+        });
+
+        const approved = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: 'QUALITY_DESIGNATION',
+            value: 'Qualité approuvée historique',
+        });
+        const rejected = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: 'COLOR',
+            value: 'Couleur refusée historique',
+        });
+
+        await reviewReferenceContribution({
+            contributionId: approved.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+        await reviewReferenceContribution({
+            contributionId: rejected.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'REJECT',
+        });
+
+        const result = await listReferenceContributions({
+            reviewedOnly: true,
+        });
+
+        expect(result.pagination.total).toBe(2);
+        expect(result.contributions).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: approved.contribution.id,
+                    status: 'APPROVED',
+                    decision: 'APPROVE',
+                }),
+                expect.objectContaining({
+                    id: rejected.contribution.id,
+                    status: 'REJECTED',
+                    decision: 'REJECT',
+                }),
+            ]),
+        );
     });
 
     it('liste les contributions même si le Workspace ou l’auteur référencé n’existe plus', async () => {

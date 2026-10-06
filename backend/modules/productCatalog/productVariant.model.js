@@ -64,6 +64,18 @@ const productVariantSchema = new Schema(
             enum: Object.values(PRODUCT_REFERENCE_UNIT),
             required: true,
         },
+        countUnitLabelSingular: {
+            type: String,
+            trim: true,
+            maxlength: 40,
+            default: null,
+        },
+        countUnitLabelPlural: {
+            type: String,
+            trim: true,
+            maxlength: 40,
+            default: null,
+        },
         yieldPercent: { type: Number, min: 0.000001, max: 100, default: null },
         status: {
             type: String,
@@ -96,6 +108,19 @@ const productVariantSchema = new Schema(
     },
     { timestamps: true },
 );
+
+productVariantSchema.pre('validate', function normalizeCountUnitLabels() {
+    if (this.referenceUnit !== PRODUCT_REFERENCE_UNIT.UNIT) {
+        this.countUnitLabelSingular = null;
+        this.countUnitLabelPlural = null;
+        return;
+    }
+
+    this.countUnitLabelSingular =
+        this.countUnitLabelSingular?.trim() || 'pièce';
+    this.countUnitLabelPlural =
+        this.countUnitLabelPlural?.trim() || 'pièces';
+});
 
 productVariantSchema.index(
     { normalizedName: 1 },

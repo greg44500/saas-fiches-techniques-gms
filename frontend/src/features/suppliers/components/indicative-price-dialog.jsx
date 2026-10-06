@@ -34,6 +34,7 @@ import {
 import {
   getReferenceLabel,
   getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
 } from '@/features/products/lib/product-presentation';
 import {
   useArchiveDossierIndicativePriceMutation,
@@ -159,7 +160,12 @@ function IndicativePriceDialog({
       ))
       .map(({ value }) => ({
         value,
-        label: getReferenceUnitLabel(metadata, value),
+        label: value === 'UNIT'
+          ? getVariantReferenceUnitLabel(
+              metadata,
+              selectedVariant,
+            )
+          : getReferenceUnitLabel(metadata, value),
       }));
   }, [metadata, selectedVariant]);
 

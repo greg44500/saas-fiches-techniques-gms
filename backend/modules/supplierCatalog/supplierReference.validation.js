@@ -207,6 +207,7 @@ export {
     globalArticleListQuerySchema,
     globalSupplierIdParamsSchema,
     globalSupplierListQuerySchema,
+    packagingBodySchema,
     replaceArticleBodySchema,
     supplierIdParamsSchema,
     updateArticleBodySchema,

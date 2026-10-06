@@ -123,6 +123,7 @@ const markProductDimensionReviewed = async ({
 
         await createProductReferenceEvent({
             actorId,
+            workspaceId: dimension.contributedFromWorkspace ?? null,
             action:
                 PRODUCT_REFERENCE_EVENT_ACTION.PRODUCT_DIMENSION_REVIEWED,
             entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,

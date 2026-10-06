@@ -54,7 +54,26 @@ const seedVariantSchema = z.strictObject({
         { message: 'Gamme bootstrap invalide.' },
     ).nullable().optional().default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
+    countUnitLabelSingular:
+        nullableText(40).optional().default(null),
+    countUnitLabelPlural:
+        nullableText(40).optional().default(null),
     yieldPercent: z.number().positive().max(100).nullable().optional().default(null),
+}).superRefine((variant, context) => {
+    if (
+        variant.referenceUnit !== PRODUCT_REFERENCE_UNIT.UNIT
+        && (
+            variant.countUnitLabelSingular
+            || variant.countUnitLabelPlural
+        )
+    ) {
+        context.addIssue({
+            code: 'custom',
+            path: ['referenceUnit'],
+            message:
+                'Les libellés d’unité dénombrable sont réservés à UNIT.',
+        });
+    }
 });
 
 const seedCategorySchema = z.strictObject({
@@ -195,7 +214,7 @@ const m002ReferenceDatasetSchema = z.strictObject({
         }
 
         if (
-            ['m002-reference-v5', 'm002-reference-v6'].includes(dataset.version)
+            ['m002-reference-v5', 'm002-reference-v6', 'm002-reference-v7', 'm002-reference-v8', 'm002-reference-v9'].includes(dataset.version)
             && product.variants.length === 0
         ) {
             context.addIssue({
@@ -205,7 +224,27 @@ const m002ReferenceDatasetSchema = z.strictObject({
             });
         }
 
-        for (const variant of product.variants) {
+        for (const [variantIndex, variant] of product.variants.entries()) {
+            if (
+                dataset.version === 'm002-reference-v9'
+                && variant.referenceUnit === PRODUCT_REFERENCE_UNIT.UNIT
+                && (
+                    !variant.countUnitLabelSingular
+                    || !variant.countUnitLabelPlural
+                )
+            ) {
+                context.addIssue({
+                    code: 'custom',
+                    path: [
+                        'products',
+                        productIndex,
+                        'variants',
+                        variantIndex,
+                    ],
+                    message:
+                        'Le corpus v9 doit nommer chaque unité dénombrable.',
+                });
+            }
             referenceNames.push(normalizeProductText(variant.name));
         }
     });
@@ -477,6 +516,10 @@ const upsertSeedProduct = async ({
             normalizedSignature,
             foodRange: variantDefinition.foodRange,
             referenceUnit: variantDefinition.referenceUnit,
+            countUnitLabelSingular:
+                variantDefinition.countUnitLabelSingular,
+            countUnitLabelPlural:
+                variantDefinition.countUnitLabelPlural,
             yieldPercent: variantDefinition.yieldPercent,
             status: PRODUCT_STATUS.ACTIVE,
             identityActive: true,
@@ -612,10 +655,39 @@ const seedM002Reference = async ({ dataset, actorId }) => {
     });
 };
 
-const loadDefaultDataset = async () => {
-    const datasetUrl = new URL('./data/m002-reference.v6.json', import.meta.url);
+const loadReferenceDataset = async (filename) => {
+    const allowed = new Set([
+        'm002-reference.v6.json',
+        'm002-reference.v7.json',
+        'm002-reference.v8.json',
+        'm002-reference.v9.json',
+    ]);
+
+    if (!allowed.has(filename)) {
+        throw new TypeError('Unsupported M-002 reference dataset.');
+    }
+
+    const datasetUrl = new URL('./data/' + filename, import.meta.url);
     return JSON.parse(await readFile(datasetUrl, 'utf8'));
 };
+
+const loadLegacyReferenceDataset = async () => (
+    loadReferenceDataset('m002-reference.v6.json')
+);
+
+const loadV7ReferenceDataset = async () => (
+    loadReferenceDataset('m002-reference.v7.json')
+);
+
+const loadV8ReferenceDataset = async () => (
+    loadReferenceDataset('m002-reference.v8.json')
+);
+
+const loadDefaultDataset = async () => (
+    loadReferenceDataset('m002-reference.v9.json')
+);
+
+const loadProfessionalReferenceDataset = loadDefaultDataset;
 
 const runSeedM002Reference = async () => {
     await connectDB(env.MONGODB_URI);
@@ -649,6 +721,10 @@ if (isExecutedDirectly) {
 export {
     hashDataset,
     loadDefaultDataset,
+    loadLegacyReferenceDataset,
+    loadV7ReferenceDataset,
+    loadV8ReferenceDataset,
+    loadProfessionalReferenceDataset,
     m002ReferenceDatasetSchema,
     resolveBootstrapActorId,
     runSeedM002Reference,

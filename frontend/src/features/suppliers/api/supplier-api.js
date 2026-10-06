@@ -353,6 +353,21 @@ const supplierApi = supplierApiBase.injectEndpoints({
       transformResponse: (response) => response.data.prices,
       providesTags: ['SupplierPricing'],
     }),
+    listWorkspaceGlobalIndicativePrices: builder.query({
+      query: ({
+        workspaceId,
+        productId,
+        productVariantId,
+        status = 'ACTIVE',
+      }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/supplier-pricing/global-indicative-prices',
+        params: { productId, productVariantId, status },
+      }),
+      transformResponse: (response) => response.data.prices,
+      providesTags: ['SupplierPricing'],
+    }),
     setWorkspaceIndicativePrice: builder.mutation({
       query: ({ workspaceId, productVariantId, ...body }) => ({
         url:
@@ -603,6 +618,7 @@ export const {
   useListSupplierCatalogsQuery,
   useListSuppliersQuery,
   useListWorkspaceIndicativePricesQuery,
+  useListWorkspaceGlobalIndicativePricesQuery,
   usePreviewGlobalSupplierCatalogImportMutation,
   usePreviewSupplierCatalogImportMutation,
   useRemoveDossierSupplierReferenceMutation,

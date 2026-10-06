@@ -18,6 +18,8 @@ import {
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_IMPORT_SCOPE,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
+    PRODUCT_REVIEW_QUEUE_TYPE,
+    PRODUCT_REVIEW_QUEUE_TYPE_REGISTRY,
     PRODUCT_SEARCH_SCOPE,
     PRODUCT_SEARCH_SCOPE_REGISTRY,
     PRODUCT_STATUS,
@@ -161,6 +163,7 @@ describe('M-002 product catalog registries', () => {
         });
         expect(PRODUCT_CONTRIBUTION_TYPE).toEqual({
             CANONICAL_PRODUCT: 'CANONICAL_PRODUCT',
+            VARIANT: 'VARIANT',
             VARIETY: 'VARIETY',
             CHARACTERISTIC: 'CHARACTERISTIC',
         });
@@ -178,6 +181,24 @@ describe('M-002 product catalog registries', () => {
             PENDING: 'PENDING',
             REVIEWED: 'REVIEWED',
         });
+    });
+
+    it('décrit les deux natures de la file Produit À contrôler', () => {
+        expect(PRODUCT_REVIEW_QUEUE_TYPE).toEqual({
+            CONTRIBUTION: 'CONTRIBUTION',
+            DIMENSION_REVIEW: 'DIMENSION_REVIEW',
+        });
+        expect(Object.values(PRODUCT_REVIEW_QUEUE_TYPE_REGISTRY))
+            .toEqual([
+                {
+                    value: 'CONTRIBUTION',
+                    label: 'Contribution',
+                },
+                {
+                    value: 'DIMENSION_REVIEW',
+                    label: 'Valeur à vérifier',
+                },
+            ]);
     });
 
     it('distingue les imports Workspace et globaux', () => {

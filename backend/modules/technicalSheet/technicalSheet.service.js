@@ -275,7 +275,7 @@ const getTechnicalSheet = async ({
             ).populate({
                 path: 'lines.productVariant',
                 select:
-                    '_id name referenceUnit yieldPercent status',
+                    '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
             }),
         ]);
 

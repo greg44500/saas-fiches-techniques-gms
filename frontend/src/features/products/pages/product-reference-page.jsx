@@ -30,15 +30,17 @@ import {
 } from '@/components/ui/tabs';
 import {
   useGetProductReferenceMetadataQuery,
-  useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
-  useReviewProductReferenceContributionMutation,
+  useListProductReferenceReviewQueueQuery,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
 import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
 import { ProductReferenceCategoryDialog } from '@/features/products/components/product-reference-category-dialog';
 import { ProductReferenceDetailsDrawer } from '@/features/products/components/product-reference-details-drawer';
+import {
+  ProductReferenceReviewQueue,
+} from '@/features/products/components/product-reference-review-queue';
 import {
   ProductReferenceSearchAutocomplete,
 } from '@/features/products/components/product-reference-search-autocomplete';
@@ -66,13 +68,13 @@ function ProductReferencePage({ canManage }) {
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState(ALL_REFERENCE_CATEGORIES);
   const [referenceStatus, setReferenceStatus] = useState('ACTIVE');
-  const [contributionStatus, setContributionStatus] =
-    useState('PENDING_REVIEW');
   const [drawerState, setDrawerState] = useState({
     open: false,
     productId: null,
     initialTab: 'product',
     initialDimensionFilter: 'active',
+    initialReferenceFilter: 'all',
+    reviewContext: null,
   });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -91,9 +93,14 @@ function ProductReferencePage({ canManage }) {
     },
     { skip: false },
   );
-  const globalPricesQuery = useListGlobalIndicativePricesQuery({
-    status: 'ACTIVE',
-  });
+  const globalPricesQuery = useListGlobalIndicativePricesQuery(
+    {
+      status: 'ACTIVE',
+    },
+    {
+      skip: section !== 'reference',
+    },
+  );
   const globalPriceByVariantId = useMemo(
     () => new Map(
       (globalPricesQuery.data ?? []).map((price) => [
@@ -104,29 +111,30 @@ function ProductReferencePage({ canManage }) {
     [globalPricesQuery.data],
   );
 
-  const contributionsQuery = useListProductReferenceContributionsQuery(
+  const reviewQueueCountQuery = useListProductReferenceReviewQueueQuery(
     {
-      status: contributionStatus,
-      page: section === 'contributions' ? page : 1,
-      limit: section === 'contributions' ? pageSize : 1,
+      origins: 'omit',
+      page: 1,
+      limit: 1,
     },
     { skip: false },
   );
-  const [reviewContribution, reviewContributionState] =
-    useReviewProductReferenceContributionMutation();
+
   const [updateCategoryStatus, categoryStatusState] =
     useUpdateProductReferenceCategoryStatusMutation();
 
   useEffect(() => {
     const totalPages = section === 'reference'
       ? productsQuery.data?.pagination?.totalPages
-      : section === 'contributions'
-        ? contributionsQuery.data?.pagination?.totalPages
-        : null;
+      : null;
+
+    if (totalPages === 0 && page !== 1) {
+      setPage(1);
+      return;
+    }
 
     if (totalPages && page > totalPages) setPage(totalPages);
   }, [
-    contributionsQuery.data?.pagination?.totalPages,
     page,
     productsQuery.data?.pagination?.totalPages,
     section,
@@ -150,7 +158,7 @@ function ProductReferencePage({ canManage }) {
   );
 
   const referenceCount = productsQuery.data?.pagination?.total ?? 0;
-  const contributionCount = contributionsQuery.data?.pagination?.total ?? 0;
+  const reviewCount = reviewQueueCountQuery.data?.summary?.total ?? 0;
   const categoryCount = metadata?.categories?.length ?? 0;
 
   function changeSection(nextSection) {
@@ -160,7 +168,6 @@ function ProductReferencePage({ canManage }) {
     setSearchInput('');
     setCategoryId(ALL_REFERENCE_CATEGORIES);
     setReferenceStatus('ACTIVE');
-    setContributionStatus('PENDING_REVIEW');
   }
 
   function applySearch(event) {
@@ -179,13 +186,51 @@ function ProductReferencePage({ canManage }) {
     productId,
     initialTab = 'product',
     initialDimensionFilter = 'active',
+    initialReferenceFilter = 'all',
+    reviewContext = null,
   ) {
     setDrawerState({
       open: true,
       productId,
       initialTab,
       initialDimensionFilter,
+      initialReferenceFilter,
+      reviewContext,
     });
+  }
+
+  function examineReviewItem(item) {
+    if (!item.productId) return;
+
+    if (item.dataType === 'REFERENCE') {
+      openProduct(
+        item.productId,
+        'variants',
+        'active',
+        'pending',
+        item,
+      );
+      return;
+    }
+
+    if (item.dataType === 'DIMENSION') {
+      openProduct(
+        item.productId,
+        'dimensions',
+        'pending',
+        'all',
+        item,
+      );
+      return;
+    }
+
+    openProduct(
+      item.productId,
+      'product',
+      'active',
+      'all',
+      item,
+    );
   }
 
   function openCategoryProducts(category) {
@@ -194,38 +239,9 @@ function ProductReferencePage({ canManage }) {
     setSearchInput('');
     setCategoryId(category.id);
     setReferenceStatus('ACTIVE');
-    setContributionStatus('PENDING_REVIEW');
     setPage(1);
   }
 
-
-  async function decideContribution(
-    contribution,
-    decision,
-    targetReferenceId = null,
-  ) {
-    try {
-      await reviewContribution({
-        contributionId: contribution.id,
-        decision,
-        ...(targetReferenceId ? { targetReferenceId } : {}),
-      }).unwrap();
-      toast({
-        title: decision === 'APPROVE'
-          ? 'Contribution approuvée'
-          : decision === 'MERGE'
-            ? 'Contribution fusionnée'
-            : 'Contribution refusée',
-        variant: 'success',
-      });
-    } catch (error) {
-      toast({
-        title: 'Décision impossible',
-        description: getApiErrorMessage(error),
-        variant: 'destructive',
-      });
-    }
-  }
 
   async function confirmCategoryLifecycle() {
     const category = categoryLifecycle;
@@ -397,127 +413,6 @@ function ProductReferencePage({ canManage }) {
     },
   ];
 
-  const contributionTypeLabel = (type) => (
-    (metadata?.productContributionTypes ?? [])
-      .find(({ value }) => value === type)?.label
-    ?? type
-  );
-  const contributionStatusLabel = (status) => (
-    (metadata?.productContributionStatuses ?? [])
-      .find(({ value }) => value === status)?.label
-    ?? status
-  );
-  const characteristicKindLabel = (kind) => (
-    (metadata?.productCharacteristicKinds ?? [])
-      .find(({ value }) => value === kind)?.label
-    ?? kind
-  );
-
-  const contributionColumns = [
-    {
-      id: 'value',
-      header: 'Proposition',
-      cell: (contribution) => (
-        <div>
-          <p className="font-medium">{contribution.proposedValue}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {contributionTypeLabel(contribution.type)}
-            {contribution.characteristicKind
-              ? ' · ' + characteristicKindLabel(contribution.characteristicKind)
-              : ''}
-          </p>
-        </div>
-      ),
-    },
-    {
-      id: 'origin',
-      header: 'Origine',
-      cell: (contribution) => (
-        <div>
-          <p>{contribution.workspace?.name ?? 'Workspace'}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {[
-              contribution.author?.firstName,
-              contribution.author?.lastName,
-            ].filter(Boolean).join(' ')
-              || contribution.author?.email
-              || 'Auteur non disponible'}
-          </p>
-        </div>
-      ),
-    },
-    {
-      id: 'status',
-      header: 'Statut',
-      cell: (contribution) => (
-        <StatusBadge
-          tone={contribution.status === 'PENDING_REVIEW' ? 'warning' : 'neutral'}
-        >
-          {contributionStatusLabel(contribution.status)}
-        </StatusBadge>
-      ),
-    },
-    {
-      id: 'reason',
-      header: 'Motif',
-      cell: (contribution) => (
-        <div className="space-y-1 text-sm text-muted-foreground">
-          <p>{contribution.reasons?.[0]?.message ?? 'Aucun motif'}</p>
-          {(contribution.candidates ?? []).length > 0 && (
-            <p className="text-xs">
-              Valeurs proches : {(contribution.candidates ?? [])
-                .map((candidate) => candidate.name)
-                .join(', ')}
-            </p>
-          )}
-        </div>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: (contribution) => (
-        contribution.status === 'PENDING_REVIEW' && canManage ? (
-          <DataTableActions>
-            <Button
-              disabled={reviewContributionState.isLoading}
-              onClick={() => decideContribution(contribution, 'APPROVE')}
-              size="sm"
-              type="button"
-            >
-              Approuver
-            </Button>
-            {(contribution.candidates ?? []).map((candidate) => (
-              <Button
-                disabled={reviewContributionState.isLoading}
-                key={candidate.id}
-                onClick={() => decideContribution(
-                  contribution,
-                  'MERGE',
-                  candidate.id,
-                )}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Fusionner avec {candidate.name}
-              </Button>
-            ))}
-            <Button
-              disabled={reviewContributionState.isLoading}
-              onClick={() => decideContribution(contribution, 'REJECT')}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              Refuser
-            </Button>
-          </DataTableActions>
-        ) : null
-      ),
-    },
-  ];
-
   const categoryColumns = [
     {
       id: 'name',
@@ -588,28 +483,35 @@ function ProductReferencePage({ canManage }) {
 
   const initialLoading = (
     metadataQuery.isLoading
-    || (globalPricesQuery.isLoading && globalPricesQuery.data === undefined)
     || (
       section === 'reference'
-      && productsQuery.isLoading
-      && productsQuery.data === undefined
-    )
-    || (
-      section === 'contributions'
-      && contributionsQuery.isLoading
-      && contributionsQuery.data === undefined
+      && (
+        (
+          globalPricesQuery.isLoading
+          && globalPricesQuery.data === undefined
+        )
+        || (
+          productsQuery.isLoading
+          && productsQuery.data === undefined
+        )
+      )
     )
   );
   const hasError = metadataQuery.isError
-    || globalPricesQuery.isError
-    || (section === 'reference' && productsQuery.isError)
-    || (section === 'contributions' && contributionsQuery.isError);
+    || (
+      section === 'reference'
+      && (
+        globalPricesQuery.isError
+        || productsQuery.isError
+      )
+    );
 
   function retry() {
     metadataQuery.refetch();
-    globalPricesQuery.refetch();
-    if (section === 'reference') productsQuery.refetch();
-    if (section === 'contributions') contributionsQuery.refetch();
+    if (section === 'reference') {
+      globalPricesQuery.refetch();
+      productsQuery.refetch();
+    }
   }
 
   return (
@@ -659,8 +561,8 @@ function ProductReferencePage({ canManage }) {
           <TabsTrigger value="reference" variant="section">
             Référentiel ({referenceCount})
           </TabsTrigger>
-          <TabsTrigger value="contributions" variant="section">
-            Contributions ({contributionCount})
+          <TabsTrigger value="review" variant="section">
+            À contrôler ({reviewCount})
           </TabsTrigger>
           <TabsTrigger value="categories" variant="section">
             Catégories ({categoryCount})
@@ -770,76 +672,15 @@ function ProductReferencePage({ canManage }) {
         </section>
       )}
 
-      {section === 'contributions' && (
-        <section className="rounded-xl border border-border bg-card">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
-            <div>
-              <h2 className="font-semibold">Contributions au référentiel</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Examinez les propositions qui ne peuvent pas être publiées automatiquement.
-              </p>
-            </div>
-            <Select
-              items={metadata?.productContributionStatuses ?? []}
-              onValueChange={(value) => {
-                setContributionStatus(value);
-                setPage(1);
-              }}
-              value={contributionStatus}
-            >
-              <SelectTrigger aria-label="Filtrer les contributions par statut">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(metadata?.productContributionStatuses ?? []).map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {initialLoading ? (
-            <p className="p-5 text-sm text-muted-foreground">
-              Chargement des contributions…
-            </p>
-          ) : hasError ? (
-            <ErrorState
-              description="Les contributions n’ont pas pu être chargées."
-              onRetry={retry}
-              title="Contributions indisponibles"
-            />
-          ) : (
-            <>
-              <DataTable
-                caption="Contributions au référentiel Produits"
-                columns={contributionColumns}
-                data={contributionsQuery.data?.contributions ?? []}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucune contribution ne correspond à ce statut."
-                    title="Aucune contribution"
-                  />
-                )}
-                getRowKey={(contribution) => contribution.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
-              <div className="px-5 pb-5">
-                <DataPagination
-                  ariaLabel="Pagination des contributions"
-                  disabled={contributionsQuery.isFetching}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
-                  page={page}
-                  pageSize={pageSize}
-                  pagination={contributionsQuery.data?.pagination}
-                />
-              </div>
-            </>
-          )}
-        </section>
+      {section === 'review' && (
+        <ProductReferenceReviewQueue
+          metadata={metadata}
+          onExamine={examineReviewItem}
+          page={page}
+          pageSize={pageSize}
+          setPage={setPage}
+          setPageSize={setPageSize}
+        />
       )}
 
       {section === 'categories' && (
@@ -875,8 +716,14 @@ function ProductReferencePage({ canManage }) {
         canManage={canManage}
         metadata={metadata}
         initialDimensionFilter={drawerState.initialDimensionFilter}
+        initialReferenceFilter={drawerState.initialReferenceFilter}
         initialTab={drawerState.initialTab}
-        onClose={() => setDrawerState((current) => ({ ...current, open: false }))}
+        reviewContext={drawerState.reviewContext}
+        onClose={() => setDrawerState((current) => ({
+          ...current,
+          open: false,
+          reviewContext: null,
+        }))}
         open={drawerState.open}
         productId={drawerState.productId}
       />

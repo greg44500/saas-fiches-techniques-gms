@@ -69,10 +69,11 @@ describe('M-003 global indicative price bootstrap', () => {
 
         expect(parsed.ready).toBe(true);
         expect(parsed.version)
-            .toBe('m003-global-indicative-v1');
+            .toBe('m003-global-indicative-v3');
         expect(parsed.currency).toBe('EUR');
-        expect(parsed.prices).toHaveLength(264);
+        expect(parsed.prices).toHaveLength(362);
         expect(parsed.note).toMatch(/fictives et indicatives/i);
+        expect(parsed.note).toMatch(/aucun montant n'est inventé/i);
 
         for (const price of parsed.prices) {
             expect(Number(price.amount)).toBeGreaterThan(0);
@@ -82,7 +83,7 @@ describe('M-003 global indicative price bootstrap', () => {
         }
     });
 
-    it('couvre exactement les Références Produit du bootstrap M-002 actif', async () => {
+    it('reste compatible avec le bootstrap M-002 v8 sans inventer de Prix repère pour les nouvelles Références', async () => {
         const [prices, products] = await Promise.all([
             loadDefaultGlobalIndicativePriceDataset(),
             loadDefaultDataset(),
@@ -102,13 +103,25 @@ describe('M-003 global indicative price bootstrap', () => {
             ]),
         );
 
-        expect(actual.size).toBe(expected.size);
-        expect([...actual.keys()].sort())
-            .toEqual([...expected.keys()].sort());
+        expect(expected.size).toBe(488);
+        expect(actual.size).toBe(362);
 
-        for (const [reference, unit] of expected) {
-            expect(actual.get(reference)).toBe(unit);
+        for (const [reference, unit] of actual) {
+            expect(expected.get(reference)).toBe(unit);
         }
+
+        const unpriced = [...expected.keys()].filter(
+            (reference) => !actual.has(reference),
+        );
+
+        expect(unpriced).toHaveLength(126);
+        expect(unpriced).toEqual(expect.arrayContaining([
+            'Œuf entier liquide pasteurisé',
+            'Purée de mangue surgelée',
+            'Sauce barbecue',
+            'Cerneau de noix',
+            'Fond de tarte sucré cru surgelé Ø 10 cm',
+        ]));
     });
 
     it('installe uniquement les Prix repères globaux absents', async () => {

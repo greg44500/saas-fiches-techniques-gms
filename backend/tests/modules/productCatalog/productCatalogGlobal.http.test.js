@@ -42,6 +42,9 @@ import {
     createProductVariety,
 } from '../../../modules/productCatalog/productReferenceDimension.service.js';
 import {
+    ReferenceContribution,
+} from '../../../modules/productCatalog/referenceContribution.model.js';
+import {
     User,
 } from '../../../modules/users/user.model.js';
 import {
@@ -638,6 +641,202 @@ describe('M-002 global product reference HTTP contract', () => {
 
         expect(preview.status).toBe(200);
         expect(preview.body.data.counts.CREATE_PRODUCT).toBe(1);
+    });
+
+    it('expose la file À contrôler paginée sous la permission globale de lecture', async () => {
+        const workspace = await createWorkspaceOwnerFixture();
+
+        const productResponse = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Produit file HTTP' });
+
+        const productId = productResponse.body.data.product.id;
+
+        await createProductVariety({
+            actorId: workspace.owner._id,
+            workspaceId: workspace.workspace._id,
+            productId,
+            name: 'Valeur file HTTP',
+        });
+
+        const response = await request(app)
+            .get('/api/product-reference/review-queue')
+            .query({
+                type: 'DIMENSION_REVIEW',
+                workspaceId: workspace.workspace._id.toString(),
+                origins: 'omit',
+                page: 1,
+                limit: 10,
+            })
+            .set(bearer(governorToken));
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.summary).toMatchObject({
+            total: 1,
+            productCount: 0,
+            referenceCount: 0,
+            dimensionCount: 1,
+        });
+        expect(response.body.data.origins).toEqual([]);
+        expect(response.body.data.items).toEqual([
+            expect.objectContaining({
+                type: 'DIMENSION_REVIEW',
+                dimensionType: 'VARIETY',
+                value: 'Valeur file HTTP',
+                product: expect.objectContaining({
+                    id: productId,
+                    name: 'Produit file HTTP',
+                }),
+                workspaceId: null,
+                workspace: null,
+                authorId: null,
+                author: null,
+            }),
+        ]);
+        expect(response.body.meta).toEqual({
+            page: 1,
+            limit: 10,
+            total: 1,
+            totalPages: 1,
+        });
+    });
+
+    it('retourne ensemble les Contributions traitées dans l’Historique', async () => {
+        const workspace = await createWorkspaceOwnerFixture();
+
+        await ReferenceContribution.create([
+            {
+                type: 'CANONICAL_PRODUCT',
+                workspace: workspace.workspace._id,
+                author: workspace.owner._id,
+                proposedValue: 'Produit historique approuvé',
+                normalizedValue: 'produit historique approuve',
+                classification: 'PROVISIONAL',
+                status: 'APPROVED',
+                reviewer: governor._id,
+                reviewedAt: new Date('2026-10-03T10:00:00.000Z'),
+            },
+            {
+                type: 'CANONICAL_PRODUCT',
+                workspace: workspace.workspace._id,
+                author: workspace.owner._id,
+                proposedValue: 'Produit historique refusé',
+                normalizedValue: 'produit historique refuse',
+                classification: 'PROVISIONAL',
+                status: 'REJECTED',
+                reviewer: governor._id,
+                reviewedAt: new Date('2026-10-03T11:00:00.000Z'),
+            },
+            {
+                type: 'CANONICAL_PRODUCT',
+                workspace: workspace.workspace._id,
+                author: workspace.owner._id,
+                proposedValue: 'Produit encore à traiter',
+                normalizedValue: 'produit encore a traiter',
+                classification: 'PROVISIONAL',
+                status: 'PENDING_REVIEW',
+            },
+        ]);
+
+        const response = await request(app)
+            .get('/api/product-reference/contributions')
+            .query({
+                reviewedOnly: 'true',
+                page: 1,
+                limit: 20,
+            })
+            .set(bearer(governorToken));
+
+        expect(response.status).toBe(200);
+        expect(response.body.meta.total).toBe(2);
+        expect(response.body.data.contributions).toEqual([
+            expect.objectContaining({
+                proposedValue: 'Produit historique refusé',
+                status: 'REJECTED',
+                decision: 'REJECT',
+            }),
+            expect.objectContaining({
+                proposedValue: 'Produit historique approuvé',
+                status: 'APPROVED',
+                decision: 'APPROVE',
+            }),
+        ]);
+    });
+
+    it('refuse de combiner un statut explicite avec reviewedOnly=true', async () => {
+        const response = await request(app)
+            .get('/api/product-reference/contributions')
+            .query({
+                status: 'APPROVED',
+                reviewedOnly: 'true',
+            })
+            .set(bearer(governorToken));
+
+        expect(response.status).toBe(400);
+    });
+
+    it('sépare lecture et traitement de la file À contrôler par permission', async () => {
+        const workspace = await createWorkspaceOwnerFixture();
+        const productResponse = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Produit file lecture seule' });
+        const productId = productResponse.body.data.product.id;
+
+        const variety = await createProductVariety({
+            actorId: workspace.owner._id,
+            workspaceId: workspace.workspace._id,
+            productId,
+            name: 'Variété lecture seule',
+        });
+
+        const reader = await createUserToken({
+            email: 'product-reference-reader@example.test',
+        });
+        const readerRole = await syncApplicationGlobalSystemRole({
+            roleData: {
+                key: 'product_reference_reader_test',
+                name: 'Lecture référentiel Produits test',
+                description: 'Lecture seule du référentiel Produit.',
+                permissions: [
+                    PRODUCT_CATALOG_GLOBAL_PERMISSION.READ,
+                ],
+            },
+            actorId: governor._id,
+        });
+
+        await bootstrapApplicationGlobalMember({
+            userId: reader.user._id,
+            roleId: readerRole.id,
+            actorId: governor._id,
+        });
+
+        const listed = await request(app)
+            .get('/api/product-reference/review-queue')
+            .set(bearer(reader.token));
+
+        expect(listed.status).toBe(200);
+        expect(listed.body.data.items).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    sourceId: variety.id,
+                    type: 'DIMENSION_REVIEW',
+                }),
+            ]),
+        );
+
+        const review = await request(app)
+            .post(
+                '/api/product-reference/'
+                + productId
+                + '/dimensions/VARIETY/'
+                + variety.id
+                + '/review',
+            )
+            .set(bearer(reader.token));
+
+        expect(review.status).toBe(403);
     });
 
     it('ne donne aucun droit métier global implicite à un Super Admin Platform', async () => {

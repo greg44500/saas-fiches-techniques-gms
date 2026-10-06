@@ -6,9 +6,9 @@ import {
 } from 'react';
 import {
   Euro,
-  Minus,
   PackagePlus,
   Plus,
+  Star,
 } from 'lucide-react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
@@ -17,6 +17,11 @@ import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   Tabs,
   TabsContent,
@@ -39,12 +44,13 @@ import {
   getConservationTypeLabel,
   getProductStatusLabel,
   getProductStatusTone,
-  getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 import {
   useListSupplierArticlesQuery,
   useListSuppliersQuery,
+  useListWorkspaceGlobalIndicativePricesQuery,
   useListWorkspaceIndicativePricesQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
@@ -59,8 +65,69 @@ import {
 import {
   formatPackaging,
   formatPrice,
+  formatSourcePrice,
 } from '@/features/suppliers/lib/supplier-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
+
+function FilledStarIcon(props) {
+  return <Star {...props} fill="currentColor" />;
+}
+
+function FavoriteToggleIcon({
+  disabled,
+  favorite,
+  label,
+  onClick,
+}) {
+  const tooltipLabel = favorite
+    ? 'Retirer des favoris'
+    : 'Ajouter aux favoris';
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={(
+          <button
+            aria-label={label}
+            className="group relative inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            disabled={disabled}
+            onClick={onClick}
+            type="button"
+          />
+        )}
+      >
+        {favorite ? (
+          <>
+            <FilledStarIcon
+              aria-hidden="true"
+              className="size-4 transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0"
+              data-favorite-state-icon="filled"
+            />
+            <Star
+              aria-hidden="true"
+              className="absolute size-4 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              data-favorite-hover-icon="outline"
+            />
+          </>
+        ) : (
+          <>
+            <Star
+              aria-hidden="true"
+              className="size-4 transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0"
+              data-favorite-state-icon="outline"
+            />
+            <FilledStarIcon
+              aria-hidden="true"
+              className="absolute size-4 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              data-favorite-hover-icon="filled"
+            />
+          </>
+        )}
+      </TooltipTrigger>
+      <TooltipContent>{tooltipLabel}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 function DetailRow({ label, value }) {
   return (
@@ -71,16 +138,23 @@ function DetailRow({ label, value }) {
   );
 }
 
-function VariantIdentity({ metadata, variant }) {
+function VariantIdentity({
+  metadata,
+  nameAction = null,
+  variant,
+}) {
   return (
     <>
-      <p className="font-medium">{getVariantLabel(variant)}</p>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <p className="truncate font-medium">{getVariantLabel(variant)}</p>
+        {nameAction}
+      </div>
       <p className="mt-1 text-sm text-muted-foreground">
         Conservation : {getConservationTypeLabel(
           metadata,
           variant.conservationType,
         )}
-        {' · '}Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
+        {' · '}Unité : {getVariantReferenceUnitLabel(metadata, variant)}
         {variant.yieldPercent
           ? ' · Rendement : ' + formatYield(variant.yieldPercent)
           : ''}
@@ -139,6 +213,17 @@ function ProductDetailsDrawer({
       skip: !open || !productId || !canReadIndicativePrices,
     },
   );
+  const globalIndicativePriceQuery =
+    useListWorkspaceGlobalIndicativePricesQuery(
+      {
+        workspaceId,
+        productId,
+        status: 'ACTIVE',
+      },
+      {
+        skip: !open || !productId || !canReadIndicativePrices,
+      },
+    );
   const supplierQuery = useListSuppliersQuery(
     {
       workspaceId,
@@ -206,6 +291,14 @@ function ProductDetailsDrawer({
     ),
     [indicativePriceQuery.data],
   );
+  const globalIndicativePriceByVariant = useMemo(
+    () => new Map(
+      (globalIndicativePriceQuery.data ?? [])
+        .map((price) => [price.productVariant?.id, price])
+        .filter(([variantId]) => Boolean(variantId)),
+    ),
+    [globalIndicativePriceQuery.data],
+  );
   const mutationPending = attachState.isLoading || archiveState.isLoading;
 
   if (!detail && !open) return null;
@@ -217,7 +310,6 @@ function ProductDetailsDrawer({
           workspaceId,
           variantId: variant.id,
         }).unwrap();
-        setSection('catalog');
         toast({
           title: 'Référence ajoutée aux favoris',
           description:
@@ -273,10 +365,6 @@ function ProductDetailsDrawer({
               <div className="rounded-lg border border-border px-4">
                 <dl>
                   <DetailRow label="Nom" value={product.name} />
-                  <DetailRow
-                    label="Alias"
-                    value={product.aliases?.length ? product.aliases.join(', ') : null}
-                  />
                   <DetailRow label="Catégorie" value={product.category?.name} />
                   <div className="grid gap-1 py-3 sm:grid-cols-[160px_1fr]">
                     <dt className="text-sm text-muted-foreground">Statut</dt>
@@ -316,6 +404,8 @@ function ProductDetailsDrawer({
                       && product.status === 'ACTIVE'
                       && variant.status === 'ACTIVE'
                     );
+                    const globalPrice =
+                      globalIndicativePriceByVariant.get(variant.id) ?? null;
 
                     return (
                       <li
@@ -323,45 +413,121 @@ function ProductDetailsDrawer({
                         key={variant.id}
                       >
                         <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <VariantIdentity metadata={metadata} variant={variant} />
+                          <div className="min-w-0">
+                            <VariantIdentity
+                              metadata={metadata}
+                              nameAction={
+                                can(PRODUCT_PERMISSION.CATALOG_MANAGE)
+                                && (
+                                  inCatalog
+                                    ? (
+                                      <FavoriteToggleIcon
+                                        disabled={mutationPending}
+                                        favorite
+                                        label={
+                                          'Retirer '
+                                          + getVariantLabel(variant)
+                                          + ' des favoris'
+                                        }
+                                        onClick={() => changeCatalog(
+                                          variant,
+                                          false,
+                                        )}
+                                      />
+                                    )
+                                    : canAttach
+                                      ? (
+                                        <FavoriteToggleIcon
+                                          disabled={mutationPending}
+                                          favorite={false}
+                                          label={
+                                            'Ajouter '
+                                            + getVariantLabel(variant)
+                                            + ' aux favoris'
+                                          }
+                                          onClick={() => changeCatalog(
+                                            variant,
+                                            true,
+                                          )}
+                                        />
+                                      )
+                                      : null
+                                )
+                              }
+                              variant={variant}
+                            />
                           </div>
 
                           <div className="flex items-center gap-2">
                             <StatusBadge tone={getProductStatusTone(variant.status)}>
                               {getProductStatusLabel(metadata, variant.status)}
                             </StatusBadge>
-
-                            {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
-                              inCatalog ? (
-                                <ActionIconButton
-                                  Icon={Minus}
-                                  disabled={mutationPending}
-                                  label={
-                                    'Retirer '
-                                    + getVariantLabel(variant)
-                                    + ' des favoris'
-                                  }
-                                  onClick={() => changeCatalog(variant, false)}
-                                  tooltipLabel="Retirer des favoris"
-                                  variant="outline"
-                                />
-                              ) : canAttach ? (
-                                <ActionIconButton
-                                  Icon={Plus}
-                                  disabled={mutationPending}
-                                  label={
-                                    'Ajouter '
-                                    + getVariantLabel(variant)
-                                    + ' aux favoris'
-                                  }
-                                  onClick={() => changeCatalog(variant, true)}
-                                  tooltipLabel="Ajouter aux favoris"
-                                />
-                              ) : null
+                            {variant.governanceStatus === 'PROVISIONAL' && (
+                              <StatusBadge tone="warning">
+                                À contrôler
+                              </StatusBadge>
                             )}
+
                           </div>
                         </div>
+
+                        {canReadIndicativePrices && (
+                          <div className="mt-3 border-t border-border pt-3">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Prix repère global
+                            </p>
+                            <p className="mt-1 text-sm font-medium">
+                              {globalIndicativePriceQuery.isLoading
+                                && globalIndicativePriceQuery.data === undefined
+                                ? 'Chargement…'
+                                : globalPrice
+                                  ? formatPrice(globalPrice, {
+                                      hideDefaultCurrency: true,
+                                      productVariant: variant,
+                                    })
+                                  : 'Non renseigné'}
+                            </p>
+
+                            {globalPrice?.packaging && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Conditionnement repère : {' '}
+                                {formatPackaging(globalPrice.packaging, {
+                                  productVariant: variant,
+                                })}
+                                {globalPrice.sourceBasis === 'PACKAGE'
+                                  ? ' · ' + formatSourcePrice(globalPrice)
+                                  : ''}
+                              </p>
+                            )}
+
+                            {(globalPrice?.sourceOrganization
+                              || globalPrice?.source
+                              || globalPrice?.observedAt) && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {[
+                                  globalPrice.sourceOrganization,
+                                  globalPrice.observedAt
+                                    ? 'relevé le '
+                                      + new Date(globalPrice.observedAt)
+                                        .toLocaleDateString('fr-FR')
+                                    : null,
+                                  globalPrice.source,
+                                ].filter(Boolean).join(' · ')}
+                              </p>
+                            )}
+
+                            {globalPrice?.sourceUrl && (
+                              <a
+                                className="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline"
+                                href={globalPrice.sourceUrl}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                Consulter la source
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </li>
                     );
                   })}
@@ -379,7 +545,8 @@ function ProductDetailsDrawer({
                 )}
 
                 {canReadIndicativePrices
-                && indicativePriceQuery.isError && (
+                && (indicativePriceQuery.isError
+                  || globalIndicativePriceQuery.isError) && (
                   <p className="text-sm text-destructive">
                     Les Prix indicatifs n’ont pas pu être chargés.
                   </p>
@@ -396,6 +563,10 @@ function ProductDetailsDrawer({
                         articlesByVariant.get(variant.id) ?? [];
                       const indicativePrice =
                         indicativePriceByVariant.get(variant.id) ?? null;
+                      const globalPrice =
+                        globalIndicativePriceByVariant.get(variant.id) ?? null;
+                      const displayedPrice =
+                        indicativePrice ?? globalPrice;
 
                       return (
                         <li
@@ -412,6 +583,11 @@ function ProductDetailsDrawer({
                               </div>
 
                               <div className="flex items-center gap-2">
+                                {variant.governanceStatus === 'PROVISIONAL' && (
+                                  <StatusBadge tone="warning">
+                                    À contrôler
+                                  </StatusBadge>
+                                )}
                                 {canManageIndicativePrices && (
                                   <ActionIconButton
                                     Icon={Euro}
@@ -441,7 +617,7 @@ function ProductDetailsDrawer({
 
                                 {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && (
                                   <ActionIconButton
-                                    Icon={Minus}
+                                    Icon={FilledStarIcon}
                                     disabled={mutationPending}
                                     label={
                                       'Retirer '
@@ -460,21 +636,35 @@ function ProductDetailsDrawer({
                               {canReadIndicativePrices && (
                                 <div>
                                   <p className="text-xs font-medium text-muted-foreground">
-                                    PU HT estimé
+                                    {indicativePrice
+                                      ? 'Prix indicatif Workspace'
+                                      : 'Prix repère global (repli)'}
                                   </p>
                                   <p className="mt-1 text-sm font-medium">
-                                    {indicativePriceQuery.isLoading
-                                      && indicativePriceQuery.data === undefined
+                                    {(indicativePriceQuery.isLoading
+                                      && indicativePriceQuery.data === undefined)
+                                      || (globalIndicativePriceQuery.isLoading
+                                        && globalIndicativePriceQuery.data
+                                          === undefined)
                                       ? 'Chargement…'
-                                      : indicativePrice
-                                        ? formatPrice(indicativePrice, {
+                                      : displayedPrice
+                                        ? formatPrice(displayedPrice, {
                                             hideDefaultCurrency: true,
+                                            productVariant: variant,
                                           })
                                         : 'Non renseigné'}
                                   </p>
-                                  {indicativePrice?.source && (
+                                  {displayedPrice?.source && (
                                     <p className="mt-1 text-xs text-muted-foreground">
-                                      {indicativePrice.source}
+                                      {displayedPrice.source}
+                                    </p>
+                                  )}
+                                  {displayedPrice?.packaging && (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      {formatPackaging(
+                                        displayedPrice.packaging,
+                                        { productVariant: variant },
+                                      )}
                                     </p>
                                   )}
                                 </div>
@@ -508,7 +698,10 @@ function ProductDetailsDrawer({
                                               + article.supplierReference}
                                           </p>
                                           <p className="mt-1 text-xs text-muted-foreground">
-                                            {formatPackaging(article.packaging)}
+                                            {formatPackaging(
+                                              article.packaging,
+                                              { productVariant: variant },
+                                            )}
                                           </p>
                                         </li>
                                       ))}
@@ -534,13 +727,24 @@ function ProductDetailsDrawer({
           existingVariants={variants}
           metadata={metadata}
           onClose={() => setVariantDialogOpen(false)}
-          onCreated={() => {
+          onCreated={(result) => {
             setVariantDialogOpen(false);
-            setSection('catalog');
+
+            if (result?.classification === 'EXISTING') {
+              toast({
+                title: 'Référence existante utilisée',
+                description:
+                  'La Référence a été ajoutée à vos favoris sans créer de doublon.',
+                variant: 'success',
+              });
+              return;
+            }
+
+            setSection('variants');
             toast({
-              title: 'Référence créée',
+              title: 'Référence créée · À contrôler',
               description:
-                'Elle a été ajoutée aux favoris. Vous pouvez maintenant compléter son prix ou son approvisionnement.',
+                'Elle est utilisable dans cet espace de travail et attend la validation du référentiel global.',
               variant: 'success',
             });
           }}

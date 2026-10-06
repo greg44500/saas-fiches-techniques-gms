@@ -242,7 +242,10 @@ function SupplierReferencePage({ canManage }) {
     {
       id: 'packaging',
       header: 'Conditionnement',
-      cell: (article) => formatPackaging(article.packaging),
+      cell: (article) => formatPackaging(
+        article.packaging,
+        { productVariant: article.productVariant },
+      ),
     },
     {
       id: 'status',

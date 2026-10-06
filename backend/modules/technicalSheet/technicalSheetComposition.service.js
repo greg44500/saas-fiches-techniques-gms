@@ -48,7 +48,7 @@ const resolveProductVariants = async ({
             ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
         }),
     ).select(
-        '_id name referenceUnit yieldPercent status identityActive',
+        '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status identityActive',
     );
 
     if (session) {

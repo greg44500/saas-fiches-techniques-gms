@@ -82,6 +82,41 @@ describe('productReferenceApi', () => {
     });
 
     expect(
+      captured.endpointDefinitions.listProductReferenceReviewQueue.query({
+        type: 'DIMENSION_REVIEW',
+        workspaceId: 'workspace-1',
+        origins: 'omit',
+        page: 2,
+        limit: 10,
+      }),
+    ).toEqual({
+      url: '/product-reference/review-queue',
+      params: {
+        type: 'DIMENSION_REVIEW',
+        workspaceId: 'workspace-1',
+        origins: 'omit',
+        page: 2,
+        limit: 10,
+      },
+    });
+
+    expect(
+      captured.endpointDefinitions.listProductReferenceContributions.query({
+        reviewedOnly: true,
+        page: 1,
+        limit: 20,
+      }),
+    ).toEqual({
+      url: '/product-reference/contributions',
+      params: {
+        status: undefined,
+        reviewedOnly: 'true',
+        page: 1,
+        limit: 20,
+      },
+    });
+
+    expect(
       captured.endpointDefinitions.reviewProductReferenceContribution.query({
         contributionId: 'contribution-1',
         decision: 'APPROVE',

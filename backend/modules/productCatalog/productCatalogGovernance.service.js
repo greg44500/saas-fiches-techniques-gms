@@ -719,6 +719,18 @@ const updateVariant = async ({
             referenceUnit: Object.prototype.hasOwnProperty.call(changes, 'referenceUnit')
                 ? changes.referenceUnit
                 : variant.referenceUnit,
+            countUnitLabelSingular: Object.prototype.hasOwnProperty.call(
+                changes,
+                'countUnitLabelSingular',
+            )
+                ? changes.countUnitLabelSingular
+                : variant.countUnitLabelSingular,
+            countUnitLabelPlural: Object.prototype.hasOwnProperty.call(
+                changes,
+                'countUnitLabelPlural',
+            )
+                ? changes.countUnitLabelPlural
+                : variant.countUnitLabelPlural,
             yieldPercent: Object.prototype.hasOwnProperty.call(changes, 'yieldPercent')
                 ? changes.yieldPercent
                 : variant.yieldPercent,

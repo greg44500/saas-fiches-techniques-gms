@@ -55,6 +55,12 @@ Une Référence Produit exploitable porte obligatoirement :
 - `conservationType` ;
 - `referenceUnit`.
 
+Lorsque `referenceUnit = UNIT`, elle porte aussi les libellés métier de cette
+unité dénombrable :
+
+- `countUnitLabelSingular` ;
+- `countUnitLabelPlural`.
+
 Règles :
 
 - le nom visible n'est jamais reconstruit automatiquement depuis les dimensions ;
@@ -62,6 +68,12 @@ Règles :
 - une collision exacte bloque la création ;
 - les noms proches déclenchent la logique de revue/déduplication existante ;
 - les dimensions servent à enrichir, filtrer et rechercher, pas à fabriquer l'identité.
+- les libellés dénombrables servent uniquement à présenter et historiser
+  `UNIT` comme « tranche(s) », « œuf(s) », « pain(s) », etc. ;
+- ces libellés ne participent ni à l'identité, ni à la déduplication, ni aux
+  conversions ;
+- carton, paquet, sac et autres contenants restent des conditionnements
+  commerciaux M-003, jamais des unités de référence M-002.
 
 Exemples de références distinctes :
 
@@ -138,6 +150,8 @@ Une référence reste exploitable sans devoir renseigner toutes ces dimensions.
 
 La gouvernance des valeurs est non bloquante : une nouvelle identité nécessitant contrôle peut être créée en `PROVISIONAL`, immédiatement exploitable dans le Workspace d'origine, puis validée, corrigée, fusionnée ou rejetée par la gouvernance Platform. Une proximité lexicale produit une confirmation utilisateur explicite et jamais une fusion automatique silencieuse.
 
+Cette règle couvre désormais aussi une **Référence Produit** créée depuis un Workspace sous un Produit global existant : le `ProductVariant` est créé en `PROVISIONAL`, une `ReferenceContribution` de type `VARIANT` porte la demande de contrôle, et le moteur de rapprochement M-002 est réutilisé avant création puis lors de la gouvernance Platform. Une correspondance exacte réutilise l'existant ; une proximité telle que `Galla / Gala` reste une suggestion et nécessite une décision humaine explicite.
+
 `Type commercial` reste dans le modèle M-002 et dans les données existantes, mais les nouveaux ajouts Workspace sont temporairement masqués tant que sa définition métier n'est pas validée.
 
 ## 6.1. Revue qualité Platform des Dimensions
@@ -165,7 +179,7 @@ Règles :
 - une Dimension créée depuis un Workspace porte `PENDING` ;
 - la migration historique applique la même règle à partir de `contributedFromWorkspace` ;
 - le tableau Platform expose uniquement un compteur des Dimensions actives encore `PENDING` ;
-- cliquer sur cette pastille ouvre directement le drawer Produit sur `Dimensions > À vérifier` ;
+- cliquer sur cette pastille ouvre directement le drawer Produit sur `Dimensions > À contrôler` ;
 - aucune action d'acquittement global n'est disponible dans le tableau Produit ;
 - chaque ligne `PENDING` peut être marquée `REVIEWED` indépendamment ;
 - corriger une ligne `PENDING` depuis la Platform vaut revue explicite et la passe à `REVIEWED` ;
@@ -174,9 +188,88 @@ Règles :
 - archiver reste distinct de supprimer : l'archivage conserve une valeur métier valide mais indisponible ;
 - une Dimension archivée encore `PENDING` ne compte pas dans la pastille ; si elle est réactivée sans revue, elle redevient à vérifier ;
 - les événements `PRODUCT_DIMENSION_REVIEWED` et `PRODUCT_DIMENSION_DELETED` alimentent l'historique Produit ;
-- la revue qualité ne vaut jamais approbation d'une contribution `PROVISIONAL` ou `PENDING_REVIEW`.
+- une revue qualité directe ne vaut jamais, à elle seule, approbation d'une identité `PROVISIONAL` ;
+- lorsqu'une Dimension `PROVISIONAL` est elle-même l'objet d'une décision de gouvernance `APPROVE`, cette décision humaine clôt également sa revue qualité en la passant à `REVIEWED`, afin de ne jamais demander un second contrôle sur la même donnée.
 
-La revue qualité des Dimensions et la gouvernance des Contributions restent deux responsabilités distinctes.
+La revue qualité et la gouvernance restent deux responsabilités backend distinctes ; une même décision humaine peut toutefois satisfaire les deux lorsqu'elles portent exactement sur la même Dimension provisoire.
+
+## 6.2. Surface Platform unifiée « À contrôler »
+
+La séparation des responsabilités backend est conservée, mais le gestionnaire
+global dispose d'une file de travail unifiée :
+
+```text
+ReferenceContribution PENDING_REVIEW
++
+ProductVariety / ProductCharacteristic PENDING
+→ read model « À contrôler »
+```
+
+La file est agrégée et paginée côté serveur. Elle ne constitue ni une nouvelle
+collection MongoDB, ni un nouveau lifecycle.
+
+Le gestionnaire ne manipule pas le concept technique de Contribution. La vue
+présente des **données métier à contrôler** :
+
+```text
+Type
+→ Produit
+→ Référence
+→ Dimension · Variété / type de Caractéristique
+
+Donnée à valider
+Contexte Produit
+Rapprochement éventuel
+Action → Examiner
+```
+
+L'origine Workspace et l'auteur restent disponibles pour l'audit mais ne sont
+pas affichés dans la file principale.
+
+Une Dimension provisoire déjà liée à une `ReferenceContribution` en attente
+n'apparaît qu'une seule fois. Une Contribution dont la cible provisoire
+n'existe plus ou n'est plus `PROVISIONAL` est exclue de la file active afin
+de ne jamais proposer une action vouée à échouer.
+
+`Examiner` ouvre le drawer sur la cible exacte :
+
+```text
+Produit
+→ onglet Produit
+
+Référence
+→ onglet Références
+→ filtre À contrôler
+→ focus sur la Référence
+
+Dimension
+→ onglet Dimensions
+→ filtre À contrôler
+→ focus sur la Dimension
+```
+
+La décision est prise dans le drawer avec le contexte nécessaire :
+
+```text
+Modifier
+Valider
+Fusionner avec une valeur proche
+Refuser
+```
+
+La fusion reste toujours explicite. Le score ou la distance Levenshtein ne sont
+jamais exposés comme une décision automatique.
+
+Les décisions restent persistées dans les primitives backend de gouvernance et
+d'audit, mais ne sont plus exposées comme onglet principal de la surface
+Platform. Une donnée traitée disparaît de `À contrôler` ; la traçabilité reste
+disponible pour audit, support et diagnostic.
+
+Aucune nouvelle permission n'est créée : lecture par
+`product:reference:read`, traitement par `product:reference:manage`.
+
+Le contrat détaillé est
+`docs/m002/M-002-GOVERNANCE-REVIEW-QUEUE.md`.
 
 ## 7. UX Workspace
 
@@ -260,17 +353,38 @@ L'import M-002 reste temporaire et sécurisé ; il ne constitue pas un stockage 
 
 ## 11. Seed
 
-Les datasets v1 à v5 sont historiques et restent immuables.
+Les datasets v1 à v8 sont historiques et restent immuables.
 
-Le dataset actif est :
+Le dataset actif sur la branche du lot Produits globaux est :
 
 ```text
-m002-reference-v6
+m002-reference-v9
 ```
 
-Les v1 à v5 sont historiques. Le v6 est le dataset actif et sa source unique est le PDF `SANS PRIX-IPCOLL-SEC-SEPT 2026.pdf`. Il ne contient que des denrées alimentaires présentes dans ce document ; aucune Référence des anciens seeds n'est conservée si elle n'est pas présente dans le PDF. Marques, références fournisseur, prix et colisages restent hors M-002.
+Le v9 reprend exactement les identités du v8 et enrichit uniquement les
+Références `UNIT` avec leur unité de recette sémantique. Il ne crée aucun
+conditionnement commercial.
 
-Le PDF fourni sert de source unique au bootstrap v6. Les imports fournisseur complets et les données commerciales restent traités séparément selon la frontière M-002 / M-003.
+État du corpus :
+
+```text
+16 catégories
+381 Produits
+488 Références Produit
+64 Références UNIT nommées au singulier et au pluriel
+```
+
+Le v8 conserve sa provenance propre et reste immuable. Le v9 documente son
+audit sémantique dans `docs/m002/M-002-SEED-V9-SOURCE.md`, sans transformer les
+marques, références fournisseur, prix ou conditionnements en identité M-002.
+
+Le corpus exploite explicitement la structure
+`CanonicalProduct → plusieurs ProductVariant` lorsque plusieurs Références
+techniquement distinctes appartiennent au même concept Produit, par exemple
+Farine de blé, Beurre ou Pain burger.
+
+Les imports fournisseur complets et les données commerciales restent traités
+séparément selon la frontière M-002 / M-003.
 
 ## 12. Migration et remise à zéro locale pré-release
 
@@ -281,7 +395,7 @@ M-002 n'étant pas encore livré, les bases locales ayant servi aux itérations 
 ```text
 reset M-002 local sécurisé
 → migration M-002 sur catalogue vide
-→ seed m002-reference-v6
+→ seed m002-reference-v9
 ```
 
 Le reset est strictement limité à `NODE_ENV=development`, à MongoDB local, à une base terminant par `_dev`, à `ALLOW_DEVELOPMENT_DATA_RESET=true` et à une confirmation explicite. Il ne touche qu'aux collections M-002.
@@ -317,7 +431,9 @@ Le lot final doit prouver au minimum :
 - recherche par nom et dimensions ;
 - import sans doublon ;
 - migration fail-closed ;
-- seed v6 idempotent et réconciliation des anciens seeds ;
+- libellés singulier/pluriel obligatoires pour les 64 Références `UNIT` du v9 ;
+- absence de libellés dénombrables sur les unités physiques ;
+- seed v9 idempotent et réconciliation des anciens seeds v1 à v8 ;
 - permissions Workspace et Application Global ;
 - E2E création/contribution/favoris.
 
@@ -349,7 +465,7 @@ Aucune nouvelle primitive Core n'est requise pour :
 - Conservation ;
 - Gamme 6 ;
 - Favoris Produit ;
-- seed v6 ;
+- seed v9 ;
 - déduplication Produit.
 
 Toute évolution générique découverte ultérieurement doit continuer à être traitée dans `saas-core-api` puis intégrée par une branche `core-update/*`.

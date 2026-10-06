@@ -142,7 +142,7 @@ describe('ProductVariantFields', () => {
     expect(screen.getByLabelText('Calibre / format')).toBeDisabled();
   });
 
-  it('présente UNIT comme PCE sans modifier la valeur canonique', async () => {
+  it('présente UNIT comme pièce et envoie son libellé métier sans modifier le code canonique', async () => {
     const user = userEvent.setup();
     const onPayload = vi.fn();
 
@@ -151,9 +151,25 @@ describe('ProductVariantFields', () => {
     await openSelect(user, 'Unité de référence *');
 
     expect(
-      await screen.findByRole('option', { name: 'PCE' }),
+      await screen.findByRole('option', { name: 'pièce' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'unité' })).not.toBeInTheDocument();
+
+    await user.click(await screen.findByRole('option', { name: 'pièce' }));
+    await user.clear(screen.getByLabelText('Nom d’une unité'));
+    await user.type(screen.getByLabelText('Nom d’une unité'), 'tranche');
+    await user.clear(screen.getByLabelText('Nom de plusieurs unités'));
+    await user.type(
+      screen.getByLabelText('Nom de plusieurs unités'),
+      'tranches',
+    );
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
+
+    expect(onPayload).toHaveBeenCalledWith(expect.objectContaining({
+      referenceUnit: 'UNIT',
+      countUnitLabelSingular: 'tranche',
+      countUnitLabelPlural: 'tranches',
+    }));
   });
 
   it('n expose plus la gamme et ne l envoie pas dans le payload frontend', async () => {

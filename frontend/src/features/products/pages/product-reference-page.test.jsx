@@ -13,8 +13,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const mocks = vi.hoisted(() => ({
   metadataQuery: vi.fn(),
   productsQuery: vi.fn(),
-  contributionsQuery: vi.fn(),
-  reviewContribution: vi.fn(),
+  reviewQueueQuery: vi.fn(),
   updateCategoryStatus: vi.fn(),
   globalPricesQuery: vi.fn(),
 }));
@@ -22,11 +21,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/features/products/api/product-reference-api', () => ({
   useGetProductReferenceMetadataQuery: mocks.metadataQuery,
   useListProductReferenceProductsQuery: mocks.productsQuery,
-  useListProductReferenceContributionsQuery: mocks.contributionsQuery,
-  useReviewProductReferenceContributionMutation: () => [
-    mocks.reviewContribution,
-    { isLoading: false },
-  ],
+  useListProductReferenceReviewQueueQuery: mocks.reviewQueueQuery,
   useUpdateProductReferenceCategoryStatusMutation: () => [
     mocks.updateCategoryStatus,
     { isLoading: false },
@@ -76,14 +71,43 @@ vi.mock('@/features/products/components/product-reference-search-autocomplete', 
 vi.mock('@/features/products/components/product-reference-details-drawer', () => ({
   ProductReferenceDetailsDrawer: ({
     initialDimensionFilter,
+    initialReferenceFilter,
     initialTab,
     open,
+    reviewContext,
   }) => (
     open ? (
       <div>
         Détail global ouvert · {initialTab} · {initialDimensionFilter}
+        {' · '}{initialReferenceFilter}
+        {reviewContext?.targetId
+          ? ' · cible ' + reviewContext.targetId
+          : ''}
       </div>
     ) : null
+  ),
+}));
+
+vi.mock('@/features/products/components/product-reference-review-queue', () => ({
+  ProductReferenceReviewQueue: ({ onExamine }) => (
+    <div>
+      <span>File Produit à contrôler ouverte</span>
+      <button
+        onClick={() => onExamine({
+          sourceId: 'contribution-reference-1',
+          targetId: 'variant-pending-1',
+          type: 'CONTRIBUTION',
+          dataType: 'REFERENCE',
+          value: 'Abricot sec',
+          productId: 'product-1',
+          product: { id: 'product-1', name: 'Carotte' },
+          candidates: [],
+        })}
+        type="button"
+      >
+        Examiner une Référence
+      </button>
+    </div>
   ),
 }));
 
@@ -128,6 +152,10 @@ const metadata = {
   productContributionTypes: [
     { value: 'CANONICAL_PRODUCT', label: 'Produit' },
     { value: 'CHARACTERISTIC', label: 'Caractéristique' },
+  ],
+  productReviewQueueTypes: [
+    { value: 'CONTRIBUTION', label: 'Contribution' },
+    { value: 'DIMENSION_REVIEW', label: 'Valeur à vérifier' },
   ],
   conservationTypes: [{ value: 'FRAIS', label: 'Frais' }],
   referenceUnits: [{ value: 'KG', label: 'kg' }],
@@ -253,18 +281,22 @@ describe('ProductReferencePage', () => {
       isLoading: false,
       refetch: vi.fn(),
     });
-    mocks.contributionsQuery.mockReturnValue({
+    mocks.reviewQueueQuery.mockReturnValue({
       data: {
-        contributions: [],
-        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+        items: [],
+        summary: {
+          total: 0,
+          productCount: 0,
+          referenceCount: 0,
+          dimensionCount: 0,
+        },
+        origins: [],
+        pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
       },
       isError: false,
       isFetching: false,
       isLoading: false,
       refetch: vi.fn(),
-    });
-    mocks.reviewContribution.mockReturnValue({
-      unwrap: vi.fn().mockResolvedValue({}),
     });
     mocks.updateCategoryStatus.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
@@ -277,7 +309,7 @@ describe('ProductReferencePage', () => {
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Prix repère' }))
       .toBeInTheDocument();
-    expect(screen.getByText('2,750 / KG')).toBeInTheDocument();
+    expect(screen.getByText('2,750 / kg')).toBeInTheDocument();
     expect(screen.queryByText('Carottes')).not.toBeInTheDocument();
     expect(screen.queryByText(/Gamme 1/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Références' }))
@@ -382,7 +414,7 @@ describe('ProductReferencePage', () => {
     });
   });
 
-  it('affiche des compteurs d’onglets basés sur les totaux filtrés', async () => {
+  it('affiche les compteurs du Référentiel et de la file À contrôler', async () => {
     const user = userEvent.setup();
 
     mocks.productsQuery.mockImplementation((args) => ({
@@ -391,7 +423,7 @@ describe('ProductReferencePage', () => {
         pagination: {
           page: 1,
           limit: args.limit,
-          total: args.categoryId === 'category-1' ? 7 : 264,
+          total: args.categoryId === 'category-1' ? 7 : 368,
           totalPages: 1,
         },
       },
@@ -400,28 +432,32 @@ describe('ProductReferencePage', () => {
       isLoading: false,
       refetch: vi.fn(),
     }));
-    mocks.contributionsQuery.mockImplementation((args) => ({
+    mocks.reviewQueueQuery.mockReturnValue({
       data: {
-        contributions: [],
-        pagination: {
-          page: 1,
-          limit: args.limit,
-          total: args.status === 'APPROVED' ? 2 : 4,
-          totalPages: args.status === 'APPROVED' ? 2 : 4,
+        items: [],
+        summary: {
+          total: 4,
+          productCount: 1,
+          referenceCount: 1,
+          dimensionCount: 2,
         },
+        origins: [],
+        pagination: { page: 1, limit: 1, total: 4, totalPages: 4 },
       },
       isError: false,
       isFetching: false,
       isLoading: false,
       refetch: vi.fn(),
-    }));
+    });
 
     renderPage();
 
-    expect(screen.getByRole('tab', { name: 'Référentiel (264)' }))
+    expect(screen.getByRole('tab', { name: 'Référentiel (368)' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Contributions (4)' }))
+    expect(screen.getByRole('tab', { name: 'À contrôler (4)' }))
       .toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Historique' }))
+      .not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Catégories (1)' }))
       .toBeInTheDocument();
 
@@ -433,20 +469,7 @@ describe('ProductReferencePage', () => {
 
     expect(await screen.findByRole('tab', { name: 'Référentiel (7)' }))
       .toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {
-      name: 'Contributions (4)',
-    }));
-    await selectOption(
-      user,
-      'Filtrer les contributions par statut',
-      'Approuvée',
-    );
-
-    expect(await screen.findByRole('tab', { name: 'Contributions (2)' }))
-      .toBeInTheDocument();
   });
-
 
   it('signale les nouvelles Dimensions et ouvre directement les lignes à vérifier', async () => {
     const user = userEvent.setup();
@@ -477,7 +500,7 @@ describe('ProductReferencePage', () => {
     await user.click(notification);
 
     expect(screen.getByText(
-      'Détail global ouvert · dimensions · pending',
+      'Détail global ouvert · dimensions · pending · all',
     )).toBeInTheDocument();
     expect(screen.queryByRole('button', {
       name: 'Marquer Carotte comme vérifié',
@@ -612,24 +635,20 @@ describe('ProductReferencePage', () => {
     })).toBeInTheDocument();
   });
 
-  it('examine les contributions séparément du lifecycle des références', async () => {
+  it('ouvre la file unifiée depuis l’onglet À contrôler', async () => {
     const user = userEvent.setup();
-    mocks.contributionsQuery.mockReturnValue({
+
+    mocks.reviewQueueQuery.mockReturnValue({
       data: {
-        contributions: [{
-          id: 'contribution-1',
-          type: 'CHARACTERISTIC',
-          characteristicKind: 'QUALITY_DESIGNATION',
-          proposedValue: 'Carottes des sables',
-          workspace: { id: 'workspace-1', name: 'Atelier pilote' },
-          author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
-          status: 'PENDING_REVIEW',
-          reasons: [{
-            code: 'CHARACTERISTIC_REQUIRES_GOVERNANCE',
-            message: 'Ce type nécessite une revue.',
-          }],
-        }],
-        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+        items: [],
+        summary: {
+          total: 1,
+          productCount: 0,
+          referenceCount: 1,
+          dimensionCount: 0,
+        },
+        origins: [],
+        pagination: { page: 1, limit: 1, total: 1, totalPages: 1 },
       },
       isError: false,
       isFetching: false,
@@ -638,63 +657,48 @@ describe('ProductReferencePage', () => {
     });
 
     renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Contributions (1)' }));
 
-    expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
-    expect(screen.getByText('Caractéristique · Désignation de qualité'))
-      .toBeInTheDocument();
-    expect(screen.getByText('Atelier pilote')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Approuver' }));
-
-    expect(mocks.reviewContribution).toHaveBeenCalledWith({
-      contributionId: 'contribution-1',
-      decision: 'APPROVE',
-    });
-  });
-
-  it('propose une fusion explicite avec les candidats de gouvernance', async () => {
-    const user = userEvent.setup();
-    mocks.contributionsQuery.mockReturnValue({
-      data: {
-        contributions: [{
-          id: 'contribution-merge',
-          type: 'VARIETY',
-          proposedValue: 'Galla',
-          workspace: { id: 'workspace-1', name: 'Atelier pilote' },
-          author: { id: 'user-1', firstName: 'Alice', lastName: 'Martin' },
-          status: 'PENDING_REVIEW',
-          reasons: [{
-            code: 'TYPO_CANDIDATE',
-            message: 'Une valeur proche existe.',
-          }],
-          candidates: [{
-            id: 'variety-gala',
-            name: 'Gala',
-          }],
-        }],
-        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
-      },
-      isError: false,
-      isFetching: false,
-      isLoading: false,
-      refetch: vi.fn(),
-    });
-
-    renderPage({ canManage: true });
-    await user.click(screen.getByRole('tab', { name: 'Contributions (1)' }));
-
-    expect(screen.getByText(/Valeurs proches : Gala/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', {
-      name: 'Fusionner avec Gala',
+    await user.click(screen.getByRole('tab', {
+      name: 'À contrôler (1)',
     }));
 
-    expect(mocks.reviewContribution).toHaveBeenCalledWith({
-      contributionId: 'contribution-merge',
-      decision: 'MERGE',
-      targetReferenceId: 'variety-gala',
+    expect(screen.getByText('File Produit à contrôler ouverte'))
+      .toBeInTheDocument();
+  });
+
+  it('route une Référence à contrôler vers son filtre et sa cible exacte', async () => {
+    const user = userEvent.setup();
+
+    mocks.reviewQueueQuery.mockReturnValue({
+      data: {
+        items: [],
+        summary: {
+          total: 1,
+          productCount: 0,
+          referenceCount: 1,
+          dimensionCount: 0,
+        },
+        origins: [],
+        pagination: { page: 1, limit: 1, total: 1, totalPages: 1 },
+      },
+      isError: false,
+      isFetching: false,
+      isLoading: false,
+      refetch: vi.fn(),
     });
+
+    renderPage({ canManage: true });
+
+    await user.click(screen.getByRole('tab', {
+      name: 'À contrôler (1)',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Examiner une Référence',
+    }));
+
+    expect(screen.getByText(
+      'Détail global ouvert · variants · active · pending · cible variant-pending-1',
+    )).toBeInTheDocument();
   });
 
   it('ouvre le détail global depuis la liste', async () => {
@@ -703,6 +707,6 @@ describe('ProductReferencePage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
 
-    expect(screen.getByText('Détail global ouvert · product · active')).toBeInTheDocument();
+    expect(screen.getByText('Détail global ouvert · product · active · all')).toBeInTheDocument();
   });
 });

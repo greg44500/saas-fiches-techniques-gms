@@ -148,4 +148,49 @@ describe('SupplierDetailsDrawer', () => {
     expect(screen.queryByRole('tab', { name: 'Utilisation' }))
       .not.toBeInTheDocument();
   });
+
+  it('affiche le libellé métier de UNIT dans le conditionnement Article', async () => {
+    const user = userEvent.setup();
+
+    mocks.listWorkspaceArticles.mockReturnValue(queryResult({
+      articles: [{
+        id: 'article-unit',
+        supplierReference: 'BRU-001',
+        supplierDesignation: 'Pain bruschetta',
+        productVariant: {
+          id: 'variant-unit',
+          name: 'Pain bruschetta surgelé',
+          referenceUnit: 'UNIT',
+          countUnitLabelSingular: 'tranche',
+          countUnitLabelPlural: 'tranches',
+        },
+        packaging: {
+          unitCount: 8,
+          quantityPerUnit: '1',
+          unit: 'UNIT',
+        },
+        status: 'ACTIVE',
+      }],
+    }));
+
+    render(
+      <SupplierDetailsDrawer
+        canManage
+        canReadArticles
+        canReadCatalogs
+        mode="workspace"
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        open
+        supplier={supplier}
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', { name: 'Articles' }));
+
+    expect(screen.getByText(/1 tranche/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 UNIT/)).not.toBeInTheDocument();
+  });
+
 });

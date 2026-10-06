@@ -37,6 +37,10 @@ function variantToDraft(variant) {
     processingState: variant?.processingState ?? '',
     conservationType: variant?.conservationType ?? '',
     referenceUnit: variant?.referenceUnit ?? '',
+    countUnitLabelSingular:
+      variant?.countUnitLabelSingular ?? '',
+    countUnitLabelPlural:
+      variant?.countUnitLabelPlural ?? '',
     yieldPercent: variant?.yieldPercent ? String(variant.yieldPercent) : '',
     structured: true,
   };

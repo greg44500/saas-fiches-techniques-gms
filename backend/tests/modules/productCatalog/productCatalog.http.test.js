@@ -37,6 +37,7 @@ import {
 } from '../../../modules/productCatalog/productCatalogCapability.registry.js';
 import {
     createCategory,
+    createGlobalVariant,
 } from '../../../modules/productCatalog/productCatalogGovernance.service.js';
 import {
     PRODUCT_CATALOG_PERMISSION,
@@ -242,6 +243,81 @@ describe('M-002 product catalog HTTP contract', () => {
 
         expect(otherWorkspaceSearch.status).toBe(200);
         expect(otherWorkspaceSearch.body.data.results).toHaveLength(0);
+    });
+
+    it('demande confirmation avant de créer une Référence proche puis la soumet au contrôle global', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Pomme Référence HTTP',
+        });
+        const existing = await createGlobalVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variant: {
+                name: 'Gala HTTP',
+                conservationType: 'FRAIS',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+            },
+        });
+        const path =
+            `${basePath()}/${reference.product._id.toString()}/variants`;
+        const headers = bearer(ownerContext.token);
+
+        const warning = await request(app)
+            .post(path)
+            .set(headers)
+            .send({
+                name: 'Galla HTTP',
+                conservationType: 'FRAIS',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+            });
+
+        expect(warning.status).toBe(200);
+        expect(warning.body.data).toMatchObject({
+            classification: 'USER_CONFIRMATION_REQUIRED',
+            candidates: [
+                expect.objectContaining({
+                    id: existing.id,
+                    name: 'Gala HTTP',
+                }),
+            ],
+        });
+
+        const created = await request(app)
+            .post(path)
+            .set(headers)
+            .send({
+                name: 'Galla HTTP',
+                conservationType: 'FRAIS',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+                forceCreate: true,
+                reviewedCandidateIds: [existing.id],
+            });
+
+        expect(created.status).toBe(201);
+        expect(created.body.data).toMatchObject({
+            classification: 'PROVISIONAL',
+            candidates: [
+                expect.objectContaining({
+                    id: existing.id,
+                    name: 'Gala HTTP',
+                }),
+            ],
+            variant: {
+                name: 'Galla HTTP',
+                governanceStatus: 'PROVISIONAL',
+            },
+            contribution: {
+                type: 'VARIANT',
+                status: 'PENDING_REVIEW',
+            },
+        });
     });
 
     it('permet de retirer immédiatement une Variété ajoutée par erreur et encore inutilisée', async () => {

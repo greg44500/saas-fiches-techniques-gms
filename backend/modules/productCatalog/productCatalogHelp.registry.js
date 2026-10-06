@@ -124,7 +124,7 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
                 'Ouvrez la surface Platform.',
                 'Dans la section GMS, ouvrez Gestion des référentiels.',
                 'Sélectionnez l’onglet Produits.',
-                'Consultez les Produits, catégories et contributions disponibles.',
+                'Consultez le Référentiel, la file À contrôler et les Catégories.',
             ],
             outcome: 'Le référentiel global est consulté sans élévation implicite liée au rôle Platform.',
             edgeCases: [],
@@ -136,13 +136,20 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
             id: 'platform.products.governance',
             context: HELP_CONTEXT.PLATFORM,
             categoryId: PLATFORM_REFERENCE_MANAGEMENT_HELP_CATEGORY_ID,
-            title: 'Gouverner les contributions Produit',
-            summary: 'Valider, fusionner ou refuser les valeurs provisoires proposées par les Workspaces.',
+            title: 'Traiter les éléments Produit à contrôler',
+            summary: 'Traiter dans une file unique les contributions et nouvelles valeurs qui nécessitent une intervention globale.',
             search: {
-                keywords: ['produit', 'gouvernance', 'valider', 'fusionner', 'refuser'],
+                keywords: [
+                    'produit',
+                    'gouvernance',
+                    'à contrôler',
+                    'valider',
+                    'fusionner',
+                    'refuser',
+                ],
                 questions: [
+                    'Comment traiter un élément Produit à contrôler ?',
                     'Comment valider une contribution Produit ?',
-                    'Comment traiter un doublon ?',
                 ],
             },
             audience: {
@@ -159,9 +166,11 @@ const PRODUCT_CATALOG_HELP_MODULE = Object.freeze({
             ],
             steps: [
                 'Dans la section GMS, ouvrez Gestion des référentiels puis l’onglet Produits.',
-                'Sélectionnez Contributions.',
-                'Examinez la proposition et son contexte.',
-                'Validez, fusionnez ou refusez explicitement la contribution.',
+                'Sélectionnez À contrôler.',
+                'Examinez la valeur, le Produit concerné et son contexte.',
+                'Examinez la donnée dans le drawer ciblé avant toute décision.',
+                'Validez, fusionnez ou refusez explicitement une donnée soumise à gouvernance.',
+                'Pour une nouvelle Dimension, validez-la ou corrigez-la depuis le Produit concerné.'
             ],
             outcome: 'Le référentiel partagé est harmonisé tout en conservant les snapshots historiques validés.',
             edgeCases: [

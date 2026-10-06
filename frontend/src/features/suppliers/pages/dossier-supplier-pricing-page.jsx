@@ -76,6 +76,8 @@ function normalizeArticle(article) {
     supplierId: article.supplier?.id ?? article.supplierId,
     supplierName: article.supplier?.name ?? article.supplierName ?? 'Fournisseur',
     supplierReference: article.supplierReference,
+    productVariant:
+      article.productVariant ?? null,
     productVariantName:
       article.productVariant?.name
       ?? article.productVariantName

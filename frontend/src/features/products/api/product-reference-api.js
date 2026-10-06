@@ -51,10 +51,45 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data,
       providesTags: ['ProductReference'],
     }),
+    listProductReferenceReviewQueue: builder.query({
+      query: ({
+        type,
+        workspaceId,
+        origins,
+        page = 1,
+        limit = 20,
+      } = {}) => ({
+        url: '/product-reference/review-queue',
+        params: {
+          type,
+          workspaceId,
+          origins,
+          page,
+          limit,
+        },
+      }),
+      transformResponse: (response) => ({
+        items: response.data.items,
+        summary: response.data.summary,
+        origins: response.data.origins,
+        pagination: response.meta,
+      }),
+      providesTags: ['ProductReference'],
+    }),
     listProductReferenceContributions: builder.query({
-      query: ({ status = 'PENDING_REVIEW', page = 1, limit = 20 } = {}) => ({
+      query: ({
+        status,
+        reviewedOnly = false,
+        page = 1,
+        limit = 20,
+      } = {}) => ({
         url: '/product-reference/contributions',
-        params: { status, page, limit },
+        params: {
+          status: status ?? (reviewedOnly ? undefined : 'PENDING_REVIEW'),
+          reviewedOnly: reviewedOnly ? 'true' : undefined,
+          page,
+          limit,
+        },
       }),
       transformResponse: (response) => ({
         contributions: response.data.contributions,
@@ -317,6 +352,7 @@ export const {
   useLazyGetProductReferenceDetailQuery,
   useListProductReferenceContributionsQuery,
   useListProductReferenceProductsQuery,
+  useListProductReferenceReviewQueueQuery,
   useDeleteProductReferenceDimensionMutation,
   usePreviewProductReferenceImportMutation,
   useReviewProductReferenceDimensionMutation,

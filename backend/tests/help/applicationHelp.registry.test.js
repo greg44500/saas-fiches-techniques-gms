@@ -66,6 +66,23 @@ describe('application Help registry', () => {
         }
     });
 
+    it('oriente la gouvernance Produit vers la file À contrôler', () => {
+        const entry =
+            ACTIVE_HELP_REGISTRY.entriesById[
+                'platform.products.governance'
+            ];
+
+        expect(entry.title)
+            .toBe('Traiter les éléments Produit à contrôler');
+        expect(entry.steps).toContain('Sélectionnez À contrôler.');
+        expect(entry.steps).not.toContain(
+            'Consultez Historique pour retrouver les Contributions déjà traitées.',
+        );
+        expect(entry.steps).toContain(
+            'Examinez la donnée dans le drawer ciblé avant toute décision.',
+        );
+    });
+
     it('conserve séparées les permissions Workspace et Application Global', () => {
         const workspaceEntry =
             ACTIVE_HELP_REGISTRY.entriesById['workspace.products.reference'];

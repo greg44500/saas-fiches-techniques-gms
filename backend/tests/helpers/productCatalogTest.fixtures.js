@@ -27,6 +27,8 @@ const createActiveProductReference = async ({
     conservationType = PRODUCT_CONSERVATION_TYPE.FRAIS,
     foodRange = 1,
     referenceUnit = PRODUCT_REFERENCE_UNIT.KG,
+    countUnitLabelSingular = null,
+    countUnitLabelPlural = null,
     yieldPercent = null,
     categoryName = 'Légumes',
 } = {}) => {
@@ -97,6 +99,8 @@ const createActiveProductReference = async ({
         conservationType,
         foodRange,
         referenceUnit,
+        countUnitLabelSingular,
+        countUnitLabelPlural,
         yieldPercent,
         status: PRODUCT_STATUS.ACTIVE,
         createdBy: actorId,

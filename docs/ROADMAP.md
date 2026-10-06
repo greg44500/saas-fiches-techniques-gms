@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; Bloc A Prix repère global M-003 en implémentation  
-**Dernière mise à jour :** 2026-10-02
+**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; corpus professionnel v9, conditionnements M-003 et lecture Workspace des Prix repères finalisés sur branche unique
+**Dernière mise à jour :** 2026-10-06
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -72,7 +72,7 @@ Décisions finales :
 
 ### 2.2 Référentiel Produit
 
-**État : CONTRAT EXISTANT CLÔTURÉ — audit/cadrage des Produits globaux rouvert le 2026-10-02 avant toute nouvelle implémentation**
+**État : CONTRAT EXISTANT CONSERVÉ — corpus professionnel v9 implémenté, sans changement des invariants de calcul M-002**
 
 Contrat canonique :
 
@@ -86,6 +86,7 @@ Décisions finales :
 - nom métier persistant et unique par normalisation ;
 - Conservation obligatoire ;
 - unité de référence obligatoire ;
+- libellés singulier/pluriel obligatoires pour les Références `UNIT`, sans effet sur l'identité ni les calculs ;
 - Catégorie facultative ;
 - `foodRange` / Gammes conservés côté backend pour compatibilité et évolution future, mais non exposés par le frontend actif ;
 - suppression de `usageType` du contrat actif ;
@@ -93,14 +94,22 @@ Décisions finales :
 - dimensions avancées facultatives ;
 - `WorkspaceProduct` présenté comme Favori ;
 - liste Workspace `Produit | Conservation | Actions` ;
-- seed actif `m002-reference-v6`, source unique = PDF alimentaire fourni, 264 Références exploitables ;\n- migration de réconciliation supprimant du référentiel actif les anciennes références bootstrap absentes du v6 ;
+- seed actif sur la branche : `m002-reference-v9`, 16 catégories, 381 Produits et 488 Références Produit ;
+- v9 conserve exactement les identités v8 et nomme les 64 unités de recette dénombrables ;
+- migration de réconciliation v1-v8 → v9, sans suppression physique des données utilisateur ;
 - migration additionnelle fail-closed ;
 - import dédupliqué par nom exact de Référence ;
 - frontière stricte M-002 / M-003 maintenue.
 
 La dépendance générique Core de navigation Platform est résolue par le commit post-tag `6581e573c6a6885790b23fe502bd34d8199ea6ba`. Elle est intégrée sur la branche Core-update dédiée et devient effective sur `main` après PR, merge et Core Gate post-merge du BLOC A.
 
-Décision de clôture du 2026-09-25 : le contrat M-002 reste l'autorité pour l'existant. Le 2026-10-02, un audit/cadrage des **Produits globaux** est ouvert avant le bloc Exports et diffusion afin de confronter ce modèle à l'usage cible. Cet audit ne constitue ni une réouverture automatique de M-002, ni une implémentation. Aucun invariant, modèle, endpoint ou écran Produit ne doit être modifié avant validation explicite du nouveau périmètre.
+Décision de clôture du 2026-09-25 : le contrat M-002 reste l'autorité. Les
+audits Produit des 2026-10-03 et 2026-10-06 ont validé des enrichissements
+sans refonte du modèle : la séparation `CanonicalProduct / ProductVariant`
+est conservée, M-003 reste propriétaire des données commerciales et le v9
+ajoute seulement la sémantique d'affichage des Références `UNIT`.
+L'implémentation reste sur une branche et une PR uniques jusqu'à validation
+locale et visuelle.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
@@ -122,6 +131,7 @@ Décisions établies :
 - une ligne sans référence exploitable ne crée pas automatiquement un Article ;
 - les Articles suivent `ACTIVE / ARCHIVED` et peuvent conserver un lien `replacedBy` ;
 - conditionnements structurés et prix normalisés lorsque les données sont suffisantes ;
+- conditionnement V1 plat à un niveau arithmétique ; le libellé fournisseur conserve les niveaux commerciaux supplémentaires ;
 - éditions de catalogues historisées ; nouvelle édition ≠ écrasement de l'ancienne ;
 - réimport de la même édition = réconciliation sans duplication ;
 - Tarifs fournisseur de référence historisés par édition ;
@@ -168,6 +178,12 @@ Les retours des bêta-testeurs peuvent déclencher des retouches UX ultérieures
 Extension post-clôture validée le 2026-09-29 pendant la QA M-004 : ajout d'un Prix indicatif interne, historisé, porté par Workspace ou Dossier et utilisable comme dernier recours lorsqu'aucune source commerciale M-003 n'est exploitable. Cette extension ne modifie ni l'isolation Dossier des Tarifs négociés/Prix facturés, ni la priorité des sources commerciales, ni la frontière Core/Produit.
 
 Checkpoint UX du 2026-09-30 : le parcours Produit ↔ Fournisseur doit rester unique. Les écrans Produit et Fournisseurs peuvent ouvrir le même workflow M-003 avec un contexte prérempli, mais aucune donnée commerciale ni aucun formulaire parallèle ne doit être créé. Le drawer Produit expose les Favoris actifs, le Prix indicatif Workspace et les Articles/conditionnements accessibles sans sélectionner automatiquement un fournisseur.
+
+Extension du 2026-10-06 : les Workspaces peuvent consulter en lecture seule
+les Prix repères globaux, leur conditionnement et leur provenance pour toutes
+les Références visibles, sans dépendre des Favoris. La Platform peut maintenir
+un prix `PACKAGE` avec conditionnement plat et provenance structurée. Aucun
+montant ni fournisseur n'est inventé dans le bootstrap existant.
 
 Le **corpus d'aide métier** est volontairement traité dans un bloc séparé après stabilisation de ces parcours. Il devra utiliser le point d'extension Core `APPLICATION_HELP_MODULES` et conserver le filtrage serveur selon permissions, capabilities et contexte ; aucune logique d'aide parallèle ne doit être créée.
 
@@ -597,40 +613,121 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le BLOC B Platform / Gestion des référentiels est clôturé. M-004 Fiches techniques + valorisation est également clôturé pour son périmètre hors Exports et diffusion après les Core Gates #179 et #180.
-
-Le lot actif est désormais **Bloc A — Référentiel global valorisable / Prix repère global M-003**. Le cadrage est validé et l'implémentation est soumise aux gates avant fusion.
-
-Séquence attendue :
+Le corpus professionnel A2 est implémenté sur la branche
+`feature/a2-professional-reference-corpus` :
 
 ~~~text
-extension IndicativePrice avec portée globale
-→ corpus initial versionné de Prix repères
-→ maintenance par la gouvernance Produit
-→ fallback M-004 après Dossier / Workspace
-→ tests backend / frontend / E2E
-→ Core Gate PR
-→ merge si verte
-→ Core Gate post-merge
-→ Bloc B gouvernance Produit unifiée
-→ puis reprise ultérieure du bloc Exports / diffusion M-004
+m002-reference-v9
+→ 16 catégories
+→ 381 Produits
+→ 488 Références Produit
+→ identités v8 conservées
+→ 64 unités UNIT nommées au singulier et au pluriel
+
+m003-global-indicative-prices.v3
+→ 362 Prix repères historiques compatibles
+→ 126 Références volontairement sans Prix repère
+→ aucun montant ajouté sans calibration validée
 ~~~
 
-Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité tant qu'un nouveau périmètre n'a pas été validé.
+Le lot actif regroupe le **Bloc B — Gouvernance Produit unifiée**, le corpus
+professionnel v9, le conditionnement M-003 et la lecture Workspace des Prix
+repères globaux. L'ensemble reste consolidé sur la même branche et attend la
+validation locale/visuelle avant PR unique.
 
-Points à instruire pendant l'audit :
+Cible implémentée :
 
-- sens métier exact de « Produit global » ;
-- pertinence et visibilité de la séparation `CanonicalProduct / ProductVariant` ;
-- informations visibles et modifiables ;
-- catégories, variantes/états, dimensions et unités ;
-- déduplication et gestion des doublons ;
-- création, contribution, validation, archivage et réactivation ;
-- rôles Workspace et autorité Application Global ;
-- recherche, filtres et administration Platform ;
-- impacts des références et seeds existants ;
-- compatibilité M-003 Fournisseurs / Articles / Prix ;
-- compatibilité M-004 Fiches techniques ;
-- dettes UX Produit déjà documentées dans `docs/DEBT.md`.
+~~~text
+Référentiel
+→ consultation / maintenance des Produits
 
-Aucune évolution Produit ne doit être codée avant validation de ce cadrage. Le lot ne doit pas être nommé arbitrairement `M-002.1`, nouveau module ou refonte avant que la nature réelle du besoin soit décidée.
+À contrôler
+→ file métier Produit / Référence / Dimension
+→ action unique Examiner dans la table
+→ drawer ouvert sur la cible exacte
+→ Modifier / Valider / Fusionner / Refuser selon le contexte
+
+Catégories
+→ taxonomie Produit
+~~~
+
+Pour une nouvelle Référence créée depuis un Workspace :
+
+~~~text
+doublon exact
+→ réutilisation de la Référence existante
+
+proximité lexicale
+→ suggestion à l'utilisateur
+→ aucune fusion automatique
+
+création confirmée distincte
+→ ProductVariant PROVISIONAL
+→ utilisable dans le Workspace d'origine
+→ demande de contrôle globale VARIANT
+
+gestionnaire Platform
+→ corriger
+→ valider
+OU
+→ fusionner avec une Référence existante
+OU
+→ refuser
+~~~
+
+Le scénario de référence proche `Galla / Gala` est couvert dans les tests
+d'intégration ajoutés à la branche.
+
+La file `À contrôler` réutilise les modèles et mutations M-002 existants.
+Aucune nouvelle collection de gouvernance ni nouvelle permission n'est créée.
+
+RBAC :
+
+~~~text
+product:reference:read
+→ consulter Référentiel / À contrôler / Catégories
+
+product:reference:manage
+→ traiter les données à contrôler
+→ corriger les Produits, Références et Dimensions
+~~~
+
+L'origine Workspace, l'auteur et les décisions passées restent disponibles
+pour l'audit/support backend mais ne sont pas affichés dans la surface de
+travail principale du gestionnaire. Une donnée traitée disparaît de
+`À contrôler` sans onglet Historique dédié.
+
+L'audit du Core v1.2.1 ne montre pas de primitive générique de notification
+applicative persistée. Le signal du lot reste donc le compteur in-app
+`À contrôler`. Une notification générique persistée éventuelle relève de
+la dette Core D-008 et ne doit pas être recréée dans le produit dérivé.
+
+Source contractuelle du Bloc B :
+
+~~~text
+docs/m002/M-002-GOVERNANCE-REVIEW-QUEUE.md
+~~~
+
+Séquence de sortie du lot unique :
+
+~~~text
+A2 corpus professionnel
+→ Bloc B gouvernance Produit unifiée
+→ tests ciblés
+→ QA visuelle utilisateur
+→ corrections éventuelles sur la même branche
+→ amorce de reprise vers une nouvelle conversation
+→ demande spécifique d'ajout au référentiel global
+→ poursuite sur la même branche
+→ tests / QA du lot complémentaire
+→ release:check
+→ PR unique
+→ Core Gate PR
+→ merge
+→ Core Gate post-merge
+~~~
+
+Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité pour les
+invariants Produit. Le Bloc B unifie la surface de travail du gestionnaire sans
+réouvrir la séparation `CanonicalProduct / ProductVariant`, la frontière
+M-002 / M-003 ni les règles de tenancy.

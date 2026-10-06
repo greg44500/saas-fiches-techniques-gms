@@ -1,5 +1,6 @@
 import {
   getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
 } from '@/features/products/lib/product-presentation';
 
 function getApiErrorMessage(error, fallback = 'Une erreur est survenue.') {
@@ -28,26 +29,60 @@ function getSupplierStatusTone(status) {
   return status === 'ACTIVE' ? 'success' : 'neutral';
 }
 
-function formatPackaging(packaging) {
+function getPackagingUnitLabel(packaging, productVariant, quantity) {
+  if (packaging?.unit !== 'UNIT') {
+    return getReferenceUnitLabel(null, packaging?.unit);
+  }
+
+  return getVariantReferenceUnitLabel(
+    null,
+    productVariant,
+    { plural: Number(quantity) !== 1 },
+  );
+}
+
+function formatPackaging(
+  packaging,
+  { productVariant = null } = {},
+) {
   if (!packaging) return 'Non renseigné';
 
   const parts = [];
 
-  if (packaging.containerType) parts.push(packaging.containerType);
-  if (packaging.unitCount) parts.push(String(packaging.unitCount) + ' unité(s)');
-  if (packaging.quantityPerUnit && packaging.unit) {
+  if (packaging.supplierLabel) {
+    parts.push(packaging.supplierLabel);
+  } else if (packaging.containerType) {
+    parts.push(packaging.containerType);
+  }
+  if (
+    packaging.unitCount
+    && packaging.quantityPerUnit
+    && packaging.unit
+  ) {
     parts.push(
-      String(packaging.quantityPerUnit)
+      String(packaging.unitCount)
+      + ' × '
+      + String(packaging.quantityPerUnit)
       + ' '
-      + getReferenceUnitLabel(null, packaging.unit),
+      + getPackagingUnitLabel(
+        packaging,
+        productVariant,
+        packaging.quantityPerUnit,
+      ),
     );
+  } else if (packaging.unitCount) {
+    parts.push(String(packaging.unitCount) + ' sous-unités');
   }
   if (packaging.totalQuantity && packaging.unit) {
     parts.push(
       'total '
       + String(packaging.totalQuantity)
       + ' '
-      + getReferenceUnitLabel(null, packaging.unit),
+      + getPackagingUnitLabel(
+        packaging,
+        productVariant,
+        packaging.totalQuantity,
+      ),
     );
   }
   if (packaging.netWeight && packaging.netWeightUnit) {
@@ -72,7 +107,12 @@ function formatPackaging(packaging) {
 
 function formatPrice(
   price,
-  { hideDefaultCurrency = false } = {},
+  {
+    hideDefaultCurrency = false,
+    productVariant = price?.productVariant
+      ?? price?.supplierArticle?.productVariant
+      ?? null,
+  } = {},
 ) {
   if (!price) return 'Indisponible';
 
@@ -94,7 +134,34 @@ function formatPrice(
     minimumFractionDigits: 3,
     maximumFractionDigits: 3,
   }) + currencyLabel + ' / '
-    + (unit ? getReferenceUnitLabel(null, unit) : '—');
+    + (
+      unit === 'UNIT'
+        ? getVariantReferenceUnitLabel(null, productVariant)
+        : unit
+          ? getReferenceUnitLabel(null, unit)
+          : '—'
+    );
+}
+
+function formatSourcePrice(price) {
+  if (!price?.sourceAmount) return 'Non renseigné';
+
+  const amount = Number(price.sourceAmount).toLocaleString('fr-FR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 3,
+  });
+
+  if (price.sourceBasis === 'PACKAGE') {
+    return amount + ' € / '
+      + (price.packaging?.containerType || 'conditionnement');
+  }
+
+  return amount + ' € / '
+    + (
+      price.sourceBasis === 'UNIT'
+        ? getVariantReferenceUnitLabel(null, price.productVariant)
+        : getReferenceUnitLabel(null, price.sourceBasis)
+    );
 }
 
 function getMatchStatusLabel(status) {
@@ -124,6 +191,7 @@ function getImportClassificationLabel(classification) {
 export {
   formatPackaging,
   formatPrice,
+  formatSourcePrice,
   getApiErrorMessage,
   getImportClassificationLabel,
   getMatchStatusLabel,

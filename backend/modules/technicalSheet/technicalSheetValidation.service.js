@@ -234,6 +234,12 @@ const buildValidationLines = ({
                 source.productVariant.id,
             productVariantName:
                 source.productVariant.name,
+            countUnitLabelSingular:
+                source.productVariant
+                    .countUnitLabelSingular ?? null,
+            countUnitLabelPlural:
+                source.productVariant
+                    .countUnitLabelPlural ?? null,
             netQuantity:
                 line.netQuantity.toString(),
             inputUnit:

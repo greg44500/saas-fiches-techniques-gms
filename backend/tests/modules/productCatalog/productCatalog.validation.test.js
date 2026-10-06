@@ -98,6 +98,16 @@ describe('M-002 product request validation', () => {
     });
 
     it('valide une référence structurée avec dimensions facultatives', () => {
+        expect(createWorkspaceVariantBodySchema.parse({
+            ...minimalReference,
+        })).toEqual({
+            ...minimalReference,
+            foodRange: null,
+            characteristicIds: [],
+            reviewedCandidateIds: [],
+            forceCreate: false,
+        });
+
         expect(createWorkspaceVariantBodySchema.safeParse({
             ...minimalReference,
             varietyId: '507f1f77bcf86cd799439012',
@@ -115,6 +125,33 @@ describe('M-002 product request validation', () => {
                 '507f1f77bcf86cd799439013',
             ],
         }).success).toBe(false);
+
+        expect(createWorkspaceVariantBodySchema.safeParse({
+            ...minimalReference,
+            forceCreate: true,
+            reviewedCandidateIds: ['not-an-object-id'],
+        }).success).toBe(false);
+    });
+
+    it('réserve les libellés métier dénombrables à UNIT', () => {
+        expect(createWorkspaceVariantBodySchema.safeParse({
+            ...minimalReference,
+            name: 'Pain bruschetta surgelé',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'tranche',
+            countUnitLabelPlural: 'tranches',
+        }).success).toBe(true);
+
+        expect(createWorkspaceVariantBodySchema.safeParse({
+            ...minimalReference,
+            countUnitLabelSingular: 'sac',
+            countUnitLabelPlural: 'sacs',
+        }).success).toBe(false);
+
+        expect(updateVariantBodySchema.safeParse({
+            referenceUnit: 'KG',
+            countUnitLabelSingular: 'sac',
+        }).success).toBe(false);
     });
 
     it('valide les contributions Produit sans rendre la catégorie obligatoire', () => {
@@ -130,6 +167,11 @@ describe('M-002 product request validation', () => {
         expect(createReferenceContributionBodySchema.safeParse({
             type: 'CANONICAL_PRODUCT',
             value: 'Betterave',
+        }).success).toBe(false);
+
+        expect(createReferenceContributionBodySchema.safeParse({
+            type: 'VARIANT',
+            value: 'Betterave séchée',
         }).success).toBe(false);
     });
 

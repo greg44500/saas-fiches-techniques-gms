@@ -53,6 +53,10 @@ import {
 import {
     markProductDimensionReviewed,
 } from './productReferenceReview.service.js';
+import {
+    listProductReviewQueue,
+} from './productReferenceReviewQueue.service.js';
+
 
 const access = async (req, res) => {
     const authorization = await resolveApplicationGlobalAuthorization({
@@ -122,6 +126,19 @@ const createVariantController = async (req, res) => {
         variant: req.validated.body,
     });
     res.status(201).json({ status: 'success', data: { variant } });
+};
+
+const reviewQueue = async (req, res) => {
+    const result = await listProductReviewQueue(req.validated.query);
+    res.status(200).json({
+        status: 'success',
+        data: {
+            items: result.items,
+            summary: result.summary,
+            origins: result.origins,
+        },
+        meta: result.pagination,
+    });
 };
 
 const contributions = async (req, res) => {
@@ -406,6 +423,7 @@ export {
     previewImport,
     reviewContribution,
     reviewDimension,
+    reviewQueue,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,

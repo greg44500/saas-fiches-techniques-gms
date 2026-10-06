@@ -120,6 +120,7 @@ D-020 validation terrain invitation commerciale / onboarding bêta
 D-023 demande gouvernée de capacité exceptionnelle de transfert de propriété — cible Core 1.1
 D-024 console d’administration Platform contextualisée du Workspace — cible Core 1.1
 GMS-TAX-001 TVA Produit / fiscalité d’achat — à cadrer avant tout besoin comptable/fiscal avancé
+GMS-PRICING-002 calibration des Prix repères des 126 Références M-002 sans valeur dans le corpus v9 — DIFFÉRÉ
 ```
 
 ---
@@ -171,10 +172,20 @@ D-019 = moteur d'exécution générique validé
 
 ### D-008 — Notifications et communications transactionnelles étendues
 
-**Statut :** CONDITIONNEL  
+**Statut :** CONDITIONNEL — besoin Produit identifié, aucune primitive parallèle créée  
 **Blocage Core 1.0 :** non
 
 À traiter seulement si un produit dépasse les emails transactionnels déjà fournis.
+
+Audit Produit du 2026-10-03 : la gouvernance M-002 nécessite un signal visible
+lorsque des éléments attendent une intervention globale. Le Bloc B couvre ce
+besoin immédiat par une file et un compteur in-app `À contrôler`.
+
+Le Core v1.2.1 ne fournit pas de primitive générique de notification
+applicative persistée avec état lu/non lu. Le produit dérivé ne crée donc pas
+de modèle `Notification` spécifique. Si un besoin de notification persistée,
+distribuée ou multi-canal est confirmé, il doit être cadré comme évolution
+générique Core, versionné dans `saas-core-api`, puis réintégré au produit.
 
 ### D-009 — API Keys et Webhooks
 
@@ -725,3 +736,33 @@ run number : 11
 conclusion : success
 Run canonical Core gate : success
 ```
+
+
+### GMS-PRICING-002 — Calibration des Prix repères absents du corpus M-002 v9
+
+**Statut :** DIFFÉRÉ  
+**Périmètre :** produit dérivé — M-003 Prix repère global  
+**Création :** 2026-10-03
+
+Le corpus M-002 v9 conserve les identités du v8. Parmi elles, 126 Références
+apparues avec le v8 restent sans valeur économique validée.
+
+Le dataset économique `m003-global-indicative-prices.v3.json` conserve
+uniquement les 362 Prix repères historiques compatibles avec les Références v9
+restantes.
+
+Les 126 nouvelles Références restent volontairement sans Prix repère global :
+aucun montant n'est inventé en l'absence d'une calibration économique validée.
+
+**Critère de clôture :**
+
+```text
+source / méthode de calibration validée
+→ valeurs documentées
+→ cohérence unité M-002
+→ dataset M-003 versionné
+→ tests de couverture
+```
+
+Cette dette ne bloque pas M-002 : une Référence sans Prix repère reste
+exploitable et M-004 applique alors la chaîne de résolution des prix existante.

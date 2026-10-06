@@ -202,6 +202,12 @@ const productMetadata = {
       dimension: 'VOLUME',
       factorToBase: 10,
     },
+    {
+      value: 'UNIT',
+      label: 'unité',
+      dimension: 'COUNT',
+      factorToBase: 1,
+    },
   ],
 };
 
@@ -416,6 +422,42 @@ describe('TechnicalSheetLineEditor', () => {
     })).toBeInTheDocument();
   });
 
+  it('affiche le libellé UNIT métier sans l’utiliser comme unité de calcul', async () => {
+    const user = userEvent.setup();
+    const countableLine = normalizeDraftLine({
+      ...valuedLine,
+      productVariantId: 'variant-bruschetta',
+      productVariant: {
+        id: 'variant-bruschetta',
+        name: 'Pain bruschetta surgelé',
+        referenceUnit: 'UNIT',
+        countUnitLabelSingular: 'tranche',
+        countUnitLabelPlural: 'tranches',
+        yieldPercent: '100',
+      },
+      netQuantity: '2',
+      inputUnit: 'UNIT',
+      valuation: {
+        ...valuedLine.valuation,
+        normalizedUnit: 'UNIT',
+        applicableSource: 'INDICATIVE_GLOBAL',
+      },
+    }, 0);
+
+    renderEditor({ lines: [countableLine] });
+
+    expect(screen.getByLabelText('Unité ligne 1'))
+      .toHaveTextContent('tranches');
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Prix unitaire hors taxe — Prix repère global',
+    }));
+    expect(await screen.findByText(/prix normalisé par tranche/))
+      .toBeInTheDocument();
+    expect(countableLine.referenceUnit).toBe('UNIT');
+    expect(countableLine.valuation.normalizedUnit).toBe('UNIT');
+  });
+
   it('ne rend plus de badge permanent de sourcing sous le Produit', () => {
     renderEditor({
       lines: [{
@@ -608,7 +650,7 @@ describe('TechnicalSheetLineEditor', () => {
       .toBeInTheDocument();
     expect(screen.getByText('Référence fournisseur : SYS-001'))
       .toBeInTheDocument();
-    expect(screen.getByText(/Conditionnement : 1 unité/))
+    expect(screen.getByText(/Conditionnement : 1 × 10 kg/))
       .toBeInTheDocument();
   });
 

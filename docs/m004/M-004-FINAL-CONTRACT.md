@@ -272,8 +272,19 @@ ProductVariant.referenceUnit = KG
 → ligne affichée et persistée en kg
 
 ProductVariant.referenceUnit = UNIT
-→ ligne affichée et persistée en pièce
+→ ligne persistée en UNIT
+→ ligne affichée avec le libellé métier de la Référence
+  (pièce, tranche, œuf, pain, etc.)
 ```
+
+Le singulier/pluriel affiché provient de
+`countUnitLabelSingular/countUnitLabelPlural`. Ces libellés sont descriptifs :
+les conversions, la quantité brute, la normalisation du prix et le coût de
+ligne continuent d'utiliser exclusivement `referenceUnit = UNIT` avec un
+facteur de base égal à 1.
+
+Un paquet ou un carton n'est jamais affiché comme unité de recette : il
+appartient au conditionnement commercial M-003.
 
 Le frontend n'expose donc aucun sélecteur d'unité sur une ligne de composition.
 
@@ -370,9 +381,14 @@ jamais 0 €
 → Fiche non complètement valorisée
 ```
 
-Le fallback reste celui du contrat M-003 et toujours dans le contexte autorisé du même Dossier. Les Prix indicatifs M-003 constituent le dernier recours après les sources commerciales : surcharge Dossier puis valeur Workspace.
+Le fallback reste celui du contrat M-003 et toujours dans le contexte
+autorisé : après les sources commerciales viennent le Prix indicatif Dossier,
+le Prix indicatif Workspace, puis le Prix repère global en dernier recours.
 
-Une ligne valorisée par Prix indicatif conserve `supplierArticleId = null` et une source explicite `INDICATIVE_DOSSIER` ou `INDICATIVE_WORKSPACE`. Le snapshot historique reste valide sans inventer de Fournisseur ni d'Article.
+Une ligne valorisée par Prix indicatif conserve `supplierArticleId = null` et
+une source explicite `INDICATIVE_DOSSIER`, `INDICATIVE_WORKSPACE` ou
+`INDICATIVE_GLOBAL`. Le snapshot historique reste valide sans inventer de
+Fournisseur ni d'Article.
 
 ---
 
@@ -662,6 +678,8 @@ Il conserve au minimum, selon pertinence :
 - type Ingrédient / Économat ;
 - ProductVariant utilisé ;
 - identité/libellé utile du Produit au moment de la validation ;
+- libellés singulier/pluriel de l'unité dénombrable lorsqu'il s'agit de
+  `UNIT` ;
 - quantité nette ;
 - unité ;
 - rendement utilisé lorsque pertinent ;
@@ -1369,6 +1387,8 @@ Prévoir notamment :
 - quantité brute ;
 - rendement ;
 - conversions ;
+- calcul `UNIT` inchangé lorsque son libellé métier varie ;
+- libellés dénombrables figés dans le snapshot validé ;
 - contribution au coût matière (%CM) ;
 - CM ;
 - Économat ;
@@ -1404,6 +1424,7 @@ Prévoir notamment :
 - création ;
 - édition ;
 - composition ;
+- affichage singulier/pluriel des unités dénombrables ;
 - ambiguïté Article ;
 - Prix absent ;
 - valorisation ;

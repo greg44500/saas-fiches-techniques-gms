@@ -83,6 +83,37 @@ const serializeReferenceId = (reference) => (
     ?? null
 );
 
+const deriveReferenceContributionDecision = (contribution) => {
+    if (
+        contribution.status
+        === PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW
+    ) {
+        return null;
+    }
+
+    if (
+        contribution.status
+        === PRODUCT_CONTRIBUTION_STATUS.REJECTED
+    ) {
+        return 'REJECT';
+    }
+
+    const provisionalId =
+        contribution.provisionalEntityId?.toString?.() ?? null;
+    const resolutionId =
+        contribution.resolutionEntityId?.toString?.() ?? null;
+
+    if (
+        provisionalId
+        && resolutionId
+        && provisionalId !== resolutionId
+    ) {
+        return 'MERGE';
+    }
+
+    return 'APPROVE';
+};
+
 const serializeReferenceContribution = (contribution) => {
     const workspaceId = serializeReferenceId(contribution.workspace);
     const authorId = serializeReferenceId(contribution.author);
@@ -118,8 +149,17 @@ const serializeReferenceContribution = (contribution) => {
             message,
         })),
         status: contribution.status,
+        decision: deriveReferenceContributionDecision(contribution),
         candidates: contribution.payload?.candidates ?? [],
         reviewerId,
+        reviewer: contribution.reviewer?._id
+            ? {
+                id: reviewerId,
+                firstName: contribution.reviewer.firstName ?? null,
+                lastName: contribution.reviewer.lastName ?? null,
+                email: contribution.reviewer.email ?? null,
+            }
+            : null,
         reviewedAt: contribution.reviewedAt ?? null,
         provisionalEntityType: contribution.provisionalEntityType ?? null,
         provisionalEntityId:
@@ -642,17 +682,39 @@ const submitReferenceContribution = async ({
 });
 
 const listReferenceContributions = async ({
-    status = PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
+    status = null,
+    reviewedOnly = false,
     page = 1,
     limit = 20,
 }) => {
-    const filter = status ? { status } : {};
+    const filter = reviewedOnly
+        ? {
+            status: mongoose.trusted({
+                $in: [
+                    PRODUCT_CONTRIBUTION_STATUS.APPROVED,
+                    PRODUCT_CONTRIBUTION_STATUS.REJECTED,
+                ],
+            }),
+        }
+        : status
+            ? { status }
+            : {
+                status: PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
+            };
+    const sort = (
+        !reviewedOnly
+        && (status ?? PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW)
+            === PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW
+    )
+        ? { createdAt: 1, _id: 1 }
+        : { reviewedAt: -1, _id: -1 };
+
     const [items, total] = await Promise.all([
         ReferenceContribution.find(filter)
             .populate('workspace', 'name')
             .populate('author', 'firstName lastName email')
             .populate('reviewer', 'firstName lastName email')
-            .sort({ createdAt: 1, _id: 1 })
+            .sort(sort)
             .skip((page - 1) * limit)
             .limit(limit)
             .lean(),
@@ -706,9 +768,11 @@ const reviewReferenceContribution = async ({
             ? (
                 current.type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT
                     ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT
-                    : current.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
-                        ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY
-                        : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC
+                    : current.type === PRODUCT_CONTRIBUTION_TYPE.VARIANT
+                        ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT
+                        : current.type === PRODUCT_CONTRIBUTION_TYPE.VARIETY
+                            ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY
+                            : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC
             )
             : null;
         current.resolutionEntityId = approved

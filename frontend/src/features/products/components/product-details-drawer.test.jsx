@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   productDetail: vi.fn(),
   listArticles: vi.fn(),
   listIndicative: vi.fn(),
+  listGlobalIndicative: vi.fn(),
   listSuppliers: vi.fn(),
   attachVariant: vi.fn(),
   archiveVariant: vi.fn(),
@@ -50,6 +51,7 @@ vi.mock('@/components/shared/entity-details-drawer', () => ({
 vi.mock('@/components/shared/action-icon-button', () => ({
   ActionIconButton: ({
     disabled,
+    Icon,
     label,
     onClick,
   }) => (
@@ -58,7 +60,9 @@ vi.mock('@/components/shared/action-icon-button', () => ({
       disabled={disabled}
       onClick={onClick}
       type="button"
-    />
+    >
+      <Icon aria-hidden="true" />
+    </button>
   ),
 }));
 
@@ -83,6 +87,8 @@ vi.mock('@/features/products/components/product-variant-create-dialog', () => ({
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListSupplierArticlesQuery: mocks.listArticles,
   useListSuppliersQuery: mocks.listSuppliers,
+  useListWorkspaceGlobalIndicativePricesQuery:
+    mocks.listGlobalIndicative,
   useListWorkspaceIndicativePricesQuery: mocks.listIndicative,
 }));
 
@@ -156,7 +162,7 @@ describe('ProductDetailsDrawer', () => {
       product: {
         id: 'product-1',
         name: 'Abricot',
-        aliases: [],
+        aliases: ['Abricots'],
         category: { id: 'category-1', name: 'Fruits' },
         status: 'ACTIVE',
       },
@@ -168,6 +174,7 @@ describe('ProductDetailsDrawer', () => {
           referenceUnit: 'KG',
           yieldPercent: null,
           status: 'ACTIVE',
+          governanceStatus: 'APPROVED',
           workspaceEntry: {
             id: 'workspace-product-1',
             status: 'ACTIVE',
@@ -180,6 +187,7 @@ describe('ProductDetailsDrawer', () => {
           referenceUnit: 'KG',
           yieldPercent: 100,
           status: 'ACTIVE',
+          governanceStatus: 'PROVISIONAL',
           workspaceEntry: null,
         },
       ],
@@ -222,6 +230,31 @@ describe('ProductDetailsDrawer', () => {
       currency: 'EUR',
       source: 'Estimation Workspace',
     }]));
+    mocks.listGlobalIndicative.mockReturnValue(queryResult([{
+      id: 'global-indicative-1',
+      productVariant: {
+        id: 'variant-puree',
+        name: 'Purée d’abricots',
+        referenceUnit: 'KG',
+      },
+      sourceAmount: '18',
+      sourceBasis: 'PACKAGE',
+      normalizedAmount: '4.5',
+      normalizedUnit: 'KG',
+      currency: 'EUR',
+      packaging: {
+        containerType: 'Carton',
+        unitCount: 4,
+        quantityPerUnit: '1',
+        totalQuantity: '4',
+        unit: 'KG',
+        supplierLabel: 'Carton de 4 poches de 1 kg',
+      },
+      sourceOrganization: 'Catalogue professionnel vérifié',
+      observedAt: '2026-10-05T00:00:00.000Z',
+      sourceUrl: 'https://example.test/catalogue',
+      source: 'Relevé documenté',
+    }]));
     mocks.listSuppliers.mockReturnValue(queryResult({
       suppliers: [{
         id: 'supplier-1',
@@ -240,6 +273,128 @@ describe('ProductDetailsDrawer', () => {
     mocks.archiveVariant.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
     });
+  });
+
+  it('masque les alias techniques du détail utilisateur', () => {
+    renderDrawer();
+
+    expect(screen.queryByText('Alias')).not.toBeInTheDocument();
+    expect(screen.queryByText('Abricots')).not.toBeInTheDocument();
+  });
+
+  it('signale une Référence provisoire comme À contrôler', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('tab', {
+      name: 'Références (2)',
+    }));
+
+    const provisionalRow = screen
+      .getByText('Purée d’abricots')
+      .closest('li');
+    expect(provisionalRow).not.toBeNull();
+    expect(within(provisionalRow).getByText('À contrôler'))
+      .toBeInTheDocument();
+
+    const referenceList = screen.getByRole('list', {
+      name: 'Références Produit',
+    });
+    const approvedRow = within(referenceList)
+      .getByText('Abricot')
+      .closest('li');
+    expect(approvedRow).not.toBeNull();
+    expect(within(approvedRow).queryByText('À contrôler'))
+      .not.toBeInTheDocument();
+  });
+
+  it('utilise une étoile vide pour ajouter et pleine pour retirer des favoris', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('tab', {
+      name: 'Références (2)',
+    }));
+
+    const addButton = screen.getByRole('button', {
+      name: 'Ajouter Purée d’abricots aux favoris',
+    });
+    const removeButton = screen.getByRole('button', {
+      name: 'Retirer Abricot des favoris',
+    });
+
+    expect(addButton).toHaveClass('size-5');
+    expect(removeButton).toHaveClass('size-5');
+
+    const addDefaultIcon = addButton.querySelector(
+      '[data-favorite-state-icon="outline"]',
+    );
+    const addHoverIcon = addButton.querySelector(
+      '[data-favorite-hover-icon="filled"]',
+    );
+    const removeDefaultIcon = removeButton.querySelector(
+      '[data-favorite-state-icon="filled"]',
+    );
+    const removeHoverIcon = removeButton.querySelector(
+      '[data-favorite-hover-icon="outline"]',
+    );
+
+    expect(addDefaultIcon).toHaveAttribute('fill', 'none');
+    expect(addHoverIcon).toHaveAttribute('fill', 'currentColor');
+    expect(removeDefaultIcon).toHaveAttribute('fill', 'currentColor');
+    expect(removeHoverIcon).toHaveAttribute('fill', 'none');
+
+    expect(addDefaultIcon).toHaveClass(
+      'group-hover:opacity-0',
+      'group-focus-visible:opacity-0',
+    );
+    expect(addHoverIcon).toHaveClass(
+      'opacity-0',
+      'group-hover:opacity-100',
+      'group-focus-visible:opacity-100',
+    );
+    expect(removeDefaultIcon).toHaveClass(
+      'group-hover:opacity-0',
+      'group-focus-visible:opacity-0',
+    );
+    expect(removeHoverIcon).toHaveClass(
+      'opacity-0',
+      'group-hover:opacity-100',
+      'group-focus-visible:opacity-100',
+    );
+
+    await user.hover(addButton);
+    expect(await screen.findByText('Ajouter aux favoris'))
+      .toBeInTheDocument();
+
+    await user.unhover(addButton);
+    await user.hover(removeButton);
+    expect(await screen.findByText('Retirer des favoris'))
+      .toBeInTheDocument();
+  });
+
+  it('reste dans Références lors de l’ajout successif aux favoris', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    const referencesTab = screen.getByRole('tab', {
+      name: 'Références (2)',
+    });
+    await user.click(referencesTab);
+
+    const addButton = screen.getByRole('button', {
+      name: 'Ajouter Purée d’abricots aux favoris',
+    });
+    await user.click(addButton);
+
+    expect(mocks.attachVariant).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      variantId: 'variant-puree',
+    });
+    expect(referencesTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', {
+      name: 'Favoris (1)',
+    })).toHaveAttribute('aria-selected', 'false');
   });
 
   it('affiche les compteurs et réserve Favoris aux Références actives du Workspace', async () => {
@@ -276,11 +431,34 @@ describe('ProductDetailsDrawer', () => {
       name: 'Favoris (1)',
     }));
 
-    expect(screen.getByText('3,100 / KG')).toBeInTheDocument();
+    expect(screen.getByText('3,100 / kg')).toBeInTheDocument();
     expect(screen.getByText('Estimation Workspace')).toBeInTheDocument();
     expect(screen.getByText('Sysco · ABR-001')).toBeInTheDocument();
     expect(screen.getByText(/Carton/)).toBeInTheDocument();
-    expect(screen.getByText(/6 unité/)).toBeInTheDocument();
+    expect(screen.getByText(/6 × 1 kg/)).toBeInTheDocument();
+  });
+
+  it('rend le Prix repère global lisible dans Références sans exiger un Favori', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('tab', {
+      name: 'Références (2)',
+    }));
+
+    const row = screen.getByText('Purée d’abricots').closest('li');
+    expect(row).not.toBeNull();
+    expect(within(row).getByText('Prix repère global'))
+      .toBeInTheDocument();
+    expect(within(row).getByText('4,500 / kg'))
+      .toBeInTheDocument();
+    expect(within(row).getByText(/Carton de 4 poches de 1 kg/))
+      .toBeInTheDocument();
+    expect(within(row).getByText(/Catalogue professionnel vérifié/))
+      .toBeInTheDocument();
+    expect(within(row).getByRole('link', {
+      name: 'Consulter la source',
+    })).toHaveAttribute('href', 'https://example.test/catalogue');
   });
 
   it('réutilise les workflows Prix indicatif et Article fournisseur depuis le Produit', async () => {

@@ -583,7 +583,7 @@ const createArticleInSession = async ({
             },
             {
                 path: 'productVariant',
-                select: '_id name referenceUnit status',
+                select: '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status',
             },
         ]);
 
@@ -662,7 +662,7 @@ const updateSupplierArticle = async ({
             { path: 'supplier', select: '_id name scope status' },
             {
                 path: 'productVariant',
-                select: '_id name referenceUnit status',
+                select: '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status',
             },
         ]);
         return serializeSupplierArticle(article);
@@ -687,7 +687,7 @@ const updateSupplierArticle = async ({
         { path: 'supplier', select: '_id name scope status' },
         {
             path: 'productVariant',
-            select: '_id name referenceUnit status',
+            select: '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status',
         },
     ]);
 
@@ -731,7 +731,7 @@ const updateSupplierArticleStatus = async ({
         { path: 'supplier', select: '_id name scope status' },
         {
             path: 'productVariant',
-            select: '_id name referenceUnit status',
+            select: '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status',
         },
     ]);
 
@@ -878,7 +878,7 @@ const listSupplierArticles = async ({
         })
         .populate({
             path: 'productVariant',
-            select: '_id name referenceUnit status',
+            select: '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status',
         })
         .sort({ supplierReference: 1, _id: 1 })
         .skip(skip)

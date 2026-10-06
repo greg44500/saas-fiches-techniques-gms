@@ -143,6 +143,10 @@ const PRODUCT_CONTRIBUTION_TYPE_REGISTRY = Object.freeze({
         value: 'CANONICAL_PRODUCT',
         label: 'Produit',
     }),
+    VARIANT: Object.freeze({
+        value: 'VARIANT',
+        label: 'Référence',
+    }),
     VARIETY: Object.freeze({
         value: 'VARIETY',
         label: 'Variété',
@@ -321,6 +325,25 @@ const PRODUCT_IMPORT_SCOPE = Object.freeze({
     GLOBAL: 'GLOBAL',
 });
 
+const PRODUCT_REVIEW_QUEUE_TYPE_REGISTRY = Object.freeze({
+    CONTRIBUTION: Object.freeze({
+        value: 'CONTRIBUTION',
+        label: 'Contribution',
+    }),
+    DIMENSION_REVIEW: Object.freeze({
+        value: 'DIMENSION_REVIEW',
+        label: 'Valeur à vérifier',
+    }),
+});
+
+const PRODUCT_REVIEW_QUEUE_TYPE = Object.freeze(
+    Object.fromEntries(
+        Object.entries(PRODUCT_REVIEW_QUEUE_TYPE_REGISTRY).map(
+            ([key, definition]) => [key, definition.value],
+        ),
+    ),
+);
+
 const PRODUCT_SEARCH_SCOPE_REGISTRY = Object.freeze({
     WORKSPACE: Object.freeze({
         value: 'WORKSPACE',
@@ -382,6 +405,8 @@ export {
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
     PRODUCT_REFERENCE_UNIT,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
+    PRODUCT_REVIEW_QUEUE_TYPE,
+    PRODUCT_REVIEW_QUEUE_TYPE_REGISTRY,
     PRODUCT_SEARCH_SCOPE,
     PRODUCT_SEARCH_SCOPE_REGISTRY,
     PRODUCT_REJECTION_REASON,

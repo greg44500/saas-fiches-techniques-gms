@@ -70,6 +70,10 @@ const serializeVariant = (variant) => {
         conservationType: variant.conservationType,
         foodRange: variant.foodRange ?? null,
         referenceUnit: variant.referenceUnit,
+        countUnitLabelSingular:
+            variant.countUnitLabelSingular ?? null,
+        countUnitLabelPlural:
+            variant.countUnitLabelPlural ?? null,
         yieldPercent: variant.yieldPercent ?? null,
         status: variant.status,
         governanceStatus: variant.governanceStatus ?? 'APPROVED',

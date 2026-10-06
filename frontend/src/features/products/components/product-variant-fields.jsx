@@ -22,6 +22,8 @@ function createEmptyVariantDraft(metadata, { structured = false } = {}) {
     processingState: '',
     conservationType: metadata?.conservationTypes?.[0]?.value ?? '',
     referenceUnit: metadata?.referenceUnits?.[0]?.value ?? '',
+    countUnitLabelSingular: '',
+    countUnitLabelPlural: '',
     yieldPercent: '',
     structured,
   };
@@ -38,6 +40,14 @@ function variantDraftToPayload(draft, { structured = draft.structured } = {}) {
     processingState: optionalText(draft.processingState),
     conservationType: draft.conservationType,
     referenceUnit: draft.referenceUnit,
+    countUnitLabelSingular:
+      draft.referenceUnit === 'UNIT'
+        ? optionalText(draft.countUnitLabelSingular) || 'pièce'
+        : null,
+    countUnitLabelPlural:
+      draft.referenceUnit === 'UNIT'
+        ? optionalText(draft.countUnitLabelPlural) || 'pièces'
+        : null,
     yieldPercent: draft.yieldPercent ? Number(draft.yieldPercent) : null,
   };
 
@@ -83,10 +93,19 @@ function ProductVariantFields({
     : 'Non renseigné';
 
   function change(field, nextValue) {
-    onChange({
+    const next = {
       ...value,
       [field]: nextValue,
-    });
+    };
+
+    if (field === 'referenceUnit' && nextValue === 'UNIT') {
+      next.countUnitLabelSingular =
+        value.countUnitLabelSingular || 'pièce';
+      next.countUnitLabelPlural =
+        value.countUnitLabelPlural || 'pièces';
+    }
+
+    onChange(next);
   }
 
   return (
@@ -256,6 +275,44 @@ function ProductVariantFields({
           </SelectContent>
         </Select>
       </Field>
+
+      {value.referenceUnit === 'UNIT' && (
+        <>
+          <Field>
+            <FieldLabel htmlFor="product-variant-count-unit-singular">
+              Nom d’une unité
+            </FieldLabel>
+            <Input
+              disabled={disabled}
+              id="product-variant-count-unit-singular"
+              maxLength={40}
+              onChange={(event) => change(
+                'countUnitLabelSingular',
+                event.target.value,
+              )}
+              placeholder="Ex. tranche, pain, œuf"
+              value={value.countUnitLabelSingular ?? ''}
+            />
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="product-variant-count-unit-plural">
+              Nom de plusieurs unités
+            </FieldLabel>
+            <Input
+              disabled={disabled}
+              id="product-variant-count-unit-plural"
+              maxLength={40}
+              onChange={(event) => change(
+                'countUnitLabelPlural',
+                event.target.value,
+              )}
+              placeholder="Ex. tranches, pains, œufs"
+              value={value.countUnitLabelPlural ?? ''}
+            />
+          </Field>
+        </>
+      )}
 
       <Field>
         <FieldLabel htmlFor="product-variant-processing">

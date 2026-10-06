@@ -8,25 +8,41 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 
 ### Added
 
+- ajout du corpus professionnel M-002 `m002-reference-v8` : 16 catégories, 381 Produits et 488 Références Produit, avec 126 nouvelles Références par rapport au v7, 6 anciennes Références génériques de fonds de tarte retirées et remplacées par des formats exploitables ;
+- ajout du corpus M-003 `m003-global-indicative-prices.v3` : 362 Prix repères historiques compatibles avec le v8 ; les 126 nouvelles Références v8 restent volontairement sans Prix repère jusqu'à calibration documentée, sans montant inventé ;
+- ajout de la réconciliation bootstrap M-002 v1-v7 → v8, du retrait contrôlé des 6 fonds de tarte génériques et de la réconciliation M-003 archivant uniquement leurs anciens Prix repères bootstrap v2 ;
 - ajout du **Prix repère global** M-003 comme dernier fallback de valorisation des Références Produit, sans Fournisseur fictif ;
-- ajout d'un corpus initial versionné de 264 prix fictifs/indicatifs alignés sur `m002-reference-v6`, installé de façon idempotente sans écraser les corrections gestionnaire ;
+- conservation historique des corpus de Prix repères v1 (264) et v2 (368) ; le corpus v3 devient le défaut avec 362 valeurs héritées compatibles avec `m002-reference-v8` ;
 - maintenance Application Global des Prix repères depuis le Référentiel Produits ;
 - parcours E2E sans fournisseur validant la valorisation par Prix repère global puis la priorité d'un Prix indicatif Workspace ;
 
 - revue qualité Platform ligne par ligne des Variétés et Caractéristiques M-002 avec états `NOT_REQUIRED / PENDING / REVIEWED` ;
 - signalement chiffré des Produits ayant des Dimensions Workspace à vérifier et ouverture directe du drawer filtré ;
 - suppression fonctionnelle contrôlée d'une Dimension erronée lorsqu'aucune Référence Produit ne l'utilise ;
-- compteurs dynamiques des onglets Référentiel, Contributions et Catégories.
+- file Platform `À contrôler` agrégeant les demandes de gouvernance et les Dimensions à revoir, avec compteur, pagination serveur, classification métier Produit / Référence / Dimension et ouverture sur la cible exacte ;
+- indexes M-002 dédiés à la revue globale des Variétés/Caractéristiques et au rapprochement des Dimensions provisoires avec leur Contribution ;
+- compteurs dynamiques des onglets Référentiel, À contrôler et Catégories.
+- gouvernance des nouvelles Références Produit Workspace : détection des doublons exacts, rapprochements lexicaux non bloquants, création `PROVISIONAL`, contrôle Platform ciblé et fusion explicite ;
 
 ### Fixed
 
+- masquage de la provenance technique du Prix repère dans la Référence Produit au profit du seul libellé utilisateur « Mis à jour le JJ/MM/AAAA » ;
+- déduplication de la file `À contrôler` : une Dimension provisoire déjà couverte par une Contribution en attente n'est pas proposée une seconde fois ;
 - backfill M-002 des références historiques dépourvues de `governanceStatus`, compatible avec `sanitizeFilter=true` ;
 - restauration de la visibilité Workspace des Produits historiques ;
 - feedback anti-doublon explicite lors de la création d'un Produit ;
 - retrait immédiat sécurisé d'une Dimension fraîchement ajoutée.
+- suppression du double contrôle d'une Dimension provisoire : une approbation de gouvernance clôt aussi sa revue qualité lorsqu'il s'agit de la même donnée ;
+- retrait des alias techniques des drawers Produit utilisateur/Platform ;
+- exclusion des demandes de contrôle orphelines dont la cible provisoire n'est plus actionnable ;
+- conservation de l'acteur lors du repointage des Favoris pendant une fusion de Références.
 
 ### Changed
 
+- gouvernance Produit Platform simplifiée en `Référentiel | À contrôler | Catégories` ; les décisions passées restent conservées uniquement dans la traçabilité backend/audit ;
+- signalement in-app des interventions Produit via le compteur `À contrôler` ; aucune notification persistée parallèle n'est créée dans le produit faute de primitive Core générique validée ;
+- bootstrap M-002 par défaut basculé vers `m002-reference-v8` sans changer le contrat `CanonicalProduct / ProductVariant` ;
+- bootstrap Prix repère global par défaut basculé vers `m003-global-indicative-prices.v3.json` ;
 - extension de `IndicativePrice` aux portées GLOBAL / WORKSPACE / DOSSIER tout en conservant le même modèle et l'historisation par remplacement ;
 - ordre du Prix applicable complété par `INDICATIVE_GLOBAL` après les Prix indicatifs Dossier et Workspace ;
 - tableau et détail Platform du Référentiel Produits enrichis avec le Prix repère global et sa maintenance ;
@@ -36,7 +52,10 @@ La première release candidate formelle du Core est `v1.0.0-rc.1`, publiée le 2
 - navigation Platform GMS unifiée sous « Gestion des référentiels », avec onglets Produits/Fournisseurs filtrés par permissions Application Global ;
 - aide métier Platform alignée sur cette navigation avec une catégorie unique « Gestion des référentiels », sans modifier le moteur d’aide Core ni les catégories Workspace ;
 
-- drawer Platform Produit densifié : recherche et enrichissement alignés, compteurs, filtres À vérifier/Actives/Archivées/Toutes et actions par icônes ;
+- drawer Platform Produit densifié : recherche et enrichissement alignés, compteurs, filtres À contrôler/Actives/Archivées/Toutes, filtre Références À contrôler et actions contextualisées par donnée ;
+- drawer Workspace Produit : dans Références, Favori devient une étoile compacte sans cadre placée sur la ligne du nom, sans augmentation de hauteur, avec remplissage de l’étoile au survol/focus pour ajouter, évidement pour retirer et tooltip visuel conservé ; dans Favoris, le bouton étoile encadré reste aligné avec les autres actions ;
+- ajout/retrait de Favori depuis Références sans basculer automatiquement vers l’onglet Favoris, afin de permettre une sélection successive fluide ;
+- file Platform `À contrôler` allégée : suppression du badge `À contrôler` redondant dans chaque ligne ;
 - aides secondaires de création/enrichissement déplacées vers des infobulles contextuelles ;
 
 - intégration du Core post-tag `v1.2.1` jusqu’au commit `054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3`, sans nouvelle version ni déplacement de tag ;

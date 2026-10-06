@@ -30,7 +30,7 @@ import {
 } from '@/features/products/components/product-variant-fields';
 import {
   getApiErrorMessage,
-  getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 
@@ -51,6 +51,8 @@ function ProductVariantCreateDialog({
     { structured: true },
   ));
   const [dimensionDialogOpen, setDimensionDialogOpen] = useState(false);
+  const [duplicateCandidates, setDuplicateCandidates] = useState([]);
+  const [reviewedCandidateIds, setReviewedCandidateIds] = useState([]);
   const [formError, setFormError] = useState('');
   const [createWorkspaceVariant, workspaceState] = useCreateVariantMutation();
   const [createGlobalVariant, globalState] = useCreateProductReferenceVariantMutation();
@@ -77,13 +79,26 @@ function ProductVariantCreateDialog({
     characteristics: [],
   };
   const pending = workspaceState.isLoading || globalState.isLoading;
+  const everyCandidateReviewed = duplicateCandidates.every(({ id }) => (
+    reviewedCandidateIds.includes(id)
+  ));
 
   useEffect(() => {
     if (!open) return;
     setVariant(createEmptyVariantDraft(metadata, { structured: true }));
     setDimensionDialogOpen(false);
+    setDuplicateCandidates([]);
+    setReviewedCandidateIds([]);
     setFormError('');
   }, [metadata, open]);
+
+  function toggleCandidate(candidateId) {
+    setReviewedCandidateIds((current) => (
+      current.includes(candidateId)
+        ? current.filter((id) => id !== candidateId)
+        : [...current, candidateId]
+    ));
+  }
 
   async function submit() {
     if (!variant.name.trim()) {
@@ -96,6 +111,16 @@ function ProductVariantCreateDialog({
     }
     if (!variant.referenceUnit) {
       setFormError('Sélectionnez une unité de référence.');
+      return;
+    }
+    if (
+      !isGlobal
+      && duplicateCandidates.length > 0
+      && !everyCandidateReviewed
+    ) {
+      setFormError(
+        'Examinez les Références proches avant de confirmer la création.',
+      );
       return;
     }
 
@@ -111,7 +136,22 @@ function ProductVariantCreateDialog({
         : await createWorkspaceVariant({
           workspaceId,
           ...payload,
+          forceCreate: duplicateCandidates.length > 0,
+          reviewedCandidateIds,
         }).unwrap();
+
+      if (
+        !isGlobal
+        && result?.classification === 'USER_CONFIRMATION_REQUIRED'
+      ) {
+        setDuplicateCandidates(result.candidates ?? []);
+        setReviewedCandidateIds([]);
+        setFormError(
+          'Des Références proches existent. Vérifiez-les avant de confirmer '
+          + 'la création de cette nouvelle Référence.',
+        );
+        return;
+      }
 
       onCreated(result);
     } catch (error) {
@@ -160,7 +200,7 @@ function ProductVariantCreateDialog({
                     <li className="flex flex-wrap justify-between gap-2" key={existing.id}>
                       <span>{getVariantLabel(existing)}</span>
                       <span className="text-muted-foreground">
-                        {getReferenceUnitLabel(metadata, existing.referenceUnit)}
+                        {getVariantReferenceUnitLabel(metadata, existing)}
                       </span>
                     </li>
                   ))}
@@ -192,10 +232,55 @@ function ProductVariantCreateDialog({
               dimensions={dimensions}
               disabled={pending}
               metadata={metadata}
-              onChange={setVariant}
+              onChange={(nextVariant) => {
+                setVariant(nextVariant);
+                if (nextVariant.name !== variant.name) {
+                  setDuplicateCandidates([]);
+                  setReviewedCandidateIds([]);
+                }
+                setFormError('');
+              }}
               structured
               value={variant}
             />
+
+            {duplicateCandidates.length > 0 && (
+              <section className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
+                <div>
+                  <h3 className="font-medium">
+                    Références proches à examiner
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Une proximité n’empêche pas la création. Confirmez que
+                    chaque Référence proposée est bien différente.
+                  </p>
+                </div>
+                <ul className="space-y-2">
+                  {duplicateCandidates.map((candidate) => (
+                    <li
+                      className="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3"
+                      key={candidate.id}
+                    >
+                      <div>
+                        <p className="font-medium">{candidate.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Référence existante de {product?.name}
+                        </p>
+                      </div>
+                      <label className="flex cursor-pointer items-center gap-2 text-sm">
+                        <input
+                          checked={reviewedCandidateIds.includes(candidate.id)}
+                          disabled={pending}
+                          onChange={() => toggleCandidate(candidate.id)}
+                          type="checkbox"
+                        />
+                        Différente
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             <FieldError>{formError}</FieldError>
           </div>
@@ -213,7 +298,11 @@ function ProductVariantCreateDialog({
               onClick={submit}
               type="button"
             >
-              {pending ? 'Création…' : 'Créer la référence'}
+              {pending
+                ? 'Création…'
+                : duplicateCandidates.length > 0
+                  ? 'Confirmer la nouvelle référence'
+                  : 'Créer la référence'}
             </Button>
           </DialogFooter>
         </DialogContent>

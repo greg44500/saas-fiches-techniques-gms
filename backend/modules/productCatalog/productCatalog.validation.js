@@ -8,6 +8,7 @@ import {
     PRODUCT_CONTRIBUTION_TYPE,
     PRODUCT_FOOD_RANGES,
     PRODUCT_REFERENCE_UNIT,
+    PRODUCT_REVIEW_QUEUE_TYPE,
     PRODUCT_SEARCH_SCOPE,
     PRODUCT_STATUS,
     WORKSPACE_PRODUCT_STATUS,
@@ -80,6 +81,28 @@ const conservationTypeSchema = z.enum(
     Object.values(PRODUCT_CONSERVATION_TYPE),
 );
 
+const countUnitLabelSchema = z.string().trim().min(1).max(40)
+    .nullable()
+    .optional();
+
+const validateCountUnitLabels = (value, context) => {
+    if (value.referenceUnit === PRODUCT_REFERENCE_UNIT.UNIT) return;
+
+    for (const field of [
+        'countUnitLabelSingular',
+        'countUnitLabelPlural',
+    ]) {
+        if (value[field] !== null && value[field] !== undefined) {
+            context.addIssue({
+                code: 'custom',
+                path: [field],
+                message:
+                    'Le libellé d’unité dénombrable est réservé à UNIT.',
+            });
+        }
+    }
+};
+
 const structuredVariantBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(160),
     varietyId: objectIdSchema.nullable().optional(),
@@ -88,8 +111,10 @@ const structuredVariantBodySchema = z.strictObject({
     conservationType: conservationTypeSchema,
     foodRange: foodRangeSchema.nullable().optional().default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
+    countUnitLabelSingular: countUnitLabelSchema,
+    countUnitLabelPlural: countUnitLabelSchema,
     yieldPercent: z.number().positive().max(100).nullable().optional(),
-});
+}).superRefine(validateCountUnitLabels);
 
 const newProductVariantBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(160),
@@ -98,8 +123,10 @@ const newProductVariantBodySchema = z.strictObject({
     conservationType: conservationTypeSchema,
     foodRange: foodRangeSchema.nullable().optional().default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
+    countUnitLabelSingular: countUnitLabelSchema,
+    countUnitLabelPlural: countUnitLabelSchema,
     yieldPercent: z.number().positive().max(100).nullable().optional(),
-});
+}).superRefine(validateCountUnitLabels);
 
 const duplicateCheckBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
@@ -122,7 +149,10 @@ const createGlobalProductBodySchema = z.strictObject({
     variant: newProductVariantBodySchema.optional(),
 });
 
-const createWorkspaceVariantBodySchema = structuredVariantBodySchema;
+const createWorkspaceVariantBodySchema = structuredVariantBodySchema.extend({
+    forceCreate: z.boolean().optional().default(false),
+    reviewedCandidateIds: z.array(objectIdSchema).max(20).optional().default([]),
+});
 const createGlobalVariantBodySchema = structuredVariantBodySchema;
 
 const productSearchQuerySchema = z.strictObject({
@@ -224,7 +254,11 @@ const globalCategoryParamsSchema = z.strictObject({
 });
 
 const createReferenceContributionBodySchema = z.strictObject({
-    type: z.enum(Object.values(PRODUCT_CONTRIBUTION_TYPE)),
+    type: z.enum([
+        PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT,
+        PRODUCT_CONTRIBUTION_TYPE.VARIETY,
+        PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC,
+    ]),
     productId: objectIdSchema.optional(),
     characteristicKind: z.enum(
         Object.values(PRODUCT_CHARACTERISTIC_KIND),
@@ -274,9 +308,28 @@ const createReferenceContributionBodySchema = z.strictObject({
 });
 
 const referenceContributionListQuerySchema = z.strictObject({
-    status: z.enum(Object.values(PRODUCT_CONTRIBUTION_STATUS))
+    status: z.enum(Object.values(PRODUCT_CONTRIBUTION_STATUS)).optional(),
+    reviewedOnly: z.enum(['true', 'false'])
         .optional()
-        .default(PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW),
+        .default('false')
+        .transform((value) => value === 'true'),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+}).superRefine((query, context) => {
+    if (query.reviewedOnly && query.status) {
+        context.addIssue({
+            code: 'custom',
+            path: ['status'],
+            message:
+                'status ne peut pas être combiné avec reviewedOnly=true.',
+        });
+    }
+});
+
+const productReviewQueueListQuerySchema = z.strictObject({
+    type: z.enum(Object.values(PRODUCT_REVIEW_QUEUE_TYPE)).optional(),
+    workspaceId: objectIdSchema.optional(),
+    origins: z.enum(['include', 'omit']).optional().default('include'),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
 });
@@ -368,7 +421,16 @@ const updateVariantBodySchema = z.strictObject({
     conservationType: conservationTypeSchema.optional(),
     foodRange: foodRangeSchema.nullable().optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
+    countUnitLabelSingular: countUnitLabelSchema,
+    countUnitLabelPlural: countUnitLabelSchema,
     yieldPercent: z.number().positive().max(100).nullable().optional(),
+}).superRefine((value, context) => {
+    if (
+        value.referenceUnit
+        && value.referenceUnit !== PRODUCT_REFERENCE_UNIT.UNIT
+    ) {
+        validateCountUnitLabels(value, context);
+    }
 }).refine(
     (body) => Object.keys(body).length > 0,
     { message: 'Au moins un champ Référence doit être modifié.' },
@@ -400,6 +462,7 @@ export {
     objectIdSchema,
     productIdParamsSchema,
     productSearchQuerySchema,
+    productReviewQueueListQuerySchema,
     productVariantParamsSchema,
     referenceContributionDecisionBodySchema,
     referenceContributionListQuerySchema,

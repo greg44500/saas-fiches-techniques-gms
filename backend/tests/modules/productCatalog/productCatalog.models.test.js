@@ -194,4 +194,42 @@ describe('M-002 product catalog models', () => {
 
         await expect(variant.validate()).rejects.toThrow();
     });
+
+    it('nomme UNIT comme une unité de recette sans transformer le conditionnement en identité Produit', async () => {
+        const actorId = new mongoose.Types.ObjectId();
+        const countable = new ProductVariant({
+            canonicalProduct: new mongoose.Types.ObjectId(),
+            name: 'Pain bruschetta surgelé',
+            normalizedName: 'pain bruschetta surgele',
+            normalizedSignature: 'n:pain bruschetta surgele|v:_|c:_',
+            conservationType: 'SURGELE',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'tranche',
+            countUnitLabelPlural: 'tranches',
+            createdBy: actorId,
+            updatedBy: actorId,
+        });
+        const mass = new ProductVariant({
+            canonicalProduct: new mongoose.Types.ObjectId(),
+            name: 'Farine',
+            normalizedName: 'farine',
+            normalizedSignature: 'n:farine|v:_|c:_',
+            conservationType: 'SEC',
+            referenceUnit: 'KG',
+            countUnitLabelSingular: 'sac',
+            countUnitLabelPlural: 'sacs',
+            createdBy: actorId,
+            updatedBy: actorId,
+        });
+
+        await countable.validate();
+        await mass.validate();
+
+        expect(countable).toMatchObject({
+            countUnitLabelSingular: 'tranche',
+            countUnitLabelPlural: 'tranches',
+        });
+        expect(mass.countUnitLabelSingular).toBeNull();
+        expect(mass.countUnitLabelPlural).toBeNull();
+    });
 });

@@ -34,8 +34,8 @@ import {
     reconcileM002LegacyReferenceDuplicates,
 } from './reconcileM002LegacyReferenceDuplicates.migration.js';
 import {
-    reconcileM002BootstrapToV6,
-} from './reconcileM002BootstrapToV6.migration.js';
+    reconcileM002BootstrapToV9,
+} from './reconcileM002BootstrapToV9.migration.js';
 
 const run = async () => {
     try {
@@ -112,10 +112,9 @@ const run = async () => {
                 archivedWorkspaceFavorites: 0,
                 skipped: true,
             };
-        // Nettoyer d'abord les données bootstrap historiques.
-        // Cela évite de forcer une migration sémantique sur des références
-        // v1-v5 qui ne font plus partie du référentiel PDF v6.
-        const bootstrapV6 = await reconcileM002BootstrapToV6();
+        // Réconcilier les anciens bootstraps avant les migrations sémantiques.
+        // Le corpus v9 reprend le v8 et nomme explicitement chaque unité de recette dénombrable.
+        const bootstrapV9 = await reconcileM002BootstrapToV9();
         const legacyReferenceDuplicates =
             await reconcileM002LegacyReferenceDuplicates();
         const productReferenceContract =
@@ -134,7 +133,7 @@ const run = async () => {
                 foodRangeUsageType,
                 legacyReferenceDuplicates,
                 productReferenceContract,
-                bootstrapV6,
+                bootstrapV9,
                 dimensionQualityReview,
                 indexes,
                 permissions,

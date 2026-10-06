@@ -197,4 +197,30 @@ describe('IndicativePriceDialog', () => {
       source: 'Estimation magasin',
     });
   });
+
+  it('affiche le libellé métier de UNIT pour une Référence dénombrable', () => {
+    render(
+      <TooltipProvider>
+        <IndicativePriceDialog
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+          open
+          variant={{
+            id: 'variant-unit',
+            name: 'Pain bruschetta surgelé',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'tranche',
+            countUnitLabelPlural: 'tranches',
+          }}
+          workspaceId="workspace-1"
+        />
+      </TooltipProvider>,
+    );
+
+    expect(screen.getByRole('combobox', {
+      name: 'Unité du prix indicatif',
+    })).toHaveTextContent('tranche');
+    expect(screen.queryByText('UNIT')).not.toBeInTheDocument();
+  });
+
 });
