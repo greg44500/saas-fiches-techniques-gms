@@ -13,6 +13,9 @@ import {
 } from '../../../constants/plan.constants.js';
 
 import {
+    BusinessActivityEvent,
+} from '../../../modules/businessActivity/businessActivity.model.js';
+import {
     Dossier,
 } from '../../../modules/dossier/dossier.model.js';
 import {
@@ -1150,6 +1153,39 @@ describe('M-004 services Fiches techniques', () => {
             remaining: 7,
             unlimited: false,
         });
+
+        const exportEvents =
+            await BusinessActivityEvent
+                .find({
+                    workspace:
+                        owner.workspace._id,
+                    action:
+                        'TECHNICAL_SHEET_EXPORTED',
+                })
+                .sort({ _id: 1 })
+                .lean();
+
+        expect(exportEvents)
+            .toHaveLength(3);
+        expect(
+            exportEvents.map(
+                (event) =>
+                    event.metadata.format,
+            ),
+        ).toEqual([
+            'CSV',
+            'XLSX',
+            'PDF',
+        ]);
+        expect(
+            exportEvents.every(
+                (event) =>
+                    !Object.hasOwn(
+                        event.metadata,
+                        'buffer',
+                    ),
+            ),
+        ).toBe(true);
     });
 
     it('exporte toujours le dernier snapshot validé lorsqu’un nouveau brouillon existe', async () => {
