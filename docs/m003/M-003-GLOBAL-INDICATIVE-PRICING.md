@@ -86,14 +86,16 @@ INDICATIVE_GLOBAL
 
 ## 5. Corpus initial
 
-Le corpus économique actif reste compatible avec le bootstrap Produit `m002-reference-v8` sans inventer de nouveaux montants.
+Le corpus économique actif reste compatible avec le bootstrap Produit
+`m002-reference-v9` sans inventer de nouveaux montants. Le v9 conserve les
+identités du v8 ; aucune clé économique n'est donc créée ni retirée.
 
 Règles :
 
 - dataset actif : `m003-global-indicative-prices.v3.json` ;
 - 362 Prix repères hérités des Références v7 toujours présentes dans le v8 ;
-- 488 Références Produit dans le corpus M-002 v8 ;
-- 126 nouvelles Références v8 volontairement sans Prix repère global faute de valeur économique validée ;
+- 488 Références Produit dans le corpus M-002 v9 ;
+- 126 Références apparues en v8 et conservées en v9, volontairement sans Prix repère global faute de valeur économique validée ;
 - retrait des 6 entrées de prix correspondant aux anciens fonds de tarte génériques retirés du v8 ;
 - conservation historique de `m003-global-indicative-prices.v1.json` et `m003-global-indicative-prices.v2.json` ;
 - valeurs explicitement fictives / indicatives ;
@@ -106,7 +108,9 @@ Règles :
 - le bootstrap ne remplace jamais un Prix repère global déjà maintenu par un gestionnaire ;
 - les Références sans valeur exploitable peuvent rester sans Prix repère plutôt que recevoir une valeur incohérente.
 
-Le v3 applique explicitement cette règle : aucune estimation n'a été créée pour les 126 nouvelles Références v8. Leur valorisation globale reste absente jusqu'à calibration documentée.
+Le v3 applique explicitement cette règle : aucune estimation n'a été créée
+pour les 126 Références apparues en v8 et conservées en v9. Leur valorisation
+globale reste absente jusqu'à calibration documentée.
 
 ## 6. Maintenance par le gestionnaire métier global
 
@@ -117,6 +121,8 @@ Le gestionnaire disposant de `product:reference:manage` peut :
 - remplacer un Prix repère existant ;
 - retirer le Prix repère actif ;
 - renseigner une note / provenance ;
+- exprimer un prix par unité M-002 ou par conditionnement `PACKAGE` ;
+- renseigner l'organisation source, l'URL et la date d'observation ;
 - voir la date de dernière mise à jour.
 
 La maintenance est intégrée à la gouvernance du Référentiel Produits afin d'éviter une surface Fournisseur artificielle.
@@ -150,6 +156,11 @@ Le gestionnaire ne doit pas saisir manuellement le corpus initial Référence pa
 
 Le Workspace n'administre pas le Prix repère global.
 
+Il peut toutefois lire les Prix repères actifs, leur conditionnement et leur
+provenance via la surface Workspace M-003. Cette lecture ne dépend pas de
+`WorkspaceProduct` : une Référence globale non favorite reste consultable et
+peut servir à tester la complétion et la valorisation d'une Fiche technique.
+
 Lorsqu'une Fiche technique est valorisée par ce fallback, l'interface affiche explicitement :
 
 ~~~text
@@ -164,21 +175,30 @@ Le Prix repère global ne doit jamais être confondu avec :
 - Tarif négocié ;
 - Prix facturé.
 
-## 9. Conditionnements génériques
+## 9. Conditionnement et provenance du Prix repère
 
-Les conditionnements génériques sont compatibles avec cette architecture mais ne sont pas introduits dans ce bloc.
-
-Raison :
+Un Prix repère maintenu par la Platform peut être saisi sur une base
+`PACKAGE`. Le modèle réutilise le conditionnement M-003 plat :
 
 ~~~text
-quantité recette
-× prix normalisé par KG / L / UNIT
-→ valorisation M-004 possible sans conditionnement d'achat
+contenant principal
++ nombre de sous-unités
+× quantité par sous-unité
++ unité M-002
+→ quantité totale normalisable
 ~~~
 
-Le conditionnement devient nécessaire pour des usages d'approvisionnement, quantité d'achat ou nombre de colis.
+Le V1 ne représente pas une hiérarchie récursive de cartons, paquets et
+pièces. Le libellé source conserve la désignation complète ; les champs
+structurés portent un seul niveau de calcul. Pour `UNIT`, la quantité compte
+des unités de recette nommées par M-002, pas des emballages.
 
-L'extension future devra réutiliser les unités M-002 et ne devra créer aucun Fournisseur fictif.
+Les champs de provenance sont facultatifs mais structurés : organisation,
+URL, date d'observation et note. Ils sont affichés comme informations de
+source sans transformer un Prix repère en Tarif fournisseur réel.
+
+Le dataset v3 historique reste inchangé : aucun conditionnement, fournisseur
+ou relevé de marché n'y est inventé.
 
 ## 10. Migration
 
@@ -219,6 +239,8 @@ Backend :
 - création / remplacement / archivage du Prix repère global ;
 - isolation des Prix Workspace/Dossier inchangée ;
 - normalisation d'unité ;
+- normalisation d'un Prix repère `PACKAGE` ;
+- conservation du conditionnement plat et de la provenance structurée ;
 - priorité du fallback global ;
 - absence de fallback global lorsqu'une source plus précise existe ;
 - autorisation Application Global ;
@@ -228,6 +250,8 @@ Backend :
 Frontend :
 
 - affichage du Prix repère ;
+- lecture Workspace d'une Référence globale non favorite ;
+- affichage du conditionnement et de la provenance ;
 - ajout / modification / retrait par le gestionnaire ;
 - aucune action de maintenance sans `product:reference:manage` ;
 - libellé de source explicite.
@@ -249,7 +273,7 @@ puis Prix indicatif Workspace
 
 - scraping automatique récurrent des fournisseurs ;
 - fournisseur fictif ;
-- conditionnements génériques ;
+- arbres récursifs de conditionnements ;
 - moteur de prix temps réel ;
 - historique graphique ;
 - alertes de volatilité ;

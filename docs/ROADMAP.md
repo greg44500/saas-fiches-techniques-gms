@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; corpus professionnel v8 implémenté et gouvernance Produit unifiée en cours sur branche unique  
-**Dernière mise à jour :** 2026-10-03
+**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; corpus professionnel v9, conditionnements M-003 et lecture Workspace des Prix repères finalisés sur branche unique
+**Dernière mise à jour :** 2026-10-06
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -72,7 +72,7 @@ Décisions finales :
 
 ### 2.2 Référentiel Produit
 
-**État : CONTRAT EXISTANT CONSERVÉ — corpus professionnel v8 en implémentation, sans changement des invariants M-002**
+**État : CONTRAT EXISTANT CONSERVÉ — corpus professionnel v9 implémenté, sans changement des invariants de calcul M-002**
 
 Contrat canonique :
 
@@ -86,6 +86,7 @@ Décisions finales :
 - nom métier persistant et unique par normalisation ;
 - Conservation obligatoire ;
 - unité de référence obligatoire ;
+- libellés singulier/pluriel obligatoires pour les Références `UNIT`, sans effet sur l'identité ni les calculs ;
 - Catégorie facultative ;
 - `foodRange` / Gammes conservés côté backend pour compatibilité et évolution future, mais non exposés par le frontend actif ;
 - suppression de `usageType` du contrat actif ;
@@ -93,16 +94,22 @@ Décisions finales :
 - dimensions avancées facultatives ;
 - `WorkspaceProduct` présenté comme Favori ;
 - liste Workspace `Produit | Conservation | Actions` ;
-- seed actif sur la branche : `m002-reference-v8`, 16 catégories, 381 Produits et 488 Références Produit ;
-- v8 ajoute 126 Références professionnelles par rapport au v7, retire 6 fonds de tarte génériques et les remplace par des Références portant un diamètre ou format exploitable ;
-- migration de réconciliation v1-v7 → v8, sans suppression physique des données utilisateur ;
+- seed actif sur la branche : `m002-reference-v9`, 16 catégories, 381 Produits et 488 Références Produit ;
+- v9 conserve exactement les identités v8 et nomme les 64 unités de recette dénombrables ;
+- migration de réconciliation v1-v8 → v9, sans suppression physique des données utilisateur ;
 - migration additionnelle fail-closed ;
 - import dédupliqué par nom exact de Référence ;
 - frontière stricte M-002 / M-003 maintenue.
 
 La dépendance générique Core de navigation Platform est résolue par le commit post-tag `6581e573c6a6885790b23fe502bd34d8199ea6ba`. Elle est intégrée sur la branche Core-update dédiée et devient effective sur `main` après PR, merge et Core Gate post-merge du BLOC A.
 
-Décision de clôture du 2026-09-25 : le contrat M-002 reste l'autorité. L'audit Produit du 2026-10-03 a validé un enrichissement de données sans refonte du modèle : la séparation `CanonicalProduct / ProductVariant` est conservée, M-003 reste propriétaire des données commerciales et le corpus v8 exploite les racines multi-références lorsque la distinction technique est utile, notamment pour les formats de fonds de tartes. L'implémentation reste sur une branche et une PR uniques jusqu'à validation visuelle et Core Gate.
+Décision de clôture du 2026-09-25 : le contrat M-002 reste l'autorité. Les
+audits Produit des 2026-10-03 et 2026-10-06 ont validé des enrichissements
+sans refonte du modèle : la séparation `CanonicalProduct / ProductVariant`
+est conservée, M-003 reste propriétaire des données commerciales et le v9
+ajoute seulement la sémantique d'affichage des Références `UNIT`.
+L'implémentation reste sur une branche et une PR uniques jusqu'à validation
+locale et visuelle.
 
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
@@ -124,6 +131,7 @@ Décisions établies :
 - une ligne sans référence exploitable ne crée pas automatiquement un Article ;
 - les Articles suivent `ACTIVE / ARCHIVED` et peuvent conserver un lien `replacedBy` ;
 - conditionnements structurés et prix normalisés lorsque les données sont suffisantes ;
+- conditionnement V1 plat à un niveau arithmétique ; le libellé fournisseur conserve les niveaux commerciaux supplémentaires ;
 - éditions de catalogues historisées ; nouvelle édition ≠ écrasement de l'ancienne ;
 - réimport de la même édition = réconciliation sans duplication ;
 - Tarifs fournisseur de référence historisés par édition ;
@@ -170,6 +178,12 @@ Les retours des bêta-testeurs peuvent déclencher des retouches UX ultérieures
 Extension post-clôture validée le 2026-09-29 pendant la QA M-004 : ajout d'un Prix indicatif interne, historisé, porté par Workspace ou Dossier et utilisable comme dernier recours lorsqu'aucune source commerciale M-003 n'est exploitable. Cette extension ne modifie ni l'isolation Dossier des Tarifs négociés/Prix facturés, ni la priorité des sources commerciales, ni la frontière Core/Produit.
 
 Checkpoint UX du 2026-09-30 : le parcours Produit ↔ Fournisseur doit rester unique. Les écrans Produit et Fournisseurs peuvent ouvrir le même workflow M-003 avec un contexte prérempli, mais aucune donnée commerciale ni aucun formulaire parallèle ne doit être créé. Le drawer Produit expose les Favoris actifs, le Prix indicatif Workspace et les Articles/conditionnements accessibles sans sélectionner automatiquement un fournisseur.
+
+Extension du 2026-10-06 : les Workspaces peuvent consulter en lecture seule
+les Prix repères globaux, leur conditionnement et leur provenance pour toutes
+les Références visibles, sans dépendre des Favoris. La Platform peut maintenir
+un prix `PACKAGE` avec conditionnement plat et provenance structurée. Aucun
+montant ni fournisseur n'est inventé dans le bootstrap existant.
 
 Le **corpus d'aide métier** est volontairement traité dans un bloc séparé après stabilisation de ces parcours. Il devra utiliser le point d'extension Core `APPLICATION_HELP_MODULES` et conserver le filtrage serveur selon permissions, capabilities et contexte ; aucune logique d'aide parallèle ne doit être créée.
 
@@ -603,20 +617,23 @@ Le corpus professionnel A2 est implémenté sur la branche
 `feature/a2-professional-reference-corpus` :
 
 ~~~text
-m002-reference-v8
+m002-reference-v9
 → 16 catégories
 → 381 Produits
 → 488 Références Produit
-→ 126 nouvelles Références vs v7
-→ 6 fonds de tarte génériques remplacés par des formats exploitables
+→ identités v8 conservées
+→ 64 unités UNIT nommées au singulier et au pluriel
 
 m003-global-indicative-prices.v3
 → 362 Prix repères historiques compatibles
-→ 126 nouvelles Références v8 volontairement sans Prix repère
+→ 126 Références volontairement sans Prix repère
 → aucun montant ajouté sans calibration validée
 ~~~
 
-Le lot actif regroupe désormais le **Bloc B — Gouvernance Produit unifiée** et l'enrichissement complémentaire du corpus professionnel v8. L'ensemble reste consolidé sur la même branche et attend la validation locale/visuelle avant PR unique.
+Le lot actif regroupe le **Bloc B — Gouvernance Produit unifiée**, le corpus
+professionnel v9, le conditionnement M-003 et la lecture Workspace des Prix
+repères globaux. L'ensemble reste consolidé sur la même branche et attend la
+validation locale/visuelle avant PR unique.
 
 Cible implémentée :
 
@@ -714,4 +731,3 @@ Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité pour les
 invariants Produit. Le Bloc B unifie la surface de travail du gestionnaire sans
 réouvrir la séparation `CanonicalProduct / ProductVariant`, la frontière
 M-002 / M-003 ni les règles de tenancy.
-

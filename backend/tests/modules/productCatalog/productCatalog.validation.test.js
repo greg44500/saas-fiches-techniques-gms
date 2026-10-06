@@ -133,6 +133,27 @@ describe('M-002 product request validation', () => {
         }).success).toBe(false);
     });
 
+    it('réserve les libellés métier dénombrables à UNIT', () => {
+        expect(createWorkspaceVariantBodySchema.safeParse({
+            ...minimalReference,
+            name: 'Pain bruschetta surgelé',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'tranche',
+            countUnitLabelPlural: 'tranches',
+        }).success).toBe(true);
+
+        expect(createWorkspaceVariantBodySchema.safeParse({
+            ...minimalReference,
+            countUnitLabelSingular: 'sac',
+            countUnitLabelPlural: 'sacs',
+        }).success).toBe(false);
+
+        expect(updateVariantBodySchema.safeParse({
+            referenceUnit: 'KG',
+            countUnitLabelSingular: 'sac',
+        }).success).toBe(false);
+    });
+
     it('valide les contributions Produit sans rendre la catégorie obligatoire', () => {
         expect(createReferenceContributionBodySchema.safeParse({
             type: 'CANONICAL_PRODUCT',

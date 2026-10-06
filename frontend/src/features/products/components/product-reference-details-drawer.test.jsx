@@ -202,10 +202,21 @@ describe('ProductReferenceDetailsDrawer', () => {
         referenceUnit: 'KG',
       },
       sourceAmount: '3.25',
+      sourceBasis: 'PACKAGE',
       normalizedAmount: '3.25',
       normalizedUnit: 'KG',
       currency: 'EUR',
-      source: 'Référentiel de démonstration — prix repère global — corpus professionnel v7 — octobre 2026 · m003-global-indicative-v2',
+      source: 'Relevé vérifié',
+      sourceOrganization: 'Catalogue professionnel',
+      observedAt: '2026-10-01T00:00:00.000Z',
+      packaging: {
+        containerType: 'Carton',
+        unitCount: 4,
+        quantityPerUnit: '1',
+        totalQuantity: '4',
+        unit: 'KG',
+        supplierLabel: 'Carton de 4 poches de 1 kg',
+      },
       updatedAt: '2026-10-03T10:00:00.000Z',
       status: 'ACTIVE',
     }]));
@@ -481,10 +492,14 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     expect(screen.getByText(/Prix repère global : 3,250 \/ KG/))
       .toBeInTheDocument();
+    expect(screen.getByText(/Relevé : 3,25 € \/ Carton/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/Carton de 4 poches de 1 kg/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/Source : Catalogue professionnel/))
+      .toBeInTheDocument();
     expect(screen.getByText('Mis à jour le 03/10/2026'))
       .toBeInTheDocument();
-    expect(screen.queryByText(/Référentiel de démonstration/))
-      .not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
       name: 'Modifier le Prix repère global de Abricot frais',

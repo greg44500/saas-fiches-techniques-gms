@@ -287,6 +287,19 @@ const listWorkspaceIndicative = async (req, res) => {
     });
 };
 
+const listWorkspaceGlobalIndicative = async (req, res) => {
+    const prices = await listIndicativePrices({
+        workspaceId: null,
+        dossierId: null,
+        ...req.validated.query,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { prices },
+    });
+};
+
 const setWorkspaceIndicative = async (req, res) => {
     const price = await setIndicativePrice({
         workspaceId: req.workspace._id,
@@ -428,6 +441,7 @@ export {
     listInvoiced,
     listNegotiated,
     listWorkspaceIndicative,
+    listWorkspaceGlobalIndicative,
     listReferences,
     metadata,
     removeReference,

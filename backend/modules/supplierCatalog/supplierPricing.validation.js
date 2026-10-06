@@ -1,15 +1,15 @@
 import { z } from 'zod';
 
 import {
-    PRODUCT_REFERENCE_UNIT,
-} from '../productCatalog/productCatalog.registry.js';
-import {
     INDICATIVE_PRICE_STATUS,
     INVOICED_PRICE_STATUS,
     NEGOTIATED_PRICE_STATUS,
     SUPPLIER_PRICE_BASIS,
     SUPPLIER_PRICING_POLICY_MODE,
 } from './supplierCatalog.registry.js';
+import {
+    packagingBodySchema,
+} from './supplierReference.validation.js';
 
 const objectIdSchema = z
     .string()
@@ -206,10 +206,31 @@ const indicativePriceBodySchema =
     z.strictObject({
         sourceAmount: positiveDecimalSchema,
         sourceBasis: z.enum(
-            Object.values(PRODUCT_REFERENCE_UNIT),
+            Object.values(SUPPLIER_PRICE_BASIS),
         ),
         currency: currencySchema.optional().default('EUR'),
         source: z.string().trim().max(500).nullable().optional(),
+        packaging: packagingBodySchema.nullable().optional(),
+        sourceOrganization:
+            z.string().trim().min(1).max(160).nullable().optional(),
+        sourceUrl:
+            z.string().trim().url().max(1000).nullable().optional(),
+        observedAt: z.coerce.date().nullable().optional(),
+    }).superRefine((value, context) => {
+        if (value.sourceBasis !== SUPPLIER_PRICE_BASIS.PACKAGE) return;
+
+        if (
+            !value.packaging?.unitCount
+            || !value.packaging?.quantityPerUnit
+            || !value.packaging?.unit
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['packaging'],
+                message:
+                    'Un prix au conditionnement exige un nombre d’unités, une quantité par unité et son unité.',
+            });
+        }
     });
 
 const listIndicativePriceQuerySchema =

@@ -245,6 +245,103 @@ describe('M-003 dossier pricing HTTP', () => {
             .expect(200);
     });
 
+    it('expose au Workspace le Prix repère global en lecture seule avec conditionnement et provenance', async () => {
+        const countableReference =
+            await createActiveProductReference({
+                actorId:
+                    owner.owner._id,
+                name:
+                    'Pain bruschetta Workspace M003',
+                referenceName:
+                    'Pain bruschetta Workspace M003',
+                referenceUnit:
+                    'UNIT',
+                countUnitLabelSingular:
+                    'tranche',
+                countUnitLabelPlural:
+                    'tranches',
+            });
+        const variantId =
+            countableReference.variant._id.toString();
+
+        await setIndicativePrice({
+            workspaceId: null,
+            dossierId: null,
+            productVariantId:
+                countableReference.variant._id,
+            actorId:
+                owner.owner._id,
+            sourceAmount: '16',
+            sourceBasis: 'PACKAGE',
+            packaging: {
+                containerType: 'Carton',
+                unitCount: 8,
+                quantityPerUnit: '4',
+                unit: 'UNIT',
+                supplierLabel:
+                    '1 carton = 8 paquets × 4 tranches',
+            },
+            source: 'Relevé documenté',
+            sourceOrganization:
+                'Catalogue professionnel vérifié',
+            sourceUrl:
+                'https://example.test/catalogue',
+            observedAt:
+                new Date('2026-10-05T00:00:00.000Z'),
+        });
+
+        const response = await request(app)
+            .get(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/supplier-pricing/global-indicative-prices',
+            )
+            .query({ productVariantId: variantId })
+            .set(bearer(owner.token));
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.prices).toEqual([
+            expect.objectContaining({
+                workspaceId: null,
+                dossierId: null,
+                sourceAmount: '16',
+                sourceBasis: 'PACKAGE',
+                normalizedAmount: '0.5',
+                normalizedUnit: 'UNIT',
+                sourceOrganization:
+                    'Catalogue professionnel vérifié',
+                sourceUrl:
+                    'https://example.test/catalogue',
+                packaging: expect.objectContaining({
+                    unitCount: 8,
+                    quantityPerUnit: '4',
+                    totalQuantity: '32',
+                    unit: 'UNIT',
+                }),
+                productVariant: expect.objectContaining({
+                    id: variantId,
+                    referenceUnit: 'UNIT',
+                    countUnitLabelSingular: 'tranche',
+                    countUnitLabelPlural: 'tranches',
+                }),
+            }),
+        ]);
+
+        await request(app)
+            .put(
+                '/api/workspaces/'
+                + owner.workspace._id.toString()
+                + '/supplier-pricing/global-indicative-prices/'
+                + variantId,
+            )
+            .set(bearer(owner.token))
+            .send({
+                sourceAmount: '18',
+                sourceBasis: 'PACKAGE',
+            })
+            .expect(404);
+    });
+
     it('utilise le Prix repère global en dernier recours sans Article fournisseur', async () => {
         const orphanReference =
             await createActiveProductReference({
@@ -297,6 +394,14 @@ describe('M-003 dossier pricing HTTP', () => {
             resolved.body.data.applicablePrice
                 .price.normalizedAmount,
         ).toBe('2.75');
+        expect(
+            resolved.body.data.applicablePrice
+                .price.source,
+        ).toBe('INDICATIVE_GLOBAL');
+        expect(
+            resolved.body.data.applicablePrice
+                .price.sourceNote,
+        ).toBe('Référentiel de démonstration');
     });
 
     it('préfère le Prix indicatif Workspace au Prix repère global', async () => {

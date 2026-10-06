@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   productDetail: vi.fn(),
   listArticles: vi.fn(),
   listIndicative: vi.fn(),
+  listGlobalIndicative: vi.fn(),
   listSuppliers: vi.fn(),
   attachVariant: vi.fn(),
   archiveVariant: vi.fn(),
@@ -86,6 +87,8 @@ vi.mock('@/features/products/components/product-variant-create-dialog', () => ({
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListSupplierArticlesQuery: mocks.listArticles,
   useListSuppliersQuery: mocks.listSuppliers,
+  useListWorkspaceGlobalIndicativePricesQuery:
+    mocks.listGlobalIndicative,
   useListWorkspaceIndicativePricesQuery: mocks.listIndicative,
 }));
 
@@ -226,6 +229,31 @@ describe('ProductDetailsDrawer', () => {
       normalizedUnit: 'KG',
       currency: 'EUR',
       source: 'Estimation Workspace',
+    }]));
+    mocks.listGlobalIndicative.mockReturnValue(queryResult([{
+      id: 'global-indicative-1',
+      productVariant: {
+        id: 'variant-puree',
+        name: 'Purée d’abricots',
+        referenceUnit: 'KG',
+      },
+      sourceAmount: '18',
+      sourceBasis: 'PACKAGE',
+      normalizedAmount: '4.5',
+      normalizedUnit: 'KG',
+      currency: 'EUR',
+      packaging: {
+        containerType: 'Carton',
+        unitCount: 4,
+        quantityPerUnit: '1',
+        totalQuantity: '4',
+        unit: 'KG',
+        supplierLabel: 'Carton de 4 poches de 1 kg',
+      },
+      sourceOrganization: 'Catalogue professionnel vérifié',
+      observedAt: '2026-10-05T00:00:00.000Z',
+      sourceUrl: 'https://example.test/catalogue',
+      source: 'Relevé documenté',
     }]));
     mocks.listSuppliers.mockReturnValue(queryResult({
       suppliers: [{
@@ -403,11 +431,34 @@ describe('ProductDetailsDrawer', () => {
       name: 'Favoris (1)',
     }));
 
-    expect(screen.getByText('3,100 / KG')).toBeInTheDocument();
+    expect(screen.getByText('3,100 / kg')).toBeInTheDocument();
     expect(screen.getByText('Estimation Workspace')).toBeInTheDocument();
     expect(screen.getByText('Sysco · ABR-001')).toBeInTheDocument();
     expect(screen.getByText(/Carton/)).toBeInTheDocument();
-    expect(screen.getByText(/6 unité/)).toBeInTheDocument();
+    expect(screen.getByText(/6 × 1 kg/)).toBeInTheDocument();
+  });
+
+  it('rend le Prix repère global lisible dans Références sans exiger un Favori', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('tab', {
+      name: 'Références (2)',
+    }));
+
+    const row = screen.getByText('Purée d’abricots').closest('li');
+    expect(row).not.toBeNull();
+    expect(within(row).getByText('Prix repère global'))
+      .toBeInTheDocument();
+    expect(within(row).getByText('4,500 / kg'))
+      .toBeInTheDocument();
+    expect(within(row).getByText(/Carton de 4 poches de 1 kg/))
+      .toBeInTheDocument();
+    expect(within(row).getByText(/Catalogue professionnel vérifié/))
+      .toBeInTheDocument();
+    expect(within(row).getByRole('link', {
+      name: 'Consulter la source',
+    })).toHaveAttribute('href', 'https://example.test/catalogue');
   });
 
   it('réutilise les workflows Prix indicatif et Article fournisseur depuis le Produit', async () => {

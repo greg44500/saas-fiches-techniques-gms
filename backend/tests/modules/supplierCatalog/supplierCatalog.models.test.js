@@ -119,6 +119,43 @@ describe('M-003 supplier catalog models', () => {
             .toEqual({ status: 'ACTIVE' });
     });
 
+    it('historise le conditionnement et la provenance d’un Prix indicatif PACKAGE', async () => {
+        const actorId = new mongoose.Types.ObjectId();
+        const price = new IndicativePrice({
+            productVariant: new mongoose.Types.ObjectId(),
+            sourceAmount: '16',
+            sourceBasis: 'PACKAGE',
+            normalizedAmount: '0.5',
+            normalizedUnit: 'UNIT',
+            packaging: {
+                containerType: 'Carton',
+                unitCount: 8,
+                quantityPerUnit: '4',
+                totalQuantity: '32',
+                unit: 'UNIT',
+                supplierLabel:
+                    '1 carton = 8 paquets × 4 tranches',
+            },
+            sourceOrganization: 'Catalogue professionnel vérifié',
+            sourceUrl: 'https://example.test/catalogue',
+            observedAt: new Date('2026-10-05T00:00:00.000Z'),
+            createdBy: actorId,
+            updatedBy: actorId,
+        });
+
+        await expect(price.validate()).resolves.toBeUndefined();
+        expect(IndicativePrice.schema.path('packaging').options.immutable)
+            .toBe(true);
+        expect(
+            IndicativePrice.schema.path('sourceOrganization').options.immutable,
+        ).toBe(true);
+
+        price.packaging.totalQuantity = null;
+        await expect(price.validate()).rejects.toThrow(
+            /quantité totale normalisable/,
+        );
+    });
+
     it('versionne les lignes et tarifs courants', () => {
         expect(SupplierCatalogLine.schema.path('revision').options.default)
             .toBe(1);

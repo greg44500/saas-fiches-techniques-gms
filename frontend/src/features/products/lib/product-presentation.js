@@ -31,7 +31,12 @@ function getCategoryStatusLabel(metadata, status) {
 }
 
 const PRODUCT_REFERENCE_UNIT_PRESENTATION = Object.freeze({
-  UNIT: 'PCE',
+  G: 'g',
+  KG: 'kg',
+  ML: 'ml',
+  CL: 'cl',
+  L: 'l',
+  UNIT: 'pièce',
 });
 
 function getReferenceUnitLabel(metadata, unit) {
@@ -41,6 +46,26 @@ function getReferenceUnitLabel(metadata, unit) {
 
   return PRODUCT_REFERENCE_UNIT_PRESENTATION[unit]
     ?? getMetadataLabel(metadata?.referenceUnits, unit, String(unit));
+}
+
+function getVariantReferenceUnitLabel(
+  metadata,
+  variant,
+  { plural = false } = {},
+) {
+  const unit = variant?.referenceUnit;
+
+  if (unit !== 'UNIT') {
+    return getReferenceUnitLabel(metadata, unit);
+  }
+
+  if (plural) {
+    return variant?.countUnitLabelPlural
+      || variant?.countUnitLabelSingular
+      || 'pièces';
+  }
+
+  return variant?.countUnitLabelSingular || 'pièce';
 }
 
 function getProductStatusTone(status) {
@@ -165,6 +190,7 @@ export {
   getProductStatusTone,
   getProductVariantSearchLabel,
   getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
   getVariantLabel,
   getWorkspaceProductStatusLabel,
 };

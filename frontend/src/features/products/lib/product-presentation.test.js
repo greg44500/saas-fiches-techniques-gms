@@ -10,6 +10,7 @@ import {
   getReferenceLabel,
   getProductVariantSearchLabel,
   getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
   getVariantLabel,
   getWorkspaceProductStatusLabel,
 } from '@/features/products/lib/product-presentation';
@@ -49,7 +50,26 @@ describe('product presentation', () => {
     expect(getCategoryStatusLabel(metadata, 'ARCHIVED')).toBe('Archivée');
     expect(getConservationTypeLabel(metadata, 'SURGELE')).toBe('Surgelé');
     expect(getReferenceUnitLabel(metadata, 'KG')).toBe('kg');
-    expect(getReferenceUnitLabel(metadata, 'UNIT')).toBe('PCE');
+    expect(getReferenceUnitLabel(metadata, 'UNIT')).toBe('pièce');
+  });
+
+  it('présente le libellé métier de UNIT sans modifier son code technique', () => {
+    const variant = {
+      referenceUnit: 'UNIT',
+      countUnitLabelSingular: 'tranche',
+      countUnitLabelPlural: 'tranches',
+    };
+
+    expect(getVariantReferenceUnitLabel(metadata, variant))
+      .toBe('tranche');
+    expect(getVariantReferenceUnitLabel(
+      metadata,
+      variant,
+      { plural: true },
+    )).toBe('tranches');
+    expect(getVariantReferenceUnitLabel(metadata, {
+      referenceUnit: 'UNIT',
+    })).toBe('pièce');
   });
 
   it('présente directement le nom métier persistant de la référence', () => {

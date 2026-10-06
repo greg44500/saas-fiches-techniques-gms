@@ -48,6 +48,7 @@ import {
     listNegotiated,
     listReferences,
     listWorkspaceIndicative,
+    listWorkspaceGlobalIndicative,
     metadata,
     removeReference,
     setDossierIndicative,
@@ -360,6 +361,20 @@ dossierSupplierPricingRouter.get(
     ),
     ...readDossierScope,
     applicable,
+);
+
+workspaceSupplierPricingRouter.get(
+    '/global-indicative-prices',
+    authenticate,
+    validateRequest({
+        params: workspaceIdParamsSchema,
+        query: listIndicativePriceQuerySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        SUPPLIER_CATALOG_PERMISSION.INDICATIVE_PRICE_READ,
+    ),
+    listWorkspaceGlobalIndicative,
 );
 
 workspaceSupplierPricingRouter.get(

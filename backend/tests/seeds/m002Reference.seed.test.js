@@ -95,12 +95,12 @@ beforeEach(async () => {
 });
 
 describe('M-002 reference bootstrap', () => {
-    it('valide le dataset v8 professionnel sans données commerciales', async () => {
+    it('valide le dataset v9 professionnel sans données commerciales', async () => {
         const dataset = await loadDefaultDataset();
         const parsed = m002ReferenceDatasetSchema.parse(dataset);
 
         expect(parsed.ready).toBe(true);
-        expect(parsed.version).toBe('m002-reference-v8');
+        expect(parsed.version).toBe('m002-reference-v9');
         expect(parsed.categories).toHaveLength(16);
         expect(parsed.products).toHaveLength(381);
         expect(

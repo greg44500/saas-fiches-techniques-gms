@@ -101,6 +101,12 @@ const serializeLine = (line) => {
                     name: line.productVariant.name,
                     referenceUnit:
                         line.productVariant.referenceUnit,
+                    countUnitLabelSingular:
+                        line.productVariant
+                            .countUnitLabelSingular ?? null,
+                    countUnitLabelPlural:
+                        line.productVariant
+                            .countUnitLabelPlural ?? null,
                     yieldPercent:
                         line.productVariant.yieldPercent ?? null,
                     status: line.productVariant.status,

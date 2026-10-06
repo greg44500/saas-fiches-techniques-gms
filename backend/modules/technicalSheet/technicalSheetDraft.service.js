@@ -404,7 +404,7 @@ const saveTechnicalSheetDraft = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
         });
 
         return serializeTechnicalSheetDraft(
@@ -450,7 +450,7 @@ const getTechnicalSheetDraft = async ({
         ).populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
         });
 
     return draft
@@ -649,7 +649,7 @@ const createDraftFromValidatedState = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
         });
 
         return serializeTechnicalSheetDraft(
@@ -763,7 +763,7 @@ const selectTechnicalSheetSupplierArticle = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
         });
 
         return serializeTechnicalSheetDraft(

@@ -309,7 +309,7 @@ describe('ProductReferencePage', () => {
     expect(screen.getByText('Carotte')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Prix repère' }))
       .toBeInTheDocument();
-    expect(screen.getByText('2,750 / KG')).toBeInTheDocument();
+    expect(screen.getByText('2,750 / kg')).toBeInTheDocument();
     expect(screen.queryByText('Carottes')).not.toBeInTheDocument();
     expect(screen.queryByText(/Gamme 1/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Références' }))

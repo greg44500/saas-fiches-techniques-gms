@@ -34,6 +34,7 @@ import {
 } from '@/features/products/api/product-catalog-api';
 import {
   getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
 } from '@/features/products/lib/product-presentation';
 import {
   useCreateSupplierArticleMutation,
@@ -70,10 +71,21 @@ function SupplierArticleFormDialog({
   const [unitCount, setUnitCount] = useState('');
   const [quantityPerUnit, setQuantityPerUnit] = useState('');
   const [unit, setUnit] = useState('KG');
+  const [netWeight, setNetWeight] = useState('');
+  const [netWeightUnit, setNetWeightUnit] = useState('G');
+  const [supplierLabel, setSupplierLabel] = useState('');
   const [error, setError] = useState('');
   const packagingUnitItems = PACKAGING_UNITS.map((value) => ({
     value,
-    label: getReferenceUnitLabel(metadataQuery.data, value),
+    label:
+      value === 'UNIT'
+        ? getVariantReferenceUnitLabel(
+            metadataQuery.data,
+            productVariant?.referenceUnit === 'UNIT'
+              ? productVariant
+              : { referenceUnit: 'UNIT' },
+          )
+        : getReferenceUnitLabel(metadataQuery.data, value),
   }));
 
   useEffect(() => {
@@ -88,7 +100,10 @@ function SupplierArticleFormDialog({
     setContainerType('');
     setUnitCount('');
     setQuantityPerUnit('');
-    setUnit('KG');
+    setUnit(initialProductVariant?.referenceUnit ?? 'KG');
+    setNetWeight('');
+    setNetWeightUnit('G');
+    setSupplierLabel('');
     setError('');
   }, [initialProductVariant, open]);
 
@@ -132,12 +147,17 @@ function SupplierArticleFormDialog({
           containerType.trim()
           || parsedUnitCount
           || quantityPerUnit
+          || netWeight
+          || supplierLabel.trim()
         )
           ? {
             containerType: containerType.trim() || null,
             unitCount: parsedUnitCount,
             quantityPerUnit: quantityPerUnit || null,
             unit: quantityPerUnit ? unit : null,
+            netWeight: netWeight || null,
+            netWeightUnit: netWeight ? netWeightUnit : null,
+            supplierLabel: supplierLabel.trim() || null,
           }
           : null,
       }).unwrap();
@@ -232,6 +252,7 @@ function SupplierArticleFormDialog({
                     }
 
                     setProductVariant(result.variant);
+                    setUnit(result.variant.referenceUnit);
                     setError('');
                   }}
                   onValueChange={(value) => {
@@ -286,58 +307,111 @@ function SupplierArticleFormDialog({
               />
             </Field>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field>
-                <FieldLabel htmlFor="supplier-packaging-type">Contenant</FieldLabel>
-                <Input
-                  id="supplier-packaging-type"
-                  maxLength={80}
-                  onChange={(event) => setContainerType(event.target.value)}
-                  placeholder="Carton, sac…"
-                  value={containerType}
-                />
-              </Field>
+            <div className="space-y-4 rounded-md border border-border p-4">
+              <div>
+                <p className="text-sm font-medium">Conditionnement commercial</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Décrivez une structure calculable simple. Le libellé d’origine conserve les niveaux supplémentaires, par exemple un carton de paquets.
+                </p>
+              </div>
 
-              <Field>
-                <FieldLabel htmlFor="supplier-packaging-count">Nombre d’unités</FieldLabel>
-                <Input
-                  id="supplier-packaging-count"
-                  min="1"
-                  onChange={(event) => setUnitCount(event.target.value)}
-                  type="number"
-                  value={unitCount}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="supplier-packaging-quantity">Quantité / unité</FieldLabel>
-                <div className="flex gap-2">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Field>
+                  <FieldLabel htmlFor="supplier-packaging-type">Contenant principal</FieldLabel>
                   <Input
-                    id="supplier-packaging-quantity"
-                    min="0"
-                    onChange={(event) => setQuantityPerUnit(event.target.value)}
-                    step="any"
-                    type="number"
-                    value={quantityPerUnit}
+                    id="supplier-packaging-type"
+                    maxLength={80}
+                    onChange={(event) => setContainerType(event.target.value)}
+                    placeholder="Carton, sac…"
+                    value={containerType}
                   />
-                  <Select
-                    items={packagingUnitItems}
-                    onValueChange={setUnit}
-                    value={unit}
-                  >
-                    <SelectTrigger aria-label="Unité du conditionnement" className="w-24">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {packagingUnitItems.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </Field>
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="supplier-packaging-count">Sous-unités</FieldLabel>
+                  <Input
+                    id="supplier-packaging-count"
+                    min="1"
+                    onChange={(event) => setUnitCount(event.target.value)}
+                    placeholder="Ex. 8"
+                    type="number"
+                    value={unitCount}
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="supplier-packaging-quantity">Quantité / sous-unité</FieldLabel>
+                  <div className="flex gap-2">
+                    <Input
+                      id="supplier-packaging-quantity"
+                      min="0"
+                      onChange={(event) => setQuantityPerUnit(event.target.value)}
+                      step="any"
+                      type="number"
+                      value={quantityPerUnit}
+                    />
+                    <Select
+                      items={packagingUnitItems}
+                      onValueChange={setUnit}
+                      value={unit}
+                    >
+                      <SelectTrigger aria-label="Unité du conditionnement" className="w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {packagingUnitItems.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </Field>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="supplier-packaging-net-weight">Poids net total</FieldLabel>
+                  <div className="flex gap-2">
+                    <Input
+                      id="supplier-packaging-net-weight"
+                      min="0"
+                      onChange={(event) => setNetWeight(event.target.value)}
+                      step="any"
+                      type="number"
+                      value={netWeight}
+                    />
+                    <Select
+                      items={[
+                        { value: 'G', label: 'g' },
+                        { value: 'KG', label: 'kg' },
+                      ]}
+                      onValueChange={setNetWeightUnit}
+                      value={netWeightUnit}
+                    >
+                      <SelectTrigger aria-label="Unité du poids net" className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="G">g</SelectItem>
+                        <SelectItem value="KG">kg</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="supplier-packaging-label">Libellé fournisseur d’origine</FieldLabel>
+                  <Input
+                    id="supplier-packaging-label"
+                    maxLength={240}
+                    onChange={(event) => setSupplierLabel(event.target.value)}
+                    placeholder="Ex. carton de 8 paquets × 4 tranches"
+                    value={supplierLabel}
+                  />
+                </Field>
+              </div>
             </div>
 
             <FieldError>{error}</FieldError>

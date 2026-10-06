@@ -1,7 +1,7 @@
 # REPRISE-CURRENT — saas-fiches-techniques-gms
 
-**Date :** 2026-10-03  
-**Lot courant :** Produits globaux — corpus professionnel v8 + gouvernance Produit unifiée  
+**Date :** 2026-10-06
+**Lot courant :** corpus professionnel v9 + conditionnements M-003 + Prix repères globaux lisibles par les Workspaces
 **Branche de travail :** `feature/a2-professional-reference-corpus`  
 **Base vérifiée :** `main@3634b9b76c4b019f9458f3827cd6d29d20cf6e3f`  
 **Version produit :** `0.1.0` — channel `development`
@@ -115,18 +115,20 @@ Branche :
 feature/a2-professional-reference-corpus
 ~~~
 
-### 5.1 M-002 — corpus professionnel v8
+### 5.1 M-002 — corpus professionnel v9
 
 Le dataset actif sur la branche est désormais :
 
 ~~~text
-m002-reference-v8
+m002-reference-v9
 16 catégories
 381 Produits
 488 Références Produit
+64 Références UNIT nommées au singulier et au pluriel
 ~~~
 
-Delta par rapport au v7 :
+Le v9 conserve exactement les identités du v8. Le delta identitaire v8 par
+rapport au v7 reste historique :
 
 ~~~text
 +61 Produits
@@ -157,15 +159,18 @@ WorkspaceProduct
 → Favori Workspace
 ~~~
 
-Le v8 conserve les racines multi-Références du v7 et pousse la distinction technique jusqu'aux formats qui modifient réellement la production, notamment les fonds de tartes et tartelettes.
+Le v9 conserve les racines multi-Références du v8 et ajoute uniquement le
+libellé métier des unités dénombrables. `UNIT` reste l'unité technique de
+calcul ; paquet et carton restent des conditionnements M-003.
 
 Sources et règles :
 
 ~~~text
 docs/m002/M-002-SEED-V8-SOURCE.md
+docs/m002/M-002-SEED-V9-SOURCE.md
 ~~~
 
-### 5.2 Réconciliation v1-v7 → v8
+### 5.2 Réconciliation v1-v8 → v9
 
 La migration canonique reste :
 
@@ -176,13 +181,13 @@ npm run migration:m002-catalog
 Le runner utilise désormais :
 
 ~~~text
-reconcileM002BootstrapToV8
+reconcileM002BootstrapToV9
 ~~~
 
 Règles :
 
-- datasets v1 à v7 historiques ;
-- cible v8 ;
+- datasets v1 à v8 historiques ;
+- cible v9 ;
 - aucune suppression physique ;
 - Favoris archivés uniquement lorsqu'une ancienne Référence bootstrap est
   réellement retirée ;
@@ -195,7 +200,7 @@ Le seed actif reste :
 npm run seed:m002-reference
 ~~~
 
-et charge désormais v8.
+et charge désormais v9.
 
 ### 5.3 M-003 — Prix repères v3
 
@@ -204,14 +209,17 @@ Le corpus actif sur la branche est :
 ~~~text
 m003-global-indicative-prices.v3.json
 362 Prix repères hérités
-488 Références v8
-126 nouvelles Références volontairement sans Prix repère
+488 Références v9
+126 Références volontairement sans Prix repère
 6 anciennes entrées de prix génériques retirées
 ~~~
 
 Les datasets v1 et v2 restent historiques et immuables.
 
-Aucun nouveau montant n'a été inventé pour les 126 Références v8. Les 362 valeurs conservées restent explicitement fictives / indicatives de démonstration, sans attribution à un fournisseur ni prétention d'observation de marché.
+Aucun nouveau montant n'a été inventé pour les 126 Références sans Prix
+repère. Les 362 valeurs conservées restent explicitement fictives /
+indicatives de démonstration, sans attribution à un fournisseur ni
+prétention d'observation de marché.
 
 La commande opérationnelle reste :
 
@@ -224,43 +232,69 @@ par le gestionnaire n'est jamais écrasé.
 
 La migration M-003 exécute aussi `reconcileM003GlobalIndicativePricesToV3` : elle archive uniquement les anciens Prix repères bootstrap v2 des 6 fonds de tarte génériques retirés du v8 et préserve les corrections manuelles.
 
+### 5.4 M-003 — conditionnements et lecture Workspace
+
+Le conditionnement commercial V1 est structuré sur un seul niveau calculable :
+
+~~~text
+nombre de sous-unités × quantité par sous-unité × unité M-002
+~~~
+
+Le libellé fournisseur conserve les niveaux supplémentaires. Les Prix
+indicatifs, y compris globaux, acceptent une base `PACKAGE`, ce
+conditionnement plat et une provenance structurée
+`sourceOrganization/sourceUrl/observedAt/source`.
+
+Les Workspaces disposent d'une lecture seule des Prix repères globaux via :
+
+~~~text
+GET /api/workspaces/:workspaceId/supplier-pricing/global-indicative-prices
+~~~
+
+Cette lecture utilise la permission Workspace M-003 existante et ne dépend
+pas d'un Favori `WorkspaceProduct`.
+
 ## 6. Validation du bloc avant PR
 
 Contrôles structurels déjà effectués directement sur la branche :
 
-- v8 parseable comme dataset JSON ;
+- v9 parseable comme dataset JSON ;
 - 16 catégories ;
 - 381 Produits ;
 - 488 Références ;
-- 126 nouvelles Références vs v7 ;
-- 6 anciennes Références génériques de fonds de tarte explicitement retirées ;
+- identités v9 strictement identiques au v8 ;
+- 64 Références `UNIT` nommées ;
 - aucun doublon de nom normalisé détecté ;
 - aucune catégorie vide ;
-- 362 Prix repères v3 compatibles avec les Références v8 conservées ;
-- 126 nouvelles Références sans montant inventé ;
+- 362 Prix repères v3 compatibles avec les Références v9 ;
+- 126 Références sans montant inventé ;
 - aucune unité M-002 / M-003 incohérente sur les 362 prix conservés ;
-- bootstrap M-002 par défaut pointant sur v8 ;
+- bootstrap M-002 par défaut pointant sur v9 ;
 - bootstrap M-003 par défaut pointant sur v3 ;
-- réconciliation pointant sur v8 avec v1-v7 dans l'historique ;
+- réconciliation pointant sur v9 avec v1-v8 dans l'historique ;
 - réconciliation M-003 v3 présente et câblée avant le seed v3 ;
 - aucun Prix v3 orphelin ou avec unité incohérente lors du contrôle statique ;
 - Références demandées (ovoproduits, purées/coulis, sauces, poudres/fruits secs,
   fonds de tartes dimensionnés) présentes dans le dataset final.
 
-Ces contrôles ont été recalculés directement depuis les fichiers du HEAD GitHub
-le 2026-10-03. Ils ne remplacent pas l'exécution Vitest/Supertest/Playwright.
+Preuve exécutée dans l'environnement de travail le 2026-10-06 :
 
-L'environnement de cette conversation ne permet pas de cloner le dépôt pour
-exécuter les suites. Aucun test local n'est donc déclaré vert à ce stade.
+~~~text
+Frontend ciblé : 9 fichiers / 65 tests verts
+Backend sans base : 6 fichiers / 37 tests verts
+~~~
 
-La validation automatisée réelle devra être fournie par les tests locaux
-utilisateur puis la Core Gate de la future PR.
+Les six suites backend dépendant de MongoDB ont été bloquées avant collecte
+car cet environnement ne fournit ni `.env.test` ni serveur MongoDB. Le lint
+complet, le build, les intégrations MongoDB et l'E2E restent à exécuter
+localement par l'utilisateur après récupération de la branche. Ils ne sont
+pas déclarés verts ici.
 
 ## 7. Reprise locale du Bloc B
 
-Le corpus A2/v8 complète désormais le référentiel professionnel avant la PR
+Le corpus A2/v9 complète désormais le référentiel professionnel avant la PR
 unique du lot. Les changements du sous-bloc Produits globaux portent sur le
-dataset v8, la réconciliation bootstrap v1-v7 → v8, le corpus économique v3
+dataset v9, la réconciliation bootstrap v1-v8 → v9, le corpus économique v3
 et l'archivage contrôlé des anciens Prix repères bootstrap attachés aux
 6 fonds de tarte génériques retirés.
 
@@ -269,7 +303,7 @@ existantes, sans créer de nouvelle commande opératoire :
 
 ~~~text
 npm run migration:m002-catalog
-→ reconcileM002BootstrapToV8
+→ reconcileM002BootstrapToV9
 
 npm run migration:m003-indicative-pricing
 → reconcileM003GlobalIndicativePricesToV3
@@ -288,14 +322,15 @@ git pull --ff-only origin feature/a2-professional-reference-corpus
 Si `git status --short` est vide après le pull, lancer les contrôles ciblés
 avant la QA visuelle.
 
-Backend corpus v8 / Prix repères v3 à exécuter en priorité :
+Backend corpus v9 / Prix repères v3 à exécuter en priorité :
 
 ~~~text
 npx vitest run \
   backend/tests/seeds/m002Reference.seed.test.js \
   backend/tests/seeds/m002ProfessionalReferenceV7.seed.test.js \
   backend/tests/seeds/m002ProfessionalReferenceV8.seed.test.js \
-  backend/tests/migrations/m002BootstrapV8.migration.test.js \
+  backend/tests/seeds/m002ProfessionalReferenceV9.seed.test.js \
+  backend/tests/migrations/m002BootstrapV9.migration.test.js \
   backend/tests/seeds/m003GlobalIndicativePrices.seed.test.js \
   backend/tests/migrations/m003GlobalIndicativePricesV3.migration.test.js
 ~~~
@@ -316,13 +351,15 @@ npx vitest run \
 Frontend ciblé :
 
 ~~~text
-npm --prefix frontend exec -- vitest run \
+cd frontend
+npx vitest run \
   src/features/products/api/product-catalog-api.test.js \
   src/features/products/components/product-variant-create-dialog.test.jsx \
   src/features/products/components/product-details-drawer.test.jsx \
   src/features/products/components/product-reference-review-queue.test.jsx \
   src/features/products/components/product-reference-details-drawer.test.jsx \
   src/features/products/pages/product-reference-page.test.jsx
+cd ..
 ~~~
 
 Puis lancer l'application :
@@ -564,10 +601,9 @@ npm --prefix frontend run test -- \
 Ne pas lancer de PR, de merge ni de `release:check` avant la demande
 complémentaire Produits globaux.
 
-### 9.1 Prochain bloc obligatoire — demande complémentaire Produits globaux
+### 9.1 Demande complémentaire Produits globaux — traitée
 
-L'utilisateur veut poursuivre immédiatement sur une demande spécifique liée à
-l'ajout de Produits dans le référentiel global.
+La demande complémentaire a été cadrée et implémentée sur la même branche.
 
 Contraintes déjà validées :
 
@@ -581,11 +617,11 @@ même future PR unique
 → pas de merge avant ce bloc complémentaire
 ~~~
 
-Les directives exactes de ce nouveau besoin doivent être données/confirmées
-par l'utilisateur dans la nouvelle conversation. Ne rien inventer avant ce
-cadrage.
+Périmètre retenu : sémantique des unités `UNIT`, conditionnement commercial
+plat M-003, provenance structurée et lecture Workspace des Prix repères
+globaux.
 
-Avant toute implémentation :
+Contrôles appliqués pendant l'implémentation :
 
 1. lire `KB-START-HERE.md` ;
 2. lire cette reprise ;
@@ -603,7 +639,7 @@ Avant toute implémentation :
 
 Si la demande modifie le corpus bootstrap :
 
-- ne pas réécrire silencieusement `m002-reference.v7.json` ;
+- ne pas réécrire silencieusement `m002-reference.v8.json` ;
 - versionner le nouveau corpus après validation du périmètre ;
 - préserver l'historique des datasets précédents ;
 - prévoir la réconciliation idempotente vers la nouvelle version ;
@@ -633,6 +669,23 @@ tests ciblés
 → merge
 → Core Gate post-merge
 ~~~
+
+### 9.2 État final du lot du 2026-10-06
+
+Le code et les tests couvrent désormais :
+
+- `m002-reference.v9.json`, identique au v8 sur les identités et enrichi pour
+  les 64 Références `UNIT` ;
+- la réconciliation M-002 v1-v8 vers v9 ;
+- la saisie et la restitution des conditionnements plats d'Articles ;
+- les Prix indicatifs `PACKAGE` avec provenance structurée ;
+- l'endpoint Workspace de lecture seule des Prix repères globaux ;
+- leur affichage sur une Référence globale même non favorite ;
+- la propagation du libellé `UNIT` dans M-004 et dans les snapshots validés,
+  sans modification des formules.
+
+La branche doit être validée localement puis faire l'objet de la PR unique
+prévue. Aucun merge n'est réalisé par ce lot.
 
 ## 10. Exports et diffusion — ordre ultérieur
 

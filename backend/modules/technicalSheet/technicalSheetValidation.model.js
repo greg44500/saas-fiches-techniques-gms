@@ -62,6 +62,18 @@ const lineSnapshotSchema = new Schema(
             required: true,
         },
         productVariantName: { type: String, required: true },
+        countUnitLabelSingular: {
+            type: String,
+            trim: true,
+            maxlength: 40,
+            default: null,
+        },
+        countUnitLabelPlural: {
+            type: String,
+            trim: true,
+            maxlength: 40,
+            default: null,
+        },
         netQuantity: {
             type: Schema.Types.Decimal128,
             required: true,

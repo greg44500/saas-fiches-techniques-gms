@@ -39,6 +39,7 @@ import {
     PRODUCT_GOVERNANCE_STATUS_REGISTRY,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
+    PRODUCT_REFERENCE_UNIT,
     PRODUCT_REFERENCE_UNIT_REGISTRY,
     PRODUCT_REVIEW_QUEUE_TYPE_REGISTRY,
     PRODUCT_SEARCH_SCOPE,
@@ -251,6 +252,14 @@ const normalizeVariantInput = async ({
         conservationType: variant.conservationType,
         foodRange,
         referenceUnit: variant.referenceUnit,
+        countUnitLabelSingular:
+            variant.referenceUnit === PRODUCT_REFERENCE_UNIT.UNIT
+                ? variant.countUnitLabelSingular?.trim() || 'pièce'
+                : null,
+        countUnitLabelPlural:
+            variant.referenceUnit === PRODUCT_REFERENCE_UNIT.UNIT
+                ? variant.countUnitLabelPlural?.trim() || 'pièces'
+                : null,
         yieldPercent: variant.yieldPercent ?? null,
     };
 

@@ -73,6 +73,10 @@ const serializeArticleProduct = (productVariant) => {
         id: productVariant._id.toString(),
         name: productVariant.name,
         referenceUnit: productVariant.referenceUnit,
+        countUnitLabelSingular:
+            productVariant.countUnitLabelSingular ?? null,
+        countUnitLabelPlural:
+            productVariant.countUnitLabelPlural ?? null,
         status: productVariant.status,
     };
 };

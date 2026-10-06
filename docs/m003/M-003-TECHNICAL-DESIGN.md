@@ -1,6 +1,6 @@
 # M-003 — Conception technique
 
-**Statut :** LIVRÉ — M-003 fusionné dans `main` le 2026-09-28  
+**Statut :** LIVRÉ pour la baseline ; extension conditionnement/Prix repère Workspace finalisée sur la branche courante, en attente de QA
 **Contrat fonctionnel :** docs/m003/M-003-FINAL-CONTRACT.md  
 **Branche de livraison :** feature/m003-suppliers-catalogs-pricing — fusionnée via PR #22
 
@@ -61,9 +61,13 @@ InvoicedPrice
 - la fraîcheur de 12 mois calendaires est calculée au runtime.
 
 IndicativePrice
-- workspace + productVariant ;
-- dossier nullable : null = portée Workspace, renseigné = surcharge Dossier ;
+- workspace nullable + productVariant ;
+- workspace null + dossier null = portée globale ;
+- workspace renseigné + dossier null = portée Workspace ;
+- workspace + dossier renseignés = surcharge Dossier ;
 - sourceAmount/sourceBasis/currency + valeur normalisée ;
+- packaging plat lorsque sourceBasis = PACKAGE ;
+- sourceOrganization/sourceUrl/observedAt/source pour la provenance ;
 - `ACTIVE / ARCHIVED` ;
 - un seul `ACTIVE` par portée + productVariant ;
 - ne dépend pas obligatoirement d'un SupplierArticle.
@@ -78,7 +82,7 @@ WorkspaceSupplierPricingPolicy
 - politique du Prix applicable ;
 - absence de document = mode NEGOTIATED_PRICE par défaut ;
 - les sources commerciales prévues par le mode restent prioritaires ;
-- dernier recours commun : IndicativePrice Dossier puis Workspace.
+- dernier recours commun : IndicativePrice Dossier puis Workspace puis Global.
 
 Migration d'extension post-clôture :
 - `migration:m003-indicative-pricing` ;
@@ -106,7 +110,7 @@ SupplierCommerceLock
 | SupplierTariff | workspace null | workspace requis | non |
 | NegotiatedPrice | non | workspace requis | requis |
 | InvoicedPrice | non | workspace requis | requis |
-| IndicativePrice | non | workspace requis | facultatif |
+| IndicativePrice | workspace null | workspace requis | facultatif |
 | DossierSupplierReference | non | workspace requis | requis |
 | WorkspaceSupplierPricingPolicy | non | workspace requis | non |
 | SupplierCatalogImportSession | selon portée | selon portée | non |
@@ -118,6 +122,11 @@ Les services valident en plus la cohérence des relations. Une ressource globale
 Le sous-document packaging peut porter containerType, unitCount, quantityPerUnit, unit, totalQuantity, netWeight, netWeightUnit, drainedNetWeight, drainedNetWeightUnit et supplierLabel.
 
 Les unités réutilisent le registre M-002. totalQuantity ne sera calculée par le service que lorsque les données sont suffisantes et cohérentes.
+
+La structure V1 est volontairement plate : un seul niveau
+`unitCount × quantityPerUnit`. Les niveaux commerciaux supplémentaires restent
+dans `supplierLabel`. Lorsque `unit = UNIT`, le libellé métier vient de la
+Référence Produit M-002.
 
 ## 5. Prix et précision
 
@@ -380,6 +389,7 @@ Pour éviter les requêtes N+1 lors de la projection commerciale d'un Produit, l
 ~~~text
 GET /api/workspaces/:workspaceId/supplier-articles?productId=...
 GET /api/workspaces/:workspaceId/supplier-pricing/indicative-prices?productId=...
+GET /api/workspaces/:workspaceId/supplier-pricing/global-indicative-prices?productId=...
 ~~~
 
 Chaque endpoint conserve sa propre permission M-003. Le frontend n'agrège donc que les données auxquelles l'utilisateur a effectivement accès.
@@ -390,7 +400,10 @@ Dans le drawer Produit :
 - `Favoris (n)` compte uniquement les `WorkspaceProduct ACTIVE` ;
 - l'onglet Favoris n'affiche jamais « Favori » comme information redondante ;
 - un Prix indicatif Workspace est présenté comme `PU HT estimé` ;
-- les conditionnements proviennent exclusivement des Articles fournisseur M-003 ;
+- le Prix repère global est visible en lecture seule, même pour une Référence
+  non favorite ;
+- les conditionnements proviennent exclusivement de données M-003 : Articles
+  fournisseur ou Prix indicatifs `PACKAGE` ;
 - plusieurs Articles sont tous présentés, sans sélection automatique d'un fournisseur ou du moins cher ;
 - les actions contextuelles réutilisent les workflows Prix indicatif et Article fournisseur existants ;
 - retirer un favori reste une action M-002 et ne supprime aucune donnée commerciale M-003.

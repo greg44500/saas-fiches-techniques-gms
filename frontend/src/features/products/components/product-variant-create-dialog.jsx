@@ -30,7 +30,7 @@ import {
 } from '@/features/products/components/product-variant-fields';
 import {
   getApiErrorMessage,
-  getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 
@@ -200,7 +200,7 @@ function ProductVariantCreateDialog({
                     <li className="flex flex-wrap justify-between gap-2" key={existing.id}>
                       <span>{getVariantLabel(existing)}</span>
                       <span className="text-muted-foreground">
-                        {getReferenceUnitLabel(metadata, existing.referenceUnit)}
+                        {getVariantReferenceUnitLabel(metadata, existing)}
                       </span>
                     </li>
                   ))}

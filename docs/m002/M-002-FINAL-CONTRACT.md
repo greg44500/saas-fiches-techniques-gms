@@ -55,6 +55,12 @@ Une Référence Produit exploitable porte obligatoirement :
 - `conservationType` ;
 - `referenceUnit`.
 
+Lorsque `referenceUnit = UNIT`, elle porte aussi les libellés métier de cette
+unité dénombrable :
+
+- `countUnitLabelSingular` ;
+- `countUnitLabelPlural`.
+
 Règles :
 
 - le nom visible n'est jamais reconstruit automatiquement depuis les dimensions ;
@@ -62,6 +68,12 @@ Règles :
 - une collision exacte bloque la création ;
 - les noms proches déclenchent la logique de revue/déduplication existante ;
 - les dimensions servent à enrichir, filtrer et rechercher, pas à fabriquer l'identité.
+- les libellés dénombrables servent uniquement à présenter et historiser
+  `UNIT` comme « tranche(s) », « œuf(s) », « pain(s) », etc. ;
+- ces libellés ne participent ni à l'identité, ni à la déduplication, ni aux
+  conversions ;
+- carton, paquet, sac et autres contenants restent des conditionnements
+  commerciaux M-003, jamais des unités de référence M-002.
 
 Exemples de références distinctes :
 
@@ -341,33 +353,32 @@ L'import M-002 reste temporaire et sécurisé ; il ne constitue pas un stockage 
 
 ## 11. Seed
 
-Les datasets v1 à v6 sont historiques et restent immuables.
+Les datasets v1 à v8 sont historiques et restent immuables.
 
 Le dataset actif sur la branche du lot Produits globaux est :
 
 ```text
-m002-reference-v7
+m002-reference-v9
 ```
 
-Le v7 reprend intégralement les 264 Références du v6 puis ajoute le corpus
-professionnel validé autour de la pâtisserie / boulangerie, de la crémerie et
-des pains / snacking.
+Le v9 reprend exactement les identités du v8 et enrichit uniquement les
+Références `UNIT` avec leur unité de recette sémantique. Il ne crée aucun
+conditionnement commercial.
 
 État du corpus :
 
 ```text
 16 catégories
-320 Produits
-368 Références Produit
-+104 Références par rapport au v6
+381 Produits
+488 Références Produit
+64 Références UNIT nommées au singulier et au pluriel
 ```
 
-Le v6 conserve sa provenance propre et reste immuable. Le v7 ajoute des
-sources professionnelles documentées dans
-`docs/m002/M-002-SEED-V7-SOURCE.md` sans transformer les marques, références
-fournisseur, prix ou conditionnements en identité M-002.
+Le v8 conserve sa provenance propre et reste immuable. Le v9 documente son
+audit sémantique dans `docs/m002/M-002-SEED-V9-SOURCE.md`, sans transformer les
+marques, références fournisseur, prix ou conditionnements en identité M-002.
 
-Le v7 exploite explicitement la structure
+Le corpus exploite explicitement la structure
 `CanonicalProduct → plusieurs ProductVariant` lorsque plusieurs Références
 techniquement distinctes appartiennent au même concept Produit, par exemple
 Farine de blé, Beurre ou Pain burger.
@@ -384,7 +395,7 @@ M-002 n'étant pas encore livré, les bases locales ayant servi aux itérations 
 ```text
 reset M-002 local sécurisé
 → migration M-002 sur catalogue vide
-→ seed m002-reference-v6
+→ seed m002-reference-v9
 ```
 
 Le reset est strictement limité à `NODE_ENV=development`, à MongoDB local, à une base terminant par `_dev`, à `ALLOW_DEVELOPMENT_DATA_RESET=true` et à une confirmation explicite. Il ne touche qu'aux collections M-002.
@@ -420,7 +431,9 @@ Le lot final doit prouver au minimum :
 - recherche par nom et dimensions ;
 - import sans doublon ;
 - migration fail-closed ;
-- seed v7 idempotent et réconciliation des anciens seeds v1 à v6 ;
+- libellés singulier/pluriel obligatoires pour les 64 Références `UNIT` du v9 ;
+- absence de libellés dénombrables sur les unités physiques ;
+- seed v9 idempotent et réconciliation des anciens seeds v1 à v8 ;
 - permissions Workspace et Application Global ;
 - E2E création/contribution/favoris.
 
@@ -452,7 +465,7 @@ Aucune nouvelle primitive Core n'est requise pour :
 - Conservation ;
 - Gamme 6 ;
 - Favoris Produit ;
-- seed v7 ;
+- seed v9 ;
 - déduplication Produit.
 
 Toute évolution générique découverte ultérieurement doit continuer à être traitée dans `saas-core-api` puis intégrée par une branche `core-update/*`.

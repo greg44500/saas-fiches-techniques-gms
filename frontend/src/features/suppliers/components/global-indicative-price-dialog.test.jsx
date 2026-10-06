@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   beforeEach,
@@ -108,6 +108,10 @@ describe('GlobalIndicativePriceDialog', () => {
       sourceBasis: 'KG',
       currency: 'EUR',
       source: 'Ajustement marché',
+      packaging: null,
+      sourceOrganization: null,
+      sourceUrl: null,
+      observedAt: null,
     });
     expect(onSaved).toHaveBeenCalledWith({
       id: 'price-global-1',
@@ -153,6 +157,88 @@ describe('GlobalIndicativePriceDialog', () => {
     });
     expect(onSaved).toHaveBeenCalledWith({
       removed: true,
+    });
+  });
+
+  it('normalise un prix relevé au conditionnement avec sa provenance structurée', async () => {
+    const user = userEvent.setup();
+    const countableVariant = {
+      id: '507f1f77bcf86cd799439012',
+      name: 'Pain bruschetta surgelé',
+      referenceUnit: 'UNIT',
+      countUnitLabelSingular: 'tranche',
+      countUnitLabelPlural: 'tranches',
+    };
+
+    render(
+      <TooltipProvider>
+        <GlobalIndicativePriceDialog
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+          open
+          variant={countableVariant}
+        />
+      </TooltipProvider>,
+    );
+
+    const basis = screen.getByRole('combobox', {
+      name: 'Base du Prix repère',
+    });
+    vi.spyOn(basis, 'getBoundingClientRect').mockReturnValue(
+      DOMRect.fromRect({ x: 24, y: 24, width: 240, height: 40 }),
+    );
+    await user.click(basis);
+    await user.click(await screen.findByRole('option', {
+      name: 'Prix du conditionnement',
+    }));
+
+    await user.type(
+      screen.getByLabelText('Prix HT du conditionnement observé'),
+      '16',
+    );
+    await user.type(screen.getByLabelText('Contenant principal'), 'Carton');
+    await user.type(screen.getByLabelText('Sous-unités'), '8');
+    await user.type(
+      screen.getByLabelText('Quantité par sous-unité'),
+      '4',
+    );
+    await user.type(
+      screen.getByLabelText('Libellé d’origine'),
+      '1 carton = 8 paquets × 4 tranches',
+    );
+    await user.type(
+      screen.getByLabelText('Source professionnelle'),
+      'Catalogue professionnel vérifié',
+    );
+    fireEvent.change(screen.getByLabelText('Date du relevé'), {
+      target: { value: '2026-10-05' },
+    });
+    await user.type(
+      screen.getByLabelText('URL de la source'),
+      'https://example.test/catalogue',
+    );
+    await user.click(screen.getByRole('button', {
+      name: 'Enregistrer',
+    }));
+
+    expect(mocks.setGlobal).toHaveBeenCalledWith({
+      productVariantId: countableVariant.id,
+      sourceAmount: '16',
+      sourceBasis: 'PACKAGE',
+      currency: 'EUR',
+      source: null,
+      packaging: {
+        containerType: 'Carton',
+        unitCount: 8,
+        quantityPerUnit: '4',
+        unit: 'UNIT',
+        netWeight: null,
+        netWeightUnit: null,
+        supplierLabel: '1 carton = 8 paquets × 4 tranches',
+      },
+      sourceOrganization: 'Catalogue professionnel vérifié',
+      sourceUrl: 'https://example.test/catalogue',
+      observedAt: '2026-10-05',
     });
   });
 });

@@ -51,7 +51,9 @@ import {
   useListGlobalIndicativePricesQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
+  formatPackaging,
   formatPrice,
+  formatSourcePrice,
 } from '@/features/suppliers/lib/supplier-presentation';
 import {
   formatYield,
@@ -60,7 +62,7 @@ import {
   getProductEventLabel,
   getProductStatusLabel,
   getProductStatusTone,
-  getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 
@@ -1122,7 +1124,7 @@ function ProductReferenceDetailsDrawer({
                               metadata,
                               variant.conservationType,
                             )}
-                            {' · '}Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
+                            {' · '}Unité : {getVariantReferenceUnitLabel(metadata, variant)}
                             {variant.yieldPercent
                               ? ' · Rendement : ' + formatYield(variant.yieldPercent)
                               : ''}
@@ -1137,6 +1139,46 @@ function ProductReferenceDetailsDrawer({
                                 : 'Non renseigné'
                             }
                           </p>
+                          {globalPrice && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Relevé : {formatSourcePrice(globalPrice)}
+                              {globalPrice.packaging
+                                ? ' · ' + formatPackaging(
+                                  globalPrice.packaging,
+                                  { productVariant: variant },
+                                )
+                                : ''}
+                            </p>
+                          )}
+                          {(globalPrice?.sourceOrganization
+                            || globalPrice?.source
+                            || globalPrice?.observedAt) && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Source : {
+                                globalPrice.sourceOrganization
+                                ?? globalPrice.source
+                                ?? 'Non précisée'
+                              }
+                              {globalPrice.observedAt
+                                ? ' · relevé le '
+                                  + new Date(globalPrice.observedAt)
+                                    .toLocaleDateString('fr-FR')
+                                : ''}
+                              {globalPrice.sourceUrl && (
+                                <>
+                                  {' · '}
+                                  <a
+                                    className="underline underline-offset-2"
+                                    href={globalPrice.sourceUrl}
+                                    rel="noreferrer"
+                                    target="_blank"
+                                  >
+                                    Consulter
+                                  </a>
+                                </>
+                              )}
+                            </p>
+                          )}
                           {globalPrice?.updatedAt && (
                             <p className="mt-1 text-xs text-muted-foreground">
                               Mis à jour le {

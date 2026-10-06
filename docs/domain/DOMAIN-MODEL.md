@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
 
 **Statut :** VALIDÉ — modèle conceptuel transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-27  
+**Dernière mise à jour :** 2026-10-06
 **Important :** ce document décrit des concepts métier et leurs relations. Il ne constitue pas un schéma Mongoose.
 
 ---
@@ -314,6 +314,7 @@ ProductVariant
 → normalizedName unique pour une référence active
 → conservationType obligatoire
 → referenceUnit obligatoire
+→ libellés singulier/pluriel obligatoires lorsque referenceUnit = UNIT
 → foodRange 1..6 facultatif
 → processingState facultatif
 → dimensions facultatives
@@ -453,19 +454,22 @@ m002-reference-v3
 m002-reference-v4
 m002-reference-v5
 m002-reference-v6
+m002-reference-v7
+m002-reference-v8
 ```
 
 Dataset actif sur la branche Produits globaux :
 
 ```text
-m002-reference-v7
+m002-reference-v9
 16 catégories
-320 Produits
-368 Références Produit
+381 Produits
+488 Références Produit
+64 Références UNIT nommées
 ```
 
-Le v7 reprend toutes les Références v6 puis ajoute le corpus professionnel
-pâtisserie / crémerie / snacking. Il ne modifie pas la frontière M-002 / M-003.
+Le v9 conserve exactement les identités v8 et nomme uniquement les unités de
+recette dénombrables. Il ne modifie pas la frontière M-002 / M-003.
 
 La migration du contrat Référence Produit est fail-closed lorsqu'un nom ou une conservation ne peut pas être déterminé sans invention.
 
@@ -598,6 +602,11 @@ Invariant :
 
 Le libellé fournisseur d'origine (`5/1`, `4/4`, etc.) peut être conservé pour la traçabilité sans devenir l'unique source de calcul.
 
+La baseline V1 porte un seul niveau structuré et calculable
+`nombre d'unités × quantité par unité`. Une hiérarchie commerciale plus
+profonde reste dans le libellé fournisseur ; elle ne crée pas un arbre
+récursif. `UNIT` compte alors l'unité de recette M-002, jamais le contenant.
+
 Pour les produits concernés, poids net et poids net égoutté doivent pouvoir être conservés.
 
 ### 8.1 Prix source et prix normalisé
@@ -666,9 +675,12 @@ Il peut être contextualisé par magasin lorsque celui-ci est identifiable.
 
 Estimation interne de dernier recours, distincte de toute donnée commerciale fournisseur.
 
-Deux portées sont retenues :
+Trois portées sont retenues :
 
 ~~~text
+Global × Référence Produit
+→ Prix repère commun en lecture seule pour les Workspaces
+
 Workspace × Référence Produit
 → estimation commune à l'espace de travail
 
@@ -676,7 +688,10 @@ Dossier × Référence Produit
 → surcharge locale facultative
 ~~~
 
-Le Prix indicatif peut exister sans Article fournisseur. Il ne remplace jamais une source commerciale applicable. La surcharge Dossier est prioritaire sur l'indicatif Workspace, mais ces deux sources restent derrière Tarif fournisseur, Tarif négocié et Prix facturé admissibles.
+Le Prix indicatif peut exister sans Article fournisseur. Il ne remplace jamais
+une source commerciale applicable. La surcharge Dossier est prioritaire sur
+l'indicatif Workspace, lui-même prioritaire sur le Prix repère global. Un
+Workspace peut lire ce dernier pour une Référence globale même sans Favori.
 
 Chaque donnée tarifaire doit pouvoir porter conceptuellement :
 
@@ -687,6 +702,8 @@ Chaque donnée tarifaire doit pouvoir porter conceptuellement :
 - devise ;
 - date ou période ;
 - provenance ;
+- conditionnement plat lorsque la base source est `PACKAGE` ;
+- organisation source, URL et date d'observation lorsqu'elles sont connues ;
 - contexte magasin éventuel ;
 - prix normalisé calculé lorsque possible ;
 - traçabilité de création / modification.
@@ -737,6 +754,7 @@ Prix facturé
 Puis, quel que soit le mode, si aucune source commerciale n'est exploitable :
 → Prix indicatif Dossier
 → sinon Prix indicatif Workspace
+→ sinon Prix repère global
 → sinon aucun prix
 ~~~
 

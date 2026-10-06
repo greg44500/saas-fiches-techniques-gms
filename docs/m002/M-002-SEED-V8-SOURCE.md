@@ -1,5 +1,9 @@
 # M-002 — Source et règles du corpus professionnel v8
 
+> **Historique immuable.** Le dataset actif est désormais le v9. Il conserve
+> exactement les identités v8 et ajoute uniquement les libellés métier des
+> unités dénombrables `UNIT`. Voir `docs/m002/M-002-SEED-V9-SOURCE.md`.
+
 **Statut : ACTIF SUR LA BRANCHE — enrichissement complémentaire du lot Produits globaux, avant PR finale**  
 **Date de constitution :** 2026-10-03  
 **Dataset :** `backend/seeds/data/m002-reference.v8.json`

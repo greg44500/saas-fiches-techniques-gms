@@ -81,6 +81,28 @@ const conservationTypeSchema = z.enum(
     Object.values(PRODUCT_CONSERVATION_TYPE),
 );
 
+const countUnitLabelSchema = z.string().trim().min(1).max(40)
+    .nullable()
+    .optional();
+
+const validateCountUnitLabels = (value, context) => {
+    if (value.referenceUnit === PRODUCT_REFERENCE_UNIT.UNIT) return;
+
+    for (const field of [
+        'countUnitLabelSingular',
+        'countUnitLabelPlural',
+    ]) {
+        if (value[field] !== null && value[field] !== undefined) {
+            context.addIssue({
+                code: 'custom',
+                path: [field],
+                message:
+                    'Le libellé d’unité dénombrable est réservé à UNIT.',
+            });
+        }
+    }
+};
+
 const structuredVariantBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(160),
     varietyId: objectIdSchema.nullable().optional(),
@@ -89,8 +111,10 @@ const structuredVariantBodySchema = z.strictObject({
     conservationType: conservationTypeSchema,
     foodRange: foodRangeSchema.nullable().optional().default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
+    countUnitLabelSingular: countUnitLabelSchema,
+    countUnitLabelPlural: countUnitLabelSchema,
     yieldPercent: z.number().positive().max(100).nullable().optional(),
-});
+}).superRefine(validateCountUnitLabels);
 
 const newProductVariantBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(160),
@@ -99,8 +123,10 @@ const newProductVariantBodySchema = z.strictObject({
     conservationType: conservationTypeSchema,
     foodRange: foodRangeSchema.nullable().optional().default(null),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)),
+    countUnitLabelSingular: countUnitLabelSchema,
+    countUnitLabelPlural: countUnitLabelSchema,
     yieldPercent: z.number().positive().max(100).nullable().optional(),
-});
+}).superRefine(validateCountUnitLabels);
 
 const duplicateCheckBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
@@ -395,7 +421,16 @@ const updateVariantBodySchema = z.strictObject({
     conservationType: conservationTypeSchema.optional(),
     foodRange: foodRangeSchema.nullable().optional(),
     referenceUnit: z.enum(Object.values(PRODUCT_REFERENCE_UNIT)).optional(),
+    countUnitLabelSingular: countUnitLabelSchema,
+    countUnitLabelPlural: countUnitLabelSchema,
     yieldPercent: z.number().positive().max(100).nullable().optional(),
+}).superRefine((value, context) => {
+    if (
+        value.referenceUnit
+        && value.referenceUnit !== PRODUCT_REFERENCE_UNIT.UNIT
+    ) {
+        validateCountUnitLabels(value, context);
+    }
 }).refine(
     (body) => Object.keys(body).length > 0,
     { message: 'Au moins un champ Référence doit être modifié.' },

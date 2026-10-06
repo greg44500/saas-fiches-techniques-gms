@@ -288,6 +288,10 @@ const buildTechnicalSheetValuation = async ({
                 name: variant.name,
                 referenceUnit:
                     variant.referenceUnit,
+                countUnitLabelSingular:
+                    variant.countUnitLabelSingular ?? null,
+                countUnitLabelPlural:
+                    variant.countUnitLabelPlural ?? null,
                 yieldPercent:
                     variant.yieldPercent ?? null,
             },
@@ -642,7 +646,7 @@ const valuateTechnicalSheet = async ({
     await draft.populate({
         path: 'lines.productVariant',
         select:
-            '_id name referenceUnit yieldPercent status',
+            '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
     });
 
     return {

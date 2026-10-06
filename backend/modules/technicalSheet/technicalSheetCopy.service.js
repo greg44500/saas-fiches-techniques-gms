@@ -349,7 +349,7 @@ const copyTechnicalSheet = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
         });
 
         await createTechnicalSheetEvent({

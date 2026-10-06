@@ -802,7 +802,11 @@ describe('M-004 services Fiches techniques', () => {
                 referenceName:
                     'Produit repère global M004',
                 referenceUnit:
-                    'KG',
+                    'UNIT',
+                countUnitLabelSingular:
+                    'tranche',
+                countUnitLabelPlural:
+                    'tranches',
                 yieldPercent:
                     '100',
             });
@@ -817,7 +821,7 @@ describe('M-004 services Fiches techniques', () => {
             sourceAmount:
                 '3.25',
             sourceBasis:
-                'KG',
+                'UNIT',
             source:
                 'Référentiel de démonstration',
         });
@@ -876,7 +880,7 @@ describe('M-004 services Fiches techniques', () => {
                         netQuantity:
                             '2',
                         inputUnit:
-                            'KG',
+                            'UNIT',
                         order: 0,
                     }],
                 },
@@ -899,6 +903,11 @@ describe('M-004 services Fiches techniques', () => {
             saved.lines[0]
                 .valuation.lineCostHt,
         ).toBe('6.5');
+        expect(saved.lines[0].productVariant).toMatchObject({
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'tranche',
+            countUnitLabelPlural: 'tranches',
+        });
 
         const validated =
             await validateTechnicalSheet({
@@ -931,6 +940,15 @@ describe('M-004 services Fiches techniques', () => {
             validated.validation.linesSnapshot[0]
                 .applicableSource,
         ).toBe('INDICATIVE_GLOBAL');
+        expect(
+            validated.validation.linesSnapshot[0],
+        ).toMatchObject({
+            inputUnit: 'UNIT',
+            normalizedUnit: 'UNIT',
+            countUnitLabelSingular: 'tranche',
+            countUnitLabelPlural: 'tranches',
+            lineCostHt: '6.5',
+        });
     });
 
     it('crée, compose, valorise et valide un snapshot historique immuable', async () => {

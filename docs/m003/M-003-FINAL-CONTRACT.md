@@ -307,6 +307,16 @@ Le contrat conceptuel doit pouvoir représenter :
 - poids net égoutté éventuel ;
 - libellé fournisseur d'origine.
 
+Baseline V1 : le modèle structuré porte un seul niveau arithmétique
+`nombre d'unités × quantité par unité`. Il ne construit pas d'arbre récursif
+de contenants. Un niveau commercial supplémentaire, par exemple
+« 1 carton = 8 paquets × 4 tranches », reste conservé sans perte dans le
+libellé fournisseur d'origine tandis que les champs structurés portent la
+quantité totale réellement normalisable.
+
+Pour `UNIT`, l'unité structurée désigne l'unité de recette M-002
+(`tranche`, `œuf`, `pain`, etc.), jamais le paquet ou le carton.
+
 Lorsque les données sont suffisantes, le backend convertit le conditionnement vers l'unité de référence M-002.
 
 Lorsque les données sont insuffisantes, le prix normalisé reste indisponible. Aucune valeur n'est inventée.
@@ -591,9 +601,12 @@ Cette durée standard reste révisable à partir des tests métier réels.
 
 Le Prix indicatif est une estimation interne explicite. Il n'est ni un Tarif fournisseur, ni un Tarif négocié, ni un Prix facturé.
 
-Deux portées sont autorisées :
+Trois portées sont autorisées :
 
 ~~~text
+Global × Référence Produit
+→ Prix repère partagé en lecture seule avec les Workspaces
+
 Workspace × Référence Produit
 → estimation commune à l'espace de travail
 
@@ -611,7 +624,15 @@ Règles :
 - l'unité du prix doit être compatible avec l'unité de référence du Produit ;
 - le Prix indicatif Dossier n'est jamais partagé avec un autre Dossier ;
 - le Prix indicatif Workspace peut être utilisé par les Dossiers du même Workspace ;
+- le Prix repère global peut être lu par un Workspace sans exiger que la
+  Référence Produit soit un Favori ;
 - un Prix indicatif n'est jamais promu silencieusement en Tarif fournisseur ou Tarif négocié.
+
+Le montant source peut être exprimé par unité M-002 ou par
+`PACKAGE`. Dans ce dernier cas, le conditionnement plat complet est requis
+pour calculer le prix normalisé. Une provenance structurée peut conserver
+l'organisation source, une URL, la date d'observation et une note libre ;
+aucun de ces champs ne constitue à lui seul une preuve de marché.
 
 ---
 
@@ -848,6 +869,7 @@ Surfaces Workspace conceptuelles :
 /workspaces/:workspaceId/dossiers/:dossierId/negotiated-prices
 /workspaces/:workspaceId/dossiers/:dossierId/invoiced-prices
 /workspaces/:workspaceId/dossiers/:dossierId/references
+/workspaces/:workspaceId/supplier-pricing/global-indicative-prices
 /workspaces/:workspaceId/supplier-pricing/indicative-prices
 /workspaces/:workspaceId/dossiers/:dossierId/supplier-pricing/indicative-prices
 ~~~
@@ -954,6 +976,7 @@ Catalogues :
 - édition/millésime/période ;
 - global/privé ;
 - provenance ;
+- organisation source, URL et date d'observation lorsqu'elles sont fournies ;
 - import privé.
 
 Import :
@@ -1085,7 +1108,9 @@ Prix :
 - Tarif fournisseur ;
 - Tarif négocié ;
 - Prix facturé ;
-- Prix indicatif Workspace et Dossier ;
+- Prix indicatif Global, Workspace et Dossier ;
+- lecture Workspace du Prix repère global sans Favori ;
+- prix `PACKAGE`, conditionnement plat et provenance structurée ;
 - priorité des sources commerciales sur l'indicatif ;
 - chevauchements refusés ;
 - fraîcheur 12 mois calendaires ;
@@ -1196,7 +1221,10 @@ Prix indicatif Dossier
 → strictement Dossier
 
 Prix indicatif Workspace
-→ dernier fallback interne commun au Workspace
+→ fallback interne commun au Workspace
+
+Prix repère global
+→ dernier fallback commun en lecture seule
 
 aucun prix d'un autre Dossier comme fallback
 
@@ -1260,7 +1288,7 @@ M-003 est acceptable lorsque :
 7. les ambiguïtés restent contrôlées ;
 8. les catalogues privés restent strictement Workspace ;
 9. les Tarifs négociés et Prix facturés restent strictement Dossier ;
-10. les Prix indicatifs restent explicitement distincts des sources commerciales et respectent leur portée Workspace/Dossier ;
+10. les Prix indicatifs restent explicitement distincts des sources commerciales et respectent leur portée Global/Workspace/Dossier ;
 11. le Prix applicable respecte la politique Workspace puis utilise l'indicatif seulement en dernier recours ;
 12. aucun fallback inter-Dossier n'existe ;
 13. l'Owner possède toutes les permissions métier de son Workspace mais reste soumis aux capabilities ;
@@ -1332,4 +1360,8 @@ Le `Prix repère global` :
 - est historisé par remplacement comme les Prix indicatifs existants ;
 - ne prime jamais sur une donnée commerciale ou locale plus précise.
 
-Le corpus initial est versionné séparément du seed M-002. Les conditionnements génériques ne sont pas introduits par cette extension.
+Le corpus initial est versionné séparément du seed M-002. Aucun
+conditionnement ni aucune provenance de marché ne sont inventés dans ce
+corpus historique. En revanche, la maintenance Platform accepte désormais
+un prix `PACKAGE`, son conditionnement plat et sa provenance structurée ; les
+Workspaces les consultent en lecture seule.

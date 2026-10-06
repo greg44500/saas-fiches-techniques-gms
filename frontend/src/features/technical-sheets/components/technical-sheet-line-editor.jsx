@@ -35,6 +35,7 @@ import {
 } from '@/features/products/components/product-search-autocomplete';
 import {
   getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
 } from '@/features/products/lib/product-presentation';
 import {
   useListSupplierArticlesQuery,
@@ -85,6 +86,10 @@ function normalizeDraftLine(line, index) {
               id: line.productVariantId,
               name: line.productVariantName ?? 'Référence Produit',
               referenceUnit: line.referenceUnit ?? line.inputUnit,
+              countUnitLabelSingular:
+                line.countUnitLabelSingular ?? null,
+              countUnitLabelPlural:
+                line.countUnitLabelPlural ?? null,
               yieldPercent: line.yieldPercent ?? null,
             }
           : null
@@ -412,7 +417,10 @@ function ProductDetailsTrigger({
                 Article : {selectedArticle.supplierDesignation ?? 'Non renseigné'}
               </p>
               <p>
-                Conditionnement : {formatPackaging(selectedArticle.packaging)}
+                Conditionnement : {formatPackaging(
+                  selectedArticle.packaging,
+                  { productVariant: line.productVariant },
+                )}
               </p>
             </>
           )}
@@ -919,10 +927,19 @@ function TechnicalSheetLineEditor({
             aria-label={'Unité ligne ' + (index + 1)}
             className="truncate text-sm font-medium text-muted-foreground lg:text-center"
           >
-            {getReferenceUnitLabel(
+            {getVariantReferenceUnitLabel(
               productMetadata,
-              line.referenceUnit
-              ?? line.inputUnit,
+              line.productVariant ?? {
+                referenceUnit:
+                  line.referenceUnit ?? line.inputUnit,
+                countUnitLabelSingular:
+                  line.countUnitLabelSingular ?? null,
+                countUnitLabelPlural:
+                  line.countUnitLabelPlural ?? null,
+              },
+              {
+                plural: Number(line.netQuantity) !== 1,
+              },
             )}
           </p>
         </div>
@@ -949,9 +966,16 @@ function TechnicalSheetLineEditor({
                   + (
                     line.valuation?.normalizedUnit
                       ? ' · prix normalisé par '
-                        + getReferenceUnitLabel(
-                          productMetadata,
-                          line.valuation.normalizedUnit,
+                        + (
+                          line.valuation.normalizedUnit === 'UNIT'
+                            ? getVariantReferenceUnitLabel(
+                                productMetadata,
+                                line.productVariant,
+                              )
+                            : getReferenceUnitLabel(
+                                productMetadata,
+                                line.valuation.normalizedUnit,
+                              )
                         )
                       : ''
                   )

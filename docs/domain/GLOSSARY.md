@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 
 **Statut :** VALIDÉ — vocabulaire transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-09-27
+**Dernière mise à jour :** 2026-10-06
 
 > Ce glossaire fixe le vocabulaire déjà stabilisé pendant le cadrage.  
 > Les termes marqués comme ouverts ne doivent pas être transformés en contrats techniques définitifs.
@@ -171,6 +171,7 @@ name persistant
 normalizedName unique pour une référence active
 conservationType obligatoire
 referenceUnit obligatoire
+countUnitLabelSingular / countUnitLabelPlural pour UNIT
 foodRange facultatif
 processingState facultatif
 Variété facultative
@@ -318,7 +319,12 @@ Exemples :
 
 - kg / g ;
 - L / ml ;
-- unité.
+- `UNIT`, présenté par le libellé métier de la Référence : pièce, tranche,
+  œuf, pain, etc.
+
+`UNIT` est le code technique stable de calcul. Son libellé singulier/pluriel
+n'en change ni la dimension, ni le facteur de conversion, ni l'identité de la
+Référence Produit.
 
 Un carton, un sac, une boîte ou une barquette sont des conditionnements commerciaux et non des unités mathématiques de référence.
 
@@ -470,6 +476,13 @@ carton de 24 × 125 g
 
 Le système conserve le libellé fournisseur d'origine lorsqu'il existe mais ne dépend pas uniquement de ce texte pour les calculs.
 
+La baseline V1 structure un seul niveau calculable : nombre de sous-unités ×
+quantité par sous-unité. Les niveaux supplémentaires restent dans le libellé
+fournisseur d'origine ; aucun arbre récursif de contenants n'est construit.
+
+Lorsque l'unité vaut `UNIT`, elle compte l'unité de recette M-002 (par exemple
+des tranches), jamais le paquet ou le carton.
+
 Le conditionnement doit pouvoir être ramené à l'unité de référence du Produit lorsque les données disponibles le permettent.
 
 ---
@@ -559,10 +572,20 @@ Sa validité repose sur sa propre période commerciale et non sur un seuil gén�
 Estimation interne de dernier recours, distincte des données commerciales fournisseur.
 
 Portées :
+
+- Global : Prix repère commun, maintenu par la Platform et lu seulement par
+  les Workspaces ;
 - Workspace : estimation commune à l'espace de travail ;
 - Dossier : surcharge locale facultative.
 
-Le Prix indicatif peut exister sans Article fournisseur. La portée Dossier est essayée avant la portée Workspace, après toutes les sources commerciales admissibles.
+Le Prix indicatif peut exister sans Article fournisseur. Après toutes les
+sources commerciales admissibles, la portée Dossier est essayée avant la
+portée Workspace, puis la portée globale en dernier recours.
+
+Un prix peut être exprimé par unité de référence ou par `PACKAGE` avec un
+conditionnement plat normalisable. Sa provenance peut conserver organisation,
+URL, date d'observation et note sans devenir automatiquement un Tarif
+fournisseur réel.
 
 ---
 
@@ -700,7 +723,9 @@ La politique est globale au Workspace, mais les tarifs négociés et prix factur
 
 ## Prix applicable
 
-Prix retenu par le moteur pour valoriser une fiche dans le contexte d'un magasin, d'un Article fournisseur et d'une date de valorisation.
+Prix retenu par le moteur pour valoriser une fiche dans le contexte d'un
+magasin, d'une Référence Produit, d'un éventuel Article fournisseur et d'une
+date de valorisation.
 
 Hiérarchie validée :
 
@@ -716,6 +741,12 @@ Mode Prix facturé
 → dernier Prix facturé exploitable et validé
 → sinon Tarif négocié valide
 → sinon Tarif fournisseur
+
+Puis, si aucune source commerciale n'est exploitable
+→ Prix indicatif Dossier
+→ sinon Prix indicatif Workspace
+→ sinon Prix repère global
+→ sinon aucun prix
 ```
 
 La source réellement utilisée et l'existence d'un fallback doivent rester traçables.

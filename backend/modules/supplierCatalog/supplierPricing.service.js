@@ -20,6 +20,9 @@ import {
     SupplierArticle,
 } from './supplier.model.js';
 import {
+    serializePackaging,
+} from './supplierCatalog.serializer.js';
+import {
     SupplierTariff,
 } from './supplierCatalog.model.js';
 import {
@@ -50,6 +53,9 @@ import {
 import {
     createSupplierCatalogEvent,
 } from './supplierCatalogEvent.service.js';
+import {
+    normalizePackaging,
+} from './supplierReference.service.js';
 
 const MUTABLE_DOSSIER_STATUSES = Object.freeze([
     DOSSIER_STATUS.ACTIVE,
@@ -138,6 +144,10 @@ const serializeProductVariantSummary =
         id: variant._id.toString(),
         name: variant.name,
         referenceUnit: variant.referenceUnit,
+        countUnitLabelSingular:
+            variant.countUnitLabelSingular ?? null,
+        countUnitLabelPlural:
+            variant.countUnitLabelPlural ?? null,
         productId:
             variant.canonicalProduct?._id
                 ? variant.canonicalProduct._id.toString()
@@ -258,7 +268,7 @@ const findVisibleSupplierArticle = async ({
             .populate({
                 path: 'productVariant',
                 select:
-                    '_id name referenceUnit status identityActive canonicalProduct',
+                    '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status identityActive canonicalProduct',
                 populate: {
                     path: 'canonicalProduct',
                     select: '_id name',
@@ -339,7 +349,7 @@ const findUsableSupplierArticlesForVariant = async ({
             .populate({
                 path: 'productVariant',
                 select:
-                    '_id name referenceUnit status identityActive canonicalProduct',
+                    '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status identityActive canonicalProduct',
                 populate: {
                     path: 'canonicalProduct',
                     select: '_id name',
@@ -762,7 +772,7 @@ const listNegotiatedPrices = async ({
                     },
                     {
                         path: 'productVariant',
-                        select: '_id name referenceUnit status',
+                        select: '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status',
                     },
                 ],
             })
@@ -1030,7 +1040,7 @@ const listInvoicedPrices = async ({
                     },
                     {
                         path: 'productVariant',
-                        select: '_id name referenceUnit status',
+                        select: '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status',
                     },
                 ],
             })
@@ -1276,6 +1286,11 @@ const serializeIndicativePrice = (price) => ({
     normalizedAmount: decimalToString(price.normalizedAmount),
     normalizedUnit: price.normalizedUnit,
     source: price.source ?? null,
+    packaging: serializePackaging(price.packaging),
+    sourceOrganization:
+        price.sourceOrganization ?? null,
+    sourceUrl: price.sourceUrl ?? null,
+    observedAt: price.observedAt ?? null,
     status: price.status,
     createdAt: price.createdAt,
     updatedAt: price.updatedAt,
@@ -1293,7 +1308,7 @@ const populateIndicativeProductVariant = (query) =>
     query.populate({
         path: 'productVariant',
         select:
-            '_id name referenceUnit canonicalProduct',
+            '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural canonicalProduct',
         populate: {
             path: 'canonicalProduct',
             select: '_id name',
@@ -1395,6 +1410,10 @@ const setIndicativePrice = async ({
     sourceBasis,
     currency = 'EUR',
     source = null,
+    packaging = null,
+    sourceOrganization = null,
+    sourceUrl = null,
+    observedAt = null,
 }) => mongoose.connection.transaction(
     async (session) => {
         if (dossierId) {
@@ -1413,10 +1432,13 @@ const setIndicativePrice = async ({
                 session,
             });
 
+        const normalizedPackaging =
+            normalizePackaging(packaging);
         const normalized =
             normalizeSupplierPrice({
                 sourceAmount,
                 sourceBasis,
+                packaging: normalizedPackaging,
                 targetUnit:
                     productVariant.referenceUnit,
             });
@@ -1473,6 +1495,12 @@ const setIndicativePrice = async ({
                     normalizedUnit:
                         normalized.normalizedUnit,
                     source: source ?? null,
+                    packaging:
+                        normalizedPackaging,
+                    sourceOrganization:
+                        sourceOrganization ?? null,
+                    sourceUrl: sourceUrl ?? null,
+                    observedAt: observedAt ?? null,
                     createdBy: actorId,
                     updatedBy: actorId,
                 },
@@ -1508,7 +1536,7 @@ const setIndicativePrice = async ({
         await price.populate({
             path: 'productVariant',
             select:
-                '_id name referenceUnit canonicalProduct',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural canonicalProduct',
             populate: {
                 path: 'canonicalProduct',
                 select: '_id name',
@@ -1729,6 +1757,16 @@ const serializeApplicableSource = ({
     normalizedUnit:
         price.normalizedUnit
         ?? null,
+    packaging:
+        serializePackaging(price.packaging),
+    sourceNote:
+        price.source ?? null,
+    sourceOrganization:
+        price.sourceOrganization ?? null,
+    sourceUrl:
+        price.sourceUrl ?? null,
+    observedAt:
+        price.observedAt ?? null,
     ...extra,
 });
 
@@ -2246,7 +2284,7 @@ const listDossierReferences = async ({
                     {
                         path: 'productVariant',
                         select:
-                            '_id name referenceUnit status identityActive',
+                            '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural status identityActive',
                     },
                 ],
             })

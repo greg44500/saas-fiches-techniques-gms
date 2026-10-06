@@ -44,12 +44,13 @@ import {
   getConservationTypeLabel,
   getProductStatusLabel,
   getProductStatusTone,
-  getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
   getVariantLabel,
 } from '@/features/products/lib/product-presentation';
 import {
   useListSupplierArticlesQuery,
   useListSuppliersQuery,
+  useListWorkspaceGlobalIndicativePricesQuery,
   useListWorkspaceIndicativePricesQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
@@ -64,6 +65,7 @@ import {
 import {
   formatPackaging,
   formatPrice,
+  formatSourcePrice,
 } from '@/features/suppliers/lib/supplier-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 
@@ -152,7 +154,7 @@ function VariantIdentity({
           metadata,
           variant.conservationType,
         )}
-        {' · '}Unité : {getReferenceUnitLabel(metadata, variant.referenceUnit)}
+        {' · '}Unité : {getVariantReferenceUnitLabel(metadata, variant)}
         {variant.yieldPercent
           ? ' · Rendement : ' + formatYield(variant.yieldPercent)
           : ''}
@@ -211,6 +213,17 @@ function ProductDetailsDrawer({
       skip: !open || !productId || !canReadIndicativePrices,
     },
   );
+  const globalIndicativePriceQuery =
+    useListWorkspaceGlobalIndicativePricesQuery(
+      {
+        workspaceId,
+        productId,
+        status: 'ACTIVE',
+      },
+      {
+        skip: !open || !productId || !canReadIndicativePrices,
+      },
+    );
   const supplierQuery = useListSuppliersQuery(
     {
       workspaceId,
@@ -277,6 +290,14 @@ function ProductDetailsDrawer({
         .filter(([variantId]) => Boolean(variantId)),
     ),
     [indicativePriceQuery.data],
+  );
+  const globalIndicativePriceByVariant = useMemo(
+    () => new Map(
+      (globalIndicativePriceQuery.data ?? [])
+        .map((price) => [price.productVariant?.id, price])
+        .filter(([variantId]) => Boolean(variantId)),
+    ),
+    [globalIndicativePriceQuery.data],
   );
   const mutationPending = attachState.isLoading || archiveState.isLoading;
 
@@ -383,6 +404,8 @@ function ProductDetailsDrawer({
                       && product.status === 'ACTIVE'
                       && variant.status === 'ACTIVE'
                     );
+                    const globalPrice =
+                      globalIndicativePriceByVariant.get(variant.id) ?? null;
 
                     return (
                       <li
@@ -447,6 +470,64 @@ function ProductDetailsDrawer({
 
                           </div>
                         </div>
+
+                        {canReadIndicativePrices && (
+                          <div className="mt-3 border-t border-border pt-3">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Prix repère global
+                            </p>
+                            <p className="mt-1 text-sm font-medium">
+                              {globalIndicativePriceQuery.isLoading
+                                && globalIndicativePriceQuery.data === undefined
+                                ? 'Chargement…'
+                                : globalPrice
+                                  ? formatPrice(globalPrice, {
+                                      hideDefaultCurrency: true,
+                                      productVariant: variant,
+                                    })
+                                  : 'Non renseigné'}
+                            </p>
+
+                            {globalPrice?.packaging && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Conditionnement repère : {' '}
+                                {formatPackaging(globalPrice.packaging, {
+                                  productVariant: variant,
+                                })}
+                                {globalPrice.sourceBasis === 'PACKAGE'
+                                  ? ' · ' + formatSourcePrice(globalPrice)
+                                  : ''}
+                              </p>
+                            )}
+
+                            {(globalPrice?.sourceOrganization
+                              || globalPrice?.source
+                              || globalPrice?.observedAt) && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {[
+                                  globalPrice.sourceOrganization,
+                                  globalPrice.observedAt
+                                    ? 'relevé le '
+                                      + new Date(globalPrice.observedAt)
+                                        .toLocaleDateString('fr-FR')
+                                    : null,
+                                  globalPrice.source,
+                                ].filter(Boolean).join(' · ')}
+                              </p>
+                            )}
+
+                            {globalPrice?.sourceUrl && (
+                              <a
+                                className="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline"
+                                href={globalPrice.sourceUrl}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                Consulter la source
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </li>
                     );
                   })}
@@ -464,7 +545,8 @@ function ProductDetailsDrawer({
                 )}
 
                 {canReadIndicativePrices
-                && indicativePriceQuery.isError && (
+                && (indicativePriceQuery.isError
+                  || globalIndicativePriceQuery.isError) && (
                   <p className="text-sm text-destructive">
                     Les Prix indicatifs n’ont pas pu être chargés.
                   </p>
@@ -481,6 +563,10 @@ function ProductDetailsDrawer({
                         articlesByVariant.get(variant.id) ?? [];
                       const indicativePrice =
                         indicativePriceByVariant.get(variant.id) ?? null;
+                      const globalPrice =
+                        globalIndicativePriceByVariant.get(variant.id) ?? null;
+                      const displayedPrice =
+                        indicativePrice ?? globalPrice;
 
                       return (
                         <li
@@ -550,21 +636,35 @@ function ProductDetailsDrawer({
                               {canReadIndicativePrices && (
                                 <div>
                                   <p className="text-xs font-medium text-muted-foreground">
-                                    PU HT estimé
+                                    {indicativePrice
+                                      ? 'Prix indicatif Workspace'
+                                      : 'Prix repère global (repli)'}
                                   </p>
                                   <p className="mt-1 text-sm font-medium">
-                                    {indicativePriceQuery.isLoading
-                                      && indicativePriceQuery.data === undefined
+                                    {(indicativePriceQuery.isLoading
+                                      && indicativePriceQuery.data === undefined)
+                                      || (globalIndicativePriceQuery.isLoading
+                                        && globalIndicativePriceQuery.data
+                                          === undefined)
                                       ? 'Chargement…'
-                                      : indicativePrice
-                                        ? formatPrice(indicativePrice, {
+                                      : displayedPrice
+                                        ? formatPrice(displayedPrice, {
                                             hideDefaultCurrency: true,
+                                            productVariant: variant,
                                           })
                                         : 'Non renseigné'}
                                   </p>
-                                  {indicativePrice?.source && (
+                                  {displayedPrice?.source && (
                                     <p className="mt-1 text-xs text-muted-foreground">
-                                      {indicativePrice.source}
+                                      {displayedPrice.source}
+                                    </p>
+                                  )}
+                                  {displayedPrice?.packaging && (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      {formatPackaging(
+                                        displayedPrice.packaging,
+                                        { productVariant: variant },
+                                      )}
                                     </p>
                                   )}
                                 </div>
@@ -598,7 +698,10 @@ function ProductDetailsDrawer({
                                               + article.supplierReference}
                                           </p>
                                           <p className="mt-1 text-xs text-muted-foreground">
-                                            {formatPackaging(article.packaging)}
+                                            {formatPackaging(
+                                              article.packaging,
+                                              { productVariant: variant },
+                                            )}
                                           </p>
                                         </li>
                                       ))}

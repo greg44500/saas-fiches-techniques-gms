@@ -13,6 +13,7 @@ import {
 } from './supplierCatalog.registry.js';
 import {
     createAuditFields,
+    packagingSchema,
 } from './supplierCatalog.schemas.js';
 
 const { Schema, model } = mongoose;
@@ -196,7 +197,7 @@ const indicativePriceSchema = new Schema(
         },
         sourceBasis: {
             type: String,
-            enum: Object.values(PRODUCT_REFERENCE_UNIT),
+            enum: Object.values(SUPPLIER_PRICE_BASIS),
             required: true,
             immutable: true,
         },
@@ -228,6 +229,30 @@ const indicativePriceSchema = new Schema(
             default: null,
             immutable: true,
         },
+        packaging: {
+            type: packagingSchema,
+            default: null,
+            immutable: true,
+        },
+        sourceOrganization: {
+            type: String,
+            trim: true,
+            maxlength: 160,
+            default: null,
+            immutable: true,
+        },
+        sourceUrl: {
+            type: String,
+            trim: true,
+            maxlength: 1000,
+            default: null,
+            immutable: true,
+        },
+        observedAt: {
+            type: Date,
+            default: null,
+            immutable: true,
+        },
         status: {
             type: String,
             enum: Object.values(INDICATIVE_PRICE_STATUS),
@@ -245,6 +270,19 @@ indicativePriceSchema.pre('validate', function validateIndicativePriceScope() {
     if (this.dossier && !this.workspace) {
         throw new Error(
             'Un Prix indicatif Dossier doit appartenir à un Workspace.',
+        );
+    }
+
+    if (
+        this.sourceBasis === SUPPLIER_PRICE_BASIS.PACKAGE
+        && (
+            !this.packaging?.totalQuantity
+            || !this.packaging?.unit
+        )
+    ) {
+        this.invalidate(
+            'packaging',
+            'Un prix au conditionnement exige une quantité totale normalisable.',
         );
     }
 });

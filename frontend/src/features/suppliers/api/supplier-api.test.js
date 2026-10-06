@@ -59,6 +59,7 @@ import {
   useSetDossierIndicativePriceMutation,
   useSetGlobalIndicativePriceMutation,
   useSetWorkspaceIndicativePriceMutation,
+  useListWorkspaceGlobalIndicativePricesQuery,
   useUpdateSupplierCatalogStatusMutation,
 } from '@/features/suppliers/api/supplier-api';
 
@@ -217,6 +218,24 @@ describe('supplierApi', () => {
   it('expose les Prix indicatifs Workspace et Dossier sans Article fournisseur obligatoire', () => {
     expect(useSetWorkspaceIndicativePriceMutation).toBeTypeOf('function');
     expect(useSetDossierIndicativePriceMutation).toBeTypeOf('function');
+    expect(useListWorkspaceGlobalIndicativePricesQuery)
+      .toBeTypeOf('function');
+
+    expect(
+      captured.endpointDefinitions
+        .listWorkspaceGlobalIndicativePrices.query({
+          workspaceId: 'workspace-1',
+          productId: 'product-1',
+        }),
+    ).toEqual({
+      url:
+        '/workspaces/workspace-1/supplier-pricing/global-indicative-prices',
+      params: {
+        productId: 'product-1',
+        productVariantId: undefined,
+        status: 'ACTIVE',
+      },
+    });
 
     expect(
       captured.endpointDefinitions.listWorkspaceIndicativePrices.query({

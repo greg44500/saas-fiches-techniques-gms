@@ -174,7 +174,7 @@ describe('SupplierArticleFormDialog', () => {
     );
   });
 
-  it('présente une aide métier sans jargon M-002 et affiche UNIT comme PCE', async () => {
+  it('présente une aide métier sans jargon M-002 et affiche UNIT comme pièce', async () => {
     const user = userEvent.setup();
 
     renderDialog();
@@ -198,8 +198,58 @@ describe('SupplierArticleFormDialog', () => {
     await user.click(unitTrigger);
 
     expect(
-      await screen.findByRole('option', { name: 'PCE' }),
+      await screen.findByRole('option', { name: 'pièce' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'UNIT' })).not.toBeInTheDocument();
+  });
+
+  it('conserve un conditionnement plat calculable et son libellé fournisseur complet', async () => {
+    const user = userEvent.setup();
+
+    renderDialog(vi.fn(), {
+      initialProductVariant: {
+        id: 'variant-bruschetta',
+        name: 'Pain bruschetta surgelé',
+        referenceUnit: 'UNIT',
+        countUnitLabelSingular: 'tranche',
+        countUnitLabelPlural: 'tranches',
+      },
+    });
+
+    await selectOption(
+      user,
+      'Sélectionner le Fournisseur',
+      'Sysco',
+    );
+    await user.type(
+      screen.getByLabelText('Référence fournisseur'),
+      'BRU-032',
+    );
+    await user.type(screen.getByLabelText('Contenant principal'), 'Carton');
+    await user.type(screen.getByLabelText('Sous-unités'), '8');
+    await user.type(screen.getByLabelText('Quantité / sous-unité'), '4');
+    await user.type(screen.getByLabelText('Poids net total'), '3200');
+    await user.type(
+      screen.getByLabelText('Libellé fournisseur d’origine'),
+      '1 carton = 8 paquets × 4 tranches de 100 g',
+    );
+    await user.click(screen.getByRole('button', {
+      name: 'Créer l’Article',
+    }));
+
+    expect(mocks.createArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        packaging: {
+          containerType: 'Carton',
+          unitCount: 8,
+          quantityPerUnit: '4',
+          unit: 'UNIT',
+          netWeight: '3200',
+          netWeightUnit: 'G',
+          supplierLabel:
+            '1 carton = 8 paquets × 4 tranches de 100 g',
+        },
+      }),
+    );
   });
 });

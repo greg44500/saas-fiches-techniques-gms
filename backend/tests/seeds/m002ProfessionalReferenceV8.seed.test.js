@@ -16,8 +16,8 @@ import {
     ProductVariant,
 } from '../../modules/productCatalog/productVariant.model.js';
 import {
-    loadDefaultDataset,
     loadV7ReferenceDataset,
+    loadV8ReferenceDataset,
     m002ReferenceDatasetSchema,
     seedM002Reference,
 } from '../../seeds/seedM002Reference.js';
@@ -34,7 +34,7 @@ describe('M-002 professional reference corpus v8', () => {
     it('versionne un enrichissement de 126 nouvelles Références avec 6 retraits explicites', async () => {
         const [v7, candidate] = await Promise.all([
             loadV7ReferenceDataset(),
-            loadDefaultDataset(),
+            loadV8ReferenceDataset(),
         ]);
 
         const parsed = m002ReferenceDatasetSchema.parse(candidate);
@@ -69,7 +69,7 @@ describe('M-002 professional reference corpus v8', () => {
 
     it('couvre les ingrédients structurants de pâtisserie, glacerie et snacking', async () => {
         const dataset = m002ReferenceDatasetSchema.parse(
-            await loadDefaultDataset(),
+            await loadV8ReferenceDataset(),
         );
         const names = new Set(referenceNames(dataset));
 
@@ -98,7 +98,7 @@ describe('M-002 professional reference corpus v8', () => {
 
     it('préserve les poudres et complète les fruits secs génériques demandés', async () => {
         const dataset = m002ReferenceDatasetSchema.parse(
-            await loadDefaultDataset(),
+            await loadV8ReferenceDataset(),
         );
         const productByName = new Map(
             dataset.products.map((product) => [product.name, product]),
@@ -149,7 +149,7 @@ describe('M-002 professional reference corpus v8', () => {
 
     it('porte le diamètre ou format des fonds de tarte dans la Référence et la dimension', async () => {
         const dataset = m002ReferenceDatasetSchema.parse(
-            await loadDefaultDataset(),
+            await loadV8ReferenceDataset(),
         );
         const productByName = new Map(
             dataset.products.map((product) => [product.name, product]),
@@ -186,7 +186,7 @@ describe('M-002 professional reference corpus v8', () => {
 
     it('reste sans doublon normalisé et sans données commerciales M-003', async () => {
         const dataset = m002ReferenceDatasetSchema.parse(
-            await loadDefaultDataset(),
+            await loadV8ReferenceDataset(),
         );
         const names = referenceNames(dataset);
         const normalized = names.map(normalizeProductText);
@@ -210,7 +210,7 @@ describe('M-002 professional reference corpus v8', () => {
         const actor = await createTestUser({
             email: 'seed-m002-v8@example.test',
         });
-        const dataset = await loadDefaultDataset();
+        const dataset = await loadV8ReferenceDataset();
 
         const first = await seedM002Reference({
             dataset,
