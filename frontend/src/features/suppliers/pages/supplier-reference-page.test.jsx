@@ -279,4 +279,44 @@ describe('SupplierReferencePage', () => {
 
     expect(screen.getByText('Import catalogue ouvert')).toBeInTheDocument();
   });
+
+  it('affiche le libellé métier de UNIT pour les Articles globaux', async () => {
+    const user = userEvent.setup();
+
+    mocks.listGlobalArticles.mockReturnValue(queryResult({
+      articles: [{
+        id: 'article-unit',
+        supplierReference: 'BRU-001',
+        supplierDesignation: 'Pain bruschetta',
+        productVariant: {
+          id: 'variant-unit',
+          name: 'Pain bruschetta surgelé',
+          referenceUnit: 'UNIT',
+          countUnitLabelSingular: 'tranche',
+          countUnitLabelPlural: 'tranches',
+        },
+        supplier: { id: 'supplier-active', name: 'Sysco' },
+        scope: 'GLOBAL_SHARED',
+        status: 'ACTIVE',
+        packaging: {
+          unitCount: 8,
+          quantityPerUnit: '1',
+          unit: 'UNIT',
+        },
+      }],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
+      },
+    }));
+
+    renderPage();
+    await user.click(screen.getByRole('tab', { name: 'Articles' }));
+
+    expect(screen.getByText(/1 tranche/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 UNIT/)).not.toBeInTheDocument();
+  });
+
 });

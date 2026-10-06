@@ -266,7 +266,10 @@ function SupplierDetailsDrawer({
                               || 'Sans désignation'}
                           </p>
                           <p className="mt-2 text-xs text-muted-foreground">
-                            {formatPackaging(article.packaging)}
+                            {formatPackaging(
+                              article.packaging,
+                              { productVariant: article.productVariant },
+                            )}
                           </p>
                         </div>
                         <StatusBadge tone={getSupplierStatusTone(article.status)}>
