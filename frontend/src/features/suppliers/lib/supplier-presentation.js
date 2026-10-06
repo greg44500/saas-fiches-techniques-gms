@@ -109,7 +109,9 @@ function formatPrice(
   price,
   {
     hideDefaultCurrency = false,
-    productVariant = price?.productVariant ?? null,
+    productVariant = price?.productVariant
+      ?? price?.supplierArticle?.productVariant
+      ?? null,
   } = {},
 ) {
   if (!price) return 'Indisponible';

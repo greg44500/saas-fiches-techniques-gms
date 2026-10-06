@@ -177,6 +177,12 @@ const serializeSupplierArticleSummary =
         productVariantName:
             article.productVariant
                 ?.name ?? null,
+        productVariant:
+            article.productVariant?._id
+                ? serializeProductVariantSummary(
+                    article.productVariant,
+                )
+                : null,
         supplierReference:
             article.supplierReference,
         supplierDesignation:

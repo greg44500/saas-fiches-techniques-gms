@@ -1134,7 +1134,10 @@ function ProductReferenceDetailsDrawer({
                               globalPrice
                                 ? formatPrice(
                                   globalPrice,
-                                  { hideDefaultCurrency: true },
+                                  {
+                                    hideDefaultCurrency: true,
+                                    productVariant: variant,
+                                  },
                                 )
                                 : 'Non renseigné'
                             }

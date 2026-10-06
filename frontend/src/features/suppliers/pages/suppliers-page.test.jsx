@@ -353,13 +353,19 @@ describe('SuppliersPage', () => {
     expect(screen.getByText('Import catalogue ouvert')).toBeInTheDocument();
   });
 
-  it('affiche UNIT comme PCE dans le conditionnement Article', () => {
+  it('affiche le libellé métier de UNIT dans le conditionnement Article', () => {
     mocks.listArticles.mockReturnValue(queryResult({
       articles: [{
         id: 'article-1',
         supplierReference: 'ABR-1',
         supplierDesignation: 'Abricot',
-        productVariant: { id: 'variant-1', name: 'Abricot' },
+        productVariant: {
+          id: 'variant-1',
+          name: 'Abricot',
+          referenceUnit: 'UNIT',
+          countUnitLabelSingular: 'abricot',
+          countUnitLabelPlural: 'abricots',
+        },
         supplier: { id: 'supplier-1', name: 'Sysco' },
         scope: 'WORKSPACE_PRIVATE',
         status: 'ACTIVE',
@@ -379,7 +385,7 @@ describe('SuppliersPage', () => {
 
     renderPage('/workspaces/workspace-1/suppliers?section=articles');
 
-    expect(screen.getByText(/1 PCE/)).toBeInTheDocument();
+    expect(screen.getByText(/1 abricot/)).toBeInTheDocument();
     expect(screen.queryByText(/1 UNIT/)).not.toBeInTheDocument();
   });
 });

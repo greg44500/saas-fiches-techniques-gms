@@ -281,7 +281,7 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
   });
   await resolveArticlePrice(page, {
     articleLabel,
-    expectedPrice: '10,000 / KG',
+    expectedPrice: '10,000 / kg',
   });
 
   await page.goto(
@@ -294,7 +294,7 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
   });
   await resolveArticlePrice(page, {
     articleLabel,
-    expectedPrice: '20,000 / KG',
+    expectedPrice: '20,000 / kg',
   });
 
   await page.goto(
@@ -302,7 +302,7 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
   );
   await resolveArticlePrice(page, {
     articleLabel,
-    expectedPrice: '10,000 / KG',
+    expectedPrice: '10,000 / kg',
   });
 });
 

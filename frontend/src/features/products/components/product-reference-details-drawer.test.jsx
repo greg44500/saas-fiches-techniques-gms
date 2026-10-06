@@ -490,7 +490,7 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
 
-    expect(screen.getByText(/Prix repère global : 3,250 \/ KG/))
+    expect(screen.getByText(/Prix repère global : 3,250 \/ kg/))
       .toBeInTheDocument();
     expect(screen.getByText(/Relevé : 3,25 € \/ Carton/))
       .toBeInTheDocument();
@@ -515,7 +515,7 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
 
-    expect(screen.getByText(/Prix repère global : 3,250 \/ KG/))
+    expect(screen.getByText(/Prix repère global : 3,250 \/ kg/))
       .toBeInTheDocument();
     expect(screen.queryByRole('button', {
       name: 'Modifier le Prix repère global de Abricot frais',

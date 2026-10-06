@@ -173,6 +173,7 @@ function DossierApplicablePriceCard({
               {applicable.price
                 ? formatPrice(applicable.price, {
                     hideDefaultCurrency: true,
+                    productVariant: applicable.productVariant,
                   })
                 : 'Aucun prix applicable'}
             </p>

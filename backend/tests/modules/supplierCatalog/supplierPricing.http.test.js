@@ -481,6 +481,27 @@ describe('M-003 dossier pricing HTTP', () => {
 
         expect(first.status).toBe(201);
 
+        const listed = await request(app)
+            .get(
+                pricingPath(dossierA)
+                + '/negotiated-prices',
+            )
+            .set(bearer(owner.token));
+
+        expect(listed.status).toBe(200);
+        expect(
+            listed.body.data.prices[0]
+                .supplierArticle
+                .productVariant,
+        ).toEqual(
+            expect.objectContaining({
+                id:
+                    productReference.variant
+                        ._id.toString(),
+                referenceUnit: 'KG',
+            }),
+        );
+
         const overlap = await request(app)
             .post(
                 pricingPath(dossierA)
