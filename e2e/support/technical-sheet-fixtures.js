@@ -44,6 +44,7 @@ async function provisionTechnicalSheetWorkspace({
   exportEnabled = false,
   exportLimit = 10,
   favoriteProduct = true,
+  optimizerEnabled = false,
   technicalSheetLimit = 10,
   targetMarginBasisPoints = 6000,
 } = {}) {
@@ -135,6 +136,22 @@ async function provisionTechnicalSheetWorkspace({
         updatedBy: ownerId,
       },
     ];
+
+    if (optimizerEnabled) {
+      entitlementOverrides.push({
+        workspace: workspace._id,
+        targetType: 'feature',
+        featureKey:
+          'technical_sheet_optimizer',
+        featureEnabled: true,
+        source: 'support',
+        startsAt,
+        reason:
+          'E2E M-005 optimizer feature fixture',
+        grantedBy: ownerId,
+        updatedBy: ownerId,
+      });
+    }
 
     if (exportEnabled) {
       entitlementOverrides.push(
@@ -262,6 +279,7 @@ async function provisionTechnicalSheetWorkspace({
       secondSupplier?.name ?? null,
     exportEnabled,
     exportLimit,
+    optimizerEnabled,
     targetMarginBasisPoints,
     technicalSheetLimit,
   };
