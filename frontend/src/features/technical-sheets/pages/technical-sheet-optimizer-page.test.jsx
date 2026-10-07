@@ -351,6 +351,70 @@ describe('TechnicalSheetOptimizerPage', () => {
     ).toBe('workspace-1');
   });
 
+  it('neutralise le réglage lorsque minimum et maximum figent la quantité', async () => {
+    const user =
+      userEvent.setup();
+
+    render(
+      <TechnicalSheetOptimizerPage />,
+    );
+
+    await user.click(
+      screen.getByRole(
+        'button',
+        { name: 'Contraintes' },
+      ),
+    );
+
+    await user.type(
+      screen.getByLabelText(
+        'Minimum autorisé',
+      ),
+      '2',
+    );
+    await user.type(
+      screen.getByLabelText(
+        'Maximum autorisé',
+      ),
+      '2',
+    );
+
+    await user.click(
+      screen.getByRole(
+        'button',
+        { name: 'Réglage' },
+      ),
+    );
+
+    expect(
+      screen.getByText(
+        'Minimum et maximum sont identiques : la quantité ne peut pas évoluer.',
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole(
+        'slider',
+        {
+          name:
+            'Ajustement économique de l’ingrédient',
+        },
+      ),
+    ).toBeDisabled();
+
+    expect(
+      screen.getByRole(
+        'slider',
+        {
+          name: 'Ajustement Carotte',
+        },
+      ),
+    ).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+  });
+
   it('n’envoie pas de simulation pendant une saisie décimale incomplète', async () => {
     const user =
       userEvent.setup();
