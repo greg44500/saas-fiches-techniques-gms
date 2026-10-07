@@ -5,17 +5,11 @@ import {
   SlidersHorizontal,
   Sparkles,
   Truck,
-  WandSparkles,
 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {
   TechnicalSheetOptimizerInspector,
 } from '@/features/technical-sheets/components/technical-sheet-optimizer-inspector';
@@ -34,6 +28,7 @@ const TOOLS = Object.freeze([
   {
     key: 'SOURCING',
     label: 'Approvisionnement',
+    shortLabel: 'Appro.',
     Icon: Truck,
   },
   {
@@ -62,24 +57,22 @@ function TechnicalSheetOptimizerControlsPanel({
   onModeChange,
   onReset,
   onTakeAutoSuggestion,
+  profile,
   projectionLine,
 }) {
   const [activeTool, setActiveTool] =
     useState('ADJUSTMENT');
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
-      <div className="shrink-0 border-b border-border p-3">
-        <div className="mb-3 flex items-center gap-2">
-          <WandSparkles
-            aria-hidden="true"
-            className="size-4"
-          />
-          <p className="text-sm font-semibold">
-            Réglages
-          </p>
-        </div>
+    <section
+      aria-label="Panneau de pilotage"
+      className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card"
+    >
+      <div className="shrink-0">
+        {profile}
+      </div>
 
+      <div className="shrink-0 border-b border-border px-3 py-2.5">
         <div
           aria-label="Mode d’optimisation"
           className="grid grid-cols-2 rounded-lg border border-border p-1"
@@ -120,62 +113,53 @@ function TechnicalSheetOptimizerControlsPanel({
 
       {mode === 'MANUAL'
         ? (
-          <div className="flex min-h-0 flex-1">
+          <>
             <nav
               aria-label="Outils de réglage"
-              className="flex w-14 shrink-0 flex-col items-center gap-2 border-r border-border bg-muted/20 py-3"
+              className="grid shrink-0 grid-cols-4 border-b border-border bg-muted/15"
             >
               {TOOLS.map(
                 ({
                   key,
                   label,
+                  shortLabel,
                   Icon,
                 }) => {
                   const disabled =
                     key === 'SOURCING'
                     && !canManageSourcing;
+                  const active =
+                    activeTool === key;
 
                   return (
-                    <Tooltip key={key}>
-                      <TooltipTrigger
-                        aria-label={
-                          label
-                        }
-                        aria-pressed={
-                          activeTool
-                          === key
-                        }
-                        className={
-                          'inline-flex size-10 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring '
-                          + (
-                            activeTool
-                            === key
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                          )
-                          + (
-                            disabled
-                              ? ' cursor-not-allowed opacity-40'
-                              : ''
-                          )
-                        }
-                        disabled={
-                          disabled
-                        }
-                        onClick={() =>
-                          setActiveTool(
-                            key,
-                          )}
-                      >
+                    <Button
+                      aria-label={label}
+                      aria-pressed={active}
+                      className={
+                        'h-14 min-w-0 rounded-none border-r border-border px-1 last:border-r-0 '
+                        + (
+                          active
+                            ? 'bg-primary/10 text-foreground'
+                            : 'text-muted-foreground'
+                        )
+                      }
+                      disabled={disabled}
+                      key={key}
+                      onClick={() =>
+                        setActiveTool(key)}
+                      type="button"
+                      variant="ghost"
+                    >
+                      <span className="flex min-w-0 flex-col items-center gap-1">
                         <Icon
                           aria-hidden="true"
                           className="size-4"
                         />
-                      </TooltipTrigger>
-                      <TooltipContent side="left">
-                        {label}
-                      </TooltipContent>
-                    </Tooltip>
+                        <span className="max-w-full truncate text-[11px] font-medium">
+                          {shortLabel ?? label}
+                        </span>
+                      </span>
+                    </Button>
                   );
                 },
               )}
@@ -207,7 +191,7 @@ function TechnicalSheetOptimizerControlsPanel({
                 }
               />
             </div>
-          </div>
+          </>
         )
         : (
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
@@ -323,7 +307,7 @@ function TechnicalSheetOptimizerControlsPanel({
             : 'Appliquer au brouillon'}
         </Button>
       </div>
-    </div>
+    </section>
   );
 }
 
