@@ -108,6 +108,41 @@ const estimateTextWidth = (
     * 0.5
 );
 
+const truncateTextByWidth = (
+    value,
+    width,
+    size,
+) => {
+    const text =
+        String(value ?? '');
+
+    if (
+        estimateTextWidth(
+            text,
+            size,
+        ) <= width
+    ) {
+        return text;
+    }
+
+    const suffix = '…';
+    let truncated = text;
+
+    while (
+        truncated
+        && estimateTextWidth(
+            truncated + suffix,
+            size,
+        ) > width
+    ) {
+        truncated =
+            truncated.slice(0, -1);
+    }
+
+    return truncated
+        + suffix;
+};
+
 const wrapTextByWidth = (
     value,
     width,
@@ -806,12 +841,13 @@ const drawProductionCards = ({
             - (gap * 2)
         ) / 3;
     const height = 58;
-    const top =
-        composer.getY();
 
     composer.ensure(
         height + 8,
     );
+
+    const top =
+        composer.getY();
 
     cards.forEach(
         (card, index) => {
@@ -1020,6 +1056,7 @@ const drawCompositionTable = ({
     composer,
     rows,
 }) => {
+    composer.ensure(62);
     composer.sectionTitle(
         'Composition',
     );
@@ -1180,9 +1217,23 @@ const drawAnalysisDetails = ({
         index < details.length;
         index += 1
     ) {
-        composer.ensure(
-            rowHeight,
-        );
+        if (
+            composer.getY()
+            - rowHeight
+            < BOTTOM
+        ) {
+            composer.newPage();
+            composer.textAt({
+                x: MARGIN_X,
+                baseline:
+                    composer.getY(),
+                value:
+                    'Détails économiques — suite',
+                size: 10,
+                bold: true,
+            });
+            composer.moveDown(18);
+        }
 
         const top =
             composer.getY();
@@ -1282,7 +1333,11 @@ const decoratePages = ({
                     gray:
                         PDF_GRAY.MUTED,
                     text:
-                        layout.title,
+                        truncateTextByWidth(
+                            layout.title,
+                            560,
+                            7,
+                        ),
                 });
             const footerRight =
                 textCommand({
@@ -1497,5 +1552,6 @@ export {
     encodeWinAnsiHex,
     estimateTextWidth,
     minorCurrency,
+    truncateTextByWidth,
     wrapTextByWidth,
 };

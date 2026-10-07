@@ -279,6 +279,14 @@ describe('M-004 exports de Fiches techniques', () => {
         ]);
         expect(
             COMPOSITION_COLUMNS
+                .reduce(
+                    (total, { width }) =>
+                        total + width,
+                    0,
+                ),
+        ).toBe(770);
+        expect(
+            COMPOSITION_COLUMNS
                 .map(({ label }) => label),
         ).toEqual([
             'Section',
