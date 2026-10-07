@@ -171,7 +171,10 @@ function TechnicalSheetOptimizerInspector({
             </div>
             <Slider
               aria-label="Ajustement économique de l’ingrédient"
-              disabled={line.locked}
+              disabled={
+                line.locked
+                || quantityEnvelopePinned
+              }
               max={maxAdjustment}
               min={minAdjustment}
               onValueChange={([value]) =>
