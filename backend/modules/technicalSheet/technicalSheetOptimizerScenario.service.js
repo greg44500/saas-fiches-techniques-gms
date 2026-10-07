@@ -12,6 +12,7 @@ import {
     assertProductAlternative,
 } from './technicalSheetOptimizerAlternative.service.js';
 import {
+    assertLineIntent,
     buildFreshValuation,
     cloneCurve,
     toId,
