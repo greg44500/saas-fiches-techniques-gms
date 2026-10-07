@@ -258,12 +258,12 @@ describe('TechnicalSheetOptimizerPage', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Tester les alternatives Produit',
+        'Produit / rendement',
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Tester les approvisionnements',
+        'Approvisionnement',
       ),
     ).toBeInTheDocument();
   });

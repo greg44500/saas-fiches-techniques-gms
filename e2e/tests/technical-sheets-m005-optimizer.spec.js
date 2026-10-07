@@ -202,7 +202,7 @@ test('M-005 simule sans écrire puis applique explicitement au brouillon', async
     .click();
 
   await expect(
-    page.getByText(
+    page.locator('main').getByText(
       'Atelier d’optimisation',
       { exact: true },
     ),
@@ -230,7 +230,7 @@ test('M-005 simule sans écrire puis applique explicitement au brouillon', async
   await page.reload();
 
   await expect(
-    page.getByText(
+    page.locator('main').getByText(
       'Atelier d’optimisation',
       { exact: true },
     ),

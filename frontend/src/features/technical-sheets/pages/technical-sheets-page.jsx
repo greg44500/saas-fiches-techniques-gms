@@ -477,7 +477,7 @@ function TechnicalSheetsPage() {
             {canOptimize
             && sheet.status === 'ACTIVE' && (
               <ActionIconButton
-                Icon={SlidersHorizontal}
+                Icon={WandSparkles}
                 disabled={
                   optimizerOpeningSheetId
                   === sheet.id
