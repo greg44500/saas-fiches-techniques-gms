@@ -81,8 +81,10 @@ const autoOptionsSchema =
             z.boolean().default(true),
     });
 
-const optimizationSimulationSchema =
-    z.strictObject({
+const createOptimizationSchema = ({
+    includeFingerprint = false,
+} = {}) => {
+    const shape = {
         expectedRevision:
             z.number()
                 .int()
@@ -99,31 +101,56 @@ const optimizationSimulationSchema =
         ).max(500),
         autoOptions:
             autoOptionsSchema,
-    }).superRefine((value, context) => {
-        const seen = new Set();
+    };
 
-        value.lines.forEach((line, index) => {
-            if (seen.has(line.lineId)) {
-                context.addIssue({
-                    code: 'custom',
-                    path: ['lines', index, 'lineId'],
-                    message:
-                        'Une ligne ne peut être déclarée qu’une fois.',
-                });
-            }
-
-            seen.add(line.lineId);
-        });
-    });
-
-const applyOptimizationSchema =
-    optimizationSimulationSchema.extend({
-        simulationFingerprint:
+    if (includeFingerprint) {
+        shape.simulationFingerprint =
             z.string()
                 .regex(
                     /^[a-f0-9]{64}$/,
                     'Fingerprint de simulation invalide.',
-                ),
+                );
+    }
+
+    return z.strictObject(shape)
+        .superRefine(
+            (value, context) => {
+                const seen = new Set();
+
+                value.lines.forEach(
+                    (line, index) => {
+                        if (
+                            seen.has(
+                                line.lineId,
+                            )
+                        ) {
+                            context.addIssue({
+                                code: 'custom',
+                                path: [
+                                    'lines',
+                                    index,
+                                    'lineId',
+                                ],
+                                message:
+                                    'Une ligne ne peut être déclarée qu’une fois.',
+                            });
+                        }
+
+                        seen.add(
+                            line.lineId,
+                        );
+                    },
+                );
+            },
+        );
+};
+
+const optimizationSimulationSchema =
+    createOptimizationSchema();
+
+const applyOptimizationSchema =
+    createOptimizationSchema({
+        includeFingerprint: true,
     });
 
 export {
