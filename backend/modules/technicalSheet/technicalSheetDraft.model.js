@@ -89,6 +89,25 @@ const lineValuationSchema = new Schema(
     { _id: false },
 );
 
+const lineOptimizationSchema = new Schema(
+    {
+        minNetQuantity: {
+            type: Schema.Types.Decimal128,
+            default: null,
+        },
+        maxNetQuantity: {
+            type: Schema.Types.Decimal128,
+            default: null,
+        },
+        locked: {
+            type: Boolean,
+            default: false,
+            required: true,
+        },
+    },
+    { _id: false },
+);
+
 const technicalSheetLineSchema = new Schema(
     {
         kind: {
@@ -121,6 +140,10 @@ const technicalSheetLineSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: 'SupplierArticle',
             default: null,
+        },
+        optimization: {
+            type: lineOptimizationSchema,
+            default: () => ({}),
         },
         calculation: {
             type: lineCalculationSchema,
