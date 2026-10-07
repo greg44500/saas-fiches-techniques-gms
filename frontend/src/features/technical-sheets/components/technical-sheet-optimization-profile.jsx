@@ -111,6 +111,15 @@ function constraintLabel(
       );
 
   if (
+    Number.isFinite(min)
+    && Number.isFinite(max)
+    && Math.abs(min - max)
+      < 1e-9
+  ) {
+    return 'Quantité figée par les garde-fous';
+  }
+
+  if (
     Number.isFinite(quantity)
     && Number.isFinite(min)
     && Math.abs(quantity - min)
