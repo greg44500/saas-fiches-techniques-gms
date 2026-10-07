@@ -3,6 +3,7 @@ import {
   Pencil,
   Plus,
   Search,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -48,6 +49,9 @@ import {
   TechnicalSheetPreviewDialog,
 } from '@/features/technical-sheets/components/technical-sheet-preview-dialog';
 import {
+  TechnicalSheetOptimizerPickerDialog,
+} from '@/features/technical-sheets/components/technical-sheet-optimizer-picker-dialog';
+import {
   TechnicalSheetStatusBadge,
 } from '@/features/technical-sheets/components/technical-sheet-status-badge';
 import {
@@ -80,6 +84,8 @@ function TechnicalSheetsPage() {
   } = useWorkspaceContext();
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [optimizerPickerOpen, setOptimizerPickerOpen] = useState(false);
+  const [optimizerOpeningSheetId, setOptimizerOpeningSheetId] = useState(null);
   const [previewSheet, setPreviewSheet] =
     useState(null);
   const [
@@ -129,6 +135,13 @@ function TechnicalSheetsPage() {
     && can(
       TECHNICAL_SHEET_PERMISSION.EXPORT,
     );
+  const canUseOptimizer =
+    hasFeature(
+      TECHNICAL_SHEET_FEATURE.OPTIMIZER,
+    )
+    && can(
+      TECHNICAL_SHEET_PERMISSION.UPDATE,
+    );
   const exportUsageQuery =
     useGetTechnicalSheetExportUsageQuery(
       workspace.id,
@@ -142,6 +155,21 @@ function TechnicalSheetsPage() {
     draftStartingSheetId,
     setDraftStartingSheetId,
   ] = useState(null);
+  const optimizerListQuery =
+    useListTechnicalSheetsQuery(
+      {
+        workspaceId: workspace.id,
+        dossierId,
+        page: 1,
+        limit: 100,
+        status: 'ACTIVE',
+      },
+      {
+        skip:
+          !optimizerPickerOpen
+          || !canUseOptimizer,
+      },
+    );
 
   if (
     (dossierQuery.isLoading && !dossierQuery.data)
@@ -212,6 +240,9 @@ function TechnicalSheetsPage() {
     can(
       TECHNICAL_SHEET_PERMISSION.UPDATE,
     );
+  const canOptimize =
+    canUseOptimizer
+    && operational;
 
   function openTechnicalSheet(sheet) {
     navigate(
@@ -219,6 +250,60 @@ function TechnicalSheetsPage() {
       + '/dossiers/' + dossierId
       + '/technical-sheets/' + sheet.id,
     );
+  }
+
+  async function openOptimizer(
+    sheet,
+  ) {
+    if (!sheet) return;
+
+    setOptimizerOpeningSheetId(
+      sheet.id,
+    );
+
+    try {
+      if (!sheet.hasDraft) {
+        if (
+          !sheet.currentValidatedStateId
+        ) {
+          throw new Error(
+            'Aucun brouillon exploitable.',
+          );
+        }
+
+        await startDraft({
+          workspaceId:
+            workspace.id,
+          dossierId,
+          technicalSheetId:
+            sheet.id,
+          expectedSheetRevision:
+            sheet.revision,
+        }).unwrap();
+      }
+
+      setOptimizerPickerOpen(false);
+      navigate(
+        '/workspaces/' + workspace.id
+        + '/dossiers/' + dossierId
+        + '/technical-sheets/' + sheet.id
+        + '/optimization',
+      );
+    } catch (error) {
+      toast({
+        title: 'Action impossible',
+        description:
+          getTechnicalSheetApiErrorMessage(
+            error,
+            'L’Atelier d’optimisation n’a pas pu être ouvert.',
+          ),
+        variant: 'destructive',
+      });
+    } finally {
+      setOptimizerOpeningSheetId(
+        null,
+      );
+    }
   }
 
   async function modifyTechnicalSheet(
@@ -389,6 +474,30 @@ function TechnicalSheetsPage() {
               />
             )}
 
+            {canOptimize
+            && sheet.status === 'ACTIVE' && (
+              <ActionIconButton
+                Icon={SlidersHorizontal}
+                disabled={
+                  optimizerOpeningSheetId
+                  === sheet.id
+                }
+                label={
+                  'Optimiser '
+                  + sheet.name
+                }
+                onClick={() =>
+                  openOptimizer(sheet)}
+                tooltipLabel={
+                  optimizerOpeningSheetId
+                  === sheet.id
+                    ? 'Ouverture…'
+                    : 'Optimiser'
+                }
+                variant="ghost"
+              />
+            )}
+
             {canModify && (
               <ActionIconButton
                 Icon={Pencil}
@@ -458,6 +567,26 @@ function TechnicalSheetsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {canOptimize && (
+            <Button
+              disabled={
+                optimizerOpeningSheetId
+                !== null
+              }
+              onClick={() =>
+                setOptimizerPickerOpen(true)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <SlidersHorizontal
+                aria-hidden="true"
+                className="size-4"
+              />
+              Atelier d’optimisation
+            </Button>
+          )}
+
           {can(
             TECHNICAL_SHEET_PERMISSION.CREATE,
           ) && (
@@ -587,6 +716,21 @@ function TechnicalSheetsPage() {
         open={Boolean(previewSheet)}
         sheet={previewSheet}
         workspaceId={workspace.id}
+      />
+
+      <TechnicalSheetOptimizerPickerDialog
+        onClose={() =>
+          setOptimizerPickerOpen(false)}
+        onSelect={openOptimizer}
+        open={optimizerPickerOpen}
+        pendingSheetId={
+          optimizerOpeningSheetId
+        }
+        sheets={
+          optimizerListQuery.data
+            ?.sheets
+          ?? []
+        }
       />
     </div>
   );
