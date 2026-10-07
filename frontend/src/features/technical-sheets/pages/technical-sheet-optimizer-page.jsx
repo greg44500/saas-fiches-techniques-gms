@@ -785,7 +785,7 @@ function TechnicalSheetOptimizerPage() {
             </CardHeader>
             <CardContent>
               <TechnicalSheetOptimizationCurve
-                curve={curve}
+                curve={curve ?? context.neutralCurve}
                 onChange={setCurve}
                 points={
                   context.curvePoints
