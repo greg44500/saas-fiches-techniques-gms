@@ -87,3 +87,22 @@ Suite à la revue du PDF réel :
 - table métier simplifiée : `Produit | Quantité | Prix HT | Coût HT` ;
 - ajout conditionnel de `Note` seulement si au moins une ligne possède une note ;
 - conservation des données techniques supprimées de l'affichage dans le snapshot de validation : aucun changement de modèle ni de calcul.
+
+
+## PDF mono-page optimisé — 2026-10-07
+
+Décision QA intégrée :
+
+- contrat `une Fiche technique = une feuille A4 paysage` ;
+- suppression des grandes cartes de production et d'analyse ;
+- synthèse Production condensée sur une ligne ;
+- Composition à gauche et Analyse à droite ;
+- suppression du pied de page `Page 1 / 1` ;
+- Analyse affichée en lignes compactes ;
+- Économat zéro masqué ;
+- coût total identique au coût matière masqué en absence d'Économat ;
+- prix conseillé/retenu identiques fusionnés en `Prix TTC` ;
+- densité de la Composition ajustée dynamiquement pour conserver toutes les lignes sur la feuille ;
+- aucune modification des snapshots, calculs, autorisations, quotas ou autres formats d'export.
+
+Les tests PDF ont été adaptés pour vérifier explicitement le rendu mono-page, la grille côte à côte et les règles de déduplication. Ils restent à exécuter localement par l'utilisateur.

@@ -83,26 +83,41 @@ Le `validationId` envoyé est exclusivement `currentValidatedStateId`. La modal 
 Le menu d'export `TechnicalSheetExportMenu` est partagé entre le poste de travail et la liste. La liste ne réimplémente donc ni les formats ni la logique de téléchargement.
 
 
-## Renderer PDF professionnel
+## Renderer PDF professionnel mono-page
 
-Le renderer PDF reste backend et sans nouvelle dépendance. Il produit directement un PDF A4 paysage en mémoire.
+Le renderer PDF reste backend, sans nouvelle dépendance, et produit directement un PDF A4 paysage en mémoire.
 
-Il est séparé en deux responsabilités :
+### Contrat de présentation
 
-1. `buildTechnicalSheetPdfLayout(projection)` transforme la projection canonique en contrat de présentation testable : cartes de production, lignes de composition, cartes d'analyse et détails économiques ;
-2. le renderer bas niveau dessine ce contrat dans le PDF avec une grille stable, des cellules bordées, des alignements numériques à droite, des hauteurs de lignes calculées et une pagination automatique.
+`buildTechnicalSheetPdfLayout(projection)` produit un contrat testable contenant :
 
-La table de composition utilise des largeurs fixes totalisant la largeur utile du document. Une ligne n'est jamais coupée entre deux pages ; lorsque l'espace est insuffisant, une nouvelle page est créée et l'en-tête de colonnes est redessiné.
+- `summaryItems` : synthèse production compacte ;
+- `composition.columns` et `composition.rows` ;
+- `analysis.groups` : lignes économiques déjà dédupliquées ;
+- `grid` : répartition côte à côte Composition / Analyse ;
+- `document.singlePage = true`.
 
-Le PDF ne partage pas la technologie de rendu React de la modal : la mutualisation porte sur le contrat de présentation et la source de vérité, pas sur le moteur graphique.
+La composition occupe 486 points, l'analyse 280 points et leur séparation 16 points, soit exactement la largeur utile de la feuille.
 
+### Ajustement de densité
 
-## Projection de composition simplifiée
+`resolveCompositionTableMetrics()` mesure chaque cellule et cherche automatiquement une typographie/padding permettant de conserver toutes les lignes sur l'unique feuille. Les notes restent prises en compte dans le calcul de hauteur.
 
-Le snapshot conserve `kind`, rendement et quantité brute pour l'intégrité métier et les calculs. Le renderer ne les expose pas dans la V1 des livrables.
+Il n'existe plus de saut de page métier, de répétition d'en-tête ou de pied de page numéroté : la contrainte du produit est désormais `une Fiche = une feuille`.
 
-`buildTechnicalSheetExportProjection` expose désormais aussi :
-- `lines` : lignes triées dans l'ordre métier, indépendamment de leur kind ;
-- `note` : note figée de chaque ligne.
+### Déduplication
 
-PDF/CSV/XLSX et prévisualisation utilisent `lines` pour présenter une composition continue. La colonne `Note` est construite dynamiquement uniquement si `lines.some(line => line.note)`.
+`buildAnalysisGroups()` décide uniquement de la présentation :
+
+- Économat à zéro masqué ;
+- coût total masqué s'il est identique au coût matière en absence d'Économat ;
+- coûts par pièce/portion basés sur le coût total ;
+- prix conseillé/retenu fusionnés en `Prix TTC` lorsqu'ils sont identiques.
+
+Cette déduplication n'altère jamais `TechnicalSheetValidation` ni la projection canonique. Elle ne change que le renderer PDF.
+
+### Projection de composition
+
+Le snapshot conserve `kind`, rendement et quantité brute pour l'intégrité métier et les calculs. Ils ne sont pas exposés dans le PDF V1.
+
+La colonne `Note` reste conditionnelle : elle est créée uniquement lorsqu'au moins une ligne contient une note.

@@ -286,7 +286,7 @@ describe('M-004 exports de Fiches techniques', () => {
         ).toBe('Unité');
     });
 
-    it('aligne le contrat de présentation PDF sur la prévisualisation officielle', () => {
+    it('compose le PDF sur une seule feuille avec Composition et Analyse côte à côte', () => {
         const projection =
             buildTechnicalSheetExportProjection({
                 validation,
@@ -301,25 +301,33 @@ describe('M-004 exports de Fiches techniques', () => {
         ).toEqual({
             orientation: 'landscape',
             pageSize: 'A4',
+            singlePage: true,
         });
         expect(
-            layout.productionCards
+            layout.grid,
+        ).toEqual({
+            compositionWidth: 486,
+            analysisWidth: 280,
+            gap: 16,
+        });
+        expect(
+            layout.summaryItems
                 .map(({ label }) => label),
         ).toEqual([
             'Quantité produite',
             'Portions / pièce',
-            'Total portions',
+            'Total',
         ]);
         expect(
-            layout.compositionColumns
+            layout.composition.columns
                 .reduce(
                     (total, { width }) =>
                         total + width,
                     0,
                 ),
-        ).toBe(770);
+        ).toBe(486);
         expect(
-            layout.compositionColumns
+            layout.composition.columns
                 .map(({ label }) => label),
         ).toEqual([
             'Produit',
@@ -329,7 +337,7 @@ describe('M-004 exports de Fiches techniques', () => {
             'Note',
         ]);
         expect(
-            layout.compositionRows,
+            layout.composition.rows,
         ).toEqual([
             expect.objectContaining({
                 product:
@@ -350,23 +358,26 @@ describe('M-004 exports de Fiches techniques', () => {
             }),
         ]);
         expect(
-            layout.analysisCards
-                .map(({ label }) => label),
+            layout.analysis.groups
+                .flatMap(
+                    ({ rows }) =>
+                        rows.map(
+                            ({ label }) =>
+                                label,
+                        ),
+                ),
         ).toEqual([
             'Coût matière HT',
             'Coût Économat HT',
-            'Coût de fabrication HT',
+            'Coût total HT',
+            'Coût / pièce HT',
+            'Coût / portion HT',
             'Prix conseillé TTC',
             'Prix retenu TTC',
             'Marge réelle',
+            'Marge cible',
+            'TVA',
         ]);
-        expect(
-            layout.analysisDetails
-                .some(
-                    ({ label }) =>
-                        label.includes('Écart'),
-                ),
-        ).toBe(false);
     });
 
     it('n’affiche la colonne Note que lorsqu’une note existe réellement', () => {
@@ -388,7 +399,7 @@ describe('M-004 exports de Fiches techniques', () => {
             );
 
         expect(
-            layout.compositionColumns
+            layout.composition.columns
                 .map(({ label }) => label),
         ).toEqual([
             'Produit',
@@ -397,7 +408,7 @@ describe('M-004 exports de Fiches techniques', () => {
             'Coût HT',
         ]);
         expect(
-            layout.compositionRows
+            layout.composition.rows
                 .every(
                     (line) =>
                         !Object.hasOwn(
@@ -408,7 +419,63 @@ describe('M-004 exports de Fiches techniques', () => {
         ).toBe(true);
     });
 
-    it('pagine une composition longue en conservant un PDF A4 paysage valide', () => {
+    it('supprime les lignes économiques strictement redondantes', () => {
+        const projection =
+            buildTechnicalSheetExportProjection({
+                validation: {
+                    ...validation,
+                    economicSnapshot: {
+                        ...validation
+                            .economicSnapshot,
+                        economatCostHt: '0',
+                        manufacturingCostHt:
+                            '8.125',
+                        advisedPriceTtcMinor:
+                            30,
+                        finalPriceTtcMinor:
+                            30,
+                    },
+                },
+            });
+        const layout =
+            buildTechnicalSheetPdfLayout(
+                projection,
+            );
+        const labels =
+            layout.analysis.groups
+                .flatMap(
+                    ({ rows }) =>
+                        rows.map(
+                            ({ label }) =>
+                                label,
+                        ),
+                );
+
+        expect(labels)
+            .toContain(
+                'Coût matière HT',
+            );
+        expect(labels)
+            .not.toContain(
+                'Coût Économat HT',
+            );
+        expect(labels)
+            .not.toContain(
+                'Coût total HT',
+            );
+        expect(labels)
+            .toContain('Prix TTC');
+        expect(labels)
+            .not.toContain(
+                'Prix conseillé TTC',
+            );
+        expect(labels)
+            .not.toContain(
+                'Prix retenu TTC',
+            );
+    });
+
+    it('maintient une composition longue sur une seule feuille A4 paysage', () => {
         const projection =
             buildTechnicalSheetExportProjection({
                 validation: {
@@ -450,7 +517,7 @@ describe('M-004 exports de Fiches techniques', () => {
                 )
                 ?? []
             ).length,
-        ).toBeGreaterThan(1);
+        ).toBe(1);
     });
 
     it('génère un document PDF téléchargeable', () => {

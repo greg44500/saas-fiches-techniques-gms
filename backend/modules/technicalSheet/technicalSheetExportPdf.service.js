@@ -1,13 +1,19 @@
 const PAGE_WIDTH = 842;
 const PAGE_HEIGHT = 595;
-const MARGIN_X = 36;
-const TOP = 555;
-const BOTTOM = 42;
+const MARGIN_X = 30;
+const TOP = 558;
+const BOTTOM = 30;
 const CONTENT_WIDTH =
     PAGE_WIDTH - (MARGIN_X * 2);
+const MAIN_GAP = 16;
+const COMPOSITION_WIDTH = 486;
+const ANALYSIS_WIDTH =
+    CONTENT_WIDTH
+    - COMPOSITION_WIDTH
+    - MAIN_GAP;
 
 const PDF_GRAY = Object.freeze({
-    BORDER: 0.78,
+    BORDER: 0.8,
     MUTED: 0.42,
     SOFT: 0.965,
     TABLE_HEADER: 0.91,
@@ -19,25 +25,25 @@ const COMPOSITION_COLUMNS = Object.freeze({
         Object.freeze({
             key: 'product',
             label: 'Produit',
-            width: 440,
+            width: 240,
             align: 'left',
         }),
         Object.freeze({
             key: 'quantity',
             label: 'Quantité',
-            width: 105,
+            width: 78,
             align: 'right',
         }),
         Object.freeze({
             key: 'price',
             label: 'Prix HT',
-            width: 125,
+            width: 92,
             align: 'right',
         }),
         Object.freeze({
             key: 'cost',
             label: 'Coût HT',
-            width: 100,
+            width: 76,
             align: 'right',
         }),
     ]),
@@ -45,31 +51,31 @@ const COMPOSITION_COLUMNS = Object.freeze({
         Object.freeze({
             key: 'product',
             label: 'Produit',
-            width: 270,
+            width: 165,
             align: 'left',
         }),
         Object.freeze({
             key: 'quantity',
             label: 'Quantité',
-            width: 100,
+            width: 70,
             align: 'right',
         }),
         Object.freeze({
             key: 'price',
             label: 'Prix HT',
-            width: 125,
+            width: 86,
             align: 'right',
         }),
         Object.freeze({
             key: 'cost',
             label: 'Coût HT',
-            width: 100,
+            width: 70,
             align: 'right',
         }),
         Object.freeze({
             key: 'note',
             label: 'Note',
-            width: 175,
+            width: 95,
             align: 'left',
         }),
     ]),
@@ -259,19 +265,19 @@ const rectangleCommand = ({
     fillGray = null,
     strokeGray =
         PDF_GRAY.BORDER,
-    lineWidth = 0.6,
+    lineWidth = 0.5,
 }) => {
     const bottom =
         top - height;
-    const operators = ['q'];
+    const commands = ['q'];
 
     if (fillGray !== null) {
-        operators.push(
+        commands.push(
             fillGray + ' g',
         );
     }
 
-    operators.push(
+    commands.push(
         strokeGray + ' G',
         lineWidth + ' w',
         x
@@ -288,7 +294,7 @@ const rectangleCommand = ({
         'Q',
     );
 
-    return operators.join(' ');
+    return commands.join(' ');
 };
 
 const lineCommand = ({
@@ -297,7 +303,7 @@ const lineCommand = ({
     x2,
     y2,
     gray = PDF_GRAY.BORDER,
-    lineWidth = 0.6,
+    lineWidth = 0.5,
 }) => (
     'q '
     + gray
@@ -381,6 +387,254 @@ const formatQuantity = (
     );
 };
 
+const hasNumericValue = (value) => (
+    value !== null
+    && value !== undefined
+    && Number.isFinite(
+        Number(value),
+    )
+);
+
+const isNonZero = (value) => (
+    hasNumericValue(value)
+    && Math.abs(
+        Number(value),
+    ) > 0.0000001
+);
+
+const sameNumericValue = (
+    left,
+    right,
+) => (
+    hasNumericValue(left)
+    && hasNumericValue(right)
+    && Number(left) === Number(right)
+);
+
+const createCompositionColumns = (
+    hasNotes,
+) => (
+    hasNotes
+        ? COMPOSITION_COLUMNS.WITH_NOTE
+        : COMPOSITION_COLUMNS.WITHOUT_NOTE
+);
+
+const buildAnalysisGroups = (
+    projection,
+) => {
+    const {
+        analysis,
+        production,
+    } = projection;
+    const costs = [];
+    const commercial = [];
+    const hasEconomat =
+        isNonZero(
+            analysis.economatCostHt,
+        );
+
+    if (
+        hasNumericValue(
+            analysis.materialCostHt,
+        )
+    ) {
+        costs.push({
+            label:
+                'Coût matière HT',
+            value:
+                decimalCurrency(
+                    analysis.materialCostHt,
+                ),
+        });
+    }
+
+    if (hasEconomat) {
+        costs.push(
+            {
+                label:
+                    'Coût Économat HT',
+                value:
+                    decimalCurrency(
+                        analysis.economatCostHt,
+                    ),
+            },
+            {
+                label:
+                    'Coût total HT',
+                value:
+                    decimalCurrency(
+                        analysis.manufacturingCostHt,
+                    ),
+            },
+        );
+    } else if (
+        hasNumericValue(
+            analysis.manufacturingCostHt,
+        )
+        && !sameNumericValue(
+            analysis.materialCostHt,
+            analysis.manufacturingCostHt,
+        )
+    ) {
+        costs.push({
+            label:
+                'Coût total HT',
+            value:
+                decimalCurrency(
+                    analysis.manufacturingCostHt,
+                ),
+        });
+    }
+
+    if (
+        hasNumericValue(
+            analysis
+                .manufacturingCostPerProductionUnitHt,
+        )
+    ) {
+        costs.push({
+            label:
+                production.unit === 'UNIT'
+                    ? 'Coût / pièce HT'
+                    : 'Coût / unité produite HT',
+            value:
+                decimalCurrency(
+                    analysis
+                        .manufacturingCostPerProductionUnitHt,
+                ),
+        });
+    }
+
+    if (
+        hasNumericValue(
+            analysis
+                .manufacturingCostPerPortionHt,
+        )
+    ) {
+        costs.push({
+            label:
+                'Coût / portion HT',
+            value:
+                decimalCurrency(
+                    analysis
+                        .manufacturingCostPerPortionHt,
+                ),
+        });
+    }
+
+    const samePrices =
+        Number.isInteger(
+            analysis.advisedPriceTtcMinor,
+        )
+        && Number.isInteger(
+            analysis.finalPriceTtcMinor,
+        )
+        && analysis.advisedPriceTtcMinor
+            === analysis.finalPriceTtcMinor;
+
+    if (samePrices) {
+        commercial.push({
+            label: 'Prix TTC',
+            value:
+                minorCurrency(
+                    analysis.finalPriceTtcMinor,
+                ),
+        });
+    } else {
+        if (
+            Number.isInteger(
+                analysis.advisedPriceTtcMinor,
+            )
+        ) {
+            commercial.push({
+                label:
+                    'Prix conseillé TTC',
+                value:
+                    minorCurrency(
+                        analysis.advisedPriceTtcMinor,
+                    ),
+            });
+        }
+
+        if (
+            Number.isInteger(
+                analysis.finalPriceTtcMinor,
+            )
+        ) {
+            commercial.push({
+                label:
+                    'Prix retenu TTC',
+                value:
+                    minorCurrency(
+                        analysis.finalPriceTtcMinor,
+                    ),
+            });
+        }
+    }
+
+    if (
+        Number.isInteger(
+            analysis.actualMarginBasisPoints,
+        )
+    ) {
+        commercial.push({
+            label:
+                'Marge réelle',
+            value:
+                basisPoints(
+                    analysis
+                        .actualMarginBasisPoints,
+                ),
+        });
+    }
+
+    if (
+        Number.isInteger(
+            production.targetMarginBasisPoints,
+        )
+    ) {
+        commercial.push({
+            label:
+                'Marge cible',
+            value:
+                basisPoints(
+                    production
+                        .targetMarginBasisPoints,
+                ),
+        });
+    }
+
+    if (
+        Number.isInteger(
+            production.vatRateBasisPoints,
+        )
+    ) {
+        commercial.push({
+            label: 'TVA',
+            value:
+                basisPoints(
+                    production
+                        .vatRateBasisPoints,
+                ),
+        });
+    }
+
+    return [
+        {
+            label: 'Coûts',
+            rows: costs,
+        },
+        {
+            label:
+                'Prix et marge',
+            rows: commercial,
+        },
+    ].filter(
+        ({ rows }) =>
+            rows.length > 0,
+    );
+};
+
 const buildTechnicalSheetPdfLayout = (
     projection,
 ) => {
@@ -397,23 +651,28 @@ const buildTechnicalSheetPdfLayout = (
                     line.note?.trim?.(),
                 ),
         );
-    const compositionColumns =
-        hasNotes
-            ? COMPOSITION_COLUMNS.WITH_NOTE
-            : COMPOSITION_COLUMNS.WITHOUT_NOTE;
 
     return {
         document: {
             orientation: 'landscape',
             pageSize: 'A4',
+            singlePage: true,
         },
-        title: projection.title,
+        grid: {
+            compositionWidth:
+                COMPOSITION_WIDTH,
+            analysisWidth:
+                ANALYSIS_WIDTH,
+            gap: MAIN_GAP,
+        },
+        title:
+            projection.title,
         description:
             projection.description
             ?? null,
         versionAt:
             projection.validatedAt,
-        productionCards: [
+        summaryItems: [
             {
                 label:
                     'Quantité produite',
@@ -435,196 +694,71 @@ const buildTechnicalSheetPdfLayout = (
             },
             {
                 label:
-                    'Total portions',
+                    'Total',
                 value:
-                    projection.production
-                        .totalPortions
-                    ?? 'NC',
-            },
-        ],
-        compositionColumns,
-        compositionRows:
-            sourceLines.map((line) => ({
-                product:
-                    line.productName,
-                quantity:
-                    formatQuantity(
-                        line.netQuantity,
-                        line.netUnitLabel,
-                    ),
-                price:
-                    decimalCurrency(
-                        line.normalizedPriceHt,
+                    (
+                        projection.production
+                            .totalPortions
+                        ?? 'NC'
                     )
-                    + ' / '
-                    + line.normalizedUnitLabel,
-                cost:
-                    decimalCurrency(
-                        line.lineCostHt,
-                    ),
-                ...(hasNotes
-                    ? {
-                        note:
-                            line.note
-                            ?? '',
-                    }
-                    : {}),
-            })),
-        analysisCards: [
-            {
-                label:
-                    'Coût matière HT',
-                value:
-                    decimalCurrency(
-                        projection.analysis
-                            .materialCostHt,
-                    ),
-            },
-            {
-                label:
-                    'Coût Économat HT',
-                value:
-                    decimalCurrency(
-                        projection.analysis
-                            .economatCostHt,
-                    ),
-            },
-            {
-                label:
-                    'Coût de fabrication HT',
-                value:
-                    decimalCurrency(
-                        projection.analysis
-                            .manufacturingCostHt,
-                    ),
-            },
-            {
-                label:
-                    'Prix conseillé TTC',
-                value:
-                    minorCurrency(
-                        projection.analysis
-                            .advisedPriceTtcMinor,
-                    ),
-            },
-            {
-                label:
-                    'Prix retenu TTC',
-                value:
-                    minorCurrency(
-                        projection.analysis
-                            .finalPriceTtcMinor,
-                    ),
-            },
-            {
-                label:
-                    'Marge réelle',
-                value:
-                    basisPoints(
-                        projection.analysis
-                            .actualMarginBasisPoints,
+                    + (
+                        projection.production
+                            .totalPortions
+                            !== null
+                        && projection.production
+                            .totalPortions
+                            !== undefined
+                            ? ' portions'
+                            : ''
                     ),
             },
         ],
-        analysisDetails: [
-            {
-                label:
-                    'Coût matière / pièce HT',
-                value:
-                    decimalCurrency(
-                        projection.analysis
-                            .materialCostPerProductionUnitHt,
-                    ),
-            },
-            {
-                label:
-                    'Coût de fabrication / pièce HT',
-                value:
-                    decimalCurrency(
-                        projection.analysis
-                            .manufacturingCostPerProductionUnitHt,
-                    ),
-            },
-            {
-                label:
-                    'Coût matière / portion HT',
-                value:
-                    decimalCurrency(
-                        projection.analysis
-                            .materialCostPerPortionHt,
-                    ),
-            },
-            {
-                label:
-                    'Coût Économat / portion HT',
-                value:
-                    decimalCurrency(
-                        projection.analysis
-                            .economatCostPerPortionHt,
-                    ),
-            },
-            {
-                label:
-                    'Coût de fabrication / portion HT',
-                value:
-                    decimalCurrency(
-                        projection.analysis
-                            .manufacturingCostPerPortionHt,
-                    ),
-            },
-            {
-                label: 'TVA',
-                value:
-                    basisPoints(
-                        projection.production
-                            .vatRateBasisPoints,
-                    ),
-            },
-            {
-                label:
-                    'Marge cible',
-                value:
-                    basisPoints(
-                        projection.production
-                            .targetMarginBasisPoints,
-                    ),
-            },
-        ],
+        composition: {
+            columns:
+                createCompositionColumns(
+                    hasNotes,
+                ),
+            rows:
+                sourceLines.map(
+                    (line) => ({
+                        product:
+                            line.productName,
+                        quantity:
+                            formatQuantity(
+                                line.netQuantity,
+                                line.netUnitLabel,
+                            ),
+                        price:
+                            decimalCurrency(
+                                line.normalizedPriceHt,
+                            )
+                            + ' / '
+                            + line.normalizedUnitLabel,
+                        cost:
+                            decimalCurrency(
+                                line.lineCostHt,
+                            ),
+                        ...(hasNotes
+                            ? {
+                                note:
+                                    line.note
+                                    ?? '',
+                            }
+                            : {}),
+                    }),
+                ),
+        },
+        analysis: {
+            groups:
+                buildAnalysisGroups(
+                    projection,
+                ),
+        },
     };
 };
 
-const createDocumentComposer = () => {
-    const pages = [];
-    let commands = [];
-    let y = TOP;
-
-    const flushPage = () => {
-        pages.push(
-            commands.join('\n'),
-        );
-        commands = [];
-        y = TOP;
-    };
-
-    const newPage = () => {
-        flushPage();
-    };
-
-    const ensure = (height) => {
-        if (
-            y - height
-            >= BOTTOM
-        ) {
-            return false;
-        }
-
-        newPage();
-        return true;
-    };
-
-    const moveDown = (amount) => {
-        y -= amount;
-    };
+const createPageCanvas = () => {
+    const commands = [];
 
     const add = (command) => {
         commands.push(command);
@@ -634,7 +768,7 @@ const createDocumentComposer = () => {
         x,
         baseline,
         value,
-        size = 9,
+        size = 8,
         bold = false,
         gray = 0,
         align = 'left',
@@ -667,157 +801,143 @@ const createDocumentComposer = () => {
         );
     };
 
-    const paragraph = ({
-        value,
-        size = 9,
-        bold = false,
-        gray = 0,
-        width = CONTENT_WIDTH,
-        lineHeight = 12,
-        after = 0,
-    }) => {
-        const lines =
-            wrapTextByWidth(
-                value,
-                width,
-                size,
-            );
-
-        ensure(
-            lines.length
-            * lineHeight,
-        );
-
-        for (const line of lines) {
-            textAt({
-                x: MARGIN_X,
-                baseline: y,
-                value: line,
-                size,
-                bold,
-                gray,
-            });
-            y -= lineHeight;
-        }
-
-        y -= after;
-    };
-
-    const sectionTitle = (
-        title,
-    ) => {
-        ensure(30);
-        textAt({
-            x: MARGIN_X,
-            baseline: y,
-            value: title,
-            size: 12,
-            bold: true,
-        });
-        y -= 10;
-        add(
-            lineCommand({
-                x1: MARGIN_X,
-                y1: y,
-                x2:
-                    PAGE_WIDTH
-                    - MARGIN_X,
-                y2: y,
-            }),
-        );
-        y -= 14;
-    };
-
-    const rectangle = (options) => {
-        add(
-            rectangleCommand(options),
-        );
-    };
-
     return {
         add,
-        ensure,
-        finalize() {
-            if (
-                commands.length > 0
-                || pages.length === 0
-            ) {
-                flushPage();
-            }
-
-            return pages;
+        rectangle(options) {
+            add(
+                rectangleCommand(
+                    options,
+                ),
+            );
         },
-        getY() {
-            return y;
-        },
-        moveDown,
-        newPage,
-        paragraph,
-        rectangle,
-        sectionTitle,
-        setY(nextY) {
-            y = nextY;
+        stream() {
+            return commands.join(
+                '\n',
+            );
         },
         textAt,
     };
 };
 
 const drawDocumentHeader = ({
-    composer,
+    canvas,
     layout,
 }) => {
-    composer.textAt({
+    let y = TOP;
+
+    canvas.textAt({
         x: MARGIN_X,
-        baseline:
-            composer.getY(),
+        baseline: y,
         value:
-            'FICHE TECHNIQUE',
-        size: 8,
+            layout.title,
+        size: 19,
         bold: true,
-        gray: PDF_GRAY.MUTED,
     });
 
-    composer.textAt({
-        x: PAGE_WIDTH - MARGIN_X - 220,
-        baseline:
-            composer.getY(),
-        width: 220,
+    canvas.textAt({
+        x:
+            PAGE_WIDTH
+            - MARGIN_X
+            - 190,
+        baseline: y,
+        width: 190,
         align: 'right',
         value:
             'Version du '
             + new Date(
                 layout.versionAt,
-            ).toLocaleString('fr-FR'),
-        size: 8,
-        gray: PDF_GRAY.MUTED,
+            ).toLocaleDateString(
+                'fr-FR',
+            ),
+        size: 7.5,
+        gray:
+            PDF_GRAY.MUTED,
     });
 
-    composer.moveDown(22);
-    composer.paragraph({
-        value: layout.title,
-        size: 20,
-        bold: true,
-        width: 560,
-        lineHeight: 24,
-        after: 3,
-    });
+    y -= 22;
 
     if (layout.description) {
-        composer.paragraph({
-            value:
+        const descriptionLines =
+            wrapTextByWidth(
                 layout.description,
-            size: 9,
-            gray: PDF_GRAY.MUTED,
-            width: 620,
-            lineHeight: 12,
-            after: 5,
-        });
+                610,
+                7.5,
+            );
+
+        for (
+            const line
+            of descriptionLines
+        ) {
+            canvas.textAt({
+                x: MARGIN_X,
+                baseline: y,
+                value: line,
+                size: 7.5,
+                gray:
+                    PDF_GRAY.MUTED,
+            });
+            y -= 9;
+        }
+
+        y -= 2;
     }
 
-    const y =
-        composer.getY();
+    const summaryTop = y;
+    const summaryHeight = 27;
+    const summaryWidth =
+        CONTENT_WIDTH
+        / layout.summaryItems.length;
 
-    composer.add(
+    layout.summaryItems.forEach(
+        (item, index) => {
+            const x =
+                MARGIN_X
+                + (
+                    index
+                    * summaryWidth
+                );
+
+            if (index > 0) {
+                canvas.add(
+                    lineCommand({
+                        x1: x,
+                        y1:
+                            summaryTop - 4,
+                        x2: x,
+                        y2:
+                            summaryTop
+                            - summaryHeight
+                            + 4,
+                        gray: 0.86,
+                    }),
+                );
+            }
+
+            canvas.textAt({
+                x: x + 8,
+                baseline:
+                    summaryTop - 10,
+                value:
+                    item.label,
+                size: 6.7,
+                gray:
+                    PDF_GRAY.MUTED,
+            });
+            canvas.textAt({
+                x: x + 8,
+                baseline:
+                    summaryTop - 22,
+                value:
+                    item.value,
+                size: 9,
+                bold: true,
+            });
+        },
+    );
+
+    y -= summaryHeight + 8;
+
+    canvas.add(
         lineCommand({
             x1: MARGIN_X,
             y1: y,
@@ -825,570 +945,433 @@ const drawDocumentHeader = ({
                 PAGE_WIDTH
                 - MARGIN_X,
             y2: y,
+            gray: 0.78,
         }),
     );
-    composer.moveDown(18);
+
+    return y - 16;
 };
 
-const drawProductionCards = ({
-    composer,
-    cards,
-}) => {
-    const gap = 12;
-    const width =
-        (
-            CONTENT_WIDTH
-            - (gap * 2)
-        ) / 3;
-    const height = 58;
-
-    composer.ensure(
-        height + 8,
-    );
-
-    const top =
-        composer.getY();
-
-    cards.forEach(
-        (card, index) => {
-            const x =
-                MARGIN_X
-                + index
-                * (width + gap);
-
-            composer.rectangle({
-                x,
-                top,
-                width,
-                height,
-                fillGray:
-                    PDF_GRAY.SOFT,
-            });
-            composer.textAt({
-                x: x + 12,
-                baseline:
-                    top - 18,
-                value:
-                    card.label,
-                size: 7.5,
-                gray:
-                    PDF_GRAY.MUTED,
-            });
-            composer.textAt({
-                x: x + 12,
-                baseline:
-                    top - 40,
-                value:
-                    card.value,
-                size: 13,
-                bold: true,
-            });
-        },
-    );
-
-    composer.setY(
-        top - height - 18,
-    );
-};
-
-const drawTableHeader = ({
+const measureCompositionRows = ({
     columns,
-    composer,
-}) => {
-    const top =
-        composer.getY();
-    const height = 28;
-    let x = MARGIN_X;
+    rows,
+    fontSize,
+    lineHeight,
+    paddingX,
+    paddingY,
+}) => (
+    rows.map((row) => {
+        const cells = {};
 
-    for (
-        const column
-        of columns
-    ) {
-        composer.rectangle({
-            x,
-            top,
+        for (const column of columns) {
+            cells[column.key] =
+                wrapTextByWidth(
+                    row[column.key],
+                    column.width
+                        - (
+                            paddingX
+                            * 2
+                        ),
+                    fontSize,
+                );
+        }
+
+        const maxLines =
+            Math.max(
+                1,
+                ...Object.values(
+                    cells,
+                ).map(
+                    (lines) =>
+                        lines.length,
+                ),
+            );
+
+        return {
+            cells,
+            height:
+                (
+                    maxLines
+                    * lineHeight
+                )
+                + (
+                    paddingY
+                    * 2
+                ),
+        };
+    })
+);
+
+const resolveCompositionTableMetrics = ({
+    columns,
+    rows,
+    availableHeight,
+}) => {
+    const headerHeight = 20;
+    let fontSize = 7.4;
+
+    while (fontSize >= 3.6) {
+        const lineHeight =
+            fontSize + 1.5;
+        const paddingX =
+            Math.max(
+                2.5,
+                fontSize * 0.55,
+            );
+        const paddingY =
+            Math.max(
+                1.2,
+                fontSize * 0.38,
+            );
+        const measuredRows =
+            measureCompositionRows({
+                columns,
+                rows,
+                fontSize,
+                lineHeight,
+                paddingX,
+                paddingY,
+            });
+        const rowsHeight =
+            measuredRows.reduce(
+                (
+                    total,
+                    row,
+                ) =>
+                    total
+                    + row.height,
+                0,
+            );
+
+        if (
+            headerHeight
+            + rowsHeight
+            <= availableHeight
+        ) {
+            return {
+                fontSize,
+                headerHeight,
+                lineHeight,
+                measuredRows,
+                paddingX,
+                paddingY,
+            };
+        }
+
+        fontSize -= 0.2;
+    }
+
+    const fontSizeFallback = 3.4;
+    const lineHeight =
+        fontSizeFallback + 1.2;
+    const paddingX = 2;
+    const paddingY = 0.8;
+    const measuredRows =
+        measureCompositionRows({
+            columns,
+            rows,
+            fontSize:
+                fontSizeFallback,
+            lineHeight,
+            paddingX,
+            paddingY,
+        });
+    const naturalHeight =
+        headerHeight
+        + measuredRows.reduce(
+            (
+                total,
+                row,
+            ) =>
+                total + row.height,
+            0,
+        );
+    const scale =
+        naturalHeight
+        > availableHeight
+            ? availableHeight
+                / naturalHeight
+            : 1;
+
+    return {
+        fontSize:
+            fontSizeFallback
+            * scale,
+        headerHeight:
+            headerHeight
+            * scale,
+        lineHeight:
+            lineHeight
+            * scale,
+        measuredRows:
+            measuredRows.map(
+                (row) => ({
+                    cells:
+                        row.cells,
+                    height:
+                        row.height
+                        * scale,
+                }),
+            ),
+        paddingX:
+            paddingX
+            * scale,
+        paddingY:
+            paddingY
+            * scale,
+    };
+};
+
+const drawComposition = ({
+    canvas,
+    layout,
+    top,
+}) => {
+    const x = MARGIN_X;
+    const titleHeight = 22;
+    const tableTop =
+        top - titleHeight;
+    const availableHeight =
+        tableTop - BOTTOM;
+    const {
+        columns,
+        rows,
+    } = layout.composition;
+    const metrics =
+        resolveCompositionTableMetrics({
+            columns,
+            rows,
+            availableHeight,
+        });
+
+    canvas.textAt({
+        x,
+        baseline: top,
+        value: 'Composition',
+        size: 10.5,
+        bold: true,
+    });
+
+    let cursorY = tableTop;
+    let columnX = x;
+
+    for (const column of columns) {
+        canvas.rectangle({
+            x: columnX,
+            top: cursorY,
             width:
                 column.width,
-            height,
+            height:
+                metrics.headerHeight,
             fillGray:
                 PDF_GRAY.TABLE_HEADER,
         });
-        composer.textAt({
-            x: x + 6,
+        canvas.textAt({
+            x:
+                columnX
+                + metrics.paddingX,
             baseline:
-                top - 18,
+                cursorY
+                - (
+                    metrics.headerHeight
+                    / 2
+                )
+                - 2,
             width:
-                column.width - 12,
+                column.width
+                - (
+                    metrics.paddingX
+                    * 2
+                ),
             align:
                 column.align,
             value:
                 column.label,
-            size: 7.5,
+            size:
+                Math.max(
+                    4.5,
+                    metrics.fontSize,
+                ),
             bold: true,
         });
-        x += column.width;
+        columnX +=
+            column.width;
     }
 
-    composer.setY(
-        top - height,
-    );
-};
-
-const getCompositionRowMetrics = (
-    row,
-    columns,
-) => {
-    const fontSize = 7.5;
-    const lineHeight = 10;
-    const paddingX = 6;
-    const paddingY = 7;
-    const cellLines = {};
-
-    for (
-        const column
-        of columns
-    ) {
-        cellLines[column.key] =
-            wrapTextByWidth(
-                row[column.key],
-                column.width
-                    - (paddingX * 2),
-                fontSize,
-            );
-    }
-
-    const maxLines =
-        Math.max(
-            ...Object.values(
-                cellLines,
-            ).map(
-                (lines) =>
-                    lines.length,
-            ),
-        );
-
-    return {
-        cellLines,
-        fontSize,
-        lineHeight,
-        paddingX,
-        paddingY,
-        height:
-            Math.max(
-                30,
-                (maxLines * lineHeight)
-                + (paddingY * 2),
-            ),
-    };
-};
-
-const drawCompositionRow = ({
-    columns,
-    composer,
-    row,
-    rowIndex,
-}) => {
-    const metrics =
-        getCompositionRowMetrics(
-            row,
-            columns,
-        );
-    const top =
-        composer.getY();
-    let x = MARGIN_X;
-
-    for (
-        const column
-        of columns
-    ) {
-        const lines =
-            metrics.cellLines[
-                column.key
-            ];
-
-        composer.rectangle({
-            x,
-            top,
-            width:
-                column.width,
-            height:
-                metrics.height,
-            fillGray:
-                rowIndex % 2 === 1
-                    ? 0.985
-                    : PDF_GRAY.WHITE,
-        });
-
-        lines.forEach(
-            (line, lineIndex) => {
-                composer.textAt({
-                    x:
-                        x
-                        + metrics.paddingX,
-                    baseline:
-                        top
-                        - metrics.paddingY
-                        - metrics.fontSize
-                        - (
-                            lineIndex
-                            * metrics.lineHeight
-                        ),
-                    width:
-                        column.width
-                        - (
-                            metrics.paddingX
-                            * 2
-                        ),
-                    align:
-                        column.align,
-                    value: line,
-                    size:
-                        metrics.fontSize,
-                });
-            },
-        );
-
-        x += column.width;
-    }
-
-    composer.setY(
-        top - metrics.height,
-    );
-};
-
-const drawCompositionTable = ({
-    columns,
-    composer,
-    rows,
-}) => {
-    composer.ensure(62);
-    composer.sectionTitle(
-        'Composition',
-    );
-
-    drawTableHeader({
-        columns,
-        composer,
-    });
-
-    if (rows.length === 0) {
-        composer.paragraph({
-            value:
-                'Aucune ligne dans cette version.',
-            gray:
-                PDF_GRAY.MUTED,
-            after: 8,
-        });
-        return;
-    }
+    cursorY -=
+        metrics.headerHeight;
 
     rows.forEach(
         (row, rowIndex) => {
-            const metrics =
-                getCompositionRowMetrics(
-                    row,
-                    columns,
+            const rowMetrics =
+                metrics
+                    .measuredRows[
+                        rowIndex
+                    ];
+            let cellX = x;
+
+            for (const column of columns) {
+                canvas.rectangle({
+                    x: cellX,
+                    top: cursorY,
+                    width:
+                        column.width,
+                    height:
+                        rowMetrics.height,
+                    fillGray:
+                        rowIndex % 2 === 1
+                            ? 0.987
+                            : PDF_GRAY.WHITE,
+                });
+
+                const lines =
+                    rowMetrics.cells[
+                        column.key
+                    ];
+
+                lines.forEach(
+                    (
+                        line,
+                        lineIndex,
+                    ) => {
+                        canvas.textAt({
+                            x:
+                                cellX
+                                + metrics.paddingX,
+                            baseline:
+                                cursorY
+                                - metrics.paddingY
+                                - metrics.fontSize
+                                - (
+                                    lineIndex
+                                    * metrics.lineHeight
+                                ),
+                            width:
+                                column.width
+                                - (
+                                    metrics.paddingX
+                                    * 2
+                                ),
+                            align:
+                                column.align,
+                            value: line,
+                            size:
+                                metrics.fontSize,
+                        });
+                    },
                 );
 
-            if (
-                composer.getY()
-                - metrics.height
-                < BOTTOM
-            ) {
-                composer.newPage();
-                composer.textAt({
-                    x: MARGIN_X,
-                    baseline:
-                        composer.getY(),
-                    value:
-                        'Composition — suite',
-                    size: 12,
-                    bold: true,
-                });
-                composer.moveDown(20);
-                drawTableHeader({
-                    columns,
-                    composer,
-                });
+                cellX +=
+                    column.width;
             }
 
-            drawCompositionRow({
-                columns,
-                composer,
-                row,
-                rowIndex,
-            });
+            cursorY -=
+                rowMetrics.height;
         },
     );
-
-    composer.moveDown(18);
-};
-
-const drawMetricCards = ({
-    composer,
-    cards,
-}) => {
-    const columns = 3;
-    const gapX = 12;
-    const gapY = 10;
-    const width =
-        (
-            CONTENT_WIDTH
-            - (
-                gapX
-                * (columns - 1)
-            )
-        ) / columns;
-    const height = 54;
-
-    for (
-        let index = 0;
-        index < cards.length;
-        index += columns
-    ) {
-        composer.ensure(
-            height + gapY,
-        );
-        const top =
-            composer.getY();
-        const row =
-            cards.slice(
-                index,
-                index + columns,
-            );
-
-        row.forEach(
-            (card, rowIndex) => {
-                const x =
-                    MARGIN_X
-                    + rowIndex
-                    * (width + gapX);
-
-                composer.rectangle({
-                    x,
-                    top,
-                    width,
-                    height,
-                    fillGray:
-                        PDF_GRAY.SOFT,
-                });
-                composer.textAt({
-                    x: x + 12,
-                    baseline:
-                        top - 17,
-                    value:
-                        card.label,
-                    size: 7.5,
-                    gray:
-                        PDF_GRAY.MUTED,
-                });
-                composer.textAt({
-                    x: x + 12,
-                    baseline:
-                        top - 38,
-                    value:
-                        card.value,
-                    size: 12,
-                    bold: true,
-                });
-            },
-        );
-
-        composer.setY(
-            top - height - gapY,
-        );
-    }
-};
-
-const drawAnalysisDetails = ({
-    composer,
-    details,
-}) => {
-    composer.moveDown(5);
-    composer.textAt({
-        x: MARGIN_X,
-        baseline:
-            composer.getY(),
-        value:
-            'Détails économiques',
-        size: 9,
-        bold: true,
-    });
-    composer.moveDown(14);
-
-    const rowHeight = 24;
-    const labelWidth = 285;
-    const valueWidth =
-        CONTENT_WIDTH - labelWidth;
-
-    for (
-        let index = 0;
-        index < details.length;
-        index += 1
-    ) {
-        if (
-            composer.getY()
-            - rowHeight
-            < BOTTOM
-        ) {
-            composer.newPage();
-            composer.textAt({
-                x: MARGIN_X,
-                baseline:
-                    composer.getY(),
-                value:
-                    'Détails économiques — suite',
-                size: 10,
-                bold: true,
-            });
-            composer.moveDown(18);
-        }
-
-        const top =
-            composer.getY();
-        const detail =
-            details[index];
-        const fillGray =
-            index % 2 === 1
-                ? 0.985
-                : PDF_GRAY.WHITE;
-
-        composer.rectangle({
-            x: MARGIN_X,
-            top,
-            width:
-                labelWidth,
-            height:
-                rowHeight,
-            fillGray,
-        });
-        composer.rectangle({
-            x:
-                MARGIN_X
-                + labelWidth,
-            top,
-            width:
-                valueWidth,
-            height:
-                rowHeight,
-            fillGray,
-        });
-
-        composer.textAt({
-            x: MARGIN_X + 8,
-            baseline:
-                top - 16,
-            value:
-                detail.label,
-            size: 8,
-        });
-        composer.textAt({
-            x:
-                MARGIN_X
-                + labelWidth
-                + 8,
-            baseline:
-                top - 16,
-            width:
-                valueWidth - 16,
-            align: 'right',
-            value:
-                detail.value,
-            size: 8,
-            bold: true,
-        });
-
-        composer.setY(
-            top - rowHeight,
-        );
-    }
 };
 
 const drawAnalysis = ({
-    composer,
+    canvas,
     layout,
+    top,
 }) => {
-    composer.ensure(100);
-    composer.sectionTitle(
-        'Analyse figée',
-    );
-    drawMetricCards({
-        composer,
-        cards:
-            layout.analysisCards,
+    const x =
+        MARGIN_X
+        + COMPOSITION_WIDTH
+        + MAIN_GAP;
+    const labelWidth =
+        ANALYSIS_WIDTH * 0.66;
+    const valueWidth =
+        ANALYSIS_WIDTH
+        - labelWidth;
+    let y = top;
+
+    canvas.textAt({
+        x,
+        baseline: y,
+        value: 'Analyse',
+        size: 10.5,
+        bold: true,
     });
-    drawAnalysisDetails({
-        composer,
-        details:
-            layout.analysisDetails,
-    });
+
+    y -= 22;
+
+    for (
+        const group
+        of layout.analysis.groups
+    ) {
+        canvas.textAt({
+            x,
+            baseline: y,
+            value:
+                group.label,
+            size: 7.2,
+            bold: true,
+            gray:
+                PDF_GRAY.MUTED,
+        });
+
+        y -= 11;
+
+        group.rows.forEach(
+            (row, rowIndex) => {
+                const rowHeight = 20;
+                const fillGray =
+                    rowIndex % 2 === 1
+                        ? 0.987
+                        : PDF_GRAY.WHITE;
+
+                canvas.rectangle({
+                    x,
+                    top: y,
+                    width:
+                        ANALYSIS_WIDTH,
+                    height:
+                        rowHeight,
+                    fillGray,
+                });
+
+                canvas.textAt({
+                    x: x + 7,
+                    baseline:
+                        y - 13,
+                    width:
+                        labelWidth - 12,
+                    value:
+                        truncateTextByWidth(
+                            row.label,
+                            labelWidth - 12,
+                            7.2,
+                        ),
+                    size: 7.2,
+                });
+
+                canvas.textAt({
+                    x:
+                        x
+                        + labelWidth,
+                    baseline:
+                        y - 13,
+                    width:
+                        valueWidth - 7,
+                    align: 'right',
+                    value:
+                        row.value,
+                    size: 7.5,
+                    bold: true,
+                });
+
+                y -= rowHeight;
+            },
+        );
+
+        y -= 12;
+    }
 };
 
-const decoratePages = ({
-    pages,
-    layout,
-}) => (
-    pages.map(
-        (stream, index) => {
-            const pageNumber =
-                index + 1;
-            const footerY = 22;
-
-            const footerLeft =
-                textCommand({
-                    x: MARGIN_X,
-                    y: footerY,
-                    size: 7,
-                    gray:
-                        PDF_GRAY.MUTED,
-                    text:
-                        truncateTextByWidth(
-                            layout.title,
-                            560,
-                            7,
-                        ),
-                });
-            const footerRight =
-                textCommand({
-                    x:
-                        PAGE_WIDTH
-                        - MARGIN_X
-                        - 90,
-                    y: footerY,
-                    size: 7,
-                    gray:
-                        PDF_GRAY.MUTED,
-                    text:
-                        'Page '
-                        + pageNumber
-                        + ' / '
-                        + pages.length,
-                });
-
-            return (
-                stream
-                + '\n'
-                + lineCommand({
-                    x1: MARGIN_X,
-                    y1: 32,
-                    x2:
-                        PAGE_WIDTH
-                        - MARGIN_X,
-                    y2: 32,
-                    gray: 0.88,
-                    lineWidth: 0.4,
-                })
-                + '\n'
-                + footerLeft
-                + '\n'
-                + footerRight
-            );
-        },
-    )
-);
-
 const buildPdfBuffer = (
-    streams,
+    stream,
 ) => {
     const objects = [];
 
@@ -1405,52 +1388,40 @@ const buildPdfBuffer = (
     const boldFontId = add(
         '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
     );
-    const pageIds = [];
-
-    for (const stream of streams) {
-        const contentId = add(
-            '<< /Length '
-            + Buffer.byteLength(
-                stream,
-                'ascii',
-            )
-            + ' >>\nstream\n'
-            + stream
-            + '\nendstream',
-        );
-
-        pageIds.push(
-            add(
-                '<< /Type /Page /Parent '
-                + pagesId
-                + ' 0 R /MediaBox [0 0 '
-                + PAGE_WIDTH
-                + ' '
-                + PAGE_HEIGHT
-                + '] /Resources << /Font << /F1 '
-                + fontId
-                + ' 0 R /F2 '
-                + boldFontId
-                + ' 0 R >> >> /Contents '
-                + contentId
-                + ' 0 R >>',
-            ),
-        );
-    }
+    const contentId = add(
+        '<< /Length '
+        + Buffer.byteLength(
+            stream,
+            'ascii',
+        )
+        + ' >>\nstream\n'
+        + stream
+        + '\nendstream',
+    );
+    const pageId = add(
+        '<< /Type /Page /Parent '
+        + pagesId
+        + ' 0 R /MediaBox [0 0 '
+        + PAGE_WIDTH
+        + ' '
+        + PAGE_HEIGHT
+        + '] /Resources << /Font << /F1 '
+        + fontId
+        + ' 0 R /F2 '
+        + boldFontId
+        + ' 0 R >> >> /Contents '
+        + contentId
+        + ' 0 R >>',
+    );
 
     objects[catalogId - 1] =
         '<< /Type /Catalog /Pages '
         + pagesId
         + ' 0 R >>';
     objects[pagesId - 1] =
-        '<< /Type /Pages /Count '
-        + pageIds.length
-        + ' /Kids ['
-        + pageIds
-            .map((id) =>
-                id + ' 0 R')
-            .join(' ')
-        + '] >>';
+        '<< /Type /Pages /Count 1 /Kids ['
+        + pageId
+        + ' 0 R] >>';
 
     let pdf =
         '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
@@ -1518,39 +1489,50 @@ const buildTechnicalSheetPdf = (
         buildTechnicalSheetPdfLayout(
             projection,
         );
-    const composer =
-        createDocumentComposer();
-
-    drawDocumentHeader({
-        composer,
-        layout,
-    });
-    drawProductionCards({
-        composer,
-        cards:
-            layout.productionCards,
-    });
-    drawCompositionTable({
-        columns:
-            layout.compositionColumns,
-        composer,
-        rows:
-            layout.compositionRows,
-    });
-    drawAnalysis({
-        composer,
-        layout,
-    });
-
-    const pages =
-        decoratePages({
-            pages:
-                composer.finalize(),
+    const canvas =
+        createPageCanvas();
+    const bodyTop =
+        drawDocumentHeader({
+            canvas,
             layout,
         });
 
+    canvas.add(
+        lineCommand({
+            x1:
+                MARGIN_X
+                + COMPOSITION_WIDTH
+                + (
+                    MAIN_GAP
+                    / 2
+                ),
+            y1: bodyTop + 4,
+            x2:
+                MARGIN_X
+                + COMPOSITION_WIDTH
+                + (
+                    MAIN_GAP
+                    / 2
+                ),
+            y2: BOTTOM,
+            gray: 0.88,
+            lineWidth: 0.4,
+        }),
+    );
+
+    drawComposition({
+        canvas,
+        layout,
+        top: bodyTop,
+    });
+    drawAnalysis({
+        canvas,
+        layout,
+        top: bodyTop,
+    });
+
     return buildPdfBuffer(
-        pages,
+        canvas.stream(),
     );
 };
 
@@ -1562,6 +1544,7 @@ export {
     encodeWinAnsiHex,
     estimateTextWidth,
     minorCurrency,
+    resolveCompositionTableMetrics,
     truncateTextByWidth,
     wrapTextByWidth,
 };

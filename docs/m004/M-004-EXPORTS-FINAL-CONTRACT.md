@@ -103,24 +103,28 @@ L'icône d'information du KPI est placée immédiatement à droite de son titre.
 
 ## Présentation PDF
 
-Le PDF constitue un livrable métier destiné à la consultation, au partage et à l'impression. Sa hiérarchie visuelle est alignée sur la prévisualisation officielle sans chercher un rendu pixel-perfect de l'interface web.
+Le PDF constitue un livrable métier destiné à la consultation, au partage et à l'impression. Il est optimisé comme une fiche professionnelle indépendante de l'interface web.
 
-Le rendu PDF V1 utilise un A4 paysage afin de conserver des colonnes lisibles. Il reprend :
+Le rendu V1 respecte les règles suivantes :
 
-- un en-tête avec le titre et la date de validation ;
-- trois indicateurs de production : quantité produite, portions par pièce et total portions ;
-- une table de composition avec colonnes stables : Section, Produit, Qté nette, Rendement, Qté brute, Prix HT et Coût HT ;
-- six indicateurs principaux d'analyse figée présentés en cartes ;
-- un tableau complémentaire pour les coûts par pièce/portion, la TVA et la marge cible ;
-- pagination automatique, répétition de l'en-tête de table sur les pages de composition suivantes et pied de page numéroté.
+- **une Fiche technique = une seule feuille A4 paysage** ;
+- titre et date de version dans un en-tête compact ;
+- quantité produite, portions par pièce et total portions sur une seule ligne de synthèse ;
+- corps principal en deux zones simultanées : **Composition à gauche / Analyse à droite** ;
+- table Composition : `Produit | Quantité | Prix HT | Coût HT`, avec `Note` uniquement lorsqu'au moins une note existe ;
+- aucune colonne `Section`, `Rendement` ou `Quantité brute` ;
+- Analyse présentée en lignes compactes label/valeur, sans cartes volumineuses ;
+- aucune pagination ni pied de page `Page 1 / 1` ;
+- densité de la table Composition ajustée automatiquement au nombre de lignes pour conserver le document sur une feuille.
 
-La source métier et le périmètre des données ne changent pas : seul le snapshot validé courant est rendu et aucun indicateur d'écart/diagnostic n'est ajouté.
+### Déduplication des informations économiques
 
+Le PDF n'affiche pas deux fois une valeur lorsqu'une ligne n'apporte aucune information métier supplémentaire :
 
-### Simplification de la composition — décision QA 2026-10-07
+- `Coût Économat HT` est omis lorsqu'il vaut zéro ;
+- `Coût total HT` est omis lorsque, sans Économat, il est strictement égal au coût matière ;
+- les coûts unitaires utilisent le coût total de fabrication : `Coût / pièce HT` et `Coût / portion HT`, sans répéter les trois composantes matière/Économat/fabrication ;
+- lorsque le prix conseillé TTC et le prix retenu TTC sont identiques, une seule ligne `Prix TTC` est affichée ;
+- TVA, marge cible et marge réelle restent distinctes car elles expriment des informations différentes.
 
-Les livrables et la prévisualisation n'affichent pas les colonnes `Section`, `Rendement` ni `Quantité brute`. Ces informations restent disponibles dans le snapshot technique lorsque nécessaires aux calculs, mais elles ne font pas partie de la lecture métier V1 tant que la gestion d'approvisionnement n'est pas couverte.
-
-La table utilisateur expose donc `Produit | Quantité | Prix HT | Coût HT`, avec `Note` ajoutée seulement lorsqu'au moins une ligne possède une note.
-
-Les mentions redondantes indiquant explicitement que la Fiche est validée sont retirées des livrables. La date reste présentée de manière neutre sous la forme `Version du …`.
+Les données techniques non affichées restent dans le snapshot de validation et continuent d'alimenter les calculs. Aucun changement de modèle, de sécurité, de quota ou de source autoritaire n'est introduit.
