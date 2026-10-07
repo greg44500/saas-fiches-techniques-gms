@@ -6,7 +6,7 @@ import {
   Copy,
   Pencil,
   RotateCcw,
-  SlidersHorizontal,
+  WandSparkles,
   Trash2,
 } from 'lucide-react';
 
@@ -103,7 +103,7 @@ function TechnicalSheetControlPanel({
           type="button"
           variant="ghost"
         >
-          <SlidersHorizontal
+          <WandSparkles
             aria-hidden="true"
             className="size-4"
           />

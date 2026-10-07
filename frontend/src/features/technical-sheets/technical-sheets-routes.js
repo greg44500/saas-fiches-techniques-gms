@@ -31,6 +31,15 @@ const dossierTechnicalSheetFrontendRoutes = Object.freeze([
 const technicalSheetsFrontendRouteModule = Object.freeze({
   workspaceRoutes: Object.freeze([
     Object.freeze({
+      path: 'technical-sheets/optimization',
+      lazy: async () => {
+        const { TechnicalSheetOptimizerLauncherPage } = await import(
+          '@/features/technical-sheets/pages/technical-sheet-optimizer-launcher-page'
+        );
+        return { Component: TechnicalSheetOptimizerLauncherPage };
+      },
+    }),
+    Object.freeze({
       path: 'technical-sheets/trash',
       lazy: async () => {
         const { TechnicalSheetTrashRoute } = await import(

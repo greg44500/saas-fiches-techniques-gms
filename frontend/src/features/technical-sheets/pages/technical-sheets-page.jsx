@@ -3,7 +3,7 @@ import {
   Pencil,
   Plus,
   Search,
-  SlidersHorizontal,
+  WandSparkles,
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -579,7 +579,7 @@ function TechnicalSheetsPage() {
               type="button"
               variant="outline"
             >
-              <SlidersHorizontal
+              <WandSparkles
                 aria-hidden="true"
                 className="size-4"
               />

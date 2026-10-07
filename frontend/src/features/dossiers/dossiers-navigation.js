@@ -3,12 +3,16 @@ import {
   Folders,
   Settings2,
   Trash2,
+  WandSparkles,
 } from 'lucide-react';
 
 import { DOSSIER_PERMISSION } from '@/features/dossiers/constants/dossier-permissions';
 import {
   SUPPLIER_PERMISSION,
 } from '@/features/suppliers/constants/supplier-permissions';
+import {
+  TECHNICAL_SHEET_FEATURE,
+} from '@/features/technical-sheets/constants/technical-sheet-features';
 import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
@@ -27,6 +31,14 @@ const dossiersWorkspaceNavigation = Object.freeze({
           Icon: Building2,
           permission: DOSSIER_PERMISSION.READ,
           path: 'dossiers',
+        }),
+        Object.freeze({
+          id: 'technical-sheet-optimizer',
+          label: 'Atelier d’optimisation',
+          Icon: WandSparkles,
+          permission: TECHNICAL_SHEET_PERMISSION.UPDATE,
+          feature: TECHNICAL_SHEET_FEATURE.OPTIMIZER,
+          path: 'technical-sheets/optimization',
         }),
         Object.freeze({
           id: 'technical-sheet-trash',
