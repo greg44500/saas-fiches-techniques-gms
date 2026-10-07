@@ -341,6 +341,7 @@ const findUsableSupplierArticlesForVariant = async ({
     workspaceId,
     productVariantId,
     session = null,
+    limit = 3,
 }) => {
     const candidates =
         await SupplierArticle.find({
@@ -365,7 +366,7 @@ const findUsableSupplierArticlesForVariant = async ({
                 supplierReference: 1,
                 _id: 1,
             })
-            .limit(3)
+            .limit(limit)
             .session(session);
 
     return candidates.filter(
@@ -375,6 +376,25 @@ const findUsableSupplierArticlesForVariant = async ({
             && article.productVariant?.status
                 === PRODUCT_STATUS.ACTIVE
             && article.productVariant?.identityActive,
+    );
+};
+
+const listUsableSupplierArticlesForVariant = async ({
+    workspaceId,
+    productVariantId,
+    session = null,
+    limit = 50,
+}) => {
+    const articles =
+        await findUsableSupplierArticlesForVariant({
+            workspaceId,
+            productVariantId,
+            session,
+            limit,
+        });
+
+    return articles.map(
+        serializeSupplierArticleSummary,
     );
 };
 
@@ -2325,6 +2345,7 @@ const listDossierReferences = async ({
 };
 
 export {
+    listUsableSupplierArticlesForVariant,
     addCalendarMonths,
     addDossierReference,
     archiveIndicativePrice,
