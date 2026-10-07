@@ -55,26 +55,28 @@ function Metric({
   label,
 }) {
   return (
-    <div className="min-w-0 px-4 py-2.5">
-      <p className="text-xs font-medium text-muted-foreground">
-        {label}
-      </p>
-      <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <p className="text-base font-semibold tabular-nums">
-          {after}
+    <div className="min-w-0 rounded-lg border border-border bg-background/55 px-3 py-2">
+      <div className="flex items-start justify-between gap-2">
+        <p className="truncate text-[11px] font-medium text-muted-foreground">
+          {label}
         </p>
-        <span className="text-[11px] text-muted-foreground">
-          avant {before}
+        <span className="shrink-0 text-[10px] text-muted-foreground">
+          av. {before}
         </span>
       </div>
-      <p
-        className={
-          'mt-1 text-xs font-medium tabular-nums '
-          + deltaClassName
-        }
-      >
-        {delta}
-      </p>
+      <div className="mt-1 flex items-baseline justify-between gap-2">
+        <p className="truncate text-base font-semibold tabular-nums">
+          {after}
+        </p>
+        <p
+          className={
+            'shrink-0 text-[11px] font-medium tabular-nums '
+            + deltaClassName
+          }
+        >
+          {delta}
+        </p>
+      </div>
     </div>
   );
 }
@@ -148,16 +150,18 @@ function TechnicalSheetOptimizerEconomicsStrip({
       ? 'Recalcul en cours…'
       : simulationStatus === 'ready'
         ? 'Simulation à jour'
-        : simulationStatus === 'error'
-          ? 'Simulation à vérifier'
-          : 'Valeurs de référence';
+        : simulationStatus === 'input-invalid'
+          ? 'Réglage à compléter'
+          : simulationStatus === 'error'
+            ? 'Simulation à vérifier'
+            : 'Valeurs de référence';
 
   return (
     <section
       aria-label="Impact économique"
-      className="shrink-0 overflow-hidden rounded-xl border border-border bg-card"
+      className="shrink-0 rounded-xl border border-border bg-card p-2.5"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
         <p className="text-sm font-semibold">
           Impact économique
         </p>
@@ -170,7 +174,7 @@ function TechnicalSheetOptimizerEconomicsStrip({
         </p>
       </div>
 
-      <div className="grid divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         <Metric
           after={
             formatCurrency(
@@ -268,7 +272,7 @@ function TechnicalSheetOptimizerEconomicsStrip({
 
       {simulationError && (
         <p
-          className="border-t border-border px-4 py-2 text-xs text-destructive"
+          className="mt-2 rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs text-destructive"
           role="alert"
         >
           {simulationError}
