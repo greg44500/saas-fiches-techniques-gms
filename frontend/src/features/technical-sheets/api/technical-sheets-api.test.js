@@ -244,17 +244,13 @@ describe('technicalSheetsApi', () => {
     const body = {
       expectedRevision: 4,
       mode: 'MANUAL',
-      curve: {
-        enabled: true,
-        pressures: {
-          VERY_LOW: 0,
-          LOW: 0,
-          MEDIUM: 0,
-          HIGH: 0,
-          VERY_HIGH: 0,
-        },
-      },
-      lines: [],
+      lines: [{
+        lineId: 'line-1',
+        economicAdjustmentPercent: -10,
+        minNetQuantity: null,
+        maxNetQuantity: null,
+        locked: false,
+      }],
       autoOptions: {
         adjustQuantities: true,
         productAlternatives: true,
