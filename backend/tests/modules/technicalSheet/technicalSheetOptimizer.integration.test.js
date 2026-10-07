@@ -1,6 +1,8 @@
 import '../../setup.js';
 import '../../../config/applicationCapability.registry.js';
 
+import mongoose from 'mongoose';
+
 import {
     beforeEach,
     describe,
@@ -432,6 +434,94 @@ describe('M-005 Atelier d’optimisation', () => {
                 .netQuantity
                 .toString(),
         ).toBe('2');
+    });
+
+    it('refuse une substitution d’Article sans permission sourcing', async () => {
+        const request =
+            requestFor();
+
+        request.lines[0]
+            .supplierArticleId =
+                new mongoose.Types.ObjectId()
+                    .toString();
+
+        await expect(
+            simulateTechnicalSheetOptimization({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    sheet.id,
+                request,
+                canManageSourcing:
+                    false,
+                atDate,
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 403,
+        });
+    });
+
+    it('refuse l’Apply si le Prix applicable a changé depuis la simulation', async () => {
+        const request =
+            requestFor();
+        const simulation =
+            await simulateTechnicalSheetOptimization({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    sheet.id,
+                request,
+                canManageSourcing:
+                    true,
+                atDate,
+            });
+
+        await setIndicativePrice({
+            workspaceId:
+                owner.workspace._id,
+            dossierId:
+                dossier._id,
+            productVariantId:
+                reference.variant._id,
+            actorId:
+                owner.owner._id,
+            sourceAmount:
+                '12',
+            sourceBasis:
+                'KG',
+            source:
+                'Prix Dossier A modifié M005',
+        });
+
+        await expect(
+            applyTechnicalSheetOptimization({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    sheet.id,
+                actorId:
+                    owner.owner._id,
+                request: {
+                    ...request,
+                    simulationFingerprint:
+                        simulation
+                            .simulationFingerprint,
+                },
+                canManageSourcing:
+                    true,
+                atDate,
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 409,
+            code:
+                'TECHNICAL_SHEET_OPTIMIZER_SIMULATION_STALE',
+        });
     });
 
     it('refuse un apply construit sur une ancienne révision', async () => {
