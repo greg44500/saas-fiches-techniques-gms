@@ -1,20 +1,33 @@
 import { useMemo } from 'react';
 
-import { Slider } from '@/components/ui/slider';
+const SVG_WIDTH = 360;
+const SVG_HEIGHT = 138;
+const PADDING_X = 28;
+const PADDING_Y = 16;
 
-const SVG_WIDTH = 520;
-const SVG_HEIGHT = 190;
-const PADDING_X = 30;
-const PADDING_Y = 24;
+const DEFAULT_RANGE = Object.freeze({
+  min: -90,
+  max: 100,
+});
 
-function clampPressure(value) {
+function clampAdjustment(
+  value,
+  range,
+) {
   return Math.max(
-    -100,
-    Math.min(100, Math.round(value)),
+    range.min,
+    Math.min(
+      range.max,
+      Math.round(value),
+    ),
   );
 }
 
-function pointCoordinates(point, pressure) {
+function pointCoordinates(
+  point,
+  adjustment,
+  range,
+) {
   const x =
     PADDING_X
     + (
@@ -23,10 +36,13 @@ function pointCoordinates(point, pressure) {
       SVG_WIDTH
       - PADDING_X * 2
     );
+  const span =
+    range.max - range.min;
   const y =
     PADDING_Y
     + (
-      (100 - pressure) / 200
+      (adjustment - range.min)
+      / span
     ) * (
       SVG_HEIGHT
       - PADDING_Y * 2
@@ -35,24 +51,77 @@ function pointCoordinates(point, pressure) {
   return { x, y };
 }
 
+function formatAdjustment(value) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return '—';
+  }
+
+  return (
+    (number > 0 ? '+' : '')
+    + number
+    + ' %'
+  );
+}
+
+function adjustmentAriaText(value) {
+  if (value < 0) {
+    return 'Réduction du coût de '
+      + Math.abs(value)
+      + ' %';
+  }
+
+  if (value > 0) {
+    return 'Hausse du coût de '
+      + value
+      + ' %';
+  }
+
+  return 'Coût de référence';
+}
+
 function TechnicalSheetOptimizationCurve({
   curve,
   disabled = false,
   onChange,
   points,
+  range = DEFAULT_RANGE,
 }) {
+  const effectiveRange = {
+    min:
+      Number.isFinite(Number(range?.min))
+        ? Number(range.min)
+        : DEFAULT_RANGE.min,
+    max:
+      Number.isFinite(Number(range?.max))
+        ? Number(range.max)
+        : DEFAULT_RANGE.max,
+  };
   const coordinates = useMemo(
     () => points.map((point) => ({
       ...pointCoordinates(
         point,
         curve.pressures[point.key],
+        effectiveRange,
       ),
       ...point,
-      pressure:
+      adjustment:
         curve.pressures[point.key],
     })),
-    [curve.pressures, points],
+    [
+      curve.pressures,
+      effectiveRange.max,
+      effectiveRange.min,
+      points,
+    ],
   );
+  const zeroY =
+    pointCoordinates(
+      { position: 0 },
+      0,
+      effectiveRange,
+    ).y;
 
   function updatePoint(key, value) {
     onChange({
@@ -60,7 +129,10 @@ function TechnicalSheetOptimizationCurve({
       pressures: {
         ...curve.pressures,
         [key]:
-          clampPressure(value),
+          clampAdjustment(
+            value,
+            effectiveRange,
+          ),
       },
     });
   }
@@ -74,46 +146,50 @@ function TechnicalSheetOptimizationCurve({
         .ownerSVGElement;
     const rect =
       svg.getBoundingClientRect();
-    const y =
-      event.clientY
-      - rect.top;
-    const usableHeight =
-      rect.height
-      - (
+    const topPadding =
+      (
         PADDING_Y
         / SVG_HEIGHT
-      ) * rect.height * 2;
+      ) * rect.height;
+    const usableHeight =
+      rect.height
+      - topPadding * 2;
     const relative =
       Math.max(
         0,
         Math.min(
           usableHeight,
-          y
-          - (
-            PADDING_Y
-            / SVG_HEIGHT
-          ) * rect.height,
+          event.clientY
+          - rect.top
+          - topPadding,
         ),
       );
-    const pressure =
-      100
-      - (
+    const adjustment =
+      effectiveRange.min
+      + (
         relative
         / usableHeight
-      ) * 200;
+      ) * (
+        effectiveRange.max
+        - effectiveRange.min
+      );
 
     updatePoint(
       point.key,
-      pressure,
+      adjustment,
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-x-auto rounded-xl border border-border bg-muted/10 p-3">
+    <div className="space-y-2">
+      <p className="text-[11px] font-medium text-muted-foreground">
+        Réduire le coût
+      </p>
+
+      <div className="overflow-x-auto rounded-lg border border-border bg-muted/10 p-2">
         <svg
-          aria-label="Courbe globale d’optimisation"
-          className="min-w-[520px] touch-none"
+          aria-label="Courbe d’ajustement économique"
+          className="h-auto max-h-[150px] min-w-[320px] w-full touch-none"
           role="group"
           viewBox={
             '0 0 '
@@ -125,11 +201,11 @@ function TechnicalSheetOptimizationCurve({
           <line
             stroke="currentColor"
             strokeDasharray="5 5"
-            strokeOpacity="0.2"
+            strokeOpacity="0.22"
             x1={PADDING_X}
             x2={SVG_WIDTH - PADDING_X}
-            y1={SVG_HEIGHT / 2}
-            y2={SVG_HEIGHT / 2}
+            y1={zeroY}
+            y2={zeroY}
           />
           <polyline
             fill="none"
@@ -137,19 +213,27 @@ function TechnicalSheetOptimizationCurve({
               .map(({ x, y }) => x + ',' + y)
               .join(' ')}
             stroke="currentColor"
-            strokeWidth="3"
+            strokeWidth="2.5"
           />
           {coordinates.map((point) => (
             <circle
               aria-label={
-                point.label
-                + ' : '
-                + point.pressure
+                'Ajustement '
+                + point.label
               }
-              aria-valuemax={100}
-              aria-valuemin={-100}
+              aria-valuemax={
+                effectiveRange.max
+              }
+              aria-valuemin={
+                effectiveRange.min
+              }
               aria-valuenow={
-                point.pressure
+                point.adjustment
+              }
+              aria-valuetext={
+                adjustmentAriaText(
+                  point.adjustment,
+                )
               }
               cx={point.x}
               cy={point.y}
@@ -160,23 +244,23 @@ function TechnicalSheetOptimizationCurve({
 
                 if (
                   event.key === 'ArrowUp'
-                  || event.key === 'ArrowRight'
-                ) {
-                  event.preventDefault();
-                  updatePoint(
-                    point.key,
-                    point.pressure + 5,
-                  );
-                }
-
-                if (
-                  event.key === 'ArrowDown'
                   || event.key === 'ArrowLeft'
                 ) {
                   event.preventDefault();
                   updatePoint(
                     point.key,
-                    point.pressure - 5,
+                    point.adjustment - 5,
+                  );
+                }
+
+                if (
+                  event.key === 'ArrowDown'
+                  || event.key === 'ArrowRight'
+                ) {
+                  event.preventDefault();
+                  updatePoint(
+                    point.key,
+                    point.adjustment + 5,
                   );
                 }
 
@@ -184,7 +268,7 @@ function TechnicalSheetOptimizationCurve({
                   event.preventDefault();
                   updatePoint(
                     point.key,
-                    -100,
+                    effectiveRange.min,
                   );
                 }
 
@@ -192,7 +276,7 @@ function TechnicalSheetOptimizationCurve({
                   event.preventDefault();
                   updatePoint(
                     point.key,
-                    100,
+                    effectiveRange.max,
                   );
                 }
               }}
@@ -223,7 +307,7 @@ function TechnicalSheetOptimizationCurve({
                   point,
                 );
               }}
-              r="8"
+              r="7"
               role="slider"
               tabIndex={disabled ? -1 : 0}
             />
@@ -231,40 +315,26 @@ function TechnicalSheetOptimizationCurve({
         </svg>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-5">
+      <p className="text-[11px] font-medium text-muted-foreground">
+        Augmenter le coût
+      </p>
+
+      <div className="grid grid-cols-5 gap-1 text-center">
         {points.map((point) => (
           <div
-            className="space-y-2"
+            className="min-w-0"
             key={point.key}
           >
-            <div className="flex items-center justify-between gap-2 text-xs">
-              <span className="font-medium">
-                {point.label}
-              </span>
-              <span className="tabular-nums text-muted-foreground">
-                {curve.pressures[point.key]}
-              </span>
-            </div>
-            <Slider
-              aria-label={
-                'Pression '
-                + point.label
-              }
-              disabled={disabled}
-              max={100}
-              min={-100}
-              onValueChange={(value) =>
-                updatePoint(
-                  point.key,
-                  value[0],
-                )}
-              step={5}
-              value={[
+            <p className="truncate text-[10px] text-muted-foreground">
+              {point.label}
+            </p>
+            <p className="text-xs font-semibold tabular-nums">
+              {formatAdjustment(
                 curve.pressures[
                   point.key
                 ],
-              ]}
-            />
+              )}
+            </p>
           </div>
         ))}
       </div>

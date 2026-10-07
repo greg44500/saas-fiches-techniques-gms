@@ -1,7 +1,6 @@
 import {
   ArrowLeft,
-  RotateCcw,
-  Sparkles,
+  WandSparkles,
 } from 'lucide-react';
 import {
   useEffect,
@@ -18,36 +17,30 @@ import { ErrorState } from '@/components/shared/error-state';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { Switch } from '@/components/ui/switch';
 import {
   useApplyTechnicalSheetOptimizationMutation,
   useGetTechnicalSheetOptimizationQuery,
   useSimulateTechnicalSheetOptimizationMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
-  TechnicalSheetOptimizationCurve,
-} from '@/features/technical-sheets/components/technical-sheet-optimization-curve';
+  TechnicalSheetOptimizerControlsPanel,
+} from '@/features/technical-sheets/components/technical-sheet-optimizer-controls-panel';
 import {
-  TechnicalSheetOptimizerInspector,
-} from '@/features/technical-sheets/components/technical-sheet-optimizer-inspector';
+  TechnicalSheetOptimizerEconomicsStrip,
+} from '@/features/technical-sheets/components/technical-sheet-optimizer-economics-strip';
+import {
+  TechnicalSheetOptimizerRecipePreview,
+} from '@/features/technical-sheets/components/technical-sheet-optimizer-recipe-preview';
 import {
   buildOptimizationRequest,
   buildOptimizerLines,
   findOptimizerLine,
   findProjectionLine,
-  formatCurrency,
-  formatPercent,
 } from '@/features/technical-sheets/lib/technical-sheet-optimizer';
 import {
   getTechnicalSheetApiErrorMessage,
@@ -61,25 +54,6 @@ const DEFAULT_AUTO_OPTIONS = Object.freeze({
   productAlternatives: true,
   sourcingAlternatives: true,
 });
-
-function marginLabel(basisPoints) {
-  if (!Number.isFinite(Number(basisPoints))) {
-    return '—';
-  }
-
-  return formatPercent(
-    Number(basisPoints) / 100,
-  );
-}
-
-function economicsValue(
-  projection,
-  key,
-) {
-  return projection
-    ?.economicSnapshot?.[key]
-    ?? null;
-}
 
 function TechnicalSheetOptimizerPage() {
   const {
@@ -123,12 +97,20 @@ function TechnicalSheetOptimizerPage() {
     setSelectedLineId,
   ] = useState(null);
   const [
-    inspectorOpen,
-    setInspectorOpen,
+    controlsOpen,
+    setControlsOpen,
   ] = useState(false);
   const [
     simulation,
     setSimulation,
+  ] = useState(null);
+  const [
+    simulationStatus,
+    setSimulationStatus,
+  ] = useState('idle');
+  const [
+    simulationError,
+    setSimulationError,
   ] = useState(null);
   const initializedRevisionRef =
     useRef(null);
@@ -171,6 +153,8 @@ function TechnicalSheetOptimizerPage() {
       ?? null,
     );
     setSimulation(null);
+    setSimulationStatus('idle');
+    setSimulationError(null);
     initializedRevisionRef.current =
       draftRevision;
   }, [context, draftRevision]);
@@ -210,6 +194,9 @@ function TechnicalSheetOptimizerPage() {
     requestSequenceRef.current =
       sequence;
 
+    setSimulationStatus('pending');
+    setSimulationError(null);
+
     try {
       const result =
         await simulate({
@@ -225,26 +212,31 @@ function TechnicalSheetOptimizerPage() {
         === requestSequenceRef.current
       ) {
         setSimulation(result);
+        setSimulationStatus('ready');
+        setSimulationError(null);
       }
 
       return result;
     } catch (error) {
+      const message =
+        getTechnicalSheetApiErrorMessage(
+          error,
+          'Le scénario n’a pas pu être recalculé.',
+        );
+
       if (
         sequence
         === requestSequenceRef.current
       ) {
-        setSimulation(null);
+        setSimulationStatus('error');
+        setSimulationError(message);
       }
 
       if (showError) {
         toast({
           title:
             'Simulation impossible',
-          description:
-            getTechnicalSheetApiErrorMessage(
-              error,
-              'Le scénario n’a pas pu être recalculé.',
-            ),
+          description: message,
           variant: 'destructive',
         });
       }
@@ -255,6 +247,9 @@ function TechnicalSheetOptimizerPage() {
 
   useEffect(() => {
     if (!request) return undefined;
+
+    setSimulationStatus('pending');
+    setSimulationError(null);
 
     const timeout =
       window.setTimeout(
@@ -273,8 +268,7 @@ function TechnicalSheetOptimizerPage() {
   }, [request]);
 
   const before =
-    simulation?.before
-    ?? context?.baseline
+    context?.baseline
     ?? null;
   const after =
     simulation?.after
@@ -286,7 +280,11 @@ function TechnicalSheetOptimizerPage() {
     );
   const selectedProjectionLine =
     findProjectionLine(
-      context?.baseline,
+      after,
+      selectedLineId,
+    )
+    ?? findProjectionLine(
+      before,
       selectedLineId,
     );
   const selectedAlternatives =
@@ -296,7 +294,8 @@ function TechnicalSheetOptimizerPage() {
       ]
     ?? null;
   const canApply =
-    Boolean(
+    simulationStatus === 'ready'
+    && Boolean(
       simulation
         ?.simulationFingerprint,
     )
@@ -338,6 +337,8 @@ function TechnicalSheetOptimizerPage() {
       ...DEFAULT_AUTO_OPTIONS,
     });
     setSimulation(null);
+    setSimulationStatus('idle');
+    setSimulationError(null);
     setSelectedLineId(
       nextLines[0]?.lineId
       ?? null,
@@ -371,6 +372,14 @@ function TechnicalSheetOptimizerPage() {
               suggestion
                 .supplierArticleId,
             ),
+          minNetQuantity:
+            suggestion
+              .minNetQuantity
+            ?? '',
+          maxNetQuantity:
+            suggestion
+              .maxNetQuantity
+            ?? '',
           localNetQuantity:
             suggestion
               .localNetQuantity
@@ -473,9 +482,66 @@ function TechnicalSheetOptimizerPage() {
     );
   }
 
+  const controls = (
+    <TechnicalSheetOptimizerControlsPanel
+      alternatives={
+        selectedAlternatives
+      }
+      applying={
+        applyState.isLoading
+      }
+      autoOptions={autoOptions}
+      autoSuggestion={
+        simulation?.autoSuggestion
+        ?? null
+      }
+      canApply={canApply}
+      canManageSourcing={
+        context.canManageSourcing
+      }
+      comparing={
+        simulateState.isLoading
+      }
+      costAdjustmentRange={
+        context.costAdjustmentRange
+      }
+      curve={
+        curve
+        ?? context.neutralCurve
+      }
+      curvePoints={
+        context.curvePoints
+      }
+      line={selectedLine}
+      mode={mode}
+      onApply={apply}
+      onAutoOptionChange={
+        (key, checked) =>
+          setAutoOptions(
+            (current) => ({
+              ...current,
+              [key]: checked,
+            }),
+          )
+      }
+      onChangeLine={updateLine}
+      onCompare={() =>
+        runSimulation()}
+      onCurveChange={setCurve}
+      onModeChange={setMode}
+      onReset={reset}
+      onTakeAutoSuggestion={
+        takeAutoSuggestion
+      }
+      projectionLine={
+        selectedProjectionLine
+      }
+    />
+  );
+
   return (
-    <div className="space-y-5">
-      <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+    <div className="space-y-4">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Button
             aria-label="Retour à la Fiche technique"
@@ -508,478 +574,75 @@ function TechnicalSheetOptimizerPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div
-            aria-label="Mode d’optimisation"
-            className="flex rounded-lg border border-border p-1"
-            role="group"
-          >
-            <Button
-              onClick={() =>
-                setMode('MANUAL')}
-              size="sm"
-              type="button"
-              variant={
-                mode === 'MANUAL'
-                  ? 'secondary'
-                  : 'ghost'
-              }
-            >
-              Manuel
-            </Button>
-            <Button
-              onClick={() =>
-                setMode('AUTO')}
-              size="sm"
-              type="button"
-              variant={
-                mode === 'AUTO'
-                  ? 'secondary'
-                  : 'ghost'
-              }
-            >
-              <Sparkles
-                aria-hidden="true"
-                className="size-4"
-              />
-              Auto
-            </Button>
-          </div>
-
-          <Button
-            onClick={reset}
-            type="button"
-            variant="outline"
-          >
-            <RotateCcw
-              aria-hidden="true"
-              className="size-4"
-            />
-            Réinitialiser
-          </Button>
-
-          <Button
-            disabled={
-              simulateState.isLoading
-            }
-            onClick={() =>
-              runSimulation()}
-            type="button"
-            variant="outline"
-          >
-            {simulateState.isLoading
-              ? 'Calcul…'
-              : 'Comparer'}
-          </Button>
-
-          <Button
-            disabled={!canApply}
-            onClick={apply}
-            type="button"
-          >
-            {applyState.isLoading
-              ? 'Application…'
-              : 'Appliquer au brouillon'}
-          </Button>
-        </div>
+        <Button
+          className="xl:hidden"
+          onClick={() =>
+            setControlsOpen(true)}
+          type="button"
+          variant="outline"
+        >
+          <WandSparkles
+            aria-hidden="true"
+            className="size-4"
+          />
+          Réglages
+        </Button>
       </header>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">
-              Coût matière HT
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            <p className="text-xl font-semibold">
-              {formatCurrency(
-                economicsValue(
-                  after,
-                  'materialCostHt',
-                ),
-              )}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Avant : {formatCurrency(
-                economicsValue(
-                  before,
-                  'materialCostHt',
-                ),
-              )}
-            </p>
-          </CardContent>
-        </Card>
+      <TechnicalSheetOptimizerEconomicsStrip
+        after={after}
+        before={before}
+        savings={
+          simulation?.savings
+          ?? {
+            amountHt: '0',
+            percent: '0',
+          }
+        }
+        simulationError={
+          simulationError
+        }
+        simulationStatus={
+          simulationStatus
+        }
+      />
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">
-              Coût de fabrication HT
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            <p className="text-xl font-semibold">
-              {formatCurrency(
-                economicsValue(
-                  after,
-                  'manufacturingCostHt',
-                ),
-              )}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Avant : {formatCurrency(
-                economicsValue(
-                  before,
-                  'manufacturingCostHt',
-                ),
-              )}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_23rem]">
+        <TechnicalSheetOptimizerRecipePreview
+          after={after}
+          baseline={before}
+          onOpenControls={() =>
+            setControlsOpen(true)}
+          onSelect={setSelectedLineId}
+          selectedLineId={
+            selectedLineId
+          }
+        />
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">
-              Marge réelle
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            <p className="text-xl font-semibold">
-              {marginLabel(
-                economicsValue(
-                  after,
-                  'actualMarginBasisPoints',
-                ),
-              )}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Avant : {marginLabel(
-                economicsValue(
-                  before,
-                  'actualMarginBasisPoints',
-                ),
-              )}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">
-              Économie estimée
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            <p className="text-xl font-semibold">
-              {formatCurrency(
-                simulation
-                  ?.savings?.amountHt
-                ?? '0',
-              )}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {formatPercent(
-                simulation
-                  ?.savings?.percent
-                ?? '0',
-              )}
-              {' '}
-              sur la production
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-
-      {mode === 'AUTO'
-        ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Leviers automatiques
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Le serveur recherche un seul prochain mouvement économiquement favorable. Il ne modifie rien avant votre validation.
-              </p>
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-3">
-              {[
-                [
-                  'adjustQuantities',
-                  'Ajuster les quantités',
-                ],
-                [
-                  'productAlternatives',
-                  'Tester les alternatives Produit',
-                ],
-                [
-                  'sourcingAlternatives',
-                  'Tester les approvisionnements',
-                ],
-              ].map(([key, label]) => (
-                <label
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm"
-                  key={key}
-                >
-                  <span>{label}</span>
-                  <Switch
-                    checked={
-                      autoOptions[key]
-                    }
-                    disabled={
-                      key
-                        === 'sourcingAlternatives'
-                      && !context
-                        .canManageSourcing
-                    }
-                    onCheckedChange={(checked) =>
-                      setAutoOptions(
-                        (current) => ({
-                          ...current,
-                          [key]: checked,
-                        }),
-                      )}
-                  />
-                </label>
-              ))}
-
-              {simulation?.autoSuggestion && (
-                <div className="md:col-span-3 flex flex-col gap-3 rounded-lg bg-muted/40 p-4 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="font-medium">
-                      Proposition automatique disponible
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {simulation.autoSuggestion.kind === 'QUANTITY'
-                        ? 'Ajustement d’une quantité'
-                        : simulation.autoSuggestion.kind === 'PRODUCT'
-                          ? 'Alternative Produit'
-                          : 'Alternative d’approvisionnement'}
-                      {simulation.autoSuggestion.label
-                        ? ' · ' + simulation.autoSuggestion.label
-                        : ''}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={
-                      takeAutoSuggestion
-                    }
-                    type="button"
-                    variant="outline"
-                  >
-                    Reprendre en Manuel
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )
-        : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Courbe globale %CM
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Les cinq points appliquent une pression économique entre le minimum, la référence et le maximum déclarés pour chaque ingrédient.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <TechnicalSheetOptimizationCurve
-                curve={curve ?? context.neutralCurve}
-                onChange={setCurve}
-                points={
-                  context.curvePoints
-                }
-              />
-            </CardContent>
-          </Card>
-        )}
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle className="text-base">
-              Ingrédients · avant / après
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
-                <thead className="border-y border-border bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3">
-                      Ingrédient
-                    </th>
-                    <th className="px-4 py-3">
-                      Quantité
-                    </th>
-                    <th className="px-4 py-3">
-                      %CM
-                    </th>
-                    <th className="px-4 py-3">
-                      Coût HT
-                    </th>
-                    <th className="px-4 py-3">
-                      Évolution
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(context.baseline.lines ?? [])
-                    .filter(
-                      (line) =>
-                        line.kind
-                        === 'INGREDIENT',
-                    )
-                    .map((line) => {
-                      const next =
-                        findProjectionLine(
-                          after,
-                          line.id,
-                        )
-                        ?? line;
-                      const changed =
-                        line.netQuantity
-                          !== next.netQuantity
-                        || line.productVariantId
-                          !== next.productVariantId
-                        || line.supplierArticleId
-                          !== next.supplierArticleId;
-
-                      return (
-                        <tr
-                          className={
-                            'cursor-pointer border-b border-border transition-colors hover:bg-muted/40 '
-                            + (
-                              selectedLineId
-                                === line.id
-                                ? 'bg-muted/50'
-                                : ''
-                            )
-                          }
-                          key={line.id}
-                          onClick={() =>
-                            setSelectedLineId(
-                              line.id,
-                            )}
-                        >
-                          <td className="px-4 py-3">
-                            <p className="font-medium">
-                              {next.productVariantName
-                                ?? line.productVariantName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {line.productVariantName}
-                            </p>
-                          </td>
-                          <td className="px-4 py-3 tabular-nums">
-                            {line.netQuantity}
-                            {' → '}
-                            {next.netQuantity}
-                            {' '}
-                            {next.referenceUnit}
-                          </td>
-                          <td className="px-4 py-3 tabular-nums">
-                            {formatPercent(
-                              line.materialCostSharePercent,
-                            )}
-                            {' → '}
-                            {formatPercent(
-                              next.materialCostSharePercent,
-                            )}
-                          </td>
-                          <td className="px-4 py-3 tabular-nums">
-                            {formatCurrency(
-                              line.lineCostHt,
-                            )}
-                            {' → '}
-                            {formatCurrency(
-                              next.lineCostHt,
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <span>
-                                {changed
-                                  ? 'Modifiée'
-                                  : 'Stable'}
-                              </span>
-                              <Button
-                                className="xl:hidden"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setSelectedLineId(
-                                    line.id,
-                                  );
-                                  setInspectorOpen(
-                                    true,
-                                  );
-                                }}
-                                size="sm"
-                                type="button"
-                                variant="ghost"
-                              >
-                                Régler
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="hidden xl:block">
-          <div className="sticky top-[calc(var(--workspace-topbar-height,4rem)+1rem)]">
-            <TechnicalSheetOptimizerInspector
-              alternatives={
-                selectedAlternatives
-              }
-              canManageSourcing={
-                context.canManageSourcing
-              }
-              line={selectedLine}
-              onChange={updateLine}
-              projectionLine={
-                selectedProjectionLine
-              }
-            />
+        <aside className="hidden xl:block">
+          <div className="sticky top-[calc(var(--workspace-topbar-height,4rem)+1rem)] max-h-[calc(100vh-6rem)] overflow-y-auto pb-3">
+            {controls}
           </div>
-        </div>
+        </aside>
       </div>
 
       <Sheet
         onOpenChange={
-          setInspectorOpen
+          setControlsOpen
         }
-        open={inspectorOpen}
+        open={controlsOpen}
       >
         <SheetContent
-          className="w-[min(92vw,26rem)] overflow-y-auto xl:hidden"
+          className="w-[min(94vw,28rem)] overflow-y-auto xl:hidden"
           side="right"
         >
           <SheetHeader>
             <SheetTitle>
-              Réglages de l’ingrédient
+              Réglages de l’Atelier
             </SheetTitle>
           </SheetHeader>
           <div className="p-4 pt-0">
-            <TechnicalSheetOptimizerInspector
-              alternatives={
-                selectedAlternatives
-              }
-              canManageSourcing={
-                context.canManageSourcing
-              }
-              line={selectedLine}
-              onChange={updateLine}
-              projectionLine={
-                selectedProjectionLine
-              }
-            />
+            {controls}
           </div>
         </SheetContent>
       </Sheet>

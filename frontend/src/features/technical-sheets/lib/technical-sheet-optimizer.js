@@ -4,6 +4,13 @@ function normalizeDecimalInput(value) {
     .replace(',', '.');
 }
 
+function optionalDecimalInput(value) {
+  const normalized =
+    normalizeDecimalInput(value);
+
+  return normalized || null;
+}
+
 function buildOptimizerLines(context) {
   return (context?.draft?.lines ?? [])
     .filter((line) => line.kind === 'INGREDIENT')
@@ -11,10 +18,10 @@ function buildOptimizerLines(context) {
       lineId: line.id,
       minNetQuantity:
         line.optimization?.minNetQuantity
-        ?? line.netQuantity,
+        ?? '',
       maxNetQuantity:
         line.optimization?.maxNetQuantity
-        ?? line.netQuantity,
+        ?? '',
       locked: Boolean(
         line.optimization?.locked,
       ),
@@ -39,11 +46,11 @@ function buildOptimizationRequest({
     lines: lines.map((line) => ({
       lineId: line.lineId,
       minNetQuantity:
-        normalizeDecimalInput(
+        optionalDecimalInput(
           line.minNetQuantity,
         ),
       maxNetQuantity:
-        normalizeDecimalInput(
+        optionalDecimalInput(
           line.maxNetQuantity,
         ),
       locked: Boolean(line.locked),
@@ -140,4 +147,5 @@ export {
   formatCurrency,
   formatPercent,
   normalizeDecimalInput,
+  optionalDecimalInput,
 };
