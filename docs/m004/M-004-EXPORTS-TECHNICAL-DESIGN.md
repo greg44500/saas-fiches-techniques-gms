@@ -81,3 +81,17 @@ La prévisualisation de liste réutilise la lecture sécurisée existante :
 Le `validationId` envoyé est exclusivement `currentValidatedStateId`. La modal n'interroge pas le brouillon et ne déclenche aucune consommation de `technical_sheet_exports_monthly`.
 
 Le menu d'export `TechnicalSheetExportMenu` est partagé entre le poste de travail et la liste. La liste ne réimplémente donc ni les formats ni la logique de téléchargement.
+
+
+## Renderer PDF professionnel
+
+Le renderer PDF reste backend et sans nouvelle dépendance. Il produit directement un PDF A4 paysage en mémoire.
+
+Il est séparé en deux responsabilités :
+
+1. `buildTechnicalSheetPdfLayout(projection)` transforme la projection canonique en contrat de présentation testable : cartes de production, lignes de composition, cartes d'analyse et détails économiques ;
+2. le renderer bas niveau dessine ce contrat dans le PDF avec une grille stable, des cellules bordées, des alignements numériques à droite, des hauteurs de lignes calculées et une pagination automatique.
+
+La table de composition utilise des largeurs fixes totalisant la largeur utile du document. Une ligne n'est jamais coupée entre deux pages ; lorsque l'espace est insuffisant, une nouvelle page est créée et l'en-tête de colonnes est redessiné.
+
+Le PDF ne partage pas la technologie de rendu React de la modal : la mutualisation porte sur le contrat de présentation et la source de vérité, pas sur le moteur graphique.

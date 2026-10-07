@@ -9,7 +9,9 @@ import {
     buildTechnicalSheetExportProjection,
 } from '../../../modules/technicalSheet/technicalSheetExportProjection.service.js';
 import {
+    COMPOSITION_COLUMNS,
     buildTechnicalSheetPdf,
+    buildTechnicalSheetPdfLayout,
 } from '../../../modules/technicalSheet/technicalSheetExportPdf.service.js';
 import {
     buildTechnicalSheetCsv,
@@ -249,6 +251,132 @@ describe('M-004 exports de Fiches techniques', () => {
         expect(
             workbook.Sheets.Composition.B2.v,
         ).toBe("'+Carotte");
+    });
+
+    it('aligne le contrat de présentation PDF sur la prévisualisation officielle', () => {
+        const projection =
+            buildTechnicalSheetExportProjection({
+                validation,
+            });
+        const layout =
+            buildTechnicalSheetPdfLayout(
+                projection,
+            );
+
+        expect(
+            layout.document,
+        ).toEqual({
+            orientation: 'landscape',
+            pageSize: 'A4',
+        });
+        expect(
+            layout.productionCards
+                .map(({ label }) => label),
+        ).toEqual([
+            'Quantité produite',
+            'Portions / pièce',
+            'Total portions',
+        ]);
+        expect(
+            COMPOSITION_COLUMNS
+                .map(({ label }) => label),
+        ).toEqual([
+            'Section',
+            'Produit',
+            'Qté nette',
+            'Rdt.',
+            'Qté brute',
+            'Prix HT',
+            'Coût HT',
+        ]);
+        expect(
+            layout.compositionRows,
+        ).toEqual([
+            expect.objectContaining({
+                section:
+                    'Ingrédient',
+                product:
+                    '+Carotte',
+                net: '2 kg',
+                gross: '2,5 kg',
+                price:
+                    '3,25 € / kg',
+                cost: '8,13 €',
+            }),
+            expect.objectContaining({
+                section:
+                    'Économat',
+                product:
+                    'Barquette',
+                net:
+                    '1 barquette',
+                gross:
+                    '1 barquette',
+            }),
+        ]);
+        expect(
+            layout.analysisCards
+                .map(({ label }) => label),
+        ).toEqual([
+            'Coût matière HT',
+            'Coût Économat HT',
+            'Coût de fabrication HT',
+            'Prix conseillé TTC',
+            'Prix retenu TTC',
+            'Marge réelle',
+        ]);
+        expect(
+            layout.analysisDetails
+                .some(
+                    ({ label }) =>
+                        label.includes('Écart'),
+                ),
+        ).toBe(false);
+    });
+
+    it('pagine une composition longue en conservant un PDF A4 paysage valide', () => {
+        const projection =
+            buildTechnicalSheetExportProjection({
+                validation: {
+                    ...validation,
+                    linesSnapshot:
+                        Array.from(
+                            { length: 45 },
+                            (_, index) => ({
+                                ...validation
+                                    .linesSnapshot[0],
+                                productVariantId:
+                                    'variant-'
+                                    + index,
+                                productVariantName:
+                                    'Produit avec une désignation métier suffisamment longue '
+                                    + index,
+                                order: index,
+                            }),
+                        ),
+                },
+            });
+        const buffer =
+            buildTechnicalSheetPdf(
+                projection,
+            );
+        const content =
+            buffer.toString(
+                'latin1',
+            );
+
+        expect(content)
+            .toContain(
+                '/MediaBox [0 0 842 595]',
+            );
+        expect(
+            (
+                content.match(
+                    /\/Type \/Page\b/g,
+                )
+                ?? []
+            ).length,
+        ).toBeGreaterThan(1);
     });
 
     it('génère un document PDF téléchargeable', () => {

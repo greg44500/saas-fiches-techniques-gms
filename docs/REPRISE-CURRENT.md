@@ -61,3 +61,19 @@ Le premier bloc de QA visuelle demandé avant PR a été intégré sur la même 
 - E2E adapté pour couvrir l'état `Validée`, la modal de prévisualisation, l'export direct depuis la liste, puis le KPI mensuel.
 
 Les tests ajoutés/modifiés n'ont pas été exécutés à distance. La validation locale et la QA visuelle restent à faire par l'utilisateur avant toute PR.
+
+
+## Qualité visuelle PDF — 2026-10-07
+
+Le renderer PDF a été repris pour aligner le livrable avec la prévisualisation métier :
+
+- A4 paysage pour préserver la lisibilité des colonnes ;
+- en-tête clair avec titre et date de validation ;
+- trois cartes de production ;
+- vraie table Composition avec Section, Produit, Qté nette, Rendement, Qté brute, Prix HT, Coût HT ;
+- analyse figée structurée en indicateurs principaux puis détails économiques ;
+- pagination et répétition de l'en-tête de table ;
+- pied de page numéroté ;
+- aucune modification de la source autoritaire, des quotas, de la sécurité ou du contenu métier exportable.
+
+Les tests correspondants sont ajoutés mais restent à exécuter localement par l'utilisateur.

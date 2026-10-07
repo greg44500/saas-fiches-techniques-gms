@@ -98,3 +98,19 @@ Si la feature ou la permission d'export n'est pas disponible, l'action Export n'
 Un KPI configurable `Exports ce mois` affiche la consommation du Workspace sur sa limite effective. Il n'est accessible que si la feature et la permission sont effectives et peut être masqué via les préférences d'affichage existantes.
 
 L'icône d'information du KPI est placée immédiatement à droite de son titre. Le nom du Workspace n'est pas répété dans le contenu de la page `Tableau de bord` puisqu'il est déjà visible dans la navigation supérieure.
+
+
+## Présentation PDF
+
+Le PDF constitue un livrable métier destiné à la consultation, au partage et à l'impression. Sa hiérarchie visuelle est alignée sur la prévisualisation officielle sans chercher un rendu pixel-perfect de l'interface web.
+
+Le rendu PDF V1 utilise un A4 paysage afin de conserver des colonnes lisibles. Il reprend :
+
+- un en-tête avec le titre et la date de validation ;
+- trois indicateurs de production : quantité produite, portions par pièce et total portions ;
+- une table de composition avec colonnes stables : Section, Produit, Qté nette, Rendement, Qté brute, Prix HT et Coût HT ;
+- six indicateurs principaux d'analyse figée présentés en cartes ;
+- un tableau complémentaire pour les coûts par pièce/portion, la TVA et la marge cible ;
+- pagination automatique, répétition de l'en-tête de table sur les pages de composition suivantes et pied de page numéroté.
+
+La source métier et le périmètre des données ne changent pas : seul le snapshot validé courant est rendu et aucun indicateur d'écart/diagnostic n'est ajouté.
