@@ -54,24 +54,15 @@ const requestFor = ({
     mode = 'MANUAL',
     minNetQuantity = '1',
     maxNetQuantity = '3',
-    pressures = {
-        VERY_LOW: -50,
-        LOW: -50,
-        MEDIUM: -50,
-        HIGH: -50,
-        VERY_HIGH: -50,
-    },
+    economicAdjustmentPercent = -50,
 } = {}) => ({
     expectedRevision:
         draft.revision,
     mode,
-    curve: {
-        enabled: true,
-        pressures,
-    },
     lines: [{
         lineId:
             draft.lines[0].id,
+        economicAdjustmentPercent,
         minNetQuantity,
         maxNetQuantity,
         locked: false,

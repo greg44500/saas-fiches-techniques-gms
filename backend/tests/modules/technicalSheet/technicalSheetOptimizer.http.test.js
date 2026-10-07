@@ -82,19 +82,10 @@ const simulationBody = () => ({
     expectedRevision:
         draft.revision,
     mode: 'MANUAL',
-    curve: {
-        enabled: true,
-        pressures: {
-            VERY_LOW: -50,
-            LOW: -50,
-            MEDIUM: -50,
-            HIGH: -50,
-            VERY_HIGH: -50,
-        },
-    },
     lines: [{
         lineId:
             draft.lines[0].id,
+        economicAdjustmentPercent: -50,
         minNetQuantity: null,
         maxNetQuantity: null,
         locked: false,

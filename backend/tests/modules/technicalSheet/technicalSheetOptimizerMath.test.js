@@ -9,63 +9,49 @@ import {
     assertOptimizationEnvelope,
     buildQuarterStepTowardMinimum,
     calculateSavings,
-    interpolateCurvePressure,
 } from '../../../modules/technicalSheet/technicalSheetOptimizerMath.service.js';
 
 describe('M-005 mathématiques de l’Atelier', () => {
-    const curve = {
-        enabled: true,
-        pressures: {
-            VERY_LOW: -50,
-            LOW: 0,
-            MEDIUM: 50,
-            HIGH: 0,
-            VERY_HIGH: 100,
-        },
-    };
-
-    it('interpole l’ajustement économique entre les cinq zones de %CM', () => {
-        const adjustment =
-            interpolateCurvePressure({
-                materialCostSharePercent:
-                    '12.5',
-                curve,
-            });
-
-        expect(
-            Number(
-                adjustment.numerator,
-            )
-            / Number(
-                adjustment.denominator,
-            ),
-        ).toBe(-25);
-    });
-
-    it('traduit directement une baisse de coût en quantité sans exiger de bornes', () => {
+    it('traduit directement une baisse économique locale en quantité sans exiger de bornes', () => {
         expect(
             applyEconomicAdjustmentToQuantity({
                 referenceQuantity: '10',
                 minNetQuantity: null,
                 maxNetQuantity: null,
-                materialCostSharePercent:
-                    '0',
-                curve,
+                economicAdjustmentPercent: -50,
             }),
         ).toBe('5');
     });
 
-    it('traduit une hausse de coût en quantité puis respecte un garde-fou maximum', () => {
+    it('traduit une hausse économique locale en quantité puis respecte un garde-fou maximum', () => {
         expect(
             applyEconomicAdjustmentToQuantity({
                 referenceQuantity: '10',
                 minNetQuantity: null,
                 maxNetQuantity: '14',
-                materialCostSharePercent:
-                    '50',
-                curve,
+                economicAdjustmentPercent: 50,
             }),
         ).toBe('14');
+    });
+
+    it('conserve la quantité de référence pour un ajustement neutre', () => {
+        expect(
+            applyEconomicAdjustmentToQuantity({
+                referenceQuantity: '10',
+                economicAdjustmentPercent: 0,
+            }),
+        ).toBe('10');
+    });
+
+    it('refuse un ajustement économique hors plage', () => {
+        expect(() =>
+            applyEconomicAdjustmentToQuantity({
+                referenceQuantity: '10',
+                economicAdjustmentPercent: -100,
+            }),
+        ).toThrow(
+            /ajustement économique/i,
+        );
     });
 
     it('refuse un garde-fou qui n’encadre pas la quantité de référence', () => {
