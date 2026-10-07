@@ -120,6 +120,22 @@ const serializeLine = (line) => {
         note: line.note ?? null,
         selectedSupplierArticleId:
             line.selectedSupplierArticle?.toString() ?? null,
+        optimization: {
+            minNetQuantity:
+                decimalToString(
+                    line.optimization
+                        ?.minNetQuantity,
+                ),
+            maxNetQuantity:
+                decimalToString(
+                    line.optimization
+                        ?.maxNetQuantity,
+                ),
+            locked:
+                Boolean(
+                    line.optimization?.locked,
+                ),
+        },
         calculation: {
             yieldPercentUsed:
                 decimalToString(
