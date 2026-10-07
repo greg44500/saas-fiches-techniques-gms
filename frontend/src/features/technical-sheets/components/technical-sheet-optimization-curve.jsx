@@ -114,7 +114,7 @@ function TechnicalSheetOptimizationCurve({
         <svg
           aria-label="Courbe globale d’optimisation"
           className="min-w-[520px] touch-none"
-          role="img"
+          role="group"
           viewBox={
             '0 0 '
             + SVG_WIDTH
