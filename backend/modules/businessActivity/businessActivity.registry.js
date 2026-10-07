@@ -87,6 +87,10 @@ const BUSINESS_ACTIVITY_ACTION_REGISTRY = Object.freeze({
         value: 'TECHNICAL_SHEET_EXPORTED',
         label: 'Fiche technique exportée',
     }),
+    TECHNICAL_SHEET_OPTIMIZATION_APPLIED: Object.freeze({
+        value: 'TECHNICAL_SHEET_OPTIMIZATION_APPLIED',
+        label: 'Optimisation de Fiche technique appliquée',
+    }),
     TECHNICAL_SHEET_DEFAULT_MARGIN_UPDATED: Object.freeze({
         value: 'TECHNICAL_SHEET_DEFAULT_MARGIN_UPDATED',
         label: 'Marge cible par défaut modifiée',
