@@ -39,11 +39,14 @@ Le réglage principal est local à la ligne via `economicAdjustmentPercent`. Le 
 Desktop :
 
 ```text
-bandeau KPI
-→ profil global
-→ Fiche simulée
-→ barre verticale d’outils
-→ inspecteur fixe dynamique
+Fiche simulée dominante à gauche
+→ KPI économiques compacts au-dessus
+→ drawer de pilotage large à droite
+   → profil global toujours visible
+   → Manuel / Auto
+   → bandeau horizontal d’outils
+   → inspecteur dynamique
+   → actions fixes
 ```
 
 Outils : Réglage, Produit, Approvisionnement, Contraintes.
@@ -70,7 +73,7 @@ Décisions structurantes :
 - %CM = part relative du Coût Matière, jamais composition physique ;
 - l’ajustement M-005 est porté par chaque ligne Ingrédient ; l’ancien contrôle à cinq ancres est abandonné ;
 - à Produit/prix/rendement constants, la variation de coût se traduit directement en variation proportionnelle de quantité ;
-- min/max sont des garde-fous facultatifs et leur absence ne neutralise plus la courbe ;
+- min/max sont des garde-fous facultatifs et leur absence ne neutralise pas l’ajustement local ;
 - aucune compensation physique obligatoire lors d’une réduction de quantité ;
 - alternative Produit V1 = même `CanonicalProduct`, même `referenceUnit`, Référence ACTIVE et visible dans le Workspace ;
 - alternative d’approvisionnement = même Référence Produit, Article revalorisé avec le Prix applicable du Dossier courant ;
@@ -98,7 +101,7 @@ projection / contexte
 → chargement du DRAFT, valorisation fraîche, projection avant/après
 
 scénario Manuel
-→ contraintes, courbe, override local, substitutions, fingerprint
+→ ajustement local, contraintes, override local, substitutions, fingerprint
 
 stratégie Auto
 → génération bornée des candidats et sélection du meilleur prochain mouvement
@@ -166,7 +169,7 @@ Nouveaux éléments :
 ~~~text
 frontend/src/features/technical-sheets/pages/technical-sheet-optimizer-page.jsx
 frontend/src/features/technical-sheets/components/technical-sheet-optimizer-route.jsx
-frontend/src/features/technical-sheets/components/technical-sheet-optimization-curve.jsx
+frontend/src/features/technical-sheets/components/technical-sheet-optimization-profile.jsx
 frontend/src/features/technical-sheets/components/technical-sheet-optimizer-inspector.jsx
 frontend/src/features/technical-sheets/components/technical-sheet-optimizer-picker-dialog.jsx
 frontend/src/features/technical-sheets/lib/technical-sheet-optimizer.js
@@ -178,7 +181,7 @@ Fonctions visibles :
 - bandeau économique avant / après avec état de recalcul ;
 - profil économique global à points, un point par ingrédient, utilisé comme instantané de la simulation ;
 - Fiche technique simulée comme surface principale avec barres de contribution ;
-- barre verticale d’outils + inspecteur persistant à contenu dynamique sur desktop ;
+- panneau droit largeur drawer avec profil toujours visible, bandeau horizontal d’outils et inspecteur dynamique ;
 - réglages en Sheet sur petit écran ;
 - garde-fous quantité facultatifs ;
 - calques Produit / rendement et approvisionnement ;
