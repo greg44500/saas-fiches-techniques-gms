@@ -903,6 +903,21 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
     'Fiche technique mise à jour',
   );
 
+  const copyWhileDraftOpen =
+    page.getByRole('button', {
+      name:
+        'Copier vers un autre Dossier',
+    });
+
+  await expect(
+    copyWhileDraftOpen,
+  ).toBeDisabled();
+
+  await validateCurrentDraft(page, {
+    comment:
+      'Modification autorisée à la limite',
+  });
+
   await expectTechnicalSheetCapacity(page, {
     dashboardUrl: context.dashboardUrl,
     expected: '1 / 1',
