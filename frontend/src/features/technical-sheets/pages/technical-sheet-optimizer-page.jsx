@@ -508,6 +508,27 @@ function TechnicalSheetOptimizerPage() {
       onTakeAutoSuggestion={
         takeAutoSuggestion
       }
+      profile={(
+        <TechnicalSheetOptimizationProfile
+          after={after}
+          baseline={before}
+          embedded
+          lines={lines}
+          onChangeLine={
+            updateLine
+          }
+          onSelect={
+            setSelectedLineId
+          }
+          range={
+            context
+              .costAdjustmentRange
+          }
+          selectedLineId={
+            selectedLineId
+          }
+        />
+      )}
       projectionLine={
         selectedProjectionLine
       }
@@ -564,48 +585,30 @@ function TechnicalSheetOptimizerPage() {
         </Button>
       </header>
 
-      <TechnicalSheetOptimizerEconomicsStrip
-        after={after}
-        before={before}
-        savings={
-          simulation?.savings
-          ?? {
-            amountHt: '0',
-            percent: '0',
-          }
-        }
-        simulationError={
-          simulationError
-        }
-        simulationStatus={
-          simulationStatus
-        }
-      />
-
-      <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_23rem]">
-        <main className="flex min-h-0 flex-col gap-3">
-          <TechnicalSheetOptimizationProfile
+      <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(32rem,36rem)]">
+        <section className="flex min-h-0 min-w-0 flex-col gap-3">
+          <TechnicalSheetOptimizerEconomicsStrip
             after={after}
-            baseline={before}
-            lines={lines}
-            onChangeLine={
-              updateLine
+            before={before}
+            savings={
+              simulation?.savings
+              ?? {
+                amountHt: '0',
+                percent: '0',
+              }
             }
-            onSelect={
-              setSelectedLineId
+            simulationError={
+              simulationError
             }
-            range={
-              context
-                .costAdjustmentRange
-            }
-            selectedLineId={
-              selectedLineId
+            simulationStatus={
+              simulationStatus
             }
           />
 
           <TechnicalSheetOptimizerRecipePreview
             after={after}
             baseline={before}
+            draft={context.draft}
             onOpenControls={() =>
               setControlsOpen(true)}
             onSelect={
@@ -614,10 +617,11 @@ function TechnicalSheetOptimizerPage() {
             selectedLineId={
               selectedLineId
             }
+            sheet={context.sheet}
           />
-        </main>
+        </section>
 
-        <aside className="hidden min-h-0 xl:block">
+        <aside className="hidden min-h-0 min-w-0 xl:block">
           {controls}
         </aside>
       </div>
@@ -629,7 +633,7 @@ function TechnicalSheetOptimizerPage() {
         open={controlsOpen}
       >
         <SheetContent
-          className="flex w-[min(94vw,28rem)] flex-col overflow-hidden xl:hidden"
+          className="flex w-[min(96vw,36rem)] flex-col overflow-hidden xl:hidden"
           side="right"
         >
           <SheetHeader>
