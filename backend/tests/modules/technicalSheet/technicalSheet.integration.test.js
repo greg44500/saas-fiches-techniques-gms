@@ -503,6 +503,101 @@ describe('M-004 services Fiches techniques', () => {
         ).toContain(created.sheet.id);
     });
 
+    it('expose séparément la validation courante et l’existence d’un brouillon dans la liste', async () => {
+        const {
+            created,
+            valued,
+        } = await createValuedDraft();
+
+        let listed =
+            await listTechnicalSheets({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+            });
+        let listedSheet =
+            listed.sheets.find(
+                ({ id }) =>
+                    id === created.sheet.id,
+            );
+
+        expect(listedSheet).toMatchObject({
+            currentValidatedStateId: null,
+            hasDraft: true,
+        });
+
+        const validated =
+            await validateTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedSheetRevision:
+                    created.sheet.revision,
+                expectedDraftRevision:
+                    valued.draft.revision,
+                atDate,
+            });
+
+        listed =
+            await listTechnicalSheets({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+            });
+        listedSheet =
+            listed.sheets.find(
+                ({ id }) =>
+                    id === created.sheet.id,
+            );
+
+        expect(
+            listedSheet.currentValidatedStateId,
+        ).toBeTruthy();
+        expect(
+            listedSheet.hasDraft,
+        ).toBe(false);
+
+        await createDraftFromValidatedState({
+            workspaceId:
+                owner.workspace._id,
+            dossierId:
+                dossier._id,
+            technicalSheetId:
+                created.sheet.id,
+            actorId:
+                owner.owner._id,
+            expectedSheetRevision:
+                validated.sheetRevision,
+        });
+
+        listed =
+            await listTechnicalSheets({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+            });
+        listedSheet =
+            listed.sheets.find(
+                ({ id }) =>
+                    id === created.sheet.id,
+            );
+
+        expect(
+            listedSheet.currentValidatedStateId,
+        ).toBeTruthy();
+        expect(
+            listedSheet.hasDraft,
+        ).toBe(true);
+    });
+
     it('calcule %CM comme contribution de chaque Ingrédient au coût matière total', async () => {
         const commonLine = {
             kind: 'INGREDIENT',
