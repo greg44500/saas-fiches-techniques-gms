@@ -21,6 +21,35 @@ commit 054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3
 
 Aucune évolution Core n’est requise par M-005.
 
+## 1.1 Recadrage UX validé le 2026-10-07
+
+La QA a invalidé le contrôle à cinq ancres de %CM. La direction désormais contractuelle est :
+
+```text
+profil économique global = instantané de toute la Fiche
+1 point = 1 ingrédient
+x = ajustement économique local
+y = contribution au coût matière de la projection
+```
+
+Le profil n’est pas une fonction continue et n’interpole rien entre ingrédients.
+
+Le réglage principal est local à la ligne via `economicAdjustmentPercent`. Le backend traduit cette intention en quantité, applique les garde-fous et revalorise avec M-004.
+
+Desktop :
+
+```text
+bandeau KPI
+→ profil global
+→ Fiche simulée
+→ barre verticale d’outils
+→ inspecteur fixe dynamique
+```
+
+Outils : Réglage, Produit, Approvisionnement, Contraintes.
+
+Objectif UX : pas de scroll documentaire de la page Atelier sur desktop ; seule la liste de lignes peut disposer de son propre viewport lorsque la recette dépasse la hauteur disponible.
+
 ## 2. Contrats canoniques M-005
 
 ~~~text
@@ -39,7 +68,7 @@ Décisions structurantes :
 - `TechnicalSheetValidation` reste immuable ;
 - min/max/verrouillage persistés sur les lignes du DRAFT et snapshottés lors de la validation ;
 - %CM = part relative du Coût Matière, jamais composition physique ;
-- la courbe M-005 pilote une variation économique de ligne, pas un simple déplacement vers min/max ;
+- l’ajustement M-005 est porté par chaque ligne Ingrédient ; l’ancien contrôle à cinq ancres est abandonné ;
 - à Produit/prix/rendement constants, la variation de coût se traduit directement en variation proportionnelle de quantité ;
 - min/max sont des garde-fous facultatifs et leur absence ne neutralise plus la courbe ;
 - aucune compensation physique obligatoire lors d’une réduction de quantité ;
@@ -147,9 +176,9 @@ Fonctions visibles :
 
 - page Atelier dédiée ;
 - bandeau économique avant / après avec état de recalcul ;
-- courbe économique compacte à cinq points basée sur le %CM de référence ;
+- profil économique global à points, un point par ingrédient, utilisé comme instantané de la simulation ;
 - Fiche technique simulée comme surface principale avec barres de contribution ;
-- panneau de réglages persistant à droite sur desktop ;
+- barre verticale d’outils + inspecteur persistant à contenu dynamique sur desktop ;
 - réglages en Sheet sur petit écran ;
 - garde-fous quantité facultatifs ;
 - calques Produit / rendement et approvisionnement ;

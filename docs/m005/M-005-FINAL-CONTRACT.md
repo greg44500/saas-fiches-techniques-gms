@@ -1,6 +1,6 @@
 # M-005 — Contrat final — Atelier d’optimisation des Fiches techniques
 
-**Statut : VALIDÉ POUR IMPLÉMENTATION**  
+**Statut : RECADRÉ UX — IMPLÉMENTATION EN COURS**  
 **Date : 2026-10-07**  
 **Module : M-005**  
 **Branche : `feature/m005-technical-sheet-optimizer-v1`**
@@ -95,41 +95,63 @@ Invariants :
 
 Les contraintes sont persistées sur le DRAFT lorsque l’utilisateur applique le scénario. Elles sont snapshottées lors de la validation, restaurées lors d’une nouvelle révision et copiées avec la recette vers un autre Dossier. Les données économiques ne sont jamais copiées entre Dossiers.
 
-## 7. Courbe d’ajustement économique
+## 7. Profil économique global et ajustement local par ingrédient
 
-La courbe conserve cinq points fixes sur l’axe horizontal, déterminés par la contribution économique actuelle de la ligne :
+L’ancien modèle à cinq ancres `0 / 25 / 50 / 75 / 100 %CM` est abandonné. Il était mathématiquement explicable mais trop indirect : plusieurs ancres pouvaient ne produire aucun effet visible lorsque les ingrédients étaient concentrés dans une même zone de contribution au coût matière.
+
+Le nouveau principe est :
 
 ```text
-0 %CM   → Très faible
-25 %CM  → Faible
-50 %CM  → Moyenne
-75 %CM  → Forte
-100 %CM → Très forte
+1 point interactif = 1 ligne Ingrédient
 ```
 
-L’axe vertical représente directement la variation de coût souhaitée pour les lignes de la zone concernée.
+Le profil économique est la lecture globale instantanée de la Fiche simulée. Il ne constitue pas une fonction continue entre ingrédients et aucune interpolation entre lignes n’a de signification métier.
+
+Pour chaque ingrédient, le backend accepte une intention :
+
+```text
+economicAdjustmentPercent
+```
 
 En V1 :
 
 ```text
 -99 %  → réduction maximale compatible avec une quantité strictement positive
-0 %    → économie de référence inchangée
-+100 % → coût de ligne doublé
+0 %    → quantité de référence inchangée
++100 % → quantité doublée à économie unitaire inchangée
 ```
 
-Entre deux points, l’ajustement économique est interpolé linéairement selon le %CM de référence de la ligne.
-
-Lorsque Produit, rendement et prix applicable restent identiques :
+Lorsque Produit, rendement et Prix applicable restent identiques :
 
 ```text
-qSimulation = qRef × (1 + ajustementEconomique / 100)
+qSimulation = qRef × (1 + economicAdjustmentPercent / 100)
 ```
 
-Le coût de ligne évolue alors dans la même proportion que la quantité. Les éventuels minimum et maximum ne pilotent pas ce mouvement : ils bornent uniquement la quantité calculée.
+Les éventuels minimum et maximum ne pilotent pas ce mouvement : ils bornent uniquement la quantité calculée.
 
-Lorsqu’un calque Produit ou approvisionnement change l’économie unitaire, le moteur M-004 revalorise entièrement la ligne et le résultat économique réel retourné par le serveur reste autoritatif.
+Le profil utilise des grandeurs métier explicables :
 
-Un override local de quantité prend priorité sur la courbe. « Reprendre le calcul » supprime cet override.
+- axe horizontal : ajustement économique de la ligne par rapport à la recette de référence ;
+- centre `0 %` : recette de référence ;
+- gauche : réduction ;
+- droite : augmentation / enrichissement quantitatif ;
+- axe vertical : contribution au coût matière de la ligne dans la projection affichée ;
+- sélection : un clic sur un point sélectionne la même ligne que dans la Fiche centrale.
+
+La position verticale sert à lire le poids économique relatif de la ligne. Elle ne constitue jamais un score de qualité, de goût ou d’équilibre sensoriel.
+
+Au survol ou au focus d’un point, l’interface affiche au minimum :
+
+- nom de la Référence Produit ;
+- quantité avant / simulée ;
+- coût avant / simulé ;
+- contribution au coût matière avant / après ;
+- ajustement économique demandé ;
+- état éventuel d’un garde-fou.
+
+Le déplacement horizontal d’un point et le slider de l’inspecteur représentent la même intention et doivent rester synchronisés.
+
+Un override local de quantité reste disponible comme réglage avancé et prend priorité sur `economicAdjustmentPercent`. « Reprendre le calcul » supprime cet override.
 
 ## 8. Alternatives Produit
 
@@ -158,18 +180,20 @@ Aucune donnée commerciale d’un autre Dossier n’est consultée comme fallbac
 
 ## 10. Mode Manuel
 
-Le mode Manuel permet de combiner :
+Le mode Manuel combine des réglages indépendants et explicables :
 
-- courbe globale ;
+- ajustement économique local par ingrédient ;
 - bornes min/max ;
 - verrouillage de quantité ;
-- override local ;
+- override local de quantité avancé ;
 - alternative Produit ;
 - alternative Article.
 
+Il n’existe plus de courbe globale à cinq ancres pilotant plusieurs lignes à la fois.
+
 Chaque changement déclenche une simulation backend après un debounce court côté frontend.
 
-Le frontend ne calcule jamais une valeur économique autoritative. Il peut uniquement conserver des intentions de simulation et afficher la réponse du serveur.
+Le frontend conserve uniquement les intentions de simulation. Le backend traduit l’ajustement économique en quantité, applique les garde-fous, revalorise via M-004 et renvoie les coûts, marges, %CM et économies autoritatifs.
 
 ## 11. Mode Auto V1
 
@@ -253,25 +277,71 @@ Une nouvelle révision reprend ces contraintes, mais re-résout toute donnée é
 
 ## 15. UX
 
-Desktop :
+Desktop : l’Atelier est conçu comme un poste de réglage continu inspiré de Lightroom.
 
-- page Atelier dédiée inspirée d’un poste de réglage type Lightroom ;
-- bandeau économique compact avant/après ;
-- Fiche technique simulée comme surface visuelle principale ;
-- lignes Ingrédients avec quantité, coût et %CM avant/après ainsi qu’une barre de contribution ;
-- panneau de réglages persistant à droite ;
-- courbe économique compacte dans ce panneau ;
-- calques logiques Produit / rendement et approvisionnement ;
-- garde-fous quantité facultatifs dans l’inspecteur ;
-- modes Manuel / Auto ;
-- actions Réinitialiser / Comparer / Appliquer au brouillon.
+Structure :
 
-La navigation Workspace expose également « Atelier d’optimisation » dans le groupe Dossiers avec une icône baguette magique. Cette entrée ouvre un sélecteur Dossier puis Fiche avant d’accéder au même Atelier canonique.
+```text
+bandeau économique fixe
+→ profil économique global instantané
+→ Fiche technique simulée comme résultat principal
+→ barre verticale d’outils
+→ inspecteur droit fixe à contenu dynamique
+→ actions de scénario
+```
+
+La page Atelier ne doit pas imposer un scroll documentaire sur desktop. Les zones structurantes restent visibles dans le viewport. Lorsque la Fiche contient plus de lignes que l’espace disponible, seule la zone de liste des ingrédients peut défiler dans son propre viewport.
+
+Le profil économique :
+
+- présente tous les ingrédients simultanément ;
+- représente chaque ingrédient par un point réel ;
+- se met à jour après chaque simulation ;
+- sélectionne la même ligne que la Fiche centrale ;
+- permet de modifier horizontalement l’ajustement de la ligne sélectionnée ;
+- n’invente aucune continuité mathématique entre les ingrédients.
+
+La Fiche centrale affiche de manière compacte :
+
+- nom ;
+- quantité avant → après ;
+- coût avant → après ;
+- delta signé ;
+- %CM avant → après ;
+- indicateur visuel de contribution.
+
+La barre d’outils droite n’est pas une navigation entre pages. Elle change le contenu du même inspecteur pour l’ingrédient sélectionné.
+
+Outils V1 :
+
+```text
+Réglage
+Produit
+Approvisionnement
+Contraintes
+```
+
+L’outil Réglage expose en priorité :
+
+- slider d’ajustement économique ;
+- valeur signée ;
+- quantité avant → après ;
+- coût avant → après ;
+- %CM avant → après.
+
+Produit et Approvisionnement restent deux leviers distincts. Contraintes regroupe minimum, maximum, verrouillage et quantité forcée avancée.
+
+Les explications longues sont déplacées vers des tooltips / aides contextuelles. Les boutons d’outils sont identifiables au clavier et disposent d’un libellé accessible.
+
+Les actions Réinitialiser et Appliquer au brouillon restent accessibles sans faire défiler toute la page.
+
+La navigation Workspace expose toujours « Atelier d’optimisation » dans le groupe Dossiers avec une icône baguette magique. Cette entrée ouvre un sélecteur Dossier puis Fiche avant d’accéder au même Atelier canonique.
 
 Petit écran :
 
 - contenu principal conservé ;
-- inspecteur en Sheet latérale/basse ;
+- inspecteur présenté en Sheet latérale/basse ;
+- même sémantique d’outils ;
 - contrôles utilisables au tactile et au clavier.
 
 Deux entrées ouvrent le même Atelier :
@@ -297,7 +367,8 @@ Backend :
 - DRAFT absent ;
 - révision obsolète ;
 - min/max/verrouillage ;
-- courbe et override local ;
+- ajustement économique par ligne ;
+- override local prioritaire ;
 - diminution sans compensation physique ;
 - renormalisation %CM ;
 - alternative Produit admissible/inadmissible ;
@@ -311,14 +382,17 @@ Frontend :
 
 - affichage conditionné par capability + permission ;
 - ouverture depuis la liste et la Fiche ;
-- création préalable d’un DRAFT depuis une version validée ;
-- page Atelier ;
+- page Atelier sans scroll documentaire desktop ;
+- profil économique global ;
+- point = ingrédient ;
+- sélection bidirectionnelle profil ↔ Fiche ;
+- slider ↔ point synchronisés ;
+- inspecteur à outils dynamiques ;
 - Manuel/Auto ;
-- courbe ;
-- inspecteur ;
 - contraintes ;
 - alternatives ;
 - avant/après ;
+- arrondis de présentation ;
 - reset ;
 - apply ;
 - erreur de révision.
@@ -326,7 +400,7 @@ Frontend :
 E2E critique :
 
 - simulation n’écrit pas avant Apply ;
-- réduction d’une quantité sans compensation ;
+- ajustement d’une ligne sans compensation ;
 - alternative avec prix Dossier ;
 - deux Dossiers donnent des résultats économiques isolés ;
 - absence de capability bloque l’Atelier ;
