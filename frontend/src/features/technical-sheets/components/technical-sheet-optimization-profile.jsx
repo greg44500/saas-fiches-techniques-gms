@@ -82,6 +82,32 @@ function yForShare(share) {
     ) * usable;
 }
 
+function hasPinnedEnvelope(line) {
+  if (
+    !line.minNetQuantity
+    || !line.maxNetQuantity
+  ) {
+    return false;
+  }
+
+  const min =
+    safeNumber(
+      line.minNetQuantity,
+      Number.NaN,
+    );
+  const max =
+    safeNumber(
+      line.maxNetQuantity,
+      Number.NaN,
+    );
+
+  return (
+    Number.isFinite(min)
+    && Number.isFinite(max)
+    && Math.abs(min - max) < 1e-9
+  );
+}
+
 function constraintLabel(
   line,
   projectionLine,
@@ -202,6 +228,9 @@ function TechnicalSheetOptimizationProfile({
         return {
           lineId: beforeLine.id,
           adjustment,
+          disabled:
+            intent.locked
+            || hasPinnedEnvelope(intent),
           share,
           x:
             xForAdjustment(
@@ -236,7 +265,7 @@ function TechnicalSheetOptimizationProfile({
     point,
     nextAdjustment,
   ) {
-    if (point.intent.locked) {
+    if (point.disabled) {
       return;
     }
 
@@ -410,7 +439,7 @@ function TechnicalSheetOptimizationProfile({
                 />
                 <circle
                   aria-disabled={
-                    point.intent.locked
+                    point.disabled
                   }
                   aria-label={
                     'Ajustement '
@@ -441,7 +470,12 @@ function TechnicalSheetOptimizationProfile({
                     )
                   }
                   className={
-                    'cursor-ew-resize outline-none focus-visible:stroke-ring focus-visible:stroke-[3px] '
+                    (
+                      point.disabled
+                        ? 'cursor-not-allowed '
+                        : 'cursor-ew-resize '
+                    )
+                    + 'outline-none focus-visible:stroke-ring focus-visible:stroke-[3px] '
                     + (
                       selected
                         ? 'fill-primary'
@@ -468,7 +502,7 @@ function TechnicalSheetOptimizationProfile({
                   }}
                   onKeyDown={(event) => {
                     if (
-                      point.intent.locked
+                      point.disabled
                     ) {
                       return;
                     }
@@ -517,7 +551,7 @@ function TechnicalSheetOptimizationProfile({
                     );
 
                     if (
-                      point.intent.locked
+                      point.disabled
                     ) {
                       return;
                     }
@@ -565,7 +599,7 @@ function TechnicalSheetOptimizationProfile({
                         );
 
                     if (
-                      point.intent.locked
+                      point.disabled
                       || !hasPointerCapture
                     ) {
                       return;
