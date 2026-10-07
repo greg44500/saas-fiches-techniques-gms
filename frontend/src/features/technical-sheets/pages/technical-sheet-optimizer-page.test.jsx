@@ -178,6 +178,7 @@ describe('TechnicalSheetOptimizerPage', () => {
 
     expect(
       screen.getByRole('heading', {
+        level: 1,
         name: 'Purée M005',
       }),
     ).toBeInTheDocument();
@@ -400,7 +401,10 @@ describe('TechnicalSheetOptimizerPage', () => {
             'Ajustement économique de l’ingrédient',
         },
       ),
-    ).toBeDisabled();
+    ).toHaveAttribute(
+      'data-disabled',
+      '',
+    );
 
     expect(
       screen.getByRole(
