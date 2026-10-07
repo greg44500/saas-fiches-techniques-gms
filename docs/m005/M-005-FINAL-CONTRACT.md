@@ -87,17 +87,17 @@ Ces valeurs sont exprimées dans l’unité de référence de la Référence Pro
 
 Invariants :
 
-- minimum et maximum sont strictement positifs lorsqu’ils sont renseignés ;
-- `min <= quantité de référence <= max` ;
+- minimum et maximum sont des garde-fous facultatifs ;
+- lorsqu’ils sont renseignés, ils sont strictement positifs et encadrent la quantité de référence ;
+- une borne absente signifie « aucun garde-fou de ce côté » et ne neutralise jamais la courbe ;
 - une ligne verrouillée conserve sa quantité de référence ;
-- aucune borne absente n’est inventée : l’absence de borne est interprétée comme la quantité de référence elle-même ;
 - une ligne Économat n’est pas modulée par la courbe M-005 V1.
 
 Les contraintes sont persistées sur le DRAFT lorsque l’utilisateur applique le scénario. Elles sont snapshottées lors de la validation, restaurées lors d’une nouvelle révision et copiées avec la recette vers un autre Dossier. Les données économiques ne sont jamais copiées entre Dossiers.
 
-## 7. Courbe globale
+## 7. Courbe d’ajustement économique
 
-La courbe possède cinq points fixes de contribution économique :
+La courbe conserve cinq points fixes sur l’axe horizontal, déterminés par la contribution économique actuelle de la ligne :
 
 ```text
 0 %CM   → Très faible
@@ -107,29 +107,29 @@ La courbe possède cinq points fixes de contribution économique :
 100 %CM → Très forte
 ```
 
-Chaque point porte une pression entière comprise entre -100 et +100.
+L’axe vertical représente directement la variation de coût souhaitée pour les lignes de la zone concernée.
 
-- -100 : déplacement jusqu’au minimum autorisé ;
-- 0 : quantité de référence ;
-- +100 : déplacement jusqu’au maximum autorisé.
-
-Entre deux points, la pression est interpolée linéairement selon le %CM de référence de la ligne.
-
-Pour une pression négative :
+En V1 :
 
 ```text
-qSimulation = qRef + pression × (qRef - qMin)
+-90 %  → forte réduction du coût de ligne
+0 %    → économie de référence inchangée
++100 % → coût de ligne doublé
 ```
 
-Pour une pression positive :
+Entre deux points, l’ajustement économique est interpolé linéairement selon le %CM de référence de la ligne.
+
+Lorsque Produit, rendement et prix applicable restent identiques :
 
 ```text
-qSimulation = qRef + pression × (qMax - qRef)
+qSimulation = qRef × (1 + ajustementEconomique / 100)
 ```
 
-La pression est normalisée sur `[-1 ; +1]`.
+Le coût de ligne évolue alors dans la même proportion que la quantité. Les éventuels minimum et maximum ne pilotent pas ce mouvement : ils bornent uniquement la quantité calculée.
 
-Un override local de quantité prend priorité sur la courbe. « Reprendre la courbe globale » supprime cet override.
+Lorsqu’un calque Produit ou approvisionnement change l’économie unitaire, le moteur M-004 revalorise entièrement la ligne et le résultat économique réel retourné par le serveur reste autoritatif.
+
+Un override local de quantité prend priorité sur la courbe. « Reprendre le calcul » supprime cet override.
 
 ## 8. Alternatives Produit
 
@@ -255,13 +255,18 @@ Une nouvelle révision reprend ces contraintes, mais re-résout toute donnée é
 
 Desktop :
 
-- page Atelier dédiée ;
-- bandeau Fiche/Dossier/KPI avant-après ;
-- tableau des Ingrédients ;
-- courbe globale ;
-- inspecteur latéral persistant ;
+- page Atelier dédiée inspirée d’un poste de réglage type Lightroom ;
+- bandeau économique compact avant/après ;
+- Fiche technique simulée comme surface visuelle principale ;
+- lignes Ingrédients avec quantité, coût et %CM avant/après ainsi qu’une barre de contribution ;
+- panneau de réglages persistant à droite ;
+- courbe économique compacte dans ce panneau ;
+- calques logiques Produit / rendement et approvisionnement ;
+- garde-fous quantité facultatifs dans l’inspecteur ;
 - modes Manuel / Auto ;
 - actions Réinitialiser / Comparer / Appliquer au brouillon.
+
+La navigation Workspace expose également « Atelier d’optimisation » dans le groupe Dossiers avec une icône baguette magique. Cette entrée ouvre un sélecteur Dossier puis Fiche avant d’accéder au même Atelier canonique.
 
 Petit écran :
 

@@ -169,11 +169,12 @@ Ordre :
 2. contraintes ;
 3. substitution Produit ;
 4. substitution Article ;
-5. courbe globale sur les lignes Ingrédient non verrouillées ;
-6. override local ;
-7. `buildTechnicalSheetValuation` ;
-8. projection avant/après ;
-9. fingerprint.
+5. interpolation de la variation économique selon le %CM de référence ;
+6. traduction de cette variation en quantité, avec garde-fous facultatifs ;
+7. override local éventuel ;
+8. `buildTechnicalSheetValuation` ;
+9. projection avant/après ;
+10. fingerprint.
 
 Le coût de référence est lui aussi recalculé fraîchement au début de la requête.
 
@@ -272,12 +273,15 @@ Les changements de courbe/inspecteur sont debounce côté React.
 
 Un compteur de requête permet d’ignorer une réponse plus ancienne qu’une intention déjà envoyée.
 
-Le SVG de courbe fournit :
+L’interface expose explicitement les états « Recalcul en cours », « Simulation à jour » et « Simulation à vérifier ». Une erreur de recalcul automatique conserve le dernier résultat valide au lieu de revenir silencieusement aux valeurs de référence.
+
+Le SVG compact de courbe fournit :
 
 - pointer events souris/tactile ;
 - focus clavier sur les points ;
-- flèches haut/bas pour modifier la pression ;
-- sliders numériques équivalents sous la courbe.
+- flèches haut/bas pour modifier directement la variation économique ;
+- valeurs de variation visibles sous les cinq points ;
+- absence de sliders redondants sous la courbe.
 
 ## 17. Entrées UX
 
@@ -287,9 +291,13 @@ Liste Fiches :
 Voir | Modifier | Optimiser | Exporter
 ```
 
+Toutes les actions « Optimiser / Atelier d’optimisation » utilisent l’icône baguette magique.
+
 Poste de travail Fiche : bouton `Optimiser` dans le panneau de contrôle.
 
 Page Dossier/Fiches : bouton `Atelier d’optimisation` ouvrant un sélecteur de Fiche.
+
+Sidebar Workspace, groupe Dossiers : entrée `Atelier d’optimisation` vers `technical-sheets/optimization`. Cette surface sélectionne d’abord le Dossier actif puis la Fiche active, avant d’ouvrir la route Dossier canonique.
 
 Une Fiche validée sans DRAFT passe d’abord par `POST /:id/draft`, puis l’Atelier est ouvert.
 

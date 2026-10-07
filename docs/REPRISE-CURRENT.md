@@ -39,6 +39,9 @@ Décisions structurantes :
 - `TechnicalSheetValidation` reste immuable ;
 - min/max/verrouillage persistés sur les lignes du DRAFT et snapshottés lors de la validation ;
 - %CM = part relative du Coût Matière, jamais composition physique ;
+- la courbe M-005 pilote une variation économique de ligne, pas un simple déplacement vers min/max ;
+- à Produit/prix/rendement constants, la variation de coût se traduit directement en variation proportionnelle de quantité ;
+- min/max sont des garde-fous facultatifs et leur absence ne neutralise plus la courbe ;
 - aucune compensation physique obligatoire lors d’une réduction de quantité ;
 - alternative Produit V1 = même `CanonicalProduct`, même `referenceUnit`, Référence ACTIVE et visible dans le Workspace ;
 - alternative d’approvisionnement = même Référence Produit, Article revalorisé avec le Prix applicable du Dossier courant ;
@@ -143,12 +146,13 @@ frontend/src/features/technical-sheets/lib/technical-sheet-optimizer.js
 Fonctions visibles :
 
 - page Atelier dédiée ;
-- KPI avant / après ;
-- courbe globale à cinq points basée sur le %CM ;
-- contrôles accessibles au clavier + sliders équivalents ;
-- tableau Ingrédients avant / après ;
-- inspecteur persistant desktop ;
-- inspecteur en Sheet sur petit écran ;
+- bandeau économique avant / après avec état de recalcul ;
+- courbe économique compacte à cinq points basée sur le %CM de référence ;
+- Fiche technique simulée comme surface principale avec barres de contribution ;
+- panneau de réglages persistant à droite sur desktop ;
+- réglages en Sheet sur petit écran ;
+- garde-fous quantité facultatifs ;
+- calques Produit / rendement et approvisionnement ;
 - bornes min/max ;
 - verrouillage ;
 - override local ;
@@ -167,6 +171,11 @@ Fiche technique
 Dossier → Fiches techniques
 → action Optimiser sur une ligne
 → bouton Atelier d’optimisation + sélecteur de Fiche
+
+Sidebar Workspace → Dossiers
+→ Atelier d’optimisation (baguette magique)
+→ sélection Dossier
+→ sélection Fiche
 ~~~
 
 Une Fiche validée sans DRAFT passe d’abord par le workflow M-004 de création d’un nouveau brouillon.
