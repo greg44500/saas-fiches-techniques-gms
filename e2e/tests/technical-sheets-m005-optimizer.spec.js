@@ -131,24 +131,22 @@ async function composeTechnicalSheet(
 }
 
 async function configureReduction(page) {
-  const minimum =
-    page.getByLabel(
-      'Minimum',
-    ).first();
-
-  await minimum.fill('1');
-
-  const highPressure =
+  const highAdjustment =
     page.getByRole(
       'slider',
       {
         name:
-          'Pression Très forte',
+          'Ajustement Très forte',
       },
     ).first();
 
-  await highPressure.focus();
-  await highPressure.press('Home');
+  await highAdjustment.focus();
+
+  for (let step = 0; step < 10; step += 1) {
+    await highAdjustment.press(
+      'ArrowUp',
+    );
+  }
 
   await expect(
     page.getByRole('button', {
@@ -214,16 +212,19 @@ test('M-005 simule sans écrire puis applique explicitement au brouillon', async
     page,
   );
 
-  const ingredientRow =
-    page.getByRole('row')
-      .filter({
-        hasText:
+  const ingredientLine =
+    page.getByRole(
+      'button',
+      {
+        name: new RegExp(
           context
             .productReferenceName,
-      });
+        ),
+      },
+    );
 
   await expect(
-    ingredientRow,
+    ingredientLine,
   ).toContainText('2 → 1');
 
   await page.reload();
@@ -235,16 +236,19 @@ test('M-005 simule sans écrire puis applique explicitement au brouillon', async
     ),
   ).toBeVisible();
 
-  const reloadedRow =
-    page.getByRole('row')
-      .filter({
-        hasText:
+  const reloadedLine =
+    page.getByRole(
+      'button',
+      {
+        name: new RegExp(
           context
             .productReferenceName,
-      });
+        ),
+      },
+    );
 
   await expect(
-    reloadedRow,
+    reloadedLine,
   ).toContainText('2 → 2');
 
   await configureReduction(

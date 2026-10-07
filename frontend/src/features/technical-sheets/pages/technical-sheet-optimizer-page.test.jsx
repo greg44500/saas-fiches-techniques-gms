@@ -215,17 +215,17 @@ describe('TechnicalSheetOptimizerPage', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Courbe globale %CM',
+        'Ajustement économique global',
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('row', {
+      screen.getByRole('button', {
         name: /Carotte/,
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Réglages de l’ingrédient',
+        'Ingrédient sélectionné',
         { exact: true },
       ),
     ).toBeInTheDocument();
@@ -278,10 +278,9 @@ describe('TechnicalSheetOptimizerPage', () => {
 
     const minimum =
       screen.getByLabelText(
-        'Minimum',
+        'Minimum autorisé',
       );
 
-    await user.clear(minimum);
     await user.type(
       minimum,
       '1',
@@ -310,5 +309,32 @@ describe('TechnicalSheetOptimizerPage', () => {
     expect(
       request.workspaceId,
     ).toBe('workspace-1');
+  });
+
+  it('n’invente aucune borne lorsque la recette ne définit pas de garde-fou', async () => {
+    render(
+      <TechnicalSheetOptimizerPage />,
+    );
+
+    await new Promise(
+      (resolve) =>
+        setTimeout(
+          resolve,
+          450,
+        ),
+    );
+
+    const request =
+      mocks.simulate.mock
+        .calls.at(-1)[0];
+
+    expect(
+      request.lines[0]
+        .minNetQuantity,
+    ).toBeNull();
+    expect(
+      request.lines[0]
+        .maxNetQuantity,
+    ).toBeNull();
   });
 });

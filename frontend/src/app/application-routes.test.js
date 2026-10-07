@@ -70,6 +70,7 @@ describe('application frontend route composition', () => {
   it('compose les routes Workspace de Corbeille et paramètres Dossiers', () => {
     expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ path: 'technical-sheets/optimization' }),
         expect.objectContaining({ path: 'technical-sheets/trash' }),
         expect.objectContaining({ path: 'dossiers-settings' }),
       ]),
