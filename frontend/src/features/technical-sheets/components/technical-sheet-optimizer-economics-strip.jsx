@@ -1,6 +1,8 @@
 import {
   formatCurrency,
   formatPercent,
+  formatSignedCurrency,
+  formatSignedPercentPoints,
 } from '@/features/technical-sheets/lib/technical-sheet-optimizer';
 
 function economicValue(
@@ -22,58 +24,55 @@ function marginLabel(value) {
   );
 }
 
-function signedCurrency(value) {
+function deltaTone(
+  value,
+  favorableWhenPositive,
+) {
   const number = Number(value);
 
-  if (!Number.isFinite(number)) {
-    return '—';
+  if (
+    !Number.isFinite(number)
+    || number === 0
+  ) {
+    return 'text-muted-foreground';
   }
 
-  return (
-    (number > 0 ? '+' : '')
-    + formatCurrency(number)
-  );
-}
+  const favorable =
+    favorableWhenPositive
+      ? number > 0
+      : number < 0;
 
-function signedPercentPoints(value) {
-  const number = Number(value);
-
-  if (!Number.isFinite(number)) {
-    return '—';
-  }
-
-  return (
-    (number > 0 ? '+' : '')
-    + new Intl.NumberFormat(
-      'fr-FR',
-      {
-        maximumFractionDigits: 1,
-      },
-    ).format(number)
-    + ' pt'
-  );
+  return favorable
+    ? 'text-primary'
+    : 'text-destructive';
 }
 
 function Metric({
   after,
   before,
   delta,
+  deltaClassName,
   label,
 }) {
   return (
-    <div className="min-w-0 px-4 py-3">
+    <div className="min-w-0 px-4 py-2.5">
       <p className="text-xs font-medium text-muted-foreground">
         {label}
       </p>
       <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <p className="text-lg font-semibold tabular-nums">
+        <p className="text-base font-semibold tabular-nums">
           {after}
         </p>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           avant {before}
         </span>
       </div>
-      <p className="mt-1 text-xs font-medium tabular-nums text-primary">
+      <p
+        className={
+          'mt-1 text-xs font-medium tabular-nums '
+          + deltaClassName
+        }
+      >
         {delta}
       </p>
     </div>
@@ -129,6 +128,20 @@ function TechnicalSheetOptimizerEconomicsStrip({
         'actualMarginBasisPoints',
       ),
     );
+  const materialDelta =
+    materialAfter - materialBefore;
+  const manufacturingDelta =
+    manufacturingAfter
+    - manufacturingBefore;
+  const marginDelta =
+    (
+      marginAfter - marginBefore
+    ) / 100;
+  const savingsAmount =
+    Number(
+      savings?.amountHt
+      ?? 0,
+    );
 
   const statusLabel =
     simulationStatus === 'pending'
@@ -142,7 +155,7 @@ function TechnicalSheetOptimizerEconomicsStrip({
   return (
     <section
       aria-label="Impact économique"
-      className="overflow-hidden rounded-xl border border-border bg-card"
+      className="shrink-0 overflow-hidden rounded-xl border border-border bg-card"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
         <p className="text-sm font-semibold">
@@ -170,9 +183,14 @@ function TechnicalSheetOptimizerEconomicsStrip({
             )
           }
           delta={
-            signedCurrency(
-              materialAfter
-              - materialBefore,
+            formatSignedCurrency(
+              materialDelta,
+            )
+          }
+          deltaClassName={
+            deltaTone(
+              materialDelta,
+              false,
             )
           }
           label="Coût matière HT"
@@ -189,9 +207,14 @@ function TechnicalSheetOptimizerEconomicsStrip({
             )
           }
           delta={
-            signedCurrency(
-              manufacturingAfter
-              - manufacturingBefore,
+            formatSignedCurrency(
+              manufacturingDelta,
+            )
+          }
+          deltaClassName={
+            deltaTone(
+              manufacturingDelta,
+              false,
             )
           }
           label="Coût de fabrication HT"
@@ -208,11 +231,14 @@ function TechnicalSheetOptimizerEconomicsStrip({
             )
           }
           delta={
-            signedPercentPoints(
-              (
-                marginAfter
-                - marginBefore
-              ) / 100,
+            formatSignedPercentPoints(
+              marginDelta,
+            )
+          }
+          deltaClassName={
+            deltaTone(
+              marginDelta,
+              true,
             )
           }
           label="Marge réelle"
@@ -220,8 +246,7 @@ function TechnicalSheetOptimizerEconomicsStrip({
         <Metric
           after={
             formatCurrency(
-              savings?.amountHt
-              ?? 0,
+              savingsAmount,
             )
           }
           before="0,00 €"
@@ -229,6 +254,12 @@ function TechnicalSheetOptimizerEconomicsStrip({
             formatPercent(
               savings?.percent
               ?? 0,
+            )
+          }
+          deltaClassName={
+            deltaTone(
+              savingsAmount,
+              true,
             )
           }
           label="Économie estimée"
