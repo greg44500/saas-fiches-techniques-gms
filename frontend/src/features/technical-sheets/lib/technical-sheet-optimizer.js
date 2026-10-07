@@ -4,11 +4,34 @@ function normalizeDecimalInput(value) {
     .replace(',', '.');
 }
 
+const POSITIVE_DECIMAL_PATTERN =
+  /^(?:0|[1-9]\d*)(?:\.\d+)?$/;
+
 function optionalDecimalInput(value) {
   const normalized =
     normalizeDecimalInput(value);
 
   return normalized || null;
+}
+
+function isValidPositiveDecimalInput(
+  value,
+  {
+    optional = true,
+  } = {},
+) {
+  const normalized =
+    normalizeDecimalInput(value);
+
+  if (!normalized) {
+    return optional;
+  }
+
+  return (
+    POSITIVE_DECIMAL_PATTERN
+      .test(normalized)
+    && Number(normalized) > 0
+  );
 }
 
 function buildOptimizerLines(context) {
@@ -39,6 +62,29 @@ function buildOptimizationRequest({
   lines,
   mode,
 }) {
+  const invalidLine =
+    lines.find((line) => (
+      !Number.isInteger(
+        Number(
+          line.economicAdjustmentPercent
+          ?? 0,
+        ),
+      )
+      || !isValidPositiveDecimalInput(
+        line.minNetQuantity,
+      )
+      || !isValidPositiveDecimalInput(
+        line.maxNetQuantity,
+      )
+      || !isValidPositiveDecimalInput(
+        line.localNetQuantity,
+      )
+    ));
+
+  if (invalidLine) {
+    return null;
+  }
+
   return {
     expectedRevision: draftRevision,
     mode,
@@ -234,6 +280,7 @@ export {
   formatSignedCurrency,
   formatSignedPercent,
   formatSignedPercentPoints,
+  isValidPositiveDecimalInput,
   normalizeDecimalInput,
   optionalDecimalInput,
 };
