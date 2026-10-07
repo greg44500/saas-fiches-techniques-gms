@@ -499,6 +499,15 @@ function TechnicalSheetOptimizationProfile({
                       return;
                     }
 
+                    const canCapturePointer =
+                      typeof event.currentTarget
+                        .setPointerCapture
+                      === 'function';
+
+                    if (!canCapturePointer) {
+                      return;
+                    }
+
                     event.currentTarget
                       .setPointerCapture(
                         event.pointerId,
@@ -523,12 +532,18 @@ function TechnicalSheetOptimizationProfile({
                     }
                   }}
                   onPointerMove={(event) => {
-                    if (
-                      point.intent.locked
-                      || !event.currentTarget
+                    const hasPointerCapture =
+                      typeof event.currentTarget
+                        .hasPointerCapture
+                      === 'function'
+                      && event.currentTarget
                         .hasPointerCapture(
                           event.pointerId,
-                        )
+                        );
+
+                    if (
+                      point.intent.locked
+                      || !hasPointerCapture
                     ) {
                       return;
                     }
