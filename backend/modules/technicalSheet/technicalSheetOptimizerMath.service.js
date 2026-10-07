@@ -388,55 +388,6 @@ const calculateSavings = ({
             fractionToDecimal(
                 amount,
             ),
-        percent: '0',
-    };
-};
-
-const calculateSavingsFixed = ({
-    beforeManufacturingCostHt,
-    afterManufacturingCostHt,
-}) => {
-    const before =
-        decimalFraction(
-            beforeManufacturingCostHt,
-        );
-    const after =
-        decimalFraction(
-            afterManufacturingCostHt,
-        );
-    const amount =
-        subtractFractions(
-            before,
-            after,
-        );
-
-    if (before.numerator === 0n) {
-        return {
-            amountHt:
-                fractionToDecimal(
-                    amount,
-                ),
-            percent: '0',
-        };
-    }
-
-    const percent =
-        multiplyFractions(
-            divideFractions(
-                amount,
-                before,
-            ),
-            {
-                numerator: 100n,
-                denominator: 1n,
-            },
-        );
-
-    return {
-        amountHt:
-            fractionToDecimal(
-                amount,
-            ),
         percent:
             fractionToDecimal(
                 percent,
@@ -513,7 +464,7 @@ export {
     assertOptimizationEnvelope,
     assertQuantityWithinEnvelope,
     buildQuarterStepTowardMinimum,
-    calculateSavingsFixed as calculateSavings,
+    calculateSavings,
     compareFractions,
     interpolateCurvePressure,
     isPositiveSaving,
