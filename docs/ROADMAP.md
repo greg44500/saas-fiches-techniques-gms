@@ -613,130 +613,103 @@ développement immédiat
 
 ## 7. Prochaine étape immédiate
 
-Le corpus professionnel A2 est implémenté sur la branche
-`feature/a2-professional-reference-corpus` :
+Le lot actif est **M-005 — Atelier d’optimisation des Fiches techniques** sur
+`feature/m005-technical-sheet-optimizer-v1`.
+
+Contrats canoniques :
 
 ~~~text
-m002-reference-v9
-→ 16 catégories
-→ 381 Produits
-→ 488 Références Produit
-→ identités v8 conservées
-→ 64 unités UNIT nommées au singulier et au pluriel
-
-m003-global-indicative-prices.v3
-→ 362 Prix repères historiques compatibles
-→ 126 Références volontairement sans Prix repère
-→ aucun montant ajouté sans calibration validée
+docs/m005/M-005-FINAL-CONTRACT.md
+docs/m005/M-005-TECHNICAL-DESIGN.md
 ~~~
 
-Le lot actif regroupe le **Bloc B — Gouvernance Produit unifiée**, le corpus
-professionnel v9, le conditionnement M-003 et la lecture Workspace des Prix
-repères globaux. L'ensemble reste consolidé sur la même branche et attend la
-validation locale/visuelle avant PR unique.
-
-Cible implémentée :
+État du lot au 2026-10-07 :
 
 ~~~text
-Référentiel
-→ consultation / maintenance des Produits
+cadrage fonctionnel
+→ figé
 
-À contrôler
-→ file métier Produit / Référence / Dimension
-→ action unique Examiner dans la table
-→ drawer ouvert sur la cible exacte
-→ Modifier / Valider / Fusionner / Refuser selon le contexte
+design technique
+→ figé
 
-Catégories
-→ taxonomie Produit
+backend
+→ capability technical_sheet_optimizer
+→ enveloppe min/max/verrouillage sur le DRAFT
+→ snapshot immuable dans TechnicalSheetValidation
+→ simulation MANUAL / AUTO
+→ alternatives Produit compatibles
+→ alternatives d’approvisionnement contextualisées par Dossier
+→ Apply transactionnel avec revision + fingerprint
+→ activité métier tracée
+
+frontend
+→ route Atelier dédiée
+→ courbe globale 5 points basée sur le %CM
+→ inspecteur ingrédient desktop + Sheet petit écran
+→ modes Manuel / Auto
+→ comparaison avant / après
+→ entrée depuis une Fiche
+→ entrée depuis la liste Fiches du Dossier
+
+tests ajoutés
+→ mathématiques du moteur
+→ intégration simulation / Apply / historique / tenancy
+→ HTTP capability / RBAC
+→ RTK Query
+→ page React Manuel / Auto
+→ E2E simulation non destructive puis Apply
 ~~~
 
-Pour une nouvelle Référence créée depuis un Workspace :
+Décisions structurantes :
 
 ~~~text
-doublon exact
-→ réutilisation de la Référence existante
+%CM
+→ langage économique relatif
+→ somme 100 % des contributions au Coût Matière
+→ jamais une composition physique
 
-proximité lexicale
-→ suggestion à l'utilisateur
-→ aucune fusion automatique
+réduction d'une ligne
+→ aucune compensation physique obligatoire
 
-création confirmée distincte
-→ ProductVariant PROVISIONAL
-→ utilisable dans le Workspace d'origine
-→ demande de contrôle globale VARIANT
+borne absente
+→ min = référence = max
 
-gestionnaire Platform
-→ corriger
-→ valider
-OU
-→ fusionner avec une Référence existante
-OU
-→ refuser
+alternative Produit V1
+→ même CanonicalProduct
+→ même referenceUnit
+→ ACTIVE et visible dans le Workspace
+
+capability
+→ technical_sheet_optimizer
+→ distincte du RBAC
+→ absente du plan baseline/Free par défaut
+→ activable par Plan ou dérogation d'entitlement
 ~~~
 
-Le scénario de référence proche `Galla / Gala` est couvert dans les tests
-d'intégration ajoutés à la branche.
+Le mode Auto V1 propose un seul prochain mouvement économiquement favorable
+parmi les leviers activés. Il ne calcule ni goût ni score sensoriel et ne pousse
+pas toutes les lignes vers leurs minima.
 
-La file `À contrôler` réutilise les modèles et mutations M-002 existants.
-Aucune nouvelle collection de gouvernance ni nouvelle permission n'est créée.
+La simulation reste éphémère. Seule l'action **Appliquer au brouillon** écrit le
+`TechnicalSheetDraft`. La validation reste ensuite le workflow M-004 normal.
 
-RBAC :
+Le lot n'est pas encore validé localement ni visuellement. Aucun test vert n'est
+revendiqué à ce stade.
 
-~~~text
-product:reference:read
-→ consulter Référentiel / À contrôler / Catégories
-
-product:reference:manage
-→ traiter les données à contrôler
-→ corriger les Produits, Références et Dimensions
-~~~
-
-L'origine Workspace, l'auteur et les décisions passées restent disponibles
-pour l'audit/support backend mais ne sont pas affichés dans la surface de
-travail principale du gestionnaire. Une donnée traitée disparaît de
-`À contrôler` sans onglet Historique dédié.
-
-L'audit du Core v1.2.1 ne montre pas de primitive générique de notification
-applicative persistée. Le signal du lot reste donc le compteur in-app
-`À contrôler`. Une notification générique persistée éventuelle relève de
-la dette Core D-008 et ne doit pas être recréée dans le produit dérivé.
-
-Source contractuelle du Bloc B :
+Séquence restante :
 
 ~~~text
-docs/m002/M-002-GOVERNANCE-REVIEW-QUEUE.md
-~~~
-
-Séquence de sortie du lot unique :
-
-~~~text
-A2 corpus professionnel
-→ Bloc B gouvernance Produit unifiée
-→ tests ciblés
-→ QA visuelle utilisateur
+vérification statique du lot
+→ pull local utilisateur
+→ tests locaux ciblés
+→ gates globales applicables
+→ npm run dev
+→ validation visuelle utilisateur
 → corrections éventuelles sur la même branche
-→ amorce de reprise vers une nouvelle conversation
-→ demande spécifique d'ajout au référentiel global
-→ poursuite sur la même branche
-→ tests / QA du lot complémentaire
-→ release:check
-→ PR unique
-→ Core Gate PR
-→ merge
+→ PR unique créée par l'utilisateur
+→ merge unique créé par l'utilisateur
 → Core Gate post-merge
 ~~~
 
-Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité pour les
-invariants Produit. Le Bloc B unifie la surface de travail du gestionnaire sans
-réouvrir la séparation `CanonicalProduct / ProductVariant`, la frontière
-M-002 / M-003 ni les règles de tenancy.
-
-
-## Bloc V1 — Exports directs des Fiches techniques — PDF / XLSX / CSV
-
-Statut : en cours sur `feature/technical-sheet-exports-v1`.
-
-Contrat canonique : `docs/m004/M-004-EXPORTS-FINAL-CONTRACT.md`.
-
-Périmètre : export de la version validée courante, capability commerciale, quota mensuel Workspace partagé entre formats et KPI Dashboard personnalisable. L'impression et l'envoi par e-mail ne font pas partie de ce lot.
+Aucune PR ni aucun merge M-005 ne doit être réalisé avant la validation visuelle
+explicite de l'utilisateur.
