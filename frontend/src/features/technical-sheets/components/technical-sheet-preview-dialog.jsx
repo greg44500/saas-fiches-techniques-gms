@@ -243,7 +243,7 @@ function TechnicalSheetPreviewDialog({
                   </p>
                 )}
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Validée le{' '}
+                  Version du{' '}
                   {new Date(
                     validation.validatedAt,
                   ).toLocaleString('fr-FR')}
@@ -251,7 +251,7 @@ function TechnicalSheetPreviewDialog({
               </section>
 
               <section
-                aria-label="Production validée"
+                aria-label="Production"
                 className="grid gap-3 sm:grid-cols-3"
               >
                 <div className="rounded-lg border border-border p-3">

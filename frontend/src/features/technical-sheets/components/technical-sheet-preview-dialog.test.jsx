@@ -34,7 +34,7 @@ describe('TechnicalSheetPreviewDialog', () => {
           '2026-10-07T06:00:00.000Z',
         sheetSnapshot: {
           name:
-            'Tartine auvergnate validée',
+            'Tartine auvergnate',
           description:
             'Version officielle',
           productionQuantity:
@@ -135,7 +135,7 @@ describe('TechnicalSheetPreviewDialog', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Tartine auvergnate validée',
+        'Tartine auvergnate',
       ),
     ).toBeInTheDocument();
     expect(

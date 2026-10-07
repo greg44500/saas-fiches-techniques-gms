@@ -360,22 +360,6 @@ const basisPoints = (value) => {
         ) + ' %';
 };
 
-const decimalPercent = (value) => {
-    const parsed = Number(value);
-
-    if (!Number.isFinite(parsed)) {
-        return 'NC';
-    }
-
-    return parsed.toLocaleString(
-        'fr-FR',
-        {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-        },
-    ) + ' %';
-};
-
 const formatQuantity = (
     value,
     label,
@@ -1090,7 +1074,7 @@ const drawCompositionTable = ({
     if (rows.length === 0) {
         composer.paragraph({
             value:
-                'Aucune ligne dans cette version validée.',
+                'Aucune ligne dans cette version.',
             gray:
                 PDF_GRAY.MUTED,
             after: 8,
@@ -1571,7 +1555,6 @@ const buildTechnicalSheetPdf = (
 };
 
 export {
-    COMPOSITION_COLUMNS,
     basisPoints,
     buildTechnicalSheetPdf,
     buildTechnicalSheetPdfLayout,

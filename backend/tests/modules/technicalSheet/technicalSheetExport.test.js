@@ -9,7 +9,6 @@ import {
     buildTechnicalSheetExportProjection,
 } from '../../../modules/technicalSheet/technicalSheetExportProjection.service.js';
 import {
-    COMPOSITION_COLUMNS,
     buildTechnicalSheetPdf,
     buildTechnicalSheetPdfLayout,
 } from '../../../modules/technicalSheet/technicalSheetExportPdf.service.js';
@@ -99,7 +98,6 @@ const validation = {
             order: 1,
             note:
                 'Servir à part',
-        },
         },
     ],
     economicSnapshot: {
