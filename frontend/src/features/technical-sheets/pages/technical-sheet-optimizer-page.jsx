@@ -858,14 +858,10 @@ function TechnicalSheetOptimizerPage() {
                             )
                           }
                           key={line.id}
-                          onClick={() => {
+                          onClick={() =>
                             setSelectedLineId(
                               line.id,
-                            );
-                            setInspectorOpen(
-                              true,
-                            );
-                          }}
+                            )}
                         >
                           <td className="px-4 py-3">
                             <p className="font-medium">
@@ -902,9 +898,30 @@ function TechnicalSheetOptimizerPage() {
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            {changed
-                              ? 'Modifiée'
-                              : 'Stable'}
+                            <div className="flex items-center justify-between gap-2">
+                              <span>
+                                {changed
+                                  ? 'Modifiée'
+                                  : 'Stable'}
+                              </span>
+                              <Button
+                                className="xl:hidden"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setSelectedLineId(
+                                    line.id,
+                                  );
+                                  setInspectorOpen(
+                                    true,
+                                  );
+                                }}
+                                size="sm"
+                                type="button"
+                                variant="ghost"
+                              >
+                                Régler
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
