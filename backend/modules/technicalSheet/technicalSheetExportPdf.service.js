@@ -200,7 +200,6 @@ const wrapTextByWidth = (
 
         if (current) {
             lines.push(current);
-            current = '';
         }
 
         if (fits(word)) {
