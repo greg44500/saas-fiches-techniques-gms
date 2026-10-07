@@ -40,7 +40,9 @@ const EXPORT_FORMATS = Object.freeze([
 function TechnicalSheetExportMenu({
   disabledReason = null,
   exportingFormat = null,
+  label = 'Exports',
   onExport,
+  tooltipLabel = label,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -49,7 +51,7 @@ function TechnicalSheetExportMenu({
       <ActionIconButton
         Icon={FileUp}
         disabled
-        label="Exports"
+        label={label}
         tooltipLabel={disabledReason}
         variant="ghost"
       />
@@ -67,7 +69,7 @@ function TechnicalSheetExportMenu({
             <TooltipTrigger
               render={(
                 <Button
-                  aria-label="Exports"
+                  aria-label={label}
                   disabled={Boolean(exportingFormat)}
                   size="icon"
                   type="button"
@@ -83,7 +85,7 @@ function TechnicalSheetExportMenu({
           />
         </PopoverTrigger>
         <TooltipContent>
-          Exports
+          {tooltipLabel}
         </TooltipContent>
       </Tooltip>
 

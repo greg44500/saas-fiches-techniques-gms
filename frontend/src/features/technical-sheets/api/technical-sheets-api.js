@@ -247,6 +247,13 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
             technicalSheetId,
           ),
         },
+        {
+          type: 'TechnicalSheetList',
+          id: dossierScopeId(
+            workspaceId,
+            dossierId,
+          ),
+        },
       ],
     }),
 

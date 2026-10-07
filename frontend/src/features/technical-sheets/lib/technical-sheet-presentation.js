@@ -28,6 +28,45 @@ function getTechnicalSheetActionAvailability({
   };
 }
 
+function getTechnicalSheetEditorialPresentation({
+  currentValidatedStateId,
+  hasDraft = false,
+}) {
+  const hasValidatedState = Boolean(
+    currentValidatedStateId,
+  );
+
+  if (hasValidatedState && hasDraft) {
+    return {
+      value: 'IN_REVISION',
+      label: 'En révision',
+      tone: 'warning',
+    };
+  }
+
+  if (hasValidatedState) {
+    return {
+      value: 'VALIDATED',
+      label: 'Validée',
+      tone: 'success',
+    };
+  }
+
+  if (hasDraft) {
+    return {
+      value: 'DRAFT',
+      label: 'Brouillon',
+      tone: 'warning',
+    };
+  }
+
+  return {
+    value: 'UNAVAILABLE',
+    label: 'État indisponible',
+    tone: 'destructive',
+  };
+}
+
 function getTechnicalSheetStatusPresentation(
   status,
   definitions,
@@ -195,6 +234,7 @@ export {
   getLineValuationPresentation,
   getTechnicalSheetActionAvailability,
   getTechnicalSheetApiErrorMessage,
+  getTechnicalSheetEditorialPresentation,
   getTechnicalSheetStatusPresentation,
   getTechnicalSheetValuationAttentionPresentation,
   getTechnicalSheetValuationPresentation,

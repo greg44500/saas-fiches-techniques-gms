@@ -67,6 +67,30 @@ describe('TechnicalSheetExportMenu', () => {
       .toHaveBeenCalledWith('XLSX');
   });
 
+  it('adapte son libellé accessible sans dupliquer le menu d’export', async () => {
+    const user = userEvent.setup();
+
+    renderMenu({
+      label: 'Exporter Tartine auvergnate',
+      tooltipLabel: 'Exporter',
+    });
+
+    const trigger =
+      screen.getByRole('button', {
+        name: 'Exporter Tartine auvergnate',
+      });
+
+    expect(trigger).toBeInTheDocument();
+
+    await user.click(trigger);
+
+    expect(
+      screen.getByRole('button', {
+        name: '.pdf',
+      }),
+    ).toBeInTheDocument();
+  });
+
   it('désactive l’export sans version validée', () => {
     renderMenu({
       disabledReason:

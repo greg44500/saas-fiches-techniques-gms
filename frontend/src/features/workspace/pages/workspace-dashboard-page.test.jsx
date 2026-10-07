@@ -88,6 +88,7 @@ describe('WorkspaceDashboardPage', () => {
     renderDashboard();
 
     expect(screen.getByRole('heading', { name: 'Tableau de bord' })).toBeInTheDocument();
+    expect(screen.queryByText('Acme')).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'À propos du tableau de bord' }),
     ).toBeInTheDocument();
