@@ -219,10 +219,9 @@ describe('TechnicalSheetOptimizerPage', () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Carotte',
-        { exact: true },
-      ),
+      screen.getByRole('row', {
+        name: /Carotte/,
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
