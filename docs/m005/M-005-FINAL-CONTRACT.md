@@ -112,7 +112,7 @@ L’axe vertical représente directement la variation de coût souhaitée pour l
 En V1 :
 
 ```text
--90 %  → forte réduction du coût de ligne
+-99 %  → réduction maximale compatible avec une quantité strictement positive
 0 %    → économie de référence inchangée
 +100 % → coût de ligne doublé
 ```

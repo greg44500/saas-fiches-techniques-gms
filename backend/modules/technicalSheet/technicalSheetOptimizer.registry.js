@@ -34,7 +34,7 @@ const TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS = Object.freeze([
 // La courbe pilote une variation économique de la ligne. La borne basse
 // reste strictement supérieure à -100 % afin de ne jamais produire une
 // quantité nulle par simple réglage global.
-const TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT = -90;
+const TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT = -99;
 const TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT = 100;
 
 const TECHNICAL_SHEET_OPTIMIZATION_NEUTRAL_CURVE =
