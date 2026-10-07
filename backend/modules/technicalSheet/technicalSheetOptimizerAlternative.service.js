@@ -236,16 +236,38 @@ const listSupplierAlternatives = async ({
             continue;
         }
 
-        const applicable =
-            await resolveApplicablePrice({
-                workspaceId,
-                dossierId,
-                articleId:
-                    article.id,
-                productVariantId,
-                atDate,
-                session,
-            });
+        let applicable;
+
+        try {
+            applicable =
+                await resolveApplicablePrice({
+                    workspaceId,
+                    dossierId,
+                    articleId:
+                        article.id,
+                    productVariantId,
+                    atDate,
+                    session,
+                });
+        } catch (error) {
+            if (
+                error.statusCode === 404
+                || error.statusCode === 409
+            ) {
+                continue;
+            }
+
+            throw error;
+        }
+
+        if (
+            !applicable?.price
+                ?.normalizedAmount
+            || !applicable?.price
+                ?.normalizedUnit
+        ) {
+            continue;
+        }
 
         alternatives.push({
             ...article,
