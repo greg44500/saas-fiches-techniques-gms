@@ -54,6 +54,7 @@ function TechnicalSheetOptimizerInspector({
   canManageSourcing,
   line,
   onChange,
+  onOpenConstraints,
   projectionLine,
   range,
 }) {
@@ -110,6 +111,25 @@ function TechnicalSheetOptimizerInspector({
   const costDelta =
     Number(projectionLine.lineCostHt)
     - Number(baselineLine.lineCostHt);
+  const hasQuantityEnvelope =
+    Boolean(
+      line.minNetQuantity
+      || line.maxNetQuantity,
+    );
+  const minQuantity =
+    Number(line.minNetQuantity);
+  const maxQuantity =
+    Number(line.maxNetQuantity);
+  const quantityEnvelopePinned =
+    Boolean(
+      line.minNetQuantity
+      && line.maxNetQuantity
+      && Number.isFinite(minQuantity)
+      && Number.isFinite(maxQuantity)
+      && Math.abs(
+        minQuantity - maxQuantity,
+      ) < 1e-9,
+    );
 
   return (
     <div className="space-y-4 p-3 sm:p-4">
@@ -178,6 +198,34 @@ function TechnicalSheetOptimizerInspector({
             <p className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
               La quantité est verrouillée. Le réglage économique est neutralisé tant que ce garde-fou reste actif.
             </p>
+          )}
+
+          {!line.locked && hasQuantityEnvelope && (
+            <div
+              className={
+                'flex items-center justify-between gap-3 rounded-lg border p-3 '
+                + (
+                  quantityEnvelopePinned
+                    ? 'border-warning/35 bg-warning/10'
+                    : 'border-border bg-muted/25'
+                )
+              }
+            >
+              <p className="text-xs text-muted-foreground">
+                {quantityEnvelopePinned
+                  ? 'Minimum et maximum sont identiques : la quantité ne peut pas évoluer.'
+                  : 'Des garde-fous de quantité peuvent limiter l’ajustement demandé.'}
+              </p>
+              <Button
+                className="shrink-0"
+                onClick={onOpenConstraints}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Contraintes
+              </Button>
+            </div>
           )}
 
           <div className="grid gap-2 sm:grid-cols-3">
