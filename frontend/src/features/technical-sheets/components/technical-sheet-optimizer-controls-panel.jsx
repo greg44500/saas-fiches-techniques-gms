@@ -183,6 +183,10 @@ function TechnicalSheetOptimizerControlsPanel({
                 onChange={
                   onChangeLine
                 }
+                onOpenConstraints={() =>
+                  setActiveTool(
+                    'CONSTRAINTS',
+                  )}
                 projectionLine={
                   projectionLine
                 }
