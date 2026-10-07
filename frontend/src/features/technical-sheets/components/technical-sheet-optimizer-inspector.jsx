@@ -112,7 +112,7 @@ function TechnicalSheetOptimizerInspector({
     - Number(baselineLine.lineCostHt);
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-3 sm:p-4">
       <div className="border-b border-border pb-3">
         <p className="truncate font-medium">
           {projectionLine.productVariantName}
@@ -180,7 +180,7 @@ function TechnicalSheetOptimizerInspector({
             </p>
           )}
 
-          <div className="grid gap-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             <div className="rounded-lg bg-muted/35 p-3">
               <p className="text-[11px] text-muted-foreground">
                 Quantité
@@ -282,7 +282,7 @@ function TechnicalSheetOptimizerInspector({
                 {
                   value: CURRENT_PRODUCT,
                   label:
-                    projectionLine
+                    baselineLine
                       .productVariantName,
                 },
                 ...productAlternatives.map(
@@ -318,7 +318,7 @@ function TechnicalSheetOptimizerInspector({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={CURRENT_PRODUCT}>
-                  {projectionLine
+                  {baselineLine
                     .productVariantName}
                 </SelectItem>
                 {productAlternatives.map(
@@ -479,10 +479,36 @@ function TechnicalSheetOptimizerInspector({
 
       {activeTool === 'CONSTRAINTS' && (
         <section className="space-y-4">
-          <ToolHeader
-            description="Ces garde-fous ne pilotent pas l’optimisation : ils définissent seulement jusqu’où la quantité simulée peut évoluer."
-            title="Contraintes"
-          />
+          <div className="flex items-center justify-between gap-3">
+            <ToolHeader
+              description="Ces garde-fous ne pilotent pas l’optimisation : ils définissent seulement jusqu’où la quantité simulée peut évoluer."
+              title="Contraintes"
+            />
+            <Button
+              disabled={
+                !line.minNetQuantity
+                && !line.maxNetQuantity
+                && !line.locked
+                && !line.localNetQuantity
+              }
+              onClick={() =>
+                patch({
+                  minNetQuantity: '',
+                  maxNetQuantity: '',
+                  locked: false,
+                  localNetQuantity: '',
+                })}
+              size="sm"
+              type="button"
+              variant="ghost"
+            >
+              <RotateCcw
+                aria-hidden="true"
+                className="size-4"
+              />
+              Libérer
+            </Button>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <Field>
