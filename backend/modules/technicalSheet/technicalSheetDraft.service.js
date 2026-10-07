@@ -317,13 +317,36 @@ const saveTechnicalSheetDraft = async ({
                                     ?.selectedSupplierArticle
                                 ?? null,
                         optimization:
-                            line.optimization
-                            ?? existingLine
-                                ?.optimization
-                                ?.toObject?.()
-                            ?? existingLine
-                                ?.optimization
-                            ?? undefined,
+                            existingLine
+                            && (
+                                existingLine
+                                    .productVariant
+                                    .toString()
+                                !== line
+                                    .productVariant
+                                    .toString()
+                                || existingLine
+                                    .netQuantity
+                                    .toString()
+                                !== line
+                                    .netQuantity
+                                    .toString()
+                            )
+                                ? {
+                                    minNetQuantity:
+                                        null,
+                                    maxNetQuantity:
+                                        null,
+                                    locked:
+                                        false,
+                                }
+                                : line.optimization
+                                ?? existingLine
+                                    ?.optimization
+                                    ?.toObject?.()
+                                ?? existingLine
+                                    ?.optimization
+                                ?? undefined,
                         valuation: undefined,
                         productVariantSnapshot:
                             undefined,
