@@ -193,6 +193,34 @@ describe('technicalSheetsApi', () => {
     }
   });
 
+  it('rafraîchit la liste lorsqu’une version validée repasse en révision', () => {
+    const tags =
+      captured.endpointDefinitions
+        .startTechnicalSheetDraft
+        .invalidatesTags(
+          null,
+          null,
+          {
+            workspaceId:
+              'workspace-1',
+            dossierId:
+              'dossier-1',
+            technicalSheetId:
+              'sheet-1',
+          },
+        );
+
+    expect(tags).toEqual(
+      expect.arrayContaining([
+        {
+          type: 'TechnicalSheetList',
+          id:
+            'workspace-1:dossier-1',
+        },
+      ]),
+    );
+  });
+
   it('configure l’export binaire et le KPI d’usage mensuel', () => {
     expect(
       captured.endpointDefinitions

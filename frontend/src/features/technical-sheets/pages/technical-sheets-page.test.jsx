@@ -200,6 +200,7 @@ function renderPage() {
 describe('TechnicalSheetsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.previewProps = null;
 
     mocks.workspaceContext.mockReturnValue({
       can: (permission) => [
@@ -290,6 +291,35 @@ describe('TechnicalSheetsPage', () => {
           'Prévisualiser Tatin',
       }),
     ).toBeInTheDocument();
+  });
+
+  it('masque seulement Exporter lorsque la capability commerciale est absente', () => {
+    mocks.workspaceContext.mockReturnValue({
+      can: (permission) => [
+        TECHNICAL_SHEET_PERMISSION.READ,
+        TECHNICAL_SHEET_PERMISSION.CREATE,
+        TECHNICAL_SHEET_PERMISSION.EXPORT,
+      ].includes(permission),
+      hasFeature: () => false,
+      workspace: {
+        id: 'workspace-1',
+      },
+    });
+
+    renderPage();
+
+    expect(
+      screen.getByRole('button', {
+        name:
+          'Prévisualiser Tartine auvergnate',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name:
+          'Exporter Tartine auvergnate',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('ouvre la prévisualisation validée sans quitter la liste', async () => {

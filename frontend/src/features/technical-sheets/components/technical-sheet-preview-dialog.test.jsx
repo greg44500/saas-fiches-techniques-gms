@@ -111,6 +111,24 @@ describe('TechnicalSheetPreviewDialog', () => {
     );
 
     expect(
+      mocks.validationQuery,
+    ).toHaveBeenCalledWith(
+      {
+        workspaceId:
+          'workspace-1',
+        dossierId:
+          'dossier-1',
+        technicalSheetId:
+          'sheet-1',
+        validationId:
+          'validation-1',
+      },
+      {
+        skip: false,
+      },
+    );
+
+    expect(
       screen.getByRole('dialog'),
     ).toBeInTheDocument();
     expect(

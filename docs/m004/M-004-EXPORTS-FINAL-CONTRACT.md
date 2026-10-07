@@ -5,7 +5,7 @@
 
 ## Objectif
 
-Permettre l'export d'une Fiche technique validée en PDF, XLSX ou CSV depuis son panneau de contrôle.
+Permettre l'export d'une Fiche technique validée en PDF, XLSX ou CSV depuis son panneau de contrôle ou directement depuis la liste des Fiches techniques.
 
 ## Source de vérité
 
