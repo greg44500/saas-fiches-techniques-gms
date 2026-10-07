@@ -53,11 +53,14 @@ const assertOptimizationEnvelope = ({
         decimalFraction(maxNetQuantity);
 
     if (
-        compareFractions(minimum, reference) > 0
+        minimum.numerator <= 0n
+        || maximum.numerator <= 0n
+        || reference.numerator <= 0n
+        || compareFractions(minimum, reference) > 0
         || compareFractions(reference, maximum) > 0
     ) {
         throw new AppError(
-            'Les bornes d’optimisation doivent encadrer la quantité de référence.',
+            'Les bornes d’optimisation doivent être strictement positives et encadrer la quantité de référence.',
             400,
         );
     }
