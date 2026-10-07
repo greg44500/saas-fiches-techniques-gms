@@ -98,9 +98,9 @@ authenticate
 
 Durcissements intégrés :
 
-- fingerprint simulation recalculé lors de l’Apply ;
+- fingerprint simulation recalculé lors de l’Apply, y compris après changement du Prix applicable ;
 - `expectedRevision` obligatoire ;
-- modification explicite d’Article protégée par `technical-sheet:sourcing:manage` ;
+- modification explicite d’Article protégée par `technical-sheet:sourcing:manage` et couverte par un test de refus ;
 - plafond de 60 candidats élémentaires en Auto V1 ;
 - Articles sans Prix applicable exclus des alternatives M-005 au lieu de faire échouer tout le contexte ;
 - une édition M-004 normale de Produit/quantité réinitialise une ancienne enveloppe devenue incohérente ;
@@ -188,6 +188,7 @@ Frontend :
 frontend/src/features/technical-sheets/api/technical-sheets-api.test.js
 frontend/src/features/technical-sheets/pages/technical-sheet-optimizer-page.test.jsx
 frontend/src/features/technical-sheets/components/technical-sheet-control-panel.test.jsx
+frontend/src/features/technical-sheets/components/technical-sheet-optimizer-route.test.jsx
 frontend/src/app/application-routes.test.js
 ~~~
 
@@ -229,7 +230,7 @@ tests ajoutés
 → faits
 
 revue statique manuelle
-→ en cours / derniers durcissements intégrés
+→ faite ; derniers durcissements intégrés
 
 tests locaux utilisateur
 → à faire
