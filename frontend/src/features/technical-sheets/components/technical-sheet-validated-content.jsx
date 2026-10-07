@@ -168,12 +168,19 @@ function TechnicalSheetValidatedContent({
       )}
 
       {!showIdentity && (
-        <p className="text-xs text-muted-foreground">
-          Version du{' '}
-          {new Date(
-            validation.validatedAt,
-          ).toLocaleString('fr-FR')}
-        </p>
+        <section>
+          {sheetSnapshot?.description && (
+            <p className="text-sm text-muted-foreground">
+              {sheetSnapshot.description}
+            </p>
+          )}
+          <p className="mt-1 text-xs text-muted-foreground">
+            Version du{' '}
+            {new Date(
+              validation.validatedAt,
+            ).toLocaleString('fr-FR')}
+          </p>
+        </section>
       )}
 
       <section

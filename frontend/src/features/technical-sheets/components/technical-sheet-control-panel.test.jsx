@@ -88,6 +88,19 @@ describe('TechnicalSheetControlPanel', () => {
     })).toBeEnabled();
   });
 
+  it('bloque Modifier pendant l’ouverture d’un brouillon depuis la version officielle', () => {
+    renderPanel({
+      draft: null,
+      editPending: true,
+    });
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Ouverture…',
+      }),
+    ).toBeDisabled();
+  });
+
   it('conserve la position des actions et marque le panneau actif', () => {
     renderPanel({
       rightPanel: 'analysis',

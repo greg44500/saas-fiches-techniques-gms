@@ -846,12 +846,26 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
       'Validation avant contrôle du quota',
   });
 
-  await page
+  await page.goto(
+    context.dossierATechnicalSheetsUrl,
+  );
+
+  const quotaRow =
+    page.getByRole('row')
+      .filter({
+        hasText:
+          'Fiche M004 Quota',
+      });
+
+  await quotaRow
     .getByRole('button', {
-      name: 'Modifier',
-      exact: true,
+      name:
+        'Modifier Fiche M004 Quota',
     })
     .click();
+
+  await expect(page)
+    .toHaveURL(detailUrl);
 
   await expect(
     page.getByText(
