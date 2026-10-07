@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   exportMutation: vi.fn(),
   navigate: vi.fn(),
   previewProps: null,
+  startDraftMutation: vi.fn(),
   workspaceContext: vi.fn(),
 }));
 
@@ -94,6 +95,9 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
       ],
     },
   }),
+  useStartTechnicalSheetDraftMutation: () => [
+    mocks.startDraftMutation,
+  ],
   useListTechnicalSheetsQuery: () => ({
     data: {
       sheets: [
@@ -103,6 +107,7 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
           status: 'ACTIVE',
           currentValidatedStateId: null,
           hasDraft: true,
+          revision: 2,
           updatedAt:
             '2026-10-07T06:00:00.000Z',
         },
@@ -113,6 +118,7 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
           currentValidatedStateId:
             'validation-1',
           hasDraft: false,
+          revision: 5,
           updatedAt:
             '2026-10-07T06:00:00.000Z',
         },
@@ -123,6 +129,7 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
           currentValidatedStateId:
             'validation-2',
           hasDraft: true,
+          revision: 7,
           updatedAt:
             '2026-10-07T06:00:00.000Z',
         },
@@ -201,11 +208,17 @@ describe('TechnicalSheetsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.previewProps = null;
+    mocks.startDraftMutation
+      .mockReturnValue({
+        unwrap: vi.fn()
+          .mockResolvedValue({}),
+      });
 
     mocks.workspaceContext.mockReturnValue({
       can: (permission) => [
         TECHNICAL_SHEET_PERMISSION.READ,
         TECHNICAL_SHEET_PERMISSION.CREATE,
+        TECHNICAL_SHEET_PERMISSION.UPDATE,
         TECHNICAL_SHEET_PERMISSION.EXPORT,
       ].includes(permission),
       hasFeature: (feature) =>
@@ -251,13 +264,13 @@ describe('TechnicalSheetsPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('garde Ouvrir sur tous les états et réserve Prévisualiser/Exporter aux versions validées', () => {
+  it('garde Modifier sur les états éditables et réserve Prévisualiser/Exporter aux versions validées', () => {
     renderPage();
 
     expect(
       screen.getByRole('button', {
         name:
-          'Ouvrir Boeuf Bourguignon',
+          'Modifier Boeuf Bourguignon',
       }),
     ).toBeInTheDocument();
     expect(
@@ -298,6 +311,7 @@ describe('TechnicalSheetsPage', () => {
       can: (permission) => [
         TECHNICAL_SHEET_PERMISSION.READ,
         TECHNICAL_SHEET_PERMISSION.CREATE,
+        TECHNICAL_SHEET_PERMISSION.UPDATE,
         TECHNICAL_SHEET_PERMISSION.EXPORT,
       ].includes(permission),
       hasFeature: () => false,
@@ -349,7 +363,7 @@ describe('TechnicalSheetsPage', () => {
     ).toBe('validation-1');
   });
 
-  it('ouvre le brouillon avec le bouton crayon', async () => {
+  it('crée un brouillon depuis la version officielle avant d’ouvrir une Fiche validée', async () => {
     const user = userEvent.setup();
 
     renderPage();
@@ -357,7 +371,37 @@ describe('TechnicalSheetsPage', () => {
     await user.click(
       screen.getByRole('button', {
         name:
-          'Ouvrir Boeuf Bourguignon',
+          'Modifier Tartine auvergnate',
+      }),
+    );
+
+    expect(
+      mocks.startDraftMutation,
+    ).toHaveBeenCalledWith({
+      workspaceId:
+        'workspace-1',
+      dossierId:
+        'dossier-1',
+      technicalSheetId:
+        'sheet-validated',
+      expectedSheetRevision: 5,
+    });
+    expect(
+      mocks.navigate,
+    ).toHaveBeenCalledWith(
+      '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-validated',
+    );
+  });
+
+  it('ouvre directement un brouillon existant avec le bouton crayon', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(
+      screen.getByRole('button', {
+        name:
+          'Modifier Boeuf Bourguignon',
       }),
     );
 

@@ -36,6 +36,7 @@ import {
   useGetTechnicalSheetExportUsageQuery,
   useGetTechnicalSheetMetadataQuery,
   useListTechnicalSheetsQuery,
+  useStartTechnicalSheetDraftMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
   TechnicalSheetCreateDialog,
@@ -135,6 +136,12 @@ function TechnicalSheetsPage() {
     );
   const [exportSheet] =
     useExportTechnicalSheetMutation();
+  const [startDraft] =
+    useStartTechnicalSheetDraftMutation();
+  const [
+    draftStartingSheetId,
+    setDraftStartingSheetId,
+  ] = useState(null);
 
   if (
     (dossierQuery.isLoading && !dossierQuery.data)
@@ -201,6 +208,10 @@ function TechnicalSheetsPage() {
     can(TECHNICAL_SHEET_PERMISSION.CREATE)
     && operational
     && !quotaReached;
+  const canModify =
+    can(
+      TECHNICAL_SHEET_PERMISSION.UPDATE,
+    );
 
   function openTechnicalSheet(sheet) {
     navigate(
@@ -208,6 +219,46 @@ function TechnicalSheetsPage() {
       + '/dossiers/' + dossierId
       + '/technical-sheets/' + sheet.id,
     );
+  }
+
+  async function modifyTechnicalSheet(
+    sheet,
+  ) {
+    if (
+      sheet.hasDraft
+      || !sheet.currentValidatedStateId
+    ) {
+      openTechnicalSheet(sheet);
+      return;
+    }
+
+    setDraftStartingSheetId(sheet.id);
+
+    try {
+      await startDraft({
+        workspaceId:
+          workspace.id,
+        dossierId,
+        technicalSheetId:
+          sheet.id,
+        expectedSheetRevision:
+          sheet.revision,
+      }).unwrap();
+
+      openTechnicalSheet(sheet);
+    } catch (error) {
+      toast({
+        title: 'Action impossible',
+        description:
+          getTechnicalSheetApiErrorMessage(
+            error,
+            'Le brouillon n’a pas pu être créé.',
+          ),
+        variant: 'destructive',
+      });
+    } finally {
+      setDraftStartingSheetId(null);
+    }
   }
 
   async function exportValidatedSheet(
@@ -338,17 +389,30 @@ function TechnicalSheetsPage() {
               />
             )}
 
-            <ActionIconButton
-              Icon={Pencil}
-              label={
-                'Ouvrir '
-                + sheet.name
-              }
-              onClick={() =>
-                openTechnicalSheet(sheet)}
-              tooltipLabel="Ouvrir"
-              variant="ghost"
-            />
+            {canModify && (
+              <ActionIconButton
+                Icon={Pencil}
+                disabled={
+                  draftStartingSheetId
+                  === sheet.id
+                }
+                label={
+                  'Modifier '
+                  + sheet.name
+                }
+                onClick={() =>
+                  modifyTechnicalSheet(
+                    sheet,
+                  )}
+                tooltipLabel={
+                  draftStartingSheetId
+                  === sheet.id
+                    ? 'Ouverture…'
+                    : 'Modifier'
+                }
+                variant="ghost"
+              />
+            )}
 
             {hasValidatedState && canExport && (
               <TechnicalSheetExportMenu

@@ -213,13 +213,18 @@ async function validateCurrentDraft(page, {
 
   if (comment) {
     await dialog
-      .getByLabel('Commentaire de validation')
+      .getByLabel(
+        'Commentaire de validation (facultatif)',
+      )
       .fill(comment);
   }
 
   await dialog
     .getByRole('button', {
-      name: 'Valider',
+      name:
+        comment
+          ? 'Valider'
+          : 'Valider sans commentaire',
       exact: true,
     })
     .click();
@@ -231,7 +236,14 @@ async function validateCurrentDraft(page, {
 
   await expect(
     page.getByRole('button', {
-      name: 'Reprendre en brouillon',
+      name: 'Modifier',
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  await expect(
+    page.getByRole('table', {
+      name: 'Composition',
     }),
   ).toBeVisible();
 
@@ -666,7 +678,8 @@ test('M-004 ambiguïté Article, changement de prix, actualisation automatique p
 
   await staleValidationDialog
     .getByRole('button', {
-      name: 'Valider',
+      name:
+        'Valider sans commentaire',
       exact: true,
     })
     .click();
@@ -836,6 +849,21 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
   await page
     .getByRole('button', {
       name: 'Modifier',
+      exact: true,
+    })
+    .click();
+
+  await expect(
+    page.getByText(
+      'Brouillon',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  await page
+    .getByRole('button', {
+      name: 'Modifier',
+      exact: true,
     })
     .click();
 

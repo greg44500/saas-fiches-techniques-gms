@@ -359,7 +359,7 @@ describe('TechnicalSheetLineEditor', () => {
     })).toBeInTheDocument();
     expect(screen.getByText('PUHT')).toBeInTheDocument();
     expect(screen.getByText('Coût HT')).toBeInTheDocument();
-    expect(screen.getByText('%TR')).toBeInTheDocument();
+    expect(screen.queryByText('%TR')).not.toBeInTheDocument();
 
     expect(screen.queryByText('Qté brute')).not.toBeInTheDocument();
     expect(screen.queryByText('Article / Fournisseur')).not.toBeInTheDocument();
@@ -370,7 +370,7 @@ describe('TechnicalSheetLineEditor', () => {
     expect(screen.queryByText(
       'Sélectionnez une Référence Produit ; la quantité et l’unité restent modifiables dans la ligne.',
     )).not.toBeInTheDocument();
-    expect(screen.getByText('90 %')).toBeInTheDocument();
+    expect(screen.queryByText('90 %')).not.toBeInTheDocument();
     expect(screen.getByText('100 %')).toBeInTheDocument();
     expect(screen.getByText(/2,15/)).toBeInTheDocument();
     expect(screen.getByText(/6,02/)).toBeInTheDocument();

@@ -26,6 +26,7 @@ function TechnicalSheetControlPanel({
   copyDisabled,
   draft,
   draftDirty,
+  editPending = false,
   validationEligible = false,
   draftSynchronizing,
   exportDisabledReason,
@@ -76,14 +77,14 @@ function TechnicalSheetControlPanel({
       role="group"
     >
       <Button
-        disabled={!canEditIdentity}
+        disabled={!canEditIdentity || editPending}
         onClick={onEditIdentity}
         size="sm"
         type="button"
         variant="ghost"
       >
         <Pencil aria-hidden="true" className="size-4" />
-        Modifier
+        {editPending ? 'Ouverture…' : 'Modifier'}
       </Button>
 
       <Button

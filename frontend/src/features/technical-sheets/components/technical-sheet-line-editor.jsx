@@ -53,7 +53,7 @@ import {
 
 const COMPOSITION_GRID_CLASS = [
   'grid gap-x-2 gap-y-2',
-  'lg:grid-cols-[minmax(0,2fr)_4.25rem_3.5rem_5rem_5.25rem_5.5rem_4.25rem_minmax(0,1.25fr)_3.25rem]',
+  'lg:grid-cols-[minmax(0,2fr)_4.25rem_3.5rem_5rem_5.25rem_5.5rem_minmax(0,1.25fr)_3.25rem]',
   'lg:items-center',
 ].join(' ');
 
@@ -277,22 +277,6 @@ function formatMaterialCostSharePercent(line, metadata) {
   }
 
   const value = line.valuation?.materialCostSharePercent;
-  if (!hasValue(value)) return '—';
-
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return '—';
-
-  return parsed.toLocaleString('fr-FR', {
-    maximumFractionDigits: 2,
-  }) + ' %';
-}
-
-function formatYieldPercent(line) {
-  const value = (
-    line.calculation?.yieldPercentUsed
-    ?? line.productVariant?.yieldPercent
-  );
-
   if (!hasValue(value)) return '—';
 
   const parsed = Number(value);
@@ -1003,13 +987,6 @@ function TechnicalSheetLineEditor({
           </p>
         </div>
 
-        <div className="min-w-0 lg:text-center">
-          <MobileLabel>Taux de rendement</MobileLabel>
-          <p className="truncate text-sm tabular-nums lg:text-center">
-            {formatYieldPercent(line)}
-          </p>
-        </div>
-
         <div className="min-w-0">
           <MobileLabel>Note</MobileLabel>
           <Input
@@ -1089,7 +1066,7 @@ function TechnicalSheetLineEditor({
             workspaceId={workspaceId}
           />
         </div>
-        <div className="hidden lg:col-span-8 lg:block" />
+        <div className="hidden lg:col-span-7 lg:block" />
       </div>
     );
   }
@@ -1185,7 +1162,6 @@ function TechnicalSheetLineEditor({
           >
             %CM
           </ColumnHeading>
-          <ColumnHeading align="center" tooltip="Taux de rendement">%TR</ColumnHeading>
           <ColumnHeading tooltip="Note">Note</ColumnHeading>
           <ColumnHeading align="center" tooltip="Actions">Actions</ColumnHeading>
         </div>

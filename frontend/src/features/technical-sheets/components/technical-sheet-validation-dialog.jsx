@@ -1,3 +1,6 @@
+import {
+  InfoTooltip,
+} from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
   DialogClose,
@@ -13,6 +16,9 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Textarea } from '@/components/ui/textarea';
 
+const VALIDATION_HELP =
+  'La validation crée un état historique immuable. Le commentaire, s’il est renseigné, est conservé dans l’historique.';
+
 function TechnicalSheetValidationDialog({
   comment,
   onClose,
@@ -21,6 +27,9 @@ function TechnicalSheetValidationDialog({
   open,
   pending,
 }) {
+  const hasComment =
+    Boolean(comment.trim());
+
   return (
     <DialogRoot
       disablePointerDismissal
@@ -33,15 +42,23 @@ function TechnicalSheetValidationDialog({
         <DialogOverlay />
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Valider la Fiche technique</DialogTitle>
-            <DialogDescription>
-              La validation crée un état historique immuable. Le commentaire est facultatif et sera conservé dans l’historique.
+            <div className="flex items-center gap-2">
+              <DialogTitle>
+                Valider la Fiche technique
+              </DialogTitle>
+              <InfoTooltip
+                content={VALIDATION_HELP}
+                label="À propos de la validation"
+              />
+            </div>
+            <DialogDescription className="sr-only">
+              {VALIDATION_HELP}
             </DialogDescription>
           </DialogHeader>
 
           <Field className="mt-5">
             <FieldLabel htmlFor="technical-sheet-validation-comment">
-              Commentaire de validation
+              Commentaire de validation (facultatif)
             </FieldLabel>
             <Textarea
               className="min-h-28"
@@ -66,7 +83,11 @@ function TechnicalSheetValidationDialog({
               onClick={onConfirm}
               type="button"
             >
-              {pending ? 'Validation…' : 'Valider'}
+              {pending
+                ? 'Validation…'
+                : hasComment
+                  ? 'Valider'
+                  : 'Valider sans commentaire'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -75,4 +96,7 @@ function TechnicalSheetValidationDialog({
   );
 }
 
-export { TechnicalSheetValidationDialog };
+export {
+  TechnicalSheetValidationDialog,
+  VALIDATION_HELP,
+};

@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  RotateCcw,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -42,6 +41,7 @@ import {
   useExportTechnicalSheetMutation,
   useGetTechnicalSheetExportUsageQuery,
   useGetTechnicalSheetMetadataQuery,
+  useGetTechnicalSheetValidationQuery,
   useGetTechnicalSheetQuery,
   useListTechnicalSheetHistoryQuery,
   useReactivateTechnicalSheetMutation,
@@ -69,6 +69,9 @@ import {
 import {
   TechnicalSheetValidationDialog,
 } from '@/features/technical-sheets/components/technical-sheet-validation-dialog';
+import {
+  TechnicalSheetValidatedContent,
+} from '@/features/technical-sheets/components/technical-sheet-validated-content';
 import {
   TechnicalSheetEconomicsBar,
 } from '@/features/technical-sheets/components/technical-sheet-economics-bar';
@@ -276,6 +279,20 @@ function TechnicalSheetWorkspacePage() {
   const draft = sheetQuery.data?.draft;
   const draftId = draft?.id ?? null;
   const metadata = metadataQuery.data;
+  const validatedStateQuery =
+    useGetTechnicalSheetValidationQuery(
+      {
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        validationId:
+          sheet?.currentValidatedStateId,
+      },
+      {
+        skip:
+          !sheet?.currentValidatedStateId,
+      },
+    );
 
   const [identity, setIdentity] = useState({
     name: '',
@@ -889,6 +906,9 @@ function TechnicalSheetWorkspacePage() {
             canEditIdentity={
               canEditIdentity
               && actionAvailability.update
+              && Boolean(
+                sheet.currentValidatedStateId,
+              )
             }
             canExport={canExport}
             canLifecycle={canLifecycle}
@@ -896,6 +916,9 @@ function TechnicalSheetWorkspacePage() {
             copyDisabled={copyDisabled}
             draft={draft}
             draftDirty={draftDirty}
+            editPending={
+              startDraftState.isLoading
+            }
             draftSynchronizing={draftSynchronizing}
             exportDisabledReason={exportDisabledReason}
             exportingFormat={exportingFormat}
@@ -903,7 +926,7 @@ function TechnicalSheetWorkspacePage() {
             onArchive={() => setConfirmation({ type: 'archive' })}
             onCopy={() => setCopyOpen(true)}
             onDelete={() => setConfirmation({ type: 'delete' })}
-            onEditIdentity={() => setIdentityDialogOpen(true)}
+            onEditIdentity={createWorkingDraft}
             onExport={exportValidatedSheet}
             onOpenAnalysis={() => setRightPanel('analysis')}
             onOpenDossier={() => setRightPanel('dossier')}
@@ -914,19 +937,57 @@ function TechnicalSheetWorkspacePage() {
             validatePending={validateState.isLoading}
             validationEligible={validationEligible}
           />
-
-          {canUpdate && sheet.currentValidatedStateId && (
-            <ActionIconButton
-              Icon={RotateCcw}
-              disabled={startDraftState.isLoading}
-              label="Reprendre en brouillon"
-              onClick={createWorkingDraft}
-              tooltipLabel="Reprendre en brouillon"
-              variant="ghost"
-            />
-          )}
         </div>
         </header>
+      )}
+
+      {!draft && sheet.currentValidatedStateId && (
+        <Card>
+          <CardContent className="p-5">
+            {validatedStateQuery.isLoading
+              && !validatedStateQuery.data
+              ? (
+                <p
+                  aria-live="polite"
+                  className="text-sm text-muted-foreground"
+                  role="status"
+                >
+                  Chargement de la version officielle…
+                </p>
+              )
+              : validatedStateQuery.isError
+                || !validatedStateQuery.data
+                ? (
+                  <div
+                    className="rounded-lg border border-destructive/30 bg-destructive/5 p-4"
+                    role="alert"
+                  >
+                    <p className="text-sm">
+                      La version officielle n’a pas pu être chargée.
+                    </p>
+                    <Button
+                      className="mt-3"
+                      onClick={() =>
+                        validatedStateQuery.refetch()}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Réessayer
+                    </Button>
+                  </div>
+                )
+                : (
+                  <TechnicalSheetValidatedContent
+                    fallbackName={sheet.name}
+                    showIdentity={false}
+                    validation={
+                      validatedStateQuery.data
+                    }
+                  />
+                )}
+          </CardContent>
+        </Card>
       )}
 
       {draft && (
@@ -1015,6 +1076,7 @@ function TechnicalSheetWorkspacePage() {
                       copyDisabled={copyDisabled}
                       draft={draft}
                       draftDirty={draftDirty}
+                      editPending={false}
                       draftSynchronizing={draftSynchronizing}
                       exportDisabledReason={exportDisabledReason}
                       exportingFormat={exportingFormat}

@@ -1519,3 +1519,19 @@ une Fiche durable
 + une valorisation propre au Dossier
 + une capacité exprimée en nombre de Fiches
 ```
+
+
+## Ajustement UX du poste de travail — 2026-10-07
+
+Décisions validées après QA visuelle :
+
+- après validation, l'utilisateur reste sur la même route Fiche technique ;
+- en absence de brouillon, le contenu principal affiche la version officielle courante en lecture seule au lieu d'une page vide ;
+- l'action `Modifier` sur cette vue crée un nouveau brouillon depuis `currentValidatedState` via le service M-004 existant, puis réaffiche le poste de travail ;
+- dans la liste, le crayon signifie `Modifier` : il reprend un brouillon existant ou crée d'abord un brouillon à partir de la version officielle ;
+- `Prévisualiser` continue de consulter l'officiel sans changer de route ;
+- le dialogue de validation déplace son explication dans une infobulle, affiche `Commentaire de validation (facultatif)` et utilise `Valider sans commentaire` lorsque le champ est vide ;
+- la colonne `%TR` est retirée de la table de composition tant que le workflow d'approvisionnement n'est pas exposé ;
+- la colonne `Coût HT` est conservée sans changement de sémantique : elle représente le coût total HT de la ligne pour les quantités de la Fiche.
+
+Aucun de ces états d'interface ne remplace les contrôles backend de révision, permission, ownership ou cycle de vie.

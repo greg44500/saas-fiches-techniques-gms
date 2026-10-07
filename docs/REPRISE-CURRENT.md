@@ -106,3 +106,16 @@ Décision QA intégrée :
 - aucune modification des snapshots, calculs, autorisations, quotas ou autres formats d'export.
 
 Les tests PDF ont été adaptés pour vérifier explicitement le rendu mono-page, la grille côte à côte et les règles de déduplication. Ils restent à exécuter localement par l'utilisateur.
+
+
+## Continuité UX Fiche validée — 2026-10-07
+
+Bloc intégré sur la même branche :
+- après validation, la route Fiche reste affichée avec la version officielle en lecture seule ;
+- la modal de prévisualisation et la page réutilisent le même composant de lecture ;
+- `Modifier` crée/reprend le brouillon via l'API M-004 au lieu d'aboutir sur une page vide ;
+- dialogue de validation simplifié avec aide contextuelle, commentaire explicitement facultatif et bouton `Valider sans commentaire` lorsque vide ;
+- suppression visuelle de `%TR` dans la composition ;
+- conservation stricte de `Coût HT` et de sa sémantique actuelle.
+
+Les tests ont été adaptés mais ne sont pas exécutés à distance.
