@@ -1,6 +1,7 @@
 import {
   render,
   screen,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -206,6 +207,30 @@ describe('TechnicalSheetOptimizerPage', () => {
         'Coût matière HT',
       ),
     ).toBeInTheDocument();
+
+    const panel =
+      screen.getByLabelText(
+        'Panneau de pilotage',
+      );
+
+    expect(
+      within(panel).getByText(
+        'Profil économique global',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByRole(
+        'button',
+        { name: 'Contraintes' },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(
+        'Fiche technique simulée',
+      ),
+    ).toHaveTextContent(
+      'Purée M005',
+    );
   });
 
   it('synchronise le point du profil avec l’intention économique de la ligne', async () => {
@@ -324,6 +349,58 @@ describe('TechnicalSheetOptimizerPage', () => {
     expect(
       request.workspaceId,
     ).toBe('workspace-1');
+  });
+
+  it('n’envoie pas de simulation pendant une saisie décimale incomplète', async () => {
+    const user =
+      userEvent.setup();
+
+    render(
+      <TechnicalSheetOptimizerPage />,
+    );
+
+    await new Promise(
+      (resolve) =>
+        setTimeout(
+          resolve,
+          450,
+        ),
+    );
+    mocks.simulate.mockClear();
+
+    await user.click(
+      screen.getByRole(
+        'button',
+        { name: 'Contraintes' },
+      ),
+    );
+
+    const minimum =
+      screen.getByLabelText(
+        'Minimum autorisé',
+      );
+
+    await user.type(
+      minimum,
+      '0,',
+    );
+
+    await new Promise(
+      (resolve) =>
+        setTimeout(
+          resolve,
+          450,
+        ),
+    );
+
+    expect(
+      mocks.simulate,
+    ).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        'Terminez la saisie de la quantité ou du garde-fou avant le recalcul.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('n’invente aucune borne lorsque la recette ne définit pas de garde-fou', async () => {
