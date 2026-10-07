@@ -70,8 +70,31 @@ Dans le panneau de contrôle M-004 :
 - clic : popover Base UI existant ;
 - actions `.pdf`, `.xlsx`, `.csv` avec une icône par format.
 
-Si la feature ou la permission n'est pas disponible, l'action n'est pas affichée. Si la feature est disponible mais qu'aucune version validée n'existe, le bouton reste désactivé avec une explication.
+Dans la liste des Fiches techniques, une colonne `État` projette les faits réels sans créer de nouvel état persistant :
+
+- `Brouillon` : brouillon présent, aucune validation courante ;
+- `Validée` : validation courante présente, aucun brouillon ;
+- `En révision` : validation courante présente et nouveau brouillon ouvert ;
+- une combinaison incohérente ne doit jamais être présentée comme validée.
+
+Cette colonne est strictement informative. Elle ne constitue jamais une autorité d'autorisation. L'export reste contrôlé côté backend par l'identité Workspace/Dossier/Fiche, la permission, la capability, l'existence et la cohérence de `currentValidatedState`, puis le quota.
+
+Les sous-titres `Un état validé est disponible` / `Aucun état validé` sont supprimés.
+
+Actions de la liste :
+
+- `Prévisualiser` (icône œil) : uniquement lorsqu'une validation courante existe ; ouvre une modal et ne change pas de route ;
+- `Ouvrir` (icône crayon) : ouvre le poste de travail, y compris pour continuer un brouillon ;
+- `Exporter` (icône `FileUp`) : réutilise le même composant et la même API d'export que le panneau de contrôle.
+
+La prévisualisation lit uniquement le snapshot validé courant. Lorsqu'un brouillon existe en parallèle, son contenu n'est jamais injecté dans la prévisualisation officielle. La prévisualisation ne consomme aucun quota d'export.
+
+Après validation, aucun bloc explicatif `État de travail` n'est affiché. L'action `Reprendre en brouillon` reste disponible sous forme compacte dans les actions du poste de travail.
+
+Si la feature ou la permission d'export n'est pas disponible, l'action Export n'est pas affichée. Si la feature est disponible mais qu'aucune version validée n'existe, l'export n'est pas proposé depuis la liste et reste refusé côté backend.
 
 ## Dashboard Workspace
 
 Un KPI configurable `Exports ce mois` affiche la consommation du Workspace sur sa limite effective. Il n'est accessible que si la feature et la permission sont effectives et peut être masqué via les préférences d'affichage existantes.
+
+L'icône d'information du KPI est placée immédiatement à droite de son titre. Le nom du Workspace n'est pas répété dans le contenu de la page `Tableau de bord` puisqu'il est déjà visible dans la navigation supérieure.

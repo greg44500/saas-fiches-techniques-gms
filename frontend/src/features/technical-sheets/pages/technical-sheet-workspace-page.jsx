@@ -914,33 +914,19 @@ function TechnicalSheetWorkspacePage() {
             validatePending={validateState.isLoading}
             validationEligible={validationEligible}
           />
+
+          {canUpdate && sheet.currentValidatedStateId && (
+            <ActionIconButton
+              Icon={RotateCcw}
+              disabled={startDraftState.isLoading}
+              label="Reprendre en brouillon"
+              onClick={createWorkingDraft}
+              tooltipLabel="Reprendre en brouillon"
+              variant="ghost"
+            />
+          )}
         </div>
         </header>
-      )}
-
-      {!draft && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>État de travail</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Aucun brouillon n’est ouvert. L’état validé courant reste consultable dans l’historique.
-              </p>
-              {canUpdate && sheet.currentValidatedStateId && (
-                <Button
-                  disabled={startDraftState.isLoading}
-                  onClick={createWorkingDraft}
-                  type="button"
-                >
-                  <RotateCcw aria-hidden="true" className="size-4" />
-                  Reprendre en brouillon
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
       )}
 
       {draft && (

@@ -1,6 +1,6 @@
 # Reprise courante — Exports directs des Fiches techniques
 
-**Date : 2026-10-06**  
+**Date : 2026-10-07**  
 **Branche : `feature/technical-sheet-exports-v1`**
 
 Le lot A2 a été fusionné dans `main` au commit `baf8722b429a33e1ce69960d6c7d446ca8c9714c`. La Core Gate #201 est verte.
@@ -44,3 +44,20 @@ Couverture E2E ajoutée (non exécutée ici) :
 Invariant supplémentaire couvert (non exécuté ici) :
 - une Fiche déjà validée peut rouvrir un nouveau brouillon ;
 - même si son identité de travail change ensuite, l'export reste construit depuis le dernier snapshot validé et n'expose aucune donnée non validée.
+
+
+## Ajustement UX avant validation locale — 2026-10-07
+
+Le premier bloc de QA visuelle demandé avant PR a été intégré sur la même branche :
+
+- Dashboard Workspace : suppression du nom de Workspace répété dans le contenu ;
+- cartes KPI : icône d'information rapprochée du titre ;
+- liste Fiches techniques : nouvelle colonne `État` avec `Brouillon`, `Validée`, `En révision` ;
+- l'état affiché est une projection des faits `currentValidatedStateId + hasDraft`, jamais une autorité de sécurité ;
+- suppression des sous-titres ambigus sous le nom des Fiches ;
+- actions de liste compactes : œil = prévisualiser l'officiel, crayon = ouvrir, `FileUp` = exporter ;
+- prévisualisation en modal depuis le snapshot validé courant, sans navigation et sans consommation du quota export ;
+- suppression du bloc post-validation `État de travail` ; `Reprendre en brouillon` reste disponible comme action compacte ;
+- E2E adapté pour couvrir l'état `Validée`, la modal de prévisualisation, l'export direct depuis la liste, puis le KPI mensuel.
+
+Les tests ajoutés/modifiés n'ont pas été exécutés à distance. La validation locale et la QA visuelle restent à faire par l'utilisateur avant toute PR.

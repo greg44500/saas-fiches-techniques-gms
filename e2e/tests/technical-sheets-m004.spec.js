@@ -230,11 +230,17 @@ async function validateCurrentDraft(page, {
   );
 
   await expect(
+    page.getByRole('button', {
+      name: 'Reprendre en brouillon',
+    }),
+  ).toBeVisible();
+
+  await expect(
     page.getByText(
-      'Aucun brouillon n’est ouvert. L’état validé courant reste consultable dans l’historique.',
+      'État de travail',
       { exact: true },
     ),
-  ).toBeVisible();
+  ).toHaveCount(0);
 }
 
 test('M-004 un Prix repère global valorise sans fournisseur puis le Prix Workspace devient prioritaire', async ({ page }) => {
@@ -408,9 +414,58 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
       'Version officielle à exporter',
   });
 
+  await page.goto(
+    context.dossierATechnicalSheetsUrl,
+  );
+
+  const exportRow =
+    page.getByRole('row')
+      .filter({
+        hasText:
+          'Fiche M004 Exports',
+      });
+
+  await expect(
+    exportRow.getByText(
+      'Validée',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  await exportRow
+    .getByRole('button', {
+      name:
+        'Prévisualiser Fiche M004 Exports',
+    })
+    .click();
+
+  const preview =
+    page.getByRole('dialog');
+
+  await expect(
+    preview.getByRole('heading', {
+      name:
+        'Prévisualisation de la Fiche technique',
+    }),
+  ).toBeVisible();
+  await expect(
+    preview.getByText(
+      'Fiche M004 Exports',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  await preview
+    .getByRole('button', {
+      name: 'Fermer',
+      exact: true,
+    })
+    .click();
+
   const exportButton =
-    page.getByRole('button', {
-      name: 'Exports',
+    exportRow.getByRole('button', {
+      name:
+        'Exporter Fiche M004 Exports',
     });
 
   await expect(

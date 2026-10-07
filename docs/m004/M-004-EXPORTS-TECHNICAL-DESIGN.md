@@ -61,3 +61,23 @@ Le composant d'export utilise `components/ui/popover.jsx`, déjà basé sur Base
 La permission `technical-sheet:export` est déclarée par le module M-004. Les nouveaux rôles système Owner l'obtiennent via le registre applicatif. Les rôles Owner déjà persistés sont mis à niveau par `migration:m004-export-permission`, qui réutilise la primitive Core générique `backfillRegisteredSystemRolePermissions`.
 
 Aucune permission n'est ajoutée automatiquement aux rôles personnalisés.
+
+
+## État éditorial de liste et prévisualisation
+
+`listTechnicalSheets()` ne persiste aucun nouveau champ d'état. Il expose les deux faits nécessaires à la présentation :
+
+- `currentValidatedStateId`, déjà porté par `TechnicalSheet` ;
+- `hasDraft`, calculé par une requête groupée et Workspace/Dossier-scoped sur `TechnicalSheetDraft` pour les Fiches de la page.
+
+Le frontend dérive ensuite `Brouillon | Validée | En révision`. Cette projection n'est utilisée dans aucun contrôle de sécurité.
+
+L'ouverture d'un nouveau brouillon invalide également le cache RTK Query de la liste afin que `Validée` devienne immédiatement `En révision`.
+
+La prévisualisation de liste réutilise la lecture sécurisée existante :
+
+`GET /api/workspaces/:workspaceId/dossiers/:dossierId/technical-sheets/:technicalSheetId/history/:validationId`
+
+Le `validationId` envoyé est exclusivement `currentValidatedStateId`. La modal n'interroge pas le brouillon et ne déclenche aucune consommation de `technical_sheet_exports_monthly`.
+
+Le menu d'export `TechnicalSheetExportMenu` est partagé entre le poste de travail et la liste. La liste ne réimplémente donc ni les formats ni la logique de téléchargement.
