@@ -1134,6 +1134,10 @@ function TechnicalSheetWorkspacePage() {
                       }
                       canExport={canExport}
                       canLifecycle={canLifecycle}
+                      canOptimize={
+                        canOptimize
+                        && actionAvailability.update
+                      }
                       canValidate={canValidate}
                       copyDisabled={copyDisabled}
                       draft={draft}
@@ -1150,8 +1154,18 @@ function TechnicalSheetWorkspacePage() {
                       onExport={exportValidatedSheet}
                       onOpenAnalysis={() => setRightPanel('analysis')}
                       onOpenDossier={() => setRightPanel('dossier')}
+                      onOptimize={openOptimizer}
                       onReactivate={() => setConfirmation({ type: 'reactivate' })}
                       onValidate={() => setValidationDialogOpen(true)}
+                      optimizerDisabled={
+                        draftDirty
+                        || autosaveHasUnsavedChanges
+                        || autosaveIsSaving
+                      }
+                      optimizerPending={
+                        optimizerOpening
+                        || startDraftState.isLoading
+                      }
                       pendingLifecycle={pendingLifecycle}
                       rightPanel={rightPanel}
                       validatePending={validateState.isLoading}
