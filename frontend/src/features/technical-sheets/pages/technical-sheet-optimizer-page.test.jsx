@@ -88,42 +88,9 @@ const context = {
       },
     }],
   },
-  curvePoints: [
-    {
-      key: 'VERY_LOW',
-      label: 'Très faible',
-      position: 0,
-    },
-    {
-      key: 'LOW',
-      label: 'Faible',
-      position: 25,
-    },
-    {
-      key: 'MEDIUM',
-      label: 'Moyenne',
-      position: 50,
-    },
-    {
-      key: 'HIGH',
-      label: 'Forte',
-      position: 75,
-    },
-    {
-      key: 'VERY_HIGH',
-      label: 'Très forte',
-      position: 100,
-    },
-  ],
-  neutralCurve: {
-    enabled: true,
-    pressures: {
-      VERY_LOW: 0,
-      LOW: 0,
-      MEDIUM: 0,
-      HIGH: 0,
-      VERY_HIGH: 0,
-    },
+  costAdjustmentRange: {
+    min: -99,
+    max: 100,
   },
   alternatives: {
     'line-1': {
@@ -203,7 +170,7 @@ describe('TechnicalSheetOptimizerPage', () => {
     });
   });
 
-  it('affiche la courbe, les KPI et l’inspecteur de l’ingrédient', () => {
+  it('affiche le profil économique global, les KPI et l’inspecteur de l’ingrédient', () => {
     render(
       <TechnicalSheetOptimizerPage />,
     );
@@ -215,8 +182,13 @@ describe('TechnicalSheetOptimizerPage', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Ajustement économique global',
+        'Profil économique global',
       ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('slider', {
+        name: 'Ajustement Carotte',
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -225,7 +197,7 @@ describe('TechnicalSheetOptimizerPage', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Ingrédient sélectionné',
+        'Réglage économique',
         { exact: true },
       ),
     ).toBeInTheDocument();
@@ -234,6 +206,46 @@ describe('TechnicalSheetOptimizerPage', () => {
         'Coût matière HT',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('synchronise le point du profil avec l’intention économique de la ligne', async () => {
+    const user =
+      userEvent.setup();
+
+    render(
+      <TechnicalSheetOptimizerPage />,
+    );
+
+    const point =
+      screen.getByRole(
+        'slider',
+        {
+          name:
+            'Ajustement Carotte',
+        },
+      );
+
+    await user.click(point);
+    await user.keyboard(
+      '{ArrowLeft}',
+    );
+
+    await new Promise(
+      (resolve) =>
+        setTimeout(
+          resolve,
+          450,
+        ),
+    );
+
+    const request =
+      mocks.simulate.mock
+        .calls.at(-1)[0];
+
+    expect(
+      request.lines[0]
+        .economicAdjustmentPercent,
+    ).toBe(-5);
   });
 
   it('bascule en mode Auto sans rendre le sourcing disponible hors capability utilisateur', async () => {
@@ -268,12 +280,19 @@ describe('TechnicalSheetOptimizerPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('construit une simulation serveur après modification des bornes', async () => {
+  it('construit une simulation serveur après modification des contraintes', async () => {
     const user =
       userEvent.setup();
 
     render(
       <TechnicalSheetOptimizerPage />,
+    );
+
+    await user.click(
+      screen.getByRole(
+        'button',
+        { name: 'Contraintes' },
+      ),
     );
 
     const minimum =
@@ -293,10 +312,6 @@ describe('TechnicalSheetOptimizerPage', () => {
           450,
         ),
     );
-
-    expect(
-      mocks.simulate,
-    ).toHaveBeenCalled();
 
     const request =
       mocks.simulate.mock
@@ -336,5 +351,9 @@ describe('TechnicalSheetOptimizerPage', () => {
       request.lines[0]
         .maxNetQuantity,
     ).toBeNull();
+    expect(
+      request.lines[0]
+        .economicAdjustmentPercent,
+    ).toBe(0);
   });
 });
