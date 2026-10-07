@@ -289,11 +289,13 @@ applyTechnicalSheetOptimization
 Desktop :
 
 - shell Atelier borné à la hauteur du viewport ;
-- bandeau économique fixe ;
-- colonne centrale min-height 0 ;
-- profil économique global au-dessus de la Fiche ;
-- liste de lignes seule scrollable si nécessaire ;
-- barre verticale d’outils accolée à un inspecteur fixe.
+- colonne gauche dominante : indicateurs économiques compacts puis Fiche technique simulée ;
+- colonne droite `minmax(32rem, 36rem)`, alignée sur la largeur d’un drawer de détail ;
+- profil économique global intégré en tête du panneau droit et toujours visible ;
+- choix Manuel / Auto sous le profil ;
+- bandeau horizontal d’outils ;
+- contenu contextuel seul scrollable si nécessaire ;
+- actions de scénario fixées en pied du panneau.
 
 L’inspecteur possède un état local `activeTool` :
 
@@ -306,7 +308,11 @@ CONSTRAINTS
 
 Le changement d’outil ne modifie ni route, ni ingrédient sélectionné, ni scénario.
 
-Petit écran : le même panneau outils + inspecteur est rendu dans la Sheet existante.
+La Fiche simulée réemploie le vocabulaire visuel M-004 : Produit, quantité nette, unité, PU HT, coût HT et %CM. Elle reste une projection en lecture seule ; les intentions de réglage sont pilotées depuis le panneau droit.
+
+Les champs décimaux optionnels sont normalisés côté frontend. Tant qu’une saisie transitoire n’est pas un décimal strictement positif complet, `buildOptimizationRequest` ne produit pas de payload et aucune requête de simulation n’est envoyée.
+
+Petit écran : le même panneau de pilotage, profil compris, est rendu dans la Sheet existante.
 
 ## 16. Réactivité
 
@@ -356,7 +362,7 @@ technicalSheetOptimizerAlternative.service.js
 → alternatives Produit et approvisionnement
 
 technicalSheetOptimizerMath.service.js
-→ bornes, interpolation et arithmétique rationnelle
+→ bornes, ajustement proportionnel et arithmétique rationnelle
 
 technicalSheetOptimizer.service.js
 → orchestration des routes context / simulate / apply
