@@ -73,6 +73,11 @@ import {
     valuateTechnicalSheet,
 } from './technicalSheetValuation.service.js';
 import {
+    applyTechnicalSheetOptimization,
+    getTechnicalSheetOptimizationContext,
+    simulateTechnicalSheetOptimization,
+} from './technicalSheetOptimizer.service.js';
+import {
     getWorkspaceBusinessSettings,
     updateTrashRetentionDays,
 } from './workspaceBusinessSettings.service.js';
@@ -426,6 +431,87 @@ const historyById = async (req, res) => {
     });
 };
 
+const optimizationContext = async (req, res) => {
+    const context =
+        await getTechnicalSheetOptimizationContext({
+            workspaceId:
+                req.workspace._id,
+            dossierId:
+                req.dossier._id,
+            technicalSheetId:
+                req.validated.params
+                    .technicalSheetId,
+            canManageSourcing:
+                req.permissions.includes(
+                    TECHNICAL_SHEET_PERMISSION
+                        .SOURCING_MANAGE,
+                ),
+        });
+
+    res.status(200).json({
+        status: 'success',
+        data: { context },
+    });
+};
+
+const simulateOptimization = async (
+    req,
+    res,
+) => {
+    const simulation =
+        await simulateTechnicalSheetOptimization({
+            workspaceId:
+                req.workspace._id,
+            dossierId:
+                req.dossier._id,
+            technicalSheetId:
+                req.validated.params
+                    .technicalSheetId,
+            request:
+                req.validated.body,
+            canManageSourcing:
+                req.permissions.includes(
+                    TECHNICAL_SHEET_PERMISSION
+                        .SOURCING_MANAGE,
+                ),
+        });
+
+    res.status(200).json({
+        status: 'success',
+        data: { simulation },
+    });
+};
+
+const applyOptimization = async (
+    req,
+    res,
+) => {
+    const result =
+        await applyTechnicalSheetOptimization({
+            workspaceId:
+                req.workspace._id,
+            dossierId:
+                req.dossier._id,
+            technicalSheetId:
+                req.validated.params
+                    .technicalSheetId,
+            actorId:
+                req.user._id,
+            request:
+                req.validated.body,
+            canManageSourcing:
+                req.permissions.includes(
+                    TECHNICAL_SHEET_PERMISSION
+                        .SOURCING_MANAGE,
+                ),
+        });
+
+    res.status(200).json({
+        status: 'success',
+        data: result,
+    });
+};
+
 const exportCurrent = async (req, res) => {
     const artifact =
         await exportCurrentValidatedTechnicalSheet({
@@ -695,6 +781,7 @@ const updateBusinessSettings = async (
 };
 
 export {
+    applyOptimization,
     archive,
     businessSettings,
     capacity,
@@ -709,6 +796,7 @@ export {
     historyById,
     list,
     metadata,
+    optimizationContext,
     purge,
     purgeWorkspaceTrash,
     reactivate,
@@ -716,6 +804,7 @@ export {
     restore,
     saveDraft,
     selectSupplierArticle,
+    simulateOptimization,
     startDraft,
     trash,
     update,
