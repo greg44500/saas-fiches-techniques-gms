@@ -11,6 +11,7 @@ import {
 import {
     buildTechnicalSheetPdf,
     buildTechnicalSheetPdfLayout,
+    resolveCompositionTableMetrics,
 } from '../../../modules/technicalSheet/technicalSheetExportPdf.service.js';
 import {
     buildTechnicalSheetCsv,
@@ -497,6 +498,36 @@ describe('M-004 exports de Fiches techniques', () => {
                         ),
                 },
             });
+        const layout =
+            buildTechnicalSheetPdfLayout(
+                projection,
+            );
+        const availableHeight = 330;
+        const metrics =
+            resolveCompositionTableMetrics({
+                columns:
+                    layout.composition
+                        .columns,
+                rows:
+                    layout.composition
+                        .rows,
+                availableHeight,
+            });
+        const fittedHeight =
+            metrics.headerHeight
+            + metrics.measuredRows
+                .reduce(
+                    (total, row) =>
+                        total + row.height,
+                    0,
+                );
+
+        expect(
+            fittedHeight,
+        ).toBeLessThanOrEqual(
+            availableHeight,
+        );
+
         const buffer =
             buildTechnicalSheetPdf(
                 projection,

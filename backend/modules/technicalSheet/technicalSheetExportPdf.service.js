@@ -825,21 +825,38 @@ const drawDocumentHeader = ({
 }) => {
     let y = TOP;
 
-    canvas.textAt({
-        x: MARGIN_X,
-        baseline: y,
-        value:
+    const titleLines =
+        wrapTextByWidth(
             layout.title,
-        size: 19,
-        bold: true,
-    });
+            540,
+            18,
+        );
+    const versionBaseline = y;
+
+    titleLines.forEach(
+        (line, index) => {
+            canvas.textAt({
+                x: MARGIN_X,
+                baseline:
+                    y
+                    - (
+                        index
+                        * 20
+                    ),
+                value: line,
+                size: 18,
+                bold: true,
+            });
+        },
+    );
 
     canvas.textAt({
         x:
             PAGE_WIDTH
             - MARGIN_X
             - 190,
-        baseline: y,
+        baseline:
+            versionBaseline,
         width: 190,
         align: 'right',
         value:
@@ -854,7 +871,12 @@ const drawDocumentHeader = ({
             PDF_GRAY.MUTED,
     });
 
-    y -= 22;
+    y -=
+        (
+            titleLines.length
+            * 20
+        )
+        + 2;
 
     if (layout.description) {
         const descriptionLines =
@@ -1189,7 +1211,7 @@ const drawComposition = ({
                 column.label,
             size:
                 Math.max(
-                    4.5,
+                    3.4,
                     metrics.fontSize,
                 ),
             bold: true,
