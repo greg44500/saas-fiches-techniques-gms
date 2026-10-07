@@ -89,9 +89,9 @@ Invariants :
 
 - minimum et maximum sont des garde-fous facultatifs ;
 - lorsqu’ils sont renseignés, ils sont strictement positifs et encadrent la quantité de référence ;
-- une borne absente signifie « aucun garde-fou de ce côté » et ne neutralise jamais la courbe ;
+- une borne absente signifie « aucun garde-fou de ce côté » et ne neutralise jamais l’ajustement local ;
 - une ligne verrouillée conserve sa quantité de référence ;
-- une ligne Économat n’est pas modulée par la courbe M-005 V1.
+- une ligne Économat n’est pas modulée par l’ajustement quantitatif M-005 V1.
 
 Les contraintes sont persistées sur le DRAFT lorsque l’utilisateur applique le scénario. Elles sont snapshottées lors de la validation, restaurées lors d’une nouvelle révision et copiées avec la recette vers un autre Dossier. Les données économiques ne sont jamais copiées entre Dossiers.
 
@@ -277,49 +277,54 @@ Une nouvelle révision reprend ces contraintes, mais re-résout toute donnée é
 
 ## 15. UX
 
-Desktop : l’Atelier est conçu comme un poste de réglage continu inspiré de Lightroom.
+Desktop : l’Atelier est conçu comme un poste de lecture et de réglage continu. La Fiche technique simulée est le résultat principal ; les outils restent dans un panneau latéral de pilotage.
 
 Structure :
 
 ```text
-bandeau économique fixe
-→ profil économique global instantané
-→ Fiche technique simulée comme résultat principal
-→ barre verticale d’outils
-→ inspecteur droit fixe à contenu dynamique
-→ actions de scénario
+Fiche technique simulée à gauche
+├── indicateurs économiques compacts
+└── représentation tabulaire de la Fiche qui se met à jour après simulation
+
+panneau de pilotage à droite, largeur comparable aux drawers de détail
+├── profil économique global toujours visible
+├── choix Manuel / Auto
+├── bandeau horizontal d’outils
+├── contenu contextuel de l’outil sélectionné
+└── actions Réinitialiser / Comparer / Appliquer
 ```
 
-La page Atelier ne doit pas imposer un scroll documentaire sur desktop. Les zones structurantes restent visibles dans le viewport. Lorsque la Fiche contient plus de lignes que l’espace disponible, seule la zone de liste des ingrédients peut défiler dans son propre viewport.
+La page Atelier ne doit pas imposer un scroll documentaire sur desktop. Le panneau droit utilise la hauteur disponible ; seul son contenu contextuel peut défiler si nécessaire. La Fiche peut disposer de son propre viewport lorsque le nombre de lignes dépasse l’espace disponible.
 
-Le profil économique :
+Le profil économique appartient au panneau de pilotage. Il :
 
+- reste visible pendant le changement d’outil ;
 - présente tous les ingrédients simultanément ;
 - représente chaque ingrédient par un point réel ;
 - se met à jour après chaque simulation ;
-- sélectionne la même ligne que la Fiche centrale ;
+- sélectionne la même ligne que la Fiche ;
 - permet de modifier horizontalement l’ajustement de la ligne sélectionnée ;
 - n’invente aucune continuité mathématique entre les ingrédients.
 
-La Fiche centrale affiche de manière compacte :
+La Fiche simulée doit ressembler à une Fiche technique exploitable, et non à un simple résumé de réglages. Elle affiche au minimum :
 
-- nom ;
-- quantité avant → après ;
-- coût avant → après ;
-- delta signé ;
-- %CM avant → après ;
-- indicateur visuel de contribution.
+- Produit ;
+- quantité nette simulée, avec lecture de la valeur précédente lorsqu’elle change ;
+- unité ;
+- prix unitaire HT applicable ;
+- coût HT de ligne ;
+- %CM ;
+- contexte de production disponible.
 
-La barre d’outils droite n’est pas une navigation entre pages. Elle change le contenu du même inspecteur pour l’ingrédient sélectionné.
+Le bandeau économique reste compact et sert de synthèse avant/après. Il ne doit pas monopoliser toute la largeur de l’écran.
 
-Outils V1 :
+Les outils Manuel sont présentés dans un bandeau horizontal :
 
 ```text
-Réglage
-Produit
-Approvisionnement
-Contraintes
+Réglage | Produit | Approvisionnement | Contraintes
 ```
+
+Un seul contenu d’outil est affiché sous ce bandeau. Les bornes min/max, le verrouillage et la quantité forcée n’occupent donc pas l’écran en permanence.
 
 L’outil Réglage expose en priorité :
 
@@ -329,7 +334,9 @@ L’outil Réglage expose en priorité :
 - coût avant → après ;
 - %CM avant → après.
 
-Produit et Approvisionnement restent deux leviers distincts. Contraintes regroupe minimum, maximum, verrouillage et quantité forcée avancée.
+Produit et Approvisionnement restent deux leviers distincts. Contraintes regroupe minimum, maximum, verrouillage et quantité forcée avancée, avec une action permettant de libérer explicitement les garde-fous.
+
+Les saisies décimales intermédiaires incomplètes ne doivent pas produire de requête invalide au backend : le recalcul est suspendu jusqu’à ce que la saisie redevienne valide.
 
 Les explications longues sont déplacées vers des tooltips / aides contextuelles. Les boutons d’outils sont identifiables au clavier et disposent d’un libellé accessible.
 
@@ -340,7 +347,8 @@ La navigation Workspace expose toujours « Atelier d’optimisation » dans le g
 Petit écran :
 
 - contenu principal conservé ;
-- inspecteur présenté en Sheet latérale/basse ;
+- panneau de pilotage présenté en Sheet latérale/basse ;
+- profil économique conservé dans cette Sheet ;
 - même sémantique d’outils ;
 - contrôles utilisables au tactile et au clavier.
 
