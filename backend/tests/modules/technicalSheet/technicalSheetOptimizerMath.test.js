@@ -78,6 +78,18 @@ describe('M-005 mathématiques de l’Atelier', () => {
         );
     });
 
+    it('refuse une borne nulle même hors validation HTTP', () => {
+        expect(() =>
+            assertOptimizationEnvelope({
+                referenceQuantity: '10',
+                minNetQuantity: '0',
+                maxNetQuantity: '12',
+            }),
+        ).toThrow(
+            /strictement positives/i,
+        );
+    });
+
     it('construit le pas Auto V1 à 25 % du chemin vers le minimum', () => {
         expect(
             buildQuarterStepTowardMinimum({
