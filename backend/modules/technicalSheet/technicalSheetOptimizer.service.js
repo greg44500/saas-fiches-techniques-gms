@@ -52,6 +52,8 @@ import {
 } from './technicalSheetMath.service.js';
 import { AppError } from '../../utils/appError.js';
 
+const MAX_AUTO_CANDIDATES = 60;
+
 const toId = (value) =>
     value?._id?.toString?.()
     ?? value?.toString?.()
@@ -621,27 +623,15 @@ const buildManualScenarioLines = async ({
             }
         }
 
-        const sourcingRequested =
-            intent.supplierArticleExplicit
-            && intent.supplierArticleId;
-
-        if (
-            sourcingRequested
-            && !canManageSourcing
-        ) {
-            throw new AppError(
-                'Permission de gestion de l’approvisionnement requise pour sélectionner un autre Article fournisseur.',
-                403,
+        const currentSupplierArticleId =
+            toId(
+                draftLine
+                    .selectedSupplierArticle,
             );
-        }
-
         let selectedSupplierArticleId =
             productChanged
                 ? null
-                : toId(
-                    draftLine
-                        .selectedSupplierArticle,
-                );
+                : currentSupplierArticleId;
 
         if (
             intent.supplierArticleExplicit
@@ -649,6 +639,21 @@ const buildManualScenarioLines = async ({
             selectedSupplierArticleId =
                 intent.supplierArticleId
                 ?? null;
+        }
+
+        const sourcingChanged =
+            intent.supplierArticleExplicit
+            && selectedSupplierArticleId
+                !== currentSupplierArticleId;
+
+        if (
+            sourcingChanged
+            && !canManageSourcing
+        ) {
+            throw new AppError(
+                'Permission de gestion de l’approvisionnement requise pour modifier l’Article fournisseur.',
+                403,
+            );
         }
 
         lines.push({
@@ -1146,6 +1151,13 @@ const autoSimulation = async ({
                 });
 
             if (nextQuantity) {
+                if (
+                    candidates.length
+                    >= MAX_AUTO_CANDIDATES
+                ) {
+                    break;
+                }
+
                 candidates.push({
                     lineId,
                     kind: 'QUANTITY',
@@ -1180,6 +1192,13 @@ const autoSimulation = async ({
                 const alternative
                 of alternatives
             ) {
+                if (
+                    candidates.length
+                    >= MAX_AUTO_CANDIDATES
+                ) {
+                    break;
+                }
+
                 candidates.push({
                     lineId,
                     kind: 'PRODUCT',
@@ -1219,6 +1238,13 @@ const autoSimulation = async ({
                 const alternative
                 of alternatives
             ) {
+                if (
+                    candidates.length
+                    >= MAX_AUTO_CANDIDATES
+                ) {
+                    break;
+                }
+
                 candidates.push({
                     lineId,
                     kind: 'SOURCING',
@@ -1316,10 +1342,16 @@ const autoSimulation = async ({
                                     .netQuantity
                                     .toString(),
                         })
-                        : {
-                            numerator: 0n,
-                            denominator: 1n,
-                        },
+                        : candidate.kind
+                            === 'PRODUCT'
+                            ? {
+                                numerator: 1n,
+                                denominator: 1n,
+                            }
+                            : {
+                                numerator: 0n,
+                                denominator: 1n,
+                            },
             });
         } catch (error) {
             if (
