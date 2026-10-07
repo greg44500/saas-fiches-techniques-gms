@@ -141,6 +141,7 @@ function constraintLabel(
 function TechnicalSheetOptimizationProfile({
   after,
   baseline,
+  embedded = false,
   lines,
   onChangeLine,
   onSelect,
@@ -287,9 +288,18 @@ function TechnicalSheetOptimizationProfile({
   return (
     <section
       aria-label="Profil économique global"
-      className="shrink-0 rounded-xl border border-border bg-card"
+      className={
+        embedded
+          ? 'shrink-0 border-b border-border bg-card'
+          : 'shrink-0 rounded-xl border border-border bg-card'
+      }
     >
-      <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+      <div
+        className={
+          'flex items-start justify-between gap-3 border-b border-border '
+          + (embedded ? 'px-3 py-2.5' : 'px-4 py-3')
+        }
+      >
         <div>
           <div className="flex items-center gap-1">
             <h2 className="text-sm font-semibold">
@@ -312,7 +322,11 @@ function TechnicalSheetOptimizationProfile({
       <div className="relative px-2 pb-2 pt-1">
         <svg
           aria-label="Répartition économique des ingrédients"
-          className="h-[190px] w-full touch-none"
+          className={
+            embedded
+              ? 'h-[165px] w-full touch-none'
+              : 'h-[190px] w-full touch-none'
+          }
           role="group"
           viewBox={
             '0 0 '
