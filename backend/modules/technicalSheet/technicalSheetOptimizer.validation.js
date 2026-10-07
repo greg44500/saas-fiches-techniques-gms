@@ -81,10 +81,8 @@ const autoOptionsSchema =
             z.boolean().default(true),
     });
 
-const createOptimizationSchema = ({
-    includeFingerprint = false,
-} = {}) => {
-    const shape = {
+const optimizationSimulationBaseSchema =
+    z.strictObject({
         expectedRevision:
             z.number()
                 .int()
@@ -101,57 +99,47 @@ const createOptimizationSchema = ({
         ).max(500),
         autoOptions:
             autoOptionsSchema,
-    };
+    });
 
-    if (includeFingerprint) {
-        shape.simulationFingerprint =
-            z.string()
-                .regex(
-                    /^[a-f0-9]{64}$/,
-                    'Fingerprint de simulation invalide.',
-                );
-    }
+const assertUniqueLines = (
+    value,
+    context,
+) => {
+    const seen = new Set();
 
-    return z.strictObject(shape)
-        .superRefine(
-            (value, context) => {
-                const seen = new Set();
+    value.lines.forEach((line, index) => {
+        if (seen.has(line.lineId)) {
+            context.addIssue({
+                code: 'custom',
+                path: [
+                    'lines',
+                    index,
+                    'lineId',
+                ],
+                message:
+                    'Une ligne ne peut être déclarée qu’une fois.',
+            });
+        }
 
-                value.lines.forEach(
-                    (line, index) => {
-                        if (
-                            seen.has(
-                                line.lineId,
-                            )
-                        ) {
-                            context.addIssue({
-                                code: 'custom',
-                                path: [
-                                    'lines',
-                                    index,
-                                    'lineId',
-                                ],
-                                message:
-                                    'Une ligne ne peut être déclarée qu’une fois.',
-                            });
-                        }
-
-                        seen.add(
-                            line.lineId,
-                        );
-                    },
-                );
-            },
-        );
+        seen.add(line.lineId);
+    });
 };
 
 const optimizationSimulationSchema =
-    createOptimizationSchema();
+    optimizationSimulationBaseSchema
+        .superRefine(assertUniqueLines);
 
 const applyOptimizationSchema =
-    createOptimizationSchema({
-        includeFingerprint: true,
-    });
+    optimizationSimulationBaseSchema
+        .extend({
+            simulationFingerprint:
+                z.string()
+                    .regex(
+                        /^[a-f0-9]{64}$/,
+                        'Fingerprint de simulation invalide.',
+                    ),
+        })
+        .superRefine(assertUniqueLines);
 
 export {
     applyOptimizationSchema,
