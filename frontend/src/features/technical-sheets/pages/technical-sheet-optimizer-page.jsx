@@ -174,6 +174,14 @@ function TechnicalSheetOptimizerPage() {
     mode,
   ]);
 
+  const hasInvalidRequest =
+    Boolean(
+      context
+      && draftRevision !== null
+      && lines.length > 0
+      && !request,
+    );
+
   async function runSimulation({
     showError = true,
   } = {}) {
@@ -236,7 +244,19 @@ function TechnicalSheetOptimizerPage() {
   }
 
   useEffect(() => {
-    if (!request) return undefined;
+    if (!request) {
+      if (hasInvalidRequest) {
+        requestSequenceRef.current += 1;
+        setSimulationStatus(
+          'input-invalid',
+        );
+        setSimulationError(
+          'Terminez la saisie de la quantité ou du garde-fou avant le recalcul.',
+        );
+      }
+
+      return undefined;
+    }
 
     setSimulationStatus('pending');
     setSimulationError(null);
@@ -255,7 +275,7 @@ function TechnicalSheetOptimizerPage() {
       window.clearTimeout(timeout);
   // request serializes all simulation inputs and is the intended trigger.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [request]);
+  }, [hasInvalidRequest, request]);
 
   const before =
     context?.baseline
