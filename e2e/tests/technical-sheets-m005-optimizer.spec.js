@@ -131,22 +131,29 @@ async function composeTechnicalSheet(
 }
 
 async function configureReduction(page) {
-  const highAdjustment =
+  const ingredientAdjustment =
     page.getByRole(
       'slider',
       {
         name:
-          'Ajustement Très forte',
+          /^Ajustement /,
       },
     ).first();
 
-  await highAdjustment.focus();
+  await ingredientAdjustment.focus();
 
   for (let step = 0; step < 10; step += 1) {
-    await highAdjustment.press(
-      'ArrowUp',
+    await ingredientAdjustment.press(
+      'ArrowLeft',
     );
   }
+
+  await expect(
+    ingredientAdjustment,
+  ).toHaveAttribute(
+    'aria-valuenow',
+    '-50',
+  );
 
   await expect(
     page.getByRole('button', {
