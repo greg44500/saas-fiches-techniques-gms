@@ -1,6 +1,7 @@
 import {
   render,
   screen,
+  within,
 } from '@testing-library/react';
 import {
   beforeEach,
@@ -62,11 +63,14 @@ describe('TechnicalSheetExportsDashboardWidget', () => {
     ).toHaveBeenCalledWith(
       'workspace-1',
     );
+    const widget =
+      screen.getByRole('region', {
+        name: 'Exports ce mois',
+      });
+
+    expect(widget).toBeInTheDocument();
     expect(
-      screen.getByText('Exports ce mois'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('4 / 10'),
+      within(widget).getByText('4 / 10'),
     ).toBeInTheDocument();
   });
 });

@@ -39,16 +39,18 @@ function TechnicalSheetExportsDashboardWidget() {
     : 'Nombre total d’exports PDF, XLSX et CSV réalisés ce mois dans ce Workspace.';
 
   return (
-    <DashboardSummaryCard
-      description={description}
-      isError={query.isError}
-      isLoading={
-        query.isLoading
-        && !usage
-      }
-      label="Exports ce mois"
-      value={value}
-    />
+    <section aria-label="Exports ce mois">
+      <DashboardSummaryCard
+        description={description}
+        isError={query.isError}
+        isLoading={
+          query.isLoading
+          && !usage
+        }
+        label="Exports ce mois"
+        value={value}
+      />
+    </section>
   );
 }
 

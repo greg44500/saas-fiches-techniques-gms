@@ -515,11 +515,9 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
   );
 
   const exportCard =
-    page.getByText(
-      'Exports ce mois',
-      { exact: true },
-    )
-      .locator('..');
+    page.getByRole('region', {
+      name: 'Exports ce mois',
+    });
 
   await expect(
     exportCard,
