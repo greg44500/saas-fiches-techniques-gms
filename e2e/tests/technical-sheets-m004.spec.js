@@ -529,15 +529,26 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
     ),
   ).toBeVisible();
 
-  await page
-    .getByRole('button', {
+  const displayPreferencesTrigger =
+    page.getByRole('button', {
       name:
-        'Personnaliser le tableau de bord',
-    })
-    .click();
+        'Préférences d’affichage',
+    });
+
+  await expect(
+    displayPreferencesTrigger,
+  ).toBeEnabled();
+  await displayPreferencesTrigger.click();
 
   const preferences =
-    page.getByRole('dialog');
+    page.getByRole('dialog', {
+      name:
+        'Affichage du tableau de bord',
+    });
+
+  await expect(
+    preferences,
+  ).toBeVisible();
 
   const exportSwitch =
     preferences.getByRole('switch', {
@@ -550,6 +561,12 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
   ).toBeChecked();
 
   await exportSwitch.click();
+
+  await expect(
+    page.getByRole('region', {
+      name: 'Exports ce mois',
+    }),
+  ).toHaveCount(0);
 
   await preferences
     .getByRole('button', {
@@ -564,10 +581,9 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
   );
 
   await expect(
-    page.getByText(
-      'Exports ce mois',
-      { exact: true },
-    ),
+    page.getByRole('region', {
+      name: 'Exports ce mois',
+    }),
   ).toHaveCount(0);
 });
 
