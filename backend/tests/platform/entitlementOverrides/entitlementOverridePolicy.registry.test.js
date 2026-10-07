@@ -50,6 +50,54 @@ describe('entitlementOverridePolicy.registry', () => {
         })).toBe(false);
     });
 
+    it('borne le quota mensuel des exports et leur dérogation commerciale', () => {
+        expect(
+            getPlanMetricOverridePolicy(
+                'technical_sheet_exports_monthly',
+            ),
+        ).toEqual({
+            control: 'preset_slider',
+            values: [
+                0,
+                10,
+                25,
+                50,
+                100,
+                250,
+                500,
+            ],
+            allowUnlimited: false,
+        });
+
+        expect(
+            getPlanFeatureOverridePolicy(
+                'technical_sheet_export',
+            ),
+        ).toEqual({
+            requiredLimits: {
+                technical_sheet_exports_monthly: {
+                    minimumEffectiveValue: 1,
+                    minimumHeadroom: 1,
+                },
+            },
+        });
+
+        expect(
+            isLimitValueAllowedByOverridePolicy({
+                metricKey:
+                    'technical_sheet_exports_monthly',
+                limitValue: 10,
+            }),
+        ).toBe(true);
+        expect(
+            isLimitValueAllowedByOverridePolicy({
+                metricKey:
+                    'technical_sheet_exports_monthly',
+                limitValue: 11,
+            }),
+        ).toBe(false);
+    });
+
     it('déclare le minimum et la capacité disponible de la gestion d’équipe', () => {
         expect(getPlanFeatureOverridePolicy('team_management'))
             .toEqual({

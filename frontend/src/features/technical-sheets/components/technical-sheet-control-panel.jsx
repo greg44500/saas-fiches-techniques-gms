@@ -11,24 +11,32 @@ import {
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { Button } from '@/components/ui/button';
+import {
+  TechnicalSheetExportMenu,
+} from '@/features/technical-sheets/components/technical-sheet-export-menu';
 
 function TechnicalSheetControlPanel({
   actionAvailability,
   canCopy,
   canDelete,
   canEditIdentity,
+  canExport,
   canLifecycle,
   canValidate,
   copyDisabled,
   draft,
   draftDirty,
+  editPending = false,
   validationEligible = false,
   draftSynchronizing,
+  exportDisabledReason,
+  exportingFormat,
   identityDirty,
   onArchive,
   onCopy,
   onDelete,
   onEditIdentity,
+  onExport,
   onOpenAnalysis,
   onOpenDossier,
   onReactivate,
@@ -69,14 +77,14 @@ function TechnicalSheetControlPanel({
       role="group"
     >
       <Button
-        disabled={!canEditIdentity}
+        disabled={!canEditIdentity || editPending}
         onClick={onEditIdentity}
         size="sm"
         type="button"
         variant="ghost"
       >
         <Pencil aria-hidden="true" className="size-4" />
-        Modifier
+        {editPending ? 'Ouverture…' : 'Modifier'}
       </Button>
 
       <Button
@@ -103,6 +111,14 @@ function TechnicalSheetControlPanel({
         aria-hidden="true"
         className="mx-1 h-6 w-px shrink-0 bg-border"
       />
+
+      {canExport && (
+        <TechnicalSheetExportMenu
+          disabledReason={exportDisabledReason}
+          exportingFormat={exportingFormat}
+          onExport={onExport}
+        />
+      )}
 
       {canCopy && (
         <ActionIconButton

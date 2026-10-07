@@ -8,6 +8,9 @@ import {
     enforceWorkspaceAccessMode,
 } from '../../middlewares/enforceWorkspaceAccessMode.js';
 import {
+    enforcePlanFeature,
+} from '../../middlewares/enforcePlanFeature.js';
+import {
     loadWorkspaceContext,
 } from '../../middlewares/loadWorkspaceContext.js';
 import {
@@ -26,6 +29,8 @@ import {
     capacity,
     copy,
     create,
+    exportCurrent,
+    exportUsage,
     getById,
     getDossierSettings,
     getDraft,
@@ -55,6 +60,9 @@ import {
     requireWorkspaceOwner,
 } from './technicalSheetOwner.middleware.js';
 import {
+    TECHNICAL_SHEET_FEATURE,
+} from './technicalSheet.registry.js';
+import {
     TECHNICAL_SHEET_PERMISSION,
 } from './technicalSheetPermission.registry.js';
 import {
@@ -62,6 +70,7 @@ import {
     createDraftFromValidationSchema,
     createTechnicalSheetSchema,
     dossierTechnicalSheetSettingsSchema,
+    exportTechnicalSheetSchema,
     paginationQuerySchema,
     purgeTechnicalSheetSchema,
     purgeWorkspaceTrashSchema,
@@ -342,6 +351,30 @@ technicalSheetDossierRouter.post(
     validate,
 );
 
+technicalSheetDossierRouter.post(
+    '/:technicalSheetId/exports',
+    authenticate,
+    validateRequest({
+        params:
+            technicalSheetParamsSchema,
+        body:
+            exportTechnicalSheetSchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        TECHNICAL_SHEET_PERMISSION.EXPORT,
+    ),
+    enforceWorkspaceAccessMode(),
+    enforcePlanFeature(
+        TECHNICAL_SHEET_FEATURE.EXPORT,
+    ),
+    loadAuthorizedDossierContext,
+    enforceDossierStatePolicy(
+        DOSSIER_STATE_POLICY.READ,
+    ),
+    exportCurrent,
+);
+
 technicalSheetDossierRouter.get(
     '/:technicalSheetId/history',
     authenticate,
@@ -453,6 +486,23 @@ technicalSheetDossierRouter.post(
     enforceWorkspaceAccessMode(),
     loadAuthorizedDossierContext,
     copy,
+);
+
+technicalSheetWorkspaceRouter.get(
+    '/exports/usage',
+    authenticate,
+    validateRequest({
+        params:
+            technicalSheetWorkspaceParamsSchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        TECHNICAL_SHEET_PERMISSION.EXPORT,
+    ),
+    enforcePlanFeature(
+        TECHNICAL_SHEET_FEATURE.EXPORT,
+    ),
+    exportUsage,
 );
 
 technicalSheetWorkspaceRouter.get(

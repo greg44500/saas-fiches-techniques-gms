@@ -9,6 +9,13 @@ import {
 } from 'vitest';
 
 import {
+    PLAN_SYSTEM_ROLE,
+} from '../../../constants/plan.constants.js';
+
+import {
+    BusinessActivityEvent,
+} from '../../../modules/businessActivity/businessActivity.model.js';
+import {
     Dossier,
 } from '../../../modules/dossier/dossier.model.js';
 import {
@@ -33,6 +40,7 @@ import {
     createSupplierArticle,
 } from '../../../modules/supplierCatalog/supplierReference.service.js';
 import {
+    TECHNICAL_SHEET_FEATURE,
     TECHNICAL_SHEET_METRIC,
     TECHNICAL_SHEET_VALUATION_STATUS,
 } from '../../../modules/technicalSheet/technicalSheet.registry.js';
@@ -46,6 +54,11 @@ import {
     copyTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheetCopy.service.js';
 import {
+    exportCurrentValidatedTechnicalSheet,
+    getTechnicalSheetExportUsage,
+} from '../../../modules/technicalSheet/technicalSheetExport.service.js';
+import { Plan } from '../../../modules/plan/plan.model.js';
+import {
     deleteTechnicalSheet,
     purgeTechnicalSheet,
     restoreTechnicalSheet,
@@ -53,8 +66,10 @@ import {
 import {
     createTechnicalSheet,
     listTechnicalSheets,
+    updateTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheet.service.js';
 import {
+    createDraftFromValidatedState,
     saveTechnicalSheetDraft,
 } from '../../../modules/technicalSheet/technicalSheetDraft.service.js';
 import {
@@ -486,6 +501,101 @@ describe('M-004 services Fiches techniques', () => {
         expect(
             result.sheets.map((sheet) => sheet.id),
         ).toContain(created.sheet.id);
+    });
+
+    it('expose séparément la validation courante et l’existence d’un brouillon dans la liste', async () => {
+        const {
+            created,
+            valued,
+        } = await createValuedDraft();
+
+        let listed =
+            await listTechnicalSheets({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+            });
+        let listedSheet =
+            listed.sheets.find(
+                ({ id }) =>
+                    id === created.sheet.id,
+            );
+
+        expect(listedSheet).toMatchObject({
+            currentValidatedStateId: null,
+            hasDraft: true,
+        });
+
+        const validated =
+            await validateTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedSheetRevision:
+                    created.sheet.revision,
+                expectedDraftRevision:
+                    valued.draft.revision,
+                atDate,
+            });
+
+        listed =
+            await listTechnicalSheets({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+            });
+        listedSheet =
+            listed.sheets.find(
+                ({ id }) =>
+                    id === created.sheet.id,
+            );
+
+        expect(
+            listedSheet.currentValidatedStateId,
+        ).toBeTruthy();
+        expect(
+            listedSheet.hasDraft,
+        ).toBe(false);
+
+        await createDraftFromValidatedState({
+            workspaceId:
+                owner.workspace._id,
+            dossierId:
+                dossier._id,
+            technicalSheetId:
+                created.sheet.id,
+            actorId:
+                owner.owner._id,
+            expectedSheetRevision:
+                validated.sheetRevision,
+        });
+
+        listed =
+            await listTechnicalSheets({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+            });
+        listedSheet =
+            listed.sheets.find(
+                ({ id }) =>
+                    id === created.sheet.id,
+            );
+
+        expect(
+            listedSheet.currentValidatedStateId,
+        ).toBeTruthy();
+        expect(
+            listedSheet.hasDraft,
+        ).toBe(true);
     });
 
     it('calcule %CM comme contribution de chaque Ingrédient au coût matière total', async () => {
@@ -1025,6 +1135,322 @@ describe('M-004 services Fiches techniques', () => {
                     created.sheet.id,
             }),
         ).toBe(1);
+    });
+
+    it('exporte la version validée dans les trois formats et cumule le quota mensuel', async () => {
+        const plan =
+            await Plan.findOne({
+                systemRole:
+                    PLAN_SYSTEM_ROLE.BASELINE,
+            });
+
+        plan.features = [
+            ...new Set([
+                ...(plan.features ?? []),
+                TECHNICAL_SHEET_FEATURE.EXPORT,
+            ]),
+        ];
+        plan.limits.set(
+            TECHNICAL_SHEET_METRIC
+                .EXPORTS_MONTHLY,
+            10,
+        );
+        await plan.save();
+
+        const {
+            created,
+            valued,
+        } = await createValuedDraft();
+
+        await validateTechnicalSheet({
+            workspaceId:
+                owner.workspace._id,
+            dossierId:
+                dossier._id,
+            technicalSheetId:
+                created.sheet.id,
+            actorId:
+                owner.owner._id,
+            expectedSheetRevision:
+                created.sheet.revision,
+            expectedDraftRevision:
+                valued.draft.revision,
+            atDate,
+        });
+
+        const csv =
+            await exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'CSV',
+                at: atDate,
+            });
+        const xlsx =
+            await exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'XLSX',
+                at: atDate,
+            });
+        const pdf =
+            await exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'PDF',
+                at: atDate,
+            });
+
+        expect(csv.mimeType)
+            .toContain('text/csv');
+        expect(csv.fileName)
+            .toMatch(/\.csv$/);
+        expect(xlsx.fileName)
+            .toMatch(/\.xlsx$/);
+        expect(pdf.mimeType)
+            .toBe('application/pdf');
+        expect(
+            pdf.buffer
+                .toString(
+                    'latin1',
+                    0,
+                    8,
+                ),
+        ).toBe('%PDF-1.4');
+
+        const usage =
+            await getTechnicalSheetExportUsage({
+                workspaceId:
+                    owner.workspace._id,
+                at: atDate,
+            });
+
+        expect(usage).toMatchObject({
+            current: 3,
+            limit: 10,
+            remaining: 7,
+            unlimited: false,
+        });
+
+        const exportEvents =
+            await BusinessActivityEvent
+                .find({
+                    workspace:
+                        owner.workspace._id,
+                    action:
+                        'TECHNICAL_SHEET_EXPORTED',
+                })
+                .sort({ _id: 1 })
+                .lean();
+
+        expect(exportEvents)
+            .toHaveLength(3);
+        expect(
+            exportEvents.map(
+                (event) =>
+                    event.metadata.format,
+            ),
+        ).toEqual([
+            'CSV',
+            'XLSX',
+            'PDF',
+        ]);
+        expect(
+            exportEvents.every(
+                (event) =>
+                    !Object.hasOwn(
+                        event.metadata,
+                        'buffer',
+                    ),
+            ),
+        ).toBe(true);
+    });
+
+    it('exporte toujours le dernier snapshot validé lorsqu’un nouveau brouillon existe', async () => {
+        const plan =
+            await Plan.findOne({
+                systemRole:
+                    PLAN_SYSTEM_ROLE.BASELINE,
+            });
+
+        plan.features = [
+            ...new Set([
+                ...(plan.features ?? []),
+                TECHNICAL_SHEET_FEATURE.EXPORT,
+            ]),
+        ];
+        plan.limits.set(
+            TECHNICAL_SHEET_METRIC
+                .EXPORTS_MONTHLY,
+            10,
+        );
+        await plan.save();
+
+        const {
+            created,
+            valued,
+        } = await createValuedDraft();
+
+        const validated =
+            await validateTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                expectedSheetRevision:
+                    created.sheet.revision,
+                expectedDraftRevision:
+                    valued.draft.revision,
+                atDate,
+            });
+
+        await createDraftFromValidatedState({
+            workspaceId:
+                owner.workspace._id,
+            dossierId:
+                dossier._id,
+            technicalSheetId:
+                created.sheet.id,
+            actorId:
+                owner.owner._id,
+            expectedSheetRevision:
+                validated.sheetRevision,
+        });
+
+        await updateTechnicalSheet({
+            workspaceId:
+                owner.workspace._id,
+            dossierId:
+                dossier._id,
+            technicalSheetId:
+                created.sheet.id,
+            actorId:
+                owner.owner._id,
+            expectedRevision:
+                validated.sheetRevision,
+            data: {
+                name:
+                    'Titre de brouillon non validé',
+            },
+        });
+
+        const artifact =
+            await exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'CSV',
+                at: atDate,
+            });
+
+        const exported =
+            artifact.buffer.toString('utf8');
+
+        expect(exported)
+            .toContain(
+                'Purée de carottes',
+            );
+        expect(exported)
+            .not.toContain(
+                'Titre de brouillon non validé',
+            );
+    });
+
+    it('refuse l’export tant que la Fiche ne possède aucune version validée', async () => {
+        const plan =
+            await Plan.findOne({
+                systemRole:
+                    PLAN_SYSTEM_ROLE.BASELINE,
+            });
+
+        plan.features = [
+            ...new Set([
+                ...(plan.features ?? []),
+                TECHNICAL_SHEET_FEATURE.EXPORT,
+            ]),
+        ];
+        plan.limits.set(
+            TECHNICAL_SHEET_METRIC
+                .EXPORTS_MONTHLY,
+            10,
+        );
+        await plan.save();
+
+        const created =
+            await createTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                actorId:
+                    owner.owner._id,
+                data: {
+                    name:
+                        'Fiche non validée',
+                    productionQuantity:
+                        '1',
+                    productionUnit:
+                        'UNIT',
+                    vatRateBasisPoints:
+                        1000,
+                },
+            });
+
+        await expect(
+            exportCurrentValidatedTechnicalSheet({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    created.sheet.id,
+                actorId:
+                    owner.owner._id,
+                format: 'PDF',
+                at: atDate,
+            }),
+        ).rejects.toMatchObject({
+            statusCode: 409,
+            message:
+                'Validez la Fiche technique avant de l’exporter.',
+        });
+
+        expect(
+            await getUsageMetricValue({
+                workspaceId:
+                    owner.workspace._id,
+                metricKey:
+                    TECHNICAL_SHEET_METRIC
+                        .EXPORTS_MONTHLY,
+                at: atDate,
+            }),
+        ).toBe(0);
     });
 
     it('actualise automatiquement les calculs si le Prix applicable change avant validation', async () => {

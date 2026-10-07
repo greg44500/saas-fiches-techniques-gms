@@ -1416,3 +1416,15 @@ La conception M-004 est techniquement viable avec les primitives existantes pour
 La corbeille Workspace et sa purge automatique sont volontairement implémentées dans le produit métier avec `purgeScheduledAt` par ressource et un job global idempotent.
 
 Aucun blocker Core n'est identifié pour le bloc M-004 hors exports.
+
+
+## Continuité lecture officielle / édition
+
+Le frontend partage désormais un composant de lecture `TechnicalSheetValidatedContent` entre la modal de prévisualisation et la page Fiche sans brouillon. La donnée provient toujours de `GET /history/:validationId` avec `validationId = currentValidatedStateId`.
+
+Le passage lecture → édition n'est jamais déduit d'un simple libellé frontend :
+- depuis la page Fiche, `Modifier` appelle `POST /:technicalSheetId/draft` avec `expectedSheetRevision` ;
+- depuis la liste, une Fiche possédant déjà `hasDraft` est ouverte directement ; sinon une Fiche ayant `currentValidatedStateId` passe d'abord par la même mutation sécurisée ;
+- le backend reste responsable des permissions, de la révision attendue et de la création unique du brouillon.
+
+La table de composition frontend ne présente plus le taux de rendement. La donnée reste disponible dans M-002/M-004 pour les calculs et snapshots.

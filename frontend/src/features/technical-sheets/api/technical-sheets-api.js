@@ -6,6 +6,7 @@ const TECHNICAL_SHEET_API_TAG_TYPES = Object.freeze([
   'TechnicalSheetDraft',
   'TechnicalSheetHistory',
   'TechnicalSheetCapacity',
+  'TechnicalSheetExportUsage',
   'TechnicalSheetTrash',
   'TechnicalSheetSettings',
   'WorkspaceBusinessSettings',
@@ -19,6 +20,28 @@ function compactParams(params) {
       && value !== ''
     )),
   );
+}
+
+function parseDownloadFileName(contentDisposition, fallbackName) {
+  if (!contentDisposition) return fallbackName;
+
+  const encodedMatch = contentDisposition.match(
+    /filename\*=UTF-8''([^;]+)/i,
+  );
+
+  if (encodedMatch?.[1]) {
+    try {
+      return decodeURIComponent(encodedMatch[1]);
+    } catch {
+      return fallbackName;
+    }
+  }
+
+  const plainMatch = contentDisposition.match(
+    /filename="?([^";]+)"?/i,
+  );
+
+  return plainMatch?.[1] ?? fallbackName;
 }
 
 function dossierScopeId(workspaceId, dossierId) {
@@ -224,6 +247,13 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
             technicalSheetId,
           ),
         },
+        {
+          type: 'TechnicalSheetList',
+          id: dossierScopeId(
+            workspaceId,
+            dossierId,
+          ),
+        },
       ],
     }),
 
@@ -385,6 +415,62 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
         {
           type: 'TechnicalSheetList',
           id: dossierScopeId(workspaceId, dossierId),
+        },
+      ],
+    }),
+
+    exportTechnicalSheet: builder.mutation({
+      query: ({
+        workspaceId,
+        dossierId,
+        technicalSheetId,
+        format,
+      }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/dossiers/' + dossierId
+          + '/technical-sheets/' + technicalSheetId
+          + '/exports',
+        method: 'POST',
+        body: { format },
+        responseHandler: async (response) => {
+          if (!response.ok) {
+            return response.json();
+          }
+
+          const blob = await response.blob();
+          const fallbackName =
+            'fiche-technique.'
+            + format.toLowerCase();
+
+          return {
+            blob,
+            fileName: parseDownloadFileName(
+              response.headers.get('content-disposition'),
+              fallbackName,
+            ),
+          };
+        },
+      }),
+      invalidatesTags: (_result, _error, { workspaceId }) => [
+        {
+          type: 'TechnicalSheetExportUsage',
+          id: workspaceId,
+        },
+      ],
+    }),
+
+    getTechnicalSheetExportUsage: builder.query({
+      query: (workspaceId) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/technical-sheets/exports/usage',
+      }),
+      transformResponse: (response) => response.data.usage,
+      providesTags: (_result, _error, workspaceId) => [
+        {
+          type: 'TechnicalSheetExportUsage',
+          id: workspaceId,
         },
       ],
     }),
@@ -707,9 +793,11 @@ export const {
   useCopyTechnicalSheetMutation,
   useCreateTechnicalSheetMutation,
   useDeleteTechnicalSheetMutation,
+  useExportTechnicalSheetMutation,
   useGetDossierTechnicalSheetSettingsQuery,
   useGetTechnicalSheetCapacityQuery,
   useGetTechnicalSheetDraftQuery,
+  useGetTechnicalSheetExportUsageQuery,
   useGetTechnicalSheetMetadataQuery,
   useGetTechnicalSheetQuery,
   useGetTechnicalSheetValidationQuery,
@@ -735,6 +823,7 @@ export {
   TECHNICAL_SHEET_API_TAG_TYPES,
   compactParams,
   dossierScopeId,
+  parseDownloadFileName,
   technicalSheetScopeId,
   technicalSheetsApi,
 };

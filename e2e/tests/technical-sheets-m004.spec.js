@@ -213,13 +213,18 @@ async function validateCurrentDraft(page, {
 
   if (comment) {
     await dialog
-      .getByLabel('Commentaire de validation')
+      .getByLabel(
+        'Commentaire de validation (facultatif)',
+      )
       .fill(comment);
   }
 
   await dialog
     .getByRole('button', {
-      name: 'Valider',
+      name:
+        comment
+          ? 'Valider'
+          : 'Valider sans commentaire',
       exact: true,
     })
     .click();
@@ -230,11 +235,24 @@ async function validateCurrentDraft(page, {
   );
 
   await expect(
+    page.getByRole('button', {
+      name: 'Modifier',
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  await expect(
+    page.getByRole('table', {
+      name: 'Composition',
+    }),
+  ).toBeVisible();
+
+  await expect(
     page.getByText(
-      'Aucun brouillon n’est ouvert. L’état validé courant reste consultable dans l’historique.',
+      'État de travail',
       { exact: true },
     ),
-  ).toBeVisible();
+  ).toHaveCount(0);
 }
 
 test('M-004 un Prix repère global valorise sans fournisseur puis le Prix Workspace devient prioritaire', async ({ page }) => {
@@ -379,6 +397,208 @@ test('M-004 une Référence Produit globale non favorite reste composable et val
   });
 });
 
+test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', async ({ page }) => {
+  const context =
+    await provisionTechnicalSheetWorkspace({
+      exportEnabled: true,
+      exportLimit: 10,
+    });
+
+  await loginWithIdentity(
+    page,
+    context.identity,
+  );
+
+  await createTechnicalSheet(page, {
+    name:
+      'Fiche M004 Exports',
+    technicalSheetsUrl:
+      context.dossierATechnicalSheetsUrl,
+  });
+
+  await composeTechnicalSheet(page, {
+    productReferenceName:
+      context.productReferenceName,
+  });
+
+  await validateCurrentDraft(page, {
+    comment:
+      'Version officielle à exporter',
+  });
+
+  await page.goto(
+    context.dossierATechnicalSheetsUrl,
+  );
+
+  const exportRow =
+    page.getByRole('row')
+      .filter({
+        hasText:
+          'Fiche M004 Exports',
+      });
+
+  await expect(
+    exportRow.getByText(
+      'Validée',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  await exportRow
+    .getByRole('button', {
+      name:
+        'Prévisualiser Fiche M004 Exports',
+    })
+    .click();
+
+  const preview =
+    page.getByRole('dialog');
+
+  await expect(
+    preview.getByRole('heading', {
+      name:
+        'Prévisualisation de la Fiche technique',
+    }),
+  ).toBeVisible();
+  await expect(
+    preview.getByText(
+      'Fiche M004 Exports',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  await preview
+    .getByRole('button', {
+      name: 'Fermer',
+      exact: true,
+    })
+    .click();
+
+  const exportButton =
+    exportRow.getByRole('button', {
+      name:
+        'Exporter Fiche M004 Exports',
+    });
+
+  await expect(
+    exportButton,
+  ).toBeEnabled();
+  await exportButton.click();
+
+  await expect(
+    page.getByRole('button', {
+      name: '.pdf',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: '.xlsx',
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: '.csv',
+    }),
+  ).toBeVisible();
+
+  const downloadPromise =
+    page.waitForEvent('download');
+
+  await page
+    .getByRole('button', {
+      name: '.csv',
+    })
+    .click();
+
+  const download =
+    await downloadPromise;
+
+  expect(
+    download.suggestedFilename(),
+  ).toMatch(/\.csv$/);
+
+  await expectVisibleToast(
+    page,
+    'Export CSV généré',
+  );
+
+  await page.goto(
+    context.dashboardUrl,
+  );
+
+  const exportCard =
+    page.getByRole('region', {
+      name: 'Exports ce mois',
+    });
+
+  await expect(
+    exportCard,
+  ).toBeVisible();
+  await expect(
+    exportCard.getByText(
+      '1 / 10',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  const displayPreferencesTrigger =
+    page.getByRole('button', {
+      name:
+        'Préférences d’affichage',
+    });
+
+  await expect(
+    displayPreferencesTrigger,
+  ).toBeEnabled();
+  await displayPreferencesTrigger.click();
+
+  const preferences =
+    page.getByRole('dialog', {
+      name:
+        'Affichage du tableau de bord',
+    });
+
+  await expect(
+    preferences,
+  ).toBeVisible();
+
+  const exportSwitch =
+    preferences.getByRole('switch', {
+      name:
+        'Afficher Exports ce mois',
+    });
+
+  await expect(
+    exportSwitch,
+  ).toBeChecked();
+
+  await exportSwitch.click();
+
+  await expect(
+    page.getByRole('region', {
+      name: 'Exports ce mois',
+    }),
+  ).toHaveCount(0);
+
+  await preferences
+    .getByRole('button', {
+      name: 'Enregistrer',
+      exact: true,
+    })
+    .click();
+
+  await expectVisibleToast(
+    page,
+    'Affichage du tableau de bord enregistré',
+  );
+
+  await expect(
+    page.getByRole('region', {
+      name: 'Exports ce mois',
+    }),
+  ).toHaveCount(0);
+});
+
 test('M-004 ambiguïté Article, changement de prix, actualisation automatique puis validation', async ({ page }) => {
   const context =
     await provisionTechnicalSheetWorkspace({
@@ -458,7 +678,8 @@ test('M-004 ambiguïté Article, changement de prix, actualisation automatique p
 
   await staleValidationDialog
     .getByRole('button', {
-      name: 'Valider',
+      name:
+        'Valider sans commentaire',
       exact: true,
     })
     .click();
@@ -625,9 +846,38 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
       'Validation avant contrôle du quota',
   });
 
+  await page.goto(
+    context.dossierATechnicalSheetsUrl,
+  );
+
+  const quotaRow =
+    page.getByRole('row')
+      .filter({
+        hasText:
+          'Fiche M004 Quota',
+      });
+
+  await quotaRow
+    .getByRole('button', {
+      name:
+        'Modifier Fiche M004 Quota',
+    })
+    .click();
+
+  await expect(page)
+    .toHaveURL(detailUrl);
+
+  await expect(
+    page.getByText(
+      'Brouillon',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
   await page
     .getByRole('button', {
       name: 'Modifier',
+      exact: true,
     })
     .click();
 
@@ -652,6 +902,21 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
     page,
     'Fiche technique mise à jour',
   );
+
+  const copyWhileDraftOpen =
+    page.getByRole('button', {
+      name:
+        'Copier vers un autre Dossier',
+    });
+
+  await expect(
+    copyWhileDraftOpen,
+  ).toBeDisabled();
+
+  await validateCurrentDraft(page, {
+    comment:
+      'Modification autorisée à la limite',
+  });
 
   await expectTechnicalSheetCapacity(page, {
     dashboardUrl: context.dashboardUrl,

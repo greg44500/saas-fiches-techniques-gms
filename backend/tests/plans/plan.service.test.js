@@ -119,6 +119,8 @@ describe('Plan service', () => {
                 'Limites de plan non configurées : '
                 + 'file_uploads_monthly, '
                 + TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS
+                + ', '
+                + TECHNICAL_SHEET_METRIC.EXPORTS_MONTHLY
                 + '.',
             );
         });
@@ -144,6 +146,7 @@ describe('Plan service', () => {
                     storage_bytes: 1073741824,
                     file_uploads_monthly: 100,
                     [TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS]: 10,
+                    [TECHNICAL_SHEET_METRIC.EXPORTS_MONTHLY]: 10,
                 },
             };
 
@@ -186,6 +189,8 @@ describe('Plan service', () => {
                 'Limites de plan non configurées : '
                 + 'storage_bytes, file_uploads_monthly, '
                 + TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS
+                + ', '
+                + TECHNICAL_SHEET_METRIC.EXPORTS_MONTHLY
                 + '.',
             );
 

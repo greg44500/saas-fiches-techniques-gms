@@ -1,11 +1,11 @@
 import {
   Eye,
+  Pencil,
   Plus,
   Search,
 } from 'lucide-react';
 import { useState } from 'react';
 import {
-  Link,
   useNavigate,
   useParams,
 } from 'react-router';
@@ -15,12 +15,11 @@ import {
   DataTableActions,
 } from '@/components/data-display/data-table';
 import { DataPagination } from '@/components/data-display/data-pagination';
+import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
-import {
-  TechnicalSheetStatusBadge,
-} from '@/features/technical-sheets/components/technical-sheet-status-badge';
+import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -29,19 +28,37 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { downloadBlob } from '@/features/files/lib/download-blob';
 import {
+  useExportTechnicalSheetMutation,
   useGetDossierTechnicalSheetSettingsQuery,
   useGetTechnicalSheetCapacityQuery,
+  useGetTechnicalSheetExportUsageQuery,
   useGetTechnicalSheetMetadataQuery,
   useListTechnicalSheetsQuery,
+  useStartTechnicalSheetDraftMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
   TechnicalSheetCreateDialog,
 } from '@/features/technical-sheets/components/technical-sheet-create-dialog';
 import {
+  TechnicalSheetExportMenu,
+} from '@/features/technical-sheets/components/technical-sheet-export-menu';
+import {
+  TechnicalSheetPreviewDialog,
+} from '@/features/technical-sheets/components/technical-sheet-preview-dialog';
+import {
+  TechnicalSheetStatusBadge,
+} from '@/features/technical-sheets/components/technical-sheet-status-badge';
+import {
+  TECHNICAL_SHEET_FEATURE,
+} from '@/features/technical-sheets/constants/technical-sheet-features';
+import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 import {
+  getTechnicalSheetApiErrorMessage,
+  getTechnicalSheetEditorialPresentation,
   getTechnicalSheetStatusPresentation,
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 import {
@@ -55,10 +72,30 @@ import {
 function TechnicalSheetsPage() {
   const { dossierId } = useParams();
   const navigate = useNavigate();
-  const { can, workspace } = useWorkspaceContext();
+  const { toast } = useToast();
+  const {
+    can,
+    hasFeature,
+    workspace,
+  } = useWorkspaceContext();
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
-  const { page, pageSize, setPage, setPageSize } = useDataPagination();
+  const [previewSheet, setPreviewSheet] =
+    useState(null);
+  const [
+    exportingSheetId,
+    setExportingSheetId,
+  ] = useState(null);
+  const [
+    exportingFormat,
+    setExportingFormat,
+  ] = useState(null);
+  const {
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+  } = useDataPagination();
 
   const dossierQuery = useGetDossierByIdQuery({
     workspaceId: workspace.id,
@@ -71,15 +108,40 @@ function TechnicalSheetsPage() {
     limit: pageSize,
     search: search.trim() || undefined,
   });
-  const settingsQuery = useGetDossierTechnicalSheetSettingsQuery({
-    workspaceId: workspace.id,
-    dossierId,
-  });
-  const metadataQuery = useGetTechnicalSheetMetadataQuery({
-    workspaceId: workspace.id,
-    dossierId,
-  });
-  const capacityQuery = useGetTechnicalSheetCapacityQuery(workspace.id);
+  const settingsQuery =
+    useGetDossierTechnicalSheetSettingsQuery({
+      workspaceId: workspace.id,
+      dossierId,
+    });
+  const metadataQuery =
+    useGetTechnicalSheetMetadataQuery({
+      workspaceId: workspace.id,
+      dossierId,
+    });
+  const capacityQuery =
+    useGetTechnicalSheetCapacityQuery(
+      workspace.id,
+    );
+  const canExport =
+    hasFeature(
+      TECHNICAL_SHEET_FEATURE.EXPORT,
+    )
+    && can(
+      TECHNICAL_SHEET_PERMISSION.EXPORT,
+    );
+  const exportUsageQuery =
+    useGetTechnicalSheetExportUsageQuery(
+      workspace.id,
+      { skip: !canExport },
+    );
+  const [exportSheet] =
+    useExportTechnicalSheetMutation();
+  const [startDraft] =
+    useStartTechnicalSheetDraftMutation();
+  const [
+    draftStartingSheetId,
+    setDraftStartingSheetId,
+  ] = useState(null);
 
   if (
     (dossierQuery.isLoading && !dossierQuery.data)
@@ -92,7 +154,10 @@ function TechnicalSheetsPage() {
     );
   }
 
-  if (dossierQuery.isError || !dossierQuery.data) {
+  if (
+    dossierQuery.isError
+    || !dossierQuery.data
+  ) {
     return (
       <ErrorState
         description="Le Dossier demandé n’est pas accessible ou n’a pas pu être chargé."
@@ -113,48 +178,179 @@ function TechnicalSheetsPage() {
   }
 
   const dossier = dossierQuery.data;
-  const sheets = listQuery.data?.sheets ?? [];
-  const pagination = listQuery.data?.pagination;
-  const capacity = capacityQuery.data;
+  const sheets =
+    listQuery.data?.sheets
+    ?? [];
+  const pagination =
+    listQuery.data?.pagination;
+  const capacity =
+    capacityQuery.data;
   const quotaReached = Boolean(
     capacity
     && !capacity.unlimited
-    && capacity.current >= capacity.limit,
+    && capacity.current
+      >= capacity.limit,
+  );
+  const exportQuotaReached = Boolean(
+    exportUsageQuery.data
+    && !exportUsageQuery.data.unlimited
+    && exportUsageQuery.data.remaining <= 0,
   );
   const defaultTargetMarginBasisPoints =
-    settingsQuery.data?.defaultTargetMarginBasisPoints
+    settingsQuery.data
+      ?.defaultTargetMarginBasisPoints
     ?? dossier.technicalSheetSettings
       ?.defaultTargetMarginBasisPoints
     ?? null;
-  const operational = dossier.status === 'ACTIVE';
-  const canCreate = can(TECHNICAL_SHEET_PERMISSION.CREATE)
+  const operational =
+    dossier.status === 'ACTIVE';
+  const canCreate =
+    can(TECHNICAL_SHEET_PERMISSION.CREATE)
     && operational
     && !quotaReached;
+  const canModify =
+    can(
+      TECHNICAL_SHEET_PERMISSION.UPDATE,
+    );
+
+  function openTechnicalSheet(sheet) {
+    navigate(
+      '/workspaces/' + workspace.id
+      + '/dossiers/' + dossierId
+      + '/technical-sheets/' + sheet.id,
+    );
+  }
+
+  async function modifyTechnicalSheet(
+    sheet,
+  ) {
+    if (
+      sheet.hasDraft
+      || !sheet.currentValidatedStateId
+    ) {
+      openTechnicalSheet(sheet);
+      return;
+    }
+
+    setDraftStartingSheetId(sheet.id);
+
+    try {
+      await startDraft({
+        workspaceId:
+          workspace.id,
+        dossierId,
+        technicalSheetId:
+          sheet.id,
+        expectedSheetRevision:
+          sheet.revision,
+      }).unwrap();
+
+      openTechnicalSheet(sheet);
+    } catch (error) {
+      toast({
+        title: 'Action impossible',
+        description:
+          getTechnicalSheetApiErrorMessage(
+            error,
+            'Le brouillon n’a pas pu être créé.',
+          ),
+        variant: 'destructive',
+      });
+    } finally {
+      setDraftStartingSheetId(null);
+    }
+  }
+
+  async function exportValidatedSheet(
+    sheet,
+    format,
+  ) {
+    setExportingSheetId(sheet.id);
+    setExportingFormat(format);
+
+    try {
+      const artifact =
+        await exportSheet({
+          workspaceId: workspace.id,
+          dossierId,
+          technicalSheetId: sheet.id,
+          format,
+        }).unwrap();
+
+      downloadBlob(
+        artifact.blob,
+        artifact.fileName,
+      );
+
+      toast({
+        title:
+          'Export '
+          + format
+          + ' généré',
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Action impossible',
+        description:
+          getTechnicalSheetApiErrorMessage(
+            error,
+            'L’export de la Fiche technique a échoué.',
+          ),
+        variant: 'destructive',
+      });
+    } finally {
+      setExportingSheetId(null);
+      setExportingFormat(null);
+    }
+  }
+
   const columns = [
     {
       id: 'name',
       header: 'Fiche technique',
       cell: (sheet) => (
-        <div>
-          <p className="font-medium">{sheet.name}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {sheet.currentValidatedStateId
-              ? 'Un état validé est disponible'
-              : 'Aucun état validé'}
-          </p>
-        </div>
+        <p className="font-medium">
+          {sheet.name}
+        </p>
       ),
+    },
+    {
+      id: 'editorialState',
+      header: 'État',
+      cell: (sheet) => {
+        const presentation =
+          getTechnicalSheetEditorialPresentation({
+            currentValidatedStateId:
+              sheet.currentValidatedStateId,
+            hasDraft:
+              sheet.hasDraft,
+          });
+
+        return (
+          <TechnicalSheetStatusBadge
+            tone={presentation.tone}
+          >
+            {presentation.label}
+          </TechnicalSheetStatusBadge>
+        );
+      },
     },
     {
       id: 'status',
       header: 'Statut',
       cell: (sheet) => {
-        const presentation = getTechnicalSheetStatusPresentation(
-          sheet.status,
-          metadataQuery.data?.statusDefinitions,
-        );
+        const presentation =
+          getTechnicalSheetStatusPresentation(
+            sheet.status,
+            metadataQuery.data
+              ?.statusDefinitions,
+          );
+
         return (
-          <TechnicalSheetStatusBadge tone={presentation.tone}>
+          <TechnicalSheetStatusBadge
+            tone={presentation.tone}
+          >
             {presentation.label}
           </TechnicalSheetStatusBadge>
         );
@@ -163,27 +359,88 @@ function TechnicalSheetsPage() {
     {
       id: 'updated',
       header: 'Dernière modification',
-      cell: (sheet) => new Date(sheet.updatedAt).toLocaleString('fr-FR'),
+      cell: (sheet) =>
+        new Date(
+          sheet.updatedAt,
+        ).toLocaleString('fr-FR'),
     },
     {
       id: 'actions',
       header: 'Actions',
-      cell: (sheet) => (
-        <DataTableActions>
-          <Button asChild size="sm" variant="outline">
-            <Link
-              to={
-                '/workspaces/' + workspace.id
-                + '/dossiers/' + dossierId
-                + '/technical-sheets/' + sheet.id
-              }
-            >
-              <Eye aria-hidden="true" className="size-4" />
-              Ouvrir
-            </Link>
-          </Button>
-        </DataTableActions>
-      ),
+      cell: (sheet) => {
+        const hasValidatedState =
+          Boolean(
+            sheet.currentValidatedStateId,
+          );
+
+        return (
+          <DataTableActions>
+            {hasValidatedState && (
+              <ActionIconButton
+                Icon={Eye}
+                label={
+                  'Prévisualiser '
+                  + sheet.name
+                }
+                onClick={() =>
+                  setPreviewSheet(sheet)}
+                tooltipLabel="Prévisualiser"
+                variant="ghost"
+              />
+            )}
+
+            {canModify && (
+              <ActionIconButton
+                Icon={Pencil}
+                disabled={
+                  draftStartingSheetId
+                  === sheet.id
+                }
+                label={
+                  'Modifier '
+                  + sheet.name
+                }
+                onClick={() =>
+                  modifyTechnicalSheet(
+                    sheet,
+                  )}
+                tooltipLabel={
+                  draftStartingSheetId
+                  === sheet.id
+                    ? 'Ouverture…'
+                    : 'Modifier'
+                }
+                variant="ghost"
+              />
+            )}
+
+            {hasValidatedState && canExport && (
+              <TechnicalSheetExportMenu
+                disabledReason={
+                  exportQuotaReached
+                    ? 'Quota mensuel d’exports atteint'
+                    : null
+                }
+                exportingFormat={
+                  exportingSheetId === sheet.id
+                    ? exportingFormat
+                    : null
+                }
+                label={
+                  'Exporter '
+                  + sheet.name
+                }
+                onExport={(format) =>
+                  exportValidatedSheet(
+                    sheet,
+                    format,
+                  )}
+                tooltipLabel="Exporter"
+              />
+            )}
+          </DataTableActions>
+        );
+      },
     },
   ];
 
@@ -201,14 +458,20 @@ function TechnicalSheetsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {can(TECHNICAL_SHEET_PERMISSION.CREATE) && (
+          {can(
+            TECHNICAL_SHEET_PERMISSION.CREATE,
+          ) && (
             <Button
               disabled={!canCreate}
-              onClick={() => setCreateOpen(true)}
+              onClick={() =>
+                setCreateOpen(true)}
               size="sm"
               type="button"
             >
-              <Plus aria-hidden="true" className="size-4" />
+              <Plus
+                aria-hidden="true"
+                className="size-4"
+              />
               Créer
             </Button>
           )}
@@ -227,7 +490,9 @@ function TechnicalSheetsPage() {
       {!operational && (
         <Card>
           <CardHeader>
-            <CardTitle>Dossier non opérationnel</CardTitle>
+            <CardTitle>
+              Dossier non opérationnel
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
@@ -248,7 +513,9 @@ function TechnicalSheetsPage() {
               aria-label="Rechercher une Fiche technique"
               className="pl-9"
               onChange={(event) => {
-                setSearch(event.target.value);
+                setSearch(
+                  event.target.value,
+                );
                 setPage(1);
               }}
               placeholder="Rechercher par nom ou description…"
@@ -272,14 +539,20 @@ function TechnicalSheetsPage() {
               title="Aucune Fiche technique"
             />
           )}
-          getRowKey={(sheet) => sheet.id}
+          getRowKey={(sheet) =>
+            sheet.id}
           rowClassName="transition-colors hover:bg-muted/50"
         />
+
         <div className="px-5 pb-5">
           <DataPagination
-            disabled={listQuery.isFetching}
+            disabled={
+              listQuery.isFetching
+            }
             onPageChange={setPage}
-            onPageSizeChange={setPageSize}
+            onPageSizeChange={
+              setPageSize
+            }
             page={page}
             pageSize={pageSize}
             pagination={pagination}
@@ -292,16 +565,27 @@ function TechnicalSheetsPage() {
           defaultTargetMarginBasisPoints
         }
         dossierId={dossierId}
-        onClose={() => setCreateOpen(false)}
+        onClose={() =>
+          setCreateOpen(false)}
         onCreated={(result) => {
           setCreateOpen(false);
           navigate(
             '/workspaces/' + workspace.id
             + '/dossiers/' + dossierId
-            + '/technical-sheets/' + result.sheet.id,
+            + '/technical-sheets/'
+            + result.sheet.id,
           );
         }}
         open={createOpen}
+        workspaceId={workspace.id}
+      />
+
+      <TechnicalSheetPreviewDialog
+        dossierId={dossierId}
+        onClose={() =>
+          setPreviewSheet(null)}
+        open={Boolean(previewSheet)}
+        sheet={previewSheet}
         workspaceId={workspace.id}
       />
     </div>

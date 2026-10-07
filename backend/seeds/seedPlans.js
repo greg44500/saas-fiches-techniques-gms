@@ -12,6 +12,9 @@ import {
 
 import { Plan } from '../modules/plan/plan.model.js';
 import { createPlan } from '../modules/plan/plan.service.js';
+import {
+    TECHNICAL_SHEET_METRIC,
+} from '../modules/technicalSheet/technicalSheet.registry.js';
 
 /**
  * Définition initiale de l'offre baseline fournie par le Core.
@@ -40,6 +43,7 @@ const INITIAL_PLAN_DEFINITIONS = Object.freeze([
             storage_bytes: 100 * 1024 * 1024,
             file_uploads_monthly: 10,
             technical_sheets: 10,
+            [TECHNICAL_SHEET_METRIC.EXPORTS_MONTHLY]: 10,
         }),
     }),
 ]);

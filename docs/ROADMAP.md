@@ -731,3 +731,12 @@ Le contrat `docs/m002/M-002-FINAL-CONTRACT.md` reste l'autorité pour les
 invariants Produit. Le Bloc B unifie la surface de travail du gestionnaire sans
 réouvrir la séparation `CanonicalProduct / ProductVariant`, la frontière
 M-002 / M-003 ni les règles de tenancy.
+
+
+## Bloc V1 — Exports directs des Fiches techniques — PDF / XLSX / CSV
+
+Statut : en cours sur `feature/technical-sheet-exports-v1`.
+
+Contrat canonique : `docs/m004/M-004-EXPORTS-FINAL-CONTRACT.md`.
+
+Périmètre : export de la version validée courante, capability commerciale, quota mensuel Workspace partagé entre formats et KPI Dashboard personnalisable. L'impression et l'envoi par e-mail ne font pas partie de ce lot.

@@ -1,11 +1,11 @@
 import {
   ArrowLeft,
-  RotateCcw,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { downloadBlob } from '@/features/files/lib/download-blob';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { ErrorState } from '@/components/shared/error-state';
 import {
@@ -20,7 +20,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -38,7 +37,10 @@ import {
 import {
   useArchiveTechnicalSheetMutation,
   useDeleteTechnicalSheetMutation,
+  useExportTechnicalSheetMutation,
+  useGetTechnicalSheetExportUsageQuery,
   useGetTechnicalSheetMetadataQuery,
+  useGetTechnicalSheetValidationQuery,
   useGetTechnicalSheetQuery,
   useListTechnicalSheetHistoryQuery,
   useReactivateTechnicalSheetMutation,
@@ -67,6 +69,9 @@ import {
   TechnicalSheetValidationDialog,
 } from '@/features/technical-sheets/components/technical-sheet-validation-dialog';
 import {
+  TechnicalSheetValidatedContent,
+} from '@/features/technical-sheets/components/technical-sheet-validated-content';
+import {
   TechnicalSheetEconomicsBar,
 } from '@/features/technical-sheets/components/technical-sheet-economics-bar';
 import {
@@ -77,6 +82,9 @@ import {
 import {
   DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
 } from '@/features/suppliers/constants/supplier-permissions';
+import {
+  TECHNICAL_SHEET_FEATURE,
+} from '@/features/technical-sheets/constants/technical-sheet-features';
 import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
@@ -219,7 +227,12 @@ function TechnicalSheetWorkspacePage() {
   const { dossierId, technicalSheetId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { can, canAny, workspace } = useWorkspaceContext();
+  const {
+    can,
+    canAny,
+    hasFeature,
+    workspace,
+  } = useWorkspaceContext();
 
   const sheetQuery = useGetTechnicalSheetQuery({
     workspaceId: workspace.id,
@@ -238,6 +251,18 @@ function TechnicalSheetWorkspacePage() {
     page: 1,
     limit: 20,
   });
+  const canExport =
+    hasFeature(
+      TECHNICAL_SHEET_FEATURE.EXPORT,
+    )
+    && can(
+      TECHNICAL_SHEET_PERMISSION.EXPORT,
+    );
+  const exportUsageQuery =
+    useGetTechnicalSheetExportUsageQuery(
+      workspace.id,
+      { skip: !canExport },
+    );
 
   const [updateSheet, updateSheetState] = useUpdateTechnicalSheetMutation();
   const [startDraft, startDraftState] = useStartTechnicalSheetDraftMutation();
@@ -247,11 +272,26 @@ function TechnicalSheetWorkspacePage() {
   const [archiveSheet, archiveState] = useArchiveTechnicalSheetMutation();
   const [reactivateSheet, reactivateState] = useReactivateTechnicalSheetMutation();
   const [deleteSheet, deleteState] = useDeleteTechnicalSheetMutation();
+  const [exportSheet] = useExportTechnicalSheetMutation();
 
   const sheet = sheetQuery.data?.sheet;
   const draft = sheetQuery.data?.draft;
   const draftId = draft?.id ?? null;
   const metadata = metadataQuery.data;
+  const validatedStateQuery =
+    useGetTechnicalSheetValidationQuery(
+      {
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        validationId:
+          sheet?.currentValidatedStateId,
+      },
+      {
+        skip:
+          !sheet?.currentValidatedStateId,
+      },
+    );
 
   const [identity, setIdentity] = useState({
     name: '',
@@ -281,6 +321,7 @@ function TechnicalSheetWorkspacePage() {
   const [validationComment, setValidationComment] = useState('');
   const [confirmation, setConfirmation] = useState(null);
   const [copyOpen, setCopyOpen] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState(null);
   const [productScope, setProductScope] = useState(null);
   const [sourcingPendingCount, setSourcingPendingCount] = useState(0);
   const stickyControlsRef = useRef(null);
@@ -393,6 +434,7 @@ function TechnicalSheetWorkspacePage() {
     setIdentityDialogOpen(false);
     setRightPanel(null);
     setValidationDialogOpen(false);
+    setExportingFormat(null);
     setProductScope(null);
     resetAutosave(null);
   }, [resetAutosave, technicalSheetId]);
@@ -562,6 +604,13 @@ function TechnicalSheetWorkspacePage() {
   const canDelete = can(TECHNICAL_SHEET_PERMISSION.DELETE);
   const canCopy = can(TECHNICAL_SHEET_PERMISSION.COPY);
   const copyDisabled = !actionAvailability.copy;
+  const exportDisabledReason = !sheet.currentValidatedStateId
+    ? 'Validez la Fiche technique pour l’exporter'
+    : exportUsageQuery.data
+      && !exportUsageQuery.data.unlimited
+      && exportUsageQuery.data.remaining <= 0
+      ? 'Quota mensuel d’exports atteint'
+      : null;
   const validationEligible = Boolean(
     draft
     && metadata?.valuationStatusDefinitions
@@ -636,6 +685,39 @@ function TechnicalSheetWorkspacePage() {
       description: getTechnicalSheetApiErrorMessage(error, fallback),
       variant: 'destructive',
     });
+  }
+
+  async function exportValidatedSheet(format) {
+    setExportingFormat(format);
+
+    try {
+      const artifact = await exportSheet({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        format,
+      }).unwrap();
+
+      downloadBlob(
+        artifact.blob,
+        artifact.fileName,
+      );
+
+      toast({
+        title:
+          'Export '
+          + format
+          + ' généré',
+        variant: 'success',
+      });
+    } catch (error) {
+      notifyError(
+        error,
+        'L’export de la Fiche technique a échoué.',
+      );
+    } finally {
+      setExportingFormat(null);
+    }
   }
 
   async function saveIdentity() {
@@ -787,35 +869,44 @@ function TechnicalSheetWorkspacePage() {
   return (
     <div className="space-y-6">
       {!draft && (
-        <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 items-start gap-2">
-          <ActionIconButton
-            Icon={ArrowLeft}
-            label="Retour vers Dossiers"
-            onClick={() => navigate(
-              '/workspaces/' + workspace.id
-              + '/dossiers/' + dossierId
-              + '/technical-sheets',
-            )}
-            tooltipLabel="Retour vers Dossiers"
-            variant="ghost"
-          />
+        <header
+          className={
+            'grid gap-3 '
+            + 'xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center'
+          }
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <ActionIconButton
+              Icon={ArrowLeft}
+              label="Retour vers Dossiers"
+              onClick={() => navigate(
+                '/workspaces/' + workspace.id
+                + '/dossiers/' + dossierId
+                + '/technical-sheets',
+              )}
+              tooltipLabel="Retour vers Dossiers"
+              variant="ghost"
+            />
 
-          <div className="min-w-0">
-            <h1 className="truncate text-3xl font-semibold tracking-tight">
-              {sheet.name}
-            </h1>
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="min-w-0 truncate text-3xl font-semibold tracking-tight">
+                {sheet.name}
+              </h1>
 
-            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
-              <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
-                {statusPresentation.label}
-              </TechnicalSheetStatusBadge>
-
+              <div className="flex shrink-0 items-center gap-2">
+                <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+                  {statusPresentation.label}
+                </TechnicalSheetStatusBadge>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div
+            className={
+              'flex min-h-11 flex-wrap items-center justify-end gap-2 '
+              + 'xl:justify-self-end'
+            }
+          >
           <TechnicalSheetControlPanel
             actionAvailability={actionAvailability}
             canCopy={canCopy}
@@ -823,18 +914,28 @@ function TechnicalSheetWorkspacePage() {
             canEditIdentity={
               canEditIdentity
               && actionAvailability.update
+              && Boolean(
+                sheet.currentValidatedStateId,
+              )
             }
+            canExport={canExport}
             canLifecycle={canLifecycle}
             canValidate={canValidate}
             copyDisabled={copyDisabled}
             draft={draft}
             draftDirty={draftDirty}
+            editPending={
+              startDraftState.isLoading
+            }
             draftSynchronizing={draftSynchronizing}
+            exportDisabledReason={exportDisabledReason}
+            exportingFormat={exportingFormat}
             identityDirty={identityDirty}
             onArchive={() => setConfirmation({ type: 'archive' })}
             onCopy={() => setCopyOpen(true)}
             onDelete={() => setConfirmation({ type: 'delete' })}
-            onEditIdentity={() => setIdentityDialogOpen(true)}
+            onEditIdentity={createWorkingDraft}
+            onExport={exportValidatedSheet}
             onOpenAnalysis={() => setRightPanel('analysis')}
             onOpenDossier={() => setRightPanel('dossier')}
             onReactivate={() => setConfirmation({ type: 'reactivate' })}
@@ -848,29 +949,53 @@ function TechnicalSheetWorkspacePage() {
         </header>
       )}
 
-      {!draft && (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>État de travail</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Aucun brouillon n’est ouvert. L’état validé courant reste consultable dans l’historique.
-              </p>
-              {canUpdate && sheet.currentValidatedStateId && (
-                <Button
-                  disabled={startDraftState.isLoading}
-                  onClick={createWorkingDraft}
-                  type="button"
+      {!draft && sheet.currentValidatedStateId && (
+        <Card>
+          <CardContent className="p-5">
+            {validatedStateQuery.isLoading
+              && !validatedStateQuery.data
+              ? (
+                <p
+                  aria-live="polite"
+                  className="text-sm text-muted-foreground"
+                  role="status"
                 >
-                  <RotateCcw aria-hidden="true" className="size-4" />
-                  Reprendre en brouillon
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  Chargement de la version officielle…
+                </p>
+              )
+              : validatedStateQuery.isError
+                || !validatedStateQuery.data
+                ? (
+                  <div
+                    className="rounded-lg border border-destructive/30 bg-destructive/5 p-4"
+                    role="alert"
+                  >
+                    <p className="text-sm">
+                      La version officielle n’a pas pu être chargée.
+                    </p>
+                    <Button
+                      className="mt-3"
+                      onClick={() =>
+                        validatedStateQuery.refetch()}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Réessayer
+                    </Button>
+                  </div>
+                )
+                : (
+                  <TechnicalSheetValidatedContent
+                    fallbackName={sheet.name}
+                    showIdentity={false}
+                    validation={
+                      validatedStateQuery.data
+                    }
+                  />
+                )}
+          </CardContent>
+        </Card>
       )}
 
       {draft && (
@@ -953,17 +1078,22 @@ function TechnicalSheetWorkspacePage() {
                         canEditIdentity
                         && actionAvailability.update
                       }
+                      canExport={canExport}
                       canLifecycle={canLifecycle}
                       canValidate={canValidate}
                       copyDisabled={copyDisabled}
                       draft={draft}
                       draftDirty={draftDirty}
+                      editPending={false}
                       draftSynchronizing={draftSynchronizing}
+                      exportDisabledReason={exportDisabledReason}
+                      exportingFormat={exportingFormat}
                       identityDirty={identityDirty}
                       onArchive={() => setConfirmation({ type: 'archive' })}
                       onCopy={() => setCopyOpen(true)}
                       onDelete={() => setConfirmation({ type: 'delete' })}
                       onEditIdentity={() => setIdentityDialogOpen(true)}
+                      onExport={exportValidatedSheet}
                       onOpenAnalysis={() => setRightPanel('analysis')}
                       onOpenDossier={() => setRightPanel('dossier')}
                       onReactivate={() => setConfirmation({ type: 'reactivate' })}

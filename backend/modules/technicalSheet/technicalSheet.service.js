@@ -232,9 +232,40 @@ const listTechnicalSheets = async ({
             TechnicalSheet.countDocuments(filter),
         ]);
 
+    const sheetIds =
+        sheets.map(({ _id }) => _id);
+    const drafts =
+        sheetIds.length === 0
+            ? []
+            : await TechnicalSheetDraft.find(
+                mongoose.trusted({
+                    workspace: workspaceId,
+                    dossier: dossierId,
+                    technicalSheet:
+                        mongoose.trusted({
+                            $in: sheetIds,
+                        }),
+                }),
+            )
+                .select('technicalSheet')
+                .lean();
+    const draftSheetIds =
+        new Set(
+            drafts.map(
+                ({ technicalSheet }) =>
+                    technicalSheet.toString(),
+            ),
+        );
+
     return {
         sheets:
-            sheets.map(serializeTechnicalSheet),
+            sheets.map((sheet) => ({
+                ...serializeTechnicalSheet(sheet),
+                hasDraft:
+                    draftSheetIds.has(
+                        sheet._id.toString(),
+                    ),
+            })),
         pagination: {
             page,
             limit,

@@ -21,7 +21,6 @@ function getSummaryItemClass(index, itemCount) {
 
 function WorkspaceDashboardPage() {
   const {
-    workspace,
     accessibleWidgets,
     visibleWidgets,
     isPreferencesLoading,
@@ -39,8 +38,7 @@ function WorkspaceDashboardPage() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       <header>
-        <p className="text-sm font-medium text-primary">{workspace.name}</p>
-        <div className="mt-1 flex items-start gap-2">
+        <div className="flex items-start gap-2">
           <h1 className="text-3xl font-semibold tracking-tight">Tableau de bord</h1>
           <InfoTooltip content={dashboardHelp} label="À propos du tableau de bord" />
         </div>

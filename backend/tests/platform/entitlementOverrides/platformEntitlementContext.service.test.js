@@ -145,6 +145,7 @@ describe('platformEntitlementContext.service', () => {
                 storage_bytes: 0,
                 file_uploads_monthly: 0,
                 [TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS]: 0,
+                [TECHNICAL_SHEET_METRIC.EXPORTS_MONTHLY]: 0,
             },
             appliedOverrides: [
                 {

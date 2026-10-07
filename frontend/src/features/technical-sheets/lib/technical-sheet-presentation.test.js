@@ -13,6 +13,7 @@ import {
   formatSignedCurrencyDelta,
   getLineValuationPresentation,
   getTechnicalSheetActionAvailability,
+  getTechnicalSheetEditorialPresentation,
   getTechnicalSheetStatusPresentation,
   getTechnicalSheetValuationAttentionPresentation,
   getTechnicalSheetValuationPresentation,
@@ -109,6 +110,52 @@ describe('technical sheet presentation', () => {
     ).toMatchObject({
       label: 'Calcul à actualiser',
       tone: 'warning',
+    });
+  });
+
+  it('présente un état éditorial exact sans le confondre avec une autorisation', () => {
+    expect(
+      getTechnicalSheetEditorialPresentation({
+        currentValidatedStateId: null,
+        hasDraft: true,
+      }),
+    ).toEqual({
+      value: 'DRAFT',
+      label: 'Brouillon',
+      tone: 'warning',
+    });
+
+    expect(
+      getTechnicalSheetEditorialPresentation({
+        currentValidatedStateId: 'validation-1',
+        hasDraft: false,
+      }),
+    ).toEqual({
+      value: 'VALIDATED',
+      label: 'Validée',
+      tone: 'success',
+    });
+
+    expect(
+      getTechnicalSheetEditorialPresentation({
+        currentValidatedStateId: 'validation-1',
+        hasDraft: true,
+      }),
+    ).toEqual({
+      value: 'IN_REVISION',
+      label: 'En révision',
+      tone: 'warning',
+    });
+
+    expect(
+      getTechnicalSheetEditorialPresentation({
+        currentValidatedStateId: null,
+        hasDraft: false,
+      }),
+    ).toEqual({
+      value: 'UNAVAILABLE',
+      label: 'État indisponible',
+      tone: 'destructive',
     });
   });
 

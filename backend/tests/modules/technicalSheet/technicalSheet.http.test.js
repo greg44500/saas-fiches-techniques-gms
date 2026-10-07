@@ -12,6 +12,9 @@ import {
 
 import { app } from '../../../app.js';
 import {
+    PLAN_SYSTEM_ROLE,
+} from '../../../constants/plan.constants.js';
+import {
     grantDossierAccess,
 } from '../../../modules/dossier/dossierAccess.service.js';
 import {
@@ -33,6 +36,13 @@ import {
     createSupplierArticle,
 } from '../../../modules/supplierCatalog/supplierReference.service.js';
 import {
+    setIndicativePrice,
+} from '../../../modules/supplierCatalog/supplierPricing.service.js';
+import {
+    TECHNICAL_SHEET_FEATURE,
+    TECHNICAL_SHEET_METRIC,
+} from '../../../modules/technicalSheet/technicalSheet.registry.js';
+import {
     TECHNICAL_SHEET_PERMISSION,
 } from '../../../modules/technicalSheet/technicalSheetPermission.registry.js';
 import {
@@ -41,6 +51,10 @@ import {
 import {
     createTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheet.service.js';
+import {
+    validateTechnicalSheet,
+} from '../../../modules/technicalSheet/technicalSheetValidation.service.js';
+import { Plan } from '../../../modules/plan/plan.model.js';
 import {
     saveTechnicalSheetDraft,
 } from '../../../modules/technicalSheet/technicalSheetDraft.service.js';
@@ -117,6 +131,21 @@ beforeEach(async () => {
                     'TOM-RBAC',
             },
         });
+
+    await setIndicativePrice({
+        workspaceId:
+            owner.workspace._id,
+        productVariantId:
+            reference.variant._id,
+        actorId:
+            owner.owner._id,
+        sourceAmount:
+            '2.50',
+        sourceBasis:
+            'KG',
+        source:
+            'Fixture HTTP exports',
+    });
 
     const created =
         await createTechnicalSheet({
@@ -204,6 +233,50 @@ const basePath = () =>
     + dossier._id.toString()
     + '/technical-sheets/'
     + sheet.id;
+
+const workspaceExportUsagePath = () =>
+    '/api/workspaces/'
+    + owner.workspace._id.toString()
+    + '/technical-sheets/exports/usage';
+
+const enableExportFeature = async ({
+    limit = 10,
+} = {}) => {
+    const plan = await Plan.findOne({
+        systemRole:
+            PLAN_SYSTEM_ROLE.BASELINE,
+    });
+
+    plan.features = [
+        ...new Set([
+            ...(plan.features ?? []),
+            TECHNICAL_SHEET_FEATURE.EXPORT,
+        ]),
+    ];
+    plan.limits.set(
+        TECHNICAL_SHEET_METRIC
+            .EXPORTS_MONTHLY,
+        limit,
+    );
+    await plan.save();
+};
+
+const validateCurrentSheet = async () => {
+    await validateTechnicalSheet({
+        workspaceId:
+            owner.workspace._id,
+        dossierId:
+            dossier._id,
+        technicalSheetId:
+            sheet.id,
+        actorId:
+            owner.owner._id,
+        expectedSheetRevision:
+            sheet.revision,
+        expectedDraftRevision:
+            draft.revision,
+    });
+};
 
 describe('M-004 RBAC HTTP', () => {
     it('expose les unités de production et bases de vente depuis le backend', async () => {
@@ -446,6 +519,162 @@ describe('M-004 RBAC HTTP', () => {
             )
             .set(bearer(member.token))
             .expect(404);
+    });
+
+    it('refuse les exports sur le plan Free sans capability, même pour Owner', async () => {
+        await request(app)
+            .post(
+                basePath()
+                + '/exports',
+            )
+            .set(
+                bearer(owner.token),
+            )
+            .send({
+                format: 'PDF',
+            })
+            .expect(403);
+    });
+
+    it('refuse l’export à un membre sans technical-sheet:export', async () => {
+        await enableExportFeature();
+        await validateCurrentSheet();
+
+        await request(app)
+            .post(
+                basePath()
+                + '/exports',
+            )
+            .set(
+                bearer(member.token),
+            )
+            .send({
+                format: 'PDF',
+            })
+            .expect(403);
+    });
+
+    it('refuse l’export lorsque la Fiche n’a pas encore de version validée', async () => {
+        await enableExportFeature();
+
+        const response =
+            await request(app)
+                .post(
+                    basePath()
+                    + '/exports',
+                )
+                .set(
+                    bearer(owner.token),
+                )
+                .send({
+                    format: 'PDF',
+                })
+                .expect(409);
+
+        expect(
+            response.body.message,
+        ).toBe(
+            'Validez la Fiche technique avant de l’exporter.',
+        );
+    });
+
+    it('exporte la version validée et expose le quota mensuel cumulé', async () => {
+        await enableExportFeature();
+        await validateCurrentSheet();
+
+        const response =
+            await request(app)
+                .post(
+                    basePath()
+                    + '/exports',
+                )
+                .set(
+                    bearer(owner.token),
+                )
+                .send({
+                    format: 'CSV',
+                })
+                .expect(200);
+
+        expect(
+            response.headers[
+                'content-type'
+            ],
+        ).toContain('text/csv');
+        expect(
+            response.headers[
+                'content-disposition'
+            ],
+        ).toContain('.csv');
+
+        const usage =
+            await request(app)
+                .get(
+                    workspaceExportUsagePath(),
+                )
+                .set(
+                    bearer(owner.token),
+                )
+                .expect(200);
+
+        expect(
+            usage.body.data.usage,
+        ).toEqual({
+            current: 1,
+            limit: 10,
+            unlimited: false,
+            remaining: 9,
+        });
+    });
+
+    it('bloque le onzième export via le quota Workspace partagé', async () => {
+        await enableExportFeature({
+            limit: 1,
+        });
+        await validateCurrentSheet();
+
+        await request(app)
+            .post(
+                basePath()
+                + '/exports',
+            )
+            .set(
+                bearer(owner.token),
+            )
+            .send({
+                format: 'PDF',
+            })
+            .expect(200);
+
+        await request(app)
+            .post(
+                basePath()
+                + '/exports',
+            )
+            .set(
+                bearer(owner.token),
+            )
+            .send({
+                format: 'XLSX',
+            })
+            .expect(403);
+
+        const usage =
+            await request(app)
+                .get(
+                    workspaceExportUsagePath(),
+                )
+                .set(
+                    bearer(owner.token),
+                )
+                .expect(200);
+
+        expect(
+            usage.body.data.usage.current,
+        ).toBe(1);
+        expect(
+            usage.body.data.usage.remaining,
+        ).toBe(0);
     });
 
     it('autorise le sourcing sans donner le droit de modifier la recette', async () => {
