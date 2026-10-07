@@ -6,6 +6,7 @@ import {
   Copy,
   Pencil,
   RotateCcw,
+  SlidersHorizontal,
   Trash2,
 } from 'lucide-react';
 
@@ -22,6 +23,7 @@ function TechnicalSheetControlPanel({
   canEditIdentity,
   canExport,
   canLifecycle,
+  canOptimize,
   canValidate,
   copyDisabled,
   draft,
@@ -39,8 +41,10 @@ function TechnicalSheetControlPanel({
   onExport,
   onOpenAnalysis,
   onOpenDossier,
+  onOptimize,
   onReactivate,
   onValidate,
+  optimizerPending = false,
   pendingLifecycle,
   rightPanel,
   validatePending,
@@ -86,6 +90,24 @@ function TechnicalSheetControlPanel({
         <Pencil aria-hidden="true" className="size-4" />
         {editPending ? 'Ouverture…' : 'Modifier'}
       </Button>
+
+      {canOptimize && (
+        <Button
+          disabled={optimizerPending}
+          onClick={onOptimize}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          <SlidersHorizontal
+            aria-hidden="true"
+            className="size-4"
+          />
+          {optimizerPending
+            ? 'Ouverture…'
+            : 'Optimiser'}
+        </Button>
+      )}
 
       <Button
         onClick={onOpenAnalysis}
