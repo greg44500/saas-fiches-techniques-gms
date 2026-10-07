@@ -201,24 +201,28 @@ describe('DossierWorkspacePage', () => {
     expect(identityCard).toHaveClass('lg:h-56');
   });
 
-  it('masque le shell Dossier volumineux dans le poste de travail d’une Fiche', () => {
-    mocks.detailQuery.mockReturnValue(queryResult({
-      id: 'dossier-1',
-      name: 'Nantes Centre',
-      status: 'ACTIVE',
-    }));
+  it.each([
+    '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1',
+    '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1/optimization',
+  ])(
+    'masque le shell Dossier volumineux dans le poste de travail d’une Fiche (%s)',
+    (pathname) => {
+      mocks.detailQuery.mockReturnValue(queryResult({
+        id: 'dossier-1',
+        name: 'Nantes Centre',
+        status: 'ACTIVE',
+      }));
 
-    renderPage(
-      '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1',
-    );
+      renderPage(pathname);
 
-    expect(screen.queryByRole('heading', {
-      name: 'Nantes Centre',
-    })).not.toBeInTheDocument();
-    expect(screen.queryByRole('region', {
-      name: 'Carte prix applicable',
-    })).not.toBeInTheDocument();
-  });
+      expect(screen.queryByRole('heading', {
+        name: 'Nantes Centre',
+      })).not.toBeInTheDocument();
+      expect(screen.queryByRole('region', {
+        name: 'Carte prix applicable',
+      })).not.toBeInTheDocument();
+    },
+  );
 
   it('masque les coordonnées absentes et conserve la consultation d’un Dossier non actif', () => {
     mocks.detailQuery.mockReturnValue(queryResult({
