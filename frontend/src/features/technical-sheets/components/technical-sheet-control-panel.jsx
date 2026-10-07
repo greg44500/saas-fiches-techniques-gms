@@ -44,6 +44,7 @@ function TechnicalSheetControlPanel({
   onOptimize,
   onReactivate,
   onValidate,
+  optimizerDisabled = false,
   optimizerPending = false,
   pendingLifecycle,
   rightPanel,
@@ -93,7 +94,10 @@ function TechnicalSheetControlPanel({
 
       {canOptimize && (
         <Button
-          disabled={optimizerPending}
+          disabled={
+            optimizerDisabled
+            || optimizerPending
+          }
           onClick={onOptimize}
           size="sm"
           type="button"
