@@ -870,35 +870,44 @@ function TechnicalSheetWorkspacePage() {
   return (
     <div className="space-y-6">
       {!draft && (
-        <header className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex min-w-0 items-start gap-2">
-          <ActionIconButton
-            Icon={ArrowLeft}
-            label="Retour vers Dossiers"
-            onClick={() => navigate(
-              '/workspaces/' + workspace.id
-              + '/dossiers/' + dossierId
-              + '/technical-sheets',
-            )}
-            tooltipLabel="Retour vers Dossiers"
-            variant="ghost"
-          />
+        <header
+          className={
+            'grid gap-3 '
+            + 'xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center'
+          }
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <ActionIconButton
+              Icon={ArrowLeft}
+              label="Retour vers Dossiers"
+              onClick={() => navigate(
+                '/workspaces/' + workspace.id
+                + '/dossiers/' + dossierId
+                + '/technical-sheets',
+              )}
+              tooltipLabel="Retour vers Dossiers"
+              variant="ghost"
+            />
 
-          <div className="min-w-0">
-            <h1 className="truncate text-3xl font-semibold tracking-tight">
-              {sheet.name}
-            </h1>
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="min-w-0 truncate text-3xl font-semibold tracking-tight">
+                {sheet.name}
+              </h1>
 
-            <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
-              <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
-                {statusPresentation.label}
-              </TechnicalSheetStatusBadge>
-
+              <div className="flex shrink-0 items-center gap-2">
+                <TechnicalSheetStatusBadge tone={statusPresentation.tone}>
+                  {statusPresentation.label}
+                </TechnicalSheetStatusBadge>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div
+            className={
+              'flex min-h-11 flex-wrap items-center justify-end gap-2 '
+              + 'xl:justify-self-end'
+            }
+          >
           <TechnicalSheetControlPanel
             actionAvailability={actionAvailability}
             canCopy={canCopy}

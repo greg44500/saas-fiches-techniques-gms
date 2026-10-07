@@ -119,3 +119,12 @@ Bloc intégré sur la même branche :
 - conservation stricte de `Coût HT` et de sa sémantique actuelle.
 
 Les tests ont été adaptés mais ne sont pas exécutés à distance.
+
+
+## Ajustement final header Fiche validée — 2026-10-07
+
+QA visuelle :
+- titre et badge(s) sont désormais sur la même ligne ;
+- le groupe identité `flèche + titre + badges` est centré verticalement ;
+- le panneau de contrôle est aligné sur le même axe vertical sur desktop ;
+- aucun workflow, contrôle métier ou comportement de `Modifier` n'est changé.
