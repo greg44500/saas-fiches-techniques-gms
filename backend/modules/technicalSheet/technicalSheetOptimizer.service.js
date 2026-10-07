@@ -4,9 +4,6 @@ import {
     BUSINESS_ACTIVITY_ACTION,
 } from '../businessActivity/businessActivity.registry.js';
 import {
-    resolveApplicablePrice,
-} from '../supplierCatalog/supplierPricing.service.js';
-import {
     TECHNICAL_SHEET_LINE_KIND,
     TECHNICAL_SHEET_STATUS,
     TECHNICAL_SHEET_VALUATION_STATUS,
