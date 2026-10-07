@@ -28,6 +28,9 @@ import {
   useSimulateTechnicalSheetOptimizationMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
+  TechnicalSheetOptimizationProfile,
+} from '@/features/technical-sheets/components/technical-sheet-optimization-profile';
+import {
   TechnicalSheetOptimizerControlsPanel,
 } from '@/features/technical-sheets/components/technical-sheet-optimizer-controls-panel';
 import {
@@ -84,8 +87,6 @@ function TechnicalSheetOptimizerPage() {
 
   const [mode, setMode] =
     useState('MANUAL');
-  const [curve, setCurve] =
-    useState(null);
   const [lines, setLines] =
     useState([]);
   const [autoOptions, setAutoOptions] =
@@ -136,14 +137,6 @@ function TechnicalSheetOptimizerPage() {
       buildOptimizerLines(context);
 
     setMode('MANUAL');
-    setCurve({
-      enabled:
-        context.neutralCurve.enabled,
-      pressures: {
-        ...context.neutralCurve
-          .pressures,
-      },
-    });
     setLines(nextLines);
     setAutoOptions({
       ...DEFAULT_AUTO_OPTIONS,
@@ -162,7 +155,6 @@ function TechnicalSheetOptimizerPage() {
   const request = useMemo(() => {
     if (
       !context
-      || !curve
       || draftRevision === null
     ) {
       return null;
@@ -170,7 +162,6 @@ function TechnicalSheetOptimizerPage() {
 
     return buildOptimizationRequest({
       autoOptions,
-      curve,
       draftRevision,
       lines,
       mode,
@@ -178,7 +169,6 @@ function TechnicalSheetOptimizerPage() {
   }, [
     autoOptions,
     context,
-    curve,
     draftRevision,
     lines,
     mode,
@@ -278,15 +268,17 @@ function TechnicalSheetOptimizerPage() {
       lines,
       selectedLineId,
     );
+  const selectedBaselineLine =
+    findProjectionLine(
+      before,
+      selectedLineId,
+    );
   const selectedProjectionLine =
     findProjectionLine(
       after,
       selectedLineId,
     )
-    ?? findProjectionLine(
-      before,
-      selectedLineId,
-    );
+    ?? selectedBaselineLine;
   const selectedAlternatives =
     context
       ?.alternatives?.[
@@ -324,14 +316,6 @@ function TechnicalSheetOptimizerPage() {
       buildOptimizerLines(context);
 
     setMode('MANUAL');
-    setCurve({
-      enabled:
-        context.neutralCurve.enabled,
-      pressures: {
-        ...context.neutralCurve
-          .pressures,
-      },
-    });
     setLines(nextLines);
     setAutoOptions({
       ...DEFAULT_AUTO_OPTIONS,
@@ -367,6 +351,10 @@ function TechnicalSheetOptimizerPage() {
         return {
           ...line,
           ...suggestion,
+          economicAdjustmentPercent:
+            suggestion
+              .economicAdjustmentPercent
+            ?? 0,
           supplierArticleTouched:
             Boolean(
               suggestion
@@ -386,14 +374,6 @@ function TechnicalSheetOptimizerPage() {
             ?? '',
         };
       }));
-    setCurve({
-      enabled:
-        context.neutralCurve.enabled,
-      pressures: {
-        ...context.neutralCurve
-          .pressures,
-      },
-    });
     setMode('MANUAL');
   }
 
@@ -495,6 +475,9 @@ function TechnicalSheetOptimizerPage() {
         simulation?.autoSuggestion
         ?? null
       }
+      baselineLine={
+        selectedBaselineLine
+      }
       canApply={canApply}
       canManageSourcing={
         context.canManageSourcing
@@ -504,13 +487,6 @@ function TechnicalSheetOptimizerPage() {
       }
       costAdjustmentRange={
         context.costAdjustmentRange
-      }
-      curve={
-        curve
-        ?? context.neutralCurve
-      }
-      curvePoints={
-        context.curvePoints
       }
       line={selectedLine}
       mode={mode}
@@ -527,7 +503,6 @@ function TechnicalSheetOptimizerPage() {
       onChangeLine={updateLine}
       onCompare={() =>
         runSimulation()}
-      onCurveChange={setCurve}
       onModeChange={setMode}
       onReset={reset}
       onTakeAutoSuggestion={
@@ -540,8 +515,8 @@ function TechnicalSheetOptimizerPage() {
   );
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex min-h-0 flex-col gap-3 xl:h-[calc(100dvh-var(--workspace-topbar-height,4rem)-2rem)] xl:overflow-hidden">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Button
             aria-label="Retour à la Fiche technique"
@@ -568,7 +543,7 @@ function TechnicalSheetOptimizerPage() {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Atelier d’optimisation
             </p>
-            <h1 className="truncate text-2xl font-semibold tracking-tight">
+            <h1 className="truncate text-xl font-semibold tracking-tight">
               {context.sheet.name}
             </h1>
           </div>
@@ -607,22 +582,43 @@ function TechnicalSheetOptimizerPage() {
         }
       />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_23rem]">
-        <TechnicalSheetOptimizerRecipePreview
-          after={after}
-          baseline={before}
-          onOpenControls={() =>
-            setControlsOpen(true)}
-          onSelect={setSelectedLineId}
-          selectedLineId={
-            selectedLineId
-          }
-        />
+      <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[minmax(0,1fr)_23rem]">
+        <main className="flex min-h-0 flex-col gap-3">
+          <TechnicalSheetOptimizationProfile
+            after={after}
+            baseline={before}
+            lines={lines}
+            onChangeLine={
+              updateLine
+            }
+            onSelect={
+              setSelectedLineId
+            }
+            range={
+              context
+                .costAdjustmentRange
+            }
+            selectedLineId={
+              selectedLineId
+            }
+          />
 
-        <aside className="hidden xl:block">
-          <div className="sticky top-[calc(var(--workspace-topbar-height,4rem)+1rem)] max-h-[calc(100vh-6rem)] overflow-y-auto pb-3">
-            {controls}
-          </div>
+          <TechnicalSheetOptimizerRecipePreview
+            after={after}
+            baseline={before}
+            onOpenControls={() =>
+              setControlsOpen(true)}
+            onSelect={
+              setSelectedLineId
+            }
+            selectedLineId={
+              selectedLineId
+            }
+          />
+        </main>
+
+        <aside className="hidden min-h-0 xl:block">
+          {controls}
         </aside>
       </div>
 
@@ -633,7 +629,7 @@ function TechnicalSheetOptimizerPage() {
         open={controlsOpen}
       >
         <SheetContent
-          className="w-[min(94vw,28rem)] overflow-y-auto xl:hidden"
+          className="flex w-[min(94vw,28rem)] flex-col overflow-hidden xl:hidden"
           side="right"
         >
           <SheetHeader>
@@ -641,7 +637,7 @@ function TechnicalSheetOptimizerPage() {
               Réglages de l’Atelier
             </SheetTitle>
           </SheetHeader>
-          <div className="p-4 pt-0">
+          <div className="min-h-0 flex-1 p-4 pt-0">
             {controls}
           </div>
         </SheetContent>
