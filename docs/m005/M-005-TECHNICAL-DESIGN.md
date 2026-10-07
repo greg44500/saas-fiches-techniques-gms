@@ -11,7 +11,9 @@ Flux :
 
 ```text
 TechnicalSheetDraft
-→ technicalSheetOptimizer.service
+→ technicalSheetOptimizerProjection.service
+→ technicalSheetOptimizerScenario.service / technicalSheetOptimizerAuto.service
+→ technicalSheetOptimizer.service (orchestration)
 → buildTechnicalSheetValuation (M-004)
 → resolveApplicablePrice (M-003)
 → réponse de simulation
@@ -89,7 +91,7 @@ Entrée :
 expectedRevision
 mode MANUAL | AUTO
 curve
-lineIntents
+lines
 autoOptions
 ```
 
@@ -182,6 +184,8 @@ V1 construit des transformations élémentaires candidates :
 - 25 % du chemin de la quantité de référence vers `qMin` ;
 - une alternative Produit admissible ;
 - un autre Article fournisseur admissible.
+
+La génération est bornée à 60 candidats élémentaires par simulation Auto afin de conserver un coût serveur maîtrisé.
 
 Chaque candidat repasse dans le moteur M-004.
 
@@ -289,7 +293,33 @@ Page Dossier/Fiches : bouton `Atelier d’optimisation` ouvrant un sélecteur de
 
 Une Fiche validée sans DRAFT passe d’abord par `POST /:id/draft`, puis l’Atelier est ouvert.
 
-## 18. Tests
+## 18. Découpage de maintenance
+
+Le moteur backend est volontairement réparti par responsabilité :
+
+```text
+technicalSheetOptimizerProjection.service.js
+→ chargement, valorisation fraîche et projection des données
+
+technicalSheetOptimizerScenario.service.js
+→ scénario Manuel, transformations et fingerprint
+
+technicalSheetOptimizerAuto.service.js
+→ génération bornée et classement des candidats Auto
+
+technicalSheetOptimizerAlternative.service.js
+→ alternatives Produit et approvisionnement
+
+technicalSheetOptimizerMath.service.js
+→ bornes, interpolation et arithmétique rationnelle
+
+technicalSheetOptimizer.service.js
+→ orchestration des routes context / simulate / apply
+```
+
+Ce découpage évite de concentrer le module dans un service monolithique et laisse M-004/M-003 comme autorités de calcul et de prix.
+
+## 19. Tests
 
 Créer des tests M-005 dédiés plutôt que gonfler artificiellement les tests M-004 :
 
