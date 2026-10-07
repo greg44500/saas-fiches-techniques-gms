@@ -29,6 +29,8 @@ import {
     subtractFractions,
 } from './technicalSheetMath.service.js';
 
+const MAX_AUTO_CANDIDATES = 60;
+
 const createAutoIntent = ({
     intents,
     lineId,
