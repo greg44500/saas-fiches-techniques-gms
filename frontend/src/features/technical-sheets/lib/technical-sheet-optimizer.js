@@ -16,6 +16,7 @@ function buildOptimizerLines(context) {
     .filter((line) => line.kind === 'INGREDIENT')
     .map((line) => ({
       lineId: line.id,
+      economicAdjustmentPercent: 0,
       minNetQuantity:
         line.optimization?.minNetQuantity
         ?? '',
@@ -34,7 +35,6 @@ function buildOptimizerLines(context) {
 
 function buildOptimizationRequest({
   autoOptions,
-  curve,
   draftRevision,
   lines,
   mode,
@@ -42,9 +42,13 @@ function buildOptimizationRequest({
   return {
     expectedRevision: draftRevision,
     mode,
-    curve,
     lines: lines.map((line) => ({
       lineId: line.lineId,
+      economicAdjustmentPercent:
+        Number(
+          line.economicAdjustmentPercent
+          ?? 0,
+        ),
       minNetQuantity:
         optionalDecimalInput(
           line.minNetQuantity,
@@ -103,6 +107,7 @@ function formatCurrency(value) {
       style: 'currency',
       currency: 'EUR',
       maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
     },
   ).format(number);
 }
@@ -119,6 +124,85 @@ function formatPercent(value, digits = 1) {
       minimumFractionDigits: 0,
     },
   ).format(number) + ' %';
+}
+
+function formatQuantity(
+  value,
+  referenceUnit,
+) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return '—';
+  }
+
+  const unit =
+    String(referenceUnit ?? '')
+      .toUpperCase();
+  const maximumFractionDigits =
+    ['G', 'ML'].includes(unit)
+      ? 0
+      : ['KG', 'L'].includes(unit)
+        ? 3
+        : 2;
+
+  return new Intl.NumberFormat(
+    'fr-FR',
+    {
+      maximumFractionDigits,
+      minimumFractionDigits: 0,
+    },
+  ).format(number);
+}
+
+function formatSignedCurrency(value) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return '—';
+  }
+
+  return (
+    (number > 0 ? '+' : '')
+    + formatCurrency(number)
+  );
+}
+
+function formatSignedPercent(
+  value,
+  digits = 1,
+) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return '—';
+  }
+
+  return (
+    (number > 0 ? '+' : '')
+    + formatPercent(number, digits)
+  );
+}
+
+function formatSignedPercentPoints(
+  value,
+) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return '—';
+  }
+
+  return (
+    (number > 0 ? '+' : '')
+    + new Intl.NumberFormat(
+      'fr-FR',
+      {
+        maximumFractionDigits: 1,
+      },
+    ).format(number)
+    + ' pt'
+  );
 }
 
 function findProjectionLine(
@@ -146,6 +230,10 @@ export {
   findProjectionLine,
   formatCurrency,
   formatPercent,
+  formatQuantity,
+  formatSignedCurrency,
+  formatSignedPercent,
+  formatSignedPercentPoints,
   normalizeDecimalInput,
   optionalDecimalInput,
 };
