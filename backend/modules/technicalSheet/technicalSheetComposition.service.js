@@ -169,6 +169,10 @@ const prepareTechnicalSheetComposition = async ({
                 line.selectedSupplierArticleId
                 ?? line.selectedSupplierArticle
                 ?? null,
+            optimization:
+                line.optimization?.toObject?.()
+                ?? line.optimization
+                ?? undefined,
             calculation: {
                 yieldPercentUsed:
                     gross.yieldPercentUsed
