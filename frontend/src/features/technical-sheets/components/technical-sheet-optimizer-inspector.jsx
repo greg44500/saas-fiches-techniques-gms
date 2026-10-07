@@ -1,12 +1,7 @@
 import { RotateCcw } from 'lucide-react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,9 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import {
   formatCurrency,
+  formatPercent,
+  formatQuantity,
+  formatSignedCurrency,
+  formatSignedPercent,
 } from '@/features/technical-sheets/lib/technical-sheet-optimizer';
 
 const CURRENT_PRODUCT = '__CURRENT_PRODUCT__';
@@ -30,20 +30,42 @@ function supplierLabel(article) {
   ].filter(Boolean).join(' · ');
 }
 
+function ToolHeader({
+  description,
+  title,
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <h3 className="text-sm font-semibold">
+        {title}
+      </h3>
+      <InfoTooltip
+        content={description}
+        label={'Aide · ' + title}
+      />
+    </div>
+  );
+}
+
 function TechnicalSheetOptimizerInspector({
+  activeTool,
   alternatives,
+  baselineLine,
   canManageSourcing,
   line,
   onChange,
   projectionLine,
+  range,
 }) {
-  if (!line || !projectionLine) {
+  if (
+    !line
+    || !projectionLine
+    || !baselineLine
+  ) {
     return (
-      <Card className="h-fit">
-        <CardContent className="p-4 text-sm text-muted-foreground">
-          Sélectionnez un ingrédient dans la Fiche pour afficher ses réglages.
-        </CardContent>
-      </Card>
+      <div className="p-4 text-sm text-muted-foreground">
+        Sélectionnez un ingrédient dans la Fiche ou le profil économique.
+      </div>
     );
   }
 
@@ -73,158 +95,183 @@ function TechnicalSheetOptimizerInspector({
     });
   }
 
+  const adjustment =
+    Number(
+      line.economicAdjustmentPercent
+      ?? 0,
+    );
+  const minAdjustment =
+    Number(range?.min ?? -99);
+  const maxAdjustment =
+    Number(range?.max ?? 100);
+  const quantityDelta =
+    Number(projectionLine.netQuantity)
+    - Number(baselineLine.netQuantity);
+  const costDelta =
+    Number(projectionLine.lineCostHt)
+    - Number(baselineLine.lineCostHt);
+
   return (
-    <Card className="h-fit">
-      <CardHeader className="space-y-1 pb-3">
-        <CardTitle className="text-sm">
-          Ingrédient sélectionné
-        </CardTitle>
-        <p className="font-medium">
+    <div className="space-y-4 p-4">
+      <div className="border-b border-border pb-3">
+        <p className="truncate font-medium">
           {projectionLine.productVariantName}
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           {formatCurrency(
             projectionLine.lineCostHt,
           )}
           {' · '}
-          {projectionLine.materialCostSharePercent
-            ? Number(
-              projectionLine.materialCostSharePercent,
-            ).toLocaleString(
-              'fr-FR',
-              {
-                maximumFractionDigits: 1,
-              },
-            ) + ' %CM'
-            : '—'}
+          {formatPercent(
+            projectionLine
+              .materialCostSharePercent,
+          )}
+          {' CM'}
         </p>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-5">
-        <section className="space-y-3">
-          <div>
-            <p className="text-sm font-medium">
-              Garde-fous de recette
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Facultatifs : ils limitent la quantité calculée sans piloter eux-mêmes l’optimisation.
-            </p>
+      {activeTool === 'ADJUSTMENT' && (
+        <section className="space-y-4">
+          <ToolHeader
+            description="Ajuste cette ligne par rapport à la recette de référence. Le serveur traduit le pourcentage en quantité, applique les contraintes puis recalcule toute la valorisation."
+            title="Réglage économique"
+          />
+
+          <div className="rounded-lg border border-border p-3">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <span className="text-xs text-muted-foreground">
+                Ajustement
+              </span>
+              <strong className="text-lg tabular-nums">
+                {formatSignedPercent(
+                  adjustment,
+                  0,
+                )}
+              </strong>
+            </div>
+            <Slider
+              aria-label="Ajustement économique de l’ingrédient"
+              disabled={line.locked}
+              max={maxAdjustment}
+              min={minAdjustment}
+              onValueChange={([value]) =>
+                patch({
+                  economicAdjustmentPercent:
+                    value,
+                  localNetQuantity: '',
+                })}
+              step={1}
+              value={[adjustment]}
+            />
+            <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+              <span>
+                {minAdjustment} %
+              </span>
+              <span>0 %</span>
+              <span>
+                +{maxAdjustment} %
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field>
-              <FieldLabel htmlFor={'optimizer-min-' + line.lineId}>
-                Minimum autorisé
-              </FieldLabel>
-              <Input
-                id={'optimizer-min-' + line.lineId}
-                inputMode="decimal"
-                onChange={(event) =>
-                  patch({
-                    minNetQuantity:
-                      event.target.value,
-                  })}
-                placeholder="Aucun"
-                value={line.minNetQuantity}
-              />
-            </Field>
+          {line.locked && (
+            <p className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
+              La quantité est verrouillée. Le réglage économique est neutralisé tant que ce garde-fou reste actif.
+            </p>
+          )}
 
-            <Field>
-              <FieldLabel htmlFor={'optimizer-max-' + line.lineId}>
-                Maximum autorisé
-              </FieldLabel>
-              <Input
-                id={'optimizer-max-' + line.lineId}
-                inputMode="decimal"
-                onChange={(event) =>
-                  patch({
-                    maxNetQuantity:
-                      event.target.value,
-                  })}
-                placeholder="Aucun"
-                value={line.maxNetQuantity}
-              />
-            </Field>
-          </div>
-
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-            <div>
-              <p className="text-sm font-medium">
-                Verrouiller la recette
+          <div className="grid gap-2">
+            <div className="rounded-lg bg-muted/35 p-3">
+              <p className="text-[11px] text-muted-foreground">
+                Quantité
               </p>
-              <p className="text-xs text-muted-foreground">
-                Conserve la quantité de référence malgré les réglages économiques.
+              <p className="mt-1 text-sm font-medium tabular-nums">
+                {formatQuantity(
+                  baselineLine.netQuantity,
+                  baselineLine.referenceUnit,
+                )}
+                {' → '}
+                {formatQuantity(
+                  projectionLine.netQuantity,
+                  projectionLine.referenceUnit,
+                )}
+                {' '}
+                {projectionLine.referenceUnit}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {formatSignedPercent(
+                  Number(
+                    baselineLine.netQuantity,
+                  )
+                    ? (
+                      quantityDelta
+                      / Number(
+                        baselineLine.netQuantity,
+                      )
+                      * 100
+                    )
+                    : 0,
+                )}
               </p>
             </div>
-            <Switch
-              aria-label="Verrouiller la quantité"
-              checked={line.locked}
-              onCheckedChange={(checked) =>
-                patch({
-                  locked: checked,
-                  localNetQuantity:
-                    checked
-                      ? ''
-                      : line.localNetQuantity,
-                })}
-            />
+
+            <div className="rounded-lg bg-muted/35 p-3">
+              <p className="text-[11px] text-muted-foreground">
+                Coût
+              </p>
+              <p className="mt-1 text-sm font-medium tabular-nums">
+                {formatCurrency(
+                  baselineLine.lineCostHt,
+                )}
+                {' → '}
+                {formatCurrency(
+                  projectionLine.lineCostHt,
+                )}
+              </p>
+              <p
+                className={
+                  'mt-1 text-xs font-medium '
+                  + (
+                    costDelta < 0
+                      ? 'text-primary'
+                      : costDelta > 0
+                        ? 'text-destructive'
+                        : 'text-muted-foreground'
+                  )
+                }
+              >
+                {formatSignedCurrency(
+                  costDelta,
+                )}
+              </p>
+            </div>
+
+            <div className="rounded-lg bg-muted/35 p-3">
+              <p className="text-[11px] text-muted-foreground">
+                Contribution CM
+              </p>
+              <p className="mt-1 text-sm font-medium tabular-nums">
+                {formatPercent(
+                  baselineLine
+                    .materialCostSharePercent,
+                )}
+                {' → '}
+                {formatPercent(
+                  projectionLine
+                    .materialCostSharePercent,
+                )}
+              </p>
+            </div>
           </div>
         </section>
+      )}
 
-        <details className="rounded-lg border border-border p-3">
-          <summary className="cursor-pointer text-sm font-medium">
-            Ajustement quantité avancé
-          </summary>
-          <div className="mt-3">
-            <Field>
-              <div className="flex items-center justify-between gap-2">
-                <FieldLabel htmlFor={'optimizer-local-' + line.lineId}>
-                  Quantité forcée
-                </FieldLabel>
-                <Button
-                  disabled={!line.localNetQuantity}
-                  onClick={() =>
-                    patch({
-                      localNetQuantity: '',
-                    })}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <RotateCcw
-                    aria-hidden="true"
-                    className="size-4"
-                  />
-                  Reprendre le calcul
-                </Button>
-              </div>
-              <Input
-                disabled={line.locked}
-                id={'optimizer-local-' + line.lineId}
-                inputMode="decimal"
-                onChange={(event) =>
-                  patch({
-                    localNetQuantity:
-                      event.target.value,
-                  })}
-                placeholder={
-                  projectionLine.netQuantity
-                }
-                value={line.localNetQuantity}
-              />
-            </Field>
-          </div>
-        </details>
-
-        <section className="space-y-3 border-t border-border pt-4">
-          <div>
-            <p className="text-sm font-medium">
-              Calque Produit
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Teste une autre Référence Produit : prix et rendement sont revalorisés par le serveur.
-            </p>
-          </div>
+      {activeTool === 'PRODUCT' && (
+        <section className="space-y-3">
+          <ToolHeader
+            description="Teste une autre Référence Produit admissible. Rendement, quantité brute, sourcing et coût sont entièrement revalorisés par le serveur."
+            title="Produit"
+          />
 
           <Field>
             <FieldLabel>
@@ -235,7 +282,8 @@ function TechnicalSheetOptimizerInspector({
                 {
                   value: CURRENT_PRODUCT,
                   label:
-                    projectionLine.productVariantName,
+                    projectionLine
+                      .productVariantName,
                 },
                 ...productAlternatives.map(
                   (item) => ({
@@ -270,7 +318,8 @@ function TechnicalSheetOptimizerInspector({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={CURRENT_PRODUCT}>
-                  {projectionLine.productVariantName}
+                  {projectionLine
+                    .productVariantName}
                 </SelectItem>
                 {productAlternatives.map(
                   (item) => (
@@ -278,7 +327,8 @@ function TechnicalSheetOptimizerInspector({
                       disabled={
                         !item.pricing
                         && (
-                          !item.requiresSupplierSelection
+                          !item
+                            .requiresSupplierSelection
                           || !canManageSourcing
                         )
                       }
@@ -286,14 +336,18 @@ function TechnicalSheetOptimizerInspector({
                       value={item.id}
                     >
                       {item.name}
-                      {item.pricing?.normalizedAmount
+                      {item.pricing
+                        ?.normalizedAmount
                         ? ' · '
                           + formatCurrency(
-                            item.pricing.normalizedAmount,
+                            item.pricing
+                              .normalizedAmount,
                           )
                           + '/'
-                          + item.pricing.normalizedUnit
-                        : item.requiresSupplierSelection
+                          + item.pricing
+                            .normalizedUnit
+                        : item
+                          .requiresSupplierSelection
                           ? ' · article à choisir'
                           : ' · prix indisponible'}
                     </SelectItem>
@@ -303,61 +357,77 @@ function TechnicalSheetOptimizerInspector({
             </Select>
           </Field>
         </section>
+      )}
 
-        {canManageSourcing && (
-          <section className="space-y-3 border-t border-border pt-4">
-            <div>
-              <p className="text-sm font-medium">
-                Calque approvisionnement
+      {activeTool === 'SOURCING' && (
+        <section className="space-y-3">
+          <ToolHeader
+            description="Compare les Articles réellement valorisables pour cette Référence Produit dans le Dossier courant. Aucun prix d’un autre Dossier n’est utilisé."
+            title="Approvisionnement"
+          />
+
+          {!canManageSourcing
+            ? (
+              <p className="text-sm text-muted-foreground">
+                Vous n’avez pas l’autorisation de modifier l’Article fournisseur.
               </p>
-              <p className="text-xs text-muted-foreground">
-                Compare les Articles réellement valorisables dans ce Dossier.
-              </p>
-            </div>
+            )
+            : selectedProduct
+              ?.requiresSupplierSelection
+              && supplierOptions.length
+              === 0
+              ? (
+                <p className="text-sm text-muted-foreground">
+                  Aucun Article fournisseur exploitable n’est disponible pour cette alternative.
+                </p>
+              )
+              : (
+                <Field>
+                  <div className="flex items-center justify-between gap-2">
+                    <FieldLabel>
+                      Article fournisseur
+                    </FieldLabel>
+                    <Button
+                      disabled={
+                        !line
+                          .supplierArticleTouched
+                      }
+                      onClick={() =>
+                        patch({
+                          supplierArticleId:
+                            null,
+                          supplierArticleTouched:
+                            false,
+                        })}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <RotateCcw
+                        aria-hidden="true"
+                        className="size-4"
+                      />
+                      Actuel
+                    </Button>
+                  </div>
 
-            <Field>
-              <div className="flex items-center justify-between gap-2">
-                <FieldLabel>
-                  Article fournisseur
-                </FieldLabel>
-                <Button
-                  disabled={!line.supplierArticleTouched}
-                  onClick={() =>
-                    patch({
-                      supplierArticleId: null,
-                      supplierArticleTouched: false,
-                    })}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <RotateCcw
-                    aria-hidden="true"
-                    className="size-4"
-                  />
-                  Reprendre l’actuel
-                </Button>
-              </div>
-
-              {selectedProduct?.requiresSupplierSelection
-                && supplierOptions.length === 0
-                ? (
-                  <p className="text-sm text-muted-foreground">
-                    Aucun Article fournisseur exploitable n’est disponible pour cette alternative.
-                  </p>
-                )
-                : (
                   <Select
                     disabled={
-                      supplierOptions.length === 0
+                      supplierOptions
+                        .length === 0
                     }
-                    items={supplierOptions.map(
-                      (article) => ({
-                        value: article.id,
-                        label:
-                          supplierLabel(article),
-                      }),
-                    )}
+                    items={
+                      supplierOptions.map(
+                        (article) => ({
+                          value:
+                            article.id,
+                          label:
+                            supplierLabel(
+                              article,
+                            ),
+                        }),
+                      )
+                    }
                     onValueChange={(value) =>
                       patch({
                         supplierArticleId:
@@ -366,8 +436,10 @@ function TechnicalSheetOptimizerInspector({
                           true,
                       })}
                     value={
-                      line.supplierArticleTouched
-                        ? line.supplierArticleId
+                      line
+                        .supplierArticleTouched
+                        ? line
+                          .supplierArticleId
                         : null
                     }
                   >
@@ -381,31 +453,182 @@ function TechnicalSheetOptimizerInspector({
                             key={article.id}
                             value={article.id}
                           >
-                            {supplierLabel(article)}
-                            {article.pricing?.normalizedAmount
+                            {supplierLabel(
+                              article,
+                            )}
+                            {article.pricing
+                              ?.normalizedAmount
                               ? ' · '
                                 + formatCurrency(
-                                  article.pricing.normalizedAmount,
+                                  article.pricing
+                                    .normalizedAmount,
                                 )
                                 + '/'
-                                + article.pricing.normalizedUnit
+                                + article.pricing
+                                  .normalizedUnit
                               : ''}
                           </SelectItem>
                         ),
                       )}
                     </SelectContent>
                   </Select>
-                )}
-            </Field>
-          </section>
-        )}
+                </Field>
+              )}
+        </section>
+      )}
 
-        <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
-          Quantité simulée : {projectionLine.netQuantity} {projectionLine.referenceUnit}.
-          Le serveur revalide coûts, rendement, garde-fous et prix du Dossier avant application.
-        </div>
-      </CardContent>
-    </Card>
+      {activeTool === 'CONSTRAINTS' && (
+        <section className="space-y-4">
+          <ToolHeader
+            description="Ces garde-fous ne pilotent pas l’optimisation : ils définissent seulement jusqu’où la quantité simulée peut évoluer."
+            title="Contraintes"
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field>
+              <FieldLabel
+                htmlFor={
+                  'optimizer-min-'
+                  + line.lineId
+                }
+              >
+                Minimum autorisé
+              </FieldLabel>
+              <Input
+                id={
+                  'optimizer-min-'
+                  + line.lineId
+                }
+                inputMode="decimal"
+                onChange={(event) =>
+                  patch({
+                    minNetQuantity:
+                      event.target.value,
+                  })}
+                placeholder="Aucun"
+                value={
+                  line.minNetQuantity
+                }
+              />
+            </Field>
+
+            <Field>
+              <FieldLabel
+                htmlFor={
+                  'optimizer-max-'
+                  + line.lineId
+                }
+              >
+                Maximum autorisé
+              </FieldLabel>
+              <Input
+                id={
+                  'optimizer-max-'
+                  + line.lineId
+                }
+                inputMode="decimal"
+                onChange={(event) =>
+                  patch({
+                    maxNetQuantity:
+                      event.target.value,
+                  })}
+                placeholder="Aucun"
+                value={
+                  line.maxNetQuantity
+                }
+              />
+            </Field>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+            <div>
+              <p className="text-sm font-medium">
+                Verrouiller la quantité
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Conserve la quantité de référence.
+              </p>
+            </div>
+            <Switch
+              aria-label="Verrouiller la quantité"
+              checked={line.locked}
+              onCheckedChange={(checked) =>
+                patch({
+                  locked: checked,
+                  economicAdjustmentPercent:
+                    checked
+                      ? 0
+                      : line
+                        .economicAdjustmentPercent,
+                  localNetQuantity:
+                    checked
+                      ? ''
+                      : line.localNetQuantity,
+                })}
+            />
+          </div>
+
+          <details className="rounded-lg border border-border p-3">
+            <summary className="cursor-pointer text-sm font-medium">
+              Quantité forcée avancée
+            </summary>
+            <div className="mt-3">
+              <Field>
+                <div className="flex items-center justify-between gap-2">
+                  <FieldLabel
+                    htmlFor={
+                      'optimizer-local-'
+                      + line.lineId
+                    }
+                  >
+                    Quantité forcée
+                  </FieldLabel>
+                  <Button
+                    disabled={
+                      !line.localNetQuantity
+                    }
+                    onClick={() =>
+                      patch({
+                        localNetQuantity:
+                          '',
+                      })}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RotateCcw
+                      aria-hidden="true"
+                      className="size-4"
+                    />
+                    Reprendre le calcul
+                  </Button>
+                </div>
+                <Input
+                  disabled={line.locked}
+                  id={
+                    'optimizer-local-'
+                    + line.lineId
+                  }
+                  inputMode="decimal"
+                  onChange={(event) =>
+                    patch({
+                      localNetQuantity:
+                        event.target.value,
+                    })}
+                  placeholder={
+                    projectionLine
+                      .netQuantity
+                  }
+                  value={
+                    line.localNetQuantity
+                  }
+                />
+              </Field>
+            </div>
+          </details>
+        </section>
+      )}
+    </div>
   );
 }
 
