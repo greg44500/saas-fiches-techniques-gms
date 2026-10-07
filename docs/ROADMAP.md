@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** VALIDÉ — M-001 à M-004 hors Exports et diffusion clôturés ; corpus professionnel v9, conditionnements M-003 et lecture Workspace des Prix repères finalisés sur branche unique
-**Dernière mise à jour :** 2026-10-06
+**Statut :** M-005 Atelier d’optimisation implémenté sur branche — validation locale et QA visuelle en attente
+**Dernière mise à jour :** 2026-10-07
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
