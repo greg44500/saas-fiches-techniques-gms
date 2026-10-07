@@ -258,6 +258,13 @@ function TechnicalSheetWorkspacePage() {
     && can(
       TECHNICAL_SHEET_PERMISSION.EXPORT,
     );
+  const canOptimize =
+    hasFeature(
+      TECHNICAL_SHEET_FEATURE.OPTIMIZER,
+    )
+    && can(
+      TECHNICAL_SHEET_PERMISSION.UPDATE,
+    );
   const exportUsageQuery =
     useGetTechnicalSheetExportUsageQuery(
       workspace.id,
@@ -322,6 +329,7 @@ function TechnicalSheetWorkspacePage() {
   const [confirmation, setConfirmation] = useState(null);
   const [copyOpen, setCopyOpen] = useState(false);
   const [exportingFormat, setExportingFormat] = useState(null);
+  const [optimizerOpening, setOptimizerOpening] = useState(false);
   const [productScope, setProductScope] = useState(null);
   const [sourcingPendingCount, setSourcingPendingCount] = useState(0);
   const stickyControlsRef = useRef(null);
@@ -765,6 +773,35 @@ function TechnicalSheetWorkspacePage() {
     }
   }
 
+  async function openOptimizer() {
+    setOptimizerOpening(true);
+
+    try {
+      if (!draft) {
+        await startDraft({
+          workspaceId: workspace.id,
+          dossierId,
+          technicalSheetId,
+          expectedSheetRevision: sheet.revision,
+        }).unwrap();
+      }
+
+      navigate(
+        '/workspaces/' + workspace.id
+        + '/dossiers/' + dossierId
+        + '/technical-sheets/' + technicalSheetId
+        + '/optimization',
+      );
+    } catch (error) {
+      notifyError(
+        error,
+        'L’Atelier d’optimisation n’a pas pu être ouvert.',
+      );
+    } finally {
+      setOptimizerOpening(false);
+    }
+  }
+
   async function validateDraft() {
     try {
       await validateSheet({
@@ -920,6 +957,10 @@ function TechnicalSheetWorkspacePage() {
             }
             canExport={canExport}
             canLifecycle={canLifecycle}
+            canOptimize={
+              canOptimize
+              && actionAvailability.update
+            }
             canValidate={canValidate}
             copyDisabled={copyDisabled}
             draft={draft}
@@ -938,8 +979,21 @@ function TechnicalSheetWorkspacePage() {
             onExport={exportValidatedSheet}
             onOpenAnalysis={() => setRightPanel('analysis')}
             onOpenDossier={() => setRightPanel('dossier')}
+            onOptimize={openOptimizer}
             onReactivate={() => setConfirmation({ type: 'reactivate' })}
             onValidate={() => setValidationDialogOpen(true)}
+            optimizerDisabled={
+              Boolean(draft)
+              && (
+                draftDirty
+                || autosaveHasUnsavedChanges
+                || autosaveIsSaving
+              )
+            }
+            optimizerPending={
+              optimizerOpening
+              || startDraftState.isLoading
+            }
             pendingLifecycle={pendingLifecycle}
             rightPanel={rightPanel}
             validatePending={validateState.isLoading}
