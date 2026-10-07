@@ -17,9 +17,6 @@ import {
   useGetTechnicalSheetValidationQuery,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import {
-  TechnicalSheetStatusBadge,
-} from '@/features/technical-sheets/components/technical-sheet-status-badge';
-import {
   formatBasisPoints,
   formatDecimalCurrency,
   formatMinorCurrency,
@@ -120,16 +117,14 @@ function TechnicalSheetPreviewDialog({
     validation?.linesSnapshot
     ?? [];
 
+  const hasNotes =
+    lines.some(
+      (line) =>
+        Boolean(
+          line.note?.trim?.(),
+        ),
+    );
   const columns = [
-    {
-      id: 'section',
-      header: 'Section',
-      cell: (line) => (
-        line.kind === 'ECONOMAT'
-          ? 'Économat'
-          : 'Ingrédient'
-      ),
-    },
     {
       id: 'product',
       header: 'Produit',
@@ -137,8 +132,8 @@ function TechnicalSheetPreviewDialog({
         line.productVariantName,
     },
     {
-      id: 'net',
-      header: 'Qté nette',
+      id: 'quantity',
+      header: 'Quantité',
       cell: (line) => formatQuantity({
         countUnitLabelPlural:
           line.countUnitLabelPlural,
@@ -146,18 +141,6 @@ function TechnicalSheetPreviewDialog({
           line.countUnitLabelSingular,
         quantity: line.netQuantity,
         unit: line.inputUnit,
-      }),
-    },
-    {
-      id: 'gross',
-      header: 'Qté brute',
-      cell: (line) => formatQuantity({
-        countUnitLabelPlural:
-          line.countUnitLabelPlural,
-        countUnitLabelSingular:
-          line.countUnitLabelSingular,
-        quantity: line.grossQuantity,
-        unit: line.grossUnit,
       }),
     },
     {
@@ -191,6 +174,14 @@ function TechnicalSheetPreviewDialog({
           ),
         ),
     },
+    ...(hasNotes
+      ? [{
+          id: 'note',
+          header: 'Note',
+          cell: (line) =>
+            line.note ?? '',
+        }]
+      : []),
   ];
 
   return (
@@ -204,16 +195,11 @@ function TechnicalSheetPreviewDialog({
         <DialogOverlay />
         <DialogContent className="max-h-[88vh] max-w-5xl overflow-y-auto">
           <DialogHeader>
-            <div className="flex flex-wrap items-center gap-2">
-              <DialogTitle>
-                Prévisualisation de la Fiche technique
-              </DialogTitle>
-              <TechnicalSheetStatusBadge tone="success">
-                Validée
-              </TechnicalSheetStatusBadge>
-            </div>
+            <DialogTitle>
+              Prévisualisation de la Fiche technique
+            </DialogTitle>
             <DialogDescription>
-              Consultation de la version validée officielle. Les éventuelles modifications en brouillon ne sont pas affichées ici.
+              Consultation de la version officielle. Les éventuelles modifications en cours ne sont pas affichées ici.
             </DialogDescription>
           </DialogHeader>
 
@@ -223,7 +209,7 @@ function TechnicalSheetPreviewDialog({
               className="mt-5 text-sm text-muted-foreground"
               role="status"
             >
-              Chargement de la version validée…
+              Chargement de la version…
             </p>
           ) : validationQuery.isError || !validation ? (
             <div
@@ -231,7 +217,7 @@ function TechnicalSheetPreviewDialog({
               role="alert"
             >
               <p className="text-sm">
-                La version validée n’a pas pu être chargée.
+                La version n’a pas pu être chargée.
               </p>
               <Button
                 className="mt-3"
@@ -319,11 +305,11 @@ function TechnicalSheetPreviewDialog({
                 </h3>
                 <div className="overflow-hidden rounded-lg border border-border">
                   <DataTable
-                    aria-label="Composition validée"
+                    aria-label="Composition"
                     columns={columns}
                     data={lines}
                     density="compact"
-                    emptyContent="Aucune ligne dans cette version validée."
+                    emptyContent="Aucune ligne dans cette version."
                     getRowKey={(line, index) => (
                       line._id?.toString?.()
                       ?? line.id

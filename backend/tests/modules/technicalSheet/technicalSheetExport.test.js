@@ -97,6 +97,9 @@ const validation = {
             lineCostHt:
                 '0.5',
             order: 1,
+            note:
+                'Servir à part',
+        },
         },
     ],
     economicSnapshot: {
@@ -222,6 +225,26 @@ describe('M-004 exports de Fiches techniques', () => {
             .not.toContain(
                 'Écart vs cible',
             );
+        expect(text)
+            .not.toContain(
+                'Rendement (%)',
+            );
+        expect(text)
+            .not.toContain(
+                'Quantité brute',
+            );
+        expect(text)
+            .not.toContain(
+                '"Section"',
+            );
+        expect(text)
+            .toContain(
+                '"Note"',
+            );
+        expect(text)
+            .toContain(
+                '"Servir à part"',
+            );
     });
 
     it('génère un classeur XLSX structuré en trois feuilles', () => {
@@ -249,8 +272,20 @@ describe('M-004 exports de Fiches techniques', () => {
             workbook.Sheets.Fiche.B1.v,
         ).toBe("'=Fiche test");
         expect(
-            workbook.Sheets.Composition.B2.v,
+            workbook.Sheets.Composition.A2.v,
         ).toBe("'+Carotte");
+        expect(
+            workbook.Sheets.Composition.G3.v,
+        ).toBe('Servir à part');
+        expect(
+            workbook.Sheets.Composition.A1.v,
+        ).toBe('Produit');
+        expect(
+            workbook.Sheets.Composition.B1.v,
+        ).toBe('Quantité');
+        expect(
+            workbook.Sheets.Composition.C1.v,
+        ).toBe('Unité');
     });
 
     it('aligne le contrat de présentation PDF sur la prévisualisation officielle', () => {
@@ -278,7 +313,7 @@ describe('M-004 exports de Fiches techniques', () => {
             'Total portions',
         ]);
         expect(
-            COMPOSITION_COLUMNS
+            layout.compositionColumns
                 .reduce(
                     (total, { width }) =>
                         total + width,
@@ -286,40 +321,34 @@ describe('M-004 exports de Fiches techniques', () => {
                 ),
         ).toBe(770);
         expect(
-            COMPOSITION_COLUMNS
+            layout.compositionColumns
                 .map(({ label }) => label),
         ).toEqual([
-            'Section',
             'Produit',
-            'Qté nette',
-            'Rdt.',
-            'Qté brute',
+            'Quantité',
             'Prix HT',
             'Coût HT',
+            'Note',
         ]);
         expect(
             layout.compositionRows,
         ).toEqual([
             expect.objectContaining({
-                section:
-                    'Ingrédient',
                 product:
                     '+Carotte',
-                net: '2 kg',
-                gross: '2,5 kg',
+                quantity: '2 kg',
                 price:
                     '3,25 € / kg',
                 cost: '8,13 €',
+                note: '',
             }),
             expect.objectContaining({
-                section:
-                    'Économat',
                 product:
                     'Barquette',
-                net:
+                quantity:
                     '1 barquette',
-                gross:
-                    '1 barquette',
+                note:
+                    'Servir à part',
             }),
         ]);
         expect(
@@ -340,6 +369,45 @@ describe('M-004 exports de Fiches techniques', () => {
                         label.includes('Écart'),
                 ),
         ).toBe(false);
+    });
+
+    it('n’affiche la colonne Note que lorsqu’une note existe réellement', () => {
+        const withoutNotes =
+            buildTechnicalSheetExportProjection({
+                validation: {
+                    ...validation,
+                    linesSnapshot:
+                        validation.linesSnapshot
+                            .map((line) => ({
+                                ...line,
+                                note: null,
+                            })),
+                },
+            });
+        const layout =
+            buildTechnicalSheetPdfLayout(
+                withoutNotes,
+            );
+
+        expect(
+            layout.compositionColumns
+                .map(({ label }) => label),
+        ).toEqual([
+            'Produit',
+            'Quantité',
+            'Prix HT',
+            'Coût HT',
+        ]);
+        expect(
+            layout.compositionRows
+                .every(
+                    (line) =>
+                        !Object.hasOwn(
+                            line,
+                            'note',
+                        ),
+                ),
+        ).toBe(true);
     });
 
     it('pagine une composition longue en conservant un PDF A4 paysage valide', () => {

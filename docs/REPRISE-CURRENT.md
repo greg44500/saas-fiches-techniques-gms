@@ -77,3 +77,13 @@ Le renderer PDF a été repris pour aligner le livrable avec la prévisualisatio
 - aucune modification de la source autoritaire, des quotas, de la sécurité ou du contenu métier exportable.
 
 Les tests correspondants sont ajoutés mais restent à exécuter localement par l'utilisateur.
+
+
+## Ajustement QA composition — 2026-10-07
+
+Suite à la revue du PDF réel :
+- suppression des mentions redondantes `FICHE TECHNIQUE VALIDÉE` / `Validée le` ; le PDF affiche `FICHE TECHNIQUE` et `Version du` ;
+- suppression de `Section`, `Rendement` et `Quantité brute` dans PDF, CSV, XLSX et prévisualisation ;
+- table métier simplifiée : `Produit | Quantité | Prix HT | Coût HT` ;
+- ajout conditionnel de `Note` seulement si au moins une ligne possède une note ;
+- conservation des données techniques supprimées de l'affichage dans le snapshot de validation : aucun changement de modèle ni de calcul.

@@ -21,10 +21,11 @@ Chaque format reprend au minimum :
 - date de validation ;
 - quantité produite et unité ;
 - portions par pièce et total portions ;
-- lignes Ingrédients et Économat ;
-- quantités nette et brute, rendement utilisé ;
+- lignes de composition dans leur ordre métier, sans colonne de type Ingrédient/Économat ;
+- quantité métier saisie ;
 - prix HT normalisé et unité de prix ;
 - coût HT de ligne ;
+- note de ligne uniquement lorsqu'elle est renseignée ;
 - analyse économique figée : coûts matière, économat et fabrication, coûts par pièce et par portion, TVA, marge cible, prix conseillé TTC, prix retenu TTC et marge réelle.
 
 Sont volontairement exclus : écarts à la cible, diagnostics, alertes, fingerprints, statuts techniques et autres indicateurs d'écart.
@@ -114,3 +115,12 @@ Le rendu PDF V1 utilise un A4 paysage afin de conserver des colonnes lisibles. I
 - pagination automatique, répétition de l'en-tête de table sur les pages de composition suivantes et pied de page numéroté.
 
 La source métier et le périmètre des données ne changent pas : seul le snapshot validé courant est rendu et aucun indicateur d'écart/diagnostic n'est ajouté.
+
+
+### Simplification de la composition — décision QA 2026-10-07
+
+Les livrables et la prévisualisation n'affichent pas les colonnes `Section`, `Rendement` ni `Quantité brute`. Ces informations restent disponibles dans le snapshot technique lorsque nécessaires aux calculs, mais elles ne font pas partie de la lecture métier V1 tant que la gestion d'approvisionnement n'est pas couverte.
+
+La table utilisateur expose donc `Produit | Quantité | Prix HT | Coût HT`, avec `Note` ajoutée seulement lorsqu'au moins une ligne possède une note.
+
+Les mentions redondantes indiquant explicitement que la Fiche est validée sont retirées des livrables. La date reste présentée de manière neutre sous la forme `Version du …`.

@@ -64,6 +64,8 @@ describe('TechnicalSheetPreviewDialog', () => {
               'KG',
             lineCostHt:
               '3.25',
+            note:
+              'Pain légèrement toasté',
           },
         ],
         economicSnapshot: {
@@ -143,12 +145,29 @@ describe('TechnicalSheetPreviewDialog', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole('table', {
-        name: 'Composition validée',
+        name: 'Composition',
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByText('Marge réelle'),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Pain légèrement toasté',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'Section',
+        { exact: true },
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'Qté brute',
+        { exact: true },
+      ),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByText(/Écart/i),
     ).not.toBeInTheDocument();

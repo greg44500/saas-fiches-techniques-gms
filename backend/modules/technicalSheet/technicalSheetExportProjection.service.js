@@ -128,6 +128,9 @@ const buildLineProjection = (
         decimalToString(
             line.lineCostHt,
         ),
+    note:
+        line.note?.trim?.()
+        || null,
     order: line.order,
 });
 
@@ -217,6 +220,7 @@ const buildTechnicalSheetExportProjection = ({
             targetMarginBasisPoints:
                 sheet.targetMarginBasisPoints,
         },
+        lines,
         sections: {
             ingredients:
                 lines.filter(

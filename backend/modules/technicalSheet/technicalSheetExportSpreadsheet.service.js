@@ -48,18 +48,13 @@ const basisPointsToPercent = (
 
 const compositionRows = (
     projection,
-) => [
-    ...projection.sections.ingredients
-        .map((line) => [
-            'Ingrédient',
-            line,
-        ]),
-    ...projection.sections.economat
-        .map((line) => [
-            'Économat',
-            line,
-        ]),
-];
+) => (
+    projection.lines
+    ?? [
+        ...projection.sections.ingredients,
+        ...projection.sections.economat,
+    ]
+);
 
 const analysisRows = (
     projection,
@@ -178,7 +173,7 @@ const buildTechnicalSheetCsv = (
             projection.title,
         ],
         [
-            'Version validée',
+            'Version du',
             new Date(
                 projection.validatedAt,
             ).toLocaleString('fr-FR'),
@@ -207,38 +202,46 @@ const buildTechnicalSheetCsv = (
         ]);
     }
 
+    const compositionLines =
+        compositionRows(projection);
+    const hasNotes =
+        compositionLines.some(
+            (line) =>
+                Boolean(
+                    line.note?.trim?.(),
+                ),
+        );
+
     rows.push(
         [],
         ['Composition'],
         [
-            'Section',
             'Produit',
-            'Quantité nette',
-            'Unité nette',
-            'Rendement (%)',
-            'Quantité brute',
-            'Unité brute',
+            'Quantité',
+            'Unité',
             'Prix HT',
             'Unité du prix',
             'Coût ligne HT',
+            ...(hasNotes
+                ? ['Note']
+                : []),
         ],
     );
 
     for (
-        const [section, line]
-        of compositionRows(projection)
+        const line
+        of compositionLines
     ) {
         rows.push([
-            section,
             line.productName,
             line.netQuantity,
             line.netUnitLabel,
-            line.yieldPercent,
-            line.grossQuantity,
-            line.grossUnitLabel,
             line.normalizedPriceHt,
             line.normalizedUnitLabel,
             line.lineCostHt,
+            ...(hasNotes
+                ? [line.note ?? '']
+                : []),
         ]);
     }
 
@@ -274,7 +277,7 @@ const buildTechnicalSheetXlsx = (
             ),
         ],
         [
-            'Version validée',
+            'Version du',
             new Date(
                 projection.validatedAt,
             ),
@@ -316,25 +319,32 @@ const buildTechnicalSheetXlsx = (
         ],
     ];
 
+    const compositionLines =
+        compositionRows(projection);
+    const hasNotes =
+        compositionLines.some(
+            (line) =>
+                Boolean(
+                    line.note?.trim?.(),
+                ),
+        );
     const composition = [[
-        'Section',
         'Produit',
-        'Quantité nette',
-        'Unité nette',
-        'Rendement (%)',
-        'Quantité brute',
-        'Unité brute',
+        'Quantité',
+        'Unité',
         'Prix HT',
         'Unité du prix',
         'Coût ligne HT',
+        ...(hasNotes
+            ? ['Note']
+            : []),
     ]];
 
     for (
-        const [section, line]
-        of compositionRows(projection)
+        const line
+        of compositionLines
     ) {
         composition.push([
-            section,
             neutralizeSpreadsheetText(
                 line.productName,
             ),
@@ -345,15 +355,6 @@ const buildTechnicalSheetXlsx = (
                 line.netUnitLabel,
             ),
             toFiniteNumber(
-                line.yieldPercent,
-            ),
-            toFiniteNumber(
-                line.grossQuantity,
-            ),
-            neutralizeSpreadsheetText(
-                line.grossUnitLabel,
-            ),
-            toFiniteNumber(
                 line.normalizedPriceHt,
             ),
             neutralizeSpreadsheetText(
@@ -362,6 +363,13 @@ const buildTechnicalSheetXlsx = (
             toFiniteNumber(
                 line.lineCostHt,
             ),
+            ...(hasNotes
+                ? [
+                    neutralizeSpreadsheetText(
+                        line.note ?? '',
+                    ),
+                ]
+                : []),
         ]);
     }
 
@@ -387,16 +395,15 @@ const buildTechnicalSheetXlsx = (
         { wch: 48 },
     ];
     compositionSheet['!cols'] = [
-        { wch: 14 },
-        { wch: 34 },
-        { wch: 14 },
-        { wch: 14 },
-        { wch: 14 },
+        { wch: 38 },
         { wch: 14 },
         { wch: 14 },
         { wch: 14 },
         { wch: 16 },
         { wch: 16 },
+        ...(hasNotes
+            ? [{ wch: 42 }]
+            : []),
     ];
     analysisSheet['!cols'] = [
         { wch: 40 },

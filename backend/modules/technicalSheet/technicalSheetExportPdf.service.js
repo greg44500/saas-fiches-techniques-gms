@@ -14,50 +14,66 @@ const PDF_GRAY = Object.freeze({
     WHITE: 1,
 });
 
-const COMPOSITION_COLUMNS = Object.freeze([
-    Object.freeze({
-        key: 'section',
-        label: 'Section',
-        width: 72,
-        align: 'left',
-    }),
-    Object.freeze({
-        key: 'product',
-        label: 'Produit',
-        width: 250,
-        align: 'left',
-    }),
-    Object.freeze({
-        key: 'net',
-        label: 'Qté nette',
-        width: 88,
-        align: 'right',
-    }),
-    Object.freeze({
-        key: 'yield',
-        label: 'Rdt.',
-        width: 70,
-        align: 'right',
-    }),
-    Object.freeze({
-        key: 'gross',
-        label: 'Qté brute',
-        width: 88,
-        align: 'right',
-    }),
-    Object.freeze({
-        key: 'price',
-        label: 'Prix HT',
-        width: 110,
-        align: 'right',
-    }),
-    Object.freeze({
-        key: 'cost',
-        label: 'Coût HT',
-        width: 92,
-        align: 'right',
-    }),
-]);
+const COMPOSITION_COLUMNS = Object.freeze({
+    WITHOUT_NOTE: Object.freeze([
+        Object.freeze({
+            key: 'product',
+            label: 'Produit',
+            width: 440,
+            align: 'left',
+        }),
+        Object.freeze({
+            key: 'quantity',
+            label: 'Quantité',
+            width: 105,
+            align: 'right',
+        }),
+        Object.freeze({
+            key: 'price',
+            label: 'Prix HT',
+            width: 125,
+            align: 'right',
+        }),
+        Object.freeze({
+            key: 'cost',
+            label: 'Coût HT',
+            width: 100,
+            align: 'right',
+        }),
+    ]),
+    WITH_NOTE: Object.freeze([
+        Object.freeze({
+            key: 'product',
+            label: 'Produit',
+            width: 270,
+            align: 'left',
+        }),
+        Object.freeze({
+            key: 'quantity',
+            label: 'Quantité',
+            width: 100,
+            align: 'right',
+        }),
+        Object.freeze({
+            key: 'price',
+            label: 'Prix HT',
+            width: 125,
+            align: 'right',
+        }),
+        Object.freeze({
+            key: 'cost',
+            label: 'Coût HT',
+            width: 100,
+            align: 'right',
+        }),
+        Object.freeze({
+            key: 'note',
+            label: 'Note',
+            width: 175,
+            align: 'left',
+        }),
+    ]),
+});
 
 const CP1252 = new Map([
     [0x20AC, 0x80],
@@ -384,20 +400,23 @@ const formatQuantity = (
 const buildTechnicalSheetPdfLayout = (
     projection,
 ) => {
-    const composition = [
-        ...projection.sections.ingredients
-            .map((line) => ({
-                ...line,
-                sectionLabel:
-                    'Ingrédient',
-            })),
-        ...projection.sections.economat
-            .map((line) => ({
-                ...line,
-                sectionLabel:
-                    'Économat',
-            })),
-    ];
+    const sourceLines =
+        projection.lines
+        ?? [
+            ...projection.sections.ingredients,
+            ...projection.sections.economat,
+        ];
+    const hasNotes =
+        sourceLines.some(
+            (line) =>
+                Boolean(
+                    line.note?.trim?.(),
+                ),
+        );
+    const compositionColumns =
+        hasNotes
+            ? COMPOSITION_COLUMNS.WITH_NOTE
+            : COMPOSITION_COLUMNS.WITHOUT_NOTE;
 
     return {
         document: {
@@ -408,7 +427,7 @@ const buildTechnicalSheetPdfLayout = (
         description:
             projection.description
             ?? null,
-        validatedAt:
+        versionAt:
             projection.validatedAt,
         productionCards: [
             {
@@ -439,25 +458,15 @@ const buildTechnicalSheetPdfLayout = (
                     ?? 'NC',
             },
         ],
+        compositionColumns,
         compositionRows:
-            composition.map((line) => ({
-                section:
-                    line.sectionLabel,
+            sourceLines.map((line) => ({
                 product:
                     line.productName,
-                net:
+                quantity:
                     formatQuantity(
                         line.netQuantity,
                         line.netUnitLabel,
-                    ),
-                yield:
-                    decimalPercent(
-                        line.yieldPercent,
-                    ),
-                gross:
-                    formatQuantity(
-                        line.grossQuantity,
-                        line.grossUnitLabel,
                     ),
                 price:
                     decimalCurrency(
@@ -469,6 +478,13 @@ const buildTechnicalSheetPdfLayout = (
                     decimalCurrency(
                         line.lineCostHt,
                     ),
+                ...(hasNotes
+                    ? {
+                        note:
+                            line.note
+                            ?? '',
+                    }
+                    : {}),
             })),
         analysisCards: [
             {
@@ -771,7 +787,7 @@ const drawDocumentHeader = ({
         baseline:
             composer.getY(),
         value:
-            'FICHE TECHNIQUE VALIDÉE',
+            'FICHE TECHNIQUE',
         size: 8,
         bold: true,
         gray: PDF_GRAY.MUTED,
@@ -784,9 +800,9 @@ const drawDocumentHeader = ({
         width: 220,
         align: 'right',
         value:
-            'Validée le '
+            'Version du '
             + new Date(
-                layout.validatedAt,
+                layout.versionAt,
             ).toLocaleString('fr-FR'),
         size: 8,
         gray: PDF_GRAY.MUTED,
@@ -892,6 +908,7 @@ const drawProductionCards = ({
 };
 
 const drawTableHeader = ({
+    columns,
     composer,
 }) => {
     const top =
@@ -901,7 +918,7 @@ const drawTableHeader = ({
 
     for (
         const column
-        of COMPOSITION_COLUMNS
+        of columns
     ) {
         composer.rectangle({
             x,
@@ -935,6 +952,7 @@ const drawTableHeader = ({
 
 const getCompositionRowMetrics = (
     row,
+    columns,
 ) => {
     const fontSize = 7.5;
     const lineHeight = 10;
@@ -944,7 +962,7 @@ const getCompositionRowMetrics = (
 
     for (
         const column
-        of COMPOSITION_COLUMNS
+        of columns
     ) {
         cellLines[column.key] =
             wrapTextByWidth(
@@ -981,6 +999,7 @@ const getCompositionRowMetrics = (
 };
 
 const drawCompositionRow = ({
+    columns,
     composer,
     row,
     rowIndex,
@@ -988,6 +1007,7 @@ const drawCompositionRow = ({
     const metrics =
         getCompositionRowMetrics(
             row,
+            columns,
         );
     const top =
         composer.getY();
@@ -995,7 +1015,7 @@ const drawCompositionRow = ({
 
     for (
         const column
-        of COMPOSITION_COLUMNS
+        of columns
     ) {
         const lines =
             metrics.cellLines[
@@ -1053,6 +1073,7 @@ const drawCompositionRow = ({
 };
 
 const drawCompositionTable = ({
+    columns,
     composer,
     rows,
 }) => {
@@ -1062,6 +1083,7 @@ const drawCompositionTable = ({
     );
 
     drawTableHeader({
+        columns,
         composer,
     });
 
@@ -1081,6 +1103,7 @@ const drawCompositionTable = ({
             const metrics =
                 getCompositionRowMetrics(
                     row,
+                    columns,
                 );
 
             if (
@@ -1100,11 +1123,13 @@ const drawCompositionTable = ({
                 });
                 composer.moveDown(20);
                 drawTableHeader({
+                    columns,
                     composer,
                 });
             }
 
             drawCompositionRow({
+                columns,
                 composer,
                 row,
                 rowIndex,
@@ -1522,6 +1547,8 @@ const buildTechnicalSheetPdf = (
             layout.productionCards,
     });
     drawCompositionTable({
+        columns:
+            layout.compositionColumns,
         composer,
         rows:
             layout.compositionRows,

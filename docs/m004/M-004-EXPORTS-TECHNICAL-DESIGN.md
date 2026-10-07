@@ -95,3 +95,14 @@ Il est séparé en deux responsabilités :
 La table de composition utilise des largeurs fixes totalisant la largeur utile du document. Une ligne n'est jamais coupée entre deux pages ; lorsque l'espace est insuffisant, une nouvelle page est créée et l'en-tête de colonnes est redessiné.
 
 Le PDF ne partage pas la technologie de rendu React de la modal : la mutualisation porte sur le contrat de présentation et la source de vérité, pas sur le moteur graphique.
+
+
+## Projection de composition simplifiée
+
+Le snapshot conserve `kind`, rendement et quantité brute pour l'intégrité métier et les calculs. Le renderer ne les expose pas dans la V1 des livrables.
+
+`buildTechnicalSheetExportProjection` expose désormais aussi :
+- `lines` : lignes triées dans l'ordre métier, indépendamment de leur kind ;
+- `note` : note figée de chaque ligne.
+
+PDF/CSV/XLSX et prévisualisation utilisent `lines` pour présenter une composition continue. La colonne `Note` est construite dynamiquement uniquement si `lines.some(line => line.note)`.
