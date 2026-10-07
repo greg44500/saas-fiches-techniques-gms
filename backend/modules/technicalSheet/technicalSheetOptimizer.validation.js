@@ -4,7 +4,6 @@ import {
     objectIdSchema,
 } from '../dossier/dossier.validation.js';
 import {
-    TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS,
     TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT,
     TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT,
     TECHNICAL_SHEET_OPTIMIZATION_MODE,
@@ -27,7 +26,7 @@ const positiveDecimalStringSchema =
         'La valeur doit être strictement positive.',
     );
 
-const curvePressureSchema = z
+const economicAdjustmentSchema = z
     .number()
     .int()
     .min(
@@ -37,24 +36,6 @@ const curvePressureSchema = z
         TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT,
     );
 
-const curvePressuresShape =
-    Object.fromEntries(
-        TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS
-            .map(({ key }) => [
-                key,
-                curvePressureSchema,
-            ]),
-    );
-
-const optimizationCurveSchema =
-    z.strictObject({
-        enabled: z.boolean(),
-        pressures:
-            z.strictObject(
-                curvePressuresShape,
-            ),
-    });
-
 const optionalOptimizationBoundSchema =
     positiveDecimalStringSchema
         .nullable()
@@ -63,6 +44,9 @@ const optionalOptimizationBoundSchema =
 const optimizationLineIntentSchema =
     z.strictObject({
         lineId: objectIdSchema,
+        economicAdjustmentPercent:
+            economicAdjustmentSchema
+                .default(0),
         minNetQuantity:
             optionalOptimizationBoundSchema,
         maxNetQuantity:
@@ -103,8 +87,6 @@ const optimizationSimulationBaseSchema =
                 TECHNICAL_SHEET_OPTIMIZATION_MODE,
             ),
         ),
-        curve:
-            optimizationCurveSchema,
         lines: z.array(
             optimizationLineIntentSchema,
         ).max(500),

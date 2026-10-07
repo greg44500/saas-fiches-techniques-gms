@@ -5,7 +5,7 @@ import {
     TECHNICAL_SHEET_OPTIMIZATION_MODE,
 } from './technicalSheetOptimizer.registry.js';
 import {
-    applyCurveToQuantity,
+    applyEconomicAdjustmentToQuantity,
     assertQuantityWithinEnvelope,
 } from './technicalSheetOptimizerMath.service.js';
 import {
@@ -14,7 +14,6 @@ import {
 import {
     assertLineIntent,
     buildFreshValuation,
-    cloneCurve,
     toId,
 } from './technicalSheetOptimizerProjection.service.js';
 import {
@@ -25,21 +24,10 @@ import { AppError } from '../../utils/appError.js';
 const buildManualScenarioLines = async ({
     workspaceId,
     draft,
-    baseline,
-    curve,
     intents,
     canManageSourcing,
     session,
 }) => {
-    const baselineById =
-        new Map(
-            baseline.lines.map(
-                (line) => [
-                    line._id.toString(),
-                    line,
-                ],
-            ),
-        );
     const intentsById =
         new Map(
             intents.map(
@@ -55,10 +43,6 @@ const buildManualScenarioLines = async ({
     for (const draftLine of draft.lines) {
         const lineId =
             draftLine._id.toString();
-        const baselineLine =
-            baselineById.get(
-                lineId,
-            );
         const intent =
             intentsById.get(
                 lineId,
@@ -135,7 +119,7 @@ const buildManualScenarioLines = async ({
 
         if (!intent.locked) {
             netQuantity =
-                applyCurveToQuantity({
+                applyEconomicAdjustmentToQuantity({
                     referenceQuantity:
                         draftLine
                             .netQuantity
@@ -146,13 +130,9 @@ const buildManualScenarioLines = async ({
                     maxNetQuantity:
                         intent
                             .maxNetQuantity,
-                    materialCostSharePercent:
-                        baselineLine
-                            ?.valuation
-                            ?.materialCostSharePercent
-                            ?.toString?.()
-                        ?? '0',
-                    curve,
+                    economicAdjustmentPercent:
+                        intent
+                            .economicAdjustmentPercent,
                 });
 
             if (
@@ -413,16 +393,17 @@ const buildTransformations = ({
 
 const normalizeFingerprintRequest = ({
     mode,
-    curve,
     intents,
     autoOptions,
 }) => ({
     mode,
-    curve: cloneCurve(curve),
     lines: intents
         .map((intent) => ({
             lineId:
                 intent.lineId,
+            economicAdjustmentPercent:
+                intent.economicAdjustmentPercent
+                ?? 0,
             minNetQuantity:
                 intent.minNetQuantity,
             maxNetQuantity:
@@ -522,9 +503,6 @@ const manualSimulation = async ({
         await buildManualScenarioLines({
             workspaceId,
             draft,
-            baseline,
-            curve:
-                request.curve,
             intents,
             canManageSourcing,
             session,
@@ -550,8 +528,6 @@ const manualSimulation = async ({
             mode:
                 TECHNICAL_SHEET_OPTIMIZATION_MODE
                     .MANUAL,
-            curve:
-                request.curve,
             intents,
             autoOptions:
                 request.autoOptions,

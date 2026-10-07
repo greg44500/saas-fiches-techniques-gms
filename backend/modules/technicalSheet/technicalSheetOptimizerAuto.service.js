@@ -16,7 +16,6 @@ import {
 import {
     assertLineIntent,
     buildFreshValuation,
-    neutralCurve,
 } from './technicalSheetOptimizerProjection.service.js';
 import {
     buildFingerprint,
@@ -40,6 +39,7 @@ const createAutoIntent = ({
         intent.lineId === lineId
             ? {
                 ...intent,
+                economicAdjustmentPercent: 0,
                 localNetQuantity:
                     null,
                 productVariantId:
@@ -52,6 +52,7 @@ const createAutoIntent = ({
             }
             : {
                 ...intent,
+                economicAdjustmentPercent: 0,
                 localNetQuantity:
                     null,
                 productVariantId:
@@ -120,8 +121,6 @@ const autoSimulation = async ({
     session,
 }) => {
     const candidates = [];
-    const baseCurve =
-        neutralCurve();
 
     for (const line of draft.lines) {
         if (
@@ -287,9 +286,6 @@ const autoSimulation = async ({
                 await buildManualScenarioLines({
                     workspaceId,
                     draft,
-                    baseline,
-                    curve:
-                        baseCurve,
                     intents:
                         candidate.intents,
                     canManageSourcing,
@@ -448,6 +444,7 @@ const autoSimulation = async ({
         ?? intents.map(
             (intent) => ({
                 ...intent,
+                economicAdjustmentPercent: 0,
                 localNetQuantity:
                     null,
                 productVariantId:
@@ -463,8 +460,6 @@ const autoSimulation = async ({
             mode:
                 TECHNICAL_SHEET_OPTIMIZATION_MODE
                     .AUTO,
-            curve:
-                baseCurve,
             intents:
                 resolvedIntents,
             autoOptions:

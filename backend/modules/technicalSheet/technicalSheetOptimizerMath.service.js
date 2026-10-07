@@ -7,9 +7,6 @@ import {
     normalizeFraction,
     subtractFractions,
 } from './technicalSheetMath.service.js';
-import {
-    TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS,
-} from './technicalSheetOptimizer.registry.js';
 import { AppError } from '../../utils/appError.js';
 
 const compareFractions = (left, right) => {
@@ -113,117 +110,6 @@ const assertOptimizationEnvelope = ({
     };
 };
 
-const interpolateCurvePressure = ({
-    materialCostSharePercent,
-    curve,
-}) => {
-    if (!curve.enabled) {
-        return {
-            numerator: 0n,
-            denominator: 1n,
-        };
-    }
-
-    const share =
-        clampFraction({
-            value:
-                decimalFraction(
-                    materialCostSharePercent,
-                ),
-            min: {
-                numerator: 0n,
-                denominator: 1n,
-            },
-            max: {
-                numerator: 100n,
-                denominator: 1n,
-            },
-        });
-
-    const pointDefinitions =
-        TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS;
-
-    for (
-        let index = 0;
-        index < pointDefinitions.length - 1;
-        index += 1
-    ) {
-        const left =
-            pointDefinitions[index];
-        const right =
-            pointDefinitions[index + 1];
-        const leftPosition = {
-            numerator:
-                BigInt(left.position),
-            denominator: 1n,
-        };
-        const rightPosition = {
-            numerator:
-                BigInt(right.position),
-            denominator: 1n,
-        };
-
-        if (
-            compareFractions(
-                share,
-                rightPosition,
-            ) > 0
-        ) {
-            continue;
-        }
-
-        const leftPressure = {
-            numerator:
-                BigInt(
-                    curve.pressures[left.key],
-                ),
-            denominator: 1n,
-        };
-        const rightPressure = {
-            numerator:
-                BigInt(
-                    curve.pressures[right.key],
-                ),
-            denominator: 1n,
-        };
-        const segmentProgress =
-            divideFractions(
-                subtractFractions(
-                    share,
-                    leftPosition,
-                ),
-                subtractFractions(
-                    rightPosition,
-                    leftPosition,
-                ),
-            );
-
-        return addFractions(
-            leftPressure,
-            multiplyFractions(
-                subtractFractions(
-                    rightPressure,
-                    leftPressure,
-                ),
-                segmentProgress,
-            ),
-        );
-    }
-
-    const last =
-        pointDefinitions[
-            pointDefinitions.length - 1
-        ];
-
-    return {
-        numerator:
-            BigInt(
-                curve.pressures[last.key],
-            ),
-        denominator: 1n,
-    };
-};
-
 /**
  * Traduit une variation de coût de ligne en quantité lorsque l’économie
  * unitaire de la ligne reste inchangée. Les garde-fous min/max ne pilotent
@@ -233,8 +119,7 @@ const applyEconomicAdjustmentToQuantity = ({
     referenceQuantity,
     minNetQuantity = null,
     maxNetQuantity = null,
-    materialCostSharePercent,
-    curve,
+    economicAdjustmentPercent = 0,
 }) => {
     const {
         reference,
@@ -247,12 +132,22 @@ const applyEconomicAdjustmentToQuantity = ({
     });
 
     const adjustment =
-        interpolateCurvePressure({
-            materialCostSharePercent,
-            curve,
-        });
+        Number(
+            economicAdjustmentPercent,
+        );
 
-    if (adjustment.numerator === 0n) {
+    if (
+        !Number.isInteger(adjustment)
+        || adjustment < -99
+        || adjustment > 100
+    ) {
+        throw new AppError(
+            'L’ajustement économique doit être un entier compris entre -99 % et +100 %.',
+            400,
+        );
+    }
+
+    if (adjustment === 0) {
         return fractionToDecimal(
             reference,
         );
@@ -261,22 +156,10 @@ const applyEconomicAdjustmentToQuantity = ({
     const factor =
         normalizeFraction({
             numerator:
-                adjustment.numerator
-                + (
-                    adjustment.denominator
-                    * 100n
-                ),
-            denominator:
-                adjustment.denominator
-                * 100n,
+                BigInt(adjustment)
+                + 100n,
+            denominator: 100n,
         });
-
-    if (factor.numerator <= 0n) {
-        throw new AppError(
-            'L’ajustement économique doit conserver une quantité strictement positive.',
-            400,
-        );
-    }
 
     const result =
         multiplyFractions(
@@ -292,11 +175,6 @@ const applyEconomicAdjustmentToQuantity = ({
         }),
     );
 };
-
-// Alias conservé à l’intérieur de M-005 pour limiter le bruit de migration
-// des appels existants. Sa sémantique est désormais économique.
-const applyCurveToQuantity =
-    applyEconomicAdjustmentToQuantity;
 
 const assertQuantityWithinEnvelope = ({
     quantity,
@@ -459,13 +337,11 @@ const buildQuarterStepTowardMinimum = ({
 };
 
 export {
-    applyCurveToQuantity,
     applyEconomicAdjustmentToQuantity,
     assertOptimizationEnvelope,
     assertQuantityWithinEnvelope,
     buildQuarterStepTowardMinimum,
     calculateSavings,
     compareFractions,
-    interpolateCurvePressure,
     isPositiveSaving,
 };

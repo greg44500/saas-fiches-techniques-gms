@@ -18,10 +18,6 @@ import {
     buildTechnicalSheetValuation,
 } from './technicalSheetValuation.service.js';
 import {
-    TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS,
-    TECHNICAL_SHEET_OPTIMIZATION_NEUTRAL_CURVE,
-} from './technicalSheetOptimizer.registry.js';
-import {
     assertOptimizationEnvelope,
     assertQuantityWithinEnvelope,
     compareFractions,
@@ -35,28 +31,6 @@ const toId = (value) =>
     value?._id?.toString?.()
     ?? value?.toString?.()
     ?? null;
-
-const cloneCurve = (curve) => ({
-    enabled: Boolean(curve.enabled),
-    pressures:
-        Object.fromEntries(
-            TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS
-                .map(({ key }) => [
-                    key,
-                    curve.pressures[key],
-                ]),
-        ),
-});
-
-const neutralCurve = () => ({
-    enabled:
-        TECHNICAL_SHEET_OPTIMIZATION_NEUTRAL_CURVE
-            .enabled,
-    pressures: {
-        ...TECHNICAL_SHEET_OPTIMIZATION_NEUTRAL_CURVE
-            .pressures,
-    },
-});
 
 const loadOptimizerDraft = async ({
     workspaceId,
@@ -305,6 +279,7 @@ const defaultLineIntent = (
 ) => ({
     lineId:
         line._id.toString(),
+    economicAdjustmentPercent: 0,
     minNetQuantity:
         line.optimization
             ?.minNetQuantity
@@ -374,6 +349,9 @@ const normalizeLineIntents = ({
             return {
                 ...fallback,
                 ...input,
+                economicAdjustmentPercent:
+                    input.economicAdjustmentPercent
+                    ?? 0,
                 localNetQuantity:
                     input.localNetQuantity
                     ?? null,
@@ -444,9 +422,7 @@ const assertLineIntent = ({
 export {
     assertLineIntent,
     buildFreshValuation,
-    cloneCurve,
     loadOptimizerDraft,
-    neutralCurve,
     normalizeLineIntents,
     projectValuation,
     toId,

@@ -16,7 +16,6 @@ import {
     serializeTechnicalSheetDraft,
 } from './technicalSheet.serializer.js';
 import {
-    TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS,
     TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT,
     TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT,
     TECHNICAL_SHEET_OPTIMIZATION_MODE,
@@ -31,7 +30,6 @@ import {
 import {
     buildFreshValuation,
     loadOptimizerDraft,
-    neutralCurve,
     normalizeLineIntents,
     projectValuation,
 } from './technicalSheetOptimizerProjection.service.js';
@@ -232,16 +230,12 @@ const getTechnicalSheetOptimizationContext = async ({
             ),
         baseline:
             baselineProjection,
-        curvePoints:
-            TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS,
         costAdjustmentRange: {
             min:
                 TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT,
             max:
                 TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT,
         },
-        neutralCurve:
-            neutralCurve(),
         alternatives,
         canManageSourcing,
     };
