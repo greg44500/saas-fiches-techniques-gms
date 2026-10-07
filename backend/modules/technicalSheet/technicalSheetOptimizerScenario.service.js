@@ -225,9 +225,11 @@ const buildManualScenarioLines = async ({
             selectedSupplierArticleId,
             optimization: {
                 minNetQuantity:
-                    intent.minNetQuantity,
+                    intent.minNetQuantity
+                    ?? null,
                 maxNetQuantity:
-                    intent.maxNetQuantity,
+                    intent.maxNetQuantity
+                    ?? null,
                 locked:
                     intent.locked,
             },
@@ -357,14 +359,12 @@ const buildTransformations = ({
                 line.optimization
                     ?.minNetQuantity
                     ?.toString?.()
-                ?? line.netQuantity
-                    .toString(),
+                ?? null,
             maxNetQuantity:
                 line.optimization
                     ?.maxNetQuantity
                     ?.toString?.()
-                ?? line.netQuantity
-                    .toString(),
+                ?? null,
             locked:
                 Boolean(
                     line.optimization
@@ -376,14 +376,12 @@ const buildTransformations = ({
                 after.optimization
                     ?.minNetQuantity
                     ?.toString?.()
-                ?? after.netQuantity
-                    .toString(),
+                ?? null,
             maxNetQuantity:
                 after.optimization
                     ?.maxNetQuantity
                     ?.toString?.()
-                ?? after.netQuantity
-                    .toString(),
+                ?? null,
             locked:
                 Boolean(
                     after.optimization

@@ -5,6 +5,8 @@ import {
 } from '../dossier/dossier.validation.js';
 import {
     TECHNICAL_SHEET_OPTIMIZATION_CURVE_POINTS,
+    TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT,
+    TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT,
     TECHNICAL_SHEET_OPTIMIZATION_MODE,
 } from './technicalSheetOptimizer.registry.js';
 
@@ -28,8 +30,12 @@ const positiveDecimalStringSchema =
 const curvePressureSchema = z
     .number()
     .int()
-    .min(-100)
-    .max(100);
+    .min(
+        TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT,
+    )
+    .max(
+        TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT,
+    );
 
 const curvePressuresShape =
     Object.fromEntries(
@@ -49,13 +55,18 @@ const optimizationCurveSchema =
             ),
     });
 
+const optionalOptimizationBoundSchema =
+    positiveDecimalStringSchema
+        .nullable()
+        .optional();
+
 const optimizationLineIntentSchema =
     z.strictObject({
         lineId: objectIdSchema,
         minNetQuantity:
-            positiveDecimalStringSchema,
+            optionalOptimizationBoundSchema,
         maxNetQuantity:
-            positiveDecimalStringSchema,
+            optionalOptimizationBoundSchema,
         locked: z.boolean(),
         localNetQuantity:
             positiveDecimalStringSchema

@@ -5,7 +5,7 @@ import {
 } from 'vitest';
 
 import {
-    applyCurveToQuantity,
+    applyEconomicAdjustmentToQuantity,
     assertOptimizationEnvelope,
     buildQuarterStepTowardMinimum,
     calculateSavings,
@@ -16,7 +16,7 @@ describe('M-005 mathématiques de l’Atelier', () => {
     const curve = {
         enabled: true,
         pressures: {
-            VERY_LOW: -100,
+            VERY_LOW: -50,
             LOW: 0,
             MEDIUM: 50,
             HIGH: 0,
@@ -24,8 +24,8 @@ describe('M-005 mathématiques de l’Atelier', () => {
         },
     };
 
-    it('interpole la pression entre les cinq points fixes de %CM', () => {
-        const pressure =
+    it('interpole l’ajustement économique entre les cinq zones de %CM', () => {
+        const adjustment =
             interpolateCurvePressure({
                 materialCostSharePercent:
                     '12.5',
@@ -34,69 +34,81 @@ describe('M-005 mathématiques de l’Atelier', () => {
 
         expect(
             Number(
-                pressure.numerator,
+                adjustment.numerator,
             )
             / Number(
-                pressure.denominator,
+                adjustment.denominator,
             ),
-        ).toBe(-50);
+        ).toBe(-25);
     });
 
-    it('déplace une quantité vers son minimum sans compensation physique', () => {
+    it('traduit directement une baisse de coût en quantité sans exiger de bornes', () => {
         expect(
-            applyCurveToQuantity({
+            applyEconomicAdjustmentToQuantity({
                 referenceQuantity: '10',
-                minNetQuantity: '8',
-                maxNetQuantity: '14',
+                minNetQuantity: null,
+                maxNetQuantity: null,
                 materialCostSharePercent:
                     '0',
                 curve,
             }),
-        ).toBe('8');
+        ).toBe('5');
+    });
 
+    it('traduit une hausse de coût en quantité puis respecte un garde-fou maximum', () => {
         expect(
-            applyCurveToQuantity({
+            applyEconomicAdjustmentToQuantity({
                 referenceQuantity: '10',
-                minNetQuantity: '8',
+                minNetQuantity: null,
                 maxNetQuantity: '14',
                 materialCostSharePercent:
                     '50',
                 curve,
             }),
-        ).toBe('12');
+        ).toBe('14');
     });
 
-    it('refuse une enveloppe qui n’encadre pas la quantité de référence', () => {
+    it('refuse un garde-fou qui n’encadre pas la quantité de référence', () => {
         expect(() =>
             assertOptimizationEnvelope({
                 referenceQuantity: '10',
                 minNetQuantity: '11',
-                maxNetQuantity: '12',
+                maxNetQuantity: null,
             }),
         ).toThrow(
-            /bornes d’optimisation/i,
+            /garde-fous d’optimisation/i,
         );
     });
 
-    it('refuse une borne nulle même hors validation HTTP', () => {
-        expect(() =>
+    it('accepte une enveloppe sans garde-fous explicites', () => {
+        expect(
             assertOptimizationEnvelope({
                 referenceQuantity: '10',
-                minNetQuantity: '0',
-                maxNetQuantity: '12',
+                minNetQuantity: null,
+                maxNetQuantity: null,
             }),
-        ).toThrow(
-            /strictement positives/i,
+        ).toEqual(
+            expect.objectContaining({
+                minimum: null,
+                maximum: null,
+            }),
         );
     });
 
-    it('construit le pas Auto V1 à 25 % du chemin vers le minimum', () => {
+    it('construit le pas Auto V1 à 25 % du chemin vers le minimum explicite', () => {
         expect(
             buildQuarterStepTowardMinimum({
                 referenceQuantity: '10',
                 minNetQuantity: '6',
             }),
         ).toBe('9');
+
+        expect(
+            buildQuarterStepTowardMinimum({
+                referenceQuantity: '10',
+                minNetQuantity: null,
+            }),
+        ).toBeNull();
     });
 
     it('calcule l’économie HT et son pourcentage sans float autoritatif', () => {

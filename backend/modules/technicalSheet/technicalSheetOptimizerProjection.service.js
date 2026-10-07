@@ -302,33 +302,28 @@ const projectValuation = ({
 
 const defaultLineIntent = (
     line,
-) => {
-    const reference =
-        line.netQuantity.toString();
-
-    return {
-        lineId:
-            line._id.toString(),
-        minNetQuantity:
+) => ({
+    lineId:
+        line._id.toString(),
+    minNetQuantity:
+        line.optimization
+            ?.minNetQuantity
+            ?.toString?.()
+        ?? null,
+    maxNetQuantity:
+        line.optimization
+            ?.maxNetQuantity
+            ?.toString?.()
+        ?? null,
+    locked:
+        Boolean(
             line.optimization
-                ?.minNetQuantity
-                ?.toString?.()
-            ?? reference,
-        maxNetQuantity:
-            line.optimization
-                ?.maxNetQuantity
-                ?.toString?.()
-            ?? reference,
-        locked:
-            Boolean(
-                line.optimization
-                    ?.locked,
-            ),
-        localNetQuantity: null,
-        productVariantId: null,
-        supplierArticleId: null,
-    };
-};
+                ?.locked,
+        ),
+    localNetQuantity: null,
+    productVariantId: null,
+    supplierArticleId: null,
+});
 
 const normalizeLineIntents = ({
     draft,

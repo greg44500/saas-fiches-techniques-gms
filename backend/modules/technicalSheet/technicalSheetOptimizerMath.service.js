@@ -29,11 +29,23 @@ const clampFraction = ({
     min,
     max,
 }) => {
-    if (compareFractions(value, min) < 0) {
+    if (
+        min
+        && compareFractions(
+            value,
+            min,
+        ) < 0
+    ) {
         return min;
     }
 
-    if (compareFractions(value, max) > 0) {
+    if (
+        max
+        && compareFractions(
+            value,
+            max,
+        ) > 0
+    ) {
         return max;
     }
 
@@ -42,25 +54,54 @@ const clampFraction = ({
 
 const assertOptimizationEnvelope = ({
     referenceQuantity,
-    minNetQuantity,
-    maxNetQuantity,
+    minNetQuantity = null,
+    maxNetQuantity = null,
 }) => {
     const reference =
         decimalFraction(referenceQuantity);
     const minimum =
-        decimalFraction(minNetQuantity);
+        minNetQuantity === null
+        || minNetQuantity === undefined
+            ? null
+            : decimalFraction(
+                minNetQuantity,
+            );
     const maximum =
-        decimalFraction(maxNetQuantity);
+        maxNetQuantity === null
+        || maxNetQuantity === undefined
+            ? null
+            : decimalFraction(
+                maxNetQuantity,
+            );
+
+    const invalidReference =
+        reference.numerator <= 0n;
+    const invalidMinimum =
+        minimum
+        && (
+            minimum.numerator <= 0n
+            || compareFractions(
+                minimum,
+                reference,
+            ) > 0
+        );
+    const invalidMaximum =
+        maximum
+        && (
+            maximum.numerator <= 0n
+            || compareFractions(
+                reference,
+                maximum,
+            ) > 0
+        );
 
     if (
-        minimum.numerator <= 0n
-        || maximum.numerator <= 0n
-        || reference.numerator <= 0n
-        || compareFractions(minimum, reference) > 0
-        || compareFractions(reference, maximum) > 0
+        invalidReference
+        || invalidMinimum
+        || invalidMaximum
     ) {
         throw new AppError(
-            'Les bornes d’optimisation doivent être strictement positives et encadrer la quantité de référence.',
+            'Les garde-fous d’optimisation doivent être strictement positifs et, lorsqu’ils existent, encadrer la quantité de référence.',
             400,
         );
     }
@@ -183,10 +224,15 @@ const interpolateCurvePressure = ({
     };
 };
 
-const applyCurveToQuantity = ({
+/**
+ * Traduit une variation de coût de ligne en quantité lorsque l’économie
+ * unitaire de la ligne reste inchangée. Les garde-fous min/max ne pilotent
+ * plus le mouvement : ils ne font que borner le résultat lorsqu’ils existent.
+ */
+const applyEconomicAdjustmentToQuantity = ({
     referenceQuantity,
-    minNetQuantity,
-    maxNetQuantity,
+    minNetQuantity = null,
+    maxNetQuantity = null,
     materialCostSharePercent,
     curve,
 }) => {
@@ -200,55 +246,43 @@ const applyCurveToQuantity = ({
         maxNetQuantity,
     });
 
-    const pressure =
+    const adjustment =
         interpolateCurvePressure({
             materialCostSharePercent,
             curve,
         });
 
-    if (pressure.numerator === 0n) {
+    if (adjustment.numerator === 0n) {
         return fractionToDecimal(
             reference,
         );
     }
 
-    const magnitude =
+    const factor =
         normalizeFraction({
             numerator:
-                pressure.numerator < 0n
-                    ? -pressure.numerator
-                    : pressure.numerator,
+                adjustment.numerator
+                + (
+                    adjustment.denominator
+                    * 100n
+                ),
             denominator:
-                pressure.denominator * 100n,
+                adjustment.denominator
+                * 100n,
         });
 
-    const availableDelta =
-        pressure.numerator < 0n
-            ? subtractFractions(
-                reference,
-                minimum,
-            )
-            : subtractFractions(
-                maximum,
-                reference,
-            );
-
-    const movement =
-        multiplyFractions(
-            availableDelta,
-            magnitude,
+    if (factor.numerator <= 0n) {
+        throw new AppError(
+            'L’ajustement économique doit conserver une quantité strictement positive.',
+            400,
         );
+    }
 
     const result =
-        pressure.numerator < 0n
-            ? subtractFractions(
-                reference,
-                movement,
-            )
-            : addFractions(
-                reference,
-                movement,
-            );
+        multiplyFractions(
+            reference,
+            factor,
+        );
 
     return fractionToDecimal(
         clampFraction({
@@ -259,11 +293,16 @@ const applyCurveToQuantity = ({
     );
 };
 
+// Alias conservé à l’intérieur de M-005 pour limiter le bruit de migration
+// des appels existants. Sa sémantique est désormais économique.
+const applyCurveToQuantity =
+    applyEconomicAdjustmentToQuantity;
+
 const assertQuantityWithinEnvelope = ({
     quantity,
     referenceQuantity,
-    minNetQuantity,
-    maxNetQuantity,
+    minNetQuantity = null,
+    maxNetQuantity = null,
 }) => {
     const {
         minimum,
@@ -277,17 +316,24 @@ const assertQuantityWithinEnvelope = ({
         decimalFraction(quantity);
 
     if (
-        compareFractions(
-            candidate,
-            minimum,
-        ) < 0
-        || compareFractions(
-            candidate,
-            maximum,
-        ) > 0
+        candidate.numerator <= 0n
+        || (
+            minimum
+            && compareFractions(
+                candidate,
+                minimum,
+            ) < 0
+        )
+        || (
+            maximum
+            && compareFractions(
+                candidate,
+                maximum,
+            ) > 0
+        )
     ) {
         throw new AppError(
-            'La quantité simulée dépasse les bornes d’optimisation.',
+            'La quantité simulée dépasse les garde-fous d’optimisation.',
             400,
         );
     }
@@ -298,6 +344,55 @@ const assertQuantityWithinEnvelope = ({
 };
 
 const calculateSavings = ({
+    beforeManufacturingCostHt,
+    afterManufacturingCostHt,
+}) => {
+    const before =
+        decimalFraction(
+            beforeManufacturingCostHt,
+        );
+    const after =
+        decimalFraction(
+            afterManufacturingCostHt,
+        );
+    const amount =
+        subtractFractions(
+            before,
+            after,
+        );
+
+    if (before.numerator === 0n) {
+        return {
+            amountHt:
+                fractionToDecimal(
+                    amount,
+                ),
+            percent: '0',
+        };
+    }
+
+    const percent =
+        multiplyFractions(
+            divideFractions(
+                amount,
+                before,
+            ),
+            {
+                numerator: 100n,
+                denominator: 1n,
+            },
+        );
+
+    return {
+        amountHt:
+            fractionToDecimal(
+                amount,
+            ),
+        percent: '0',
+    };
+};
+
+const calculateSavingsFixed = ({
     beforeManufacturingCostHt,
     afterManufacturingCostHt,
 }) => {
@@ -367,6 +462,13 @@ const buildQuarterStepTowardMinimum = ({
     referenceQuantity,
     minNetQuantity,
 }) => {
+    if (
+        minNetQuantity === null
+        || minNetQuantity === undefined
+    ) {
+        return null;
+    }
+
     const reference =
         decimalFraction(
             referenceQuantity,
@@ -407,10 +509,11 @@ const buildQuarterStepTowardMinimum = ({
 
 export {
     applyCurveToQuantity,
+    applyEconomicAdjustmentToQuantity,
     assertOptimizationEnvelope,
     assertQuantityWithinEnvelope,
     buildQuarterStepTowardMinimum,
-    calculateSavings,
+    calculateSavingsFixed as calculateSavings,
     compareFractions,
     interpolateCurvePressure,
     isPositiveSaving,

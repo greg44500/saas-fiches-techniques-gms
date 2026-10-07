@@ -85,18 +85,18 @@ const simulationBody = () => ({
     curve: {
         enabled: true,
         pressures: {
-            VERY_LOW: -100,
-            LOW: -100,
-            MEDIUM: -100,
-            HIGH: -100,
-            VERY_HIGH: -100,
+            VERY_LOW: -50,
+            LOW: -50,
+            MEDIUM: -50,
+            HIGH: -50,
+            VERY_HIGH: -50,
         },
     },
     lines: [{
         lineId:
             draft.lines[0].id,
-        minNetQuantity: '0.5',
-        maxNetQuantity: '1',
+        minNetQuantity: null,
+        maxNetQuantity: null,
         locked: false,
     }],
     autoOptions: {

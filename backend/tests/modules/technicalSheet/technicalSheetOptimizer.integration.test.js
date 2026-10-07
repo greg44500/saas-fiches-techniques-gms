@@ -55,11 +55,11 @@ const requestFor = ({
     minNetQuantity = '1',
     maxNetQuantity = '3',
     pressures = {
-        VERY_LOW: -100,
-        LOW: -100,
-        MEDIUM: -100,
-        HIGH: -100,
-        VERY_HIGH: -100,
+        VERY_LOW: -50,
+        LOW: -50,
+        MEDIUM: -50,
+        HIGH: -50,
+        VERY_HIGH: -50,
     },
 } = {}) => ({
     expectedRevision:
