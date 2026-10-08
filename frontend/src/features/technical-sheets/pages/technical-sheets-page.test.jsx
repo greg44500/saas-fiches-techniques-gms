@@ -247,7 +247,7 @@ describe('TechnicalSheetsPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('garde Modifier sur les états éditables et réserve Prévisualiser/Exporter aux versions validées', async () => {
+  it('regroupe Prévisualiser, Modifier et Supprimer sans proposer d’exports', async () => {
     const user = userEvent.setup();
     renderPage();
 
