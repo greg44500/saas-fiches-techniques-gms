@@ -331,9 +331,8 @@ function TechnicalSheetOptimizerRecipePreview({
                           </p>
                           <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
                             <span
-                              className="block h-full rounded-full"
+                              className="block h-full rounded-full bg-primary/75"
                               style={{
-                                backgroundColor: ingredientTone?.base,
                                 width:
                                   afterShare + '%',
                               }}

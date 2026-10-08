@@ -1,15 +1,15 @@
-const PALETTE = Object.freeze([
-  { base: '#2563eb', strong: '#1d4ed8' },
-  { base: '#d97706', strong: '#b45309' },
-  { base: '#059669', strong: '#047857' },
-  { base: '#7c3aed', strong: '#5b21b6' },
-  { base: '#dc2626', strong: '#b91c1c' },
-  { base: '#0891b2', strong: '#0e7490' },
-  { base: '#65a30d', strong: '#4d7c0f' },
-  { base: '#ea580c', strong: '#c2410c' },
-  { base: '#db2777', strong: '#9d174d' },
-  { base: '#0d9488', strong: '#0f766e' },
-]);
+// Une teinte distincte par position d'ingrédient dans la Fiche de référence.
+// Aucun retour cyclique à une palette fixe de dix couleurs.
+const GOLDEN_ANGLE = 137.50776405003785;
+
+function colorForIndex(index) {
+  const hue = (218 + index * GOLDEN_ANGLE) % 360;
+
+  return {
+    base: `hsl(${hue.toFixed(6)} 75% 44%)`,
+    strong: `hsl(${hue.toFixed(6)} 78% 31%)`,
+  };
+}
 
 function buildIngredientColorMap(lines = []) {
   const colors = {};
@@ -17,7 +17,7 @@ function buildIngredientColorMap(lines = []) {
 
   for (const line of lines) {
     if (line.kind !== 'INGREDIENT') continue;
-    colors[line.id] = PALETTE[index % PALETTE.length];
+    colors[line.id] = colorForIndex(index);
     index += 1;
   }
 
@@ -25,7 +25,7 @@ function buildIngredientColorMap(lines = []) {
 }
 
 function ingredientColor(lineId, colorMap = {}) {
-  return colorMap[lineId] ?? PALETTE[0];
+  return colorMap[lineId] ?? colorForIndex(0);
 }
 
 function ingredientGraphTone(
