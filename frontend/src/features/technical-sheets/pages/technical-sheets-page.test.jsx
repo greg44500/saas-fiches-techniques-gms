@@ -264,49 +264,24 @@ describe('TechnicalSheetsPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('garde Modifier sur les états éditables et réserve Prévisualiser/Exporter aux versions validées', () => {
+  it('garde Modifier sur les états éditables et réserve Prévisualiser/Exporter aux versions validées', async () => {
+    const user = userEvent.setup();
     renderPage();
 
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Modifier Boeuf Bourguignon',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
-        name:
-          'Prévisualiser Boeuf Bourguignon',
-      }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
-        name:
-          'Exporter Boeuf Bourguignon',
-      }),
-    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions de Boeuf Bourguignon' }));
+    expect(screen.getByRole('button', { name: 'Modifier' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Prévisualiser' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Exporter .pdf' })).not.toBeInTheDocument();
 
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Prévisualiser Tartine auvergnate',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Exporter Tartine auvergnate',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Prévisualiser Tatin',
-      }),
-    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions de Tartine auvergnate' }));
+    expect(screen.getByRole('button', { name: 'Prévisualiser' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Exporter .pdf' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Exporter .xlsx' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Exporter .csv' })).toBeInTheDocument();
   });
 
-  it('masque seulement Exporter lorsque la capability commerciale est absente', () => {
+  it('masque seulement Exporter lorsque la capability commerciale est absente', async () => {
+    const user = userEvent.setup();
     mocks.workspaceContext.mockReturnValue({
       can: (permission) => [
         TECHNICAL_SHEET_PERMISSION.READ,
@@ -322,18 +297,9 @@ describe('TechnicalSheetsPage', () => {
 
     renderPage();
 
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Prévisualiser Tartine auvergnate',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
-        name:
-          'Exporter Tartine auvergnate',
-      }),
-    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions de Tartine auvergnate' }));
+    expect(screen.getByRole('button', { name: 'Prévisualiser' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Exporter .pdf' })).not.toBeInTheDocument();
   });
 
   it('ouvre la prévisualisation validée sans quitter la liste', async () => {
@@ -341,12 +307,8 @@ describe('TechnicalSheetsPage', () => {
 
     renderPage();
 
-    await user.click(
-      screen.getByRole('button', {
-        name:
-          'Prévisualiser Tartine auvergnate',
-      }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Actions de Tartine auvergnate' }));
+    await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
 
     expect(
       screen.getByRole('dialog'),
@@ -368,12 +330,8 @@ describe('TechnicalSheetsPage', () => {
 
     renderPage();
 
-    await user.click(
-      screen.getByRole('button', {
-        name:
-          'Modifier Tartine auvergnate',
-      }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Actions de Tartine auvergnate' }));
+    await user.click(screen.getByRole('button', { name: 'Modifier' }));
 
     expect(
       mocks.startDraftMutation,
@@ -398,12 +356,8 @@ describe('TechnicalSheetsPage', () => {
 
     renderPage();
 
-    await user.click(
-      screen.getByRole('button', {
-        name:
-          'Modifier Boeuf Bourguignon',
-      }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Actions de Boeuf Bourguignon' }));
+    await user.click(screen.getByRole('button', { name: 'Modifier' }));
 
     expect(
       mocks.navigate,
