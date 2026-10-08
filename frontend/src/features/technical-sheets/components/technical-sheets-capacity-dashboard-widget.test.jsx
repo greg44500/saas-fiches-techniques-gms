@@ -99,6 +99,7 @@ describe('TechnicalSheetsCapacityDashboardWidget', () => {
       { skip: false },
     );
     expect(screen.getByText('7 / 10')).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="progress-indicator"]')).toHaveStyle({ width: '70%' });
     expect(screen.getByText('5')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('3 disponibles')).toBeInTheDocument();
