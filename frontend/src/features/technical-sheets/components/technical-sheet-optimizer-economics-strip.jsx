@@ -144,6 +144,41 @@ function TechnicalSheetOptimizerEconomicsStrip({
       savings?.amountHt
       ?? 0,
     );
+  const savingsPercent =
+    Number(
+      savings?.percent
+      ?? 0,
+    );
+  const economicImpact =
+    savingsAmount > 0
+      ? {
+        label: 'Économie estimée',
+        amount: savingsAmount,
+        percent: savingsPercent,
+        className:
+          'text-primary',
+      }
+      : savingsAmount < 0
+        ? {
+          label: 'Surcoût estimé',
+          amount:
+            Math.abs(
+              savingsAmount,
+            ),
+          percent:
+            Math.abs(
+              savingsPercent,
+            ),
+          className:
+            'text-destructive',
+        }
+        : {
+          label: 'Écart estimé',
+          amount: 0,
+          percent: 0,
+          className:
+            'text-muted-foreground',
+        };
 
   const statusLabel =
     simulationStatus === 'pending'
@@ -250,23 +285,21 @@ function TechnicalSheetOptimizerEconomicsStrip({
         <Metric
           after={
             formatCurrency(
-              savingsAmount,
+              economicImpact.amount,
             )
           }
           before="0,00 €"
           delta={
             formatPercent(
-              savings?.percent
-              ?? 0,
+              economicImpact.percent,
             )
           }
           deltaClassName={
-            deltaTone(
-              savingsAmount,
-              true,
-            )
+            economicImpact.className
           }
-          label="Économie estimée"
+          label={
+            economicImpact.label
+          }
         />
       </div>
 
