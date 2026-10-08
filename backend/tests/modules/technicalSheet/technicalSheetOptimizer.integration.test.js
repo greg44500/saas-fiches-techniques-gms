@@ -371,11 +371,9 @@ describe('M-005 Atelier d’optimisation', () => {
                 {
                     $set: {
                         'lines.0.optimization.minNetQuantity':
-                            mongoose.Types.Decimal128
-                                .fromString('0'),
+                            '0',
                         'lines.0.optimization.maxNetQuantity':
-                            mongoose.Types.Decimal128
-                                .fromString('1'),
+                            '1',
                     },
                 },
             );
