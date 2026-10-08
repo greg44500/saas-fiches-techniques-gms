@@ -83,11 +83,11 @@ function DossierSettingsPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <header className="flex items-start gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Paramètres des Dossiers
+          Réglages des dossiers
         </h1>
         <InfoTooltip
           content="Réglages communs utilisés par les Dossiers de cet espace de travail."
-          label="À propos des paramètres des Dossiers"
+          label="À propos des réglages des dossiers"
         />
       </header>
 
