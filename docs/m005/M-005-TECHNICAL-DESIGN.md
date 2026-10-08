@@ -1,6 +1,6 @@
 # M-005 — Design technique — Atelier d’optimisation
 
-**Date : 2026-10-07**  
+**Date : 2026-10-08**  
 **Contrat : `docs/m005/M-005-FINAL-CONTRACT.md`**
 
 ## 1. Décision d’architecture
@@ -291,11 +291,12 @@ Desktop :
 - shell Atelier borné à la hauteur du viewport ;
 - colonne gauche dominante : indicateurs économiques compacts puis Fiche technique simulée ;
 - colonne droite `minmax(32rem, 36rem)`, alignée sur la largeur d’un drawer de détail ;
-- profil économique global intégré en tête du panneau droit et toujours visible ;
-- choix Manuel / Auto sous le profil ;
-- bandeau horizontal d’outils ;
-- contenu contextuel seul scrollable si nécessaire ;
-- actions de scénario fixées en pied du panneau.
+- en-tête du profil : titre à gauche, sélecteur compact Manuel / Auto à droite ;
+- spectre économique compact, axe Y `%CM`, axe X Réduction / Référence / Enrichissement ;
+- une trace SVG indépendante par ingrédient, avec point interactif au sommet ; aucune ligne ne relie deux ingrédients ;
+- barre horizontale d’outils par icônes uniquement ;
+- contenu contextuel seul scrollable et dimensionné pour prendre la majorité de la hauteur restante ;
+- actions de scénario regroupées sur une seule rangée compacte en pied du panneau.
 
 L’inspecteur possède un état local `activeTool` :
 
@@ -311,6 +312,8 @@ Le changement d’outil ne modifie ni route, ni ingrédient sélectionné, ni sc
 La Fiche simulée réemploie le vocabulaire visuel M-004 : Produit, quantité nette, unité, PU HT, coût HT et %CM. Elle reste une projection en lecture seule ; les intentions de réglage sont pilotées depuis le panneau droit.
 
 Les champs décimaux optionnels sont normalisés côté frontend. Tant qu’une saisie transitoire n’est pas un décimal strictement positif complet, `buildOptimizationRequest` ne produit pas de payload et aucune requête de simulation n’est envoyée.
+
+`buildOptimizerLines` conserve les contraintes persistées réellement significatives. L’ancien état non verrouillé `min = max = quantité de référence` est normalisé en bornes absentes, car `locked` est désormais l’unique mécanisme explicite de quantité figée. En absence de bornes, le moteur reste libre sur `-99 % → +100 %` sans persister de min/max artificiels.
 
 Petit écran : le même panneau de pilotage, profil compris, est rendu dans la Sheet existante.
 
