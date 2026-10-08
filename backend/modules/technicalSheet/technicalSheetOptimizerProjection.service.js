@@ -346,7 +346,7 @@ const normalizeLineIntents = ({
                 return fallback;
             }
 
-            return {
+            const normalized = {
                 ...fallback,
                 ...input,
                 economicAdjustmentPercent:
@@ -367,6 +367,46 @@ const normalizeLineIntents = ({
                         'supplierArticleId',
                     ),
             };
+
+            if (
+                !normalized.locked
+                && normalized.minNetQuantity
+                && normalized.maxNetQuantity
+            ) {
+                const reference =
+                    decimalFraction(
+                        line.netQuantity
+                            .toString(),
+                    );
+                const minimum =
+                    decimalFraction(
+                        normalized
+                            .minNetQuantity,
+                    );
+                const maximum =
+                    decimalFraction(
+                        normalized
+                            .maxNetQuantity,
+                    );
+
+                if (
+                    compareFractions(
+                        minimum,
+                        reference,
+                    ) === 0
+                    && compareFractions(
+                        maximum,
+                        reference,
+                    ) === 0
+                ) {
+                    normalized.minNetQuantity =
+                        null;
+                    normalized.maxNetQuantity =
+                        null;
+                }
+            }
+
+            return normalized;
         });
 };
 
