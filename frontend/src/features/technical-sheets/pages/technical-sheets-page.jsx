@@ -1,6 +1,4 @@
 import {
-  Eye,
-  Pencil,
   Plus,
   Search,
   WandSparkles,
@@ -11,12 +9,8 @@ import {
   useParams,
 } from 'react-router';
 
-import {
-  DataTable,
-  DataTableActions,
-} from '@/components/data-display/data-table';
+import { DataTable } from '@/components/data-display/data-table';
 import { DataPagination } from '@/components/data-display/data-pagination';
-import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
@@ -43,8 +37,8 @@ import {
   TechnicalSheetCreateDialog,
 } from '@/features/technical-sheets/components/technical-sheet-create-dialog';
 import {
-  TechnicalSheetExportMenu,
-} from '@/features/technical-sheets/components/technical-sheet-export-menu';
+  TechnicalSheetRowActions,
+} from '@/features/technical-sheets/components/technical-sheet-row-actions';
 import {
   TechnicalSheetPreviewDialog,
 } from '@/features/technical-sheets/components/technical-sheet-preview-dialog';
@@ -459,95 +453,21 @@ function TechnicalSheetsPage() {
           );
 
         return (
-          <DataTableActions>
-            {hasValidatedState && (
-              <ActionIconButton
-                Icon={Eye}
-                label={
-                  'Prévisualiser '
-                  + sheet.name
-                }
-                onClick={() =>
-                  setPreviewSheet(sheet)}
-                tooltipLabel="Prévisualiser"
-                variant="ghost"
-              />
-            )}
-
-            {canOptimize
-            && sheet.status === 'ACTIVE' && (
-              <ActionIconButton
-                Icon={WandSparkles}
-                disabled={
-                  optimizerOpeningSheetId
-                  === sheet.id
-                }
-                label={
-                  'Optimiser '
-                  + sheet.name
-                }
-                onClick={() =>
-                  openOptimizer(sheet)}
-                tooltipLabel={
-                  optimizerOpeningSheetId
-                  === sheet.id
-                    ? 'Ouverture…'
-                    : 'Optimiser'
-                }
-                variant="ghost"
-              />
-            )}
-
-            {canModify && (
-              <ActionIconButton
-                Icon={Pencil}
-                disabled={
-                  draftStartingSheetId
-                  === sheet.id
-                }
-                label={
-                  'Modifier '
-                  + sheet.name
-                }
-                onClick={() =>
-                  modifyTechnicalSheet(
-                    sheet,
-                  )}
-                tooltipLabel={
-                  draftStartingSheetId
-                  === sheet.id
-                    ? 'Ouverture…'
-                    : 'Modifier'
-                }
-                variant="ghost"
-              />
-            )}
-
-            {hasValidatedState && canExport && (
-              <TechnicalSheetExportMenu
-                disabledReason={
-                  exportQuotaReached
-                    ? 'Quota mensuel d’exports atteint'
-                    : null
-                }
-                exportingFormat={
-                  exportingSheetId === sheet.id
-                    ? exportingFormat
-                    : null
-                }
-                label={
-                  'Exporter '
-                  + sheet.name
-                }
-                onExport={(format) =>
-                  exportValidatedSheet(
-                    sheet,
-                    format,
-                  )}
-                tooltipLabel="Exporter"
-              />
-            )}
-          </DataTableActions>
+          <TechnicalSheetRowActions
+            sheet={sheet}
+            canModify={canModify}
+            canOptimize={canOptimize && sheet.status === 'ACTIVE'}
+            canExport={canExport}
+            hasValidatedState={hasValidatedState}
+            exportQuotaReached={exportQuotaReached}
+            isExporting={exportingSheetId === sheet.id}
+            isOptimizing={optimizerOpeningSheetId === sheet.id}
+            isStartingDraft={draftStartingSheetId === sheet.id}
+            onPreview={() => setPreviewSheet(sheet)}
+            onOptimize={() => openOptimizer(sheet)}
+            onModify={() => modifyTechnicalSheet(sheet)}
+            onExport={(format) => exportValidatedSheet(sheet, format)}
+          />
         );
       },
     },
