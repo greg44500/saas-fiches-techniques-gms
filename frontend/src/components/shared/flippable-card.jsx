@@ -21,7 +21,7 @@ function FlippableCard({
     <div className={cn('group relative min-w-0 [perspective:1200px]', className)}>
       <div
         className={cn(
-          'relative min-h-[22rem] w-full rounded-xl transition-transform duration-500 [transform-style:preserve-3d] motion-reduce:transition-none',
+          'relative min-h-[18rem] w-full rounded-xl transition-transform duration-500 [transform-style:preserve-3d] motion-reduce:transition-none',
           flipped && '[transform:rotateY(180deg)]',
         )}
       >
