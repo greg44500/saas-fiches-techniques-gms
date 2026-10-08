@@ -43,7 +43,7 @@ function DossierFormDialog({
     watch,
   } = useForm({
     resolver: zodResolver(editing ? dossierFormSchema : dossierCreateFormSchema),
-    mode: 'onBlur',
+    mode: 'onTouched',
     reValidateMode: 'onChange',
     defaultValues: buildDossierFormDefaults(dossier),
   });
