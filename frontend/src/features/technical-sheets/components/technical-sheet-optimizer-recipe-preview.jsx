@@ -66,7 +66,6 @@ function TechnicalSheetOptimizerRecipePreview({
   onOpenControls,
   onSelect,
   selectedLineId,
-  sheet,
 }) {
   const lines =
     baseline?.lines ?? [];
