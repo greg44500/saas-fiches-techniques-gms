@@ -12,7 +12,7 @@ import { useWorkspaceContext } from '@/features/workspace/components/workspace-c
 import { useToast } from '@/components/shared/toast-provider';
 import { isInitialQueryLoading } from '@/features/workspace/lib/dashboard-query';
 
-const DASHBOARD_DOSSIER_LIMIT = 3;
+const DASHBOARD_DOSSIER_LIMIT = 12;
 
 function DossiersDashboardWidget() {
   const { workspace, can } = useWorkspaceContext();
@@ -36,6 +36,14 @@ function DossiersDashboardWidget() {
       setPage(pagination.totalPages);
     }
   }, [pagination?.totalPages, page]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setPage(1);
+      setSearch(searchInput.trim());
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
 
   function submitSearch(event) {
     event.preventDefault();
