@@ -267,11 +267,6 @@ function GlobalEconomicIndicator({
           <span className="text-center">Référence</span>
           <span className="text-right">Surcoût</span>
         </div>
-        {savingsPercent !== 0 && (
-          <span className="block truncate text-right text-[9px] font-medium text-foreground">
-            {label}
-          </span>
-        )}
       </div>
     </div>
   );
