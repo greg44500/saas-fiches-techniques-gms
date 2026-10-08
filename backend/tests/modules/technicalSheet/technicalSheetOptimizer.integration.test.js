@@ -298,6 +298,72 @@ describe('M-005 Atelier d’optimisation', () => {
         ).toBeNull();
     });
 
+    it('neutralise un ancien min=max égal à la référence pour une ligne non verrouillée', async () => {
+        const simulation =
+            await simulateTechnicalSheetOptimization({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    sheet.id,
+                request:
+                    requestFor({
+                        minNetQuantity:
+                            '2.0',
+                        maxNetQuantity:
+                            '2',
+                        economicAdjustmentPercent:
+                            -50,
+                    }),
+                canManageSourcing:
+                    true,
+                atDate,
+            });
+
+        expect(
+            simulation.after
+                .lines[0]
+                .netQuantity,
+        ).toBe('1');
+    });
+
+    it('utilise la borne libre implicite en Auto sans minimum explicite', async () => {
+        const simulation =
+            await simulateTechnicalSheetOptimization({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    sheet.id,
+                request:
+                    requestFor({
+                        mode: 'AUTO',
+                        minNetQuantity:
+                            null,
+                        maxNetQuantity:
+                            null,
+                        economicAdjustmentPercent:
+                            0,
+                    }),
+                canManageSourcing:
+                    true,
+                atDate,
+            });
+
+        expect(
+            simulation
+                .autoSuggestion
+                .kind,
+        ).toBe('QUANTITY');
+        expect(
+            simulation.after
+                .lines[0]
+                .netQuantity,
+        ).toBe('1.505');
+    });
+
     it('applique la simulation au DRAFT puis snapshotte l’enveloppe à la validation', async () => {
         const request =
             requestFor();
