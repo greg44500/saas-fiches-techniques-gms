@@ -16,7 +16,6 @@ import {
 import { ErrorState } from '@/components/shared/error-state';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
   SheetContent,
@@ -604,9 +603,9 @@ function TechnicalSheetOptimizerPage() {
             <h1 className="truncate text-lg font-semibold tracking-tight">
               {context.sheet.name}
             </h1>
-            <Badge className="shrink-0 text-[10px]" variant="secondary">
+            <span className="shrink-0 rounded-md bg-secondary px-2 py-1 text-[10px] font-medium text-secondary-foreground">
               Simulation en cours
-            </Badge>
+            </span>
           </div>
         </div>
 
