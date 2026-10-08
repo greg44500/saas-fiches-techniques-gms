@@ -193,12 +193,12 @@ function TechnicalSheetOptimizerEconomicsStrip({
 
   return (
     <section
-      aria-label="Impact économique"
+      aria-label="Impacts économiques"
       className="shrink-0 rounded-xl border border-border bg-card p-2.5"
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
         <p className="text-sm font-semibold">
-          Impact économique
+          Impacts économiques
         </p>
         <p
           aria-label="État de la simulation"

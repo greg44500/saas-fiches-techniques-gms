@@ -221,7 +221,7 @@ describe('TechnicalSheetOptimizerPage', () => {
       }),
     ).toHaveAttribute(
       'aria-valuetext',
-      'Référence économique',
+      'Aucun écart',
     );
     expect(
       screen.getAllByRole('button', {
@@ -277,9 +277,18 @@ describe('TechnicalSheetOptimizerPage', () => {
       screen.getByLabelText(
         'Fiche technique simulée',
       ),
-    ).toHaveTextContent(
+    ).not.toHaveTextContent(
       'Purée M005',
     );
+    expect(
+      screen.getByText('Simulation en cours'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Impacts économiques'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Fiche technique simulée'),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(
         'QT Nette',

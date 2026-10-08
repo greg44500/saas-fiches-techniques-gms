@@ -1,3 +1,4 @@
+import { ingredientColor } from '@/features/technical-sheets/lib/technical-sheet-optimizer-colors';
 import { Button } from '@/components/ui/button';
 import {
   findProjectionLine,
@@ -80,29 +81,8 @@ function TechnicalSheetOptimizerRecipePreview({
       aria-label="Fiche technique simulée"
       className="overflow-hidden rounded-xl border border-border bg-card xl:flex xl:min-h-0 xl:flex-1 xl:flex-col"
     >
-      <div className="shrink-0 border-b border-border bg-muted/10 px-4 py-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Fiche technique simulée
-            </p>
-            <h2 className="mt-0.5 truncate text-lg font-semibold">
-              {sheet?.name ?? 'Fiche technique'}
-            </h2>
-          </div>
-
-          <Button
-            className="xl:hidden"
-            onClick={onOpenControls}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            Réglages
-          </Button>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/10 px-4 py-2">
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
           <span>
             Production&nbsp;
             <strong className="font-medium text-foreground">
@@ -128,6 +108,15 @@ function TechnicalSheetOptimizerRecipePreview({
             </span>
           )}
         </div>
+        <Button
+          className="xl:hidden"
+          onClick={onOpenControls}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          Réglages
+        </Button>
       </div>
 
       <div className="hidden shrink-0 border-b border-border bg-muted/25 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid lg:grid-cols-[minmax(0,1.55fr)_minmax(8rem,.8fr)_4rem_minmax(7rem,.7fr)_minmax(7rem,.7fr)_5rem] lg:gap-3">
@@ -167,6 +156,9 @@ function TechnicalSheetOptimizerRecipePreview({
                   const adjustable =
                     line.kind
                     === 'INGREDIENT';
+                  const ingredientTone = adjustable
+                    ? ingredientColor(line.id)
+                    : null;
                   const selected =
                     adjustable
                     && selectedLineId
@@ -241,7 +233,15 @@ function TechnicalSheetOptimizerRecipePreview({
                       type="button"
                     >
                       <div className="grid gap-2 lg:grid-cols-[minmax(0,1.55fr)_minmax(8rem,.8fr)_4rem_minmax(7rem,.7fr)_minmax(7rem,.7fr)_5rem] lg:items-center lg:gap-3">
-                        <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-2">
+                          {ingredientTone && (
+                            <span
+                              aria-hidden="true"
+                              className="size-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: ingredientTone.handle }}
+                            />
+                          )}
+                          <div className="min-w-0">
                           <p className="truncate text-sm font-medium">
                             {next
                               .productVariantName
@@ -253,6 +253,7 @@ function TechnicalSheetOptimizerRecipePreview({
                               Avant : {line.productVariantName}
                             </p>
                           )}
+                          </div>
                         </div>
 
                         <div className="min-w-0 lg:text-right">
@@ -330,8 +331,9 @@ function TechnicalSheetOptimizerRecipePreview({
                           </p>
                           <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
                             <span
-                              className="block h-full rounded-full bg-primary/75"
+                              className="block h-full rounded-full"
                               style={{
+                                backgroundColor: ingredientTone?.handle,
                                 width:
                                   afterShare + '%',
                               }}

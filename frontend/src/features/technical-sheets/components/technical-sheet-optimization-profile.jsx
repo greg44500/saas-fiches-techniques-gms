@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 
+import { ingredientColor } from '@/features/technical-sheets/lib/technical-sheet-optimizer-colors';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
@@ -156,35 +157,6 @@ function constraintLabel(
 }
 
 // La teinte dépend de l'identité stable de la ligne, pas de sa position.
-function ingredientHue(lineId) {
-  let hash = 0;
-
-  for (const character of String(lineId)) {
-    hash = (
-      (hash * 31 + character.charCodeAt(0))
-      >>> 0
-    );
-  }
-
-  return hash % 360;
-}
-
-function ingredientTone(lineId, adjustment, range) {
-  const hue = ingredientHue(lineId);
-  const amplitude = adjustment < 0
-    ? Math.abs(range.min)
-    : Math.abs(range.max);
-  const intensity = amplitude > 0
-    ? clamp(Math.abs(adjustment) / amplitude, 0, 1)
-    : 0;
-  const lightness = 72 - intensity * 30;
-
-  return {
-    bar: `hsl(${hue} 69% ${lightness}%)`,
-    handle: `hsl(${hue} 78% ${Math.max(lightness - 12, 28)}%)`,
-  };
-}
-
 function ProfileAxisHelp({
   align = 'center',
   description,
@@ -236,7 +208,7 @@ function globalImpactLabel(
     );
   }
 
-  return 'Référence économique';
+  return 'Aucun écart';
 }
 
 function GlobalEconomicIndicator({
@@ -262,12 +234,13 @@ function GlobalEconomicIndicator({
     );
 
   return (
-    <div className="flex items-center gap-2 px-3 pb-1 pt-0">
-      <span className="w-11 shrink-0 text-[9px] leading-tight text-muted-foreground">
+    <div className="flex items-center gap-2 px-3 py-1">
+      <span className="w-11 shrink-0 self-center text-[9px] leading-tight text-muted-foreground">
         Impact
         <span className="block">global</span>
       </span>
       <div className="min-w-0 flex-1">
+        <div className="flex h-5 items-center">
         <div
           aria-label="Impact économique global"
           aria-valuemax="100"
@@ -288,14 +261,17 @@ function GlobalEconomicIndicator({
             style={{ left: markerPosition + '%' }}
           />
         </div>
-        <div className="mt-1 grid grid-cols-3 text-[8px] text-muted-foreground">
+        </div>
+        <div className="grid grid-cols-3 text-[8px] text-muted-foreground">
           <span>Économie</span>
           <span className="text-center">Référence</span>
           <span className="text-right">Surcoût</span>
         </div>
-        <span className="block truncate text-right text-[9px] font-medium text-foreground">
-          {label}
-        </span>
+        {savingsPercent !== 0 && (
+          <span className="block truncate text-right text-[9px] font-medium text-foreground">
+            {label}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -379,7 +355,7 @@ function TechnicalSheetOptimizationProfile({
                 : 2,
             ),
           tone:
-            ingredientTone(
+            ingredientColor(
               beforeLine.id,
               adjustment,
               effectiveRange,

@@ -337,3 +337,12 @@ Ne pas créer de micro-version, de PR intermédiaire ou de merge technique pour 
 - La zone SVG est compactée et les trois aides d'axe ont une typographie identique.
 - L'indicateur de coût global conserve son calcul serveur ; son titre « Impact global » est positionné à gauche de la barre sur deux lignes.
 - « Réinitialiser » est désormais à côté de Manuel / Auto ; le pied ne conserve que « Comparer » et « Appliquer au brouillon ».
+
+
+## 1.5 QA du 2026-10-08 — cohérence entre profil et Fiche
+
+- Le repère de couleur de chaque ingrédient dans la Fiche utilise le même helper par lineId que la poignée du profil. Les teintes restent stables indépendamment de l’ordre de présentation.
+- Le titre et le surtitre redondants disparaissent du header interne du tableau ; Production et Portions y restent visibles, ainsi que le bouton mobile Réglages.
+- Un badge « Simulation en cours » accompagne le titre principal de l’Atelier.
+- Le bandeau est renommé « Impacts économiques ».
+- Dans l’indicateur global, le libellé est centré verticalement avec la barre. La mention « Référence économique » n’est plus affichée en état neutre ; le libellé accessible « Aucun écart » reste disponible.
