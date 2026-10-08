@@ -247,6 +247,75 @@ describe('TechnicalSheetOptimizerPage', () => {
     ).toHaveTextContent(
       'Purée M005',
     );
+    expect(
+      screen.getByText(
+        'QT nette',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'résultat simulé',
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it('affiche un surcoût lorsque la simulation augmente le coût', async () => {
+    mocks.simulate.mockReturnValue({
+      unwrap: vi.fn()
+        .mockResolvedValue({
+          ...neutralSimulation,
+          after: {
+            ...context.baseline,
+            economicSnapshot: {
+              ...context.baseline
+                .economicSnapshot,
+              materialCostHt: '25',
+              manufacturingCostHt:
+                '25',
+              actualMarginBasisPoints:
+                4500,
+            },
+          },
+          savings: {
+            amountHt: '-5',
+            percent: '-25',
+          },
+          transformations: [{
+            lineId: 'line-1',
+            kind: 'QUANTITY',
+            before: '2',
+            after: '2.5',
+          }],
+        }),
+    });
+
+    render(
+      <TechnicalSheetOptimizerPage />,
+    );
+
+    await new Promise(
+      (resolve) =>
+        setTimeout(
+          resolve,
+          450,
+        ),
+    );
+
+    expect(
+      screen.getByText(
+        'Surcoût estimé',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '5,00 €',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        '-5,00 €',
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it('libère un ancien min=max égal à la quantité de référence sans supprimer un verrouillage explicite', () => {
