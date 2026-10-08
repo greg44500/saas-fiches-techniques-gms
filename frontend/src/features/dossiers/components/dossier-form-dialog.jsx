@@ -3,11 +3,11 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { FormField } from '@/components/forms/form-field';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogOverlay,
@@ -116,14 +116,17 @@ function DossierFormDialog({
         <DialogOverlay />
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-2xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editing ? 'Modifier le dossier' : 'Créer un dossier'}
-            </DialogTitle>
-            <DialogDescription>
-              {editing
-                ? 'Modifiez les informations générales du dossier.'
-                : 'Le nom et la marge cible par défaut sont obligatoires. Les autres informations peuvent être complétées plus tard.'}
-            </DialogDescription>
+            <div className="flex items-center gap-2">
+              <DialogTitle>
+                {editing ? 'Modifier le dossier' : 'Créer un dossier'}
+              </DialogTitle>
+              <InfoTooltip
+                content={editing
+                  ? 'Modifiez les informations générales du dossier.'
+                  : 'Le nom et la marge cible par défaut sont obligatoires. Les autres informations peuvent être complétées plus tard.'}
+                label="À propos du formulaire de dossier"
+              />
+            </div>
           </DialogHeader>
 
           <form
@@ -137,10 +140,11 @@ function DossierFormDialog({
                 className="sm:col-span-2"
                 error={errors.name?.message}
                 id="dossier-name"
-                label="Nom"
+                label="Nom *"
               >
                 <Input
                   autoFocus
+                  required
                   id="dossier-name"
                   maxLength={120}
                   {...register('name')}
@@ -151,11 +155,12 @@ function DossierFormDialog({
                 <FormField
                   error={errors.defaultTargetMargin?.message}
                   id="dossier-default-target-margin"
-                  label="Marge cible par défaut (%)"
+                  label="Marge cible par défaut (%) *"
                 >
                   <Input
                     id="dossier-default-target-margin"
                     inputMode="decimal"
+                    required
                     placeholder="Ex. 30"
                     {...register('defaultTargetMargin')}
                   />
