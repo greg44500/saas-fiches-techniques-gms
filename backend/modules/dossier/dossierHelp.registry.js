@@ -89,6 +89,88 @@ const DOSSIER_HELP_MODULE = Object.freeze({
             relatedEntryIds: [],
             order: 110,
         },
+        {
+            "id": "workspace.dossiers.create",
+            "context": "workspace",
+            "categoryId": "workspace_dossiers",
+            "title": "Créer et régler un Dossier",
+            "summary": "Créer un Dossier avec son nom et sa marge cible par défaut.",
+            "search": {
+                "keywords": [
+                    "dossier",
+                    "création",
+                    "marge cible"
+                ],
+                "questions": [
+                    "Comment créer un Dossier ?"
+                ]
+            },
+            "audience": {
+                "permissions": [
+                    DOSSIER_PERMISSION.CREATE
+                ],
+                "applicationGlobalPermissions": [],
+                "ownerOnly": false
+            },
+            "requirements": {
+                "features": []
+            },
+            "whoCanPerform": "Un membre disposant de la permission métier correspondante et de l’accès effectif au contexte.",
+            "prerequisites": [],
+            "steps": [
+                "Ouvrez Dossiers puis l’action de création.",
+                "Renseignez le nom et la marge cible par défaut, tous deux obligatoires.",
+                "Complétez les autres informations si nécessaire, puis confirmez la création."
+            ],
+            "outcome": "Un nouveau Dossier est disponible dans votre espace de travail.",
+            "edgeCases": [
+                "La validation signale les champs obligatoires manquants et retire leur erreur après correction."
+            ],
+            "sensitiveConsequences": [],
+            "relatedEntryIds": [],
+            "order": 120
+        },
+        {
+            "id": "workspace.dossiers.settings",
+            "context": "workspace",
+            "categoryId": "workspace_dossiers",
+            "title": "Modifier les informations d’un Dossier",
+            "summary": "Mettre à jour les informations générales et accéder aux réglages d’un Dossier.",
+            "search": {
+                "keywords": [
+                    "dossier",
+                    "réglages",
+                    "modifier"
+                ],
+                "questions": [
+                    "Où modifier un Dossier ?"
+                ]
+            },
+            "audience": {
+                "permissions": [
+                    DOSSIER_PERMISSION.UPDATE
+                ],
+                "applicationGlobalPermissions": [],
+                "ownerOnly": false
+            },
+            "requirements": {
+                "features": []
+            },
+            "whoCanPerform": "Un membre disposant de la permission métier correspondante et de l’accès effectif au contexte.",
+            "prerequisites": [],
+            "steps": [
+                "Ouvrez Dossiers et sélectionnez le Dossier autorisé.",
+                "Accédez aux informations ou à l’administration du Dossier selon votre besoin.",
+                "Modifiez les champs autorisés et enregistrez."
+            ],
+            "outcome": "Les informations du Dossier sont actualisées.",
+            "edgeCases": [
+                "La marge cible de la Fiche technique relève de ses réglages métier et ne doit pas être confondue avec les informations générales."
+            ],
+            "sensitiveConsequences": [],
+            "relatedEntryIds": [],
+            "order": 130
+        },
     ]),
     workspaceRemediationEntryIds: Object.freeze([]),
 });

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { createHelpService } from '../../modules/help/help.service.js';
 
 import {
     ACTIVE_HELP_REGISTRY,
@@ -81,6 +82,85 @@ describe('application Help registry', () => {
         expect(entry.steps).toContain(
             'Examinez la donnée dans le drawer ciblé avant toute décision.',
         );
+    });
+
+    it('couvre les nouveaux parcours avec leurs permissions et capacités réelles', () => {
+        const cases = [
+            ['workspace.dossiers.create', 'dossier:create', null, false],
+            ['workspace.dossiers.settings', 'dossier:update', null, false],
+            ['workspace.suppliers.import', 'supplier:catalog:import', 'supplier_catalog_import', false],
+            ['workspace.suppliers.indicative', 'supplier:indicative-price:read', null, false],
+            ['workspace.technical_sheets.read', 'technical-sheet:read', null, false],
+            ['workspace.technical_sheets.export', 'technical-sheet:export', 'technical_sheet_export', false],
+            ['workspace.technical_sheets.optimize', 'technical-sheet:update', 'technical_sheet_optimizer', false],
+            ['workspace.technical_sheets.copy', 'technical-sheet:copy', null, false],
+            ['workspace.technical_sheets.trash', 'technical-sheet:read', null, true],
+            ['workspace.technical_sheets.restore', 'technical-sheet:restore', null, true],
+            ['workspace.technical_sheets.purge', 'technical-sheet:purge', null, true],
+        ];
+
+        for (const [id, permission, feature, ownerOnly] of cases) {
+            const entry = ACTIVE_HELP_REGISTRY.entriesById[id];
+            expect(entry, id).toBeDefined();
+            expect(entry.context).toBe('workspace');
+            expect(entry.audience.permissions).toContain(permission);
+            expect(entry.audience.applicationGlobalPermissions).toEqual([]);
+            expect(entry.audience.ownerOnly).toBe(ownerOnly);
+            expect(entry.requirements.features).toEqual(feature ? [feature] : []);
+        }
+    });
+
+    it('ne révèle ni optimisation hors offre ni Corbeille aux membres', async () => {
+        const resolveWorkspaceAccess = vi.fn(async () => ({
+            effectiveCapabilities: { features: [] },
+            accessMode: 'normal',
+        }));
+        const service = createHelpService({
+            registry: ACTIVE_HELP_REGISTRY,
+            resolveWorkspaceAccess,
+        });
+        const workspace = { _id: '507f1f77bcf86cd799439011' };
+        const permissions = [
+            'technical-sheet:read',
+            'technical-sheet:update',
+            'technical-sheet:export',
+        ];
+        const catalog = await service.getWorkspaceCatalog({
+            workspace,
+            permissions,
+            role: { key: 'member', isSystem: true },
+        });
+        const ids = catalog.entries.map((entry) => entry.id);
+
+        expect(ids).toContain('workspace.technical_sheets.read');
+        expect(ids).not.toContain('workspace.technical_sheets.optimize');
+        expect(ids).not.toContain('workspace.technical_sheets.export');
+        expect(ids).not.toContain('workspace.technical_sheets.trash');
+
+        await expect(service.getWorkspaceEntry({
+            workspace,
+            permissions,
+            role: { key: 'member', isSystem: true },
+            entryId: 'workspace.technical_sheets.trash',
+        })).rejects.toMatchObject({ statusCode: 404 });
+
+        resolveWorkspaceAccess.mockResolvedValue({
+            effectiveCapabilities: {
+                features: ['technical_sheet_export', 'technical_sheet_optimizer'],
+            },
+            accessMode: 'normal',
+        });
+        const authorized = await service.getWorkspaceCatalog({
+            workspace,
+            permissions: [...permissions, 'technical-sheet:restore', 'technical-sheet:purge'],
+            role: { key: 'owner', isSystem: true },
+        });
+        const authorizedIds = authorized.entries.map((entry) => entry.id);
+        expect(authorizedIds).toContain('workspace.technical_sheets.optimize');
+        expect(authorizedIds).toContain('workspace.technical_sheets.export');
+        expect(authorizedIds).toContain('workspace.technical_sheets.trash');
+        expect(authorizedIds).toContain('workspace.technical_sheets.restore');
+        expect(authorizedIds).toContain('workspace.technical_sheets.purge');
     });
 
     it('conserve séparées les permissions Workspace et Application Global', () => {

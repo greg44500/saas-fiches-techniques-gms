@@ -166,6 +166,93 @@ const SUPPLIER_CATALOG_HELP_MODULE = Object.freeze({
             relatedEntryIds: [],
             order: 110,
         },
+        {
+            "id": "workspace.suppliers.import",
+            "context": "workspace",
+            "categoryId": "workspace_suppliers",
+            "title": "Importer un catalogue fournisseur privé",
+            "summary": "Importer ou réimporter un catalogue CSV, XLS ou XLSX dans votre espace.",
+            "search": {
+                "keywords": [
+                    "catalogue",
+                    "import",
+                    "csv",
+                    "xlsx"
+                ],
+                "questions": [
+                    "Comment importer un catalogue fournisseur ?"
+                ]
+            },
+            "audience": {
+                "permissions": [
+                    SUPPLIER_CATALOG_PERMISSION.CATALOG_IMPORT
+                ],
+                "applicationGlobalPermissions": [],
+                "ownerOnly": false
+            },
+            "requirements": {
+                "features": [
+                    "supplier_catalog_import"
+                ]
+            },
+            "whoCanPerform": "Un membre disposant de la permission métier correspondante et de l’accès effectif au contexte.",
+            "prerequisites": [],
+            "steps": [
+                "Ouvrez Fournisseurs puis Catalogues.",
+                "Choisissez l’import dans votre Workspace et fournissez un fichier structuré compatible.",
+                "Contrôlez le résultat de l’import et les éventuels éléments à rapprocher."
+            ],
+            "outcome": "Le catalogue privé est disponible dans son Workspace et peut être réimporté sans duplication automatique.",
+            "edgeCases": [
+                "L’import nécessite une capacité commerciale active.",
+                "Un catalogue privé ne devient pas visible dans un autre Workspace."
+            ],
+            "sensitiveConsequences": [],
+            "relatedEntryIds": [],
+            "order": 120
+        },
+        {
+            "id": "workspace.suppliers.indicative",
+            "context": "workspace",
+            "categoryId": "workspace_suppliers",
+            "title": "Consulter les Prix indicatifs",
+            "summary": "Comprendre les prix de dernier recours et leur origine.",
+            "search": {
+                "keywords": [
+                    "prix indicatif",
+                    "prix repère",
+                    "provenance"
+                ],
+                "questions": [
+                    "Que faire sans prix fournisseur ?"
+                ]
+            },
+            "audience": {
+                "permissions": [
+                    SUPPLIER_CATALOG_PERMISSION.INDICATIVE_PRICE_READ
+                ],
+                "applicationGlobalPermissions": [],
+                "ownerOnly": false
+            },
+            "requirements": {
+                "features": []
+            },
+            "whoCanPerform": "Un membre disposant de la permission métier correspondante et de l’accès effectif au contexte.",
+            "prerequisites": [],
+            "steps": [
+                "Consultez les prix disponibles sur la Référence Produit ou dans la vue fournisseur appropriée.",
+                "Vérifiez la provenance et le conditionnement du Prix repère global lorsqu’il est renseigné.",
+                "Vérifiez les Prix indicatifs disponibles dans le contexte du Dossier et du Workspace."
+            ],
+            "outcome": "Une source indicative peut aider à valoriser en dernier recours selon la politique de prix applicable.",
+            "edgeCases": [
+                "Un Prix repère absent ne doit pas être remplacé par un montant inventé.",
+                "Les Prix négociés et facturés restent propres à leur Dossier."
+            ],
+            "sensitiveConsequences": [],
+            "relatedEntryIds": [],
+            "order": 130
+        },
     ]),
     workspaceRemediationEntryIds: Object.freeze([]),
 });
