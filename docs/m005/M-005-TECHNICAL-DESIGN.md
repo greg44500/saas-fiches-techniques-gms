@@ -199,7 +199,7 @@ Le coût de référence est lui aussi recalculé fraîchement au début de la re
 
 V1 construit des transformations élémentaires candidates :
 
-- 25 % du chemin de la quantité de référence vers `qMin` ;
+- 25 % du chemin de la quantité de référence vers `qMin` ; si `qMin` est absent, la borne libre implicite vaut 1 % de la quantité de référence, cohérente avec l’ajustement minimal `-99 %` ;
 - une alternative Produit admissible ;
 - un autre Article fournisseur admissible.
 
