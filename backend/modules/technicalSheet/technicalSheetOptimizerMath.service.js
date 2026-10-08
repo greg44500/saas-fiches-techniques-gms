@@ -7,6 +7,10 @@ import {
     normalizeFraction,
     subtractFractions,
 } from './technicalSheetMath.service.js';
+import {
+    TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT,
+    TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT,
+} from './technicalSheetOptimizer.registry.js';
 import { AppError } from '../../utils/appError.js';
 
 const compareFractions = (left, right) => {
@@ -138,11 +142,13 @@ const applyEconomicAdjustmentToQuantity = ({
 
     if (
         !Number.isInteger(adjustment)
-        || adjustment < -99
-        || adjustment > 100
+        || adjustment
+            < TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT
+        || adjustment
+            > TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT
     ) {
         throw new AppError(
-            'L’ajustement économique doit être un entier compris entre -99 % et +100 %.',
+            'L’ajustement économique doit respecter la plage M-005 autorisée.',
             400,
         );
     }
