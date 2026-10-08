@@ -1028,7 +1028,7 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
 
   await capacityRegion
     .getByRole('link', {
-      name: 'Voir la Corbeille',
+      name: /Dans la Corbeille/,
     })
     .click();
 
@@ -1086,7 +1086,7 @@ test('M-004 corbeille conserve le quota, restauration le conserve et purge le li
 
   await capacityRegion
     .getByRole('link', {
-      name: 'Voir la Corbeille',
+      name: /Dans la Corbeille/,
     })
     .click();
 
