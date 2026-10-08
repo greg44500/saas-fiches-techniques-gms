@@ -48,12 +48,15 @@ describe('DossierFormDialog', () => {
     });
 
     expect(createButton).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'À propos du formulaire de dossier' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Nom *')).toBeRequired();
+    expect(screen.getByLabelText('Marge cible par défaut (%) *')).toBeRequired();
 
-    await user.type(screen.getByLabelText('Nom'), 'Magasin Nantes');
+    await user.type(screen.getByLabelText('Nom *'), 'Magasin Nantes');
     expect(createButton).toBeDisabled();
 
     await user.type(
-      screen.getByLabelText('Marge cible par défaut (%)'),
+      screen.getByLabelText('Marge cible par défaut (%) *'),
       '30',
     );
     expect(createButton).toBeEnabled();
@@ -71,9 +74,9 @@ describe('DossierFormDialog', () => {
       />,
     );
 
-    await user.type(screen.getByLabelText('Nom'), 'Magasin Nantes');
+    await user.type(screen.getByLabelText('Nom *'), 'Magasin Nantes');
     await user.type(
-      screen.getByLabelText('Marge cible par défaut (%)'),
+      screen.getByLabelText('Marge cible par défaut (%) *'),
       '30',
     );
     await user.click(screen.getByRole('button', { name: 'Créer le dossier' }));
@@ -132,9 +135,9 @@ describe('DossierFormDialog', () => {
       />,
     );
 
-    await user.type(screen.getByLabelText('Nom'), 'Magasin Nantes');
+    await user.type(screen.getByLabelText('Nom *'), 'Magasin Nantes');
     await user.type(
-      screen.getByLabelText('Marge cible par défaut (%)'),
+      screen.getByLabelText('Marge cible par défaut (%) *'),
       '30',
     );
     await user.click(screen.getByRole('button', { name: 'Créer le dossier' }));
