@@ -33,7 +33,7 @@ describe('Application plan capability registry', () => {
         ).toBe(true);
     });
 
-    it('compose les capabilities métier M-002 à M-004 dans le registre applicatif actif', () => {
+    it('compose les capabilities métier M-002 à M-005 dans le registre applicatif actif', () => {
         expect(
             ACTIVE_PLAN_CAPABILITY_REGISTRY.features.has(
                 PRODUCT_CATALOG_FEATURE.REFERENCE_ACCESS,
@@ -70,6 +70,21 @@ describe('Application plan capability registry', () => {
                 TECHNICAL_SHEET_FEATURE.EXPORT,
             ),
         ).toBe(true);
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.features.has(
+                TECHNICAL_SHEET_FEATURE.OPTIMIZER,
+            ),
+        ).toBe(true);
+        expect(
+            ACTIVE_PLAN_CAPABILITY_REGISTRY.getFeatureDefinition(
+                TECHNICAL_SHEET_FEATURE.OPTIMIZER,
+            ),
+        ).toEqual(expect.objectContaining({
+            label:
+                'Atelier d’optimisation des Fiches techniques',
+            category:
+                'technical_sheets',
+        }));
         expect(
             ACTIVE_PLAN_CAPABILITY_REGISTRY.metrics.has(
                 TECHNICAL_SHEET_METRIC.TECHNICAL_SHEETS,

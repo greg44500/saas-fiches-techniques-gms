@@ -7,6 +7,7 @@ const TECHNICAL_SHEET_API_TAG_TYPES = Object.freeze([
   'TechnicalSheetHistory',
   'TechnicalSheetCapacity',
   'TechnicalSheetExportUsage',
+  'TechnicalSheetOptimization',
   'TechnicalSheetTrash',
   'TechnicalSheetSettings',
   'WorkspaceBusinessSettings',
@@ -419,6 +420,97 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
       ],
     }),
 
+    getTechnicalSheetOptimization: builder.query({
+      query: ({ workspaceId, dossierId, technicalSheetId }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/dossiers/' + dossierId
+          + '/technical-sheets/' + technicalSheetId
+          + '/optimization',
+      }),
+      transformResponse: (response) => response.data.context,
+      providesTags: (_result, _error, {
+        workspaceId,
+        dossierId,
+        technicalSheetId,
+      }) => [
+        {
+          type: 'TechnicalSheetOptimization',
+          id: technicalSheetScopeId(
+            workspaceId,
+            dossierId,
+            technicalSheetId,
+          ),
+        },
+      ],
+    }),
+
+    simulateTechnicalSheetOptimization: builder.mutation({
+      query: ({
+        workspaceId,
+        dossierId,
+        technicalSheetId,
+        ...body
+      }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/dossiers/' + dossierId
+          + '/technical-sheets/' + technicalSheetId
+          + '/optimization/simulate',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data.simulation,
+    }),
+
+    applyTechnicalSheetOptimization: builder.mutation({
+      query: ({
+        workspaceId,
+        dossierId,
+        technicalSheetId,
+        ...body
+      }) => ({
+        url:
+          '/workspaces/' + workspaceId
+          + '/dossiers/' + dossierId
+          + '/technical-sheets/' + technicalSheetId
+          + '/optimization/apply',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: (_result, _error, {
+        workspaceId,
+        dossierId,
+        technicalSheetId,
+      }) => [
+        {
+          type: 'TechnicalSheetOptimization',
+          id: technicalSheetScopeId(
+            workspaceId,
+            dossierId,
+            technicalSheetId,
+          ),
+        },
+        {
+          type: 'TechnicalSheetDraft',
+          id: technicalSheetScopeId(
+            workspaceId,
+            dossierId,
+            technicalSheetId,
+          ),
+        },
+        {
+          type: 'TechnicalSheet',
+          id: technicalSheetScopeId(
+            workspaceId,
+            dossierId,
+            technicalSheetId,
+          ),
+        },
+      ],
+    }),
+
     exportTechnicalSheet: builder.mutation({
       query: ({
         workspaceId,
@@ -789,6 +881,7 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
 });
 
 export const {
+  useApplyTechnicalSheetOptimizationMutation,
   useArchiveTechnicalSheetMutation,
   useCopyTechnicalSheetMutation,
   useCreateTechnicalSheetMutation,
@@ -799,6 +892,7 @@ export const {
   useGetTechnicalSheetDraftQuery,
   useGetTechnicalSheetExportUsageQuery,
   useGetTechnicalSheetMetadataQuery,
+  useGetTechnicalSheetOptimizationQuery,
   useGetTechnicalSheetQuery,
   useGetTechnicalSheetValidationQuery,
   useGetWorkspaceBusinessSettingsQuery,
@@ -811,6 +905,7 @@ export const {
   useRestoreTechnicalSheetMutation,
   useSaveTechnicalSheetDraftMutation,
   useSelectTechnicalSheetSupplierArticleMutation,
+  useSimulateTechnicalSheetOptimizationMutation,
   useStartTechnicalSheetDraftMutation,
   useUpdateDossierTechnicalSheetSettingsMutation,
   useUpdateTechnicalSheetMutation,

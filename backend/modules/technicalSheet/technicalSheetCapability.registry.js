@@ -10,6 +10,7 @@ import {
 const TECHNICAL_SHEET_CAPABILITY_MODULE = Object.freeze({
     features: Object.freeze([
         TECHNICAL_SHEET_FEATURE.EXPORT,
+        TECHNICAL_SHEET_FEATURE.OPTIMIZER,
     ]),
     featureDefinitions: Object.freeze({
         [TECHNICAL_SHEET_FEATURE.EXPORT]: Object.freeze({
@@ -19,6 +20,15 @@ const TECHNICAL_SHEET_CAPABILITY_MODULE = Object.freeze({
             category: 'technical_sheets',
             categoryLabel: 'Fiches techniques',
             displayOrder: 20,
+            tags: Object.freeze([]),
+        }),
+        [TECHNICAL_SHEET_FEATURE.OPTIMIZER]: Object.freeze({
+            label: 'Atelier d’optimisation des Fiches techniques',
+            description:
+                'Permet de simuler puis d’appliquer des optimisations économiques non destructives sur les brouillons de Fiches techniques.',
+            category: 'technical_sheets',
+            categoryLabel: 'Fiches techniques',
+            displayOrder: 30,
             tags: Object.freeze([]),
         }),
     }),

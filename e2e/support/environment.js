@@ -67,7 +67,9 @@ function getE2eBackendEnvironment() {
     FILE_STORAGE_PROVIDER: 'local',
     LOCAL_STORAGE_ROOT_DIR: 'uploads/e2e/files',
     UPLOAD_TEMP_DIR: 'uploads/e2e/tmp',
-    CLAMAV_BINARY_PATH: 'clamscan',
+    // L'antivirus reste obligatoire ; un chemin local peut être transmis
+    // explicitement aux E2E Windows sans toucher à la politique backend.
+    CLAMAV_BINARY_PATH: process.env.CLAMAV_BINARY_PATH?.trim() || 'clamscan',
     CLAMAV_SCAN_TIMEOUT_MS: '30000',
     UPLOAD_TEMP_FILE_MAX_AGE_MINUTES: '60',
     TRIAL_IDENTITY_SECRET: 'e2e_test_trial_identity_secret_0123456789abcdef',

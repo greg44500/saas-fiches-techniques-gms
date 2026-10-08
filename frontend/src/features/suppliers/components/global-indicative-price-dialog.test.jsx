@@ -192,32 +192,38 @@ describe('GlobalIndicativePriceDialog', () => {
       name: 'Prix du conditionnement',
     }));
 
-    await user.type(
+    fireEvent.change(
       screen.getByLabelText('Prix HT du conditionnement observé'),
-      '16',
+      { target: { value: '16' } },
     );
-    await user.type(screen.getByLabelText('Contenant principal'), 'Carton');
-    await user.type(screen.getByLabelText('Sous-unités'), '8');
-    await user.type(
+    fireEvent.change(
+      screen.getByLabelText('Contenant principal'),
+      { target: { value: 'Carton' } },
+    );
+    fireEvent.change(
+      screen.getByLabelText('Sous-unités'),
+      { target: { value: '8' } },
+    );
+    fireEvent.change(
       screen.getByLabelText('Quantité par sous-unité'),
-      '4',
+      { target: { value: '4' } },
     );
-    await user.type(
+    fireEvent.change(
       screen.getByLabelText('Libellé d’origine'),
-      '1 carton = 8 paquets × 4 tranches',
+      { target: { value: '1 carton = 8 paquets × 4 tranches' } },
     );
-    await user.type(
+    fireEvent.change(
       screen.getByLabelText('Source professionnelle'),
-      'Catalogue professionnel vérifié',
+      { target: { value: 'Catalogue professionnel vérifié' } },
     );
     fireEvent.change(screen.getByLabelText('Date du relevé'), {
       target: { value: '2026-10-05' },
     });
-    await user.type(
+    fireEvent.change(
       screen.getByLabelText('URL de la source'),
-      'https://example.test/catalogue',
+      { target: { value: 'https://example.test/catalogue' } },
     );
-    await user.click(screen.getByRole('button', {
+    fireEvent.click(screen.getByRole('button', {
       name: 'Enregistrer',
     }));
 

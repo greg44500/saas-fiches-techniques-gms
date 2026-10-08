@@ -316,6 +316,37 @@ const saveTechnicalSheetDraft = async ({
                                 : existingLine
                                     ?.selectedSupplierArticle
                                 ?? null,
+                        optimization:
+                            existingLine
+                            && (
+                                existingLine
+                                    .productVariant
+                                    .toString()
+                                !== line
+                                    .productVariant
+                                    .toString()
+                                || existingLine
+                                    .netQuantity
+                                    .toString()
+                                !== line
+                                    .netQuantity
+                                    .toString()
+                            )
+                                ? {
+                                    minNetQuantity:
+                                        null,
+                                    maxNetQuantity:
+                                        null,
+                                    locked:
+                                        false,
+                                }
+                                : line.optimization
+                                ?? existingLine
+                                    ?.optimization
+                                    ?.toObject?.()
+                                ?? existingLine
+                                    ?.optimization
+                                ?? undefined,
                         valuation: undefined,
                         productVariantSnapshot:
                             undefined,
@@ -565,6 +596,23 @@ const createDraftFromValidatedState = async ({
                                             .toString(),
                                 }
                                 : {}),
+                            optimization: {
+                                minNetQuantity:
+                                    line.optimization
+                                        ?.minNetQuantity
+                                        ?.toString?.()
+                                    ?? null,
+                                maxNetQuantity:
+                                    line.optimization
+                                        ?.maxNetQuantity
+                                        ?.toString?.()
+                                    ?? null,
+                                locked:
+                                    Boolean(
+                                        line.optimization
+                                            ?.locked,
+                                    ),
+                            },
                         }),
                     ),
                 session,

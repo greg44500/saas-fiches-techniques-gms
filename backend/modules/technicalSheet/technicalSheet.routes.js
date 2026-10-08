@@ -24,6 +24,7 @@ import {
     enforceDossierStatePolicy,
 } from '../dossier/dossierState.middleware.js';
 import {
+    applyOptimization,
     archive,
     businessSettings,
     capacity,
@@ -38,6 +39,7 @@ import {
     historyById,
     list,
     metadata,
+    optimizationContext,
     purge,
     purgeWorkspaceTrash,
     reactivate,
@@ -45,6 +47,7 @@ import {
     restore,
     saveDraft,
     selectSupplierArticle,
+    simulateOptimization,
     startDraft,
     trash,
     update,
@@ -65,6 +68,10 @@ import {
 import {
     TECHNICAL_SHEET_PERMISSION,
 } from './technicalSheetPermission.registry.js';
+import {
+    applyOptimizationSchema,
+    optimizationSimulationSchema,
+} from './technicalSheetOptimizer.validation.js';
 import {
     copyTechnicalSheetSchema,
     createDraftFromValidationSchema,
@@ -306,6 +313,76 @@ technicalSheetDossierRouter.patch(
     loadAuthorizedDossierContext,
     enforceTechnicalSheetDossierOperational,
     selectSupplierArticle,
+);
+
+technicalSheetDossierRouter.get(
+    '/:technicalSheetId/optimization',
+    authenticate,
+    validateRequest({
+        params:
+            technicalSheetParamsSchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        TECHNICAL_SHEET_PERMISSION.UPDATE,
+    ),
+    enforceWorkspaceAccessMode({
+        allowDuringRemediation: true,
+    }),
+    enforcePlanFeature(
+        TECHNICAL_SHEET_FEATURE.OPTIMIZER,
+    ),
+    loadAuthorizedDossierContext,
+    enforceTechnicalSheetDossierOperational,
+    optimizationContext,
+);
+
+technicalSheetDossierRouter.post(
+    '/:technicalSheetId/optimization/simulate',
+    authenticate,
+    validateRequest({
+        params:
+            technicalSheetParamsSchema,
+        body:
+            optimizationSimulationSchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        TECHNICAL_SHEET_PERMISSION.UPDATE,
+    ),
+    enforceWorkspaceAccessMode({
+        allowDuringRemediation: true,
+    }),
+    enforcePlanFeature(
+        TECHNICAL_SHEET_FEATURE.OPTIMIZER,
+    ),
+    loadAuthorizedDossierContext,
+    enforceTechnicalSheetDossierOperational,
+    simulateOptimization,
+);
+
+technicalSheetDossierRouter.post(
+    '/:technicalSheetId/optimization/apply',
+    authenticate,
+    validateRequest({
+        params:
+            technicalSheetParamsSchema,
+        body:
+            applyOptimizationSchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(
+        TECHNICAL_SHEET_PERMISSION.UPDATE,
+    ),
+    enforceWorkspaceAccessMode({
+        allowDuringRemediation: true,
+    }),
+    enforcePlanFeature(
+        TECHNICAL_SHEET_FEATURE.OPTIMIZER,
+    ),
+    loadAuthorizedDossierContext,
+    enforceTechnicalSheetDossierOperational,
+    applyOptimization,
 );
 
 technicalSheetDossierRouter.post(

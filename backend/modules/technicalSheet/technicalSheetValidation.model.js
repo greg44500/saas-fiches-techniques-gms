@@ -50,6 +50,25 @@ const sheetSnapshotSchema = new Schema(
     { _id: false },
 );
 
+const lineOptimizationSnapshotSchema = new Schema(
+    {
+        minNetQuantity: {
+            type: Schema.Types.Decimal128,
+            default: null,
+        },
+        maxNetQuantity: {
+            type: Schema.Types.Decimal128,
+            default: null,
+        },
+        locked: {
+            type: Boolean,
+            default: false,
+            required: true,
+        },
+    },
+    { _id: false },
+);
+
 const lineSnapshotSchema = new Schema(
     {
         kind: {
@@ -126,6 +145,10 @@ const lineSnapshotSchema = new Schema(
         materialCostSharePercent: {
             type: Schema.Types.Decimal128,
             default: null,
+        },
+        optimization: {
+            type: lineOptimizationSnapshotSchema,
+            default: () => ({}),
         },
         order: { type: Number, min: 0, required: true },
         note: { type: String, default: null },

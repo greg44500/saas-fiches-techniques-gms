@@ -154,6 +154,23 @@ const sourceComposition = async ({
                     order: line.order,
                     note:
                         line.note ?? null,
+                    optimization: {
+                        minNetQuantity:
+                            line.optimization
+                                ?.minNetQuantity
+                                ?.toString?.()
+                            ?? null,
+                        maxNetQuantity:
+                            line.optimization
+                                ?.maxNetQuantity
+                                ?.toString?.()
+                            ?? null,
+                        locked:
+                            Boolean(
+                                line.optimization
+                                    ?.locked,
+                            ),
+                    },
                 }),
             ),
     };

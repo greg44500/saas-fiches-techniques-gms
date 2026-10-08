@@ -72,7 +72,10 @@ import {
   TECHNICAL_SHEET_API_TAG_TYPES,
   parseDownloadFileName,
   technicalSheetsApi,
+  useApplyTechnicalSheetOptimizationMutation,
   useExportTechnicalSheetMutation,
+  useGetTechnicalSheetOptimizationQuery,
+  useSimulateTechnicalSheetOptimizationMutation,
   useValuateTechnicalSheetMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 
@@ -219,6 +222,95 @@ describe('technicalSheetsApi', () => {
         },
       ]),
     );
+  });
+
+  it('configure le contexte, la simulation et l’application M-005 sous la portée Dossier', () => {
+    expect(
+      captured.endpointDefinitions
+        .getTechnicalSheetOptimization
+        .query({
+          workspaceId: 'workspace-1',
+          dossierId: 'dossier-1',
+          technicalSheetId: 'sheet-1',
+        }),
+    ).toEqual({
+      url:
+        '/workspaces/workspace-1'
+        + '/dossiers/dossier-1'
+        + '/technical-sheets/sheet-1'
+        + '/optimization',
+    });
+
+    const body = {
+      expectedRevision: 4,
+      mode: 'MANUAL',
+      lines: [{
+        lineId: 'line-1',
+        economicAdjustmentPercent: -10,
+        minNetQuantity: null,
+        maxNetQuantity: null,
+        locked: false,
+      }],
+      autoOptions: {
+        adjustQuantities: true,
+        productAlternatives: true,
+        sourcingAlternatives: true,
+      },
+    };
+
+    expect(
+      captured.endpointDefinitions
+        .simulateTechnicalSheetOptimization
+        .query({
+          workspaceId: 'workspace-1',
+          dossierId: 'dossier-1',
+          technicalSheetId: 'sheet-1',
+          ...body,
+        }),
+    ).toEqual({
+      url:
+        '/workspaces/workspace-1'
+        + '/dossiers/dossier-1'
+        + '/technical-sheets/sheet-1'
+        + '/optimization/simulate',
+      method: 'POST',
+      body,
+    });
+
+    expect(
+      captured.endpointDefinitions
+        .applyTechnicalSheetOptimization
+        .query({
+          workspaceId: 'workspace-1',
+          dossierId: 'dossier-1',
+          technicalSheetId: 'sheet-1',
+          ...body,
+          simulationFingerprint:
+            'a'.repeat(64),
+        }),
+    ).toEqual({
+      url:
+        '/workspaces/workspace-1'
+        + '/dossiers/dossier-1'
+        + '/technical-sheets/sheet-1'
+        + '/optimization/apply',
+      method: 'POST',
+      body: {
+        ...body,
+        simulationFingerprint:
+          'a'.repeat(64),
+      },
+    });
+
+    expect(
+      useGetTechnicalSheetOptimizationQuery,
+    ).toBeTypeOf('function');
+    expect(
+      useSimulateTechnicalSheetOptimizationMutation,
+    ).toBeTypeOf('function');
+    expect(
+      useApplyTechnicalSheetOptimizationMutation,
+    ).toBeTypeOf('function');
   });
 
   it('configure l’export binaire et le KPI d’usage mensuel', () => {

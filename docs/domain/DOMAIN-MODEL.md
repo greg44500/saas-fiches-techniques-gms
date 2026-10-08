@@ -1226,42 +1226,42 @@ La fiche et ses versions sont traitées comme un ensemble cohérent.
 
 L'Atelier d'optimisation est une capability payante distincte de l'édition ordinaire d'une fiche.
 
-Il opère uniquement sur un DRAFT ou une simulation issue d'un DRAFT.
+Il opère uniquement sur le DRAFT courant ou sur une simulation éphémère issue de ce DRAFT. Une `TechnicalSheetValidation` n'est jamais modifiée.
 
-Conceptuellement, une ligne d'ingrédient modulable peut porter pour l'optimisation :
+Conceptuellement, une ligne Ingrédient modulable peut porter pour l'optimisation :
 
 ```text
 quantité de référence
 minimum autorisé
 maximum autorisé
-verrouillage
+verrouillage de quantité
 ```
 
-Les pièces / unités et lignes déclarées fixes restent verrouillées.
+L'absence de borne ne déclenche aucune latitude implicite : le minimum et le maximum effectifs valent alors la quantité de référence.
 
-Invariant :
+Le langage normalisé de l'Atelier est le **% de contribution au Coût Matière** :
 
 ```text
-composition totale = 100 %
+PartCM_i = CoûtMatière_i / CoûtMatièreTotal
 ```
 
-Lorsque la quantité finale est verrouillée, toute diminution d'une ligne doit être compensée par une augmentation conforme d'une ou plusieurs autres lignes modulables.
+La somme des %CM des lignes Ingrédient valorisées vaut 100 %. Cette somme est une représentation économique relative et jamais une composition physique.
 
-Les bornes sont configurables, mais le backend applique également des limites de sécurité propres au moteur afin d'empêcher des valeurs incohérentes ou dangereuses même si elles sont envoyées directement à l'API.
+Il n'existe donc aucune obligation de compenser une diminution de quantité par l'augmentation d'une autre ligne. Les kg, litres et unités ne sont pas additionnés artificiellement.
 
-Le moteur doit préserver l'enveloppe de qualité perçue et peut conclure qu'un objectif est impossible.
+Les bornes min/max/verrouillage matérialisent l'enveloppe de recette déclarée par l'utilisateur. Le moteur ne calcule aucun score de goût ou de qualité.
 
 La couche UX transpose un environnement de retouche paramétrique professionnel :
 
-- sliders globaux ;
-- courbe d'équilibre multipoints ;
-- histogramme composition/coût ;
+- courbe économique multipoints ;
+- histogramme %CM ;
 - réglages fins par ingrédient ;
+- alternatives Produit/approvisionnement admissibles ;
 - visualisation des bornes atteintes ;
 - comparaison avant / après ;
-- scénarios/presets uniquement lorsqu'ils correspondent à des règles mathématiques explicables.
+- mode Manuel et proposition Auto explicable.
 
-Les sliders et la courbe ne sont pas interchangeables : ils agissent sur des dimensions différentes.
+Le contrat détaillé et l'algorithme V1 sont définis dans `docs/m005/M-005-FINAL-CONTRACT.md` et `docs/m005/M-005-TECHNICAL-DESIGN.md`.
 
 Aucune manipulation ne persiste automatiquement :
 

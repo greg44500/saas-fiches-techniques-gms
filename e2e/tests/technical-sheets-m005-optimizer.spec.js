@@ -1,0 +1,292 @@
+import {
+  expect,
+  test,
+} from '@playwright/test';
+
+import {
+  loginWithIdentity,
+} from '../support/auth.js';
+import {
+  provisionTechnicalSheetWorkspace,
+} from '../support/technical-sheet-fixtures.js';
+
+async function createTechnicalSheet(page, {
+  name,
+  technicalSheetsUrl,
+}) {
+  await page.goto(technicalSheetsUrl);
+
+  await page
+    .getByRole('button', {
+      name: 'Créer',
+      exact: true,
+    })
+    .click();
+
+  const dialog =
+    page.getByRole('dialog');
+
+  await dialog
+    .getByLabel('Nom')
+    .fill(name);
+  await dialog
+    .getByLabel(
+      'Quantité produite',
+    )
+    .fill('10');
+  await dialog
+    .getByRole('button', {
+      name: '10 %',
+    })
+    .click();
+  await dialog
+    .getByRole('button', {
+      name: 'Créer',
+      exact: true,
+    })
+    .click();
+
+  await expect(
+    page.getByRole('heading', {
+      name,
+    }),
+  ).toBeVisible();
+}
+
+async function composeTechnicalSheet(
+  page,
+  productReferenceName,
+) {
+  const search =
+    page.getByRole('combobox', {
+      name:
+        'Ajouter un produit aux Ingrédients',
+    });
+
+  await search.fill(
+    productReferenceName,
+  );
+
+  await page
+    .getByRole('option')
+    .filter({
+      hasText:
+        productReferenceName,
+    })
+    .first()
+    .click();
+
+  const saveResponse =
+    page.waitForResponse((response) => {
+      const request =
+        response.request();
+      const pathname =
+        new URL(
+          response.url(),
+        ).pathname;
+
+      if (
+        request.method() !== 'PUT'
+        || !pathname
+          .endsWith('/draft')
+      ) {
+        return false;
+      }
+
+      try {
+        return request
+          .postDataJSON()
+          ?.lines
+          ?.some(
+            (line) =>
+              line.netQuantity
+              === '2',
+          );
+      } catch {
+        return false;
+      }
+    });
+
+  await page
+    .getByLabel(
+      'Quantité nette ligne 1',
+    )
+    .fill('2');
+
+  expect(
+    (await saveResponse).ok(),
+  ).toBeTruthy();
+
+  await expect(
+    page.getByRole(
+      'status',
+      {
+        name:
+          'État d’enregistrement du brouillon',
+      },
+    ),
+  ).toContainText(
+    'Enregistré',
+  );
+}
+
+async function configureReduction(page) {
+  const ingredientAdjustment =
+    page.getByRole(
+      'slider',
+      {
+        name:
+          /^Ajustement /,
+      },
+    ).first();
+
+  await ingredientAdjustment.focus();
+
+  for (let step = 0; step < 10; step += 1) {
+    await ingredientAdjustment.press(
+      'ArrowLeft',
+    );
+  }
+
+  await expect(
+    ingredientAdjustment,
+  ).toHaveAttribute(
+    'aria-valuenow',
+    '-50',
+  );
+
+  await expect(
+    page.getByRole('button', {
+      name:
+        'Appliquer au brouillon',
+    }),
+  ).toBeEnabled();
+}
+
+test('M-005 simule sans écrire puis applique explicitement au brouillon', async ({ page }) => {
+  const context =
+    await provisionTechnicalSheetWorkspace({
+      optimizerEnabled: true,
+    });
+
+  await loginWithIdentity(
+    page,
+    context.identity,
+  );
+
+  await createTechnicalSheet(
+    page,
+    {
+      name:
+        'Fiche M005 Optimiseur',
+      technicalSheetsUrl:
+        context
+          .dossierATechnicalSheetsUrl,
+    },
+  );
+
+  await composeTechnicalSheet(
+    page,
+    context.productReferenceName,
+  );
+
+  await expect(
+    page.getByRole(
+      'button',
+      {
+        name: 'Optimiser',
+      },
+    ),
+  ).toBeVisible();
+
+  await page
+    .getByRole(
+      'button',
+      {
+        name: 'Optimiser',
+      },
+    )
+    .click();
+
+  await expect(
+    page.locator('main').getByText(
+      'Atelier d’optimisation',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  await configureReduction(
+    page,
+  );
+
+  const ingredientLine =
+    page.getByRole(
+      'button',
+      {
+        name: new RegExp(
+          context
+            .productReferenceName,
+        ),
+      },
+    );
+
+  // La valeur d'origine est barrée et la nouvelle quantité est affichée
+  // à sa suite, sans caractère flèche dans le tableau compact.
+  await expect(
+    ingredientLine.locator('span.line-through'),
+  ).toHaveText('2');
+  await expect(
+    ingredientLine.locator('span.tabular-nums').first(),
+  ).toHaveText('21');
+
+  await page.reload();
+
+  await expect(
+    page.locator('main').getByText(
+      'Atelier d’optimisation',
+      { exact: true },
+    ),
+  ).toBeVisible();
+
+  const reloadedLine =
+    page.getByRole(
+      'button',
+      {
+        name: new RegExp(
+          context
+            .productReferenceName,
+        ),
+      },
+    );
+
+  await expect(
+    reloadedLine.locator('span.line-through'),
+  ).toHaveCount(0);
+  await expect(
+    reloadedLine.locator('span.tabular-nums').first(),
+  ).toHaveText('2');
+
+  await configureReduction(
+    page,
+  );
+
+  await page
+    .getByRole('button', {
+      name:
+        'Appliquer au brouillon',
+    })
+    .click();
+
+  await expect(
+    page.getByRole('heading', {
+      name:
+        'Fiche M005 Optimiseur',
+    }),
+  ).toBeVisible();
+
+  await expect(
+    page.getByLabel(
+      'Quantité nette ligne 1',
+    ),
+  ).toHaveValue('1');
+});

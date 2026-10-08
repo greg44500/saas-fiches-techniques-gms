@@ -305,6 +305,7 @@ const TECHNICAL_SHEET_ECONOMIC_METRIC_REGISTRY = Object.freeze({
 
 const TECHNICAL_SHEET_FEATURE = Object.freeze({
     EXPORT: 'technical_sheet_export',
+    OPTIMIZER: 'technical_sheet_optimizer',
 });
 
 const TECHNICAL_SHEET_METRIC = Object.freeze({

@@ -511,5 +511,6 @@ export {
     fractionToDecimal,
     multiplyFractions,
     normalizeFraction,
+    subtractFractions,
     sumFractions,
 };

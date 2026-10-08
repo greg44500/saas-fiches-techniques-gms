@@ -75,7 +75,7 @@ function DossierWorkspacePage() {
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
   const isTechnicalSheetDetail = new RegExp(
     '/dossiers/' + dossierId
-    + '/technical-sheets/[^/]+/?$',
+    + '/technical-sheets/[^/]+(?:/optimization)?/?$',
   ).test(location.pathname);
 
   const dossierQuery = useGetDossierByIdQuery(

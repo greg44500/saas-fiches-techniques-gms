@@ -1,130 +1,364 @@
-# Reprise courante — Exports directs des Fiches techniques
+# Reprise courante — M-005 Atelier d’optimisation des Fiches techniques
 
-**Date : 2026-10-07**  
-**Branche : `feature/technical-sheet-exports-v1`**
+**Date : 2026-10-08**  
+**Branche : `feature/m005-technical-sheet-optimizer-v1`**  
+**État Git vérifié : branche en avance sur `main`, aucune PR/merge M-005 à réaliser avant validation utilisateur.**
 
-Le lot A2 a été fusionné dans `main` au commit `baf8722b429a33e1ce69960d6c7d446ca8c9714c`. La Core Gate #201 est verte.
+## 1. Point de départ
 
-Le lot courant implémente les exports PDF, XLSX et CSV de la version validée courante des Fiches techniques.
+M-001 à M-004 constituent les fondations métier déjà intégrées. M-005 réutilise strictement :
 
-Décisions validées :
+- M-002 pour les Références Produit et les rendements ;
+- M-003 pour les Articles fournisseur et les Prix applicables contextualisés par Dossier ;
+- M-004 pour la composition, les calculs, la valorisation, la concurrence optimiste, les snapshots validés et le cycle DRAFT / VALIDATED.
 
-- aucune exportation de brouillon ;
-- 10 exports mensuels par Workspace, tous formats cumulés ;
-- feature `technical_sheet_export`, absente du Free par défaut et activable par dérogation ;
-- permission `technical-sheet:export` ;
-- bouton `FileUp` + popover dans le panneau de contrôle ;
-- KPI Workspace personnalisable ;
-- artefacts générés à la demande sans stockage durable ;
-- source exclusive : snapshot `TechnicalSheetValidation`;
-- écarts et diagnostics exclus des exports.
+Core intégré :
 
-Contrats :
-- `docs/m004/M-004-EXPORTS-FINAL-CONTRACT.md`
-- `docs/m004/M-004-EXPORTS-TECHNICAL-DESIGN.md`
+~~~text
+v1.2.1
+commit 054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3
+~~~
 
-Les tests sont exécutés localement par l'utilisateur. Aucune PR ni fusion ne doit être faite avant sa validation.
+Aucune évolution Core n’est requise par M-005.
+
+## 1.1 Recadrage UX validé le 2026-10-07
+
+La QA a invalidé le contrôle à cinq ancres de %CM. La direction désormais contractuelle est :
+
+```text
+profil économique global = instantané de toute la Fiche
+1 point = 1 ingrédient
+x = ajustement économique local
+y = contribution au coût matière de la projection
+```
+
+Le profil n’est pas une fonction continue et n’interpole rien entre ingrédients.
+
+Le réglage principal est local à la ligne via `economicAdjustmentPercent`. Le backend traduit cette intention en quantité, applique les garde-fous et revalorise avec M-004.
+
+Desktop :
+
+```text
+Fiche simulée dominante à gauche
+→ KPI économiques compacts au-dessus
+→ drawer de pilotage large à droite
+   → profil global toujours visible
+   → Manuel / Auto
+   → bandeau horizontal d’outils
+   → inspecteur dynamique
+   → actions fixes
+```
+
+Outils : Réglage, Produit, Approvisionnement, Contraintes.
+
+Objectif UX : pas de scroll documentaire de la page Atelier sur desktop ; seule la liste de lignes peut disposer de son propre viewport lorsque la recette dépasse la hauteur disponible.
+
+## 1.2 Recadrage UX QA du 2026-10-08
+
+Le second passage QA conserve la Fiche à gauche et le drawer à droite, mais compacte fortement le panneau :
+
+```text
+Profil économique + [Manuel | Auto]
+→ spectre coloré compact
+→ icônes outils seules avec tooltip
+→ grande zone contextuelle
+→ actions sur une seule rangée
+```
+
+Le sous-titre explicatif du profil disparaît. `%CM` devient le libellé de l’axe Y. Réduction / Référence / Augmentation portent une aide contextuelle. Les termes de qualité ou de valeur ne sont pas utilisés car M-005 ne calcule aucun score de qualité.
+
+Le profil adopte une esthétique de spectre/histogramme : une trace indépendante par ingrédient, avec un sommet positionné sur les vraies coordonnées `ajustement / %CM`. Aucun ingrédient n’est relié à un autre.
+
+La plage libre par défaut reste `-99 % → +100 %`, soit presque zéro à deux fois la quantité de référence. Aucun min/max n’est inventé. L’ancien état non verrouillé `min = max = référence` est neutralisé ; le verrouillage explicite passe uniquement par `locked`.
+
+## 1.3 Ajustements QA du 2026-10-08 — lisibilité
+
+Le profil à courbes décoratives est remplacé par des barres horizontales indépendantes, ancrées sur Référence et positionnées verticalement par %CM. La couleur change selon réduction / augmentation. Le détail au survol est docké hors de la zone de tracé : il reste dans le panneau mais ne masque plus les barres ni leurs poignées.
+
+Un indicateur économique global est ajouté sous l’axe. Il ne fait pas la moyenne des ajustements de lignes : il reprend directement `savings.percent` calculé par le backend sur le Coût de fabrication HT. Centre = référence, gauche = économie, droite = surcoût.
+
+Autres ajustements :
+
+- en-tête Atelier sur une ligne ;
+- colonne « QT nette » ;
+- suppression de « Lecture résultat simulé » ;
+- min/max : champs uniquement numériques ou vides, explications dans les aides `(i)` ;
+- KPI dynamique : Économie estimée / Surcoût estimé / Écart estimé selon le signe de `before - after`.
+
+## 2. Contrats canoniques M-005
+
+~~~text
+docs/m005/M-005-FINAL-CONTRACT.md
+docs/m005/M-005-TECHNICAL-DESIGN.md
+~~~
+
+Décisions structurantes :
+
+- feature commerciale dédiée : `technical_sheet_optimizer` ;
+- baseline/Free : feature absente par défaut ;
+- aucun quota de simulation V1 ;
+- RBAC : `technical-sheet:update` pour l’Atelier et `technical-sheet:sourcing:manage` pour changer explicitement d’Article ;
+- simulation exclusivement sur le DRAFT courant ;
+- aucune mutation avant `Appliquer au brouillon` ;
+- `TechnicalSheetValidation` reste immuable ;
+- min/max/verrouillage persistés sur les lignes du DRAFT et snapshottés lors de la validation ;
+- %CM = part relative du Coût Matière, jamais composition physique ;
+- l’ajustement M-005 est porté par chaque ligne Ingrédient ; l’ancien contrôle à cinq ancres est abandonné ;
+- à Produit/prix/rendement constants, la variation de coût se traduit directement en variation proportionnelle de quantité ;
+- min/max sont des garde-fous facultatifs et leur absence ne neutralise pas l’ajustement local ;
+- aucune compensation physique obligatoire lors d’une réduction de quantité ;
+- alternative Produit V1 = même `CanonicalProduct`, même `referenceUnit`, Référence ACTIVE et visible dans le Workspace ;
+- alternative d’approvisionnement = même Référence Produit, Article revalorisé avec le Prix applicable du Dossier courant ;
+- mode Auto V1 = meilleur prochain mouvement élémentaire économiquement favorable, sans score de goût ni solveur opaque.
+
+## 3. Backend implémenté
+
+Fichiers principaux :
+
+~~~text
+backend/modules/technicalSheet/technicalSheetOptimizer.registry.js
+backend/modules/technicalSheet/technicalSheetOptimizer.validation.js
+backend/modules/technicalSheet/technicalSheetOptimizerMath.service.js
+backend/modules/technicalSheet/technicalSheetOptimizerAlternative.service.js
+backend/modules/technicalSheet/technicalSheetOptimizerProjection.service.js
+backend/modules/technicalSheet/technicalSheetOptimizerScenario.service.js
+backend/modules/technicalSheet/technicalSheetOptimizerAuto.service.js
+backend/modules/technicalSheet/technicalSheetOptimizer.service.js
+~~~
+
+Le service initial trop volumineux a été découpé par responsabilités :
+
+~~~text
+projection / contexte
+→ chargement du DRAFT, valorisation fraîche, projection avant/après
+
+scénario Manuel
+→ ajustement local, contraintes, override local, substitutions, fingerprint
+
+stratégie Auto
+→ génération bornée des candidats et sélection du meilleur prochain mouvement
+
+orchestration
+→ contexte API, simulate, apply transactionnel
+~~~
+
+Routes :
+
+~~~text
+GET  /workspaces/:workspaceId/dossiers/:dossierId/technical-sheets/:technicalSheetId/optimization
+POST /workspaces/:workspaceId/dossiers/:dossierId/technical-sheets/:technicalSheetId/optimization/simulate
+POST /workspaces/:workspaceId/dossiers/:dossierId/technical-sheets/:technicalSheetId/optimization/apply
+~~~
+
+Sécurité des routes :
+
+~~~text
+authenticate
+→ validation Zod
+→ contexte Workspace
+→ technical-sheet:update
+→ access mode Workspace
+→ feature technical_sheet_optimizer
+→ contexte Dossier autorisé
+→ Dossier opérationnel
+~~~
+
+Durcissements intégrés :
+
+- fingerprint simulation recalculé lors de l’Apply, y compris après changement du Prix applicable ;
+- `expectedRevision` obligatoire ;
+- modification explicite d’Article protégée par `technical-sheet:sourcing:manage` et couverte par un test de refus ;
+- plafond de 60 candidats élémentaires en Auto V1 ;
+- Articles sans Prix applicable exclus des alternatives M-005 au lieu de faire échouer tout le contexte ;
+- une édition M-004 normale de Produit/quantité réinitialise une ancienne enveloppe devenue incohérente ;
+- aucune sélection automatique arbitraire de l’Article fournisseur le moins cher dans M-003.
+
+## 4. Persistance et historique
+
+`TechnicalSheetDraft.lines[].optimization` :
+
+~~~text
+minNetQuantity
+maxNetQuantity
+locked
+~~~
+
+La même enveloppe est ajoutée à `TechnicalSheetValidation.linesSnapshot[]`.
+
+Effets :
+
+- l’Apply M-005 écrit le DRAFT dans une transaction et incrémente sa révision ;
+- la validation M-004 snapshotte ensuite l’enveloppe ;
+- une nouvelle révision restaurée depuis une validation conserve les contraintes de recette ;
+- une copie inter-Dossier conserve l’enveloppe de recette mais jamais les données économiques source.
+
+Aucune nouvelle collection MongoDB M-005.
+
+## 5. Frontend implémenté
+
+Nouveaux éléments :
+
+~~~text
+frontend/src/features/technical-sheets/pages/technical-sheet-optimizer-page.jsx
+frontend/src/features/technical-sheets/components/technical-sheet-optimizer-route.jsx
+frontend/src/features/technical-sheets/components/technical-sheet-optimization-profile.jsx
+frontend/src/features/technical-sheets/components/technical-sheet-optimizer-inspector.jsx
+frontend/src/features/technical-sheets/components/technical-sheet-optimizer-picker-dialog.jsx
+frontend/src/features/technical-sheets/lib/technical-sheet-optimizer.js
+~~~
+
+Fonctions visibles :
+
+- page Atelier dédiée ;
+- bandeau économique avant / après avec état de recalcul ;
+- profil économique global à points, un point par ingrédient, utilisé comme instantané de la simulation ;
+- Fiche technique simulée comme surface principale avec barres de contribution ;
+- panneau droit largeur drawer avec profil toujours visible, bandeau horizontal d’outils et inspecteur dynamique ;
+- réglages en Sheet sur petit écran ;
+- garde-fous quantité facultatifs ;
+- calques Produit / rendement et approvisionnement ;
+- bornes min/max ;
+- verrouillage ;
+- override local ;
+- alternatives Produit ;
+- alternatives d’approvisionnement selon permission ;
+- modes Manuel / Auto ;
+- Réinitialiser / Comparer / Appliquer au brouillon ;
+- reprise d’une suggestion Auto en Manuel.
+
+Entrées UX :
+
+~~~text
+Fiche technique
+→ bouton Optimiser
+
+Dossier → Fiches techniques
+→ action Optimiser sur une ligne
+→ bouton Atelier d’optimisation + sélecteur de Fiche
+
+Sidebar Workspace → Dossiers
+→ Atelier d’optimisation (baguette magique)
+→ sélection Dossier
+→ sélection Fiche
+~~~
+
+Une Fiche validée sans DRAFT passe d’abord par le workflow M-004 de création d’un nouveau brouillon.
+
+## 6. Tests ajoutés
+
+Backend :
+
+~~~text
+backend/tests/modules/technicalSheet/technicalSheetOptimizerMath.test.js
+backend/tests/modules/technicalSheet/technicalSheetOptimizer.integration.test.js
+backend/tests/modules/technicalSheet/technicalSheetOptimizer.http.test.js
+backend/tests/plans/applicationCapability.registry.test.js
+~~~
+
+Frontend :
+
+~~~text
+frontend/src/features/technical-sheets/api/technical-sheets-api.test.js
+frontend/src/features/technical-sheets/pages/technical-sheet-optimizer-page.test.jsx
+frontend/src/features/technical-sheets/components/technical-sheet-control-panel.test.jsx
+frontend/src/features/technical-sheets/components/technical-sheet-optimizer-route.test.jsx
+frontend/src/app/application-routes.test.js
+~~~
+
+E2E :
+
+~~~text
+e2e/tests/technical-sheets-m005-optimizer.spec.js
+~~~
+
+Le scénario E2E vérifie notamment :
+
+~~~text
+simulation
+→ avant/après visible
+→ aucun changement persistant après reload
+
+puis Apply
+→ retour Fiche
+→ quantité réellement modifiée dans le DRAFT
+~~~
+
+Les tests ajoutés n’ont pas été exécutés à distance. Aucun statut vert n’est revendiqué.
+
+## 7. État de validation
+
+État actuel :
+
+~~~text
+cadrage M-005
+→ fait
+
+implémentation backend
+→ faite
+
+implémentation frontend
+→ faite
+
+tests ajoutés
+→ faits
+
+revue statique manuelle
+→ faite ; derniers durcissements intégrés
+
+tests locaux utilisateur
+→ à faire
+
+QA visuelle utilisateur
+→ à faire
+
+PR
+→ interdite avant validation utilisateur
+
+merge
+→ interdit avant validation utilisateur
+~~~
+
+## 8. Ordre de reprise immédiat
+
+1. récupérer la branche localement ;
+2. lancer les tests M-005 ciblés ;
+3. corriger les éventuels échecs sur cette même branche ;
+4. lancer les gates globales applicables ;
+5. lancer l’application avec `npm run dev` et le frontend ;
+6. effectuer la QA visuelle de l’Atelier ;
+7. seulement après validation explicite de l’utilisateur : PR unique puis merge unique réalisés par l’utilisateur.
+
+Ne pas créer de micro-version, de PR intermédiaire ou de merge technique pour corriger un test.
 
 
-Durcissements ajoutés avant validation locale :
-- migration explicite de la nouvelle permission sur les rôles Owner système déjà persistés ;
-- tests HTTP Free/capability, RBAC, absence de validation, téléchargement et quota cumulé ;
-- tests des garde-fous de dérogation commerciale ;
-- neutralisation XLSX étendue aux libellés d'unités métier.
+### Ajustements QA du 2026-10-08 — compacité et repérage
+
+- Chaque ingrédient conserve une teinte déterministe à partir de son identifiant de ligne ; la teinte s'assombrit proportionnellement à la distance de la référence, dans chaque direction. La couleur ne constitue pas une évaluation qualitative.
+- La zone SVG est compactée et les trois aides d'axe ont une typographie identique.
+- L'indicateur de coût global conserve son calcul serveur ; son titre « Impact global » est positionné à gauche de la barre sur deux lignes.
+- « Réinitialiser » est désormais à côté de Manuel / Auto ; le pied ne conserve que « Comparer » et « Appliquer au brouillon ».
 
 
-Couverture E2E ajoutée (non exécutée ici) :
-- capability export activée par dérogation sur un Workspace de test ;
-- export CSV depuis une Fiche validée ;
-- téléchargement réel Playwright ;
-- KPI `Exports ce mois` passant à `1 / 10` ;
-- masquage du KPI via `Personnaliser le tableau de bord`.
+## 1.5 QA du 2026-10-08 — cohérence entre profil et Fiche
+
+- Le repère de couleur de chaque ingrédient dans la Fiche utilise le même helper par lineId que la poignée du profil. Les teintes restent stables indépendamment de l’ordre de présentation.
+- Le titre et le surtitre redondants disparaissent du header interne du tableau ; Production et Portions y restent visibles, ainsi que le bouton mobile Réglages.
+- Un badge « Simulation en cours » accompagne le titre principal de l’Atelier.
+- Le bandeau est renommé « Impacts économiques ».
+- Dans l’indicateur global, le libellé est centré verticalement avec la barre. La mention « Référence économique » n’est plus affichée en état neutre ; le libellé accessible « Aucun écart » reste disponible.
 
 
-Invariant supplémentaire couvert (non exécuté ici) :
-- une Fiche déjà validée peut rouvrir un nouveau brouillon ;
-- même si son identité de travail change ensuite, l'export reste construit depuis le dernier snapshot validé et n'expose aucune donnée non validée.
+## QA palette par ingrédient — 2026-10-08
+
+La palette par ligne INGREDIENT est attribuée une fois depuis l'ordre de la baseline, partagée entre le tableau et le graphique. Le repère du produit, la barre %CM et le profil ont la même couleur de base ; la couleur du graphique peut être renforcée près des extrêmes. Aucun usage de la couleur ne représente un score qualitatif. La palette boucle après dix ingrédients.
 
 
-## Ajustement UX avant validation locale — 2026-10-07
+## Correctif QA — couleurs des ingrédients et barre %CM (2026-10-08)
 
-Le premier bloc de QA visuelle demandé avant PR a été intégré sur la même branche :
-
-- Dashboard Workspace : suppression du nom de Workspace répété dans le contenu ;
-- cartes KPI : icône d'information rapprochée du titre ;
-- liste Fiches techniques : nouvelle colonne `État` avec `Brouillon`, `Validée`, `En révision` ;
-- l'état affiché est une projection des faits `currentValidatedStateId + hasDraft`, jamais une autorité de sécurité ;
-- suppression des sous-titres ambigus sous le nom des Fiches ;
-- actions de liste compactes : œil = prévisualiser l'officiel, crayon = ouvrir, `FileUp` = exporter ;
-- prévisualisation en modal depuis le snapshot validé courant, sans navigation et sans consommation du quota export ;
-- suppression du bloc post-validation `État de travail` ; `Reprendre en brouillon` reste disponible comme action compacte ;
-- E2E adapté pour couvrir l'état `Validée`, la modal de prévisualisation, l'export direct depuis la liste, puis le KPI mensuel.
-
-Les tests ajoutés/modifiés n'ont pas été exécutés à distance. La validation locale et la QA visuelle restent à faire par l'utilisateur avant toute PR.
+Les ingrédients reçoivent des teintes distinctes depuis l'ordre de la baseline sans répétition cyclique de la palette de dix couleurs. Les mêmes teintes identifient les ingrédients dans les pastilles et dans le profil (avec foncement aux extrêmes). Les barres de `%CM` utilisent exclusivement `bg-primary/75`, couleur du thème de l’application, sans style de couleur injecté.
 
 
-## Qualité visuelle PDF — 2026-10-07
+## QA E2E finale (2026-10-08)
 
-Le renderer PDF a été repris pour aligner le livrable avec la prévisualisation métier :
-
-- A4 paysage pour préserver la lisibilité des colonnes ;
-- en-tête clair avec titre et date de validation ;
-- trois cartes de production ;
-- vraie table Composition avec Section, Produit, Qté nette, Rendement, Qté brute, Prix HT, Coût HT ;
-- analyse figée structurée en indicateurs principaux puis détails économiques ;
-- pagination et répétition de l'en-tête de table ;
-- pied de page numéroté ;
-- aucune modification de la source autoritaire, des quotas, de la sécurité ou du contenu métier exportable.
-
-Les tests correspondants sont ajoutés mais restent à exécuter localement par l'utilisateur.
-
-
-## Ajustement QA composition — 2026-10-07
-
-Suite à la revue du PDF réel :
-- suppression des mentions redondantes `FICHE TECHNIQUE VALIDÉE` / `Validée le` ; le PDF affiche `FICHE TECHNIQUE` et `Version du` ;
-- suppression de `Section`, `Rendement` et `Quantité brute` dans PDF, CSV, XLSX et prévisualisation ;
-- table métier simplifiée : `Produit | Quantité | Prix HT | Coût HT` ;
-- ajout conditionnel de `Note` seulement si au moins une ligne possède une note ;
-- conservation des données techniques supprimées de l'affichage dans le snapshot de validation : aucun changement de modèle ni de calcul.
-
-
-## PDF mono-page optimisé — 2026-10-07
-
-Décision QA intégrée :
-
-- contrat `une Fiche technique = une feuille A4 paysage` ;
-- suppression des grandes cartes de production et d'analyse ;
-- synthèse Production condensée sur une ligne ;
-- Composition à gauche et Analyse à droite ;
-- suppression du pied de page `Page 1 / 1` ;
-- Analyse affichée en lignes compactes ;
-- Économat zéro masqué ;
-- coût total identique au coût matière masqué en absence d'Économat ;
-- prix conseillé/retenu identiques fusionnés en `Prix TTC` ;
-- densité de la Composition ajustée dynamiquement pour conserver toutes les lignes sur la feuille ;
-- aucune modification des snapshots, calculs, autorisations, quotas ou autres formats d'export.
-
-Les tests PDF ont été adaptés pour vérifier explicitement le rendu mono-page, la grille côte à côte et les règles de déduplication. Ils restent à exécuter localement par l'utilisateur.
-
-
-## Continuité UX Fiche validée — 2026-10-07
-
-Bloc intégré sur la même branche :
-- après validation, la route Fiche reste affichée avec la version officielle en lecture seule ;
-- la modal de prévisualisation et la page réutilisent le même composant de lecture ;
-- `Modifier` crée/reprend le brouillon via l'API M-004 au lieu d'aboutir sur une page vide ;
-- dialogue de validation simplifié avec aide contextuelle, commentaire explicitement facultatif et bouton `Valider sans commentaire` lorsque vide ;
-- suppression visuelle de `%TR` dans la composition ;
-- conservation stricte de `Coût HT` et de sa sémantique actuelle.
-
-Les tests ont été adaptés mais ne sont pas exécutés à distance.
-
-
-## Ajustement final header Fiche validée — 2026-10-07
-
-QA visuelle :
-- titre et badge(s) sont désormais sur la même ligne ;
-- le groupe identité `flèche + titre + badges` est centré verticalement ;
-- le panneau de contrôle est aligné sur le même axe vertical sur desktop ;
-- aucun workflow, contrôle métier ou comportement de `Modifier` n'est changé.
+- M-005 : la comparaison visuelle des quantités utilise désormais une valeur d'origine barrée et une valeur simulée contiguë, sans flèche ; E2E contrôle explicitement ces deux états et le rechargement non persistant.
+- M-003 : l'inspection CSV nécessite toujours un vrai verdict ClamAV CLEAN. Le 503 FILE_INSPECTION_FAILED en environnement Windows signale un moteur indisponible ou en échec. Le runner E2E accepte `CLAMAV_BINARY_PATH` depuis l'environnement utilisateur (défaut `clamscan`). Aucun mock ni bypass antivirus n'est autorisé. Vérifier également les signatures locales ClamAV avant une nouvelle exécution E2E.

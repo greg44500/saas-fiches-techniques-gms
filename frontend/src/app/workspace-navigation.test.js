@@ -65,6 +65,20 @@ describe('workspace navigation composition', () => {
       'suppliers',
     ]);
     expect(workspaceNavigation.some(({ id }) => id === 'files')).toBe(false);
+
+    const dossiersGroup = workspaceNavigation.find(
+      ({ id }) => id === 'dossiers',
+    );
+    expect(dossiersGroup.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'technical-sheet-optimizer',
+          label: 'Atelier d’optimisation',
+          path: 'technical-sheets/optimization',
+        }),
+      ]),
+    );
+
     expect(administrationIds).toEqual([
       'members',
       'roles',

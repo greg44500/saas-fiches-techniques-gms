@@ -84,6 +84,22 @@ const inferChangeKinds = ({
             inputUnit: line.inputUnit,
             order: line.order,
             note: line.note ?? null,
+            optimization: {
+                minNetQuantity:
+                    line.optimization
+                        ?.minNetQuantity
+                        ?.toString?.()
+                    ?? null,
+                maxNetQuantity:
+                    line.optimization
+                        ?.maxNetQuantity
+                        ?.toString?.()
+                    ?? null,
+                locked:
+                    Boolean(
+                        line.optimization?.locked,
+                    ),
+            },
         }));
 
     const previousComposition =
@@ -97,6 +113,23 @@ const inferChangeKinds = ({
                 inputUnit: line.inputUnit,
                 order: line.order,
                 note: line.note ?? null,
+                optimization: {
+                    minNetQuantity:
+                        line.optimization
+                            ?.minNetQuantity
+                            ?.toString?.()
+                        ?? null,
+                    maxNetQuantity:
+                        line.optimization
+                            ?.maxNetQuantity
+                            ?.toString?.()
+                        ?? null,
+                    locked:
+                        Boolean(
+                            line.optimization
+                                ?.locked,
+                        ),
+                },
             }));
 
     if (
@@ -289,6 +322,22 @@ const buildValidationLines = ({
                     .materialCostSharePercent
                     ?.toString()
                 ?? null,
+            optimization: {
+                minNetQuantity:
+                    line.optimization
+                        ?.minNetQuantity
+                        ?.toString?.()
+                    ?? null,
+                maxNetQuantity:
+                    line.optimization
+                        ?.maxNetQuantity
+                        ?.toString?.()
+                    ?? null,
+                locked:
+                    Boolean(
+                        line.optimization?.locked,
+                    ),
+            },
             order: line.order,
             note: line.note ?? null,
         };

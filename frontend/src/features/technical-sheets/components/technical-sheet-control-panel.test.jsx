@@ -19,6 +19,7 @@ function renderPanel(overrides = {}) {
     canEditIdentity: true,
     canExport: true,
     canLifecycle: true,
+    canOptimize: true,
     canValidate: true,
     copyDisabled: false,
     draft: {
@@ -36,6 +37,7 @@ function renderPanel(overrides = {}) {
     onExport: vi.fn(),
     onOpenAnalysis: vi.fn(),
     onOpenDossier: vi.fn(),
+    onOptimize: vi.fn(),
     onReactivate: vi.fn(),
     onValidate: vi.fn(),
     pendingLifecycle: false,
@@ -70,6 +72,9 @@ describe('TechnicalSheetControlPanel', () => {
       name: 'Modifier',
     }));
     await user.click(screen.getByRole('button', {
+      name: 'Optimiser',
+    }));
+    await user.click(screen.getByRole('button', {
       name: 'Analyse',
     }));
     await user.click(screen.getByRole('button', {
@@ -80,6 +85,7 @@ describe('TechnicalSheetControlPanel', () => {
     }));
 
     expect(props.onEditIdentity).toHaveBeenCalledTimes(1);
+    expect(props.onOptimize).toHaveBeenCalledTimes(1);
     expect(props.onOpenAnalysis).toHaveBeenCalledTimes(1);
     expect(props.onOpenDossier).toHaveBeenCalledTimes(1);
     expect(props.onCopy).toHaveBeenCalledTimes(1);
@@ -154,6 +160,18 @@ describe('TechnicalSheetControlPanel', () => {
         name: 'Exports',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('bloque Optimiser pendant une synchronisation du brouillon', () => {
+    renderPanel({
+      optimizerDisabled: true,
+    });
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Optimiser',
+      }),
+    ).toBeDisabled();
   });
 
   it('bloque la validation lorsque le backend indique que l’état économique ne le permet pas', () => {

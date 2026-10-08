@@ -1,0 +1,15 @@
+const TECHNICAL_SHEET_OPTIMIZATION_MODE = Object.freeze({
+    MANUAL: 'MANUAL',
+    AUTO: 'AUTO',
+});
+
+// L'ajustement local reste strictement supérieur à -100 % afin de conserver
+// une quantité positive avant application des garde-fous de recette.
+const TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT = -99;
+const TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT = 100;
+
+export {
+    TECHNICAL_SHEET_OPTIMIZATION_MAX_COST_ADJUSTMENT_PERCENT,
+    TECHNICAL_SHEET_OPTIMIZATION_MIN_COST_ADJUSTMENT_PERCENT,
+    TECHNICAL_SHEET_OPTIMIZATION_MODE,
+};
