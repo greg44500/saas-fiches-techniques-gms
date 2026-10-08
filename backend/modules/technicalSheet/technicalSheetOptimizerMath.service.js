@@ -291,21 +291,23 @@ const buildQuarterStepTowardMinimum = ({
     referenceQuantity,
     minNetQuantity,
 }) => {
-    if (
-        minNetQuantity === null
-        || minNetQuantity === undefined
-    ) {
-        return null;
-    }
-
     const reference =
         decimalFraction(
             referenceQuantity,
         );
     const minimum =
-        decimalFraction(
-            minNetQuantity,
-        );
+        minNetQuantity === null
+        || minNetQuantity === undefined
+            ? multiplyFractions(
+                reference,
+                {
+                    numerator: 1n,
+                    denominator: 100n,
+                },
+            )
+            : decimalFraction(
+                minNetQuantity,
+            );
 
     if (
         compareFractions(
