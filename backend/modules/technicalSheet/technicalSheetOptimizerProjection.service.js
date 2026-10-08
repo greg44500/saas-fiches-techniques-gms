@@ -342,31 +342,34 @@ const normalizeLineIntents = ({
                     fallback.lineId,
                 );
 
-            if (!input) {
-                return fallback;
-            }
-
-            const normalized = {
-                ...fallback,
-                ...input,
-                economicAdjustmentPercent:
-                    input.economicAdjustmentPercent
-                    ?? 0,
-                localNetQuantity:
-                    input.localNetQuantity
-                    ?? null,
-                productVariantId:
-                    input.productVariantId
-                    ?? null,
-                supplierArticleId:
-                    input.supplierArticleId
-                    ?? null,
-                supplierArticleExplicit:
-                    Object.hasOwn(
-                        input,
-                        'supplierArticleId',
-                    ),
-            };
+            const normalized =
+                input
+                    ? {
+                        ...fallback,
+                        ...input,
+                        economicAdjustmentPercent:
+                            input.economicAdjustmentPercent
+                            ?? 0,
+                        localNetQuantity:
+                            input.localNetQuantity
+                            ?? null,
+                        productVariantId:
+                            input.productVariantId
+                            ?? null,
+                        supplierArticleId:
+                            input.supplierArticleId
+                            ?? null,
+                        supplierArticleExplicit:
+                            Object.hasOwn(
+                                input,
+                                'supplierArticleId',
+                            ),
+                    }
+                    : {
+                        ...fallback,
+                        supplierArticleExplicit:
+                            false,
+                    };
 
             if (
                 !normalized.locked
