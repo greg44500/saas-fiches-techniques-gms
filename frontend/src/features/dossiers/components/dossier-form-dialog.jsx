@@ -21,6 +21,7 @@ import {
   buildDossierFormDefaults,
   buildDossierFormPayload,
   dossierFormSchema,
+  dossierCreateFormSchema,
 } from '@/features/dossiers/validation/dossier-form-schema';
 
 function DossierFormDialog({
@@ -41,7 +42,7 @@ function DossierFormDialog({
     setValue,
     watch,
   } = useForm({
-    resolver: zodResolver(dossierFormSchema),
+    resolver: zodResolver(editing ? dossierFormSchema : dossierCreateFormSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
     defaultValues: buildDossierFormDefaults(dossier),
@@ -84,14 +85,6 @@ function DossierFormDialog({
   }
 
   async function submit(values) {
-    if (!editing && !values.defaultTargetMargin.trim()) {
-      setError('defaultTargetMargin', {
-        type: 'required',
-        message: 'La marge cible par défaut est obligatoire.',
-      });
-      return;
-    }
-
     try {
       await onSubmit(buildDossierFormPayload(values, {
         includeDefaultTargetMargin: !editing,
