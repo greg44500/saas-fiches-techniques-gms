@@ -6,11 +6,17 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
   metadataQuery: vi.fn(),
+  createDossierMutation: vi.fn(),
   listQuery: vi.fn(),
   workspaceContext: vi.fn(),
 }));
 
+vi.mock('@/components/shared/toast-provider', () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
+
 vi.mock('@/features/dossiers/api/dossiers-api', () => ({
+  useCreateDossierMutation: () => [mocks.createDossierMutation, { isLoading: false }],
   useGetDossierMetadataQuery: mocks.metadataQuery,
   useListDossiersQuery: mocks.listQuery,
 }));
@@ -40,9 +46,11 @@ describe('DossiersDashboardWidget', () => {
     mocks.workspaceContext.mockReset();
     mocks.listQuery.mockReset();
     mocks.metadataQuery.mockReset();
+    mocks.createDossierMutation.mockReset();
 
     mocks.workspaceContext.mockReturnValue({
       workspace: { id: 'workspace-1' },
+      can: () => false,
     });
     mocks.listQuery.mockReturnValue(createQuery({
       data: {
@@ -55,7 +63,7 @@ describe('DossiersDashboardWidget', () => {
             status: 'ACTIVE',
           },
         ],
-        pagination: { total: 1 },
+        pagination: { total: 1, totalPages: 1 },
       },
     }));
     mocks.metadataQuery.mockReturnValue(createQuery({
@@ -78,10 +86,12 @@ describe('DossiersDashboardWidget', () => {
       workspaceId: 'workspace-1',
       page: 1,
       limit: DASHBOARD_DOSSIER_LIMIT,
+      search: undefined,
     });
     expect(mocks.metadataQuery).toHaveBeenCalledWith('workspace-1');
     expect(screen.getByText('Nantes')).toBeInTheDocument();
-    expect(screen.getByText('1 dossier accessible')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Dossiers (1)' })).toBeInTheDocument();
+    expect(screen.getByText('1 sur 1')).toBeInTheDocument();
   });
 
   it('relance les deux lectures lorsque le widget est en erreur', () => {
