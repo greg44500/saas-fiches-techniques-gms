@@ -25,35 +25,10 @@ const DEFAULT_RANGE = Object.freeze({
   min: -99,
   max: 100,
 });
-const PROFILE_TONES = Object.freeze([
-  {
-    stroke: 'stroke-sky-500',
-    fill: 'fill-sky-500',
-  },
-  {
-    stroke: 'stroke-emerald-500',
-    fill: 'fill-emerald-500',
-  },
-  {
-    stroke: 'stroke-amber-500',
-    fill: 'fill-amber-500',
-  },
-  {
-    stroke: 'stroke-rose-500',
-    fill: 'fill-rose-500',
-  },
-  {
-    stroke: 'stroke-violet-500',
-    fill: 'fill-violet-500',
-  },
-  {
-    stroke: 'stroke-cyan-500',
-    fill: 'fill-cyan-500',
-  },
-]);
 
 function safeNumber(value, fallback = 0) {
   const number = Number(value);
+
   return Number.isFinite(number)
     ? number
     : fallback;
@@ -143,8 +118,7 @@ function constraintLabel(
   if (
     Number.isFinite(min)
     && Number.isFinite(max)
-    && Math.abs(min - max)
-      < 1e-9
+    && Math.abs(min - max) < 1e-9
   ) {
     return 'Bornes identiques ignorées · utilisez Verrouiller pour figer la quantité';
   }
@@ -152,8 +126,7 @@ function constraintLabel(
   if (
     Number.isFinite(quantity)
     && Number.isFinite(min)
-    && Math.abs(quantity - min)
-      < 1e-9
+    && Math.abs(quantity - min) < 1e-9
   ) {
     return 'Minimum atteint';
   }
@@ -161,8 +134,7 @@ function constraintLabel(
   if (
     Number.isFinite(quantity)
     && Number.isFinite(max)
-    && Math.abs(quantity - max)
-      < 1e-9
+    && Math.abs(quantity - max) < 1e-9
   ) {
     return 'Maximum atteint';
   }
@@ -177,49 +149,25 @@ function constraintLabel(
   return 'Plage libre';
 }
 
-function tracePath(point) {
-  const baseY =
-    SVG_HEIGHT - PADDING_Y;
-  const width = 28;
-  const left =
-    clamp(
-      point.x - width,
-      PADDING_X,
-      SVG_WIDTH - PADDING_X,
-    );
-  const right =
-    clamp(
-      point.x + width,
-      PADDING_X,
-      SVG_WIDTH - PADDING_X,
-    );
-  const controlY =
-    Math.min(
-      baseY - 8,
-      point.y + (
-        baseY - point.y
-      ) * 0.52,
-    );
+function adjustmentTone(adjustment) {
+  if (adjustment < 0) {
+    return {
+      bar: 'fill-emerald-500/80',
+      handle: 'fill-emerald-600',
+    };
+  }
 
-  return [
-    'M',
-    left,
-    baseY,
-    'C',
-    left + 8,
-    controlY,
-    point.x - 10,
-    point.y + 5,
-    point.x,
-    point.y,
-    'C',
-    point.x + 10,
-    point.y + 5,
-    right - 8,
-    controlY,
-    right,
-    baseY,
-  ].join(' ');
+  if (adjustment > 0) {
+    return {
+      bar: 'fill-amber-500/85',
+      handle: 'fill-amber-600',
+    };
+  }
+
+  return {
+    bar: 'fill-muted-foreground/35',
+    handle: 'fill-muted-foreground',
+  };
 }
 
 function AxisLabel({
@@ -272,7 +220,7 @@ function TechnicalSheetOptimizationProfile({
         (line) =>
           line.kind === 'INGREDIENT',
       )
-      .map((beforeLine, index) => {
+      .map((beforeLine) => {
         const projectionLine =
           findProjectionLine(
             after,
@@ -297,6 +245,11 @@ function TechnicalSheetOptimizationProfile({
             projectionLine
               .materialCostSharePercent,
           );
+        const x =
+          xForAdjustment(
+            adjustment,
+            effectiveRange,
+          );
 
         return {
           lineId: beforeLine.id,
@@ -304,18 +257,20 @@ function TechnicalSheetOptimizationProfile({
           disabled:
             intent.locked,
           share,
-          x:
-            xForAdjustment(
-              adjustment,
-              effectiveRange,
-            ),
+          x,
           y:
             yForShare(share),
+          width:
+            Math.max(
+              Math.abs(x - zeroX),
+              adjustment === 0
+                ? 0
+                : 2,
+            ),
           tone:
-            PROFILE_TONES[
-              index
-              % PROFILE_TONES.length
-            ],
+            adjustmentTone(
+              adjustment,
+            ),
           beforeLine,
           projectionLine,
           intent,
@@ -328,6 +283,7 @@ function TechnicalSheetOptimizationProfile({
       effectiveRange.max,
       effectiveRange.min,
       lines,
+      zeroX,
     ],
   );
 
@@ -415,7 +371,7 @@ function TechnicalSheetOptimizationProfile({
             Profil économique global
           </h2>
           <InfoTooltip
-            content="Chaque trace représente un ingrédient. Seuls son sommet et son point portent la donnée : ajustement horizontal et part du coût matière en hauteur."
+            content="Chaque barre représente un ingrédient à sa hauteur de %CM. Elle part de la référence : à gauche la quantité diminue, à droite elle augmente."
             label="Comprendre le profil économique"
           />
         </div>
@@ -523,7 +479,7 @@ function TechnicalSheetOptimizationProfile({
           </g>
 
           <line
-            className="stroke-foreground/35"
+            className="stroke-foreground/40"
             strokeDasharray="4 4"
             x1={zeroX}
             x2={zeroX}
@@ -538,6 +494,11 @@ function TechnicalSheetOptimizationProfile({
             const selected =
               point.lineId
               === selectedLineId;
+            const barX =
+              Math.min(
+                zeroX,
+                point.x,
+              );
 
             return (
               <g
@@ -546,30 +507,45 @@ function TechnicalSheetOptimizationProfile({
                   setHoveredLineId(
                     point.lineId,
                   )}
-                onPointerLeave={() =>
-                  setHoveredLineId(
-                    null,
-                  )}
+                onPointerLeave={(event) => {
+                  if (
+                    !event.currentTarget
+                      .matches(':focus-within')
+                  ) {
+                    setHoveredLineId(
+                      null,
+                    );
+                  }
+                }}
               >
-                <path
-                  className={
-                    point.tone.stroke
-                    + ' fill-none transition-opacity '
-                    + (
+                {point.width > 0 && (
+                  <rect
+                    className={
+                      point.tone.bar
+                      + (
+                        selected
+                          ? ' opacity-100'
+                          : ' opacity-70'
+                      )
+                    }
+                    height={
                       selected
-                        ? 'opacity-100'
-                        : 'opacity-65'
-                    )
-                  }
-                  d={tracePath(point)}
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeWidth={
-                    selected
-                      ? '2.5'
-                      : '1.75'
-                  }
-                />
+                        ? 7
+                        : 5
+                    }
+                    rx="2.5"
+                    width={point.width}
+                    x={barX}
+                    y={
+                      point.y
+                      - (
+                        selected
+                          ? 3.5
+                          : 2.5
+                      )
+                    }
+                  />
+                )}
 
                 <circle
                   aria-disabled={
@@ -609,7 +585,7 @@ function TechnicalSheetOptimizationProfile({
                         ? 'cursor-not-allowed '
                         : 'cursor-ew-resize '
                     )
-                    + point.tone.fill
+                    + point.tone.handle
                     + ' outline-none ring-offset-background focus-visible:stroke-ring focus-visible:stroke-[3px]'
                   }
                   cx={point.x}
@@ -756,24 +732,8 @@ function TechnicalSheetOptimizationProfile({
         </svg>
 
         {hovered && (
-          <div
-            className="pointer-events-none absolute z-10 w-60 -translate-x-1/2 -translate-y-[108%] rounded-lg border border-border bg-popover p-3 text-xs shadow-lg"
-            style={{
-              left:
-                (
-                  hovered.x
-                  / SVG_WIDTH
-                  * 100
-                ) + '%',
-              top:
-                (
-                  hovered.y
-                  / SVG_HEIGHT
-                  * 100
-                ) + '%',
-            }}
-          >
-            <p className="font-semibold text-foreground">
+          <div className="pointer-events-none absolute right-2 top-2 z-20 w-60 max-w-[calc(100%-1rem)] rounded-lg border border-border bg-popover p-3 text-xs shadow-lg">
+            <p className="truncate font-semibold text-foreground">
               {hovered
                 .projectionLine
                 .productVariantName
