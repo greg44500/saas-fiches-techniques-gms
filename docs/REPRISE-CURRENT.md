@@ -1,8 +1,28 @@
-# Reprise courante — M-005 Atelier d’optimisation des Fiches techniques
+# Reprise courante — M-005 fusionné ; audit de roadmap à engager
+
+**Date : 2026-10-08**  
+**Branche de référence : `main`**  
+**M-005 : PR #39 fusionnée ; commit de merge `5d0a3d9692343d60ccfec0e46759383d595680dd` ; comparaison avec `main` : identique lors du contrôle documentaire.**
+
+## État courant et prochaines actions
+
+1. Vérifier le résultat de la Core Gate post-merge M-005 : preuve non obtenue lors de la présente révision (les recherches de runs/checks sur le commit de merge n'ont pas fourni de résultat exploitable). Ne pas déclarer cette gate verte sans preuve.
+2. M-005 est intégré ; conserver ses contrats canoniques `docs/m005/M-005-FINAL-CONTRACT.md` et `docs/m005/M-005-TECHNICAL-DESIGN.md`. Ne pas rouvrir son développement sans anomalie démontrée.
+3. Auditer le code des exports déjà présents dans M-004 et comparer au périmètre V1 : CSV, XLSX, PDF, impression, envoi par e-mail. Vérifier stockage, autorisations, capabilities, quotas, API, UI et tests.
+4. Présenter les écarts prouvés et proposer un seul prochain lot métier, avec périmètre et critères d'acceptation à valider avant toute implémentation. Les Fiches process restent candidates ensuite.
+5. Respecter « un lot cohérent → une branche → une PR → un merge ». L'utilisateur réalise les tests locaux et garde la validation des PR/merges.
+
+## Archive de reprise M-005 (état antérieur à la fusion)
+
+Les sections ci-dessous documentent le chantier et la QA avant fusion. Leurs formulations « branche active », « PR interdite » et « tests à faire » sont **historiques et ne décrivent plus l'état courant**. Pour le statut opérationnel, seule la section précédente fait foi.
+
+---
+
+# Archive — M-005 Atelier d’optimisation des Fiches techniques
 
 **Date : 2026-10-08**  
 **Branche : `feature/m005-technical-sheet-optimizer-v1`**  
-**État Git vérifié : branche en avance sur `main`, aucune PR/merge M-005 à réaliser avant validation utilisateur.**
+**État historique au moment de la rédaction : branche en avance sur `main`, avant fusion de la PR #39.**
 
 ## 1. Point de départ
 
