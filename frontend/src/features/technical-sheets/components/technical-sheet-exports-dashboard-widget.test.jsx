@@ -69,8 +69,20 @@ describe('TechnicalSheetExportsDashboardWidget', () => {
       });
 
     expect(widget).toBeInTheDocument();
-    expect(
-      within(widget).getByText('4 / 10'),
-    ).toBeInTheDocument();
+    expect(within(widget).getByText('4 / 10')).toBeInTheDocument();
+    expect(within(widget).getByText('6 disponibles')).toBeInTheDocument();
+    expect(within(widget).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
+    expect(within(widget).getByRole('progressbar').querySelector('[data-slot="progress-indicator"]'))
+      .toHaveStyle({ width: '40%' });
+  });
+  it('ne présente pas une progression artificielle pour une offre illimitée', () => {
+    mocks.usageQuery.mockReturnValue({
+      data: { current: 12, unlimited: true },
+      isError: false,
+      isLoading: false,
+    });
+    render(<TooltipProvider><TechnicalSheetExportsDashboardWidget /></TooltipProvider>);
+    expect(screen.getByText('12 / illimité')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 });
