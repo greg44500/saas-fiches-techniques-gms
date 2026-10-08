@@ -1,24 +1,22 @@
-import { Eye, MoreHorizontal, Pencil, WandSparkles } from 'lucide-react';
+import { Eye, MoreHorizontal, Pencil, Trash2, WandSparkles } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { EXPORT_FORMATS } from '@/features/technical-sheets/components/technical-sheet-export-menu';
 
 function TechnicalSheetRowActions({
   sheet,
   canModify,
   canOptimize,
-  canExport,
+  canDelete,
   hasValidatedState,
-  exportQuotaReached,
-  isExporting,
+  isDeleting,
   isOptimizing,
   isStartingDraft,
   onPreview,
   onOptimize,
   onModify,
-  onExport,
+  onDelete,
 }) {
   const [open, setOpen] = useState(false);
   const actions = [
@@ -42,13 +40,14 @@ function TechnicalSheetRowActions({
       disabled: isStartingDraft,
       onClick: onModify,
     }] : []),
-    ...(hasValidatedState && canExport ? EXPORT_FORMATS.map(({ format, label, Icon }) => ({
-      key: format,
-      Icon,
-      label: 'Exporter ' + label,
-      disabled: exportQuotaReached || isExporting,
-      onClick: () => onExport(format),
-    })) : []),
+    ...(canDelete ? [{
+      key: 'delete',
+      Icon: Trash2,
+      label: 'Supprimer',
+      destructive: true,
+      disabled: isDeleting,
+      onClick: onDelete,
+    }] : []),
   ];
 
   if (actions.length === 0) return null;
@@ -69,11 +68,14 @@ function TechnicalSheetRowActions({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-1">
         <div aria-label={'Actions de ' + sheet.name} className="space-y-0.5" role="group">
-          {actions.map(({ key, Icon, label, disabled, onClick }) => (
-            <Button
-              className="w-full justify-start gap-2"
+          {actions.map(({ key, Icon, label, destructive, disabled, onClick }) => (
+            <div key={key}>
+              {destructive && <div aria-hidden="true" className="my-1 border-t border-border" />}
+              <Button
+              className={destructive
+                ? "w-full justify-start gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                : "w-full justify-start gap-2"}
               disabled={disabled}
-              key={key}
               onClick={() => {
                 setOpen(false);
                 onClick();
@@ -84,7 +86,8 @@ function TechnicalSheetRowActions({
             >
               <Icon aria-hidden="true" className="size-4 shrink-0" />
               {label}
-            </Button>
+              </Button>
+            </div>
           ))}
         </div>
       </PopoverContent>
