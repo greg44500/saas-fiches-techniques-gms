@@ -104,7 +104,7 @@ describe('DashboardDossiers', () => {
 
     expect(screen.getByText(/Mme Martin/)).toBeInTheDocument();
     expect(screen.getByText(/35 %/)).toBeInTheDocument();
-    expect(screen.getByText(/Fiches techniques :/).parentElement).toHaveTextContent('4');
+    expect(screen.getByRole('button', { name: 'Revenir à Nantes Centre' }).closest('section')).toHaveTextContent('Fiches techniques : 4');
     expect(screen.getByRole('button', { name: 'Revenir à Nantes Centre' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Revenir à Nantes Centre' }));
