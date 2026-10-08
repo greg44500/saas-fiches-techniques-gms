@@ -72,20 +72,20 @@ function TechnicalSheetRowActions({
             <div key={key}>
               {destructive && <div aria-hidden="true" className="my-1 border-t border-border" />}
               <Button
-              className={destructive
-                ? "w-full justify-start gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                : "w-full justify-start gap-2"}
-              disabled={disabled}
-              onClick={() => {
-                setOpen(false);
-                onClick();
-              }}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <Icon aria-hidden="true" className="size-4 shrink-0" />
-              {label}
+                className={destructive
+                  ? 'w-full justify-start gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive'
+                  : 'w-full justify-start gap-2'}
+                disabled={disabled}
+                onClick={() => {
+                  setOpen(false);
+                  onClick();
+                }}
+                size="sm"
+                type="button"
+                variant="ghost"
+              >
+                <Icon aria-hidden="true" className="size-4 shrink-0" />
+                {label}
               </Button>
             </div>
           ))}
