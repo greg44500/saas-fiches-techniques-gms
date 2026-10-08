@@ -39,6 +39,7 @@ import {
 import {
   TechnicalSheetOptimizerRecipePreview,
 } from '@/features/technical-sheets/components/technical-sheet-optimizer-recipe-preview';
+import { buildIngredientColorMap } from '@/features/technical-sheets/lib/technical-sheet-optimizer-colors';
 import {
   buildOptimizationRequest,
   buildOptimizerLines,
@@ -283,6 +284,10 @@ function TechnicalSheetOptimizerPage() {
   const after =
     simulation?.after
     ?? before;
+  const ingredientColorMap = useMemo(
+    () => buildIngredientColorMap(before?.lines ?? []),
+    [before?.lines],
+  );
   const selectedLine =
     findOptimizerLine(
       lines,
@@ -531,6 +536,7 @@ function TechnicalSheetOptimizerPage() {
           after={after}
           baseline={before}
           embedded
+          ingredientColorMap={ingredientColorMap}
           lines={lines}
           mode={mode}
           onChangeLine={
@@ -648,6 +654,7 @@ function TechnicalSheetOptimizerPage() {
             after={after}
             baseline={before}
             draft={context.draft}
+            ingredientColorMap={ingredientColorMap}
             onOpenControls={() =>
               setControlsOpen(true)}
             onSelect={

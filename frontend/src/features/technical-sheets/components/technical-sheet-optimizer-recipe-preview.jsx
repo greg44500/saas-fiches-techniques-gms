@@ -63,6 +63,7 @@ function TechnicalSheetOptimizerRecipePreview({
   after,
   baseline,
   draft,
+  ingredientColorMap,
   onOpenControls,
   onSelect,
   selectedLineId,
@@ -156,7 +157,7 @@ function TechnicalSheetOptimizerRecipePreview({
                     line.kind
                     === 'INGREDIENT';
                   const ingredientTone = adjustable
-                    ? ingredientColor(line.id)
+                    ? ingredientColor(line.id, ingredientColorMap)
                     : null;
                   const selected =
                     adjustable
@@ -237,7 +238,7 @@ function TechnicalSheetOptimizerRecipePreview({
                             <span
                               aria-hidden="true"
                               className="size-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: ingredientTone.handle }}
+                              style={{ backgroundColor: ingredientTone.base }}
                             />
                           )}
                           <div className="min-w-0">
@@ -332,7 +333,7 @@ function TechnicalSheetOptimizerRecipePreview({
                             <span
                               className="block h-full rounded-full"
                               style={{
-                                backgroundColor: ingredientTone?.handle,
+                                backgroundColor: ingredientTone?.base,
                                 width:
                                   afterShare + '%',
                               }}

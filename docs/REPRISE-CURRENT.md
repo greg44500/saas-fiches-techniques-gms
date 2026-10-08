@@ -346,3 +346,8 @@ Ne pas créer de micro-version, de PR intermédiaire ou de merge technique pour 
 - Un badge « Simulation en cours » accompagne le titre principal de l’Atelier.
 - Le bandeau est renommé « Impacts économiques ».
 - Dans l’indicateur global, le libellé est centré verticalement avec la barre. La mention « Référence économique » n’est plus affichée en état neutre ; le libellé accessible « Aucun écart » reste disponible.
+
+
+## QA palette par ingrédient — 2026-10-08
+
+La palette par ligne INGREDIENT est attribuée une fois depuis l'ordre de la baseline, partagée entre le tableau et le graphique. Le repère du produit, la barre %CM et le profil ont la même couleur de base ; la couleur du graphique peut être renforcée près des extrêmes. Aucun usage de la couleur ne représente un score qualitatif. La palette boucle après dix ingrédients.

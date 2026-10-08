@@ -7,7 +7,7 @@ import {
   useState,
 } from 'react';
 
-import { ingredientColor } from '@/features/technical-sheets/lib/technical-sheet-optimizer-colors';
+import { ingredientGraphTone } from '@/features/technical-sheets/lib/technical-sheet-optimizer-colors';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
@@ -281,6 +281,7 @@ function TechnicalSheetOptimizationProfile({
   after,
   baseline,
   embedded = false,
+  ingredientColorMap,
   lines,
   mode,
   onChangeLine,
@@ -355,10 +356,11 @@ function TechnicalSheetOptimizationProfile({
                 : 2,
             ),
           tone:
-            ingredientColor(
+            ingredientGraphTone(
               beforeLine.id,
               adjustment,
               effectiveRange,
+              ingredientColorMap,
             ),
           beforeLine,
           projectionLine,
@@ -371,6 +373,7 @@ function TechnicalSheetOptimizationProfile({
       baseline,
       effectiveRange.max,
       effectiveRange.min,
+      ingredientColorMap,
       lines,
       zeroX,
     ],
