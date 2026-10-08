@@ -27,6 +27,10 @@ const dossiers = [
       city: 'Nantes',
     },
     status: 'ACTIVE',
+    contactName: 'Mme Martin',
+    createdAt: '2026-09-20T10:00:00.000Z',
+    technicalSheetCount: 4,
+    technicalSheetSettings: { defaultTargetMarginBasisPoints: 3500 },
   },
   {
     id: 'dossier-2',
@@ -37,6 +41,7 @@ const dossiers = [
       city: 'Saint-Nazaire',
     },
     status: 'PAUSED',
+    technicalSheetCount: 0,
   },
 ];
 
@@ -48,6 +53,14 @@ function renderDashboard(props = {}) {
     metadata,
     onRetry: vi.fn(),
     total: 2,
+    totalPages: 1,
+    page: 1,
+    pageSize: 3,
+    canCreate: true,
+    onCreate: vi.fn(),
+    onPageChange: vi.fn(),
+    onSearch: (event) => event.preventDefault(),
+    onSearchChange: vi.fn(),
     workspaceId: 'workspace-1',
   };
 
@@ -64,13 +77,14 @@ describe('DashboardDossiers', () => {
   it('affiche les dossiers accessibles et ouvre uniquement un dossier ACTIVE', () => {
     renderDashboard();
 
-    expect(screen.getByRole('heading', { name: 'Dossiers' })).toBeInTheDocument();
-    expect(screen.getByText('2 dossiers accessibles')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Dossiers (2)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer un dossier' })).toBeInTheDocument();
+    expect(screen.getByText('1 sur 2')).toBeInTheDocument();
     expect(screen.getByText('Nantes Centre')).toBeInTheDocument();
     expect(screen.getByText('Leclerc · 44000 Nantes')).toBeInTheDocument();
     expect(screen.getByText('Saint-Nazaire')).toBeInTheDocument();
-    expect(screen.getByText('Actif')).toBeInTheDocument();
-    expect(screen.getByText('En pause')).toBeInTheDocument();
+    expect(screen.getAllByText('Actif').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('En pause').length).toBeGreaterThan(0);
 
     expect(screen.getByRole('link', { name: 'Voir tous' })).toHaveAttribute(
       'href',
@@ -81,15 +95,62 @@ describe('DashboardDossiers', () => {
       '/workspaces/workspace-1/dossiers/dossier-1',
     );
     expect(screen.getAllByRole('link', { name: 'Ouvrir' })).toHaveLength(1);
+    const frontSection = screen.getByRole('button', {
+      name: 'Afficher les détails de Nantes Centre',
+    }).closest('section');
+    const frontActions = frontSection.querySelectorAll('a, button');
+    expect(frontActions[0]).toHaveTextContent('Ouvrir');
+    expect(frontActions[1]).toHaveTextContent('Détails');
+  });
+
+  it('retourne une carte et affiche les informations de synthèse du Dossier', () => {
+    renderDashboard();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Afficher les détails de Nantes Centre' }));
+
+    expect(screen.getByText(/Mme Martin/)).toBeInTheDocument();
+    expect(screen.getByText(/35 %/)).toBeInTheDocument();
+    const backSection = screen.getByRole('button', { name: 'Revenir à Nantes Centre' }).closest('section');
+    expect(backSection).toHaveTextContent('Actif');
+    expect(backSection).not.toHaveTextContent('Statut :');
+    expect(backSection).toHaveTextContent('Fiches techniques : 4');
+    expect(screen.getByRole('button', { name: 'Revenir à Nantes Centre' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Revenir à Nantes Centre' }).closest('section').querySelector('a[href="/workspaces/workspace-1/dossiers/dossier-1"]')).toHaveTextContent('Ouvrir');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revenir à Nantes Centre' }));
+    expect(screen.getByRole('button', { name: 'Afficher les détails de Nantes Centre' })).toBeInTheDocument();
   });
 
   it('affiche un état vide sans inventer de droit de création', () => {
-    renderDashboard({ dossiers: [], total: 0 });
+    renderDashboard({ dossiers: [], total: 0, canCreate: false });
+    expect(screen.queryByRole('button', { name: 'Créer un dossier' })).not.toBeInTheDocument();
 
     expect(screen.getByText('Aucun dossier accessible')).toBeInTheDocument();
     expect(
       screen.getByText('Les dossiers auxquels vous avez accès apparaîtront ici.'),
     ).toBeInTheDocument();
+  });
+
+  it('navigue dans les pages sans charger tous les Dossiers', () => {
+    const onPageChange = vi.fn();
+    renderDashboard({ total: 100, totalPages: 34, onPageChange });
+    fireEvent.click(screen.getByRole('button', { name: 'Cartes suivantes' }));
+    expect(onPageChange).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cartes suivantes' }));
+    expect(onPageChange).toHaveBeenCalledWith(2);
+    expect(screen.getByText('Dossiers (100)')).toBeInTheDocument();
+  });
+
+  it('soumet une recherche sur les Dossiers accessibles', () => {
+    const onSearch = vi.fn((event) => event.preventDefault());
+    const onSearchChange = vi.fn();
+    renderDashboard({ onSearch, onSearchChange });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Rechercher un dossier dans le tableau de bord' }), {
+      target: { value: 'Nantes' },
+    });
+    fireEvent.submit(screen.getByRole('textbox', { name: 'Rechercher un dossier dans le tableau de bord' }).closest('form'));
+    expect(onSearchChange).toHaveBeenCalledWith('Nantes');
+    expect(onSearch).toHaveBeenCalledTimes(1);
   });
 
   it('propose un retry en cas d’erreur serveur', () => {

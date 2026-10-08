@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
-import { Button } from '@/components/ui/button';
+import { ArrowUpRight } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -49,10 +49,10 @@ function TechnicalSheetsCapacityDashboardWidget() {
   return (
     <Card
       aria-label="Capacité des Fiches techniques"
-      className="h-full shadow-sm"
+      className="shadow-sm"
       role="region"
     >
-      <CardHeader>
+      <CardHeader className="pb-2">
         <div className="flex items-center gap-1">
           <CardTitle as="h2">Fiches techniques</CardTitle>
           <InfoTooltip
@@ -61,7 +61,7 @@ function TechnicalSheetsCapacityDashboardWidget() {
           />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {capacityQuery.isLoading && !capacity ? (
           <div aria-live="polite" className="space-y-4" role="status">
             <span className="sr-only">
@@ -76,7 +76,7 @@ function TechnicalSheetsCapacityDashboardWidget() {
             Capacité indisponible.
           </p>
         ) : capacity ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
               <p className="text-2xl font-semibold tracking-tight">
                 {capacity.current}
@@ -92,25 +92,36 @@ function TechnicalSheetsCapacityDashboardWidget() {
 
             {!capacity.unlimited && (
               <Progress
+                indicatorClassName="bg-primary"
                 aria-valuetext={Math.round(percentage) + ' % de la capacité utilisée'}
                 value={percentage}
               />
             )}
 
             {isOwner && trashCount !== null && !trashQuery.isError && (
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg border border-border p-3">
-                  <p className="text-muted-foreground">Dans les Dossiers</p>
-                  <p className="mt-1 text-lg font-semibold tabular-nums">
-                    {inDossiers}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-border p-3">
-                  <p className="text-muted-foreground">Dans la Corbeille</p>
-                  <p className="mt-1 text-lg font-semibold tabular-nums">
-                    {trashCount}
-                  </p>
-                </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <Link
+                  className="group rounded-lg border border-border p-2.5 transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  to={`/workspaces/${workspace.id}/dossiers`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-muted-foreground">Dans les Dossiers</span>
+                    <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                  </div>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">{inDossiers}</p>
+                  <span className="text-xs text-muted-foreground">Accéder aux Dossiers</span>
+                </Link>
+                <Link
+                  className="group rounded-lg border border-border p-2.5 transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  to={`/workspaces/${workspace.id}/technical-sheets/trash`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-muted-foreground">Dans la Corbeille</span>
+                    <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                  </div>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">{trashCount}</p>
+                  <span className="text-xs text-muted-foreground">Accéder à la Corbeille</span>
+                </Link>
               </div>
             )}
 
@@ -120,13 +131,6 @@ function TechnicalSheetsCapacityDashboardWidget() {
               </p>
             )}
 
-            {isOwner && trashCount > 0 && (
-              <Button asChild size="sm" variant="outline">
-                <Link to={'/workspaces/' + workspace.id + '/technical-sheets/trash'}>
-                  Voir la Corbeille
-                </Link>
-              </Button>
-            )}
           </div>
         ) : null}
       </CardContent>

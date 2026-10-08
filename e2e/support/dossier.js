@@ -39,9 +39,9 @@ async function createDossierFromUi(page, {
   await page.getByRole('button', { name: 'Créer un dossier' }).click();
 
   const dialog = page.getByRole('dialog');
-  await dialog.getByLabel('Nom', { exact: true }).fill(name);
+  await dialog.getByLabel('Nom *', { exact: true }).fill(name);
   await dialog
-    .getByLabel('Marge cible par défaut (%)')
+    .getByLabel('Marge cible par défaut (%) *')
     .fill(defaultTargetMargin);
   await dialog.getByRole('button', { name: 'Créer le dossier' }).click();
 

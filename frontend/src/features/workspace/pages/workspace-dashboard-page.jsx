@@ -25,8 +25,21 @@ function WorkspaceDashboardPage() {
     visibleWidgets,
     isPreferencesLoading,
   } = useWorkspaceDashboardWidgets();
-  const summaryWidgets = visibleWidgets.filter((widget) => widget.slot === 'summary');
-  const contentWidgets = visibleWidgets.filter((widget) => widget.slot === 'content');
+  const dossierWidget = visibleWidgets.find((widget) => widget.id === 'gms.dossiers-overview');
+  const exportsWidget = visibleWidgets.find((widget) => widget.id === 'gms.technical-sheet-exports-monthly');
+  const capacityWidget = visibleWidgets.find((widget) => widget.id === 'gms.technical-sheets-capacity');
+  const productsWidget = visibleWidgets.find((widget) => widget.id === 'gms.products-catalog');
+  const businessWidgets = [exportsWidget, productsWidget, capacityWidget].filter(Boolean);
+  const pairedBusinessWidgets = businessWidgets.length === 3;
+  const summaryWidgets = visibleWidgets.filter(
+    (widget) => widget.slot === 'summary' && widget.id !== 'gms.technical-sheet-exports-monthly',
+  );
+  const contentWidgets = visibleWidgets.filter(
+    (widget) => widget.slot === 'content'
+      && widget.id !== 'gms.dossiers-overview'
+      && widget.id !== 'gms.technical-sheets-capacity'
+      && widget.id !== 'gms.products-catalog',
+  );
   const pendingSummaryWidgets = isPreferencesLoading
     ? accessibleWidgets.filter((widget) => widget.configurable && widget.slot === 'summary')
     : [];
@@ -44,39 +57,57 @@ function WorkspaceDashboardPage() {
         </div>
       </header>
 
-      <section
-        aria-label="Synthèse du workspace"
-        className={getSummaryGridClass()}
-      >
-        {summaryWidgets.map((widget, index) => {
-          const Widget = widget.component;
-          return (
-            <div
-              className={getSummaryItemClass(index, renderedSummaryCount)}
-              key={widget.id}
-            >
-              <Widget />
-            </div>
-          );
-        })}
+      {dossierWidget && <dossierWidget.component />}
 
-        {pendingSummaryWidgets.map((widget, pendingIndex) => {
-          const index = summaryWidgets.length + pendingIndex;
+      {businessWidgets.length > 0 && (
+        <section
+          aria-label="Indicateurs métier"
+          className={getSummaryGridClass()}
+        >
+          {pairedBusinessWidgets ? (
+            <>
+              <div className="col-span-6 flex min-w-0 flex-col gap-4 md:col-span-3">
+                <exportsWidget.component />
+                <productsWidget.component />
+              </div>
+              <div className="col-span-6 min-w-0 md:col-span-3">
+                <capacityWidget.component />
+              </div>
+            </>
+          ) : businessWidgets.map((widget) => {
+            const Widget = widget.component;
+            return (
+              <div
+                className={businessWidgets.length === 1 ? "col-span-6" : "col-span-6 md:col-span-3"}
+                key={widget.id}
+              >
+                <Widget />
+              </div>
+            );
+          })}
+        </section>
+      )}
 
-          return (
-            <div
-              className={getSummaryItemClass(index, renderedSummaryCount)}
-              key={`loading-${widget.id}`}
-            >
-              <DashboardSummaryCard
-                description={widget.description}
-                isLoading
-                label={widget.label}
-              />
-            </div>
-          );
-        })}
-      </section>
+      {(summaryWidgets.length > 0 || pendingSummaryWidgets.length > 0) && (
+        <section aria-label="Synthèse du workspace" className={getSummaryGridClass()}>
+          {summaryWidgets.map((widget, index) => {
+            const Widget = widget.component;
+            return (
+              <div className={getSummaryItemClass(index, renderedSummaryCount)} key={widget.id}>
+                <Widget />
+              </div>
+            );
+          })}
+          {pendingSummaryWidgets.map((widget, pendingIndex) => {
+            const index = summaryWidgets.length + pendingIndex;
+            return (
+              <div className={getSummaryItemClass(index, renderedSummaryCount)} key={`loading-${widget.id}`}>
+                <DashboardSummaryCard description={widget.description} isLoading label={widget.label} />
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {contentWidgets.map((widget) => {
         const Widget = widget.component;

@@ -68,7 +68,7 @@ describe('dossiers frontend composition', () => {
     ]);
   });
 
-  it('compose Compte Client, Corbeille et Paramètres selon leurs permissions', () => {
+  it('compose Compte Client, Corbeille et Réglages selon leurs permissions', () => {
     const navigation = filterWorkspaceNavigation(
       workspaceNavigation,
       {
@@ -95,7 +95,7 @@ describe('dossiers frontend composition', () => {
         path: 'technical-sheets/trash',
       },
       {
-        label: 'Paramètres',
+        label: 'Réglages',
         path: 'dossiers-settings',
       },
     ]);

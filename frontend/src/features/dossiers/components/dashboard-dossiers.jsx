@@ -1,6 +1,12 @@
 import { Link } from 'react-router';
+import { Plus, Search, X } from 'lucide-react';
+
+import { PagedCardCarousel } from '@/components/shared/paged-card-carousel';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import { EmptyState } from '@/components/shared/empty-state';
+import { FlippableCard } from '@/components/shared/flippable-card';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
@@ -38,10 +44,21 @@ function formatAccessibleDossierCount(total) {
 }
 
 function DashboardDossiers({
+  canCreate = false,
   dossiers,
   isError,
   isLoading,
+  isFetching = false,
   metadata,
+  onCreate,
+  onPageChange,
+  onSearch,
+  onSearchChange,
+  page = 1,
+  pageSize = 3,
+  search = '',
+  searchInput = '',
+  totalPages = 1,
   onRetry,
   total,
   workspaceId,
@@ -51,28 +68,40 @@ function DashboardDossiers({
 
   return (
     <Card>
-      <CardHeader className="border-b border-border pb-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-start gap-2">
-              <h2 className="text-lg font-semibold">Dossiers</h2>
-              <InfoTooltip content={help} label="À propos des dossiers" />
-            </div>
-            {!isLoading && !isError && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {formatAccessibleDossierCount(total)}
-              </p>
-            )}
+      <CardHeader className="space-y-4 border-b border-border pb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Dossiers ({total})</h2>
+            <InfoTooltip content={help} label="À propos des dossiers" />
           </div>
-
-          {!isLoading && !isError && (
-            <Link
-              className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              to={`/workspaces/${workspaceId}/dossiers`}
-            >
-              Voir tous
-            </Link>
-          )}
+          <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+            <form className="flex min-w-48 max-w-sm flex-1" onSubmit={onSearch}>
+              <div className="relative w-full">
+                <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  aria-label="Rechercher un dossier dans le tableau de bord"
+                  className="pl-9 pr-9"
+                  onChange={(event) => onSearchChange?.(event.target.value)}
+                  placeholder="Rechercher un dossier…"
+                  value={searchInput}
+                />
+                {searchInput && (
+                  <button aria-label="Effacer la recherche" className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground" onClick={() => onSearchChange?.('')} type="button">
+                    <X aria-hidden="true" className="size-4" />
+                  </button>
+                )}
+              </div>
+            </form>
+            {canCreate && (
+              <Button onClick={onCreate} size="sm" type="button" variant="outline">
+                <Plus aria-hidden="true" className="size-4" />
+                Créer un dossier
+              </Button>
+            )}
+            <Button asChild size="sm" variant="ghost">
+              <Link to={`/workspaces/${workspaceId}/dossiers`}>Voir tous</Link>
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -89,46 +118,88 @@ function DashboardDossiers({
         ) : dossiers.length === 0 ? (
           <EmptyState
             className="p-5"
-            description="Les dossiers auxquels vous avez accès apparaîtront ici."
+            description={search ? 'Aucun dossier ne correspond à cette recherche.' : 'Les dossiers auxquels vous avez accès apparaîtront ici.'}
             title="Aucun dossier accessible"
           />
         ) : (
-          <ul className="divide-y divide-border">
+          <div className="p-5">
+            <PagedCardCarousel
+              disabled={isFetching}
+              label="Dossiers accessibles"
+              onPageChange={onPageChange}
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              totalPages={totalPages}
+            >
             {dossiers.map((dossier) => {
               const isOperational = dossier.status === 'ACTIVE';
+              const margin = dossier.technicalSheetSettings?.defaultTargetMarginBasisPoints;
+              const createdAt = dossier.createdAt
+                ? new Date(dossier.createdAt).toLocaleDateString('fr-FR')
+                : 'Non renseignée';
+              const address = [
+                dossier.location?.address,
+                [dossier.location?.postalCode, dossier.location?.city]
+                  .filter(Boolean).join(' '),
+              ].filter(Boolean).join(' · ') || 'Non renseignée';
 
               return (
-                <li
-                  className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"
-                  key={dossier.id}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">
-                      {dossier.name}
-                    </p>
-                    <p className="mt-1 truncate text-sm text-muted-foreground">
-                      {getDossierSecondaryLabel(dossier)}
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-3">
-                    <StatusBadge tone={isOperational ? 'success' : 'warning'}>
-                      {statusLabels.get(dossier.status) ?? dossier.status}
-                    </StatusBadge>
-
-                    {isOperational && (
+                <div key={dossier.id}>
+                  <FlippableCard
+                    title={dossier.name}
+                    backAction={isOperational ? (
                       <Link
-                        className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="rounded-md px-3 py-2 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         to={`/workspaces/${workspaceId}/dossiers/${dossier.id}`}
                       >
                         Ouvrir
                       </Link>
+                    ) : null}
+                    frontAction={isOperational ? (
+                      <Link
+                        className="rounded-md px-3 py-2 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        to={`/workspaces/${workspaceId}/dossiers/${dossier.id}`}
+                      >
+                        Ouvrir
+                      </Link>
+                    ) : null}
+                    front={(
+                      <div className="flex h-full flex-col gap-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="min-w-0 break-words text-base font-semibold">{dossier.name}</h3>
+                          <StatusBadge tone={isOperational ? 'success' : 'warning'}>
+                            {statusLabels.get(dossier.status) ?? dossier.status}
+                          </StatusBadge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {getDossierSecondaryLabel(dossier)}
+                        </p>
+
+                      </div>
                     )}
-                  </div>
-                </li>
+                    back={(
+                      <div className="space-y-1.5 text-sm">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="break-words font-semibold">Informations du dossier</h3>
+                          <StatusBadge tone={isOperational ? 'success' : 'warning'}>
+                            {statusLabels.get(dossier.status) ?? dossier.status}
+                          </StatusBadge>
+                        </div>
+                        <p><span className="text-muted-foreground">Enseigne :</span> {dossier.brand || 'Non renseignée'}</p>
+                        <p className="break-words"><span className="text-muted-foreground">Adresse :</span> {address}</p>
+                        <p><span className="text-muted-foreground">Interlocuteur :</span> {dossier.contactName || 'Non renseigné'}</p>
+                        <p><span className="text-muted-foreground">Création :</span> {createdAt}</p>
+                        <p><span className="text-muted-foreground">Fiches techniques :</span> {dossier.technicalSheetCount ?? '—'}</p>
+                        <p><span className="text-muted-foreground">Marge cible :</span> {Number.isInteger(margin) ? `${(margin / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %` : 'Non définie'}</p>
+                      </div>
+                    )}
+                  />
+                </div>
               );
             })}
-          </ul>
+            </PagedCardCarousel>
+          </div>
         )}
       </CardContent>
     </Card>

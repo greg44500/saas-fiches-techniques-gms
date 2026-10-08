@@ -215,7 +215,7 @@ function TechnicalSheetTrashPage() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">
-            Corbeille des Fiches techniques
+            Corbeille
           </h1>
           <InfoTooltip
             content="Les Fiches restent restaurables jusqu’à leur date de suppression définitive et continuent de compter dans la capacité pendant cette période."
@@ -247,30 +247,29 @@ function TechnicalSheetTrashPage() {
       </header>
 
       <section className="overflow-hidden rounded-xl border border-border bg-card">
-        <DataTable
-          aria-label="Corbeille des Fiches techniques"
-          columns={columns}
-          data={sheets}
-          emptyContent={(
-            <EmptyState
-              className="p-0"
-              description="Aucune Fiche technique n’attend une restauration ou une suppression définitive."
-              title="Corbeille vide"
+        {sheets.length === 0 ? (
+          <EmptyState className="p-5" title="Corbeille vide" />
+        ) : (
+          <>
+            <DataTable
+              aria-label="Corbeille des Fiches techniques"
+              columns={columns}
+              data={sheets}
+              getRowKey={(sheet) => sheet.id}
+              rowClassName="transition-colors hover:bg-muted/50"
             />
-          )}
-          getRowKey={(sheet) => sheet.id}
-          rowClassName="transition-colors hover:bg-muted/50"
-        />
-        <div className="px-5 pb-5">
-          <DataPagination
-            disabled={trashQuery.isFetching}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-            page={page}
-            pageSize={pageSize}
-            pagination={pagination}
-          />
-        </div>
+            <div className="px-5 pb-5">
+              <DataPagination
+                disabled={trashQuery.isFetching}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                page={page}
+                pageSize={pageSize}
+                pagination={pagination}
+              />
+            </div>
+          </>
+        )}
       </section>
 
       {settingsOpen && (

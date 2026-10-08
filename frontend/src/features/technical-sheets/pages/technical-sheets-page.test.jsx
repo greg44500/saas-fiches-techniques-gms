@@ -14,7 +14,7 @@ import {
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
-  exportMutation: vi.fn(),
+  deleteMutation: vi.fn(),
   navigate: vi.fn(),
   previewProps: null,
   startDraftMutation: vi.fn(),
@@ -60,8 +60,9 @@ vi.mock('@/features/dossiers/api/dossiers-api', () => ({
 }));
 
 vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
-  useExportTechnicalSheetMutation: () => [
-    mocks.exportMutation,
+  useDeleteTechnicalSheetMutation: () => [
+    mocks.deleteMutation,
+    { isLoading: false },
   ],
   useGetDossierTechnicalSheetSettingsQuery: () => ({
     data: {
@@ -73,14 +74,6 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
     data: {
       current: 3,
       limit: 10,
-      unlimited: false,
-    },
-  }),
-  useGetTechnicalSheetExportUsageQuery: () => ({
-    data: {
-      current: 0,
-      limit: 10,
-      remaining: 10,
       unlimited: false,
     },
   }),
@@ -153,19 +146,6 @@ vi.mock('@/features/technical-sheets/components/technical-sheet-create-dialog', 
     null,
 }));
 
-vi.mock('@/features/technical-sheets/components/technical-sheet-export-menu', () => ({
-  TechnicalSheetExportMenu: ({
-    label,
-  }) => (
-    <button
-      aria-label={label}
-      type="button"
-    >
-      Export
-    </button>
-  ),
-}));
-
 vi.mock('@/features/technical-sheets/components/technical-sheet-preview-dialog', () => ({
   TechnicalSheetPreviewDialog: (
     props,
@@ -208,6 +188,9 @@ describe('TechnicalSheetsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.previewProps = null;
+    mocks.deleteMutation.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({}),
+    });
     mocks.startDraftMutation
       .mockReturnValue({
         unwrap: vi.fn()
@@ -219,7 +202,7 @@ describe('TechnicalSheetsPage', () => {
         TECHNICAL_SHEET_PERMISSION.READ,
         TECHNICAL_SHEET_PERMISSION.CREATE,
         TECHNICAL_SHEET_PERMISSION.UPDATE,
-        TECHNICAL_SHEET_PERMISSION.EXPORT,
+        TECHNICAL_SHEET_PERMISSION.DELETE,
       ].includes(permission),
       hasFeature: (feature) =>
         feature
@@ -264,76 +247,50 @@ describe('TechnicalSheetsPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('garde Modifier sur les états éditables et réserve Prévisualiser/Exporter aux versions validées', () => {
+  it('regroupe Prévisualiser, Modifier et Supprimer sans proposer d’exports', async () => {
+    const user = userEvent.setup();
     renderPage();
 
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Modifier Boeuf Bourguignon',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
-        name:
-          'Prévisualiser Boeuf Bourguignon',
-      }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
-        name:
-          'Exporter Boeuf Bourguignon',
-      }),
-    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions de Boeuf Bourguignon' }));
+    expect(screen.getByRole('button', { name: 'Modifier' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Prévisualiser' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Supprimer' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Exporter/ })).not.toBeInTheDocument();
 
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Prévisualiser Tartine auvergnate',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Exporter Tartine auvergnate',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Prévisualiser Tatin',
-      }),
-    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions de Tartine auvergnate' }));
+    expect(screen.getByRole('button', { name: 'Prévisualiser' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Supprimer' })).toHaveClass('text-destructive');
+    expect(screen.queryByRole('button', { name: /Exporter/ })).not.toBeInTheDocument();
   });
 
-  it('masque seulement Exporter lorsque la capability commerciale est absente', () => {
+  it('masque Supprimer sans permission dédiée et conserve les actions de lecture', async () => {
+    const user = userEvent.setup();
     mocks.workspaceContext.mockReturnValue({
-      can: (permission) => [
-        TECHNICAL_SHEET_PERMISSION.READ,
-        TECHNICAL_SHEET_PERMISSION.CREATE,
-        TECHNICAL_SHEET_PERMISSION.UPDATE,
-        TECHNICAL_SHEET_PERMISSION.EXPORT,
-      ].includes(permission),
+      can: (permission) => permission === TECHNICAL_SHEET_PERMISSION.READ,
       hasFeature: () => false,
-      workspace: {
-        id: 'workspace-1',
-      },
+      workspace: { id: 'workspace-1' },
     });
-
     renderPage();
+    await user.click(screen.getByRole('button', { name: 'Actions de Tartine auvergnate' }));
+    expect(screen.getByRole('button', { name: 'Prévisualiser' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Supprimer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Exporter/ })).not.toBeInTheDocument();
+  });
 
-    expect(
-      screen.getByRole('button', {
-        name:
-          'Prévisualiser Tartine auvergnate',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {
-        name:
-          'Exporter Tartine auvergnate',
-      }),
-    ).not.toBeInTheDocument();
+  it('demande confirmation et transmet la révision de la fiche avant suppression', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Actions de Tartine auvergnate' }));
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(mocks.deleteMutation).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Mettre dans la Corbeille' }));
+    expect(mocks.deleteMutation).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      dossierId: 'dossier-1',
+      technicalSheetId: 'sheet-validated',
+      expectedRevision: 5,
+    });
   });
 
   it('ouvre la prévisualisation validée sans quitter la liste', async () => {
@@ -341,12 +298,8 @@ describe('TechnicalSheetsPage', () => {
 
     renderPage();
 
-    await user.click(
-      screen.getByRole('button', {
-        name:
-          'Prévisualiser Tartine auvergnate',
-      }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Actions de Tartine auvergnate' }));
+    await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
 
     expect(
       screen.getByRole('dialog'),
@@ -368,12 +321,8 @@ describe('TechnicalSheetsPage', () => {
 
     renderPage();
 
-    await user.click(
-      screen.getByRole('button', {
-        name:
-          'Modifier Tartine auvergnate',
-      }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Actions de Tartine auvergnate' }));
+    await user.click(screen.getByRole('button', { name: 'Modifier' }));
 
     expect(
       mocks.startDraftMutation,
@@ -398,12 +347,8 @@ describe('TechnicalSheetsPage', () => {
 
     renderPage();
 
-    await user.click(
-      screen.getByRole('button', {
-        name:
-          'Modifier Boeuf Bourguignon',
-      }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Actions de Boeuf Bourguignon' }));
+    await user.click(screen.getByRole('button', { name: 'Modifier' }));
 
     expect(
       mocks.navigate,

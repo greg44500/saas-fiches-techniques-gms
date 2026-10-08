@@ -88,6 +88,7 @@ describe('DossiersPage', () => {
             id: 'dossier-1',
             name: 'Nantes Centre',
             brand: 'Leclerc',
+            technicalSheetCount: 12,
             location: {
               address: null,
               postalCode: '44000',
@@ -99,6 +100,7 @@ describe('DossiersPage', () => {
             id: 'dossier-2',
             name: 'Saint-Nazaire',
             brand: null,
+            technicalSheetCount: 0,
             location: null,
             status: 'PAUSED',
           },
@@ -122,6 +124,9 @@ describe('DossiersPage', () => {
     renderPage();
 
     expect(screen.getByText('Nantes Centre')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Nb FT' })).toBeInTheDocument();
+    expect(screen.getByText('Nantes Centre').closest('tr')).toHaveTextContent('12');
+    expect(screen.getByText('Saint-Nazaire').closest('tr')).toHaveTextContent('0');
     expect(screen.getByText('Leclerc')).toBeInTheDocument();
     expect(screen.getByText('44000 Nantes')).toBeInTheDocument();
     expect(screen.getByText('Actif')).toBeInTheDocument();

@@ -67,7 +67,7 @@ describe('DossierSettingsPage', () => {
 
     expect(mocks.policyQuery).toHaveBeenCalledWith('workspace-1');
     expect(screen.getByRole('heading', {
-      name: 'Paramètres des Dossiers',
+      name: 'Réglages des dossiers',
     })).toBeInTheDocument();
     expect(screen.getByText('Politique des prix')).toBeInTheDocument();
     expect(screen.getByRole('button', {

@@ -20,6 +20,8 @@ import {
     DossierAccessGrant,
 } from './dossierAccess.model.js';
 import { Dossier } from './dossier.model.js';
+import { TechnicalSheet } from '../technicalSheet/technicalSheet.model.js';
+import { TECHNICAL_SHEET_STATUS } from '../technicalSheet/technicalSheet.registry.js';
 import { DOSSIER_STATUS } from './dossier.registry.js';
 import { serializeDossier } from './dossier.serializer.js';
 import { AppError } from '../../utils/appError.js';
@@ -201,8 +203,38 @@ const listDossiers = async ({
     const total =
         result?.metadata?.[0]?.total ?? 0;
 
+    // Count identities (not drafts or validation snapshots) only on this page.
+    const counts = dossiers.length
+        ? await TechnicalSheet.aggregate([
+            {
+                $match: {
+                    workspace: workspaceObjectId,
+                    dossier: { $in: dossiers.map((dossier) => dossier._id) },
+                    status: {
+                        $in: [
+                            TECHNICAL_SHEET_STATUS.ACTIVE,
+                            TECHNICAL_SHEET_STATUS.ARCHIVED,
+                        ],
+                    },
+                },
+            },
+            {
+                $group: {
+                    _id: '$dossier',
+                    count: { $sum: 1 },
+                },
+            },
+        ])
+        : [];
+    const countByDossier = new Map(
+        counts.map(({ _id, count }) => [_id.toString(), count]),
+    );
+
     return {
-        dossiers: dossiers.map(serializeDossier),
+        dossiers: dossiers.map((dossier) => ({
+            ...serializeDossier(dossier),
+            technicalSheetCount: countByDossier.get(dossier._id.toString()) ?? 0,
+        })),
         pagination: {
             page,
             limit,
