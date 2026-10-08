@@ -98,12 +98,14 @@ describe('TechnicalSheetTrashPage', () => {
     );
 
     expect(screen.getByRole('heading', {
-      name: 'Corbeille des Fiches techniques',
+      name: 'Corbeille',
     })).toBeInTheDocument();
     expect(screen.getByRole('button', {
       name: 'Régler la durée de conservation de la Corbeille',
     })).toBeInTheDocument();
     expect(screen.queryByText('Capacité')).not.toBeInTheDocument();
+    expect(screen.getByText('Corbeille vide')).toBeInTheDocument();
+    expect(screen.queryByText('Aucune Fiche technique n’attend une restauration ou une suppression définitive.')).not.toBeInTheDocument();
     expect(screen.queryByText(/Purger/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', {
       name: 'Supprimer les éléments arrivés à échéance',
