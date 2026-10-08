@@ -86,10 +86,6 @@ function TechnicalSheetsPage() {
     exportingSheetId,
     setExportingSheetId,
   ] = useState(null);
-  const [
-    exportingFormat,
-    setExportingFormat,
-  ] = useState(null);
   const {
     page,
     pageSize,
@@ -345,7 +341,6 @@ function TechnicalSheetsPage() {
     format,
   ) {
     setExportingSheetId(sheet.id);
-    setExportingFormat(format);
 
     try {
       const artifact =
@@ -380,7 +375,6 @@ function TechnicalSheetsPage() {
       });
     } finally {
       setExportingSheetId(null);
-      setExportingFormat(null);
     }
   }
 
