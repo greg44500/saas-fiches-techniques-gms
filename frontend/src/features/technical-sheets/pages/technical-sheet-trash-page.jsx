@@ -215,7 +215,7 @@ function TechnicalSheetTrashPage() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">
-            Corbeille des Fiches techniques
+            Corbeille
           </h1>
           <InfoTooltip
             content="Les Fiches restent restaurables jusqu’à leur date de suppression définitive et continuent de compter dans la capacité pendant cette période."
@@ -254,7 +254,7 @@ function TechnicalSheetTrashPage() {
           emptyContent={(
             <EmptyState
               className="p-0"
-              description="Aucune Fiche technique n’attend une restauration ou une suppression définitive."
+              description={undefined}
               title="Corbeille vide"
             />
           )}
