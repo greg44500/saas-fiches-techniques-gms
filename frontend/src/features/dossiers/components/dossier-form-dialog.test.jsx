@@ -62,6 +62,28 @@ describe('DossierFormDialog', () => {
     expect(createButton).toBeEnabled();
   });
 
+  it('signale la marge manquante au blur puis retire son erreur après saisie', async () => {
+    const user = userEvent.setup();
+    render(
+      <DossierFormDialog
+        onClose={vi.fn()}
+        onSubmit={vi.fn().mockResolvedValue(undefined)}
+        open
+      />,
+    );
+
+    const margin = screen.getByLabelText('Marge cible par défaut (%) *');
+    await user.click(margin);
+    await user.tab();
+    expect(await screen.findByText('La marge cible par défaut est obligatoire.')).toBeInTheDocument();
+    expect(margin).toHaveAttribute('aria-invalid', 'true');
+
+    await user.type(margin, '30');
+    await waitFor(() => {
+      expect(screen.queryByText('La marge cible par défaut est obligatoire.')).not.toBeInTheDocument();
+    });
+  });
+
   it('crée un payload avec nom et marge cible et efface les champs facultatifs', async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
