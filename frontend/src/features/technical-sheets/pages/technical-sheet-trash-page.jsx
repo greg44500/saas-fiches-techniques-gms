@@ -247,30 +247,29 @@ function TechnicalSheetTrashPage() {
       </header>
 
       <section className="overflow-hidden rounded-xl border border-border bg-card">
-        <DataTable
-          aria-label="Corbeille des Fiches techniques"
-          columns={columns}
-          data={sheets}
-          emptyContent={(
-            <EmptyState
-              className="p-0"
-              description={undefined}
-              title="Corbeille vide"
+        {sheets.length === 0 ? (
+          <EmptyState className="p-5" title="Corbeille vide" />
+        ) : (
+          <>
+            <DataTable
+              aria-label="Corbeille des Fiches techniques"
+              columns={columns}
+              data={sheets}
+              getRowKey={(sheet) => sheet.id}
+              rowClassName="transition-colors hover:bg-muted/50"
             />
-          )}
-          getRowKey={(sheet) => sheet.id}
-          rowClassName="transition-colors hover:bg-muted/50"
-        />
-        <div className="px-5 pb-5">
-          <DataPagination
-            disabled={trashQuery.isFetching}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-            page={page}
-            pageSize={pageSize}
-            pagination={pagination}
-          />
-        </div>
+            <div className="px-5 pb-5">
+              <DataPagination
+                disabled={trashQuery.isFetching}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                page={page}
+                pageSize={pageSize}
+                pagination={pagination}
+              />
+            </div>
+          </>
+        )}
       </section>
 
       {settingsOpen && (
