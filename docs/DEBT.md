@@ -246,17 +246,17 @@ Core Gate post-merge #146 : success
 
 D-012 reste une responsabilité permanente de chaque futur module métier, mais les preuves E2E M-001 à M-004 actuellement livrées sont validées.
 
-Checkpoint M-005 en attente de validation locale :
+Checkpoint M-005 actualisé le 2026-10-08 :
 
 ~~~text
-Atelier d’optimisation
-→ test Playwright dédié ajouté
-→ simulation non destructive vérifiée par le scénario
-→ Apply explicite vérifié par le scénario
-→ exécution locale et QA visuelle encore requises avant PR/merge
+Atelier d'optimisation M-005
+→ tests backend, frontend et E2E ajoutés au lot
+→ PR #39 fusionnée sur main
+→ merge : 5d0a3d9692343d60ccfec0e46759383d595680dd
+→ Core Gate post-merge : résultat non vérifié dans cette révision documentaire
 ~~~
 
-Ce checkpoint ne sera déclaré validé qu’après exécution réelle des tests par l’utilisateur.
+La fusion est établie, mais ne suffit pas à prouver le succès de tous les tests. Vérifier la Core Gate post-merge et conserver cette réserve tant que son résultat n'est pas disponible. D-012 continue de s'appliquer aux futurs modules métier ; cette actualisation n'ouvre pas de nouvelle dette fonctionnelle M-005.
 
 ### GMS-UX-001 — Raffinements visuels post-M-002
 
