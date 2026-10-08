@@ -125,6 +125,8 @@ describe('DashboardDossiers', () => {
     const onPageChange = vi.fn();
     renderDashboard({ total: 100, totalPages: 34, onPageChange });
     fireEvent.click(screen.getByRole('button', { name: 'Cartes suivantes' }));
+    expect(onPageChange).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cartes suivantes' }));
     expect(onPageChange).toHaveBeenCalledWith(2);
     expect(screen.getByText('Dossiers (100)')).toBeInTheDocument();
   });
@@ -136,7 +138,7 @@ describe('DashboardDossiers', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'Rechercher un dossier dans le tableau de bord' }), {
       target: { value: 'Nantes' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Lancer la recherche de dossiers' }));
+    fireEvent.submit(screen.getByRole('textbox', { name: 'Rechercher un dossier dans le tableau de bord' }).closest('form'));
     expect(onSearchChange).toHaveBeenCalledWith('Nantes');
     expect(onSearch).toHaveBeenCalledTimes(1);
   });
