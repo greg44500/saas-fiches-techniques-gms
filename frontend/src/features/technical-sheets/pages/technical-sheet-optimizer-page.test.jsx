@@ -240,6 +240,10 @@ describe('TechnicalSheetOptimizerPage', () => {
       ),
     ).toBeInTheDocument();
     expect(
+      screen.getByText('Carotte', { selector: 'p' })
+        .previousElementSibling,
+    ).toHaveStyle({ backgroundColor: 'hsl(218 75% 44%)' });
+    expect(
       screen.getByText(
         'Coût matière HT',
       ),

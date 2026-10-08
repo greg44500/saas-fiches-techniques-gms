@@ -51,6 +51,7 @@ function TechnicalSheetOptimizerControlsPanel({
   comparing,
   costAdjustmentRange,
   line,
+  ingredientColorMap,
   mode,
   onApply,
   onAutoOptionChange,
@@ -143,6 +144,7 @@ function TechnicalSheetOptimizerControlsPanel({
                   canManageSourcing
                 }
                 line={line}
+                ingredientColorMap={ingredientColorMap}
                 onChange={
                   onChangeLine
                 }

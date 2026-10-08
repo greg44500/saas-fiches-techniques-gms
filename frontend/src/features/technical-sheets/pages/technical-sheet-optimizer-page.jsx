@@ -514,6 +514,7 @@ function TechnicalSheetOptimizerPage() {
         context.costAdjustmentRange
       }
       line={selectedLine}
+      ingredientColorMap={ingredientColorMap}
       mode={mode}
       onApply={apply}
       onAutoOptionChange={

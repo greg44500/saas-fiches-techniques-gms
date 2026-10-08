@@ -1,5 +1,6 @@
 import { RotateCcw } from 'lucide-react';
 
+import { ingredientColor } from '@/features/technical-sheets/lib/technical-sheet-optimizer-colors';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import { Field, FieldLabel } from '@/components/ui/field';
@@ -53,6 +54,7 @@ function TechnicalSheetOptimizerInspector({
   baselineLine,
   canManageSourcing,
   line,
+  ingredientColorMap,
   onChange,
   onOpenConstraints,
   projectionLine,
@@ -133,8 +135,18 @@ function TechnicalSheetOptimizerInspector({
 
   return (
     <div className="space-y-3 p-3">
-      <div className="border-b border-border pb-2">
-        <p className="truncate text-sm font-semibold">
+      <div className="flex items-center gap-2 border-b border-border pb-2">
+        <span
+          aria-hidden="true"
+          className="size-2.5 shrink-0 rounded-full"
+          style={{
+            backgroundColor: ingredientColor(
+              baselineLine.id,
+              ingredientColorMap,
+            ).base,
+          }}
+        />
+        <p className="min-w-0 truncate text-sm font-semibold">
           {projectionLine.productVariantName}
         </p>
       </div>
