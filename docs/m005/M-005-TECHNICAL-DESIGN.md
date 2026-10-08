@@ -292,8 +292,8 @@ Desktop :
 - colonne gauche dominante : indicateurs économiques compacts puis Fiche technique simulée ;
 - colonne droite `minmax(32rem, 36rem)`, alignée sur la largeur d’un drawer de détail ;
 - en-tête du profil : titre à gauche, sélecteur compact Manuel / Auto à droite ;
-- spectre économique compact, axe Y `%CM`, axe X Réduction / Référence / Enrichissement ;
-- une trace SVG indépendante par ingrédient, avec point interactif au sommet ; aucune ligne ne relie deux ingrédients ;
+- profil économique compact, axe Y `%CM`, axe X Réduction / Référence / Enrichissement ;
+- une barre SVG horizontale indépendante par ingrédient, ancrée au centre Référence, colorée selon le sens de variation, avec point interactif terminal ; aucune ligne ne relie deux ingrédients ;
 - barre horizontale d’outils par icônes uniquement ;
 - contenu contextuel seul scrollable et dimensionné pour prendre la majorité de la hauteur restante ;
 - actions de scénario regroupées sur une seule rangée compacte en pied du panneau.
@@ -309,7 +309,11 @@ CONSTRAINTS
 
 Le changement d’outil ne modifie ni route, ni ingrédient sélectionné, ni scénario.
 
-La Fiche simulée réemploie le vocabulaire visuel M-004 : Produit, quantité nette, unité, PU HT, coût HT et %CM. Elle reste une projection en lecture seule ; les intentions de réglage sont pilotées depuis le panneau droit.
+La Fiche simulée réemploie le vocabulaire visuel M-004 : Produit, QT nette, unité, PU HT, coût HT et %CM. Elle reste une projection en lecture seule ; les intentions de réglage sont pilotées depuis le panneau droit.
+
+L’en-tête desktop est compacté sur une seule ligne. Les champs de contraintes restent vides ou numériques et leurs explications sont portées par `InfoTooltip`.
+
+Le KPI d’impact utilise le signe de `savings.amountHt` retourné par le serveur pour choisir entre Économie estimée, Surcoût estimé et Écart estimé. Aucun calcul économique autoritatif supplémentaire n’est introduit dans React.
 
 Les champs décimaux optionnels sont normalisés côté frontend. Tant qu’une saisie transitoire n’est pas un décimal strictement positif complet, `buildOptimizationRequest` ne produit pas de payload et aucune requête de simulation n’est envoyée.
 
