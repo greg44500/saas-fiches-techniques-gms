@@ -83,6 +83,32 @@ describe('application Help registry', () => {
         );
     });
 
+    it('couvre les nouveaux parcours avec leurs permissions et capacités réelles', () => {
+        const cases = [
+            ['workspace.dossiers.create', 'dossier:create', null, false],
+            ['workspace.dossiers.settings', 'dossier:update', null, false],
+            ['workspace.suppliers.import', 'supplier:catalog:import', 'supplier_catalog_import', false],
+            ['workspace.suppliers.indicative', 'supplier:indicative-price:read', null, false],
+            ['workspace.technical_sheets.read', 'technical-sheet:read', null, false],
+            ['workspace.technical_sheets.export', 'technical-sheet:export', 'technical_sheet_export', false],
+            ['workspace.technical_sheets.optimize', 'technical-sheet:update', 'technical_sheet_optimizer', false],
+            ['workspace.technical_sheets.copy', 'technical-sheet:copy', null, false],
+            ['workspace.technical_sheets.trash', 'technical-sheet:read', null, true],
+            ['workspace.technical_sheets.restore', 'technical-sheet:restore', null, true],
+            ['workspace.technical_sheets.purge', 'technical-sheet:purge', null, true],
+        ];
+
+        for (const [id, permission, feature, ownerOnly] of cases) {
+            const entry = ACTIVE_HELP_REGISTRY.entriesById[id];
+            expect(entry, id).toBeDefined();
+            expect(entry.context).toBe('workspace');
+            expect(entry.audience.permissions).toContain(permission);
+            expect(entry.audience.applicationGlobalPermissions).toEqual([]);
+            expect(entry.audience.ownerOnly).toBe(ownerOnly);
+            expect(entry.requirements.features).toEqual(feature ? [feature] : []);
+        }
+    });
+
     it('conserve séparées les permissions Workspace et Application Global', () => {
         const workspaceEntry =
             ACTIVE_HELP_REGISTRY.entriesById['workspace.products.reference'];
