@@ -180,16 +180,19 @@ function DashboardDossiers({
                       </div>
                     )}
                     back={(
-                      <div className="space-y-2 text-sm">
-                        <h3 className="break-words font-semibold">Informations du dossier</h3>
+                      <div className="space-y-1.5 text-sm">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="break-words font-semibold">Informations du dossier</h3>
+                          <StatusBadge tone={isOperational ? 'success' : 'warning'}>
+                            {statusLabels.get(dossier.status) ?? dossier.status}
+                          </StatusBadge>
+                        </div>
                         <p><span className="text-muted-foreground">Enseigne :</span> {dossier.brand || 'Non renseignée'}</p>
                         <p className="break-words"><span className="text-muted-foreground">Adresse :</span> {address}</p>
                         <p><span className="text-muted-foreground">Interlocuteur :</span> {dossier.contactName || 'Non renseigné'}</p>
                         <p><span className="text-muted-foreground">Création :</span> {createdAt}</p>
-                        <p><span className="text-muted-foreground">Statut :</span> {statusLabels.get(dossier.status) ?? dossier.status}</p>
                         <p><span className="text-muted-foreground">Fiches techniques :</span> {dossier.technicalSheetCount ?? '—'}</p>
                         <p><span className="text-muted-foreground">Marge cible :</span> {Number.isInteger(margin) ? `${(margin / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %` : 'Non définie'}</p>
-
                       </div>
                     )}
                   />
