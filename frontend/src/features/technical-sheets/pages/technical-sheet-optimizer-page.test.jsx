@@ -240,7 +240,9 @@ describe('TechnicalSheetOptimizerPage', () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Carotte', { selector: 'p' })
+      within(
+        screen.getByLabelText('Panneau de pilotage'),
+      ).getByText('Carotte', { selector: 'p' })
         .previousElementSibling,
     ).toHaveStyle({ backgroundColor: 'hsl(218 75% 44%)' });
     expect(
