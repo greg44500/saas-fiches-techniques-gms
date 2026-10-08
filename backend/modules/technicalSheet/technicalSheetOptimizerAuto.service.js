@@ -488,10 +488,11 @@ const autoSimulation = async ({
                         ?? null,
                     resolvedIntents:
                         resolvedIntents.map(
-                            ({
-                                supplierArticleExplicit: _supplierArticleExplicit,
-                                ...intent
-                            }) => intent,
+                            (intent) => {
+                                const publicIntent = { ...intent };
+                                delete publicIntent.supplierArticleExplicit;
+                                return publicIntent;
+                            },
                         ),
                 }
                 : null,

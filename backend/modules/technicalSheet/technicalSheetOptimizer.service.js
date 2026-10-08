@@ -268,10 +268,8 @@ const simulateTechnicalSheetOptimization = async ({
             atDate,
         });
 
-    const {
-        resolvedScenario: _resolvedScenario,
-        ...result
-    } = simulation;
+    const result = { ...simulation };
+    delete result.resolvedScenario;
 
     return result;
 };
