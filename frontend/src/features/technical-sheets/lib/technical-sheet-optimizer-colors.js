@@ -11,13 +11,17 @@ function ingredientHue(lineId) {
   return hash % 360;
 }
 
-function ingredientColor(lineId, adjustment, range) {
+function ingredientColor(
+  lineId,
+  adjustment = 0,
+  range = { min: -99, max: 100 },
+) {
   const hue = ingredientHue(lineId);
   const amplitude = adjustment < 0
     ? Math.abs(range.min)
     : Math.abs(range.max);
   const intensity = amplitude > 0
-    ? clamp(Math.abs(adjustment) / amplitude, 0, 1)
+    ? Math.min(Math.max(Math.abs(adjustment) / amplitude, 0), 1)
     : 0;
   const lightness = 72 - intensity * 30;
 
