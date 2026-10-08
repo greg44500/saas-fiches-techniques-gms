@@ -71,6 +71,18 @@ Le profil adopte une esthétique de spectre/histogramme : une trace indépendant
 
 La plage libre par défaut reste `-99 % → +100 %`, soit presque zéro à deux fois la quantité de référence. Aucun min/max n’est inventé. L’ancien état non verrouillé `min = max = référence` est neutralisé ; le verrouillage explicite passe uniquement par `locked`.
 
+## 1.3 Ajustements QA du 2026-10-08 — lisibilité
+
+Le profil à courbes décoratives est remplacé par des barres horizontales indépendantes, ancrées sur Référence et positionnées verticalement par %CM. La couleur change selon réduction / augmentation. Le détail au survol est contenu dans le profil afin de ne plus être coupé par les limites du panneau.
+
+Autres ajustements :
+
+- en-tête Atelier sur une ligne ;
+- colonne « QT nette » ;
+- suppression de « Lecture résultat simulé » ;
+- min/max : champs uniquement numériques ou vides, explications dans les aides `(i)` ;
+- KPI dynamique : Économie estimée / Surcoût estimé / Écart estimé selon le signe de `before - after`.
+
 ## 2. Contrats canoniques M-005
 
 ~~~text
