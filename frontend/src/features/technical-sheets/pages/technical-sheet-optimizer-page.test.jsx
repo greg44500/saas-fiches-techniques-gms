@@ -298,6 +298,29 @@ describe('TechnicalSheetOptimizerPage', () => {
       maxNetQuantity: '2',
       locked: true,
     });
+
+    const [sanitizedLine] =
+      buildOptimizerLines({
+        ...legacyContext,
+        draft: {
+          ...legacyContext.draft,
+          lines: [{
+            ...legacyContext
+              .draft.lines[0],
+            optimization: {
+              minNetQuantity: '0',
+              maxNetQuantity: '1',
+              locked: false,
+            },
+          }],
+        },
+      });
+
+    expect(sanitizedLine).toMatchObject({
+      minNetQuantity: '',
+      maxNetQuantity: '',
+      locked: false,
+    });
   });
 
   it('synchronise le point du profil avec l’intention économique de la ligne', async () => {
