@@ -62,19 +62,40 @@ function buildOptimizerLines(context) {
             persistedMaximum,
           ),
         );
-      const legacyPinnedEnvelope =
-        !line.optimization?.locked
-        && persistedMinimum !== ''
-        && persistedMaximum !== ''
+      const validMinimum =
+        persistedMinimum !== ''
         && Number.isFinite(
           referenceQuantity,
         )
         && Number.isFinite(
           minimumQuantity,
         )
+        && minimumQuantity > 0
+        && minimumQuantity
+          <= referenceQuantity;
+      const validMaximum =
+        persistedMaximum !== ''
+        && Number.isFinite(
+          referenceQuantity,
+        )
         && Number.isFinite(
           maximumQuantity,
         )
+        && maximumQuantity > 0
+        && maximumQuantity
+          >= referenceQuantity;
+      const normalizedMinimum =
+        validMinimum
+          ? persistedMinimum
+          : '';
+      const normalizedMaximum =
+        validMaximum
+          ? persistedMaximum
+          : '';
+      const legacyPinnedEnvelope =
+        !line.optimization?.locked
+        && normalizedMinimum !== ''
+        && normalizedMaximum !== ''
         && minimumQuantity
           === referenceQuantity
         && maximumQuantity
@@ -86,11 +107,11 @@ function buildOptimizerLines(context) {
         minNetQuantity:
           legacyPinnedEnvelope
             ? ''
-            : persistedMinimum,
+            : normalizedMinimum,
         maxNetQuantity:
           legacyPinnedEnvelope
             ? ''
-            : persistedMaximum,
+            : normalizedMaximum,
         locked: Boolean(
           line.optimization?.locked,
         ),
