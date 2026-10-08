@@ -13,6 +13,7 @@ import {
   useParams,
 } from 'react-router';
 
+import { StatusBadge } from '@/components/shared/status-badge';
 import { ErrorState } from '@/components/shared/error-state';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
@@ -610,9 +611,9 @@ function TechnicalSheetOptimizerPage() {
             <h1 className="truncate text-lg font-semibold tracking-tight">
               {context.sheet.name}
             </h1>
-            <span className="shrink-0 rounded-md bg-secondary px-2 py-1 text-[10px] font-medium text-secondary-foreground">
+            <StatusBadge className="shrink-0 text-[10px]" tone="warning">
               Simulation en cours
-            </span>
+            </StatusBadge>
           </div>
         </div>
 
