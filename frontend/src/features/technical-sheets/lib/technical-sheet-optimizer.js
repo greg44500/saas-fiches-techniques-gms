@@ -45,19 +45,40 @@ function buildOptimizerLines(context) {
         line.optimization?.maxNetQuantity
         ?? '';
       const referenceQuantity =
-        normalizeDecimalInput(
-          line.netQuantity,
+        Number(
+          normalizeDecimalInput(
+            line.netQuantity,
+          ),
+        );
+      const minimumQuantity =
+        Number(
+          normalizeDecimalInput(
+            persistedMinimum,
+          ),
+        );
+      const maximumQuantity =
+        Number(
+          normalizeDecimalInput(
+            persistedMaximum,
+          ),
         );
       const legacyPinnedEnvelope =
         !line.optimization?.locked
         && persistedMinimum !== ''
         && persistedMaximum !== ''
-        && normalizeDecimalInput(
-          persistedMinimum,
-        ) === referenceQuantity
-        && normalizeDecimalInput(
-          persistedMaximum,
-        ) === referenceQuantity;
+        && Number.isFinite(
+          referenceQuantity,
+        )
+        && Number.isFinite(
+          minimumQuantity,
+        )
+        && Number.isFinite(
+          maximumQuantity,
+        )
+        && minimumQuantity
+          === referenceQuantity
+        && maximumQuantity
+          === referenceQuantity;
 
       return {
         lineId: line.id,
