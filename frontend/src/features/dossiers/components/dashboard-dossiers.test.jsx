@@ -27,6 +27,10 @@ const dossiers = [
       city: 'Nantes',
     },
     status: 'ACTIVE',
+    contactName: 'Mme Martin',
+    createdAt: '2026-09-20T10:00:00.000Z',
+    technicalSheetCount: 4,
+    technicalSheetSettings: { defaultTargetMarginBasisPoints: 3500 },
   },
   {
     id: 'dossier-2',
@@ -37,6 +41,7 @@ const dossiers = [
       city: 'Saint-Nazaire',
     },
     status: 'PAUSED',
+    technicalSheetCount: 0,
   },
 ];
 
@@ -81,6 +86,20 @@ describe('DashboardDossiers', () => {
       '/workspaces/workspace-1/dossiers/dossier-1',
     );
     expect(screen.getAllByRole('link', { name: 'Ouvrir' })).toHaveLength(1);
+  });
+
+  it('retourne une carte et affiche les informations de synthèse du Dossier', () => {
+    renderDashboard();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Afficher les détails de Nantes Centre' }));
+
+    expect(screen.getByText(/Mme Martin/)).toBeInTheDocument();
+    expect(screen.getByText(/35 %/)).toBeInTheDocument();
+    expect(screen.getByText(/Fiches techniques :/).parentElement).toHaveTextContent('4');
+    expect(screen.getByRole('button', { name: 'Revenir à Nantes Centre' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revenir à Nantes Centre' }));
+    expect(screen.getByRole('button', { name: 'Afficher les détails de Nantes Centre' })).toBeInTheDocument();
   });
 
   it('affiche un état vide sans inventer de droit de création', () => {
