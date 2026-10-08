@@ -104,7 +104,10 @@ describe('DashboardDossiers', () => {
 
     expect(screen.getByText(/Mme Martin/)).toBeInTheDocument();
     expect(screen.getByText(/35 %/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Revenir à Nantes Centre' }).closest('section')).toHaveTextContent('Fiches techniques : 4');
+    const backSection = screen.getByRole('button', { name: 'Revenir à Nantes Centre' }).closest('section');
+    expect(backSection).toHaveTextContent('Actif');
+    expect(backSection).not.toHaveTextContent('Statut :');
+    expect(backSection).toHaveTextContent('Fiches techniques : 4');
     expect(screen.getByRole('button', { name: 'Revenir à Nantes Centre' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Revenir à Nantes Centre' }).closest('section').querySelector('a[href="/workspaces/workspace-1/dossiers/dossier-1"]')).toHaveTextContent('Ouvrir');
 
