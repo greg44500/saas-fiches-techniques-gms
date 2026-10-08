@@ -156,6 +156,14 @@ function DashboardDossiers({
                         Ouvrir
                       </Link>
                     ) : null}
+                    frontAction={isOperational ? (
+                      <Link
+                        className="rounded-md px-3 py-2 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        to={`/workspaces/${workspaceId}/dossiers/${dossier.id}`}
+                      >
+                        Ouvrir
+                      </Link>
+                    ) : null}
                     front={(
                       <div className="flex h-full flex-col gap-3">
                         <div className="flex items-start justify-between gap-2">
@@ -167,16 +175,7 @@ function DashboardDossiers({
                         <p className="text-sm text-muted-foreground">
                           {getDossierSecondaryLabel(dossier)}
                         </p>
-                        <div className="mt-auto pt-4">
-                          {isOperational && (
-                            <Link
-                              className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              to={`/workspaces/${workspaceId}/dossiers/${dossier.id}`}
-                            >
-                              Ouvrir
-                            </Link>
-                          )}
-                        </div>
+
                       </div>
                     )}
                     back={(
