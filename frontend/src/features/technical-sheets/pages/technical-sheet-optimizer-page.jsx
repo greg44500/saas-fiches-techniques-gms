@@ -583,11 +583,17 @@ function TechnicalSheetOptimizerPage() {
             />
           </Button>
 
-          <div className="min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="flex min-w-0 items-baseline gap-2">
+            <span className="shrink-0 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Atelier d’optimisation
-            </p>
-            <h1 className="truncate text-xl font-semibold tracking-tight">
+            </span>
+            <span
+              aria-hidden="true"
+              className="text-muted-foreground/70"
+            >
+              |
+            </span>
+            <h1 className="truncate text-lg font-semibold tracking-tight">
               {context.sheet.name}
             </h1>
           </div>
