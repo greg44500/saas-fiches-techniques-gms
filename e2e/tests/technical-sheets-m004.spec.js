@@ -173,18 +173,18 @@ async function expectTechnicalSheetCapacity(page, {
   ).toBeVisible();
 
   if (Number.isInteger(inDossiers)) {
-    const dossierMetric = capacityRegion
-      .getByText('Dans les Dossiers', { exact: true })
-      .locator('..');
+    const dossierMetric = capacityRegion.getByRole('link', {
+      name: /Dans les Dossiers/,
+    });
     await expect(
       dossierMetric.getByText(String(inDossiers), { exact: true }),
     ).toBeVisible();
   }
 
   if (Number.isInteger(inTrash)) {
-    const trashMetric = capacityRegion
-      .getByText('Dans la Corbeille', { exact: true })
-      .locator('..');
+    const trashMetric = capacityRegion.getByRole('link', {
+      name: /Dans la Corbeille/,
+    });
     await expect(
       trashMetric.getByText(String(inTrash), { exact: true }),
     ).toBeVisible();
@@ -444,12 +444,13 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
     ),
   ).toBeVisible();
 
-  await exportRow
-    .getByRole('button', {
-      name:
-        'Prévisualiser Fiche M004 Exports',
-    })
-    .click();
+  await exportRow.getByRole('button', {
+    name: 'Actions de Fiche M004 Exports',
+  }).click();
+  await page.getByRole('button', {
+    name: 'Prévisualiser',
+    exact: true,
+  }).click();
 
   const preview =
     page.getByRole('dialog');
@@ -474,11 +475,18 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
     })
     .click();
 
-  const exportButton =
-    exportRow.getByRole('button', {
-      name:
-        'Exporter Fiche M004 Exports',
-    });
+  await exportRow.getByRole('button', {
+    name: 'Actions de Fiche M004 Exports',
+  }).click();
+  await page.getByRole('button', {
+    name: 'Modifier',
+    exact: true,
+  }).click();
+
+  const exportButton = page.getByRole('button', {
+    name: 'Exports',
+    exact: true,
+  });
 
   await expect(
     exportButton,
@@ -857,12 +865,13 @@ test('M-004 quota atteint bloque création et copie mais autorise la modificatio
           'Fiche M004 Quota',
       });
 
-  await quotaRow
-    .getByRole('button', {
-      name:
-        'Modifier Fiche M004 Quota',
-    })
-    .click();
+  await quotaRow.getByRole('button', {
+    name: 'Actions de Fiche M004 Quota',
+  }).click();
+  await page.getByRole('button', {
+    name: 'Modifier',
+    exact: true,
+  }).click();
 
   await expect(page)
     .toHaveURL(detailUrl);
