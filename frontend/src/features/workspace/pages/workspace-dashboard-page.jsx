@@ -29,6 +29,8 @@ function WorkspaceDashboardPage() {
   const exportsWidget = visibleWidgets.find((widget) => widget.id === 'gms.technical-sheet-exports-monthly');
   const capacityWidget = visibleWidgets.find((widget) => widget.id === 'gms.technical-sheets-capacity');
   const productsWidget = visibleWidgets.find((widget) => widget.id === 'gms.products-catalog');
+  const businessWidgets = [exportsWidget, productsWidget, capacityWidget].filter(Boolean);
+  const pairedBusinessWidgets = businessWidgets.length === 3;
   const summaryWidgets = visibleWidgets.filter(
     (widget) => widget.slot === 'summary' && widget.id !== 'gms.technical-sheet-exports-monthly',
   );
@@ -57,19 +59,32 @@ function WorkspaceDashboardPage() {
 
       {dossierWidget && <dossierWidget.component />}
 
-      {(exportsWidget || productsWidget || capacityWidget) && (
-        <section aria-label="Indicateurs métier" className="grid items-start gap-4 md:grid-cols-2">
-          {(exportsWidget || productsWidget) && (
-            <div className="flex min-w-0 flex-col gap-4">
-              {exportsWidget && <exportsWidget.component />}
-              {productsWidget && <productsWidget.component />}
-            </div>
-          )}
-          {capacityWidget && (
-            <div className="min-w-0">
-              <capacityWidget.component />
-            </div>
-          )}
+      {businessWidgets.length > 0 && (
+        <section
+          aria-label="Indicateurs métier"
+          className={getSummaryGridClass()}
+        >
+          {pairedBusinessWidgets ? (
+            <>
+              <div className="col-span-6 flex min-w-0 flex-col gap-4 md:col-span-3">
+                <exportsWidget.component />
+                <productsWidget.component />
+              </div>
+              <div className="col-span-6 min-w-0 md:col-span-3">
+                <capacityWidget.component />
+              </div>
+            </>
+          ) : businessWidgets.map((widget, index) => {
+            const Widget = widget.component;
+            return (
+              <div
+                className={getSummaryItemClass(index, businessWidgets.length)}
+                key={widget.id}
+              >
+                <Widget />
+              </div>
+            );
+          })}
         </section>
       )}
 
