@@ -25,8 +25,17 @@ function WorkspaceDashboardPage() {
     visibleWidgets,
     isPreferencesLoading,
   } = useWorkspaceDashboardWidgets();
-  const summaryWidgets = visibleWidgets.filter((widget) => widget.slot === 'summary');
-  const contentWidgets = visibleWidgets.filter((widget) => widget.slot === 'content');
+  const dossierWidget = visibleWidgets.find((widget) => widget.id === 'gms.dossiers-overview');
+  const exportsWidget = visibleWidgets.find((widget) => widget.id === 'gms.technical-sheet-exports-monthly');
+  const capacityWidget = visibleWidgets.find((widget) => widget.id === 'gms.technical-sheets-capacity');
+  const summaryWidgets = visibleWidgets.filter(
+    (widget) => widget.slot === 'summary' && widget.id !== 'gms.technical-sheet-exports-monthly',
+  );
+  const contentWidgets = visibleWidgets.filter(
+    (widget) => widget.slot === 'content'
+      && widget.id !== 'gms.dossiers-overview'
+      && widget.id !== 'gms.technical-sheets-capacity',
+  );
   const pendingSummaryWidgets = isPreferencesLoading
     ? accessibleWidgets.filter((widget) => widget.configurable && widget.slot === 'summary')
     : [];
@@ -44,39 +53,43 @@ function WorkspaceDashboardPage() {
         </div>
       </header>
 
-      <section
-        aria-label="Synthèse du workspace"
-        className={getSummaryGridClass()}
-      >
-        {summaryWidgets.map((widget, index) => {
-          const Widget = widget.component;
-          return (
-            <div
-              className={getSummaryItemClass(index, renderedSummaryCount)}
-              key={widget.id}
-            >
-              <Widget />
-            </div>
-          );
-        })}
+      {dossierWidget && <dossierWidget.component />}
 
-        {pendingSummaryWidgets.map((widget, pendingIndex) => {
-          const index = summaryWidgets.length + pendingIndex;
-
-          return (
-            <div
-              className={getSummaryItemClass(index, renderedSummaryCount)}
-              key={`loading-${widget.id}`}
-            >
-              <DashboardSummaryCard
-                description={widget.description}
-                isLoading
-                label={widget.label}
-              />
+      {(exportsWidget || capacityWidget) && (
+        <section aria-label="Indicateurs Fiches techniques" className="grid gap-4 md:grid-cols-2">
+          {exportsWidget && (
+            <div className="min-w-0">
+              <exportsWidget.component />
             </div>
-          );
-        })}
-      </section>
+          )}
+          {capacityWidget && (
+            <div className="min-w-0">
+              <capacityWidget.component />
+            </div>
+          )}
+        </section>
+      )}
+
+      {(summaryWidgets.length > 0 || pendingSummaryWidgets.length > 0) && (
+        <section aria-label="Synthèse du workspace" className={getSummaryGridClass()}>
+          {summaryWidgets.map((widget, index) => {
+            const Widget = widget.component;
+            return (
+              <div className={getSummaryItemClass(index, renderedSummaryCount)} key={widget.id}>
+                <Widget />
+              </div>
+            );
+          })}
+          {pendingSummaryWidgets.map((widget, pendingIndex) => {
+            const index = summaryWidgets.length + pendingIndex;
+            return (
+              <div className={getSummaryItemClass(index, renderedSummaryCount)} key={`loading-${widget.id}`}>
+                <DashboardSummaryCard description={widget.description} isLoading label={widget.label} />
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {contentWidgets.map((widget) => {
         const Widget = widget.component;
