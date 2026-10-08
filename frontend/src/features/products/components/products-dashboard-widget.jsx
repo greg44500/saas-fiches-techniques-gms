@@ -24,13 +24,6 @@ function ProductsDashboardWidget() {
                 label="À propos des favoris Produits"
               />
             </div>
-            {!summaryQuery.isLoading && !summaryQuery.isError && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {summary?.activeCatalogEntries ?? 0} référence
-                {(summary?.activeCatalogEntries ?? 0) === 1 ? '' : 's'} active
-                {(summary?.activeCatalogEntries ?? 0) === 1 ? '' : 's'}
-              </p>
-            )}
           </div>
 
           {!summaryQuery.isLoading && !summaryQuery.isError && (
