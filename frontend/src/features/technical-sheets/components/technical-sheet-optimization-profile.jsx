@@ -241,13 +241,13 @@ function GlobalEconomicIndicator({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex h-5 items-center">
-        <div
-          aria-label="Impact économique global"
+          <div
+            aria-label="Impact économique global"
           aria-valuemax="100"
           aria-valuemin="-100"
           aria-valuenow={visualDelta}
           aria-valuetext={label}
-          className="relative h-2 rounded-full bg-muted"
+          className="relative h-2 w-full rounded-full bg-muted"
           role="meter"
           title="Écart global de coût de fabrication HT renvoyé par le serveur ; ce n’est pas une moyenne arithmétique des ingrédients."
         >
