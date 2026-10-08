@@ -24,7 +24,7 @@ function PagedCardCarousel({
 
   useEffect(() => {
     setIndex(0);
-    viewportRef.current?.scrollTo({ left: 0, behavior: 'instant' });
+    viewportRef.current?.scrollTo?.({ left: 0, behavior: 'instant' });
   }, [page]);
 
   function move(direction) {
@@ -41,7 +41,7 @@ function PagedCardCarousel({
     setIndex(next);
     const node = viewportRef.current;
     const target = node?.children[next];
-    if (node && target) {
+    if (node && target && typeof node.scrollTo === 'function') {
       node.scrollTo({
         left: target.offsetLeft - node.offsetLeft,
         behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
