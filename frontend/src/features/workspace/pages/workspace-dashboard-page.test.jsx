@@ -100,6 +100,24 @@ describe('WorkspaceDashboardPage', () => {
     expect(screen.queryByText(/Votre rôle/)).not.toBeInTheDocument();
   });
 
+  it('place les Dossiers avant les KPI métier et regroupe Exports et Capacité', () => {
+    const widgets = [
+      { id: 'gms.technical-sheet-exports-monthly', slot: 'summary', component: () => <div>Exports métier</div> },
+      { id: 'gms.technical-sheets-capacity', slot: 'content', component: () => <div>Capacité métier</div> },
+      { id: 'gms.dossiers-overview', slot: 'content', component: () => <div>Cartes Dossiers</div> },
+    ];
+    useWorkspaceDashboardWidgetsMock.mockReturnValue({
+      ...baseData,
+      accessibleWidgets: widgets,
+      visibleWidgets: widgets,
+    });
+    const { container } = renderDashboard();
+    const text = container.textContent;
+    expect(text.indexOf('Cartes Dossiers')).toBeLessThan(text.indexOf('Exports métier'));
+    expect(text.indexOf('Exports métier')).toBeLessThan(text.indexOf('Capacité métier'));
+    expect(screen.getByRole('region', { name: 'Indicateurs Fiches techniques' })).toHaveClass('md:grid-cols-2');
+  });
+
   it('utilise une grille à six colonnes pour répartir les tiers et les moitiés', () => {
     expect(getSummaryGridClass()).toBe('grid grid-cols-6 gap-4');
   });
