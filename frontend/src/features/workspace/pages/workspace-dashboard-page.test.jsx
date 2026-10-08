@@ -115,7 +115,7 @@ describe('WorkspaceDashboardPage', () => {
     const text = container.textContent;
     expect(text.indexOf('Cartes Dossiers')).toBeLessThan(text.indexOf('Exports métier'));
     expect(text.indexOf('Exports métier')).toBeLessThan(text.indexOf('Capacité métier'));
-    expect(screen.getByRole('region', { name: 'Indicateurs métier' })).toHaveClass('md:grid-cols-2');
+    expect(screen.getByRole('region', { name: 'Indicateurs métier' })).toHaveClass('grid-cols-6');
   });
 
   it('affiche les favoris sous les Exports et conserve les préférences', () => {
@@ -132,7 +132,35 @@ describe('WorkspaceDashboardPage', () => {
     const { container } = renderDashboard();
     const text = container.textContent;
     expect(text.indexOf('Exports métier')).toBeLessThan(text.indexOf('Favoris Produits'));
-    expect(screen.getByRole('region', { name: 'Indicateurs métier' })).toHaveClass('md:grid-cols-2');
+    expect(screen.getByRole('region', { name: 'Indicateurs métier' })).toHaveClass('grid-cols-6');
+  });
+
+  it('élargit le seul KPI métier visible sur toute la largeur', () => {
+    const widgets = [
+      { id: 'gms.technical-sheets-capacity', slot: 'content', component: () => <div>Capacité seule</div> },
+    ];
+    useWorkspaceDashboardWidgetsMock.mockReturnValue({
+      ...baseData,
+      accessibleWidgets: widgets,
+      visibleWidgets: widgets,
+    });
+    renderDashboard();
+    expect(screen.getByText('Capacité seule').parentElement).toHaveClass('col-span-6');
+  });
+
+  it('rééquilibre deux KPI métier visibles en deux colonnes', () => {
+    const widgets = [
+      { id: 'gms.products-catalog', slot: 'content', component: () => <div>Favoris seuls</div> },
+      { id: 'gms.technical-sheets-capacity', slot: 'content', component: () => <div>Capacité visible</div> },
+    ];
+    useWorkspaceDashboardWidgetsMock.mockReturnValue({
+      ...baseData,
+      accessibleWidgets: widgets,
+      visibleWidgets: widgets,
+    });
+    renderDashboard();
+    expect(screen.getByText('Favoris seuls').parentElement).toHaveClass('md:col-span-3');
+    expect(screen.getByText('Capacité visible').parentElement).toHaveClass('md:col-span-3');
   });
 
   it('utilise une grille à six colonnes pour répartir les tiers et les moitiés', () => {
