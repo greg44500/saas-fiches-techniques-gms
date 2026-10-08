@@ -12,6 +12,7 @@ function FlippableCard({
   front,
   back,
   backAction,
+  frontAction,
   title,
   className,
 }) {
@@ -31,16 +32,19 @@ function FlippableCard({
           inert={flipped}
         >
           <div className="min-h-0 flex-1">{front}</div>
-          <Button
-            aria-label={`Afficher les détails de ${title}`}
-            className="mt-3 w-full"
-            onClick={() => setFlipped(true)}
-            type="button"
-            variant="outline"
-          >
-            <RotateCw aria-hidden="true" className="size-4" />
-            Détails
-          </Button>
+          <div className="mt-3 flex items-center gap-2">
+            {frontAction && <div className="flex shrink-0 items-center">{frontAction}</div>}
+            <Button
+              aria-label={`Afficher les détails de ${title}`}
+              className="min-w-0 flex-1"
+              onClick={() => setFlipped(true)}
+              type="button"
+              variant="outline"
+            >
+              <RotateCw aria-hidden="true" className="size-4" />
+              Détails
+            </Button>
+          </div>
         </section>
         <section
           aria-hidden={!flipped}
