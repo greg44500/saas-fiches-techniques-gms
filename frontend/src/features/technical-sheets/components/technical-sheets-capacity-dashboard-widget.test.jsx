@@ -104,11 +104,14 @@ describe('TechnicalSheetsCapacityDashboardWidget', () => {
     expect(screen.getByText('5')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('3 disponibles')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Voir la Corbeille' }))
-      .toHaveAttribute(
-        'href',
-        '/workspaces/workspace-1/technical-sheets/trash',
-      );
+    expect(screen.getByRole('link', { name: /Dans les Dossiers/ })).toHaveAttribute(
+      'href',
+      '/workspaces/workspace-1/dossiers',
+    );
+    expect(screen.getByRole('link', { name: /Dans la Corbeille/ })).toHaveAttribute(
+      'href',
+      '/workspaces/workspace-1/technical-sheets/trash',
+    );
   });
 
   it('n’expose pas la répartition Corbeille à un membre sans accès Owner', () => {
@@ -138,7 +141,9 @@ describe('TechnicalSheetsCapacityDashboardWidget', () => {
       { skip: true },
     );
     expect(screen.queryByText('Dans la Corbeille')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Voir la Corbeille' }))
+    expect(screen.queryByRole('link', { name: /Dans la Corbeille/ }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Dans les Dossiers/ }))
       .not.toBeInTheDocument();
   });
 });
