@@ -3,13 +3,17 @@ import {
   RotateCcw,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
   Truck,
 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   TechnicalSheetOptimizerInspector,
 } from '@/features/technical-sheets/components/technical-sheet-optimizer-inspector';
@@ -28,7 +32,6 @@ const TOOLS = Object.freeze([
   {
     key: 'SOURCING',
     label: 'Approvisionnement',
-    shortLabel: 'Appro.',
     Icon: Truck,
   },
   {
@@ -54,7 +57,6 @@ function TechnicalSheetOptimizerControlsPanel({
   onAutoOptionChange,
   onChangeLine,
   onCompare,
-  onModeChange,
   onReset,
   onTakeAutoSuggestion,
   profile,
@@ -72,57 +74,17 @@ function TechnicalSheetOptimizerControlsPanel({
         {profile}
       </div>
 
-      <div className="shrink-0 border-b border-border px-3 py-2.5">
-        <div
-          aria-label="Mode d’optimisation"
-          className="grid grid-cols-2 rounded-lg border border-border p-1"
-          role="group"
-        >
-          <Button
-            onClick={() =>
-              onModeChange('MANUAL')}
-            size="sm"
-            type="button"
-            variant={
-              mode === 'MANUAL'
-                ? 'secondary'
-                : 'ghost'
-            }
-          >
-            Manuel
-          </Button>
-          <Button
-            onClick={() =>
-              onModeChange('AUTO')}
-            size="sm"
-            type="button"
-            variant={
-              mode === 'AUTO'
-                ? 'secondary'
-                : 'ghost'
-            }
-          >
-            <Sparkles
-              aria-hidden="true"
-              className="size-4"
-            />
-            Auto
-          </Button>
-        </div>
-      </div>
-
       {mode === 'MANUAL'
         ? (
           <>
             <nav
               aria-label="Outils de réglage"
-              className="grid shrink-0 grid-cols-4 border-b border-border bg-muted/15"
+              className="grid shrink-0 grid-cols-4 border-b border-border bg-muted/10"
             >
               {TOOLS.map(
                 ({
                   key,
                   label,
-                  shortLabel,
                   Icon,
                 }) => {
                   const disabled =
@@ -132,34 +94,37 @@ function TechnicalSheetOptimizerControlsPanel({
                     activeTool === key;
 
                   return (
-                    <Button
-                      aria-label={label}
-                      aria-pressed={active}
-                      className={
-                        'h-14 min-w-0 rounded-none border-r border-border px-1 last:border-r-0 '
-                        + (
-                          active
-                            ? 'bg-primary/10 text-foreground'
-                            : 'text-muted-foreground'
-                        )
-                      }
-                      disabled={disabled}
-                      key={key}
-                      onClick={() =>
-                        setActiveTool(key)}
-                      type="button"
-                      variant="ghost"
-                    >
-                      <span className="flex min-w-0 flex-col items-center gap-1">
+                    <Tooltip key={key}>
+                      <TooltipTrigger
+                        render={(
+                          <Button
+                            aria-label={label}
+                            aria-pressed={active}
+                            className={
+                              'h-10 min-w-0 rounded-none border-r border-border px-0 last:border-r-0 '
+                              + (
+                                active
+                                  ? 'bg-primary/10 text-foreground'
+                                  : 'text-muted-foreground'
+                              )
+                            }
+                            disabled={disabled}
+                            onClick={() =>
+                              setActiveTool(key)}
+                            type="button"
+                            variant="ghost"
+                          />
+                        )}
+                      >
                         <Icon
                           aria-hidden="true"
                           className="size-4"
                         />
-                        <span className="max-w-full truncate text-[11px] font-medium">
-                          {shortLabel ?? label}
-                        </span>
-                      </span>
-                    </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {label}
+                      </TooltipContent>
+                    </Tooltip>
                   );
                 },
               )}
@@ -198,7 +163,7 @@ function TechnicalSheetOptimizerControlsPanel({
           </>
         )
         : (
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
             <div>
               <p className="text-sm font-medium">
                 Leviers automatiques
@@ -276,19 +241,29 @@ function TechnicalSheetOptimizerControlsPanel({
           </div>
         )}
 
-      <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-border bg-card p-3">
-        <Button
-          onClick={onReset}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          <RotateCcw
-            aria-hidden="true"
-            className="size-4"
-          />
-          Réinitialiser
-        </Button>
+      <div className="grid shrink-0 grid-cols-[2.5rem_auto_minmax(0,1fr)] gap-2 border-t border-border bg-card p-2">
+        <Tooltip>
+          <TooltipTrigger
+            render={(
+              <Button
+                aria-label="Réinitialiser"
+                onClick={onReset}
+                size="icon"
+                type="button"
+                variant="ghost"
+              />
+            )}
+          >
+            <RotateCcw
+              aria-hidden="true"
+              className="size-4"
+            />
+          </TooltipTrigger>
+          <TooltipContent>
+            Réinitialiser
+          </TooltipContent>
+        </Tooltip>
+
         <Button
           disabled={comparing}
           onClick={onCompare}
@@ -300,10 +275,11 @@ function TechnicalSheetOptimizerControlsPanel({
             ? 'Calcul…'
             : 'Comparer'}
         </Button>
+
         <Button
-          className="col-span-2"
           disabled={!canApply}
           onClick={onApply}
+          size="sm"
           type="button"
         >
           {applying
