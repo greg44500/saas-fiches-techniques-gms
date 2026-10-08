@@ -132,26 +132,15 @@ function TechnicalSheetOptimizerInspector({
     );
 
   return (
-    <div className="space-y-4 p-3 sm:p-4">
-      <div className="border-b border-border pb-3">
-        <p className="truncate font-medium">
+    <div className="space-y-3 p-3">
+      <div className="border-b border-border pb-2">
+        <p className="truncate text-sm font-semibold">
           {projectionLine.productVariantName}
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {formatCurrency(
-            projectionLine.lineCostHt,
-          )}
-          {' · '}
-          {formatPercent(
-            projectionLine
-              .materialCostSharePercent,
-          )}
-          {' CM'}
         </p>
       </div>
 
       {activeTool === 'ADJUSTMENT' && (
-        <section className="space-y-4">
+        <section className="space-y-3">
           <ToolHeader
             description="Ajuste cette ligne par rapport à la recette de référence. Le serveur traduit le pourcentage en quantité, applique les contraintes puis recalcule toute la valorisation."
             title="Réglage économique"
@@ -582,7 +571,7 @@ function TechnicalSheetOptimizerInspector({
                     minNetQuantity:
                       event.target.value,
                   })}
-                placeholder="Aucun"
+                placeholder="Libre · jusqu’à -99 %"
                 value={
                   line.minNetQuantity
                 }
@@ -609,7 +598,7 @@ function TechnicalSheetOptimizerInspector({
                     maxNetQuantity:
                       event.target.value,
                   })}
-                placeholder="Aucun"
+                placeholder="Libre · jusqu’à +100 %"
                 value={
                   line.maxNetQuantity
                 }
