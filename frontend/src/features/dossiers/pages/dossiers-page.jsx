@@ -196,6 +196,13 @@ function DossiersPage() {
       cell: (dossier) => formatDossierLocation(dossier),
     },
     {
+      id: 'technicalSheetCount',
+      header: 'Nb FT',
+      cell: (dossier) => (
+        <span className="tabular-nums">{dossier.technicalSheetCount}</span>
+      ),
+    },
+    {
       id: 'status',
       header: 'Statut',
       cell: (dossier) => (
