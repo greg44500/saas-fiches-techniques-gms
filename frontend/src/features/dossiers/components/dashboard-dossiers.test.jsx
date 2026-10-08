@@ -79,7 +79,7 @@ describe('DashboardDossiers', () => {
 
     expect(screen.getByRole('heading', { name: 'Dossiers (2)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Créer un dossier' })).toBeInTheDocument();
-    expect(screen.getByText('1–2 sur 2')).toBeInTheDocument();
+    expect(screen.getByText('1 sur 2')).toBeInTheDocument();
     expect(screen.getByText('Nantes Centre')).toBeInTheDocument();
     expect(screen.getByText('Leclerc · 44000 Nantes')).toBeInTheDocument();
     expect(screen.getByText('Saint-Nazaire')).toBeInTheDocument();
