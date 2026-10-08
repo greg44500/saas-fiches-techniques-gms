@@ -78,7 +78,7 @@ function WorkspaceDashboardPage() {
             const Widget = widget.component;
             return (
               <div
-                className={getSummaryItemClass(index, businessWidgets.length)}
+                className={businessWidgets.length === 1 ? "col-span-6" : "col-span-6 md:col-span-3"}
                 key={widget.id}
               >
                 <Widget />
