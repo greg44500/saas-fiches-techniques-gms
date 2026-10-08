@@ -418,7 +418,7 @@ describe('TechnicalSheetOptimizerPage', () => {
     ).toBe('workspace-1');
   });
 
-  it('neutralise le réglage lorsque minimum et maximum figent la quantité', async () => {
+  it('n’utilise pas min=max comme verrouillage implicite', async () => {
     const user =
       userEvent.setup();
 
@@ -455,7 +455,7 @@ describe('TechnicalSheetOptimizerPage', () => {
 
     expect(
       screen.getByText(
-        'Minimum et maximum sont identiques : la quantité ne peut pas évoluer.',
+        'Minimum et maximum identiques sont traités comme une plage libre. Utilisez Verrouiller pour figer réellement la quantité.',
       ),
     ).toBeInTheDocument();
 
@@ -467,9 +467,8 @@ describe('TechnicalSheetOptimizerPage', () => {
             'Ajustement économique de l’ingrédient',
         },
       ),
-    ).toHaveAttribute(
+    ).not.toHaveAttribute(
       'data-disabled',
-      '',
     );
 
     expect(
@@ -481,7 +480,7 @@ describe('TechnicalSheetOptimizerPage', () => {
       ),
     ).toHaveAttribute(
       'aria-disabled',
-      'true',
+      'false',
     );
   });
 
