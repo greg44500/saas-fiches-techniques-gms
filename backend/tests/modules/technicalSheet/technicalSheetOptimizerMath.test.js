@@ -81,7 +81,7 @@ describe('M-005 mathématiques de l’Atelier', () => {
         );
     });
 
-    it('construit le pas Auto V1 à 25 % du chemin vers le minimum explicite', () => {
+    it('construit le pas Auto V1 vers le minimum explicite ou la borne libre implicite', () => {
         expect(
             buildQuarterStepTowardMinimum({
                 referenceQuantity: '10',
@@ -94,7 +94,7 @@ describe('M-005 mathématiques de l’Atelier', () => {
                 referenceQuantity: '10',
                 minNetQuantity: null,
             }),
-        ).toBeNull();
+        ).toBe('7.525');
     });
 
     it('calcule l’économie HT et son pourcentage sans float autoritatif', () => {
