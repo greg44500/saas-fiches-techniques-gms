@@ -13,8 +13,8 @@ function ProductsDashboardWidget() {
   const summary = summaryQuery.data;
 
   return (
-    <Card>
-      <CardHeader className="border-b border-border pb-5">
+    <Card className="h-full">
+      <CardHeader className="border-b border-border pb-3">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-start gap-2">
@@ -37,7 +37,7 @@ function ProductsDashboardWidget() {
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-3">
         {summaryQuery.isLoading ? (
           <div aria-live="polite" className="space-y-3" role="status">
             <span className="sr-only">Chargement des favoris Produits…</span>
@@ -52,11 +52,11 @@ function ProductsDashboardWidget() {
             title="Référentiel indisponible"
           />
         ) : (
-          <div className="rounded-lg border border-border p-4">
-            <p className="text-2xl font-semibold">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-lg border border-border px-4 py-3">
+            <p className="text-2xl font-semibold tabular-nums">
               {summary?.activeCatalogEntries ?? 0}
             </p>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Références actives
             </p>
           </div>
