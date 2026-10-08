@@ -224,6 +224,11 @@ describe('TechnicalSheetOptimizerPage', () => {
       'Référence économique',
     );
     expect(
+      screen.getAllByRole('button', {
+        name: 'Réinitialiser',
+      }),
+    ).toHaveLength(1);
+    expect(
       screen.getByRole('button', {
         name: /Carotte/,
       }),

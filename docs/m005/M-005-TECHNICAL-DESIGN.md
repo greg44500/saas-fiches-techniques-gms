@@ -403,3 +403,11 @@ Les régressions UX de la plage libre couvrent également :
 - réduction Auto disponible sans minimum explicite.
 
 Aucun test n’est annoncé vert sans exécution locale.
+
+
+### Ajustements QA du 2026-10-08 — compacité et repérage
+
+- Chaque ingrédient conserve une teinte déterministe à partir de son identifiant de ligne ; la teinte s'assombrit proportionnellement à la distance de la référence, dans chaque direction. La couleur ne constitue pas une évaluation qualitative.
+- La zone SVG est compactée et les trois aides d'axe ont une typographie identique.
+- L'indicateur de coût global conserve son calcul serveur ; son titre « Impact global » est positionné à gauche de la barre sur deux lignes.
+- « Réinitialiser » est désormais à côté de Manuel / Auto ; le pied ne conserve que « Comparer » et « Appliquer au brouillon ».

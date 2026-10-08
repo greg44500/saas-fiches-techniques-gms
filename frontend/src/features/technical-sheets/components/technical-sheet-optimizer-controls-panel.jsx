@@ -1,6 +1,5 @@
 import {
   Package,
-  RotateCcw,
   ShieldCheck,
   SlidersHorizontal,
   Truck,
@@ -57,7 +56,6 @@ function TechnicalSheetOptimizerControlsPanel({
   onAutoOptionChange,
   onChangeLine,
   onCompare,
-  onReset,
   onTakeAutoSuggestion,
   profile,
   projectionLine,
@@ -241,29 +239,7 @@ function TechnicalSheetOptimizerControlsPanel({
           </div>
         )}
 
-      <div className="grid shrink-0 grid-cols-[2.5rem_auto_minmax(0,1fr)] gap-2 border-t border-border bg-card p-2">
-        <Tooltip>
-          <TooltipTrigger
-            render={(
-              <Button
-                aria-label="Réinitialiser"
-                onClick={onReset}
-                size="icon"
-                type="button"
-                variant="ghost"
-              />
-            )}
-          >
-            <RotateCcw
-              aria-hidden="true"
-              className="size-4"
-            />
-          </TooltipTrigger>
-          <TooltipContent>
-            Réinitialiser
-          </TooltipContent>
-        </Tooltip>
-
+      <div className="grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-2 border-t border-border bg-card p-2">
         <Button
           disabled={comparing}
           onClick={onCompare}

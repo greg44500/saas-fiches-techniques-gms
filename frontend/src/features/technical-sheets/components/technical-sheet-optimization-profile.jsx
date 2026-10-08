@@ -1,4 +1,5 @@
 import {
+  RotateCcw,
   Sparkles,
 } from 'lucide-react';
 import {
@@ -23,9 +24,9 @@ import {
 } from '@/features/technical-sheets/lib/technical-sheet-optimizer';
 
 const SVG_WIDTH = 620;
-const SVG_HEIGHT = 154;
+const SVG_HEIGHT = 132;
 const PADDING_X = 46;
-const PADDING_Y = 22;
+const PADDING_Y = 13;
 const DEFAULT_RANGE = Object.freeze({
   min: -99,
   max: 100,
@@ -154,24 +155,33 @@ function constraintLabel(
   return 'Plage libre';
 }
 
-function adjustmentTone(adjustment) {
-  if (adjustment < 0) {
-    return {
-      bar: 'fill-emerald-500/80',
-      handle: 'fill-emerald-600',
-    };
+// La teinte dépend de l'identité stable de la ligne, pas de sa position.
+function ingredientHue(lineId) {
+  let hash = 0;
+
+  for (const character of String(lineId)) {
+    hash = (
+      (hash * 31 + character.charCodeAt(0))
+      >>> 0
+    );
   }
 
-  if (adjustment > 0) {
-    return {
-      bar: 'fill-amber-500/85',
-      handle: 'fill-amber-600',
-    };
-  }
+  return hash % 360;
+}
+
+function ingredientTone(lineId, adjustment, range) {
+  const hue = ingredientHue(lineId);
+  const amplitude = adjustment < 0
+    ? Math.abs(range.min)
+    : Math.abs(range.max);
+  const intensity = amplitude > 0
+    ? clamp(Math.abs(adjustment) / amplitude, 0, 1)
+    : 0;
+  const lightness = 72 - intensity * 30;
 
   return {
-    bar: 'fill-muted-foreground/35',
-    handle: 'fill-muted-foreground',
+    bar: `hsl(${hue} 69% ${lightness}%)`,
+    handle: `hsl(${hue} 78% ${Math.max(lightness - 12, 28)}%)`,
   };
 }
 
@@ -191,7 +201,7 @@ function ProfileAxisHelp({
     <Tooltip>
       <TooltipTrigger
         className={
-          'rounded-md px-2 py-1 text-[10px] text-muted-foreground transition-colors '
+          'rounded-md px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors '
           + 'hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring '
           + alignment
         }
@@ -252,44 +262,39 @@ function GlobalEconomicIndicator({
     );
 
   return (
-    <div className="px-9 pb-2 pt-1">
-      <div className="mb-1 flex items-center justify-between gap-2 text-[9px] text-muted-foreground">
-        <span>Impact global</span>
-        <span className="truncate font-medium text-foreground">
+    <div className="flex items-center gap-2 px-3 pb-1 pt-0">
+      <span className="w-11 shrink-0 text-[9px] leading-tight text-muted-foreground">
+        Impact
+        <span className="block">global</span>
+      </span>
+      <div className="min-w-0 flex-1">
+        <div
+          aria-label="Impact économique global"
+          aria-valuemax="100"
+          aria-valuemin="-100"
+          aria-valuenow={visualDelta}
+          aria-valuetext={label}
+          className="relative h-2 rounded-full bg-muted"
+          role="meter"
+          title="Écart global de coût de fabrication HT renvoyé par le serveur ; ce n’est pas une moyenne arithmétique des ingrédients."
+        >
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-[-2px] left-1/2 w-px -translate-x-1/2 bg-foreground/35"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background bg-foreground shadow-sm transition-[left]"
+            style={{ left: markerPosition + '%' }}
+          />
+        </div>
+        <div className="mt-1 grid grid-cols-3 text-[8px] text-muted-foreground">
+          <span>Économie</span>
+          <span className="text-center">Référence</span>
+          <span className="text-right">Surcoût</span>
+        </div>
+        <span className="block truncate text-right text-[9px] font-medium text-foreground">
           {label}
-        </span>
-      </div>
-      <div
-        aria-label="Impact économique global"
-        aria-valuemax="100"
-        aria-valuemin="-100"
-        aria-valuenow={visualDelta}
-        aria-valuetext={label}
-        className="relative h-2 rounded-full bg-muted"
-        role="meter"
-        title="Écart global de coût de fabrication HT renvoyé par le serveur ; ce n’est pas une moyenne arithmétique des ingrédients."
-      >
-        <span
-          aria-hidden="true"
-          className="absolute inset-y-[-2px] left-1/2 w-px -translate-x-1/2 bg-foreground/35"
-        />
-        <span
-          aria-hidden="true"
-          className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background bg-foreground shadow-sm transition-[left]"
-          style={{
-            left:
-              markerPosition
-              + '%',
-          }}
-        />
-      </div>
-      <div className="mt-1 grid grid-cols-3 text-[8px] text-muted-foreground">
-        <span>Économie</span>
-        <span className="text-center">
-          Référence
-        </span>
-        <span className="text-right">
-          Surcoût
         </span>
       </div>
     </div>
@@ -304,6 +309,7 @@ function TechnicalSheetOptimizationProfile({
   mode,
   onChangeLine,
   onModeChange,
+  onReset,
   onSelect,
   range = DEFAULT_RANGE,
   savings,
@@ -373,8 +379,10 @@ function TechnicalSheetOptimizationProfile({
                 : 2,
             ),
           tone:
-            adjustmentTone(
+            ingredientTone(
+              beforeLine.id,
               adjustment,
+              effectiveRange,
             ),
           beforeLine,
           projectionLine,
@@ -481,7 +489,25 @@ function TechnicalSheetOptimizationProfile({
           />
         </div>
 
-        <div
+        <div className="flex shrink-0 items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger
+              render={(
+                <Button
+                  aria-label="Réinitialiser"
+                  className="size-7"
+                  onClick={onReset}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                />
+              )}
+            >
+              <RotateCcw aria-hidden="true" className="size-3.5" />
+            </TooltipTrigger>
+            <TooltipContent>Réinitialiser</TooltipContent>
+          </Tooltip>
+          <div
           aria-label="Mode d’optimisation"
           className="flex shrink-0 rounded-md border border-border bg-background p-0.5"
           role="group"
@@ -516,13 +542,14 @@ function TechnicalSheetOptimizationProfile({
             />
             Auto
           </Button>
+          </div>
         </div>
       </div>
 
-      <div className="relative mx-auto w-full max-w-[31rem] px-2 pb-1 pt-1">
+      <div className="relative mx-auto w-full max-w-[31rem] px-2 pb-0 pt-0">
         <svg
           aria-label="Répartition économique des ingrédients"
-          className="h-[132px] w-full touch-none"
+          className="h-[105px] w-full touch-none"
           role="group"
           viewBox={
             '0 0 '
@@ -625,14 +652,10 @@ function TechnicalSheetOptimizationProfile({
               >
                 {point.width > 0 && (
                   <rect
-                    className={
-                      point.tone.bar
-                      + (
-                        selected
-                          ? ' opacity-100'
-                          : ' opacity-70'
-                      )
-                    }
+                    style={{
+                      fill: point.tone.bar,
+                      opacity: selected ? 1 : 0.75,
+                    }}
                     height={
                       selected
                         ? 7
@@ -690,9 +713,9 @@ function TechnicalSheetOptimizationProfile({
                         ? 'cursor-not-allowed '
                         : 'cursor-ew-resize '
                     )
-                    + point.tone.handle
-                    + ' outline-none ring-offset-background focus-visible:stroke-ring focus-visible:stroke-[3px]'
+                    + 'outline-none ring-offset-background focus-visible:stroke-ring focus-visible:stroke-[3px]'
                   }
+                  style={{ fill: point.tone.handle }}
                   cx={point.x}
                   cy={point.y}
                   onBlur={() =>
