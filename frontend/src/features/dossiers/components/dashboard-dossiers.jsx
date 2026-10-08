@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 
 import { PagedCardCarousel } from '@/components/shared/paged-card-carousel';
 import { Button } from '@/components/ui/button';
@@ -74,7 +74,24 @@ function DashboardDossiers({
             <h2 className="text-lg font-semibold">Dossiers ({total})</h2>
             <InfoTooltip content={help} label="À propos des dossiers" />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+            <form className="flex min-w-48 max-w-sm flex-1" onSubmit={onSearch}>
+              <div className="relative w-full">
+                <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  aria-label="Rechercher un dossier dans le tableau de bord"
+                  className="pl-9 pr-9"
+                  onChange={(event) => onSearchChange?.(event.target.value)}
+                  placeholder="Rechercher un dossier…"
+                  value={searchInput}
+                />
+                {searchInput && (
+                  <button aria-label="Effacer la recherche" className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground" onClick={() => onSearchChange?.('')} type="button">
+                    <X aria-hidden="true" className="size-4" />
+                  </button>
+                )}
+              </div>
+            </form>
             {canCreate && (
               <Button onClick={onCreate} size="sm" type="button" variant="outline">
                 <Plus aria-hidden="true" className="size-4" />
@@ -86,18 +103,6 @@ function DashboardDossiers({
             </Button>
           </div>
         </div>
-        <form className="flex gap-2" onSubmit={onSearch}>
-          <Input
-            aria-label="Rechercher un dossier dans le tableau de bord"
-            onChange={(event) => onSearchChange?.(event.target.value)}
-            placeholder="Nom, enseigne, ville ou code postal"
-            value={searchInput}
-          />
-          <Button aria-label="Lancer la recherche de dossiers" type="submit" variant="outline">
-            <Search aria-hidden="true" className="size-4" />
-            <span className="hidden sm:inline">Rechercher</span>
-          </Button>
-        </form>
       </CardHeader>
 
       <CardContent className="p-0">
