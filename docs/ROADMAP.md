@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** M-005 Atelier d’optimisation implémenté sur branche — validation locale et QA visuelle en attente
-**Dernière mise à jour :** 2026-10-07
+**Statut :** M-005 fusionné sur `main` (PR #39) ; clôture documentaire en cours, gate post-merge non vérifiée
+**Dernière mise à jour :** 2026-10-08
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -611,10 +611,9 @@ développement immédiat
 
 
 
-## 7. Prochaine étape immédiate
+## 7. M-005 fusionné — prochaine étape
 
-Le lot actif est **M-005 — Atelier d’optimisation des Fiches techniques** sur
-`feature/m005-technical-sheet-optimizer-v1`.
+**Statut au 2026-10-08 :** implémentation M-005 fusionnée sur `main` par la [PR #39](https://github.com/greg44500/saas-fiches-techniques-gms/pull/39), commit de merge `5d0a3d9692343d60ccfec0e46759383d595680dd`. Le comparatif GitHub confirme que ce commit correspond au `main` examiné lors de cette mise à jour.
 
 Contrats canoniques :
 
@@ -623,93 +622,8 @@ docs/m005/M-005-FINAL-CONTRACT.md
 docs/m005/M-005-TECHNICAL-DESIGN.md
 ~~~
 
-État du lot au 2026-10-07 :
+M-005 fournit un Atelier d'optimisation économique, des simulations MANUAL/AUTO non persistées avant « Appliquer au brouillon », des contraintes et verrouillages par ingrédient, des alternatives Produit et Article accessibles, un profil à barres indépendantes par ingrédient et un indicateur économique global. Le backend réutilise les calculs M-004 et les prix applicables M-003 ; l'application au DRAFT est transactionnelle, contrôlée par révision et fingerprint. Les validations antérieures restent immuables.
 
-~~~text
-cadrage fonctionnel
-→ figé
+**Preuves et réserves :** la fusion est vérifiée. Le résultat de la Core Gate post-merge n'a pas été établi par les données accessibles lors de cette révision documentaire ; il reste à contrôler. Aucun bilan « tous les tests verts » n'est déduit de la seule fusion. Ne pas rouvrir M-005 sans anomalie démontrée.
 
-design technique
-→ figé
-
-backend
-→ capability technical_sheet_optimizer
-→ enveloppe min/max/verrouillage sur le DRAFT
-→ snapshot immuable dans TechnicalSheetValidation
-→ simulation MANUAL / AUTO
-→ alternatives Produit compatibles
-→ alternatives d’approvisionnement contextualisées par Dossier
-→ Apply transactionnel avec revision + fingerprint
-→ activité métier tracée
-
-frontend
-→ route Atelier dédiée
-→ courbe globale 5 points basée sur le %CM
-→ inspecteur ingrédient desktop + Sheet petit écran
-→ modes Manuel / Auto
-→ comparaison avant / après
-→ entrée depuis une Fiche
-→ entrée depuis la liste Fiches du Dossier
-
-tests ajoutés
-→ mathématiques du moteur
-→ intégration simulation / Apply / historique / tenancy
-→ HTTP capability / RBAC
-→ RTK Query
-→ page React Manuel / Auto
-→ E2E simulation non destructive puis Apply
-~~~
-
-Décisions structurantes :
-
-~~~text
-%CM
-→ langage économique relatif
-→ somme 100 % des contributions au Coût Matière
-→ jamais une composition physique
-
-réduction d'une ligne
-→ aucune compensation physique obligatoire
-
-borne absente
-→ min = référence = max
-
-alternative Produit V1
-→ même CanonicalProduct
-→ même referenceUnit
-→ ACTIVE et visible dans le Workspace
-
-capability
-→ technical_sheet_optimizer
-→ distincte du RBAC
-→ absente du plan baseline/Free par défaut
-→ activable par Plan ou dérogation d'entitlement
-~~~
-
-Le mode Auto V1 propose un seul prochain mouvement économiquement favorable
-parmi les leviers activés. Il ne calcule ni goût ni score sensoriel et ne pousse
-pas toutes les lignes vers leurs minima.
-
-La simulation reste éphémère. Seule l'action **Appliquer au brouillon** écrit le
-`TechnicalSheetDraft`. La validation reste ensuite le workflow M-004 normal.
-
-Le lot n'est pas encore validé localement ni visuellement. Aucun test vert n'est
-revendiqué à ce stade.
-
-Séquence restante :
-
-~~~text
-vérification statique du lot
-→ pull local utilisateur
-→ tests locaux ciblés
-→ gates globales applicables
-→ npm run dev
-→ validation visuelle utilisateur
-→ corrections éventuelles sur la même branche
-→ PR unique créée par l'utilisateur
-→ merge unique créé par l'utilisateur
-→ Core Gate post-merge
-~~~
-
-Aucune PR ni aucun merge M-005 ne doit être réalisé avant la validation visuelle
-explicite de l'utilisateur.
+**Prochaine priorité : audit des exports et de la diffusion V1**, sans préjuger du numéro du prochain module. Inventorier le CSV, XLSX, PDF, l'impression et l'envoi e-mail, y compris leurs API, parcours UI, stockage, permissions, capabilities, quotas et tests. Réutiliser les exports déjà présents dans M-004 ; définir les écarts avant le cadrage et la validation d'un unique lot cohérent. Les Fiches process constituent le chantier métier candidat suivant, à cadrer séparément.
