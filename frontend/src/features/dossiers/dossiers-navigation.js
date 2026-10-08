@@ -49,7 +49,7 @@ const dossiersWorkspaceNavigation = Object.freeze({
         }),
         Object.freeze({
           id: 'dossier-settings',
-          label: 'Paramètres',
+          label: 'Réglages',
           Icon: Settings2,
           permission: SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
           path: 'dossiers-settings',
