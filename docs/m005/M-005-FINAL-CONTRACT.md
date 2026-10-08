@@ -384,6 +384,9 @@ Backend :
 - DRAFT absent ;
 - révision obsolète ;
 - min/max/verrouillage ;
+- plage libre sans min/max explicites ;
+- normalisation de l’ancien état non verrouillé `min=max=référence` ;
+- Auto quantité sans minimum explicite via la borne libre implicite ;
 - ajustement économique par ligne ;
 - override local prioritaire ;
 - diminution sans compensation physique ;
