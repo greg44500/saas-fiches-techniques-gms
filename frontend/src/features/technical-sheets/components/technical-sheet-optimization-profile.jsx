@@ -112,32 +112,6 @@ function yForShare(share) {
     ) * usable;
 }
 
-function hasPinnedEnvelope(line) {
-  if (
-    !line.minNetQuantity
-    || !line.maxNetQuantity
-  ) {
-    return false;
-  }
-
-  const min =
-    safeNumber(
-      line.minNetQuantity,
-      Number.NaN,
-    );
-  const max =
-    safeNumber(
-      line.maxNetQuantity,
-      Number.NaN,
-    );
-
-  return (
-    Number.isFinite(min)
-    && Number.isFinite(max)
-    && Math.abs(min - max) < 1e-9
-  );
-}
-
 function constraintLabel(
   line,
   projectionLine,
@@ -172,7 +146,7 @@ function constraintLabel(
     && Math.abs(min - max)
       < 1e-9
   ) {
-    return 'Quantité figée par les garde-fous';
+    return 'Bornes identiques ignorées · utilisez Verrouiller pour figer la quantité';
   }
 
   if (
@@ -328,8 +302,7 @@ function TechnicalSheetOptimizationProfile({
           lineId: beforeLine.id,
           adjustment,
           disabled:
-            intent.locked
-            || hasPinnedEnvelope(intent),
+            intent.locked,
           share,
           x:
             xForAdjustment(
