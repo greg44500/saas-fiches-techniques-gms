@@ -176,12 +176,14 @@ function TechnicalSheetOptimizerInspector({
               value={[adjustment]}
             />
             <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
-              <span>
-                {minAdjustment} %
+              <span title={minAdjustment + ' %'}>
+                ≈ 0
               </span>
-              <span>0 %</span>
-              <span>
-                +{maxAdjustment} %
+              <span title="0 %">
+                Référence
+              </span>
+              <span title={'+' + maxAdjustment + ' %'}>
+                2×
               </span>
             </div>
           </div>
@@ -571,7 +573,7 @@ function TechnicalSheetOptimizerInspector({
                     minNetQuantity:
                       event.target.value,
                   })}
-                placeholder="Libre · jusqu’à -99 %"
+                placeholder="Libre · plancher ≈ 0"
                 value={
                   line.minNetQuantity
                 }
@@ -598,7 +600,7 @@ function TechnicalSheetOptimizerInspector({
                     maxNetQuantity:
                       event.target.value,
                   })}
-                placeholder="Libre · jusqu’à +100 %"
+                placeholder="Libre · plafond 2×"
                 value={
                   line.maxNetQuantity
                 }
