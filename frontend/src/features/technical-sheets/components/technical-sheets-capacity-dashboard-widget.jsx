@@ -49,10 +49,10 @@ function TechnicalSheetsCapacityDashboardWidget() {
   return (
     <Card
       aria-label="Capacité des Fiches techniques"
-      className="h-full shadow-sm"
+      className="shadow-sm"
       role="region"
     >
-      <CardHeader>
+      <CardHeader className="pb-2">
         <div className="flex items-center gap-1">
           <CardTitle as="h2">Fiches techniques</CardTitle>
           <InfoTooltip
@@ -61,7 +61,7 @@ function TechnicalSheetsCapacityDashboardWidget() {
           />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {capacityQuery.isLoading && !capacity ? (
           <div aria-live="polite" className="space-y-4" role="status">
             <span className="sr-only">
@@ -76,7 +76,7 @@ function TechnicalSheetsCapacityDashboardWidget() {
             Capacité indisponible.
           </p>
         ) : capacity ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
               <p className="text-2xl font-semibold tracking-tight">
                 {capacity.current}
@@ -99,9 +99,9 @@ function TechnicalSheetsCapacityDashboardWidget() {
             )}
 
             {isOwner && trashCount !== null && !trashQuery.isError && (
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-sm">
                 <Link
-                  className="group rounded-lg border border-border p-3 transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="group rounded-lg border border-border p-2.5 transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   to={`/workspaces/${workspace.id}/dossiers`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -112,7 +112,7 @@ function TechnicalSheetsCapacityDashboardWidget() {
                   <span className="text-xs text-muted-foreground">Accéder aux Dossiers</span>
                 </Link>
                 <Link
-                  className="group rounded-lg border border-border p-3 transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="group rounded-lg border border-border p-2.5 transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   to={`/workspaces/${workspace.id}/technical-sheets/trash`}
                 >
                   <div className="flex items-start justify-between gap-2">
