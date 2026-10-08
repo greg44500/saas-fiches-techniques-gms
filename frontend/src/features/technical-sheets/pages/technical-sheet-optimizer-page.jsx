@@ -547,6 +547,13 @@ function TechnicalSheetOptimizerPage() {
             context
               .costAdjustmentRange
           }
+          savings={
+            simulation?.savings
+            ?? {
+              amountHt: '0',
+              percent: '0',
+            }
+          }
           selectedLineId={
             selectedLineId
           }

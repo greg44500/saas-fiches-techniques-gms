@@ -136,7 +136,7 @@ Le profil utilise des grandeurs métier explicables :
 - axe horizontal : ajustement économique de la ligne par rapport à la recette de référence ;
 - centre `0 %` : recette de référence ;
 - gauche : réduction ;
-- droite : augmentation / enrichissement quantitatif ;
+- droite : augmentation quantitative ;
 - axe vertical : contribution au coût matière de la ligne dans la projection affichée ;
 - sélection : un clic sur un point sélectionne la même ligne que dans la Fiche centrale.
 
@@ -294,7 +294,7 @@ panneau de pilotage à droite
 │   └── sélecteur [Manuel | Auto]
 ├── spectre économique toujours visible
 │   ├── axe Y : %CM
-│   └── axe X : Réduction — Référence — Enrichissement
+│   └── axe X : Réduction — Référence — Augmentation
 ├── barre horizontale d’outils par icônes
 ├── grande zone contextuelle de l’outil sélectionné
 └── pied compact Réinitialiser | Comparer | Appliquer
@@ -317,7 +317,11 @@ Pour chaque ingrédient :
 - le point terminal reste l’autorité de sélection et de réglage ;
 - le survol/focus conserve l’avant/après de la ligne dans une fenêtre contenue dans le graphique, jamais coupée par le drawer.
 
-L’axe vertical porte explicitement `%CM`. L’axe horizontal expose `Réduction`, `Référence` et `Enrichissement` avec aide contextuelle.
+L’axe vertical porte explicitement `%CM`. L’axe horizontal expose `Réduction`, `Référence` et `Augmentation` sous forme d’aides discrètes au survol/focus. Le vocabulaire reste descriptif de la quantité : M-005 n’infère ni « perte de qualité » ni « perte de valeur ».
+
+Sous cet axe, un indicateur économique global en lecture seule utilise directement `savings.percent` renvoyé par le backend sur le Coût de fabrication HT. Le centre représente la recette de référence, la gauche une économie et la droite un surcoût. Cet indicateur n’est pas une moyenne arithmétique des ajustements de lignes.
+
+Le détail avant/après d’un ingrédient survolé ou focalisé est affiché hors de la zone de tracé afin de ne jamais masquer les barres ou leurs poignées interactives.
 
 ### Mode et outils
 

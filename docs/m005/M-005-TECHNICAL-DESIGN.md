@@ -146,7 +146,11 @@ Interaction directe :
 - clic/focus → sélection ;
 - déplacement horizontal → mise à jour de `economicAdjustmentPercent` ;
 - clavier gauche/droite → modification par pas déterministe ;
-- tooltip → avant/après de la ligne.
+- tooltip → avant/après de la ligne, rendu hors de la zone de tracé pour ne pas masquer une barre ou sa poignée.
+
+Les libellés d’axe sont des aides focusables hors SVG : `Réduction / Référence / Augmentation`. Aucun libellé de qualité ou de valeur n’est déduit de la variation de quantité.
+
+Un indicateur global read-only reçoit `savings.percent` déjà calculé par le backend sur le Coût de fabrication HT. Le frontend inverse uniquement le sens visuel du signe pour placer une économie à gauche et un surcoût à droite, puis borne la position graphique à l’intervalle d’affichage `[-100 ; +100]`. La valeur métier affichée reste celle du serveur ; aucune moyenne des lignes n’est calculée.
 
 Le calcul de quantité reste côté backend via l’arithmétique rationnelle M-005.
 
@@ -292,8 +296,10 @@ Desktop :
 - colonne gauche dominante : indicateurs économiques compacts puis Fiche technique simulée ;
 - colonne droite `minmax(32rem, 36rem)`, alignée sur la largeur d’un drawer de détail ;
 - en-tête du profil : titre à gauche, sélecteur compact Manuel / Auto à droite ;
-- profil économique compact, axe Y `%CM`, axe X Réduction / Référence / Enrichissement ;
+- profil économique compact, axe Y `%CM`, axe X Réduction / Référence / Augmentation avec aides focusables hors SVG ;
 - une barre SVG horizontale indépendante par ingrédient, ancrée au centre Référence, colorée selon le sens de variation, avec point interactif terminal ; aucune ligne ne relie deux ingrédients ;
+- détail de ligne docké hors de la zone de tracé afin de préserver l’accès aux poignées ;
+- indicateur économique global sous l’axe, alimenté par `savings.percent` serveur : économie à gauche, référence au centre, surcoût à droite ;
 - barre horizontale d’outils par icônes uniquement ;
 - contenu contextuel seul scrollable et dimensionné pour prendre la majorité de la hauteur restante ;
 - actions de scénario regroupées sur une seule rangée compacte en pied du panneau.

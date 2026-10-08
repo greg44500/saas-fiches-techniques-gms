@@ -9,6 +9,11 @@ import {
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   findOptimizerLine,
   findProjectionLine,
   formatCurrency,
@@ -170,25 +175,124 @@ function adjustmentTone(adjustment) {
   };
 }
 
-function AxisLabel({
-  anchor = 'middle',
+function ProfileAxisHelp({
+  align = 'center',
   description,
-  x,
-  y,
   children,
 }) {
+  const alignment =
+    align === 'start'
+      ? 'justify-self-start'
+      : align === 'end'
+        ? 'justify-self-end'
+        : 'justify-self-center';
+
   return (
-    <g className="cursor-help">
-      <title>{description}</title>
-      <text
-        className="fill-muted-foreground text-[9px]"
-        textAnchor={anchor}
-        x={x}
-        y={y}
+    <Tooltip>
+      <TooltipTrigger
+        className={
+          'rounded-md px-2 py-1 text-[10px] text-muted-foreground transition-colors '
+          + 'hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring '
+          + alignment
+        }
       >
         {children}
-      </text>
-    </g>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        {description}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function globalImpactLabel(
+  savingsPercent,
+) {
+  if (savingsPercent > 0) {
+    return (
+      'Économie globale '
+      + formatPercent(
+        Math.abs(savingsPercent),
+      )
+    );
+  }
+
+  if (savingsPercent < 0) {
+    return (
+      'Surcoût global '
+      + formatPercent(
+        Math.abs(savingsPercent),
+      )
+    );
+  }
+
+  return 'Référence économique';
+}
+
+function GlobalEconomicIndicator({
+  savings,
+}) {
+  const savingsPercent =
+    safeNumber(
+      savings?.percent,
+    );
+  const economicDeltaPercent =
+    -savingsPercent;
+  const visualDelta =
+    clamp(
+      economicDeltaPercent,
+      -100,
+      100,
+    );
+  const markerPosition =
+    (visualDelta + 100) / 2;
+  const label =
+    globalImpactLabel(
+      savingsPercent,
+    );
+
+  return (
+    <div className="px-9 pb-2 pt-1">
+      <div className="mb-1 flex items-center justify-between gap-2 text-[9px] text-muted-foreground">
+        <span>Impact global</span>
+        <span className="truncate font-medium text-foreground">
+          {label}
+        </span>
+      </div>
+      <div
+        aria-label="Impact économique global"
+        aria-valuemax="100"
+        aria-valuemin="-100"
+        aria-valuenow={visualDelta}
+        aria-valuetext={label}
+        className="relative h-2 rounded-full bg-muted"
+        role="meter"
+        title="Écart global de coût de fabrication HT renvoyé par le serveur ; ce n’est pas une moyenne arithmétique des ingrédients."
+      >
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-[-2px] left-1/2 w-px -translate-x-1/2 bg-foreground/35"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background bg-foreground shadow-sm transition-[left]"
+          style={{
+            left:
+              markerPosition
+              + '%',
+          }}
+        />
+      </div>
+      <div className="mt-1 grid grid-cols-3 text-[8px] text-muted-foreground">
+        <span>Économie</span>
+        <span className="text-center">
+          Référence
+        </span>
+        <span className="text-right">
+          Surcoût
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -202,6 +306,7 @@ function TechnicalSheetOptimizationProfile({
   onModeChange,
   onSelect,
   range = DEFAULT_RANGE,
+  savings,
   selectedLineId,
 }) {
   const [hoveredLineId, setHoveredLineId] =
@@ -706,33 +811,34 @@ function TechnicalSheetOptimizationProfile({
             );
           })}
 
-          <AxisLabel
-            anchor="start"
-            description="Réduction : diminution de la quantité par rapport à la recette de référence."
-            x={PADDING_X}
-            y={SVG_HEIGHT - 4}
-          >
-            Réduction
-          </AxisLabel>
-          <AxisLabel
-            description="Référence : quantité initiale de la recette, soit un ajustement de 0 %."
-            x={zeroX}
-            y={SVG_HEIGHT - 4}
-          >
-            Référence
-          </AxisLabel>
-          <AxisLabel
-            anchor="end"
-            description="Enrichissement : augmentation de la quantité par rapport à la recette de référence."
-            x={SVG_WIDTH - PADDING_X}
-            y={SVG_HEIGHT - 4}
-          >
-            Enrichissement
-          </AxisLabel>
         </svg>
 
+        <div className="grid grid-cols-3 gap-1 px-9">
+          <ProfileAxisHelp
+            align="start"
+            description="Réduction : diminution de la quantité par rapport à la recette de référence. Cela peut diminuer le coût, sans préjuger de la qualité."
+          >
+            Réduction
+          </ProfileAxisHelp>
+          <ProfileAxisHelp
+            description="Référence : quantité initiale de la recette, soit un ajustement de 0 %."
+          >
+            Référence
+          </ProfileAxisHelp>
+          <ProfileAxisHelp
+            align="end"
+            description="Augmentation : hausse de la quantité par rapport à la recette de référence. Le terme ne suppose aucun enrichissement qualitatif."
+          >
+            Augmentation
+          </ProfileAxisHelp>
+        </div>
+
+        <GlobalEconomicIndicator
+          savings={savings}
+        />
+
         {hovered && (
-          <div className="pointer-events-none absolute right-2 top-2 z-20 w-60 max-w-[calc(100%-1rem)] rounded-lg border border-border bg-popover p-3 text-xs shadow-lg">
+          <div className="pointer-events-none absolute left-2 right-2 top-full z-30 mt-2 rounded-lg border border-border bg-popover p-3 text-xs shadow-lg">
             <p className="truncate font-semibold text-foreground">
               {hovered
                 .projectionLine

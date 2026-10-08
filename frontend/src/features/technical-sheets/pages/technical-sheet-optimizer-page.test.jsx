@@ -197,6 +197,34 @@ describe('TechnicalSheetOptimizerPage', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
+        name: 'Réduction',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Référence',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Augmentation',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: 'Enrichissement',
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('meter', {
+        name: 'Impact économique global',
+      }),
+    ).toHaveAttribute(
+      'aria-valuetext',
+      'Référence économique',
+    );
+    expect(
+      screen.getByRole('button', {
         name: /Carotte/,
       }),
     ).toBeInTheDocument();
@@ -316,6 +344,14 @@ describe('TechnicalSheetOptimizerPage', () => {
         '-5,00 €',
       ),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('meter', {
+        name: 'Impact économique global',
+      }),
+    ).toHaveAttribute(
+      'aria-valuetext',
+      'Surcoût global 25 %',
+    );
   });
 
   it('libère un ancien min=max égal à la quantité de référence sans supprimer un verrouillage explicite', () => {
