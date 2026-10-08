@@ -95,6 +95,12 @@ describe('DashboardDossiers', () => {
       '/workspaces/workspace-1/dossiers/dossier-1',
     );
     expect(screen.getAllByRole('link', { name: 'Ouvrir' })).toHaveLength(1);
+    const frontSection = screen.getByRole('button', {
+      name: 'Afficher les détails de Nantes Centre',
+    }).closest('section');
+    const frontActions = frontSection.querySelectorAll('a, button');
+    expect(frontActions[0]).toHaveTextContent('Ouvrir');
+    expect(frontActions[1]).toHaveTextContent('Détails');
   });
 
   it('retourne une carte et affiche les informations de synthèse du Dossier', () => {
