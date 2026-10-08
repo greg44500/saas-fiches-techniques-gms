@@ -28,13 +28,15 @@ function WorkspaceDashboardPage() {
   const dossierWidget = visibleWidgets.find((widget) => widget.id === 'gms.dossiers-overview');
   const exportsWidget = visibleWidgets.find((widget) => widget.id === 'gms.technical-sheet-exports-monthly');
   const capacityWidget = visibleWidgets.find((widget) => widget.id === 'gms.technical-sheets-capacity');
+  const productsWidget = visibleWidgets.find((widget) => widget.id === 'gms.products-catalog');
   const summaryWidgets = visibleWidgets.filter(
     (widget) => widget.slot === 'summary' && widget.id !== 'gms.technical-sheet-exports-monthly',
   );
   const contentWidgets = visibleWidgets.filter(
     (widget) => widget.slot === 'content'
       && widget.id !== 'gms.dossiers-overview'
-      && widget.id !== 'gms.technical-sheets-capacity',
+      && widget.id !== 'gms.technical-sheets-capacity'
+      && widget.id !== 'gms.products-catalog',
   );
   const pendingSummaryWidgets = isPreferencesLoading
     ? accessibleWidgets.filter((widget) => widget.configurable && widget.slot === 'summary')
@@ -55,11 +57,12 @@ function WorkspaceDashboardPage() {
 
       {dossierWidget && <dossierWidget.component />}
 
-      {(exportsWidget || capacityWidget) && (
-        <section aria-label="Indicateurs Fiches techniques" className="grid gap-4 md:grid-cols-2">
-          {exportsWidget && (
-            <div className="min-w-0">
-              <exportsWidget.component />
+      {(exportsWidget || productsWidget || capacityWidget) && (
+        <section aria-label="Indicateurs métier" className="grid items-start gap-4 md:grid-cols-2">
+          {(exportsWidget || productsWidget) && (
+            <div className="flex min-w-0 flex-col gap-4">
+              {exportsWidget && <exportsWidget.component />}
+              {productsWidget && <productsWidget.component />}
             </div>
           )}
           {capacityWidget && (
