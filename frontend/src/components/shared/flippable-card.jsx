@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 function FlippableCard({
   front,
   back,
+  backAction,
   title,
   className,
 }) {
@@ -47,16 +48,19 @@ function FlippableCard({
           inert={!flipped}
         >
           <div className="min-h-0 flex-1">{back}</div>
-          <Button
-            aria-label={`Revenir à ${title}`}
-            className="mt-3 w-full"
-            onClick={() => setFlipped(false)}
-            type="button"
-            variant="outline"
-          >
-            <RotateCcw aria-hidden="true" className="size-4" />
-            Retour
-          </Button>
+          <div className="mt-3 flex items-center gap-2">
+            <Button
+              aria-label={`Revenir à ${title}`}
+              className="min-w-0 flex-1"
+              onClick={() => setFlipped(false)}
+              type="button"
+              variant="outline"
+            >
+              <RotateCcw aria-hidden="true" className="size-4" />
+              Retour
+            </Button>
+            {backAction && <div className="flex shrink-0 items-center">{backAction}</div>}
+          </div>
         </section>
       </div>
     </div>
