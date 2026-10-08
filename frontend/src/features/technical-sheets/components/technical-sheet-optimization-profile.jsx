@@ -458,7 +458,7 @@ function TechnicalSheetOptimizationProfile({
         </div>
       </div>
 
-      <div className="relative px-2 pb-1 pt-1">
+      <div className="relative mx-auto w-full max-w-[31rem] px-2 pb-1 pt-1">
         <svg
           aria-label="Répartition économique des ingrédients"
           className="h-[132px] w-full touch-none"
