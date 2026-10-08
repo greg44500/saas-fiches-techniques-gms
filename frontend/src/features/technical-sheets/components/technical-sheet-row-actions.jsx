@@ -12,7 +12,6 @@ function TechnicalSheetRowActions({
   canExport,
   hasValidatedState,
   exportQuotaReached,
-  exportingFormat,
   isExporting,
   isOptimizing,
   isStartingDraft,
