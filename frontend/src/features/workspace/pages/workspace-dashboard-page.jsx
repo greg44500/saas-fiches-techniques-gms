@@ -74,7 +74,7 @@ function WorkspaceDashboardPage() {
                 <capacityWidget.component />
               </div>
             </>
-          ) : businessWidgets.map((widget, index) => {
+          ) : businessWidgets.map((widget) => {
             const Widget = widget.component;
             return (
               <div
