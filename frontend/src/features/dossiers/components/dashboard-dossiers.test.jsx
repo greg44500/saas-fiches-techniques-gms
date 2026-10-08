@@ -53,6 +53,14 @@ function renderDashboard(props = {}) {
     metadata,
     onRetry: vi.fn(),
     total: 2,
+    totalPages: 1,
+    page: 1,
+    pageSize: 3,
+    canCreate: true,
+    onCreate: vi.fn(),
+    onPageChange: vi.fn(),
+    onSearch: (event) => event.preventDefault(),
+    onSearchChange: vi.fn(),
     workspaceId: 'workspace-1',
   };
 
@@ -69,8 +77,9 @@ describe('DashboardDossiers', () => {
   it('affiche les dossiers accessibles et ouvre uniquement un dossier ACTIVE', () => {
     renderDashboard();
 
-    expect(screen.getByRole('heading', { name: 'Dossiers' })).toBeInTheDocument();
-    expect(screen.getByText('2 dossiers accessibles')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Dossiers (2)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer un dossier' })).toBeInTheDocument();
+    expect(screen.getByText('1–2 sur 2')).toBeInTheDocument();
     expect(screen.getByText('Nantes Centre')).toBeInTheDocument();
     expect(screen.getByText('Leclerc · 44000 Nantes')).toBeInTheDocument();
     expect(screen.getByText('Saint-Nazaire')).toBeInTheDocument();
@@ -103,12 +112,33 @@ describe('DashboardDossiers', () => {
   });
 
   it('affiche un état vide sans inventer de droit de création', () => {
-    renderDashboard({ dossiers: [], total: 0 });
+    renderDashboard({ dossiers: [], total: 0, canCreate: false });
+    expect(screen.queryByRole('button', { name: 'Créer un dossier' })).not.toBeInTheDocument();
 
     expect(screen.getByText('Aucun dossier accessible')).toBeInTheDocument();
     expect(
       screen.getByText('Les dossiers auxquels vous avez accès apparaîtront ici.'),
     ).toBeInTheDocument();
+  });
+
+  it('navigue dans les pages sans charger tous les Dossiers', () => {
+    const onPageChange = vi.fn();
+    renderDashboard({ total: 100, totalPages: 34, onPageChange });
+    fireEvent.click(screen.getByRole('button', { name: 'Cartes suivantes' }));
+    expect(onPageChange).toHaveBeenCalledWith(2);
+    expect(screen.getByText('Dossiers (100)')).toBeInTheDocument();
+  });
+
+  it('soumet une recherche sur les Dossiers accessibles', () => {
+    const onSearch = vi.fn((event) => event.preventDefault());
+    const onSearchChange = vi.fn();
+    renderDashboard({ onSearch, onSearchChange });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Rechercher un dossier dans le tableau de bord' }), {
+      target: { value: 'Nantes' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Lancer la recherche de dossiers' }));
+    expect(onSearchChange).toHaveBeenCalledWith('Nantes');
+    expect(onSearch).toHaveBeenCalledTimes(1);
   });
 
   it('propose un retry en cas d’erreur serveur', () => {
