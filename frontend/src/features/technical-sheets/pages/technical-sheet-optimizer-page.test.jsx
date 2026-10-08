@@ -249,7 +249,7 @@ describe('TechnicalSheetOptimizerPage', () => {
     );
     expect(
       screen.getByText(
-        'QT nette',
+        'QT Nette',
       ),
     ).toBeInTheDocument();
     expect(
