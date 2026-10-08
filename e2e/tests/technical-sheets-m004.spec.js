@@ -409,7 +409,7 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
     context.identity,
   );
 
-  await createTechnicalSheet(page, {
+  const { detailUrl } = await createTechnicalSheet(page, {
     name:
       'Fiche M004 Exports',
     technicalSheetsUrl:
@@ -475,13 +475,8 @@ test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', a
     })
     .click();
 
-  await exportRow.getByRole('button', {
-    name: 'Actions de Fiche M004 Exports',
-  }).click();
-  await page.getByRole('button', {
-    name: 'Modifier',
-    exact: true,
-  }).click();
+  // Les exports sont disponibles sur la fiche validée, hors du menu de la liste.
+  await page.goto(detailUrl);
 
   const exportButton = page.getByRole('button', {
     name: 'Exports',
