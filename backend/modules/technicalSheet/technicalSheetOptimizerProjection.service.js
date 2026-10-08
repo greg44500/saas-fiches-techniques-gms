@@ -371,16 +371,61 @@ const normalizeLineIntents = ({
                             false,
                     };
 
+            const reference =
+                decimalFraction(
+                    line.netQuantity
+                        .toString(),
+                );
+
+            if (!input) {
+                if (
+                    normalized.minNetQuantity
+                ) {
+                    const minimum =
+                        decimalFraction(
+                            normalized
+                                .minNetQuantity,
+                        );
+
+                    if (
+                        minimum.numerator <= 0n
+                        || compareFractions(
+                            minimum,
+                            reference,
+                        ) > 0
+                    ) {
+                        normalized.minNetQuantity =
+                            null;
+                    }
+                }
+
+                if (
+                    normalized.maxNetQuantity
+                ) {
+                    const maximum =
+                        decimalFraction(
+                            normalized
+                                .maxNetQuantity,
+                        );
+
+                    if (
+                        maximum.numerator <= 0n
+                        || compareFractions(
+                            maximum,
+                            reference,
+                        ) < 0
+                    ) {
+                        normalized.maxNetQuantity =
+                            null;
+                    }
+                }
+            }
+
             if (
                 !normalized.locked
                 && normalized.minNetQuantity
                 && normalized.maxNetQuantity
             ) {
-                const reference =
-                    decimalFraction(
-                        line.netQuantity
-                            .toString(),
-                    );
                 const minimum =
                     decimalFraction(
                         normalized
