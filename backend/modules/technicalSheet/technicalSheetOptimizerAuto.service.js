@@ -489,7 +489,7 @@ const autoSimulation = async ({
                     resolvedIntents:
                         resolvedIntents.map(
                             ({
-                                supplierArticleExplicit,
+                                supplierArticleExplicit: _supplierArticleExplicit,
                                 ...intent
                             }) => intent,
                         ),

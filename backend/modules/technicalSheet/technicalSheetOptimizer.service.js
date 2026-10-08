@@ -269,7 +269,7 @@ const simulateTechnicalSheetOptimization = async ({
         });
 
     const {
-        resolvedScenario,
+        resolvedScenario: _resolvedScenario,
         ...result
     } = simulation;
 
