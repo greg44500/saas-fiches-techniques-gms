@@ -1,9 +1,13 @@
 import {
+  Sparkles,
+} from 'lucide-react';
+import {
   useMemo,
   useState,
 } from 'react';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { Button } from '@/components/ui/button';
 import {
   findOptimizerLine,
   findProjectionLine,
@@ -13,14 +17,40 @@ import {
   formatSignedPercent,
 } from '@/features/technical-sheets/lib/technical-sheet-optimizer';
 
-const SVG_WIDTH = 760;
-const SVG_HEIGHT = 210;
+const SVG_WIDTH = 620;
+const SVG_HEIGHT = 154;
 const PADDING_X = 46;
-const PADDING_Y = 24;
+const PADDING_Y = 22;
 const DEFAULT_RANGE = Object.freeze({
   min: -99,
   max: 100,
 });
+const PROFILE_TONES = Object.freeze([
+  {
+    stroke: 'stroke-sky-500',
+    fill: 'fill-sky-500',
+  },
+  {
+    stroke: 'stroke-emerald-500',
+    fill: 'fill-emerald-500',
+  },
+  {
+    stroke: 'stroke-amber-500',
+    fill: 'fill-amber-500',
+  },
+  {
+    stroke: 'stroke-rose-500',
+    fill: 'fill-rose-500',
+  },
+  {
+    stroke: 'stroke-violet-500',
+    fill: 'fill-violet-500',
+  },
+  {
+    stroke: 'stroke-cyan-500',
+    fill: 'fill-cyan-500',
+  },
+]);
 
 function safeNumber(value, fallback = 0) {
   const number = Number(value);
@@ -170,7 +200,74 @@ function constraintLabel(
     return 'Garde-fous actifs';
   }
 
-  return 'Aucun garde-fou';
+  return 'Plage libre';
+}
+
+function tracePath(point) {
+  const baseY =
+    SVG_HEIGHT - PADDING_Y;
+  const width = 28;
+  const left =
+    clamp(
+      point.x - width,
+      PADDING_X,
+      SVG_WIDTH - PADDING_X,
+    );
+  const right =
+    clamp(
+      point.x + width,
+      PADDING_X,
+      SVG_WIDTH - PADDING_X,
+    );
+  const controlY =
+    Math.min(
+      baseY - 8,
+      point.y + (
+        baseY - point.y
+      ) * 0.52,
+    );
+
+  return [
+    'M',
+    left,
+    baseY,
+    'C',
+    left + 8,
+    controlY,
+    point.x - 10,
+    point.y + 5,
+    point.x,
+    point.y,
+    'C',
+    point.x + 10,
+    point.y + 5,
+    right - 8,
+    controlY,
+    right,
+    baseY,
+  ].join(' ');
+}
+
+function AxisLabel({
+  anchor = 'middle',
+  description,
+  x,
+  y,
+  children,
+}) {
+  return (
+    <g className="cursor-help">
+      <title>{description}</title>
+      <text
+        className="fill-muted-foreground text-[9px]"
+        textAnchor={anchor}
+        x={x}
+        y={y}
+      >
+        {children}
+      </text>
+    </g>
+  );
 }
 
 function TechnicalSheetOptimizationProfile({
@@ -178,7 +275,9 @@ function TechnicalSheetOptimizationProfile({
   baseline,
   embedded = false,
   lines,
+  mode,
   onChangeLine,
+  onModeChange,
   onSelect,
   range = DEFAULT_RANGE,
   selectedLineId,
@@ -199,7 +298,7 @@ function TechnicalSheetOptimizationProfile({
         (line) =>
           line.kind === 'INGREDIENT',
       )
-      .map((beforeLine) => {
+      .map((beforeLine, index) => {
         const projectionLine =
           findProjectionLine(
             after,
@@ -239,6 +338,11 @@ function TechnicalSheetOptimizationProfile({
             ),
           y:
             yForShare(share),
+          tone:
+            PROFILE_TONES[
+              index
+              % PROFILE_TONES.length
+            ],
           beforeLine,
           projectionLine,
           intent,
@@ -332,39 +436,59 @@ function TechnicalSheetOptimizationProfile({
           : 'shrink-0 rounded-xl border border-border bg-card'
       }
     >
-      <div
-        className={
-          'flex items-start justify-between gap-3 border-b border-border '
-          + (embedded ? 'px-3 py-2.5' : 'px-4 py-3')
-        }
-      >
-        <div>
-          <div className="flex items-center gap-1">
-            <h2 className="text-sm font-semibold">
-              Profil économique global
-            </h2>
-            <InfoTooltip
-              content="Chaque point est un ingrédient. Sa position horizontale représente l’ajustement demandé ; sa hauteur représente sa contribution au coût matière dans la simulation affichée."
-              label="Comprendre le profil économique"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Instantané de la Fiche : réduction à gauche, référence au centre, enrichissement à droite.
-          </p>
+      <div className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-3 py-2">
+        <div className="flex min-w-0 items-center gap-1">
+          <h2 className="truncate text-sm font-semibold">
+            Profil économique global
+          </h2>
+          <InfoTooltip
+            content="Chaque trace représente un ingrédient. Seuls son sommet et son point portent la donnée : ajustement horizontal et part du coût matière en hauteur."
+            label="Comprendre le profil économique"
+          />
         </div>
-        <p className="hidden text-xs text-muted-foreground sm:block">
-          Hauteur = %CM
-        </p>
+
+        <div
+          aria-label="Mode d’optimisation"
+          className="flex shrink-0 rounded-md border border-border bg-background p-0.5"
+          role="group"
+        >
+          <Button
+            className="h-7 px-2.5 text-xs"
+            onClick={() =>
+              onModeChange('MANUAL')}
+            type="button"
+            variant={
+              mode === 'MANUAL'
+                ? 'secondary'
+                : 'ghost'
+            }
+          >
+            Manuel
+          </Button>
+          <Button
+            className="h-7 px-2.5 text-xs"
+            onClick={() =>
+              onModeChange('AUTO')}
+            type="button"
+            variant={
+              mode === 'AUTO'
+                ? 'secondary'
+                : 'ghost'
+            }
+          >
+            <Sparkles
+              aria-hidden="true"
+              className="size-3.5"
+            />
+            Auto
+          </Button>
+        </div>
       </div>
 
-      <div className="relative px-2 pb-2 pt-1">
+      <div className="relative px-2 pb-1 pt-1">
         <svg
           aria-label="Répartition économique des ingrédients"
-          className={
-            embedded
-              ? 'h-[165px] w-full touch-none'
-              : 'h-[190px] w-full touch-none'
-          }
+          className="h-[132px] w-full touch-none"
           role="group"
           viewBox={
             '0 0 '
@@ -377,14 +501,15 @@ function TechnicalSheetOptimizationProfile({
             (share) => {
               const y =
                 yForShare(share);
+
               return (
                 <g key={share}>
                   <line
-                    className="stroke-border"
+                    className="stroke-border/70"
                     strokeDasharray={
                       share === 0
                         ? undefined
-                        : '3 5'
+                        : '2 5'
                     }
                     x1={PADDING_X}
                     x2={
@@ -395,20 +520,38 @@ function TechnicalSheetOptimizationProfile({
                     y2={y}
                   />
                   <text
-                    className="fill-muted-foreground text-[10px]"
-                    x="4"
+                    className="fill-muted-foreground text-[8px]"
+                    textAnchor="end"
+                    x={PADDING_X - 8}
                     y={y + 3}
                   >
-                    {share} %
+                    {share}
                   </text>
                 </g>
               );
             },
           )}
 
+          <g className="cursor-help">
+            <title>
+              %CM : part de l’ingrédient dans le coût matière total simulé.
+            </title>
+            <text
+              className="fill-muted-foreground text-[9px] font-medium"
+              transform={
+                'translate(11 '
+                + (SVG_HEIGHT / 2)
+                + ') rotate(-90)'
+              }
+              textAnchor="middle"
+            >
+              %CM
+            </text>
+          </g>
+
           <line
-            className="stroke-foreground/40"
-            strokeDasharray="5 5"
+            className="stroke-foreground/35"
+            strokeDasharray="4 4"
             x1={zeroX}
             x2={zeroX}
             y1={PADDING_Y}
@@ -424,19 +567,37 @@ function TechnicalSheetOptimizationProfile({
               === selectedLineId;
 
             return (
-              <g key={point.lineId}>
-                <line
+              <g
+                key={point.lineId}
+                onPointerEnter={() =>
+                  setHoveredLineId(
+                    point.lineId,
+                  )}
+                onPointerLeave={() =>
+                  setHoveredLineId(
+                    null,
+                  )}
+              >
+                <path
                   className={
-                    selected
-                      ? 'stroke-primary/70'
-                      : 'stroke-muted-foreground/30'
+                    point.tone.stroke
+                    + ' fill-none transition-opacity '
+                    + (
+                      selected
+                        ? 'opacity-100'
+                        : 'opacity-65'
+                    )
                   }
-                  strokeWidth="2"
-                  x1={zeroX}
-                  x2={point.x}
-                  y1={point.y}
-                  y2={point.y}
+                  d={tracePath(point)}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeWidth={
+                    selected
+                      ? '2.5'
+                      : '1.75'
+                  }
                 />
+
                 <circle
                   aria-disabled={
                     point.disabled
@@ -475,12 +636,8 @@ function TechnicalSheetOptimizationProfile({
                         ? 'cursor-not-allowed '
                         : 'cursor-ew-resize '
                     )
-                    + 'outline-none focus-visible:stroke-ring focus-visible:stroke-[3px] '
-                    + (
-                      selected
-                        ? 'fill-primary'
-                        : 'fill-foreground/70'
-                    )
+                    + point.tone.fill
+                    + ' outline-none ring-offset-background focus-visible:stroke-ring focus-visible:stroke-[3px]'
                   }
                   cx={point.x}
                   cy={point.y}
@@ -501,9 +658,7 @@ function TechnicalSheetOptimizationProfile({
                     );
                   }}
                   onKeyDown={(event) => {
-                    if (
-                      point.disabled
-                    ) {
+                    if (point.disabled) {
                       return;
                     }
 
@@ -550,9 +705,7 @@ function TechnicalSheetOptimizationProfile({
                       point.lineId,
                     );
 
-                    if (
-                      point.disabled
-                    ) {
+                    if (point.disabled) {
                       return;
                     }
 
@@ -573,20 +726,6 @@ function TechnicalSheetOptimizationProfile({
                       event,
                       point,
                     );
-                  }}
-                  onPointerEnter={() =>
-                    setHoveredLineId(
-                      point.lineId,
-                    )}
-                  onPointerLeave={(event) => {
-                    if (
-                      !event.currentTarget
-                        .matches(':focus')
-                    ) {
-                      setHoveredLineId(
-                        null,
-                      );
-                    }
                   }}
                   onPointerMove={(event) => {
                     const hasPointerCapture =
@@ -610,7 +749,7 @@ function TechnicalSheetOptimizationProfile({
                       point,
                     );
                   }}
-                  r={selected ? 8 : 6}
+                  r={selected ? 5.5 : 4}
                   role="slider"
                   tabIndex="0"
                 />
@@ -618,35 +757,34 @@ function TechnicalSheetOptimizationProfile({
             );
           })}
 
-          <text
-            className="fill-muted-foreground text-[10px]"
-            textAnchor="start"
+          <AxisLabel
+            anchor="start"
+            description="Réduction : diminution de la quantité par rapport à la recette de référence."
             x={PADDING_X}
             y={SVG_HEIGHT - 4}
           >
             Réduction
-          </text>
-          <text
-            className="fill-muted-foreground text-[10px]"
-            textAnchor="middle"
+          </AxisLabel>
+          <AxisLabel
+            description="Référence : quantité initiale de la recette, soit un ajustement de 0 %."
             x={zeroX}
             y={SVG_HEIGHT - 4}
           >
-            0 % · référence
-          </text>
-          <text
-            className="fill-muted-foreground text-[10px]"
-            textAnchor="end"
+            Référence
+          </AxisLabel>
+          <AxisLabel
+            anchor="end"
+            description="Enrichissement : augmentation de la quantité par rapport à la recette de référence."
             x={SVG_WIDTH - PADDING_X}
             y={SVG_HEIGHT - 4}
           >
             Enrichissement
-          </text>
+          </AxisLabel>
         </svg>
 
         {hovered && (
           <div
-            className="pointer-events-none absolute z-10 w-64 -translate-x-1/2 -translate-y-[108%] rounded-lg border border-border bg-popover p-3 text-xs shadow-lg"
+            className="pointer-events-none absolute z-10 w-60 -translate-x-1/2 -translate-y-[108%] rounded-lg border border-border bg-popover p-3 text-xs shadow-lg"
             style={{
               left:
                 (
