@@ -132,7 +132,7 @@ function TechnicalSheetOptimizerRecipePreview({
 
       <div className="hidden shrink-0 border-b border-border bg-muted/25 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid lg:grid-cols-[minmax(0,1.55fr)_minmax(8rem,.8fr)_4rem_minmax(7rem,.7fr)_minmax(7rem,.7fr)_5rem] lg:gap-3">
         <span>Produit</span>
-        <span className="text-right">QT nette</span>
+        <span className="text-right">QT Nette</span>
         <span className="text-center">U</span>
         <span className="text-right">PU HT</span>
         <span className="text-right">Coût HT</span>
