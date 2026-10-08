@@ -306,16 +306,16 @@ La page Atelier ne doit pas imposer un scroll documentaire sur desktop. La Fiche
 
 Le texte explicatif redondant sous le titre est supprimé. Les termes d’axes portent leur propre aide au survol/focus.
 
-Le rendu visuel peut s’inspirer d’un histogramme photographique : chaque ingrédient possède une trace fine et colorée indépendante. Cette trace ne relie jamais deux ingrédients entre eux et ne crée aucune interpolation métier.
+Le profil utilise des barres horizontales centrées sur la Référence. Il ne relie jamais deux ingrédients entre eux et ne crée aucune interpolation métier.
 
-Pour chaque trace :
+Pour chaque ingrédient :
 
-- le sommet est le point de donnée réel ;
-- son abscisse est `economicAdjustmentPercent` ;
-- son ordonnée est `materialCostSharePercent` de la projection ;
-- la largeur de la forme autour du sommet est uniquement décorative et ne constitue pas une mesure ;
-- le point interactif reste l’autorité de sélection et de réglage ;
-- le survol/focus conserve l’avant/après de la ligne.
+- l’ordonnée reste `materialCostSharePercent` de la projection ;
+- la barre part du centre Référence vers la gauche pour une réduction ou vers la droite pour une augmentation ;
+- la longueur représente `economicAdjustmentPercent` ;
+- la couleur distingue réduction, neutralité et augmentation ;
+- le point terminal reste l’autorité de sélection et de réglage ;
+- le survol/focus conserve l’avant/après de la ligne dans une fenêtre contenue dans le graphique, jamais coupée par le drawer.
 
 L’axe vertical porte explicitement `%CM`. L’axe horizontal expose `Réduction`, `Référence` et `Enrichissement` avec aide contextuelle.
 
@@ -346,15 +346,19 @@ La vue Réglage reste centrée sur l’action :
 
 Les min/max ne sont pas initialisés par défaut. La plage libre est donc celle du moteur M-005 : presque zéro (`-99 %`) jusqu’au double (`+100 %`).
 
-Le bouton Contraintes sert uniquement à resserrer volontairement cette plage, verrouiller une ligne ou utiliser une quantité forcée avancée.
+Le bouton Contraintes sert uniquement à resserrer volontairement cette plage, verrouiller une ligne ou utiliser une quantité forcée avancée. Les champs min/max restent numériques ou vides ; la signification « vide = plage libre » et les plancher/plafond implicites sont portés par les aides contextuelles, pas par le contenu des champs.
 
 Le cas historique non verrouillé `min = max = quantité de référence` est considéré comme un ancien état de blocage et est neutralisé à l’ouverture de la session. Une quantité réellement figée doit utiliser `locked`.
 
 ### Fiche et indicateurs
 
-La Fiche simulée affiche au minimum Produit, quantité nette simulée, unité, PU HT, coût HT et %CM, avec lecture de la valeur précédente lorsqu’elle change.
+La Fiche simulée affiche au minimum Produit, QT nette, unité, PU HT, coût HT et %CM, avec lecture de la valeur précédente lorsqu’elle change. Le libellé redondant « Lecture résultat simulé » n’est pas affiché puisque le contexte « Fiche technique simulée » est déjà explicite.
 
-Le bandeau économique reste compact. Les informations déjà évidentes dans la Fiche ou le profil ne sont pas répétées inutilement dans l’inspecteur.
+L’en-tête de page tient sur une ligne sur desktop : retour, « Atelier d’optimisation », séparateur, nom de la Fiche.
+
+Le bandeau économique reste compact. Son quatrième indicateur est sémantique : « Économie estimée » si `before - after > 0`, « Surcoût estimé » si `before - after < 0`, et « Écart estimé » à zéro. En cas de surcoût, le montant affiché est positif et présenté comme une dépense supplémentaire.
+
+Les informations déjà évidentes dans la Fiche ou le profil ne sont pas répétées inutilement dans l’inspecteur.
 
 ### Petit écran
 
