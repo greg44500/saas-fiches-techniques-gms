@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
-import { Button } from '@/components/ui/button';
+import { ArrowUpRight } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -100,18 +100,28 @@ function TechnicalSheetsCapacityDashboardWidget() {
 
             {isOwner && trashCount !== null && !trashQuery.isError && (
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-lg border border-border p-3">
-                  <p className="text-muted-foreground">Dans les Dossiers</p>
-                  <p className="mt-1 text-lg font-semibold tabular-nums">
-                    {inDossiers}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-border p-3">
-                  <p className="text-muted-foreground">Dans la Corbeille</p>
-                  <p className="mt-1 text-lg font-semibold tabular-nums">
-                    {trashCount}
-                  </p>
-                </div>
+                <Link
+                  className="group rounded-lg border border-border p-3 transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  to={`/workspaces/${workspace.id}/dossiers`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-muted-foreground">Dans les Dossiers</span>
+                    <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                  </div>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">{inDossiers}</p>
+                  <span className="text-xs text-muted-foreground">Accéder aux Dossiers</span>
+                </Link>
+                <Link
+                  className="group rounded-lg border border-border p-3 transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  to={`/workspaces/${workspace.id}/technical-sheets/trash`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-muted-foreground">Dans la Corbeille</span>
+                    <ArrowUpRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                  </div>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">{trashCount}</p>
+                  <span className="text-xs text-muted-foreground">Accéder à la Corbeille</span>
+                </Link>
               </div>
             )}
 
@@ -121,13 +131,6 @@ function TechnicalSheetsCapacityDashboardWidget() {
               </p>
             )}
 
-            {isOwner && trashCount > 0 && (
-              <Button asChild size="sm" variant="outline">
-                <Link to={'/workspaces/' + workspace.id + '/technical-sheets/trash'}>
-                  Voir la Corbeille
-                </Link>
-              </Button>
-            )}
           </div>
         ) : null}
       </CardContent>
