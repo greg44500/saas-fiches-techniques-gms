@@ -162,7 +162,6 @@ function TechnicalSheetOptimizerInspector({
               aria-label="Ajustement économique de l’ingrédient"
               disabled={
                 line.locked
-                || quantityEnvelopePinned
               }
               max={maxAdjustment}
               min={minAdjustment}
@@ -207,7 +206,7 @@ function TechnicalSheetOptimizerInspector({
             >
               <p className="text-xs text-muted-foreground">
                 {quantityEnvelopePinned
-                  ? 'Minimum et maximum sont identiques : la quantité ne peut pas évoluer.'
+                  ? 'Minimum et maximum identiques sont traités comme une plage libre. Utilisez Verrouiller pour figer réellement la quantité.'
                   : 'Des garde-fous de quantité peuvent limiter l’ajustement demandé.'}
               </p>
               <Button
