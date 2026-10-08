@@ -385,4 +385,11 @@ frontend/.../technical-sheet-optimizer-page.test.jsx
 
 Compléter les tests API/routes et un scénario Playwright critique dans un fichier M-005 dédié.
 
+Les régressions UX de la plage libre couvrent également :
+
+- absence de bornes explicites ;
+- ancien `min=max=référence` non verrouillé ;
+- contraintes historiques incohérentes assainies uniquement lorsqu’elles proviennent du brouillon ;
+- réduction Auto disponible sans minimum explicite.
+
 Aucun test n’est annoncé vert sans exécution locale.
