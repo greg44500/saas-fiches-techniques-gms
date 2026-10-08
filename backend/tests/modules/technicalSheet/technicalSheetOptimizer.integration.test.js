@@ -364,6 +364,64 @@ describe('M-005 Atelier d’optimisation', () => {
         ).toBe('1.505');
     });
 
+    it('assainit les anciennes bornes persistées incohérentes lorsqu’aucune nouvelle contrainte n’est envoyée', async () => {
+        await TechnicalSheetDraft
+            .updateOne(
+                { _id: draft.id },
+                {
+                    $set: {
+                        'lines.0.optimization.minNetQuantity':
+                            mongoose.Types.Decimal128
+                                .fromString('0'),
+                        'lines.0.optimization.maxNetQuantity':
+                            mongoose.Types.Decimal128
+                                .fromString('1'),
+                    },
+                },
+            );
+
+        const persisted =
+            await TechnicalSheetDraft
+                .findById(draft.id);
+
+        const simulation =
+            await simulateTechnicalSheetOptimization({
+                workspaceId:
+                    owner.workspace._id,
+                dossierId:
+                    dossier._id,
+                technicalSheetId:
+                    sheet.id,
+                request: {
+                    expectedRevision:
+                        persisted.revision,
+                    mode: 'MANUAL',
+                    lines: [],
+                    autoOptions: {
+                        adjustQuantities:
+                            false,
+                        productAlternatives:
+                            false,
+                        sourcingAlternatives:
+                            false,
+                    },
+                },
+                canManageSourcing:
+                    true,
+                atDate,
+            });
+
+        expect(
+            simulation.after
+                .lines[0]
+                .optimization,
+        ).toEqual({
+            minNetQuantity: null,
+            maxNetQuantity: null,
+            locked: false,
+        });
+    });
+
     it('applique la simulation au DRAFT puis snapshotte l’enveloppe à la validation', async () => {
         const request =
             requestFor();
