@@ -10,6 +10,7 @@ import {
 } from 'react-router';
 
 import { DataTable } from '@/components/data-display/data-table';
+import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
@@ -23,12 +24,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { downloadBlob } from '@/features/files/lib/download-blob';
 import {
-  useExportTechnicalSheetMutation,
+  useDeleteTechnicalSheetMutation,
   useGetDossierTechnicalSheetSettingsQuery,
   useGetTechnicalSheetCapacityQuery,
-  useGetTechnicalSheetExportUsageQuery,
   useGetTechnicalSheetMetadataQuery,
   useListTechnicalSheetsQuery,
   useStartTechnicalSheetDraftMutation,
@@ -48,9 +47,7 @@ import {
 import {
   TechnicalSheetStatusBadge,
 } from '@/features/technical-sheets/components/technical-sheet-status-badge';
-import {
-  TECHNICAL_SHEET_FEATURE,
-} from '@/features/technical-sheets/constants/technical-sheet-features';
+import { TECHNICAL_SHEET_FEATURE } from '@/features/technical-sheets/constants/technical-sheet-features';
 import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
@@ -82,10 +79,8 @@ function TechnicalSheetsPage() {
   const [optimizerOpeningSheetId, setOptimizerOpeningSheetId] = useState(null);
   const [previewSheet, setPreviewSheet] =
     useState(null);
-  const [
-    exportingSheetId,
-    setExportingSheetId,
-  ] = useState(null);
+  const [sheetToDelete, setSheetToDelete] = useState(null);
+  const [deleteSheet, deleteState] = useDeleteTechnicalSheetMutation();
   const {
     page,
     pageSize,
@@ -118,27 +113,10 @@ function TechnicalSheetsPage() {
     useGetTechnicalSheetCapacityQuery(
       workspace.id,
     );
-  const canExport =
-    hasFeature(
-      TECHNICAL_SHEET_FEATURE.EXPORT,
-    )
-    && can(
-      TECHNICAL_SHEET_PERMISSION.EXPORT,
-    );
+  const canDelete = can(TECHNICAL_SHEET_PERMISSION.DELETE);
   const canUseOptimizer =
-    hasFeature(
-      TECHNICAL_SHEET_FEATURE.OPTIMIZER,
-    )
-    && can(
-      TECHNICAL_SHEET_PERMISSION.UPDATE,
-    );
-  const exportUsageQuery =
-    useGetTechnicalSheetExportUsageQuery(
-      workspace.id,
-      { skip: !canExport },
-    );
-  const [exportSheet] =
-    useExportTechnicalSheetMutation();
+    hasFeature(TECHNICAL_SHEET_FEATURE.OPTIMIZER)
+    && can(TECHNICAL_SHEET_PERMISSION.UPDATE);
   const [startDraft] =
     useStartTechnicalSheetDraftMutation();
   const [
@@ -208,11 +186,6 @@ function TechnicalSheetsPage() {
     && !capacity.unlimited
     && capacity.current
       >= capacity.limit,
-  );
-  const exportQuotaReached = Boolean(
-    exportUsageQuery.data
-    && !exportUsageQuery.data.unlimited
-    && exportUsageQuery.data.remaining <= 0,
   );
   const defaultTargetMarginBasisPoints =
     settingsQuery.data
@@ -336,45 +309,24 @@ function TechnicalSheetsPage() {
     }
   }
 
-  async function exportValidatedSheet(
-    sheet,
-    format,
-  ) {
-    setExportingSheetId(sheet.id);
+  async function confirmDelete() {
+    if (!sheetToDelete) return;
 
     try {
-      const artifact =
-        await exportSheet({
-          workspaceId: workspace.id,
-          dossierId,
-          technicalSheetId: sheet.id,
-          format,
-        }).unwrap();
-
-      downloadBlob(
-        artifact.blob,
-        artifact.fileName,
-      );
-
-      toast({
-        title:
-          'Export '
-          + format
-          + ' généré',
-        variant: 'success',
-      });
+      await deleteSheet({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId: sheetToDelete.id,
+        expectedRevision: sheetToDelete.revision,
+      }).unwrap();
+      setSheetToDelete(null);
+      toast({ title: 'Fiche technique placée dans la Corbeille', variant: 'success' });
     } catch (error) {
       toast({
-        title: 'Action impossible',
-        description:
-          getTechnicalSheetApiErrorMessage(
-            error,
-            'L’export de la Fiche technique a échoué.',
-          ),
+        title: 'Suppression impossible',
+        description: getTechnicalSheetApiErrorMessage(error),
         variant: 'destructive',
       });
-    } finally {
-      setExportingSheetId(null);
     }
   }
 
@@ -451,16 +403,15 @@ function TechnicalSheetsPage() {
             sheet={sheet}
             canModify={canModify}
             canOptimize={canOptimize && sheet.status === 'ACTIVE'}
-            canExport={canExport}
+            canDelete={canDelete && sheet.status === 'ACTIVE'}
             hasValidatedState={hasValidatedState}
-            exportQuotaReached={exportQuotaReached}
-            isExporting={exportingSheetId === sheet.id}
+            isDeleting={deleteState.isLoading}
             isOptimizing={optimizerOpeningSheetId === sheet.id}
             isStartingDraft={draftStartingSheetId === sheet.id}
             onPreview={() => setPreviewSheet(sheet)}
             onOptimize={() => openOptimizer(sheet)}
             onModify={() => modifyTechnicalSheet(sheet)}
-            onExport={(format) => exportValidatedSheet(sheet, format)}
+            onDelete={() => setSheetToDelete(sheet)}
           />
         );
       },
@@ -602,6 +553,17 @@ function TechnicalSheetsPage() {
           />
         </div>
       </section>
+
+      {sheetToDelete && (
+        <ConfirmationDialog
+          confirmLabel="Mettre dans la Corbeille"
+          description="Cette Fiche technique sera placée dans la Corbeille. Elle pourra être restaurée selon les règles de conservation applicables."
+          onCancel={() => setSheetToDelete(null)}
+          onConfirm={confirmDelete}
+          pending={deleteState.isLoading}
+          title={`Supprimer « ${sheetToDelete.name} » ?`}
+        />
+      )}
 
       <TechnicalSheetCreateDialog
         defaultTargetMarginBasisPoints={
