@@ -522,7 +522,7 @@ function TechnicalSheetOptimizerInspector({
         <section className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <ToolHeader
-              description="Ces garde-fous ne pilotent pas l’optimisation : ils définissent seulement jusqu’où la quantité simulée peut évoluer."
+              description="Les contraintes sont facultatives. Sans borne renseignée, l’Atelier utilise sa plage libre : presque zéro jusqu’au double de la quantité de référence."
               title="Contraintes"
             />
             <Button
@@ -553,14 +553,20 @@ function TechnicalSheetOptimizerInspector({
 
           <div className="grid grid-cols-2 gap-3">
             <Field>
-              <FieldLabel
-                htmlFor={
-                  'optimizer-min-'
-                  + line.lineId
-                }
-              >
-                Minimum autorisé
-              </FieldLabel>
+              <div className="flex items-center gap-1">
+                <FieldLabel
+                  htmlFor={
+                    'optimizer-min-'
+                    + line.lineId
+                  }
+                >
+                  Minimum autorisé
+                </FieldLabel>
+                <InfoTooltip
+                  content="Laissez vide pour une plage libre. Sans minimum explicite, le plancher M-005 correspond à -99 %, soit une quantité presque nulle."
+                  label="Aide · Minimum autorisé"
+                />
+              </div>
               <Input
                 id={
                   'optimizer-min-'
@@ -572,7 +578,6 @@ function TechnicalSheetOptimizerInspector({
                     minNetQuantity:
                       event.target.value,
                   })}
-                placeholder="Libre · plancher ≈ 0"
                 value={
                   line.minNetQuantity
                 }
@@ -580,14 +585,20 @@ function TechnicalSheetOptimizerInspector({
             </Field>
 
             <Field>
-              <FieldLabel
-                htmlFor={
-                  'optimizer-max-'
-                  + line.lineId
-                }
-              >
-                Maximum autorisé
-              </FieldLabel>
+              <div className="flex items-center gap-1">
+                <FieldLabel
+                  htmlFor={
+                    'optimizer-max-'
+                    + line.lineId
+                  }
+                >
+                  Maximum autorisé
+                </FieldLabel>
+                <InfoTooltip
+                  content="Laissez vide pour une plage libre. Sans maximum explicite, le plafond M-005 est +100 %, soit deux fois la quantité de référence."
+                  label="Aide · Maximum autorisé"
+                />
+              </div>
               <Input
                 id={
                   'optimizer-max-'
@@ -599,7 +610,6 @@ function TechnicalSheetOptimizerInspector({
                     maxNetQuantity:
                       event.target.value,
                   })}
-                placeholder="Libre · plafond 2×"
                 value={
                   line.maxNetQuantity
                 }
