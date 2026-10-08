@@ -92,6 +92,7 @@ function TechnicalSheetsCapacityDashboardWidget() {
 
             {!capacity.unlimited && (
               <Progress
+                indicatorClassName="bg-primary"
                 aria-valuetext={Math.round(percentage) + ' % de la capacité utilisée'}
                 value={percentage}
               />
