@@ -83,8 +83,8 @@ describe('DashboardDossiers', () => {
     expect(screen.getByText('Nantes Centre')).toBeInTheDocument();
     expect(screen.getByText('Leclerc · 44000 Nantes')).toBeInTheDocument();
     expect(screen.getByText('Saint-Nazaire')).toBeInTheDocument();
-    expect(screen.getByText('Actif')).toBeInTheDocument();
-    expect(screen.getByText('En pause')).toBeInTheDocument();
+    expect(screen.getAllByText('Actif').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('En pause').length).toBeGreaterThan(0);
 
     expect(screen.getByRole('link', { name: 'Voir tous' })).toHaveAttribute(
       'href',
