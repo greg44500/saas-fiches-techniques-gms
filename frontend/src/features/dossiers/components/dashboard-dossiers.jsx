@@ -148,6 +148,14 @@ function DashboardDossiers({
                 <div key={dossier.id}>
                   <FlippableCard
                     title={dossier.name}
+                    backAction={isOperational ? (
+                      <Link
+                        className="rounded-md px-3 py-2 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        to={`/workspaces/${workspaceId}/dossiers/${dossier.id}`}
+                      >
+                        Ouvrir
+                      </Link>
+                    ) : null}
                     front={(
                       <div className="flex h-full flex-col gap-3">
                         <div className="flex items-start justify-between gap-2">
@@ -181,16 +189,7 @@ function DashboardDossiers({
                         <p><span className="text-muted-foreground">Statut :</span> {statusLabels.get(dossier.status) ?? dossier.status}</p>
                         <p><span className="text-muted-foreground">Fiches techniques :</span> {dossier.technicalSheetCount ?? '—'}</p>
                         <p><span className="text-muted-foreground">Marge cible :</span> {Number.isInteger(margin) ? `${(margin / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %` : 'Non définie'}</p>
-                        {isOperational && (
-                          <div className="flex justify-end pt-2">
-                            <Link
-                              className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              to={`/workspaces/${workspaceId}/dossiers/${dossier.id}`}
-                            >
-                              Ouvrir
-                            </Link>
-                          </div>
-                        )}
+
                       </div>
                     )}
                   />
