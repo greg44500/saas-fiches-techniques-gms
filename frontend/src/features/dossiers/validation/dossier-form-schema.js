@@ -37,6 +37,14 @@ const dossierFormSchema = z.object({
   defaultTargetMargin: marginInputSchema,
 });
 
+// La création exige la marge ; l'édition des informations générales ne la modifie pas.
+const dossierCreateFormSchema = dossierFormSchema.extend({
+  defaultTargetMargin: marginInputSchema.refine(
+    (value) => value.length > 0,
+    'La marge cible par défaut est obligatoire.',
+  ),
+});
+
 function nullableTrimmed(value) {
   const normalized = typeof value === 'string' ? value.trim() : '';
   return normalized || null;
@@ -99,5 +107,6 @@ export {
   buildDossierFormDefaults,
   buildDossierFormPayload,
   dossierFormSchema,
+  dossierCreateFormSchema,
   nullableTrimmed,
 };
