@@ -230,9 +230,14 @@ test('M-005 simule sans écrire puis applique explicitement au brouillon', async
       },
     );
 
+  // La valeur d'origine est barrée et la nouvelle quantité est affichée
+  // à sa suite, sans caractère flèche dans le tableau compact.
   await expect(
-    ingredientLine,
-  ).toContainText('2 → 1');
+    ingredientLine.locator('span.line-through'),
+  ).toHaveText('2');
+  await expect(
+    ingredientLine.locator('span.tabular-nums').first(),
+  ).toHaveText('21');
 
   await page.reload();
 
@@ -255,8 +260,11 @@ test('M-005 simule sans écrire puis applique explicitement au brouillon', async
     );
 
   await expect(
-    reloadedLine,
-  ).toContainText('2 → 2');
+    reloadedLine.locator('span.line-through'),
+  ).toHaveCount(0);
+  await expect(
+    reloadedLine.locator('span.tabular-nums').first(),
+  ).toHaveText('2');
 
   await configureReduction(
     page,

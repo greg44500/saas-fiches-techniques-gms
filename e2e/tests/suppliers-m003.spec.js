@@ -74,6 +74,9 @@ async function importCatalogFromUi(page, {
       inspectPayload?.message
         ? 'Backend : ' + inspectPayload.message
         : 'Aucun message backend exploitable.',
+      inspectResponse.status() === 503
+        ? 'Vérifier que ClamAV est exécutable et que CLAMAV_BINARY_PATH pointe vers clamscan (éventuellement chemin absolu sous Windows).'
+        : '',
     ].join(' '),
   ).toBe(201);
 
