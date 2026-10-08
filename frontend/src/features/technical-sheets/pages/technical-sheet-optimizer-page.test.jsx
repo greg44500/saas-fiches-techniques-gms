@@ -150,6 +150,9 @@ vi.mock('@/features/workspace/components/workspace-context', () => ({
 import {
   TechnicalSheetOptimizerPage,
 } from '@/features/technical-sheets/pages/technical-sheet-optimizer-page';
+import {
+  buildOptimizerLines,
+} from '@/features/technical-sheets/lib/technical-sheet-optimizer';
 
 describe('TechnicalSheetOptimizerPage', () => {
   beforeEach(() => {
@@ -226,12 +229,75 @@ describe('TechnicalSheetOptimizerPage', () => {
       ),
     ).toBeInTheDocument();
     expect(
+      within(panel).getByRole(
+        'button',
+        { name: 'Manuel' },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByRole(
+        'button',
+        { name: 'Auto' },
+      ),
+    ).toBeInTheDocument();
+    expect(
       screen.getByLabelText(
         'Fiche technique simulée',
       ),
     ).toHaveTextContent(
       'Purée M005',
     );
+  });
+
+  it('libère un ancien min=max égal à la quantité de référence sans supprimer un verrouillage explicite', () => {
+    const legacyContext = {
+      ...context,
+      draft: {
+        ...context.draft,
+        lines: [{
+          ...context.draft.lines[0],
+          optimization: {
+            minNetQuantity: '2.0',
+            maxNetQuantity: '2',
+            locked: false,
+          },
+        }],
+      },
+    };
+
+    const [line] =
+      buildOptimizerLines(
+        legacyContext,
+      );
+
+    expect(line).toMatchObject({
+      minNetQuantity: '',
+      maxNetQuantity: '',
+      locked: false,
+    });
+
+    const [lockedLine] =
+      buildOptimizerLines({
+        ...legacyContext,
+        draft: {
+          ...legacyContext.draft,
+          lines: [{
+            ...legacyContext
+              .draft.lines[0],
+            optimization: {
+              minNetQuantity: '2',
+              maxNetQuantity: '2',
+              locked: true,
+            },
+          }],
+        },
+      });
+
+    expect(lockedLine).toMatchObject({
+      minNetQuantity: '2',
+      maxNetQuantity: '2',
+      locked: true,
+    });
   });
 
   it('synchronise le point du profil avec l’intention économique de la ligne', async () => {
