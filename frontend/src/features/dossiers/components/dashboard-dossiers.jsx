@@ -1,4 +1,9 @@
 import { Link } from 'react-router';
+import { Plus, Search } from 'lucide-react';
+
+import { PagedCardCarousel } from '@/components/shared/paged-card-carousel';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import { EmptyState } from '@/components/shared/empty-state';
 import { FlippableCard } from '@/components/shared/flippable-card';
@@ -39,10 +44,21 @@ function formatAccessibleDossierCount(total) {
 }
 
 function DashboardDossiers({
+  canCreate = false,
   dossiers,
   isError,
   isLoading,
+  isFetching = false,
   metadata,
+  onCreate,
+  onPageChange,
+  onSearch,
+  onSearchChange,
+  page = 1,
+  pageSize = 3,
+  search = '',
+  searchInput = '',
+  totalPages = 1,
   onRetry,
   total,
   workspaceId,
@@ -52,29 +68,36 @@ function DashboardDossiers({
 
   return (
     <Card>
-      <CardHeader className="border-b border-border pb-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-start gap-2">
-              <h2 className="text-lg font-semibold">Dossiers</h2>
-              <InfoTooltip content={help} label="À propos des dossiers" />
-            </div>
-            {!isLoading && !isError && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {formatAccessibleDossierCount(total)}
-              </p>
-            )}
+      <CardHeader className="space-y-4 border-b border-border pb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Dossiers ({total})</h2>
+            <InfoTooltip content={help} label="À propos des dossiers" />
           </div>
-
-          {!isLoading && !isError && (
-            <Link
-              className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              to={`/workspaces/${workspaceId}/dossiers`}
-            >
-              Voir tous
-            </Link>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {canCreate && (
+              <Button onClick={onCreate} size="sm" type="button" variant="outline">
+                <Plus aria-hidden="true" className="size-4" />
+                Créer un dossier
+              </Button>
+            )}
+            <Button asChild size="sm" variant="ghost">
+              <Link to={`/workspaces/${workspaceId}/dossiers`}>Voir tous</Link>
+            </Button>
+          </div>
         </div>
+        <form className="flex gap-2" onSubmit={onSearch}>
+          <Input
+            aria-label="Rechercher un dossier dans le tableau de bord"
+            onChange={(event) => onSearchChange?.(event.target.value)}
+            placeholder="Nom, enseigne, ville ou code postal"
+            value={searchInput}
+          />
+          <Button aria-label="Lancer la recherche de dossiers" type="submit" variant="outline">
+            <Search aria-hidden="true" className="size-4" />
+            <span className="hidden sm:inline">Rechercher</span>
+          </Button>
+        </form>
       </CardHeader>
 
       <CardContent className="p-0">
@@ -90,11 +113,20 @@ function DashboardDossiers({
         ) : dossiers.length === 0 ? (
           <EmptyState
             className="p-5"
-            description="Les dossiers auxquels vous avez accès apparaîtront ici."
+            description={search ? 'Aucun dossier ne correspond à cette recherche.' : 'Les dossiers auxquels vous avez accès apparaîtront ici.'}
             title="Aucun dossier accessible"
           />
         ) : (
-          <ul className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="p-5">
+            <PagedCardCarousel
+              disabled={isFetching}
+              label="Dossiers accessibles"
+              onPageChange={onPageChange}
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              totalPages={totalPages}
+            >
             {dossiers.map((dossier) => {
               const isOperational = dossier.status === 'ACTIVE';
               const margin = dossier.technicalSheetSettings?.defaultTargetMarginBasisPoints;
@@ -150,7 +182,8 @@ function DashboardDossiers({
                 </li>
               );
             })}
-          </ul>
+            </PagedCardCarousel>
+          </div>
         )}
       </CardContent>
     </Card>
