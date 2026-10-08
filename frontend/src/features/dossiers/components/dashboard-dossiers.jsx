@@ -168,7 +168,7 @@ function DashboardDossiers({
                     )}
                     back={(
                       <div className="space-y-2 text-sm">
-                        <h3 className="break-words font-semibold">{dossier.name}</h3>
+                        <h3 className="break-words font-semibold">Informations du dossier</h3>
                         <p><span className="text-muted-foreground">Enseigne :</span> {dossier.brand || 'Non renseignée'}</p>
                         <p className="break-words"><span className="text-muted-foreground">Adresse :</span> {address}</p>
                         <p><span className="text-muted-foreground">Interlocuteur :</span> {dossier.contactName || 'Non renseigné'}</p>
