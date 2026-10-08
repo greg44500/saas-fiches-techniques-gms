@@ -209,7 +209,7 @@ Il inspecte les leviers explicitement activés :
 
 V1 recherche le meilleur **prochain mouvement élémentaire** :
 
-- quantité : 25 % du chemin disponible entre la référence et le minimum pour une ligne non verrouillée ;
+- quantité : 25 % du chemin disponible entre la référence et le minimum explicite ; en absence de minimum, le moteur utilise la borne libre implicite correspondant à `-99 %` ;
 - Produit : substitution admissible selon la section 8 ;
 - approvisionnement : Article admissible selon la section 9.
 
