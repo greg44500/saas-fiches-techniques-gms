@@ -153,19 +153,6 @@ vi.mock('@/features/technical-sheets/components/technical-sheet-create-dialog', 
     null,
 }));
 
-vi.mock('@/features/technical-sheets/components/technical-sheet-export-menu', () => ({
-  TechnicalSheetExportMenu: ({
-    label,
-  }) => (
-    <button
-      aria-label={label}
-      type="button"
-    >
-      Export
-    </button>
-  ),
-}));
-
 vi.mock('@/features/technical-sheets/components/technical-sheet-preview-dialog', () => ({
   TechnicalSheetPreviewDialog: (
     props,
