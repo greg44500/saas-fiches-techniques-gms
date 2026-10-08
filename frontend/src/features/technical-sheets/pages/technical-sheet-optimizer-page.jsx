@@ -523,7 +523,6 @@ function TechnicalSheetOptimizerPage() {
       onChangeLine={updateLine}
       onCompare={() =>
         runSimulation()}
-      onModeChange={setMode}
       onReset={reset}
       onTakeAutoSuggestion={
         takeAutoSuggestion
@@ -534,8 +533,12 @@ function TechnicalSheetOptimizerPage() {
           baseline={before}
           embedded
           lines={lines}
+          mode={mode}
           onChangeLine={
             updateLine
+          }
+          onModeChange={
+            setMode
           }
           onSelect={
             setSelectedLineId
