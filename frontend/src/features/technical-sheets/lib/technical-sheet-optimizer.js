@@ -37,23 +37,48 @@ function isValidPositiveDecimalInput(
 function buildOptimizerLines(context) {
   return (context?.draft?.lines ?? [])
     .filter((line) => line.kind === 'INGREDIENT')
-    .map((line) => ({
-      lineId: line.id,
-      economicAdjustmentPercent: 0,
-      minNetQuantity:
+    .map((line) => {
+      const persistedMinimum =
         line.optimization?.minNetQuantity
-        ?? '',
-      maxNetQuantity:
+        ?? '';
+      const persistedMaximum =
         line.optimization?.maxNetQuantity
-        ?? '',
-      locked: Boolean(
-        line.optimization?.locked,
-      ),
-      localNetQuantity: '',
-      productVariantId: null,
-      supplierArticleId: null,
-      supplierArticleTouched: false,
-    }));
+        ?? '';
+      const referenceQuantity =
+        normalizeDecimalInput(
+          line.netQuantity,
+        );
+      const legacyPinnedEnvelope =
+        !line.optimization?.locked
+        && persistedMinimum !== ''
+        && persistedMaximum !== ''
+        && normalizeDecimalInput(
+          persistedMinimum,
+        ) === referenceQuantity
+        && normalizeDecimalInput(
+          persistedMaximum,
+        ) === referenceQuantity;
+
+      return {
+        lineId: line.id,
+        economicAdjustmentPercent: 0,
+        minNetQuantity:
+          legacyPinnedEnvelope
+            ? ''
+            : persistedMinimum,
+        maxNetQuantity:
+          legacyPinnedEnvelope
+            ? ''
+            : persistedMaximum,
+        locked: Boolean(
+          line.optimization?.locked,
+        ),
+        localNetQuantity: '',
+        productVariantId: null,
+        supplierArticleId: null,
+        supplierArticleTouched: false,
+      };
+    });
 }
 
 function buildOptimizationRequest({
