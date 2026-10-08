@@ -1,7 +1,7 @@
 # M-005 — Contrat final — Atelier d’optimisation des Fiches techniques
 
 **Statut : RECADRÉ UX — IMPLÉMENTATION EN COURS**  
-**Date : 2026-10-07**  
+**Date : 2026-10-08**  
 **Module : M-005**  
 **Branche : `feature/m005-technical-sheet-optimizer-v1`**
 
@@ -87,9 +87,11 @@ Ces valeurs sont exprimées dans l’unité de référence de la Référence Pro
 
 Invariants :
 
-- minimum et maximum sont des garde-fous facultatifs ;
+- minimum et maximum sont des garde-fous facultatifs et ne sont jamais inventés par défaut ;
+- sans garde-fou explicite, la plage V1 est celle de l’ajustement économique : `-99 % → +100 %`, soit une quantité presque nulle jusqu’au double de la référence ;
 - lorsqu’ils sont renseignés, ils sont strictement positifs et encadrent la quantité de référence ;
 - une borne absente signifie « aucun garde-fou de ce côté » et ne neutralise jamais l’ajustement local ;
+- pour une ligne non verrouillée, l’ancien cas `min = max = quantité de référence` est normalisé comme une absence de garde-fou : le mécanisme `locked` est l’unique façon explicite de figer la quantité ;
 - une ligne verrouillée conserve sa quantité de référence ;
 - une ligne Économat n’est pas modulée par l’ajustement quantitatif M-005 V1.
 
@@ -277,85 +279,92 @@ Une nouvelle révision reprend ces contraintes, mais re-résout toute donnée é
 
 ## 15. UX
 
-Desktop : l’Atelier est conçu comme un poste de lecture et de réglage continu. La Fiche technique simulée est le résultat principal ; les outils restent dans un panneau latéral de pilotage.
+Desktop : l’Atelier est un poste de lecture et de réglage continu. La Fiche simulée reste le résultat principal ; le panneau droit est un poste de pilotage compact et dense.
 
-Structure :
+Structure cible :
 
 ```text
 Fiche technique simulée à gauche
 ├── indicateurs économiques compacts
-└── représentation tabulaire de la Fiche qui se met à jour après simulation
+└── représentation tabulaire vivante de la Fiche
 
-panneau de pilotage à droite, largeur comparable aux drawers de détail
-├── profil économique global toujours visible
-├── choix Manuel / Auto
-├── bandeau horizontal d’outils
-├── contenu contextuel de l’outil sélectionné
-└── actions Réinitialiser / Comparer / Appliquer
+panneau de pilotage à droite
+├── en-tête compact
+│   ├── Profil économique global
+│   └── sélecteur [Manuel | Auto]
+├── spectre économique toujours visible
+│   ├── axe Y : %CM
+│   └── axe X : Réduction — Référence — Enrichissement
+├── barre horizontale d’outils par icônes
+├── grande zone contextuelle de l’outil sélectionné
+└── pied compact Réinitialiser | Comparer | Appliquer
 ```
 
-La page Atelier ne doit pas imposer un scroll documentaire sur desktop. Le panneau droit utilise la hauteur disponible ; seul son contenu contextuel peut défiler si nécessaire. La Fiche peut disposer de son propre viewport lorsque le nombre de lignes dépasse l’espace disponible.
+La page Atelier ne doit pas imposer un scroll documentaire sur desktop. La Fiche et la zone contextuelle peuvent disposer de leur propre viewport si leur contenu dépasse la hauteur disponible.
 
-Le profil économique appartient au panneau de pilotage. Il :
+### Profil / spectre économique
 
-- reste visible pendant le changement d’outil ;
-- présente tous les ingrédients simultanément ;
-- représente chaque ingrédient par un point réel ;
-- se met à jour après chaque simulation ;
-- sélectionne la même ligne que la Fiche ;
-- permet de modifier horizontalement l’ajustement de la ligne sélectionnée ;
-- n’invente aucune continuité mathématique entre les ingrédients.
+Le texte explicatif redondant sous le titre est supprimé. Les termes d’axes portent leur propre aide au survol/focus.
 
-La Fiche simulée doit ressembler à une Fiche technique exploitable, et non à un simple résumé de réglages. Elle affiche au minimum :
+Le rendu visuel peut s’inspirer d’un histogramme photographique : chaque ingrédient possède une trace fine et colorée indépendante. Cette trace ne relie jamais deux ingrédients entre eux et ne crée aucune interpolation métier.
 
-- Produit ;
-- quantité nette simulée, avec lecture de la valeur précédente lorsqu’elle change ;
-- unité ;
-- prix unitaire HT applicable ;
-- coût HT de ligne ;
-- %CM ;
-- contexte de production disponible.
+Pour chaque trace :
 
-Le bandeau économique reste compact et sert de synthèse avant/après. Il ne doit pas monopoliser toute la largeur de l’écran.
+- le sommet est le point de donnée réel ;
+- son abscisse est `economicAdjustmentPercent` ;
+- son ordonnée est `materialCostSharePercent` de la projection ;
+- la largeur de la forme autour du sommet est uniquement décorative et ne constitue pas une mesure ;
+- le point interactif reste l’autorité de sélection et de réglage ;
+- le survol/focus conserve l’avant/après de la ligne.
 
-Les outils Manuel sont présentés dans un bandeau horizontal :
+L’axe vertical porte explicitement `%CM`. L’axe horizontal expose `Réduction`, `Référence` et `Enrichissement` avec aide contextuelle.
+
+### Mode et outils
+
+Le sélecteur Manuel / Auto est compact et intégré à l’en-tête du profil. Il ne crée plus une rangée pleine largeur dédiée.
+
+Les outils Manuel sont des icônes seules :
 
 ```text
 Réglage | Produit | Approvisionnement | Contraintes
 ```
 
-Un seul contenu d’outil est affiché sous ce bandeau. Les bornes min/max, le verrouillage et la quantité forcée n’occupent donc pas l’écran en permanence.
+Le libellé complet est fourni par tooltip et nom accessible. L’outil actif dispose d’un état visuel clair.
 
-L’outil Réglage expose en priorité :
+Un seul contenu d’outil est affiché sous cette barre. Cette zone reçoit la majorité de la hauteur disponible du panneau.
 
-- slider d’ajustement économique ;
+### Réglage et contraintes
+
+La vue Réglage reste centrée sur l’action :
+
+- ingrédient sélectionné ;
+- slider ;
 - valeur signée ;
 - quantité avant → après ;
 - coût avant → après ;
 - %CM avant → après.
 
-Produit et Approvisionnement restent deux leviers distincts. Contraintes regroupe minimum, maximum, verrouillage et quantité forcée avancée, avec une action permettant de libérer explicitement les garde-fous.
+Les min/max ne sont pas initialisés par défaut. La plage libre est donc celle du moteur M-005 : presque zéro (`-99 %`) jusqu’au double (`+100 %`).
 
-Les saisies décimales intermédiaires incomplètes ne doivent pas produire de requête invalide au backend : le recalcul est suspendu jusqu’à ce que la saisie redevienne valide.
+Le bouton Contraintes sert uniquement à resserrer volontairement cette plage, verrouiller une ligne ou utiliser une quantité forcée avancée.
 
-Les explications longues sont déplacées vers des tooltips / aides contextuelles. Les boutons d’outils sont identifiables au clavier et disposent d’un libellé accessible.
+Le cas historique non verrouillé `min = max = quantité de référence` est considéré comme un ancien état de blocage et est neutralisé à l’ouverture de la session. Une quantité réellement figée doit utiliser `locked`.
 
-Les actions Réinitialiser et Appliquer au brouillon restent accessibles sans faire défiler toute la page.
+### Fiche et indicateurs
 
-La navigation Workspace expose toujours « Atelier d’optimisation » dans le groupe Dossiers avec une icône baguette magique. Cette entrée ouvre un sélecteur Dossier puis Fiche avant d’accéder au même Atelier canonique.
+La Fiche simulée affiche au minimum Produit, quantité nette simulée, unité, PU HT, coût HT et %CM, avec lecture de la valeur précédente lorsqu’elle change.
 
-Petit écran :
+Le bandeau économique reste compact. Les informations déjà évidentes dans la Fiche ou le profil ne sont pas répétées inutilement dans l’inspecteur.
 
-- contenu principal conservé ;
-- panneau de pilotage présenté en Sheet latérale/basse ;
-- profil économique conservé dans cette Sheet ;
-- même sémantique d’outils ;
-- contrôles utilisables au tactile et au clavier.
+### Petit écran
 
-Deux entrées ouvrent le même Atelier :
+Le panneau de pilotage est présenté dans la Sheet existante avec la même hiérarchie :
 
-- action « Optimiser » depuis une Fiche ;
-- entrée « Atelier d’optimisation » dans le Dossier avec choix d’une Fiche.
+- en-tête compact ;
+- profil ;
+- icônes ;
+- contenu contextuel ;
+- actions.
 
 ## 16. Performance
 
