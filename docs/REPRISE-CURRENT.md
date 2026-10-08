@@ -1,6 +1,6 @@
 # Reprise courante — M-005 Atelier d’optimisation des Fiches techniques
 
-**Date : 2026-10-07**  
+**Date : 2026-10-08**  
 **Branche : `feature/m005-technical-sheet-optimizer-v1`**  
 **État Git vérifié : branche en avance sur `main`, aucune PR/merge M-005 à réaliser avant validation utilisateur.**
 
@@ -52,6 +52,24 @@ Fiche simulée dominante à gauche
 Outils : Réglage, Produit, Approvisionnement, Contraintes.
 
 Objectif UX : pas de scroll documentaire de la page Atelier sur desktop ; seule la liste de lignes peut disposer de son propre viewport lorsque la recette dépasse la hauteur disponible.
+
+## 1.2 Recadrage UX QA du 2026-10-08
+
+Le second passage QA conserve la Fiche à gauche et le drawer à droite, mais compacte fortement le panneau :
+
+```text
+Profil économique + [Manuel | Auto]
+→ spectre coloré compact
+→ icônes outils seules avec tooltip
+→ grande zone contextuelle
+→ actions sur une seule rangée
+```
+
+Le sous-titre explicatif du profil disparaît. `%CM` devient le libellé de l’axe Y. Réduction / Référence / Enrichissement portent une aide contextuelle.
+
+Le profil adopte une esthétique de spectre/histogramme : une trace indépendante par ingrédient, avec un sommet positionné sur les vraies coordonnées `ajustement / %CM`. Aucun ingrédient n’est relié à un autre.
+
+La plage libre par défaut reste `-99 % → +100 %`, soit presque zéro à deux fois la quantité de référence. Aucun min/max n’est inventé. L’ancien état non verrouillé `min = max = référence` est neutralisé ; le verrouillage explicite passe uniquement par `locked`.
 
 ## 2. Contrats canoniques M-005
 
