@@ -140,7 +140,7 @@ function DashboardDossiers({
               ].filter(Boolean).join(' · ') || 'Non renseignée';
 
               return (
-                <li key={dossier.id}>
+                <div key={dossier.id}>
                   <FlippableCard
                     title={dossier.name}
                     front={(
@@ -179,7 +179,7 @@ function DashboardDossiers({
                       </div>
                     )}
                   />
-                </li>
+                </div>
               );
             })}
             </PagedCardCarousel>
