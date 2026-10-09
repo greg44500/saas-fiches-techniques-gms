@@ -264,6 +264,7 @@ test('M-002 gestionnaire Application Global fusionne deux Références compatibl
 
   const candidateRow = page.locator('li').filter({
     hasText: secondReferenceName,
+    has: page.getByRole('button', { name: 'Comparer', exact: true }),
   });
   await expect(candidateRow).toBeVisible();
   await candidateRow.getByRole('button', { name: 'Comparer' }).click();
