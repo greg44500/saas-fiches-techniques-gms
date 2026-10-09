@@ -278,7 +278,7 @@ const variantMergePriceResolutionSchema = z.strictObject({
     sourcePriceId: objectIdSchema,
     action: z.enum(['KEEP_RETAINED', 'KEEP_REPLACED', 'MANUAL']),
     manualAmount: z.string().regex(
-        /^(?:0*[1-9]\d*(?:\.\d{1,6})?|0*\.\d{0,5}[1-9]\d{0,5})$/,
+        /^(?!0+(?:\.0+)?$)\d+(?:\.\d{1,6})?$/,
         'Saisissez un montant positif avec au plus six décimales.',
     ).optional(),
 }).superRefine((resolution, context) => {
