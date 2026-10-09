@@ -192,9 +192,9 @@ function formatIndicativePriceSource(price) {
 
 function getMatchStatusLabel(status) {
   const labels = {
-    MATCHED: 'Associé',
-    UNMATCHED: 'À associer',
-    AMBIGUOUS: 'À vérifier',
+    MATCHED: 'Rapproché',
+    UNMATCHED: 'Non rapproché',
+    AMBIGUOUS: 'Ambigu',
     IGNORED: 'Ignoré',
   };
 
