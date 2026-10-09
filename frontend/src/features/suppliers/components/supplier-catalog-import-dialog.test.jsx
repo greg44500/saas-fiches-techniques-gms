@@ -209,9 +209,9 @@ describe('SupplierCatalogImportDialog', () => {
         supplierId: 'supplier-1',
         edition: expect.objectContaining({
           name: 'Octobre 2026',
-          editionDate: '2026-10-09',
-          validFrom: '2026-10-01',
-          validTo: '2026-10-31',
+          editionDate: '2026-10-09T00:00:00.000Z',
+          validFrom: '2026-10-01T00:00:00.000Z',
+          validTo: '2026-10-31T00:00:00.000Z',
         }),
         mapping: expect.objectContaining({
           supplierReference: 0,
