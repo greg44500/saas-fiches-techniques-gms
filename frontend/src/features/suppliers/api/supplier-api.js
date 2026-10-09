@@ -149,9 +149,16 @@ const supplierApi = supplierApiBase.injectEndpoints({
       providesTags: ['SupplierCatalog'],
     }),
     listSupplierCatalogLines: builder.query({
-      query: ({ workspaceId, catalogId, page = 1, limit = 50 }) => ({
+      query: ({
+        workspaceId,
+        catalogId,
+        page = 1,
+        limit = 50,
+        search,
+        matchStatus,
+      }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-catalogs/' + catalogId + '/lines',
-        params: { page, limit },
+        params: { page, limit, search, matchStatus },
       }),
       transformResponse: (response) => response.data,
       providesTags: ['SupplierCatalog'],
@@ -539,9 +546,15 @@ const supplierApi = supplierApiBase.injectEndpoints({
       invalidatesTags: ['SupplierReference', 'SupplierCatalog'],
     }),
     listGlobalSupplierCatalogLines: builder.query({
-      query: ({ catalogId, page = 1, limit = 50 }) => ({
+      query: ({
+        catalogId,
+        page = 1,
+        limit = 50,
+        search,
+        matchStatus,
+      }) => ({
         url: '/supplier-reference/catalogs/' + catalogId + '/lines',
-        params: { page, limit },
+        params: { page, limit, search, matchStatus },
       }),
       transformResponse: (response) => response.data,
       providesTags: ['SupplierReference'],
