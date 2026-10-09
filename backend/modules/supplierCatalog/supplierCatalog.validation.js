@@ -4,6 +4,7 @@ import {
     PRODUCT_REFERENCE_UNIT,
 } from '../productCatalog/productCatalog.registry.js';
 import {
+    SUPPLIER_CATALOG_MATCH_STATUS,
     SUPPLIER_PRICE_BASIS,
     SUPPLIER_RESOURCE_STATUS,
     SUPPLIER_SCOPE,
@@ -247,6 +248,15 @@ const listCatalogLinesQuerySchema =
         limit: z.coerce.number()
             .int().min(1).max(100)
             .default(50),
+        search: z.string()
+            .trim().min(1).max(120)
+            .optional(),
+        matchStatus:
+            z.enum(
+                Object.values(
+                    SUPPLIER_CATALOG_MATCH_STATUS,
+                ),
+            ).optional(),
     });
 
 const mappingIndexSchema =
