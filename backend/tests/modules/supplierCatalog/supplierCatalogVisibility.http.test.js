@@ -126,6 +126,28 @@ describe('M-003 supplier catalog visibility', () => {
             }),
         ]);
 
+        const brandSearch = await request(app)
+            .get(linesPath)
+            .query({ search: 'maison test' })
+            .set(bearer(ownerA.token));
+
+        expect(brandSearch.status).toBe(200);
+        expect(brandSearch.body.data.lines).toEqual([
+            expect.objectContaining({
+                supplierReference: 'BAC-001',
+                brand: 'Maison Test',
+            }),
+        ]);
+
+        const literalSearch = await request(app)
+            .get(linesPath)
+            .query({ search: '.*' })
+            .set(bearer(ownerA.token));
+
+        expect(literalSearch.status).toBe(200);
+        expect(literalSearch.body.data.pagination.total)
+            .toBe(0);
+
         const crossWorkspace = await request(app)
             .get(
                 catalogsPath(ownerB)
