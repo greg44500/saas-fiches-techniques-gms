@@ -328,15 +328,15 @@ function ProductVariantMergeDrawer({
           side="right"
         >
           <SheetHeader className="border-b border-border pr-14">
-            <SheetTitle>
-              Fusionner des Références Produit
-            </SheetTitle>
-            <SheetDescription className="flex items-center gap-2">
-              {product?.name}
+            <SheetTitle className="flex flex-wrap items-center gap-2 pr-2">
+              Fusionner des Références Produit : {product?.name}
               <InfoHint label="Informations sur la fusion">
                 La Référence remplacée reste conservée dans l’historique et
                 ses dépendances sont réconciliées par le serveur.
               </InfoHint>
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              Sélectionner, comparer et confirmer la fusion des Références Produit.
             </SheetDescription>
           </SheetHeader>
 
@@ -350,12 +350,13 @@ function ProductVariantMergeDrawer({
                   <div className="mt-2 rounded-lg border border-border p-3">
                     <p className="font-medium">{sourceVariant.name}</p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {getConservationTypeLabel(
-                        metadata,
-                        sourceVariant.conservationType,
-                      )}
-                      {' · '}
-                      {getVariantReferenceUnitLabel(metadata, sourceVariant)}
+                      Unité : {getVariantReferenceUnitLabel(metadata, sourceVariant)}
+                      <span className="mt-1 block">
+                        Conservation : {getConservationTypeLabel(
+                          metadata,
+                          sourceVariant.conservationType,
+                        )}
+                      </span>
                     </p>
                   </div>
                 </div>
