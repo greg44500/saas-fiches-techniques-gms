@@ -7,6 +7,7 @@ import {
     describe,
     expect,
     it,
+    vi,
 } from 'vitest';
 
 import {
@@ -207,6 +208,113 @@ describe('M-002 fusion contrôlée des Références Produit', () => {
             statusCode: 409,
             code: 'PRODUCT_VARIANT_MERGE_STALE_PREVIEW',
         });
+    });
+
+    it('bloque un nom cible déjà utilisé par une autre Référence active', async () => {
+        const pair = await createMergePair();
+
+        const third = await createGlobalVariant({
+            actorId: actorContext.owner._id,
+            productId: pair.product._id,
+            variant: {
+                name: 'Référence collision fusion',
+                conservationType: 'SEC',
+                referenceUnit: 'KG',
+                yieldPercent: 100,
+            },
+        });
+
+        const preview = await previewProductVariantMerge({
+            productId: pair.product._id,
+            retainedVariantId: pair.retained._id,
+            replacedVariantId: pair.replaced.id,
+            targetName: third.name,
+        });
+
+        expect(preview.canMerge).toBe(false);
+        expect(preview.conflicts).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    code: 'TARGET_NAME_COLLISION',
+                }),
+            ]),
+        );
+    });
+
+    it('annule toute la transaction si une réconciliation échoue après le début de la fusion', async () => {
+        const pair = await createMergePair();
+        const actorId = actorContext.owner._id;
+
+        const supplier = await Supplier.create({
+            scope: 'GLOBAL_SHARED',
+            workspace: null,
+            name: 'Fournisseur rollback fusion',
+            normalizedName: 'fournisseur rollback fusion',
+            createdBy: actorId,
+            updatedBy: actorId,
+        });
+
+        await SupplierArticle.create({
+            scope: 'GLOBAL_SHARED',
+            workspace: null,
+            supplier: supplier._id,
+            productVariant: pair.replaced.id,
+            supplierReference: 'ROLLBACK-001',
+            normalizedSupplierReference: 'rollback 001',
+            supplierDesignation: 'Article rollback',
+            packaging: {
+                containerType: 'Sac',
+                totalQuantity: decimal('1'),
+                unit: 'KG',
+            },
+            createdBy: actorId,
+            updatedBy: actorId,
+        });
+
+        const preview = await previewProductVariantMerge({
+            productId: pair.product._id,
+            retainedVariantId: pair.retained._id,
+            replacedVariantId: pair.replaced.id,
+        });
+
+        const updateSpy = vi
+            .spyOn(SupplierArticle, 'updateMany')
+            .mockRejectedValueOnce(new Error('échec forcé de réconciliation'));
+
+        try {
+            await expect(mergeProductVariants({
+                actorId,
+                productId: pair.product._id,
+                retainedVariantId: pair.retained._id,
+                replacedVariantId: pair.replaced.id,
+                targetName: 'Nom qui doit être rollbacké',
+                previewFingerprint: preview.previewFingerprint,
+            })).rejects.toThrow('échec forcé de réconciliation');
+        } finally {
+            updateSpy.mockRestore();
+        }
+
+        const [retained, replaced, article, event] = await Promise.all([
+            ProductVariant.findById(pair.retained._id).lean(),
+            ProductVariant.findById(pair.replaced.id).lean(),
+            SupplierArticle.findOne({
+                supplierReference: 'ROLLBACK-001',
+            }).lean(),
+            ProductReferenceEvent.findOne({
+                action: 'VARIANT_MERGED',
+                entityId: pair.product._id,
+            }).lean(),
+        ]);
+
+        expect(retained.name).toBe(pair.retained.name);
+        expect(replaced).toMatchObject({
+            status: 'ACTIVE',
+            governanceStatus: 'APPROVED',
+            identityActive: true,
+            replacementVariant: null,
+        });
+        expect(article.productVariant.toString()).toBe(pair.replaced.id);
+        expect(event).toBeNull();
     });
 
     it('réconcilie les dépendances actives et laisse les validations historiques inchangées', async () => {
