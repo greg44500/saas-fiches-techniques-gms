@@ -48,7 +48,7 @@ const queryResult = {
       id: 'catalog-1',
       scope: 'WORKSPACE_PRIVATE',
       supplierName: 'Pro à Pro',
-      name: 'Catalogue octobre 2026',
+      name: 'Pro à Pro | Catalogue octobre 2026',
       editionDate: '2026-10-09T00:00:00.000Z',
       validFrom: '2026-10-01T00:00:00.000Z',
       validTo: '2026-10-31T00:00:00.000Z',
@@ -127,11 +127,11 @@ describe('SupplierCatalogPage', () => {
     })).toBeInTheDocument();
     expect(screen.getAllByText('Pro à Pro').length).toBeGreaterThan(0);
     expect(screen.getByText('09/10/2026')).toBeInTheDocument();
-    expect(screen.getByText('01/10/2026 → 31/10/2026'))
+    expect(screen.getByText('01/10/2026 – 31/10/2026'))
       .toBeInTheDocument();
     expect(screen.getByText('BAC-001')).toBeInTheDocument();
     expect(screen.getByText('Bacon fumé')).toBeInTheDocument();
-    expect(screen.getByText('Rapproché')).toBeInTheDocument();
+    expect(screen.getByText('Associé')).toBeInTheDocument();
     expect(screen.getByText('11,58 EUR / kg')).toBeInTheDocument();
 
     expect(mocks.listCatalogLines).toHaveBeenLastCalledWith(
@@ -173,7 +173,7 @@ describe('SupplierCatalogPage', () => {
     );
     await user.click(
       await screen.findByRole('option', {
-        name: 'Non rapprochés',
+        name: 'À associer',
       }),
     );
 
