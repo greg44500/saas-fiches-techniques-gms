@@ -385,6 +385,16 @@ const collectMergePlan = async ({
         });
     }
 
+    if (retained.status !== PRODUCT_STATUS.ACTIVE) {
+        conflicts.push({
+            code: 'RETAINED_VARIANT_NOT_ACTIVE',
+            message:
+                'La Référence conservée doit être active. '
+                + 'Une Référence archivée peut être remplacée, mais pas réactivée '
+                + 'implicitement par une fusion.',
+        });
+    }
+
     if (![
         PRODUCT_GOVERNANCE_STATUS.APPROVED,
         PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
@@ -599,17 +609,22 @@ const listProductVariantMergeCandidates = async ({
 
     const query = String(q ?? '').trim();
     const filtered = candidates.filter((candidate) => {
-        if (
-            source.governanceStatus !== PRODUCT_GOVERNANCE_STATUS.APPROVED
-            && candidate.governanceStatus !== PRODUCT_GOVERNANCE_STATUS.APPROVED
-        ) {
+        const sourceCanBeRetained = (
+            source.governanceStatus === PRODUCT_GOVERNANCE_STATUS.APPROVED
+            && source.status === PRODUCT_STATUS.ACTIVE
+        );
+        const candidateCanBeRetained = (
+            candidate.governanceStatus === PRODUCT_GOVERNANCE_STATUS.APPROVED
+            && candidate.status === PRODUCT_STATUS.ACTIVE
+        );
+
+        if (!sourceCanBeRetained && !candidateCanBeRetained) {
             return false;
         }
 
-        const retained =
-            candidate.governanceStatus === PRODUCT_GOVERNANCE_STATUS.APPROVED
-                ? candidate
-                : source;
+        const retained = candidateCanBeRetained && !sourceCanBeRetained
+            ? candidate
+            : source;
         const replaced = retained === candidate ? source : candidate;
         const blockingDifference = buildVariantDifferences({
             retained,
@@ -630,7 +645,8 @@ const listProductVariantMergeCandidates = async ({
         ...serializeVariantIdentity(candidate),
         canBeRetained:
             candidate.governanceStatus
-            === PRODUCT_GOVERNANCE_STATUS.APPROVED,
+            === PRODUCT_GOVERNANCE_STATUS.APPROVED
+            && candidate.status === PRODUCT_STATUS.ACTIVE,
     }));
 };
 
