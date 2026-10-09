@@ -85,6 +85,18 @@ describe('SupplierCatalogImportDialog', () => {
     });
   });
 
+  it('ne confond pas unité du prix et montant tarifaire', () => {
+    const mapping = autoDetectMapping([
+      'Reference',
+      'Designation',
+      'Unite du prix',
+      'Prix HT',
+    ]);
+
+    expect(mapping.priceAmount).toBe(3);
+    expect(mapping.priceBasis).toBe(2);
+  });
+
   it('rend une ambiguïté visible avant confirmation', async () => {
     const user = userEvent.setup();
 
