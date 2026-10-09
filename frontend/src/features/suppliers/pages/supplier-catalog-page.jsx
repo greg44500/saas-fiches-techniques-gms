@@ -27,7 +27,6 @@ import {
 import {
   formatPackaging,
   getMatchStatusLabel,
-  getSupplierOriginLabel,
   getSupplierStatusLabel,
   getSupplierStatusTone,
 } from '@/features/suppliers/lib/supplier-presentation';
@@ -207,22 +206,22 @@ function SupplierCatalogPage() {
   return (
     <div className="space-y-4">
       <header className="space-y-2">
-        <Button
-          onClick={() => navigate(
-            '/workspaces/'
-            + workspace.id
-            + '/suppliers?section=catalogs',
-          )}
-          type="button"
-          variant="ghost"
-          title="Retour aux catalogues"
-          aria-label="Retour aux catalogues"
-        >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-          <span className="sr-only">Retour aux catalogues</span>
-        </Button>
-
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <Button
+            onClick={() => navigate(
+              '/workspaces/'
+              + workspace.id
+              + '/suppliers?section=catalogs',
+            )}
+            type="button"
+            variant="ghost"
+            title="Retour aux catalogues"
+            aria-label="Retour aux catalogues"
+            size="icon"
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            <span className="sr-only">Retour aux catalogues</span>
+          </Button>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">
