@@ -523,7 +523,11 @@ describe('M-002 fusion contrôlée des Références Produit', () => {
         expect(historicalValidation.sentinel).toBe('historique-intact');
     });
 
-    it('bloque la fusion quand deux Prix indicatifs actifs couvrent le même périmètre', async () => {
+    it.each([
+        ['KEEP_RETAINED', '9.10'],
+        ['KEEP_REPLACED', '9.50'],
+        ['MANUAL', '8.75'],
+    ])('arbitre les Prix indicatifs d’un même périmètre : %s', async (action, expected) => {
         const pair = await createMergePair();
         const actorId = actorContext.owner._id;
 
@@ -546,14 +550,45 @@ describe('M-002 fusion contrôlée des Références Produit', () => {
             replacedVariantId: pair.replaced.id,
         });
 
-        expect(preview.canMerge).toBe(false);
-        expect(preview.conflicts).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    code: 'INDICATIVE_PRICE_COLLISION',
-                    count: 1,
-                }),
-            ]),
-        );
+        expect(preview.canMerge).toBe(true);
+        expect(preview.priceArbitrations).toHaveLength(1);
+        const sourcePriceId = preview.priceArbitrations[0].sourcePriceId;
+
+        await expect(mergeProductVariants({
+            actorId,
+            productId: pair.product._id,
+            retainedVariantId: pair.retained._id,
+            replacedVariantId: pair.replaced.id,
+            previewFingerprint: preview.previewFingerprint,
+        })).rejects.toMatchObject({
+            statusCode: 409,
+            code: 'PRODUCT_VARIANT_MERGE_PRICE_RESOLUTION_REQUIRED',
+        });
+
+        await mergeProductVariants({
+            actorId,
+            productId: pair.product._id,
+            retainedVariantId: pair.retained._id,
+            replacedVariantId: pair.replaced.id,
+            previewFingerprint: preview.previewFingerprint,
+            priceResolutions: [{
+                sourcePriceId,
+                action,
+                ...(action === 'MANUAL' ? { manualAmount: '8.75' } : {}),
+            }],
+        });
+
+        const active = await IndicativePrice.find({
+            productVariant: pair.retained._id,
+            status: 'ACTIVE',
+        }).lean();
+        const archivedSource = await IndicativePrice.find({
+            productVariant: pair.replaced.id,
+            status: 'ARCHIVED',
+        }).lean();
+
+        expect(active).toHaveLength(1);
+        expect(active[0].normalizedAmount.toString()).toBe(expected);
+        expect(archivedSource).toHaveLength(1);
     });
 });
