@@ -213,6 +213,7 @@ describe('ProductVariantMergeDrawer', () => {
       replacedVariantId: 'variant-candidate',
       targetName: 'Poudre d’amandes',
       previewFingerprint: 'a'.repeat(64),
+      priceResolutions: [],
     });
     expect(onMerged).toHaveBeenCalledTimes(1);
   });
@@ -249,6 +250,63 @@ describe('ProductVariantMergeDrawer', () => {
       replacedVariantId: 'variant-source',
       targetName: 'Amande en poudre brute',
     });
+  });
+
+  it('propose un stepper navigable vers les étapes précédentes', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('button', { name: 'Comparer' }));
+    expect(screen.getByRole('button', { name: /Sélection/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Validation/ })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: /Sélection/ }));
+    expect(screen.getByRole('textbox', {
+      name: 'Rechercher la seconde Référence',
+    })).toBeInTheDocument();
+  });
+
+  it('demande un arbitrage des prix et transmet le choix retenu', async () => {
+    const user = userEvent.setup();
+    mocks.preview.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        retained: sourceVariant,
+        replaced: candidate,
+        targetName: sourceVariant.name,
+        differences: [],
+        dependencies: {},
+        conflicts: [],
+        priceArbitrations: [{
+          sourcePriceId: 'price-source-1',
+          retainedPriceId: 'price-target-1',
+          scope: { workspaceId: null, dossierId: null },
+          retained: { amount: '9.1', currency: 'EUR', unit: 'KG' },
+          replaced: { amount: '9.5', currency: 'EUR', unit: 'KG' },
+        }],
+        canMerge: true,
+        previewFingerprint: 'c'.repeat(64),
+      }),
+    });
+    mocks.merge.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({ retained: sourceVariant }),
+    });
+    renderDrawer();
+    await user.click(screen.getByRole('button', { name: 'Comparer' }));
+    await user.click(screen.getByRole('button', { name: 'Vérifier la fusion' }));
+
+    expect(await screen.findByText('Arbitrer les Prix indicatifs'))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmer la fusion' }))
+      .toBeDisabled();
+    await user.click(screen.getByRole('radio', { name: /Prix conservé/ }));
+    await user.click(screen.getByRole('button', { name: 'Confirmer la fusion' }));
+    await user.click(screen.getByRole('button', { name: 'Fusionner' }));
+    expect(mocks.merge).toHaveBeenCalledWith(expect.objectContaining({
+      priceResolutions: [{
+        sourcePriceId: 'price-source-1',
+        action: 'KEEP_RETAINED',
+      }],
+    }));
   });
 
   it('affiche les conflits backend et interdit la confirmation', async () => {
