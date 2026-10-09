@@ -249,6 +249,30 @@ const globalProductVariantParamsSchema = z.strictObject({
     variantId: objectIdSchema,
 });
 
+const globalVariantMergeCandidateQuerySchema = z.strictObject({
+    q: z.string().trim().min(2).max(120).optional(),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+const variantMergePreviewBodySchema = z.strictObject({
+    retainedVariantId: objectIdSchema,
+    replacedVariantId: objectIdSchema,
+    targetName: z.string().trim().min(1).max(160).optional(),
+}).refine(
+    (body) => body.retainedVariantId !== body.replacedVariantId,
+    {
+        message: 'Deux Références Produit distinctes sont requises.',
+        path: ['replacedVariantId'],
+    },
+);
+
+const variantMergeConfirmBodySchema = variantMergePreviewBodySchema.extend({
+    previewFingerprint: z.string().regex(
+        /^[a-f\d]{64}$/i,
+        'Empreinte de prévisualisation invalide.',
+    ),
+});
+
 const globalCategoryParamsSchema = z.strictObject({
     categoryId: objectIdSchema,
 });
@@ -456,6 +480,7 @@ export {
     globalProductVarietyParamsSchema,
     globalProductListQuerySchema,
     globalProductVariantParamsSchema,
+    globalVariantMergeCandidateQuerySchema,
     importCommitBodySchema,
     importIdParamsSchema,
     importPreviewBodySchema,
@@ -475,6 +500,8 @@ export {
     updateVariantBodySchema,
     updateVarietyBodySchema,
     updateVariantStatusBodySchema,
+    variantMergeConfirmBodySchema,
+    variantMergePreviewBodySchema,
     variantIdParamsSchema,
     workspaceIdParamsSchema,
     workspaceProductDimensionUndoParamsSchema,

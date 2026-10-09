@@ -31,6 +31,9 @@ import { ProductCharacteristic } from './productCharacteristic.model.js';
 import { ProductVariant } from './productVariant.model.js';
 import { ProductVariety } from './productVariety.model.js';
 import { WorkspaceProduct } from './workspaceProduct.model.js';
+import {
+    reconcileProductVariantDependencies,
+} from './productVariantMerge.service.js';
 
 const conflict = (message) => {
     throw new AppError(message, 409);
@@ -102,147 +105,9 @@ const assertApprovedTarget = async ({
     return target;
 };
 
-const assertNoIndicativePriceCollision = async ({
-    sourceVariantId,
-    targetVariantId,
-    session,
-}) => {
-    const prices = await IndicativePrice.find({
-        productVariant: sourceVariantId,
-        status: 'ACTIVE',
-    }).session(session);
-
-    for (const price of prices) {
-        const existing = await IndicativePrice.exists({
-            _id: mongoose.trusted({ $ne: price._id }),
-            workspace: price.workspace,
-            dossier: price.dossier ?? null,
-            productVariant: targetVariantId,
-            status: 'ACTIVE',
-        }).session(session);
-
-        if (existing) {
-            conflict(
-                'La fusion créerait un doublon de Prix indicatif actif. '
-                + 'Résolvez ce prix avant de fusionner les références.',
-            );
-        }
-    }
-};
-
-const repointWorkspaceProducts = async ({
-    sourceVariantId,
-    targetVariantId,
-    actorId,
-    session,
-}) => {
-    const entries = await WorkspaceProduct.find({
-        productVariant: sourceVariantId,
-    }).session(session);
-
-    for (const entry of entries) {
-        const targetEntry = await WorkspaceProduct.findOne({
-            workspace: entry.workspace,
-            productVariant: targetVariantId,
-        }).session(session);
-
-        if (targetEntry) {
-            if (
-                entry.status === WORKSPACE_PRODUCT_STATUS.ACTIVE
-                && targetEntry.status !== WORKSPACE_PRODUCT_STATUS.ACTIVE
-            ) {
-                targetEntry.status = WORKSPACE_PRODUCT_STATUS.ACTIVE;
-                targetEntry.updatedBy = actorId;
-                await targetEntry.save({ session });
-            }
-
-            entry.status = WORKSPACE_PRODUCT_STATUS.ARCHIVED;
-            entry.updatedBy = actorId;
-            await entry.save({ session });
-            continue;
-        }
-
-        await WorkspaceProduct.collection.updateOne(
-            { _id: entry._id },
-            {
-                $set: {
-                    productVariant: targetVariantId,
-                    updatedBy: actorId,
-                },
-            },
-            { session },
-        );
-    }
-};
-
-const repointVariantDependencies = async ({
-    sourceVariantId,
-    targetVariantId,
-    actorId,
-    session,
-}) => {
-    await assertNoIndicativePriceCollision({
-        sourceVariantId,
-        targetVariantId,
-        actorId,
-        session,
-    });
-
-    await repointWorkspaceProducts({
-        sourceVariantId,
-        targetVariantId,
-        actorId,
-        session,
-    });
-
-    await SupplierArticle.collection.updateMany(
-        { productVariant: sourceVariantId },
-        {
-            $set: {
-                productVariant: targetVariantId,
-                updatedBy: actorId,
-            },
-        },
-        { session },
-    );
-    await SupplierCatalogLine.collection.updateMany(
-        { productVariant: sourceVariantId },
-        {
-            $set: {
-                productVariant: targetVariantId,
-                updatedBy: actorId,
-            },
-        },
-        { session },
-    );
-    await IndicativePrice.collection.updateMany(
-        { productVariant: sourceVariantId },
-        {
-            $set: {
-                productVariant: targetVariantId,
-                updatedBy: actorId,
-            },
-        },
-        { session },
-    );
-    await TechnicalSheetDraft.collection.updateMany(
-        { 'lines.productVariant': sourceVariantId },
-        {
-            $set: {
-                'lines.$[line].productVariant': targetVariantId,
-                valuationStatus: 'NOT_VALUED',
-                valuedAt: null,
-                valuationFingerprint: null,
-                economicSnapshot: null,
-                updatedBy: actorId,
-            },
-        },
-        {
-            session,
-            arrayFilters: [{ 'line.productVariant': sourceVariantId }],
-        },
-    );
-};
+const repointVariantDependencies = async (options) => (
+    reconcileProductVariantDependencies(options)
+);
 
 const loadVariantIdentity = async ({ variantId, session }) => (
     ProductVariant.findById(variantId)

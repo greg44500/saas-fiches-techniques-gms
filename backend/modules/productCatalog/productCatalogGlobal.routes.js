@@ -13,6 +13,7 @@ import {
     access,
     categories,
     commitImport,
+    confirmVariantMerge,
     createCategoryController,
     createCharacteristicController,
     createProductController,
@@ -25,8 +26,10 @@ import {
     duplicateCheck,
     inspectImport,
     list,
+    mergeCandidates,
     metadata,
     previewImport,
+    previewVariantMerge,
     reviewContribution,
     reviewDimension,
     reviewQueue,
@@ -60,6 +63,7 @@ import {
     globalProductVarietyParamsSchema,
     globalProductListQuerySchema,
     globalProductVariantParamsSchema,
+    globalVariantMergeCandidateQuerySchema,
     importCommitBodySchema,
     importPreviewBodySchema,
     referenceContributionDecisionBodySchema,
@@ -74,6 +78,8 @@ import {
     updateVariantBodySchema,
     updateVarietyBodySchema,
     updateVariantStatusBodySchema,
+    variantMergeConfirmBodySchema,
+    variantMergePreviewBodySchema,
 } from './productCatalog.validation.js';
 
 const productCatalogGlobalRouter = Router();
@@ -318,6 +324,36 @@ productCatalogGlobalRouter.post(
         body: createGlobalVariantBodySchema,
     }),
     createVariantController,
+);
+
+productCatalogGlobalRouter.get(
+    '/:productId/variants/:variantId/merge-candidates',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductVariantParamsSchema,
+        query: globalVariantMergeCandidateQuerySchema,
+    }),
+    mergeCandidates,
+);
+
+productCatalogGlobalRouter.post(
+    '/:productId/variants/merge/preview',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductIdParamsSchema,
+        body: variantMergePreviewBodySchema,
+    }),
+    previewVariantMerge,
+);
+
+productCatalogGlobalRouter.post(
+    '/:productId/variants/merge',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductIdParamsSchema,
+        body: variantMergeConfirmBodySchema,
+    }),
+    confirmVariantMerge,
 );
 
 productCatalogGlobalRouter.patch(
