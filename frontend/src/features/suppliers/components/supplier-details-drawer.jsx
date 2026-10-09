@@ -246,8 +246,8 @@ function SupplierDetailsDrawer({
                 />
               ) : articles.length === 0 ? (
                 <EmptyState
-                  description="Aucun Article actif n’est rattaché à ce Fournisseur."
-                  title="Aucun Article"
+                  description="Aucun article fournisseur identifié n’est disponible ici. Consultez l’onglet Catalogues pour retrouver les références importées, y compris celles qui ne sont pas encore associées à un produit."
+                  title="Aucun article associé"
                 />
               ) : (
                 <ul className="space-y-3">
