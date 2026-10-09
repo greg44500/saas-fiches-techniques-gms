@@ -271,10 +271,12 @@ describe('M-002 fusion contrôlée des Références Produit', () => {
             updatedBy: actorId,
         });
 
+        const targetName = 'Nom qui doit être rollbacké';
         const preview = await previewProductVariantMerge({
             productId: pair.product._id,
             retainedVariantId: pair.retained._id,
             replacedVariantId: pair.replaced.id,
+            targetName,
         });
 
         const updateSpy = vi
@@ -287,7 +289,7 @@ describe('M-002 fusion contrôlée des Références Produit', () => {
                 productId: pair.product._id,
                 retainedVariantId: pair.retained._id,
                 replacedVariantId: pair.replaced.id,
-                targetName: 'Nom qui doit être rollbacké',
+                targetName,
                 previewFingerprint: preview.previewFingerprint,
             })).rejects.toThrow('échec forcé de réconciliation');
         } finally {
