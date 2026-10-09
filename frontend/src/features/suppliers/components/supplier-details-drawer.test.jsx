@@ -86,6 +86,7 @@ describe('SupplierDetailsDrawer', () => {
         validFrom: '2026-09-01T00:00:00.000Z',
         validTo: '2026-09-30T00:00:00.000Z',
         status: 'ACTIVE',
+        lineCount: 42,
       }],
     }));
     mocks.listGlobalArticles.mockReturnValue(queryResult({ articles: [] }));
@@ -95,6 +96,8 @@ describe('SupplierDetailsDrawer', () => {
   it('présente les informations et les extensions prévues du Fournisseur Workspace', async () => {
     const user = userEvent.setup();
 
+    const onViewCatalog = vi.fn();
+
     render(
       <SupplierDetailsDrawer
         canManage
@@ -103,6 +106,7 @@ describe('SupplierDetailsDrawer', () => {
         mode="workspace"
         onClose={vi.fn()}
         onEdit={vi.fn()}
+        onViewCatalog={onViewCatalog}
         open
         supplier={supplier}
         workspaceId="workspace-1"
@@ -122,6 +126,17 @@ describe('SupplierDetailsDrawer', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Catalogues' }));
     expect(screen.getByText('Catalogue septembre')).toBeInTheDocument();
+    expect(screen.getByText(/42 référence\(s\)/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Voir Catalogue septembre',
+    }));
+    expect(onViewCatalog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'catalog-1',
+        name: 'Catalogue septembre',
+      }),
+    );
 
     await user.click(screen.getByRole('tab', { name: 'Utilisation' }));
     expect(screen.getByText(/Tarifs négociés et Prix facturés/i))
