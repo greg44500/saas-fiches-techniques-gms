@@ -163,12 +163,14 @@ function ProductVariantMergeDrawer({
   }, [open, sourceVariant?.id]);
 
   function chooseCandidate(nextCandidate) {
-    const sourceApproved = sourceVariant.governanceStatus === 'APPROVED';
-    const candidateApproved =
-      nextCandidate.governanceStatus === 'APPROVED';
-    const defaultRetainedId = sourceApproved
+    const sourceCanBeRetained = (
+      sourceVariant.governanceStatus === 'APPROVED'
+      && sourceVariant.status === 'ACTIVE'
+    );
+    const candidateCanBeRetained = nextCandidate.canBeRetained === true;
+    const defaultRetainedId = sourceCanBeRetained
       ? sourceVariant.id
-      : candidateApproved
+      : candidateCanBeRetained
         ? nextCandidate.id
         : null;
 
@@ -252,10 +254,14 @@ function ProductVariantMergeDrawer({
   }
 
   const candidates = candidatesQuery.data ?? [];
-  const canChooseSourceAsRetained =
-    sourceVariant?.governanceStatus === 'APPROVED';
-  const canChooseCandidateAsRetained =
-    candidate?.governanceStatus === 'APPROVED';
+  const canChooseSourceAsRetained = (
+    sourceVariant?.governanceStatus === 'APPROVED'
+    && sourceVariant?.status === 'ACTIVE'
+  );
+  const canChooseCandidateAsRetained = (
+    candidate?.governanceStatus === 'APPROVED'
+    && candidate?.status === 'ACTIVE'
+  );
   const hasBlockingConflicts = Boolean(preview?.conflicts?.length);
 
   return (
@@ -361,7 +367,9 @@ function ProductVariantMergeDrawer({
                             {' · '}
                             {item.governanceStatus === 'PROVISIONAL'
                               ? 'À contrôler'
-                              : 'Validée'}
+                              : item.status === 'ARCHIVED'
+                                ? 'Validée · Archivée'
+                                : 'Validée'}
                           </p>
                         </div>
                         <Button
