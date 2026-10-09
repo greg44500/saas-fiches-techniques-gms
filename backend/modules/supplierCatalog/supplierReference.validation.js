@@ -122,7 +122,7 @@ const packagingBodySchema = z.strictObject({
 
 const createArticleBodySchema = z.strictObject({
     supplierId: objectIdSchema,
-    productVariantId: objectIdSchema.optional(),
+    productVariantId: objectIdSchema,
     supplierReference: z.string().trim().min(1).max(120),
     supplierDesignation: nullableText(300).optional(),
     brand: nullableText(160).optional(),

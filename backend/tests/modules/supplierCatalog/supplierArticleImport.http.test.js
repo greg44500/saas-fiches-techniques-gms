@@ -166,7 +166,7 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
             supplier: supplier.id,
             productVariant: null,
             supplierReference: 'GLOBAL-1',
-            normalizedSupplierReference: 'GLOBAL-1',
+            normalizedSupplierReference: 'global-1',
             supplierDesignation: 'Référence globale',
             createdBy: context.owner._id,
             updatedBy: context.owner._id,
