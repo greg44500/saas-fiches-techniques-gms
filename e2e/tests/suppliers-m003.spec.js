@@ -372,7 +372,7 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
       'Reference;Designation;Marque',
       reference + ';Pain test;Bridor',
       ';Sans reference;Bridor',
-    ].join('\\n'), 'utf8'),
+    ].join('\n'), 'utf8'),
   });
   const inspectPromise = page.waitForResponse((response) => (
     response.request().method() === 'POST'
