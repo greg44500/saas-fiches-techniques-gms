@@ -309,6 +309,53 @@ describe('ProductVariantMergeDrawer', () => {
     }));
   });
 
+  it('permet une saisie manuelle de prix et exige un montant positif', async () => {
+    const user = userEvent.setup();
+    mocks.preview.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        retained: sourceVariant,
+        replaced: candidate,
+        targetName: sourceVariant.name,
+        differences: [],
+        dependencies: {},
+        conflicts: [],
+        priceArbitrations: [{
+          sourcePriceId: 'price-source-1',
+          retainedPriceId: 'price-target-1',
+          scope: { workspaceId: null, dossierId: null },
+          retained: { amount: '9.1', currency: 'EUR', unit: 'KG' },
+          replaced: { amount: '9.5', currency: 'EUR', unit: 'KG' },
+        }],
+        canMerge: true,
+        previewFingerprint: 'd'.repeat(64),
+      }),
+    });
+    mocks.merge.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({ retained: sourceVariant }),
+    });
+    renderDrawer();
+    await user.click(screen.getByRole('button', { name: 'Comparer' }));
+    await user.click(screen.getByRole('button', { name: 'Vérifier la fusion' }));
+    await user.click(screen.getByRole('radio', { name: /Définir un montant manuel/ }));
+    const confirm = screen.getByRole('button', { name: 'Confirmer la fusion' });
+    expect(confirm).toBeDisabled();
+    const amount = screen.getByRole('textbox', { name: /Montant/ });
+    await user.type(amount, '0');
+    expect(confirm).toBeDisabled();
+    await user.clear(amount);
+    await user.type(amount, '8,75');
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+    await user.click(screen.getByRole('button', { name: 'Fusionner' }));
+    expect(mocks.merge).toHaveBeenCalledWith(expect.objectContaining({
+      priceResolutions: [{
+        sourcePriceId: 'price-source-1',
+        action: 'MANUAL',
+        manualAmount: '8.75',
+      }],
+    }));
+  });
+
   it('affiche les conflits backend et interdit la confirmation', async () => {
     const user = userEvent.setup();
 
