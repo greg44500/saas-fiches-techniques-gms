@@ -79,6 +79,18 @@ beforeEach(async () => {
 });
 
 describe('M-003 — import autonome des Articles fournisseur', () => {
+    it('refuse l’inspection du référentiel global sans autorité Application Global', async () => {
+        const response = await request(app)
+            .post('/api/supplier-reference/articles/imports/inspect')
+            .set(auth())
+            .attach(
+                'file',
+                Buffer.from('Reference;Designation\\nGLOBAL1;Pain', 'utf8'),
+                'articles.csv',
+            );
+        expect(response.status).toBe(403);
+    });
+
     it('exige la capability commerciale pour l’inspection Workspace', async () => {
         const result = await inspect('Reference;Designation;Marque\nREF1;Pain;B');
         expect(result.status).toBe(403);

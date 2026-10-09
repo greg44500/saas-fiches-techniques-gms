@@ -41,7 +41,7 @@ const articleVisibility = ({ scope, workspaceId }) => (
 );
 
 const hasPackaging = (value) => (
-    value !== null
+    value !== null && value !== undefined
     && Object.values(value).some((item) => (
         item !== null && item !== undefined && item !== ''
     ))
