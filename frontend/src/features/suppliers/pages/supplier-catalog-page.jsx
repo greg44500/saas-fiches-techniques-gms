@@ -45,7 +45,7 @@ function formatDate(value, fallback = 'Non renseignée') {
 }
 
 function formatCatalogLinePrice(sourcePrice, packaging) {
-  if (!sourcePrice?.amount) return 'Non renseigné';
+  if (sourcePrice?.amount == null) return 'Non communiqué';
 
   const amount = Number(sourcePrice.amount).toLocaleString('fr-FR', {
     minimumFractionDigits: 2,
@@ -144,9 +144,7 @@ function SupplierCatalogPage() {
           <p className="font-medium">
             {line.supplierReference || 'Sans référence'}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Ligne source {line.sourceRowNumber ?? '—'}
-          </p>
+
         </div>
       ),
     },
@@ -156,7 +154,7 @@ function SupplierCatalogPage() {
       cell: (line) => (
         <div>
           <p>{line.designation || 'Non renseignée'}</p>
-          {line.brand && (
+          {line.brand && line.brand.toLocaleLowerCase('fr-FR') !== catalog?.supplierName?.toLocaleLowerCase('fr-FR') && (
             <p className="mt-1 text-xs text-muted-foreground">
               {line.brand}
             </p>
@@ -179,7 +177,7 @@ function SupplierCatalogPage() {
     },
     {
       id: 'match',
-      header: 'Rapprochement',
+      header: 'Association produit',
       cell: (line) => (
         <StatusBadge tone={getMatchStatusTone(line.matchStatus)}>
           {getMatchStatusLabel(line.matchStatus)}
@@ -207,8 +205,8 @@ function SupplierCatalogPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-4">
+    <div className="space-y-4">
+      <header className="space-y-2">
         <Button
           onClick={() => navigate(
             '/workspaces/'
@@ -217,25 +215,25 @@ function SupplierCatalogPage() {
           )}
           type="button"
           variant="ghost"
+          title="Retour aux catalogues"
+          aria-label="Retour aux catalogues"
         >
           <ArrowLeft aria-hidden="true" className="size-4" />
-          Retour aux catalogues
+          <span className="sr-only">Retour aux catalogues</span>
         </Button>
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">
-                {catalog?.name ?? 'Catalogue fournisseur'}
+                {catalog?.supplierName ? catalog.supplierName + ' | ' : ''}{catalog?.name ?? 'Catalogue fournisseur'}
               </h1>
               <InfoTooltip
                 content="Consultez les références importées, leur tarif source et leur état de rapprochement avec le référentiel Produit."
                 label="À propos du catalogue fournisseur"
               />
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {catalog?.supplierName ?? 'Fournisseur non disponible'}
-            </p>
+
           </div>
 
           {catalog && (
@@ -264,22 +262,28 @@ function SupplierCatalogPage() {
               <p className="mt-1 text-sm font-medium">
                 {catalog?.supplierName ?? 'Non disponible'}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {getSupplierOriginLabel(catalog?.scope)}
-              </p>
+
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
               <p className="text-xs text-muted-foreground">Date d’édition</p>
               <p className="mt-1 text-sm font-medium">
-                {formatDate(catalog?.editionDate)}
+                {catalog?.editionDate
+                  ? formatDate(catalog.editionDate)
+                  : catalog?.integratedAt
+                    ? 'Importé le ' + formatDate(catalog.integratedAt)
+                    : 'Non renseignée'}
               </p>
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
               <p className="text-xs text-muted-foreground">Période</p>
               <p className="mt-1 text-sm font-medium">
-                {formatDate(catalog?.validFrom, 'Début non renseigné')}
-                {' → '}
-                {formatDate(catalog?.validTo, 'sans fin')}
+                {catalog?.validFrom && catalog?.validTo
+                  ? formatDate(catalog.validFrom) + ' – ' + formatDate(catalog.validTo)
+                  : catalog?.validFrom
+                    ? 'Depuis le ' + formatDate(catalog.validFrom)
+                    : catalog?.validTo
+                      ? "Jusqu’au " + formatDate(catalog.validTo)
+                      : 'Non renseignée'}
               </p>
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
@@ -325,7 +329,7 @@ function SupplierCatalogPage() {
 
               <div className="w-full lg:w-60">
                 <p className="mb-2 text-sm font-medium">
-                  Rapprochement
+                  Association produit
                 </p>
                 <Select
                   items={[
@@ -346,9 +350,9 @@ function SupplierCatalogPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={ALL_MATCH_STATUSES}>Tous</SelectItem>
-                    <SelectItem value="MATCHED">Rapprochés</SelectItem>
-                    <SelectItem value="UNMATCHED">Non rapprochés</SelectItem>
-                    <SelectItem value="AMBIGUOUS">Ambigus</SelectItem>
+                    <SelectItem value="MATCHED">Associés</SelectItem>
+                    <SelectItem value="UNMATCHED">À associer</SelectItem>
+                    <SelectItem value="AMBIGUOUS">À vérifier</SelectItem>
                     <SelectItem value="IGNORED">Ignorés</SelectItem>
                   </SelectContent>
                 </Select>
