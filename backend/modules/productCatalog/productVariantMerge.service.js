@@ -752,6 +752,17 @@ const migrateActiveIndicativePrices = async ({
             || decisions.has(decision.sourcePriceId)) {
             throw conflictError('Arbitrage de prix non reconnu ou en doublon.');
         }
+        if (!['KEEP_RETAINED', 'KEEP_REPLACED', 'MANUAL']
+            .includes(decision.action)) {
+            throw conflictError('Décision d’arbitrage de prix invalide.');
+        }
+        if (decision.action === 'MANUAL'
+            && (typeof decision.manualAmount !== 'string'
+                || !/^(?!0+(?:\\.0+)?$)\\d+(?:\\.\\d{1,6})?$/.test(
+                    decision.manualAmount,
+                ))) {
+            throw conflictError('Le montant manuel doit être positif et valide.');
+        }
         decisions.set(decision.sourcePriceId, decision);
     }
     if (decisions.size !== collisions.length) {
@@ -1061,6 +1072,12 @@ const mergeProductVariants = async ({
             replacedVariantId: replaced._id.toString(),
             retainedName: retained.name,
             replacedName: replaced.name,
+            priceArbitrations: priceResolutions.map((resolution) => ({
+                sourcePriceId: resolution.sourcePriceId,
+                action: resolution.action,
+                ...(resolution.action === 'MANUAL'
+                    ? { manualAmount: resolution.manualAmount } : {}),
+            })),
             dependencies: {
                 ...plan.dependencies,
                 ...reconciled,
