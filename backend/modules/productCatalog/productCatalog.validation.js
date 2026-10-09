@@ -254,24 +254,35 @@ const globalVariantMergeCandidateQuerySchema = z.strictObject({
     limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
-const variantMergePreviewBodySchema = z.strictObject({
+const variantMergeIdentityFields = {
     retainedVariantId: objectIdSchema,
     replacedVariantId: objectIdSchema,
     targetName: z.string().trim().min(1).max(160).optional(),
-}).refine(
-    (body) => body.retainedVariantId !== body.replacedVariantId,
-    {
-        message: 'Deux Références Produit distinctes sont requises.',
-        path: ['replacedVariantId'],
-    },
-);
+};
 
-const variantMergeConfirmBodySchema = variantMergePreviewBodySchema.extend({
-    previewFingerprint: z.string().regex(
-        /^[a-f\d]{64}$/i,
-        'Empreinte de prévisualisation invalide.',
-    ),
-});
+const distinctVariantMergeRefinement = (body, context) => {
+    if (body.retainedVariantId === body.replacedVariantId) {
+        context.addIssue({
+            code: 'custom',
+            message: 'Deux Références Produit distinctes sont requises.',
+            path: ['replacedVariantId'],
+        });
+    }
+};
+
+const variantMergePreviewBodySchema = z
+    .strictObject(variantMergeIdentityFields)
+    .superRefine(distinctVariantMergeRefinement);
+
+const variantMergeConfirmBodySchema = z
+    .strictObject({
+        ...variantMergeIdentityFields,
+        previewFingerprint: z.string().regex(
+            /^[a-f\d]{64}$/i,
+            'Empreinte de prévisualisation invalide.',
+        ),
+    })
+    .superRefine(distinctVariantMergeRefinement);
 
 const globalCategoryParamsSchema = z.strictObject({
     categoryId: objectIdSchema,
