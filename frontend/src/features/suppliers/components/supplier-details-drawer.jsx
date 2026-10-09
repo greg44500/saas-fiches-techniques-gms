@@ -1,4 +1,4 @@
-import { Pencil } from 'lucide-react';
+import { Eye, Pencil } from 'lucide-react';
 import { useRef } from 'react';
 
 import { ActionIconButton } from '@/components/shared/action-icon-button';
@@ -54,6 +54,7 @@ function SupplierDetailsDrawer({
   mode = 'workspace',
   onClose,
   onEdit,
+  onViewCatalog,
   open,
   supplier,
   workspaceId,
@@ -147,8 +148,8 @@ function SupplierDetailsDrawer({
     <EntityDetailsDrawer
       description={
         isGlobal
-          ? 'Identité partagée, Articles et catalogues du Fournisseur.'
-          : 'Identité, Articles, catalogues et usages du Fournisseur dans cet espace de travail.'
+          ? 'Fournisseur du référentiel commun, Articles et catalogues associés.'
+          : 'Fournisseur, Articles, catalogues et usages dans cet espace de travail.'
       }
       onClose={onClose}
       open={open}
@@ -315,12 +316,23 @@ function SupplierDetailsDrawer({
                             {formatPeriod(catalog)}
                           </p>
                           <p className="mt-2 text-xs text-muted-foreground">
-                            Provenance : {catalog.source || 'non renseignée'}
+                            {catalog.lineCount ?? 0} référence(s) · Provenance : {catalog.source || 'non renseignée'}
                           </p>
                         </div>
-                        <StatusBadge tone={getSupplierStatusTone(catalog.status)}>
-                          {getSupplierStatusLabel(catalog.status)}
-                        </StatusBadge>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge tone={getSupplierStatusTone(catalog.status)}>
+                            {getSupplierStatusLabel(catalog.status)}
+                          </StatusBadge>
+                          {onViewCatalog && (
+                            <ActionIconButton
+                              Icon={Eye}
+                              label={'Voir ' + catalog.name}
+                              onClick={() => onViewCatalog(catalog)}
+                              tooltipLabel="Voir"
+                              variant="outline"
+                            />
+                          )}
+                        </div>
                       </div>
                     </li>
                   ))}
