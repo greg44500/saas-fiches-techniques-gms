@@ -254,7 +254,7 @@ test('M-002 gestionnaire Application Global fusionne deux Références compatibl
 
   await expect(
     page.getByRole('heading', {
-      name: 'Fusionner des Références Produit',
+      name: `Fusionner des Références Produit : ${productName}`,
     }),
   ).toBeVisible();
 
