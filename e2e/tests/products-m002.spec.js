@@ -19,6 +19,47 @@ import {
   expectVisibleToast,
 } from '../support/toast.js';
 
+async function createGlobalProductForMerge(page, productName) {
+  await page.getByRole('button', { name: 'Créer un Produit' }).click();
+
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Nom du Produit').fill(productName);
+  await dialog
+    .getByRole('button', { name: 'Rechercher l’existant' })
+    .click();
+  await dialog
+    .getByRole('button', { name: 'Créer dans le référentiel global' })
+    .click();
+
+  await expectVisibleToast(
+    page,
+    'Produit créé dans le référentiel',
+  );
+  await expect(
+    page.getByRole('heading', { name: productName, exact: true }),
+  ).toBeVisible();
+}
+
+async function createGlobalReferenceForMerge(
+  page,
+  referenceName,
+  { yieldPercent = null } = {},
+) {
+  await page.getByRole('button', { name: 'Créer une référence' }).click();
+
+  const dialog = page.getByRole('dialog', {
+    name: 'Créer une référence Produit',
+  });
+  await dialog.getByLabel('Nom de la référence *').fill(referenceName);
+
+  if (yieldPercent !== null) {
+    await dialog.getByLabel('Rendement (%)').fill(String(yieldPercent));
+  }
+
+  await dialog.getByRole('button', { name: 'Créer la référence' }).click();
+  await expectVisibleToast(page, 'Référence créée');
+}
+
 test('M-002 contribution Workspace est revue puis publiée globalement', async ({ page }) => {
   const context = await provisionProductOwnerWorkspace();
 
@@ -188,3 +229,120 @@ test('M-002 autorité Application Global alimente directement le référentiel',
     page.getByRole('tab', { name: 'Historique' }),
   ).toHaveCount(0);
 });
+
+test('M-002 gestionnaire Application Global fusionne deux Références compatibles', async ({ page }) => {
+  await loginWithIdentity(page, E2E_FOUNDER);
+  await page.goto('/product-reference');
+
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const productName = `Produit fusion E2E ${suffix}`;
+  const secondReferenceName = `Référence fusion source ${suffix}`;
+  const mergedReferenceName = `Référence fusionnée E2E ${suffix}`;
+
+  await createGlobalProductForMerge(page, productName);
+
+  await page.getByRole('tab', { name: 'Références (1)' }).click();
+  await createGlobalReferenceForMerge(page, secondReferenceName);
+
+  await expect(
+    page.getByRole('tab', { name: 'Références (2)' }),
+  ).toBeVisible();
+
+  await page.getByRole('button', {
+    name: `Fusionner la référence ${productName}`,
+  }).click();
+
+  await expect(
+    page.getByRole('heading', {
+      name: `Fusionner des Références Produit : ${productName}`,
+    }),
+  ).toBeVisible();
+
+  await page.getByRole('textbox', {
+    name: 'Rechercher la seconde Référence',
+  }).fill(secondReferenceName);
+
+  const candidateRow = page.locator('li').filter({
+    hasText: secondReferenceName,
+    has: page.getByRole('button', { name: 'Comparer', exact: true }),
+  });
+  await expect(candidateRow).toBeVisible();
+  await candidateRow.getByRole('button', { name: 'Comparer' }).click();
+
+  const targetName = page.getByRole('textbox', {
+    name: 'Nom après fusion',
+  });
+  await expect(targetName).toHaveValue(productName);
+  await targetName.fill(mergedReferenceName);
+
+  await page.getByRole('button', {
+    name: 'Vérifier la fusion',
+  }).click();
+
+  await expect(
+    page.getByText('Dépendances concernées', { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole('button', {
+    name: 'Confirmer la fusion',
+  }).click();
+
+  const confirmation = page.getByRole('dialog', {
+    name: 'Confirmer la fusion des Références ?',
+  });
+  await confirmation.getByRole('button', { name: 'Fusionner' }).click();
+
+  await expectVisibleToast(page, 'Références fusionnées');
+
+  await expect(
+    page.getByRole('tab', { name: 'Références (1)' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(mergedReferenceName, { exact: true }).first(),
+  ).toBeVisible();
+  await expect(
+    page.getByText(secondReferenceName, { exact: true }),
+  ).toHaveCount(0);
+});
+
+test('M-002 fusion exclut une Référence incompatible avec les calculs', async ({ page }) => {
+  await loginWithIdentity(page, E2E_FOUNDER);
+  await page.goto('/product-reference');
+
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const productName = `Produit refus fusion E2E ${suffix}`;
+  const incompatibleReferenceName =
+    `Référence rendement incompatible ${suffix}`;
+
+  await createGlobalProductForMerge(page, productName);
+
+  await page.getByRole('tab', { name: 'Références (1)' }).click();
+  await createGlobalReferenceForMerge(
+    page,
+    incompatibleReferenceName,
+    { yieldPercent: 80 },
+  );
+
+  await expect(
+    page.getByRole('tab', { name: 'Références (2)' }),
+  ).toBeVisible();
+
+  await page.getByRole('button', {
+    name: `Fusionner la référence ${productName}`,
+  }).click();
+
+  await page.getByRole('textbox', {
+    name: 'Rechercher la seconde Référence',
+  }).fill(incompatibleReferenceName);
+
+  await expect(
+    page.getByText('Aucune autre Référence admissible.', {
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  await expect(
+    page.getByRole('button', { name: 'Comparer' }),
+  ).toHaveCount(0);
+});
+

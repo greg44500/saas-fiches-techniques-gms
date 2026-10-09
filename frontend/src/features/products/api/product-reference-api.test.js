@@ -128,6 +128,58 @@ describe('productReferenceApi', () => {
     });
 
     expect(
+      captured.endpointDefinitions.listProductReferenceMergeCandidates.query({
+        productId: 'product-1',
+        variantId: 'variant-1',
+        q: 'amande',
+        limit: 10,
+      }),
+    ).toEqual({
+      url:
+        '/product-reference/product-1/variants/variant-1/merge-candidates',
+      params: {
+        q: 'amande',
+        limit: 10,
+      },
+    });
+
+    expect(
+      captured.endpointDefinitions.previewProductReferenceVariantMerge.query({
+        productId: 'product-1',
+        retainedVariantId: 'variant-1',
+        replacedVariantId: 'variant-2',
+        targetName: 'Poudre d’amandes',
+      }),
+    ).toEqual({
+      url: '/product-reference/product-1/variants/merge/preview',
+      method: 'POST',
+      body: {
+        retainedVariantId: 'variant-1',
+        replacedVariantId: 'variant-2',
+        targetName: 'Poudre d’amandes',
+      },
+    });
+
+    expect(
+      captured.endpointDefinitions.mergeProductReferenceVariants.query({
+        productId: 'product-1',
+        retainedVariantId: 'variant-1',
+        replacedVariantId: 'variant-2',
+        targetName: 'Poudre d’amandes',
+        previewFingerprint: 'fingerprint',
+      }),
+    ).toEqual({
+      url: '/product-reference/product-1/variants/merge',
+      method: 'POST',
+      body: {
+        retainedVariantId: 'variant-1',
+        replacedVariantId: 'variant-2',
+        targetName: 'Poudre d’amandes',
+        previewFingerprint: 'fingerprint',
+      },
+    });
+
+    expect(
       captured.endpointDefinitions.commitProductReferenceImport.query({
         importId: 'import-1',
         decisions: [],

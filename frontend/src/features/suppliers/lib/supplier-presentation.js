@@ -164,6 +164,32 @@ function formatSourcePrice(price) {
     );
 }
 
+function formatIndicativePriceSource(price) {
+  const explicitOrganization = price?.sourceOrganization?.trim();
+  if (explicitOrganization) return explicitOrganization;
+
+  const rawSource = price?.source?.trim();
+  if (!rawSource) return null;
+
+  const technicalPartPatterns = [
+    /^m\d{3}[-_]/i,
+    /^(?:dataset|bootstrap|migration)\b/i,
+    /^prix repère global$/i,
+    /^corpus professionnel(?:\s+v\d+)?$/i,
+    /^(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4}$/i,
+  ];
+
+  const readableParts = rawSource
+    .split(/\s+[·—]\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => !technicalPartPatterns.some((pattern) => (
+      pattern.test(part)
+    )));
+
+  return readableParts[0] ?? null;
+}
+
 function getMatchStatusLabel(status) {
   const labels = {
     MATCHED: 'Rapproché',
@@ -189,6 +215,7 @@ function getImportClassificationLabel(classification) {
 }
 
 export {
+  formatIndicativePriceSource,
   formatPackaging,
   formatPrice,
   formatSourcePrice,

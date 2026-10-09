@@ -56,6 +56,11 @@ import {
 import {
     listProductReviewQueue,
 } from './productReferenceReviewQueue.service.js';
+import {
+    listProductVariantMergeCandidates,
+    mergeProductVariants,
+    previewProductVariantMerge,
+} from './productVariantMerge.service.js';
 
 
 const access = async (req, res) => {
@@ -383,6 +388,44 @@ const updateProductStatusController = async (req, res) => {
     res.status(200).json({ status: 'success', data: { product } });
 };
 
+const mergeCandidates = async (req, res) => {
+    const candidates = await listProductVariantMergeCandidates({
+        productId: req.validated.params.productId,
+        sourceVariantId: req.validated.params.variantId,
+        ...req.validated.query,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { candidates },
+    });
+};
+
+const previewVariantMerge = async (req, res) => {
+    const preview = await previewProductVariantMerge({
+        productId: req.validated.params.productId,
+        ...req.validated.body,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { preview },
+    });
+};
+
+const confirmVariantMerge = async (req, res) => {
+    const result = await mergeProductVariants({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        ...req.validated.body,
+    });
+
+    res.status(200).json({
+        status: 'success',
+        data: { result },
+    });
+};
+
 const updateVariantController = async (req, res) => {
     const variant = await updateVariant({
         actorId: req.user._id,
@@ -407,6 +450,7 @@ export {
     access,
     categories,
     commitImport,
+    confirmVariantMerge,
     createCategoryController,
     createCharacteristicController,
     createProductController,
@@ -419,8 +463,10 @@ export {
     duplicateCheck,
     inspectImport,
     list,
+    mergeCandidates,
     metadata,
     previewImport,
+    previewVariantMerge,
     reviewContribution,
     reviewDimension,
     reviewQueue,

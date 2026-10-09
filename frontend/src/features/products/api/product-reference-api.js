@@ -303,6 +303,42 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data.variant,
       invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
+    listProductReferenceMergeCandidates: builder.query({
+      query: ({
+        productId,
+        variantId,
+        q,
+        limit = 20,
+      }) => ({
+        url:
+          '/product-reference/' + productId
+          + '/variants/' + variantId
+          + '/merge-candidates',
+        params: {
+          q: q || undefined,
+          limit,
+        },
+      }),
+      transformResponse: (response) => response.data.candidates,
+      providesTags: ['ProductReference'],
+    }),
+    previewProductReferenceVariantMerge: builder.mutation({
+      query: ({ productId, ...body }) => ({
+        url: '/product-reference/' + productId + '/variants/merge/preview',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data.preview,
+    }),
+    mergeProductReferenceVariants: builder.mutation({
+      query: ({ productId, ...body }) => ({
+        url: '/product-reference/' + productId + '/variants/merge',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data.result,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
     inspectProductReferenceImport: builder.mutation({
       query: ({ file }) => {
         const body = new FormData();
@@ -351,10 +387,13 @@ export const {
   useInspectProductReferenceImportMutation,
   useLazyGetProductReferenceDetailQuery,
   useListProductReferenceContributionsQuery,
+  useListProductReferenceMergeCandidatesQuery,
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
   useDeleteProductReferenceDimensionMutation,
   usePreviewProductReferenceImportMutation,
+  usePreviewProductReferenceVariantMergeMutation,
+  useMergeProductReferenceVariantsMutation,
   useReviewProductReferenceDimensionMutation,
   useReviewProductReferenceContributionMutation,
   useUpdateProductReferenceCategoryMutation,

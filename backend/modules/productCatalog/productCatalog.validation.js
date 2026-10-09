@@ -249,6 +249,59 @@ const globalProductVariantParamsSchema = z.strictObject({
     variantId: objectIdSchema,
 });
 
+const globalVariantMergeCandidateQuerySchema = z.strictObject({
+    q: z.string().trim().min(2).max(120).optional(),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+const variantMergeIdentityFields = {
+    retainedVariantId: objectIdSchema,
+    replacedVariantId: objectIdSchema,
+    targetName: z.string().trim().min(1).max(160).optional(),
+};
+
+const distinctVariantMergeRefinement = (body, context) => {
+    if (body.retainedVariantId === body.replacedVariantId) {
+        context.addIssue({
+            code: 'custom',
+            message: 'Deux Références Produit distinctes sont requises.',
+            path: ['replacedVariantId'],
+        });
+    }
+};
+
+const variantMergePreviewBodySchema = z
+    .strictObject(variantMergeIdentityFields)
+    .superRefine(distinctVariantMergeRefinement);
+
+const variantMergePriceResolutionSchema = z.strictObject({
+    sourcePriceId: objectIdSchema,
+    action: z.enum(['KEEP_RETAINED', 'KEEP_REPLACED', 'MANUAL']),
+    manualAmount: z.string().regex(
+        /^(?!0+(?:\.0+)?$)\d+(?:\.\d{1,6})?$/,
+        'Saisissez un montant positif avec au plus six décimales.',
+    ).optional(),
+}).superRefine((resolution, context) => {
+    if (resolution.action === 'MANUAL' && !resolution.manualAmount) {
+        context.addIssue({
+            code: 'custom',
+            path: ['manualAmount'],
+            message: 'Le montant manuel est obligatoire.',
+        });
+    }
+});
+
+const variantMergeConfirmBodySchema = z
+    .strictObject({
+        ...variantMergeIdentityFields,
+        priceResolutions: z.array(variantMergePriceResolutionSchema).max(200).optional().default([]),
+        previewFingerprint: z.string().regex(
+            /^[a-f\d]{64}$/i,
+            'Empreinte de prévisualisation invalide.',
+        ),
+    })
+    .superRefine(distinctVariantMergeRefinement);
+
 const globalCategoryParamsSchema = z.strictObject({
     categoryId: objectIdSchema,
 });
@@ -456,6 +509,7 @@ export {
     globalProductVarietyParamsSchema,
     globalProductListQuerySchema,
     globalProductVariantParamsSchema,
+    globalVariantMergeCandidateQuerySchema,
     importCommitBodySchema,
     importIdParamsSchema,
     importPreviewBodySchema,
@@ -475,6 +529,8 @@ export {
     updateVariantBodySchema,
     updateVarietyBodySchema,
     updateVariantStatusBodySchema,
+    variantMergeConfirmBodySchema,
+    variantMergePreviewBodySchema,
     variantIdParamsSchema,
     workspaceIdParamsSchema,
     workspaceProductDimensionUndoParamsSchema,
