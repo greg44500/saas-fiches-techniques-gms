@@ -629,30 +629,31 @@ const listCatalogLines = async ({
 
         if (normalizedReference) {
             conditions.push({
-                normalizedSupplierReference: {
-                    $regex:
+                normalizedSupplierReference:
+                    new RegExp(
                         escapeRegExp(
                             normalizedReference,
                         ),
-                },
+                    ),
             });
         }
         if (normalizedText) {
             conditions.push({
-                normalizedDesignation: {
-                    $regex:
+                normalizedDesignation:
+                    new RegExp(
                         escapeRegExp(
                             normalizedText,
                         ),
-                },
+                    ),
             });
         }
         if (escapedRaw) {
             conditions.push({
-                brand: {
-                    $regex: escapedRaw,
-                    $options: 'i',
-                },
+                brand:
+                    new RegExp(
+                        escapedRaw,
+                        'i',
+                    ),
             });
         }
 
