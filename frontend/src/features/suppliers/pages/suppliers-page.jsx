@@ -39,6 +39,9 @@ import {
   useUpdateSupplierStatusMutation,
 } from '@/features/suppliers/api/supplier-api';
 import {
+  SupplierArticleImportDialog,
+} from '@/features/suppliers/components/supplier-article-import-dialog';
+import {
   SupplierArticleFormDialog,
 } from '@/features/suppliers/components/supplier-article-form-dialog';
 import {
@@ -117,6 +120,7 @@ function SuppliersPage() {
     supplier: null,
   });
   const [articleDialogOpen, setArticleDialogOpen] = useState(false);
+  const [articleImportOpen, setArticleImportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
   const supplierQuery = useListSuppliersQuery({
@@ -381,7 +385,7 @@ function SuppliersPage() {
     {
       id: 'product',
       header: 'Référence Produit',
-      cell: (article) => article.productVariant?.name ?? '—',
+      cell: (article) => article.productVariant?.name ?? 'Produit à associer',
     },
     {
       id: 'packaging',
@@ -548,6 +552,12 @@ function SuppliersPage() {
             <Button onClick={() => setArticleDialogOpen(true)} type="button">
               <Plus aria-hidden="true" className="size-4" />
               Créer un Article
+            </Button>
+          )}
+          {section === 'articles' && canManageArticles && canImport && (
+            <Button onClick={() => setArticleImportOpen(true)} type="button" variant="outline">
+              <FileUp aria-hidden="true" className="size-4" />
+              Importer des Articles
             </Button>
           )}
           {section === 'catalogs' && canImport && (
@@ -785,6 +795,22 @@ function SuppliersPage() {
           });
         }}
         open={articleDialogOpen}
+        suppliers={activeSuppliers}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticleImportDialog
+        onClose={() => setArticleImportOpen(false)}
+        onCommitted={(result) => {
+          setArticleImportOpen(false);
+          toast({
+            title: 'Import des Articles terminé',
+            description: String(result.created) + ' créé(s), '
+              + String(result.updated) + ' actualisé(s).',
+            variant: 'success',
+          });
+        }}
+        open={articleImportOpen}
         suppliers={activeSuppliers}
         workspaceId={workspace.id}
       />

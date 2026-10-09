@@ -35,6 +35,9 @@ import {
   useUpdateGlobalSupplierStatusMutation,
 } from '@/features/suppliers/api/supplier-api';
 import {
+  SupplierArticleImportDialog,
+} from '@/features/suppliers/components/supplier-article-import-dialog';
+import {
   SupplierCatalogImportDialog,
 } from '@/features/suppliers/components/supplier-catalog-import-dialog';
 import {
@@ -72,6 +75,7 @@ function SupplierReferencePage({ canManage }) {
     supplier: null,
   });
   const [importOpen, setImportOpen] = useState(false);
+  const [articleImportOpen, setArticleImportOpen] = useState(false);
 
   const supplierQuery = useListGlobalSuppliersQuery({
     search: search || undefined,
@@ -237,7 +241,7 @@ function SupplierReferencePage({ canManage }) {
     {
       id: 'product',
       header: 'Référence Produit',
-      cell: (article) => article.productVariant?.name ?? '—',
+      cell: (article) => article.productVariant?.name ?? 'Produit à associer',
     },
     {
       id: 'packaging',
@@ -397,6 +401,12 @@ function SupplierReferencePage({ canManage }) {
               >
                 <Plus aria-hidden="true" className="size-4" />
                 Créer un Fournisseur
+              </Button>
+            )}
+            {section === 'articles' && (
+              <Button onClick={() => setArticleImportOpen(true)} type="button" variant="outline">
+                <FileUp aria-hidden="true" className="size-4" />
+                Importer des Articles
               </Button>
             )}
             {section === 'catalogs' && (
@@ -584,6 +594,22 @@ function SupplierReferencePage({ canManage }) {
         }}
         open={supplierDialog.open}
         supplier={supplierDialog.supplier}
+      />
+
+      <SupplierArticleImportDialog
+        mode="global"
+        onClose={() => setArticleImportOpen(false)}
+        onCommitted={(result) => {
+          setArticleImportOpen(false);
+          toast({
+            title: 'Import global des Articles terminé',
+            description: String(result.created) + ' créé(s), '
+              + String(result.updated) + ' actualisé(s).',
+            variant: 'success',
+          });
+        }}
+        open={articleImportOpen}
+        suppliers={activeSuppliers}
       />
 
       <SupplierCatalogImportDialog
