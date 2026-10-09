@@ -164,6 +164,7 @@ function ProductVariantMergeDrawer({
   const [retainedVariantId, setRetainedVariantId] = useState(null);
   const [targetName, setTargetName] = useState('');
   const [preview, setPreview] = useState(null);
+  const [priceResolutions, setPriceResolutions] = useState({});
   const [previewError, setPreviewError] = useState('');
   const [mergeError, setMergeError] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -193,6 +194,7 @@ function ProductVariantMergeDrawer({
     setRetainedVariantId(null);
     setTargetName('');
     setPreview(null);
+    setPriceResolutions({});
     setPreviewError('');
     setMergeError('');
     setConfirmOpen(false);
@@ -210,6 +212,7 @@ function ProductVariantMergeDrawer({
         ? nextCandidate.id
         : null;
 
+    setPriceResolutions({});
     setCandidate(nextCandidate);
     setRetainedVariantId(defaultRetainedId);
     setTargetName(
@@ -238,6 +241,7 @@ function ProductVariantMergeDrawer({
       ? sourceVariant
       : candidate;
 
+    setPriceResolutions({});
     setRetainedVariantId(nextId);
     setTargetName(nextVariant?.name ?? '');
     setPreview(null);
@@ -256,6 +260,7 @@ function ProductVariantMergeDrawer({
         targetName: targetName.trim(),
       }).unwrap();
 
+      setPriceResolutions({});
       setPreview(nextPreview);
       setStep(3);
     } catch (error) {
@@ -277,6 +282,12 @@ function ProductVariantMergeDrawer({
         replacedVariantId: preview.replaced.id,
         targetName: preview.targetName,
         previewFingerprint: preview.previewFingerprint,
+        priceResolutions: Object.entries(priceResolutions).map(([sourcePriceId, decision]) => ({
+          sourcePriceId,
+          action: decision.action,
+          ...(decision.action === 'MANUAL'
+            ? { manualAmount: decision.manualAmount } : {}),
+        })),
       }).unwrap();
 
       setConfirmOpen(false);
@@ -299,6 +310,15 @@ function ProductVariantMergeDrawer({
     && candidate?.status === 'ACTIVE'
   );
   const hasBlockingConflicts = Boolean(preview?.conflicts?.length);
+  const priceArbitrations = preview?.priceArbitrations ?? [];
+  const unresolvedPrices = priceArbitrations.some(({ sourcePriceId }) => {
+    const decision = priceResolutions[sourcePriceId];
+    if (!decision) return true;
+    if (decision.action === 'MANUAL') {
+      return !/^(?:0*[1-9]\\d*(?:\\.\\d{1,6})?|0*\\.\\d{0,5}[1-9]\\d{0,5})$/.test(decision.manualAmount ?? '');
+    }
+    return false;
+  });
 
   return (
     <>
@@ -495,6 +515,7 @@ function ProductVariantMergeDrawer({
                     onChange={(event) => {
                       setTargetName(event.target.value);
                       setPreview(null);
+                      setPriceResolutions({});
                     }}
                     value={targetName}
                   />
@@ -559,6 +580,108 @@ function ProductVariantMergeDrawer({
                   </p>
                 </div>
 
+                {priceArbitrations.length > 0 ? (
+                  <section className="space-y-3">
+                    <h3 className="text-sm font-semibold">
+                      Arbitrer les Prix indicatifs
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Chaque périmètre conserve un seul Prix indicatif actif.
+                      Choisissez le montant à retenir avant de confirmer la fusion.
+                    </p>
+                    {priceArbitrations.map((price) => {
+                      const decision = priceResolutions[price.sourcePriceId];
+                      const scopeName = price.scope.dossierId
+                        ? 'Dossier ' + price.scope.dossierId
+                        : price.scope.workspaceId
+                          ? 'Espace ' + price.scope.workspaceId
+                          : 'Référentiel global';
+                      return (
+                        <fieldset
+                          className="space-y-3 rounded-lg border border-border p-4"
+                          key={price.sourcePriceId}
+                        >
+                          <legend className="px-1 text-sm font-medium">{scopeName}</legend>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <label className="flex cursor-pointer gap-2 rounded-md border p-3">
+                              <input
+                                checked={decision?.action === 'KEEP_RETAINED'}
+                                name={'price-' + price.sourcePriceId}
+                                onChange={() => setPriceResolutions((current) => ({
+                                  ...current,
+                                  [price.sourcePriceId]: { action: 'KEEP_RETAINED' },
+                                }))}
+                                type="radio"
+                              />
+                              <span className="text-sm">
+                                <span className="block font-medium">Prix conservé</span>
+                                {price.retained.amount} {price.retained.currency}
+                                {' / '}{price.retained.unit}
+                              </span>
+                            </label>
+                            <label className="flex cursor-pointer gap-2 rounded-md border p-3">
+                              <input
+                                checked={decision?.action === 'KEEP_REPLACED'}
+                                name={'price-' + price.sourcePriceId}
+                                onChange={() => setPriceResolutions((current) => ({
+                                  ...current,
+                                  [price.sourcePriceId]: { action: 'KEEP_REPLACED' },
+                                }))}
+                                type="radio"
+                              />
+                              <span className="text-sm">
+                                <span className="block font-medium">Prix remplacé</span>
+                                {price.replaced.amount} {price.replaced.currency}
+                                {' / '}{price.replaced.unit}
+                              </span>
+                            </label>
+                          </div>
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              checked={decision?.action === 'MANUAL'}
+                              disabled={price.retained.unit !== price.replaced.unit
+                                || price.retained.currency !== price.replaced.currency}
+                              name={'price-' + price.sourcePriceId}
+                              onChange={() => setPriceResolutions((current) => ({
+                                ...current,
+                                [price.sourcePriceId]: {
+                                  action: 'MANUAL',
+                                  manualAmount: '',
+                                },
+                              }))}
+                              type="radio"
+                            />
+                            Définir un montant manuel
+                          </label>
+                          {decision?.action === 'MANUAL' ? (
+                            <div className="max-w-xs">
+                              <label
+                                className="mb-1 block text-sm font-medium"
+                                htmlFor={'manual-price-' + price.sourcePriceId}
+                              >
+                                Montant ({price.retained.currency} / {price.retained.unit})
+                              </label>
+                              <Input
+                                id={'manual-price-' + price.sourcePriceId}
+                                inputMode="decimal"
+                                onChange={(event) => setPriceResolutions((current) => ({
+                                  ...current,
+                                  [price.sourcePriceId]: {
+                                    action: 'MANUAL',
+                                    manualAmount: event.target.value.replace(',', '.'),
+                                  },
+                                }))}
+                                placeholder="0,00"
+                                value={decision.manualAmount ?? ''}
+                              />
+                            </div>
+                          ) : null}
+                        </fieldset>
+                      );
+                    })}
+                  </section>
+                ) : null}
+
                 <section>
                   <h3 className="text-sm font-semibold">
                     Dépendances concernées
@@ -613,7 +736,7 @@ function ProductVariantMergeDrawer({
                     Modifier la comparaison
                   </Button>
                   <Button
-                    disabled={hasBlockingConflicts}
+                    disabled={hasBlockingConflicts || unresolvedPrices}
                     onClick={() => setConfirmOpen(true)}
                     type="button"
                   >
