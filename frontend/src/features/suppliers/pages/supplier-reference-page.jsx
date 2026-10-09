@@ -154,7 +154,7 @@ function SupplierReferencePage({ canManage }) {
         <div>
           <p className="font-medium">{supplier.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {supplier.legalName || supplier.supplierCode || 'Identité partagée'}
+            {supplier.legalName || supplier.supplierCode || 'Fournisseur du référentiel commun'}
           </p>
         </div>
       ),
@@ -308,6 +308,15 @@ function SupplierReferencePage({ canManage }) {
           {catalog.validTo
             ? new Date(catalog.validTo).toLocaleDateString('fr-FR')
             : 'sans fin'}
+        </span>
+      ),
+    },
+    {
+      id: 'references',
+      header: 'Références',
+      cell: (catalog) => (
+        <span className="tabular-nums">
+          {catalog.lineCount ?? 0}
         </span>
       ),
     },
