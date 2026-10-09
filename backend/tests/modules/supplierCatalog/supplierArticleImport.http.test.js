@@ -85,7 +85,7 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
             .set(auth())
             .attach(
                 'file',
-                Buffer.from('Reference;Designation\\nGLOBAL1;Pain', 'utf8'),
+                Buffer.from('Reference;Designation\nGLOBAL1;Pain', 'utf8'),
                 'articles.csv',
             );
         expect(response.status).toBe(403);
