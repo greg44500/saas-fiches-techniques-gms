@@ -197,7 +197,12 @@ const buildVariantDifferences = ({ retained, replaced }) => {
             normalizedNullable(entry.retainedKey ?? entry.retained)
             !== normalizedNullable(entry.replacedKey ?? entry.replaced)
         ))
-        .map(({ retainedKey, replacedKey, ...entry }) => entry);
+        .map((entry) => {
+            const result = { ...entry };
+            delete result.retainedKey;
+            delete result.replacedKey;
+            return result;
+        });
 };
 
 const priceScopeKey = ({ workspace, dossier }) => (
@@ -701,7 +706,7 @@ const reconcileWorkspaceFavorites = async ({
     }).session(session);
 
     for (const sourceEntry of sourceEntries) {
-        let targetEntry = await WorkspaceProduct.findOne({
+        const targetEntry = await WorkspaceProduct.findOne({
             workspace: sourceEntry.workspace,
             productVariant: targetVariantId,
         }).session(session);
@@ -710,7 +715,7 @@ const reconcileWorkspaceFavorites = async ({
             sourceEntry.status === WORKSPACE_PRODUCT_STATUS.ACTIVE
             && !targetEntry
         ) {
-            [targetEntry] = await WorkspaceProduct.create([
+            await WorkspaceProduct.create([
                 {
                     workspace: sourceEntry.workspace,
                     productVariant: targetVariantId,
