@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { DatePicker } from '@/components/forms/date-picker';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,11 @@ const MAPPING_FIELDS = Object.freeze([
   ['unitCount', 'Nombre d’unités'],
   ['quantityPerUnit', 'Quantité par unité'],
   ['unit', 'Unité'],
+  ['netWeight', 'Poids net'],
+  ['netWeightUnit', 'Unité du poids net'],
+  ['drainedNetWeight', 'Poids net égoutté'],
+  ['drainedNetWeightUnit', 'Unité du poids net égoutté'],
+  ['supplierLabel', 'Libellé fournisseur du conditionnement'],
   ['priceAmount', 'Prix HT'],
   ['priceBasis', 'Unité du prix (Kilo, Pièce, etc.)'],
 ]);
@@ -68,9 +74,29 @@ function autoDetectMapping(headers) {
     brand: find('marque', 'brand'),
     containerType: find('conditionnement', 'contenant', 'colisage'),
     unitCount: findExact('unites', 'nb unites', 'nombre unites'),
-    quantityPerUnit: find('quantite', 'qte'),
+    quantityPerUnit: find(
+      'quantite par unite',
+      'qte par unite',
+      'quantite unite',
+      'qte unite',
+      'grammage',
+    ),
     unit: findExact('unite', 'unit', 'uom'),
-    priceAmount: find('prix', 'tarif', 'price'),
+    netWeight: find('poids net'),
+    netWeightUnit: find('unite poids net', 'unite du poids net'),
+    drainedNetWeight: find(
+      'poids net egoutte',
+      'poids egoutte',
+    ),
+    drainedNetWeightUnit: find(
+      'unite poids net egoutte',
+      'unite poids egoutte',
+    ),
+    supplierLabel: find(
+      'libelle fournisseur',
+      'libelle conditionnement',
+    ),
+    priceAmount: find('prix ht', 'prix', 'tarif', 'price'),
     priceBasis: find('base', 'unite prix', 'prix par'),
   };
 
@@ -91,6 +117,7 @@ function SupplierCatalogImportDialog({
 }) {
   const isGlobal = mode === 'global';
   const cancelRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [inspectResult, setInspectResult] = useState(null);
   const [supplierId, setSupplierId] = useState(NONE);
@@ -298,13 +325,32 @@ function SupplierCatalogImportDialog({
                   </div>
                   <Input
                     accept=".csv,.xls,.xlsx"
+                    className="sr-only"
                     id="supplier-catalog-file"
                     onChange={(event) => {
                       setFile(event.target.files?.[0] ?? null);
                       setError('');
                     }}
+                    ref={fileInputRef}
                     type="file"
                   />
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      type="button"
+                      variant="outline"
+                    >
+                      Choisir un fichier
+                    </Button>
+                    <p
+                      aria-live="polite"
+                      className="text-sm text-muted-foreground"
+                    >
+                      {file
+                        ? 'Fichier choisi : ' + file.name
+                        : 'Pas de fichier pour le moment'}
+                    </p>
+                  </div>
                 </Field>
                 <Button disabled={pending || !file} onClick={inspect} type="button">
                   {pending ? 'Inspection…' : 'Inspecter le fichier'}
@@ -365,13 +411,12 @@ function SupplierCatalogImportDialog({
                     <FieldLabel htmlFor="supplier-catalog-edition-date">
                       Date d’édition
                     </FieldLabel>
-                    <Input
+                    <DatePicker
                       id="supplier-catalog-edition-date"
-                      onChange={(event) => {
-                        setEditionDate(event.target.value);
+                      onChange={(value) => {
+                        setEditionDate(value);
                         setPreview(null);
                       }}
-                      type="date"
                       value={editionDate}
                     />
                   </Field>
@@ -380,13 +425,13 @@ function SupplierCatalogImportDialog({
                     <FieldLabel htmlFor="supplier-catalog-valid-from">
                       Valide à partir du
                     </FieldLabel>
-                    <Input
+                    <DatePicker
                       id="supplier-catalog-valid-from"
-                      onChange={(event) => {
-                        setValidFrom(event.target.value);
+                      max={validTo || undefined}
+                      onChange={(value) => {
+                        setValidFrom(value);
                         setPreview(null);
                       }}
-                      type="date"
                       value={validFrom}
                     />
                   </Field>
@@ -395,13 +440,13 @@ function SupplierCatalogImportDialog({
                     <FieldLabel htmlFor="supplier-catalog-valid-to">
                       Valide jusqu’au
                     </FieldLabel>
-                    <Input
+                    <DatePicker
                       id="supplier-catalog-valid-to"
-                      onChange={(event) => {
-                        setValidTo(event.target.value);
+                      min={validFrom || undefined}
+                      onChange={(value) => {
+                        setValidTo(value);
                         setPreview(null);
                       }}
-                      type="date"
                       value={validTo}
                     />
                   </Field>
