@@ -227,7 +227,7 @@ describe('ProductsPage', () => {
 
     expect(screen.getByRole('button', { name: 'Rechercher' }))
       .toBeDisabled();
-    expect(screen.getByRole('tab', { name: 'Tous les produits' }))
+    expect(screen.getByRole('tab', { name: 'Tous les produits (1)' }))
       .toHaveAttribute('aria-selected', 'true');
 
     await user.type(
@@ -255,14 +255,14 @@ describe('ProductsPage', () => {
       }),
     );
 
-    await user.click(screen.getByRole('tab', { name: 'Favoris' }));
+    await user.click(screen.getByRole('tab', { name: 'Favoris (1)' }));
 
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({
         scope: 'WORKSPACE',
       }),
     );
-    expect(screen.getByRole('tab', { name: 'Favoris' }))
+    expect(screen.getByRole('tab', { name: 'Favoris (1)' }))
       .toHaveAttribute('aria-selected', 'true');
   });
 
@@ -270,14 +270,14 @@ describe('ProductsPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('tab', { name: 'Favoris' }));
-    expect(screen.getByRole('tab', { name: 'Favoris' }))
+    await user.click(screen.getByRole('tab', { name: 'Favoris (1)' }));
+    expect(screen.getByRole('tab', { name: 'Favoris (1)' }))
       .toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('predictive-scope')).toHaveTextContent('REFERENCE');
 
     await user.click(screen.getByRole('button', { name: 'Suggestion Carotte' }));
 
-    expect(screen.getByRole('tab', { name: 'Tous les produits' }))
+    expect(screen.getByRole('tab', { name: 'Tous les produits (1)' }))
       .toHaveAttribute('aria-selected', 'true');
     expect(mocks.searchQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -291,8 +291,9 @@ describe('ProductsPage', () => {
     const user = userEvent.setup();
     renderPage();
 
+    await user.click(screen.getByRole('button', { name: 'Actions pour Carotte' }));
     await user.click(screen.getByRole('button', {
-      name: 'Appliquer un prix indicatif à Carotte',
+      name: 'Appliquer un prix indicatif',
     }));
 
     expect(screen.getByText(/Prix indicatif ouvert · Carotte/))
@@ -309,19 +310,23 @@ describe('ProductsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Importer' }));
     expect(screen.getByText('Import Produits ouvert')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', { name: 'Actions pour Carotte' }));
+    await user.click(screen.getByRole('button', { name: 'Voir le produit' }));
     expect(screen.getByText('Détail Produit ouvert')).toBeInTheDocument();
   });
 
-  it('affiche une action compacte pour retirer une référence précise du catalogue', () => {
+  it('affiche une étoile vide pour retirer des favoris depuis le menu', async () => {
+    const user = userEvent.setup();
     renderPage();
+    await user.click(screen.getByRole('button', { name: 'Actions pour Carotte' }));
 
     expect(screen.getByRole('button', {
-      name: 'Retirer Carotte des favoris',
+      name: 'Retirer des favoris',
     })).toBeInTheDocument();
   });
 
-  it('affiche une action compacte pour ajouter une référence précise au catalogue', () => {
+  it('affiche une étoile pleine pour ajouter aux favoris depuis le menu', async () => {
+    const user = userEvent.setup();
     mocks.searchQuery.mockReturnValue({
       data: {
         results: [{
@@ -337,14 +342,16 @@ describe('ProductsPage', () => {
     });
 
     renderPage();
+    await user.click(screen.getByRole('button', { name: 'Actions pour Carotte' }));
 
     expect(screen.getByRole('button', {
-      name: 'Ajouter Carotte aux favoris',
+      name: 'Ajouter aux favoris',
     })).toBeInTheDocument();
   });
 
 
-  it('masque les actions d’écriture sans permissions ou capabilities M-002', () => {
+  it('masque les actions d’écriture sans permissions ou capabilities M-002', async () => {
+    const user = userEvent.setup();
     mocks.workspaceContext.mockReturnValue({
       workspace: { id: 'workspace-1', name: 'Acme' },
       can: (permission) => permission === PRODUCT_PERMISSION.READ,
@@ -353,17 +360,18 @@ describe('ProductsPage', () => {
 
     renderPage();
 
+    await user.click(screen.getByRole('button', { name: 'Actions pour Carotte' }));
     expect(screen.queryByRole('button', { name: 'Créer un Produit' }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Importer' }))
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', {
-      name: 'Retirer Carotte des favoris',
+      name: 'Retirer des favoris',
     })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', {
-      name: 'Appliquer un prix indicatif à Carotte',
+      name: 'Appliquer un prix indicatif',
     })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Voir Carotte' }))
+    expect(screen.getByRole('button', { name: 'Voir le produit' }))
       .toBeInTheDocument();
   });
 
@@ -377,8 +385,8 @@ describe('ProductsPage', () => {
     renderPage();
 
     expect(screen.getByText('Carotte')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Favoris' })).toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: 'Tous les produits' }))
+    expect(screen.getByRole('tab', { name: 'Favoris (1)' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Tous les produits (1)' }))
       .not.toBeInTheDocument();
   });
 });
