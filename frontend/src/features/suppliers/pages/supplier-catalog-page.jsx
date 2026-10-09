@@ -225,6 +225,7 @@ function SupplierCatalogPage() {
           </PopoverContent>
         </Popover>
       ),
+    },
   ];
 
   return (
