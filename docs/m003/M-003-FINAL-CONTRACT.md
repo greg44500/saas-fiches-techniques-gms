@@ -1365,3 +1365,45 @@ conditionnement ni aucune provenance de marché ne sont inventés dans ce
 corpus historique. En revanche, la maintenance Platform accepte désormais
 un prix `PACKAGE`, son conditionnement plat et sa provenance structurée ; les
 Workspaces les consultent en lecture seule.
+
+---
+
+## Complément validé — import autonome d'une liste d'Articles fournisseur (2026-10-09)
+
+Le flux **Importer des Articles** est distinct du flux **Importer un catalogue**.
+Il doit être accessible depuis l'onglet Articles et, avec l'autorité Application Global,
+depuis le référentiel partagé. Le fournisseur est choisi explicitement, puis l'utilisateur
+importe un CSV/XLS/XLSX, associe les colonnes, prévisualise et confirme.
+
+- **Identité commerciale** : Fournisseur × référence fournisseur normalisée, avec
+  ownership GLOBAL_SHARED ou WORKSPACE_PRIVATE. Une référence absente ne doit jamais être
+  inventée : la ligne est affichée « à résoudre », mais aucun Article n'est créé.
+- **Association à M-002** : un Article peut désormais être ACTIVE avec `productVariant=null`.
+  L'API expose `associationStatus=PENDING` ou `ASSOCIATED`. L'association ultérieure
+  est explicite, sous permission métier, avec validation de la Référence Produit.
+  Un Article non associé n'est pas utilisable pour valoriser une fiche, fixer un prix
+  sur base Produit, ni proposer une alternative d'optimisation.
+- **Réimport** : une référence existante dans la même portée est réutilisée.
+  Si son descriptif ou conditionnement change, les informations Article sont actualisées ;
+  le Produit associé, l'identité fournisseur, les tarifs et la portée ne changent pas.
+  Un Article global visible depuis un Workspace n'est jamais altéré ou recopié lors
+  de cet import. Les Articles archivés nécessitent une réactivation explicite.
+- **Sécurité** : permission ARTICLE_MANAGE et CATALOG_IMPORT en Workspace, capability
+  commerciale d'import existante, autorité Application Global MANAGE au global,
+  contrôle d'accès au Workspace, inspection ClamAV, transactions, verrouillage
+  par référence et index d'unicité MongoDB.
+- **Prévisualisation** : CREATE / UPDATE / UNCHANGED / SHARED / SKIPPED / INVALID.
+  Une référence dupliquée dans le fichier ou un Article archivé bloque la confirmation ;
+  une ligne SKIPPED est signalée mais n'empêche pas les autres lignes valides.
+- **Stockage et audit** : sessions temporaires TTL 30 minutes ; pas de stockage
+  commercial de fichier ; événement métier durable pour chaque import confirmé,
+  contenant les identifiants des Articles créés et actualisés.
+- **Frontière commerciale** : ne crée ni édition de catalogue, ni ligne de catalogue,
+  ni Tarif fournisseur, ni Prix négocié ou Prix facturé. L'import catalogue historique
+  reste inchangé.
+
+Ce complément autorise les adaptations strictement nécessaires des modèles et services
+M-003/M-004/M-005 ; il n'introduit aucun changement Core. L'annulation d'import et la
+suppression contrôlée d'une édition commerciale sont un besoin distinct à finaliser,
+avec vérification de toutes les dépendances économiques, sans effacer implicitement
+les données déjà utilisées dans d'autres Dossiers ou éditions.

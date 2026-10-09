@@ -778,3 +778,16 @@ source / méthode de calibration validée
 
 Cette dette ne bloque pas M-002 : une Référence sans Prix repère reste
 exploitable et M-004 applique alors la chaîne de résolution des prix existante.
+
+---
+
+### Complément M-003 — annulation contrôlée et historique des imports (2026-10-09)
+
+**État : à cadrer / non implémenté pour le flux catalogue.** L'utilisateur doit pouvoir
+supprimer un catalogue importé par erreur et, quand aucune dépendance économique ne
+l'interdit, retirer uniquement les Articles créés exclusivement par cet import.
+La suppression ne doit pas effacer des Articles préexistants, partagés,
+réemployés par une autre édition, ni les prix ou snapshots historiques des Dossiers.
+Les événements d'import d'Articles conservent les identifiants utiles au futur
+rapprochement, mais ne sont pas à eux seuls une implémentation d'annulation.
+Ne pas présenter l'archivage actuel comme une suppression.

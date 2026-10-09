@@ -382,3 +382,19 @@ Les ingrédients reçoivent des teintes distinctes depuis l'ordre de la baseline
 
 - M-005 : la comparaison visuelle des quantités utilise désormais une valeur d'origine barrée et une valeur simulée contiguë, sans flèche ; E2E contrôle explicitement ces deux états et le rechargement non persistant.
 - M-003 : l'inspection CSV nécessite toujours un vrai verdict ClamAV CLEAN. Le 503 FILE_INSPECTION_FAILED en environnement Windows signale un moteur indisponible ou en échec. Le runner E2E accepte `CLAMAV_BINARY_PATH` depuis l'environnement utilisateur (défaut `clamscan`). Aucun mock ni bypass antivirus n'est autorisé. Vérifier également les signatures locales ClamAV avant une nouvelle exécution E2E.
+
+---
+
+## Complément M-003 en cours — 2026-10-09
+
+Branche unique : `feature/m003-catalog-management-and-import-ux`.
+Lot « Importer une liste d'Articles fournisseur » implémenté côté modèle,
+API, frontend Workspace/global et tests ajoutés. Fonctionnalité non validée
+tant que le responsable produit n'a pas exécuté les tests locaux et la QA visuelle.
+
+Invariants : fournisseur et référence normalisée ; produit M-002 facultatif
+au stade import et obligatoire à l'usage économique ; déduplication au réimport ;
+aucune édition Catalogue ou tarif créé par le flux Articles ; séparation stricte
+GLOBAL_SHARED / WORKSPACE_PRIVATE. Tests à mener avec ClamAV fonctionnel et base
+de test dédiée, migration M-003 des nouveaux indexes à exécuter sur l'environnement
+de développement. Ne pas ouvrir de PR ni merger avant validation utilisateur.

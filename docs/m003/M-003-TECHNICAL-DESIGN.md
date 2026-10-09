@@ -409,3 +409,29 @@ Dans le drawer Produit :
 - retirer un favori reste une action M-002 et ne supprime aucune donnée commerciale M-003.
 
 Dans la liste Fournisseurs, les catégories Produit commercialisées sont projetées dans une colonne dédiée. Aucun « univers commercial » n'est déduit automatiquement des catégories M-002 : une éventuelle taxonomie de spécialités fournisseur devra être cadrée séparément avant ajout au modèle.
+
+---
+
+## Complément technique M-003 — import direct Articles (2026-10-09)
+
+- `SupplierArticle.productVariant` accepte `null` pour le statut métier PENDING.
+  L'identité et les index uniques Fournisseur / Référence / portée restent identiques.
+- `SupplierArticleImportSession` est un staging séparé de
+  `SupplierCatalogImportSession` ; même inspection sécurisée, même parseur et
+  normalisation des lignes, sans dépendance à une édition commerciale.
+- Endpoints Workspace :
+  `POST /workspaces/:workspaceId/supplier-articles/imports/inspect`,
+  `POST /workspaces/:workspaceId/supplier-articles/imports/:importId/preview`,
+  `POST /workspaces/:workspaceId/supplier-articles/imports/:importId/commit`.
+- Endpoints globaux : mêmes suffixes sous `/supplier-reference/articles/imports`.
+- Transaction de confirmation idempotente via statut PREVIEWED → COMMITTING → COMMITTED,
+  verrou de commerce et vérification à nouveau des références sous transaction.
+  La session est actor-scoped et la portée Workspace/global est vérifiée à chaque étape.
+- Les accès pricing et fiches conservent la condition ProductVariant ACTIVE et
+  interdisent un Article non associé. Une association explicite reste possible via
+  `PATCH /workspaces/:workspaceId/supplier-articles/:articleId` ou l'API globale.
+- Nouvelle paire d'index de sessions `supplier_article_import_session_ttl` et
+  `supplier_article_import_scope_actor_status`, incluse dans la migration M-003.
+
+Le pilote ne procède à aucune suppression de catalogue, aucun changement d'Article
+global depuis un Workspace et aucune modification du Core.

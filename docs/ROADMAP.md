@@ -627,3 +627,15 @@ M-005 fournit un Atelier d'optimisation économique, des simulations MANUAL/AUTO
 **Preuves et réserves :** la fusion est vérifiée. Le résultat de la Core Gate post-merge n'a pas été établi par les données accessibles lors de cette révision documentaire ; il reste à contrôler. Aucun bilan « tous les tests verts » n'est déduit de la seule fusion. Ne pas rouvrir M-005 sans anomalie démontrée.
 
 **Prochaine priorité : compléter M-004 (diffusion V1) par l'impression et l'envoi par e-mail.** Selon le retour fonctionnel du responsable produit du 2026-10-08, les exports CSV, XLSX et PDF sont déjà réalisés ; cette information reste à rapprocher du code et des tests avant toute nouvelle implémentation. Ne pas redévelopper ces trois formats sans défaut prouvé. Auditer les mécanismes existants (API, services, UI, stockage, permissions, capabilities, quotas, tests) pour cadrer uniquement les deux parcours manquants : impression et diffusion par e-mail. Il s'agit d'un lot complémentaire du domaine M-004, pas d'un nouveau module métier numéroté par défaut. Ce lot doit être validé avant développement. Les Fiches process constituent le chantier métier candidat suivant, à cadrer séparément.
+
+---
+
+## Complément M-003 — import liste d'Articles (2026-10-09)
+
+Le lot courant ajoute un parcours indépendant « Importer des Articles » dans
+le référentiel Workspace et partagé, réutilisant l'inspection CSV/XLS/XLSX.
+L'association à la Référence Produit peut être différée ; les fonctionnalités
+économiques restent inaccessibles tant que l'Article n'est pas associé.
+Ce complément est **en attente de tests et de QA locale**. La suppression
+contrôlée d'éditions Catalogue est recensée en dette M-003 et ne fait pas
+partie des modifications de l'import d'Articles de ce passage.
