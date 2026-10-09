@@ -324,6 +324,7 @@ function ProductVariantMergeDrawer({
                 {candidatesQuery.isError ? (
                   <ErrorState
                     description="Impossible de rechercher les Références admissibles."
+                    title="Recherche indisponible"
                   />
                 ) : null}
 

@@ -110,6 +110,11 @@ vi.mock('@/features/products/components/product-reference-edit-dialog', () => ({
 vi.mock('@/features/products/components/product-reference-variant-edit-dialog', () => ({
   ProductReferenceVariantEditDialog: () => null,
 }));
+vi.mock('@/features/products/components/product-variant-merge-drawer', () => ({
+  ProductVariantMergeDrawer: ({ open, sourceVariant }) => (
+    open ? <div>Fusion ouverte · {sourceVariant?.name}</div> : null
+  ),
+}));
 vi.mock('@/features/products/components/product-variant-create-dialog', () => ({
   ProductVariantCreateDialog: () => null,
 }));
@@ -509,6 +514,44 @@ describe('ProductReferenceDetailsDrawer', () => {
       .toBeInTheDocument();
   });
 
+  it('masque les codes techniques de provenance des Prix repères', async () => {
+    const user = userEvent.setup();
+    mocks.globalPrices.mockReturnValue(queryResult([{
+      id: 'global-price-technical',
+      workspaceId: null,
+      dossierId: null,
+      productVariant: {
+        id: 'variant-1',
+        name: 'Abricot frais',
+        referenceUnit: 'KG',
+      },
+      sourceAmount: '3.25',
+      sourceBasis: 'KG',
+      normalizedAmount: '3.25',
+      normalizedUnit: 'KG',
+      currency: 'EUR',
+      source:
+        'Référentiel de démonstration — prix repère global — '
+        + 'corpus professionnel v7 — octobre 2026 · '
+        + 'm003-global-indicative-v3',
+      sourceOrganization: null,
+      observedAt: '2026-10-01T00:00:00.000Z',
+      packaging: null,
+      updatedAt: '2026-10-03T10:00:00.000Z',
+      status: 'ACTIVE',
+    }]));
+
+    renderDrawer();
+    await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
+
+    expect(screen.getByText(/Source : Référentiel de démonstration/))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/m003-global-indicative-v3/))
+      .not.toBeInTheDocument();
+    expect(screen.queryByText(/corpus professionnel v7/))
+      .not.toBeInTheDocument();
+  });
+
   it('masque la maintenance du Prix repère sans droit de gestion', async () => {
     const user = userEvent.setup();
     renderDrawer({ canManage: false });
@@ -547,8 +590,17 @@ describe('ProductReferenceDetailsDrawer', () => {
     await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
 
     expect(screen.getByRole('button', {
+      name: 'Fusionner la référence Abricot frais',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
       name: 'Corriger la référence Abricot frais',
     })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Fusionner la référence Abricot frais',
+    }));
+    expect(screen.getByText('Fusion ouverte · Abricot frais'))
+      .toBeInTheDocument();
     expect(screen.getByRole('button', {
       name: 'Archiver la référence Abricot frais',
     })).toBeInTheDocument();

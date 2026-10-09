@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  formatIndicativePriceSource,
   formatPackaging,
   formatPrice,
   formatSourcePrice,
@@ -31,6 +32,22 @@ describe('supplier presentation', () => {
       normalizedUnit: 'UNIT',
       productVariant: variant,
     }, { hideDefaultCurrency: true })).toBe('0,500 / tranche');
+  });
+
+  it('masque la provenance technique tout en conservant une source métier lisible', () => {
+    expect(formatIndicativePriceSource({
+      source:
+        'Référentiel de démonstration — prix repère global — '
+        + 'corpus professionnel v7 — octobre 2026 · '
+        + 'm003-global-indicative-v3',
+    })).toBe('Référentiel de démonstration');
+
+    expect(formatIndicativePriceSource({
+      source: 'Fallback interne',
+      sourceOrganization: 'Mercuriale fournisseur',
+    })).toBe('Mercuriale fournisseur');
+
+    expect(formatIndicativePriceSource({ source: null })).toBeNull();
   });
 
   it('distingue le prix source du conditionnement et son prix normalisé', () => {
