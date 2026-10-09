@@ -464,8 +464,8 @@ function ProductVariantMergeDrawer({
                   />
                 </div>
 
-                <fieldset className="space-y-2">
-                  <legend className="text-sm font-medium">
+                <fieldset className="grid gap-2 sm:grid-cols-2">
+                  <legend className="mb-2 text-sm font-medium">
                     Référence à conserver
                   </legend>
                   <label className="flex cursor-pointer gap-3 rounded-lg border border-border p-3">
@@ -481,9 +481,9 @@ function ProductVariantMergeDrawer({
                         {sourceVariant.name}
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {canChooseSourceAsRetained
-                          ? 'Conserver cet identifiant.'
-                          : 'Cette Référence provisoire ne peut pas être conservée.'}
+                        {!canChooseSourceAsRetained
+                          ? 'Cette Référence provisoire ne peut pas être conservée.'
+                          : null}
                       </span>
                     </span>
                   </label>
@@ -498,18 +498,24 @@ function ProductVariantMergeDrawer({
                     <span>
                       <span className="block font-medium">{candidate.name}</span>
                       <span className="text-sm text-muted-foreground">
-                        {canChooseCandidateAsRetained
-                          ? 'Conserver cet identifiant.'
-                          : 'Cette Référence provisoire ne peut pas être conservée.'}
+                        {!canChooseCandidateAsRetained
+                          ? 'Cette Référence provisoire ne peut pas être conservée.'
+                          : null}
                       </span>
                     </span>
                   </label>
                 </fieldset>
 
                 <div>
-                  <label className="text-sm font-medium" htmlFor="merge-target-name">
-                    Nom après fusion
-                  </label>
+                  <div className="flex items-center gap-1">
+                    <label className="text-sm font-medium" htmlFor="merge-target-name">
+                      Nom après fusion
+                    </label>
+                    <InfoHint label="Informations sur le nom après fusion">
+                      Les autres caractéristiques métier restent celles de la
+                      Référence explicitement conservée.
+                    </InfoHint>
+                  </div>
                   <Input
                     id="merge-target-name"
                     maxLength={160}
@@ -520,10 +526,6 @@ function ProductVariantMergeDrawer({
                     }}
                     value={targetName}
                   />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Les autres caractéristiques métier restent celles de la
-                    Référence explicitement conservée.
-                  </p>
                 </div>
 
                 {previewError ? (
