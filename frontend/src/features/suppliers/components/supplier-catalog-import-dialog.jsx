@@ -104,7 +104,10 @@ function autoDetectMapping(headers) {
       'libelle fournisseur',
       'libelle conditionnement',
     ),
-    priceAmount: find('prix ht', 'prix', 'tarif', 'price'),
+    priceAmount: findWithout(
+      ['unite du prix', 'unite prix', 'prix par', 'base prix'],
+      'prix ht', 'prix', 'tarif', 'price',
+    ),
     priceBasis: find('base', 'unite prix', 'prix par'),
   };
 
