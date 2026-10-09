@@ -986,8 +986,8 @@ const mergeProductVariants = async ({
     await createProductReferenceEvent({
         actorId,
         action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_MERGED,
-        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
-        entityId: retained._id,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT,
+        entityId: productId,
         metadata: {
             productId: productId.toString(),
             retainedVariantId: retained._id.toString(),

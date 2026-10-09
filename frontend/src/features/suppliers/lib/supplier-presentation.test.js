@@ -48,6 +48,9 @@ describe('supplier presentation', () => {
     })).toBe('Mercuriale fournisseur');
 
     expect(formatIndicativePriceSource({ source: null })).toBeNull();
+    expect(formatIndicativePriceSource({
+      source: 'm003-global-indicative-v3',
+    })).toBeNull();
   });
 
   it('distingue le prix source du conditionnement et son prix normalisé', () => {

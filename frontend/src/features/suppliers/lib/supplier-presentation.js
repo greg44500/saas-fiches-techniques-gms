@@ -187,7 +187,7 @@ function formatIndicativePriceSource(price) {
       pattern.test(part)
     )));
 
-  return readableParts[0] ?? rawSource;
+  return readableParts[0] ?? null;
 }
 
 function getMatchStatusLabel(status) {

@@ -132,7 +132,7 @@ describe('M-002 fusion contrôlée des Références Produit', () => {
             ProductVariant.findById(pair.replaced.id).lean(),
             ProductReferenceEvent.findOne({
                 action: 'VARIANT_MERGED',
-                entityId: pair.retained._id,
+                entityId: pair.product._id,
             }).lean(),
         ]);
 
