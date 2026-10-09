@@ -54,14 +54,19 @@ describe('SupplierCatalogImportDialog', () => {
     vi.clearAllMocks();
   });
 
-  it('distingue la colonne nombre d unités de la colonne unité', () => {
+  it('distingue les unités, poids et poids égouttés du mapping', () => {
     expect(autoDetectMapping([
       'Reference',
       'Designation',
       'Unites',
-      'Quantite',
+      'Quantite par unite',
       'Unite',
-      'Prix',
+      'Poids net egoutte',
+      'Unite poids net egoutte',
+      'Poids net',
+      'Unite poids net',
+      'Libelle fournisseur',
+      'Prix HT',
       'Base',
       'Devise',
     ])).toEqual({
@@ -70,8 +75,13 @@ describe('SupplierCatalogImportDialog', () => {
       unitCount: 2,
       quantityPerUnit: 3,
       unit: 4,
-      priceAmount: 5,
-      priceBasis: 6,
+      drainedNetWeight: 5,
+      drainedNetWeightUnit: 6,
+      netWeight: 7,
+      netWeightUnit: 8,
+      supplierLabel: 9,
+      priceAmount: 10,
+      priceBasis: 11,
     });
   });
 
@@ -121,6 +131,13 @@ describe('SupplierCatalogImportDialog', () => {
       />,
     );
 
+    expect(
+      screen.getByRole('button', { name: 'Choisir un fichier' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Pas de fichier pour le moment'),
+    ).toBeInTheDocument();
+
     const file = new File(
       ['Reference;Designation;Prix;Base\nREF-001;Carotte;1.2;KG'],
       'catalogue.csv',
@@ -131,6 +148,10 @@ describe('SupplierCatalogImportDialog', () => {
       screen.getByLabelText('Fichier'),
       file,
     );
+
+    expect(
+      screen.getByText('Fichier choisi : catalogue.csv'),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
         name: 'Inspecter le fichier',
@@ -147,8 +168,23 @@ describe('SupplierCatalogImportDialog', () => {
 
     await user.type(
       screen.getByLabelText('Édition'),
-      'Septembre 2026',
+      'Octobre 2026',
     );
+    await user.type(
+      screen.getByLabelText('Date d’édition'),
+      '09/10/2026',
+    );
+    await user.tab();
+    await user.type(
+      screen.getByLabelText('Valide à partir du'),
+      '01/10/2026',
+    );
+    await user.tab();
+    await user.type(
+      screen.getByLabelText('Valide jusqu’au'),
+      '31/10/2026',
+    );
+    await user.tab();
 
     await user.click(
       screen.getByRole('button', {
@@ -172,7 +208,10 @@ describe('SupplierCatalogImportDialog', () => {
         importId: 'import-1',
         supplierId: 'supplier-1',
         edition: expect.objectContaining({
-          name: 'Septembre 2026',
+          name: 'Octobre 2026',
+          editionDate: '2026-10-09',
+          validFrom: '2026-10-01',
+          validTo: '2026-10-31',
         }),
         mapping: expect.objectContaining({
           supplierReference: 0,
