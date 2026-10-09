@@ -497,7 +497,10 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     expect(screen.getByText(/Prix repère global : 3,250 \/ kg/))
       .toBeInTheDocument();
-    expect(screen.getByText(/Relevé : 3,25 € \/ Carton/))
+    const priceDetails = screen.getByRole('button', { name: 'Détails du prix' });
+    expect(priceDetails).toBeInTheDocument();
+    await user.hover(priceDetails);
+    expect(await screen.findByText(/Relevé : 3,25 € \/ Carton/))
       .toBeInTheDocument();
     expect(screen.getByText(/Carton de 4 poches de 1 kg/))
       .toBeInTheDocument();
