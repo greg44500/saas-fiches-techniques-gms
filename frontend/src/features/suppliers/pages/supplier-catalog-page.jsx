@@ -26,7 +26,6 @@ import {
 } from '@/features/suppliers/api/supplier-api';
 import {
   formatPackaging,
-  getMatchStatusLabel,
   getSupplierStatusLabel,
   getSupplierStatusTone,
 } from '@/features/suppliers/lib/supplier-presentation';
@@ -62,6 +61,17 @@ function formatCatalogLinePrice(sourcePrice, packaging) {
     + (sourcePrice.currency ?? 'EUR')
     + ' / '
     + (basisLabels[sourcePrice.basis] ?? sourcePrice.basis ?? '—');
+}
+
+function getAssociationLabel(status) {
+  const labels = {
+    MATCHED: 'Associé',
+    UNMATCHED: 'À associer',
+    AMBIGUOUS: 'À vérifier',
+    IGNORED: 'Ignoré',
+  };
+
+  return labels[status] ?? 'Non renseigné';
 }
 
 function getMatchStatusTone(status) {
@@ -179,7 +189,7 @@ function SupplierCatalogPage() {
       header: 'Association produit',
       cell: (line) => (
         <StatusBadge tone={getMatchStatusTone(line.matchStatus)}>
-          {getMatchStatusLabel(line.matchStatus)}
+          {getAssociationLabel(line.matchStatus)}
         </StatusBadge>
       ),
     },
@@ -333,9 +343,9 @@ function SupplierCatalogPage() {
                 <Select
                   items={[
                     { value: ALL_MATCH_STATUSES, label: 'Tous' },
-                    { value: 'MATCHED', label: 'Rapprochés' },
-                    { value: 'UNMATCHED', label: 'Non rapprochés' },
-                    { value: 'AMBIGUOUS', label: 'Ambigus' },
+                    { value: 'MATCHED', label: 'Associés' },
+                    { value: 'UNMATCHED', label: 'À associer' },
+                    { value: 'AMBIGUOUS', label: 'À vérifier' },
                     { value: 'IGNORED', label: 'Ignorés' },
                   ]}
                   onValueChange={(value) => {
