@@ -327,6 +327,15 @@ const assertMergeableVariantState = ({ retained, replaced }) => {
     }
 };
 
+/** MongoDB sessions must not execute concurrent commands inside a transaction. */
+const runMongoOperationsSequentially = async (operations) => {
+    const results = [];
+    for (const operation of operations) {
+        results.push(await operation());
+    }
+    return results;
+};
+
 const collectMergePlan = async ({
     productId,
     retainedVariantId,
@@ -334,21 +343,21 @@ const collectMergePlan = async ({
     targetName = null,
     session = null,
 }) => {
-    const [product, retained, replaced] = await Promise.all([
-        CanonicalProduct.findOne({
+    const [product, retained, replaced] = await runMongoOperationsSequentially([
+        () => (CanonicalProduct.findOne({
             _id: productId,
             identityActive: true,
-        }).session(session),
-        loadVariant({
+        }).session(session)),
+        () => (loadVariant({
             productId,
             variantId: retainedVariantId,
             session,
-        }),
-        loadVariant({
+        })),
+        () => (loadVariant({
             productId,
             variantId: replacedVariantId,
             session,
-        }),
+        })),
     ]);
 
     if (!product) {
@@ -443,52 +452,52 @@ const collectMergePlan = async ({
         drafts,
         validations,
         pendingContributions,
-    ] = await Promise.all([
-        SupplierArticle.find({
+    ] = await runMongoOperationsSequentially([
+        () => (SupplierArticle.find({
             productVariant: replaced._id,
         })
             .select('_id updatedAt')
             .lean()
-            .session(session),
-        SupplierCatalogLine.find({
+            .session(session)),
+        () => (SupplierCatalogLine.find({
             productVariant: replaced._id,
         })
             .select('_id updatedAt')
             .lean()
-            .session(session),
-        WorkspaceProduct.find({
+            .session(session)),
+        () => (WorkspaceProduct.find({
             productVariant: replaced._id,
         })
             .select('_id workspace status updatedAt')
             .lean()
-            .session(session),
-        IndicativePrice.find({
+            .session(session)),
+        () => (IndicativePrice.find({
             productVariant: replaced._id,
             status: INDICATIVE_PRICE_STATUS.ACTIVE,
         })
             .select('_id workspace dossier status')
             .lean()
-            .session(session),
-        IndicativePrice.find({
+            .session(session)),
+        () => (IndicativePrice.find({
             productVariant: retained._id,
             status: INDICATIVE_PRICE_STATUS.ACTIVE,
         })
             .select('_id workspace dossier status')
             .lean()
-            .session(session),
-        TechnicalSheetDraft.find({
+            .session(session)),
+        () => (TechnicalSheetDraft.find({
             'lines.productVariant': replaced._id,
         })
             .select('_id revision updatedAt lines.productVariant')
             .lean()
-            .session(session),
-        TechnicalSheetValidation.find({
+            .session(session)),
+        () => (TechnicalSheetValidation.find({
             'linesSnapshot.productVariantId': replaced._id,
         })
             .select('_id')
             .lean()
-            .session(session),
-        ReferenceContribution.find({
+            .session(session)),
+        () => (ReferenceContribution.find({
             status: PRODUCT_CONTRIBUTION_STATUS.PENDING_REVIEW,
             provisionalEntityType:
                 PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
@@ -496,7 +505,7 @@ const collectMergePlan = async ({
         })
             .select('_id updatedAt')
             .lean()
-            .session(session),
+            .session(session)),
     ]);
 
     const targetPriceScopes = new Set(
@@ -655,18 +664,18 @@ const assertNoActiveIndicativePriceCollision = async ({
     targetVariantId,
     session,
 }) => {
-    const [sourcePrices, targetPrices] = await Promise.all([
-        IndicativePrice.find({
+    const [sourcePrices, targetPrices] = await runMongoOperationsSequentially([
+        () => (IndicativePrice.find({
             productVariant: sourceVariantId,
             status: INDICATIVE_PRICE_STATUS.ACTIVE,
-        }).session(session),
-        IndicativePrice.find({
+        }).session(session)),
+        () => (IndicativePrice.find({
             productVariant: targetVariantId,
             status: INDICATIVE_PRICE_STATUS.ACTIVE,
         })
             .select('_id workspace dossier')
             .lean()
-            .session(session),
+            .session(session)),
     ]);
 
     const targetScopes = new Set(targetPrices.map(priceScopeKey));
@@ -832,8 +841,8 @@ const reconcileProductVariantDependencies = async ({
         session,
     });
 
-    const [supplierArticles, catalogLines, drafts] = await Promise.all([
-        SupplierArticle.updateMany(
+    const [supplierArticles, catalogLines, drafts] = await runMongoOperationsSequentially([
+        () => (SupplierArticle.updateMany(
             { productVariant: sourceVariantId },
             {
                 $set: {
@@ -842,8 +851,8 @@ const reconcileProductVariantDependencies = async ({
                 },
             },
             { session },
-        ),
-        SupplierCatalogLine.updateMany(
+        )),
+        () => (SupplierCatalogLine.updateMany(
             { productVariant: sourceVariantId },
             {
                 $set: {
@@ -852,13 +861,13 @@ const reconcileProductVariantDependencies = async ({
                 },
             },
             { session },
-        ),
-        invalidateAffectedDrafts({
+        )),
+        () => (invalidateAffectedDrafts({
             sourceVariantId,
             targetVariantId,
             actorId,
             session,
-        }),
+        })),
     ]);
 
     return {
