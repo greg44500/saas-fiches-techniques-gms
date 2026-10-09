@@ -265,15 +265,11 @@ function SupplierCatalogPage() {
         />
       ) : (
         <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground">Fournisseur</p>
-              <p className="mt-1 text-sm font-medium">
-                {catalog?.supplierName ?? 'Non disponible'}
-              </p>
-
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
+          <section
+            aria-label="Informations du catalogue"
+            className="flex flex-wrap gap-x-8 gap-y-3 rounded-xl border border-border bg-card px-4 py-3"
+          >
+            <div>
               <p className="text-xs text-muted-foreground">Date d’édition</p>
               <p className="mt-1 text-sm font-medium">
                 {catalog?.editionDate
@@ -283,7 +279,7 @@ function SupplierCatalogPage() {
                     : 'Non renseignée'}
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4">
+            <div>
               <p className="text-xs text-muted-foreground">Période</p>
               <p className="mt-1 text-sm font-medium">
                 {catalog?.validFrom && catalog?.validTo
@@ -291,22 +287,22 @@ function SupplierCatalogPage() {
                   : catalog?.validFrom
                     ? 'Depuis le ' + formatDate(catalog.validFrom)
                     : catalog?.validTo
-                      ? "Jusqu’au " + formatDate(catalog.validTo)
+                      ? 'Jusqu’au ' + formatDate(catalog.validTo)
                       : 'Non renseignée'}
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground">Références</p>
+            <div>
+              <p className="text-xs text-muted-foreground">Lignes du catalogue</p>
               <p className="mt-1 text-sm font-medium tabular-nums">
                 {totalReferences}
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground">Provenance</p>
-              <p className="mt-1 text-sm font-medium">
-                {catalog?.source || 'Non renseignée'}
-              </p>
-            </div>
+            {catalog?.source && (
+              <div>
+                <p className="text-xs text-muted-foreground">Provenance</p>
+                <p className="mt-1 text-sm font-medium">{catalog.source}</p>
+              </div>
+            )}
           </section>
 
           <section className="rounded-xl border border-border bg-card">
