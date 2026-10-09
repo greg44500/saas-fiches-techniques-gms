@@ -1,6 +1,6 @@
 import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import {
@@ -75,6 +75,7 @@ function SuppliersPage() {
     workspace,
   } = useWorkspaceContext();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     page,
@@ -101,8 +102,9 @@ function SuppliersPage() {
 
     return 'suppliers';
   });
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  const initialSearch = searchParams.get('search') ?? '';
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [search, setSearch] = useState(initialSearch);
   const [status, setStatus] = useState(
     section === 'suppliers' ? ALL_SUPPLIER_STATUSES : 'ACTIVE',
   );
@@ -445,6 +447,15 @@ function SuppliersPage() {
       ),
     },
     {
+      id: 'references',
+      header: 'Références',
+      cell: (catalog) => (
+        <span className="tabular-nums">
+          {catalog.lineCount ?? 0}
+        </span>
+      ),
+    },
+    {
       id: 'source',
       header: 'Provenance',
       cell: (catalog) => catalog.source || 'Non renseignée',
@@ -462,9 +473,21 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (catalog) => (
-        catalog.scope === 'WORKSPACE_PRIVATE'
-        && can(SUPPLIER_PERMISSION.CATALOG_MANAGE) ? (
-          <DataTableActions>
+        <DataTableActions>
+          <ActionIconButton
+            Icon={Eye}
+            label={'Voir ' + catalog.name}
+            onClick={() => navigate(
+              '/workspaces/'
+              + workspace.id
+              + '/suppliers/catalogs/'
+              + catalog.id,
+            )}
+            tooltipLabel="Voir"
+            variant="outline"
+          />
+          {catalog.scope === 'WORKSPACE_PRIVATE'
+            && can(SUPPLIER_PERMISSION.CATALOG_MANAGE) && (
             <ActionIconButton
               Icon={catalog.status === 'ACTIVE' ? Archive : RotateCcw}
               disabled={catalogStatusState.isLoading}
@@ -478,8 +501,8 @@ function SuppliersPage() {
               }
               variant="outline"
             />
-          </DataTableActions>
-        ) : null
+          )}
+        </DataTableActions>
       ),
     },
   ];
@@ -718,6 +741,18 @@ function SuppliersPage() {
             open: false,
           }));
           setSupplierDialog({ open: true, supplier });
+        }}
+        onViewCatalog={(catalog) => {
+          setSupplierDetails((current) => ({
+            ...current,
+            open: false,
+          }));
+          navigate(
+            '/workspaces/'
+            + workspace.id
+            + '/suppliers/catalogs/'
+            + catalog.id,
+          );
         }}
         open={supplierDetails.open}
         supplier={supplierDetails.supplier}
