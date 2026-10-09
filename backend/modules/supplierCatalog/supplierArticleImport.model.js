@@ -26,5 +26,9 @@ articleImportSessionSchema.index(
     { expiresAt: 1 },
     { name: 'supplier_article_import_session_ttl', expireAfterSeconds: 0 },
 );
+articleImportSessionSchema.index(
+    { scope: 1, workspace: 1, actor: 1, status: 1, createdAt: -1 },
+    { name: 'supplier_article_import_scope_actor_status' },
+);
 const SupplierArticleImportSession = model('SupplierArticleImportSession', articleImportSessionSchema);
 export { SupplierArticleImportSession };

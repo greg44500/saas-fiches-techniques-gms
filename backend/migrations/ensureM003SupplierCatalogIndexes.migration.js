@@ -2,6 +2,7 @@ import {
     Supplier,
     SupplierArticle,
 } from '../modules/supplierCatalog/supplier.model.js';
+import { SupplierArticleImportSession } from '../modules/supplierCatalog/supplierArticleImport.model.js';
 import {
     SupplierCatalogEvent,
 } from '../modules/supplierCatalog/supplierCatalogEvent.model.js';
@@ -41,6 +42,8 @@ const M003_INDEX_NAMES = Object.freeze([
     'dossier_supplier_reference_unique',
     'dossier_supplier_reference_status',
     'workspace_supplier_pricing_policy_unique',
+    'supplier_article_import_session_ttl',
+    'supplier_article_import_scope_actor_status',
     'supplier_catalog_import_session_ttl',
     'supplier_catalog_import_scope_workspace_actor_created_at',
     'supplier_commerce_lock_key_unique',
@@ -61,6 +64,7 @@ const M003_MODELS = Object.freeze([
     DossierSupplierReference,
     WorkspaceSupplierPricingPolicy,
     SupplierCatalogImportSession,
+    SupplierArticleImportSession,
     SupplierCommerceLock,
     SupplierCatalogEvent,
 ]);

@@ -414,7 +414,7 @@ const resolvePricingContext = async ({
 
         if (
             productVariantId
-            && article.productVariant._id.toString()
+            && article.productVariant?._id?.toString()
                 !== productVariantId.toString()
         ) {
             throw new AppError(
