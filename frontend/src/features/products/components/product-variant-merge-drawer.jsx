@@ -324,7 +324,7 @@ function ProductVariantMergeDrawer({
     <>
       <Sheet onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
         <SheetContent
-          className="w-[min(96vw,56rem)] max-w-none overflow-y-auto"
+          className="w-[min(96vw,44rem)] max-w-none overflow-y-auto"
           side="right"
         >
           <SheetHeader className="border-b border-border pr-14">
@@ -361,12 +361,18 @@ function ProductVariantMergeDrawer({
                 </div>
 
                 <div>
-                  <label
-                    className="text-sm font-medium"
-                    htmlFor="variant-merge-search"
-                  >
-                    Rechercher la seconde Référence
-                  </label>
+                  <div className="flex items-center gap-1">
+                    <label
+                      className="text-sm font-medium"
+                      htmlFor="variant-merge-search"
+                    >
+                      Rechercher la seconde Référence
+                    </label>
+                    <InfoHint label="Informations sur la recherche">
+                      La recherche interroge le serveur et ne dépend pas de la
+                      pagination de la liste courante.
+                    </InfoHint>
+                  </div>
                   <div className="relative mt-2">
                     <Search
                       aria-hidden="true"
@@ -379,12 +385,6 @@ function ProductVariantMergeDrawer({
                       placeholder="Nom, variété ou caractéristique"
                       value={search}
                     />
-                  </div>
-                  <div className="mt-1">
-                    <InfoHint label="Informations sur la recherche">
-                      La recherche interroge le serveur et ne dépend pas de la
-                      pagination de la liste courante.
-                    </InfoHint>
                   </div>
                 </div>
 
@@ -582,13 +582,15 @@ function ProductVariantMergeDrawer({
 
                 {priceArbitrations.length > 0 ? (
                   <section className="space-y-3">
-                    <h3 className="text-sm font-semibold">
-                      Arbitrer les Prix indicatifs
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <h3 className="text-sm font-semibold">
+                        Arbitrer les Prix indicatifs
+                      </h3>
+                      <InfoHint label="Informations sur l’arbitrage des prix">
                       Chaque périmètre conserve un seul Prix indicatif actif.
                       Choisissez le montant à retenir avant de confirmer la fusion.
-                    </p>
+                      </InfoHint>
+                    </div>
                     {priceArbitrations.map((price) => {
                       const decision = priceResolutions[price.sourcePriceId];
                       const scopeName = price.scope.dossierId
@@ -719,12 +721,7 @@ function ProductVariantMergeDrawer({
                       ))}
                     </ul>
                   </section>
-                ) : (
-                  <p className="rounded-lg border border-border p-4 text-sm text-muted-foreground">
-                    Le serveur a vérifié les dépendances actuelles. Elles seront
-                    vérifiées une nouvelle fois au moment de la confirmation.
-                  </p>
-                )}
+) : null}
 
                 <div className="flex flex-wrap justify-between gap-2">
                   <Button
