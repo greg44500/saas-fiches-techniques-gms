@@ -67,6 +67,10 @@ function autoDetectMapping(headers) {
     terms.some((term) => header.includes(term)));
   const findExact = (...terms) => normalized.findIndex((header) =>
     terms.includes(header.trim()));
+  const findWithout = (excludedTerms, ...terms) =>
+    normalized.findIndex((header) =>
+      terms.some((term) => header.includes(term))
+      && !excludedTerms.some((term) => header.includes(term)));
 
   const candidates = {
     supplierReference: find('reference', 'ref article', 'code article', 'sku'),
@@ -82,8 +86,12 @@ function autoDetectMapping(headers) {
       'grammage',
     ),
     unit: findExact('unite', 'unit', 'uom'),
-    netWeight: find('poids net'),
-    netWeightUnit: find('unite poids net', 'unite du poids net'),
+    netWeight: findWithout(['egoutte'], 'poids net'),
+    netWeightUnit: findWithout(
+      ['egoutte'],
+      'unite poids net',
+      'unite du poids net',
+    ),
     drainedNetWeight: find(
       'poids net egoutte',
       'poids egoutte',
