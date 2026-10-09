@@ -3,6 +3,7 @@ import {
   Archive,
   CircleCheck,
   Euro,
+  GitMerge,
   Pencil,
   Plus,
   RotateCcw,
@@ -43,6 +44,7 @@ import {
   ProductReferenceGovernanceReviewPanel,
 } from '@/features/products/components/product-reference-governance-review-panel';
 import { ProductReferenceVariantEditDialog } from '@/features/products/components/product-reference-variant-edit-dialog';
+import { ProductVariantMergeDrawer } from '@/features/products/components/product-variant-merge-drawer';
 import { ProductVariantCreateDialog } from '@/features/products/components/product-variant-create-dialog';
 import {
   GlobalIndicativePriceDialog,
@@ -51,6 +53,7 @@ import {
   useListGlobalIndicativePricesQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
+  formatIndicativePriceSource,
   formatPackaging,
   formatPrice,
   formatSourcePrice,
@@ -113,6 +116,7 @@ function ProductReferenceDetailsDrawer({
   const [deleteError, setDeleteError] = useState('');
   const [activeTab, setActiveTab] = useState(initialTab);
   const [priceVariant, setPriceVariant] = useState(null);
+  const [mergeVariant, setMergeVariant] = useState(null);
 
   const query = useGetProductReferenceDetailQuery(productId, { skip: !productId });
   const dimensionsQuery = useGetProductReferenceDimensionsQuery(productId, {
@@ -142,6 +146,7 @@ function ProductReferenceDetailsDrawer({
     setReferenceFilter(initialReferenceFilter);
     setDimensionSearch('');
     setPriceVariant(null);
+    setMergeVariant(null);
   }, [
     initialDimensionFilter,
     initialReferenceFilter,
@@ -1158,8 +1163,7 @@ function ProductReferenceDetailsDrawer({
                             || globalPrice?.observedAt) && (
                             <p className="mt-1 text-xs text-muted-foreground">
                               Source : {
-                                globalPrice.sourceOrganization
-                                ?? globalPrice.source
+                                formatIndicativePriceSource(globalPrice)
                                 ?? 'Non précisée'
                               }
                               {globalPrice.observedAt
@@ -1248,6 +1252,16 @@ function ProductReferenceDetailsDrawer({
                                   ? 'Modifier le Prix repère'
                                   : 'Ajouter un Prix repère'
                               }
+                              variant="outline"
+                            />
+                          )}
+                          {variants.length > 1 && (
+                            <ActionIconButton
+                              disabled={pending}
+                              Icon={GitMerge}
+                              label={'Fusionner la référence ' + getVariantLabel(variant)}
+                              onClick={() => setMergeVariant(variant)}
+                              tooltipLabel="Fusionner"
                               variant="outline"
                             />
                           )}
@@ -1386,6 +1400,25 @@ function ProductReferenceDetailsDrawer({
           pending={deleteDimensionState.isLoading}
           pendingLabel="Suppression…"
           title="Supprimer cette valeur ?"
+        />
+      )}
+
+      {product && mergeVariant && (
+        <ProductVariantMergeDrawer
+          metadata={metadata}
+          onClose={() => setMergeVariant(null)}
+          onMerged={() => {
+            setMergeVariant(null);
+            query.refetch();
+            globalPricesQuery.refetch();
+            toast({
+              title: 'Références fusionnées',
+              variant: 'success',
+            });
+          }}
+          open
+          product={product}
+          sourceVariant={mergeVariant}
         />
       )}
 
