@@ -123,7 +123,7 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
     it('signale une référence trop longue avant écriture', async () => {
         await enableImport();
         const inspected = await inspect(
-            'Reference;Designation;Marque\\n'
+            'Reference;Designation;Marque\n'
             + 'X'.repeat(121) + ';Pain;Bridor',
         );
         const proposed = await preview(inspected.body.data.importId);
