@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Search } from 'lucide-react';
+import { ArrowLeft, Check, Info, Search } from 'lucide-react';
 
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { ErrorState } from '@/components/shared/error-state';
-import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Sheet,
   SheetContent,
@@ -46,11 +46,13 @@ function formatDimensionList(values = []) {
   return values.map(({ name }) => name).filter(Boolean).join(', ') || 'Aucune';
 }
 
-function VariantSummary({ metadata, title, variant }) {
+function VariantSummary({ metadata, title, variant, highlighted = false }) {
   if (!variant) return null;
 
   return (
-    <section className="rounded-lg border border-border p-4">
+    <section className={highlighted
+      ? "rounded-lg border border-sky-500/60 bg-sky-500/10 p-4"
+      : "rounded-lg border border-border p-4"}>
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {title}
       </p>
@@ -85,32 +87,66 @@ function VariantSummary({ metadata, title, variant }) {
   );
 }
 
-function StepIndicator({ step }) {
+function InfoHint({ children, label }) {
   return (
-    <ol className="grid grid-cols-3 gap-2" aria-label="Étapes de fusion">
-      {STEP_LABELS.map((label, index) => {
-        const number = index + 1;
-        const active = number === step;
-        const done = number < step;
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger
+          aria-label={label}
+          className="inline-flex size-6 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          type="button"
+        >
+          <Info aria-hidden="true" className="size-4" />
+        </TooltipTrigger>
+        <TooltipContent>{children}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
-        return (
-          <li
-            className={
-              'rounded-md border px-3 py-2 text-sm '
-              + (active
-                ? 'border-primary bg-primary/5 font-medium'
-                : 'border-border text-muted-foreground')
-            }
-            key={label}
-          >
-            <span className="mr-2">
-              {done ? <Check aria-hidden="true" className="inline size-4" /> : number + '.'}
-            </span>
-            {label}
-          </li>
-        );
-      })}
-    </ol>
+function StepIndicator({ step, onNavigate }) {
+  return (
+    <nav aria-label="Progression de la fusion">
+      <ol className="grid grid-cols-3 gap-2">
+        {STEP_LABELS.map((label, index) => {
+          const number = index + 1;
+          const active = number === step;
+          const done = number < step;
+          return (
+            <li key={label}>
+              <button
+                aria-current={active ? 'step' : undefined}
+                className={
+                  'flex w-full items-center justify-center gap-2 border-b-[3px] px-1 py-3 text-sm transition-colors '
+                  + (active
+                    ? 'border-sky-500 bg-sky-500/10 font-semibold text-foreground'
+                    : done
+                      ? 'border-emerald-500 text-foreground hover:bg-muted'
+                      : 'cursor-not-allowed border-border text-muted-foreground')
+                }
+                disabled={!done}
+                onClick={() => onNavigate(number)}
+                type="button"
+              >
+                <span className={
+                  'flex size-7 shrink-0 items-center justify-center rounded-full border '
+                  + (active
+                    ? 'border-sky-500 bg-sky-500 text-white'
+                    : done
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600'
+                      : 'border-border')
+                }>
+                  {done
+                    ? <Check aria-hidden="true" className="size-4" />
+                    : number}
+                </span>
+                <span>{label}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }
 
@@ -268,21 +304,24 @@ function ProductVariantMergeDrawer({
     <>
       <Sheet onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
         <SheetContent
-          className="w-[min(96vw,72rem)] max-w-none overflow-y-auto"
+          className="w-[min(96vw,56rem)] max-w-none overflow-y-auto"
           side="right"
         >
           <SheetHeader className="border-b border-border pr-14">
             <SheetTitle>
               Fusionner des Références Produit
             </SheetTitle>
-            <SheetDescription>
-              {product?.name} · la Référence remplacée reste conservée dans
-              l’historique et ses dépendances sont réconciliées par le serveur.
+            <SheetDescription className="flex items-center gap-2">
+              {product?.name}
+              <InfoHint label="Informations sur la fusion">
+                La Référence remplacée reste conservée dans l’historique et
+                ses dépendances sont réconciliées par le serveur.
+              </InfoHint>
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-6 p-4 sm:p-6">
-            <StepIndicator step={step} />
+            <StepIndicator step={step} onNavigate={setStep} />
 
             {step === 1 && (
               <section className="space-y-4">
@@ -321,10 +360,12 @@ function ProductVariantMergeDrawer({
                       value={search}
                     />
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    La recherche interroge le serveur et ne dépend pas de la
-                    pagination de la liste courante.
-                  </p>
+                  <div className="mt-1">
+                    <InfoHint label="Informations sur la recherche">
+                      La recherche interroge le serveur et ne dépend pas de la
+                      pagination de la liste courante.
+                    </InfoHint>
+                  </div>
                 </div>
 
                 {candidatesQuery.isError ? (
@@ -500,6 +541,7 @@ function ProductVariantMergeDrawer({
                 <div className="grid gap-4 lg:grid-cols-2">
                   <VariantSummary
                     metadata={metadata}
+                    highlighted
                     title="Référence conservée"
                     variant={preview.retained}
                   />
@@ -516,36 +558,6 @@ function ProductVariantMergeDrawer({
                     {preview.targetName}
                   </p>
                 </div>
-
-                {preview.differences?.length > 0 ? (
-                  <section>
-                    <h3 className="text-sm font-semibold">
-                      Différences constatées
-                    </h3>
-                    <ul className="mt-2 space-y-2">
-                      {preview.differences.map((difference) => (
-                        <li
-                          className="rounded-lg border border-border p-3 text-sm"
-                          key={difference.field}
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="font-medium">{difference.label}</span>
-                            {difference.blocking ? (
-                              <StatusBadge tone="destructive">Bloquante</StatusBadge>
-                            ) : (
-                              <StatusBadge tone="neutral">Arbitrée par la référence conservée</StatusBadge>
-                            )}
-                          </div>
-                          <p className="mt-2 text-muted-foreground">
-                            Conservée : {String(difference.retained ?? '—')}
-                            {' · '}
-                            Remplacée : {String(difference.replaced ?? '—')}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                ) : null}
 
                 <section>
                   <h3 className="text-sm font-semibold">
