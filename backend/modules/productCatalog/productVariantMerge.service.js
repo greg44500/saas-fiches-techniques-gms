@@ -758,7 +758,7 @@ const migrateActiveIndicativePrices = async ({
         }
         if (decision.action === 'MANUAL'
             && (typeof decision.manualAmount !== 'string'
-                || !/^(?!0+(?:\\.0+)?$)\\d+(?:\\.\\d{1,6})?$/.test(
+                || !/^(?!0+(?:\.0+)?$)\d+(?:\.\d{1,6})?$/.test(
                     decision.manualAmount,
                 ))) {
             throw conflictError('Le montant manuel doit être positif et valide.');
