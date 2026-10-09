@@ -74,6 +74,12 @@ vi.mock('@/features/suppliers/components/supplier-article-form-dialog', () => ({
   ),
 }));
 
+vi.mock('@/features/suppliers/components/supplier-article-association-dialog', () => ({
+  SupplierArticleAssociationDialog: ({ open }) => (
+    open ? <div>Association Article ouverte</div> : null
+  ),
+}));
+
 vi.mock('@/features/suppliers/components/supplier-article-import-dialog', () => ({
   SupplierArticleImportDialog: ({ open }) => (
     open ? <div>Import Articles ouvert</div> : null

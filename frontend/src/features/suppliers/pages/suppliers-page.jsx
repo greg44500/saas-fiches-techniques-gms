@@ -1,4 +1,4 @@
-import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
+import { Archive, Eye, FileUp, Link2, Pencil, Plus, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
@@ -38,6 +38,9 @@ import {
   useUpdateSupplierCatalogStatusMutation,
   useUpdateSupplierStatusMutation,
 } from '@/features/suppliers/api/supplier-api';
+import {
+  SupplierArticleAssociationDialog,
+} from '@/features/suppliers/components/supplier-article-association-dialog';
 import {
   SupplierArticleImportDialog,
 } from '@/features/suppliers/components/supplier-article-import-dialog';
@@ -121,6 +124,7 @@ function SuppliersPage() {
   });
   const [articleDialogOpen, setArticleDialogOpen] = useState(false);
   const [articleImportOpen, setArticleImportOpen] = useState(false);
+  const [articleToAssociate, setArticleToAssociate] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
 
   const supplierQuery = useListSuppliersQuery({
@@ -401,6 +405,17 @@ function SuppliersPage() {
       cell: (article) => (
         article.scope === 'WORKSPACE_PRIVATE' && canManageArticles ? (
           <DataTableActions>
+            {article.status === 'ACTIVE'
+              && !article.productVariant
+              && canReadProducts && (
+              <ActionIconButton
+                Icon={Link2}
+                label={'Associer ' + article.supplierReference + ' à un Produit'}
+                onClick={() => setArticleToAssociate(article)}
+                tooltipLabel="Associer à un Produit"
+                variant="outline"
+              />
+            )}
             <ActionIconButton
               Icon={article.status === 'ACTIVE' ? Archive : RotateCcw}
               disabled={articleStatusState.isLoading}
@@ -796,6 +811,17 @@ function SuppliersPage() {
         }}
         open={articleDialogOpen}
         suppliers={activeSuppliers}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticleAssociationDialog
+        article={articleToAssociate}
+        onClose={() => setArticleToAssociate(null)}
+        onSaved={() => {
+          setArticleToAssociate(null);
+          toast({ title: 'Référence Produit associée', variant: 'success' });
+        }}
+        open={Boolean(articleToAssociate)}
         workspaceId={workspace.id}
       />
 
