@@ -351,3 +351,45 @@ test('M-003 un catalogue global est réutilisable depuis plusieurs Workspaces', 
   await expect(workspaceBCatalogRow).toContainText(context.catalogName);
   await expect(workspaceBCatalogRow).toContainText('Référentiel partagé');
 });
+
+test('M-003 owner importe une liste d’Articles sans créer de catalogue commercial', async ({ page }) => {
+  const workspace = await provisionSupplierOwnerWorkspace();
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const supplierName = 'Fournisseur liste E2E ' + suffix;
+  const reference = 'LST-' + suffix;
+
+  await loginWithIdentity(page, workspace.identity);
+  await page.goto(workspace.suppliersUrl);
+  await createSupplierFromUi(page, supplierName);
+  await page.getByRole('tab', { name: 'Articles' }).click();
+  await page.getByRole('button', { name: 'Importer des Articles' }).click();
+
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Fichier', { exact: true }).setInputFiles({
+    name: 'articles.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from([
+      'Reference;Designation;Marque',
+      reference + ';Pain test;Bridor',
+      ';Sans reference;Bridor',
+    ].join('\\n'), 'utf8'),
+  });
+  const inspectPromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/supplier-articles/imports/inspect')
+  ));
+  await dialog.getByRole('button', { name: 'Inspecter le fichier' }).click();
+  const inspected = await inspectPromise;
+  expect(inspected.status(), 'Inspection Articles : vérifier ClamAV si HTTP 503').toBe(201);
+
+  await dialog.getByRole('combobox', { name: 'Fournisseur des Articles' }).click();
+  await page.getByRole('option', { name: supplierName }).click();
+  await dialog.getByRole('button', { name: 'Prévisualiser les Articles' }).click();
+  await expect(dialog.getByText(reference, { exact: true })).toBeVisible();
+  await expect(dialog.getByText(/1 ligne\(s\) sans référence ignorée\(s\)/)).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Confirmer l’import des Articles' }).click();
+  await expectVisibleToast(page, 'Import des Articles terminé');
+  await expect(page.getByText(reference, { exact: true })).toBeVisible();
+  await expect(page.getByText('Produit à associer', { exact: true })).toBeVisible();
+});
