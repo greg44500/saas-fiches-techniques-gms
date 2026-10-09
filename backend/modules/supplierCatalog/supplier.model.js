@@ -74,7 +74,7 @@ const supplierArticleSchema = new Schema(
         productVariant: {
             type: Schema.Types.ObjectId,
             ref: 'ProductVariant',
-            required: true,
+            default: null,
         },
         supplierReference: {
             type: String,

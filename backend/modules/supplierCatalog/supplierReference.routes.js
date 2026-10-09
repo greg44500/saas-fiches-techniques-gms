@@ -1,5 +1,20 @@
 import { Router } from 'express';
 
+import {
+    globalArticleImport,
+    workspaceArticleImport,
+} from './supplierArticleImport.controller.js';
+import { articleImportPreviewBodySchema } from './supplierArticleImport.validation.js';
+import {
+    cleanupSupplierCatalogImportUploadOnError,
+    uploadSupplierCatalogImportFile,
+} from './supplierCatalogImport.middleware.js';
+import { enforceSupplierCatalogImportFeature } from './supplierCatalogAccess.middleware.js';
+import {
+    globalImportIdParamsSchema,
+    workspaceImportIdParamsSchema,
+} from './supplierCatalog.validation.js';
+
 import { authenticate } from '../../middlewares/authenticate.js';
 import {
     authorizeApplicationGlobalPermission,
@@ -125,6 +140,47 @@ supplierRouter.patch(
     authorizePermission(SUPPLIER_CATALOG_PERMISSION.SUPPLIER_MANAGE),
     enforceWorkspaceAccessMode(),
     updateWorkspaceSupplierStatus,
+);
+
+supplierArticleRouter.post(
+    '/imports/inspect',
+    authenticate,
+    validateRequest({ params: workspaceIdParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_IMPORT),
+    enforceWorkspaceAccessMode(),
+    enforceSupplierCatalogImportFeature,
+    uploadSupplierCatalogImportFile,
+    workspaceArticleImport.inspect,
+    cleanupSupplierCatalogImportUploadOnError,
+);
+
+supplierArticleRouter.post(
+    '/imports/:importId/preview',
+    authenticate,
+    validateRequest({
+        params: workspaceImportIdParamsSchema,
+        body: articleImportPreviewBodySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_IMPORT),
+    enforceWorkspaceAccessMode(),
+    enforceSupplierCatalogImportFeature,
+    workspaceArticleImport.preview,
+);
+
+supplierArticleRouter.post(
+    '/imports/:importId/commit',
+    authenticate,
+    validateRequest({ params: workspaceImportIdParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_IMPORT),
+    enforceWorkspaceAccessMode(),
+    enforceSupplierCatalogImportFeature,
+    workspaceArticleImport.commit,
 );
 
 supplierArticleRouter.get(
@@ -255,6 +311,37 @@ supplierReferenceGlobalRouter.get(
     ),
     validateRequest({ query: globalArticleListQuerySchema }),
     listGlobalArticles,
+);
+
+supplierReferenceGlobalRouter.post(
+    '/articles/imports/inspect',
+    authorizeApplicationGlobalPermission(
+        SUPPLIER_CATALOG_GLOBAL_PERMISSION.MANAGE,
+    ),
+    uploadSupplierCatalogImportFile,
+    globalArticleImport.inspect,
+    cleanupSupplierCatalogImportUploadOnError,
+);
+
+supplierReferenceGlobalRouter.post(
+    '/articles/imports/:importId/preview',
+    authorizeApplicationGlobalPermission(
+        SUPPLIER_CATALOG_GLOBAL_PERMISSION.MANAGE,
+    ),
+    validateRequest({
+        params: globalImportIdParamsSchema,
+        body: articleImportPreviewBodySchema,
+    }),
+    globalArticleImport.preview,
+);
+
+supplierReferenceGlobalRouter.post(
+    '/articles/imports/:importId/commit',
+    authorizeApplicationGlobalPermission(
+        SUPPLIER_CATALOG_GLOBAL_PERMISSION.MANAGE,
+    ),
+    validateRequest({ params: globalImportIdParamsSchema }),
+    globalArticleImport.commit,
 );
 
 supplierReferenceGlobalRouter.post(

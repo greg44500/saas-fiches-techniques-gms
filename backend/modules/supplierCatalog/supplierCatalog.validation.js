@@ -376,6 +376,7 @@ export {
     editionBodySchema,
     globalCatalogIdParamsSchema,
     globalImportIdParamsSchema,
+    importMappingSchema,
     importPreviewBodySchema,
     listCatalogLinesQuerySchema,
     listCatalogQuerySchema,

@@ -87,6 +87,7 @@ const serializeSupplierArticle = (article) => ({
     workspaceId: article.workspace?.toString() ?? null,
     supplier: serializeArticleSupplier(article.supplier),
     productVariant: serializeArticleProduct(article.productVariant),
+    associationStatus: article.productVariant ? 'ASSOCIATED' : 'PENDING',
     supplierReference: article.supplierReference,
     supplierDesignation: article.supplierDesignation ?? null,
     brand: article.brand ?? null,

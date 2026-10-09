@@ -523,11 +523,13 @@ const createArticleInSession = async ({
         workspaceId,
     });
 
-    await assertActiveProductVariant({
-        productVariantId: data.productVariantId,
-        workspaceId,
-        session,
-    });
+    if (data.productVariantId) {
+        await assertActiveProductVariant({
+            productVariantId: data.productVariantId,
+            workspaceId,
+            session,
+        });
+    }
 
     const normalizedSupplierReference =
         normalizeSupplierReference(data.supplierReference);
@@ -571,7 +573,7 @@ const createArticleInSession = async ({
             metadata: {
                 supplierId: supplier._id.toString(),
                 productVariantId:
-                    data.productVariantId.toString(),
+                    data.productVariantId?.toString() ?? null,
             },
             session,
         });
@@ -632,7 +634,7 @@ const updateSupplierArticle = async ({
             session,
         });
         if (
-            article.productVariant.toString()
+            article.productVariant?.toString()
             !== data.productVariantId.toString()
         ) {
             article.productVariant = data.productVariantId;
