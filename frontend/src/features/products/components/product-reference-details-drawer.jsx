@@ -20,6 +20,7 @@ import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Tabs,
   TabsContent,
@@ -1124,17 +1125,19 @@ function ProductReferenceDetailsDrawer({
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <p className="font-medium">{getVariantLabel(variant)}</p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Conservation : {getConservationTypeLabel(
-                              metadata,
-                              variant.conservationType,
-                            )}
-                            {' · '}Unité : {getVariantReferenceUnitLabel(metadata, variant)}
-                            {variant.yieldPercent
-                              ? ' · Rendement : ' + formatYield(variant.yieldPercent)
-                              : ''}
-                          </p>
-                          <p className="mt-1 text-sm text-muted-foreground">
+                          <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+                            <p>Unité : {getVariantReferenceUnitLabel(metadata, variant)}</p>
+                            <p>
+                              Conservation : {getConservationTypeLabel(
+                                metadata,
+                                variant.conservationType,
+                              )}
+                            </p>
+                            {variant.yieldPercent ? (
+                              <p>Rendement : {formatYield(variant.yieldPercent)}</p>
+                            ) : null}
+                          </div>
+                          <p className="mt-2 text-sm text-muted-foreground">
                             Prix repère global : {
                               globalPrice
                                 ? formatPrice(
@@ -1147,53 +1150,55 @@ function ProductReferenceDetailsDrawer({
                                 : 'Non renseigné'
                             }
                           </p>
-                          {globalPrice && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Relevé : {formatSourcePrice(globalPrice)}
-                              {globalPrice.packaging
-                                ? ' · ' + formatPackaging(
-                                  globalPrice.packaging,
-                                  { productVariant: variant },
-                                )
-                                : ''}
-                            </p>
-                          )}
-                          {(globalPrice?.sourceOrganization
-                            || globalPrice?.source
-                            || globalPrice?.observedAt) && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Source : {
-                                formatIndicativePriceSource(globalPrice)
-                                ?? 'Non précisée'
-                              }
-                              {globalPrice.observedAt
-                                ? ' · relevé le '
-                                  + new Date(globalPrice.observedAt)
-                                    .toLocaleDateString('fr-FR')
-                                : ''}
-                              {globalPrice.sourceUrl && (
-                                <>
-                                  {' · '}
-                                  <a
-                                    className="underline underline-offset-2"
-                                    href={globalPrice.sourceUrl}
-                                    rel="noreferrer"
-                                    target="_blank"
-                                  >
-                                    Consulter
-                                  </a>
-                                </>
-                              )}
-                            </p>
-                          )}
-                          {globalPrice?.updatedAt && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Mis à jour le {
-                                new Date(globalPrice.updatedAt)
-                                  .toLocaleDateString('fr-FR')
-                              }
-                            </p>
-                          )}
+                          {globalPrice ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger
+                                  className="mt-1 text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+                                  type="button"
+                                >
+                                  Détails du prix
+                                </TooltipTrigger>
+                                <TooltipContent className="space-y-1">
+                                  <p>
+                                    Relevé : {formatSourcePrice(globalPrice)}
+                                    {globalPrice.packaging
+                                      ? ' · ' + formatPackaging(
+                                        globalPrice.packaging,
+                                        { productVariant: variant },
+                                      )
+                                      : ''}
+                                  </p>
+                                  <p>
+                                    Source : {formatIndicativePriceSource(globalPrice)
+                                      ?? 'Non précisée'}
+                                  </p>
+                                  {globalPrice.observedAt ? (
+                                    <p>
+                                      Relevé le {new Date(globalPrice.observedAt)
+                                        .toLocaleDateString('fr-FR')}
+                                    </p>
+                                  ) : null}
+                                  {globalPrice.updatedAt ? (
+                                    <p>
+                                      Mis à jour le {new Date(globalPrice.updatedAt)
+                                        .toLocaleDateString('fr-FR')}
+                                    </p>
+                                  ) : null}
+                                  {globalPrice.sourceUrl ? (
+                                    <a
+                                      className="underline underline-offset-2"
+                                      href={globalPrice.sourceUrl}
+                                      rel="noreferrer"
+                                      target="_blank"
+                                    >
+                                      Consulter la source
+                                    </a>
+                                  ) : null}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : null}
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <StatusBadge tone={getProductStatusTone(variant.status)}>
