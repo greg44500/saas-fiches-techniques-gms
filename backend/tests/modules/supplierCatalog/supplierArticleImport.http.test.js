@@ -108,12 +108,27 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         expect(article.productVariant).toBeNull();
         expect(article.supplierReference).toBe('REF001');
         expect(article.scope).toBe('WORKSPACE_PRIVATE');
+        const listed = await request(app)
+            .get(basePath()).set(auth());
+        expect(listed.status).toBe(200);
+        expect(listed.body.data.articles[0].associationStatus).toBe('PENDING');
         expect(article.workspace.toString()).toBe(context.workspace.id);
         expect(await SupplierCatalogEdition.countDocuments({ supplier: supplierId })).toBe(0);
         expect(await SupplierCatalogLine.countDocuments({ workspace: context.workspace.id })).toBe(0);
         expect(await SupplierTariff.countDocuments({ workspace: context.workspace.id })).toBe(0);
         expect(await SupplierArticleImportSession.countDocuments({ _id: id, status: 'COMMITTED' })).toBe(1);
         expect((await commit(id)).status).toBe(404);
+    });
+
+    it('signale une référence trop longue avant écriture', async () => {
+        await enableImport();
+        const inspected = await inspect(
+            'Reference;Designation;Marque\\n'
+            + 'X'.repeat(121) + ';Pain;Bridor',
+        );
+        const proposed = await preview(inspected.body.data.importId);
+        expect(proposed.body.data.counts.INVALID).toBe(1);
+        expect((await commit(inspected.body.data.importId)).status).toBe(409);
     });
 
     it('met à jour la désignation au réimport sans créer un doublon', async () => {

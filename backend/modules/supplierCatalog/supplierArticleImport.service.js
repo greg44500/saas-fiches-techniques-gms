@@ -148,8 +148,18 @@ const previewSupplierArticleImport = async ({
         });
         const reference = normalizeSupplierReference(row.supplierReference);
         const errors = [...row.errors];
+        if ((row.supplierReference?.length ?? 0) > 120) {
+            errors.push('Référence fournisseur trop longue (120 caractères maximum).');
+        }
+        if ((row.designation?.length ?? 0) > 300) {
+            errors.push('Désignation trop longue (300 caractères maximum).');
+        }
+        if ((row.brand?.length ?? 0) > 160) {
+            errors.push('Marque trop longue (160 caractères maximum).');
+        }
         let classification = 'CREATE';
         let articleId = null;
+        let observedUpdatedAt = null;
 
         if (!reference) {
             classification = 'SKIPPED';
@@ -165,6 +175,7 @@ const previewSupplierArticleImport = async ({
             });
             if (existing) {
                 articleId = existing.id;
+                observedUpdatedAt = existing.updatedAt?.toISOString() ?? null;
                 if (existing.status !== SUPPLIER_RESOURCE_STATUS.ACTIVE) {
                     classification = 'INVALID';
                     errors.push('Article archivé : réactivez-le avant le réimport.');
@@ -186,6 +197,7 @@ const previewSupplierArticleImport = async ({
             packaging: hasPackaging(row.packaging) ? row.packaging : null,
             classification,
             articleId,
+            observedUpdatedAt,
             errors,
         });
     }
@@ -268,6 +280,7 @@ const commitSupplierArticleImport = async ({
         if (
             !existing || existing.id !== row.articleId
             || existing.status !== SUPPLIER_RESOURCE_STATUS.ACTIVE
+            || (existing.updatedAt?.toISOString() ?? null) !== row.observedUpdatedAt
         ) {
             throw new AppError('Article modifié depuis la prévisualisation : recommencez.', 409);
         }
