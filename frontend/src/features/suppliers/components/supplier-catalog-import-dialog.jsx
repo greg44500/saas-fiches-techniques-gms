@@ -108,7 +108,7 @@ function autoDetectMapping(headers) {
       ['unite du prix', 'unite prix', 'prix par', 'base prix'],
       'prix ht', 'prix', 'tarif', 'price',
     ),
-    priceBasis: find('base', 'unite prix', 'prix par'),
+    priceBasis: find('base', 'unite du prix', 'unite prix', 'prix par'),
   };
 
   return Object.fromEntries(
