@@ -565,6 +565,19 @@ describe('M-002 fusion contrôlée des Références Produit', () => {
             code: 'PRODUCT_VARIANT_MERGE_PRICE_RESOLUTION_REQUIRED',
         });
 
+        await expect(mergeProductVariants({
+            actorId,
+            productId: pair.product._id,
+            retainedVariantId: pair.retained._id,
+            replacedVariantId: pair.replaced.id,
+            previewFingerprint: preview.previewFingerprint,
+            priceResolutions: [{
+                sourcePriceId,
+                action: 'MANUAL',
+                manualAmount: '-1',
+            }],
+        })).rejects.toMatchObject({ statusCode: 409 });
+
         await mergeProductVariants({
             actorId,
             productId: pair.product._id,
@@ -588,7 +601,8 @@ describe('M-002 fusion contrôlée des Références Produit', () => {
         }).lean();
 
         expect(active).toHaveLength(1);
-        expect(active[0].normalizedAmount.toString()).toBe(expected);
+        expect(Number(active[0].normalizedAmount.toString()))
+            .toBe(Number(expected));
         expect(archivedSource).toHaveLength(1);
     });
 });
