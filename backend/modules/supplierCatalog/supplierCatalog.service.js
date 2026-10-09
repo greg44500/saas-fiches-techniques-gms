@@ -51,17 +51,31 @@ const buildScopeFilter = ({
             : workspaceId,
 });
 
+const REGEXP_SPECIAL_CHARACTERS = new Set([
+    '\\',
+    '^',
+    '$',
+    '.',
+    '*',
+    '+',
+    '?',
+    '(',
+    ')',
+    '[',
+    ']',
+    '{',
+    '}',
+    '|',
+]);
+
 const escapeRegExp = (value) =>
-    value.replace(/[\\^$.*+?()[\]{}|]/g, '\\const buildScopeFilter = ({
-    scope,
-    workspaceId,
-}) => ({
-    scope,
-    workspace:
-        scope === SUPPLIER_SCOPE.GLOBAL_SHARED
-            ? null
-            : workspaceId,
-});');
+    [...value]
+        .map((character) =>
+            REGEXP_SPECIAL_CHARACTERS
+                .has(character)
+                ? '\\' + character
+                : character)
+        .join('');
 
 const acquireCommerceLock = async ({
     key,
