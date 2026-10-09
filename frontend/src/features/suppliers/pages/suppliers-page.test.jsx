@@ -190,6 +190,7 @@ describe('SuppliersPage', () => {
         status: 'ACTIVE',
         validFrom: '2026-09-01T00:00:00.000Z',
         validTo: '2026-09-30T00:00:00.000Z',
+        lineCount: 58,
       }],
       pagination: {
         page: 1,
@@ -261,6 +262,10 @@ describe('SuppliersPage', () => {
       .toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Catalogue septembre'))
       .toBeInTheDocument();
+    expect(screen.getByText('58')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Voir Catalogue septembre',
+    })).toBeInTheDocument();
   });
 
   it('affiche tous les Fournisseurs par défaut et permet de réactiver un archivé', async () => {
