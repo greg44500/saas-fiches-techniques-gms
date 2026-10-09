@@ -547,7 +547,9 @@ describe('ProductReferenceDetailsDrawer', () => {
     renderDrawer();
     await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
 
-    expect(screen.getByText(/Source : Référentiel de démonstration/))
+    const priceDetails = screen.getByRole('button', { name: 'Détails du prix' });
+    await user.hover(priceDetails);
+    expect(await screen.findByText(/Source : Référentiel de démonstration/))
       .toBeInTheDocument();
     expect(screen.queryByText(/m003-global-indicative-v3/))
       .not.toBeInTheDocument();
