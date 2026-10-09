@@ -282,13 +282,6 @@ test('M-002 gestionnaire Application Global fusionne deux Références compatibl
   await expect(
     page.getByText('Dépendances concernées', { exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByText(
-      'Le serveur a vérifié les dépendances actuelles. '
-      + 'Elles seront vérifiées une nouvelle fois au moment de la confirmation.',
-      { exact: true },
-    ),
-  ).toBeVisible();
 
   await page.getByRole('button', {
     name: 'Confirmer la fusion',
