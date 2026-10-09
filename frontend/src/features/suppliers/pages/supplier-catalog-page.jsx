@@ -1,19 +1,17 @@
-import { ArrowLeft, Eye, Search } from 'lucide-react';
+import { ArrowLeft, Eye, MoreHorizontal, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
-import {
-  DataTable,
-  DataTableActions,
-} from '@/components/data-display/data-table';
-import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { DataTable } from '@/components/data-display/data-table';
+import { EntityDetailsDrawer } from '@/components/shared/entity-details-drawer';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -93,6 +91,7 @@ function SupplierCatalogPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [matchStatus, setMatchStatus] = useState(ALL_MATCH_STATUSES);
+  const [selectedLine, setSelectedLine] = useState(null);
 
   const catalogQuery = useListSupplierCatalogLinesQuery({
     workspaceId: workspace.id,
@@ -196,27 +195,42 @@ function SupplierCatalogPage() {
     {
       id: 'actions',
       header: 'Actions',
-      cell: (line) => line.supplierArticleId ? (
-        <DataTableActions>
-          <ActionIconButton
-            Icon={Eye}
-            label={
-              'Voir l’Article '
-              + (line.supplierReference || line.designation || '')
-            }
-            onClick={() => openArticle(line)}
-            tooltipLabel="Voir dans les Articles"
-            variant="outline"
-          />
-        </DataTableActions>
-      ) : null,
-    },
+      cell: (line) => (
+        <Popover>
+          <PopoverTrigger
+            aria-label={'Actions pour ' + (line.supplierReference || line.designation || 'cette ligne')}
+            className="inline-flex size-9 items-center justify-center rounded-md border border-border hover:bg-muted"
+          >
+            <MoreHorizontal aria-hidden="true" className="size-4" />
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-56">
+            <button
+              className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted"
+              onClick={() => setSelectedLine(line)}
+              type="button"
+            >
+              <Eye aria-hidden="true" className="size-4" />
+              Consulter la référence
+            </button>
+            {line.supplierArticleId && (
+              <button
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted"
+                onClick={() => openArticle(line)}
+                type="button"
+              >
+                <Eye aria-hidden="true" className="size-4" />
+                Voir l’article associé
+              </button>
+            )}
+          </PopoverContent>
+        </Popover>
+      ),
   ];
 
   return (
     <div className="space-y-4">
       <header className="space-y-2">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             onClick={() => navigate(
               '/workspaces/'
@@ -232,9 +246,9 @@ function SupplierCatalogPage() {
             <ArrowLeft aria-hidden="true" className="size-4" />
             <span className="sr-only">Retour aux catalogues</span>
           </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-semibold tracking-tight">
                 {catalog?.supplierName ? catalog.supplierName + ' | ' : ''}{catalog?.name ?? 'Catalogue fournisseur'}
               </h1>
               <InfoTooltip
@@ -265,9 +279,10 @@ function SupplierCatalogPage() {
         />
       ) : (
         <>
-          <section
+          <section className="rounded-xl border border-border bg-card">
+            <section
             aria-label="Informations du catalogue"
-            className="flex flex-wrap gap-x-8 gap-y-3 rounded-xl border border-border bg-card px-4 py-3"
+            className="flex flex-wrap gap-x-8 gap-y-3 border-b border-border px-5 py-3"
           >
             <div>
               <p className="text-xs text-muted-foreground">Date d’édition</p>
@@ -303,9 +318,9 @@ function SupplierCatalogPage() {
                 <p className="mt-1 text-sm font-medium">{catalog.source}</p>
               </div>
             )}
-          </section>
+            </section>
 
-          <section className="rounded-xl border border-border bg-card">
+
             <div className="flex flex-col gap-3 border-b border-border p-5 lg:flex-row lg:items-end">
               <form
                 className="flex min-w-0 flex-1 gap-2"
@@ -399,6 +414,40 @@ function SupplierCatalogPage() {
           </section>
         </>
       )}
+      <EntityDetailsDrawer
+        description="Informations issues de cette édition du catalogue. Les données sources et les historiques ne sont pas modifiés depuis cette consultation."
+        onClose={() => setSelectedLine(null)}
+        open={selectedLine !== null}
+        title={selectedLine?.designation || selectedLine?.supplierReference || 'Référence fournisseur'}
+      >
+        {selectedLine && (
+          <dl className="space-y-4 text-sm">
+            {[
+              ['Référence fournisseur', selectedLine.supplierReference || 'Sans référence'],
+              ['Désignation', selectedLine.designation || 'Non renseignée'],
+              ['Marque', selectedLine.brand || 'Non renseignée'],
+              ['Conditionnement', formatPackaging(selectedLine.packaging)],
+              ['Tarif source', formatCatalogLinePrice(selectedLine.sourcePrice, selectedLine.packaging)],
+              ['Association produit', getAssociationLabel(selectedLine.matchStatus)],
+              ['Ligne du fichier importé', selectedLine.sourceRowNumber ?? 'Non renseignée'],
+            ].map(([label, value]) => (
+              <div className="border-b border-border pb-3" key={label}>
+                <dt className="text-xs text-muted-foreground">{label}</dt>
+                <dd className="mt-1 font-medium">{value}</dd>
+              </div>
+            ))}
+            {selectedLine.supplierArticleId && (
+              <Button onClick={() => {
+                const line = selectedLine;
+                setSelectedLine(null);
+                openArticle(line);
+              }} type="button" variant="outline">
+                Voir l’article associé
+              </Button>
+            )}
+          </dl>
+        )}
+      </EntityDetailsDrawer>
     </div>
   );
 }
