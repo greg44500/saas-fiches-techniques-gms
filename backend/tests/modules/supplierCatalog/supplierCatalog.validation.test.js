@@ -7,6 +7,7 @@ import {
 import {
     editionBodySchema,
     importPreviewBodySchema,
+    listCatalogLinesQuerySchema,
 } from '../../../modules/supplierCatalog/supplierCatalog.validation.js';
 
 const objectId =
@@ -15,6 +16,28 @@ const objectId =
 describe('M-003 supplier catalog validation', () => {
     it('charge le schéma de preview sans composer omit après refinement', () => {
         expect(importPreviewBodySchema).toBeDefined();
+    });
+
+    it('valide la recherche et le filtre de rapprochement des lignes', () => {
+        expect(
+            listCatalogLinesQuerySchema.parse({
+                page: '2',
+                limit: '25',
+                search: '  bacon  ',
+                matchStatus: 'UNMATCHED',
+            }),
+        ).toEqual({
+            page: 2,
+            limit: 25,
+            search: 'bacon',
+            matchStatus: 'UNMATCHED',
+        });
+
+        expect(
+            listCatalogLinesQuerySchema.safeParse({
+                matchStatus: 'INCONNU',
+            }).success,
+        ).toBe(false);
     });
 
     it('applique la même validation de période à une édition standard', () => {
