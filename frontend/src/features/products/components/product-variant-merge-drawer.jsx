@@ -315,7 +315,7 @@ function ProductVariantMergeDrawer({
     const decision = priceResolutions[sourcePriceId];
     if (!decision) return true;
     if (decision.action === 'MANUAL') {
-      return !/^(?:0*[1-9]\\d*(?:\\.\\d{1,6})?|0*\\.\\d{0,5}[1-9]\\d{0,5})$/.test(decision.manualAmount ?? '');
+      return !/^(?!0+(?:\.0+)?$)\d+(?:\.\d{1,6})?$/.test(decision.manualAmount ?? '');
     }
     return false;
   });
