@@ -262,11 +262,11 @@ const buildFingerprint = ({
         ),
         sourcePrices: stableRows(
             sourcePrices,
-            (row) => row._id.toString() + ':' + row.status,
+            (row) => row._id.toString() + ':' + row.status + ':' + String(row.normalizedAmount) + ':' + String(row.updatedAt ?? ''),
         ),
         targetPrices: stableRows(
             targetPrices,
-            (row) => row._id.toString() + ':' + row.status,
+            (row) => row._id.toString() + ':' + row.status + ':' + String(row.normalizedAmount) + ':' + String(row.updatedAt ?? ''),
         ),
         drafts: stableRows(
             drafts,
@@ -480,14 +480,12 @@ const collectMergePlan = async ({
             productVariant: replaced._id,
             status: INDICATIVE_PRICE_STATUS.ACTIVE,
         })
-            .select('_id workspace dossier status')
             .lean()
             .session(session)),
         () => (IndicativePrice.find({
             productVariant: retained._id,
             status: INDICATIVE_PRICE_STATUS.ACTIVE,
         })
-            .select('_id workspace dossier status')
             .lean()
             .session(session)),
         () => (TechnicalSheetDraft.find({
@@ -520,16 +518,30 @@ const collectMergePlan = async ({
         (price) => targetPriceScopes.has(priceScopeKey(price)),
     );
 
-    if (priceCollisions.length > 0) {
-        conflicts.push({
-            code: 'INDICATIVE_PRICE_COLLISION',
-            message:
-                'Un Prix indicatif actif existe déjà sur la Référence conservée '
-                + 'pour au moins un même périmètre. '
-                + 'Résolvez ce prix avant la fusion.',
-            count: priceCollisions.length,
-        });
-    }
+    const targetByScope = new Map(
+        targetPrices.map((price) => [priceScopeKey(price), price]),
+    );
+    const priceArbitrations = priceCollisions.map((source) => {
+        const target = targetByScope.get(priceScopeKey(source));
+        return {
+            sourcePriceId: toId(source._id),
+            retainedPriceId: toId(target._id),
+            scope: {
+                workspaceId: toId(source.workspace),
+                dossierId: toId(source.dossier),
+            },
+            retained: {
+                amount: String(target.normalizedAmount),
+                unit: target.normalizedUnit,
+                currency: target.currency,
+            },
+            replaced: {
+                amount: String(source.normalizedAmount),
+                unit: source.normalizedUnit,
+                currency: source.currency,
+            },
+        };
+    });
 
     const affectedLineCount = drafts.reduce(
         (total, draft) => total + (draft.lines ?? []).filter(
@@ -579,6 +591,7 @@ const collectMergePlan = async ({
         differences,
         dependencies,
         conflicts,
+        priceArbitrations,
         previewFingerprint,
         canMerge: conflicts.length === 0,
     };
@@ -664,37 +677,6 @@ const listProductVariantMergeCandidates = async ({
     }));
 };
 
-const assertNoActiveIndicativePriceCollision = async ({
-    sourceVariantId,
-    targetVariantId,
-    session,
-}) => {
-    const [sourcePrices, targetPrices] = await runMongoOperationsSequentially([
-        () => (IndicativePrice.find({
-            productVariant: sourceVariantId,
-            status: INDICATIVE_PRICE_STATUS.ACTIVE,
-        }).session(session)),
-        () => (IndicativePrice.find({
-            productVariant: targetVariantId,
-            status: INDICATIVE_PRICE_STATUS.ACTIVE,
-        })
-            .select('_id workspace dossier')
-            .lean()
-            .session(session)),
-    ]);
-
-    const targetScopes = new Set(targetPrices.map(priceScopeKey));
-    if (sourcePrices.some((price) => targetScopes.has(priceScopeKey(price)))) {
-        throw conflictError(
-            'Un Prix indicatif actif existe déjà sur la Référence conservée '
-            + 'pour le même périmètre.',
-            'INDICATIVE_PRICE_COLLISION',
-        );
-    }
-
-    return sourcePrices;
-};
-
 const reconcileWorkspaceFavorites = async ({
     sourceVariantId,
     targetVariantId,
@@ -747,46 +729,96 @@ const migrateActiveIndicativePrices = async ({
     targetVariantId,
     actorId,
     session,
+    priceResolutions = [],
 }) => {
-    const sourcePrices = await assertNoActiveIndicativePriceCollision({
-        sourceVariantId,
-        targetVariantId,
-        session,
-    });
+    const sourcePrices = await IndicativePrice.find({
+        productVariant: sourceVariantId,
+        status: INDICATIVE_PRICE_STATUS.ACTIVE,
+    }).session(session);
+    const targetPrices = await IndicativePrice.find({
+        productVariant: targetVariantId,
+        status: INDICATIVE_PRICE_STATUS.ACTIVE,
+    }).session(session);
+    const targetByScope = new Map(
+        targetPrices.map((price) => [priceScopeKey(price), price]),
+    );
+    const collisions = sourcePrices.filter(
+        (price) => targetByScope.has(priceScopeKey(price)),
+    );
+    const collisionIds = new Set(collisions.map((price) => toId(price._id)));
+    const decisions = new Map();
+    for (const decision of priceResolutions) {
+        if (!collisionIds.has(decision.sourcePriceId)
+            || decisions.has(decision.sourcePriceId)) {
+            throw conflictError('Arbitrage de prix non reconnu ou en doublon.');
+        }
+        decisions.set(decision.sourcePriceId, decision);
+    }
+    if (decisions.size !== collisions.length) {
+        throw conflictError(
+            'Chaque conflit de prix doit être arbitré avant de confirmer la fusion.',
+            'PRODUCT_VARIANT_MERGE_PRICE_RESOLUTION_REQUIRED',
+        );
+    }
 
     const now = new Date();
-
-    for (const price of sourcePrices) {
-        await IndicativePrice.create([
-            {
-                workspace: price.workspace ?? null,
-                dossier: price.dossier ?? null,
-                productVariant: targetVariantId,
-                sourceAmount: price.sourceAmount,
-                sourceBasis: price.sourceBasis,
-                currency: price.currency,
-                normalizedAmount: price.normalizedAmount,
-                normalizedUnit: price.normalizedUnit,
-                source: price.source ?? null,
-                packaging: price.packaging?.toObject?.()
-                    ?? price.packaging
-                    ?? null,
-                sourceOrganization: price.sourceOrganization ?? null,
-                sourceUrl: price.sourceUrl ?? null,
-                observedAt: price.observedAt ?? null,
-                status: INDICATIVE_PRICE_STATUS.ACTIVE,
-                createdBy: actorId,
-                updatedBy: actorId,
-            },
-        ], { session });
-
+    const archive = async (price) => {
         price.status = INDICATIVE_PRICE_STATUS.ARCHIVED;
         price.archivedAt = now;
         price.archivedBy = actorId;
         price.updatedBy = actorId;
         await price.save({ session });
-    }
+    };
+    const copyPrice = async (price, manualAmount = null) => {
+        await IndicativePrice.create([{
+            workspace: price.workspace ?? null,
+            dossier: price.dossier ?? null,
+            productVariant: targetVariantId,
+            sourceAmount: manualAmount ?? price.sourceAmount,
+            sourceBasis: manualAmount === null
+                ? price.sourceBasis : price.normalizedUnit,
+            currency: price.currency,
+            normalizedAmount: manualAmount ?? price.normalizedAmount,
+            normalizedUnit: price.normalizedUnit,
+            source: manualAmount === null ? (price.source ?? null)
+                : 'Arbitrage manuel lors de la fusion des Références',
+            packaging: manualAmount === null
+                ? (price.packaging?.toObject?.() ?? price.packaging ?? null)
+                : null,
+            sourceOrganization: manualAmount === null
+                ? (price.sourceOrganization ?? null) : null,
+            sourceUrl: manualAmount === null ? (price.sourceUrl ?? null) : null,
+            observedAt: manualAmount === null
+                ? (price.observedAt ?? null) : now,
+            status: INDICATIVE_PRICE_STATUS.ACTIVE,
+            createdBy: actorId,
+            updatedBy: actorId,
+        }], { session });
+    };
 
+    for (const source of sourcePrices) {
+        const target = targetByScope.get(priceScopeKey(source));
+        const decision = decisions.get(toId(source._id));
+        if (!target) {
+            await copyPrice(source);
+        } else if (decision.action === 'KEEP_REPLACED') {
+            await archive(target);
+            await copyPrice(source);
+        } else if (decision.action === 'MANUAL') {
+            if (target.normalizedUnit !== source.normalizedUnit
+                || target.currency !== source.currency) {
+                throw conflictError(
+                    'Un prix manuel exige la même unité et la même devise.',
+                );
+            }
+            await archive(target);
+            await copyPrice(
+                target,
+                mongoose.Types.Decimal128.fromString(decision.manualAmount),
+            );
+        }
+        await archive(source);
+    }
     return sourcePrices.length;
 };
 
@@ -831,12 +863,14 @@ const reconcileProductVariantDependencies = async ({
     targetVariantId,
     actorId,
     session,
+    priceResolutions = [],
 }) => {
     const priceCount = await migrateActiveIndicativePrices({
         sourceVariantId,
         targetVariantId,
         actorId,
         session,
+        priceResolutions,
     });
 
     await reconcileWorkspaceFavorites({
@@ -932,6 +966,7 @@ const previewProductVariantMerge = async (input) => {
         differences: plan.differences,
         dependencies: plan.dependencies,
         conflicts: plan.conflicts,
+        priceArbitrations: plan.priceArbitrations,
         canMerge: plan.canMerge,
         previewFingerprint: plan.previewFingerprint,
     };
@@ -944,6 +979,7 @@ const mergeProductVariants = async ({
     replacedVariantId,
     targetName = null,
     previewFingerprint,
+    priceResolutions = [],
 }) => mongoose.connection.transaction(async (session) => {
     const plan = await collectMergePlan({
         productId,
@@ -1004,6 +1040,7 @@ const mergeProductVariants = async ({
         targetVariantId: retained._id,
         actorId,
         session,
+        priceResolutions,
     });
 
     const contributionCount = await resolvePendingVariantContributions({
