@@ -66,6 +66,7 @@ const sourceVariant = {
   id: 'variant-source',
   name: 'Amande en poudre blanche',
   governanceStatus: 'APPROVED',
+  status: 'ACTIVE',
   conservationType: 'SEC',
   referenceUnit: 'KG',
   yieldPercent: 100,
