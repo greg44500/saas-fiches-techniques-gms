@@ -176,9 +176,18 @@ const supplierTariffSchema = new Schema(
         catalogEdition: {
             type: Schema.Types.ObjectId,
             ref: 'SupplierCatalogEdition',
+            default: null,
+            immutable: true,
+        },
+        sourceKind: {
+            type: String,
+            enum: ['CATALOG', 'PRICE_LIST'],
+            default: 'CATALOG',
             required: true,
             immutable: true,
         },
+        sourceLabel: { type: String, trim: true, maxlength: 180, default: null, immutable: true },
+        sourceImportId: { type: Schema.Types.ObjectId, default: null, immutable: true },
         catalogLine: {
             type: Schema.Types.ObjectId,
             ref: 'SupplierCatalogLine',
@@ -241,6 +250,17 @@ const supplierTariffSchema = new Schema(
 );
 
 applySupplierScopeOwnershipValidation(supplierTariffSchema);
+supplierTariffSchema.pre('validate', function verifyTariffSource() {
+    if (this.sourceKind === 'CATALOG' && !this.catalogEdition) {
+        this.invalidate('catalogEdition', 'Édition obligatoire pour un tarif de catalogue.');
+    }
+    if (this.sourceKind === 'PRICE_LIST' && (
+        this.catalogEdition || !this.sourceImportId || !this.sourceLabel
+        || !this.validFrom
+    )) {
+        this.invalidate('sourceImportId', 'La liste tarifaire exige nom, import et date de début sans catalogue.');
+    }
+});
 
 supplierTariffSchema.index(
     { catalogEdition: 1, supplierArticle: 1, isCurrent: 1 },
@@ -248,6 +268,14 @@ supplierTariffSchema.index(
         name: 'supplier_tariff_current_edition_article_unique',
         unique: true,
         partialFilterExpression: { isCurrent: true },
+    },
+);
+supplierTariffSchema.index(
+    { sourceImportId: 1, supplierArticle: 1 },
+    {
+        name: 'supplier_price_list_import_article_unique',
+        unique: true,
+        partialFilterExpression: { sourceKind: 'PRICE_LIST' },
     },
 );
 supplierTariffSchema.index(
