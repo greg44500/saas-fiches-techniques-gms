@@ -67,6 +67,30 @@ const ensureSupplierNameAvailable = async ({
             409,
         );
     }
+    // Les variantes avec un 's' final nécessitent une décision humaine.
+    const candidateNames = [
+        normalizedName,
+        normalizedName.endsWith('s') ? normalizedName.slice(0, -1) : normalizedName + 's',
+    ];
+    const near = await Supplier.findOne({
+        normalizedName: mongoose.trusted({ $in: candidateNames }),
+        ...(scope === SUPPLIER_SCOPE.GLOBAL_SHARED
+            ? { scope, workspace: null }
+            : {
+                $or: mongoose.trusted([
+                    { scope: SUPPLIER_SCOPE.GLOBAL_SHARED, workspace: null },
+                    { scope, workspace: workspaceId },
+                ]),
+            }),
+        ...(excludeId ? { _id: mongoose.trusted({ $ne: excludeId }) } : {}),
+    }).session(session);
+    if (near && near.normalizedName !== normalizedName) {
+        throw new AppError(
+            'Nom de Fournisseur proche d’une fiche existante : ' + near.name
+            + '. Vérifiez le référentiel avant de créer une autre identité.',
+            409,
+        );
+    }
     return normalizedName;
 };
 
