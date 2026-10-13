@@ -17,6 +17,8 @@ import {
     buildWorkspaceGovernanceVisibilityFilter,
 } from '../productCatalog/productReferenceGovernance.service.js';
 import { AppError } from '../../utils/appError.js';
+import { SupplierTariff } from './supplierCatalog.model.js';
+import { supplierTariffPresentation } from './supplierArticlePresentation.service.js';
 import {
     Supplier,
     SupplierArticle,
@@ -953,8 +955,43 @@ const listSupplierArticles = async ({
         SupplierArticle.countDocuments(filter),
     ]);
 
+    // Une projection serveur unique évite une requête tarifaire par Article.
+    const articleIds = articles.map((article) => article._id);
+    const now = new Date();
+    const tariffs = articleIds.length ? await SupplierTariff.find({
+        supplierArticle: mongoose.trusted({ $in: articleIds }),
+        isCurrent: true,
+        ...buildWorkspaceVisibilityFilter(globalOnly ? null : workspaceId),
+        $and: mongoose.trusted([
+            { $or: [{ validFrom: null }, { validFrom: mongoose.trusted({ $lte: now }) }] },
+            { $or: [{ validTo: null }, { validTo: mongoose.trusted({ $gte: now }) }] },
+        ]),
+    }).populate({
+        path: 'catalogEdition',
+        select: '_id name status',
+    }).lean() : [];
+    const byArticle = new Map();
+    for (const tariff of tariffs) {
+        if ((tariff.sourceKind || 'CATALOG') === 'CATALOG'
+            && tariff.catalogEdition?.status !== SUPPLIER_RESOURCE_STATUS.ACTIVE) continue;
+        const id = tariff.supplierArticle.toString();
+        const group = byArticle.get(id) ?? [];
+        group.push(tariff);
+        byArticle.set(id, group);
+    }
+
     return {
-        articles: articles.map(serializeSupplierArticle),
+        articles: articles.map((article) => {
+            const serialized = serializeSupplierArticle(article);
+            const candidates = byArticle.get(article._id.toString()) ?? [];
+            return {
+                ...serialized,
+                supplierTariffStatus: candidates.length > 1
+                    ? 'AMBIGUOUS' : candidates.length ? 'AVAILABLE' : 'UNAVAILABLE',
+                supplierTariff: candidates.length === 1
+                    ? supplierTariffPresentation(candidates[0], article) : null,
+            };
+        }),
         pagination: {
             page,
             limit,
