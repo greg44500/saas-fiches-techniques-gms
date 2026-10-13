@@ -22,6 +22,8 @@ import {
 } from '../modules/supplierCatalog/supplierPricing.model.js';
 
 const M003_INDEX_NAMES = Object.freeze([
+    'supplier_global_normalized_name_unique',
+    'supplier_workspace_normalized_name_unique',
     'supplier_scope_status_name',
     'supplier_workspace_status_name',
     'supplier_article_global_reference_unique',
