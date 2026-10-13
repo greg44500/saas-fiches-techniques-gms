@@ -86,7 +86,7 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         const file = [
             'Reference;Designation;Prix;Base;Contenant;Nombre;Quantite;Unite',
             'REF2027;Farine test;40.625;carton;Carton;2;5;kg',
-        ].join('\\n');
+        ].join('\n');
         const inspected = await inspect(file);
         expect(inspected.status).toBe(201);
         const proposed = await request(app)
@@ -158,7 +158,7 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
 
     it('refuse les mercuriales dont les périodes se chevauchent', async () => {
         await enableImport();
-        const csv = 'Reference;Designation;Prix;Base\\nDUPTAR;Pain;10;carton';
+        const csv = 'Reference;Designation;Prix;Base\nDUPTAR;Pain;10;carton';
         const first = await inspect(csv);
         const body = (validFrom, validTo) => ({
             supplierId,
@@ -220,7 +220,7 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         };
         for (const [owner, value] of [[context, '10'], [other, '20']]) {
             const inspected = await inspect(
-                'Reference;Designation;Prix;Base\\nGLOB-PRIX-1;Article commun;'
+                'Reference;Designation;Prix;Base\nGLOB-PRIX-1;Article commun;'
                     + value + ';carton', owner,
             );
             expect(inspected.status).toBe(201);
