@@ -6,6 +6,15 @@ import {
 } from './supplierArticleImport.controller.js';
 import { articleImportPreviewBodySchema } from './supplierArticleImport.validation.js';
 import {
+    correctWorkspaceArticleTariff,
+    listWorkspaceArticleTariffs,
+} from './supplierTariffRevision.controller.js';
+import {
+    articleTariffParamsSchema,
+    articleTariffRevisionParamsSchema,
+    correctArticlePriceBodySchema,
+} from './supplierTariffRevision.validation.js';
+import {
     cleanupSupplierCatalogImportUploadOnError,
     uploadSupplierCatalogImportFile,
 } from './supplierCatalogImport.middleware.js';
@@ -219,6 +228,30 @@ supplierArticleRouter.patch(
     authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
     enforceWorkspaceAccessMode(),
     updateWorkspaceArticle,
+);
+
+supplierArticleRouter.get(
+    '/:articleId/tariffs',
+    authenticate,
+    validateRequest({ params: articleTariffParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_READ),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_READ),
+    listWorkspaceArticleTariffs,
+);
+
+supplierArticleRouter.post(
+    '/:articleId/tariffs/:tariffId/correction',
+    authenticate,
+    validateRequest({
+        params: articleTariffRevisionParamsSchema,
+        body: correctArticlePriceBodySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_MANAGE),
+    enforceWorkspaceAccessMode(),
+    correctWorkspaceArticleTariff,
 );
 
 supplierArticleRouter.patch(
