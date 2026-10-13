@@ -113,17 +113,26 @@ describe('SupplierArticleImportDialog', () => {
       new File(['Reference;Designation;Prix HT\\nR1;Pain;25'], 'prix.csv'));
     await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
     await user.click(screen.getByRole('button', { name: 'Sysco' }));
-    await user.type(screen.getByLabelText('Nom de la liste tarifaire'), 'Tarifs annuels');
-    fireEvent.change(screen.getByLabelText('Valable du'), {
-      target: { value: '2026-01-01' },
+    expect(screen.getByLabelText('Importer les prix présents dans le fichier')).toBeChecked();
+    expect(screen.queryByLabelText('Référence de la liste de prix')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Valable à partir du')).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText('Ces prix ont une période de validité définie'));
+    await user.type(screen.getByLabelText('Référence de la liste de prix'), 'Tarifs annuels');
+    fireEvent.change(screen.getByLabelText('Valable à partir du'), {
+      target: { value: '01/01/2026' },
     });
-    fireEvent.change(screen.getByLabelText('Jusqu’au (facultatif)'), {
-      target: { value: '2026-12-31' },
+    fireEvent.blur(screen.getByLabelText('Valable à partir du'));
+    fireEvent.change(screen.getByLabelText('Valable jusqu’au (facultatif)'), {
+      target: { value: '31/12/2026' },
     });
+    fireEvent.blur(screen.getByLabelText('Valable jusqu’au (facultatif)'));
+    expect(screen.getByDisplayValue('01/01/2026')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('31/12/2026')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
     expect(mocks.preview).toHaveBeenCalledWith(expect.objectContaining({
       supplierId: 'supplier-1',
       priceList: {
+        validityMode: 'DEFINED',
         name: 'Tarifs annuels',
         validFrom: '2026-01-01',
         validTo: '2026-12-31',
@@ -131,6 +140,58 @@ describe('SupplierArticleImportDialog', () => {
         defaultPriceBasis: 'PACKAGE',
       },
     }));
+  });
+
+  it('importe les prix sans demander de dates ni de nom par défaut', async () => {
+    const user = userEvent.setup();
+    mocks.inspect.mockReturnValue(resolved({
+      importId: 'import-sans-echeance',
+      format: 'CSV',
+      headers: ['Reference', 'Designation', 'Prix HT'],
+      rowCount: 1,
+    }));
+    renderDialog();
+    await user.upload(screen.getByLabelText('Fichier'),
+      new File(['Reference;Designation;Prix HT'], 'prix.csv'));
+    await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
+    await user.click(screen.getByRole('button', { name: 'Sysco' }));
+    expect(screen.getByLabelText('Importer les prix présents dans le fichier')).toBeChecked();
+    expect(screen.queryByLabelText('Valable à partir du')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
+    expect(mocks.preview).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      importId: 'import-sans-echeance',
+      supplierId: 'supplier-1',
+      mapping: { supplierReference: 0, designation: 1, priceAmount: 2 },
+      priceList: {
+        validityMode: 'FROM_IMPORT',
+        defaultPriceBasis: 'PACKAGE',
+      },
+    });
+  });
+
+  it('permet d’ignorer les prix d’un fichier sans importer de tarifs', async () => {
+    const user = userEvent.setup();
+    mocks.inspect.mockReturnValue(resolved({
+      importId: 'import-articles-seuls',
+      format: 'CSV',
+      headers: ['Reference', 'Designation', 'Prix HT'],
+      rowCount: 1,
+    }));
+    renderDialog();
+    await user.upload(screen.getByLabelText('Fichier'),
+      new File(['Reference;Designation;Prix HT'], 'prix.csv'));
+    await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
+    await user.click(screen.getByRole('button', { name: 'Sysco' }));
+    await user.click(screen.getByLabelText('Importer les prix présents dans le fichier'));
+    expect(screen.queryByLabelText('Ces prix ont une période de validité définie')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
+    expect(mocks.preview).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      importId: 'import-articles-seuls',
+      supplierId: 'supplier-1',
+      mapping: { supplierReference: 0, designation: 1 },
+    });
   });
 
   it('interdit la confirmation lorsque la prévisualisation contient une erreur', async () => {
