@@ -1,3 +1,5 @@
+import { supplierPackagingLabel } from './supplierArticlePresentation.service.js';
+
 const decimalToString = (value) => (
     value === null || value === undefined
         ? null
@@ -92,6 +94,7 @@ const serializeSupplierArticle = (article) => ({
     supplierDesignation: article.supplierDesignation ?? null,
     brand: article.brand ?? null,
     packaging: serializePackaging(article.packaging),
+    packagingLabel: supplierPackagingLabel(article.packaging, article.productVariant),
     status: article.status,
     replacedById: article.replacedBy?.toString() ?? null,
     provenance: article.provenance ?? null,
