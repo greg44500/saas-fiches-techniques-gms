@@ -275,7 +275,7 @@ describe('SupplierCatalogImportDialog', () => {
 
     await user.upload(
       screen.getByLabelText('Fichier'),
-      new File(['Reference;Designation\\nREF-1;Pain'], 'catalogue.csv', {
+      new File(['Reference;Designation\nREF-1;Pain'], 'catalogue.csv', {
         type: 'text/csv',
       }),
     );
