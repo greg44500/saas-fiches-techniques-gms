@@ -417,3 +417,20 @@ ont été adaptées, avec nouveaux tests unitaires des composants d'import.
 **Aucun test local ou gate n'est déclaré vert à cette étape.** L'utilisateur
 exécute ensuite pull, lint, tests et QA visuelle sur Windows. Corriger les
 éventuels échecs sur la même branche ; une seule PR finale après accord.
+
+
+---
+
+## Complément M-003 — création rapide d'un Fournisseur depuis les imports (2026-10-13)
+
+Branche : `feature/m003-catalog-management-and-import-ux`.
+
+- Les assistants d'import Articles fournisseur et Catalogues utilisent désormais un sélecteur partagé de Fournisseur avec recherche serveur par nom. Il évite de dépendre uniquement des cent premiers Fournisseurs chargés par la page.
+- Lorsque l'utilisateur possède les droits de création de Fournisseur de la portée concernée (Workspace ou Application Global), il peut créer une fiche minimale par son nom et la sélectionner immédiatement, sans interrompre l'import.
+- Les API existantes de création sont réutilisées, sans changement de modèle, de Core, de permissions ou de contrat d'import.
+- La nouvelle identité reste respectivement WORKSPACE_PRIVATE ou GLOBAL_SHARED selon le contexte. La création globale reste réservée aux administrateurs habilités par Application Global.
+- Aucun nouveau statut de validation n'a été introduit : le contrat actuel ne connaît que ACTIVE/ARCHIVED. Le workflow de vérification métier distinct (rôle du valideur, règles de disponibilité des Articles et prix, gestion des homonymes et éventuels blocages) doit faire l'objet d'une décision fonctionnelle et d'un avenant contractuel avant tout code.
+- Le contrôle d'homonyme dans le sélecteur est une aide UX et non une garantie d'unicité serveur.
+- Tests des dialogues et E2E adaptés ; tests nouveaux pour la sélection, les permissions et la création rapide. **Aucune exécution locale ni gate n'est déclarée verte**.
+
+QA nécessaire : recherche d'un Fournisseur au-delà de la première page, sélection d'un fournisseur existant, création privée, création globale habilitée, refus sans droits, éventuelle homonymie, conservation du fichier et des correspondances, import confirmé, isolation Workspace, absence de régression.
