@@ -1431,3 +1431,49 @@ fusionner leurs règles métier :
 
 L'identité Produit M-002, les contrôles d'import existants, les permissions,
 les contrats d'API et les règles économiques M-003 demeurent inchangés.
+
+---
+
+## Complément validé — liste tarifaire indépendante d'un catalogue (2026-10-13)
+
+Un Fournisseur peut transmettre une liste de prix valable pendant une période
+définie, sans édition de catalogue. Le parcours « Importer des Articles »
+accepte ainsi les colonnes de prix en plus des identifiants et conditionnements,
+sans imposer un Catalogue artificiel.
+
+- **Source métier** : `SupplierTariff` reste le modèle tarifaire de référence.
+  Chaque tarif possède soit une édition Catalogue, soit l'origine indépendante
+  `PRICE_LIST` (nom de la liste, import source, provenance et dates de validité).
+- **Temporalité** : date de début obligatoire pour une liste tarifaire ;
+  date de fin facultative. Début postérieur à la fin refusé. Les bornes sont
+  inclusives. Plusieurs listes historiques peuvent coexister sans chevauchement.
+- **Concurrence** : l'import refuse tout chevauchement avec un tarif courant
+  visible et applicable pour cet Article et cette portée. Aucun prix ancien
+  n'est remplacé, fusionné ou recalculé silencieusement.
+- **Sécurité** : les tarifs privés sur un Article global sont cloisonnés
+  au Workspace ; l'autorité de gestion et la capability de l'import restent
+  celles de M-003. Les autres Workspaces ne sont pas consultés lors de la
+  vérification des chevauchements.
+- **Cas sans prix** : le parcours Articles sans colonnes tarifaires reste
+  fonctionnel et ne crée aucun `SupplierTariff`.
+- **Association M-002** : un Article non associé conserve son prix commercial
+  source et peut afficher le prix ramené au kg/L/unité si la base et le
+  conditionnement le permettent. La valorisation d'une fiche nécessite
+  toujours l'association Produit préalable. Après association, la normalisation
+  est recalculée à la lecture côté serveur sans réécrire le tarif historique.
+- **Projection API** : la liste Articles expose un état de disponibilité
+  tarifaire, la provenance, les montants HT par conditionnement et par unité
+  calculables, et un libellé de conditionnement synthétisé par le backend.
+  Le frontend ne réalise aucun calcul monétaire ou de quantité.
+- **UX** : compteurs Fournisseurs actifs et Articles actifs indépendants
+  de la pagination ; badge « Non associé » ; suppression du sous-libellé
+  de portée dans la colonne Fournisseur de l'onglet Articles.
+- **Migration** : l'ancien index unique par édition/Article doit être
+  remplacé par un index qui ne contraint que les vrais tarifs de catalogue ;
+  index dédié aux listes tarifaires. Migration uniquement après audit M-003
+  et contrôle de la base concernée.
+
+Ce complément ne crée ni Catalogue, ni édition fictive, ni seconde primitive
+de Prix applicable. L'archivage d'une liste, la correction d'une période
+déjà enregistrée et la gestion assistée des collisions historiques constituent
+un workflow ultérieur à cadrer. Aucun test ou gate n'est présumé réussi.
