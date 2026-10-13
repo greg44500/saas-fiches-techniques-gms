@@ -16,6 +16,7 @@ const articleImportSessionSchema = new Schema({
     headers: { type: [String], required: true },
     rows: { type: [Schema.Types.Mixed], required: true },
     mapping: { type: Schema.Types.Mixed, default: null },
+    priceListDraft: { type: Schema.Types.Mixed, default: null },
     preview: { type: [Schema.Types.Mixed], default: [] },
     committedResult: { type: Schema.Types.Mixed, default: null },
     expiresAt: { type: Date, required: true },
