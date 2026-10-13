@@ -952,6 +952,7 @@ const upsertCurrentTariffInSession = async ({
             {
                 catalogEdition:
                     catalog._id,
+                sourceKind: 'CATALOG',
                 catalogLine:
                     catalogLine._id,
                 supplierArticle:
