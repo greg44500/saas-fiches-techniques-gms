@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
-  DialogClose, DialogContent, DialogFooter, DialogHeader,
-  DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
+  DialogContent, DialogOverlay, DialogPortal, DialogRoot,
 } from '@/components/ui/dialog';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { ImportFilePicker } from '@/features/imports/components/import-file-picker';
+import { ImportWizardFooter } from '@/features/imports/components/import-wizard-footer';
+import { ImportWizardHeader } from '@/features/imports/components/import-wizard-header';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -53,12 +54,12 @@ function SupplierArticleImportDialog({
 }) {
   const isGlobal = mode === 'global';
   const cancelRef = useRef(null);
-  const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [inspected, setInspected] = useState(null);
   const [supplierId, setSupplierId] = useState(NONE);
   const [mapping, setMapping] = useState({});
   const [preview, setPreview] = useState(null);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
   const [inspectWorkspace, inspectWorkspaceState] =
@@ -86,6 +87,7 @@ function SupplierArticleImportDialog({
     setSupplierId(NONE);
     setMapping({});
     setPreview(null);
+    setResult(null);
     setError('');
   }, [open]);
 
@@ -155,6 +157,7 @@ function SupplierArticleImportDialog({
       const result = isGlobal
         ? await commitGlobal(body).unwrap()
         : await commitWorkspace({ workspaceId, ...body }).unwrap();
+      setResult(result);
       onCommitted(result);
     } catch (failure) {
       setError(getApiErrorMessage(failure, 'Confirmation impossible.'));
@@ -162,6 +165,7 @@ function SupplierArticleImportDialog({
   }
 
   const invalid = (preview?.counts?.INVALID ?? 0) > 0;
+  const step = result ? 'done' : preview ? 'preview' : inspected ? 'mapping' : 'upload';
 
   return (
     <DialogRoot
@@ -172,49 +176,28 @@ function SupplierArticleImportDialog({
       <DialogPortal>
         <DialogOverlay />
         <DialogContent
-          className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-y-auto"
+          className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-x-hidden overflow-y-auto"
           initialFocus={cancelRef}
         >
-          <DialogHeader>
-            <DialogTitle>Importer une liste d’Articles fournisseur</DialogTitle>
-          </DialogHeader>
-          <div className="mt-5 space-y-5">
-            <p className="text-sm text-muted-foreground">
-              Cet import crée ou actualise les Articles du Fournisseur sans créer
-              de catalogue commercial ni de tarifs. Les nouveaux Articles
-              restent « Produit à associer » jusqu’à leur rattachement.
-            </p>
-            {!inspected && (
-              <section className="space-y-3">
-                <Field>
-                  <FieldLabel htmlFor="article-import-file">Fichier</FieldLabel>
-                  <FieldDescription>Formats acceptés : CSV, XLS, XLSX.</FieldDescription>
-                  <Input
-                    accept=".csv,.xls,.xlsx"
-                    className="sr-only"
-                    id="article-import-file"
-                    onChange={(event) => {
-                      setFile(event.target.files?.[0] ?? null);
-                      setError('');
-                    }}
-                    ref={fileInputRef}
-                    type="file"
-                  />
-                  <div className="flex items-center gap-3">
-                    <Button onClick={() => fileInputRef.current?.click()} type="button" variant="outline">
-                      Choisir un fichier
-                    </Button>
-                    <span className="text-sm text-muted-foreground">
-                      {file ? file.name : 'Aucun fichier choisi'}
-                    </span>
-                  </div>
-                </Field>
-                <Button disabled={pending || !file} onClick={inspect} type="button">
-                  Inspecter le fichier
-                </Button>
-              </section>
+          <ImportWizardHeader
+            helpText="Ajoutez les Articles d’un Fournisseur à partir d’un fichier. Les références existantes seront reconnues. Vous pourrez ensuite associer les nouveaux Articles aux Produits correspondants."
+            step={step}
+            title="Importer des Articles fournisseur"
+          />
+
+          <div className="mt-5 min-w-0 space-y-5">
+            {step === 'upload' && (
+              <ImportFilePicker
+                disabled={pending}
+                file={file}
+                id="article-import-file"
+                onChange={(value) => {
+                  setFile(value);
+                  setError('');
+                }}
+              />
             )}
-            {inspected && (
+            {step === 'mapping' && inspected && (
               <section className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   {inspected.rowCount} ligne(s) lue(s) dans le fichier {inspected.format}.
@@ -268,12 +251,10 @@ function SupplierArticleImportDialog({
                     </Field>
                   ))}
                 </div>
-                <Button disabled={pending} onClick={previewImport} type="button">
-                  Prévisualiser les Articles
-                </Button>
+
               </section>
             )}
-            {preview && (
+            {step === 'preview' && preview && (
               <section className="space-y-3">
                 <h3 className="font-medium">Résultat de la prévisualisation</h3>
                 <p className="text-sm text-muted-foreground">
@@ -308,6 +289,14 @@ function SupplierArticleImportDialog({
                     </tbody>
                   </table>
                 </div>
+                <Button
+                  disabled={pending}
+                  onClick={() => setPreview(null)}
+                  type="button"
+                  variant="outline"
+                >
+                  Modifier les correspondances
+                </Button>
                 {invalid && (
                   <p className="text-sm text-destructive">
                     Des lignes invalides bloquent la confirmation.
@@ -316,22 +305,45 @@ function SupplierArticleImportDialog({
                 )}
               </section>
             )}
+            {step === 'done' && result && (
+              <section className="rounded-lg border border-border p-4">
+                <h3 className="font-semibold">Import terminé</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {result.created ?? 0} Article(s) créé(s),{' '}
+                  {result.updated ?? 0} actualisé(s),{' '}
+                  {result.skipped ?? 0} ligne(s) sans référence ignorée(s).
+                  Retrouvez les Articles dans l’onglet Articles.
+                </p>
+              </section>
+            )}
             <FieldError>{error}</FieldError>
           </div>
-          <DialogFooter>
-            <DialogClose
-              disabled={pending}
-              ref={cancelRef}
-              render={<Button type="button" variant="outline" />}
-            >
-              Fermer
-            </DialogClose>
-            {preview && (
-              <Button disabled={pending || invalid} onClick={confirmImport} type="button">
-                {pending ? 'Confirmation…' : 'Confirmer l’import des Articles'}
-              </Button>
-            )}
-          </DialogFooter>
+          <ImportWizardFooter
+            cancelRef={cancelRef}
+            pending={pending}
+            primaryAction={
+              step === 'upload'
+                ? inspect
+                : step === 'mapping'
+                  ? previewImport
+                  : step === 'preview' ? confirmImport : null
+            }
+            primaryDisabled={
+              (step === 'upload' && !file)
+              || (step === 'preview' && invalid)
+            }
+            primaryLabel={
+              step === 'upload'
+                ? (inspectWorkspaceState.isLoading || inspectGlobalState.isLoading
+                  ? 'Analyse…' : 'Analyser le fichier')
+                : step === 'mapping'
+                  ? (previewWorkspaceState.isLoading || previewGlobalState.isLoading
+                    ? 'Prévisualisation…' : 'Prévisualiser')
+                  : (commitWorkspaceState.isLoading || commitGlobalState.isLoading
+                    ? 'Confirmation…' : 'Confirmer l’import')
+            }
+            step={step}
+          />
         </DialogContent>
       </DialogPortal>
     </DialogRoot>
