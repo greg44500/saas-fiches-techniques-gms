@@ -50,6 +50,40 @@ const articlePath = (context) =>
     '/api/workspaces/' + context.workspace._id.toString() + '/supplier-articles';
 
 describe('M-003 supplier/article HTTP contract', () => {
+    it('normalise le nom en majuscules et refuse le doublon, la variante plurielle et le renommage', async () => {
+        const first = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Transgourmet' });
+        expect(first.status).toBe(201);
+        expect(first.body.data.supplier.name).toBe('TRANSGOURMET');
+
+        const duplicate = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: '  transgourmet  ' });
+        expect(duplicate.status).toBe(409);
+
+        const plural = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Transgourmets' });
+        expect(plural.status).toBe(409);
+
+        const another = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Autre grossiste' });
+        expect(another.status).toBe(201);
+
+        const rename = await request(app)
+            .patch(supplierPath(ownerA) + '/' + another.body.data.supplier.id)
+            .set(bearer(ownerA.token))
+            .send({ name: 'TRANSGOURMET' });
+        expect(rename.status).toBe(409);
+    });
+
+
     it('isole un Fournisseur privé entre Workspaces', async () => {
         const created = await request(app)
             .post(supplierPath(ownerA))
