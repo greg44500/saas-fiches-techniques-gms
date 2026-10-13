@@ -639,3 +639,14 @@ L'association à la Référence Produit peut être différée ; les fonctionnali
 Ce complément est **en attente de tests et de QA locale**. La suppression
 contrôlée d'éditions Catalogue est recensée en dette M-003 et ne fait pas
 partie des modifications de l'import d'Articles de ce passage.
+
+---
+
+## UX transversale des imports métier — livraison à valider (2026-10-13)
+
+Harmonisation de l'import Produits M-002, des Articles fournisseur M-003 et
+des Catalogues M-003 : aide contextuelle utilisateur, sélecteur CSV/XLS/XLSX
+francisé, quatre étapes identifiées visuellement et accessibles, actions en pied
+de fenêtre et disposition responsive. Composants mutualisés sous
+`frontend/src/features/imports/components/`, sans changement Core ni contrat
+backend. **À confirmer par les tests et la QA visuelle locaux avant PR/merge.**

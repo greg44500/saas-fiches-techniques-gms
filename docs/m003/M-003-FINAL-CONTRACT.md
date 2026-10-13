@@ -1407,3 +1407,27 @@ M-003/M-004/M-005 ; il n'introduit aucun changement Core. L'annulation d'import 
 suppression contrôlée d'une édition commerciale sont un besoin distinct à finaliser,
 avec vérification de toutes les dépendances économiques, sans effacer implicitement
 les données déjà utilisées dans d'autres Dossiers ou éditions.
+
+---
+
+## Complément validé — cohérence UX des imports métier (2026-10-13)
+
+Les assistants d'import Produits M-002, Articles fournisseur M-003 et
+Catalogues fournisseur M-003 partagent une **présentation cohérente**, sans
+fusionner leurs règles métier :
+
+- titre visible et courte aide métier dans une icône d'information accessible ;
+- sélection du fichier avec bouton « Choisir un fichier », nom du fichier ou
+  « Aucun fichier sélectionné » en français et indication CSV/XLS/XLSX ;
+- progression « Choisir → Associer → Vérifier → Terminer » ;
+- état actif distingué visuellement par un cercle, une bordure et une graisse
+  renforcés, états terminés cochés, étapes futures neutres ; statut également
+  accessible aux lecteurs d'écran, sans signification portée par la couleur seule ;
+- actions d'analyse, de prévisualisation, de confirmation et d'annulation situées
+  de façon cohérente en pied de dialogue ;
+- étape de fin lisible après confirmation réussie ; disposition responsive sans
+  défilement horizontal de toute la boîte de dialogue ;
+- correction possible du mapping après une prévisualisation M-003.
+
+L'identité Produit M-002, les contrôles d'import existants, les permissions,
+les contrats d'API et les règles économiques M-003 demeurent inchangés.

@@ -435,3 +435,27 @@ Dans la liste Fournisseurs, les catégories Produit commercialisées sont projet
 
 Le pilote ne procède à aucune suppression de catalogue, aucun changement d'Article
 global depuis un Workspace et aucune modification du Core.
+
+---
+
+## Harmonisation visuelle des imports (2026-10-13)
+
+Les trois assistants métier réutilisent les composants situés sous
+`frontend/src/features/imports/components/` :
+
+- `ImportWizardHeader` : titre, aide via le `InfoTooltip` existant et
+  stepper d'état actif / terminé / futur (avec `aria-current="step"`) ;
+- `ImportFilePicker` : input fichier masqué mais accessible, sélection affichée
+  en français, formats CSV/XLS/XLSX, nom tronqué de façon responsive ;
+- `ImportWizardFooter` : actions cohérentes d'analyse, de prévisualisation,
+  de confirmation et de fermeture.
+
+Ces composants sont volontairement **spécifiques aux imports du produit** : ils
+ne dupliquent pas les primitives génériques du Core (`Dialog`, `Button`,
+`InfoTooltip`, `Field`) et n'altèrent pas la logique des imports ou les APIs.
+Les règles de mapping, les erreurs métier, les permissions et les requêtes
+RTK Query restent dans leurs fonctionnalités respectives.
+
+Les deux assistants Fournisseurs affichent leur résumé de confirmation avant
+fermeture, le toast restant déclenché lors du commit. Les tests RTL et Playwright
+couvrent le changement de parcours, l'accessibilité et les libellés francisés.

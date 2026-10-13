@@ -398,3 +398,22 @@ aucune édition Catalogue ou tarif créé par le flux Articles ; séparation str
 GLOBAL_SHARED / WORKSPACE_PRIVATE. Tests à mener avec ClamAV fonctionnel et base
 de test dédiée, migration M-003 des nouveaux indexes à exécuter sur l'environnement
 de développement. Ne pas ouvrir de PR ni merger avant validation utilisateur.
+
+---
+
+## Reprise UX des imports — travail en attente de QA locale (2026-10-13)
+
+Branche active : `feature/m003-catalog-management-and-import-ux`.
+Complément UX implémenté pour les trois assistants d'import métier : Produits,
+Articles fournisseur, Catalogues fournisseur. Stepper quatre étapes avec état
+actif visuellement affirmé (bordure, couleur, typographie), coches d'étapes
+terminées et `aria-current`; information métier en infobulle accessible ;
+sélecteur de fichier francisé et formats acceptés ; footer commun ; récapitulatif
+final visible pour les parcours Fournisseurs.
+
+Les modifications sont frontend / tests / documentation, sans changement Core,
+API ou modèle DB dans ce complément. Les suites de tests existantes et E2E M-003
+ont été adaptées, avec nouveaux tests unitaires des composants d'import.
+**Aucun test local ou gate n'est déclaré vert à cette étape.** L'utilisateur
+exécute ensuite pull, lint, tests et QA visuelle sur Windows. Corriger les
+éventuels échecs sur la même branche ; une seule PR finale après accord.
