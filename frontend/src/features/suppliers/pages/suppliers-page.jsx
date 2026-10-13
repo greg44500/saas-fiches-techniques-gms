@@ -390,8 +390,9 @@ function SuppliersPage() {
     {
       id: 'product',
       header: 'Produit associé',
-      cell: (article) => article.productVariant?.name
-        || <StatusBadge tone="warning">Non associé</StatusBadge>,
+      cell: (article) => article.associationStatus === 'PENDING'
+        ? <StatusBadge tone="warning">Non associé</StatusBadge>
+        : article.productVariant?.name ?? '—',
     },
     {
       id: 'packaging',
