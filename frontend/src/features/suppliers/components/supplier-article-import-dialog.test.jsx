@@ -106,7 +106,7 @@ describe('SupplierArticleImportDialog', () => {
     }));
     renderDialog();
     await user.upload(screen.getByLabelText('Fichier'), new File(['x'], 'test.csv'));
-    await user.click(screen.getByRole('button', { name: 'Inspecter le fichier' }));
+    await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
     await user.click(screen.getByRole('combobox', { name: 'Fournisseur des Articles' }));
     await user.click(await screen.findByRole('option', { name: 'Sysco' }));
     await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
