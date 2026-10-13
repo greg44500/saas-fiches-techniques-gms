@@ -79,6 +79,14 @@ const packagePriceAmount = ({ amount, basis, packaging }) => {
     });
 };
 
+const supplierSourcePriceLabel = (price, packaging) => {
+    if (!price) return null;
+    return money(price.amount, price.currency) + ' / '
+        + (price.basis === 'PACKAGE'
+            ? (packaging?.containerType || 'conditionnement')
+            : unitLabel(price.basis));
+};
+
 const supplierTariffPresentation = (tariff, article) => {
     if (!tariff) return null;
     const packaging = article.packaging;
@@ -125,4 +133,4 @@ const supplierTariffPresentation = (tariff, article) => {
     };
 };
 
-export { supplierPackagingLabel, supplierTariffPresentation };
+export { supplierPackagingLabel, supplierSourcePriceLabel, supplierTariffPresentation };
