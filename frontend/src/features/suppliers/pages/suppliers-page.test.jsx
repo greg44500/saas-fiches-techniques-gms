@@ -401,6 +401,14 @@ describe('SuppliersPage', () => {
         id: 'article-1',
         supplierReference: 'ABR-1',
         supplierDesignation: 'Abricot',
+        supplierTariffStatus: 'AVAILABLE',
+        supplierTariff: {
+          id: 'tariff-1',
+          sourceKind: 'PRICE_LIST',
+          sourceLabel: 'test interne qui ne doit pas être affiché',
+          sourcePriceLabel: '12,500 € HT / carton',
+          unitPriceLabel: '1,250 € HT / kg',
+        },
         productVariant: {
           id: 'variant-1',
           name: 'Abricot',
@@ -429,8 +437,39 @@ describe('SuppliersPage', () => {
     renderPage('/workspaces/workspace-1/suppliers?section=articles');
 
     expect(screen.getByText(/1 abricot/)).toBeInTheDocument();
+    expect(screen.getByText('Réf. fournisseur : ABR-1').previousElementSibling)
+      .toHaveTextContent('Abricot');
+    expect(screen.getByText('12,500 € HT / carton')).toBeInTheDocument();
+    expect(screen.getByText('1,250 € HT / kg')).toBeInTheDocument();
+    expect(screen.queryByText('test interne qui ne doit pas être affiché'))
+      .not.toBeInTheDocument();
     expect(screen.queryByText(/1 UNIT/)).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Fournisseurs (2)' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Articles (1)' })).toBeInTheDocument();
   });
+  it('permet de consulter puis corriger association, Article et tarif', async () => {
+    const user = userEvent.setup();
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [{
+        id: 'article-1',
+        supplierReference: 'REF-42',
+        supplierDesignation: 'Farine fournisseur',
+        supplier: { id: 'supplier-1', name: 'Fournisseur régional' },
+        productVariant: { id: 'variant-1', name: 'Farine' },
+        associationStatus: 'ASSOCIATED',
+        supplierTariffStatus: 'AVAILABLE',
+        supplierTariff: { id: 'price-1', sourceKind: 'PRICE_LIST' },
+        scope: 'WORKSPACE_PRIVATE',
+        status: 'ACTIVE',
+        packagingLabel: 'Sac · 25 kg',
+      }],
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+    }));
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+    await user.click(screen.getByRole('button', { name: 'Détails de REF-42' }));
+    expect(screen.getByText('Détails Article : REF-42')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Corriger l’association' }));
+    expect(screen.getByText('Association Article ouverte')).toBeInTheDocument();
+  });
+
 });
