@@ -188,6 +188,7 @@ const supplierTariffSchema = new Schema(
         },
         sourceLabel: { type: String, trim: true, maxlength: 180, default: null, immutable: true },
         sourceImportId: { type: Schema.Types.ObjectId, default: null, immutable: true },
+        packagingSnapshot: { type: packagingSchema, default: null, immutable: true },
         catalogLine: {
             type: Schema.Types.ObjectId,
             ref: 'SupplierCatalogLine',
