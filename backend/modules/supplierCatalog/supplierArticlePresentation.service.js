@@ -89,7 +89,7 @@ const supplierSourcePriceLabel = (price, packaging) => {
 
 const supplierTariffPresentation = (tariff, article) => {
     if (!tariff) return null;
-    const packaging = article.packaging;
+    const packaging = tariff.packagingSnapshot ?? article.packaging;
     const basis = tariff.sourceBasis;
     const currency = tariff.currency || 'EUR';
     const target = normalizedUnit(
