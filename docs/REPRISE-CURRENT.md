@@ -500,3 +500,29 @@ merger avant QA explicite et preuve des gates.
 Contrôle ajouté : `SupplierTariff.packagingSnapshot` conserve les poids/quantités
 au moment de la liste ; projections et Prix applicable utilisent cet
 instantané plutôt que le conditionnement courant de l'Article.
+
+
+## Correction UX complémentaire — option A validée (2026-10-13)
+
+Suite au retour QA sur le formulaire des Articles : calendrier natif
+`type=date` supprimé et composant existant `components/forms/date-picker.jsx`
+réutilisé, avec affichage français `jj/mm/aaaa`.
+
+Lorsque la colonne prix est mappée, une case « Importer les prix présents
+dans le fichier » permet de n'importer que les Articles si elle est décochée.
+Lorsque les prix sont importés, une seconde case « Ces prix ont une période
+de validité définie » (décochée par défaut) ouvre les champs détaillés.
+Sans période renseignée, `validityMode=FROM_IMPORT` est traité côté
+backend : `validFrom` est déterminé à la confirmation par le serveur et
+`validTo=null`, avec nom de source en français. Avec période définie,
+`validityMode=DEFINED` exige nom et début ; l'ancienne forme du contrat
+reste acceptée.
+
+Le champ technique « Base tarifaire par défaut » est présenté comme
+« À quoi correspond le prix indiqué dans le fichier ? ». Aucune logique
+de prix n'est déplacée dans le frontend.
+
+Tests frontend étendus (avec/sans période, import prix désactivé) ;
+tests HTTP étendus (horodatage serveur sans expiration, rejet de date
+client imposée). **Exécution locale, lint et gate non encore vérifiés.**
+Conserver la branche M-003, ne pas ouvrir de PR avant validation utilisateur.
