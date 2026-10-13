@@ -826,6 +826,7 @@ function SuppliersPage() {
       />
 
       <SupplierArticleImportDialog
+        canCreateSupplier={canManageSuppliers}
         onClose={() => setArticleImportOpen(false)}
         onCommitted={(result) => {
           toast({
@@ -841,6 +842,7 @@ function SuppliersPage() {
       />
 
       <SupplierCatalogImportDialog
+        canCreateSupplier={canManageSuppliers}
         onClose={() => setImportOpen(false)}
         onCommitted={(result) => {
           toast({
