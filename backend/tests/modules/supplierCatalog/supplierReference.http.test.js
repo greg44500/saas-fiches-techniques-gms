@@ -281,7 +281,7 @@ describe('M-003 supplier/article HTTP contract', () => {
 
         expect(response.status).toBe(201);
         expect(response.body.data.supplier.name)
-            .toBe('Fournisseur rôle personnalisé');
+            .toBe('FOURNISSEUR RÔLE PERSONNALISÉ');
     });
 
     it('filtre les Articles par Produit sans requête par Référence', async () => {
