@@ -846,6 +846,8 @@ function SuppliersPage() {
         article={articleDetails}
         canManage={Boolean(articleDetails?.scope === 'WORKSPACE_PRIVATE'
           && canManageArticles)}
+        canAssociate={Boolean(articleDetails?.scope === 'WORKSPACE_PRIVATE'
+          && canManageArticles && canReadProducts)}
         canReadTariffs={canReadTariffs}
         canCorrectTariffs={canCorrectTariffs && Boolean(
           articleDetails?.supplierTariff?.sourceKind === 'PRICE_LIST'
