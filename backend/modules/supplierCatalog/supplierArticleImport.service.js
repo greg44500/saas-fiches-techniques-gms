@@ -90,7 +90,7 @@ const resolvePriceListValidity = (priceList, importDate = new Date()) => {
         return priceList;
     }
     const dateLabel = new Intl.DateTimeFormat('fr-FR', {
-        timeZone: 'UTC',
+        timeZone: 'Europe/Paris',
         day: '2-digit', month: '2-digit', year: 'numeric',
     }).format(importDate);
     return {
