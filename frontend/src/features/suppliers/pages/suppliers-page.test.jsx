@@ -80,6 +80,31 @@ vi.mock('@/features/suppliers/components/supplier-article-association-dialog', (
   ),
 }));
 
+vi.mock('@/features/suppliers/components/supplier-article-details-drawer', () => ({
+  SupplierArticleDetailsDrawer: ({ open, article, onAssociate, onEdit, onCorrectPrice }) => (
+    open ? (
+      <div>
+        Détails Article : {article?.supplierReference}
+        <button onClick={() => onAssociate(article)} type="button">Corriger l’association</button>
+        <button onClick={() => onEdit(article)} type="button">Corriger la désignation</button>
+        <button onClick={() => onCorrectPrice(article)} type="button">Corriger le tarif</button>
+      </div>
+    ) : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-article-edit-dialog', () => ({
+  SupplierArticleEditDialog: ({ open }) => (
+    open ? <div>Modification Article ouverte</div> : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-article-price-correction-dialog', () => ({
+  SupplierArticlePriceCorrectionDialog: ({ open }) => (
+    open ? <div>Correction tarifaire ouverte</div> : null
+  ),
+}));
+
 vi.mock('@/features/suppliers/components/supplier-article-import-dialog', () => ({
   SupplierArticleImportDialog: ({ open }) => (
     open ? <div>Import Articles ouvert</div> : null
