@@ -411,7 +411,22 @@ function SuppliersPage() {
     {
       id: 'packaging',
       header: 'Conditionnement',
-      cell: (article) => article.packagingLabel || 'Non renseigné',
+      cell: (article) => (
+        <div>
+          <p>{article.packagingPresentation?.mainLabel
+            || article.packagingLabel || 'Non renseigné'}</p>
+          {article.packagingPresentation?.totalLabel && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {article.packagingPresentation.totalLabel}
+            </p>
+          )}
+          {article.packagingPresentation?.warningLabel && (
+            <p className="mt-1 text-xs text-warning" role="note">
+              {article.packagingPresentation.warningLabel}
+            </p>
+          )}
+        </div>
+      ),
     },
     {
       id: 'supplier-tariff',
@@ -430,6 +445,9 @@ function SuppliersPage() {
             <p className="font-medium">
               {price.packagePriceLabel || price.sourcePriceLabel}
             </p>
+            {price.piecePriceLabel && (
+              <p className="mt-1 text-xs text-muted-foreground">{price.piecePriceLabel}</p>
+            )}
             {price.unitPriceLabel && price.unitPriceLabel !== price.packagePriceLabel && (
               <p className="mt-1 text-xs text-muted-foreground">{price.unitPriceLabel}</p>
             )}

@@ -108,6 +108,9 @@ function SupplierArticleDetailsDrawer({
             <p className="mt-3 font-medium">
               {price?.packagePriceLabel || price?.sourcePriceLabel || 'Aucun tarif valide'}
             </p>
+            {price?.piecePriceLabel && (
+              <p className="mt-1 text-sm text-muted-foreground">{price.piecePriceLabel}</p>
+            )}
             {price?.unitPriceLabel && (
               <p className="mt-1 text-sm text-muted-foreground">{price.unitPriceLabel}</p>
             )}

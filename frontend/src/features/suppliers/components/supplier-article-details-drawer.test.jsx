@@ -31,6 +31,8 @@ const article = {
     sourceLabel: 'Liste tarifaire',
     sourcePriceLabel: '11,200 € HT / unité',
     packagePriceLabel: '403,200 € HT / carton',
+    piecePriceLabel: '11,200 € HT / pièce',
+    unitPriceLabel: '37,333 € HT / kg',
     validFrom: '2026-10-13T00:00:00.000Z',
     validTo: '2026-10-14T00:00:00.000Z',
   },
@@ -65,6 +67,8 @@ describe('SupplierArticleDetailsDrawer', () => {
     })).toBeInTheDocument();
     expect(screen.getByText('Informations de l’article')).toBeInTheDocument();
     expect(screen.getByText('Réf. fournisseur : 34171')).toBeInTheDocument();
+    expect(screen.getByText('11,200 € HT / pièce')).toBeInTheDocument();
+    expect(screen.getByText('37,333 € HT / kg')).toBeInTheDocument();
     expect(screen.queryByText('BRIDOR · Réf. 34171')).not.toBeInTheDocument();
     expect(screen.getByRole('note')).toHaveClass('text-warning');
     const trigger = screen.getByRole('button', {

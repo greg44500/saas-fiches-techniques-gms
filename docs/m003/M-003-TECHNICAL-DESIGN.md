@@ -128,6 +128,24 @@ La structure V1 est volontairement plate : un seul niveau
 dans `supplierLabel`. Lorsque `unit = UNIT`, le libellé métier vient de la
 Référence Produit M-002.
 
+### Projections de lecture des conditionnements et des prix (2026-10-13)
+
+`supplierArticlePresentation.service.js` est l'autorité pour les valeurs
+de lecture. La réponse Article fournit `packagingPresentation` avec
+`mainLabel`, `totalLabel` et `warningLabel`, sans supprimer
+`packagingLabel` pour les consommateurs existants. Le total de masse est
+exprimé en kg, le volume en L et le décompte M-002 en UNIT. En cas
+d'incohérence entre masse calculée et poids net déclaré, les deux
+valeurs restent distinctes et le total est clairement indiqué comme
+calculé.
+
+La projection Tarif conserve `packagePriceLabel` et `unitPriceLabel`
+et ajoute `pieceAmount` / `piecePriceLabel` lorsque le nombre d'éléments
+et leur quantité par élément rendent le prix à la pièce calculable.
+Une absence de données rend cette projection nulle. Le tarif et son
+`packagingSnapshot` restent les seules sources économiques ; React ne
+recalcule ni prix ni quantité.
+
 ## 5. Prix et précision
 
 Chaque donnée économique conserve sourceAmount, sourceBasis, currency, normalizedAmount nullable et normalizedUnit nullable.

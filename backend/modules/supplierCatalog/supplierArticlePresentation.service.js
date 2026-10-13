@@ -32,7 +32,9 @@ const comparableAmounts = (left, leftUnit, right, rightUnit) => {
     return Number(left) * l.factorToBase === Number(right) * r.factorToBase;
 };
 
-const supplierPackagingLabel = (packaging, productVariant = null) => {
+const supplierPackagingLabel = (
+    packaging, productVariant = null, { includeWeights = true } = {},
+) => {
     if (!packaging) return 'Non renseigné';
     const parts = [];
     const label = packaging.supplierLabel || packaging.containerType;
@@ -48,7 +50,7 @@ const supplierPackagingLabel = (packaging, productVariant = null) => {
         parts.push('total ' + printQuantity(packaging.totalQuantity)
             + ' ' + unitLabel(packaging.unit, productVariant));
     }
-    if (packaging.netWeight && packaging.netWeightUnit
+    if (includeWeights && packaging.netWeight && packaging.netWeightUnit
         && !(packaging.totalQuantity && packaging.unit && comparableAmounts(
             packaging.netWeight, packaging.netWeightUnit,
             packaging.totalQuantity, packaging.unit,
@@ -56,11 +58,74 @@ const supplierPackagingLabel = (packaging, productVariant = null) => {
         parts.push('net ' + printQuantity(packaging.netWeight)
             + ' ' + unitLabel(packaging.netWeightUnit));
     }
-    if (packaging.drainedNetWeight && packaging.drainedNetWeightUnit) {
+    if (includeWeights && packaging.drainedNetWeight && packaging.drainedNetWeightUnit) {
         parts.push('égoutté ' + printQuantity(packaging.drainedNetWeight)
             + ' ' + unitLabel(packaging.drainedNetWeightUnit));
     }
     return parts.join(' · ') || 'Non renseigné';
+};
+
+// Projections de lecture : le poids calculé et le poids net saisi sont
+// distincts. Une différence ne doit jamais être masquée ou corrigée en UI.
+const convertedQuantity = (value, sourceUnit, targetUnit) => {
+    const source = PRODUCT_REFERENCE_UNIT_REGISTRY[sourceUnit];
+    const target = PRODUCT_REFERENCE_UNIT_REGISTRY[targetUnit];
+    if (!source || !target || source.dimension !== target.dimension) return null;
+    const parsed = parseDecimalFraction(value);
+    return rationalToDecimal128String({
+        numerator: parsed.numerator * BigInt(source.factorToBase),
+        denominator: parsed.denominator * BigInt(target.factorToBase),
+    });
+};
+
+const readableQuantity = (value) => Number(value).toLocaleString('fr-FR', {
+    maximumFractionDigits: 3,
+});
+
+const supplierPackagingPresentation = (packaging, productVariant = null) => {
+    const mainLabel = supplierPackagingLabel(packaging, productVariant, {
+        includeWeights: false,
+    });
+    const empty = { mainLabel, totalLabel: null, warningLabel: null };
+    if (!packaging) return empty;
+
+    const dimension = PRODUCT_REFERENCE_UNIT_REGISTRY[packaging.unit]?.dimension;
+    const totalUnit = normalizedUnit(packaging.unit);
+    const total = packaging.totalQuantity && totalUnit
+        ? convertedQuantity(packaging.totalQuantity, packaging.unit, totalUnit)
+        : null;
+
+    let totalLabel = null;
+    if (total !== null && Number(total) > 0) {
+        if (dimension === 'MASS') {
+            totalLabel = 'Poids net total : ' + readableQuantity(total) + ' kg';
+        } else if (dimension === 'VOLUME') {
+            totalLabel = 'Volume total : ' + readableQuantity(total) + ' L';
+        } else if (dimension === 'COUNT') {
+            const countName = Number(total) === 1
+                ? (productVariant?.countUnitLabelSingular || 'unité')
+                : (productVariant?.countUnitLabelPlural || 'unités');
+            totalLabel = 'Quantité totale : ' + readableQuantity(total) + ' ' + countName;
+        }
+    }
+
+    const declaredNet = packaging.netWeight && packaging.netWeightUnit
+        ? convertedQuantity(packaging.netWeight, packaging.netWeightUnit, 'KG')
+        : null;
+    let warningLabel = null;
+    if (declaredNet !== null && total !== null && dimension === 'MASS'
+        && !comparableAmounts(
+            packaging.netWeight, packaging.netWeightUnit,
+            packaging.totalQuantity, packaging.unit,
+        )) {
+        totalLabel = 'Poids total calculé : ' + readableQuantity(total) + ' kg';
+        warningLabel = 'Poids net déclaré à vérifier : '
+            + readableQuantity(declaredNet) + ' kg';
+    } else if (!totalLabel && declaredNet !== null) {
+        totalLabel = 'Poids net déclaré : ' + readableQuantity(declaredNet) + ' kg';
+    }
+
+    return { mainLabel, totalLabel, warningLabel };
 };
 
 const packagePriceAmount = ({ amount, basis, packaging }) => {
@@ -105,6 +170,22 @@ const supplierTariffPresentation = (tariff, article) => {
     const amountOfPackage = packagePriceAmount({
         amount: tariff.sourceAmount, basis, packaging,
     });
+    // Une pièce n'est identifiable que si le colis décrit explicitement
+    // plusieurs éléments physiques de même quantité. UNIT est traité
+    // directement par le prix normalisé M-002, sans le confondre avec le colis.
+    const pieceCount = packaging?.unitCount;
+    const canPricePiece = Number.isInteger(pieceCount) && pieceCount > 1
+        && packaging?.quantityPerUnit && packaging?.unit !== 'UNIT'
+        && packaging?.unit && amountOfPackage !== null;
+    const piecePrice = canPricePiece
+        ? (() => {
+            const amount = parseDecimalFraction(amountOfPackage);
+            return rationalToDecimal128String({
+                numerator: amount.numerator,
+                denominator: amount.denominator * BigInt(pieceCount),
+            });
+        })()
+        : null;
     return {
         id: tariff._id.toString(),
         sourceKind: tariff.sourceKind || 'CATALOG',
@@ -116,6 +197,10 @@ const supplierTariffPresentation = (tariff, article) => {
         validFrom: tariff.validFrom,
         validTo: tariff.validTo,
         packageAmount: amountOfPackage,
+        pieceAmount: piecePrice,
+        piecePriceLabel: piecePrice !== null
+            ? money(piecePrice, currency) + ' / pièce'
+            : null,
         normalizedAmount: normalized.normalizedAmount,
         normalizedUnit: normalized.normalizedUnit,
         packagePriceLabel: amountOfPackage !== null
@@ -133,4 +218,9 @@ const supplierTariffPresentation = (tariff, article) => {
     };
 };
 
-export { supplierPackagingLabel, supplierSourcePriceLabel, supplierTariffPresentation };
+export {
+    supplierPackagingLabel,
+    supplierPackagingPresentation,
+    supplierSourcePriceLabel,
+    supplierTariffPresentation,
+};

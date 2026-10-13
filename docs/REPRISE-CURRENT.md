@@ -602,3 +602,30 @@ Correction tarifaire : explication métier dans InfoTooltip, motif facultatif
 sans changement des règles de montant et de provenance historique.
 Tests HTTP, validations, recherche, correction et drawer à vérifier en local.
 Aucun test, lint, build, E2E ou gate n'est déclaré vert à ce stade.
+
+## Complément M-003 — projection conditionnement/prix par pièce (2026-10-13)
+
+Retour QA utilisateur : la liste Articles affiche déjà le prix du colis
+et le prix normalisé kg/L/UNIT, mais pas celui de chaque élément d'un
+carton de plaques de 300 g ; la quantité totale du conditionnement doit
+apparaître sous son libellé. L'Article et sa Référence M-002 ne sont pas
+reparamétrés à cet effet.
+
+Évolution ciblée :
+- présentation de masse totale en kg, de volume total en L ou de
+  quantité UNIT ; aucune masse inventée pour une donnée volumique ;
+- poids net déclaré incohérent conservé comme information à vérifier,
+  séparément de la quantité calculée ; ne pas masquer une anomalie ;
+- prix par pièce calculé sans arrondi intermédiaire depuis le prix
+  du colis et son nombre d'éléments lorsque le conditionnement explicite
+  est complet ; nul si les prérequis ne sont pas réunis ;
+- conservation des prix du colis et du prix normalisé, y compris lorsque
+  le tarif possède un instantané historique de conditionnement ;
+- affichage harmonisé dans le tableau Articles et le drawer Article ;
+- tests ciblés backend des masses, volumes, prix pièce, cas incomplets
+  et instantanés, ainsi que tests frontend de présentation.
+
+Core v1.2.1 inchangé ; pas de migration ni nouveau stockage ;
+une seule branche de livraison M-003.
+**Aucun test local ou gate n'est revendiqué vert sur ce lot** :
+l'utilisateur exécute les validations localement après pull.

@@ -462,6 +462,62 @@ describe('SuppliersPage', () => {
     expect(screen.getByRole('tab', { name: 'Fournisseurs (2)' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Articles (1)' })).toBeInTheDocument();
   });
+  it('affiche total du colis, prix à la pièce et prix normalisé, avec avertissement de poids incohérent', () => {
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [
+        {
+          id: 'plaque-1',
+          supplierReference: 'BRI-36',
+          supplierDesignation: 'Plaques 300 g',
+          supplier: { name: 'Bridor' },
+          status: 'ACTIVE',
+          scope: 'WORKSPACE_PRIVATE',
+          packagingLabel: 'Carton · 36 × 0.300 kg · net 10800 kg',
+          packagingPresentation: {
+            mainLabel: 'Carton · 36 × 0.300 kg',
+            totalLabel: 'Poids total calculé : 10,8 kg',
+            warningLabel: 'Poids net déclaré à vérifier : 10 800 kg',
+          },
+          supplierTariffStatus: 'AVAILABLE',
+          supplierTariff: {
+            id: 'tariff-plaque', packagePriceLabel: '11,200 € HT / Carton',
+            piecePriceLabel: '0,311 € HT / pièce',
+            unitPriceLabel: '1,037 € HT / kg',
+          },
+        },
+        {
+          id: 'bidon-1',
+          supplierReference: 'BID-30',
+          supplierDesignation: 'Bidon 30 L',
+          supplier: { name: 'Autre fournisseur' },
+          status: 'ACTIVE',
+          scope: 'WORKSPACE_PRIVATE',
+          packagingPresentation: {
+            mainLabel: 'Bidon · 1 × 30 l',
+            totalLabel: 'Volume total : 30 L',
+            warningLabel: null,
+          },
+          supplierTariffStatus: 'AVAILABLE',
+          supplierTariff: {
+            id: 'tariff-volume', packagePriceLabel: '60,000 € HT / Bidon',
+            piecePriceLabel: null, unitPriceLabel: '2,000 € HT / l',
+          },
+        },
+      ],
+      pagination: { page: 1, limit: 10, total: 2, totalPages: 1 },
+    }));
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+
+    expect(screen.getByText('Carton · 36 × 0.300 kg')).toBeInTheDocument();
+    expect(screen.getByText('Poids total calculé : 10,8 kg')).toBeInTheDocument();
+    expect(screen.getByRole('note')).toHaveClass('text-warning');
+    expect(screen.getByText('0,311 € HT / pièce')).toBeInTheDocument();
+    expect(screen.getByText('1,037 € HT / kg')).toBeInTheDocument();
+    expect(screen.getByText('Volume total : 30 L')).toBeInTheDocument();
+    expect(screen.getByText('2,000 € HT / l')).toBeInTheDocument();
+    expect(screen.queryByText(/net 10800 kg/)).not.toBeInTheDocument();
+  });
+
   it('permet de consulter puis corriger association, Article et tarif', async () => {
     const user = userEvent.setup();
     mocks.listArticles.mockReturnValue(queryResult({

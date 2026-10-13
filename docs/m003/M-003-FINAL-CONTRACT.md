@@ -1465,6 +1465,25 @@ sans imposer un Catalogue artificiel.
   tarifaire, la provenance, les montants HT par conditionnement et par unité
   calculables, et un libellé de conditionnement synthétisé par le backend.
   Le frontend ne réalise aucun calcul monétaire ou de quantité.
+- **Complément d'affichage du conditionnement (2026-10-13)** : conserver
+  le libellé commercial et exposer une ligne secondaire calculée côté
+  backend : poids net total en kg pour une quantité de masse, volume total
+  en litres pour une quantité volumique, quantité totale pour UNIT.
+  Un poids net déclaré différent du total de masse calculé n'est ni
+  effacé ni adopté silencieusement : l'interface distingue le total
+  calculé et signale la valeur déclarée à vérifier. Si le conditionnement
+  est insuffisant, aucune quantité totale n'est inventée.
+- **Prix par pièce (2026-10-13)** : en plus des prix existants du colis
+  et de l'unité normalisée (kg/L/unité), le backend projette un prix par
+  pièce lorsque le colis décrit explicitement plusieurs éléments
+  (nombre entier supérieur à un, quantité par élément et unité définies)
+  et que le prix du colis est calculable. Aucun prix par pièce n'est
+  inventé pour un simple sac, un bidon ou un conditionnement incomplet.
+  La dimension UNIT reste portée par le prix normalisé M-002, sans
+  présumer que chaque élément commercial est une unité de recette.
+  Le tarif historique utilise son packagingSnapshot si présent.
+  La présentation arrondit à trois décimales, sans arrondi anticipé
+  du calcul interne. Aucune modification du modèle métier ni du Core.
 - **UX** : compteurs Fournisseurs actifs et Articles actifs indépendants
   de la pagination ; badge « Non associé » ; suppression du sous-libellé
   de portée dans la colonne Fournisseur de l'onglet Articles.
