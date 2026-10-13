@@ -1,7 +1,9 @@
 import { SupplierImportSelector } from '@/features/suppliers/components/supplier-import-selector';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { DatePicker } from '@/components/forms/date-picker';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DialogContent, DialogOverlay, DialogPortal, DialogRoot,
 } from '@/components/ui/dialog';
@@ -63,6 +65,8 @@ function SupplierArticleImportDialog({
   const [inspected, setInspected] = useState(null);
   const [supplierId, setSupplierId] = useState(NONE);
   const [mapping, setMapping] = useState({});
+  const [importPrices, setImportPrices] = useState(true);
+  const [hasDefinedValidity, setHasDefinedValidity] = useState(false);
   const [priceListName, setPriceListName] = useState('');
   const [priceValidFrom, setPriceValidFrom] = useState('');
   const [priceValidTo, setPriceValidTo] = useState('');
@@ -96,6 +100,8 @@ function SupplierArticleImportDialog({
     setInspected(null);
     setSupplierId(NONE);
     setMapping({});
+    setImportPrices(true);
+    setHasDefinedValidity(false);
     setPriceListName('');
     setPriceValidFrom('');
     setPriceValidTo('');
@@ -152,26 +158,39 @@ function SupplierArticleImportDialog({
       setError('Associez une colonne à la référence fournisseur pour créer des Articles.');
       return;
     }
-    const hasPrices = Number.isInteger(mapping.priceAmount);
-    if (hasPrices && (!priceListName.trim() || !priceValidFrom)) {
-      setError('Indiquez le nom de la liste et sa date de début de validité.');
+    const hasPrices = importPrices && Number.isInteger(mapping.priceAmount);
+    if (hasPrices && hasDefinedValidity && (!priceListName.trim() || !priceValidFrom)) {
+      setError('Renseignez la référence de la liste et le début de sa validité.');
       return;
     }
-    if (hasPrices && priceValidTo && priceValidTo < priceValidFrom) {
+    if (hasPrices && hasDefinedValidity && priceValidTo && priceValidTo < priceValidFrom) {
       setError('La date de fin ne peut pas précéder la date de début.');
       return;
     }
+    // Exclure les colonnes tarifaires si l'utilisateur choisit de n'importer
+    // que les Articles, même lorsque le fichier contient des prix.
+    const effectiveMapping = hasPrices
+      ? mapping
+      : Object.fromEntries(Object.entries(mapping).filter(([field]) => (
+        !['priceAmount', 'priceBasis', 'currency'].includes(field)
+      )));
     try {
       const body = {
-        importId: inspected.importId, supplierId, mapping,
+        importId: inspected.importId, supplierId, mapping: effectiveMapping,
         ...(hasPrices ? {
-          priceList: {
-            name: priceListName.trim(),
-            validFrom: priceValidFrom,
-            validTo: priceValidTo || null,
-            source: priceListSource.trim() || null,
-            defaultPriceBasis,
-          },
+          priceList: hasDefinedValidity
+            ? {
+              validityMode: 'DEFINED',
+              name: priceListName.trim(),
+              validFrom: priceValidFrom,
+              validTo: priceValidTo || null,
+              source: priceListSource.trim() || null,
+              defaultPriceBasis,
+            }
+            : {
+              validityMode: 'FROM_IMPORT',
+              defaultPriceBasis,
+            },
         } : {}),
       };
       const result = isGlobal
@@ -272,59 +291,140 @@ function SupplierArticleImportDialog({
                   ))}
                 </div>
                 {Number.isInteger(mapping.priceAmount) && (
-                  <section className="space-y-3 rounded-lg border border-border p-4">
-                    <h3 className="font-medium">Validité de la liste tarifaire</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Les prix seront conservés indépendamment d’un catalogue.
-                      Les périodes se chevauchant avec un tarif existant sont refusées.
-                    </p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Field>
-                        <FieldLabel htmlFor="article-price-list-name">Nom de la liste tarifaire</FieldLabel>
-                        <Input id="article-price-list-name" maxLength={180} value={priceListName}
-                          onChange={(event) => { setPriceListName(event.target.value); setPreview(null); }}
-                          placeholder="Ex. Tarifs fournisseur 2027" />
-                      </Field>
-                      <Field>
-                        <FieldLabel htmlFor="article-price-list-source">Provenance (facultatif)</FieldLabel>
-                        <Input id="article-price-list-source" maxLength={240} value={priceListSource}
-                          onChange={(event) => { setPriceListSource(event.target.value); setPreview(null); }}
-                          placeholder="Ex. Liste reçue par courriel" />
-                      </Field>
-                      <Field>
-                        <FieldLabel htmlFor="article-price-valid-from">Valable du</FieldLabel>
-                        <Input id="article-price-valid-from" type="date" value={priceValidFrom}
-                          onChange={(event) => { setPriceValidFrom(event.target.value); setPreview(null); }} />
-                      </Field>
-                      <Field>
-                        <FieldLabel htmlFor="article-price-valid-to">Jusqu’au (facultatif)</FieldLabel>
-                        <Input id="article-price-valid-to" type="date" value={priceValidTo}
-                          onChange={(event) => { setPriceValidTo(event.target.value); setPreview(null); }} />
-                      </Field>
-                      <Field className="sm:col-span-2">
-                        <FieldLabel>Base tarifaire par défaut</FieldLabel>
-                        <Select value={defaultPriceBasis}
-                          items={[
-                            { value: 'PACKAGE', label: 'Conditionnement (colis, carton, sac…)' },
-                            { value: 'KG', label: 'Kilogramme' },
-                            { value: 'G', label: 'Gramme' },
-                            { value: 'L', label: 'Litre' },
-                            { value: 'ML', label: 'Millilitre' },
-                            { value: 'UNIT', label: 'Pièce / unité' },
-                          ]}
-                          onValueChange={(value) => { setDefaultPriceBasis(value); setPreview(null); }}>
-                          <SelectTrigger aria-label="Base tarifaire par défaut"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="PACKAGE">Conditionnement (colis, carton, sac…)</SelectItem>
-                            <SelectItem value="KG">Kilogramme</SelectItem>
-                            <SelectItem value="G">Gramme</SelectItem>
-                            <SelectItem value="L">Litre</SelectItem>
-                            <SelectItem value="ML">Millilitre</SelectItem>
-                            <SelectItem value="UNIT">Pièce / unité</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </Field>
+                  <section className="space-y-4 rounded-lg border border-border p-4">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={importPrices}
+                        id="article-import-prices"
+                        onChange={(event) => {
+                          setImportPrices(event.target.checked);
+                          setPreview(null);
+                          setError('');
+                        }}
+                      />
+                      <div className="space-y-1">
+                        <label className="cursor-pointer font-medium" htmlFor="article-import-prices">
+                          Importer les prix présents dans le fichier
+                        </label>
+                        <p className="text-sm text-muted-foreground">
+                          Les prix seront conservés indépendamment d’un catalogue fournisseur.
+                        </p>
+                      </div>
                     </div>
+                    {importPrices && (
+                      <div className="space-y-4 border-t border-border pt-4">
+                        <Field>
+                          <FieldLabel>À quoi correspond le prix indiqué dans le fichier ?</FieldLabel>
+                          <Select
+                            items={[
+                              { value: 'PACKAGE', label: 'Par carton, sac ou colis' },
+                              { value: 'KG', label: 'Au kilogramme' },
+                              { value: 'G', label: 'Au gramme' },
+                              { value: 'L', label: 'Au litre' },
+                              { value: 'ML', label: 'Au millilitre' },
+                              { value: 'CL', label: 'Au centilitre' },
+                              { value: 'UNIT', label: 'À la pièce / unité' },
+                            ]}
+                            onValueChange={(value) => {
+                              setDefaultPriceBasis(value);
+                              setPreview(null);
+                            }}
+                            value={defaultPriceBasis}
+                          >
+                            <SelectTrigger aria-label="À quoi correspond le prix indiqué dans le fichier ?">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="PACKAGE">Par carton, sac ou colis</SelectItem>
+                              <SelectItem value="KG">Au kilogramme</SelectItem>
+                              <SelectItem value="G">Au gramme</SelectItem>
+                              <SelectItem value="L">Au litre</SelectItem>
+                              <SelectItem value="ML">Au millilitre</SelectItem>
+                              <SelectItem value="CL">Au centilitre</SelectItem>
+                              <SelectItem value="UNIT">À la pièce / unité</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Si le fichier contient une colonne « Unité du prix » associée,
+                            elle sera prioritaire pour chaque ligne.
+                          </p>
+                        </Field>
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={hasDefinedValidity}
+                            id="article-price-has-period"
+                            onChange={(event) => {
+                              setHasDefinedValidity(event.target.checked);
+                              setPreview(null);
+                              setError('');
+                            }}
+                          />
+                          <div className="space-y-1">
+                            <label className="cursor-pointer font-medium" htmlFor="article-price-has-period">
+                              Ces prix ont une période de validité définie
+                            </label>
+                            <p className="text-sm text-muted-foreground">
+                              Sinon, ils seront applicables dès la confirmation de l’import,
+                              sans date d’expiration renseignée.
+                            </p>
+                          </div>
+                        </div>
+                        {hasDefinedValidity && (
+                          <div className="grid gap-3 rounded-lg bg-muted/30 p-3 sm:grid-cols-2">
+                            <Field>
+                              <FieldLabel htmlFor="article-price-list-name">Référence de la liste de prix</FieldLabel>
+                              <Input
+                                id="article-price-list-name"
+                                maxLength={180}
+                                onChange={(event) => {
+                                  setPriceListName(event.target.value);
+                                  setPreview(null);
+                                }}
+                                placeholder="Ex. Prix fournisseur 2027"
+                                value={priceListName}
+                              />
+                            </Field>
+                            <Field>
+                              <FieldLabel htmlFor="article-price-list-source">Provenance (facultatif)</FieldLabel>
+                              <Input
+                                id="article-price-list-source"
+                                maxLength={240}
+                                onChange={(event) => {
+                                  setPriceListSource(event.target.value);
+                                  setPreview(null);
+                                }}
+                                placeholder="Ex. Liste reçue par courriel"
+                                value={priceListSource}
+                              />
+                            </Field>
+                            <Field>
+                              <FieldLabel htmlFor="article-price-valid-from">Valable à partir du</FieldLabel>
+                              <DatePicker
+                                id="article-price-valid-from"
+                                max={priceValidTo || undefined}
+                                onChange={(value) => {
+                                  setPriceValidFrom(value);
+                                  setPreview(null);
+                                }}
+                                value={priceValidFrom}
+                              />
+                            </Field>
+                            <Field>
+                              <FieldLabel htmlFor="article-price-valid-to">Valable jusqu’au (facultatif)</FieldLabel>
+                              <DatePicker
+                                id="article-price-valid-to"
+                                min={priceValidFrom || undefined}
+                                onChange={(value) => {
+                                  setPriceValidTo(value);
+                                  setPreview(null);
+                                }}
+                                value={priceValidTo}
+                              />
+                            </Field>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </section>
                 )}
 
