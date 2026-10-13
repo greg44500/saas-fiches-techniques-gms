@@ -140,6 +140,7 @@ const storeListTariff = async ({
         sourceKind: 'PRICE_LIST',
         sourceLabel: priceList.name,
         sourceImportId,
+        packagingSnapshot: article.packaging ?? null,
         supplierArticle: article.id,
         scope,
         workspace: scope === SUPPLIER_SCOPE.GLOBAL_SHARED ? null : workspaceId,
