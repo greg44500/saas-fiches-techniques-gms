@@ -48,7 +48,7 @@ function SupplierArticleDetailsDrawer({
           <p className="text-sm text-muted-foreground">
             {current?.supplier?.name ?? '—'} · Réf. {current?.supplierReference}
           </p>
-          <StatusBadge tone={current?.status === 'ACTIVE' ? 'success' : 'secondary'}>
+          <StatusBadge tone={current?.status === 'ACTIVE' ? 'success' : 'neutral'}>
             {current?.status === 'ACTIVE' ? 'Actif' : 'Archivé'}
           </StatusBadge>
         </div>
@@ -122,7 +122,7 @@ function SupplierArticleDetailsDrawer({
                   <div className="rounded-md border border-border p-3 text-sm" key={item.id}>
                     <div className="flex items-center justify-between gap-2">
                       <span>{item.sourcePriceLabel}</span>
-                      <StatusBadge tone={item.isCurrent ? 'success' : 'secondary'}>
+                      <StatusBadge tone={item.isCurrent ? 'success' : 'neutral'}>
                         {item.isCurrent ? 'Version courante' : 'Version remplacée'}
                       </StatusBadge>
                     </div>
