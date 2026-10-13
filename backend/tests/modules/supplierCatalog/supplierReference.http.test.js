@@ -284,6 +284,49 @@ describe('M-003 supplier/article HTTP contract', () => {
             .toBe('FOURNISSEUR RÔLE PERSONNALISÉ');
     });
 
+    it('corrige une association Produit, peut la retirer, sans modifier l’identifiant fournisseur', async () => {
+        const otherReference = await createActiveProductReference({
+            actorId: ownerA.owner._id,
+            name: 'Autre Produit pour réassociation',
+        });
+        const supplier = await request(app)
+            .post(supplierPath(ownerA)).set(bearer(ownerA.token))
+            .send({ name: 'Fournisseur association corrigée' });
+        expect(supplier.status).toBe(201);
+        const created = await request(app)
+            .post(articlePath(ownerA)).set(bearer(ownerA.token))
+            .send({
+                supplierId: supplier.body.data.supplier.id,
+                productVariantId: productReference.variant._id.toString(),
+                supplierReference: 'COR-ASSOC-01',
+                supplierDesignation: 'Désignation immuable de la référence',
+            });
+        expect(created.status).toBe(201);
+        const url = articlePath(ownerA) + '/' + created.body.data.article.id;
+
+        const dissociated = await request(app)
+            .patch(url).set(bearer(ownerA.token))
+            .send({ productVariantId: null });
+        expect(dissociated.status).toBe(200);
+        expect(dissociated.body.data.article.associationStatus).toBe('PENDING');
+        expect(dissociated.body.data.article.supplierReference).toBe('COR-ASSOC-01');
+        expect(dissociated.body.data.article.supplierDesignation)
+            .toBe('Désignation immuable de la référence');
+
+        const reassociated = await request(app)
+            .patch(url).set(bearer(ownerA.token))
+            .send({ productVariantId: otherReference.variant._id.toString() });
+        expect(reassociated.status).toBe(200);
+        expect(reassociated.body.data.article.associationStatus).toBe('ASSOCIATED');
+        expect(reassociated.body.data.article.productVariant.id)
+            .toBe(otherReference.variant._id.toString());
+
+        const anotherWorkspace = await request(app)
+            .patch(articlePath(ownerB) + '/' + created.body.data.article.id)
+            .set(bearer(ownerB.token)).send({ productVariantId: null });
+        expect(anotherWorkspace.status).toBe(404);
+    });
+
     it('filtre les Articles par Produit sans requête par Référence', async () => {
         const secondProduct =
             await createActiveProductReference({
