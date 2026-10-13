@@ -430,10 +430,10 @@ function SupplierCatalogImportDialog({
 
                 <section className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">Mapping des colonnes</h3>
+                    <h3 className="font-semibold">Associer les colonnes</h3>
                     <InfoTooltip
-                      content="Associez les colonnes utiles. Les autres colonnes sont ignorées. En V1, la devise est fixée à l’euro (EUR)."
-                      label="À propos du mapping des colonnes"
+                      content="Indiquez quelles colonnes du fichier correspondent aux informations du catalogue. Les colonnes inutiles peuvent rester non associées."
+                      label="À propos de l’association des colonnes"
                     />
                   </div>
 
