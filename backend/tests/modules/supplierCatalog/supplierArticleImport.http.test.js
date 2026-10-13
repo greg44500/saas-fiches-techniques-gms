@@ -162,6 +162,63 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         expect(await SupplierTariff.countDocuments({ sourceKind: 'PRICE_LIST' })).toBe(1);
     });
 
+    it('isole les prix privés de deux Workspaces sur un même Article global', async () => {
+        const other = await createWorkspaceOwnerFixture();
+        await enableImport();
+        await enableImport(other);
+        const globalSupplier = await createSupplierService({
+            scope: SUPPLIER_SCOPE.GLOBAL_SHARED,
+            actorId: context.owner._id,
+            data: { name: 'Grossiste commun indépendants' },
+        });
+        const globalArticle = await SupplierArticle.create({
+            scope: SUPPLIER_SCOPE.GLOBAL_SHARED,
+            workspace: null,
+            supplier: globalSupplier.id,
+            productVariant: null,
+            supplierReference: 'GLOB-PRIX-1',
+            normalizedSupplierReference: 'GLOB-PRIX-1',
+            supplierDesignation: 'Article commun',
+            createdBy: context.owner._id,
+            updatedBy: context.owner._id,
+        });
+        const body = {
+            supplierId: globalSupplier.id,
+            mapping: {
+                supplierReference: 0, designation: 1,
+                priceAmount: 2, priceBasis: 3,
+            },
+            priceList: {
+                name: 'Mercuriale privée',
+                validFrom: '2026-01-01', validTo: '2026-12-31',
+                source: null, defaultPriceBasis: 'PACKAGE',
+            },
+        };
+        for (const [owner, value] of [[context, '10'], [other, '20']]) {
+            const inspected = await inspect(
+                'Reference;Designation;Prix;Base\\nGLOB-PRIX-1;Article commun;'
+                    + value + ';carton', owner,
+            );
+            expect(inspected.status).toBe(201);
+            const proposed = await request(app)
+                .post(basePath(owner) + '/imports/' + inspected.body.data.importId + '/preview')
+                .set(auth(owner)).send(body);
+            expect(proposed.status).toBe(200);
+            expect(proposed.body.data.counts.SHARED).toBe(1);
+            expect((await commit(inspected.body.data.importId, owner)).status).toBe(200);
+        }
+        const tariffs = await SupplierTariff.find({
+            supplierArticle: globalArticle._id, sourceKind: 'PRICE_LIST',
+        });
+        expect(tariffs).toHaveLength(2);
+        expect(new Set(tariffs.map((tariff) => String(tariff.workspace))).size).toBe(2);
+        const listed = await request(app).get(basePath(other)).set(auth(other));
+        expect(listed.status).toBe(200);
+        const shared = listed.body.data.articles.find((article) =>
+            article.supplierReference === 'GLOB-PRIX-1');
+        expect(shared.supplierTariff.sourceAmount).toBe('20');
+    });
+
     it('refuse l’inspection du référentiel global sans autorité Application Global', async () => {
         const response = await request(app)
             .post('/api/supplier-reference/articles/imports/inspect')
