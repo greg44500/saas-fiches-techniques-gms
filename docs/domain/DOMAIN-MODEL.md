@@ -1582,3 +1582,17 @@ Les rôles personnalisés combinent les permissions lorsque plusieurs responsabi
 - Fiche process avant son module ;
 - purge/rétention physique avant implémentation ;
 - quotas et capabilities supplémentaires lorsqu'un besoin réel est démontré.
+
+---
+
+## Extension M-003 — prix de liste sans catalogue (2026-10-13)
+
+`SupplierArticle` décrit la référence commerciale et le conditionnement,
+sans héberger de prix intemporel. `SupplierTariff` conserve les montants et
+les dates, d'origine `CATALOG` (édition existante) ou `PRICE_LIST` (nom,
+provenance et identifiant d'import durables, sans édition de catalogue).
+
+Un tarif de liste indépendant est conservé même lorsque l'Article n'a pas
+encore de `ProductVariant` ; seul le Prix applicable utilisé par une Fiche
+nécessite l'association au Produit et une normalisation compatible. Le backend
+est seul responsable des projections de prix et de conditionnement.
