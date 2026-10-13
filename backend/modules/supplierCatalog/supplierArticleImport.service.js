@@ -3,6 +3,9 @@ import mongoose from 'mongoose';
 
 import { AppError } from '../../utils/appError.js';
 import { parseProductImportFile } from '../productCatalog/productCatalogImport.parser.js';
+import { ProductVariant } from '../productCatalog/productVariant.model.js';
+import { SupplierTariff } from './supplierCatalog.model.js';
+import { normalizeSupplierPrice } from './supplierPriceMath.service.js';
 import { SupplierArticle } from './supplier.model.js';
 import { SupplierArticleImportSession } from './supplierArticleImport.model.js';
 import {
@@ -81,6 +84,77 @@ const findExisting = async ({
         ?? null;
 };
 
+const overlaps = (firstFrom, firstTo, secondFrom, secondTo) => (
+    (!firstTo || !secondFrom || new Date(firstTo) >= new Date(secondFrom))
+    && (!secondTo || !firstFrom || new Date(secondTo) >= new Date(firstFrom))
+);
+
+// Toujours vérifier les deux sources : catalogue et mercuriale autonome.
+const assertNoTariffOverlap = async ({ articleId, priceList, session = null }) => {
+    const tariffs = await SupplierTariff.find({
+        supplierArticle: articleId, isCurrent: true,
+    }).populate({ path: 'catalogEdition', select: '_id status' }).session(session).lean();
+    const conflicting = tariffs.find((tariff) =>
+        ((tariff.sourceKind || 'CATALOG') === 'PRICE_LIST'
+            || tariff.catalogEdition?.status === SUPPLIER_RESOURCE_STATUS.ACTIVE)
+        && overlaps(tariff.validFrom, tariff.validTo,
+            priceList.validFrom, priceList.validTo));
+    if (conflicting) {
+        throw new AppError(
+            'Une période tarifaire existe déjà pour cet Article. '
+            + 'Aucun ancien prix n’est remplacé automatiquement.',
+            409,
+        );
+    }
+};
+
+const storeListTariff = async ({
+    article, priceList, sourcePrice, scope, workspaceId,
+    actorId, sourceImportId, session,
+}) => {
+    if (!sourcePrice) return null;
+    await acquireCommerceLock({
+        key: 'supplier-price-list:' + article.id,
+        session,
+    });
+    await assertNoTariffOverlap({
+        articleId: article.id, priceList, session,
+    });
+    const variantId = article.productVariant?._id ?? article.productVariant;
+    const variant = variantId
+        ? await ProductVariant.findById(variantId).select('referenceUnit').session(session).lean()
+        : null;
+    const normalized = variant
+        ? normalizeSupplierPrice({
+            sourceAmount: sourcePrice.amount,
+            sourceBasis: sourcePrice.basis,
+            packaging: article.packaging,
+            targetUnit: variant.referenceUnit,
+        })
+        : { normalizedAmount: null, normalizedUnit: null };
+    const [tariff] = await SupplierTariff.create([{
+        catalogEdition: null,
+        catalogLine: null,
+        sourceKind: 'PRICE_LIST',
+        sourceLabel: priceList.name,
+        sourceImportId,
+        supplierArticle: article.id,
+        scope,
+        workspace: scope === SUPPLIER_SCOPE.GLOBAL_SHARED ? null : workspaceId,
+        sourceAmount: sourcePrice.amount,
+        sourceBasis: sourcePrice.basis,
+        currency: sourcePrice.currency,
+        normalizedAmount: normalized.normalizedAmount,
+        normalizedUnit: normalized.normalizedUnit,
+        validFrom: new Date(priceList.validFrom),
+        validTo: priceList.validTo ? new Date(priceList.validTo) : null,
+        provenance: priceList.source || priceList.name,
+        createdBy: actorId,
+        updatedBy: actorId,
+    }], { session });
+    return tariff.id;
+};
+
 const inspectSupplierArticleImport = async ({
     scope, workspaceId = null, actorId, file,
 }) => {
@@ -126,7 +200,7 @@ const loadSession = async ({
 };
 
 const previewSupplierArticleImport = async ({
-    scope, workspaceId = null, actorId, importId, supplierId, mapping,
+    scope, workspaceId = null, actorId, importId, supplierId, mapping, priceList = null,
 }) => {
     await assertSupplierForCatalog({
         scope, workspaceId, supplierId, session: null,
@@ -144,10 +218,13 @@ const previewSupplierArticleImport = async ({
     for (const [index, raw] of importSession.rows.entries()) {
         const row = mapImportRow({
             row: raw, rowNumber: index + 2, mapping,
-            defaults: { currency: 'EUR' },
+            defaults: { currency: 'EUR', priceBasis: priceList?.defaultPriceBasis },
         });
         const reference = normalizeSupplierReference(row.supplierReference);
         const errors = [...row.errors];
+        if (row.sourcePrice && !priceList) {
+            errors.push('Précisez la provenance et la validité de la liste tarifaire.');
+        }
         if ((row.supplierReference?.length ?? 0) > 120) {
             errors.push('Référence fournisseur trop longue (120 caractères maximum).');
         }
@@ -185,6 +262,17 @@ const previewSupplierArticleImport = async ({
                     classification = Object.keys(articleChanges(existing, row)).length
                         ? 'UPDATE' : 'UNCHANGED';
                 }
+                if (row.sourcePrice && priceList
+                    && classification !== 'INVALID') {
+                    try {
+                        await assertNoTariffOverlap({
+                            articleId: existing._id, priceList,
+                        });
+                    } catch (error) {
+                        classification = 'INVALID';
+                        errors.push(error.message);
+                    }
+                }
             }
         }
         if (reference) seen.add(reference);
@@ -195,6 +283,7 @@ const previewSupplierArticleImport = async ({
             designation: row.designation,
             brand: row.brand,
             packaging: hasPackaging(row.packaging) ? row.packaging : null,
+            sourcePrice: row.sourcePrice,
             classification,
             articleId,
             observedUpdatedAt,
@@ -208,6 +297,7 @@ const previewSupplierArticleImport = async ({
 
     importSession.supplier = supplierId;
     importSession.mapping = mapping;
+    importSession.priceListDraft = priceList;
     importSession.preview = preview;
     importSession.status = SUPPLIER_CATALOG_IMPORT_STATUS.PREVIEWED;
     await importSession.save();
@@ -234,9 +324,23 @@ const commitSupplierArticleImport = async ({
     await importSession.save({ session });
     const result = {
         created: 0, updated: 0, unchanged: 0, shared: 0, skipped: 0,
-        createdArticleIds: [], updatedArticleIds: [],
+        createdArticleIds: [], updatedArticleIds: [], priced: 0,
     };
 
+    const writeTariff = async (article, row) => {
+        if (!row.sourcePrice) return;
+        if (!importSession.priceListDraft) {
+            throw new AppError('Provenance tarifaire absente.', 409);
+        }
+        await storeListTariff({
+            article,
+            priceList: importSession.priceListDraft,
+            sourcePrice: row.sourcePrice,
+            scope, workspaceId, actorId,
+            sourceImportId: importSession._id, session,
+        });
+        result.priced += 1;
+    };
     for (const row of importSession.preview) {
         if (row.classification === 'SKIPPED') {
             result.skipped += 1;
@@ -274,6 +378,7 @@ const commitSupplierArticleImport = async ({
             });
             result.created += 1;
             result.createdArticleIds.push(article.id);
+            await writeTariff(article, row);
             continue;
         }
 
@@ -289,6 +394,7 @@ const commitSupplierArticleImport = async ({
                 throw new AppError('L’Article partagé a changé.', 409);
             }
             result.shared += 1;
+            await writeTariff(existing, row);
             continue;
         }
         if (existing.scope !== scope) {
@@ -315,6 +421,7 @@ const commitSupplierArticleImport = async ({
         } else {
             result.unchanged += 1;
         }
+        await writeTariff(existing, row);
     }
     importSession.status = SUPPLIER_CATALOG_IMPORT_STATUS.COMMITTED;
     importSession.committedResult = result;
