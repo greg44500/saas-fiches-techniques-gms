@@ -692,14 +692,16 @@ const updateSupplierArticle = async ({
     const changedFields = [];
 
     if (Object.hasOwn(data, 'productVariantId')) {
-        await assertActiveProductVariant({
-            productVariantId: data.productVariantId,
-            workspaceId,
-            session,
-        });
+        if (data.productVariantId !== null) {
+            await assertActiveProductVariant({
+                productVariantId: data.productVariantId,
+                workspaceId,
+                session,
+            });
+        }
         if (
-            article.productVariant?.toString()
-            !== data.productVariantId.toString()
+            (article.productVariant?.toString() ?? null)
+            !== data.productVariantId
         ) {
             article.productVariant = data.productVariantId;
             changedFields.push('productVariant');
