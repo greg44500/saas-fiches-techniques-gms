@@ -203,6 +203,8 @@ const supplierTariffSchema = new Schema(
         },
         ...createScopeFields(),
         revision: { type: Number, min: 1, default: 1, required: true, immutable: true },
+        replacesTariff: { type: Schema.Types.ObjectId, ref: 'SupplierTariff', default: null, immutable: true },
+        correctionReason: { type: String, trim: true, maxlength: 500, default: null, immutable: true },
         isCurrent: { type: Boolean, default: true, required: true },
         sourceAmount: {
             type: Schema.Types.Decimal128,
@@ -279,7 +281,7 @@ supplierTariffSchema.index(
     {
         name: 'supplier_price_list_import_article_unique',
         unique: true,
-        partialFilterExpression: { sourceKind: 'PRICE_LIST' },
+        partialFilterExpression: { sourceKind: 'PRICE_LIST', isCurrent: true },
     },
 );
 supplierTariffSchema.index(
