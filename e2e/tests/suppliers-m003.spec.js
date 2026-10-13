@@ -359,7 +359,7 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
   await loginWithIdentity(page, workspace.identity);
   await page.goto(workspace.suppliersUrl);
   await createSupplierFromUi(page, supplierName);
-  await page.getByRole('tab', { name: /^Articles \\(/ }).click();
+  await page.getByRole('tab', { name: /^Articles \(/ }).click();
   await page.getByRole('button', { name: 'Importer des Articles' }).click();
 
   const dialog = page.getByRole('dialog');
