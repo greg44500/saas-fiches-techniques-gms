@@ -1481,3 +1481,37 @@ un workflow ultérieur à cadrer. Aucun test ou gate n'est présumé réussi.
 **Invariance historique des quantités :** chaque tarif de liste conserve une copie
 structurée du conditionnement tel qu'importé. Toute modification ultérieure
 de l'Article ne modifie pas son calcul économique historique.
+
+
+### Avenant validé — échéance tarifaire facultative et import immédiat (2026-10-13)
+
+La saisie d'une période n'est pas une condition pour importer des prix présents
+dans un fichier fournisseur.
+
+- **Option A validée** : si l'utilisateur ne déclare pas de période,
+  le backend rend le tarif applicable à l'instant de la confirmation de
+  l'import (`validFrom` horodaté côté serveur), avec `validTo = null`.
+  L'absence d'expiration déclarée ne signifie pas que le prix est garanti
+  indéfiniment par le Fournisseur.
+- Le backend génère également un intitulé de provenance lisible, au format
+  « Prix importés le jj/mm/aaaa » (date française). Aucune date ni aucun
+  montant ne sont calculés dans React.
+- **Période définie** : une case à cocher ouvre la référence de la liste de
+  prix, sa provenance et les deux calendriers français `jj/mm/aaaa`
+  (début obligatoire, fin facultative). Les dates sont transmises à l'API
+  au format ISO. Les imports existants avec nom et dates sans
+  `validityMode` restent acceptés par compatibilité.
+- **Import des prix** : une coche distincte permet d'importer seulement les
+  Articles même si le fichier possède des colonnes tarifaires. Les champs
+  de prix non retenus sont exclus du mapping envoyé au serveur.
+- **Unité commerciale** : le libellé devient « À quoi correspond le prix
+  indiqué dans le fichier ? » ; la colonne d'unité mappée du fichier
+  prévaut sur la valeur par défaut, les calculs restent backend.
+- **Intégrité historique** : les conflits de périodes, y compris les
+  tarifs sans date d'expiration, restent bloquants. Un réimport identique
+  n'écrase pas l'historique ; un changement de tarif doit être traité par
+  un workflow explicite distinct.
+
+Cet avenant précise la règle précédente « date de début obligatoire » :
+elle reste obligatoire *dans le modèle persistant*, mais elle peut être
+attribuée par le serveur à la confirmation plutôt que saisie par l'utilisateur.
