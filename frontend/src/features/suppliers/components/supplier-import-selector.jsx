@@ -45,19 +45,24 @@ function SupplierImportSelector({
     .filter((supplier) => !search.trim() ||
       supplier.name.toLocaleLowerCase('fr').includes(search.trim().toLocaleLowerCase('fr')));
   const selected = [...created, ...found, ...suppliers].find((item) => item.id === value);
+  const normalizeName = (value) => value.trim().normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '').toLocaleUpperCase('fr')
+    .replace(/[-'’_`/]+/g, ' ').replace(/[^A-Z0-9\\s]+/g, ' ')
+    .replace(/\\s+/g, ' ').trim();
+  const nameSuggestions = [...created, ...found, ...suppliers].filter((supplier) =>
+    normalizeName(supplier.name) === normalizeName(name));
   const mayCreate = canCreate && (global || Boolean(workspaceId));
 
   async function create(event) {
     event.preventDefault();
-    const trimmed = name.trim();
+    const trimmed = name.trim().replace(/\s+/g, ' ').toLocaleUpperCase('fr');
     if (!trimmed) {
       setError('Indiquez le nom du Fournisseur.');
       return;
     }
     try {
       // Alerter plutôt que fusionner des homonymes : l'identité ne se réduit pas au nom.
-      const match = options.find((supplier) =>
-        supplier.name.trim().toLocaleLowerCase('fr') === trimmed.toLocaleLowerCase('fr'));
+      const match = nameSuggestions[0];
       if (match) {
         setError('Un Fournisseur de ce nom est déjà proposé. Sélectionnez-le ou précisez le nom.');
         return;
@@ -139,13 +144,19 @@ function SupplierImportSelector({
               <Field>
                 <FieldLabel htmlFor="quick-supplier-name">Nom du Fournisseur</FieldLabel>
                 <Input autoFocus id="quick-supplier-name" maxLength={160}
-                  onChange={(event) => setName(event.target.value)} value={name} />
+                  onChange={(event) => setName(event.target.value.toLocaleUpperCase('fr'))} value={name} />
               </Field>
+              {nameSuggestions.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Fournisseur existant : {nameSuggestions.map((item) => item.name).join(', ')}.
+                  Sélectionnez-le plutôt que de créer un doublon.
+                </p>
+              )}
               <FieldError>{error}</FieldError>
               <DialogFooter>
                 <Button disabled={pending} onClick={() => setCreating(false)}
                   type="button" variant="outline">Annuler</Button>
-                <Button disabled={pending || !name.trim()} type="submit">
+                <Button disabled={pending || !name.trim() || nameSuggestions.length > 0} type="submit">
                   {pending ? 'Création…' : 'Créer et sélectionner'}
                 </Button>
               </DialogFooter>
