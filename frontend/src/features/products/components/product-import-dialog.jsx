@@ -378,7 +378,7 @@ function ProductImportDialog({
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-y-auto" initialFocus={cancelRef}>
           <ImportWizardHeader
             helpText={isGlobal
-              ? 'Ajoutez plusieurs Produits au référentiel commun à partir d’un fichier. Vous pourrez vérifier les informations et les correspondances avant de confirmer.'
+              ? 'Ajoutez plusieurs Produits à la liste commune, accessible à tous les espaces de travail. Vous pourrez vérifier les informations avant de confirmer.'
               : 'Ajoutez plusieurs Produits à partir d’un fichier. Les Produits déjà enregistrés sont reconnus pour éviter les doublons. Vous pourrez vérifier les informations avant de confirmer.'}
             step={step}
             title="Importer des Produits"
