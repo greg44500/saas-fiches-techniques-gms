@@ -12,6 +12,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useCreateSupplierMutation: () => [vi.fn(), { isLoading: false }],
+  useCreateGlobalSupplierMutation: () => [vi.fn(), { isLoading: false }],
+  useListSuppliersQuery: () => ({ data: { suppliers: [] }, isFetching: false }),
+  useListGlobalSuppliersQuery: () => ({ data: { suppliers: [] }, isFetching: false }),
   useInspectSupplierCatalogImportMutation: () => [
     mocks.inspectWorkspace,
     { isLoading: false },
@@ -280,8 +284,7 @@ describe('SupplierCatalogImportDialog', () => {
       }),
     );
     await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
-    await user.click(screen.getByRole('combobox', { name: 'Fournisseur du catalogue' }));
-    await user.click(await screen.findByRole('option', { name: 'Sysco' }));
+    await user.click(screen.getByRole('button', { name: 'Sysco' }));
     await user.type(screen.getByLabelText('Édition'), 'Octobre 2026');
     await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
     expect(screen.getByText('Vérifier').closest('li')).toHaveAttribute('aria-current', 'step');
