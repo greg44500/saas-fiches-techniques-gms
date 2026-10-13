@@ -1,3 +1,4 @@
+import { SupplierImportSelector } from '@/features/suppliers/components/supplier-import-selector';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,7 @@ const CLASSIFICATIONS = {
 };
 
 function SupplierArticleImportDialog({
-  mode = 'workspace', onClose, onCommitted, open, suppliers, workspaceId,
+  mode = 'workspace', onClose, onCommitted, canCreateSupplier = false, open, suppliers, workspaceId,
 }) {
   const isGlobal = mode === 'global';
   const cancelRef = useRef(null);
@@ -202,28 +203,15 @@ function SupplierArticleImportDialog({
                 <p className="text-sm text-muted-foreground">
                   {inspected.rowCount} ligne(s) lue(s) dans le fichier {inspected.format}.
                 </p>
-                <Field>
-                  <FieldLabel>Fournisseur</FieldLabel>
-                  <Select
-                    items={[
-                      { value: NONE, label: 'Sélectionner' },
-                      ...suppliers.map((item) => ({ value: item.id, label: item.name })),
-                    ]}
-                    onValueChange={(value) => {
-                      setSupplierId(value);
-                      setPreview(null);
-                    }}
-                    value={supplierId}
-                  >
-                    <SelectTrigger aria-label="Fournisseur des Articles"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>Sélectionner</SelectItem>
-                      {suppliers.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
+                <SupplierImportSelector
+                  ariaLabel="Fournisseur des Articles"
+                  canCreate={canCreateSupplier}
+                  mode={mode}
+                  onChange={(id) => { setSupplierId(id); setPreview(null); }}
+                  suppliers={suppliers}
+                  value={supplierId}
+                  workspaceId={workspaceId}
+                />
                 <h3 className="font-medium">Correspondance des colonnes</h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {ARTICLE_FIELDS.map(([field, label]) => (
