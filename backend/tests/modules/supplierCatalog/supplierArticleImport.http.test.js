@@ -30,6 +30,7 @@ import { SUPPLIER_CATALOG_FEATURE } from '../../../modules/supplierCatalog/suppl
 import { SupplierArticleImportSession } from '../../../modules/supplierCatalog/supplierArticleImport.model.js';
 import { createSupplier as createSupplierService } from '../../../modules/supplierCatalog/supplierReference.service.js';
 import { SUPPLIER_SCOPE } from '../../../modules/supplierCatalog/supplierCatalog.registry.js';
+import { findApplicableSupplierTariff } from '../../../modules/supplierCatalog/supplierPricing.service.js';
 import {
     bearer, createWorkspaceOwnerFixture,
 } from '../../helpers/dossierTest.fixtures.js';
@@ -130,6 +131,18 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         expect(article.supplierTariffStatus).toBe('AVAILABLE');
         expect(article.supplierTariff.packagePriceLabel).toContain('40,625');
         expect(article.supplierTariff.unitPriceLabel).toContain('4,063');
+        const applicable = await findApplicableSupplierTariff({
+            workspaceId: context.workspace._id,
+            articleId: article.id,
+            atDate: new Date('2026-10-13T12:00:00.000Z'),
+        });
+        expect(applicable.sourceKind).toBe('PRICE_LIST');
+        const expired = await findApplicableSupplierTariff({
+            workspaceId: context.workspace._id,
+            articleId: article.id,
+            atDate: new Date('2028-01-01T12:00:00.000Z'),
+        });
+        expect(expired).toBeNull();
     });
 
     it('refuse les mercuriales dont les périodes se chevauchent', async () => {
