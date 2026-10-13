@@ -650,3 +650,18 @@ francisé, quatre étapes identifiées visuellement et accessibles, actions en p
 de fenêtre et disposition responsive. Composants mutualisés sous
 `frontend/src/features/imports/components/`, sans changement Core ni contrat
 backend. **À confirmer par les tests et la QA visuelle locaux avant PR/merge.**
+
+---
+
+## M-003 — listes tarifaires autonomes et lecture des Articles (2026-10-13)
+
+Extension approuvée : une liste fournisseur peut être importée avec ses prix
+et une validité explicite **sans édition de catalogue**. Le moteur de Prix
+applicable demeure commun au catalogue et à la mercuriale. L'import d'Articles
+sans prix reste inchangé. Les sorties serveur préparent prix par conditionnement,
+prix normalisé, libellé de conditionnement et état d'association ; onglets
+Fournisseurs et Articles présentent leurs compteurs actifs.
+
+**État :** code et tests ajoutés sur
+`feature/m003-catalog-management-and-import-ux`, en attente de pull,
+migration locale, tests et QA utilisateur ; aucune PR/merge autorisé avant accord.
