@@ -355,7 +355,7 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         const updatedList = await request(app).get(basePath()).set(auth());
         const latest = updatedList.body.data.articles.find((item) =>
             item.supplierReference === 'CORR-01');
-        expect(latest.supplierTariff.sourceAmount).toBe('12.5');
+        expect(Number(latest.supplierTariff.sourceAmount)).toBe(12.5);
         const history = await request(app).get(url).set(auth());
         expect(history.status).toBe(200);
         expect(history.body.data.tariffs).toHaveLength(2);
