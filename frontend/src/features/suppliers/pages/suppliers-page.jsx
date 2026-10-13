@@ -403,6 +403,9 @@ function SuppliersPage() {
       id: 'supplier-tariff',
       header: 'Tarif fournisseur HT',
       cell: (article) => {
+        if (article.supplierTariffStatus === 'RESTRICTED') {
+          return 'Tarif non accessible';
+        }
         if (article.supplierTariffStatus === 'AMBIGUOUS') {
           return <StatusBadge tone="warning">Tarifs à vérifier</StatusBadge>;
         }
