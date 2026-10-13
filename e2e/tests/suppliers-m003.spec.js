@@ -359,7 +359,7 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
   await loginWithIdentity(page, workspace.identity);
   await page.goto(workspace.suppliersUrl);
   await createSupplierFromUi(page, supplierName);
-  await page.getByRole('tab', { name: 'Articles' }).click();
+  await page.getByRole('tab', { name: /^Articles \\(/ }).click();
   await page.getByRole('button', { name: 'Importer des Articles' }).click();
 
   const dialog = page.getByRole('dialog');
@@ -391,5 +391,5 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
   await expect(dialog.getByText('Import terminé')).toBeVisible();
   await dialog.getByRole('button', { name: 'Fermer' }).click();
   await expect(page.getByText(reference, { exact: true })).toBeVisible();
-  await expect(page.getByText('Produit à associer', { exact: true })).toBeVisible();
+  await expect(page.getByText('Non associé', { exact: true })).toBeVisible();
 });
