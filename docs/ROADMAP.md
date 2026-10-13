@@ -665,3 +665,12 @@ Fournisseurs et Articles présentent leurs compteurs actifs.
 **État :** code et tests ajoutés sur
 `feature/m003-catalog-management-and-import-ux`, en attente de pull,
 migration locale, tests et QA utilisateur ; aucune PR/merge autorisé avant accord.
+
+
+### Ajustement QA M-003 — validité sans échéance (2026-10-13)
+
+Décision produit : les tarifs sans période fournisseur explicite sont
+applicables dès leur confirmation, sans expiration déclarée ; seule une
+période connue demande dates et référence de liste. Formulaire conditionnel
+et DatePicker français ajoutés. Validation backend, provenance horodatée et
+tests à confirmer localement avant clôture du lot M-003.
