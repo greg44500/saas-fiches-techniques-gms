@@ -370,9 +370,11 @@ function SuppliersPage() {
       header: 'Article fournisseur',
       cell: (article) => (
         <div>
-          <p className="font-medium">{article.supplierReference}</p>
+          <p className="font-medium">
+            {article.supplierDesignation || 'Sans désignation'}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {article.supplierDesignation || article.productVariant?.name || 'Sans désignation'}
+            Réf. fournisseur : {article.supplierReference}
           </p>
         </div>
       ),
@@ -419,9 +421,6 @@ function SuppliersPage() {
             {price.unitPriceLabel && price.unitPriceLabel !== price.packagePriceLabel && (
               <p className="mt-1 text-xs text-muted-foreground">{price.unitPriceLabel}</p>
             )}
-            <p className="mt-1 text-xs text-muted-foreground">
-              {price.sourceLabel || 'Tarif fournisseur'}
-            </p>
           </div>
         );
       },
@@ -433,13 +432,12 @@ function SuppliersPage() {
         article.scope === 'WORKSPACE_PRIVATE' && canManageArticles ? (
           <DataTableActions>
             {article.status === 'ACTIVE'
-              && !article.productVariant
               && canReadProducts && (
               <ActionIconButton
                 Icon={Link2}
-                label={'Associer ' + article.supplierReference + ' à un Produit'}
+                label={'Modifier le Produit associé à ' + article.supplierReference}
                 onClick={() => setArticleToAssociate(article)}
-                tooltipLabel="Associer à un Produit"
+                tooltipLabel="Modifier le Produit associé"
                 variant="outline"
               />
             )}
