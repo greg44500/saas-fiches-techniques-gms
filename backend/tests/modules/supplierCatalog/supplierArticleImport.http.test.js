@@ -156,6 +156,73 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         expect(expired).toBeNull();
     });
 
+    it('date une liste sans période au moment de la confirmation et sans expiration', async () => {
+        await enableImport();
+        const inspected = await inspect(
+            'Reference;Designation;Prix;Base\nSANS-FIN;Huile;12;carton',
+        );
+        expect(inspected.status).toBe(201);
+        const body = {
+            supplierId,
+            mapping: {
+                supplierReference: 0, designation: 1,
+                priceAmount: 2, priceBasis: 3,
+            },
+            priceList: {
+                validityMode: 'FROM_IMPORT',
+                defaultPriceBasis: 'PACKAGE',
+            },
+        };
+        const previewed = await request(app)
+            .post(basePath() + '/imports/' + inspected.body.data.importId + '/preview')
+            .set(auth()).send(body);
+        expect(previewed.status).toBe(200);
+        expect(previewed.body.data.counts.CREATE).toBe(1);
+
+        const beforeConfirmation = new Date();
+        const finished = await commit(inspected.body.data.importId);
+        const afterConfirmation = new Date();
+        expect(finished.status).toBe(200);
+        expect(finished.body.data.priced).toBe(1);
+
+        const tariff = await SupplierTariff.findOne({
+            sourceKind: 'PRICE_LIST',
+            sourceImportId: inspected.body.data.importId,
+        });
+        expect(tariff).not.toBeNull();
+        expect(tariff.sourceLabel).toMatch(/^Prix importés le \d{2}\/\d{2}\/\d{4}$/);
+        expect(tariff.validFrom.getTime()).toBeGreaterThanOrEqual(
+            beforeConfirmation.getTime(),
+        );
+        expect(tariff.validFrom.getTime()).toBeLessThanOrEqual(
+            afterConfirmation.getTime(),
+        );
+        expect(tariff.validTo).toBeNull();
+        expect(tariff.catalogEdition).toBeNull();
+    });
+
+    it('refuse une date client imposée dans le mode à partir de l’import', async () => {
+        await enableImport();
+        const inspected = await inspect('Reference;Designation;Prix\nNO-DATE;Pain;12');
+        expect(inspected.status).toBe(201);
+        const rejected = await request(app)
+            .post(basePath() + '/imports/' + inspected.body.data.importId + '/preview')
+            .set(auth())
+            .send({
+                supplierId,
+                mapping: { supplierReference: 0, designation: 1, priceAmount: 2 },
+                priceList: {
+                    validityMode: 'FROM_IMPORT',
+                    validFrom: '2025-01-01',
+                    defaultPriceBasis: 'PACKAGE',
+                },
+            });
+        expect(rejected.status).toBe(400);
+        expect(await SupplierTariff.countDocuments({
+            sourceImportId: inspected.body.data.importId,
+        })).toBe(0);
+    });
+
     it('refuse les mercuriales dont les périodes se chevauchent', async () => {
         await enableImport();
         const csv = 'Reference;Designation;Prix;Base\nDUPTAR;Pain;10;carton';
