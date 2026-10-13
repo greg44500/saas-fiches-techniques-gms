@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -22,7 +22,10 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
 }));
 
 vi.mock('@/features/suppliers/components/supplier-catalog-import-dialog', () => ({
-  autoDetectMapping: () => ({ supplierReference: 0, designation: 1 }),
+  autoDetectMapping: (headers) => ({
+    supplierReference: 0, designation: 1,
+    ...(headers.includes('Prix HT') ? { priceAmount: 2 } : {}),
+  }),
 }));
 
 import {
@@ -95,6 +98,39 @@ describe('SupplierArticleImportDialog', () => {
     expect(committed).toHaveBeenCalledWith({ created: 1, updated: 0 });
     expect(screen.getByText('Terminer').closest('li')).toHaveAttribute('aria-current', 'step');
     expect(screen.getByRole('heading', { name: 'Import terminé' })).toBeInTheDocument();
+  });
+
+  it('transmet la provenance et la validité des tarifs sans catalogue', async () => {
+    const user = userEvent.setup();
+    mocks.inspect.mockReturnValue(resolved({
+      importId: 'import-prix',
+      format: 'CSV',
+      headers: ['Reference', 'Designation', 'Prix HT'],
+      rowCount: 1,
+    }));
+    renderDialog();
+    await user.upload(screen.getByLabelText('Fichier'),
+      new File(['Reference;Designation;Prix HT\\nR1;Pain;25'], 'prix.csv'));
+    await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
+    await user.click(screen.getByRole('button', { name: 'Sysco' }));
+    await user.type(screen.getByLabelText('Nom de la liste tarifaire'), 'Tarifs annuels');
+    fireEvent.change(screen.getByLabelText('Valable du'), {
+      target: { value: '2026-01-01' },
+    });
+    fireEvent.change(screen.getByLabelText('Jusqu’au (facultatif)'), {
+      target: { value: '2026-12-31' },
+    });
+    await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
+    expect(mocks.preview).toHaveBeenCalledWith(expect.objectContaining({
+      supplierId: 'supplier-1',
+      priceList: {
+        name: 'Tarifs annuels',
+        validFrom: '2026-01-01',
+        validTo: '2026-12-31',
+        source: null,
+        defaultPriceBasis: 'PACKAGE',
+      },
+    }));
   });
 
   it('interdit la confirmation lorsque la prévisualisation contient une erreur', async () => {
