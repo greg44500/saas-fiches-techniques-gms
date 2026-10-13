@@ -828,7 +828,6 @@ function SuppliersPage() {
       <SupplierArticleImportDialog
         onClose={() => setArticleImportOpen(false)}
         onCommitted={(result) => {
-          setArticleImportOpen(false);
           toast({
             title: 'Import des Articles terminé',
             description: String(result.created) + ' créé(s), '
@@ -844,7 +843,6 @@ function SuppliersPage() {
       <SupplierCatalogImportDialog
         onClose={() => setImportOpen(false)}
         onCommitted={(result) => {
-          setImportOpen(false);
           toast({
             title: 'Import catalogue terminé',
             description:
