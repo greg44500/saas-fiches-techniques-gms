@@ -42,7 +42,7 @@ import {
 const escapeRegex = (value) =>
     value.replace(/[.*+?^$()|[\]\\{}]/g, '\\$&');
 
-const formatSupplierName = (name) => name.trim().replace(/\\s+/g, ' ').toLocaleUpperCase('fr');
+const formatSupplierName = (name) => name.trim().replace(/\s+/g, ' ').toLocaleUpperCase('fr');
 
 const ensureSupplierNameAvailable = async ({
     scope, workspaceId, name, excludeId = null, session,
