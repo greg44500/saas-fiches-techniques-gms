@@ -434,3 +434,17 @@ Branche : `feature/m003-catalog-management-and-import-ux`.
 - Tests des dialogues et E2E adaptés ; tests nouveaux pour la sélection, les permissions et la création rapide. **Aucune exécution locale ni gate n'est déclarée verte**.
 
 QA nécessaire : recherche d'un Fournisseur au-delà de la première page, sélection d'un fournisseur existant, création privée, création globale habilitée, refus sans droits, éventuelle homonymie, conservation du fichier et des correspondances, import confirmé, isolation Workspace, absence de régression.
+
+
+### QA en cours — noms et doublons Fournisseurs (2026-10-13)
+
+Demande produit : stocker et présenter les noms Fournisseurs en majuscules, rapprocher les noms proches et empêcher les doublons, y compris en dehors de l'import. Le code du service Fournisseurs a été adapté pour normaliser le nom et refuser les homonymes normalisés lors de la création ou du renommage, en tenant compte du global et du Workspace. Les deux formulaires de création concernés mettent désormais la saisie en majuscules.
+
+**Non clôturé :**
+- La détection phonétique/approchée et la décision explicite sur les rapprochements `TRANSGOURMET` / `TRANSGOURMETS` ne sont pas implémentées. Ne pas fusionner automatiquement ces deux identités.
+- Aucune contrainte unique MongoDB n'a été activée : audit préalable des homonymes existants (y compris archives) et migration d'index requise pour garantir les écritures concurrentes.
+- Les données historiques ne sont pas converties en majuscules.
+- Les tests locaux de ces nouveaux changements ne sont pas exécutés ; la gate n'est pas vérifiée.
+- Ne pas ouvrir de PR ou fusionner avant stabilisation, tests backend/frontend/E2E et QA utilisateur.
+
+Le contrôle actuel est une réduction du risque, **pas encore une garantie absolue contre tous les doublons**.
