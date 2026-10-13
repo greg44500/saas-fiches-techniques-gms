@@ -5,6 +5,7 @@ import { AppError } from '../../utils/appError.js';
 import { parseProductImportFile } from '../productCatalog/productCatalogImport.parser.js';
 import { ProductVariant } from '../productCatalog/productVariant.model.js';
 import { SupplierTariff } from './supplierCatalog.model.js';
+import { supplierSourcePriceLabel } from './supplierArticlePresentation.service.js';
 import { normalizeSupplierPrice } from './supplierPriceMath.service.js';
 import { SupplierArticle } from './supplier.model.js';
 import { SupplierArticleImportSession } from './supplierArticleImport.model.js';
@@ -284,6 +285,7 @@ const previewSupplierArticleImport = async ({
             brand: row.brand,
             packaging: hasPackaging(row.packaging) ? row.packaging : null,
             sourcePrice: row.sourcePrice,
+            sourcePriceLabel: supplierSourcePriceLabel(row.sourcePrice, row.packaging),
             classification,
             articleId,
             observedUpdatedAt,
