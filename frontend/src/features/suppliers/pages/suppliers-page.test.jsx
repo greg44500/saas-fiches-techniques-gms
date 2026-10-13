@@ -386,6 +386,7 @@ describe('SuppliersPage', () => {
         supplier: { id: 'supplier-1', name: 'Sysco' },
         scope: 'WORKSPACE_PRIVATE',
         status: 'ACTIVE',
+        packagingLabel: '12 × 1 abricot',
         packaging: {
           unitCount: 12,
           quantityPerUnit: '1',
@@ -404,5 +405,7 @@ describe('SuppliersPage', () => {
 
     expect(screen.getByText(/1 abricot/)).toBeInTheDocument();
     expect(screen.queryByText(/1 UNIT/)).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Fournisseurs (2)' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Articles (1)' })).toBeInTheDocument();
   });
 });
