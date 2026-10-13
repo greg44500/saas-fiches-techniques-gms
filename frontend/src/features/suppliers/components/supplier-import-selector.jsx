@@ -13,8 +13,6 @@ import {
 } from '@/features/suppliers/api/supplier-api';
 import { getApiErrorMessage } from '@/features/suppliers/lib/supplier-presentation';
 
-const NONE = '__NONE__';
-
 function SupplierImportSelector({
   mode = 'workspace', onChange, suppliers = [], value, workspaceId,
   canCreate = false, label = 'Fournisseur',
