@@ -108,6 +108,23 @@ const supplierApi = supplierApiBase.injectEndpoints({
       transformResponse: (response) => response.data.article,
       invalidatesTags: ['SupplierArticle', 'SupplierCatalog', 'SupplierPricing'],
     }),
+    listSupplierArticleTariffs: builder.query({
+      query: ({ workspaceId, articleId }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/' + articleId + '/tariffs',
+      }),
+      transformResponse: (response) => response.data.tariffs,
+      providesTags: ['SupplierPricing'],
+    }),
+    correctSupplierArticleTariff: builder.mutation({
+      query: ({ workspaceId, articleId, tariffId, ...body }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/' + articleId
+          + '/tariffs/' + tariffId + '/correction',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data.tariff,
+      invalidatesTags: ['SupplierPricing', 'SupplierArticle'],
+    }),
     updateSupplierArticleStatus: builder.mutation({
       query: ({ workspaceId, articleId, status }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-articles/' + articleId + '/status',
@@ -708,6 +725,8 @@ export const {
   useSetGlobalIndicativePriceMutation,
   useSetWorkspaceIndicativePriceMutation,
   useUpdatePricingPolicyMutation,
+  useListSupplierArticleTariffsQuery,
+  useCorrectSupplierArticleTariffMutation,
   useUpdateSupplierArticleMutation,
   useUpdateSupplierArticleStatusMutation,
   useUpdateSupplierCatalogStatusMutation,
