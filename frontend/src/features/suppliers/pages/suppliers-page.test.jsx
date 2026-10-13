@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -270,26 +270,41 @@ describe('SuppliersPage', () => {
     })).toBeInTheDocument();
   });
 
-  it('désactive la recherche tant que le champ est vide', async () => {
+  it('recherche les Fournisseurs au fil de la saisie et réinitialise le filtre', async () => {
     const user = userEvent.setup();
-
     renderPage();
 
-    expect(screen.getByRole('button', { name: 'Rechercher' }))
-      .toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Rechercher' }))
+      .not.toBeInTheDocument();
+    const searchBox = screen.getByRole('searchbox', { name: 'Rechercher' });
+    await user.type(searchBox, 'sysco');
+    await waitFor(() => {
+      const searches = mocks.listSuppliers.mock.calls
+        .map(([args]) => args).filter(({ status }) => status === 'ALL');
+      expect(searches.at(-1)).toEqual(
+        expect.objectContaining({ search: 'sysco', page: 1 }),
+      );
+    });
+    await user.clear(searchBox);
+    await waitFor(() => {
+      const searches = mocks.listSuppliers.mock.calls
+        .map(([args]) => args).filter(({ status }) => status === 'ALL');
+      expect(searches.at(-1)).toEqual(
+        expect.objectContaining({ search: undefined, page: 1 }),
+      );
+    });
+  });
 
-    await user.type(
-      screen.getByRole('textbox', { name: 'Rechercher' }),
-      'sysco',
-    );
-
-    expect(screen.getByRole('button', { name: 'Rechercher' }))
-      .toBeEnabled();
-
-    await user.clear(screen.getByRole('textbox', { name: 'Rechercher' }));
-
-    expect(screen.getByRole('button', { name: 'Rechercher' }))
-      .toBeDisabled();
+  it('recherche les Articles sur les pages du serveur sans bouton', async () => {
+    const user = userEvent.setup();
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+    await user.type(screen.getByRole('searchbox', { name: 'Rechercher' }), 'feuilletée');
+    await waitFor(() => {
+      expect(mocks.listArticles).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'feuilletée', page: 1 }),
+        expect.anything(),
+      );
+    });
   });
 
   it('ouvre directement la section Catalogues depuis le paramètre d’URL', () => {

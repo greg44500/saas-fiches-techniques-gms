@@ -19,8 +19,8 @@ const correctArticlePriceBodySchema = z.strictObject({
         .refine((value) => Number(value) > 0 && Number.isFinite(Number(value)),
             'Le prix doit être strictement positif.'),
     sourceBasis: z.enum(Object.values(SUPPLIER_PRICE_BASIS)),
-    reason: z.string().trim().min(8, 'Précisez la raison de la correction.')
-        .max(500),
+    reason: z.string().trim().max(500).nullish()
+        .transform((value) => value || null),
 });
 
 export {

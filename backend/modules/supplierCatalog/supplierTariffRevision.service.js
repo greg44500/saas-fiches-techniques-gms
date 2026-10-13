@@ -88,7 +88,8 @@ const correctArticlePrice = async ({
         targetUnit: variant.referenceUnit,
     }) : { normalizedAmount: null, normalizedUnit: null };
 
-    // L'index partiel garantit une seule version courante par import/Article.
+    // Le verrou Commerce sérialise les corrections transactionnelles.
+    // L'index unique protège le numéro de révision, pas isCurrent.
     prior.isCurrent = false;
     prior.updatedBy = actorId;
     await prior.save({ session });

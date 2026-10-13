@@ -195,14 +195,18 @@ function SuppliersPage() {
     && hasFeature(SUPPLIER_CAPABILITY.CATALOG_IMPORT)
   );
 
-  function applySearch(event) {
-    event.preventDefault();
-
+  // La recherche interroge le serveur plutôt que la seule page affichée.
+  useEffect(() => {
     const nextSearch = searchInput.trim();
-    if (!nextSearch) return;
-    setPage(1);
-    setSearch(nextSearch);
-  }
+    if (nextSearch === search) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      setPage(1);
+      setSearch(nextSearch);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchInput, search, setPage]);
 
   function changeSection(nextSection) {
     setPage(1);
@@ -633,30 +637,21 @@ function SuppliersPage() {
       <section className="rounded-xl border border-border bg-card">
         <div className="flex flex-col gap-3 border-b border-border p-5 md:flex-row md:items-end">
           {(section === 'suppliers' || section === 'articles') && (
-            <form className="flex min-w-0 flex-1 gap-2" onSubmit={applySearch}>
+            <div className="w-full min-w-0 md:max-w-xl md:flex-1">
+              <label className="mb-2 block text-sm font-medium" htmlFor="supplier-search">
+                Recherche
+              </label>
               <Input
                 aria-label="Rechercher"
+                autoComplete="off"
+                id="supplier-search"
                 maxLength={120}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setSearchInput(value);
-
-                  if (!value.trim() && search) {
-                    setPage(1);
-                    setSearch('');
-                  }
-                }}
-                placeholder="Rechercher…"
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Rechercher un fournisseur ou un article…"
+                type="search"
                 value={searchInput}
               />
-              <Button
-                disabled={!searchInput.trim()}
-                type="submit"
-                variant="outline"
-              >
-                Rechercher
-              </Button>
-            </form>
+            </div>
           )}
 
           <div className="w-full md:ml-auto md:w-52 md:shrink-0">

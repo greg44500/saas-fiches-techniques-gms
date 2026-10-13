@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
   DialogClose, DialogContent, DialogFooter, DialogHeader,
@@ -45,15 +46,15 @@ function SupplierArticlePriceCorrectionDialog({
 
   async function save(event) {
     event.preventDefault();
-    if (!article || !price || !amount.trim() || reason.trim().length < 8) {
-      setError('Indiquez le montant et un motif de correction (8 caractères minimum).');
+    if (!article || !price || !amount.trim()) {
+      setError('Indiquez un nouveau montant HT.');
       return;
     }
     try {
       await correct({
         workspaceId, articleId: article.id, tariffId: price.id,
         sourceAmount: amount.trim().replace(',', '.'),
-        sourceBasis: basis, reason: reason.trim(),
+        sourceBasis: basis, reason: reason.trim() || null,
       }).unwrap();
       onSaved();
     } catch (failure) {
@@ -69,18 +70,19 @@ function SupplierArticlePriceCorrectionDialog({
         <DialogOverlay />
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Corriger un tarif fournisseur</DialogTitle>
+            <div className="flex items-center gap-2">
+              <DialogTitle>Corriger un tarif fournisseur</DialogTitle>
+              <InfoTooltip
+                content="Utilisez cette action pour rectifier une erreur sur le prix enregistré. Le prix corrigé s'appliquera à la même période et l'ancien restera consultable. Pour un nouveau prix à une autre date, importez une nouvelle liste tarifaire."
+                label="À propos de la correction du tarif"
+              />
+            </div>
           </DialogHeader>
           <p className="mt-4 text-sm text-muted-foreground">
             {article?.supplierDesignation} · Réf. {article?.supplierReference}
           </p>
           <p className="mt-2 text-sm">
             Valeur enregistrée : <strong>{price?.sourcePriceLabel ?? '—'}</strong>
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Une nouvelle révision remplacera la valeur courante pour la même
-            période. L’ancienne valeur restera consultable dans l’historique.
-            Pour un changement de prix à une nouvelle date, utilisez une nouvelle liste tarifaire.
           </p>
           <form className="mt-4 space-y-4" onSubmit={save}>
             <Field>
@@ -108,7 +110,9 @@ function SupplierArticlePriceCorrectionDialog({
               </Select>
             </Field>
             <Field>
-              <FieldLabel htmlFor="tariff-correct-reason">Motif de la correction</FieldLabel>
+              <FieldLabel htmlFor="tariff-correct-reason">
+                Motif de la correction (facultatif)
+              </FieldLabel>
               <Textarea
                 id="tariff-correct-reason"
                 maxLength={500}

@@ -381,10 +381,10 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
             .set(auth()).send({
                 sourceAmount: '13.75',
                 sourceBasis: 'PACKAGE',
-                reason: 'Deuxième rectification justifiée du tarif',
             });
         expect(nextCorrection.status).toBe(200);
         expect(nextCorrection.body.data.tariff.revision).toBe(3);
+        expect(nextCorrection.body.data.tariff.correctionReason).toBeNull();
         expect(nextCorrection.body.data.tariff.replacesTariffId)
             .toBe(changed.body.data.tariff.id);
         const revisions = await SupplierTariff.find({

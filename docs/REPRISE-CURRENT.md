@@ -586,3 +586,19 @@ révisions historisées et une seule version courante.
 Ce correctif reste **en attente de vérification locale** : d'abord l'audit
 sur la base cible, ensuite migration des index si applicable, puis relance
 des tests ciblés. Aucun test vert n'est revendiqué par l'assistant.
+
+## QA visuelle M-003 — simplification des Articles et tarifs (2026-10-13)
+
+Sur la branche M-003 : recherche serveur progressive (300 ms, page 1,
+effacement du filtre, pas de bouton), champ réduit et alignement de
+Recherche/Statut ; drawer Article sans la ligne Fournisseur/référence
+redondante, référence placée dans la carte Informations de l’article ;
+avertissement de valorisation en couleur sémantique warning ; provenance,
+dates de validité et historique dans le Collapsible partagé fermé par défaut
+avec animation tenant compte de reduced motion.
+
+Correction tarifaire : explication métier dans InfoTooltip, motif facultatif
+(zéro caractère minimum, maximum 500), absent ou vide normalisé à null,
+sans changement des règles de montant et de provenance historique.
+Tests HTTP, validations, recherche, correction et drawer à vérifier en local.
+Aucun test, lint, build, E2E ou gate n'est déclaré vert à ce stade.

@@ -1541,12 +1541,14 @@ historique ni modifier les tarifs d'un autre Workspace.
   `packagingSnapshot` pour l'historique économique.
 - **Correction d'erreur tarifaire :** un prix provenant d'une mercuriale
   indépendante privée (`sourceKind=PRICE_LIST`) peut être corrigé sur
-  sa période existante avec nouveau montant, nouvelle base et motif obligatoire.
+  sa période existante avec nouveau montant et base tarifaire, et motif
+  facultatif (500 caractères maximum). Un motif absent ou vide devient `null`.
   L'ancienne version passe à `isCurrent=false`, sans suppression ; la
   nouvelle version immuable conserve l'import d'origine, le conditionnement,
   la période, la devise, et référence l'ancienne version (`replacesTariff`).
   Un événement d'audit `SUPPLIER_TARIFF_CORRECTED` est produit
-  avec acteur, Article, identifiant antérieur et motif.
+  avec acteur, Article, identifiant antérieur et motif facultatif
+  (`null` si aucun motif n'a été saisi).
 - **Concurrence :** une même correction est sérialisée dans une
   transaction par le verrou Commerce déjà utilisé à l'import ; la lecture
   de `isCurrent=true` est effectuée après acquisition du verrou.
