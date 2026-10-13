@@ -79,6 +79,89 @@ beforeEach(async () => {
 });
 
 describe('M-003 — import autonome des Articles fournisseur', () => {
+    it('importe un tarif annuel sans créer de catalogue et expose son prix au kilo', async () => {
+        await enableImport();
+        const file = [
+            'Reference;Designation;Prix;Base;Contenant;Nombre;Quantite;Unite',
+            'REF2027;Farine test;40.625;carton;Carton;2;5;kg',
+        ].join('\\n');
+        const inspected = await inspect(file);
+        expect(inspected.status).toBe(201);
+        const proposed = await request(app)
+            .post(basePath() + '/imports/' + inspected.body.data.importId + '/preview')
+            .set(auth())
+            .send({
+                supplierId,
+                mapping: {
+                    supplierReference: 0, designation: 1, priceAmount: 2,
+                    priceBasis: 3, containerType: 4, unitCount: 5,
+                    quantityPerUnit: 6, unit: 7,
+                },
+                priceList: {
+                    name: 'Prix annuels 2026',
+                    validFrom: '2026-01-01', validTo: '2027-12-31',
+                    source: 'Liste reçue par courriel',
+                    defaultPriceBasis: 'PACKAGE',
+                },
+            });
+        expect(proposed.status).toBe(200);
+        expect(proposed.body.data.counts.CREATE).toBe(1);
+        expect(proposed.body.data.rows[0].sourcePriceLabel)
+            .toContain('40,625');
+
+        const confirmed = await commit(inspected.body.data.importId);
+        expect(confirmed.status).toBe(200);
+        expect(confirmed.body.data.priced).toBe(1);
+        expect(await SupplierCatalogEdition.countDocuments({ supplier: supplierId })).toBe(0);
+        expect(await SupplierCatalogLine.countDocuments({ workspace: context.workspace._id })).toBe(0);
+
+        const tariff = await SupplierTariff.findOne({ sourceKind: 'PRICE_LIST' });
+        expect(tariff).not.toBeNull();
+        expect(tariff.catalogEdition).toBeNull();
+        expect(tariff.sourceLabel).toBe('Prix annuels 2026');
+        expect(tariff.sourceAmount.toString()).toBe('40.625');
+
+        const listed = await request(app).get(basePath()).set(auth());
+        expect(listed.status).toBe(200);
+        const article = listed.body.data.articles.find((item) =>
+            item.supplierReference === 'REF2027');
+        expect(article.packagingLabel).toBe('Carton · 2 × 5 kg');
+        expect(article.associationStatus).toBe('PENDING');
+        expect(article.supplierTariffStatus).toBe('AVAILABLE');
+        expect(article.supplierTariff.packagePriceLabel).toContain('40,625');
+        expect(article.supplierTariff.unitPriceLabel).toContain('4,063');
+    });
+
+    it('refuse les mercuriales dont les périodes se chevauchent', async () => {
+        await enableImport();
+        const csv = 'Reference;Designation;Prix;Base\\nDUPTAR;Pain;10;carton';
+        const first = await inspect(csv);
+        const body = (validFrom, validTo) => ({
+            supplierId,
+            mapping: {
+                supplierReference: 0, designation: 1,
+                priceAmount: 2, priceBasis: 3,
+            },
+            priceList: {
+                name: 'Liste test', validFrom, validTo,
+                source: null, defaultPriceBasis: 'PACKAGE',
+            },
+        });
+        expect((await request(app)
+            .post(basePath() + '/imports/' + first.body.data.importId + '/preview')
+            .set(auth()).send(body('2026-01-01', '2026-12-31'))).status).toBe(200);
+        expect((await commit(first.body.data.importId)).status).toBe(200);
+
+        const second = await inspect(csv);
+        const proposed = await request(app)
+            .post(basePath() + '/imports/' + second.body.data.importId + '/preview')
+            .set(auth()).send(body('2026-06-01', '2027-06-01'));
+        expect(proposed.status).toBe(200);
+        expect(proposed.body.data.counts.INVALID).toBe(1);
+        expect((await commit(second.body.data.importId)).status).toBe(409);
+        expect(await SupplierTariff.countDocuments({ sourceKind: 'PRICE_LIST' })).toBe(1);
+    });
+
     it('refuse l’inspection du référentiel global sans autorité Application Global', async () => {
         const response = await request(app)
             .post('/api/supplier-reference/articles/imports/inspect')
