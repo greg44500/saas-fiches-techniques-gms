@@ -102,10 +102,10 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(visibleA.status).toBe(200);
         expect(
             visibleA.body.data.suppliers.map(({ name }) => name),
-        ).toContain('Fournisseur privé A');
+        ).toContain('FOURNISSEUR PRIVÉ A');
         expect(
             visibleB.body.data.suppliers.map(({ name }) => name),
-        ).not.toContain('Fournisseur privé A');
+        ).not.toContain('FOURNISSEUR PRIVÉ A');
     });
 
     it('associe plusieurs catégories Produit existantes à un Fournisseur', async () => {
@@ -150,7 +150,7 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(visible.body.data.suppliers).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    name: 'Fournisseur catégorisé',
+                    name: 'FOURNISSEUR CATÉGORISÉ',
                     categories: [
                         expect.objectContaining({
                             id: categoryId,
@@ -230,7 +230,7 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(
             activeOnly.body.data.suppliers
                 .map(({ name }) => name),
-        ).not.toContain('Fournisseur archivé visible');
+        ).not.toContain('FOURNISSEUR ARCHIVÉ VISIBLE');
 
         const allStatuses = await request(app)
             .get(supplierPath(ownerA) + '?status=ALL')
@@ -240,7 +240,7 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(allStatuses.body.data.suppliers).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    name: 'Fournisseur archivé visible',
+                    name: 'FOURNISSEUR ARCHIVÉ VISIBLE',
                     status: 'ARCHIVED',
                 }),
             ]),
