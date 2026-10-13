@@ -35,7 +35,7 @@ const M003_INDEX_NAMES = Object.freeze([
     'supplier_catalog_scope_workspace_status',
     'supplier_catalog_line_current_identity_unique',
     'supplier_catalog_line_scope_workspace_match',
-    'supplier_tariff_current_edition_article_unique',
+    'supplier_tariff_catalog_current_edition_v2_unique',
     'supplier_tariff_article_validity',
     'supplier_price_list_import_article_unique',
     'negotiated_price_dossier_article_period',
@@ -83,6 +83,13 @@ const ensureM003SupplierCatalogIndexes = async () => {
     }
     for (const model of M003_MODELS) {
         await model.createIndexes();
+    }
+
+    // Index historique trop large : il empêchait deux mercuriales datées
+    // de coexister pour le même Article, même sans chevauchement.
+    const oldIndex = 'supplier_tariff_current_edition_article_unique';
+    if (await SupplierTariff.collection.indexExists(oldIndex)) {
+        await SupplierTariff.collection.dropIndex(oldIndex);
     }
 
     const indexes = await Promise.all(
