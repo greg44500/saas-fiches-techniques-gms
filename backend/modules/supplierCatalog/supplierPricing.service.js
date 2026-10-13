@@ -1279,11 +1279,9 @@ const findApplicableSupplierTariff = async ({
             .session(session)
             .lean();
 
-    const applicable =
-        tariffs.filter(
-            ({ catalogEdition }) =>
-                Boolean(catalogEdition),
-        );
+    const applicable = tariffs.filter((tariff) =>
+        (tariff.sourceKind || 'CATALOG') === 'PRICE_LIST'
+        || Boolean(tariff.catalogEdition));
 
     if (applicable.length > 1) {
         const error = new AppError(
@@ -1942,6 +1940,19 @@ const resolveApplicablePrice = async ({
             });
 
         if (tariff) {
+            // Un Article initialement importé sans Produit est normalisé
+            // au moment où il devient associé, sans réécrire l'historique.
+            const pricedTariff = tariff.normalizedAmount
+                ? tariff
+                : {
+                    ...tariff,
+                    ...normalizeSupplierPrice({
+                        sourceAmount: tariff.sourceAmount,
+                        sourceBasis: tariff.sourceBasis,
+                        packaging: article.packaging,
+                        targetUnit: productVariant.referenceUnit,
+                    }),
+                };
             return {
                 article:
                     serializeSupplierArticleSummary(article),
@@ -1956,16 +1967,20 @@ const resolveApplicablePrice = async ({
                 fallbackReason: alerts[0] ?? null,
                 price: serializeApplicableSource({
                     source: 'SUPPLIER_TARIFF',
-                    price: tariff,
+                    price: pricedTariff,
                     extra: {
-                        catalogEdition: {
-                            id:
-                                tariff.catalogEdition._id.toString(),
-                            name:
-                                tariff.catalogEdition.name,
-                            editionDate:
-                                tariff.catalogEdition.editionDate,
-                        },
+                        ...(tariff.catalogEdition ? {
+                            catalogEdition: {
+                                id: tariff.catalogEdition._id.toString(),
+                                name: tariff.catalogEdition.name,
+                                editionDate: tariff.catalogEdition.editionDate,
+                            },
+                        } : {
+                            priceList: {
+                                name: tariff.sourceLabel,
+                                importId: tariff.sourceImportId?.toString() ?? null,
+                            },
+                        }),
                         validFrom: tariff.validFrom,
                         validTo: tariff.validTo,
                     },
