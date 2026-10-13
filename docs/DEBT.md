@@ -807,3 +807,16 @@ supprimer un `SupplierTariff` pour forcer une nouvelle importation. Revoir
 également l'arbitrage métier lorsque des tarifs globaux et privés d'un même
 Article sont simultanément valides ; le serveur doit continuer à signaler
 l'ambiguïté au lieu de sélectionner arbitrairement un prix.
+
+---
+
+### M-003 — mises à jour tarifaires prospectives (2026-10-13)
+
+La correction d'une erreur tarifaire déjà saisie est désormais distincte
+de la communication d'un **nouveau prix à compter d'une date d'effet**.
+Le second parcours reste à concevoir, avec découpage atomique des
+périodes de validité, garantie d'absence de chevauchement entre sources,
+arbitrage privé/global, audit et historique économique. Ne jamais utiliser
+une correction rétrospective pour simuler un nouveau prix commercial.
+La correction des tarifs de catalogue dépend de l'édition concernée ;
+elle n'est pas ouverte depuis la fiche Article hors catalogue.
