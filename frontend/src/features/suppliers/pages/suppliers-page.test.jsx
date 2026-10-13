@@ -516,7 +516,7 @@ describe('SuppliersPage', () => {
 
     expect(screen.getByText('Carton · 36 × 0.300 kg')).toBeInTheDocument();
     expect(screen.getByText('11,200 € HT / Carton')).toBeInTheDocument();
-    expect(screen.getByText('Volume total : 30 L')).not.toBeInTheDocument();
+    expect(screen.queryByText('Volume total : 30 L')).not.toBeInTheDocument();
     expect(screen.queryByText('Poids total calculé : 10,8 kg')).not.toBeInTheDocument();
     expect(screen.queryByText('0,311 € HT / pièce')).not.toBeInTheDocument();
 
