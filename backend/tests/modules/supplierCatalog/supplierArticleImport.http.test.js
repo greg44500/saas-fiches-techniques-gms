@@ -310,6 +310,129 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         expect(shared.supplierTariff.sourceAmount).toBe('20');
     });
 
+    it('corrige une erreur tarifaire en gardant la révision et son motif', async () => {
+        await enableImport();
+        const imported = await inspect(
+            'Reference;Designation;Prix;Base\nCORR-01;Beurre;10.25;carton',
+        );
+        expect(imported.status).toBe(201);
+        const proposal = await request(app)
+            .post(basePath() + '/imports/' + imported.body.data.importId + '/preview')
+            .set(auth()).send({
+                supplierId,
+                mapping: {
+                    supplierReference: 0, designation: 1,
+                    priceAmount: 2, priceBasis: 3,
+                },
+                priceList: {
+                    validityMode: 'FROM_IMPORT',
+                    defaultPriceBasis: 'PACKAGE',
+                },
+            });
+        expect(proposal.status).toBe(200);
+        expect((await commit(imported.body.data.importId)).status).toBe(200);
+
+        const listed = await request(app).get(basePath()).set(auth());
+        const article = listed.body.data.articles.find((item) =>
+            item.supplierReference === 'CORR-01');
+        expect(article.supplierTariff.sourceAmount).toBe('10.25');
+        const url = basePath() + '/' + article.id + '/tariffs/';
+        const changed = await request(app)
+            .post(url + article.supplierTariff.id + '/correction')
+            .set(auth()).send({
+                sourceAmount: '12.50',
+                sourceBasis: 'PACKAGE',
+                reason: 'Erreur de saisie dans la liste initiale',
+            });
+        expect(changed.status).toBe(200);
+        expect(changed.body.data.tariff.revision).toBe(2);
+        expect(changed.body.data.tariff.correctionReason)
+            .toBe('Erreur de saisie dans la liste initiale');
+
+        const oldTariff = await SupplierTariff.findById(article.supplierTariff.id);
+        expect(oldTariff.isCurrent).toBe(false);
+        expect(oldTariff.sourceAmount.toString()).toBe('10.25');
+        const updatedList = await request(app).get(basePath()).set(auth());
+        const latest = updatedList.body.data.articles.find((item) =>
+            item.supplierReference === 'CORR-01');
+        expect(latest.supplierTariff.sourceAmount).toBe('12.5');
+        const history = await request(app).get(url).set(auth());
+        expect(history.status).toBe(200);
+        expect(history.body.data.tariffs).toHaveLength(2);
+        expect(history.body.data.tariffs.map((entry) => entry.isCurrent).sort())
+            .toEqual([false, true]);
+        expect(history.body.data.tariffs.some((entry) => entry.correctionReason
+            === 'Erreur de saisie dans la liste initiale')).toBe(true);
+
+        const stale = await request(app)
+            .post(url + article.supplierTariff.id + '/correction')
+            .set(auth()).send({
+                sourceAmount: '15',
+                sourceBasis: 'PACKAGE',
+                reason: 'Nouvelle tentative sur ancienne révision',
+            });
+        expect(stale.status).toBe(409);
+        expect(await SupplierTariff.countDocuments({
+            sourceImportId: imported.body.data.importId,
+        })).toBe(2);
+    });
+
+    it('protège la correction et la lecture tarifaire entre Workspaces et rôles', async () => {
+        await enableImport();
+        const imported = await inspect(
+            'Reference;Designation;Prix;Base\nPRIVE-01;Lait;6.5;carton',
+        );
+        expect(imported.status).toBe(201);
+        expect((await request(app)
+            .post(basePath() + '/imports/' + imported.body.data.importId + '/preview')
+            .set(auth()).send({
+                supplierId,
+                mapping: {
+                    supplierReference: 0, designation: 1,
+                    priceAmount: 2, priceBasis: 3,
+                },
+                priceList: {
+                    validityMode: 'FROM_IMPORT',
+                    defaultPriceBasis: 'PACKAGE',
+                },
+            })).status).toBe(200);
+        expect((await commit(imported.body.data.importId)).status).toBe(200);
+
+        const listed = await request(app).get(basePath()).set(auth());
+        const article = listed.body.data.articles.find((item) =>
+            item.supplierReference === 'PRIVE-01');
+        const relative = '/' + article.id + '/tariffs/';
+        const readOnly = await createWorkspaceMemberFixture({
+            workspaceId: context.workspace._id,
+            actorId: context.owner._id,
+            permissions: [SUPPLIER_CATALOG_PERMISSION.ARTICLE_READ],
+        });
+        const denied = await request(app)
+            .post(basePath() + relative + article.supplierTariff.id + '/correction')
+            .set(bearer(readOnly.token)).send({
+                sourceAmount: '7',
+                sourceBasis: 'PACKAGE',
+                reason: 'Correction non autorisée',
+            });
+        expect(denied.status).toBe(403);
+        expect((await request(app).get(basePath() + relative)
+            .set(bearer(readOnly.token))).status).toBe(403);
+
+        const other = await createWorkspaceOwnerFixture();
+        expect((await request(app)
+            .get(basePath(other) + relative).set(auth(other))).status).toBe(404);
+        expect((await request(app)
+            .post(basePath(other) + relative + article.supplierTariff.id + '/correction')
+            .set(auth(other)).send({
+                sourceAmount: '8',
+                sourceBasis: 'PACKAGE',
+                reason: 'Tentative autre espace de travail',
+            })).status).toBe(404);
+        expect(await SupplierTariff.countDocuments({
+            sourceImportId: imported.body.data.importId,
+        })).toBe(1);
+    });
+
     it('refuse l’inspection du référentiel global sans autorité Application Global', async () => {
         const response = await request(app)
             .post('/api/supplier-reference/articles/imports/inspect')
