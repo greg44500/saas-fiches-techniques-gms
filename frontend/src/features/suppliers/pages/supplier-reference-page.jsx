@@ -600,7 +600,6 @@ function SupplierReferencePage({ canManage }) {
         mode="global"
         onClose={() => setArticleImportOpen(false)}
         onCommitted={(result) => {
-          setArticleImportOpen(false);
           toast({
             title: 'Import global des Articles terminé',
             description: String(result.created) + ' créé(s), '
@@ -616,7 +615,6 @@ function SupplierReferencePage({ canManage }) {
         mode="global"
         onClose={() => setImportOpen(false)}
         onCommitted={(result) => {
-          setImportOpen(false);
           toast({
             title: 'Import global terminé',
             description:
