@@ -91,9 +91,10 @@ const overlaps = (firstFrom, firstTo, secondFrom, secondTo) => (
 );
 
 // Toujours vérifier les deux sources : catalogue et mercuriale autonome.
-const assertNoTariffOverlap = async ({ articleId, priceList, session = null }) => {
+const assertNoTariffOverlap = async ({ articleId, priceList, scope, workspaceId, session = null }) => {
     const tariffs = await SupplierTariff.find({
         supplierArticle: articleId, isCurrent: true,
+        ...articleVisibility({ scope, workspaceId }),
     }).populate({ path: 'catalogEdition', select: '_id status' }).session(session).lean();
     const conflicting = tariffs.find((tariff) =>
         ((tariff.sourceKind || 'CATALOG') === 'PRICE_LIST'
@@ -119,7 +120,7 @@ const storeListTariff = async ({
         session,
     });
     await assertNoTariffOverlap({
-        articleId: article.id, priceList, session,
+        articleId: article.id, priceList, scope, workspaceId, session,
     });
     const variantId = article.productVariant?._id ?? article.productVariant;
     const variant = variantId
@@ -267,7 +268,7 @@ const previewSupplierArticleImport = async ({
                     && classification !== 'INVALID') {
                     try {
                         await assertNoTariffOverlap({
-                            articleId: existing._id, priceList,
+                            articleId: existing._id, priceList, scope, workspaceId,
                         });
                     } catch (error) {
                         classification = 'INVALID';
