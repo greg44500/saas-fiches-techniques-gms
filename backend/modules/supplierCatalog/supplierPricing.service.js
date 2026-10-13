@@ -1948,7 +1948,7 @@ const resolveApplicablePrice = async ({
                     ...normalizeSupplierPrice({
                         sourceAmount: tariff.sourceAmount,
                         sourceBasis: tariff.sourceBasis,
-                        packaging: article.packaging,
+                        packaging: tariff.packagingSnapshot ?? article.packaging,
                         targetUnit: productVariant.referenceUnit,
                     }),
                 };
