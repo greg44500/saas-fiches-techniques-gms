@@ -1596,3 +1596,17 @@ Un tarif de liste indépendant est conservé même lorsque l'Article n'a pas
 encore de `ProductVariant` ; seul le Prix applicable utilisé par une Fiche
 nécessite l'association au Produit et une normalisation compatible. Le backend
 est seul responsable des projections de prix et de conditionnement.
+
+---
+
+### M-003 — révisions d'erreurs tarifaires hors catalogue (2026-10-13)
+
+`SupplierTariff` conserve l'identité source (`sourceImportId`,
+`sourceKind`, `sourceLabel`), les valeurs et le
+`packagingSnapshot` immuables. Une erreur de saisie peut produire une
+révision corrective : `revision` incrémentée, `replacesTariff`
+pointant vers l'ancien tarif, `correctionReason` explicite, ancienne
+révision `isCurrent=false`. Les deux versions demeurent en base.
+Le moteur des prix ne considère que les versions courantes ; le détail
+Article peut lire leur historique dans son Workspace, selon RBAC.
+Aucune correction ne change la période effective initiale.
