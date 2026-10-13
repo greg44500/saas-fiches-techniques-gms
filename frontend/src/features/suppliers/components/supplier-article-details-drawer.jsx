@@ -19,7 +19,7 @@ function dateLabel(value) {
 }
 
 function SupplierArticleDetailsDrawer({
-  article, canManage = false, canReadTariffs = false,
+  article, canManage = false, canAssociate = false, canReadTariffs = false,
   canCorrectTariffs = false, onAssociate, onClose, onCorrectPrice,
   onEdit, open, workspaceId,
 }) {
@@ -70,7 +70,7 @@ function SupplierArticleDetailsDrawer({
         <section className="rounded-lg border border-border p-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-semibold">Produit associé</h3>
-            {canManage && current?.status === 'ACTIVE' && (
+            {canAssociate && current?.status === 'ACTIVE' && (
               <Button onClick={() => onAssociate(current)} size="sm" variant="outline">
                 Modifier l’association
               </Button>
