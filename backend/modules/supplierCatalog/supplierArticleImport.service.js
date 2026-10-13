@@ -85,6 +85,22 @@ const findExisting = async ({
         ?? null;
 };
 
+const resolvePriceListValidity = (priceList, importDate = new Date()) => {
+    if (!priceList || priceList.validityMode !== 'FROM_IMPORT') {
+        return priceList;
+    }
+    const dateLabel = new Intl.DateTimeFormat('fr-FR', {
+        timeZone: 'UTC',
+        day: '2-digit', month: '2-digit', year: 'numeric',
+    }).format(importDate);
+    return {
+        ...priceList,
+        name: priceList.name || 'Prix importés le ' + dateLabel,
+        validFrom: importDate.toISOString(),
+        validTo: null,
+    };
+};
+
 const overlaps = (firstFrom, firstTo, secondFrom, secondTo) => (
     (!firstTo || !secondFrom || new Date(firstTo) >= new Date(secondFrom))
     && (!secondTo || !firstFrom || new Date(secondTo) >= new Date(firstFrom))
@@ -216,6 +232,9 @@ const previewSupplierArticleImport = async ({
         ],
     });
 
+    // Ce calcul sert uniquement à la prévisualisation des chevauchements.
+    // La date réellement applicable est fixée au moment de la confirmation.
+    const previewPriceList = resolvePriceListValidity(priceList);
     const seen = new Set();
     const preview = [];
     for (const [index, raw] of importSession.rows.entries()) {
@@ -269,7 +288,9 @@ const previewSupplierArticleImport = async ({
                     && classification !== 'INVALID') {
                     try {
                         await assertNoTariffOverlap({
-                            articleId: existing._id, priceList, scope, workspaceId,
+                            articleId: existing._id,
+                            priceList: previewPriceList,
+                            scope, workspaceId,
                         });
                     } catch (error) {
                         classification = 'INVALID';
@@ -331,14 +352,17 @@ const commitSupplierArticleImport = async ({
         createdArticleIds: [], updatedArticleIds: [], priced: 0,
     };
 
+    const confirmedPriceList = resolvePriceListValidity(
+        importSession.priceListDraft,
+    );
     const writeTariff = async (article, row) => {
         if (!row.sourcePrice) return;
-        if (!importSession.priceListDraft) {
+        if (!confirmedPriceList) {
             throw new AppError('Provenance tarifaire absente.', 409);
         }
         await storeListTariff({
             article,
-            priceList: importSession.priceListDraft,
+            priceList: confirmedPriceList,
             sourcePrice: row.sourcePrice,
             scope, workspaceId, actorId,
             sourceImportId: importSession._id, session,
