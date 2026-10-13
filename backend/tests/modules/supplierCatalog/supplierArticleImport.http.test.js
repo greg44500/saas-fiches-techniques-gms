@@ -30,9 +30,10 @@ import { SUPPLIER_CATALOG_FEATURE } from '../../../modules/supplierCatalog/suppl
 import { SupplierArticleImportSession } from '../../../modules/supplierCatalog/supplierArticleImport.model.js';
 import { createSupplier as createSupplierService } from '../../../modules/supplierCatalog/supplierReference.service.js';
 import { SUPPLIER_SCOPE } from '../../../modules/supplierCatalog/supplierCatalog.registry.js';
+import { SUPPLIER_CATALOG_PERMISSION } from '../../../modules/supplierCatalog/supplierCatalogPermission.registry.js';
 import { findApplicableSupplierTariff } from '../../../modules/supplierCatalog/supplierPricing.service.js';
 import {
-    bearer, createWorkspaceOwnerFixture,
+    bearer, createWorkspaceMemberFixture, createWorkspaceOwnerFixture,
 } from '../../helpers/dossierTest.fixtures.js';
 
 let context;
@@ -131,6 +132,16 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         expect(article.supplierTariffStatus).toBe('AVAILABLE');
         expect(article.supplierTariff.packagePriceLabel).toContain('40,625');
         expect(article.supplierTariff.unitPriceLabel).toContain('4,063');
+        const reader = await createWorkspaceMemberFixture({
+            workspaceId: context.workspace._id,
+            actorId: context.owner._id,
+            permissions: [SUPPLIER_CATALOG_PERMISSION.ARTICLE_READ],
+        });
+        const limited = await request(app)
+            .get(basePath()).set(bearer(reader.token));
+        expect(limited.status).toBe(200);
+        expect(limited.body.data.articles[0].supplierTariff).toBeNull();
+        expect(limited.body.data.articles[0].supplierTariffStatus).toBe('RESTRICTED');
         const applicable = await findApplicableSupplierTariff({
             workspaceId: context.workspace._id,
             articleId: article.id,
