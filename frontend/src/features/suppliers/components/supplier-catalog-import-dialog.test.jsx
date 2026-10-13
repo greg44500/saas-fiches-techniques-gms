@@ -239,4 +239,58 @@ describe('SupplierCatalogImportDialog', () => {
       }),
     );
   });
+  it('affiche la quatrième étape après la confirmation du catalogue', async () => {
+    const user = userEvent.setup();
+    const onCommitted = vi.fn();
+
+    mocks.inspectWorkspace.mockReturnValue(resolved({
+      importId: 'import-catalogue',
+      format: 'CSV',
+      headers: ['Reference', 'Designation'],
+      rowCount: 1,
+    }));
+    mocks.previewWorkspace.mockReturnValue(resolved({
+      counts: { MATCHED: 1 },
+      rows: [{
+        rowNumber: 2,
+        supplierReference: 'REF-1',
+        designation: 'Pain',
+        classification: 'MATCHED',
+        errors: [],
+      }],
+    }));
+    mocks.commitWorkspace.mockReturnValue(resolved({
+      changedLines: 1,
+    }));
+
+    render(
+      <SupplierCatalogImportDialog
+        onClose={vi.fn()}
+        onCommitted={onCommitted}
+        open
+        suppliers={[{ id: 'supplier-1', name: 'Sysco' }]}
+        workspaceId="workspace-1"
+      />,
+    );
+
+    await user.upload(
+      screen.getByLabelText('Fichier'),
+      new File(['Reference;Designation\\nREF-1;Pain'], 'catalogue.csv', {
+        type: 'text/csv',
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
+    await user.click(screen.getByRole('combobox', { name: 'Fournisseur du catalogue' }));
+    await user.click(await screen.findByRole('option', { name: 'Sysco' }));
+    await user.type(screen.getByLabelText('Édition'), 'Octobre 2026');
+    await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
+    expect(screen.getByText('Vérifier').closest('li')).toHaveAttribute('aria-current', 'step');
+
+    await user.click(screen.getByRole('button', { name: 'Confirmer l’import' }));
+    expect(onCommitted).toHaveBeenCalledWith({ changedLines: 1 });
+    expect(screen.getByText('Terminer').closest('li')).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByRole('heading', { name: 'Import terminé' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Fermer' })).toBeInTheDocument();
+  });
+
 });
