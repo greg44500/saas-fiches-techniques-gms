@@ -458,3 +458,41 @@ Le contrôle actuel est une réduction du risque, **pas encore une garantie abso
 - Commande d'audit préalable, sans écriture : `npm run audit:m003-supplier-names`. Elle signale les doublons existants, incohérences de normalisation et bloque le déploiement des nouveaux index si elle échoue. Vérifier l'URI MONGODB_URI et la base cible avant toute commande.
 - `npm run migration:m003-supplier-catalog` n'est à exécuter qu'après audit sans collisions ; la migration échoue volontairement si les noms historiques nécessitent une résolution manuelle. Aucune fusion, suppression ou conversion automatique des données historiques.
 - Tests backend spécifiques ajoutés mais non exécutés localement. Revalider les tests historiques dont les attentes de casse changent, l'indexation en base de test, les autorisations, l'UX, E2E et les gates. Aucune PR/merge autorisée sans QA.
+
+---
+
+## Travail en cours — prix fournisseurs hors catalogue et UX Articles (2026-10-13)
+
+Branche : `feature/m003-catalog-management-and-import-ux`.
+Référence Core inchangée : v1.2.1.
+
+**Cadrage utilisateur validé :** importer une liste tarifaire fournisseur
+avec période de validité (ex. un an), sans créer d'édition catalogue.
+Le frontend n'effectue aucune conversion ou présentation calculée des prix :
+les montants et textes métier dérivés proviennent du backend.
+
+Code enregistré sur GitHub : `SupplierTariff` accepte l'origine `PRICE_LIST`
+avec import, libellé source et période, sans catalogue. L'import Articles
+accepte prix, base monétaire, provenance et dates ; absence de prix reste
+compatible. Le backend bloque les chevauchements visibles et conserve
+l'historique ; le résolveur Prix applicable comprend les deux origines,
+sans inventer de prix normalisé lorsqu'il est impossible de le calculer.
+La liste Articles reçoit les projections tarifaires et libellés consolidés
+côté serveur. L'onglet Articles affiche les badges d'association et les prix ;
+les compteurs Fournisseurs/Articles actifs exploitent les totaux serveur.
+
+**Avant QA locale :** vérifier `MONGODB_URI`, puis
+`npm run audit:m003-supplier-names`; en l'absence d'anomalies,
+`npm run migration:m003-supplier-catalog` pour migrer l'ancien index
+tarifaire et appliquer les index de listes. Ne pas faire de migration dans
+une base contenant des doublons de Fournisseurs non résolus.
+
+Tests ajoutés : import sans édition, projection prix/kg, périodes en conflit,
+isolation tarifaire de deux Workspaces pour un Article global, libellé de
+conditionnement, interface de saisie, badges/compteurs. **Aucune exécution
+locale, build ni gate verte n'est affirmée.**
+
+Attention : correction/archivage d'une liste déjà importée non livré ;
+le conflit est volontairement bloquant. Le prix « fournisseur de référence »
+ne constitue pas le Prix applicable d'un Dossier. Ne pas ouvrir de PR ni
+merger avant QA explicite et preuve des gates.
