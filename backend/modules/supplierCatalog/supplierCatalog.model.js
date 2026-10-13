@@ -265,9 +265,12 @@ supplierTariffSchema.pre('validate', function verifyTariffSource() {
 supplierTariffSchema.index(
     { catalogEdition: 1, supplierArticle: 1, isCurrent: 1 },
     {
-        name: 'supplier_tariff_current_edition_article_unique',
+        name: 'supplier_tariff_catalog_current_edition_v2_unique',
         unique: true,
-        partialFilterExpression: { isCurrent: true },
+        partialFilterExpression: {
+            isCurrent: true,
+            catalogEdition: { $type: 'objectId' },
+        },
     },
 );
 supplierTariffSchema.index(
