@@ -53,5 +53,14 @@ describe('M-003 projections commerciales préparées côté backend', () => {
         expect(result.unitPriceLabel).toContain('4,063');
         expect(result.normalizedUnit).toBe('KG');
         expect(result.sourceLabel).toBe('Tarifs 2027');
+        const changedArticle = {
+            ...article,
+            packaging: { containerType: 'Carton', totalQuantity: '5', unit: 'KG' },
+        };
+        const frozen = supplierTariffPresentation({
+            ...tariff,
+            packagingSnapshot: article.packaging,
+        }, changedArticle);
+        expect(frozen.unitPriceLabel).toBe(result.unitPriceLabel);
     });
 });
