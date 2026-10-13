@@ -42,6 +42,34 @@ import {
 const escapeRegex = (value) =>
     value.replace(/[.*+?^$()|[\]\\{}]/g, '\\$&');
 
+const formatSupplierName = (name) => name.trim().replace(/\\s+/g, ' ').toLocaleUpperCase('fr');
+
+const ensureSupplierNameAvailable = async ({
+    scope, workspaceId, name, excludeId = null, session,
+}) => {
+    const normalizedName = normalizeSupplierText(name);
+    const existing = await Supplier.findOne({
+        normalizedName,
+        ...(scope === SUPPLIER_SCOPE.GLOBAL_SHARED
+            ? { scope, workspace: null }
+            : {
+                $or: mongoose.trusted([
+                    { scope: SUPPLIER_SCOPE.GLOBAL_SHARED, workspace: null },
+                    { scope, workspace: workspaceId },
+                ]),
+            }),
+        ...(excludeId ? { _id: mongoose.trusted({ $ne: excludeId }) } : {}),
+    }).session(session);
+    if (existing) {
+        throw new AppError(
+            'Un Fournisseur portant ce nom existe déjà dans le référentiel accessible : '
+                + existing.name + '. Sélectionnez la fiche existante.',
+            409,
+        );
+    }
+    return normalizedName;
+};
+
 const normalizeDecimalInput = (value) => (
     value === null || value === undefined
         ? null
@@ -240,14 +268,18 @@ const createSupplier = async ({
         session,
     });
 
+    const normalizedName = await ensureSupplierNameAvailable({
+        scope, workspaceId, name: data.name, session,
+    });
+
     const [supplier] = await Supplier.create([
         {
             scope,
             workspace: scope === SUPPLIER_SCOPE.GLOBAL_SHARED
                 ? null
                 : workspaceId,
-            name: data.name,
-            normalizedName: normalizeSupplierText(data.name),
+            name: formatSupplierName(data.name),
+            normalizedName,
             supplierCode: data.supplierCode ?? null,
             legalName: data.legalName ?? null,
             website: data.website ?? null,
@@ -285,6 +317,12 @@ const updateSupplier = async ({
         supplierId,
         session,
     });
+    if (Object.hasOwn(data, 'name')) {
+        await ensureSupplierNameAvailable({
+            scope, workspaceId, name: data.name, excludeId: supplier._id, session,
+        });
+        data = { ...data, name: formatSupplierName(data.name) };
+    }
     const changedFields = [];
 
     for (const field of [
