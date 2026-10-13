@@ -37,6 +37,7 @@ const M003_INDEX_NAMES = Object.freeze([
     'supplier_catalog_line_scope_workspace_match',
     'supplier_tariff_current_edition_article_unique',
     'supplier_tariff_article_validity',
+    'supplier_price_list_import_article_unique',
     'negotiated_price_dossier_article_period',
     'invoiced_price_dossier_article_invoice_date',
     'invoiced_price_dossier_status_date',
