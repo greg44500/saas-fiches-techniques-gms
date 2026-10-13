@@ -9,6 +9,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useCreateSupplierMutation: () => [vi.fn(), { isLoading: false }],
+  useCreateGlobalSupplierMutation: () => [vi.fn(), { isLoading: false }],
+  useListSuppliersQuery: () => ({ data: { suppliers: [] }, isFetching: false }),
+  useListGlobalSuppliersQuery: () => ({ data: { suppliers: [] }, isFetching: false }),
   useInspectSupplierArticleImportMutation: () => [mocks.inspect, { isLoading: false }],
   usePreviewSupplierArticleImportMutation: () => [mocks.preview, { isLoading: false }],
   useCommitSupplierArticleImportMutation: () => [mocks.commit, { isLoading: false }],
@@ -74,8 +78,7 @@ describe('SupplierArticleImportDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
     expect(mocks.inspect).toHaveBeenCalledWith({ workspaceId: 'workspace-1', file });
 
-    await user.click(screen.getByRole('combobox', { name: 'Fournisseur des Articles' }));
-    await user.click(await screen.findByRole('option', { name: 'Sysco' }));
+    await user.click(screen.getByRole('button', { name: 'Sysco' }));
     await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
     expect(mocks.preview).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
@@ -107,8 +110,7 @@ describe('SupplierArticleImportDialog', () => {
     renderDialog();
     await user.upload(screen.getByLabelText('Fichier'), new File(['x'], 'test.csv'));
     await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
-    await user.click(screen.getByRole('combobox', { name: 'Fournisseur des Articles' }));
-    await user.click(await screen.findByRole('option', { name: 'Sysco' }));
+    await user.click(screen.getByRole('button', { name: 'Sysco' }));
     await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
     expect(screen.getByRole('button', { name: 'Confirmer l’import' })).toBeDisabled();
   });
