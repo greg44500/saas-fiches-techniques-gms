@@ -80,12 +80,8 @@ async function importCatalogFromUi(page, {
     ].join(' '),
   ).toBe(201);
 
-  await dialog.getByRole('combobox', {
-    name: 'Fournisseur du catalogue',
-  }).click();
-  await page.getByRole('option', {
-    name: supplierName,
-  }).click();
+  await dialog.getByRole('textbox', { name: 'Rechercher un Fournisseur' }).fill(supplierName);
+  await dialog.getByRole('button', { name: supplierName, exact: true }).click();
 
   await dialog.getByRole('textbox', {
     name: 'Édition',
@@ -380,12 +376,12 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
     response.request().method() === 'POST'
     && response.url().includes('/supplier-articles/imports/inspect')
   ));
-  await dialog.getByRole('button', { name: 'Inspecter le fichier' }).click();
+  await dialog.getByRole('button', { name: 'Analyser le fichier' }).click();
   const inspected = await inspectPromise;
   expect(inspected.status(), 'Inspection Articles : vérifier ClamAV si HTTP 503').toBe(201);
 
-  await dialog.getByRole('combobox', { name: 'Fournisseur des Articles' }).click();
-  await page.getByRole('option', { name: supplierName }).click();
+  await dialog.getByRole('textbox', { name: 'Rechercher un Fournisseur' }).fill(supplierName);
+  await dialog.getByRole('button', { name: supplierName, exact: true }).click();
   await dialog.getByRole('button', { name: 'Prévisualiser' }).click();
   await expect(dialog.getByText(reference, { exact: true })).toBeVisible();
   await expect(dialog.getByText(/1 ligne\(s\) sans référence ignorée\(s\)/)).toBeVisible();
