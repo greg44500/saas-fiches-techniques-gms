@@ -1939,19 +1939,20 @@ const resolveApplicablePrice = async ({
             });
 
         if (tariff) {
-            // Un Article initialement importé sans Produit est normalisé
-            // au moment où il devient associé, sans réécrire l'historique.
-            const pricedTariff = tariff.normalizedAmount
-                ? tariff
-                : {
-                    ...tariff,
-                    ...normalizeSupplierPrice({
-                        sourceAmount: tariff.sourceAmount,
-                        sourceBasis: tariff.sourceBasis,
-                        packaging: tariff.packagingSnapshot ?? article.packaging,
-                        targetUnit: productVariant.referenceUnit,
-                    }),
-                };
+            // L'association Produit peut être corrigée a posteriori.
+            // Toujours convertir la base source vers l'unité du Produit
+            // désormais associé, avec le conditionnement historique.
+            // Un montant normalisé stocké ne doit jamais être réutilisé
+            // s'il a été calculé pour un ancien Produit.
+            const pricedTariff = {
+                ...tariff,
+                ...normalizeSupplierPrice({
+                    sourceAmount: tariff.sourceAmount,
+                    sourceBasis: tariff.sourceBasis,
+                    packaging: tariff.packagingSnapshot ?? article.packaging,
+                    targetUnit: productVariant.referenceUnit,
+                }),
+            };
             return {
                 article:
                     serializeSupplierArticleSummary(article),
