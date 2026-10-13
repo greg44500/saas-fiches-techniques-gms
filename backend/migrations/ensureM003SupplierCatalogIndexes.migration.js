@@ -81,6 +81,17 @@ const ensureM003SupplierCatalogIndexes = async () => {
             + JSON.stringify(audit),
         );
     }
+    // L'index précédent bloquait les corrections historisées, car il
+    // s'appliquait aussi aux anciennes révisions (isCurrent=false).
+    const legacyPriceListIndex = 'supplier_price_list_import_article_unique';
+    if (await SupplierTariff.collection.indexExists(legacyPriceListIndex)) {
+        const indexes = await SupplierTariff.collection.indexes();
+        const legacy = indexes.find(({ name }) => name === legacyPriceListIndex);
+        if (legacy?.partialFilterExpression?.isCurrent !== true) {
+            await SupplierTariff.collection.dropIndex(legacyPriceListIndex);
+        }
+    }
+
     for (const model of M003_MODELS) {
         await model.createIndexes();
     }
