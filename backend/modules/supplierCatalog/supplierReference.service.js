@@ -874,6 +874,7 @@ const replaceSupplierArticle = async ({
 });
 
 const listSupplierArticles = async ({
+    includeSupplierTariff = false,
     workspaceId = null,
     globalOnly = false,
     page = 1,
@@ -958,7 +959,7 @@ const listSupplierArticles = async ({
     // Une projection serveur unique évite une requête tarifaire par Article.
     const articleIds = articles.map((article) => article._id);
     const now = new Date();
-    const tariffs = articleIds.length ? await SupplierTariff.find({
+    const tariffs = includeSupplierTariff && articleIds.length ? await SupplierTariff.find({
         supplierArticle: mongoose.trusted({ $in: articleIds }),
         isCurrent: true,
         ...buildWorkspaceVisibilityFilter(globalOnly ? null : workspaceId),
@@ -986,8 +987,9 @@ const listSupplierArticles = async ({
             const candidates = byArticle.get(article._id.toString()) ?? [];
             return {
                 ...serialized,
-                supplierTariffStatus: candidates.length > 1
-                    ? 'AMBIGUOUS' : candidates.length ? 'AVAILABLE' : 'UNAVAILABLE',
+                supplierTariffStatus: !includeSupplierTariff ? 'RESTRICTED'
+                    : candidates.length > 1 ? 'AMBIGUOUS'
+                        : candidates.length ? 'AVAILABLE' : 'UNAVAILABLE',
                 supplierTariff: candidates.length === 1
                     ? supplierTariffPresentation(candidates[0], article) : null,
             };
