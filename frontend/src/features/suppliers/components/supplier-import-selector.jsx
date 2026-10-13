@@ -47,8 +47,8 @@ function SupplierImportSelector({
   const selected = [...created, ...found, ...suppliers].find((item) => item.id === value);
   const normalizeName = (value) => value.trim().normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '').toLocaleUpperCase('fr')
-    .replace(/[-'’_`/]+/g, ' ').replace(/[^A-Z0-9\\s]+/g, ' ')
-    .replace(/\\s+/g, ' ').trim();
+    .replace(/[-'’_`/]+/g, ' ').replace(/[^A-Z0-9\s]+/g, ' ')
+    .replace(/\s+/g, ' ').trim();
   const nameSuggestions = [...created, ...found, ...suppliers].filter((supplier) =>
     normalizeName(supplier.name) === normalizeName(name));
   const mayCreate = canCreate && (global || Boolean(workspaceId));
