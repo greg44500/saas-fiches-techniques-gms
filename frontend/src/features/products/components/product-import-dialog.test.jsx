@@ -128,9 +128,13 @@ describe('ProductImportDialog', () => {
       type: 'text/csv',
     });
 
+    expect(screen.getByRole('button', { name: 'Choisir un fichier' })).toBeInTheDocument();
+    expect(screen.getByText('Aucun fichier sélectionné')).toBeInTheDocument();
+    expect(screen.getByText('Choisir').closest('li')).toHaveAttribute('aria-current', 'step');
     await user.upload(screen.getByLabelText('Fichier'), file);
     await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
 
+    expect(screen.getByText('Associer').closest('li')).toHaveAttribute('aria-current', 'step');
     expect(await screen.findByText('Colonnes commerciales détectées'))
       .toBeInTheDocument();
     expect(screen.getByText('Prix HT')).toBeInTheDocument();

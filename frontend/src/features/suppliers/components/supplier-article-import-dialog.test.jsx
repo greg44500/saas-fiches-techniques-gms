@@ -71,12 +71,12 @@ describe('SupplierArticleImportDialog', () => {
       type: 'text/csv',
     });
     await user.upload(screen.getByLabelText('Fichier'), file);
-    await user.click(screen.getByRole('button', { name: 'Inspecter le fichier' }));
+    await user.click(screen.getByRole('button', { name: 'Analyser le fichier' }));
     expect(mocks.inspect).toHaveBeenCalledWith({ workspaceId: 'workspace-1', file });
 
     await user.click(screen.getByRole('combobox', { name: 'Fournisseur des Articles' }));
     await user.click(await screen.findByRole('option', { name: 'Sysco' }));
-    await user.click(screen.getByRole('button', { name: 'Prévisualiser les Articles' }));
+    await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
     expect(mocks.preview).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
       importId: 'import-1',
@@ -85,11 +85,13 @@ describe('SupplierArticleImportDialog', () => {
     });
     expect(screen.getByText(/ligne\(s\) sans référence ignorée\(s\)/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Confirmer l’import des Articles' }));
+    await user.click(screen.getByRole('button', { name: 'Confirmer l’import' }));
     expect(mocks.commit).toHaveBeenCalledWith({
       workspaceId: 'workspace-1', importId: 'import-1',
     });
     expect(committed).toHaveBeenCalledWith({ created: 1, updated: 0 });
+    expect(screen.getByText('Terminer').closest('li')).toHaveAttribute('aria-current', 'step');
+    expect(screen.getByRole('heading', { name: 'Import terminé' })).toBeInTheDocument();
   });
 
   it('interdit la confirmation lorsque la prévisualisation contient une erreur', async () => {
@@ -107,7 +109,7 @@ describe('SupplierArticleImportDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Inspecter le fichier' }));
     await user.click(screen.getByRole('combobox', { name: 'Fournisseur des Articles' }));
     await user.click(await screen.findByRole('option', { name: 'Sysco' }));
-    await user.click(screen.getByRole('button', { name: 'Prévisualiser les Articles' }));
-    expect(screen.getByRole('button', { name: 'Confirmer l’import des Articles' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
+    expect(screen.getByRole('button', { name: 'Confirmer l’import' })).toBeDisabled();
   });
 });

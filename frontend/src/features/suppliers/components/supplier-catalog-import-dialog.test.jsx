@@ -147,7 +147,7 @@ describe('SupplierCatalogImportDialog', () => {
       screen.getByRole('button', { name: 'Choisir un fichier' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Pas de fichier pour le moment'),
+      screen.getByText('Aucun fichier sélectionné'),
     ).toBeInTheDocument();
 
     const file = new File(
@@ -166,7 +166,7 @@ describe('SupplierCatalogImportDialog', () => {
     ).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {
-        name: 'Inspecter le fichier',
+        name: 'Analyser le fichier',
       }),
     );
 
@@ -198,14 +198,16 @@ describe('SupplierCatalogImportDialog', () => {
     );
     await user.tab();
 
+    expect(screen.getByText('Unité du prix (Kilo, Pièce, etc.)'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Associer').closest('li')).toHaveAttribute('aria-current', 'step');
+
     await user.click(
       screen.getByRole('button', {
         name: 'Prévisualiser',
       }),
     );
-
-    expect(screen.getByText('Unité du prix (Kilo, Pièce, etc.)'))
-      .toBeInTheDocument();
+    expect(screen.getByText('Vérifier').closest('li')).toHaveAttribute('aria-current', 'step');
     expect(screen.queryByText('Devise')).not.toBeInTheDocument();
 
     expect(

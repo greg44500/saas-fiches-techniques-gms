@@ -60,7 +60,7 @@ async function importCatalogFromUi(page, {
   ));
 
   await dialog.getByRole('button', {
-    name: 'Inspecter le fichier',
+    name: 'Analyser le fichier',
   }).click();
 
   const inspectResponse = await inspectResponsePromise;
@@ -109,6 +109,8 @@ async function importCatalogFromUi(page, {
     page,
     'Import catalogue terminé',
   );
+  await expect(dialog.getByText('Import terminé')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Fermer' }).click();
 }
 
 async function createNegotiatedPriceFromUi(page, {
@@ -384,12 +386,14 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
 
   await dialog.getByRole('combobox', { name: 'Fournisseur des Articles' }).click();
   await page.getByRole('option', { name: supplierName }).click();
-  await dialog.getByRole('button', { name: 'Prévisualiser les Articles' }).click();
+  await dialog.getByRole('button', { name: 'Prévisualiser' }).click();
   await expect(dialog.getByText(reference, { exact: true })).toBeVisible();
   await expect(dialog.getByText(/1 ligne\(s\) sans référence ignorée\(s\)/)).toBeVisible();
 
-  await dialog.getByRole('button', { name: 'Confirmer l’import des Articles' }).click();
+  await dialog.getByRole('button', { name: 'Confirmer l’import' }).click();
   await expectVisibleToast(page, 'Import des Articles terminé');
+  await expect(dialog.getByText('Import terminé')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Fermer' }).click();
   await expect(page.getByText(reference, { exact: true })).toBeVisible();
   await expect(page.getByText('Produit à associer', { exact: true })).toBeVisible();
 });
