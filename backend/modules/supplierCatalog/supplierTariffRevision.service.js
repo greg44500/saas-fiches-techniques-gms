@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
 import { AppError } from '../../utils/appError.js';
-import { ProductVariant } from '../productCatalog/productVariant.model.js';
 import { SupplierArticle } from './supplier.model.js';
 import { SupplierTariff } from './supplierCatalog.model.js';
 import { normalizeSupplierPrice } from './supplierPriceMath.service.js';
