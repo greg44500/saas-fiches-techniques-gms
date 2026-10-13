@@ -496,3 +496,7 @@ Attention : correction/archivage d'une liste déjà importée non livré ;
 le conflit est volontairement bloquant. Le prix « fournisseur de référence »
 ne constitue pas le Prix applicable d'un Dossier. Ne pas ouvrir de PR ni
 merger avant QA explicite et preuve des gates.
+
+Contrôle ajouté : `SupplierTariff.packagingSnapshot` conserve les poids/quantités
+au moment de la liste ; projections et Prix applicable utilisent cet
+instantané plutôt que le conditionnement courant de l'Article.
