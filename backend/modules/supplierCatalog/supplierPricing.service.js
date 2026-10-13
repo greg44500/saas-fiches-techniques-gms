@@ -1275,7 +1275,6 @@ const findApplicableSupplierTariff = async ({
                 createdAt: -1,
                 _id: -1,
             })
-            .limit(3)
             .session(session)
             .lean();
 
