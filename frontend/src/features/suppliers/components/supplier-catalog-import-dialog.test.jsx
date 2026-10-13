@@ -86,6 +86,7 @@ describe('SupplierCatalogImportDialog', () => {
       supplierLabel: 9,
       priceAmount: 10,
       priceBasis: 11,
+      currency: 12,
     });
   });
 
@@ -174,13 +175,7 @@ describe('SupplierCatalogImportDialog', () => {
       }),
     );
 
-    const supplierSelect = await screen.findByRole('combobox', {
-      name: 'Fournisseur du catalogue',
-    });
-    await user.click(supplierSelect);
-    await user.click(await screen.findByRole('option', {
-      name: 'Sysco',
-    }));
+    await user.click(screen.getByRole('button', { name: 'Sysco' }));
 
     await user.type(
       screen.getByLabelText('Édition'),
