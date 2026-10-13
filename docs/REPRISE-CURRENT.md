@@ -448,3 +448,13 @@ Demande produit : stocker et présenter les noms Fournisseurs en majuscules, rap
 - Ne pas ouvrir de PR ou fusionner avant stabilisation, tests backend/frontend/E2E et QA utilisateur.
 
 Le contrôle actuel est une réduction du risque, **pas encore une garantie absolue contre tous les doublons**.
+
+
+### Durcissement Fournisseurs — identité et audit DB (2026-10-13)
+
+- Les nouveaux noms Fournisseurs sont enregistrés en majuscules ; le service refuse les doublons normalisés lors de la création et du renommage, en incluant la visibilité globale pour un Workspace.
+- Les variations simples avec ou sans `s` final (ex. TRANSGOURMET(S)) sont bloquées par le service avec HTTP 409 et demande de revue ; il ne s'agit PAS d'un système général de similarité phonétique ou sémantique.
+- Deux index uniques partiels (global par normalizedName ; privé par workspace + normalizedName) ont été déclarés. Ils ne protègent pas les collisions cross-scope global/privé concurrentes, qui sont refusées par le service applicatif mais sans garantie atomique commune.
+- Commande d'audit préalable, sans écriture : `npm run audit:m003-supplier-names`. Elle signale les doublons existants, incohérences de normalisation et bloque le déploiement des nouveaux index si elle échoue. Vérifier l'URI MONGODB_URI et la base cible avant toute commande.
+- `npm run migration:m003-supplier-catalog` n'est à exécuter qu'après audit sans collisions ; la migration échoue volontairement si les noms historiques nécessitent une résolution manuelle. Aucune fusion, suppression ou conversion automatique des données historiques.
+- Tests backend spécifiques ajoutés mais non exécutés localement. Revalider les tests historiques dont les attentes de casse changent, l'indexation en base de test, les autorisations, l'UX, E2E et les gates. Aucune PR/merge autorisée sans QA.
