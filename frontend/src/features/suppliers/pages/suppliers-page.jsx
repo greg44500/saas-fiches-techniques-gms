@@ -1,4 +1,4 @@
-import { Archive, Eye, FileUp, Link2, Pencil, Plus, RotateCcw } from 'lucide-react';
+import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
@@ -41,6 +41,9 @@ import {
 import {
   SupplierArticleAssociationDialog,
 } from '@/features/suppliers/components/supplier-article-association-dialog';
+import { SupplierArticleDetailsDrawer } from '@/features/suppliers/components/supplier-article-details-drawer';
+import { SupplierArticleEditDialog } from '@/features/suppliers/components/supplier-article-edit-dialog';
+import { SupplierArticlePriceCorrectionDialog } from '@/features/suppliers/components/supplier-article-price-correction-dialog';
 import {
   SupplierArticleImportDialog,
 } from '@/features/suppliers/components/supplier-article-import-dialog';
@@ -124,6 +127,9 @@ function SuppliersPage() {
   const [articleDialogOpen, setArticleDialogOpen] = useState(false);
   const [articleImportOpen, setArticleImportOpen] = useState(false);
   const [articleToAssociate, setArticleToAssociate] = useState(null);
+  const [articleDetails, setArticleDetails] = useState(null);
+  const [articleToEdit, setArticleToEdit] = useState(null);
+  const [articlePriceToCorrect, setArticlePriceToCorrect] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
 
   const supplierQuery = useListSuppliersQuery({
@@ -181,6 +187,8 @@ function SuppliersPage() {
 
   const canManageSuppliers = can(SUPPLIER_PERMISSION.SUPPLIER_MANAGE);
   const canManageArticles = can(SUPPLIER_PERMISSION.ARTICLE_MANAGE);
+  const canReadTariffs = can(SUPPLIER_PERMISSION.CATALOG_READ);
+  const canCorrectTariffs = canManageArticles && can(SUPPLIER_PERMISSION.CATALOG_MANAGE);
   const canReadProducts = can(PRODUCT_PERMISSION.READ);
   const canImport = (
     can(SUPPLIER_PERMISSION.CATALOG_IMPORT)
@@ -429,18 +437,15 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (article) => (
-        article.scope === 'WORKSPACE_PRIVATE' && canManageArticles ? (
-          <DataTableActions>
-            {article.status === 'ACTIVE'
-              && canReadProducts && (
-              <ActionIconButton
-                Icon={Link2}
-                label={'Modifier le Produit associé à ' + article.supplierReference}
-                onClick={() => setArticleToAssociate(article)}
-                tooltipLabel="Modifier le Produit associé"
-                variant="outline"
-              />
-            )}
+        <DataTableActions>
+          <ActionIconButton
+            Icon={Eye}
+            label={'Détails de ' + article.supplierReference}
+            onClick={() => setArticleDetails(article)}
+            tooltipLabel="Consulter l’Article"
+            variant="outline"
+          />
+          {article.scope === 'WORKSPACE_PRIVATE' && canManageArticles && (
             <ActionIconButton
               Icon={article.status === 'ACTIVE' ? Archive : RotateCcw}
               disabled={articleStatusState.isLoading}
@@ -449,13 +454,11 @@ function SuppliersPage() {
                 + article.supplierReference
               }
               onClick={() => toggleArticleStatus(article)}
-              tooltipLabel={
-                article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
-              }
+              tooltipLabel={article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
               variant="outline"
             />
-          </DataTableActions>
-        ) : null
+          )}
+        </DataTableActions>
       ),
     },
   ];
@@ -839,12 +842,60 @@ function SuppliersPage() {
         workspaceId={workspace.id}
       />
 
+      <SupplierArticleDetailsDrawer
+        article={articleDetails}
+        canManage={Boolean(articleDetails?.scope === 'WORKSPACE_PRIVATE'
+          && canManageArticles)}
+        canReadTariffs={canReadTariffs}
+        canCorrectTariffs={canCorrectTariffs && Boolean(
+          articleDetails?.supplierTariff?.sourceKind === 'PRICE_LIST'
+          && articleDetails?.supplierTariffStatus === 'AVAILABLE'
+        )}
+        onAssociate={(article) => {
+          setArticleDetails(null);
+          setArticleToAssociate(article);
+        }}
+        onClose={() => setArticleDetails(null)}
+        onCorrectPrice={(article) => {
+          setArticleDetails(null);
+          setArticlePriceToCorrect(article);
+        }}
+        onEdit={(article) => {
+          setArticleDetails(null);
+          setArticleToEdit(article);
+        }}
+        open={Boolean(articleDetails)}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticleEditDialog
+        article={articleToEdit}
+        onClose={() => setArticleToEdit(null)}
+        onSaved={() => {
+          setArticleToEdit(null);
+          toast({ title: 'Article fournisseur modifié', variant: 'success' });
+        }}
+        open={Boolean(articleToEdit)}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticlePriceCorrectionDialog
+        article={articlePriceToCorrect}
+        onClose={() => setArticlePriceToCorrect(null)}
+        onSaved={() => {
+          setArticlePriceToCorrect(null);
+          toast({ title: 'Tarif corrigé et historisé', variant: 'success' });
+        }}
+        open={Boolean(articlePriceToCorrect)}
+        workspaceId={workspace.id}
+      />
+
       <SupplierArticleAssociationDialog
         article={articleToAssociate}
         onClose={() => setArticleToAssociate(null)}
         onSaved={() => {
           setArticleToAssociate(null);
-          toast({ title: 'Référence Produit associée', variant: 'success' });
+          toast({ title: 'Association Produit mise à jour', variant: 'success' });
         }}
         open={Boolean(articleToAssociate)}
         workspaceId={workspace.id}
