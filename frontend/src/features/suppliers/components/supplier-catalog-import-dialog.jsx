@@ -1,3 +1,4 @@
+import { SupplierImportSelector } from '@/features/suppliers/components/supplier-import-selector';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { DatePicker } from '@/components/forms/date-picker';
@@ -121,6 +122,7 @@ function SupplierCatalogImportDialog({
   mode = 'workspace',
   onClose,
   onCommitted,
+  canCreateSupplier = false,
   open,
   suppliers,
   workspaceId,
@@ -337,35 +339,17 @@ function SupplierCatalogImportDialog({
             {step === 'mapping' && inspectResult && (
               <>
                 <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Field className="sm:col-span-2">
-                    <FieldLabel>Fournisseur</FieldLabel>
-                    <Select
-                      items={[
-                        { value: NONE, label: 'Sélectionner' },
-                        ...suppliers.map((supplier) => ({
-                          value: supplier.id,
-                          label: supplier.name,
-                        })),
-                      ]}
-                      onValueChange={(value) => {
-                        setSupplierId(value);
-                        setPreview(null);
-                      }}
+                  <div className="sm:col-span-2">
+                    <SupplierImportSelector
+                      ariaLabel="Fournisseur du catalogue"
+                      canCreate={canCreateSupplier}
+                      mode={mode}
+                      onChange={(id) => { setSupplierId(id); setPreview(null); }}
+                      suppliers={suppliers}
                       value={supplierId}
-                    >
-                      <SelectTrigger aria-label="Fournisseur du catalogue">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE}>Sélectionner</SelectItem>
-                        {suppliers.map((supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.id}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
+                      workspaceId={workspaceId}
+                    />
+                  </div>
 
                   <Field className="sm:col-span-2">
                     <FieldLabel htmlFor="supplier-catalog-edition">
