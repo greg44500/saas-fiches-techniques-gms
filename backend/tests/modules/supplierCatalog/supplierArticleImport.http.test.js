@@ -375,6 +375,25 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
         expect(await SupplierTariff.countDocuments({
             sourceImportId: imported.body.data.importId,
         })).toBe(2);
+
+        const nextCorrection = await request(app)
+            .post(url + changed.body.data.tariff.id + '/correction')
+            .set(auth()).send({
+                sourceAmount: '13.75',
+                sourceBasis: 'PACKAGE',
+                reason: 'Deuxième rectification justifiée du tarif',
+            });
+        expect(nextCorrection.status).toBe(200);
+        expect(nextCorrection.body.data.tariff.revision).toBe(3);
+        expect(nextCorrection.body.data.tariff.replacesTariffId)
+            .toBe(changed.body.data.tariff.id);
+        const revisions = await SupplierTariff.find({
+            sourceImportId: imported.body.data.importId,
+        }).sort({ revision: 1 });
+        expect(revisions.map((item) => item.revision)).toEqual([1, 2, 3]);
+        expect(revisions.map((item) => item.isCurrent)).toEqual([false, false, true]);
+        expect(revisions.map((item) => item.sourceAmount.toString()))
+            .toEqual(['10.25', '12.50', '13.75']);
     });
 
     it('protège la correction et la lecture tarifaire entre Workspaces et rôles', async () => {

@@ -37,7 +37,7 @@ const M003_INDEX_NAMES = Object.freeze([
     'supplier_catalog_line_scope_workspace_match',
     'supplier_tariff_catalog_current_edition_v2_unique',
     'supplier_tariff_article_validity',
-    'supplier_price_list_import_article_unique',
+    'supplier_price_list_import_article_revision_unique',
     'negotiated_price_dossier_article_period',
     'invoiced_price_dossier_article_invoice_date',
     'invoiced_price_dossier_status_date',
@@ -81,15 +81,13 @@ const ensureM003SupplierCatalogIndexes = async () => {
             + JSON.stringify(audit),
         );
     }
-    // L'index précédent bloquait les corrections historisées, car il
-    // s'appliquait aussi aux anciennes révisions (isCurrent=false).
+    // Même limité aux révisions courantes, l'ancien index unique bloque
+    // la réutilisation d'une clé lors d'un remplacement transactionnel.
+    // L'unicité de la révision prend le relais ; le verrou Commerce assure
+    // qu'une seule révision reste courante dans les écritures métier.
     const legacyPriceListIndex = 'supplier_price_list_import_article_unique';
     if (await SupplierTariff.collection.indexExists(legacyPriceListIndex)) {
-        const indexes = await SupplierTariff.collection.indexes();
-        const legacy = indexes.find(({ name }) => name === legacyPriceListIndex);
-        if (legacy?.partialFilterExpression?.isCurrent !== true) {
-            await SupplierTariff.collection.dropIndex(legacyPriceListIndex);
-        }
+        await SupplierTariff.collection.dropIndex(legacyPriceListIndex);
     }
 
     for (const model of M003_MODELS) {

@@ -1547,9 +1547,14 @@ historique ni modifier les tarifs d'un autre Workspace.
   la période, la devise, et référence l'ancienne version (`replacesTariff`).
   Un événement d'audit `SUPPLIER_TARIFF_CORRECTED` est produit
   avec acteur, Article, identifiant antérieur et motif.
-- **Concurrence :** une même correction est protégée par le verrou Commerce
-  déjà utilisé à l'import et par l'index unique partiel limitant la
-  révision courante d'un import/Article.
+- **Concurrence :** une même correction est sérialisée dans une
+  transaction par le verrou Commerce déjà utilisé à l'import ; la lecture
+  de `isCurrent=true` est effectuée après acquisition du verrou.
+  Un index unique partiel garantit une seule combinaison
+  import/Article/numéro de révision. L'unicité de la révision courante
+  relève du protocole transactionnel, et non d'un index unique direct
+  sur `isCurrent` : celui-ci empêchait le remplacement atomique
+  d'une révision par une autre sous MongoDB.
 - **Sécurité :** la lecture de l'historique requiert les permissions
   `supplier:article:read` ET `supplier:catalog:read` ; la correction
   exige `supplier:article:manage` ET `supplier:catalog:manage` et les

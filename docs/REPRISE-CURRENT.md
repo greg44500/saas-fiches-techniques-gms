@@ -544,9 +544,10 @@ Nouveau complément :
   `SupplierTariff` privés de type `PRICE_LIST` : motif, acteur,
   événement d'audit, ancienne valeur non effacée, même période ;
 - liste d'historique privée au Workspace et RBAC explicite ;
-- migration d'index partiel `supplier_price_list_import_article_unique`
-  avant validation locale, conservant une seule version courante mais
-  autorisant plusieurs versions historiques ;
+- migration de l'index partiel des listes de prix avant validation
+  locale ; l'index `supplier_price_list_import_article_revision_unique`
+  protège le numéro de révision et le verrou Commerce transactionnel
+  garantit une seule révision courante lors des écritures métier ;
 - tests backend d'association, correction, révision obsolète, RBAC
   et tenancy ; tests UI d'ordre d'affichage et de correction.
 
@@ -569,3 +570,19 @@ le prix source et son conditionnement figé. Les nouveaux tarifs issus de
 Catalogues figent eux aussi désormais le conditionnement dans
 `packagingSnapshot`. Les anciens tarifs Catalogue qui ne possèdent pas
 cet instantané restent un point à auditer avant correction rétrospective.
+
+## QA locale M-003 — correction transactionnelle des tarifs (2026-10-13)
+
+Les 4 suites backend ciblées ont été lancées par l'utilisateur : 31 tests
+réussis sur 32, échec HTTP 500 sur la première correction tarifaire.
+L'analyse de code montre que l'index unique partiel de la révision courante
+conserve la même clé lors du remplacement transactionnel et peut déclencher
+E11000. Le correctif remplace cet index par une unicité
+import/Article/numéro de révision et conserve le verrou Commerce commun à
+l'import et à la correction. La migration retire l'index précédent.
+Le test HTTP vérifie maintenant deux corrections successives, trois
+révisions historisées et une seule version courante.
+
+Ce correctif reste **en attente de vérification locale** : d'abord l'audit
+sur la base cible, ensuite migration des index si applicable, puis relance
+des tests ciblés. Aucun test vert n'est revendiqué par l'assistant.

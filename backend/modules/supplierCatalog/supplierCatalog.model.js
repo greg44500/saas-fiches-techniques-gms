@@ -276,12 +276,15 @@ supplierTariffSchema.index(
         },
     },
 );
+// Une clé unique sur la révision (et non sur isCurrent) permet de
+// remplacer une version dans la même transaction MongoDB. Le verrou
+// supplier-price-list par Article sérialise les corrections et les imports.
 supplierTariffSchema.index(
-    { sourceImportId: 1, supplierArticle: 1 },
+    { sourceImportId: 1, supplierArticle: 1, revision: 1 },
     {
-        name: 'supplier_price_list_import_article_unique',
+        name: 'supplier_price_list_import_article_revision_unique',
         unique: true,
-        partialFilterExpression: { sourceKind: 'PRICE_LIST', isCurrent: true },
+        partialFilterExpression: { sourceKind: 'PRICE_LIST' },
     },
 );
 supplierTariffSchema.index(
