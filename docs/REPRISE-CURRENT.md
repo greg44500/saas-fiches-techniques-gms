@@ -562,3 +562,10 @@ Ne pas ouvrir de PR ni effectuer de merge sans sa validation explicite.
 Ordre recommandé : vérifier `MONGODB_URI`, audit Fournisseurs,
 migration index M-003, tests backend ciblés, tests frontend ciblés,
 lint/backend+frontend, build, E2E et QA manuelle.
+
+Dernière vérification : le résolveur de prix applicable recalcule le montant
+normalisé à la lecture après toute correction d'association Produit, depuis
+le prix source et son conditionnement figé. Les nouveaux tarifs issus de
+Catalogues figent eux aussi désormais le conditionnement dans
+`packagingSnapshot`. Les anciens tarifs Catalogue qui ne possèdent pas
+cet instantané restent un point à auditer avant correction rétrospective.
