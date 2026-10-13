@@ -23,19 +23,19 @@ function SupplierArticleAssociationDialog({
 
   useEffect(() => {
     if (!open) return;
-    setSearch('');
-    setVariant(null);
+    setSearch(article?.productVariant?.name ?? '');
+    setVariant(article?.productVariant ?? null);
     setError('');
   }, [open, article?.id]);
 
-  async function save() {
-    if (!variant?.id) {
+  async function save(unlink = false) {
+    if (!unlink && !variant?.id) {
       setError('Sélectionnez une Référence Produit.');
       return;
     }
     try {
       await updateArticle({
-        workspaceId, articleId: article.id, productVariantId: variant.id,
+        workspaceId, articleId: article.id, productVariantId: unlink ? null : variant.id,
       }).unwrap();
       onSaved();
     } catch (failure) {
@@ -55,14 +55,19 @@ function SupplierArticleAssociationDialog({
         <DialogOverlay />
         <DialogContent className="max-w-xl" initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>Associer une Référence Produit</DialogTitle>
+            <DialogTitle>Modifier le Produit associé</DialogTitle>
           </DialogHeader>
           <div className="mt-5 space-y-4">
             <p className="text-sm text-muted-foreground">
               {article?.supplierReference} · {article?.supplierDesignation || 'Sans désignation'}
             </p>
+            {article?.productVariant && (
+              <p className="rounded-md border border-border p-3 text-sm">
+                Association actuelle : <strong>{article.productVariant.name}</strong>
+              </p>
+            )}
             <Field>
-              <FieldLabel>Référence Produit</FieldLabel>
+              <FieldLabel>Rechercher une Référence Produit</FieldLabel>
               <ProductSearchAutocomplete
                 metadata={metadata.data}
                 onSelect={(result) => {
@@ -86,9 +91,20 @@ function SupplierArticleAssociationDialog({
               ref={cancelRef}
               render={<Button type="button" variant="outline" />}
             >Fermer</DialogClose>
-            <Button disabled={updateState.isLoading || !variant} onClick={save} type="button">
-              Associer
-            </Button>
+            {article?.productVariant && (
+              <Button
+                disabled={updateState.isLoading}
+                onClick={() => save(true)}
+                type="button"
+                variant="outline"
+              >Retirer l’association</Button>
+            )}
+            <Button
+              disabled={updateState.isLoading || !variant?.id
+                || article?.productVariant?.id === variant?.id}
+              onClick={() => save(false)}
+              type="button"
+            >Enregistrer l’association</Button>
           </DialogFooter>
         </DialogContent>
       </DialogPortal>
