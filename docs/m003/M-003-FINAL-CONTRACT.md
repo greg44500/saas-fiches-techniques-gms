@@ -1515,3 +1515,54 @@ dans un fichier fournisseur.
 Cet avenant précise la règle précédente « date de début obligatoire » :
 elle reste obligatoire *dans le modèle persistant*, mais elle peut être
 attribuée par le serveur à la confirmation plutôt que saisie par l'utilisateur.
+
+---
+
+## Avenant M-003 — correction des Articles et des prix privés (2026-10-13)
+
+**Décision produit :** un utilisateur habilité peut corriger ses propres données
+fournisseur depuis la fiche détaillée d'un Article, sans archiver l'Article
+ni réimporter le fichier. La correction ne doit pas détruire une valeur
+historique ni modifier les tarifs d'un autre Workspace.
+
+- **Présentation :** la désignation fournisseur est en premier et la
+  référence commerciale en second, sous la forme « Réf. fournisseur : ... ».
+  Le nom de la liste de prix est retiré du tableau, mais reste disponible
+  dans le détail et l'historique.
+- **Association Produit :** un Article privé actif peut être associé,
+  réassocié ou dissocié explicitement. Le retrait passe par
+  `PATCH /supplier-articles/:articleId` avec `productVariantId: null`.
+  La référence fournisseur et la désignation ne sont pas modifiées par
+  cette opération. Le backend vérifie l'identité et le statut du Produit
+  en cas d'association.
+- **Détails et informations commerciales :** consultation de l'Article,
+  modification de sa désignation, de sa marque et de son conditionnement
+  existants via l'API M-003. Les anciens tarifs conservent leur
+  `packagingSnapshot` pour l'historique économique.
+- **Correction d'erreur tarifaire :** un prix provenant d'une mercuriale
+  indépendante privée (`sourceKind=PRICE_LIST`) peut être corrigé sur
+  sa période existante avec nouveau montant, nouvelle base et motif obligatoire.
+  L'ancienne version passe à `isCurrent=false`, sans suppression ; la
+  nouvelle version immuable conserve l'import d'origine, le conditionnement,
+  la période, la devise, et référence l'ancienne version (`replacesTariff`).
+  Un événement d'audit `SUPPLIER_TARIFF_CORRECTED` est produit
+  avec acteur, Article, identifiant antérieur et motif.
+- **Concurrence :** une même correction est protégée par le verrou Commerce
+  déjà utilisé à l'import et par l'index unique partiel limitant la
+  révision courante d'un import/Article.
+- **Sécurité :** la lecture de l'historique requiert les permissions
+  `supplier:article:read` ET `supplier:catalog:read` ; la correction
+  exige `supplier:article:manage` ET `supplier:catalog:manage` et les
+  contrôles d'accès Workspace. Un Article global ne devient pas modifiable
+  par un Workspace pour autant. Seuls les tarifs privés du Workspace
+  peuvent être corrigés dans ce parcours.
+- **Hors périmètre de ce correctif :** modification directe d'un tarif
+  issu d'une édition de catalogue, création d'un nouveau tarif à une
+  date d'effet différente, extinction/archivage d'une liste complète,
+  réécriture des valorisations historiques. Un nouveau prix à une
+  nouvelle date ne doit pas être simulé par une « correction de saisie »
+  rétrospective. Ces workflows temporels devront être cadrés séparément.
+
+Le tableau et les formulaires React consomment exclusivement les projections
+de prix/conditionnement calculées dans le backend ; aucun calcul monétaire
+n'est ajouté dans le frontend.
