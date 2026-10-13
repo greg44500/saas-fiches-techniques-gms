@@ -61,7 +61,6 @@ import {
   SUPPLIER_PERMISSION,
 } from '@/features/suppliers/constants/supplier-permissions';
 import {
-  formatPackaging,
   getApiErrorMessage,
   getSupplierOriginLabel,
   getSupplierStatusLabel,
@@ -139,6 +138,10 @@ function SuppliersPage() {
     status: 'ACTIVE',
     limit: 100,
   });
+  const activeArticleCountQuery = useListSupplierArticlesQuery(
+    { workspaceId: workspace.id, status: 'ACTIVE', limit: 1 },
+    { skip: !can(SUPPLIER_PERMISSION.ARTICLE_READ) },
+  );
   const articleQuery = useListSupplierArticlesQuery(
     {
       workspaceId: workspace.id,
@@ -380,24 +383,44 @@ function SuppliersPage() {
       cell: (article) => (
         <div>
           <p>{article.supplier?.name ?? '—'}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {getSupplierOriginLabel(article.scope)}
-          </p>
+
         </div>
       ),
     },
     {
       id: 'product',
-      header: 'Référence Produit',
-      cell: (article) => article.productVariant?.name ?? 'Produit à associer',
+      header: 'Produit associé',
+      cell: (article) => article.productVariant?.name
+        || <StatusBadge tone="warning">Non associé</StatusBadge>,
     },
     {
       id: 'packaging',
       header: 'Conditionnement',
-      cell: (article) => formatPackaging(
-        article.packaging,
-        { productVariant: article.productVariant },
-      ),
+      cell: (article) => article.packagingLabel || 'Non renseigné',
+    },
+    {
+      id: 'supplier-tariff',
+      header: 'Tarif fournisseur HT',
+      cell: (article) => {
+        if (article.supplierTariffStatus === 'AMBIGUOUS') {
+          return <StatusBadge tone="warning">Tarifs à vérifier</StatusBadge>;
+        }
+        const price = article.supplierTariff;
+        if (!price) return 'Aucun tarif valide';
+        return (
+          <div>
+            <p className="font-medium">
+              {price.packagePriceLabel || price.sourcePriceLabel}
+            </p>
+            {price.unitPriceLabel && price.unitPriceLabel !== price.packagePriceLabel && (
+              <p className="mt-1 text-xs text-muted-foreground">{price.unitPriceLabel}</p>
+            )}
+            <p className="mt-1 text-xs text-muted-foreground">
+              {price.sourceLabel || 'Tarif fournisseur'}
+            </p>
+          </div>
+        );
+      },
     },
     {
       id: 'actions',
@@ -587,11 +610,11 @@ function SuppliersPage() {
       <Tabs onValueChange={changeSection} value={section}>
         <TabsList aria-label="Gestion Fournisseurs" variant="section">
           <TabsTrigger value="suppliers" variant="section">
-            Fournisseurs
+            Fournisseurs ({activeSupplierQuery.data?.pagination?.total ?? '…'})
           </TabsTrigger>
           {can(SUPPLIER_PERMISSION.ARTICLE_READ) && (
             <TabsTrigger value="articles" variant="section">
-              Articles
+              Articles ({activeArticleCountQuery.data?.pagination?.total ?? '…'})
             </TabsTrigger>
           )}
           {can(SUPPLIER_PERMISSION.CATALOG_READ) && (
