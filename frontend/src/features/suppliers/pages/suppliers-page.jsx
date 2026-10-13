@@ -45,6 +45,10 @@ import { SupplierArticleDetailsDrawer } from '@/features/suppliers/components/su
 import { SupplierArticleEditDialog } from '@/features/suppliers/components/supplier-article-edit-dialog';
 import { SupplierArticlePriceCorrectionDialog } from '@/features/suppliers/components/supplier-article-price-correction-dialog';
 import {
+  SupplierArticlePackagingPopover,
+  SupplierArticlePricePopover,
+} from '@/features/suppliers/components/supplier-article-table-popovers';
+import {
   SupplierArticleImportDialog,
 } from '@/features/suppliers/components/supplier-article-import-dialog';
 import {
@@ -412,19 +416,15 @@ function SuppliersPage() {
       id: 'packaging',
       header: 'Conditionnement',
       cell: (article) => (
-        <div>
-          <p>{article.packagingPresentation?.mainLabel
-            || article.packagingLabel || 'Non renseigné'}</p>
-          {article.packagingPresentation?.totalLabel && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {article.packagingPresentation.totalLabel}
-            </p>
-          )}
-          {article.packagingPresentation?.warningLabel && (
-            <p className="mt-1 text-xs text-warning" role="note">
-              {article.packagingPresentation.warningLabel}
-            </p>
-          )}
+        <div className="inline-flex max-w-full items-center gap-1">
+          <span>
+            {article.packagingPresentation?.mainLabel
+              || article.packagingLabel || 'Non renseigné'}
+          </span>
+          <SupplierArticlePackagingPopover
+            presentation={article.packagingPresentation}
+            supplierReference={article.supplierReference}
+          />
         </div>
       ),
     },
@@ -441,16 +441,14 @@ function SuppliersPage() {
         const price = article.supplierTariff;
         if (!price) return 'Aucun tarif valide';
         return (
-          <div>
-            <p className="font-medium">
+          <div className="inline-flex max-w-full items-center gap-1">
+            <span className="font-medium">
               {price.packagePriceLabel || price.sourcePriceLabel}
-            </p>
-            {price.piecePriceLabel && (
-              <p className="mt-1 text-xs text-muted-foreground">{price.piecePriceLabel}</p>
-            )}
-            {price.unitPriceLabel && price.unitPriceLabel !== price.packagePriceLabel && (
-              <p className="mt-1 text-xs text-muted-foreground">{price.unitPriceLabel}</p>
-            )}
+            </span>
+            <SupplierArticlePricePopover
+              price={price}
+              supplierReference={article.supplierReference}
+            />
           </div>
         );
       },

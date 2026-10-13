@@ -142,6 +142,15 @@ calculé.
 La projection Tarif conserve `packagePriceLabel` et `unitPriceLabel`
 et ajoute `pieceAmount` / `piecePriceLabel` lorsque le nombre d'éléments
 et leur quantité par élément rendent le prix à la pièce calculable.
+Le tableau Articles utilise deux popovers propres à la feature M-003,
+basés sur les composants communs `Popover`, `PopoverTrigger` et
+`PopoverContent` sans les modifier. Les boutons `PackageSearch` et
+`Calculator` acceptent survol, activation clavier et toucher
+(`openOnHover` Base UI) ; leurs intitulés accessibles incluent la
+référence de l'Article. Les valeurs complémentaires sont absentes du
+flux de lecture principal tant que le popover est fermé. Une incohérence
+de poids reste signalée par la couleur `warning` de l'icône ;
+son libellé complet est consultable dans le popover.
 Une absence de données rend cette projection nulle. Le tarif et son
 `packagingSnapshot` restent les seules sources économiques ; React ne
 recalcule ni prix ni quantité.

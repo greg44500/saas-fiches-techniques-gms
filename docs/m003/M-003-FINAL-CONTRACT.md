@@ -1484,6 +1484,18 @@ sans imposer un Catalogue artificiel.
   Le tarif historique utilise son packagingSnapshot si présent.
   La présentation arrondit à trois décimales, sans arrondi anticipé
   du calcul interne. Aucune modification du modèle métier ni du Core.
+- **Compacité du tableau Articles (2026-10-13)** : les colonnes
+  Conditionnement et Tarif fournisseur HT affichent respectivement le
+  libellé commercial et le prix principal, sur une seule ligne chacun.
+  Si des projections complémentaires existent, un bouton icône
+  `PackageSearch` (quantité totale, avertissement sur le poids déclaré)
+  ou `Calculator` (prix par pièce, kg, L, UNIT selon disponibilité)
+  ouvre un popover au survol, au clic, au clavier ou au toucher.
+  Aucune icône n'est affichée si son popover serait vide. L'avertissement
+  de masse reste signalé par une icône de couleur `warning` avec
+  libellé accessible explicite. Les montants et quantités restent
+  ceux projetés par le backend, sans calcul React. La fiche détail
+  Article conserve son affichage développé.
 - **UX** : compteurs Fournisseurs actifs et Articles actifs indépendants
   de la pagination ; badge « Non associé » ; suppression du sous-libellé
   de portée dans la colonne Fournisseur de l'onglet Articles.

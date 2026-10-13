@@ -410,7 +410,8 @@ describe('SuppliersPage', () => {
     expect(screen.getByText('Import catalogue ouvert')).toBeInTheDocument();
   });
 
-  it('affiche le libellé métier de UNIT dans le conditionnement Article', () => {
+  it('affiche le libellé métier de UNIT et rend le prix normalisé consultable', async () => {
+    const user = userEvent.setup();
     mocks.listArticles.mockReturnValue(queryResult({
       articles: [{
         id: 'article-1',
@@ -455,14 +456,19 @@ describe('SuppliersPage', () => {
     expect(screen.getByText('Réf. fournisseur : ABR-1').previousElementSibling)
       .toHaveTextContent('Abricot');
     expect(screen.getByText('12,500 € HT / carton')).toBeInTheDocument();
-    expect(screen.getByText('1,250 € HT / kg')).toBeInTheDocument();
+    expect(screen.queryByText('1,250 € HT / kg')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', {
+      name: 'Détails des prix de ABR-1',
+    }));
+    expect(await screen.findByText('1,250 € HT / kg')).toBeInTheDocument();
     expect(screen.queryByText('test interne qui ne doit pas être affiché'))
       .not.toBeInTheDocument();
     expect(screen.queryByText(/1 UNIT/)).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Fournisseurs (2)' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Articles (1)' })).toBeInTheDocument();
   });
-  it('affiche total du colis, prix à la pièce et prix normalisé, avec avertissement de poids incohérent', () => {
+  it('affiche les informations complémentaires sur demande, sans alourdir les lignes', async () => {
+    const user = userEvent.setup();
     mocks.listArticles.mockReturnValue(queryResult({
       articles: [
         {
@@ -509,12 +515,38 @@ describe('SuppliersPage', () => {
     renderPage('/workspaces/workspace-1/suppliers?section=articles');
 
     expect(screen.getByText('Carton · 36 × 0.300 kg')).toBeInTheDocument();
-    expect(screen.getByText('Poids total calculé : 10,8 kg')).toBeInTheDocument();
-    expect(screen.getByRole('note')).toHaveClass('text-warning');
-    expect(screen.getByText('0,311 € HT / pièce')).toBeInTheDocument();
+    expect(screen.getByText('11,200 € HT / Carton')).toBeInTheDocument();
+    expect(screen.getByText('Volume total : 30 L')).not.toBeInTheDocument();
+    expect(screen.queryByText('Poids total calculé : 10,8 kg')).not.toBeInTheDocument();
+    expect(screen.queryByText('0,311 € HT / pièce')).not.toBeInTheDocument();
+
+    const packagingIcon = screen.getByRole('button', {
+      name: 'Détails du conditionnement de BRI-36 — poids à vérifier',
+    });
+    expect(packagingIcon).toHaveClass('text-warning');
+    await user.click(packagingIcon);
+    expect(await screen.findByText('Poids total calculé : 10,8 kg')).toBeInTheDocument();
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Poids net déclaré à vérifier : 10 800 kg',
+    );
+
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', {
+      name: 'Détails des prix de BRI-36',
+    }));
+    expect(await screen.findByText('0,311 € HT / pièce')).toBeInTheDocument();
     expect(screen.getByText('1,037 € HT / kg')).toBeInTheDocument();
-    expect(screen.getByText('Volume total : 30 L')).toBeInTheDocument();
-    expect(screen.getByText('2,000 € HT / l')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', {
+      name: 'Détails du conditionnement de BID-30',
+    }));
+    expect(await screen.findByText('Volume total : 30 L')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', {
+      name: 'Détails des prix de BID-30',
+    }));
+    expect(await screen.findByText('2,000 € HT / l')).toBeInTheDocument();
     expect(screen.queryByText(/net 10800 kg/)).not.toBeInTheDocument();
   });
 
@@ -537,6 +569,10 @@ describe('SuppliersPage', () => {
       pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
     }));
     renderPage('/workspaces/workspace-1/suppliers?section=articles');
+    expect(screen.queryByRole('button', { name: 'Détails des prix de REF-42' }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Détails du conditionnement de REF-42' }))
+      .not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Détails de REF-42' }));
     expect(screen.getByText('Détails Article : REF-42')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Corriger l’association' }));

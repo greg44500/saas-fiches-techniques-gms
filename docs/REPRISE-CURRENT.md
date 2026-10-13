@@ -629,3 +629,22 @@ Core v1.2.1 inchangé ; pas de migration ni nouveau stockage ;
 une seule branche de livraison M-003.
 **Aucun test local ou gate n'est revendiqué vert sur ce lot** :
 l'utilisateur exécute les validations localement après pull.
+
+## Densification du tableau Articles M-003 — popovers (2026-10-13)
+
+Après retour QA utilisateur, les colonnes Conditionnement et Tarif
+fournisseur HT ne doivent plus empiler plusieurs lignes dans la liste.
+Seuls le libellé du conditionnement et le prix du colis restent visibles.
+Les informations secondaires déjà projetées par le backend sont dans
+deux popovers métier utilisant la primitive UI existante :
+- `PackageSearch` : total massique, volumique ou UNIT et anomalie
+  éventuelle du poids net déclaré (icône au ton `warning` si besoin) ;
+- `Calculator` : prix par pièce et prix normalisé au kg/L/UNIT,
+  uniquement si calculables ; aucune nouvelle règle économique.
+
+Activation au survol sur desktop et au clic/toucher ou au clavier.
+Les icônes n'apparaissent que si elles portent un complément exploitable.
+Aucun composant partagé/Core, backend, modèle ou index n'est modifié.
+Tests frontend mis à jour pour vérifier la compacité, les popovers,
+les warnings et l'absence d'icône si aucune donnée secondaire.
+Validations locales, lint, build, QA et gates encore à exécuter.
