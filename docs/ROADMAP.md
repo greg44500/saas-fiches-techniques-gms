@@ -674,3 +674,14 @@ applicables dès leur confirmation, sans expiration déclarée ; seule une
 période connue demande dates et référence de liste. Formulaire conditionnel
 et DatePicker français ajoutés. Validation backend, provenance horodatée et
 tests à confirmer localement avant clôture du lot M-003.
+
+---
+
+### Complément M-003 — gestion des corrections Articles (2026-10-13)
+
+Parcours détaillé permettant la correction d'association Produit, de
+désignation et conditionnement d'Article privé, et la correction d'erreur
+de prix sur une mercuriale privée avec historique et audit. Présentation
+désignation puis référence et retrait de la provenance du tableau.
+Livraison sur la branche M-003, en attente de pull, tests, QA et validation
+utilisateur avant PR unique ; aucune gate présumée verte.
