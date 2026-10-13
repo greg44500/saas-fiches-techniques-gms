@@ -526,3 +526,39 @@ Tests frontend étendus (avec/sans période, import prix désactivé) ;
 tests HTTP étendus (horodatage serveur sans expiration, rejet de date
 client imposée). **Exécution locale, lint et gate non encore vérifiés.**
 Conserver la branche M-003, ne pas ouvrir de PR avant validation utilisateur.
+
+---
+
+## Reprise M-003 — gestion corrective des Articles (2026-10-13)
+
+Sur `feature/m003-catalog-management-and-import-ux`, reprise après
+interruption de connexion. Fichiers vérifiés directement sur GitHub avant
+reprise, Core toujours v1.2.1 et non modifié.
+
+Nouveau complément :
+- tableau Articles : désignation fournisseur prioritaire, référence
+  secondaire ; retrait de la provenance d'import sous le prix ;
+- fiche détail Article avec action de réassociation/dissociation Produit,
+  édition des champs fournisseur et du conditionnement ;
+- révisions immuables de corrections d'erreurs de prix pour les
+  `SupplierTariff` privés de type `PRICE_LIST` : motif, acteur,
+  événement d'audit, ancienne valeur non effacée, même période ;
+- liste d'historique privée au Workspace et RBAC explicite ;
+- migration d'index partiel `supplier_price_list_import_article_unique`
+  avant validation locale, conservant une seule version courante mais
+  autorisant plusieurs versions historiques ;
+- tests backend d'association, correction, révision obsolète, RBAC
+  et tenancy ; tests UI d'ordre d'affichage et de correction.
+
+**Important :** les nouveaux prix avec date d'effet distincte,
+l'archivage d'une liste et les corrections de tarifs issus de catalogues
+ne sont PAS livrés dans cette correction de saisie. Aucun prix historique
+n'est réécrit. Les workflows restent à cadrer.
+
+Aucun test, lint, build, E2E ou gate n'a été exécuté par l'assistant.
+L'utilisateur effectue le pull et tous les tests localement.
+Ne pas ouvrir de PR ni effectuer de merge sans sa validation explicite.
+
+Ordre recommandé : vérifier `MONGODB_URI`, audit Fournisseurs,
+migration index M-003, tests backend ciblés, tests frontend ciblés,
+lint/backend+frontend, build, E2E et QA manuelle.
