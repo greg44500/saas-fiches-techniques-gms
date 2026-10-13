@@ -6,6 +6,7 @@ import {
   DialogContent, DialogOverlay, DialogPortal, DialogRoot,
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { ImportFilePicker } from '@/features/imports/components/import-file-picker';
 import { ImportWizardFooter } from '@/features/imports/components/import-wizard-footer';
 import { ImportWizardHeader } from '@/features/imports/components/import-wizard-header';
@@ -39,6 +40,9 @@ const ARTICLE_FIELDS = Object.freeze([
   ['drainedNetWeight', 'Poids net égoutté'],
   ['drainedNetWeightUnit', 'Unité du poids net égoutté'],
   ['supplierLabel', 'Libellé du conditionnement'],
+  ['priceAmount', 'Prix HT'],
+  ['priceBasis', 'Unité du prix (si présente dans le fichier)'],
+  ['currency', 'Devise (si présente dans le fichier)'],
 ]);
 
 const CLASSIFICATIONS = {
@@ -59,6 +63,11 @@ function SupplierArticleImportDialog({
   const [inspected, setInspected] = useState(null);
   const [supplierId, setSupplierId] = useState(NONE);
   const [mapping, setMapping] = useState({});
+  const [priceListName, setPriceListName] = useState('');
+  const [priceValidFrom, setPriceValidFrom] = useState('');
+  const [priceValidTo, setPriceValidTo] = useState('');
+  const [priceListSource, setPriceListSource] = useState('');
+  const [defaultPriceBasis, setDefaultPriceBasis] = useState('PACKAGE');
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -87,6 +96,11 @@ function SupplierArticleImportDialog({
     setInspected(null);
     setSupplierId(NONE);
     setMapping({});
+    setPriceListName('');
+    setPriceValidFrom('');
+    setPriceValidTo('');
+    setPriceListSource('');
+    setDefaultPriceBasis('PACKAGE');
     setPreview(null);
     setResult(null);
     setError('');
@@ -138,9 +152,27 @@ function SupplierArticleImportDialog({
       setError('Associez une colonne à la référence fournisseur pour créer des Articles.');
       return;
     }
+    const hasPrices = Number.isInteger(mapping.priceAmount);
+    if (hasPrices && (!priceListName.trim() || !priceValidFrom)) {
+      setError('Indiquez le nom de la liste et sa date de début de validité.');
+      return;
+    }
+    if (hasPrices && priceValidTo && priceValidTo < priceValidFrom) {
+      setError('La date de fin ne peut pas précéder la date de début.');
+      return;
+    }
     try {
       const body = {
         importId: inspected.importId, supplierId, mapping,
+        ...(hasPrices ? {
+          priceList: {
+            name: priceListName.trim(),
+            validFrom: priceValidFrom,
+            validTo: priceValidTo || null,
+            source: priceListSource.trim() || null,
+            defaultPriceBasis,
+          },
+        } : {}),
       };
       const result = isGlobal
         ? await previewGlobal(body).unwrap()
@@ -239,6 +271,62 @@ function SupplierArticleImportDialog({
                     </Field>
                   ))}
                 </div>
+                {Number.isInteger(mapping.priceAmount) && (
+                  <section className="space-y-3 rounded-lg border border-border p-4">
+                    <h3 className="font-medium">Validité de la liste tarifaire</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Les prix seront conservés indépendamment d’un catalogue.
+                      Les périodes se chevauchant avec un tarif existant sont refusées.
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field>
+                        <FieldLabel htmlFor="article-price-list-name">Nom de la liste tarifaire</FieldLabel>
+                        <Input id="article-price-list-name" maxLength={180} value={priceListName}
+                          onChange={(event) => { setPriceListName(event.target.value); setPreview(null); }}
+                          placeholder="Ex. Tarifs fournisseur 2027" />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="article-price-list-source">Provenance (facultatif)</FieldLabel>
+                        <Input id="article-price-list-source" maxLength={240} value={priceListSource}
+                          onChange={(event) => { setPriceListSource(event.target.value); setPreview(null); }}
+                          placeholder="Ex. Liste reçue par courriel" />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="article-price-valid-from">Valable du</FieldLabel>
+                        <Input id="article-price-valid-from" type="date" value={priceValidFrom}
+                          onChange={(event) => { setPriceValidFrom(event.target.value); setPreview(null); }} />
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor="article-price-valid-to">Jusqu’au (facultatif)</FieldLabel>
+                        <Input id="article-price-valid-to" type="date" value={priceValidTo}
+                          onChange={(event) => { setPriceValidTo(event.target.value); setPreview(null); }} />
+                      </Field>
+                      <Field className="sm:col-span-2">
+                        <FieldLabel>Base tarifaire par défaut</FieldLabel>
+                        <Select value={defaultPriceBasis}
+                          items={[
+                            { value: 'PACKAGE', label: 'Conditionnement (colis, carton, sac…)' },
+                            { value: 'KG', label: 'Kilogramme' },
+                            { value: 'G', label: 'Gramme' },
+                            { value: 'L', label: 'Litre' },
+                            { value: 'ML', label: 'Millilitre' },
+                            { value: 'UNIT', label: 'Pièce / unité' },
+                          ]}
+                          onValueChange={(value) => { setDefaultPriceBasis(value); setPreview(null); }}>
+                          <SelectTrigger aria-label="Base tarifaire par défaut"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="PACKAGE">Conditionnement (colis, carton, sac…)</SelectItem>
+                            <SelectItem value="KG">Kilogramme</SelectItem>
+                            <SelectItem value="G">Gramme</SelectItem>
+                            <SelectItem value="L">Litre</SelectItem>
+                            <SelectItem value="ML">Millilitre</SelectItem>
+                            <SelectItem value="UNIT">Pièce / unité</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    </div>
+                  </section>
+                )}
 
               </section>
             )}
@@ -257,6 +345,7 @@ function SupplierArticleImportDialog({
                         <th className="px-3 py-2">Ligne</th>
                         <th className="px-3 py-2">Référence</th>
                         <th className="px-3 py-2">Désignation</th>
+                        <th className="px-3 py-2">Prix importé HT</th>
                         <th className="px-3 py-2">Résultat</th>
                       </tr>
                     </thead>
@@ -266,6 +355,7 @@ function SupplierArticleImportDialog({
                           <td className="px-3 py-2">{row.rowNumber}</td>
                           <td className="px-3 py-2">{row.supplierReference || '—'}</td>
                           <td className="px-3 py-2">{row.designation || '—'}</td>
+                          <td className="px-3 py-2">{row.sourcePriceLabel || '—'}</td>
                           <td className="px-3 py-2">
                             {CLASSIFICATIONS[row.classification] ?? row.classification}
                             {row.errors?.length > 0 && (
