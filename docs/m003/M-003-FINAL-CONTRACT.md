@@ -1477,3 +1477,7 @@ Ce complément ne crée ni Catalogue, ni édition fictive, ni seconde primitive
 de Prix applicable. L'archivage d'une liste, la correction d'une période
 déjà enregistrée et la gestion assistée des collisions historiques constituent
 un workflow ultérieur à cadrer. Aucun test ou gate n'est présumé réussi.
+
+**Invariance historique des quantités :** chaque tarif de liste conserve une copie
+structurée du conditionnement tel qu'importé. Toute modification ultérieure
+de l'Article ne modifie pas son calcul économique historique.
