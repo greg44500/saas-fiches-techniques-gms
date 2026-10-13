@@ -1,3 +1,4 @@
+import { auditM003SupplierNames } from './auditM003SupplierNames.migration.js';
 import {
     Supplier,
     SupplierArticle,
@@ -72,6 +73,13 @@ const M003_MODELS = Object.freeze([
 ]);
 
 const ensureM003SupplierCatalogIndexes = async () => {
+    const audit = await auditM003SupplierNames();
+    if (!audit.safeForUniqueIndexes) {
+        throw new Error(
+            'Migration M-003 interrompue : noms Fournisseurs dupliqués ou incohérents. '
+            + JSON.stringify(audit),
+        );
+    }
     for (const model of M003_MODELS) {
         await model.createIndexes();
     }
