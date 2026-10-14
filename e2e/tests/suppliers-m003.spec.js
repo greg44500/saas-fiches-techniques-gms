@@ -566,3 +566,68 @@ test('M-003 importe des prix Articles sans période saisie et les expose depuis 
   await expect(page.getByText('2,550 € HT / kg', { exact: true }))
     .toBeVisible();
 });
+
+
+test('M-003 associe immédiatement une Référence provisoire créée après un import Article', async ({ page }) => {
+  const workspace = await provisionSupplierOwnerWorkspace({ withProductReference: false });
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const supplierName = 'Fournisseur contribution E2E ' + suffix;
+  const reference = 'CTR-' + suffix;
+  const productName = 'Croissant PAI E2E ' + suffix;
+
+  const token = await loginWithIdentity(page, workspace.identity);
+  await page.goto(workspace.suppliersUrl);
+  await createSupplierFromUi(page, supplierName);
+  await page.getByRole('tab', { name: /^Articles \(/ }).click();
+  await page.getByRole('button', { name: 'Importer des Articles' }).click();
+  const importDialog = page.getByRole('dialog');
+  await importDialog.getByLabel('Fichier', { exact: true }).setInputFiles({
+    name: 'articles.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from([
+      'Reference;Designation;Marque',
+      reference + ';Croissant individuel PAI;BRIDOR',
+    ].join('\n'), 'utf8'),
+  });
+  const inspect = page.waitForResponse((response) => response.request().method() === 'POST'
+    && response.url().includes('/supplier-articles/imports/inspect'));
+  await importDialog.getByRole('button', { name: 'Analyser le fichier' }).click();
+  expect((await inspect).status(), 'Inspection des Articles : vérifier ClamAV').toBe(201);
+  await importDialog.getByRole('textbox', { name: 'Rechercher un Fournisseur' }).fill(supplierName);
+  await importDialog.getByRole('button', { name: new RegExp('^' + supplierName + '$', 'i') }).click();
+  await importDialog.getByRole('button', { name: 'Prévisualiser' }).click();
+  await expect(importDialog.getByText(reference, { exact: true })).toBeVisible();
+  await importDialog.getByRole('button', { name: 'Confirmer l’import' }).click();
+  await expectVisibleToast(page, 'Import des Articles terminé');
+  await importDialog.getByRole('button', { name: 'Fermer' }).click();
+  await expect(page.locator('[data-slot="dialog-content"][role="dialog"]')).toBeHidden();
+
+  const { articleRow } = await expectImportedWorkspaceArticle(page, {
+    workspaceId: workspace.workspaceId, reference, accessToken: token,
+  });
+  await articleRow.getByRole('button', { name: 'Détails de ' + reference }).click();
+  await page.getByRole('tab', { name: 'Association' }).click();
+  await page.getByRole('button', { name: 'Modifier l’association' }).click();
+  const associationDialog = page.getByRole('dialog', { name: 'Modifier le Produit associé' });
+  await associationDialog.getByRole('button', { name: 'Créer une Référence Produit' }).click();
+  const productDialog = page.getByRole('dialog', { name: 'Créer un Produit' });
+  await productDialog.getByLabel('Nom du Produit').fill(productName);
+  await productDialog.getByRole('button', { name: 'Rechercher l’existant' }).click();
+  await expect(productDialog.getByRole('button', { name: 'Soumettre la proposition' })).toBeEnabled();
+  await productDialog.getByRole('button', { name: 'Soumettre la proposition' }).click();
+
+  await expectVisibleToast(page, 'Référence Produit créée et associée');
+  const articles = await page.request.get(
+    '/api/workspaces/' + workspace.workspaceId + '/supplier-articles',
+    {
+      headers: { Authorization: 'Bearer ' + token },
+      params: { search: reference },
+    },
+  );
+  expect(articles.status()).toBe(200);
+  const article = (await articles.json()).data.articles.find(
+    (entry) => entry.supplierReference === reference,
+  );
+  expect(article?.associationStatus).toBe('ASSOCIATED');
+  expect(article?.productVariant?.name).toBe(productName);
+});
