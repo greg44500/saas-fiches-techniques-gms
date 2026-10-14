@@ -45,22 +45,27 @@ import {
 const NO_CATEGORY = '__NONE__';
 
 function ProductCreateDialog({
+  createRequest,
+  duplicateCheckRequest,
+  initialName = '',
   metadata,
   mode = 'workspace',
   onClose,
   onCreated,
   onUseExisting,
+  onUseCandidate,
   open,
   workspaceId,
 }) {
   const cancelRef = useRef(null);
   const isGlobal = mode === 'global';
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialName);
   const [categoryId, setCategoryId] = useState(NO_CATEGORY);
   const [duplicateResult, setDuplicateResult] = useState(null);
   const [reviewedCandidateIds, setReviewedCandidateIds] = useState([]);
   const [variant, setVariant] = useState(() => createEmptyVariantDraft(metadata));
   const [formError, setFormError] = useState('');
+  const [externalPending, setExternalPending] = useState(false);
 
   const [workspaceDuplicateCheck, workspaceDuplicateState] =
     useDuplicateCheckProductMutation();
@@ -74,13 +79,13 @@ function ProductCreateDialog({
   useEffect(() => {
     if (!open) return;
 
-    setName('');
+    setName(initialName);
     setCategoryId(NO_CATEGORY);
     setDuplicateResult(null);
     setReviewedCandidateIds([]);
     setVariant(createEmptyVariantDraft(metadata));
     setFormError('');
-  }, [metadata, open]);
+  }, [metadata, open, initialName]);
 
   const activeCategories = useMemo(
     () => (metadata?.categories ?? []).filter((category) => category.status === 'ACTIVE'),
@@ -99,6 +104,7 @@ function ProductCreateDialog({
   const pending = (
     workspaceDuplicateState.isLoading
     || globalDuplicateState.isLoading
+    || externalPending
     || workspaceCreateState.isLoading
     || globalCreateState.isLoading
   );
@@ -118,16 +124,19 @@ function ProductCreateDialog({
 
     setFormError('');
     try {
+      if (duplicateCheckRequest) setExternalPending(true);
       const result = isGlobal
         ? await globalDuplicateCheck({
           name: normalizedName,
           aliases: [],
         }).unwrap()
-        : await workspaceDuplicateCheck({
-          workspaceId,
-          name: normalizedName,
-          aliases: [],
-        }).unwrap();
+        : duplicateCheckRequest
+          ? await duplicateCheckRequest({ workspaceId, name: normalizedName, aliases: [] })
+          : await workspaceDuplicateCheck({
+            workspaceId,
+            name: normalizedName,
+            aliases: [],
+          }).unwrap();
 
       setDuplicateResult(result);
       setReviewedCandidateIds([]);
@@ -136,6 +145,8 @@ function ProductCreateDialog({
         error,
         'Le contrôle des doublons n’a pas pu être effectué.',
       ));
+    } finally {
+      setExternalPending(false);
     }
   }
 
@@ -170,6 +181,15 @@ function ProductCreateDialog({
 
     setFormError('');
     try {
+      if (createRequest) setExternalPending(true);
+      const payload = {
+        workspaceId,
+        name: name.trim(),
+        categoryId: selectedCategoryId,
+        reviewedCandidateIds,
+        forceCreate: candidates.length > 0,
+        variant: variantPayload,
+      };
       const result = isGlobal
         ? await createGlobalProduct({
           name: name.trim(),
@@ -178,14 +198,9 @@ function ProductCreateDialog({
           reviewedCandidateIds: candidates.map(({ id }) => id),
           variant: variantPayload,
         }).unwrap()
-        : await createWorkspaceProduct({
-          workspaceId,
-          name: name.trim(),
-          categoryId: selectedCategoryId,
-          reviewedCandidateIds,
-          forceCreate: candidates.length > 0,
-          variant: variantPayload,
-        }).unwrap();
+        : createRequest
+          ? await createRequest(payload)
+          : await createWorkspaceProduct(payload).unwrap();
 
       if (
         !isGlobal
@@ -210,6 +225,8 @@ function ProductCreateDialog({
           ? 'Le Produit n’a pas pu être créé.'
           : 'La proposition n’a pas pu être soumise.',
       ));
+    } finally {
+      setExternalPending(false);
     }
   }
 
@@ -282,11 +299,11 @@ function ProductCreateDialog({
                   {onUseExisting
                     && (isGlobal || duplicateResult.exactMatch.status === 'ACTIVE') && (
                     <Button
-                      onClick={() => onUseExisting(duplicateResult.exactMatch.id)}
+                      onClick={() => onUseExisting(duplicateResult.exactMatch.id, duplicateResult.exactMatch)}
                       type="button"
                       variant="outline"
                     >
-                      Ouvrir cette référence
+                      {onUseCandidate ? 'Utiliser ce Produit' : 'Ouvrir cette référence'}
                     </Button>
                   )}
                   {!isGlobal && duplicateResult.exactMatch.status === 'ARCHIVED' && (
@@ -329,15 +346,26 @@ function ProductCreateDialog({
                           {candidate.category?.name ?? 'Catégorie non renseignée'}
                         </p>
                       </div>
-                      <label className="flex cursor-pointer items-center gap-2 text-sm">
-                        <input
-                          checked={reviewedCandidateIds.includes(candidate.id)}
-                          disabled={pending}
-                          onChange={() => toggleCandidate(candidate.id)}
-                          type="checkbox"
-                        />
-                        Différent
-                      </label>
+                      <div className="flex items-center gap-2">
+                        {onUseCandidate && candidate.status === 'ACTIVE' && (
+                          <Button
+                            disabled={pending}
+                            onClick={() => onUseCandidate(candidate.id, candidate)}
+                            size="sm"
+                            type="button"
+                            variant="outline"
+                          >Utiliser ce Produit</Button>
+                        )}
+                        <label className="flex cursor-pointer items-center gap-2 text-sm">
+                          <input
+                            checked={reviewedCandidateIds.includes(candidate.id)}
+                            disabled={pending}
+                            onChange={() => toggleCandidate(candidate.id)}
+                            type="checkbox"
+                          />
+                          Différent
+                        </label>
+                      </div>
                     </li>
                   ))}
                 </ul>
