@@ -95,6 +95,14 @@ M-003 historique et sa journalisation existante.
   exemples de saisie et une infobulle accessible par survol ou focus.
 - Les infobulles distinguent bien dimensions Produit et conditionnements
   commerciaux fournisseur ; elles ne déduisent pas l'État depuis une Gamme.
+- Après QA, aucune numérotation artificielle d'étapes n'est affichée.
+  Le conseil de recherche du Produit parent générique se trouve dans une
+  infobulle dédiée, sans encadré explicatif permanent.
+- La fiche d'identité de l'Article fournisseur associe une désignation
+  prioritaire et une référence secondaire dans une zone neutre discrète.
+- « Saisissez au moins 3 caractères » apparaît directement sous la recherche,
+  comme aide de champ liée par `aria-describedby` ; une recherche réussie,
+  vide ou en erreur conserve ses messages contextuels distincts.
 - Aucune modification des données persistées ni des invariants de validation.
 
 ## 5. Validation et non-régression

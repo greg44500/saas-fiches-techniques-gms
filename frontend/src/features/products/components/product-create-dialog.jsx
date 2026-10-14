@@ -260,14 +260,12 @@ function ProductCreateDialog({
 
           <div className="mt-5 space-y-5">
             {onUseCandidate && (
-              <div className="rounded-md border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">Étape 1 — Retrouver le Produit parent</p>
-                <p className="mt-1">
-                  Recherchez d’abord son nom générique, par exemple « Croissant »
-                  plutôt que « Croissant individuel prêt à cuire ».
-                  Si ce Produit existe, sélectionnez-le : vous créerez ensuite
-                  uniquement la Référence manquante.
-                </p>
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium">Rechercher un Produit existant</span>
+                <InfoTooltip
+                  content="Recherchez d’abord le Produit générique, par exemple « Croissant » plutôt que « Croissant individuel prêt à cuire ». Si le Produit existe, sélectionnez-le pour créer uniquement la Référence manquante."
+                  label="Aide sur la recherche du Produit parent"
+                />
               </div>
             )}
             <Field>

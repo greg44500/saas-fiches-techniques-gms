@@ -8,8 +8,9 @@ vi.mock('@/features/products/api/product-catalog-api', () => ({
   useGetProductMetadataQuery: () => ({ data: {} }),
 }));
 vi.mock('@/features/products/components/product-search-autocomplete', () => ({
-  ProductSearchAutocomplete: ({ onValueChange, onDebouncedSearchChange }) => (
+  ProductSearchAutocomplete: ({ descriptionId, onValueChange, onDebouncedSearchChange }) => (
     <input
+      aria-describedby={descriptionId}
       aria-label="Rechercher un Produit"
       onChange={(event) => {
         onValueChange(event.target.value);
@@ -52,6 +53,16 @@ describe('SupplierArticleAssociationDialog', () => {
       open
       workspaceId="workspace-1"
     />);
+    const articleContext = screen.getByRole('region', {
+      name: 'Article fournisseur concerné',
+    });
+    expect(articleContext).toHaveTextContent('Croissant 120 g');
+    expect(articleContext).toHaveTextContent('Réf. fournisseur : 43279');
+    expect(articleContext).toHaveClass('bg-muted/25');
+    expect(screen.getByText('Saisissez au moins 3 caractères'))
+      .toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Rechercher un Produit' }))
+      .toHaveAttribute('aria-describedby', screen.getByText('Saisissez au moins 3 caractères').id);
     expect(screen.queryByRole('button', { name: 'Créer une Référence Produit' }))
       .not.toBeInTheDocument();
     rerender(<SupplierArticleAssociationDialog
@@ -65,7 +76,14 @@ describe('SupplierArticleAssociationDialog', () => {
     />);
     expect(screen.queryByRole('button', { name: 'Créer la Référence manquante' }))
       .not.toBeInTheDocument();
-    await user.type(screen.getByRole('textbox', { name: 'Rechercher un Produit' }), 'Croissant');
+    await user.type(screen.getByRole('textbox', { name: 'Rechercher un Produit' }), 'Cr');
+    expect(screen.getByText('Saisissez au moins 3 caractères'))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Créer la Référence manquante' }))
+      .not.toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: 'Rechercher un Produit' }), 'oissant');
+    expect(screen.queryByText('Saisissez au moins 3 caractères'))
+      .not.toBeInTheDocument();
     expect(screen.getByText(/Aucune Référence Produit trouvée pour/))
       .toHaveClass('font-medium');
     await user.click(screen.getByRole('button', { name: 'Créer la Référence manquante' }));

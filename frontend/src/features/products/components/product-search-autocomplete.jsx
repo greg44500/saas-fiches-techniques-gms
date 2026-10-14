@@ -51,6 +51,7 @@ function ProductSearchAutocomplete({
   externalSearch = false,
   compact = false,
   conservationType,
+  descriptionId,
   metadata,
   onDebouncedSearchChange,
   onSelect,
@@ -158,6 +159,7 @@ function ProductSearchAutocomplete({
           className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
         />
         <AutocompleteInput
+          aria-describedby={descriptionId}
           aria-label={ariaLabel}
           className={compact ? 'h-8' : 'h-10'}
           maxLength={120}

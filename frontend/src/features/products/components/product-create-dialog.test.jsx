@@ -113,6 +113,29 @@ describe('ProductCreateDialog', () => {
     })).toBeInTheDocument();
   });
 
+  it('guide discrètement la recherche du parent sans notion d’étape', () => {
+    render(
+      <ProductCreateDialog
+        initialName="Croissant individuel prêt à cuire"
+        metadata={metadata}
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        onUseCandidate={vi.fn()}
+        onUseExisting={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+
+    expect(screen.getByText('Rechercher un Produit existant')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Aide sur la recherche du Produit parent',
+    })).toHaveAttribute('data-content', expect.stringContaining('Croissant'));
+    expect(screen.queryByText(/Étape 1/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Nom du Produit'))
+      .toHaveValue('Croissant individuel prêt à cuire');
+  });
+
   it('privilégie une correspondance exacte au lieu de créer un doublon', async () => {
     const user = userEvent.setup();
     const onUseExisting = vi.fn();

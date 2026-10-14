@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Info } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ function SupplierArticleAssociationDialog({
   article, canCreateProduct = false, onClose, onCreateProduct, onSaved, open, workspaceId,
 }) {
   const cancelRef = useRef(null);
+  const searchHintId = useId();
   const [search, setSearch] = useState('');
   const [contextualSearch, setContextualSearch] = useState('');
   const [variant, setVariant] = useState(null);
@@ -93,9 +94,20 @@ function SupplierArticleAssociationDialog({
             <DialogTitle>Modifier le Produit associé</DialogTitle>
           </DialogHeader>
           <div className="mt-5 space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {article?.supplierReference} · {article?.supplierDesignation || 'Sans désignation'}
-            </p>
+            <section
+              aria-label="Article fournisseur concerné"
+              className="rounded-lg border border-border bg-muted/25 px-4 py-3"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Article fournisseur
+              </p>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {article?.supplierDesignation || 'Sans désignation'}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Réf. fournisseur : {article?.supplierReference}
+              </p>
+            </section>
             {article?.productVariant && (
               <p className="rounded-md border border-border p-3 text-sm">
                 Association actuelle : <strong>{article.productVariant.name}</strong>
@@ -104,6 +116,7 @@ function SupplierArticleAssociationDialog({
             <Field>
               <FieldLabel>Rechercher une Référence Produit</FieldLabel>
               <ProductSearchAutocomplete
+                descriptionId={!hasEnoughCharacters ? searchHintId : undefined}
                 externalQuery={contextualQuery}
                 externalSearch={canCreateProduct}
                 metadata={metadata.data}
@@ -120,15 +133,15 @@ function SupplierArticleAssociationDialog({
                 value={search}
                 workspaceId={workspaceId}
               />
+              {!hasEnoughCharacters && (
+                <p className="text-xs text-muted-foreground" id={searchHintId}>
+                  Saisissez au moins 3 caractères
+                </p>
+              )}
             </Field>
-            {canCreateProduct && !hasSelectedReference && (
+            {canCreateProduct && !hasSelectedReference && hasEnoughCharacters && (
               <div className="space-y-3" aria-live="polite">
-                {!hasEnoughCharacters && (
-                  <p className="text-sm text-muted-foreground">
-                    1. Saisissez au moins 3 caractères pour rechercher une Référence Produit existante.
-                  </p>
-                )}
-                {hasEnoughCharacters && !searchReady && !searchFailed && (
+                {!searchReady && !searchFailed && (
                   <p className="text-sm text-muted-foreground" role="status">
                     Recherche des Références Produit en cours…
                   </p>
@@ -147,7 +160,7 @@ function SupplierArticleAssociationDialog({
                       </p>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Vous pouvez maintenant proposer une Référence. Recherchez d’abord son Produit parent dans l’étape suivante.
+                      Vous pouvez maintenant proposer une Référence. Recherchez d’abord son Produit parent dans le formulaire de création.
                     </p>
                     <Button
                       disabled={updateState.isLoading}

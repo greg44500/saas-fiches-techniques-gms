@@ -60,6 +60,7 @@ function Harness({
   ariaLabel,
   clearOnSelect = false,
   compact = false,
+  descriptionId,
   onSelect,
   placeholder,
   resultOverride = result,
@@ -91,6 +92,7 @@ function Harness({
       categoryId={undefined}
       clearOnSelect={clearOnSelect}
       compact={compact}
+      descriptionId={descriptionId}
       metadata={metadata}
       onSelect={onSelect}
       onValueChange={setValue}
@@ -107,6 +109,15 @@ function Harness({
 describe('ProductSearchAutocomplete', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('transmet la description de saisie au champ de recherche', () => {
+    render(<>
+      <p id="product-search-help">Saisissez au moins 3 caractères</p>
+      <Harness descriptionId="product-search-help" onSelect={vi.fn()} />
+    </>);
+    expect(screen.getByRole('combobox', { name: 'Rechercher un Produit' }))
+      .toHaveAttribute('aria-describedby', 'product-search-help');
   });
 
   it('déclenche une recherche prédictive après trois caractères et applique la référence métier', async () => {
