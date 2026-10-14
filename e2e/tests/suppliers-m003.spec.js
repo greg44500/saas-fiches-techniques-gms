@@ -618,13 +618,14 @@ test('M-003 associe immédiatement une Référence provisoire créée après un 
   await associationDialog.getByRole('button', { name: 'Créer la Référence manquante' }).click();
   const productDialog = page.getByRole('dialog', { name: 'Créer un Produit' });
   await productDialog.getByLabel('Nom du Produit').fill(productName);
-  await productDialog.getByRole('button', { name: 'Rechercher l’existant' }).click();
-  const nearCandidates = productDialog.getByRole('checkbox', { name: 'Différent' });
   await expect(productDialog.getByText(
-    /Aucun Produit existant correspondant|Produits proches à examiner/,
+    /Aucun Produit existant correspondant|Produits correspondants/,
   )).toBeVisible();
-  for (let index = 0; index < await nearCandidates.count(); index += 1) {
-    await nearCandidates.nth(index).check();
+  const confirmDistinct = productDialog.getByRole('checkbox', {
+    name: /J’ai examiné ces Produits/,
+  });
+  if (await confirmDistinct.count()) {
+    await confirmDistinct.check();
   }
   await expect(productDialog.getByRole('button', { name: 'Soumettre la proposition' })).toBeEnabled();
   await productDialog.getByRole('button', { name: 'Soumettre la proposition' }).click();
