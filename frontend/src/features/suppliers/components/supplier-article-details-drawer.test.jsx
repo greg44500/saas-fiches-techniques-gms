@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -127,7 +127,9 @@ describe('SupplierArticleDetailsDrawer — onglets M-003', () => {
     renderDrawer();
 
     await user.click(screen.getByRole('tab', { name: 'Tarif fournisseur' }));
-    expect(screen.getByText('403,200 € HT / carton')).toBeInTheDocument();
+    const tariffCard = screen.getByRole('region', { name: 'Prix fournisseur HT' });
+    expect(tariffCard).toHaveClass('rounded-lg');
+    expect(within(tariffCard).getByText('403,200 € HT / carton')).toBeInTheDocument();
     expect(screen.getByText('11,200 € HT / pièce')).toBeInTheDocument();
     expect(screen.getByText('37,333 € HT / kg')).toBeInTheDocument();
     expect(screen.getByText('Liste tarifaire')).toBeInTheDocument();
@@ -156,12 +158,17 @@ describe('SupplierArticleDetailsDrawer — onglets M-003', () => {
     });
 
     await user.click(screen.getByRole('tab', { name: 'Tarif fournisseur' }));
-    expect(screen.getByText('Dernier prix connu — expiré')).toBeInTheDocument();
-    expect(screen.getByText('403,200 € HT / carton')).toBeInTheDocument();
+    const tariffCard = screen.getByRole('region', { name: 'Prix fournisseur HT' });
+    expect(within(tariffCard).getByText('Dernier prix connu — expiré')).toBeInTheDocument();
+    expect(within(tariffCard).getByText('403,200 € HT / carton')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Modifier la période' }));
+    // Les actions appartiennent à l'en-tête de la carte, pas à un bloc sous celle-ci.
+    const cardHeader = tariffCard.firstElementChild;
+    const correctPrice = within(cardHeader).getByRole('button', { name: 'Corriger le prix' });
+    const correctPeriod = within(cardHeader).getByRole('button', { name: 'Modifier la période' });
+    await user.click(correctPeriod);
     expect(onCorrectPeriod).toHaveBeenCalledWith(expiredArticle);
-    await user.click(screen.getByRole('button', { name: 'Corriger le prix' }));
+    await user.click(correctPrice);
     expect(onCorrectPrice).toHaveBeenCalledWith(expiredArticle);
   });
 
@@ -204,6 +211,8 @@ describe('SupplierArticleDetailsDrawer — onglets M-003', () => {
     expect(screen.queryByRole('button', { name: 'Corriger le prix' }))
       .not.toBeInTheDocument();
     expect(screen.getByText(/correction relève du parcours Catalogue/)).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Prix fournisseur HT' }))
+      .queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('revient à Infos Article après fermeture et réouverture', async () => {

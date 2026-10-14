@@ -1680,6 +1680,11 @@ les drawers Fournisseur, Dossier et Analyse : trois onglets métier
   Le dernier prix expiré conserve son avertissement explicite ;
   `Corriger le prix` et `Modifier la période` restent conditionnés
   par les permissions, le type `PRICE_LIST` et le statut actif.
+  Ces deux actions sont positionnées dans l'en-tête de la carte
+  « Prix fournisseur HT », à droite du titre, comme les actions des
+  autres onglets. En largeur réduite, elles se réorganisent sans
+  débordement ; aucun bloc d'actions supplémentaire ne s'affiche
+  sous la carte.
   L'historique reste replié initialement et consultable sur demande,
   avec défilement local borné si nécessaire.
 

@@ -133,14 +133,26 @@ function ArticleTariffTab({
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h3 className="font-semibold">Prix fournisseur HT</h3>
-        {article.supplierTariffStatus === 'EXPIRED' && (
-          <StatusBadge tone="warning">Dernier prix connu — expiré</StatusBadge>
-        )}
-      </div>
-      <div className="rounded-lg border border-border px-4 py-3">
-        <p className="font-semibold">
+      <section aria-label="Prix fournisseur HT" className="rounded-lg border border-border px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-2">
+            <h3 className="font-semibold">Prix fournisseur HT</h3>
+            {article.supplierTariffStatus === 'EXPIRED' && (
+              <StatusBadge tone="warning">Dernier prix connu — expiré</StatusBadge>
+            )}
+          </div>
+          {canCorrect && (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button onClick={() => onCorrectPrice(article)} size="sm" variant="outline">
+                Corriger le prix
+              </Button>
+              <Button onClick={() => onCorrectPeriod(article)} size="sm" variant="outline">
+                Modifier la période
+              </Button>
+            </div>
+          )}
+        </div>
+        <p className="mt-4 font-semibold">
           {price?.packagePriceLabel || price?.sourcePriceLabel || 'Aucun tarif renseigné'}
         </p>
         {price?.piecePriceLabel && (
@@ -156,17 +168,7 @@ function ArticleTariffTab({
             <DetailRow label="Fin de validité">{dateLabel(price.validTo)}</DetailRow>
           </dl>
         )}
-      </div>
-      {canCorrect && (
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={() => onCorrectPrice(article)} size="sm" variant="outline">
-            Corriger le prix
-          </Button>
-          <Button onClick={() => onCorrectPeriod(article)} size="sm" variant="outline">
-            Modifier la période
-          </Button>
-        </div>
-      )}
+      </section>
       {price?.sourceKind === 'CATALOG' && (
         <p className="text-xs text-muted-foreground">
           Ce prix provient d’un catalogue : sa correction relève du parcours Catalogue.

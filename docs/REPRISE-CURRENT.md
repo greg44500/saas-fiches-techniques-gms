@@ -734,3 +734,20 @@ Fichiers impactés : drawer, tests RTL, contrat M-003, conception et
 synthèse de reprise. Aucun changement Core, backend, migrations ou
 règles de valorisation. Les tests sont à exécuter par l'utilisateur
 localement ; ne pas annoncer de gate verte sans résultat réel.
+
+## Ajustement UX M-003 — actions dans la carte Tarif (2026-10-14)
+
+Retour visuel : « Corriger le prix » et « Modifier la période »
+figuraient sous la carte alors que les autres onglets plaçaient
+leurs actions en haut à droite de la zone métier. Déplacement
+des deux boutons dans l'en-tête de la carte « Prix fournisseur HT »,
+avec alignement à droite et adaptation aux petites largeurs.
+Le prix principal, les prix complémentaires, la provenance,
+l'expiration et l'historique replié sont conservés.
+
+La garde existante (permission de correction, liste privée
+`PRICE_LIST`, Article actif) et les callbacks restent inchangés.
+Test RTL renforcé sur la position des actions à l'intérieur de
+l'en-tête de la carte et leur absence pour les prix Catalogue.
+Aucun Core, backend, API ou modèle touché.
+Tests, lint et build à effectuer localement par l'utilisateur.
