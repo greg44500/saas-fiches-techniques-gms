@@ -156,7 +156,12 @@ async function resolveArticlePrice(page, {
   const articleSelect = applicablePriceCard.getByRole('combobox', {
     name: 'Article fournisseur à vérifier',
   });
-  await articleSelect.click();
+
+  // Un parcours clavier complet évite de réactiver le trigger au milieu
+  // de la navigation, ce qui fermait le popup dans la version précédente.
+  // Base UI gère les touches Home / ArrowDown / Enter sur le Select ouvert.
+  await articleSelect.press('Enter');
+  await expect(articleSelect).toHaveAttribute('aria-expanded', 'true');
 
   const option = page.getByRole('option', {
     name: articleLabel,
@@ -164,24 +169,20 @@ async function resolveArticlePrice(page, {
   });
   await expect(option).toHaveCount(1);
 
-  // Dans ce contexte, le positionnement du popup empêche le clic souris
-  // sur l'option malgré sa présence. Vérifier ici le parcours clavier
-  // standard de Base UI, sans force-click ni affectation artificielle.
-  const optionCount = await page.getByRole('option').count();
-  expect(optionCount).toBeGreaterThan(0);
-  expect(optionCount).toBeLessThanOrEqual(100);
-  await articleSelect.press('Home');
-
-  let selected = false;
-  for (let index = 0; index < optionCount; index += 1) {
-    if (await option.getAttribute('data-highlighted') !== null) {
-      await articleSelect.press('Enter');
-      selected = true;
-      break;
-    }
-    await articleSelect.press('ArrowDown');
+  // Déterminer l'index de l'Article réellement proposé, sans supposer qu'il
+  // est l'unique option ni écrire sa valeur artificiellement dans React.
+  const labels = (await page.getByRole('option').allTextContents())
+    .map((label) => label.trim());
+  const targetIndex = labels.indexOf(articleLabel);
+  expect(targetIndex, 'Article absent de la sélection du Dossier')
+    .toBeGreaterThanOrEqual(0);
+  await page.keyboard.press('Home');
+  for (let index = 0; index < targetIndex; index += 1) {
+    await page.keyboard.press('ArrowDown');
   }
-  expect(selected, 'La sélection clavier doit atteindre l’Article cible').toBe(true);
+  await page.keyboard.press('Enter');
+
+  await expect(articleSelect).toHaveAttribute('aria-expanded', 'false');
   await expect(articleSelect).toContainText(articleLabel);
 
   await expect(
