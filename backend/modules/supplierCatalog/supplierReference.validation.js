@@ -26,6 +26,10 @@ const articleIdParamsSchema = z.strictObject({
     articleId: objectIdSchema,
 });
 
+const articleProductVariantParamsSchema = articleIdParamsSchema.extend({
+    productId: objectIdSchema,
+});
+
 const globalSupplierIdParamsSchema = z.strictObject({
     supplierId: objectIdSchema,
 });
@@ -201,6 +205,7 @@ const globalArticleListQuerySchema = z.strictObject({
 
 export {
     articleIdParamsSchema,
+    articleProductVariantParamsSchema,
     createArticleBodySchema,
     createSupplierBodySchema,
     globalArticleIdParamsSchema,

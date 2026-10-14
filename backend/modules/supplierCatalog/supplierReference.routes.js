@@ -6,6 +6,17 @@ import {
 } from './supplierArticleImport.controller.js';
 import { articleImportPreviewBodySchema } from './supplierArticleImport.validation.js';
 import {
+    createProduct,
+    createVariant,
+    duplicateCheck,
+} from '../productCatalog/productCatalog.controller.js';
+import {
+    createWorkspaceProductBodySchema,
+    createWorkspaceVariantBodySchema,
+    duplicateCheckBodySchema,
+} from '../productCatalog/productCatalog.validation.js';
+import { assertPrivateActiveSupplierArticle } from './supplierArticleProductContribution.middleware.js';
+import {
     correctWorkspaceArticleTariff,
     correctWorkspaceArticleTariffPeriod,
     listWorkspaceArticleTariffs,
@@ -72,6 +83,7 @@ import {
 } from './supplierReference.controller.js';
 import {
     articleIdParamsSchema,
+    articleProductVariantParamsSchema,
     createArticleBodySchema,
     createSupplierBodySchema,
     globalArticleIdParamsSchema,
@@ -217,6 +229,46 @@ supplierArticleRouter.post(
     authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
     enforceWorkspaceAccessMode(),
     createWorkspaceArticle,
+);
+
+const supplierArticleProductAccess = [
+    authenticate,
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_IMPORT),
+    enforceWorkspaceAccessMode(),
+    enforceSupplierCatalogImportFeature,
+    assertPrivateActiveSupplierArticle,
+];
+
+supplierArticleRouter.post(
+    '/:articleId/product-contributions/duplicate-check',
+    validateRequest({
+        params: articleIdParamsSchema,
+        body: duplicateCheckBodySchema,
+    }),
+    ...supplierArticleProductAccess,
+    duplicateCheck,
+);
+
+supplierArticleRouter.post(
+    '/:articleId/product-contributions',
+    validateRequest({
+        params: articleIdParamsSchema,
+        body: createWorkspaceProductBodySchema,
+    }),
+    ...supplierArticleProductAccess,
+    createProduct,
+);
+
+supplierArticleRouter.post(
+    '/:articleId/product-contributions/:productId/variants',
+    validateRequest({
+        params: articleProductVariantParamsSchema,
+        body: createWorkspaceVariantBodySchema,
+    }),
+    ...supplierArticleProductAccess,
+    createVariant,
 );
 
 supplierArticleRouter.patch(
