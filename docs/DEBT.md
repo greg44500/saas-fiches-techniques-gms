@@ -1,8 +1,8 @@
-# SAAS-CORE-API — Registre canonique des dettes actives
+# SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
 
 **Statut :** source de vérité documentaire pour les dettes non résolues  
-**Dernière mise à jour :** 2026-09-29  
-**Périmètre :** Core clonable et, lorsque précisé, applications dérivées
+**Dernière mise à jour :** 2026-10-14  
+**Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
 
 ---
 
@@ -799,10 +799,11 @@ Ne pas présenter l'archivage actuel comme une suppression.
 **Statut : différé après livraison de l'import autonome avec prix.**
 
 Les listes tarifaires importées sont historisées et les chevauchements de
-période sont refusés. La V1 ne fournit pas encore d'interface de remplacement,
-archivage, correction de dates ou résolution des conflits d'une liste passée.
-Avant de proposer ces opérations, cadrer les droits, l'audit, la consultation
-des dépendances économiques et la préservation des états historiques. Ne pas
+période sont refusés. **La PR #44 a livré la correction historisée des prix
+et des dates pour les tarifs privés `PRICE_LIST`** ; il reste à cadrer le
+remplacement prospectif, l'archivage/annulation d'une liste complète et
+les conflits commerciaux privé/global. Les droits, l'audit, les dépendances
+économiques et la préservation des historiques restent impératifs. Ne pas
 supprimer un `SupplierTariff` pour forcer une nouvelle importation. Revoir
 également l'arbitrage métier lorsque des tarifs globaux et privés d'un même
 Article sont simultanément valides ; le serveur doit continuer à signaler
@@ -820,3 +821,25 @@ arbitrage privé/global, audit et historique économique. Ne jamais utiliser
 une correction rétrospective pour simuler un nouveau prix commercial.
 La correction des tarifs de catalogue dépend de l'édition concernée ;
 elle n'est pas ouverte depuis la fiche Article hors catalogue.
+
+---
+
+### QA-M004-SELECT — Sélecteur intermittent en test frontend (2026-10-14)
+
+**Statut : CONDITIONNEL**, non bloquant après une gate verte. La première
+tentative post-merge de la [Core Gate #44](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/38539141748)
+a échoué sur le test du choix de vente à la « Portion » dans
+`TechnicalSheetCreateDialog`. Le test et les composants étaient identiques
+avant et après le merge. La tentative 2 a réussi sur le **même commit**.
+Cette intermittence doit être reproduite avant de la déclarer corrigée ou
+de l'attribuer au composant Core `Select`. Si le comportement générique
+est en cause, corriger dans `saas-core-api` et intégrer ensuite via
+un upgrade versionné ; ne pas désactiver le contrôle de test.
+
+### Livraison M-003 — PR #44
+
+**Statut : VALIDÉ le 2026-10-14** — merge
+`962177905bcc198e439a316d9610b23c60dd53cd` ;
+Core Gate PR `38537453030` success ; post-merge
+`38539141748` success (tentative 2). Les dettes M-003
+différées ci-dessus restent ouvertes.

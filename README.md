@@ -1,12 +1,20 @@
-# SAAS-CORE-API
+# SAAS-FICHES-TECHNIQUES-GMS
 
-Socle SaaS fullstack générique et réutilisable, destiné à être dérivé en applications métier tout en conservant des fondations communes maintenables : authentification, multi-tenant, RBAC, plans et abonnements, entitlements, quotas, fichiers, audit et administration Platform.
+SaaS métier pour la gestion des Produits, Fournisseurs, Articles, catalogues, tarifs et Fiches techniques, contextualisés par Workspace et par Dossier/magasin. Dérivé du [Core](https://github.com/greg44500/saas-core-api) sans y introduire de logique métier.
 
-## Statut du projet
+## État de l'application — 2026-10-14
 
-Le Core suit désormais la ligne stable `1.1.0`. D-015 — versionnement / provenance / release process / migrations —, D-016 — E2E Core Playwright — et D-017 — dérivation et upgrade réel d’un SaaS pilote — sont validées.
+- **M-001 à M-005 intégrés sur `main`**. Le complément M-003 (imports d'Articles, mercuriales autonomes, tarification historisée et UX) a été fusionné via la [PR #44](https://github.com/greg44500/saas-fiches-techniques-gms/pull/44), merge `962177905bcc198e439a316d9610b23c60dd53cd`.
+- **Gates :** [PR #44](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/38537453030) réussie ; [post-merge](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/38539141748) réussie **à la tentative 2**. La première tentative avait signalé une intermittence de test M-004, sans modification de ce composant au merge.
+- **Core intégré :** `v1.2.1`, commit `054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3` ; `core-origin.json` reste la source autoritaire.
+- **M-004 :** exports PDF/XLSX/CSV implémentés ; impression et envoi par e-mail restent à auditer/cadrer.
+- **Prochaine étape :** audit et cadrage du complément de diffusion M-004, sans redévelopper les trois exports existants.
 
-`v1.1.0` a été publiée le 2026-09-21 conformément à `docs/releases/RELEASE-POLICY.md`. Son tag `v1.1.0` cible exactement le commit validé `8326fb48856dcef151b5ab01495c934951050d6d` après Core Gate #52 verte. Cette release ajoute le lifecycle transactionnel extensible `WorkspaceMember.onMemberRemoved` destiné aux relations métier des SaaS dérivés, sans introduire leurs modèles dans le Core. La stabilité du Core ne signifie pas qu’une application dérivée est automatiquement prête pour la production.
+Documents de référence : [cadrage produit](docs/PRODUCT-SCOPE.md), [roadmap](docs/ROADMAP.md), [reprise](docs/REPRISE-CURRENT.md), [contrat M-003](docs/m003/M-003-FINAL-CONTRACT.md), [dettes](docs/DEBT.md).
+
+## Fondations techniques héritées du Core
+
+Les sections suivantes décrivent des mécanismes et conventions génériques hérités du Core. Elles ne définissent **ni la version actuelle du dépôt maître Core** ni le périmètre métier de ce produit ; pour la provenance exacte, consulter `core-origin.json`.
 
 ## Ce que fournit le Core
 

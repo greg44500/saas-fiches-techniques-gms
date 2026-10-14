@@ -1,16 +1,36 @@
-# Reprise courante — M-005 fusionné ; audit de roadmap à engager
+# Reprise courante — M-003 clôturé ; diffusion M-004 à cadrer
 
-**Date : 2026-10-08**  
-**Branche de référence : `main`**  
-**M-005 : PR #39 fusionnée ; commit de merge `5d0a3d9692343d60ccfec0e46759383d595680dd` ; comparaison avec `main` : identique lors du contrôle documentaire.**
+**Date : 2026-10-14**  
+**Dépôt : `greg44500/saas-fiches-techniques-gms`**  
+**Dernier `main` métier vérifié : `962177905bcc198e439a316d9610b23c60dd53cd` (PR #44)**  
+**Core intégré : v1.2.1 — `054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3` (`core-origin.json`)**
 
-## État courant et prochaines actions
+## État réel vérifié
 
-1. Vérifier le résultat de la Core Gate post-merge M-005 : preuve non obtenue lors de la présente révision (les recherches de runs/checks sur le commit de merge n'ont pas fourni de résultat exploitable). Ne pas déclarer cette gate verte sans preuve.
-2. M-005 est intégré ; conserver ses contrats canoniques `docs/m005/M-005-FINAL-CONTRACT.md` et `docs/m005/M-005-TECHNICAL-DESIGN.md`. Ne pas rouvrir son développement sans anomalie démontrée.
-3. Selon le retour fonctionnel du responsable produit du 2026-10-08, les exports CSV, XLSX et PDF sont déjà réalisés. Vérifier leur présence dans le code sans les redévelopper. Concentrer le prochain audit/cadrage sur les deux parcours restant à livrer au sein de M-004 (complément diffusion V1) : impression et envoi par e-mail. Le contrat M-004, section 37, porte explicitement ces cinq fonctions ; leur livraison avait été organisée en bloc séparé après la stabilisation des fiches. Ne pas numéroter automatiquement ce complément comme un nouveau module métier. Vérifier réutilisation des services, stockage, autorisations, capabilities, quotas, API, UI et tests.
-4. Présenter les écarts prouvés et proposer un seul prochain lot métier, avec périmètre et critères d'acceptation à valider avant toute implémentation. Les Fiches process restent candidates ensuite.
-5. Respecter « un lot cohérent → une branche → une PR → un merge ». L'utilisateur réalise les tests locaux et garde la validation des PR/merges.
+- **M-001 à M-005 intégrés.** Le complément M-003 est fusionné par la [PR #44](https://github.com/greg44500/saas-fiches-techniques-gms/pull/44).
+- [Core Gate PR #44](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/38537453030) : success sur `f40a054b4462167af66f28dc2426b329f7a064f6`.
+- [Core Gate post-merge](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/38539141748) : **success à la tentative 2** sur `962177905bcc198e439a316d9610b23c60dd53cd`. Première tentative échouée sur une interaction du sélecteur `Base de vente` du test M-004 ; code du test et composants inchangés avant/après le merge. Cela signale une intermittence potentielle, non une régression métier démontrée.
+- Aucune version Core ou provenance Core n'a été changée par la PR #44. Ne pas inférer que les migrations de la PR ont été jouées sur chaque base locale ou de production.
+
+## Clôture fonctionnelle M-003
+
+Imports directs d'Articles et mercuriales (avec ou sans catalogue), association à la Référence Produit facultative à l'import, corrections de listes privées historisées et auditées, choix explicite du tarif courant/expiré, prix normalisés et par pièce, recherche côté serveur, drawer Article à onglets, UX import Produit harmonisée et avertissement M-004 de tarif expiré.
+
+**Dettes différées :** suppression contrôlée d'import/catalogue, renouvellements tarifaires prospectifs, gestion des conflits prix privé/global ; `docs/DEBT.md`.
+
+## Prochain travail métier : complément de diffusion M-004
+
+Les exports CSV, XLSX et PDF sont **déjà présents** dans le code et documentés dans `docs/m004/M-004-EXPORTS-FINAL-CONTRACT.md` et `docs/m004/M-004-EXPORTS-TECHNICAL-DESIGN.md`. Il reste à auditer/cadrer l'**impression** et l'**envoi par e-mail** de la Fiche validée. Avant toute implémentation : vérifier snapshot `TechnicalSheetValidation`, permissions, capability/quota, confidentialité, destinataires, stockage temporaire, traçabilité, réutilisation des rendus et tests. Ne pas redévelopper les formats existants ; pas de nouveau modèle/Core sans raison démontrée. Les Fiches process seront cadrées séparément.
+
+## Opérations Git convenues
+
+Créer puis fusionner une PR **strictement documentaire**. Ensuite seulement, aligner le clone local sur `main` et nettoyer les **branches déjà fusionnées** après vérification du statut Git, des refs et de l'absence de changements non sauvegardés. Ne pas effacer une branche non fusionnée ; ne pas effacer `main` ni modifier le remote `upstream-core`. L'utilisateur garde le contrôle des opérations locales et des merges.
+
+## Archives historiques
+
+Les sections suivantes documentent des états antérieurs des travaux M-003/M-005. Leurs mentions « tests en attente », « branche active » ou « PR interdite » ne s'appliquent plus à l'état courant. Le code et les gates réels priment.
+
+---
 
 ## Archive de reprise M-005 (état antérieur à la fusion)
 
