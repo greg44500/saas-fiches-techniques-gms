@@ -172,6 +172,36 @@ async function resolveArticlePrice(page, {
   ).toBeVisible();
 }
 
+// Vérifier la lecture avec la session et la tenancy réelles, puis la projection
+// dans le tableau filtré côté serveur : aucune donnée injectée dans le navigateur.
+async function expectImportedWorkspaceArticle(page, { workspaceId, reference }) {
+  const response = await page.request.get(
+    `/api/workspaces/${workspaceId}/supplier-articles`,
+    {
+      params: { search: reference, status: 'ACTIVE', page: 1, limit: 10 },
+    },
+  );
+  expect(response.status(), 'Lecture des Articles après confirmation').toBe(200);
+  const { data } = await response.json();
+  expect(data.pagination.total).toBe(1);
+  expect(data.articles).toHaveLength(1);
+  const article = data.articles[0];
+  expect(article).toEqual(expect.objectContaining({
+    scope: 'WORKSPACE_PRIVATE',
+    workspaceId,
+    supplierReference: reference,
+    status: 'ACTIVE',
+  }));
+
+  await page.getByRole('searchbox', { name: 'Rechercher' }).fill(reference);
+  const articleRow = page.getByRole('row').filter({
+    hasText: `Réf. fournisseur : ${reference}`,
+  });
+  await expect(articleRow).toBeVisible();
+
+  return { article, articleRow };
+}
+
 test('M-003 autorité Application Global ouvre le Référentiel Fournisseurs', async ({ page }) => {
   await loginWithIdentity(page, E2E_FOUNDER);
   await page.goto('/supplier-reference');
@@ -386,12 +416,38 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
   await expect(dialog.getByText(reference, { exact: true })).toBeVisible();
   await expect(dialog.getByText(/1 ligne\(s\) sans référence ignorée\(s\)/)).toBeVisible();
 
+  const commitPromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && /\/supplier-articles\/imports\/[^/]+\/commit$/.test(
+      new URL(response.url()).pathname,
+    )
+  ));
   await dialog.getByRole('button', { name: 'Confirmer l’import' }).click();
+  const committed = await commitPromise;
+  expect(committed.status()).toBe(200);
+  expect((await committed.json()).data).toEqual(expect.objectContaining({
+    created: 1, updated: 0, skipped: 1, priced: 0,
+  }));
   await expectVisibleToast(page, 'Import des Articles terminé');
   await expect(dialog.getByText('Import terminé')).toBeVisible();
   await dialog.getByRole('button', { name: 'Fermer' }).click();
-  await expect(page.getByText(reference, { exact: true })).toBeVisible();
-  await expect(page.getByText('Non associé', { exact: true })).toBeVisible();
+  await expect(dialog).toBeHidden();
+
+  const { article, articleRow } = await expectImportedWorkspaceArticle(page, {
+    workspaceId: workspace.workspaceId,
+    reference,
+  });
+  expect(article.associationStatus).toBe('PENDING');
+  expect(article.productVariant).toBeNull();
+  await expect(articleRow.getByText('Non associé', { exact: true }))
+    .toBeVisible();
+
+  const catalogs = await page.request.get(
+    `/api/workspaces/${workspace.workspaceId}/supplier-catalogs`,
+    { params: { supplierId: article.supplier.id, status: 'ACTIVE' } },
+  );
+  expect(catalogs.status()).toBe(200);
+  expect((await catalogs.json()).data.catalogs).toHaveLength(0);
 });
 
 
@@ -431,12 +487,44 @@ test('M-003 importe des prix Articles sans période saisie et les expose depuis 
 
   await dialog.getByRole('button', { name: 'Prévisualiser' }).click();
   await expect(dialog.getByText(reference, { exact: true })).toBeVisible();
+  const commitPromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && /\/supplier-articles\/imports\/[^/]+\/commit$/.test(
+      new URL(response.url()).pathname,
+    )
+  ));
   await dialog.getByRole('button', { name: 'Confirmer l’import' }).click();
+  const committed = await commitPromise;
+  expect(committed.status()).toBe(200);
+  expect((await committed.json()).data).toEqual(expect.objectContaining({
+    created: 1, updated: 0, skipped: 0, priced: 1,
+  }));
   await expectVisibleToast(page, 'Import des Articles terminé');
+  await expect(dialog.getByText('Import terminé')).toBeVisible();
   await dialog.getByRole('button', { name: 'Fermer' }).click();
+  await expect(dialog).toBeHidden();
 
-  const articleRow = page.getByRole('row').filter({ hasText: reference });
-  await expect(articleRow).toBeVisible();
+  const { article, articleRow } = await expectImportedWorkspaceArticle(page, {
+    workspaceId: workspace.workspaceId,
+    reference,
+  });
+  expect(article.supplierTariffStatus).toBe('AVAILABLE');
+  expect(article.supplierTariff).toEqual(expect.objectContaining({
+    sourceKind: 'PRICE_LIST',
+    sourceAmount: '25.5',
+    sourceBasis: 'PACKAGE',
+    currency: 'EUR',
+    normalizedAmount: '2.55',
+    normalizedUnit: 'KG',
+    validTo: null,
+  }));
+  expect(Date.parse(article.supplierTariff.validFrom)).not.toBeNaN();
+
   await expect(articleRow).toContainText('25,500');
-  await expect(articleRow).toContainText('2,550');
+  await expect(articleRow).not.toContainText('2,550');
+  await articleRow.getByRole('button', {
+    name: `Détails des prix de ${reference}`,
+  }).click();
+  await expect(page.getByText('2,550 € HT / kg', { exact: true }))
+    .toBeVisible();
 });
