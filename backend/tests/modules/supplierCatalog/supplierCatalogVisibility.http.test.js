@@ -113,7 +113,7 @@ describe('M-003 supplier catalog visibility', () => {
                 id: catalogId,
                 lineCount: 2,
                 supplierName:
-                    'Fournisseur consultation A',
+                    'FOURNISSEUR CONSULTATION A',
             }),
         );
         expect(filtered.body.data.pagination.total)
