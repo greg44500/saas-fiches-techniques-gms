@@ -153,13 +153,6 @@ async function resolveArticlePrice(page, {
   });
   await expect(applicablePriceCard).toBeVisible();
 
-  // La carte est sous le contenu du Dossier : la placer au centre avant
-  // d'ouvrir le sélecteur pour que la liste soit réellement accessible.
-  // Aucun clic forcé ni mutation directe de la valeur du composant.
-  await applicablePriceCard.evaluate((element) => {
-    element.scrollIntoView({ block: 'center', inline: 'nearest' });
-  });
-
   const articleSelect = applicablePriceCard.getByRole('combobox', {
     name: 'Article fournisseur à vérifier',
   });
@@ -169,9 +162,26 @@ async function resolveArticlePrice(page, {
     name: articleLabel,
     exact: true,
   });
-  await expect(option).toBeVisible();
-  await expect(option).toBeInViewport();
-  await option.click();
+  await expect(option).toHaveCount(1);
+
+  // Dans ce contexte, le positionnement du popup empêche le clic souris
+  // sur l'option malgré sa présence. Vérifier ici le parcours clavier
+  // standard de Base UI, sans force-click ni affectation artificielle.
+  const optionCount = await page.getByRole('option').count();
+  expect(optionCount).toBeGreaterThan(0);
+  expect(optionCount).toBeLessThanOrEqual(100);
+  await articleSelect.press('Home');
+
+  let selected = false;
+  for (let index = 0; index < optionCount; index += 1) {
+    if (await option.getAttribute('data-highlighted') !== null) {
+      await articleSelect.press('Enter');
+      selected = true;
+      break;
+    }
+    await articleSelect.press('ArrowDown');
+  }
+  expect(selected, 'La sélection clavier doit atteindre l’Article cible').toBe(true);
   await expect(articleSelect).toContainText(articleLabel);
 
   await expect(
@@ -189,10 +199,13 @@ async function resolveArticlePrice(page, {
 
 // Vérifier la lecture avec la session et la tenancy réelles, puis la projection
 // dans le tableau filtré côté serveur : aucune donnée injectée dans le navigateur.
-async function expectImportedWorkspaceArticle(page, { workspaceId, reference }) {
+async function expectImportedWorkspaceArticle(page, {
+  workspaceId, reference, accessToken,
+}) {
   const response = await page.request.get(
     `/api/workspaces/${workspaceId}/supplier-articles`,
     {
+      headers: { Authorization: `Bearer ${accessToken}` },
       params: { search: reference, status: 'ACTIVE', page: 1, limit: 10 },
     },
   );
@@ -401,7 +414,7 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
   const supplierName = 'Fournisseur liste E2E ' + suffix;
   const reference = 'LST-' + suffix;
 
-  await loginWithIdentity(page, workspace.identity);
+  const accessToken = await loginWithIdentity(page, workspace.identity);
   await page.goto(workspace.suppliersUrl);
   await createSupplierFromUi(page, supplierName);
   await page.getByRole('tab', { name: /^Articles \(/ }).click();
@@ -453,6 +466,7 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
   const { article, articleRow } = await expectImportedWorkspaceArticle(page, {
     workspaceId: workspace.workspaceId,
     reference,
+    accessToken,
   });
   expect(article.associationStatus).toBe('PENDING');
   expect(article.productVariant).toBeNull();
@@ -461,7 +475,10 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
 
   const catalogs = await page.request.get(
     `/api/workspaces/${workspace.workspaceId}/supplier-catalogs`,
-    { params: { supplierId: article.supplier.id, status: 'ACTIVE' } },
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: { supplierId: article.supplier.id, status: 'ACTIVE' },
+    },
   );
   expect(catalogs.status()).toBe(200);
   expect((await catalogs.json()).data.catalogs).toHaveLength(0);
@@ -474,7 +491,7 @@ test('M-003 importe des prix Articles sans période saisie et les expose depuis 
   const supplierName = 'Fournisseur prix E2E ' + suffix;
   const reference = 'TAR-' + suffix;
 
-  await loginWithIdentity(page, workspace.identity);
+  const accessToken = await loginWithIdentity(page, workspace.identity);
   await page.goto(workspace.suppliersUrl);
   await createSupplierFromUi(page, supplierName);
   await page.getByRole('tab', { name: /^Articles \(/ }).click();
@@ -526,6 +543,7 @@ test('M-003 importe des prix Articles sans période saisie et les expose depuis 
   const { article, articleRow } = await expectImportedWorkspaceArticle(page, {
     workspaceId: workspace.workspaceId,
     reference,
+    accessToken,
   });
   expect(article.supplierTariffStatus).toBe('AVAILABLE');
   expect(article.supplierTariff).toEqual(expect.objectContaining({

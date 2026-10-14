@@ -29,6 +29,19 @@ async function loginWithIdentity(page, identity) {
     response.ok(),
     `E2E session login failed with status ${response.status()}`,
   ).toBe(true);
+
+  // Le cookie HttpOnly sert exclusivement au refresh. Pour une requête
+  // API protégée émise directement par Playwright, transmettre le même
+  // access token Bearer que la couche RTK Query du navigateur.
+  const payload = await response.json();
+  const accessToken = payload?.data?.accessToken;
+  expect(
+    typeof accessToken,
+    'La connexion E2E doit fournir un access token JWT.',
+  ).toBe('string');
+  expect(accessToken.length).toBeGreaterThan(0);
+
+  return accessToken;
 }
 
 async function registerAndLogin(page) {
