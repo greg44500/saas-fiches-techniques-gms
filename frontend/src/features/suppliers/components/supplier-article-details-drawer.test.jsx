@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 vi.mock('@/components/shared/entity-details-drawer', () => ({
   EntityDetailsDrawer: ({ children, open, title }) => (
@@ -21,7 +23,7 @@ const article = {
   status: 'ACTIVE',
   supplierReference: '34171',
   supplierDesignation: 'Plaque de pâte feuilletée 300 g',
-  supplier: { name: 'BRIDOR' },
+  supplier: { id: 'supplier-1', name: 'BRIDOR' },
   brand: 'BRIDOR',
   packagingLabel: 'Carton · 36 × 300 g',
   productVariant: { id: 'variant-1', name: 'Pâte feuilletée pur beurre' },
@@ -38,84 +40,196 @@ const article = {
   },
 };
 
-describe('SupplierArticleDetailsDrawer', () => {
-  it('évite les répétitions, montre un warning et masque initialement l’historique', async () => {
-    const user = userEvent.setup();
+function renderDrawer(props = {}) {
+  return render(
+    <TooltipProvider>
+      <SupplierArticleDetailsDrawer
+        article={article}
+        canReadTariffs
+        onClose={vi.fn()}
+        open
+        workspaceId="workspace-1"
+        {...props}
+      />
+    </TooltipProvider>,
+  );
+}
+
+describe('SupplierArticleDetailsDrawer — onglets M-003', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
     mocks.history.mockReturnValue({
-      isLoading: false,
-      isError: false,
       data: [{
         id: 'tariff-1',
         isCurrent: true,
-        sourcePriceLabel: '11,200 € HT / unité',
         revision: 1,
+        sourcePriceLabel: '11,200 € HT / unité',
         sourceLabel: 'Liste tarifaire',
         validFrom: article.supplierTariff.validFrom,
         validTo: article.supplierTariff.validTo,
       }],
+      isLoading: false,
+      isError: false,
     });
-    render(<SupplierArticleDetailsDrawer
-      article={article}
-      canReadTariffs
-      onClose={vi.fn()}
-      open
-      workspaceId="workspace-1"
-    />);
+  });
+
+  it('ouvre Infos Article avec les informations essentielles sans empiler les autres sections', async () => {
+    const user = userEvent.setup();
+    const onEdit = vi.fn();
+    renderDrawer({ canManage: true, onEdit });
 
     expect(screen.getByRole('complementary', {
       name: 'Plaque de pâte feuilletée 300 g',
     })).toBeInTheDocument();
-    expect(screen.getByText('Informations de l’article')).toBeInTheDocument();
-    expect(screen.getByText('Réf. fournisseur : 34171')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Infos Article' }))
+      .toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Association' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Tarif fournisseur' })).toBeInTheDocument();
+    expect(screen.getByText('Réf. fournisseur')).toBeInTheDocument();
+    expect(screen.getByText('34171')).toBeInTheDocument();
+    expect(screen.getByText('Fournisseur')).toBeInTheDocument();
+    expect(screen.getByText('Carton · 36 × 300 g')).toBeInTheDocument();
+    expect(screen.getByText('Actif')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Modifier' }));
+    expect(onEdit).toHaveBeenCalledWith(article);
+
+    expect(screen.queryByText('Pâte feuilletée pur beurre')).not.toBeInTheDocument();
+    expect(screen.queryByText('403,200 € HT / carton')).not.toBeInTheDocument();
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  });
+
+  it('isole l’association et place son avertissement dans une aide contextuelle', async () => {
+    const user = userEvent.setup();
+    const onAssociate = vi.fn();
+    renderDrawer({ canAssociate: true, onAssociate });
+
+    await user.click(screen.getByRole('tab', { name: 'Association' }));
+    expect(screen.getByText('Pâte feuilletée pur beurre')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Conséquences de la modification de l’association',
+    })).toBeInTheDocument();
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    expect(screen.queryByText(/valorisations futures/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Modifier l’association' }));
+    expect(onAssociate).toHaveBeenCalledWith(article);
+  });
+
+  it('identifie clairement un Article sans Produit associé', async () => {
+    const user = userEvent.setup();
+    renderDrawer({ article: { ...article, productVariant: null } });
+    await user.click(screen.getByRole('tab', { name: 'Association' }));
+    expect(screen.getByText('Non associé')).toBeInTheDocument();
+  });
+
+  it('affiche prix et période dans Tarif fournisseur, avec historique replié par défaut', async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await user.click(screen.getByRole('tab', { name: 'Tarif fournisseur' }));
+    expect(screen.getByText('403,200 € HT / carton')).toBeInTheDocument();
     expect(screen.getByText('11,200 € HT / pièce')).toBeInTheDocument();
     expect(screen.getByText('37,333 € HT / kg')).toBeInTheDocument();
-    expect(screen.queryByText('BRIDOR · Réf. 34171')).not.toBeInTheDocument();
-    expect(screen.getByRole('note')).toHaveClass('text-warning');
-    const trigger = screen.getByRole('button', {
-      name: 'Informations tarifaires et historique',
-    });
+    expect(screen.getByText('Liste tarifaire')).toBeInTheDocument();
+    expect(screen.getByText('Début de validité')).toBeInTheDocument();
+    expect(screen.getByText('Fin de validité')).toBeInTheDocument();
+
+    const trigger = screen.getByRole('button', { name: 'Historique des tarifs' });
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('Provenance')).toBeInTheDocument();
-    expect(screen.getByText('Historique des listes tarifaires')).toBeInTheDocument();
+    expect(screen.getByText(/Révision 1/)).toBeInTheDocument();
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('propose la correction de période pour un dernier prix expiré', async () => {
+  it('conserve le dernier tarif expiré et les deux actions de correction historisée', async () => {
     const user = userEvent.setup();
     const onCorrectPeriod = vi.fn();
-    mocks.history.mockReturnValue({ isLoading: false, data: [] });
-    render(<SupplierArticleDetailsDrawer
-      article={{ ...article, supplierTariffStatus: 'EXPIRED' }}
-      canCorrectTariffs
-      canReadTariffs
-      onClose={vi.fn()}
-      onCorrectPrice={vi.fn()}
-      onCorrectPeriod={onCorrectPeriod}
-      open
-      workspaceId="workspace-1"
-    />);
+    const onCorrectPrice = vi.fn();
+    const expiredArticle = { ...article, supplierTariffStatus: 'EXPIRED' };
+    renderDrawer({
+      article: expiredArticle,
+      canCorrectTariffs: true,
+      onCorrectPrice,
+      onCorrectPeriod,
+    });
+
+    await user.click(screen.getByRole('tab', { name: 'Tarif fournisseur' }));
     expect(screen.getByText('Dernier prix connu — expiré')).toBeInTheDocument();
+    expect(screen.getByText('403,200 € HT / carton')).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: 'Modifier la période' }));
-    expect(onCorrectPeriod).toHaveBeenCalledOnce();
+    expect(onCorrectPeriod).toHaveBeenCalledWith(expiredArticle);
+    await user.click(screen.getByRole('button', { name: 'Corriger le prix' }));
+    expect(onCorrectPrice).toHaveBeenCalledWith(expiredArticle);
   });
 
-  it('protège les détails tarifaires sans permission de lecture', () => {
-    mocks.history.mockReturnValue({ isLoading: false, data: [] });
-    render(<SupplierArticleDetailsDrawer
-      article={article}
-      canReadTariffs={false}
-      onClose={vi.fn()}
-      open
-      workspaceId="workspace-1"
-    />);
-    expect(screen.queryByText('Informations tarifaires et historique'))
-      .not.toBeInTheDocument();
+  it('respecte l’accès tarifaire et les interdictions de modification', async () => {
+    const user = userEvent.setup();
+    const limited = renderDrawer({ canReadTariffs: false });
+    expect(screen.queryByRole('tab', { name: 'Tarif fournisseur' })).not.toBeInTheDocument();
     expect(mocks.history).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ skip: true }),
     );
+
+    limited.unmount();
+    const archived = { ...article, status: 'ARCHIVED' };
+    renderDrawer({
+      article: archived,
+      canManage: true,
+      canAssociate: true,
+      canCorrectTariffs: true,
+    });
+    expect(screen.getByText('Archivé')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Association' }));
+    expect(screen.queryByRole('button', { name: 'Modifier l’association' }))
+      .not.toBeInTheDocument();
+  });
+
+  it('ne propose pas les actions de correction sur un tarif issu d’un Catalogue', async () => {
+    const user = userEvent.setup();
+    renderDrawer({
+      article: {
+        ...article,
+        supplierTariff: { ...article.supplierTariff, sourceKind: 'CATALOG' },
+      },
+      canCorrectTariffs: true,
+    });
+    await user.click(screen.getByRole('tab', { name: 'Tarif fournisseur' }));
+    expect(screen.queryByRole('button', { name: 'Modifier la période' }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Corriger le prix' }))
+      .not.toBeInTheDocument();
+    expect(screen.getByText(/correction relève du parcours Catalogue/)).toBeInTheDocument();
+  });
+
+  it('revient à Infos Article après fermeture et réouverture', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const props = { article, canReadTariffs: true, open: true, onClose };
+    const { rerender } = render(
+      <TooltipProvider>
+        <SupplierArticleDetailsDrawer workspaceId="workspace-1" {...props} />
+      </TooltipProvider>,
+    );
+    await user.click(screen.getByRole('tab', { name: 'Tarif fournisseur' }));
+    expect(screen.getByRole('tab', { name: 'Tarif fournisseur' }))
+      .toHaveAttribute('aria-selected', 'true');
+
+    rerender(
+      <TooltipProvider>
+        <SupplierArticleDetailsDrawer workspaceId="workspace-1" {...props} open={false} />
+      </TooltipProvider>,
+    );
+    rerender(
+      <TooltipProvider>
+        <SupplierArticleDetailsDrawer workspaceId="workspace-1" {...props} />
+      </TooltipProvider>,
+    );
+    expect(screen.getByRole('tab', { name: 'Infos Article' }))
+      .toHaveAttribute('aria-selected', 'true');
   });
 });

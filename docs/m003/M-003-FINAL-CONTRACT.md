@@ -1652,3 +1652,38 @@ Fournisseur recherchable et filtre Statut juxtaposés ; filtres combinables,
 page réinitialisée à 1. Le sélecteur de Fournisseurs interroge
 l'API et invite à affiner si plus de 50 résultats, sans tronquer
 silencieusement. Labels accessibles conservés.
+
+---
+
+## Complément UX validé — drawer Article à onglets (2026-10-14)
+
+Le drawer « Article fournisseur » suit désormais la même composition que
+les drawers Fournisseur, Dossier et Analyse : trois onglets métier
+`Infos Article`, `Association`, `Tarif fournisseur`
+(`Tabs`/variante `section` déjà partagés par l'application).
+
+- Ouverture initiale sur `Infos Article` ; réinitialisation de cet onglet
+  lors de la réouverture du drawer ou de la sélection d'un autre Article.
+  La désignation reste dans le titre du drawer, sans répétition dans
+  le contenu ; référence, nom du fournisseur, marque, conditionnement
+  et statut composent un tableau de lecture compact. Action `Modifier`
+  maintenue uniquement selon les droits et l'état de l'Article.
+- `Association` affiche le Produit associé ou `Non associé` ; le
+  bouton `Modifier l’association` conserve les gardes existantes.
+  L'avertissement concernant les valorisations futures et la
+  conservation des données historiques est consultable via un
+  `InfoTooltip` placé au niveau de cette action, sans encadré
+  permanent.
+- `Tarif fournisseur` reste invisible sans autorisation de lecture.
+  Prix principal, prix complémentaires calculés par M-003,
+  provenance et dates de validité sont visibles immédiatement.
+  Le dernier prix expiré conserve son avertissement explicite ;
+  `Corriger le prix` et `Modifier la période` restent conditionnés
+  par les permissions, le type `PRICE_LIST` et le statut actif.
+  L'historique reste replié initialement et consultable sur demande,
+  avec défilement local borné si nécessaire.
+
+La réduction du scroll vise les cas courants ; elle ne masque
+aucune information nécessaire et ne prétend pas empêcher le défilement
+sur petit écran. L'accès historique, le backend, les règles de
+valorisation, les schémas MongoDB et les primitives Core sont inchangés.

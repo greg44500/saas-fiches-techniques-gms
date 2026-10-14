@@ -710,3 +710,27 @@ renforcé pour vérifier également la création de l'événement d'audit
 et son rattachement à la nouvelle révision. Aucun changement de
 contrat, de schéma, de Core ou de migration. Tests locaux à rejouer
 par l'utilisateur ; succès non revendiqué avant exécution.
+
+## UX M-003 — drawer Article à onglets (2026-10-14)
+
+Retour visuel utilisateur validé : ne plus empiler les blocs
+d'informations Article / association / tarif dans le même drawer ;
+réutiliser la navigation à onglets des autres drawers.
+
+Lot frontend ciblé :
+- `Infos Article` par défaut : référence, Fournisseur, marque,
+  conditionnement, statut et modification autorisée ; désignation
+  conservée dans le titre du drawer ;
+- `Association` : Produit lié ou état « Non associé », action
+  conditionnée par RBAC et statut, conséquences économiques accessibles
+  via `InfoTooltip` près de l'action sans bandeau permanent ;
+- `Tarif fournisseur` : prix principal et complémentaires, provenance,
+  dates et avertissement d'expiration ; correction du prix et de la
+  période selon les droits ; historique replié et hauteur bornée ;
+- navigation réinitialisée à `Infos Article` lors de la réouverture,
+  onglet Tarif entièrement absent sans permission de lecture.
+
+Fichiers impactés : drawer, tests RTL, contrat M-003, conception et
+synthèse de reprise. Aucun changement Core, backend, migrations ou
+règles de valorisation. Les tests sont à exécuter par l'utilisateur
+localement ; ne pas annoncer de gate verte sans résultat réel.

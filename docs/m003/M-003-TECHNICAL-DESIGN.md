@@ -513,3 +513,25 @@ limitée à 50 résultats par recherche. `SupplierArticlePeriodCorrectionDialog`
 réutilise le DatePicker commun. Aucune primitive Core modifiée.
 La présentation des avertissements FT se limite au code d'alerte
 existant dans la valorisation, sans calcul M-004 ajouté.
+
+## Drawer Article fournisseur — trois onglets (2026-10-14)
+
+`SupplierArticleDetailsDrawer` utilise le composant commun
+`Tabs` (`TabsList`, `TabsTrigger`, `TabsContent`) en variante
+`section`, comme `SupplierDetailsDrawer` et `DossierDetailsDrawer`.
+Les sous-vues de la feature séparent les responsabilités de
+présentation : informations de l'Article, association Produit, prix
+et historique. `EntityDetailsDrawer` n'est pas modifié.
+
+Le `key` du groupe d'onglets intègre l'Article et l'état d'ouverture
+afin de revenir à `Infos Article` après réouverture et lors du
+changement d'Article. Le hook d'historique M-003 conserve son
+`skip` RBAC existant ; l'onglet Tarif n'est pas rendu sans permission
+de lecture. `InfoTooltip` remplace l'avertissement permanent
+pour l'action d'association. Le `Collapsible` historique est fermé
+par défaut et sa liste dispose d'une hauteur maximale avec
+défilement interne, sans calcul serveur ni mutation des données.
+
+Tests RTL dédiés : sélection initiale, séparation du contenu,
+actions, consultation du prix expiré, permissions, historique replié,
+retour à l'onglet initial lors de la réouverture, cas Catalogue.
