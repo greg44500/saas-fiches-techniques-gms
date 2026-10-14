@@ -687,3 +687,26 @@ Corrections limitées à la chaîne de test et à la syntaxe JSX.
 Pas d'évolution de règle économique, d'API, de données ou de Core.
 Après correction : tests ciblés puis lint, build et gates globaux
 à relancer par l'utilisateur ; aucune réussite non démontrée.
+
+## Correction du filtre MongoDB de révision tarifaire — 2026-10-14
+
+Résultat utilisateur au commit `319286ed` :
+- suite backend `supplierArticleImport.http.test.js` : 15/16 verts ;
+- le test `corrige une période expirée...` passe l'inspection CSV,
+  l'import, le contrôle des permissions et du Workspace, mais échoue
+  sur l'API de correction avec un HTTP 500 au lieu de 200.
+
+Cause identifiée dans le code (à confirmer par le prochain test) :
+`backend/config/db.js` active `mongoose.set('sanitizeFilter', true)` ;
+le service de correction de période introduisait un filtre interne
+`_id: { $ne: prior._id }` sans `mongoose.trusted`. Avec la
+sanitisation, cet opérateur peut être requalifié et provoquer une
+erreur de conversion au moment de la requête MongoDB.
+
+Correction ciblée : déclarer ce `$ne` construit et contrôlé par le
+service comme fiable via `mongoose.trusted({ $ne: prior._id })`.
+La sanitisation globale est conservée. Le test HTTP existant est
+renforcé pour vérifier également la création de l'événement d'audit
+et son rattachement à la nouvelle révision. Aucun changement de
+contrat, de schéma, de Core ou de migration. Tests locaux à rejouer
+par l'utilisateur ; succès non revendiqué avant exécution.

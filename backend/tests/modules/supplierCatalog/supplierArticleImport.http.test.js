@@ -28,8 +28,12 @@ import {
 } from '../../../modules/supplierCatalog/supplierCatalog.model.js';
 import { SUPPLIER_CATALOG_FEATURE } from '../../../modules/supplierCatalog/supplierCatalogCapability.registry.js';
 import { SupplierArticleImportSession } from '../../../modules/supplierCatalog/supplierArticleImport.model.js';
+import { SupplierCatalogEvent } from '../../../modules/supplierCatalog/supplierCatalogEvent.model.js';
 import { createSupplier as createSupplierService } from '../../../modules/supplierCatalog/supplierReference.service.js';
-import { SUPPLIER_SCOPE } from '../../../modules/supplierCatalog/supplierCatalog.registry.js';
+import {
+    SUPPLIER_CATALOG_EVENT_ACTION,
+    SUPPLIER_SCOPE,
+} from '../../../modules/supplierCatalog/supplierCatalog.registry.js';
 import { SUPPLIER_CATALOG_PERMISSION } from '../../../modules/supplierCatalog/supplierCatalogPermission.registry.js';
 import { findApplicableSupplierTariff } from '../../../modules/supplierCatalog/supplierPricing.service.js';
 import {
@@ -458,6 +462,17 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
             .toEqual(['21.75', '21.75']);
         expect(revisions[0].validTo.toISOString().slice(0, 10)).toBe('2026-02-28');
         expect(revisions[1].validTo.toISOString().slice(0, 10)).toBe('2026-12-31');
+
+        // La correction doit être atomique, historisée et auditée.
+        const audit = await SupplierCatalogEvent.findOne({
+            action: SUPPLIER_CATALOG_EVENT_ACTION.SUPPLIER_TARIFF_PERIOD_CORRECTED,
+            workspace: context.workspace._id,
+            entityId: revisions[1]._id,
+        });
+        expect(audit).not.toBeNull();
+        expect(audit.metadata.previousTariffId).toBe(revisions[0].id);
+        expect(audit.metadata.reason).toBe('Date de fin erronée');
+
         const refreshed = await request(app).get(basePath()).set(auth());
         const now = refreshed.body.data.articles.find((item) =>
             item.supplierReference === 'DATE-01');

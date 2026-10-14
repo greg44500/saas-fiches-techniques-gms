@@ -172,7 +172,9 @@ const correctArticleTariffPeriod = async ({
     const concurrent = await SupplierTariff.find({
         supplierArticle: article._id,
         isCurrent: true,
-        _id: { $ne: prior._id },
+        // sanitizeFilter est actif globalement : seul cet opérateur
+        // construit par le service est explicitement de confiance.
+        _id: mongoose.trusted({ $ne: prior._id }),
         $or: mongoose.trusted([
             { scope: SUPPLIER_SCOPE.GLOBAL_SHARED, workspace: null },
             { scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE, workspace: workspaceId },
