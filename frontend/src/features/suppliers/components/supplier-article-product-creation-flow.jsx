@@ -56,7 +56,7 @@ function SupplierArticleProductCreationFlow({
     }
   }
 
-  function useExisting(_id, candidate) {
+  function selectExistingReference(_id, candidate) {
     if (candidate?.variantId && candidate.status === 'ACTIVE') {
       void associate(candidate.variantId);
       return;
@@ -67,7 +67,7 @@ function SupplierArticleProductCreationFlow({
 
   function createdProduct(result) {
     if (result?.classification === 'EXISTING' && result.existingReference) {
-      useExisting(result.existingReference.id, result.existingReference);
+      selectExistingReference(result.existingReference.id, result.existingReference);
       return;
     }
     const createdVariant = result?.provisionalReference?.variant
@@ -102,8 +102,8 @@ function SupplierArticleProductCreationFlow({
         metadata={metadata.data}
         onClose={onClose}
         onCreated={createdProduct}
-        onUseCandidate={useExisting}
-        onUseExisting={useExisting}
+        onUseCandidate={selectExistingReference}
+        onUseExisting={selectExistingReference}
         open={step === 'product'}
         workspaceId={workspaceId}
       />
