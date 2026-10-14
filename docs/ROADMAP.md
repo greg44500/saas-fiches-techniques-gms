@@ -111,6 +111,20 @@ ajoute seulement la sémantique d'affichage des Références `UNIT`.
 L'implémentation reste sur une branche et une PR uniques jusqu'à validation
 locale et visuelle.
 
+### Complément transversal M-002/M-003 — Création Produit depuis l'Article (branche en QA)
+
+Un utilisateur disposant de la capability commerciale `supplier_catalog_import`
+et des permissions `supplier:article:manage` et `supplier:catalog:import`
+peut créer ou réutiliser une Référence Produit depuis un Article fournisseur
+privé et actif. Aucune deuxième capability `product_contribution` n'est
+exigée pour ce parcours contextuel. Le référentiel Produit global reste sous
+gouvernance Application Global ; les créations Workspace sont provisoires.
+Contrat et validations à effectuer :
+`docs/m003/M-003-ARTICLE-PRODUCT-CREATION-ADDENDUM.md`.
+
+**État :** implémenté sur `feature/m002-m003-supplier-product-creation`,
+tests locaux et gates non encore exécutés ; aucune PR ni merge.
+
 ### 2.3 Fournisseurs, articles, conditionnements et tarifs
 
 **État : CLÔTURÉ — PR #22 fusionnée le 2026-09-28 ; Core Gates #132 et #133 vertes**
