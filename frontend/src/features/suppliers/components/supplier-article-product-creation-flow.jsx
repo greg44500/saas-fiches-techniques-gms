@@ -7,9 +7,10 @@ import {
 } from '@/components/ui/dialog';
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
 import { ProductVariantCreateDialog } from '@/features/products/components/product-variant-create-dialog';
-import { useGetProductMetadataQuery } from '@/features/products/api/product-catalog-api';
 import {
   useCheckSupplierArticleProductDuplicateMutation,
+  useGetSupplierArticleProductMetadataQuery,
+  useGetSupplierArticleProductDimensionsQuery,
   useCreateSupplierArticleProductMutation,
   useCreateSupplierArticleProductVariantMutation,
   useUpdateSupplierArticleMutation,
@@ -28,7 +29,12 @@ function SupplierArticleProductCreationFlow({
   const [product, setProduct] = useState(null);
   const [variantId, setVariantId] = useState(null);
   const [error, setError] = useState('');
-  const metadata = useGetProductMetadataQuery(workspaceId);
+  const metadata = useGetSupplierArticleProductMetadataQuery({
+    workspaceId, articleId: article.id,
+  });
+  const dimensions = useGetSupplierArticleProductDimensionsQuery({
+    workspaceId, articleId: article.id, productId: product?.id,
+  }, { skip: step !== 'variant' || !product?.id });
   const [duplicateCheck] = useCheckSupplierArticleProductDuplicateMutation();
   const [createProduct] = useCreateSupplierArticleProductMutation();
   const [createVariant] = useCreateSupplierArticleProductVariantMutation();
@@ -104,6 +110,8 @@ function SupplierArticleProductCreationFlow({
       {product && (
         <ProductVariantCreateDialog
           allowDimensionContribution={false}
+          useProvidedDimensions
+          providedDimensions={dimensions.data}
           createRequest={({ workspaceId: _workspaceId, productId, ...body }) =>
             createVariant({ workspaceId, articleId: article.id, productId, ...body }).unwrap()}
           initialName={initialName}

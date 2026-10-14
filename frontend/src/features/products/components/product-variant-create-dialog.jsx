@@ -40,6 +40,8 @@ function ProductVariantCreateDialog({
   existingVariants = [],
   initialName = '',
   metadata,
+  providedDimensions,
+  useProvidedDimensions = false,
   mode = 'workspace',
   onClose,
   onCreated,
@@ -66,7 +68,7 @@ function ProductVariantCreateDialog({
       productId: product?.id,
     },
     {
-      skip: !open || isGlobal || !workspaceId || !product?.id,
+      skip: !open || isGlobal || useProvidedDimensions || !workspaceId || !product?.id,
     },
   );
   const globalDimensionsQuery = useGetProductReferenceDimensionsQuery(
@@ -77,7 +79,9 @@ function ProductVariantCreateDialog({
   );
   const dimensionsQuery = isGlobal
     ? globalDimensionsQuery
-    : workspaceDimensionsQuery;
+    : useProvidedDimensions
+      ? { data: providedDimensions }
+      : workspaceDimensionsQuery;
   const dimensions = dimensionsQuery.data ?? {
     varieties: [],
     characteristics: [],

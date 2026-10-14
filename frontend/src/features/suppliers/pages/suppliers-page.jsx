@@ -871,7 +871,7 @@ function SuppliersPage() {
         canManage={Boolean(articleDetails?.scope === 'WORKSPACE_PRIVATE'
           && canManageArticles)}
         canAssociate={Boolean(articleDetails?.scope === 'WORKSPACE_PRIVATE'
-          && canManageArticles && canReadProducts)}
+          && canManageArticles && (canReadProducts || canImport))}
         canReadTariffs={canReadTariffs}
         canCorrectTariffs={canCorrectTariffs && Boolean(
           articleDetails?.supplierTariff?.sourceKind === 'PRICE_LIST'
@@ -933,7 +933,7 @@ function SuppliersPage() {
 
       <SupplierArticleAssociationDialog
         article={articleToAssociate}
-        canCreateProduct={canImport && canManageArticles && canReadProducts}
+        canCreateProduct={canImport && canManageArticles}
         onCreateProduct={(initialName) => {
           setArticleProductFlow({ article: articleToAssociate, initialName });
           setArticleToAssociate(null);

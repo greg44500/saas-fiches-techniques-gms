@@ -46,6 +46,7 @@ function isWorkspaceFavorite(result, metadata) {
 function ProductSearchAutocomplete({
   ariaLabel = 'Rechercher un Produit',
   categoryId,
+  contextArticleId,
   clearOnSelect = false,
   compact = false,
   conservationType,
@@ -54,6 +55,7 @@ function ProductSearchAutocomplete({
   onValueChange,
   placeholder = 'Rechercher un produit…',
   scope,
+  searchHook = useSearchProductsQuery,
   showWorkspaceFavorite = false,
   status,
   value,
@@ -76,9 +78,11 @@ function ProductSearchAutocomplete({
     return () => window.clearTimeout(timeoutId);
   }, [value]);
 
-  const suggestionsQuery = useSearchProductsQuery(
+  const useSuggestionsQuery = searchHook;
+  const suggestionsQuery = useSuggestionsQuery(
     {
       workspaceId,
+      articleId: contextArticleId,
       scope,
       q: debouncedQuery || undefined,
       categoryId,

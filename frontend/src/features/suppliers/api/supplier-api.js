@@ -99,6 +99,31 @@ const supplierApi = supplierApiBase.injectEndpoints({
       transformResponse: (response) => response.data.article,
       invalidatesTags: ['SupplierArticle', 'SupplierCatalog', 'SupplierPricing'],
     }),
+    getSupplierArticleProductMetadata: builder.query({
+      query: ({ workspaceId, articleId }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/'
+          + articleId + '/product-contributions/metadata',
+      }),
+      transformResponse: (response) => response.data.metadata,
+    }),
+    searchSupplierArticleProducts: builder.query({
+      query: ({ workspaceId, articleId, ...params }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/'
+          + articleId + '/product-contributions/search',
+        params,
+      }),
+      transformResponse: (response) => ({
+        results: response.data.results,
+        pagination: response.meta,
+      }),
+    }),
+    getSupplierArticleProductDimensions: builder.query({
+      query: ({ workspaceId, articleId, productId }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/'
+          + articleId + '/product-contributions/' + productId + '/dimensions',
+      }),
+      transformResponse: (response) => response.data,
+    }),
     checkSupplierArticleProductDuplicate: builder.mutation({
       query: ({ workspaceId, articleId, name, aliases = [] }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-articles/'
@@ -705,6 +730,9 @@ const supplierApi = supplierApiBase.injectEndpoints({
 export const {
   useAddDossierSupplierReferenceMutation,
   useCheckSupplierArticleProductDuplicateMutation,
+  useGetSupplierArticleProductMetadataQuery,
+  useGetSupplierArticleProductDimensionsQuery,
+  useSearchSupplierArticleProductsQuery,
   useCreateSupplierArticleProductMutation,
   useCreateSupplierArticleProductVariantMutation,
   useArchiveDossierIndicativePriceMutation,

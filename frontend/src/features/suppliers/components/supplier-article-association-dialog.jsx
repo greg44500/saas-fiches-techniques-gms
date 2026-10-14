@@ -8,8 +8,16 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { ProductSearchAutocomplete } from '@/features/products/components/product-search-autocomplete';
 import { useGetProductMetadataQuery } from '@/features/products/api/product-catalog-api';
+import {
+  useGetSupplierArticleProductMetadataQuery,
+  useSearchSupplierArticleProductsQuery,
+} from '@/features/suppliers/api/supplier-api';
 import { useUpdateSupplierArticleMutation } from '@/features/suppliers/api/supplier-api';
 import { getApiErrorMessage } from '@/features/suppliers/lib/supplier-presentation';
+
+function useContextualArticleSearch(args, options) {
+  return useSearchSupplierArticleProductsQuery(args, options);
+}
 
 function SupplierArticleAssociationDialog({
   article, canCreateProduct = false, onClose, onCreateProduct, onSaved, open, workspaceId,
@@ -18,7 +26,14 @@ function SupplierArticleAssociationDialog({
   const [search, setSearch] = useState('');
   const [variant, setVariant] = useState(null);
   const [error, setError] = useState('');
-  const metadata = useGetProductMetadataQuery(workspaceId, { skip: !open });
+  const standardMetadata = useGetProductMetadataQuery(
+    workspaceId, { skip: !open || canCreateProduct },
+  );
+  const articleMetadata = useGetSupplierArticleProductMetadataQuery(
+    { workspaceId, articleId: article?.id },
+    { skip: !open || !canCreateProduct || !article?.id },
+  );
+  const metadata = canCreateProduct ? articleMetadata : standardMetadata;
   const [updateArticle, updateState] = useUpdateSupplierArticleMutation();
 
   useEffect(() => {
@@ -69,6 +84,8 @@ function SupplierArticleAssociationDialog({
             <Field>
               <FieldLabel>Rechercher une Référence Produit</FieldLabel>
               <ProductSearchAutocomplete
+                contextArticleId={canCreateProduct ? article?.id : undefined}
+                searchHook={canCreateProduct ? useContextualArticleSearch : undefined}
                 metadata={metadata.data}
                 onSelect={(result) => {
                   setVariant(result.variant ?? null);
