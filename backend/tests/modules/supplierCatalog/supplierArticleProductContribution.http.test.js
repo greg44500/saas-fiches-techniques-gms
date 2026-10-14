@@ -14,7 +14,11 @@ import { SupplierArticle } from '../../../modules/supplierCatalog/supplier.model
 import { SUPPLIER_CATALOG_FEATURE } from '../../../modules/supplierCatalog/supplierCatalogCapability.registry.js';
 import { SUPPLIER_SCOPE } from '../../../modules/supplierCatalog/supplierCatalog.registry.js';
 import { createSupplier } from '../../../modules/supplierCatalog/supplierReference.service.js';
-import { bearer, createWorkspaceOwnerFixture } from '../../helpers/dossierTest.fixtures.js';
+import {
+    bearer, createWorkspaceMemberFixture, createWorkspaceOwnerFixture,
+} from '../../helpers/dossierTest.fixtures.js';
+import { SUPPLIER_CATALOG_PERMISSION } from '../../../modules/supplierCatalog/supplierCatalogPermission.registry.js';
+import { listProductSearch } from '../../../modules/productCatalog/productCatalog.service.js';
 
 let ownerA;
 let ownerB;
@@ -81,6 +85,31 @@ describe('M-002/M-003 contribution Produit depuis un Article importé', () => {
         expect(response.status).toBe(403);
     });
 
+    it('refuse un membre sans autorisation RBAC de gestion des Articles', async () => {
+        await feature(ownerA, SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT, true);
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: ownerA.workspace._id,
+            actorId: ownerA.owner._id,
+            permissions: [SUPPLIER_CATALOG_PERMISSION.ARTICLE_READ],
+        });
+        const response = await request(app)
+            .post(pathFor())
+            .set(bearer(member.token))
+            .send(newProduct);
+        expect(response.status).toBe(403);
+    });
+
+    it('refuse la création sur un Article archivé', async () => {
+        await feature(ownerA, SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT, true);
+        article.status = 'ARCHIVED';
+        await article.save();
+        const response = await request(app)
+            .post(pathFor())
+            .set(bearer(ownerA.token))
+            .send(newProduct);
+        expect(response.status).toBe(404);
+    });
+
     it('isole le contexte Article : un autre Workspace ne peut pas contribuer', async () => {
         await feature(ownerB, SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT, true);
         const response = await request(app)
@@ -116,15 +145,14 @@ describe('M-002/M-003 contribution Produit depuis un Article importé', () => {
         expect(associate.status).toBe(200);
         expect(associate.body.data.article.productVariant.id).toBe(variantId);
 
-        const other = await request(app)
-            .get('/api/workspaces/' + ownerB.workspace._id.toString()
-                + '/products/search?scope=REFERENCE&q=Croissant')
-            .set(bearer(ownerB.token));
-        if (other.status === 200) {
-            expect(other.body.data.results.some(
-                ({ variant }) => variant?.id === variantId,
-            )).toBe(false);
-        }
+        const other = await listProductSearch({
+            workspaceId: ownerB.workspace._id,
+            scope: 'REFERENCE',
+            q: 'Croissant individuel',
+        });
+        expect(other.results.some(
+            ({ variant }) => variant?.id === variantId,
+        )).toBe(false);
     });
 
     it('crée une Référence sous un Produit parent existant', async () => {
