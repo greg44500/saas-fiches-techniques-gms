@@ -47,9 +47,13 @@ function ProductSearchAutocomplete({
   ariaLabel = 'Rechercher un Produit',
   categoryId,
   clearOnSelect = false,
+  externalQuery,
+  externalSearch = false,
   compact = false,
   conservationType,
+  descriptionId,
   metadata,
+  onDebouncedSearchChange,
   onSelect,
   onValueChange,
   placeholder = 'Rechercher un produit…',
@@ -76,7 +80,11 @@ function ProductSearchAutocomplete({
     return () => window.clearTimeout(timeoutId);
   }, [value]);
 
-  const suggestionsQuery = useSearchProductsQuery(
+  useEffect(() => {
+    if (externalSearch) onDebouncedSearchChange?.(debouncedQuery);
+  }, [debouncedQuery, externalSearch, onDebouncedSearchChange]);
+
+  const standardQuery = useSearchProductsQuery(
     {
       workspaceId,
       scope,
@@ -88,9 +96,12 @@ function ProductSearchAutocomplete({
       limit: PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT,
     },
     {
-      skip: debouncedQuery.length < PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH,
+      skip: externalSearch
+        || debouncedQuery.length < PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH,
     },
   );
+
+  const suggestionsQuery = externalSearch ? externalQuery : standardQuery;
 
   const suggestions = useMemo(() => {
     if (debouncedQuery.length < PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH) {
@@ -148,6 +159,7 @@ function ProductSearchAutocomplete({
           className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
         />
         <AutocompleteInput
+          aria-describedby={descriptionId}
           aria-label={ariaLabel}
           className={compact ? 'h-8' : 'h-10'}
           maxLength={120}

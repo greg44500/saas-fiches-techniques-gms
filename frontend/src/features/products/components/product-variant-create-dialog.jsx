@@ -35,8 +35,13 @@ import {
 } from '@/features/products/lib/product-presentation';
 
 function ProductVariantCreateDialog({
+  allowDimensionContribution = true,
+  createRequest,
   existingVariants = [],
+  initialName = '',
   metadata,
+  providedDimensions,
+  useProvidedDimensions = false,
   mode = 'workspace',
   onClose,
   onCreated,
@@ -51,6 +56,7 @@ function ProductVariantCreateDialog({
     { structured: true },
   ));
   const [dimensionDialogOpen, setDimensionDialogOpen] = useState(false);
+  const [externalPending, setExternalPending] = useState(false);
   const [duplicateCandidates, setDuplicateCandidates] = useState([]);
   const [reviewedCandidateIds, setReviewedCandidateIds] = useState([]);
   const [formError, setFormError] = useState('');
@@ -62,7 +68,7 @@ function ProductVariantCreateDialog({
       productId: product?.id,
     },
     {
-      skip: !open || isGlobal || !workspaceId || !product?.id,
+      skip: !open || isGlobal || useProvidedDimensions || !workspaceId || !product?.id,
     },
   );
   const globalDimensionsQuery = useGetProductReferenceDimensionsQuery(
@@ -73,24 +79,29 @@ function ProductVariantCreateDialog({
   );
   const dimensionsQuery = isGlobal
     ? globalDimensionsQuery
-    : workspaceDimensionsQuery;
+    : useProvidedDimensions
+      ? { data: providedDimensions }
+      : workspaceDimensionsQuery;
   const dimensions = dimensionsQuery.data ?? {
     varieties: [],
     characteristics: [],
   };
-  const pending = workspaceState.isLoading || globalState.isLoading;
+  const pending = workspaceState.isLoading || globalState.isLoading || externalPending;
   const everyCandidateReviewed = duplicateCandidates.every(({ id }) => (
     reviewedCandidateIds.includes(id)
   ));
 
   useEffect(() => {
     if (!open) return;
-    setVariant(createEmptyVariantDraft(metadata, { structured: true }));
+    setVariant({
+      ...createEmptyVariantDraft(metadata, { structured: true }),
+      name: initialName,
+    });
     setDimensionDialogOpen(false);
     setDuplicateCandidates([]);
     setReviewedCandidateIds([]);
     setFormError('');
-  }, [metadata, open]);
+  }, [metadata, open, initialName]);
 
   function toggleCandidate(candidateId) {
     setReviewedCandidateIds((current) => (
@@ -131,14 +142,22 @@ function ProductVariantCreateDialog({
 
     setFormError('');
     try {
+      if (createRequest) setExternalPending(true);
       const result = isGlobal
         ? await createGlobalVariant(payload).unwrap()
-        : await createWorkspaceVariant({
-          workspaceId,
-          ...payload,
-          forceCreate: duplicateCandidates.length > 0,
-          reviewedCandidateIds,
-        }).unwrap();
+        : createRequest
+          ? await createRequest({
+            workspaceId,
+            ...payload,
+            forceCreate: duplicateCandidates.length > 0,
+            reviewedCandidateIds,
+          })
+          : await createWorkspaceVariant({
+            workspaceId,
+            ...payload,
+            forceCreate: duplicateCandidates.length > 0,
+            reviewedCandidateIds,
+          }).unwrap();
 
       if (
         !isGlobal
@@ -159,6 +178,8 @@ function ProductVariantCreateDialog({
         error,
         'La référence n’a pas pu être créée.',
       ));
+    } finally {
+      setExternalPending(false);
     }
   }
 
@@ -218,14 +239,16 @@ function ProductVariantCreateDialog({
                   label="À propos des variétés et caractéristiques"
                 />
               </div>
-              <Button
-                disabled={pending}
-                onClick={() => setDimensionDialogOpen(true)}
-                type="button"
-                variant="outline"
-              >
-                Ajouter des valeurs
-              </Button>
+              {allowDimensionContribution && (
+                <Button
+                  disabled={pending}
+                  onClick={() => setDimensionDialogOpen(true)}
+                  type="button"
+                  variant="outline"
+                >
+                  Ajouter des valeurs
+                </Button>
+              )}
             </div>
 
             <ProductVariantFields
@@ -309,7 +332,7 @@ function ProductVariantCreateDialog({
       </DialogPortal>
     </DialogRoot>
 
-    <ProductDimensionContributionDialog
+    {allowDimensionContribution && <ProductDimensionContributionDialog
       metadata={metadata}
       mode={mode}
       onClose={() => setDimensionDialogOpen(false)}
@@ -319,7 +342,7 @@ function ProductVariantCreateDialog({
       open={dimensionDialogOpen}
       product={product}
       workspaceId={workspaceId}
-    />
+    />}
   </>
   );
 }

@@ -522,6 +522,27 @@ const submitReferenceContribution = async ({
         return decision;
     }
 
+    // Un forceCreate ne vaut pas validation de candidats apparus entre
+    // l'aperçu et la transaction : seuls les IDs explicitement revus passent.
+    if (
+        type === PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT
+        && forceCreate
+        && decision.classification === PRODUCT_CONTRIBUTION_CLASSIFICATION.PROVISIONAL
+        && (decision.candidates ?? []).some(({ id }) => (
+            !reviewedCandidateIds.map(String).includes(String(id))
+        ))
+    ) {
+        return {
+            ...decision,
+            classification:
+                PRODUCT_CONTRIBUTION_CLASSIFICATION.USER_CONFIRMATION_REQUIRED,
+            reasons: [contributionReason(
+                'CANONICAL_PRODUCT_REVIEW_CHANGED',
+                'De nouveaux Produits proches ont été détectés. Confirmez leur examen.',
+            )],
+        };
+    }
+
     if (
         decision.classification
         === PRODUCT_CONTRIBUTION_CLASSIFICATION.AUTO_PUBLISHABLE
@@ -613,12 +634,9 @@ const submitReferenceContribution = async ({
                 name: value,
                 aliases: [],
                 categoryId,
-                reviewedCandidateIds: [
-                    ...new Set([
-                        ...reviewedCandidateIds.map(String),
-                        ...(decision.candidates ?? []).map(({ id }) => id),
-                    ]),
-                ],
+                reviewedCandidateIds: [...new Set(
+                    reviewedCandidateIds.map(String),
+                )],
                 variant,
                 dimensionProposals,
                 workspaceId,

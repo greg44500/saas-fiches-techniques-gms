@@ -1,9 +1,26 @@
-# Reprise courante — M-003 clôturé ; diffusion M-004 à cadrer
+# Reprise courante — complément d'association M-002/M-003 en QA ; M-004 ensuite
 
 **Date : 2026-10-14**  
 **Dépôt : `greg44500/saas-fiches-techniques-gms`**  
 **Dernier `main` métier vérifié : `962177905bcc198e439a316d9610b23c60dd53cd` (PR #44)**  
 **Core intégré : v1.2.1 — `054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3` (`core-origin.json`)**
+
+## Chantier actif — Association Produit depuis Article fournisseur
+
+- Branche : `feature/m002-m003-supplier-product-creation`, créée depuis `a759fac`.
+- Complément M-002/M-003 : création de Produits/Références provisoires depuis
+  un Article fournisseur privé, sans capability Produit supplémentaire lorsque
+  l'import fournisseur est accessible avec les permissions M-003 pertinentes.
+- APIs contextuelles sécurisées + réutilisation des services de contribution
+  M-002 ; lectures Produits contextuelles ; frontend à dialogues successifs ;
+  association automatique et réessai sans recréer la contribution.
+- Tests backend/frontend et E2E ajoutés, mais **aucun n'a encore été exécuté**.
+  La QA locale, les gates globales et la validation visuelle restent nécessaires.
+- Contrat : `docs/m003/M-003-ARTICLE-PRODUCT-CREATION-ADDENDUM.md`.
+- Pas d'évolution Core ni de modification de `core-origin.json`.
+- Interdiction de fusionner cette branche avant retour des gates et validation
+  explicite de l'utilisateur. Le complément impression/email M-004 reprendra
+  après la clôture du présent lot.
 
 ## État réel vérifié
 

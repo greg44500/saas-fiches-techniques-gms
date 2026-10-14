@@ -11,6 +11,10 @@
 > Les invariants de tenancy, d'isolation Dossier et d'historisation ne sont pas des préférences UX.
 > Aucun modèle Mongoose M-003 ne doit précéder ce contrat ; l'implémentation peut commencer après sa validation.
 
+> Complément UX M-002/M-003 du 2026-10-14, en QA sur une branche
+> distincte : `docs/m003/M-003-ARTICLE-PRODUCT-CREATION-ADDENDUM.md`.
+> Il ne modifie pas les invariants de la baseline déjà fusionnée.
+
 ---
 
 ## État d'implémentation et clôture — 2026-10-14

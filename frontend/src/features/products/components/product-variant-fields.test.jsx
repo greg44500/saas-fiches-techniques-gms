@@ -91,6 +91,26 @@ function StructuredHarness({
 }
 
 describe('ProductVariantFields', () => {
+  it('explique les dimensions métier sans imposer de valeur', () => {
+    const onChange = vi.fn();
+    const value = createEmptyVariantDraft(metadata);
+    render(<ProductVariantFields
+      metadata={metadata}
+      onChange={onChange}
+      value={value}
+    />);
+    expect(screen.getByRole('button', {
+      name: 'Aide sur la présentation de la Référence Produit',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Aide sur l’état ou la transformation du Produit',
+    })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Ex. entier, en tranches, râpé'))
+      .toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Ex. cru, précuit, cuit, prêt à cuire'))
+      .toBeInTheDocument();
+  });
+
   it('porte un nom métier persistant et des dimensions facultatives', async () => {
     const user = userEvent.setup();
     const onPayload = vi.fn();
@@ -134,6 +154,9 @@ describe('ProductVariantFields', () => {
       .toHaveTextContent('Aucune variété disponible');
     expect(screen.getByLabelText('Présentation'))
       .toHaveTextContent('Aucune valeur disponible');
+    expect(screen.getByRole('button', {
+      name: 'Aide sur la présentation de la Référence Produit',
+    })).toBeInTheDocument();
     expect(screen.getByLabelText('Calibre / format'))
       .toHaveTextContent('Aucune valeur disponible');
 
