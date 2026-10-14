@@ -99,6 +99,35 @@ const supplierApi = supplierApiBase.injectEndpoints({
       transformResponse: (response) => response.data.article,
       invalidatesTags: ['SupplierArticle', 'SupplierCatalog', 'SupplierPricing'],
     }),
+    checkSupplierArticleProductDuplicate: builder.mutation({
+      query: ({ workspaceId, articleId, name, aliases = [] }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/'
+          + articleId + '/product-contributions/duplicate-check',
+        method: 'POST',
+        body: { name, aliases },
+      }),
+      transformResponse: (response) => response.data,
+    }),
+    createSupplierArticleProduct: builder.mutation({
+      query: ({ workspaceId, articleId, ...body }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/'
+          + articleId + '/product-contributions',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductCatalog', 'ProductReference'],
+    }),
+    createSupplierArticleProductVariant: builder.mutation({
+      query: ({ workspaceId, articleId, productId, ...body }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/'
+          + articleId + '/product-contributions/' + productId + '/variants',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['ProductCatalog', 'ProductReference'],
+    }),
     updateSupplierArticle: builder.mutation({
       query: ({ workspaceId, articleId, ...body }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-articles/' + articleId,
@@ -675,6 +704,9 @@ const supplierApi = supplierApiBase.injectEndpoints({
 
 export const {
   useAddDossierSupplierReferenceMutation,
+  useCheckSupplierArticleProductDuplicateMutation,
+  useCreateSupplierArticleProductMutation,
+  useCreateSupplierArticleProductVariantMutation,
   useArchiveDossierIndicativePriceMutation,
   useArchiveGlobalIndicativePriceMutation,
   useArchiveNegotiatedPriceMutation,

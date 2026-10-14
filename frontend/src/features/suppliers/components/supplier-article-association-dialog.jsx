@@ -12,7 +12,7 @@ import { useUpdateSupplierArticleMutation } from '@/features/suppliers/api/suppl
 import { getApiErrorMessage } from '@/features/suppliers/lib/supplier-presentation';
 
 function SupplierArticleAssociationDialog({
-  article, onClose, onSaved, open, workspaceId,
+  article, canCreateProduct = false, onClose, onCreateProduct, onSaved, open, workspaceId,
 }) {
   const cancelRef = useRef(null);
   const [search, setSearch] = useState('');
@@ -86,6 +86,14 @@ function SupplierArticleAssociationDialog({
             <FieldError>{error}</FieldError>
           </div>
           <DialogFooter>
+            {canCreateProduct && (
+              <Button
+                disabled={updateState.isLoading}
+                onClick={() => onCreateProduct(search.trim() || article?.supplierDesignation || '')}
+                type="button"
+                variant="outline"
+              >Créer une Référence Produit</Button>
+            )}
             <DialogClose
               disabled={updateState.isLoading}
               ref={cancelRef}

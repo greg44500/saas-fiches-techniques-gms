@@ -42,6 +42,7 @@ import {
   SupplierArticleAssociationDialog,
 } from '@/features/suppliers/components/supplier-article-association-dialog';
 import { SupplierArticleDetailsDrawer } from '@/features/suppliers/components/supplier-article-details-drawer';
+import { SupplierArticleProductCreationFlow } from '@/features/suppliers/components/supplier-article-product-creation-flow';
 import { SupplierArticleEditDialog } from '@/features/suppliers/components/supplier-article-edit-dialog';
 import { SupplierArticlePriceCorrectionDialog } from '@/features/suppliers/components/supplier-article-price-correction-dialog';
 import { SupplierArticlePeriodCorrectionDialog } from '@/features/suppliers/components/supplier-article-period-correction-dialog';
@@ -135,6 +136,7 @@ function SuppliersPage() {
   const [articleDialogOpen, setArticleDialogOpen] = useState(false);
   const [articleImportOpen, setArticleImportOpen] = useState(false);
   const [articleToAssociate, setArticleToAssociate] = useState(null);
+  const [articleProductFlow, setArticleProductFlow] = useState(null);
   const [articleDetails, setArticleDetails] = useState(null);
   const [articleToEdit, setArticleToEdit] = useState(null);
   const [articlePriceToCorrect, setArticlePriceToCorrect] = useState(null);
@@ -931,6 +933,11 @@ function SuppliersPage() {
 
       <SupplierArticleAssociationDialog
         article={articleToAssociate}
+        canCreateProduct={canImport && canManageArticles && canReadProducts}
+        onCreateProduct={(initialName) => {
+          setArticleProductFlow({ article: articleToAssociate, initialName });
+          setArticleToAssociate(null);
+        }}
         onClose={() => setArticleToAssociate(null)}
         onSaved={() => {
           setArticleToAssociate(null);
@@ -939,6 +946,26 @@ function SuppliersPage() {
         open={Boolean(articleToAssociate)}
         workspaceId={workspace.id}
       />
+
+      {articleProductFlow && (
+        <SupplierArticleProductCreationFlow
+          article={articleProductFlow.article}
+          initialName={articleProductFlow.initialName}
+          onAssociated={() => {
+            setArticleProductFlow(null);
+            toast({
+              title: 'Référence Produit créée et associée',
+              description: 'La gouvernance globale pourra la contrôler sans bloquer votre travail.',
+              variant: 'success',
+            });
+          }}
+          onClose={() => {
+            setArticleToAssociate(articleProductFlow.article);
+            setArticleProductFlow(null);
+          }}
+          workspaceId={workspace.id}
+        />
+      )}
 
       <SupplierArticleImportDialog
         canCreateSupplier={canManageSuppliers}
