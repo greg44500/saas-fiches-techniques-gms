@@ -121,7 +121,7 @@ function SupplierArticleDetailsDrawer({
                   Échéance : {dateLabel(price?.validTo)}
                 </span>
               </div>
-            )
+            )}
             {price?.piecePriceLabel && (
               <p className="mt-1 text-sm text-muted-foreground">{price.piecePriceLabel}</p>
             )}

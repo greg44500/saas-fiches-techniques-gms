@@ -399,7 +399,7 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
     it('corrige une période expirée sans perdre le prix et sans ouvrir les autres Workspaces', async () => {
         await enableImport();
         const inspected = await inspect(
-            'Reference;Designation;Prix;Base\\nDATE-01;Article daté;21.75;kg',
+            'Reference;Designation;Prix;Base\nDATE-01;Article daté;21.75;kg',
         );
         expect(inspected.status).toBe(201);
         const proposed = await request(app)

@@ -672,3 +672,18 @@ Les tests sont préparés ; **aucune exécution locale, lint, build, E2E
 ni Core Gate n'est attestée à ce stade**. L'utilisateur réalisera les
 tests localement puis décidera de la PR et du merge. Pas de
 modification silencieuse de main.
+
+## Correctif ciblé QA locale M-003 — 2026-10-14
+
+Retour utilisateur après le commit `d9ced965` :
+- backend ciblé : 44 tests réussis sur 45, inspection CSV du nouveau
+  test de correction de période en HTTP 400 ; le test contenait
+  les caractères littéraux `\\n` au lieu d'un saut de ligne CSV ;
+- frontend ciblé : 36 tests exécutés et réussis, mais suite drawer
+  non collectée à cause d'une accolade fermante JSX manquante
+  après le bandeau « Dernier prix connu — expiré ».
+
+Corrections limitées à la chaîne de test et à la syntaxe JSX.
+Pas d'évolution de règle économique, d'API, de données ou de Core.
+Après correction : tests ciblés puis lint, build et gates globaux
+à relancer par l'utilisateur ; aucune réussite non démontrée.
