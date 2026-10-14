@@ -50,6 +50,40 @@ const articlePath = (context) =>
     '/api/workspaces/' + context.workspace._id.toString() + '/supplier-articles';
 
 describe('M-003 supplier/article HTTP contract', () => {
+    it('normalise le nom en majuscules et refuse le doublon, la variante plurielle et le renommage', async () => {
+        const first = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Transgourmet' });
+        expect(first.status).toBe(201);
+        expect(first.body.data.supplier.name).toBe('TRANSGOURMET');
+
+        const duplicate = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: '  transgourmet  ' });
+        expect(duplicate.status).toBe(409);
+
+        const plural = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Transgourmets' });
+        expect(plural.status).toBe(409);
+
+        const another = await request(app)
+            .post(supplierPath(ownerA))
+            .set(bearer(ownerA.token))
+            .send({ name: 'Autre grossiste' });
+        expect(another.status).toBe(201);
+
+        const rename = await request(app)
+            .patch(supplierPath(ownerA) + '/' + another.body.data.supplier.id)
+            .set(bearer(ownerA.token))
+            .send({ name: 'TRANSGOURMET' });
+        expect(rename.status).toBe(409);
+    });
+
+
     it('isole un Fournisseur privé entre Workspaces', async () => {
         const created = await request(app)
             .post(supplierPath(ownerA))
@@ -68,10 +102,10 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(visibleA.status).toBe(200);
         expect(
             visibleA.body.data.suppliers.map(({ name }) => name),
-        ).toContain('Fournisseur privé A');
+        ).toContain('FOURNISSEUR PRIVÉ A');
         expect(
             visibleB.body.data.suppliers.map(({ name }) => name),
-        ).not.toContain('Fournisseur privé A');
+        ).not.toContain('FOURNISSEUR PRIVÉ A');
     });
 
     it('associe plusieurs catégories Produit existantes à un Fournisseur', async () => {
@@ -116,7 +150,7 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(visible.body.data.suppliers).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    name: 'Fournisseur catégorisé',
+                    name: 'FOURNISSEUR CATÉGORISÉ',
                     categories: [
                         expect.objectContaining({
                             id: categoryId,
@@ -196,7 +230,7 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(
             activeOnly.body.data.suppliers
                 .map(({ name }) => name),
-        ).not.toContain('Fournisseur archivé visible');
+        ).not.toContain('FOURNISSEUR ARCHIVÉ VISIBLE');
 
         const allStatuses = await request(app)
             .get(supplierPath(ownerA) + '?status=ALL')
@@ -206,7 +240,7 @@ describe('M-003 supplier/article HTTP contract', () => {
         expect(allStatuses.body.data.suppliers).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    name: 'Fournisseur archivé visible',
+                    name: 'FOURNISSEUR ARCHIVÉ VISIBLE',
                     status: 'ARCHIVED',
                 }),
             ]),
@@ -247,7 +281,50 @@ describe('M-003 supplier/article HTTP contract', () => {
 
         expect(response.status).toBe(201);
         expect(response.body.data.supplier.name)
-            .toBe('Fournisseur rôle personnalisé');
+            .toBe('FOURNISSEUR RÔLE PERSONNALISÉ');
+    });
+
+    it('corrige une association Produit, peut la retirer, sans modifier l’identifiant fournisseur', async () => {
+        const otherReference = await createActiveProductReference({
+            actorId: ownerA.owner._id,
+            name: 'Autre Produit pour réassociation',
+        });
+        const supplier = await request(app)
+            .post(supplierPath(ownerA)).set(bearer(ownerA.token))
+            .send({ name: 'Fournisseur association corrigée' });
+        expect(supplier.status).toBe(201);
+        const created = await request(app)
+            .post(articlePath(ownerA)).set(bearer(ownerA.token))
+            .send({
+                supplierId: supplier.body.data.supplier.id,
+                productVariantId: productReference.variant._id.toString(),
+                supplierReference: 'COR-ASSOC-01',
+                supplierDesignation: 'Désignation immuable de la référence',
+            });
+        expect(created.status).toBe(201);
+        const url = articlePath(ownerA) + '/' + created.body.data.article.id;
+
+        const dissociated = await request(app)
+            .patch(url).set(bearer(ownerA.token))
+            .send({ productVariantId: null });
+        expect(dissociated.status).toBe(200);
+        expect(dissociated.body.data.article.associationStatus).toBe('PENDING');
+        expect(dissociated.body.data.article.supplierReference).toBe('COR-ASSOC-01');
+        expect(dissociated.body.data.article.supplierDesignation)
+            .toBe('Désignation immuable de la référence');
+
+        const reassociated = await request(app)
+            .patch(url).set(bearer(ownerA.token))
+            .send({ productVariantId: otherReference.variant._id.toString() });
+        expect(reassociated.status).toBe(200);
+        expect(reassociated.body.data.article.associationStatus).toBe('ASSOCIATED');
+        expect(reassociated.body.data.article.productVariant.id)
+            .toBe(otherReference.variant._id.toString());
+
+        const anotherWorkspace = await request(app)
+            .patch(articlePath(ownerB) + '/' + created.body.data.article.id)
+            .set(bearer(ownerB.token)).send({ productVariantId: null });
+        expect(anotherWorkspace.status).toBe(404);
     });
 
     it('filtre les Articles par Produit sans requête par Référence', async () => {

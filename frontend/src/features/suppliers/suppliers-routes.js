@@ -32,6 +32,15 @@ const suppliersFrontendRouteModule = Object.freeze({
         return { Component: SuppliersRoute };
       },
     }),
+    Object.freeze({
+      path: 'suppliers/catalogs/:catalogId',
+      lazy: async () => {
+        const { SupplierCatalogRoute } = await import(
+          '@/features/suppliers/components/supplier-catalog-route'
+        );
+        return { Component: SupplierCatalogRoute };
+      },
+    }),
   ]),
 });
 

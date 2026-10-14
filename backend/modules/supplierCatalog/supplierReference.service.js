@@ -17,6 +17,9 @@ import {
     buildWorkspaceGovernanceVisibilityFilter,
 } from '../productCatalog/productReferenceGovernance.service.js';
 import { AppError } from '../../utils/appError.js';
+import { SupplierTariff } from './supplierCatalog.model.js';
+import { supplierTariffPresentation } from './supplierArticlePresentation.service.js';
+import { selectSupplierTariffs } from './supplierTariffSelection.service.js';
 import {
     Supplier,
     SupplierArticle,
@@ -41,6 +44,58 @@ import {
 
 const escapeRegex = (value) =>
     value.replace(/[.*+?^$()|[\]\\{}]/g, '\\$&');
+
+const formatSupplierName = (name) => name.trim().replace(/\s+/g, ' ').toLocaleUpperCase('fr');
+
+const ensureSupplierNameAvailable = async ({
+    scope, workspaceId, name, excludeId = null, session,
+}) => {
+    const normalizedName = normalizeSupplierText(name);
+    const existing = await Supplier.findOne({
+        normalizedName,
+        ...(scope === SUPPLIER_SCOPE.GLOBAL_SHARED
+            ? { scope, workspace: null }
+            : {
+                $or: mongoose.trusted([
+                    { scope: SUPPLIER_SCOPE.GLOBAL_SHARED, workspace: null },
+                    { scope, workspace: workspaceId },
+                ]),
+            }),
+        ...(excludeId ? { _id: mongoose.trusted({ $ne: excludeId }) } : {}),
+    }).session(session);
+    if (existing) {
+        throw new AppError(
+            'Un Fournisseur portant ce nom existe déjà dans le référentiel accessible : '
+                + existing.name + '. Sélectionnez la fiche existante.',
+            409,
+        );
+    }
+    // Les variantes avec un 's' final nécessitent une décision humaine.
+    const candidateNames = [
+        normalizedName,
+        normalizedName.endsWith('s') ? normalizedName.slice(0, -1) : normalizedName + 's',
+    ];
+    const near = await Supplier.findOne({
+        normalizedName: mongoose.trusted({ $in: candidateNames }),
+        ...(scope === SUPPLIER_SCOPE.GLOBAL_SHARED
+            ? { scope, workspace: null }
+            : {
+                $or: mongoose.trusted([
+                    { scope: SUPPLIER_SCOPE.GLOBAL_SHARED, workspace: null },
+                    { scope, workspace: workspaceId },
+                ]),
+            }),
+        ...(excludeId ? { _id: mongoose.trusted({ $ne: excludeId }) } : {}),
+    }).session(session);
+    if (near && near.normalizedName !== normalizedName) {
+        throw new AppError(
+            'Nom de Fournisseur proche d’une fiche existante : ' + near.name
+            + '. Vérifiez le référentiel avant de créer une autre identité.',
+            409,
+        );
+    }
+    return normalizedName;
+};
 
 const normalizeDecimalInput = (value) => (
     value === null || value === undefined
@@ -240,14 +295,18 @@ const createSupplier = async ({
         session,
     });
 
+    const normalizedName = await ensureSupplierNameAvailable({
+        scope, workspaceId, name: data.name, session,
+    });
+
     const [supplier] = await Supplier.create([
         {
             scope,
             workspace: scope === SUPPLIER_SCOPE.GLOBAL_SHARED
                 ? null
                 : workspaceId,
-            name: data.name,
-            normalizedName: normalizeSupplierText(data.name),
+            name: formatSupplierName(data.name),
+            normalizedName,
             supplierCode: data.supplierCode ?? null,
             legalName: data.legalName ?? null,
             website: data.website ?? null,
@@ -285,6 +344,12 @@ const updateSupplier = async ({
         supplierId,
         session,
     });
+    if (Object.hasOwn(data, 'name')) {
+        await ensureSupplierNameAvailable({
+            scope, workspaceId, name: data.name, excludeId: supplier._id, session,
+        });
+        data = { ...data, name: formatSupplierName(data.name) };
+    }
     const changedFields = [];
 
     for (const field of [
@@ -523,11 +588,13 @@ const createArticleInSession = async ({
         workspaceId,
     });
 
-    await assertActiveProductVariant({
-        productVariantId: data.productVariantId,
-        workspaceId,
-        session,
-    });
+    if (data.productVariantId) {
+        await assertActiveProductVariant({
+            productVariantId: data.productVariantId,
+            workspaceId,
+            session,
+        });
+    }
 
     const normalizedSupplierReference =
         normalizeSupplierReference(data.supplierReference);
@@ -571,7 +638,7 @@ const createArticleInSession = async ({
             metadata: {
                 supplierId: supplier._id.toString(),
                 productVariantId:
-                    data.productVariantId.toString(),
+                    data.productVariantId?.toString() ?? null,
             },
             session,
         });
@@ -626,14 +693,16 @@ const updateSupplierArticle = async ({
     const changedFields = [];
 
     if (Object.hasOwn(data, 'productVariantId')) {
-        await assertActiveProductVariant({
-            productVariantId: data.productVariantId,
-            workspaceId,
-            session,
-        });
+        if (data.productVariantId !== null) {
+            await assertActiveProductVariant({
+                productVariantId: data.productVariantId,
+                workspaceId,
+                session,
+            });
+        }
         if (
-            article.productVariant.toString()
-            !== data.productVariantId.toString()
+            (article.productVariant?.toString() ?? null)
+            !== data.productVariantId
         ) {
             article.productVariant = data.productVariantId;
             changedFields.push('productVariant');
@@ -808,6 +877,7 @@ const replaceSupplierArticle = async ({
 });
 
 const listSupplierArticles = async ({
+    includeSupplierTariff = false,
     workspaceId = null,
     globalOnly = false,
     page = 1,
@@ -889,8 +959,40 @@ const listSupplierArticles = async ({
         SupplierArticle.countDocuments(filter),
     ]);
 
+    // Une projection serveur unique évite une requête tarifaire par Article.
+    const articleIds = articles.map((article) => article._id);
+    const now = new Date();
+    const tariffs = includeSupplierTariff && articleIds.length ? await SupplierTariff.find({
+        supplierArticle: mongoose.trusted({ $in: articleIds }),
+        isCurrent: true,
+        ...buildWorkspaceVisibilityFilter(globalOnly ? null : workspaceId),
+    }).populate({
+        path: 'catalogEdition',
+        select: '_id name status',
+    }).lean() : [];
+    const byArticle = new Map();
+    for (const tariff of tariffs) {
+        if ((tariff.sourceKind || 'CATALOG') === 'CATALOG'
+            && tariff.catalogEdition?.status !== SUPPLIER_RESOURCE_STATUS.ACTIVE) continue;
+        const id = tariff.supplierArticle.toString();
+        const group = byArticle.get(id) ?? [];
+        group.push(tariff);
+        byArticle.set(id, group);
+    }
+
     return {
-        articles: articles.map(serializeSupplierArticle),
+        articles: articles.map((article) => {
+            const serialized = serializeSupplierArticle(article);
+            const candidates = byArticle.get(article._id.toString()) ?? [];
+            const selection = selectSupplierTariffs(candidates, now);
+            return {
+                ...serialized,
+                supplierTariffStatus: !includeSupplierTariff ? 'RESTRICTED'
+                    : selection.status,
+                supplierTariff: includeSupplierTariff && selection.tariff
+                    ? supplierTariffPresentation(selection.tariff, article) : null,
+            };
+        }),
         pagination: {
             page,
             limit,

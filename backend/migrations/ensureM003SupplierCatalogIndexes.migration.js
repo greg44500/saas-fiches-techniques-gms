@@ -1,7 +1,9 @@
+import { auditM003SupplierNames } from './auditM003SupplierNames.migration.js';
 import {
     Supplier,
     SupplierArticle,
 } from '../modules/supplierCatalog/supplier.model.js';
+import { SupplierArticleImportSession } from '../modules/supplierCatalog/supplierArticleImport.model.js';
 import {
     SupplierCatalogEvent,
 } from '../modules/supplierCatalog/supplierCatalogEvent.model.js';
@@ -21,6 +23,8 @@ import {
 } from '../modules/supplierCatalog/supplierPricing.model.js';
 
 const M003_INDEX_NAMES = Object.freeze([
+    'supplier_global_normalized_name_unique',
+    'supplier_workspace_normalized_name_unique',
     'supplier_scope_status_name',
     'supplier_workspace_status_name',
     'supplier_article_global_reference_unique',
@@ -31,8 +35,9 @@ const M003_INDEX_NAMES = Object.freeze([
     'supplier_catalog_scope_workspace_status',
     'supplier_catalog_line_current_identity_unique',
     'supplier_catalog_line_scope_workspace_match',
-    'supplier_tariff_current_edition_article_unique',
+    'supplier_tariff_catalog_current_edition_v2_unique',
     'supplier_tariff_article_validity',
+    'supplier_price_list_import_article_revision_unique',
     'negotiated_price_dossier_article_period',
     'invoiced_price_dossier_article_invoice_date',
     'invoiced_price_dossier_status_date',
@@ -41,6 +46,8 @@ const M003_INDEX_NAMES = Object.freeze([
     'dossier_supplier_reference_unique',
     'dossier_supplier_reference_status',
     'workspace_supplier_pricing_policy_unique',
+    'supplier_article_import_session_ttl',
+    'supplier_article_import_scope_actor_status',
     'supplier_catalog_import_session_ttl',
     'supplier_catalog_import_scope_workspace_actor_created_at',
     'supplier_commerce_lock_key_unique',
@@ -61,13 +68,37 @@ const M003_MODELS = Object.freeze([
     DossierSupplierReference,
     WorkspaceSupplierPricingPolicy,
     SupplierCatalogImportSession,
+    SupplierArticleImportSession,
     SupplierCommerceLock,
     SupplierCatalogEvent,
 ]);
 
 const ensureM003SupplierCatalogIndexes = async () => {
+    const audit = await auditM003SupplierNames();
+    if (!audit.safeForUniqueIndexes) {
+        throw new Error(
+            'Migration M-003 interrompue : noms Fournisseurs dupliqués ou incohérents. '
+            + JSON.stringify(audit),
+        );
+    }
+    // Même limité aux révisions courantes, l'ancien index unique bloque
+    // la réutilisation d'une clé lors d'un remplacement transactionnel.
+    // L'unicité de la révision prend le relais ; le verrou Commerce assure
+    // qu'une seule révision reste courante dans les écritures métier.
+    const legacyPriceListIndex = 'supplier_price_list_import_article_unique';
+    if (await SupplierTariff.collection.indexExists(legacyPriceListIndex)) {
+        await SupplierTariff.collection.dropIndex(legacyPriceListIndex);
+    }
+
     for (const model of M003_MODELS) {
         await model.createIndexes();
+    }
+
+    // Index historique trop large : il empêchait deux mercuriales datées
+    // de coexister pour le même Article, même sans chevauchement.
+    const oldIndex = 'supplier_tariff_current_edition_article_unique';
+    if (await SupplierTariff.collection.indexExists(oldIndex)) {
+        await SupplierTariff.collection.dropIndex(oldIndex);
     }
 
     const indexes = await Promise.all(

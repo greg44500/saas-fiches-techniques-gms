@@ -1,6 +1,6 @@
 import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import {
@@ -39,6 +39,21 @@ import {
   useUpdateSupplierStatusMutation,
 } from '@/features/suppliers/api/supplier-api';
 import {
+  SupplierArticleAssociationDialog,
+} from '@/features/suppliers/components/supplier-article-association-dialog';
+import { SupplierArticleDetailsDrawer } from '@/features/suppliers/components/supplier-article-details-drawer';
+import { SupplierArticleEditDialog } from '@/features/suppliers/components/supplier-article-edit-dialog';
+import { SupplierArticlePriceCorrectionDialog } from '@/features/suppliers/components/supplier-article-price-correction-dialog';
+import { SupplierArticlePeriodCorrectionDialog } from '@/features/suppliers/components/supplier-article-period-correction-dialog';
+import { SupplierArticleSupplierFilter } from '@/features/suppliers/components/supplier-article-supplier-filter';
+import {
+  SupplierArticlePackagingPopover,
+  SupplierArticlePricePopover,
+} from '@/features/suppliers/components/supplier-article-table-popovers';
+import {
+  SupplierArticleImportDialog,
+} from '@/features/suppliers/components/supplier-article-import-dialog';
+import {
   SupplierArticleFormDialog,
 } from '@/features/suppliers/components/supplier-article-form-dialog';
 import {
@@ -55,7 +70,6 @@ import {
   SUPPLIER_PERMISSION,
 } from '@/features/suppliers/constants/supplier-permissions';
 import {
-  formatPackaging,
   getApiErrorMessage,
   getSupplierOriginLabel,
   getSupplierStatusLabel,
@@ -75,6 +89,7 @@ function SuppliersPage() {
     workspace,
   } = useWorkspaceContext();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     page,
@@ -101,11 +116,14 @@ function SuppliersPage() {
 
     return 'suppliers';
   });
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  const initialSearch = searchParams.get('search') ?? '';
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [search, setSearch] = useState(initialSearch);
   const [status, setStatus] = useState(
     section === 'suppliers' ? ALL_SUPPLIER_STATUSES : 'ACTIVE',
   );
+  const [articleSupplierId, setArticleSupplierId] = useState(null);
+  const [articlePeriodToCorrect, setArticlePeriodToCorrect] = useState(null);
   const [supplierDialog, setSupplierDialog] = useState({
     open: false,
     supplier: null,
@@ -115,6 +133,11 @@ function SuppliersPage() {
     supplier: null,
   });
   const [articleDialogOpen, setArticleDialogOpen] = useState(false);
+  const [articleImportOpen, setArticleImportOpen] = useState(false);
+  const [articleToAssociate, setArticleToAssociate] = useState(null);
+  const [articleDetails, setArticleDetails] = useState(null);
+  const [articleToEdit, setArticleToEdit] = useState(null);
+  const [articlePriceToCorrect, setArticlePriceToCorrect] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
 
   const supplierQuery = useListSuppliersQuery({
@@ -129,11 +152,16 @@ function SuppliersPage() {
     status: 'ACTIVE',
     limit: 100,
   });
+  const activeArticleCountQuery = useListSupplierArticlesQuery(
+    { workspaceId: workspace.id, status: 'ACTIVE', limit: 1 },
+    { skip: !can(SUPPLIER_PERMISSION.ARTICLE_READ) },
+  );
   const articleQuery = useListSupplierArticlesQuery(
     {
       workspaceId: workspace.id,
       search: search || undefined,
       status: status === ALL_SUPPLIER_STATUSES ? 'ACTIVE' : status,
+      supplierId: articleSupplierId || undefined,
       page,
       limit: pageSize,
     },
@@ -168,23 +196,30 @@ function SuppliersPage() {
 
   const canManageSuppliers = can(SUPPLIER_PERMISSION.SUPPLIER_MANAGE);
   const canManageArticles = can(SUPPLIER_PERMISSION.ARTICLE_MANAGE);
+  const canReadTariffs = can(SUPPLIER_PERMISSION.CATALOG_READ);
+  const canCorrectTariffs = canManageArticles && can(SUPPLIER_PERMISSION.CATALOG_MANAGE);
   const canReadProducts = can(PRODUCT_PERMISSION.READ);
   const canImport = (
     can(SUPPLIER_PERMISSION.CATALOG_IMPORT)
     && hasFeature(SUPPLIER_CAPABILITY.CATALOG_IMPORT)
   );
 
-  function applySearch(event) {
-    event.preventDefault();
-
+  // La recherche interroge le serveur plutôt que la seule page affichée.
+  useEffect(() => {
     const nextSearch = searchInput.trim();
-    if (!nextSearch) return;
-    setPage(1);
-    setSearch(nextSearch);
-  }
+    if (nextSearch === search) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      setPage(1);
+      setSearch(nextSearch);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchInput, search, setPage]);
 
   function changeSection(nextSection) {
     setPage(1);
+    if (nextSection !== 'articles') setArticleSupplierId(null);
 
     if (
       nextSection !== 'suppliers'
@@ -357,9 +392,11 @@ function SuppliersPage() {
       header: 'Article fournisseur',
       cell: (article) => (
         <div>
-          <p className="font-medium">{article.supplierReference}</p>
+          <p className="font-medium">
+            {article.supplierDesignation || 'Sans désignation'}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {article.supplierDesignation || article.productVariant?.name || 'Sans désignation'}
+            Réf. fournisseur : {article.supplierReference}
           </p>
         </div>
       ),
@@ -370,31 +407,74 @@ function SuppliersPage() {
       cell: (article) => (
         <div>
           <p>{article.supplier?.name ?? '—'}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {getSupplierOriginLabel(article.scope)}
-          </p>
+
         </div>
       ),
     },
     {
       id: 'product',
-      header: 'Référence Produit',
-      cell: (article) => article.productVariant?.name ?? '—',
+      header: 'Produit associé',
+      cell: (article) => article.associationStatus === 'PENDING'
+        ? <StatusBadge tone="warning">Non associé</StatusBadge>
+        : article.productVariant?.name ?? '—',
     },
     {
       id: 'packaging',
       header: 'Conditionnement',
-      cell: (article) => formatPackaging(
-        article.packaging,
-        { productVariant: article.productVariant },
+      cell: (article) => (
+        <div className="inline-flex max-w-full items-center gap-1">
+          <span>
+            {article.packagingPresentation?.mainLabel
+              || article.packagingLabel || 'Non renseigné'}
+          </span>
+          <SupplierArticlePackagingPopover
+            presentation={article.packagingPresentation}
+            supplierReference={article.supplierReference}
+          />
+        </div>
       ),
+    },
+    {
+      id: 'supplier-tariff',
+      header: 'Tarif fournisseur HT',
+      cell: (article) => {
+        if (article.supplierTariffStatus === 'RESTRICTED') {
+          return 'Tarif non accessible';
+        }
+        if (article.supplierTariffStatus === 'AMBIGUOUS') {
+          return <StatusBadge tone="warning">Tarifs à vérifier</StatusBadge>;
+        }
+        const price = article.supplierTariff;
+        if (!price) return 'Aucun tarif renseigné';
+        return (
+          <div className="inline-flex max-w-full items-center gap-1">
+            <span className="font-medium">
+              {price.packagePriceLabel || price.sourcePriceLabel}
+            </span>
+            <SupplierArticlePricePopover
+              price={price}
+              supplierReference={article.supplierReference}
+            />
+            {article.supplierTariffStatus === 'EXPIRED' && (
+              <StatusBadge tone="warning">Expiré</StatusBadge>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: 'actions',
       header: 'Actions',
       cell: (article) => (
-        article.scope === 'WORKSPACE_PRIVATE' && canManageArticles ? (
-          <DataTableActions>
+        <DataTableActions>
+          <ActionIconButton
+            Icon={Eye}
+            label={'Détails de ' + article.supplierReference}
+            onClick={() => setArticleDetails(article)}
+            tooltipLabel="Consulter l’Article"
+            variant="outline"
+          />
+          {article.scope === 'WORKSPACE_PRIVATE' && canManageArticles && (
             <ActionIconButton
               Icon={article.status === 'ACTIVE' ? Archive : RotateCcw}
               disabled={articleStatusState.isLoading}
@@ -403,13 +483,11 @@ function SuppliersPage() {
                 + article.supplierReference
               }
               onClick={() => toggleArticleStatus(article)}
-              tooltipLabel={
-                article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
-              }
+              tooltipLabel={article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
               variant="outline"
             />
-          </DataTableActions>
-        ) : null
+          )}
+        </DataTableActions>
       ),
     },
   ];
@@ -445,6 +523,15 @@ function SuppliersPage() {
       ),
     },
     {
+      id: 'references',
+      header: 'Références',
+      cell: (catalog) => (
+        <span className="tabular-nums">
+          {catalog.lineCount ?? 0}
+        </span>
+      ),
+    },
+    {
       id: 'source',
       header: 'Provenance',
       cell: (catalog) => catalog.source || 'Non renseignée',
@@ -462,9 +549,21 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (catalog) => (
-        catalog.scope === 'WORKSPACE_PRIVATE'
-        && can(SUPPLIER_PERMISSION.CATALOG_MANAGE) ? (
-          <DataTableActions>
+        <DataTableActions>
+          <ActionIconButton
+            Icon={Eye}
+            label={'Voir ' + catalog.name}
+            onClick={() => navigate(
+              '/workspaces/'
+              + workspace.id
+              + '/suppliers/catalogs/'
+              + catalog.id,
+            )}
+            tooltipLabel="Voir"
+            variant="outline"
+          />
+          {catalog.scope === 'WORKSPACE_PRIVATE'
+            && can(SUPPLIER_PERMISSION.CATALOG_MANAGE) && (
             <ActionIconButton
               Icon={catalog.status === 'ACTIVE' ? Archive : RotateCcw}
               disabled={catalogStatusState.isLoading}
@@ -478,8 +577,8 @@ function SuppliersPage() {
               }
               variant="outline"
             />
-          </DataTableActions>
-        ) : null
+          )}
+        </DataTableActions>
       ),
     },
   ];
@@ -527,6 +626,12 @@ function SuppliersPage() {
               Créer un Article
             </Button>
           )}
+          {section === 'articles' && canManageArticles && canImport && (
+            <Button onClick={() => setArticleImportOpen(true)} type="button" variant="outline">
+              <FileUp aria-hidden="true" className="size-4" />
+              Importer des Articles
+            </Button>
+          )}
           {section === 'catalogs' && canImport && (
             <Button onClick={() => setImportOpen(true)} type="button">
               <FileUp aria-hidden="true" className="size-4" />
@@ -539,11 +644,11 @@ function SuppliersPage() {
       <Tabs onValueChange={changeSection} value={section}>
         <TabsList aria-label="Gestion Fournisseurs" variant="section">
           <TabsTrigger value="suppliers" variant="section">
-            Fournisseurs
+            Fournisseurs ({activeSupplierQuery.data?.pagination?.total ?? '…'})
           </TabsTrigger>
           {can(SUPPLIER_PERMISSION.ARTICLE_READ) && (
             <TabsTrigger value="articles" variant="section">
-              Articles
+              Articles ({activeArticleCountQuery.data?.pagination?.total ?? '…'})
             </TabsTrigger>
           )}
           {can(SUPPLIER_PERMISSION.CATALOG_READ) && (
@@ -555,43 +660,40 @@ function SuppliersPage() {
       </Tabs>
 
       <section className="rounded-xl border border-border bg-card">
-        <div className="flex flex-col gap-3 border-b border-border p-5 md:flex-row md:items-end">
+        <div className="flex flex-col gap-3 border-b border-border p-5 md:flex-row md:items-center">
           {(section === 'suppliers' || section === 'articles') && (
-            <form className="flex min-w-0 flex-1 gap-2" onSubmit={applySearch}>
+            <div className="w-full min-w-0 md:flex-1">
               <Input
                 aria-label="Rechercher"
+                autoComplete="off"
+                id="supplier-search"
                 maxLength={120}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setSearchInput(value);
-
-                  if (!value.trim() && search) {
-                    setPage(1);
-                    setSearch('');
-                  }
-                }}
-                placeholder="Rechercher…"
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder={section === 'articles'
+                  ? 'Rechercher un article…'
+                  : 'Rechercher un fournisseur…'}
+                type="search"
                 value={searchInput}
               />
-              <Button
-                disabled={!searchInput.trim()}
-                type="submit"
-                variant="outline"
-              >
-                Rechercher
-              </Button>
-            </form>
+            </div>
           )}
-
-          <div className="w-full md:ml-auto md:w-52 md:shrink-0">
-            <p className="mb-2 text-sm font-medium">Statut</p>
+          {section === 'articles' && (
+            <div className="w-full md:w-64 md:shrink-0">
+              <SupplierArticleSupplierFilter
+                onChange={(supplierId) => {
+                  setPage(1);
+                  setArticleSupplierId(supplierId);
+                }}
+                value={articleSupplierId}
+                workspaceId={workspace.id}
+              />
+            </div>
+          )}
+          <div className="w-full md:w-44 md:shrink-0">
             <Select
               items={[
                 ...(section === 'suppliers'
-                  ? [{
-                    value: ALL_SUPPLIER_STATUSES,
-                    label: 'Tous',
-                  }]
+                  ? [{ value: ALL_SUPPLIER_STATUSES, label: 'Tous' }]
                   : []),
                 { value: 'ACTIVE', label: 'Actifs' },
                 { value: 'ARCHIVED', label: 'Archivés' },
@@ -603,11 +705,7 @@ function SuppliersPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {section === 'suppliers' && (
-                  <SelectItem value={ALL_SUPPLIER_STATUSES}>
-                    Tous
-                  </SelectItem>
-                )}
+                {section === 'suppliers' && <SelectItem value={ALL_SUPPLIER_STATUSES}>Tous</SelectItem>}
                 <SelectItem value="ACTIVE">Actifs</SelectItem>
                 <SelectItem value="ARCHIVED">Archivés</SelectItem>
               </SelectContent>
@@ -719,6 +817,18 @@ function SuppliersPage() {
           }));
           setSupplierDialog({ open: true, supplier });
         }}
+        onViewCatalog={(catalog) => {
+          setSupplierDetails((current) => ({
+            ...current,
+            open: false,
+          }));
+          navigate(
+            '/workspaces/'
+            + workspace.id
+            + '/suppliers/catalogs/'
+            + catalog.id,
+          );
+        }}
         open={supplierDetails.open}
         supplier={supplierDetails.supplier}
         workspaceId={workspace.id}
@@ -754,10 +864,102 @@ function SuppliersPage() {
         workspaceId={workspace.id}
       />
 
+      <SupplierArticleDetailsDrawer
+        article={articleDetails}
+        canManage={Boolean(articleDetails?.scope === 'WORKSPACE_PRIVATE'
+          && canManageArticles)}
+        canAssociate={Boolean(articleDetails?.scope === 'WORKSPACE_PRIVATE'
+          && canManageArticles && canReadProducts)}
+        canReadTariffs={canReadTariffs}
+        canCorrectTariffs={canCorrectTariffs && Boolean(
+          articleDetails?.supplierTariff?.sourceKind === 'PRICE_LIST'
+          && ['AVAILABLE', 'EXPIRED'].includes(articleDetails?.supplierTariffStatus)
+        )}
+        onAssociate={(article) => {
+          setArticleDetails(null);
+          setArticleToAssociate(article);
+        }}
+        onClose={() => setArticleDetails(null)}
+        onCorrectPrice={(article) => {
+          setArticleDetails(null);
+          setArticlePriceToCorrect(article);
+        }}
+        onCorrectPeriod={(article) => {
+          setArticleDetails(null);
+          setArticlePeriodToCorrect(article);
+        }}
+        onEdit={(article) => {
+          setArticleDetails(null);
+          setArticleToEdit(article);
+        }}
+        open={Boolean(articleDetails)}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticleEditDialog
+        article={articleToEdit}
+        onClose={() => setArticleToEdit(null)}
+        onSaved={() => {
+          setArticleToEdit(null);
+          toast({ title: 'Article fournisseur modifié', variant: 'success' });
+        }}
+        open={Boolean(articleToEdit)}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticlePeriodCorrectionDialog
+        article={articlePeriodToCorrect}
+        onClose={() => setArticlePeriodToCorrect(null)}
+        onSaved={() => {
+          setArticlePeriodToCorrect(null);
+          toast({ title: 'Période corrigée et historisée', variant: 'success' });
+        }}
+        open={Boolean(articlePeriodToCorrect)}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticlePriceCorrectionDialog
+        article={articlePriceToCorrect}
+        onClose={() => setArticlePriceToCorrect(null)}
+        onSaved={() => {
+          setArticlePriceToCorrect(null);
+          toast({ title: 'Tarif corrigé et historisé', variant: 'success' });
+        }}
+        open={Boolean(articlePriceToCorrect)}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticleAssociationDialog
+        article={articleToAssociate}
+        onClose={() => setArticleToAssociate(null)}
+        onSaved={() => {
+          setArticleToAssociate(null);
+          toast({ title: 'Association Produit mise à jour', variant: 'success' });
+        }}
+        open={Boolean(articleToAssociate)}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticleImportDialog
+        canCreateSupplier={canManageSuppliers}
+        onClose={() => setArticleImportOpen(false)}
+        onCommitted={(result) => {
+          toast({
+            title: 'Import des Articles terminé',
+            description: String(result.created) + ' créé(s), '
+              + String(result.updated) + ' actualisé(s).',
+            variant: 'success',
+          });
+        }}
+        open={articleImportOpen}
+        suppliers={activeSuppliers}
+        workspaceId={workspace.id}
+      />
+
       <SupplierCatalogImportDialog
+        canCreateSupplier={canManageSuppliers}
         onClose={() => setImportOpen(false)}
         onCommitted={(result) => {
-          setImportOpen(false);
           toast({
             title: 'Import catalogue terminé',
             description:

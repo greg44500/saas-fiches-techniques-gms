@@ -176,9 +176,19 @@ const supplierTariffSchema = new Schema(
         catalogEdition: {
             type: Schema.Types.ObjectId,
             ref: 'SupplierCatalogEdition',
+            default: null,
+            immutable: true,
+        },
+        sourceKind: {
+            type: String,
+            enum: ['CATALOG', 'PRICE_LIST'],
+            default: 'CATALOG',
             required: true,
             immutable: true,
         },
+        sourceLabel: { type: String, trim: true, maxlength: 180, default: null, immutable: true },
+        sourceImportId: { type: Schema.Types.ObjectId, default: null, immutable: true },
+        packagingSnapshot: { type: packagingSchema, default: null, immutable: true },
         catalogLine: {
             type: Schema.Types.ObjectId,
             ref: 'SupplierCatalogLine',
@@ -193,6 +203,8 @@ const supplierTariffSchema = new Schema(
         },
         ...createScopeFields(),
         revision: { type: Number, min: 1, default: 1, required: true, immutable: true },
+        replacesTariff: { type: Schema.Types.ObjectId, ref: 'SupplierTariff', default: null, immutable: true },
+        correctionReason: { type: String, trim: true, maxlength: 500, default: null, immutable: true },
         isCurrent: { type: Boolean, default: true, required: true },
         sourceAmount: {
             type: Schema.Types.Decimal128,
@@ -241,13 +253,38 @@ const supplierTariffSchema = new Schema(
 );
 
 applySupplierScopeOwnershipValidation(supplierTariffSchema);
+supplierTariffSchema.pre('validate', function verifyTariffSource() {
+    if (this.sourceKind === 'CATALOG' && !this.catalogEdition) {
+        this.invalidate('catalogEdition', 'Édition obligatoire pour un tarif de catalogue.');
+    }
+    if (this.sourceKind === 'PRICE_LIST' && (
+        this.catalogEdition || !this.sourceImportId || !this.sourceLabel
+        || !this.validFrom
+    )) {
+        this.invalidate('sourceImportId', 'La liste tarifaire exige nom, import et date de début sans catalogue.');
+    }
+});
 
 supplierTariffSchema.index(
     { catalogEdition: 1, supplierArticle: 1, isCurrent: 1 },
     {
-        name: 'supplier_tariff_current_edition_article_unique',
+        name: 'supplier_tariff_catalog_current_edition_v2_unique',
         unique: true,
-        partialFilterExpression: { isCurrent: true },
+        partialFilterExpression: {
+            isCurrent: true,
+            catalogEdition: { $type: 'objectId' },
+        },
+    },
+);
+// Une clé unique sur la révision (et non sur isCurrent) permet de
+// remplacer une version dans la même transaction MongoDB. Le verrou
+// supplier-price-list par Article sérialise les corrections et les imports.
+supplierTariffSchema.index(
+    { sourceImportId: 1, supplierArticle: 1, revision: 1 },
+    {
+        name: 'supplier_price_list_import_article_revision_unique',
+        unique: true,
+        partialFilterExpression: { sourceKind: 'PRICE_LIST' },
     },
 );
 supplierTariffSchema.index(

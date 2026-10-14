@@ -25,6 +25,7 @@ import {
 import {
     SupplierTariff,
 } from './supplierCatalog.model.js';
+import { selectSupplierTariffs } from './supplierTariffSelection.service.js';
 import {
     DOSSIER_SUPPLIER_REFERENCE_STATUS,
     INDICATIVE_PRICE_STATUS,
@@ -414,7 +415,7 @@ const resolvePricingContext = async ({
 
         if (
             productVariantId
-            && article.productVariant._id.toString()
+            && article.productVariant?._id?.toString()
                 !== productVariantId.toString()
         ) {
             throw new AppError(
@@ -1213,89 +1214,39 @@ const findValidNegotiatedPrice = async ({
     .session(session)
     .lean();
 
-const findApplicableSupplierTariff = async ({
-    workspaceId,
-    articleId,
-    atDate,
-    session = null,
+const selectSupplierTariffForDate = async ({
+    workspaceId, articleId, atDate, session = null,
 }) => {
-    const tariffs =
-        await SupplierTariff.find({
-            supplierArticle:
-                articleId,
-            isCurrent: true,
-            ...visibleArticleFilter({
-                workspaceId,
-            }),
-            $and: mongoose.trusted([
-                {
-                    $or: [
-                        {
-                            validFrom:
-                                null,
-                        },
-                        {
-                            validFrom:
-                                mongoose.trusted({
-                                    $lte:
-                                        atDate,
-                                }),
-                        },
-                    ],
-                },
-                {
-                    $or: [
-                        {
-                            validTo: null,
-                        },
-                        {
-                            validTo:
-                                mongoose.trusted({
-                                    $gte:
-                                        atDate,
-                                }),
-                        },
-                    ],
-                },
-            ]),
-        })
-            .populate({
-                path:
-                    'catalogEdition',
-                match: {
-                    status:
-                        SUPPLIER_RESOURCE_STATUS
-                            .ACTIVE,
-                },
-                select:
-                    '_id name scope workspace editionDate validFrom validTo integratedAt status',
-            })
-            .sort({
-                validFrom: -1,
-                createdAt: -1,
-                _id: -1,
-            })
-            .limit(3)
-            .session(session)
-            .lean();
+    const tariffs = await SupplierTariff.find({
+        supplierArticle: articleId,
+        isCurrent: true,
+        ...visibleArticleFilter({ workspaceId }),
+    }).populate({
+        path: 'catalogEdition',
+        match: { status: SUPPLIER_RESOURCE_STATUS.ACTIVE },
+        select: '_id name scope workspace editionDate validFrom validTo integratedAt status',
+    }).sort({ validFrom: -1, createdAt: -1, _id: -1 })
+        .session(session).lean();
 
-    const applicable =
-        tariffs.filter(
-            ({ catalogEdition }) =>
-                Boolean(catalogEdition),
-        );
-
-    if (applicable.length > 1) {
+    const eligible = tariffs.filter((tariff) =>
+        (tariff.sourceKind || 'CATALOG') === 'PRICE_LIST'
+        || Boolean(tariff.catalogEdition));
+    const selection = selectSupplierTariffs(eligible, atDate);
+    if (selection.status === 'AMBIGUOUS') {
         const error = new AppError(
             'Plusieurs Tarifs fournisseur sont simultanément applicables. La gouvernance du catalogue doit être corrigée.',
             409,
         );
-        error.code =
-            'SUPPLIER_TARIFF_AMBIGUOUS';
+        error.code = 'SUPPLIER_TARIFF_AMBIGUOUS';
         throw error;
     }
+    return selection;
+};
 
-    return applicable[0] ?? null;
+// L'API historique continue à renvoyer uniquement les tarifs applicables.
+const findApplicableSupplierTariff = async (args) => {
+    const selected = await selectSupplierTariffForDate(args);
+    return selected.status === 'AVAILABLE' ? selected.tariff : null;
 };
 
 const serializeIndicativePrice = (price) => ({
@@ -1933,15 +1884,31 @@ const resolveApplicablePrice = async ({
 
     if (article) {
         attempted.push('SUPPLIER_TARIFF');
-        const tariff =
-            await findApplicableSupplierTariff({
-                workspaceId,
-                articleId: article._id,
-                atDate,
-                session,
-            });
+        const selectedTariff = await selectSupplierTariffForDate({
+            workspaceId,
+            articleId: article._id,
+            atDate,
+            session,
+        });
+        const tariff = selectedTariff.tariff;
+        const usesExpired = selectedTariff.status === 'EXPIRED';
 
         if (tariff) {
+            if (usesExpired) alerts.push('LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED');
+            // L'association Produit peut être corrigée a posteriori.
+            // Toujours convertir la base source vers l'unité du Produit
+            // désormais associé, avec le conditionnement historique.
+            // Un montant normalisé stocké ne doit jamais être réutilisé
+            // s'il a été calculé pour un ancien Produit.
+            const pricedTariff = {
+                ...tariff,
+                ...normalizeSupplierPrice({
+                    sourceAmount: tariff.sourceAmount,
+                    sourceBasis: tariff.sourceBasis,
+                    packaging: tariff.packagingSnapshot ?? article.packaging,
+                    targetUnit: productVariant.referenceUnit,
+                }),
+            };
             return {
                 article:
                     serializeSupplierArticleSummary(article),
@@ -1950,24 +1917,29 @@ const resolveApplicablePrice = async ({
                 policy,
                 requestedMode: policy.mode,
                 resolvedSource: 'SUPPLIER_TARIFF',
-                fallbackApplied:
-                    policy.mode
-                    !== SUPPLIER_PRICING_POLICY_MODE.SUPPLIER_TARIFF,
-                fallbackReason: alerts[0] ?? null,
+                fallbackApplied: usesExpired
+                    || policy.mode !== SUPPLIER_PRICING_POLICY_MODE.SUPPLIER_TARIFF,
+                fallbackReason: usesExpired
+                    ? 'LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED' : alerts[0] ?? null,
                 price: serializeApplicableSource({
                     source: 'SUPPLIER_TARIFF',
-                    price: tariff,
+                    price: pricedTariff,
                     extra: {
-                        catalogEdition: {
-                            id:
-                                tariff.catalogEdition._id.toString(),
-                            name:
-                                tariff.catalogEdition.name,
-                            editionDate:
-                                tariff.catalogEdition.editionDate,
-                        },
+                        ...(tariff.catalogEdition ? {
+                            catalogEdition: {
+                                id: tariff.catalogEdition._id.toString(),
+                                name: tariff.catalogEdition.name,
+                                editionDate: tariff.catalogEdition.editionDate,
+                            },
+                        } : {
+                            priceList: {
+                                name: tariff.sourceLabel,
+                                importId: tariff.sourceImportId?.toString() ?? null,
+                            },
+                        }),
                         validFrom: tariff.validFrom,
                         validTo: tariff.validTo,
+                        validityStatus: usesExpired ? 'EXPIRED' : 'AVAILABLE',
                     },
                 }),
                 alerts,

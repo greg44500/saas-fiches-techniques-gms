@@ -108,6 +108,33 @@ const supplierApi = supplierApiBase.injectEndpoints({
       transformResponse: (response) => response.data.article,
       invalidatesTags: ['SupplierArticle', 'SupplierCatalog', 'SupplierPricing'],
     }),
+    listSupplierArticleTariffs: builder.query({
+      query: ({ workspaceId, articleId }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/' + articleId + '/tariffs',
+      }),
+      transformResponse: (response) => response.data.tariffs,
+      providesTags: ['SupplierPricing'],
+    }),
+    correctSupplierArticleTariffPeriod: builder.mutation({
+      query: ({ workspaceId, articleId, tariffId, ...body }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/' + articleId
+          + '/tariffs/' + tariffId + '/period-correction',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data.tariff,
+      invalidatesTags: ['SupplierPricing', 'SupplierArticle'],
+    }),
+    correctSupplierArticleTariff: builder.mutation({
+      query: ({ workspaceId, articleId, tariffId, ...body }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/' + articleId
+          + '/tariffs/' + tariffId + '/correction',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data.tariff,
+      invalidatesTags: ['SupplierPricing', 'SupplierArticle'],
+    }),
     updateSupplierArticleStatus: builder.mutation({
       query: ({ workspaceId, articleId, status }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-articles/' + articleId + '/status',
@@ -149,9 +176,16 @@ const supplierApi = supplierApiBase.injectEndpoints({
       providesTags: ['SupplierCatalog'],
     }),
     listSupplierCatalogLines: builder.query({
-      query: ({ workspaceId, catalogId, page = 1, limit = 50 }) => ({
+      query: ({
+        workspaceId,
+        catalogId,
+        page = 1,
+        limit = 50,
+        search,
+        matchStatus,
+      }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-catalogs/' + catalogId + '/lines',
-        params: { page, limit },
+        params: { page, limit, search, matchStatus },
       }),
       transformResponse: (response) => response.data,
       providesTags: ['SupplierCatalog'],
@@ -173,6 +207,34 @@ const supplierApi = supplierApiBase.injectEndpoints({
       }),
       transformResponse: (response) => response.data.catalog,
       invalidatesTags: ['SupplierCatalog', 'SupplierPricing'],
+    }),
+    inspectSupplierArticleImport: builder.mutation({
+      query: ({ workspaceId, file }) => {
+        const body = new FormData();
+        body.append('file', file);
+        return {
+          url: '/workspaces/' + workspaceId + '/supplier-articles/imports/inspect',
+          method: 'POST',
+          body,
+        };
+      },
+      transformResponse: (response) => response.data,
+    }),
+    previewSupplierArticleImport: builder.mutation({
+      query: ({ workspaceId, importId, ...body }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/imports/' + importId + '/preview',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+    }),
+    commitSupplierArticleImport: builder.mutation({
+      query: ({ workspaceId, importId }) => ({
+        url: '/workspaces/' + workspaceId + '/supplier-articles/imports/' + importId + '/commit',
+        method: 'POST',
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['SupplierArticle', 'SupplierReference', 'SupplierPricing'],
     }),
     inspectSupplierCatalogImport: builder.mutation({
       query: ({ workspaceId, file }) => {
@@ -539,12 +601,46 @@ const supplierApi = supplierApiBase.injectEndpoints({
       invalidatesTags: ['SupplierReference', 'SupplierCatalog'],
     }),
     listGlobalSupplierCatalogLines: builder.query({
-      query: ({ catalogId, page = 1, limit = 50 }) => ({
+      query: ({
+        catalogId,
+        page = 1,
+        limit = 50,
+        search,
+        matchStatus,
+      }) => ({
         url: '/supplier-reference/catalogs/' + catalogId + '/lines',
-        params: { page, limit },
+        params: { page, limit, search, matchStatus },
       }),
       transformResponse: (response) => response.data,
       providesTags: ['SupplierReference'],
+    }),
+    inspectGlobalSupplierArticleImport: builder.mutation({
+      query: ({ file }) => {
+        const body = new FormData();
+        body.append('file', file);
+        return {
+          url: '/supplier-reference/articles/imports/inspect',
+          method: 'POST',
+          body,
+        };
+      },
+      transformResponse: (response) => response.data,
+    }),
+    previewGlobalSupplierArticleImport: builder.mutation({
+      query: ({ importId, ...body }) => ({
+        url: '/supplier-reference/articles/imports/' + importId + '/preview',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: (response) => response.data,
+    }),
+    commitGlobalSupplierArticleImport: builder.mutation({
+      query: ({ importId }) => ({
+        url: '/supplier-reference/articles/imports/' + importId + '/commit',
+        method: 'POST',
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: ['SupplierReference', 'SupplierArticle', 'SupplierPricing'],
     }),
     inspectGlobalSupplierCatalogImport: builder.mutation({
       query: ({ file }) => {
@@ -583,7 +679,9 @@ export const {
   useArchiveGlobalIndicativePriceMutation,
   useArchiveNegotiatedPriceMutation,
   useArchiveWorkspaceIndicativePriceMutation,
+  useCommitGlobalSupplierArticleImportMutation,
   useCommitGlobalSupplierCatalogImportMutation,
+  useCommitSupplierArticleImportMutation,
   useCommitSupplierCatalogImportMutation,
   useCreateGlobalSupplierArticleMutation,
   useCreateGlobalSupplierCatalogMutation,
@@ -602,7 +700,9 @@ export const {
   useGetSupplierMetadataQuery,
   useGetSupplierPricingMetadataQuery,
   useGetSupplierReferenceAccessQuery,
+  useInspectGlobalSupplierArticleImportMutation,
   useInspectGlobalSupplierCatalogImportMutation,
+  useInspectSupplierArticleImportMutation,
   useInspectSupplierCatalogImportMutation,
   useListDossierIndicativePricesQuery,
   useListGlobalIndicativePricesQuery,
@@ -619,7 +719,9 @@ export const {
   useListSuppliersQuery,
   useListWorkspaceIndicativePricesQuery,
   useListWorkspaceGlobalIndicativePricesQuery,
+  usePreviewGlobalSupplierArticleImportMutation,
   usePreviewGlobalSupplierCatalogImportMutation,
+  usePreviewSupplierArticleImportMutation,
   usePreviewSupplierCatalogImportMutation,
   useRemoveDossierSupplierReferenceMutation,
   useReplaceGlobalSupplierArticleMutation,
@@ -633,6 +735,9 @@ export const {
   useSetGlobalIndicativePriceMutation,
   useSetWorkspaceIndicativePriceMutation,
   useUpdatePricingPolicyMutation,
+  useListSupplierArticleTariffsQuery,
+  useCorrectSupplierArticleTariffMutation,
+  useCorrectSupplierArticleTariffPeriodMutation,
   useUpdateSupplierArticleMutation,
   useUpdateSupplierArticleStatusMutation,
   useUpdateSupplierCatalogStatusMutation,

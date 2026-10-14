@@ -131,7 +131,7 @@ const createArticleBodySchema = z.strictObject({
 });
 
 const updateArticleBodySchema = z.strictObject({
-    productVariantId: objectIdSchema.optional(),
+    productVariantId: objectIdSchema.nullable().optional(),
     supplierDesignation: nullableText(300).optional(),
     brand: nullableText(160).optional(),
     packaging: packagingBodySchema.nullable().optional(),

@@ -3,18 +3,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import {
-  DialogClose,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogOverlay,
   DialogPortal,
   DialogRoot,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { ImportFilePicker } from '@/features/imports/components/import-file-picker';
+import { ImportWizardFooter } from '@/features/imports/components/import-wizard-footer';
+import { ImportWizardHeader } from '@/features/imports/components/import-wizard-header';
 import {
   Select,
   SelectContent,
@@ -379,46 +376,22 @@ function ProductImportDialog({
       <DialogPortal>
         <DialogOverlay />
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-y-auto" initialFocus={cancelRef}>
-          <DialogHeader>
-            <DialogTitle>Importer des Produits</DialogTitle>
-            <DialogDescription>
-              {isGlobal
-                ? 'Le fichier alimente le référentiel Produit global. Les données fournisseur, références commerciales, conditionnements et prix restent hors périmètre M-002.'
-                : 'Le fichier est rapproché du référentiel global avant rattachement ou création. Les données fournisseur et prix restent hors périmètre M-002.'}
-            </DialogDescription>
-          </DialogHeader>
+          <ImportWizardHeader
+            helpText={isGlobal
+              ? 'Ajoutez plusieurs Produits à la liste commune, accessible à tous les espaces de travail. Vous pourrez vérifier les informations avant de confirmer.'
+              : 'Ajoutez plusieurs Produits à partir d’un fichier. Les Produits déjà enregistrés sont reconnus pour éviter les doublons. Vous pourrez vérifier les informations avant de confirmer.'}
+            step={step}
+            title="Importer des Produits"
+          />
 
-          <div className="mt-5 space-y-5">
-            <ol className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
-              {[
-                ['upload', '1. Téléverser'],
-                ['mapping', '2. Associer'],
-                ['preview', '3. Vérifier'],
-                ['done', '4. Confirmer'],
-              ].map(([value, label]) => (
-                <li
-                  className={step === value ? 'font-semibold text-foreground' : ''}
-                  key={value}
-                >
-                  {label}
-                </li>
-              ))}
-            </ol>
-
+          <div className="mt-5 min-w-0 space-y-5">
             {step === 'upload' && (
-              <Field>
-                <FieldLabel htmlFor="product-import-file">Fichier</FieldLabel>
-                <Input
-                  accept=".csv,.xls,.xlsx"
-                  disabled={pending}
-                  id="product-import-file"
-                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                  type="file"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Formats acceptés : CSV, XLS et XLSX.
-                </p>
-              </Field>
+              <ImportFilePicker
+                disabled={pending}
+                file={file}
+                id="product-import-file"
+                onChange={setFile}
+              />
             )}
 
             {step === 'mapping' && inspection && (
@@ -836,37 +809,34 @@ function ProductImportDialog({
             )}
           </div>
 
-          <DialogFooter>
-            <DialogClose
-              disabled={pending}
-              ref={cancelRef}
-              render={<Button type="button" variant="outline" />}
-            >
-              {step === 'done' ? 'Fermer' : 'Annuler'}
-            </DialogClose>
-
-            {step === 'upload' && (
-              <Button disabled={pending || !file} onClick={inspect} type="button">
-                {(inspectWorkspaceState.isLoading || inspectGlobalState.isLoading)
-                  ? 'Analyse…'
-                  : 'Analyser le fichier'}
-              </Button>
-            )}
-            {step === 'mapping' && (
-              <Button disabled={pending} onClick={generatePreview} type="button">
-                {(previewWorkspaceState.isLoading || previewGlobalState.isLoading)
-                  ? 'Préparation…'
-                  : 'Prévisualiser'}
-              </Button>
-            )}
-            {step === 'preview' && (
-              <Button disabled={pending || stalePreview} onClick={commit} type="button">
-                {(commitWorkspaceState.isLoading || commitGlobalState.isLoading)
-                  ? 'Confirmation…'
-                  : 'Confirmer l’import'}
-              </Button>
-            )}
-          </DialogFooter>
+          <ImportWizardFooter
+            cancelRef={cancelRef}
+            pending={pending}
+            primaryAction={
+              step === 'upload'
+                ? inspect
+                : step === 'mapping'
+                  ? generatePreview
+                  : step === 'preview'
+                    ? commit
+                    : null
+            }
+            primaryDisabled={
+              (step === 'upload' && !file)
+              || (step === 'preview' && stalePreview)
+            }
+            primaryLabel={
+              step === 'upload'
+                ? (inspectWorkspaceState.isLoading || inspectGlobalState.isLoading
+                  ? 'Analyse…' : 'Analyser le fichier')
+                : step === 'mapping'
+                  ? (previewWorkspaceState.isLoading || previewGlobalState.isLoading
+                    ? 'Préparation…' : 'Prévisualiser')
+                  : (commitWorkspaceState.isLoading || commitGlobalState.isLoading
+                    ? 'Confirmation…' : 'Confirmer l’import')
+            }
+            step={step}
+          />
         </DialogContent>
       </DialogPortal>
     </DialogRoot>

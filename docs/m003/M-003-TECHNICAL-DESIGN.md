@@ -128,6 +128,33 @@ La structure V1 est volontairement plate : un seul niveau
 dans `supplierLabel`. Lorsque `unit = UNIT`, le libellé métier vient de la
 Référence Produit M-002.
 
+### Projections de lecture des conditionnements et des prix (2026-10-13)
+
+`supplierArticlePresentation.service.js` est l'autorité pour les valeurs
+de lecture. La réponse Article fournit `packagingPresentation` avec
+`mainLabel`, `totalLabel` et `warningLabel`, sans supprimer
+`packagingLabel` pour les consommateurs existants. Le total de masse est
+exprimé en kg, le volume en L et le décompte M-002 en UNIT. En cas
+d'incohérence entre masse calculée et poids net déclaré, les deux
+valeurs restent distinctes et le total est clairement indiqué comme
+calculé.
+
+La projection Tarif conserve `packagePriceLabel` et `unitPriceLabel`
+et ajoute `pieceAmount` / `piecePriceLabel` lorsque le nombre d'éléments
+et leur quantité par élément rendent le prix à la pièce calculable.
+Le tableau Articles utilise deux popovers propres à la feature M-003,
+basés sur les composants communs `Popover`, `PopoverTrigger` et
+`PopoverContent` sans les modifier. Les boutons `PackageSearch` et
+`Calculator` acceptent survol, activation clavier et toucher
+(`openOnHover` Base UI) ; leurs intitulés accessibles incluent la
+référence de l'Article. Les valeurs complémentaires sont absentes du
+flux de lecture principal tant que le popover est fermé. Une incohérence
+de poids reste signalée par la couleur `warning` de l'icône ;
+son libellé complet est consultable dans le popover.
+Une absence de données rend cette projection nulle. Le tarif et son
+`packagingSnapshot` restent les seules sources économiques ; React ne
+recalcule ni prix ni quantité.
+
 ## 5. Prix et précision
 
 Chaque donnée économique conserve sourceAmount, sourceBasis, currency, normalizedAmount nullable et normalizedUnit nullable.
@@ -409,3 +436,102 @@ Dans le drawer Produit :
 - retirer un favori reste une action M-002 et ne supprime aucune donnée commerciale M-003.
 
 Dans la liste Fournisseurs, les catégories Produit commercialisées sont projetées dans une colonne dédiée. Aucun « univers commercial » n'est déduit automatiquement des catégories M-002 : une éventuelle taxonomie de spécialités fournisseur devra être cadrée séparément avant ajout au modèle.
+
+---
+
+## Complément technique M-003 — import direct Articles (2026-10-09)
+
+- `SupplierArticle.productVariant` accepte `null` pour le statut métier PENDING.
+  L'identité et les index uniques Fournisseur / Référence / portée restent identiques.
+- `SupplierArticleImportSession` est un staging séparé de
+  `SupplierCatalogImportSession` ; même inspection sécurisée, même parseur et
+  normalisation des lignes, sans dépendance à une édition commerciale.
+- Endpoints Workspace :
+  `POST /workspaces/:workspaceId/supplier-articles/imports/inspect`,
+  `POST /workspaces/:workspaceId/supplier-articles/imports/:importId/preview`,
+  `POST /workspaces/:workspaceId/supplier-articles/imports/:importId/commit`.
+- Endpoints globaux : mêmes suffixes sous `/supplier-reference/articles/imports`.
+- Transaction de confirmation idempotente via statut PREVIEWED → COMMITTING → COMMITTED,
+  verrou de commerce et vérification à nouveau des références sous transaction.
+  La session est actor-scoped et la portée Workspace/global est vérifiée à chaque étape.
+- Les accès pricing et fiches conservent la condition ProductVariant ACTIVE et
+  interdisent un Article non associé. Une association explicite reste possible via
+  `PATCH /workspaces/:workspaceId/supplier-articles/:articleId` ou l'API globale.
+- Nouvelle paire d'index de sessions `supplier_article_import_session_ttl` et
+  `supplier_article_import_scope_actor_status`, incluse dans la migration M-003.
+
+Le pilote ne procède à aucune suppression de catalogue, aucun changement d'Article
+global depuis un Workspace et aucune modification du Core.
+
+---
+
+## Harmonisation visuelle des imports (2026-10-13)
+
+Les trois assistants métier réutilisent les composants situés sous
+`frontend/src/features/imports/components/` :
+
+- `ImportWizardHeader` : titre, aide via le `InfoTooltip` existant et
+  stepper d'état actif / terminé / futur (avec `aria-current="step"`) ;
+- `ImportFilePicker` : input fichier masqué mais accessible, sélection affichée
+  en français, formats CSV/XLS/XLSX, nom tronqué de façon responsive ;
+- `ImportWizardFooter` : actions cohérentes d'analyse, de prévisualisation,
+  de confirmation et de fermeture.
+
+Ces composants sont volontairement **spécifiques aux imports du produit** : ils
+ne dupliquent pas les primitives génériques du Core (`Dialog`, `Button`,
+`InfoTooltip`, `Field`) et n'altèrent pas la logique des imports ou les APIs.
+Les règles de mapping, les erreurs métier, les permissions et les requêtes
+RTK Query restent dans leurs fonctionnalités respectives.
+
+Les deux assistants Fournisseurs affichent leur résumé de confirmation avant
+fermeture, le toast restant déclenché lors du commit. Les tests RTL et Playwright
+couvrent le changement de parcours, l'accessibilité et les libellés francisés.
+
+## Complément technique M-003 — périodes et filtre Fournisseurs (2026-10-14)
+
+Le sélecteur de tarifs `supplierTariffSelection.service.js` projette
+`AVAILABLE`, `EXPIRED`, `AMBIGUOUS` ou `UNAVAILABLE` de manière
+déterministe. La liste des Articles lit les tarifs courants visibles
+sur la page (pas de requête par Article), puis sérialise le tarif
+retenu et son état. Le résolveur de prix conserve les priorités
+facturé/négocié/fournisseur/indicatif existantes ; en l'absence de
+tarif applicable, il sélectionne le dernier expiré si disponible
+et expose `validityStatus=EXPIRED`, `fallbackApplied=true`,
+`fallbackReason=LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED` et la même
+valeur dans `alerts` pour traçabilité M-004. Les conflits actifs
+produisent toujours l'erreur `SUPPLIER_TARIFF_AMBIGUOUS`.
+
+`POST /workspaces/:workspaceId/supplier-articles/:articleId/tariffs/:tariffId/period-correction`
+utilise le verrou transactionnel Commerce et crée une nouvelle révision.
+Le modèle et les index existants ne sont pas modifiés ; l'événement
+`SUPPLIER_TARIFF_PERIOD_CORRECTED` trace anciennes et nouvelles bornes.
+Le contrôle d'intervalles est partagé avec l'import indépendant.
+
+Frontend : `SupplierArticleSupplierFilter` réutilise Popover et
+`useListSuppliersQuery`, avec recherche et pagination côté serveur
+limitée à 50 résultats par recherche. `SupplierArticlePeriodCorrectionDialog`
+réutilise le DatePicker commun. Aucune primitive Core modifiée.
+La présentation des avertissements FT se limite au code d'alerte
+existant dans la valorisation, sans calcul M-004 ajouté.
+
+## Drawer Article fournisseur — trois onglets (2026-10-14)
+
+`SupplierArticleDetailsDrawer` utilise le composant commun
+`Tabs` (`TabsList`, `TabsTrigger`, `TabsContent`) en variante
+`section`, comme `SupplierDetailsDrawer` et `DossierDetailsDrawer`.
+Les sous-vues de la feature séparent les responsabilités de
+présentation : informations de l'Article, association Produit, prix
+et historique. `EntityDetailsDrawer` n'est pas modifié.
+
+Le `key` du groupe d'onglets intègre l'Article et l'état d'ouverture
+afin de revenir à `Infos Article` après réouverture et lors du
+changement d'Article. Le hook d'historique M-003 conserve son
+`skip` RBAC existant ; l'onglet Tarif n'est pas rendu sans permission
+de lecture. `InfoTooltip` remplace l'avertissement permanent
+pour l'action d'association. Le `Collapsible` historique est fermé
+par défaut et sa liste dispose d'une hauteur maximale avec
+défilement interne, sans calcul serveur ni mutation des données.
+
+Tests RTL dédiés : sélection initiale, séparation du contenu,
+actions, consultation du prix expiré, permissions, historique replié,
+retour à l'onglet initial lors de la réouverture, cas Catalogue.

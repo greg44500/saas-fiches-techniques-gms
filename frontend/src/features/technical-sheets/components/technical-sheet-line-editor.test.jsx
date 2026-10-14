@@ -333,6 +333,23 @@ describe('TechnicalSheetLineEditor', () => {
     expect(onChange).toHaveBeenCalledWith('WORKSPACE');
   });
 
+  it('signale le dernier tarif expiré tout en conservant la valorisation', () => {
+    renderEditor({
+      lines: [{
+        ...valuedLine,
+        valuation: {
+          ...valuedLine.valuation,
+          applicableSource: 'SUPPLIER_TARIFF',
+          alerts: ['LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED'],
+        },
+      }],
+    });
+    expect(screen.getByRole('button', {
+      name: 'Dernier prix connu — tarif fournisseur expiré',
+    })).toHaveClass('text-warning');
+    expect(screen.getByText(/6,02/)).toBeInTheDocument();
+  });
+
   it('maintient l’en-tête du tableau sous le cockpit sticky', () => {
     renderEditor({
       compositionHeaderOffset: 240,

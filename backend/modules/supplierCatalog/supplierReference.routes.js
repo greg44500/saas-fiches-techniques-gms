@@ -1,5 +1,31 @@
 import { Router } from 'express';
 
+import {
+    globalArticleImport,
+    workspaceArticleImport,
+} from './supplierArticleImport.controller.js';
+import { articleImportPreviewBodySchema } from './supplierArticleImport.validation.js';
+import {
+    correctWorkspaceArticleTariff,
+    correctWorkspaceArticleTariffPeriod,
+    listWorkspaceArticleTariffs,
+} from './supplierTariffRevision.controller.js';
+import {
+    articleTariffParamsSchema,
+    articleTariffRevisionParamsSchema,
+    correctArticlePriceBodySchema,
+    correctArticleTariffPeriodBodySchema,
+} from './supplierTariffRevision.validation.js';
+import {
+    cleanupSupplierCatalogImportUploadOnError,
+    uploadSupplierCatalogImportFile,
+} from './supplierCatalogImport.middleware.js';
+import { enforceSupplierCatalogImportFeature } from './supplierCatalogAccess.middleware.js';
+import {
+    globalImportIdParamsSchema,
+    workspaceImportIdParamsSchema,
+} from './supplierCatalog.validation.js';
+
 import { authenticate } from '../../middlewares/authenticate.js';
 import {
     authorizeApplicationGlobalPermission,
@@ -127,6 +153,47 @@ supplierRouter.patch(
     updateWorkspaceSupplierStatus,
 );
 
+supplierArticleRouter.post(
+    '/imports/inspect',
+    authenticate,
+    validateRequest({ params: workspaceIdParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_IMPORT),
+    enforceWorkspaceAccessMode(),
+    enforceSupplierCatalogImportFeature,
+    uploadSupplierCatalogImportFile,
+    workspaceArticleImport.inspect,
+    cleanupSupplierCatalogImportUploadOnError,
+);
+
+supplierArticleRouter.post(
+    '/imports/:importId/preview',
+    authenticate,
+    validateRequest({
+        params: workspaceImportIdParamsSchema,
+        body: articleImportPreviewBodySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_IMPORT),
+    enforceWorkspaceAccessMode(),
+    enforceSupplierCatalogImportFeature,
+    workspaceArticleImport.preview,
+);
+
+supplierArticleRouter.post(
+    '/imports/:importId/commit',
+    authenticate,
+    validateRequest({ params: workspaceImportIdParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_IMPORT),
+    enforceWorkspaceAccessMode(),
+    enforceSupplierCatalogImportFeature,
+    workspaceArticleImport.commit,
+);
+
 supplierArticleRouter.get(
     '/',
     authenticate,
@@ -163,6 +230,44 @@ supplierArticleRouter.patch(
     authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
     enforceWorkspaceAccessMode(),
     updateWorkspaceArticle,
+);
+
+supplierArticleRouter.get(
+    '/:articleId/tariffs',
+    authenticate,
+    validateRequest({ params: articleTariffParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_READ),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_READ),
+    listWorkspaceArticleTariffs,
+);
+
+supplierArticleRouter.post(
+    '/:articleId/tariffs/:tariffId/correction',
+    authenticate,
+    validateRequest({
+        params: articleTariffRevisionParamsSchema,
+        body: correctArticlePriceBodySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_MANAGE),
+    enforceWorkspaceAccessMode(),
+    correctWorkspaceArticleTariff,
+);
+
+supplierArticleRouter.post(
+    '/:articleId/tariffs/:tariffId/period-correction',
+    authenticate,
+    validateRequest({
+        params: articleTariffRevisionParamsSchema,
+        body: correctArticleTariffPeriodBodySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_MANAGE),
+    enforceWorkspaceAccessMode(),
+    correctWorkspaceArticleTariffPeriod,
 );
 
 supplierArticleRouter.patch(
@@ -255,6 +360,37 @@ supplierReferenceGlobalRouter.get(
     ),
     validateRequest({ query: globalArticleListQuerySchema }),
     listGlobalArticles,
+);
+
+supplierReferenceGlobalRouter.post(
+    '/articles/imports/inspect',
+    authorizeApplicationGlobalPermission(
+        SUPPLIER_CATALOG_GLOBAL_PERMISSION.MANAGE,
+    ),
+    uploadSupplierCatalogImportFile,
+    globalArticleImport.inspect,
+    cleanupSupplierCatalogImportUploadOnError,
+);
+
+supplierReferenceGlobalRouter.post(
+    '/articles/imports/:importId/preview',
+    authorizeApplicationGlobalPermission(
+        SUPPLIER_CATALOG_GLOBAL_PERMISSION.MANAGE,
+    ),
+    validateRequest({
+        params: globalImportIdParamsSchema,
+        body: articleImportPreviewBodySchema,
+    }),
+    globalArticleImport.preview,
+);
+
+supplierReferenceGlobalRouter.post(
+    '/articles/imports/:importId/commit',
+    authorizeApplicationGlobalPermission(
+        SUPPLIER_CATALOG_GLOBAL_PERMISSION.MANAGE,
+    ),
+    validateRequest({ params: globalImportIdParamsSchema }),
+    globalArticleImport.commit,
 );
 
 supplierReferenceGlobalRouter.post(

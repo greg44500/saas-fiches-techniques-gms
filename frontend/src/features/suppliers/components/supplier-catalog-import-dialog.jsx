@@ -1,17 +1,15 @@
+import { SupplierImportSelector } from '@/features/suppliers/components/supplier-import-selector';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { DatePicker } from '@/components/forms/date-picker';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import {
-  DialogClose,
   DialogContent,
-  DialogFooter,
-  DialogHeader,
   DialogOverlay,
   DialogPortal,
   DialogRoot,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import {
   Field,
@@ -19,6 +17,9 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { ImportFilePicker } from '@/features/imports/components/import-file-picker';
+import { ImportWizardFooter } from '@/features/imports/components/import-wizard-footer';
+import { ImportWizardHeader } from '@/features/imports/components/import-wizard-header';
 import {
   Select,
   SelectContent,
@@ -49,6 +50,11 @@ const MAPPING_FIELDS = Object.freeze([
   ['unitCount', 'Nombre d’unités'],
   ['quantityPerUnit', 'Quantité par unité'],
   ['unit', 'Unité'],
+  ['netWeight', 'Poids net'],
+  ['netWeightUnit', 'Unité du poids net'],
+  ['drainedNetWeight', 'Poids net égoutté'],
+  ['drainedNetWeightUnit', 'Unité du poids net égoutté'],
+  ['supplierLabel', 'Libellé fournisseur du conditionnement'],
   ['priceAmount', 'Prix HT'],
   ['priceBasis', 'Unité du prix (Kilo, Pièce, etc.)'],
 ]);
@@ -61,6 +67,10 @@ function autoDetectMapping(headers) {
     terms.some((term) => header.includes(term)));
   const findExact = (...terms) => normalized.findIndex((header) =>
     terms.includes(header.trim()));
+  const findWithout = (excludedTerms, ...terms) =>
+    normalized.findIndex((header) =>
+      terms.some((term) => header.includes(term))
+      && !excludedTerms.some((term) => header.includes(term)));
 
   const candidates = {
     supplierReference: find('reference', 'ref article', 'code article', 'sku'),
@@ -68,10 +78,38 @@ function autoDetectMapping(headers) {
     brand: find('marque', 'brand'),
     containerType: find('conditionnement', 'contenant', 'colisage'),
     unitCount: findExact('unites', 'nb unites', 'nombre unites'),
-    quantityPerUnit: find('quantite', 'qte'),
+    quantityPerUnit: find(
+      'quantite par unite',
+      'qte par unite',
+      'quantite unite',
+      'qte unite',
+      'grammage',
+    ),
     unit: findExact('unite', 'unit', 'uom'),
-    priceAmount: find('prix', 'tarif', 'price'),
-    priceBasis: find('base', 'unite prix', 'prix par'),
+    netWeight: findWithout(['egoutte'], 'poids net'),
+    netWeightUnit: findWithout(
+      ['egoutte'],
+      'unite poids net',
+      'unite du poids net',
+    ),
+    drainedNetWeight: find(
+      'poids net egoutte',
+      'poids egoutte',
+    ),
+    drainedNetWeightUnit: find(
+      'unite poids net egoutte',
+      'unite poids egoutte',
+    ),
+    supplierLabel: find(
+      'libelle fournisseur',
+      'libelle conditionnement',
+    ),
+    priceAmount: findWithout(
+      ['unite du prix', 'unite prix', 'prix par', 'base prix'],
+      'prix ht', 'prix', 'tarif', 'price',
+    ),
+    priceBasis: find('base', 'unite du prix', 'unite prix', 'prix par'),
+    currency: find('devise', 'currency'),
   };
 
   return Object.fromEntries(
@@ -85,6 +123,7 @@ function SupplierCatalogImportDialog({
   mode = 'workspace',
   onClose,
   onCommitted,
+  canCreateSupplier = false,
   open,
   suppliers,
   workspaceId,
@@ -100,6 +139,7 @@ function SupplierCatalogImportDialog({
   const [validTo, setValidTo] = useState('');
   const [mapping, setMapping] = useState({});
   const [preview, setPreview] = useState(null);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
   const [inspectWorkspace, inspectWorkspaceState] =
@@ -137,10 +177,12 @@ function SupplierCatalogImportDialog({
     setValidTo('');
     setMapping({});
     setPreview(null);
+    setResult(null);
     setError('');
   }, [open]);
 
   const invalidCount = preview?.counts?.INVALID ?? 0;
+  const step = result ? 'done' : preview ? 'preview' : inspectResult ? 'mapping' : 'upload';
 
   const headerItems = useMemo(() => (
     inspectResult?.headers?.map((header, index) => ({
@@ -252,6 +294,7 @@ function SupplierCatalogImportDialog({
           importId: inspectResult.importId,
         }).unwrap();
 
+      setResult(result);
       onCommitted(result);
     } catch (commitError) {
       setError(getApiErrorMessage(
@@ -272,78 +315,42 @@ function SupplierCatalogImportDialog({
       <DialogPortal>
         <DialogOverlay />
         <DialogContent
-          className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-y-auto"
+          className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-x-hidden overflow-y-auto"
           initialFocus={cancelRef}
         >
-          <DialogHeader>
-            <div className="flex items-center gap-2">
-              <DialogTitle>Importer un catalogue fournisseur</DialogTitle>
-              <InfoTooltip
-                content="Le fichier reste temporaire. Les écritures définitives ne sont effectuées qu’à la confirmation."
-                label="À propos de l’import d’un catalogue fournisseur"
-              />
-            </div>
-          </DialogHeader>
+          <ImportWizardHeader
+            helpText="Ajoutez le catalogue d’un Fournisseur avec ses références et ses tarifs. Vous pourrez vérifier les informations et les correspondances avant de confirmer l’import."
+            step={step}
+            title="Importer un catalogue fournisseur"
+          />
 
-          <div className="mt-5 space-y-6">
-            {!inspectResult && (
-              <section className="space-y-4">
-                <Field>
-                  <div className="flex items-center gap-1">
-                    <FieldLabel htmlFor="supplier-catalog-file">Fichier</FieldLabel>
-                    <InfoTooltip
-                      content="Formats autorisés : CSV, XLS et XLSX."
-                      label="Formats de fichier autorisés"
-                    />
-                  </div>
-                  <Input
-                    accept=".csv,.xls,.xlsx"
-                    id="supplier-catalog-file"
-                    onChange={(event) => {
-                      setFile(event.target.files?.[0] ?? null);
-                      setError('');
-                    }}
-                    type="file"
-                  />
-                </Field>
-                <Button disabled={pending || !file} onClick={inspect} type="button">
-                  {pending ? 'Inspection…' : 'Inspecter le fichier'}
-                </Button>
-              </section>
+          <div className="mt-5 min-w-0 space-y-6">
+            {step === 'upload' && (
+              <ImportFilePicker
+                disabled={pending}
+                file={file}
+                id="supplier-catalog-file"
+                onChange={(value) => {
+                  setFile(value);
+                  setError('');
+                }}
+              />
             )}
 
-            {inspectResult && (
+            {step === 'mapping' && inspectResult && (
               <>
                 <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Field className="sm:col-span-2">
-                    <FieldLabel>Fournisseur</FieldLabel>
-                    <Select
-                      items={[
-                        { value: NONE, label: 'Sélectionner' },
-                        ...suppliers.map((supplier) => ({
-                          value: supplier.id,
-                          label: supplier.name,
-                        })),
-                      ]}
-                      onValueChange={(value) => {
-                        setSupplierId(value);
-                        setPreview(null);
-                      }}
+                  <div className="sm:col-span-2">
+                    <SupplierImportSelector
+                      ariaLabel="Fournisseur du catalogue"
+                      canCreate={canCreateSupplier}
+                      mode={mode}
+                      onChange={(id) => { setSupplierId(id); setPreview(null); }}
+                      suppliers={suppliers}
                       value={supplierId}
-                    >
-                      <SelectTrigger aria-label="Fournisseur du catalogue">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE}>Sélectionner</SelectItem>
-                        {suppliers.map((supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.id}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
+                      workspaceId={workspaceId}
+                    />
+                  </div>
 
                   <Field className="sm:col-span-2">
                     <FieldLabel htmlFor="supplier-catalog-edition">
@@ -365,13 +372,12 @@ function SupplierCatalogImportDialog({
                     <FieldLabel htmlFor="supplier-catalog-edition-date">
                       Date d’édition
                     </FieldLabel>
-                    <Input
+                    <DatePicker
                       id="supplier-catalog-edition-date"
-                      onChange={(event) => {
-                        setEditionDate(event.target.value);
+                      onChange={(value) => {
+                        setEditionDate(value);
                         setPreview(null);
                       }}
-                      type="date"
                       value={editionDate}
                     />
                   </Field>
@@ -380,13 +386,13 @@ function SupplierCatalogImportDialog({
                     <FieldLabel htmlFor="supplier-catalog-valid-from">
                       Valide à partir du
                     </FieldLabel>
-                    <Input
+                    <DatePicker
                       id="supplier-catalog-valid-from"
-                      onChange={(event) => {
-                        setValidFrom(event.target.value);
+                      max={validTo || undefined}
+                      onChange={(value) => {
+                        setValidFrom(value);
                         setPreview(null);
                       }}
-                      type="date"
                       value={validFrom}
                     />
                   </Field>
@@ -395,13 +401,13 @@ function SupplierCatalogImportDialog({
                     <FieldLabel htmlFor="supplier-catalog-valid-to">
                       Valide jusqu’au
                     </FieldLabel>
-                    <Input
+                    <DatePicker
                       id="supplier-catalog-valid-to"
-                      onChange={(event) => {
-                        setValidTo(event.target.value);
+                      min={validFrom || undefined}
+                      onChange={(value) => {
+                        setValidTo(value);
                         setPreview(null);
                       }}
-                      type="date"
                       value={validTo}
                     />
                   </Field>
@@ -409,10 +415,10 @@ function SupplierCatalogImportDialog({
 
                 <section className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">Mapping des colonnes</h3>
+                    <h3 className="font-semibold">Associer les colonnes</h3>
                     <InfoTooltip
-                      content="Associez les colonnes utiles. Les autres colonnes sont ignorées. En V1, la devise est fixée à l’euro (EUR)."
-                      label="À propos du mapping des colonnes"
+                      content="Indiquez quelles colonnes du fichier correspondent aux informations du catalogue. Les colonnes inutiles peuvent rester non associées."
+                      label="À propos de l’association des colonnes"
                     />
                   </div>
 
@@ -448,16 +454,12 @@ function SupplierCatalogImportDialog({
                     ))}
                   </div>
 
-                  <Button disabled={pending} onClick={runPreview} type="button">
-                    {previewWorkspaceState.isLoading || previewGlobalState.isLoading
-                      ? 'Prévisualisation…'
-                      : 'Prévisualiser'}
-                  </Button>
+
                 </section>
               </>
             )}
 
-            {preview && (
+            {step === 'preview' && preview && (
               <section className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -512,6 +514,15 @@ function SupplierCatalogImportDialog({
                   </table>
                 </div>
 
+                <Button
+                  disabled={pending}
+                  onClick={() => setPreview(null)}
+                  type="button"
+                  variant="outline"
+                >
+                  Modifier les correspondances
+                </Button>
+
                 {invalidCount > 0 && (
                   <p className="text-sm text-destructive">
                     Corrigez le fichier ou le mapping avant de confirmer : les lignes invalides bloquent l’import.
@@ -520,29 +531,44 @@ function SupplierCatalogImportDialog({
               </section>
             )}
 
+            {step === 'done' && result && (
+              <section className="rounded-lg border border-border p-4">
+                <h3 className="font-semibold">Import terminé</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {result.changedLines ?? 0} ligne(s) ajoutée(s) ou actualisée(s).
+                  Vous pouvez retrouver ce catalogue dans l’onglet Catalogues.
+                </p>
+              </section>
+            )}
             <FieldError>{error}</FieldError>
           </div>
 
-          <DialogFooter>
-            <DialogClose
-              disabled={pending}
-              ref={cancelRef}
-              render={<Button type="button" variant="outline" />}
-            >
-              Fermer
-            </DialogClose>
-            {preview && (
-              <Button
-                disabled={pending || invalidCount > 0}
-                onClick={commit}
-                type="button"
-              >
-                {commitWorkspaceState.isLoading || commitGlobalState.isLoading
-                  ? 'Confirmation…'
-                  : 'Confirmer l’import'}
-              </Button>
-            )}
-          </DialogFooter>
+          <ImportWizardFooter
+            cancelRef={cancelRef}
+            pending={pending}
+            primaryAction={
+              step === 'upload'
+                ? inspect
+                : step === 'mapping'
+                  ? runPreview
+                  : step === 'preview' ? commit : null
+            }
+            primaryDisabled={
+              (step === 'upload' && !file)
+              || (step === 'preview' && invalidCount > 0)
+            }
+            primaryLabel={
+              step === 'upload'
+                ? (inspectWorkspaceState.isLoading || inspectGlobalState.isLoading
+                  ? 'Analyse…' : 'Analyser le fichier')
+                : step === 'mapping'
+                  ? (previewWorkspaceState.isLoading || previewGlobalState.isLoading
+                    ? 'Prévisualisation…' : 'Prévisualiser')
+                  : (commitWorkspaceState.isLoading || commitGlobalState.isLoading
+                    ? 'Confirmation…' : 'Confirmer l’import')
+            }
+            step={step}
+          />
         </DialogContent>
       </DialogPortal>
     </DialogRoot>

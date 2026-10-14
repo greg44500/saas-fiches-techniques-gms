@@ -1365,3 +1365,330 @@ conditionnement ni aucune provenance de marché ne sont inventés dans ce
 corpus historique. En revanche, la maintenance Platform accepte désormais
 un prix `PACKAGE`, son conditionnement plat et sa provenance structurée ; les
 Workspaces les consultent en lecture seule.
+
+---
+
+## Complément validé — import autonome d'une liste d'Articles fournisseur (2026-10-09)
+
+Le flux **Importer des Articles** est distinct du flux **Importer un catalogue**.
+Il doit être accessible depuis l'onglet Articles et, avec l'autorité Application Global,
+depuis le référentiel partagé. Le fournisseur est choisi explicitement, puis l'utilisateur
+importe un CSV/XLS/XLSX, associe les colonnes, prévisualise et confirme.
+
+- **Identité commerciale** : Fournisseur × référence fournisseur normalisée, avec
+  ownership GLOBAL_SHARED ou WORKSPACE_PRIVATE. Une référence absente ne doit jamais être
+  inventée : la ligne est affichée « à résoudre », mais aucun Article n'est créé.
+- **Association à M-002** : un Article peut désormais être ACTIVE avec `productVariant=null`.
+  L'API expose `associationStatus=PENDING` ou `ASSOCIATED`. L'association ultérieure
+  est explicite, sous permission métier, avec validation de la Référence Produit.
+  Un Article non associé n'est pas utilisable pour valoriser une fiche, fixer un prix
+  sur base Produit, ni proposer une alternative d'optimisation.
+- **Réimport** : une référence existante dans la même portée est réutilisée.
+  Si son descriptif ou conditionnement change, les informations Article sont actualisées ;
+  le Produit associé, l'identité fournisseur, les tarifs et la portée ne changent pas.
+  Un Article global visible depuis un Workspace n'est jamais altéré ou recopié lors
+  de cet import. Les Articles archivés nécessitent une réactivation explicite.
+- **Sécurité** : permission ARTICLE_MANAGE et CATALOG_IMPORT en Workspace, capability
+  commerciale d'import existante, autorité Application Global MANAGE au global,
+  contrôle d'accès au Workspace, inspection ClamAV, transactions, verrouillage
+  par référence et index d'unicité MongoDB.
+- **Prévisualisation** : CREATE / UPDATE / UNCHANGED / SHARED / SKIPPED / INVALID.
+  Une référence dupliquée dans le fichier ou un Article archivé bloque la confirmation ;
+  une ligne SKIPPED est signalée mais n'empêche pas les autres lignes valides.
+- **Stockage et audit** : sessions temporaires TTL 30 minutes ; pas de stockage
+  commercial de fichier ; événement métier durable pour chaque import confirmé,
+  contenant les identifiants des Articles créés et actualisés.
+- **Frontière commerciale** : ne crée ni édition de catalogue, ni ligne de catalogue,
+  ni Tarif fournisseur, ni Prix négocié ou Prix facturé. L'import catalogue historique
+  reste inchangé.
+
+Ce complément autorise les adaptations strictement nécessaires des modèles et services
+M-003/M-004/M-005 ; il n'introduit aucun changement Core. L'annulation d'import et la
+suppression contrôlée d'une édition commerciale sont un besoin distinct à finaliser,
+avec vérification de toutes les dépendances économiques, sans effacer implicitement
+les données déjà utilisées dans d'autres Dossiers ou éditions.
+
+---
+
+## Complément validé — cohérence UX des imports métier (2026-10-13)
+
+Les assistants d'import Produits M-002, Articles fournisseur M-003 et
+Catalogues fournisseur M-003 partagent une **présentation cohérente**, sans
+fusionner leurs règles métier :
+
+- titre visible et courte aide métier dans une icône d'information accessible ;
+- sélection du fichier avec bouton « Choisir un fichier », nom du fichier ou
+  « Aucun fichier sélectionné » en français et indication CSV/XLS/XLSX ;
+- progression « Choisir → Associer → Vérifier → Terminer » ;
+- état actif distingué visuellement par un cercle, une bordure et une graisse
+  renforcés, états terminés cochés, étapes futures neutres ; statut également
+  accessible aux lecteurs d'écran, sans signification portée par la couleur seule ;
+- actions d'analyse, de prévisualisation, de confirmation et d'annulation situées
+  de façon cohérente en pied de dialogue ;
+- étape de fin lisible après confirmation réussie ; disposition responsive sans
+  défilement horizontal de toute la boîte de dialogue ;
+- correction possible du mapping après une prévisualisation M-003.
+
+L'identité Produit M-002, les contrôles d'import existants, les permissions,
+les contrats d'API et les règles économiques M-003 demeurent inchangés.
+
+---
+
+## Complément validé — liste tarifaire indépendante d'un catalogue (2026-10-13)
+
+Un Fournisseur peut transmettre une liste de prix valable pendant une période
+définie, sans édition de catalogue. Le parcours « Importer des Articles »
+accepte ainsi les colonnes de prix en plus des identifiants et conditionnements,
+sans imposer un Catalogue artificiel.
+
+- **Source métier** : `SupplierTariff` reste le modèle tarifaire de référence.
+  Chaque tarif possède soit une édition Catalogue, soit l'origine indépendante
+  `PRICE_LIST` (nom de la liste, import source, provenance et dates de validité).
+- **Temporalité** : date de début obligatoire pour une liste tarifaire ;
+  date de fin facultative. Début postérieur à la fin refusé. Les bornes sont
+  inclusives. Plusieurs listes historiques peuvent coexister sans chevauchement.
+- **Concurrence** : l'import refuse tout chevauchement avec un tarif courant
+  visible et applicable pour cet Article et cette portée. Aucun prix ancien
+  n'est remplacé, fusionné ou recalculé silencieusement.
+- **Sécurité** : les tarifs privés sur un Article global sont cloisonnés
+  au Workspace ; l'autorité de gestion et la capability de l'import restent
+  celles de M-003. Les autres Workspaces ne sont pas consultés lors de la
+  vérification des chevauchements.
+- **Cas sans prix** : le parcours Articles sans colonnes tarifaires reste
+  fonctionnel et ne crée aucun `SupplierTariff`.
+- **Association M-002** : un Article non associé conserve son prix commercial
+  source et peut afficher le prix ramené au kg/L/unité si la base et le
+  conditionnement le permettent. La valorisation d'une fiche nécessite
+  toujours l'association Produit préalable. Après association, la normalisation
+  est recalculée à la lecture côté serveur sans réécrire le tarif historique.
+- **Projection API** : la liste Articles expose un état de disponibilité
+  tarifaire, la provenance, les montants HT par conditionnement et par unité
+  calculables, et un libellé de conditionnement synthétisé par le backend.
+  Le frontend ne réalise aucun calcul monétaire ou de quantité.
+- **Complément d'affichage du conditionnement (2026-10-13)** : conserver
+  le libellé commercial et exposer une ligne secondaire calculée côté
+  backend : poids net total en kg pour une quantité de masse, volume total
+  en litres pour une quantité volumique, quantité totale pour UNIT.
+  Un poids net déclaré différent du total de masse calculé n'est ni
+  effacé ni adopté silencieusement : l'interface distingue le total
+  calculé et signale la valeur déclarée à vérifier. Si le conditionnement
+  est insuffisant, aucune quantité totale n'est inventée.
+- **Prix par pièce (2026-10-13)** : en plus des prix existants du colis
+  et de l'unité normalisée (kg/L/unité), le backend projette un prix par
+  pièce lorsque le colis décrit explicitement plusieurs éléments
+  (nombre entier supérieur à un, quantité par élément et unité définies)
+  et que le prix du colis est calculable. Aucun prix par pièce n'est
+  inventé pour un simple sac, un bidon ou un conditionnement incomplet.
+  La dimension UNIT reste portée par le prix normalisé M-002, sans
+  présumer que chaque élément commercial est une unité de recette.
+  Le tarif historique utilise son packagingSnapshot si présent.
+  La présentation arrondit à trois décimales, sans arrondi anticipé
+  du calcul interne. Aucune modification du modèle métier ni du Core.
+- **Compacité du tableau Articles (2026-10-13)** : les colonnes
+  Conditionnement et Tarif fournisseur HT affichent respectivement le
+  libellé commercial et le prix principal, sur une seule ligne chacun.
+  Si des projections complémentaires existent, un bouton icône
+  `PackageSearch` (quantité totale, avertissement sur le poids déclaré)
+  ou `Calculator` (prix par pièce, kg, L, UNIT selon disponibilité)
+  ouvre un popover au survol, au clic, au clavier ou au toucher.
+  Aucune icône n'est affichée si son popover serait vide. L'avertissement
+  de masse reste signalé par une icône de couleur `warning` avec
+  libellé accessible explicite. Les montants et quantités restent
+  ceux projetés par le backend, sans calcul React. La fiche détail
+  Article conserve son affichage développé.
+- **UX** : compteurs Fournisseurs actifs et Articles actifs indépendants
+  de la pagination ; badge « Non associé » ; suppression du sous-libellé
+  de portée dans la colonne Fournisseur de l'onglet Articles.
+- **Migration** : l'ancien index unique par édition/Article doit être
+  remplacé par un index qui ne contraint que les vrais tarifs de catalogue ;
+  index dédié aux listes tarifaires. Migration uniquement après audit M-003
+  et contrôle de la base concernée.
+
+Ce complément ne crée ni Catalogue, ni édition fictive, ni seconde primitive
+de Prix applicable. L'archivage d'une liste, la correction d'une période
+déjà enregistrée et la gestion assistée des collisions historiques constituent
+un workflow ultérieur à cadrer. Aucun test ou gate n'est présumé réussi.
+
+**Invariance historique des quantités :** chaque tarif de liste conserve une copie
+structurée du conditionnement tel qu'importé. Toute modification ultérieure
+de l'Article ne modifie pas son calcul économique historique.
+
+
+### Avenant validé — échéance tarifaire facultative et import immédiat (2026-10-13)
+
+La saisie d'une période n'est pas une condition pour importer des prix présents
+dans un fichier fournisseur.
+
+- **Option A validée** : si l'utilisateur ne déclare pas de période,
+  le backend rend le tarif applicable à l'instant de la confirmation de
+  l'import (`validFrom` horodaté côté serveur), avec `validTo = null`.
+  L'absence d'expiration déclarée ne signifie pas que le prix est garanti
+  indéfiniment par le Fournisseur.
+- Le backend génère également un intitulé de provenance lisible, au format
+  « Prix importés le jj/mm/aaaa » (date française). Aucune date ni aucun
+  montant ne sont calculés dans React.
+- **Période définie** : une case à cocher ouvre la référence de la liste de
+  prix, sa provenance et les deux calendriers français `jj/mm/aaaa`
+  (début obligatoire, fin facultative). Les dates sont transmises à l'API
+  au format ISO. Les imports existants avec nom et dates sans
+  `validityMode` restent acceptés par compatibilité.
+- **Import des prix** : une coche distincte permet d'importer seulement les
+  Articles même si le fichier possède des colonnes tarifaires. Les champs
+  de prix non retenus sont exclus du mapping envoyé au serveur.
+- **Unité commerciale** : le libellé devient « À quoi correspond le prix
+  indiqué dans le fichier ? » ; la colonne d'unité mappée du fichier
+  prévaut sur la valeur par défaut, les calculs restent backend.
+- **Intégrité historique** : les conflits de périodes, y compris les
+  tarifs sans date d'expiration, restent bloquants. Un réimport identique
+  n'écrase pas l'historique ; un changement de tarif doit être traité par
+  un workflow explicite distinct.
+
+Cet avenant précise la règle précédente « date de début obligatoire » :
+elle reste obligatoire *dans le modèle persistant*, mais elle peut être
+attribuée par le serveur à la confirmation plutôt que saisie par l'utilisateur.
+
+---
+
+## Avenant M-003 — correction des Articles et des prix privés (2026-10-13)
+
+**Décision produit :** un utilisateur habilité peut corriger ses propres données
+fournisseur depuis la fiche détaillée d'un Article, sans archiver l'Article
+ni réimporter le fichier. La correction ne doit pas détruire une valeur
+historique ni modifier les tarifs d'un autre Workspace.
+
+- **Présentation :** la désignation fournisseur est en premier et la
+  référence commerciale en second, sous la forme « Réf. fournisseur : ... ».
+  Le nom de la liste de prix est retiré du tableau, mais reste disponible
+  dans le détail et l'historique.
+- **Association Produit :** un Article privé actif peut être associé,
+  réassocié ou dissocié explicitement. Le retrait passe par
+  `PATCH /supplier-articles/:articleId` avec `productVariantId: null`.
+  La référence fournisseur et la désignation ne sont pas modifiées par
+  cette opération. Le backend vérifie l'identité et le statut du Produit
+  en cas d'association.
+- **Détails et informations commerciales :** consultation de l'Article,
+  modification de sa désignation, de sa marque et de son conditionnement
+  existants via l'API M-003. Les anciens tarifs conservent leur
+  `packagingSnapshot` pour l'historique économique.
+- **Correction d'erreur tarifaire :** un prix provenant d'une mercuriale
+  indépendante privée (`sourceKind=PRICE_LIST`) peut être corrigé sur
+  sa période existante avec nouveau montant et base tarifaire, et motif
+  facultatif (500 caractères maximum). Un motif absent ou vide devient `null`.
+  L'ancienne version passe à `isCurrent=false`, sans suppression ; la
+  nouvelle version immuable conserve l'import d'origine, le conditionnement,
+  la période, la devise, et référence l'ancienne version (`replacesTariff`).
+  Un événement d'audit `SUPPLIER_TARIFF_CORRECTED` est produit
+  avec acteur, Article, identifiant antérieur et motif facultatif
+  (`null` si aucun motif n'a été saisi).
+- **Concurrence :** une même correction est sérialisée dans une
+  transaction par le verrou Commerce déjà utilisé à l'import ; la lecture
+  de `isCurrent=true` est effectuée après acquisition du verrou.
+  Un index unique partiel garantit une seule combinaison
+  import/Article/numéro de révision. L'unicité de la révision courante
+  relève du protocole transactionnel, et non d'un index unique direct
+  sur `isCurrent` : celui-ci empêchait le remplacement atomique
+  d'une révision par une autre sous MongoDB.
+- **Sécurité :** la lecture de l'historique requiert les permissions
+  `supplier:article:read` ET `supplier:catalog:read` ; la correction
+  exige `supplier:article:manage` ET `supplier:catalog:manage` et les
+  contrôles d'accès Workspace. Un Article global ne devient pas modifiable
+  par un Workspace pour autant. Seuls les tarifs privés du Workspace
+  peuvent être corrigés dans ce parcours.
+- **Hors périmètre de ce correctif :** modification directe d'un tarif
+  issu d'une édition de catalogue, création d'un nouveau tarif à une
+  date d'effet différente, extinction/archivage d'une liste complète,
+  réécriture des valorisations historiques. Un nouveau prix à une
+  nouvelle date ne doit pas être simulé par une « correction de saisie »
+  rétrospective. Ces workflows temporels devront être cadrés séparément.
+
+Le tableau et les formulaires React consomment exclusivement les projections
+de prix/conditionnement calculées dans le backend ; aucun calcul monétaire
+n'est ajouté dans le frontend.
+
+---
+
+## Avenant validé — dernier tarif connu et correction des périodes (2026-10-14)
+
+**Décision produit expresse :** si aucun tarif actuellement applicable n'existe,
+le dernier tarif fournisseur de période expirée reste visible ET peut valoriser
+les Fiches techniques, sous réserve des politiques de priorité des prix
+du Workspace. Son état `EXPIRED` et l'alerte
+`LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED` sont obligatoires et transmis par
+l'API aux consommateurs M-004. Les tarifs futurs ne sont pas utilisés
+avant leur début. Le dernier prix connu est sélectionné par la fin
+de période la plus récente, puis le début de période en départage ;
+une révision remplacée ou une édition Catalogue archivée est exclue.
+Tout conflit entre tarifs simultanément applicables demeure bloquant
+et n'autorise pas de sélection arbitraire.
+
+**Dates civiles :** les dates de fin explicites saisies sans heure sont
+inclusives jusqu'à la fin de la journée métier (Europe/Paris).
+Les dates horodatées par le serveur pour `FROM_IMPORT` conservent leur
+précision. La même comparaison de périodes est utilisée pour importer
+et corriger, avec prise en compte des changements d'heure.
+
+**Correction de la période :** un utilisateur habilité peut modifier
+la date de début et la date de fin d'une liste privée `PRICE_LIST`,
+y compris lorsqu'elle est expirée, sans réimport. Le montant, la base,
+la devise, la provenance et le conditionnement figé demeurent inchangés.
+La correction crée une nouvelle révision immuable, marque l'ancienne
+comme remplacée, conserve les deux périodes et journalise l'acteur et
+les anciennes/nouvelles dates. Les chevauchements, le cloisonnement
+Workspace, les droits ARTICLE_MANAGE + CATALOG_MANAGE et l'accès
+en écriture sont vérifiés. Les tarifs Catalogue globaux ne sont pas
+modifiables par ce parcours. Motif facultatif (max. 500 caractères).
+
+**Interface :** les colonnes du tableau Articles identifient le dernier
+tarif expiré avec un avertissement non bloquant ; son détail et les
+prix complémentaires restent consultables. La fiche Article propose
+« Modifier la période » en plus de « Corriger le prix » et retrouve
+son historique. La carte du Prix applicable et les lignes de Fiche
+technique signalent explicitement toute valorisation à partir d'un
+tarif expiré, sans remettre en cause les valorisations historisées.
+
+**Filtres Articles :** toolbar compacte sans labels visuels Recherche
+ou Statut, avec recherche serveur « Rechercher un article… », filtre
+Fournisseur recherchable et filtre Statut juxtaposés ; filtres combinables,
+page réinitialisée à 1. Le sélecteur de Fournisseurs interroge
+l'API et invite à affiner si plus de 50 résultats, sans tronquer
+silencieusement. Labels accessibles conservés.
+
+---
+
+## Complément UX validé — drawer Article à onglets (2026-10-14)
+
+Le drawer « Article fournisseur » suit désormais la même composition que
+les drawers Fournisseur, Dossier et Analyse : trois onglets métier
+`Infos Article`, `Association`, `Tarif fournisseur`
+(`Tabs`/variante `section` déjà partagés par l'application).
+
+- Ouverture initiale sur `Infos Article` ; réinitialisation de cet onglet
+  lors de la réouverture du drawer ou de la sélection d'un autre Article.
+  La désignation reste dans le titre du drawer, sans répétition dans
+  le contenu ; référence, nom du fournisseur, marque, conditionnement
+  et statut composent un tableau de lecture compact. Action `Modifier`
+  maintenue uniquement selon les droits et l'état de l'Article.
+- `Association` affiche le Produit associé ou `Non associé` ; le
+  bouton `Modifier l’association` conserve les gardes existantes.
+  L'avertissement concernant les valorisations futures et la
+  conservation des données historiques est consultable via un
+  `InfoTooltip` placé au niveau de cette action, sans encadré
+  permanent.
+- `Tarif fournisseur` reste invisible sans autorisation de lecture.
+  Prix principal, prix complémentaires calculés par M-003,
+  provenance et dates de validité sont visibles immédiatement.
+  Le dernier prix expiré conserve son avertissement explicite ;
+  `Corriger le prix` et `Modifier la période` restent conditionnés
+  par les permissions, le type `PRICE_LIST` et le statut actif.
+  Ces deux actions sont positionnées dans l'en-tête de la carte
+  « Prix fournisseur HT », à droite du titre, comme les actions des
+  autres onglets. En largeur réduite, elles se réorganisent sans
+  débordement ; aucun bloc d'actions supplémentaire ne s'affiche
+  sous la carte.
+  L'historique reste replié initialement et consultable sur demande,
+  avec défilement local borné si nécessaire.
+
+La réduction du scroll vise les cas courants ; elle ne masque
+aucune information nécessaire et ne prétend pas empêcher le défilement
+sur petit écran. L'accès historique, le backend, les règles de
+valorisation, les schémas MongoDB et les primitives Core sont inchangés.

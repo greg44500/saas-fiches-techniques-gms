@@ -184,6 +184,11 @@ function DossierApplicablePriceCard({
                 applicable.resolvedSource,
               )}
             </p>
+            {applicable.price?.validityStatus === 'EXPIRED' && (
+              <p className="mt-1 text-xs font-medium text-warning" role="note">
+                Dernier prix connu — tarif expiré, à confirmer auprès du fournisseur.
+              </p>
+            )}
           </>
         )}
       </div>

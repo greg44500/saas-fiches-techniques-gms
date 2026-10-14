@@ -101,7 +101,7 @@ function SupplierFormDialog({
     }
 
     const body = {
-      name: name.trim(),
+      name: name.trim().replace(/\s+/g, ' ').toLocaleUpperCase('fr'),
       supplierCode: supplierCode.trim() || null,
       legalName: legalName.trim() || null,
       website: website.trim() || null,
@@ -168,7 +168,7 @@ function SupplierFormDialog({
               <Input
                 id="supplier-name"
                 maxLength={160}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => setName(event.target.value.toLocaleUpperCase('fr'))}
                 value={name}
               />
             </Field>

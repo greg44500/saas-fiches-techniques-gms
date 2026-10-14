@@ -4,6 +4,7 @@ import {
 import {
     SUPPLIER_SCOPE,
 } from './supplierCatalog.registry.js';
+import { SUPPLIER_CATALOG_PERMISSION } from './supplierCatalogPermission.registry.js';
 import {
     SUPPLIER_CATALOG_GLOBAL_PERMISSION,
 } from './supplierCatalogGlobalPermission.registry.js';
@@ -105,6 +106,9 @@ const updateWorkspaceSupplierStatus = async (req, res) => {
 const listWorkspaceArticles = async (req, res) => {
     const result = await listSupplierArticles({
         workspaceId: req.workspace._id,
+        includeSupplierTariff: req.permissions.includes(
+            SUPPLIER_CATALOG_PERMISSION.CATALOG_READ,
+        ),
         ...req.validated.query,
     });
 
@@ -220,6 +224,7 @@ const updateGlobalSupplierStatus = async (req, res) => {
 const listGlobalArticles = async (req, res) => {
     const result = await listSupplierArticles({
         globalOnly: true,
+        includeSupplierTariff: true,
         ...req.validated.query,
     });
 

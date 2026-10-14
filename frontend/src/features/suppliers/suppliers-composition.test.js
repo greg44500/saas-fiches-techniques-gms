@@ -42,6 +42,9 @@ describe('suppliers frontend composition', () => {
     expect(APPLICATION_FRONTEND_ROUTES.workspaceRoutes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: 'suppliers' }),
+        expect.objectContaining({
+          path: 'suppliers/catalogs/:catalogId',
+        }),
       ]),
     );
 

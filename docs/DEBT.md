@@ -778,3 +778,45 @@ source / méthode de calibration validée
 
 Cette dette ne bloque pas M-002 : une Référence sans Prix repère reste
 exploitable et M-004 applique alors la chaîne de résolution des prix existante.
+
+---
+
+### Complément M-003 — annulation contrôlée et historique des imports (2026-10-09)
+
+**État : à cadrer / non implémenté pour le flux catalogue.** L'utilisateur doit pouvoir
+supprimer un catalogue importé par erreur et, quand aucune dépendance économique ne
+l'interdit, retirer uniquement les Articles créés exclusivement par cet import.
+La suppression ne doit pas effacer des Articles préexistants, partagés,
+réemployés par une autre édition, ni les prix ou snapshots historiques des Dossiers.
+Les événements d'import d'Articles conservent les identifiants utiles au futur
+rapprochement, mais ne sont pas à eux seuls une implémentation d'annulation.
+Ne pas présenter l'archivage actuel comme une suppression.
+
+---
+
+### M-003 — cycle de vie des listes tarifaires indépendantes (2026-10-13)
+
+**Statut : différé après livraison de l'import autonome avec prix.**
+
+Les listes tarifaires importées sont historisées et les chevauchements de
+période sont refusés. La V1 ne fournit pas encore d'interface de remplacement,
+archivage, correction de dates ou résolution des conflits d'une liste passée.
+Avant de proposer ces opérations, cadrer les droits, l'audit, la consultation
+des dépendances économiques et la préservation des états historiques. Ne pas
+supprimer un `SupplierTariff` pour forcer une nouvelle importation. Revoir
+également l'arbitrage métier lorsque des tarifs globaux et privés d'un même
+Article sont simultanément valides ; le serveur doit continuer à signaler
+l'ambiguïté au lieu de sélectionner arbitrairement un prix.
+
+---
+
+### M-003 — mises à jour tarifaires prospectives (2026-10-13)
+
+La correction d'une erreur tarifaire déjà saisie est désormais distincte
+de la communication d'un **nouveau prix à compter d'une date d'effet**.
+Le second parcours reste à concevoir, avec découpage atomique des
+périodes de validité, garantie d'absence de chevauchement entre sources,
+arbitrage privé/global, audit et historique économique. Ne jamais utiliser
+une correction rétrospective pour simuler un nouveau prix commercial.
+La correction des tarifs de catalogue dépend de l'édition concernée ;
+elle n'est pas ouverte depuis la fiche Article hors catalogue.

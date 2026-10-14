@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   ArrowDownUp,
   ArrowUpRight,
   MoreHorizontal,
@@ -818,6 +819,8 @@ function TechnicalSheetLineEditor({
       metadata,
       line.valuation?.applicableSource,
     );
+    const usesExpiredTariff = line.valuation?.alerts
+      ?.includes('LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED') ?? false;
     const lineKindDefinition =
       getLineKindDefinition(metadata, line.kind);
     const oppositeLineKindDefinition =
@@ -930,6 +933,7 @@ function TechnicalSheetLineEditor({
 
         <div className="min-w-0 lg:text-center">
           <MobileLabel>Prix unitaire hors taxe</MobileLabel>
+          <div className="flex items-center gap-1 lg:justify-center">
           <Tooltip>
             <TooltipTrigger
               aria-label={
@@ -966,6 +970,22 @@ function TechnicalSheetLineEditor({
                 : valuationPresentation.label}
             </TooltipContent>
           </Tooltip>
+          {usesExpiredTariff && (
+            <Tooltip>
+              <TooltipTrigger
+                aria-label="Dernier prix connu — tarif fournisseur expiré"
+                className="inline-flex shrink-0 text-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                type="button"
+              >
+                <AlertTriangle aria-hidden="true" className="size-4" />
+              </TooltipTrigger>
+              <TooltipContent>
+                Dernier prix connu utilisé pour la valorisation.
+                Ce tarif a expiré et doit être confirmé auprès du fournisseur.
+              </TooltipContent>
+            </Tooltip>
+          )}
+          </div>
         </div>
 
         <div className="min-w-0 lg:text-center">

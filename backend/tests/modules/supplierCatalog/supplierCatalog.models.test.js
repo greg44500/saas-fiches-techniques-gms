@@ -167,14 +167,37 @@ describe('M-003 supplier catalog models', () => {
                 options.name
                     === 'supplier_catalog_line_current_identity_unique',
         );
-        const tariffIndex = SupplierTariff.schema.indexes().find(
+        const catalogTariffIndex = SupplierTariff.schema.indexes().find(
             ([, options]) =>
                 options.name
-                    === 'supplier_tariff_current_edition_article_unique',
+                    === 'supplier_tariff_catalog_current_edition_v2_unique',
+        );
+        const priceListRevisionIndex = SupplierTariff.schema.indexes().find(
+            ([, options]) =>
+                options.name
+                    === 'supplier_price_list_import_article_revision_unique',
         );
 
         expect(lineIndex?.[1].unique).toBe(true);
-        expect(tariffIndex?.[1].unique).toBe(true);
+        expect(catalogTariffIndex?.[0]).toEqual({
+            catalogEdition: 1,
+            supplierArticle: 1,
+            isCurrent: 1,
+        });
+        expect(catalogTariffIndex?.[1].unique).toBe(true);
+        expect(catalogTariffIndex?.[1].partialFilterExpression).toEqual({
+            isCurrent: true,
+            catalogEdition: { $type: 'objectId' },
+        });
+        expect(priceListRevisionIndex?.[0]).toEqual({
+            sourceImportId: 1,
+            supplierArticle: 1,
+            revision: 1,
+        });
+        expect(priceListRevisionIndex?.[1].unique).toBe(true);
+        expect(priceListRevisionIndex?.[1].partialFilterExpression).toEqual({
+            sourceKind: 'PRICE_LIST',
+        });
     });
 
     it('rend les identités Article et édition uniques par portée', () => {

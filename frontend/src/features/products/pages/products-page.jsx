@@ -4,19 +4,20 @@ import {
   Euro,
   Eye,
   FileUp,
-  Minus,
+  MoreHorizontal,
   Plus,
+  Star,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
-import { DataTable, DataTableActions } from '@/components/data-display/data-table';
-import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { DataTable } from '@/components/data-display/data-table';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -82,6 +83,18 @@ function ProductsPage() {
 
   const productReferenceAccessQuery = useGetProductReferenceAccessQuery();
   const metadataQuery = useGetProductMetadataQuery(workspace.id);
+  const favoritesCountQuery = useSearchProductsQuery({
+    workspaceId: workspace.id,
+    scope: 'WORKSPACE',
+    page: 1,
+    limit: 1,
+  });
+  const allProductsCountQuery = useSearchProductsQuery({
+    workspaceId: workspace.id,
+    scope: 'REFERENCE',
+    page: 1,
+    limit: 1,
+  }, { skip: !canReferenceAccess });
   const productsQuery = useSearchProductsQuery({
     workspaceId: workspace.id,
     scope,
@@ -266,45 +279,58 @@ function ProductsPage() {
         );
 
         return (
-          <DataTableActions>
-            {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && result.variant && (
-              inFavorites ? (
-                <ActionIconButton
-                  Icon={Minus}
-                  disabled={mutationPending}
-                  label={'Retirer ' + referenceLabel + ' des favoris'}
-                  onClick={() => changeCatalog(result, false)}
-                  tooltipLabel="Retirer des favoris"
-                  variant="outline"
-                />
-              ) : canAttach ? (
-                <ActionIconButton
-                  Icon={Plus}
-                  disabled={mutationPending}
-                  label={'Ajouter ' + referenceLabel + ' aux favoris'}
-                  onClick={() => changeCatalog(result, true)}
-                  tooltipLabel="Ajouter aux favoris"
-                />
-              ) : null
-            )}
-            {result.variant
-            && can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE) && (
-              <ActionIconButton
-                Icon={Euro}
-                label={'Appliquer un prix indicatif à ' + referenceLabel}
-                onClick={() => setIndicativeVariant(result.variant)}
-                tooltipLabel="Appliquer un prix indicatif"
-                variant="outline"
-              />
-            )}
-            <ActionIconButton
-              Icon={Eye}
-              label={'Voir ' + referenceLabel}
-              onClick={() => openProduct(result.product.id)}
-              tooltipLabel="Voir"
-              variant="outline"
-            />
-          </DataTableActions>
+          <Popover>
+            <PopoverTrigger
+              aria-label={'Actions pour ' + referenceLabel}
+              className="inline-flex size-9 items-center justify-center rounded-md border border-border hover:bg-muted"
+            >
+              <MoreHorizontal aria-hidden="true" className="size-4" />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64">
+              {can(PRODUCT_PERMISSION.CATALOG_MANAGE) && result.variant && (
+                inFavorites ? (
+                  <button
+                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
+                    disabled={mutationPending}
+                    onClick={() => changeCatalog(result, false)}
+                    type="button"
+                  >
+                    <Star aria-hidden="true" className="size-4" />
+                    Retirer des favoris
+                  </button>
+                ) : canAttach ? (
+                  <button
+                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
+                    disabled={mutationPending}
+                    onClick={() => changeCatalog(result, true)}
+                    type="button"
+                  >
+                    <Star aria-hidden="true" className="size-4 fill-current" />
+                    Ajouter aux favoris
+                  </button>
+                ) : null
+              )}
+              {result.variant
+              && can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE) && (
+                <button
+                  className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted"
+                  onClick={() => setIndicativeVariant(result.variant)}
+                  type="button"
+                >
+                  <Euro aria-hidden="true" className="size-4" />
+                  Appliquer un prix indicatif
+                </button>
+              )}
+              <button
+                className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted"
+                onClick={() => openProduct(result.product.id)}
+                type="button"
+              >
+                <Eye aria-hidden="true" className="size-4" />
+                Voir le produit
+              </button>
+            </PopoverContent>
+          </Popover>
         );
       },
     },
@@ -362,10 +388,10 @@ function ProductsPage() {
         <TabsList aria-label="Portée du référentiel Produit" variant="section">
           {canReferenceAccess && (
             <TabsTrigger value="REFERENCE" variant="section">
-              Tous les produits
+              Tous les produits ({allProductsCountQuery.data?.pagination?.total ?? '—'})
             </TabsTrigger>
           )}
-          <TabsTrigger value="WORKSPACE" variant="section">Favoris</TabsTrigger>
+          <TabsTrigger value="WORKSPACE" variant="section">Favoris ({favoritesCountQuery.data?.pagination?.total ?? "—"})</TabsTrigger>
         </TabsList>
       </Tabs>
 

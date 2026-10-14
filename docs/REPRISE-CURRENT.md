@@ -382,3 +382,372 @@ Les ingrédients reçoivent des teintes distinctes depuis l'ordre de la baseline
 
 - M-005 : la comparaison visuelle des quantités utilise désormais une valeur d'origine barrée et une valeur simulée contiguë, sans flèche ; E2E contrôle explicitement ces deux états et le rechargement non persistant.
 - M-003 : l'inspection CSV nécessite toujours un vrai verdict ClamAV CLEAN. Le 503 FILE_INSPECTION_FAILED en environnement Windows signale un moteur indisponible ou en échec. Le runner E2E accepte `CLAMAV_BINARY_PATH` depuis l'environnement utilisateur (défaut `clamscan`). Aucun mock ni bypass antivirus n'est autorisé. Vérifier également les signatures locales ClamAV avant une nouvelle exécution E2E.
+
+---
+
+## Complément M-003 en cours — 2026-10-09
+
+Branche unique : `feature/m003-catalog-management-and-import-ux`.
+Lot « Importer une liste d'Articles fournisseur » implémenté côté modèle,
+API, frontend Workspace/global et tests ajoutés. Fonctionnalité non validée
+tant que le responsable produit n'a pas exécuté les tests locaux et la QA visuelle.
+
+Invariants : fournisseur et référence normalisée ; produit M-002 facultatif
+au stade import et obligatoire à l'usage économique ; déduplication au réimport ;
+aucune édition Catalogue ou tarif créé par le flux Articles ; séparation stricte
+GLOBAL_SHARED / WORKSPACE_PRIVATE. Tests à mener avec ClamAV fonctionnel et base
+de test dédiée, migration M-003 des nouveaux indexes à exécuter sur l'environnement
+de développement. Ne pas ouvrir de PR ni merger avant validation utilisateur.
+
+---
+
+## Reprise UX des imports — travail en attente de QA locale (2026-10-13)
+
+Branche active : `feature/m003-catalog-management-and-import-ux`.
+Complément UX implémenté pour les trois assistants d'import métier : Produits,
+Articles fournisseur, Catalogues fournisseur. Stepper quatre étapes avec état
+actif visuellement affirmé (bordure, couleur, typographie), coches d'étapes
+terminées et `aria-current`; information métier en infobulle accessible ;
+sélecteur de fichier francisé et formats acceptés ; footer commun ; récapitulatif
+final visible pour les parcours Fournisseurs.
+
+Les modifications sont frontend / tests / documentation, sans changement Core,
+API ou modèle DB dans ce complément. Les suites de tests existantes et E2E M-003
+ont été adaptées, avec nouveaux tests unitaires des composants d'import.
+**Aucun test local ou gate n'est déclaré vert à cette étape.** L'utilisateur
+exécute ensuite pull, lint, tests et QA visuelle sur Windows. Corriger les
+éventuels échecs sur la même branche ; une seule PR finale après accord.
+
+
+---
+
+## Complément M-003 — création rapide d'un Fournisseur depuis les imports (2026-10-13)
+
+Branche : `feature/m003-catalog-management-and-import-ux`.
+
+- Les assistants d'import Articles fournisseur et Catalogues utilisent désormais un sélecteur partagé de Fournisseur avec recherche serveur par nom. Il évite de dépendre uniquement des cent premiers Fournisseurs chargés par la page.
+- Lorsque l'utilisateur possède les droits de création de Fournisseur de la portée concernée (Workspace ou Application Global), il peut créer une fiche minimale par son nom et la sélectionner immédiatement, sans interrompre l'import.
+- Les API existantes de création sont réutilisées, sans changement de modèle, de Core, de permissions ou de contrat d'import.
+- La nouvelle identité reste respectivement WORKSPACE_PRIVATE ou GLOBAL_SHARED selon le contexte. La création globale reste réservée aux administrateurs habilités par Application Global.
+- Aucun nouveau statut de validation n'a été introduit : le contrat actuel ne connaît que ACTIVE/ARCHIVED. Le workflow de vérification métier distinct (rôle du valideur, règles de disponibilité des Articles et prix, gestion des homonymes et éventuels blocages) doit faire l'objet d'une décision fonctionnelle et d'un avenant contractuel avant tout code.
+- Le contrôle d'homonyme dans le sélecteur est une aide UX et non une garantie d'unicité serveur.
+- Tests des dialogues et E2E adaptés ; tests nouveaux pour la sélection, les permissions et la création rapide. **Aucune exécution locale ni gate n'est déclarée verte**.
+
+QA nécessaire : recherche d'un Fournisseur au-delà de la première page, sélection d'un fournisseur existant, création privée, création globale habilitée, refus sans droits, éventuelle homonymie, conservation du fichier et des correspondances, import confirmé, isolation Workspace, absence de régression.
+
+
+### QA en cours — noms et doublons Fournisseurs (2026-10-13)
+
+Demande produit : stocker et présenter les noms Fournisseurs en majuscules, rapprocher les noms proches et empêcher les doublons, y compris en dehors de l'import. Le code du service Fournisseurs a été adapté pour normaliser le nom et refuser les homonymes normalisés lors de la création ou du renommage, en tenant compte du global et du Workspace. Les deux formulaires de création concernés mettent désormais la saisie en majuscules.
+
+**Non clôturé :**
+- La détection phonétique/approchée et la décision explicite sur les rapprochements `TRANSGOURMET` / `TRANSGOURMETS` ne sont pas implémentées. Ne pas fusionner automatiquement ces deux identités.
+- Aucune contrainte unique MongoDB n'a été activée : audit préalable des homonymes existants (y compris archives) et migration d'index requise pour garantir les écritures concurrentes.
+- Les données historiques ne sont pas converties en majuscules.
+- Les tests locaux de ces nouveaux changements ne sont pas exécutés ; la gate n'est pas vérifiée.
+- Ne pas ouvrir de PR ou fusionner avant stabilisation, tests backend/frontend/E2E et QA utilisateur.
+
+Le contrôle actuel est une réduction du risque, **pas encore une garantie absolue contre tous les doublons**.
+
+
+### Durcissement Fournisseurs — identité et audit DB (2026-10-13)
+
+- Les nouveaux noms Fournisseurs sont enregistrés en majuscules ; le service refuse les doublons normalisés lors de la création et du renommage, en incluant la visibilité globale pour un Workspace.
+- Les variations simples avec ou sans `s` final (ex. TRANSGOURMET(S)) sont bloquées par le service avec HTTP 409 et demande de revue ; il ne s'agit PAS d'un système général de similarité phonétique ou sémantique.
+- Deux index uniques partiels (global par normalizedName ; privé par workspace + normalizedName) ont été déclarés. Ils ne protègent pas les collisions cross-scope global/privé concurrentes, qui sont refusées par le service applicatif mais sans garantie atomique commune.
+- Commande d'audit préalable, sans écriture : `npm run audit:m003-supplier-names`. Elle signale les doublons existants, incohérences de normalisation et bloque le déploiement des nouveaux index si elle échoue. Vérifier l'URI MONGODB_URI et la base cible avant toute commande.
+- `npm run migration:m003-supplier-catalog` n'est à exécuter qu'après audit sans collisions ; la migration échoue volontairement si les noms historiques nécessitent une résolution manuelle. Aucune fusion, suppression ou conversion automatique des données historiques.
+- Tests backend spécifiques ajoutés mais non exécutés localement. Revalider les tests historiques dont les attentes de casse changent, l'indexation en base de test, les autorisations, l'UX, E2E et les gates. Aucune PR/merge autorisée sans QA.
+
+---
+
+## Travail en cours — prix fournisseurs hors catalogue et UX Articles (2026-10-13)
+
+Branche : `feature/m003-catalog-management-and-import-ux`.
+Référence Core inchangée : v1.2.1.
+
+**Cadrage utilisateur validé :** importer une liste tarifaire fournisseur
+avec période de validité (ex. un an), sans créer d'édition catalogue.
+Le frontend n'effectue aucune conversion ou présentation calculée des prix :
+les montants et textes métier dérivés proviennent du backend.
+
+Code enregistré sur GitHub : `SupplierTariff` accepte l'origine `PRICE_LIST`
+avec import, libellé source et période, sans catalogue. L'import Articles
+accepte prix, base monétaire, provenance et dates ; absence de prix reste
+compatible. Le backend bloque les chevauchements visibles et conserve
+l'historique ; le résolveur Prix applicable comprend les deux origines,
+sans inventer de prix normalisé lorsqu'il est impossible de le calculer.
+La liste Articles reçoit les projections tarifaires et libellés consolidés
+côté serveur. L'onglet Articles affiche les badges d'association et les prix ;
+les compteurs Fournisseurs/Articles actifs exploitent les totaux serveur.
+
+**Avant QA locale :** vérifier `MONGODB_URI`, puis
+`npm run audit:m003-supplier-names`; en l'absence d'anomalies,
+`npm run migration:m003-supplier-catalog` pour migrer l'ancien index
+tarifaire et appliquer les index de listes. Ne pas faire de migration dans
+une base contenant des doublons de Fournisseurs non résolus.
+
+Tests ajoutés : import sans édition, projection prix/kg, périodes en conflit,
+isolation tarifaire de deux Workspaces pour un Article global, libellé de
+conditionnement, interface de saisie, badges/compteurs. **Aucune exécution
+locale, build ni gate verte n'est affirmée.**
+
+Attention : correction/archivage d'une liste déjà importée non livré ;
+le conflit est volontairement bloquant. Le prix « fournisseur de référence »
+ne constitue pas le Prix applicable d'un Dossier. Ne pas ouvrir de PR ni
+merger avant QA explicite et preuve des gates.
+
+Contrôle ajouté : `SupplierTariff.packagingSnapshot` conserve les poids/quantités
+au moment de la liste ; projections et Prix applicable utilisent cet
+instantané plutôt que le conditionnement courant de l'Article.
+
+
+## Correction UX complémentaire — option A validée (2026-10-13)
+
+Suite au retour QA sur le formulaire des Articles : calendrier natif
+`type=date` supprimé et composant existant `components/forms/date-picker.jsx`
+réutilisé, avec affichage français `jj/mm/aaaa`.
+
+Lorsque la colonne prix est mappée, une case « Importer les prix présents
+dans le fichier » permet de n'importer que les Articles si elle est décochée.
+Lorsque les prix sont importés, une seconde case « Ces prix ont une période
+de validité définie » (décochée par défaut) ouvre les champs détaillés.
+Sans période renseignée, `validityMode=FROM_IMPORT` est traité côté
+backend : `validFrom` est déterminé à la confirmation par le serveur et
+`validTo=null`, avec nom de source en français. Avec période définie,
+`validityMode=DEFINED` exige nom et début ; l'ancienne forme du contrat
+reste acceptée.
+
+Le champ technique « Base tarifaire par défaut » est présenté comme
+« À quoi correspond le prix indiqué dans le fichier ? ». Aucune logique
+de prix n'est déplacée dans le frontend.
+
+Tests frontend étendus (avec/sans période, import prix désactivé) ;
+tests HTTP étendus (horodatage serveur sans expiration, rejet de date
+client imposée). **Exécution locale, lint et gate non encore vérifiés.**
+Conserver la branche M-003, ne pas ouvrir de PR avant validation utilisateur.
+
+---
+
+## Reprise M-003 — gestion corrective des Articles (2026-10-13)
+
+Sur `feature/m003-catalog-management-and-import-ux`, reprise après
+interruption de connexion. Fichiers vérifiés directement sur GitHub avant
+reprise, Core toujours v1.2.1 et non modifié.
+
+Nouveau complément :
+- tableau Articles : désignation fournisseur prioritaire, référence
+  secondaire ; retrait de la provenance d'import sous le prix ;
+- fiche détail Article avec action de réassociation/dissociation Produit,
+  édition des champs fournisseur et du conditionnement ;
+- révisions immuables de corrections d'erreurs de prix pour les
+  `SupplierTariff` privés de type `PRICE_LIST` : motif, acteur,
+  événement d'audit, ancienne valeur non effacée, même période ;
+- liste d'historique privée au Workspace et RBAC explicite ;
+- migration de l'index partiel des listes de prix avant validation
+  locale ; l'index `supplier_price_list_import_article_revision_unique`
+  protège le numéro de révision et le verrou Commerce transactionnel
+  garantit une seule révision courante lors des écritures métier ;
+- tests backend d'association, correction, révision obsolète, RBAC
+  et tenancy ; tests UI d'ordre d'affichage et de correction.
+
+**Important :** les nouveaux prix avec date d'effet distincte,
+l'archivage d'une liste et les corrections de tarifs issus de catalogues
+ne sont PAS livrés dans cette correction de saisie. Aucun prix historique
+n'est réécrit. Les workflows restent à cadrer.
+
+Aucun test, lint, build, E2E ou gate n'a été exécuté par l'assistant.
+L'utilisateur effectue le pull et tous les tests localement.
+Ne pas ouvrir de PR ni effectuer de merge sans sa validation explicite.
+
+Ordre recommandé : vérifier `MONGODB_URI`, audit Fournisseurs,
+migration index M-003, tests backend ciblés, tests frontend ciblés,
+lint/backend+frontend, build, E2E et QA manuelle.
+
+Dernière vérification : le résolveur de prix applicable recalcule le montant
+normalisé à la lecture après toute correction d'association Produit, depuis
+le prix source et son conditionnement figé. Les nouveaux tarifs issus de
+Catalogues figent eux aussi désormais le conditionnement dans
+`packagingSnapshot`. Les anciens tarifs Catalogue qui ne possèdent pas
+cet instantané restent un point à auditer avant correction rétrospective.
+
+## QA locale M-003 — correction transactionnelle des tarifs (2026-10-13)
+
+Les 4 suites backend ciblées ont été lancées par l'utilisateur : 31 tests
+réussis sur 32, échec HTTP 500 sur la première correction tarifaire.
+L'analyse de code montre que l'index unique partiel de la révision courante
+conserve la même clé lors du remplacement transactionnel et peut déclencher
+E11000. Le correctif remplace cet index par une unicité
+import/Article/numéro de révision et conserve le verrou Commerce commun à
+l'import et à la correction. La migration retire l'index précédent.
+Le test HTTP vérifie maintenant deux corrections successives, trois
+révisions historisées et une seule version courante.
+
+Ce correctif reste **en attente de vérification locale** : d'abord l'audit
+sur la base cible, ensuite migration des index si applicable, puis relance
+des tests ciblés. Aucun test vert n'est revendiqué par l'assistant.
+
+## QA visuelle M-003 — simplification des Articles et tarifs (2026-10-13)
+
+Sur la branche M-003 : recherche serveur progressive (300 ms, page 1,
+effacement du filtre, pas de bouton), champ réduit et alignement de
+Recherche/Statut ; drawer Article sans la ligne Fournisseur/référence
+redondante, référence placée dans la carte Informations de l’article ;
+avertissement de valorisation en couleur sémantique warning ; provenance,
+dates de validité et historique dans le Collapsible partagé fermé par défaut
+avec animation tenant compte de reduced motion.
+
+Correction tarifaire : explication métier dans InfoTooltip, motif facultatif
+(zéro caractère minimum, maximum 500), absent ou vide normalisé à null,
+sans changement des règles de montant et de provenance historique.
+Tests HTTP, validations, recherche, correction et drawer à vérifier en local.
+Aucun test, lint, build, E2E ou gate n'est déclaré vert à ce stade.
+
+## Complément M-003 — projection conditionnement/prix par pièce (2026-10-13)
+
+Retour QA utilisateur : la liste Articles affiche déjà le prix du colis
+et le prix normalisé kg/L/UNIT, mais pas celui de chaque élément d'un
+carton de plaques de 300 g ; la quantité totale du conditionnement doit
+apparaître sous son libellé. L'Article et sa Référence M-002 ne sont pas
+reparamétrés à cet effet.
+
+Évolution ciblée :
+- présentation de masse totale en kg, de volume total en L ou de
+  quantité UNIT ; aucune masse inventée pour une donnée volumique ;
+- poids net déclaré incohérent conservé comme information à vérifier,
+  séparément de la quantité calculée ; ne pas masquer une anomalie ;
+- prix par pièce calculé sans arrondi intermédiaire depuis le prix
+  du colis et son nombre d'éléments lorsque le conditionnement explicite
+  est complet ; nul si les prérequis ne sont pas réunis ;
+- conservation des prix du colis et du prix normalisé, y compris lorsque
+  le tarif possède un instantané historique de conditionnement ;
+- affichage harmonisé dans le tableau Articles et le drawer Article ;
+- tests ciblés backend des masses, volumes, prix pièce, cas incomplets
+  et instantanés, ainsi que tests frontend de présentation.
+
+Core v1.2.1 inchangé ; pas de migration ni nouveau stockage ;
+une seule branche de livraison M-003.
+**Aucun test local ou gate n'est revendiqué vert sur ce lot** :
+l'utilisateur exécute les validations localement après pull.
+
+## Densification du tableau Articles M-003 — popovers (2026-10-13)
+
+Après retour QA utilisateur, les colonnes Conditionnement et Tarif
+fournisseur HT ne doivent plus empiler plusieurs lignes dans la liste.
+Seuls le libellé du conditionnement et le prix du colis restent visibles.
+Les informations secondaires déjà projetées par le backend sont dans
+deux popovers métier utilisant la primitive UI existante :
+- `PackageSearch` : total massique, volumique ou UNIT et anomalie
+  éventuelle du poids net déclaré (icône au ton `warning` si besoin) ;
+- `Calculator` : prix par pièce et prix normalisé au kg/L/UNIT,
+  uniquement si calculables ; aucune nouvelle règle économique.
+
+Activation au survol sur desktop et au clic/toucher ou au clavier.
+Les icônes n'apparaissent que si elles portent un complément exploitable.
+Aucun composant partagé/Core, backend, modèle ou index n'est modifié.
+Tests frontend mis à jour pour vérifier la compacité, les popovers,
+les warnings et l'absence d'icône si aucune donnée secondaire.
+Validations locales, lint, build, QA et gates encore à exécuter.
+
+## QA M-003 — reprise après interruption et décision prix expiré (2026-10-14)
+
+L'utilisateur valide explicitement :
+- dernier tarif expiré visible sur l'Article, prix secondaires conservés ;
+- recours au dernier tarif connu expiré dans la valorisation
+  des Fiches techniques, avec alerte explicite et traçable ;
+- correction historisée des dates de période par l'utilisateur ;
+- barre Articles compacte sans labels Recherche/Statut, filtre
+  Fournisseur recherché côté serveur + Statut + recherche Article.
+
+Implémentation sur `feature/m003-catalog-management-and-import-ux`
+sans upgrade Core ni nouveau modèle/index :
+`supplierTariffSelection`, tarif expiré dans les listes,
+résolveur de prix M-003 avec alerte, endpoint de correction des dates,
+formulaire DatePicker, filtre Fournisseur Popover, avertissement dans
+carte prix Dossier et icône d'avertissement sur prix unitaire
+dans la composition FT M-004. Les contrôles de chevauchement import
+s'appuient sur la même règle de dates civiles Europe/Paris.
+
+Les tests sont préparés ; **aucune exécution locale, lint, build, E2E
+ni Core Gate n'est attestée à ce stade**. L'utilisateur réalisera les
+tests localement puis décidera de la PR et du merge. Pas de
+modification silencieuse de main.
+
+## Correctif ciblé QA locale M-003 — 2026-10-14
+
+Retour utilisateur après le commit `d9ced965` :
+- backend ciblé : 44 tests réussis sur 45, inspection CSV du nouveau
+  test de correction de période en HTTP 400 ; le test contenait
+  les caractères littéraux `\\n` au lieu d'un saut de ligne CSV ;
+- frontend ciblé : 36 tests exécutés et réussis, mais suite drawer
+  non collectée à cause d'une accolade fermante JSX manquante
+  après le bandeau « Dernier prix connu — expiré ».
+
+Corrections limitées à la chaîne de test et à la syntaxe JSX.
+Pas d'évolution de règle économique, d'API, de données ou de Core.
+Après correction : tests ciblés puis lint, build et gates globaux
+à relancer par l'utilisateur ; aucune réussite non démontrée.
+
+## Correction du filtre MongoDB de révision tarifaire — 2026-10-14
+
+Résultat utilisateur au commit `319286ed` :
+- suite backend `supplierArticleImport.http.test.js` : 15/16 verts ;
+- le test `corrige une période expirée...` passe l'inspection CSV,
+  l'import, le contrôle des permissions et du Workspace, mais échoue
+  sur l'API de correction avec un HTTP 500 au lieu de 200.
+
+Cause identifiée dans le code (à confirmer par le prochain test) :
+`backend/config/db.js` active `mongoose.set('sanitizeFilter', true)` ;
+le service de correction de période introduisait un filtre interne
+`_id: { $ne: prior._id }` sans `mongoose.trusted`. Avec la
+sanitisation, cet opérateur peut être requalifié et provoquer une
+erreur de conversion au moment de la requête MongoDB.
+
+Correction ciblée : déclarer ce `$ne` construit et contrôlé par le
+service comme fiable via `mongoose.trusted({ $ne: prior._id })`.
+La sanitisation globale est conservée. Le test HTTP existant est
+renforcé pour vérifier également la création de l'événement d'audit
+et son rattachement à la nouvelle révision. Aucun changement de
+contrat, de schéma, de Core ou de migration. Tests locaux à rejouer
+par l'utilisateur ; succès non revendiqué avant exécution.
+
+## UX M-003 — drawer Article à onglets (2026-10-14)
+
+Retour visuel utilisateur validé : ne plus empiler les blocs
+d'informations Article / association / tarif dans le même drawer ;
+réutiliser la navigation à onglets des autres drawers.
+
+Lot frontend ciblé :
+- `Infos Article` par défaut : référence, Fournisseur, marque,
+  conditionnement, statut et modification autorisée ; désignation
+  conservée dans le titre du drawer ;
+- `Association` : Produit lié ou état « Non associé », action
+  conditionnée par RBAC et statut, conséquences économiques accessibles
+  via `InfoTooltip` près de l'action sans bandeau permanent ;
+- `Tarif fournisseur` : prix principal et complémentaires, provenance,
+  dates et avertissement d'expiration ; correction du prix et de la
+  période selon les droits ; historique replié et hauteur bornée ;
+- navigation réinitialisée à `Infos Article` lors de la réouverture,
+  onglet Tarif entièrement absent sans permission de lecture.
+
+Fichiers impactés : drawer, tests RTL, contrat M-003, conception et
+synthèse de reprise. Aucun changement Core, backend, migrations ou
+règles de valorisation. Les tests sont à exécuter par l'utilisateur
+localement ; ne pas annoncer de gate verte sans résultat réel.
+
+## Ajustement UX M-003 — actions dans la carte Tarif (2026-10-14)
+
+Retour visuel : « Corriger le prix » et « Modifier la période »
+figuraient sous la carte alors que les autres onglets plaçaient
+leurs actions en haut à droite de la zone métier. Déplacement
+des deux boutons dans l'en-tête de la carte « Prix fournisseur HT »,
+avec alignement à droite et adaptation aux petites largeurs.
+Le prix principal, les prix complémentaires, la provenance,
+l'expiration et l'historique replié sont conservés.
+
+La garde existante (permission de correction, liste privée
+`PRICE_LIST`, Article actif) et les callbacks restent inchangés.
+Test RTL renforcé sur la position des actions à l'intérieur de
+l'en-tête de la carte et leur absence pour les prix Catalogue.
+Aucun Core, backend, API ou modèle touché.
+Tests, lint et build à effectuer localement par l'utilisateur.

@@ -131,6 +131,43 @@ describe('supplierApi', () => {
     });
   });
 
+  it('transmet les filtres serveur de consultation d un catalogue', () => {
+    expect(
+      captured.endpointDefinitions.listSupplierCatalogLines.query({
+        workspaceId: 'workspace-1',
+        catalogId: 'catalog-1',
+        page: 2,
+        limit: 50,
+        search: 'bacon',
+        matchStatus: 'UNMATCHED',
+      }),
+    ).toEqual({
+      url: '/workspaces/workspace-1/supplier-catalogs/catalog-1/lines',
+      params: {
+        page: 2,
+        limit: 50,
+        search: 'bacon',
+        matchStatus: 'UNMATCHED',
+      },
+    });
+
+    expect(
+      captured.endpointDefinitions.listGlobalSupplierCatalogLines.query({
+        catalogId: 'catalog-1',
+        search: 'amande',
+        matchStatus: 'MATCHED',
+      }),
+    ).toEqual({
+      url: '/supplier-reference/catalogs/catalog-1/lines',
+      params: {
+        page: 1,
+        limit: 50,
+        search: 'amande',
+        matchStatus: 'MATCHED',
+      },
+    });
+  });
+
   it('porte le flux import sur inspect preview commit', () => {
     const file = new File(['Reference;Designation'], 'catalogue.csv', {
       type: 'text/csv',

@@ -51,6 +51,32 @@ const buildScopeFilter = ({
             : workspaceId,
 });
 
+const REGEXP_SPECIAL_CHARACTERS = new Set([
+    '\\',
+    '^',
+    '$',
+    '.',
+    '*',
+    '+',
+    '?',
+    '(',
+    ')',
+    '[',
+    ']',
+    '{',
+    '}',
+    '|',
+]);
+
+const escapeRegExp = (value) =>
+    [...value]
+        .map((character) =>
+            REGEXP_SPECIAL_CHARACTERS
+                .has(character)
+                ? '\\' + character
+                : character)
+        .join('');
+
 const acquireCommerceLock = async ({
     key,
     session,
@@ -112,7 +138,10 @@ const assertSupplierForCatalog = async ({
     return supplier;
 };
 
-const serializeCatalogEdition = (edition) => ({
+const serializeCatalogEdition = (
+    edition,
+    { lineCount = null } = {},
+) => ({
     id: edition._id.toString(),
     scope: edition.scope,
     workspaceId:
@@ -129,6 +158,7 @@ const serializeCatalogEdition = (edition) => ({
     validTo: edition.validTo,
     source: edition.source ?? null,
     status: edition.status,
+    lineCount,
     integratedAt: edition.integratedAt,
     createdAt: edition.createdAt,
     updatedAt: edition.updatedAt,
@@ -399,10 +429,49 @@ const listCatalogEditions = async ({
                 .countDocuments(filter),
         ]);
 
+    const lineCounts = editions.length > 0
+        ? await SupplierCatalogLine.aggregate([
+            {
+                $match: {
+                    catalogEdition: {
+                        $in: editions.map(
+                            ({ _id }) => _id,
+                        ),
+                    },
+                    isCurrent: true,
+                },
+            },
+            {
+                $group: {
+                    _id: '$catalogEdition',
+                    count: { $sum: 1 },
+                },
+            },
+        ])
+        : [];
+
+    const lineCountByCatalog = new Map(
+        lineCounts.map(({ _id, count }) => [
+            _id.toString(),
+            count,
+        ]),
+    );
+
     return {
         catalogs:
             editions.map(
-                serializeCatalogEdition,
+                (edition) =>
+                    serializeCatalogEdition(
+                        edition,
+                        {
+                            lineCount:
+                                lineCountByCatalog
+                                    .get(
+                                        edition._id
+                                            .toString(),
+                                    ) ?? 0,
+                        },
+                    ),
             ),
         pagination: {
             page,
@@ -520,6 +589,8 @@ const listCatalogLines = async ({
     catalogId,
     page = 1,
     limit = 50,
+    search,
+    matchStatus,
 }) => {
     const catalog = globalOnly
         ? await findScopedCatalogEdition({
@@ -532,13 +603,71 @@ const listCatalogLines = async ({
             allowGlobalVisibility: true,
         });
 
-    const filter = {
+    await catalog.populate({
+        path: 'supplier',
+        select: '_id name',
+    });
+
+    const baseFilter = {
         catalogEdition: catalog._id,
         isCurrent: true,
     };
+    const filter = { ...baseFilter };
+
+    if (matchStatus) {
+        filter.matchStatus = matchStatus;
+    }
+
+    if (search) {
+        const normalizedText =
+            normalizeSupplierText(search);
+        const normalizedReference =
+            normalizeSupplierReference(search);
+        const escapedRaw =
+            escapeRegExp(search.trim());
+        const conditions = [];
+
+        if (normalizedReference) {
+            conditions.push({
+                normalizedSupplierReference:
+                    new RegExp(
+                        escapeRegExp(
+                            normalizedReference,
+                        ),
+                    ),
+            });
+        }
+        if (normalizedText) {
+            conditions.push({
+                normalizedDesignation:
+                    new RegExp(
+                        escapeRegExp(
+                            normalizedText,
+                        ),
+                    ),
+            });
+        }
+        if (escapedRaw) {
+            conditions.push({
+                brand:
+                    new RegExp(
+                        escapedRaw,
+                        'i',
+                    ),
+            });
+        }
+
+        if (conditions.length > 0) {
+            filter.$or =
+                mongoose.trusted(
+                    conditions,
+                );
+        }
+    }
+
     const skip = (page - 1) * limit;
 
-    const [lines, total] =
+    const [lines, total, catalogLineCount] =
         await Promise.all([
             SupplierCatalogLine
                 .find(filter)
@@ -551,9 +680,19 @@ const listCatalogLines = async ({
                 .lean(),
             SupplierCatalogLine
                 .countDocuments(filter),
+            SupplierCatalogLine
+                .countDocuments(baseFilter),
         ]);
 
     return {
+        catalog:
+            serializeCatalogEdition(
+                catalog,
+                {
+                    lineCount:
+                        catalogLineCount,
+                },
+            ),
         lines:
             lines.map(
                 serializeCatalogLine,
@@ -813,6 +952,8 @@ const upsertCurrentTariffInSession = async ({
             {
                 catalogEdition:
                     catalog._id,
+                sourceKind: 'CATALOG',
+                packagingSnapshot: packaging,
                 catalogLine:
                     catalogLine._id,
                 supplierArticle:

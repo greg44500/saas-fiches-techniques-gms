@@ -54,6 +54,22 @@ const supplierSchema = new Schema(
 applySupplierScopeOwnershipValidation(supplierSchema);
 
 supplierSchema.index(
+    { normalizedName: 1 },
+    {
+        name: 'supplier_global_normalized_name_unique',
+        unique: true,
+        partialFilterExpression: { scope: 'GLOBAL_SHARED' },
+    },
+);
+supplierSchema.index(
+    { workspace: 1, normalizedName: 1 },
+    {
+        name: 'supplier_workspace_normalized_name_unique',
+        unique: true,
+        partialFilterExpression: { scope: 'WORKSPACE_PRIVATE' },
+    },
+);
+supplierSchema.index(
     { scope: 1, status: 1, normalizedName: 1 },
     { name: 'supplier_scope_status_name' },
 );
@@ -74,7 +90,7 @@ const supplierArticleSchema = new Schema(
         productVariant: {
             type: Schema.Types.ObjectId,
             ref: 'ProductVariant',
-            required: true,
+            default: null,
         },
         supplierReference: {
             type: String,

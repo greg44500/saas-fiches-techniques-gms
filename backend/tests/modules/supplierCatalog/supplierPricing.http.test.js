@@ -1,6 +1,7 @@
 import '../../setup.js';
 
 import request from 'supertest';
+import mongoose from 'mongoose';
 import {
     beforeEach,
     describe,
@@ -25,6 +26,7 @@ import {
     createCatalogEdition,
     upsertCatalogLine,
 } from '../../../modules/supplierCatalog/supplierCatalog.service.js';
+import { SupplierTariff } from '../../../modules/supplierCatalog/supplierCatalog.model.js';
 import {
     SUPPLIER_SCOPE,
 } from '../../../modules/supplierCatalog/supplierCatalog.registry.js';
@@ -1075,6 +1077,57 @@ describe('M-003 dossier pricing HTTP', () => {
                 .applicablePrice.price
                 .normalizedAmount,
         ).toBe('15');
+    });
+
+    it('valorise avec le dernier tarif expiré en signalant sa date sans le préférer à un tarif valide', async () => {
+        const addTariff = async (amount, from, to) => SupplierTariff.create({
+            supplierArticle: article.id,
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspace: owner.workspace._id,
+            sourceKind: 'PRICE_LIST',
+            sourceLabel: 'Prix fournisseur historiques',
+            sourceImportId: new mongoose.Types.ObjectId(),
+            isCurrent: true,
+            sourceAmount: amount,
+            sourceBasis: 'KG',
+            currency: 'EUR',
+            validFrom: new Date(from + 'T00:00:00.000Z'),
+            validTo: new Date(to + 'T00:00:00.000Z'),
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+
+        await addTariff('8', '2026-01-01', '2026-02-28');
+        await addTariff('12', '2026-03-01', '2026-09-30');
+        const route = pricingPath(dossierA) + '/applicable';
+        const atDate = '2026-10-14T10:00:00.000Z';
+        const expired = await request(app).get(route).query({
+            articleId: article.id, atDate,
+        }).set(bearer(owner.token));
+        expect(expired.status).toBe(200);
+        expect(expired.body.data.applicablePrice).toMatchObject({
+            resolvedSource: 'SUPPLIER_TARIFF',
+            fallbackApplied: true,
+            fallbackReason: 'LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED',
+            price: {
+                normalizedAmount: '12',
+                validityStatus: 'EXPIRED',
+            },
+        });
+        expect(expired.body.data.applicablePrice.alerts)
+            .toContain('LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED');
+
+        await addTariff('14', '2026-10-01', '2026-12-31');
+        const valid = await request(app).get(route).query({
+            articleId: article.id, atDate,
+        }).set(bearer(owner.token));
+        expect(valid.status).toBe(200);
+        expect(valid.body.data.applicablePrice.price).toMatchObject({
+            normalizedAmount: '14',
+            validityStatus: 'AVAILABLE',
+        });
+        expect(valid.body.data.applicablePrice.alerts)
+            .not.toContain('LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED');
     });
 
     it('écarte un Prix facturé VALIDATED devenu ancien de plus de 12 mois puis utilise le négocié', async () => {

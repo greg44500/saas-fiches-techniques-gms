@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -71,6 +71,49 @@ vi.mock('@/features/suppliers/components/supplier-form-dialog', () => ({
 vi.mock('@/features/suppliers/components/supplier-article-form-dialog', () => ({
   SupplierArticleFormDialog: ({ open }) => (
     open ? <div>Formulaire Article ouvert</div> : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-article-association-dialog', () => ({
+  SupplierArticleAssociationDialog: ({ open }) => (
+    open ? <div>Association Article ouverte</div> : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-article-details-drawer', () => ({
+  SupplierArticleDetailsDrawer: ({ open, article, onAssociate, onEdit, onCorrectPrice }) => (
+    open ? (
+      <div>
+        Détails Article : {article?.supplierReference}
+        <button onClick={() => onAssociate(article)} type="button">Corriger l’association</button>
+        <button onClick={() => onEdit(article)} type="button">Corriger la désignation</button>
+        <button onClick={() => onCorrectPrice(article)} type="button">Corriger le tarif</button>
+      </div>
+    ) : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-article-edit-dialog', () => ({
+  SupplierArticleEditDialog: ({ open }) => (
+    open ? <div>Modification Article ouverte</div> : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-article-price-correction-dialog', () => ({
+  SupplierArticlePriceCorrectionDialog: ({ open }) => (
+    open ? <div>Correction tarifaire ouverte</div> : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-article-period-correction-dialog', () => ({
+  SupplierArticlePeriodCorrectionDialog: ({ open }) => (
+    open ? <div>Correction de période ouverte</div> : null
+  ),
+}));
+
+vi.mock('@/features/suppliers/components/supplier-article-import-dialog', () => ({
+  SupplierArticleImportDialog: ({ open }) => (
+    open ? <div>Import Articles ouvert</div> : null
   ),
 }));
 
@@ -190,6 +233,7 @@ describe('SuppliersPage', () => {
         status: 'ACTIVE',
         validFrom: '2026-09-01T00:00:00.000Z',
         validTo: '2026-09-30T00:00:00.000Z',
+        lineCount: 58,
       }],
       pagination: {
         page: 1,
@@ -232,26 +276,113 @@ describe('SuppliersPage', () => {
     })).toBeInTheDocument();
   });
 
-  it('désactive la recherche tant que le champ est vide', async () => {
+  it('recherche les Fournisseurs au fil de la saisie et réinitialise le filtre', async () => {
     const user = userEvent.setup();
-
     renderPage();
 
-    expect(screen.getByRole('button', { name: 'Rechercher' }))
-      .toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Rechercher' }))
+      .not.toBeInTheDocument();
+    const searchBox = screen.getByRole('searchbox', { name: 'Rechercher' });
+    await user.type(searchBox, 'sysco');
+    await waitFor(() => {
+      const searches = mocks.listSuppliers.mock.calls
+        .map(([args]) => args).filter(({ status }) => status === 'ALL');
+      expect(searches.at(-1)).toEqual(
+        expect.objectContaining({ search: 'sysco', page: 1 }),
+      );
+    });
+    await user.clear(searchBox);
+    await waitFor(() => {
+      const searches = mocks.listSuppliers.mock.calls
+        .map(([args]) => args).filter(({ status }) => status === 'ALL');
+      expect(searches.at(-1)).toEqual(
+        expect.objectContaining({ search: undefined, page: 1 }),
+      );
+    });
+  });
 
-    await user.type(
-      screen.getByRole('textbox', { name: 'Rechercher' }),
-      'sysco',
+  it('recherche les Articles sur les pages du serveur sans bouton', async () => {
+    const user = userEvent.setup();
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+    await user.type(screen.getByRole('searchbox', { name: 'Rechercher' }), 'feuilletée');
+    await waitFor(() => {
+      expect(mocks.listArticles).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'feuilletée', page: 1 }),
+        expect.anything(),
+      );
+    });
+  });
+
+  it('aligne recherche, fournisseur et statut sans labels, et combine les filtres Article', async () => {
+    const user = userEvent.setup();
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+
+    expect(screen.getByRole('searchbox', { name: 'Rechercher' }))
+      .toHaveAttribute('placeholder', 'Rechercher un article…');
+    expect(screen.queryByText('Recherche')).not.toBeInTheDocument();
+    expect(screen.queryByText('Statut')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Filtrer par fournisseur' }));
+    await user.click(await screen.findByRole('button', { name: 'Fournisseur local' }));
+    await waitFor(() => {
+      expect(mocks.listArticles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          supplierId: 'supplier-private', status: 'ACTIVE', page: 1,
+        }),
+        expect.anything(),
+      );
+    });
+
+    await user.type(screen.getByRole('searchbox', { name: 'Rechercher' }), 'farine');
+    await waitFor(() => {
+      expect(mocks.listArticles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          supplierId: 'supplier-private', search: 'farine',
+        }),
+        expect.anything(),
+      );
+    });
+    await user.click(screen.getByRole('combobox', { name: 'Filtrer par statut' }));
+    await user.click(await screen.findByRole('option', { name: 'Archivés' }));
+    await waitFor(() => {
+      expect(mocks.listArticles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          supplierId: 'supplier-private', search: 'farine', status: 'ARCHIVED', page: 1,
+        }),
+        expect.anything(),
+      );
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Filtrer par fournisseur' }));
+    await user.click(await screen.findByRole('button', { name: 'Tous les fournisseurs' }));
+    expect(mocks.listArticles).toHaveBeenLastCalledWith(
+      expect.objectContaining({ supplierId: undefined }),
+      expect.anything(),
     );
+  });
 
-    expect(screen.getByRole('button', { name: 'Rechercher' }))
-      .toBeEnabled();
-
-    await user.clear(screen.getByRole('textbox', { name: 'Rechercher' }));
-
-    expect(screen.getByRole('button', { name: 'Rechercher' }))
-      .toBeDisabled();
+  it('maintient le dernier tarif expiré visible avec accès Calculator', async () => {
+    const user = userEvent.setup();
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [{
+        id: 'article-old', supplierReference: 'OLD-14',
+        supplierDesignation: 'Ancien tarif', supplier: { name: 'Fournisseur local' },
+        scope: 'WORKSPACE_PRIVATE', status: 'ACTIVE',
+        supplierTariffStatus: 'EXPIRED',
+        supplierTariff: {
+          id: 'tariff-old', sourceKind: 'PRICE_LIST',
+          packagePriceLabel: '11,200 € HT / carton',
+          unitPriceLabel: '1,037 € HT / kg',
+          validTo: '2026-10-14T00:00:00.000Z',
+        },
+      }],
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+    }));
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+    expect(screen.getByText('11,200 € HT / carton')).toBeInTheDocument();
+    expect(screen.getByText('Expiré')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Détails des prix de OLD-14' }));
+    expect(await screen.findByText('1,037 € HT / kg')).toBeInTheDocument();
   });
 
   it('ouvre directement la section Catalogues depuis le paramètre d’URL', () => {
@@ -261,6 +392,10 @@ describe('SuppliersPage', () => {
       .toHaveAttribute('aria-selected', 'true');
     expect(screen.getByText('Catalogue septembre'))
       .toBeInTheDocument();
+    expect(screen.getByText('58')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Voir Catalogue septembre',
+    })).toBeInTheDocument();
   });
 
   it('affiche tous les Fournisseurs par défaut et permet de réactiver un archivé', async () => {
@@ -353,12 +488,21 @@ describe('SuppliersPage', () => {
     expect(screen.getByText('Import catalogue ouvert')).toBeInTheDocument();
   });
 
-  it('affiche le libellé métier de UNIT dans le conditionnement Article', () => {
+  it('affiche le libellé métier de UNIT et rend le prix normalisé consultable', async () => {
+    const user = userEvent.setup();
     mocks.listArticles.mockReturnValue(queryResult({
       articles: [{
         id: 'article-1',
         supplierReference: 'ABR-1',
         supplierDesignation: 'Abricot',
+        supplierTariffStatus: 'AVAILABLE',
+        supplierTariff: {
+          id: 'tariff-1',
+          sourceKind: 'PRICE_LIST',
+          sourceLabel: 'test interne qui ne doit pas être affiché',
+          sourcePriceLabel: '12,500 € HT / carton',
+          unitPriceLabel: '1,250 € HT / kg',
+        },
         productVariant: {
           id: 'variant-1',
           name: 'Abricot',
@@ -369,6 +513,7 @@ describe('SuppliersPage', () => {
         supplier: { id: 'supplier-1', name: 'Sysco' },
         scope: 'WORKSPACE_PRIVATE',
         status: 'ACTIVE',
+        packagingLabel: '12 × 1 abricot',
         packaging: {
           unitCount: 12,
           quantityPerUnit: '1',
@@ -386,6 +531,130 @@ describe('SuppliersPage', () => {
     renderPage('/workspaces/workspace-1/suppliers?section=articles');
 
     expect(screen.getByText(/1 abricot/)).toBeInTheDocument();
+    expect(screen.getByText('Réf. fournisseur : ABR-1').previousElementSibling)
+      .toHaveTextContent('Abricot');
+    expect(screen.getByText('12,500 € HT / carton')).toBeInTheDocument();
+    expect(screen.queryByText('1,250 € HT / kg')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', {
+      name: 'Détails des prix de ABR-1',
+    }));
+    expect(await screen.findByText('1,250 € HT / kg')).toBeInTheDocument();
+    expect(screen.queryByText('test interne qui ne doit pas être affiché'))
+      .not.toBeInTheDocument();
     expect(screen.queryByText(/1 UNIT/)).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Fournisseurs (2)' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Articles (1)' })).toBeInTheDocument();
   });
+  it('affiche les informations complémentaires sur demande, sans alourdir les lignes', async () => {
+    const user = userEvent.setup();
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [
+        {
+          id: 'plaque-1',
+          supplierReference: 'BRI-36',
+          supplierDesignation: 'Plaques 300 g',
+          supplier: { name: 'Bridor' },
+          status: 'ACTIVE',
+          scope: 'WORKSPACE_PRIVATE',
+          packagingLabel: 'Carton · 36 × 0.300 kg · net 10800 kg',
+          packagingPresentation: {
+            mainLabel: 'Carton · 36 × 0.300 kg',
+            totalLabel: 'Poids total calculé : 10,8 kg',
+            warningLabel: 'Poids net déclaré à vérifier : 10 800 kg',
+          },
+          supplierTariffStatus: 'AVAILABLE',
+          supplierTariff: {
+            id: 'tariff-plaque', packagePriceLabel: '11,200 € HT / Carton',
+            piecePriceLabel: '0,311 € HT / pièce',
+            unitPriceLabel: '1,037 € HT / kg',
+          },
+        },
+        {
+          id: 'bidon-1',
+          supplierReference: 'BID-30',
+          supplierDesignation: 'Bidon 30 L',
+          supplier: { name: 'Autre fournisseur' },
+          status: 'ACTIVE',
+          scope: 'WORKSPACE_PRIVATE',
+          packagingPresentation: {
+            mainLabel: 'Bidon · 1 × 30 l',
+            totalLabel: 'Volume total : 30 L',
+            warningLabel: null,
+          },
+          supplierTariffStatus: 'AVAILABLE',
+          supplierTariff: {
+            id: 'tariff-volume', packagePriceLabel: '60,000 € HT / Bidon',
+            piecePriceLabel: null, unitPriceLabel: '2,000 € HT / l',
+          },
+        },
+      ],
+      pagination: { page: 1, limit: 10, total: 2, totalPages: 1 },
+    }));
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+
+    expect(screen.getByText('Carton · 36 × 0.300 kg')).toBeInTheDocument();
+    expect(screen.getByText('11,200 € HT / Carton')).toBeInTheDocument();
+    expect(screen.queryByText('Volume total : 30 L')).not.toBeInTheDocument();
+    expect(screen.queryByText('Poids total calculé : 10,8 kg')).not.toBeInTheDocument();
+    expect(screen.queryByText('0,311 € HT / pièce')).not.toBeInTheDocument();
+
+    const packagingIcon = screen.getByRole('button', {
+      name: 'Détails du conditionnement de BRI-36 — poids à vérifier',
+    });
+    expect(packagingIcon).toHaveClass('text-warning');
+    await user.click(packagingIcon);
+    expect(await screen.findByText('Poids total calculé : 10,8 kg')).toBeInTheDocument();
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Poids net déclaré à vérifier : 10 800 kg',
+    );
+
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', {
+      name: 'Détails des prix de BRI-36',
+    }));
+    expect(await screen.findByText('0,311 € HT / pièce')).toBeInTheDocument();
+    expect(screen.getByText('1,037 € HT / kg')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', {
+      name: 'Détails du conditionnement de BID-30',
+    }));
+    expect(await screen.findByText('Volume total : 30 L')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', {
+      name: 'Détails des prix de BID-30',
+    }));
+    expect(await screen.findByText('2,000 € HT / l')).toBeInTheDocument();
+    expect(screen.queryByText(/net 10800 kg/)).not.toBeInTheDocument();
+  });
+
+  it('permet de consulter puis corriger association, Article et tarif', async () => {
+    const user = userEvent.setup();
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [{
+        id: 'article-1',
+        supplierReference: 'REF-42',
+        supplierDesignation: 'Farine fournisseur',
+        supplier: { id: 'supplier-1', name: 'Fournisseur régional' },
+        productVariant: { id: 'variant-1', name: 'Farine' },
+        associationStatus: 'ASSOCIATED',
+        supplierTariffStatus: 'AVAILABLE',
+        supplierTariff: { id: 'price-1', sourceKind: 'PRICE_LIST' },
+        scope: 'WORKSPACE_PRIVATE',
+        status: 'ACTIVE',
+        packagingLabel: 'Sac · 25 kg',
+      }],
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+    }));
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+    expect(screen.queryByRole('button', { name: 'Détails des prix de REF-42' }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Détails du conditionnement de REF-42' }))
+      .not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Détails de REF-42' }));
+    expect(screen.getByText('Détails Article : REF-42')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Corriger l’association' }));
+    expect(screen.getByText('Association Article ouverte')).toBeInTheDocument();
+  });
+
 });

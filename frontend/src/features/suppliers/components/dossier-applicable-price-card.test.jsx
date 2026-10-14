@@ -135,6 +135,34 @@ describe('DossierApplicablePriceCard', () => {
     expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();
   });
 
+  it('identifie visuellement le dernier prix expiré retenu par le backend', async () => {
+    const user = userEvent.setup();
+    mocks.lazyApplicable.mockReturnValue([
+      mocks.loadApplicable,
+      {
+        data: {
+          productVariant: { referenceUnit: 'KG' },
+          resolvedSource: 'SUPPLIER_TARIFF',
+          alerts: ['LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED'],
+          price: {
+            normalizedAmount: '12',
+            normalizedUnit: 'KG',
+            currency: 'EUR',
+            validityStatus: 'EXPIRED',
+          },
+        },
+        isError: false,
+        isFetching: false,
+        reset: mocks.resetApplicable,
+      },
+    ]);
+    render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
+    await selectArticleOption(user, 'Sysco · Ali321');
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Dernier prix connu — tarif expiré',
+    );
+  });
+
   it('identifie explicitement un Prix indicatif utilisé en dernier recours', async () => {
     const user = userEvent.setup();
 

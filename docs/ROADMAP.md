@@ -627,3 +627,61 @@ M-005 fournit un Atelier d'optimisation économique, des simulations MANUAL/AUTO
 **Preuves et réserves :** la fusion est vérifiée. Le résultat de la Core Gate post-merge n'a pas été établi par les données accessibles lors de cette révision documentaire ; il reste à contrôler. Aucun bilan « tous les tests verts » n'est déduit de la seule fusion. Ne pas rouvrir M-005 sans anomalie démontrée.
 
 **Prochaine priorité : compléter M-004 (diffusion V1) par l'impression et l'envoi par e-mail.** Selon le retour fonctionnel du responsable produit du 2026-10-08, les exports CSV, XLSX et PDF sont déjà réalisés ; cette information reste à rapprocher du code et des tests avant toute nouvelle implémentation. Ne pas redévelopper ces trois formats sans défaut prouvé. Auditer les mécanismes existants (API, services, UI, stockage, permissions, capabilities, quotas, tests) pour cadrer uniquement les deux parcours manquants : impression et diffusion par e-mail. Il s'agit d'un lot complémentaire du domaine M-004, pas d'un nouveau module métier numéroté par défaut. Ce lot doit être validé avant développement. Les Fiches process constituent le chantier métier candidat suivant, à cadrer séparément.
+
+---
+
+## Complément M-003 — import liste d'Articles (2026-10-09)
+
+Le lot courant ajoute un parcours indépendant « Importer des Articles » dans
+le référentiel Workspace et partagé, réutilisant l'inspection CSV/XLS/XLSX.
+L'association à la Référence Produit peut être différée ; les fonctionnalités
+économiques restent inaccessibles tant que l'Article n'est pas associé.
+Ce complément est **en attente de tests et de QA locale**. La suppression
+contrôlée d'éditions Catalogue est recensée en dette M-003 et ne fait pas
+partie des modifications de l'import d'Articles de ce passage.
+
+---
+
+## UX transversale des imports métier — livraison à valider (2026-10-13)
+
+Harmonisation de l'import Produits M-002, des Articles fournisseur M-003 et
+des Catalogues M-003 : aide contextuelle utilisateur, sélecteur CSV/XLS/XLSX
+francisé, quatre étapes identifiées visuellement et accessibles, actions en pied
+de fenêtre et disposition responsive. Composants mutualisés sous
+`frontend/src/features/imports/components/`, sans changement Core ni contrat
+backend. **À confirmer par les tests et la QA visuelle locaux avant PR/merge.**
+
+---
+
+## M-003 — listes tarifaires autonomes et lecture des Articles (2026-10-13)
+
+Extension approuvée : une liste fournisseur peut être importée avec ses prix
+et une validité explicite **sans édition de catalogue**. Le moteur de Prix
+applicable demeure commun au catalogue et à la mercuriale. L'import d'Articles
+sans prix reste inchangé. Les sorties serveur préparent prix par conditionnement,
+prix normalisé, libellé de conditionnement et état d'association ; onglets
+Fournisseurs et Articles présentent leurs compteurs actifs.
+
+**État :** code et tests ajoutés sur
+`feature/m003-catalog-management-and-import-ux`, en attente de pull,
+migration locale, tests et QA utilisateur ; aucune PR/merge autorisé avant accord.
+
+
+### Ajustement QA M-003 — validité sans échéance (2026-10-13)
+
+Décision produit : les tarifs sans période fournisseur explicite sont
+applicables dès leur confirmation, sans expiration déclarée ; seule une
+période connue demande dates et référence de liste. Formulaire conditionnel
+et DatePicker français ajoutés. Validation backend, provenance horodatée et
+tests à confirmer localement avant clôture du lot M-003.
+
+---
+
+### Complément M-003 — gestion des corrections Articles (2026-10-13)
+
+Parcours détaillé permettant la correction d'association Produit, de
+désignation et conditionnement d'Article privé, et la correction d'erreur
+de prix sur une mercuriale privée avec historique et audit. Présentation
+désignation puis référence et retrait de la provenance du tableau.
+Livraison sur la branche M-003, en attente de pull, tests, QA et validation
+utilisateur avant PR unique ; aucune gate présumée verte.

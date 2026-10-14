@@ -60,7 +60,7 @@ async function importCatalogFromUi(page, {
   ));
 
   await dialog.getByRole('button', {
-    name: 'Inspecter le fichier',
+    name: 'Analyser le fichier',
   }).click();
 
   const inspectResponse = await inspectResponsePromise;
@@ -80,12 +80,8 @@ async function importCatalogFromUi(page, {
     ].join(' '),
   ).toBe(201);
 
-  await dialog.getByRole('combobox', {
-    name: 'Fournisseur du catalogue',
-  }).click();
-  await page.getByRole('option', {
-    name: supplierName,
-  }).click();
+  await dialog.getByRole('textbox', { name: 'Rechercher un Fournisseur' }).fill(supplierName);
+  await dialog.getByRole('button', { name: new RegExp('^' + supplierName + '$', 'i') }).click();
 
   await dialog.getByRole('textbox', {
     name: 'Édition',
@@ -109,6 +105,8 @@ async function importCatalogFromUi(page, {
     page,
     'Import catalogue terminé',
   );
+  await expect(dialog.getByText('Import terminé')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Fermer' }).click();
 }
 
 async function createNegotiatedPriceFromUi(page, {
@@ -148,18 +146,44 @@ async function resolveArticlePrice(page, {
   articleLabel,
   expectedPrice,
 }) {
-  await page.getByRole('combobox', {
-    name: 'Article fournisseur à vérifier',
-  }).click();
-  await page.getByRole('option', {
-    name: articleLabel,
-  }).click();
-
   const applicablePriceCard = page.locator('section').filter({
     has: page.getByRole('heading', {
       name: 'Vérifier un prix applicable',
     }),
   });
+  await expect(applicablePriceCard).toBeVisible();
+
+  const articleSelect = applicablePriceCard.getByRole('combobox', {
+    name: 'Article fournisseur à vérifier',
+  });
+
+  // Un parcours clavier complet évite de réactiver le trigger au milieu
+  // de la navigation, ce qui fermait le popup dans la version précédente.
+  // Base UI gère les touches Home / ArrowDown / Enter sur le Select ouvert.
+  await articleSelect.press('Enter');
+  await expect(articleSelect).toHaveAttribute('aria-expanded', 'true');
+
+  const option = page.getByRole('option', {
+    name: articleLabel,
+    exact: true,
+  });
+  await expect(option).toHaveCount(1);
+
+  // Déterminer l'index de l'Article réellement proposé, sans supposer qu'il
+  // est l'unique option ni écrire sa valeur artificiellement dans React.
+  const labels = (await page.getByRole('option').allTextContents())
+    .map((label) => label.trim());
+  const targetIndex = labels.indexOf(articleLabel);
+  expect(targetIndex, 'Article absent de la sélection du Dossier')
+    .toBeGreaterThanOrEqual(0);
+  await page.keyboard.press('Home');
+  for (let index = 0; index < targetIndex; index += 1) {
+    await page.keyboard.press('ArrowDown');
+  }
+  await page.keyboard.press('Enter');
+
+  await expect(articleSelect).toHaveAttribute('aria-expanded', 'false');
+  await expect(articleSelect).toContainText(articleLabel);
 
   await expect(
     applicablePriceCard.getByText(expectedPrice, {
@@ -172,6 +196,39 @@ async function resolveArticlePrice(page, {
       { exact: true },
     ),
   ).toBeVisible();
+}
+
+// Vérifier la lecture avec la session et la tenancy réelles, puis la projection
+// dans le tableau filtré côté serveur : aucune donnée injectée dans le navigateur.
+async function expectImportedWorkspaceArticle(page, {
+  workspaceId, reference, accessToken,
+}) {
+  const response = await page.request.get(
+    `/api/workspaces/${workspaceId}/supplier-articles`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: { search: reference, status: 'ACTIVE', page: 1, limit: 10 },
+    },
+  );
+  expect(response.status(), 'Lecture des Articles après confirmation').toBe(200);
+  const { data } = await response.json();
+  expect(data.pagination.total).toBe(1);
+  expect(data.articles).toHaveLength(1);
+  const article = data.articles[0];
+  expect(article).toEqual(expect.objectContaining({
+    scope: 'WORKSPACE_PRIVATE',
+    workspaceId,
+    supplierReference: reference,
+    status: 'ACTIVE',
+  }));
+
+  await page.getByRole('searchbox', { name: 'Rechercher' }).fill(reference);
+  const articleRow = page.getByRole('row').filter({
+    hasText: `Réf. fournisseur : ${reference}`,
+  });
+  await expect(articleRow).toBeVisible();
+
+  return { article, articleRow };
 }
 
 test('M-003 autorité Application Global ouvre le Référentiel Fournisseurs', async ({ page }) => {
@@ -350,4 +407,162 @@ test('M-003 un catalogue global est réutilisable depuis plusieurs Workspaces', 
   await expect(workspaceBCatalogRow).toHaveCount(1);
   await expect(workspaceBCatalogRow).toContainText(context.catalogName);
   await expect(workspaceBCatalogRow).toContainText('Référentiel partagé');
+});
+
+test('M-003 owner importe une liste d’Articles sans créer de catalogue commercial', async ({ page }) => {
+  const workspace = await provisionSupplierOwnerWorkspace();
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const supplierName = 'Fournisseur liste E2E ' + suffix;
+  const reference = 'LST-' + suffix;
+
+  const accessToken = await loginWithIdentity(page, workspace.identity);
+  await page.goto(workspace.suppliersUrl);
+  await createSupplierFromUi(page, supplierName);
+  await page.getByRole('tab', { name: /^Articles \(/ }).click();
+  await page.getByRole('button', { name: 'Importer des Articles' }).click();
+
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Fichier', { exact: true }).setInputFiles({
+    name: 'articles.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from([
+      'Reference;Designation;Marque',
+      reference + ';Pain test;Bridor',
+      ';Sans reference;Bridor',
+    ].join('\n'), 'utf8'),
+  });
+  const inspectPromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/supplier-articles/imports/inspect')
+  ));
+  await dialog.getByRole('button', { name: 'Analyser le fichier' }).click();
+  const inspected = await inspectPromise;
+  expect(inspected.status(), 'Inspection Articles : vérifier ClamAV si HTTP 503').toBe(201);
+
+  await dialog.getByRole('textbox', { name: 'Rechercher un Fournisseur' }).fill(supplierName);
+  await dialog.getByRole('button', { name: new RegExp('^' + supplierName + '$', 'i') }).click();
+  await dialog.getByRole('button', { name: 'Prévisualiser' }).click();
+  await expect(dialog.getByText(reference, { exact: true })).toBeVisible();
+  await expect(dialog.getByText(/1 ligne\(s\) sans référence ignorée\(s\)/)).toBeVisible();
+
+  const commitPromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && /\/supplier-articles\/imports\/[^/]+\/commit$/.test(
+      new URL(response.url()).pathname,
+    )
+  ));
+  await dialog.getByRole('button', { name: 'Confirmer l’import' }).click();
+  const committed = await commitPromise;
+  expect(committed.status()).toBe(200);
+  expect((await committed.json()).data).toEqual(expect.objectContaining({
+    created: 1, updated: 0, skipped: 1, priced: 0,
+  }));
+  await expectVisibleToast(page, 'Import des Articles terminé');
+  await expect(dialog.getByText('Import terminé')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Fermer' }).click();
+  // Les toasts Base UI ont aussi role="dialog" : isoler le contenu modal.
+  await expect(page.locator('[data-slot="dialog-content"][role="dialog"]'))
+    .toBeHidden();
+
+  const { article, articleRow } = await expectImportedWorkspaceArticle(page, {
+    workspaceId: workspace.workspaceId,
+    reference,
+    accessToken,
+  });
+  expect(article.associationStatus).toBe('PENDING');
+  expect(article.productVariant).toBeNull();
+  await expect(articleRow.getByText('Non associé', { exact: true }))
+    .toBeVisible();
+
+  const catalogs = await page.request.get(
+    `/api/workspaces/${workspace.workspaceId}/supplier-catalogs`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: { supplierId: article.supplier.id, status: 'ACTIVE' },
+    },
+  );
+  expect(catalogs.status()).toBe(200);
+  expect((await catalogs.json()).data.catalogs).toHaveLength(0);
+});
+
+
+test('M-003 importe des prix Articles sans période saisie et les expose depuis le backend', async ({ page }) => {
+  const workspace = await provisionSupplierOwnerWorkspace();
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const supplierName = 'Fournisseur prix E2E ' + suffix;
+  const reference = 'TAR-' + suffix;
+
+  const accessToken = await loginWithIdentity(page, workspace.identity);
+  await page.goto(workspace.suppliersUrl);
+  await createSupplierFromUi(page, supplierName);
+  await page.getByRole('tab', { name: /^Articles \(/ }).click();
+  await page.getByRole('button', { name: 'Importer des Articles' }).click();
+  const dialog = page.getByRole('dialog');
+
+  await dialog.getByLabel('Fichier', { exact: true }).setInputFiles({
+    name: 'tarifs.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from([
+      'Reference;Designation;Prix HT;Base;Conditionnement;Unites;Quantite par unite;Unite',
+      reference + ';Pâtes alimentaires;25.5;carton;Carton;2;5;kg',
+    ].join('\n'), 'utf8'),
+  });
+  const inspected = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/supplier-articles/imports/inspect')
+  ));
+  await dialog.getByRole('button', { name: 'Analyser le fichier' }).click();
+  expect((await inspected).status(), 'Inspection Articles : vérifier ClamAV si HTTP 503').toBe(201);
+
+  await dialog.getByRole('textbox', { name: 'Rechercher un Fournisseur' }).fill(supplierName);
+  await dialog.getByRole('button', { name: new RegExp('^' + supplierName + '$', 'i') }).click();
+  await expect(dialog.getByLabel('Importer les prix présents dans le fichier')).toBeChecked();
+  await expect(dialog.getByLabel('Ces prix ont une période de validité définie')).not.toBeChecked();
+  await expect(dialog.getByLabel('Valable à partir du')).toHaveCount(0);
+
+  await dialog.getByRole('button', { name: 'Prévisualiser' }).click();
+  await expect(dialog.getByText(reference, { exact: true })).toBeVisible();
+  const commitPromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && /\/supplier-articles\/imports\/[^/]+\/commit$/.test(
+      new URL(response.url()).pathname,
+    )
+  ));
+  await dialog.getByRole('button', { name: 'Confirmer l’import' }).click();
+  const committed = await commitPromise;
+  expect(committed.status()).toBe(200);
+  expect((await committed.json()).data).toEqual(expect.objectContaining({
+    created: 1, updated: 0, skipped: 0, priced: 1,
+  }));
+  await expectVisibleToast(page, 'Import des Articles terminé');
+  await expect(dialog.getByText('Import terminé')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Fermer' }).click();
+  // Les toasts Base UI ont aussi role="dialog" : isoler le contenu modal.
+  await expect(page.locator('[data-slot="dialog-content"][role="dialog"]'))
+    .toBeHidden();
+
+  const { article, articleRow } = await expectImportedWorkspaceArticle(page, {
+    workspaceId: workspace.workspaceId,
+    reference,
+    accessToken,
+  });
+  expect(article.supplierTariffStatus).toBe('AVAILABLE');
+  expect(article.supplierTariff).toEqual(expect.objectContaining({
+    sourceKind: 'PRICE_LIST',
+    sourceAmount: '25.5',
+    sourceBasis: 'PACKAGE',
+    currency: 'EUR',
+    normalizedAmount: '2.55',
+    normalizedUnit: 'KG',
+    validTo: null,
+  }));
+  expect(Date.parse(article.supplierTariff.validFrom)).not.toBeNaN();
+
+  await expect(articleRow).toContainText('25,500');
+  await expect(articleRow).not.toContainText('2,550');
+  await articleRow.getByRole('button', {
+    name: `Détails des prix de ${reference}`,
+  }).click();
+  await expect(page.getByText('2,550 € HT / kg', { exact: true }))
+    .toBeVisible();
 });

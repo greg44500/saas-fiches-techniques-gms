@@ -164,9 +164,18 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
     context.productName,
   );
 
-  await page.getByRole('button', {
-    name: `Ajouter ${context.productName} aux favoris`,
+  const productRow = page.getByRole('row').filter({
+    hasText: context.productName,
+  });
+  await expect(productRow).toBeVisible();
+  await productRow.getByRole('button', {
+    name: `Actions pour ${context.productName}`,
   }).click();
+  await page.getByRole('button', {
+    name: 'Ajouter aux favoris',
+    exact: true,
+  }).click();
+  await expectVisibleToast(page, 'Référence ajoutée aux favoris');
 
   await page.getByRole('tab', { name: 'Favoris' }).click();
   await expect(
