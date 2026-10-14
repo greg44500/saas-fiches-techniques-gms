@@ -52,7 +52,7 @@ describe('SupplierFormDialog', () => {
     mocks.createWorkspace.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({
         id: 'supplier-1',
-        name: 'Grossiste test',
+        name: 'GROSSISTE TEST',
       }),
     });
   });
@@ -71,13 +71,14 @@ describe('SupplierFormDialog', () => {
     );
 
     await user.type(screen.getByLabelText('Nom'), 'Grossiste test');
+    expect(screen.getByLabelText('Nom')).toHaveValue('GROSSISTE TEST');
     await user.click(screen.getByLabelText('Fruits et légumes'));
     await user.click(screen.getByLabelText('Produits laitiers'));
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
 
     expect(mocks.createWorkspace).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
-      name: 'Grossiste test',
+      name: 'GROSSISTE TEST',
       supplierCode: null,
       legalName: null,
       website: null,
@@ -85,7 +86,7 @@ describe('SupplierFormDialog', () => {
     });
     expect(onSaved).toHaveBeenCalledWith({
       id: 'supplier-1',
-      name: 'Grossiste test',
+      name: 'GROSSISTE TEST',
     });
   });
 

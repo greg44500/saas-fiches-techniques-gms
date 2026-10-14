@@ -53,15 +53,17 @@ describe('SupplierImportSelector', () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     mocks.createWorkspace.mockReturnValue({
-      unwrap: vi.fn().mockResolvedValue({ id: 'new-supplier', name: 'Nouveau fournisseur' }),
+      unwrap: vi.fn().mockResolvedValue({ id: 'new-supplier', name: 'NOUVEAU FOURNISSEUR' }),
     });
     render(<SupplierImportSelector canCreate onChange={onChange} suppliers={[]}
       value="__NONE__" workspaceId="workspace-1" />);
     await user.click(screen.getByRole('button', { name: 'Créer un nouveau Fournisseur' }));
     await user.type(screen.getByRole('textbox', { name: 'Nom du Fournisseur' }), 'Nouveau fournisseur');
+    expect(screen.getByRole('textbox', { name: 'Nom du Fournisseur' }))
+      .toHaveValue('NOUVEAU FOURNISSEUR');
     await user.click(screen.getByRole('button', { name: 'Créer et sélectionner' }));
     expect(mocks.createWorkspace).toHaveBeenCalledWith({
-      workspaceId: 'workspace-1', name: 'Nouveau fournisseur',
+      workspaceId: 'workspace-1', name: 'NOUVEAU FOURNISSEUR',
     });
     expect(onChange).toHaveBeenCalledWith('new-supplier');
   });
