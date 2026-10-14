@@ -136,6 +136,117 @@ describe('ProductCreateDialog', () => {
       .toHaveValue('Croissant individuel prêt à cuire');
   });
 
+  it('actualise les suggestions automatiquement sans nouveau clic de recherche', async () => {
+    const user = userEvent.setup();
+    const onUseCandidate = vi.fn();
+    const duplicateCheckRequest = vi.fn().mockImplementation(async ({ name }) => ({
+      exactMatch: null,
+      candidates: name === 'Pâte'
+        ? [{ id: 'product-1', name: 'Pâte à tartiner', status: 'ACTIVE' }]
+        : [{ id: 'product-2', name: 'Pâte feuilletée', status: 'ACTIVE' }],
+    }));
+    render(<ProductCreateDialog
+      duplicateCheckRequest={duplicateCheckRequest}
+      initialName=""
+      metadata={metadata}
+      onClose={vi.fn()}
+      onCreated={vi.fn()}
+      onUseCandidate={onUseCandidate}
+      onUseExisting={vi.fn()}
+      open
+      workspaceId="workspace-1"
+    />);
+
+    const input = screen.getByLabelText('Nom du Produit');
+    await user.type(input, 'Pâte');
+    expect(screen.queryByRole('button', { name: 'Rechercher l’existant' }))
+      .not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Pâte à tartiner')).toBeInTheDocument();
+    });
+    await user.type(input, ' feuilletée');
+    await waitFor(() => {
+      expect(screen.getByText('Pâte feuilletée')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Pâte à tartiner')).not.toBeInTheDocument();
+    expect(duplicateCheckRequest).toHaveBeenLastCalledWith({
+      workspaceId: 'workspace-1', name: 'Pâte feuilletée', aliases: [],
+    });
+    await user.click(screen.getByRole('button', { name: 'Utiliser ce Produit' }));
+    expect(onUseCandidate).toHaveBeenCalledWith(
+      'product-2', expect.objectContaining({ name: 'Pâte feuilletée' }),
+    );
+  });
+
+  it('demande une confirmation globale explicite avant de créer un Produit proche', async () => {
+    const user = userEvent.setup();
+    const createRequest = vi.fn().mockResolvedValue({
+      classification: 'PROVISIONAL',
+      provisionalReference: { id: 'new-product', variant: { id: 'new-variant' } },
+    });
+    const duplicateCheckRequest = vi.fn().mockResolvedValue({
+      exactMatch: null,
+      candidates: [
+        { id: 'product-1', name: 'Pâte d’amande', status: 'ACTIVE' },
+        { id: 'product-2', name: 'Pâte feuilletée', status: 'ACTIVE' },
+      ],
+    });
+    render(<ProductCreateDialog
+      createRequest={createRequest}
+      duplicateCheckRequest={duplicateCheckRequest}
+      initialName="Pâte"
+      metadata={metadata}
+      onClose={vi.fn()}
+      onCreated={vi.fn()}
+      onUseCandidate={vi.fn()}
+      onUseExisting={vi.fn()}
+      open
+      workspaceId="workspace-1"
+    />);
+
+    await screen.findByText('Pâte feuilletée');
+    expect(screen.queryAllByRole('checkbox', { name: 'Différent' })).toHaveLength(0);
+    const confirmation = screen.getByRole('checkbox', {
+      name: /J’ai examiné ces Produits/,
+    });
+    expect(confirmation).not.toBeChecked();
+    expect(screen.queryByRole('button', { name: 'Soumettre la proposition' }))
+      .not.toBeInTheDocument();
+    await user.click(confirmation);
+    await user.click(screen.getByRole('button', { name: 'Soumettre la proposition' }));
+    await waitFor(() => expect(createRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Pâte',
+        forceCreate: true,
+        reviewedCandidateIds: ['product-1', 'product-2'],
+      }),
+    ));
+  });
+
+  it('refuse de créer si une correspondance exacte est renvoyée', async () => {
+    const user = userEvent.setup();
+    const duplicateCheckRequest = vi.fn().mockResolvedValue({
+      exactMatch: { id: 'same-product', name: 'Croissant', status: 'ACTIVE' },
+      candidates: [],
+    });
+    render(<ProductCreateDialog
+      duplicateCheckRequest={duplicateCheckRequest}
+      initialName="Croissant"
+      metadata={metadata}
+      onClose={vi.fn()}
+      onCreated={vi.fn()}
+      onUseCandidate={vi.fn()}
+      onUseExisting={vi.fn()}
+      open
+      workspaceId="workspace-1"
+    />);
+    await screen.findByRole('button', { name: 'Utiliser ce Produit' });
+    expect(screen.queryByRole('button', { name: 'Soumettre la proposition' }))
+      .not.toBeInTheDocument();
+    expect(duplicateCheckRequest).toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Utiliser ce Produit' }));
+  });
+
   it('privilégie une correspondance exacte au lieu de créer un doublon', async () => {
     const user = userEvent.setup();
     const onUseExisting = vi.fn();

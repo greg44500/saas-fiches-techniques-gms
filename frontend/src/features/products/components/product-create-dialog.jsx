@@ -66,6 +66,11 @@ function ProductCreateDialog({
   const [variant, setVariant] = useState(() => createEmptyVariantDraft(metadata));
   const [formError, setFormError] = useState('');
   const [externalPending, setExternalPending] = useState(false);
+  const [contextualLookupStatus, setContextualLookupStatus] = useState('idle');
+  const [confirmedDistinct, setConfirmedDistinct] = useState(false);
+  const contextualCreation = Boolean(!isGlobal && onUseCandidate && duplicateCheckRequest);
+  const duplicateCheckRequestRef = useRef(duplicateCheckRequest);
+  duplicateCheckRequestRef.current = duplicateCheckRequest;
 
   const [workspaceDuplicateCheck, workspaceDuplicateState] =
     useDuplicateCheckProductMutation();
@@ -85,17 +90,63 @@ function ProductCreateDialog({
     setReviewedCandidateIds([]);
     setVariant(createEmptyVariantDraft(metadata));
     setFormError('');
+    setConfirmedDistinct(false);
+    setContextualLookupStatus('idle');
   }, [metadata, open, initialName]);
+
+  // La recherche est prédictive dans le parcours Article fournisseur.
+  // Une réponse ancienne ne peut pas remplacer une recherche plus récente.
+  useEffect(() => {
+    if (!contextualCreation || !open) return undefined;
+    const query = name.trim();
+    if (query.length < 3) {
+      setContextualLookupStatus('idle');
+      return undefined;
+    }
+
+    let current = true;
+    setContextualLookupStatus('loading');
+    const timer = window.setTimeout(async () => {
+      try {
+        const found = await duplicateCheckRequestRef.current({
+          workspaceId, name: query, aliases: [],
+        });
+        if (!current) return;
+        setDuplicateResult(found);
+        setReviewedCandidateIds([]);
+        setConfirmedDistinct(false);
+        setContextualLookupStatus('success');
+      } catch (failure) {
+        if (!current) return;
+        setDuplicateResult(null);
+        setConfirmedDistinct(false);
+        setContextualLookupStatus('error');
+        setFormError(getApiErrorMessage(
+          failure, 'La recherche est indisponible. Réessayez en modifiant votre saisie.',
+        ));
+      }
+    }, 350);
+
+    return () => {
+      current = false;
+      window.clearTimeout(timer);
+    };
+  }, [contextualCreation, name, open, workspaceId]);
 
   const activeCategories = useMemo(
     () => (metadata?.categories ?? []).filter((category) => category.status === 'ACTIVE'),
     [metadata?.categories],
   );
   const candidates = duplicateResult?.candidates ?? [];
-  const everyCandidateReviewed = candidates.every(({ id }) =>
-    reviewedCandidateIds.includes(id));
+  const everyCandidateReviewed = contextualCreation
+    ? (candidates.length === 0 || confirmedDistinct)
+    : candidates.every(({ id }) => reviewedCandidateIds.includes(id));
+  const reviewedIdsForCreation = contextualCreation && confirmedDistinct
+    ? candidates.map(({ id }) => id)
+    : reviewedCandidateIds;
   const canCreate = Boolean(
     duplicateResult
+    && (!contextualCreation || contextualLookupStatus === 'success')
     && !duplicateResult.exactMatch
     && everyCandidateReviewed
     && variant.conservationType
@@ -112,6 +163,7 @@ function ProductCreateDialog({
   function invalidateDuplicateReview() {
     setDuplicateResult(null);
     setReviewedCandidateIds([]);
+    setConfirmedDistinct(false);
     setFormError('');
   }
 
@@ -159,7 +211,8 @@ function ProductCreateDialog({
   }
 
   async function submit() {
-    if (!duplicateResult || duplicateResult.exactMatch || !everyCandidateReviewed) {
+    if (!duplicateResult || duplicateResult.exactMatch || !everyCandidateReviewed
+      || (contextualCreation && contextualLookupStatus !== 'success')) {
       setFormError('Examinez les références proches avant de créer un nouveau Produit.');
       return;
     }
@@ -186,7 +239,7 @@ function ProductCreateDialog({
         workspaceId,
         name: name.trim(),
         categoryId: selectedCategoryId,
-        reviewedCandidateIds,
+        reviewedCandidateIds: reviewedIdsForCreation,
         forceCreate: candidates.length > 0,
         variant: variantPayload,
       };
@@ -195,7 +248,7 @@ function ProductCreateDialog({
           name: name.trim(),
           aliases: [],
           categoryId: selectedCategoryId,
-          reviewedCandidateIds: candidates.map(({ id }) => id),
+          reviewedCandidateIds: reviewedIdsForCreation,
           variant: variantPayload,
         }).unwrap()
         : createRequest
@@ -211,8 +264,9 @@ function ProductCreateDialog({
           candidates: result.candidates ?? [],
         });
         setReviewedCandidateIds([]);
+        setConfirmedDistinct(false);
         setFormError(
-          'De nouvelles références proches ont été détectées. Examinez-les avant de confirmer la création.',
+          'De nouveaux Produits proches ont été détectés. Examinez-les avant de confirmer la création.',
         );
         return;
       }
@@ -283,18 +337,32 @@ function ProductCreateDialog({
               />
             </Field>
 
-            <div className="flex justify-end">
-              <Button
-                disabled={pending || !name.trim()}
-                onClick={verifyExisting}
-                type="button"
-                variant="outline"
-              >
-                {(workspaceDuplicateState.isLoading || globalDuplicateState.isLoading)
-                  ? 'Vérification…'
-                  : 'Rechercher l’existant'}
-              </Button>
-            </div>
+            {contextualCreation ? (
+              <p className="text-xs text-muted-foreground" role="status">
+                {name.trim().length < 3
+                  ? 'Saisissez au moins 3 caractères pour rechercher un Produit.'
+                  : contextualLookupStatus === 'loading'
+                    ? 'Recherche automatique en cours…'
+                    : contextualLookupStatus === 'error'
+                      ? 'Recherche indisponible : vérifiez votre saisie et réessayez.'
+                      : contextualLookupStatus === 'success'
+                        ? 'Résultats actualisés. Affinez librement votre recherche.'
+                        : 'Recherche automatique en cours…'}
+              </p>
+            ) : (
+              <div className="flex justify-end">
+                <Button
+                  disabled={pending || !name.trim()}
+                  onClick={verifyExisting}
+                  type="button"
+                  variant="outline"
+                >
+                  {(workspaceDuplicateState.isLoading || globalDuplicateState.isLoading)
+                    ? 'Vérification…'
+                    : 'Rechercher l’existant'}
+                </Button>
+              </div>
+            )}
 
             {duplicateResult?.exactMatch && (
               <div className="rounded-lg border border-border p-4">
@@ -358,9 +426,13 @@ function ProductCreateDialog({
             {candidates.length > 0 && !duplicateResult?.exactMatch && (
               <section className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
                 <div className="flex items-center gap-1">
-                  <h3 className="font-medium">Produits proches à examiner</h3>
+                  <h3 className="font-medium">
+                    {contextualCreation ? 'Produits correspondants' : 'Produits proches à examiner'}
+                  </h3>
                   <InfoTooltip
-                    content="Confirmez pour chaque candidat qu’il s’agit bien d’un Produit différent."
+                    content={contextualCreation
+                      ? 'Ces suggestions permettent de réutiliser un Produit existant. Si aucune ne convient, confirmez votre choix pour créer une nouvelle identité provisoire.'
+                      : 'Confirmez pour chaque candidat qu’il s’agit bien d’un Produit différent.'}
                     label="Aide sur les Produits proches"
                   />
                 </div>
@@ -383,19 +455,33 @@ function ProductCreateDialog({
                             variant="outline"
                           >Utiliser ce Produit</Button>
                         )}
-                        <label className="flex cursor-pointer items-center gap-2 text-sm">
-                          <input
-                            checked={reviewedCandidateIds.includes(candidate.id)}
-                            disabled={pending}
-                            onChange={() => toggleCandidate(candidate.id)}
-                            type="checkbox"
-                          />
-                          Différent
-                        </label>
+                        {!contextualCreation && (
+                          <label className="flex cursor-pointer items-center gap-2 text-sm">
+                            <input
+                              checked={reviewedCandidateIds.includes(candidate.id)}
+                              disabled={pending}
+                              onChange={() => toggleCandidate(candidate.id)}
+                              type="checkbox"
+                            />
+                            Différent
+                          </label>
+                        )}
                       </div>
                     </li>
                   ))}
                 </ul>
+                {contextualCreation && (
+                  <label className="flex cursor-pointer items-start gap-2 rounded-md border border-warning/30 bg-card p-3 text-sm">
+                    <input
+                      checked={confirmedDistinct}
+                      className="mt-1"
+                      disabled={pending}
+                      onChange={(event) => setConfirmedDistinct(event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span>J’ai examiné ces Produits. Aucun ne correspond à celui que je souhaite créer.</span>
+                  </label>
+                )}
               </section>
             )}
 

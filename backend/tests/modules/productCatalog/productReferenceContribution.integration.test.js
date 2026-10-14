@@ -217,6 +217,42 @@ describe('M-002 contribution gouvernée et non bloquante', () => {
         expect(await ReferenceContribution.countDocuments()).toBe(1);
     });
 
+    it('refuse de considérer des Produits proches non revus comme confirmés', async () => {
+        const existing = await createActiveProductReference({
+            name: 'Pâte feuilletée contrôle manuel',
+        });
+        const initialCount = await CanonicalProduct.countDocuments();
+        const contribution = {
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CANONICAL_PRODUCT',
+            value: 'Pâte feuilletée contrôle manuel longue',
+            variant: {
+                name: 'Pâte feuilletée contrôle manuel longue',
+                conservationType: 'FRAIS',
+                referenceUnit: 'KG',
+            },
+            forceCreate: true,
+        };
+
+        const unreviewed = await submitReferenceContribution({
+            ...contribution,
+            reviewedCandidateIds: [],
+        });
+        expect(unreviewed.classification).toBe('USER_CONFIRMATION_REQUIRED');
+        expect(unreviewed.candidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: existing.product._id.toString() }),
+        ]));
+        expect(await CanonicalProduct.countDocuments()).toBe(initialCount);
+
+        const confirmed = await submitReferenceContribution({
+            ...contribution,
+            reviewedCandidateIds: unreviewed.candidates.map(({ id }) => id),
+        });
+        expect(confirmed.classification).toBe('PROVISIONAL');
+        expect(confirmed.contribution.status).toBe('PENDING_REVIEW');
+    });
+
     it('crée un nouveau Produit canonique comme provisoire Workspace au lieu de bloquer le travail', async () => {
         const reference = await createActiveProductReference({
             name: 'Produit témoin contribution',

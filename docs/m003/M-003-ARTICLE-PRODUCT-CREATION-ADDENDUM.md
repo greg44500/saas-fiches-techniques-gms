@@ -105,6 +105,31 @@ M-003 historique et sa journalisation existante.
   vide ou en erreur conserve ses messages contextuels distincts.
 - Aucune modification des données persistées ni des invariants de validation.
 
+## 4.2. Recherche prédictive et confirmation proportionnée
+
+Dans le parcours contextuel Article fournisseur, la recherche Produit se
+déclenche automatiquement après 350 ms d'inactivité, dès trois caractères.
+Les réponses périmées sont ignorées lors d'une saisie ultérieure. L'utilisateur
+peut continuer à affiner le nom sans action « Rechercher l'existant ».
+
+Le moteur M-002 conserve ses rapprochements déterministes, sa limite serveur
+de huit candidats et le blocage des collisions exactes. L'affichage propose
+la réutilisation directe d'un Produit parent actif. Pour proposer un Produit
+distinct malgré des candidats proches, une confirmation unique et explicite
+porte sur **tous les candidats effectivement affichés**, plutôt qu'une case
+par suggestion. Aucune confirmation automatique n'est effectuée.
+
+Lors de la création, le backend réévalue les collisions dans la transaction.
+Si la liste des candidats critiques a changé depuis l'affichage, il renvoie
+`USER_CONFIRMATION_REQUIRED` sans créer le Produit : une nouvelle revue
+explicite est exigée. Le serveur n'infère jamais une revue non transmise par
+le client. L'utilisateur peut poursuivre immédiatement avec un Produit
+`PROVISIONAL` une fois les contrôles passés ; la validation globale reste
+différée et humaine.
+
+Ce lot conserve les anciens formulaires de contribution M-002 hors parcours
+Article fournisseur et n'ajoute aucune capability.
+
 ## 5. Validation et non-régression
 
 - HTTP Supertest : import refusé, isolation Workspace, création provisoire,
