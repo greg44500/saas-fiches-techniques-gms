@@ -1,4 +1,5 @@
 import { Field, FieldLabel } from '@/components/ui/field';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import {
   getReferenceUnitLabel,
 } from '@/features/products/lib/product-presentation';
@@ -12,6 +13,13 @@ import {
 } from '@/components/ui/select';
 
 const EMPTY_OPTION = '__NONE__';
+
+const PRESENTATION_HELP = 'Décrit la forme de présentation du Produit : '
+  + 'entier, en tranches, en quartiers, râpé. '
+  + 'Ne saisissez pas le carton, le sachet ou d’autres conditionnements fournisseur.';
+const PROCESSING_HELP = 'Indique l’état du Produit ou une transformation déjà réalisée : '
+  + 'cru, précuit, cuit, blanchi ou prêt à cuire. '
+  + 'Ce champ est facultatif et ne doit pas être déduit automatiquement de la gamme.';
 
 function createEmptyVariantDraft(metadata, { structured = false } = {}) {
   return {
@@ -178,7 +186,15 @@ function ProductVariantFields({
 
             return (
               <Field key={kind.value}>
-                <FieldLabel htmlFor={fieldId}>{kind.label}</FieldLabel>
+                <div className="flex items-center gap-1">
+                  <FieldLabel htmlFor={fieldId}>{kind.label}</FieldLabel>
+                  {kind.value === 'PRESENTATION' && (
+                    <InfoTooltip
+                      content={PRESENTATION_HELP}
+                      label="Aide sur la présentation de la Référence Produit"
+                    />
+                  )}
+                </div>
                 <Select
                   disabled={disabled || options.length === 0}
                   items={[
@@ -222,13 +238,19 @@ function ProductVariantFields({
         </>
       ) : (
         <Field>
-          <FieldLabel htmlFor="product-variant-presentation">Présentation</FieldLabel>
+          <div className="flex items-center gap-1">
+            <FieldLabel htmlFor="product-variant-presentation">Présentation</FieldLabel>
+            <InfoTooltip
+              content={PRESENTATION_HELP}
+              label="Aide sur la présentation de la Référence Produit"
+            />
+          </div>
           <Input
             disabled={disabled}
             id="product-variant-presentation"
             maxLength={120}
             onChange={(event) => change('presentation', event.target.value)}
-            placeholder="Facultatif"
+            placeholder="Ex. entier, en tranches, râpé"
             value={value.presentation}
           />
         </Field>
@@ -315,15 +337,21 @@ function ProductVariantFields({
       )}
 
       <Field>
-        <FieldLabel htmlFor="product-variant-processing">
-          État / transformation
-        </FieldLabel>
+        <div className="flex items-center gap-1">
+          <FieldLabel htmlFor="product-variant-processing">
+            État / transformation
+          </FieldLabel>
+          <InfoTooltip
+            content={PROCESSING_HELP}
+            label="Aide sur l’état ou la transformation du Produit"
+          />
+        </div>
         <Input
           disabled={disabled}
           id="product-variant-processing"
           maxLength={80}
           onChange={(event) => change('processingState', event.target.value)}
-          placeholder="Facultatif"
+          placeholder="Ex. cru, précuit, cuit, prêt à cuire"
           value={value.processingState}
         />
       </Field>

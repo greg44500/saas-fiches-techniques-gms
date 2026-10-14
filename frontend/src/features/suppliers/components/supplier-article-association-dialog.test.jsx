@@ -2,17 +2,25 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ update: vi.fn() }));
+const mocks = vi.hoisted(() => ({ update: vi.fn(), search: vi.fn() }));
 
 vi.mock('@/features/products/api/product-catalog-api', () => ({
   useGetProductMetadataQuery: () => ({ data: {} }),
 }));
 vi.mock('@/features/products/components/product-search-autocomplete', () => ({
-  ProductSearchAutocomplete: () => <input aria-label="Rechercher un Produit" />,
+  ProductSearchAutocomplete: ({ onValueChange, onDebouncedSearchChange }) => (
+    <input
+      aria-label="Rechercher un Produit"
+      onChange={(event) => {
+        onValueChange(event.target.value);
+        onDebouncedSearchChange?.(event.target.value.trim());
+      }}
+    />
+  ),
 }));
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useGetSupplierArticleProductMetadataQuery: () => ({ data: {} }),
-  useSearchSupplierArticleProductsQuery: () => ({ data: { results: [] } }),
+  useSearchSupplierArticleProductsQuery: mocks.search,
   useUpdateSupplierArticleMutation: () => [
     mocks.update, { isLoading: false },
   ],
@@ -23,6 +31,9 @@ import { SupplierArticleAssociationDialog } from './supplier-article-association
 describe('SupplierArticleAssociationDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.search.mockReturnValue({
+      data: { results: [] }, isFetching: false, isSuccess: true, isError: false,
+    });
     mocks.update.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({}) });
   });
 
@@ -52,8 +63,56 @@ describe('SupplierArticleAssociationDialog', () => {
       open
       workspaceId="workspace-1"
     />);
-    await user.click(screen.getByRole('button', { name: 'Créer une Référence Produit' }));
-    expect(onCreateProduct).toHaveBeenCalledWith('Croissant 120 g');
+    expect(screen.queryByRole('button', { name: 'Créer la Référence manquante' }))
+      .not.toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: 'Rechercher un Produit' }), 'Croissant');
+    expect(screen.getByText(/Aucune Référence Produit trouvée pour/))
+      .toHaveClass('font-medium');
+    await user.click(screen.getByRole('button', { name: 'Créer la Référence manquante' }));
+    expect(onCreateProduct).toHaveBeenCalledWith('Croissant');
+  });
+
+  it('permet de créer une Référence différente seulement après examen de suggestions', async () => {
+    const user = userEvent.setup();
+    const onCreateProduct = vi.fn();
+    mocks.search.mockReturnValue({
+      data: { results: [{ variant: { id: 'variant-1' } }] },
+      isFetching: false, isSuccess: true, isError: false,
+    });
+    render(<SupplierArticleAssociationDialog
+      article={{ id: 'article-1', supplierReference: 'REF-1' }}
+      canCreateProduct
+      onClose={vi.fn()}
+      onCreateProduct={onCreateProduct}
+      onSaved={vi.fn()}
+      open
+      workspaceId="workspace-1"
+    />);
+    expect(screen.queryByRole('button', { name: 'Créer une Référence différente' }))
+      .not.toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: 'Rechercher un Produit' }), 'Croissant');
+    await user.click(screen.getByRole('button', { name: 'Créer une Référence différente' }));
+    expect(onCreateProduct).toHaveBeenCalledWith('Croissant');
+  });
+
+  it('interdit la création en cas d’échec de recherche', async () => {
+    const user = userEvent.setup();
+    mocks.search.mockReturnValue({
+      data: undefined, isFetching: false, isSuccess: false, isError: true,
+    });
+    render(<SupplierArticleAssociationDialog
+      article={{ id: 'article-1', supplierReference: 'REF-1' }}
+      canCreateProduct
+      onClose={vi.fn()}
+      onCreateProduct={vi.fn()}
+      onSaved={vi.fn()}
+      open
+      workspaceId="workspace-1"
+    />);
+    await user.type(screen.getByRole('textbox', { name: 'Rechercher un Produit' }), 'Croissant');
+    expect(screen.getByRole('alert')).toHaveTextContent('La recherche est indisponible');
+    expect(screen.queryByRole('button', { name: /Créer une Référence/ }))
+      .not.toBeInTheDocument();
   });
 
   it('autorise le retrait d’une association déjà présente', async () => {

@@ -26,8 +26,14 @@ Fournisseurs, même si la Référence Produit manque au référentiel.
 
 1. Depuis l'onglet Association d'un Article fournisseur privé actif, rechercher
    une Référence existante. La recherche directe reste possible.
-2. L'action « Créer une Référence Produit » ouvre le formulaire M-002 existant,
-   avec la désignation saisie comme proposition modifiable.
+2. L'action de création n'est affichée qu'après une recherche prédictive
+   effectivement aboutie (à partir de 3 caractères) : un résultat manquant est
+   signalé visuellement, un résultat proche appelle à examiner la liste.
+   Les erreurs de recherche ne sont jamais traitées comme des résultats vides.
+   Si aucune suggestion ne convient, la création reste explicitement possible.
+   Le formulaire M-002 reçoit la recherche comme proposition modifiable.
+   Il rappelle de rechercher d'abord le Produit parent générique avant de
+   créer une identité canonique nouvelle.
 3. Le contrôle de doublons M-002 reste obligatoire. Une Référence exacte peut
    être utilisée directement ; un Produit parent exact ou proche peut être
    réutilisé avant de créer uniquement la Référence manquante.
@@ -80,6 +86,16 @@ Chaque endpoint applique préalablement le même contrôle Article privé actif,
 permission de gestion + import et capability d'import. Les schémas Zod existants
 M-002 sont réutilisés. La modification de l'association conserve son PATCH
 M-003 historique et sa journalisation existante.
+
+## 4.1. Aide à la saisie et retours de recherche (QA visuelle)
+
+- L'absence d'un Produit parent est signalée de manière contrastée et accessible
+  dans le formulaire M-002 après contrôle des doublons.
+- Les champs facultatifs Présentation et État / transformation possèdent des
+  exemples de saisie et une infobulle accessible par survol ou focus.
+- Les infobulles distinguent bien dimensions Produit et conditionnements
+  commerciaux fournisseur ; elles ne déduisent pas l'État depuis une Gamme.
+- Aucune modification des données persistées ni des invariants de validation.
 
 ## 5. Validation et non-régression
 

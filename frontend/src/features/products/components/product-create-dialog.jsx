@@ -259,6 +259,17 @@ function ProductCreateDialog({
           </DialogHeader>
 
           <div className="mt-5 space-y-5">
+            {onUseCandidate && (
+              <div className="rounded-md border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">Étape 1 — Retrouver le Produit parent</p>
+                <p className="mt-1">
+                  Recherchez d’abord son nom générique, par exemple « Croissant »
+                  plutôt que « Croissant individuel prêt à cuire ».
+                  Si ce Produit existe, sélectionnez-le : vous créerez ensuite
+                  uniquement la Référence manquante.
+                </p>
+              </div>
+            )}
             <Field>
               <FieldLabel htmlFor="product-create-name">Nom du Produit</FieldLabel>
               <Input
@@ -328,12 +339,21 @@ function ProductCreateDialog({
               && !duplicateResult.exactMatch
               && candidates.length === 0 && (
               <div
-                className="rounded-lg border border-border bg-muted/20 p-3"
+                className="rounded-lg border border-warning/40 bg-warning/10 p-3"
                 role="status"
               >
-                <p className="text-sm font-medium">
-                  Aucun Produit existant correspondant n’a été trouvé.
-                </p>
+                <div className="flex items-center gap-2">
+                  <span className="size-2 shrink-0 rounded-full bg-warning" aria-hidden="true" />
+                  <p className="text-sm font-semibold">
+                    Aucun Produit existant correspondant n’a été trouvé.
+                  </p>
+                </div>
+                {onUseCandidate && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Vérifiez le libellé ou lancez une nouvelle recherche avec un nom
+                    plus générique avant de créer un nouveau Produit parent.
+                  </p>
+                )}
               </div>
             )}
 

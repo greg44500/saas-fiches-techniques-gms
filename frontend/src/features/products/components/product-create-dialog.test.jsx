@@ -104,6 +104,7 @@ describe('ProductCreateDialog', () => {
     expect(await screen.findByText(
       'Aucun Produit existant correspondant n’a été trouvé.',
     )).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveClass('border-warning/40');
     expect(screen.getByRole('button', {
       name: 'Aide sur la création d’un Produit',
     })).toBeInTheDocument();

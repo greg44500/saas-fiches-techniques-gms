@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Info } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +43,17 @@ function SupplierArticleAssociationDialog({
     skip: !open || !canCreateProduct || !article?.id || contextualSearch.length < 3,
   });
   const [updateArticle, updateState] = useUpdateSupplierArticleMutation();
+  const normalizedSearch = search.trim();
+  const hasEnoughCharacters = normalizedSearch.length >= 3;
+  const isCurrentSearch = contextualSearch === normalizedSearch;
+  const searchReady = canCreateProduct && hasEnoughCharacters
+    && isCurrentSearch && contextualQuery.isSuccess && !contextualQuery.isFetching;
+  const searchResults = contextualQuery.currentData?.results
+    ?? contextualQuery.data?.results ?? [];
+  const hasSelectedReference = Boolean(variant?.id);
+  const searchFailed = canCreateProduct && hasEnoughCharacters
+    && isCurrentSearch && contextualQuery.isError && !contextualQuery.isFetching;
+  const canOfferCreation = searchReady && !hasSelectedReference;
 
   useEffect(() => {
     if (!open) return;
@@ -109,17 +121,60 @@ function SupplierArticleAssociationDialog({
                 workspaceId={workspaceId}
               />
             </Field>
+            {canCreateProduct && !hasSelectedReference && (
+              <div className="space-y-3" aria-live="polite">
+                {!hasEnoughCharacters && (
+                  <p className="text-sm text-muted-foreground">
+                    1. Saisissez au moins 3 caractères pour rechercher une Référence Produit existante.
+                  </p>
+                )}
+                {hasEnoughCharacters && !searchReady && !searchFailed && (
+                  <p className="text-sm text-muted-foreground" role="status">
+                    Recherche des Références Produit en cours…
+                  </p>
+                )}
+                {searchFailed && (
+                  <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+                    La recherche est indisponible. Réessayez avant de créer une Référence.
+                  </p>
+                )}
+                {canOfferCreation && searchResults.length === 0 && (
+                  <div className="space-y-3 rounded-md border border-warning/40 bg-warning/10 p-3" role="status">
+                    <div className="flex items-start gap-2">
+                      <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning" />
+                      <p className="text-sm font-medium">
+                        Aucune Référence Produit trouvée pour « {normalizedSearch} ».
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Vous pouvez maintenant proposer une Référence. Recherchez d’abord son Produit parent dans l’étape suivante.
+                    </p>
+                    <Button
+                      disabled={updateState.isLoading}
+                      onClick={() => onCreateProduct(normalizedSearch)}
+                      type="button"
+                      variant="outline"
+                    >Créer la Référence manquante</Button>
+                  </div>
+                )}
+                {canOfferCreation && searchResults.length > 0 && (
+                  <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+                    <p className="text-sm text-muted-foreground">
+                      Examinez les suggestions ci-dessus. Aucune ne correspond à votre besoin ?
+                    </p>
+                    <Button
+                      disabled={updateState.isLoading}
+                      onClick={() => onCreateProduct(normalizedSearch)}
+                      type="button"
+                      variant="outline"
+                    >Créer une Référence différente</Button>
+                  </div>
+                )}
+              </div>
+            )}
             <FieldError>{error}</FieldError>
           </div>
           <DialogFooter>
-            {canCreateProduct && (
-              <Button
-                disabled={updateState.isLoading}
-                onClick={() => onCreateProduct(search.trim() || article?.supplierDesignation || '')}
-                type="button"
-                variant="outline"
-              >Créer une Référence Produit</Button>
-            )}
             <DialogClose
               disabled={updateState.isLoading}
               ref={cancelRef}
