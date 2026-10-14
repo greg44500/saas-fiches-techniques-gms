@@ -11,6 +11,8 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
   ProductSearchAutocomplete: () => <input aria-label="Rechercher un Produit" />,
 }));
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useGetSupplierArticleProductMetadataQuery: () => ({ data: {} }),
+  useSearchSupplierArticleProductsQuery: () => ({ data: { results: [] } }),
   useUpdateSupplierArticleMutation: () => [
     mocks.update, { isLoading: false },
   ],
@@ -22,6 +24,36 @@ describe('SupplierArticleAssociationDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.update.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({}) });
+  });
+
+  it('propose une création contextuelle uniquement quand le droit import est fourni', async () => {
+    const user = userEvent.setup();
+    const onCreateProduct = vi.fn();
+    const article = {
+      id: 'article-1', supplierReference: '43279',
+      supplierDesignation: 'Croissant 120 g', productVariant: null,
+    };
+    const { rerender } = render(<SupplierArticleAssociationDialog
+      article={article}
+      onClose={vi.fn()}
+      onCreateProduct={onCreateProduct}
+      onSaved={vi.fn()}
+      open
+      workspaceId="workspace-1"
+    />);
+    expect(screen.queryByRole('button', { name: 'Créer une Référence Produit' }))
+      .not.toBeInTheDocument();
+    rerender(<SupplierArticleAssociationDialog
+      article={article}
+      canCreateProduct
+      onClose={vi.fn()}
+      onCreateProduct={onCreateProduct}
+      onSaved={vi.fn()}
+      open
+      workspaceId="workspace-1"
+    />);
+    await user.click(screen.getByRole('button', { name: 'Créer une Référence Produit' }));
+    expect(onCreateProduct).toHaveBeenCalledWith('Croissant 120 g');
   });
 
   it('autorise le retrait d’une association déjà présente', async () => {
