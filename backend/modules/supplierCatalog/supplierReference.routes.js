@@ -7,12 +7,14 @@ import {
 import { articleImportPreviewBodySchema } from './supplierArticleImport.validation.js';
 import {
     correctWorkspaceArticleTariff,
+    correctWorkspaceArticleTariffPeriod,
     listWorkspaceArticleTariffs,
 } from './supplierTariffRevision.controller.js';
 import {
     articleTariffParamsSchema,
     articleTariffRevisionParamsSchema,
     correctArticlePriceBodySchema,
+    correctArticleTariffPeriodBodySchema,
 } from './supplierTariffRevision.validation.js';
 import {
     cleanupSupplierCatalogImportUploadOnError,
@@ -252,6 +254,20 @@ supplierArticleRouter.post(
     authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_MANAGE),
     enforceWorkspaceAccessMode(),
     correctWorkspaceArticleTariff,
+);
+
+supplierArticleRouter.post(
+    '/:articleId/tariffs/:tariffId/period-correction',
+    authenticate,
+    validateRequest({
+        params: articleTariffRevisionParamsSchema,
+        body: correctArticleTariffPeriodBodySchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
+    authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_MANAGE),
+    enforceWorkspaceAccessMode(),
+    correctWorkspaceArticleTariffPeriod,
 );
 
 supplierArticleRouter.patch(

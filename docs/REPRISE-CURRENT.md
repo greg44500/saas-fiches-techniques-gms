@@ -648,3 +648,27 @@ Aucun composant partagé/Core, backend, modèle ou index n'est modifié.
 Tests frontend mis à jour pour vérifier la compacité, les popovers,
 les warnings et l'absence d'icône si aucune donnée secondaire.
 Validations locales, lint, build, QA et gates encore à exécuter.
+
+## QA M-003 — reprise après interruption et décision prix expiré (2026-10-14)
+
+L'utilisateur valide explicitement :
+- dernier tarif expiré visible sur l'Article, prix secondaires conservés ;
+- recours au dernier tarif connu expiré dans la valorisation
+  des Fiches techniques, avec alerte explicite et traçable ;
+- correction historisée des dates de période par l'utilisateur ;
+- barre Articles compacte sans labels Recherche/Statut, filtre
+  Fournisseur recherché côté serveur + Statut + recherche Article.
+
+Implémentation sur `feature/m003-catalog-management-and-import-ux`
+sans upgrade Core ni nouveau modèle/index :
+`supplierTariffSelection`, tarif expiré dans les listes,
+résolveur de prix M-003 avec alerte, endpoint de correction des dates,
+formulaire DatePicker, filtre Fournisseur Popover, avertissement dans
+carte prix Dossier et icône d'avertissement sur prix unitaire
+dans la composition FT M-004. Les contrôles de chevauchement import
+s'appuient sur la même règle de dates civiles Europe/Paris.
+
+Les tests sont préparés ; **aucune exécution locale, lint, build, E2E
+ni Core Gate n'est attestée à ce stade**. L'utilisateur réalisera les
+tests localement puis décidera de la PR et du merge. Pas de
+modification silencieuse de main.

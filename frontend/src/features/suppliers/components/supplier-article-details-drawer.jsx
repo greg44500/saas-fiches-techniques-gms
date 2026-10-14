@@ -25,6 +25,7 @@ function dateLabel(value) {
 function SupplierArticleDetailsDrawer({
   article, canManage = false, canAssociate = false, canReadTariffs = false,
   canCorrectTariffs = false, onAssociate, onClose, onCorrectPrice,
+  onCorrectPeriod,
   onEdit, open, workspaceId,
 }) {
   const retained = useRef(null);
@@ -100,14 +101,27 @@ function SupplierArticleDetailsDrawer({
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-semibold">Tarif fournisseur HT</h3>
               {canCorrect && (
-                <Button onClick={() => onCorrectPrice(current)} size="sm" variant="outline">
-                  Corriger le prix
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => onCorrectPrice(current)} size="sm" variant="outline">
+                    Corriger le prix
+                  </Button>
+                  <Button onClick={() => onCorrectPeriod(current)} size="sm" variant="outline">
+                    Modifier la période
+                  </Button>
+                </div>
               )}
             </div>
             <p className="mt-3 font-medium">
-              {price?.packagePriceLabel || price?.sourcePriceLabel || 'Aucun tarif valide'}
+              {price?.packagePriceLabel || price?.sourcePriceLabel || 'Aucun tarif renseigné'}
             </p>
+            {current?.supplierTariffStatus === 'EXPIRED' && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <StatusBadge tone="warning">Dernier prix connu — expiré</StatusBadge>
+                <span className="text-xs text-muted-foreground">
+                  Échéance : {dateLabel(price?.validTo)}
+                </span>
+              </div>
+            )
             {price?.piecePriceLabel && (
               <p className="mt-1 text-sm text-muted-foreground">{price.piecePriceLabel}</p>
             )}

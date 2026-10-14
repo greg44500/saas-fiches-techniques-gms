@@ -13,6 +13,15 @@ const articleTariffRevisionParamsSchema = z.strictObject({
     articleId: objectId,
     tariffId: objectId,
 });
+const correctArticleTariffPeriodBodySchema = z.strictObject({
+    validFrom: z.iso.date(),
+    validTo: z.iso.date().nullable(),
+    reason: z.string().trim().max(500).nullish().transform((value) => value || null),
+}).refine(({ validFrom, validTo }) => !validTo || validFrom <= validTo, {
+    path: ['validTo'],
+    message: 'La fin de validité ne peut pas précéder le début.',
+});
+
 const correctArticlePriceBodySchema = z.strictObject({
     sourceAmount: z.string().trim()
         .regex(/^(?:0|[1-9]\d*)(?:\.\d+)?$/, 'Montant décimal invalide')
@@ -27,4 +36,5 @@ export {
     articleTariffParamsSchema,
     articleTariffRevisionParamsSchema,
     correctArticlePriceBodySchema,
+    correctArticleTariffPeriodBodySchema,
 };

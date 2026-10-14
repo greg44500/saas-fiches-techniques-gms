@@ -1604,3 +1604,51 @@ historique ni modifier les tarifs d'un autre Workspace.
 Le tableau et les formulaires React consomment exclusivement les projections
 de prix/conditionnement calculées dans le backend ; aucun calcul monétaire
 n'est ajouté dans le frontend.
+
+---
+
+## Avenant validé — dernier tarif connu et correction des périodes (2026-10-14)
+
+**Décision produit expresse :** si aucun tarif actuellement applicable n'existe,
+le dernier tarif fournisseur de période expirée reste visible ET peut valoriser
+les Fiches techniques, sous réserve des politiques de priorité des prix
+du Workspace. Son état `EXPIRED` et l'alerte
+`LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED` sont obligatoires et transmis par
+l'API aux consommateurs M-004. Les tarifs futurs ne sont pas utilisés
+avant leur début. Le dernier prix connu est sélectionné par la fin
+de période la plus récente, puis le début de période en départage ;
+une révision remplacée ou une édition Catalogue archivée est exclue.
+Tout conflit entre tarifs simultanément applicables demeure bloquant
+et n'autorise pas de sélection arbitraire.
+
+**Dates civiles :** les dates de fin explicites saisies sans heure sont
+inclusives jusqu'à la fin de la journée métier (Europe/Paris).
+Les dates horodatées par le serveur pour `FROM_IMPORT` conservent leur
+précision. La même comparaison de périodes est utilisée pour importer
+et corriger, avec prise en compte des changements d'heure.
+
+**Correction de la période :** un utilisateur habilité peut modifier
+la date de début et la date de fin d'une liste privée `PRICE_LIST`,
+y compris lorsqu'elle est expirée, sans réimport. Le montant, la base,
+la devise, la provenance et le conditionnement figé demeurent inchangés.
+La correction crée une nouvelle révision immuable, marque l'ancienne
+comme remplacée, conserve les deux périodes et journalise l'acteur et
+les anciennes/nouvelles dates. Les chevauchements, le cloisonnement
+Workspace, les droits ARTICLE_MANAGE + CATALOG_MANAGE et l'accès
+en écriture sont vérifiés. Les tarifs Catalogue globaux ne sont pas
+modifiables par ce parcours. Motif facultatif (max. 500 caractères).
+
+**Interface :** les colonnes du tableau Articles identifient le dernier
+tarif expiré avec un avertissement non bloquant ; son détail et les
+prix complémentaires restent consultables. La fiche Article propose
+« Modifier la période » en plus de « Corriger le prix » et retrouve
+son historique. La carte du Prix applicable et les lignes de Fiche
+technique signalent explicitement toute valorisation à partir d'un
+tarif expiré, sans remettre en cause les valorisations historisées.
+
+**Filtres Articles :** toolbar compacte sans labels visuels Recherche
+ou Statut, avec recherche serveur « Rechercher un article… », filtre
+Fournisseur recherchable et filtre Statut juxtaposés ; filtres combinables,
+page réinitialisée à 1. Le sélecteur de Fournisseurs interroge
+l'API et invite à affiner si plus de 50 résultats, sans tronquer
+silencieusement. Labels accessibles conservés.

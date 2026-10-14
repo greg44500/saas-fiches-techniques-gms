@@ -105,6 +105,12 @@ vi.mock('@/features/suppliers/components/supplier-article-price-correction-dialo
   ),
 }));
 
+vi.mock('@/features/suppliers/components/supplier-article-period-correction-dialog', () => ({
+  SupplierArticlePeriodCorrectionDialog: ({ open }) => (
+    open ? <div>Correction de période ouverte</div> : null
+  ),
+}));
+
 vi.mock('@/features/suppliers/components/supplier-article-import-dialog', () => ({
   SupplierArticleImportDialog: ({ open }) => (
     open ? <div>Import Articles ouvert</div> : null
@@ -305,6 +311,78 @@ describe('SuppliersPage', () => {
         expect.anything(),
       );
     });
+  });
+
+  it('aligne recherche, fournisseur et statut sans labels, et combine les filtres Article', async () => {
+    const user = userEvent.setup();
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+
+    expect(screen.getByRole('searchbox', { name: 'Rechercher' }))
+      .toHaveAttribute('placeholder', 'Rechercher un article…');
+    expect(screen.queryByText('Recherche')).not.toBeInTheDocument();
+    expect(screen.queryByText('Statut')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Filtrer par fournisseur' }));
+    await user.click(await screen.findByRole('button', { name: 'Fournisseur local' }));
+    await waitFor(() => {
+      expect(mocks.listArticles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          supplierId: 'supplier-private', status: 'ACTIVE', page: 1,
+        }),
+        expect.anything(),
+      );
+    });
+
+    await user.type(screen.getByRole('searchbox', { name: 'Rechercher' }), 'farine');
+    await waitFor(() => {
+      expect(mocks.listArticles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          supplierId: 'supplier-private', search: 'farine',
+        }),
+        expect.anything(),
+      );
+    });
+    await user.click(screen.getByRole('combobox', { name: 'Filtrer par statut' }));
+    await user.click(await screen.findByRole('option', { name: 'Archivés' }));
+    await waitFor(() => {
+      expect(mocks.listArticles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          supplierId: 'supplier-private', search: 'farine', status: 'ARCHIVED', page: 1,
+        }),
+        expect.anything(),
+      );
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Filtrer par fournisseur' }));
+    await user.click(await screen.findByRole('button', { name: 'Tous les fournisseurs' }));
+    expect(mocks.listArticles).toHaveBeenLastCalledWith(
+      expect.objectContaining({ supplierId: undefined }),
+      expect.anything(),
+    );
+  });
+
+  it('maintient le dernier tarif expiré visible avec accès Calculator', async () => {
+    const user = userEvent.setup();
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [{
+        id: 'article-old', supplierReference: 'OLD-14',
+        supplierDesignation: 'Ancien tarif', supplier: { name: 'Fournisseur local' },
+        scope: 'WORKSPACE_PRIVATE', status: 'ACTIVE',
+        supplierTariffStatus: 'EXPIRED',
+        supplierTariff: {
+          id: 'tariff-old', sourceKind: 'PRICE_LIST',
+          packagePriceLabel: '11,200 € HT / carton',
+          unitPriceLabel: '1,037 € HT / kg',
+          validTo: '2026-10-14T00:00:00.000Z',
+        },
+      }],
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+    }));
+    renderPage('/workspaces/workspace-1/suppliers?section=articles');
+    expect(screen.getByText('11,200 € HT / carton')).toBeInTheDocument();
+    expect(screen.getByText('Expiré')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Détails des prix de OLD-14' }));
+    expect(await screen.findByText('1,037 € HT / kg')).toBeInTheDocument();
   });
 
   it('ouvre directement la section Catalogues depuis le paramètre d’URL', () => {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     correctArticlePriceBodySchema,
+    correctArticleTariffPeriodBodySchema,
 } from '../../../modules/supplierCatalog/supplierTariffRevision.validation.js';
 
 describe('M-003 — motif facultatif de correction tarifaire', () => {
@@ -15,6 +16,18 @@ describe('M-003 — motif facultatif de correction tarifaire', () => {
         expect(correctArticlePriceBodySchema.parse({
             ...valid, reason: 'A',
         }).reason).toBe('A');
+    });
+
+    it('valide une correction de période avec fin facultative et rejette les dates inversées', () => {
+        expect(correctArticleTariffPeriodBodySchema.parse({
+            validFrom: '2026-10-13', validTo: null,
+        }).reason).toBeNull();
+        expect(correctArticleTariffPeriodBodySchema.safeParse({
+            validFrom: '2026-10-14', validTo: '2026-10-13',
+        }).success).toBe(false);
+        expect(correctArticleTariffPeriodBodySchema.safeParse({
+            validFrom: '2026-02-30', validTo: null,
+        }).success).toBe(false);
     });
 
     it('continue à refuser les montants invalides et motifs trop longs', () => {

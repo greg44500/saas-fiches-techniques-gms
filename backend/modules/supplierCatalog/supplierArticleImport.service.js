@@ -5,6 +5,7 @@ import { AppError } from '../../utils/appError.js';
 import { parseProductImportFile } from '../productCatalog/productCatalogImport.parser.js';
 import { ProductVariant } from '../productCatalog/productVariant.model.js';
 import { SupplierTariff } from './supplierCatalog.model.js';
+import { tariffPeriodsOverlap } from './supplierTariffSelection.service.js';
 import { supplierSourcePriceLabel } from './supplierArticlePresentation.service.js';
 import { normalizeSupplierPrice } from './supplierPriceMath.service.js';
 import { SupplierArticle } from './supplier.model.js';
@@ -101,10 +102,11 @@ const resolvePriceListValidity = (priceList, importDate = new Date()) => {
     };
 };
 
-const overlaps = (firstFrom, firstTo, secondFrom, secondTo) => (
-    (!firstTo || !secondFrom || new Date(firstTo) >= new Date(secondFrom))
-    && (!secondTo || !firstFrom || new Date(secondTo) >= new Date(firstFrom))
-);
+const overlaps = (firstFrom, firstTo, secondFrom, secondTo) =>
+    tariffPeriodsOverlap(
+        { validFrom: firstFrom, validTo: firstTo },
+        { validFrom: secondFrom, validTo: secondTo },
+    );
 
 // Toujours vérifier les deux sources : catalogue et mercuriale autonome.
 const assertNoTariffOverlap = async ({ articleId, priceList, scope, workspaceId, session = null }) => {

@@ -396,6 +396,78 @@ describe('M-003 — import autonome des Articles fournisseur', () => {
             .toEqual(['10.25', '12.50', '13.75']);
     });
 
+    it('corrige une période expirée sans perdre le prix et sans ouvrir les autres Workspaces', async () => {
+        await enableImport();
+        const inspected = await inspect(
+            'Reference;Designation;Prix;Base\\nDATE-01;Article daté;21.75;kg',
+        );
+        expect(inspected.status).toBe(201);
+        const proposed = await request(app)
+            .post(basePath() + '/imports/' + inspected.body.data.importId + '/preview')
+            .set(auth()).send({
+                supplierId,
+                mapping: {
+                    supplierReference: 0, designation: 1,
+                    priceAmount: 2, priceBasis: 3,
+                },
+                priceList: {
+                    name: 'Prix anciens',
+                    validFrom: '2026-01-01',
+                    validTo: '2026-02-28',
+                    defaultPriceBasis: 'KG',
+                },
+            });
+        expect(proposed.status).toBe(200);
+        expect((await commit(inspected.body.data.importId)).status).toBe(200);
+
+        const listed = await request(app).get(basePath()).set(auth());
+        const article = listed.body.data.articles.find((item) =>
+            item.supplierReference === 'DATE-01');
+        expect(article.supplierTariffStatus).toBe('EXPIRED');
+        expect(article.supplierTariff.sourceAmount).toBe('21.75');
+        const path = basePath() + '/' + article.id + '/tariffs/'
+            + article.supplierTariff.id + '/period-correction';
+        const other = await createWorkspaceOwnerFixture();
+        expect((await request(app).post(
+            basePath(other) + '/' + article.id + '/tariffs/'
+            + article.supplierTariff.id + '/period-correction',
+        ).set(auth(other)).send({
+            validFrom: '2026-01-01', validTo: '2026-12-31',
+        })).status).toBe(404);
+        const reader = await createWorkspaceMemberFixture({
+            workspaceId: context.workspace._id,
+            actorId: context.owner._id,
+            permissions: [SUPPLIER_CATALOG_PERMISSION.ARTICLE_READ],
+        });
+        expect((await request(app).post(path).set(bearer(reader.token)).send({
+            validFrom: '2026-01-01', validTo: '2026-12-31',
+        })).status).toBe(403);
+
+        const changed = await request(app).post(path).set(auth()).send({
+            validFrom: '2026-01-01', validTo: '2026-12-31',
+            reason: 'Date de fin erronée',
+        });
+        expect(changed.status).toBe(200);
+        expect(changed.body.data.tariff.revision).toBe(2);
+        expect(changed.body.data.tariff.correctionReason).toBe('Date de fin erronée');
+        const revisions = await SupplierTariff.find({
+            sourceImportId: inspected.body.data.importId,
+        }).sort({ revision: 1 });
+        expect(revisions.map((tariff) => tariff.isCurrent)).toEqual([false, true]);
+        expect(revisions.map((tariff) => tariff.sourceAmount.toString()))
+            .toEqual(['21.75', '21.75']);
+        expect(revisions[0].validTo.toISOString().slice(0, 10)).toBe('2026-02-28');
+        expect(revisions[1].validTo.toISOString().slice(0, 10)).toBe('2026-12-31');
+        const refreshed = await request(app).get(basePath()).set(auth());
+        const now = refreshed.body.data.articles.find((item) =>
+            item.supplierReference === 'DATE-01');
+        expect(now.supplierTariffStatus).toBe('AVAILABLE');
+
+        expect((await request(app).post(path).set(auth()).send({
+            validFrom: '2026-01-01', validTo: null,
+        })).status).toBe(409);
+    });
+
     it('protège la correction et la lecture tarifaire entre Workspaces et rôles', async () => {
         await enableImport();
         const imported = await inspect(

@@ -83,6 +83,25 @@ describe('SupplierArticleDetailsDrawer', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('propose la correction de période pour un dernier prix expiré', async () => {
+    const user = userEvent.setup();
+    const onCorrectPeriod = vi.fn();
+    mocks.history.mockReturnValue({ isLoading: false, data: [] });
+    render(<SupplierArticleDetailsDrawer
+      article={{ ...article, supplierTariffStatus: 'EXPIRED' }}
+      canCorrectTariffs
+      canReadTariffs
+      onClose={vi.fn()}
+      onCorrectPrice={vi.fn()}
+      onCorrectPeriod={onCorrectPeriod}
+      open
+      workspaceId="workspace-1"
+    />);
+    expect(screen.getByText('Dernier prix connu — expiré')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Modifier la période' }));
+    expect(onCorrectPeriod).toHaveBeenCalledOnce();
+  });
+
   it('protège les détails tarifaires sans permission de lecture', () => {
     mocks.history.mockReturnValue({ isLoading: false, data: [] });
     render(<SupplierArticleDetailsDrawer

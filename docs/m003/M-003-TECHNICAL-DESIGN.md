@@ -486,3 +486,30 @@ RTK Query restent dans leurs fonctionnalités respectives.
 Les deux assistants Fournisseurs affichent leur résumé de confirmation avant
 fermeture, le toast restant déclenché lors du commit. Les tests RTL et Playwright
 couvrent le changement de parcours, l'accessibilité et les libellés francisés.
+
+## Complément technique M-003 — périodes et filtre Fournisseurs (2026-10-14)
+
+Le sélecteur de tarifs `supplierTariffSelection.service.js` projette
+`AVAILABLE`, `EXPIRED`, `AMBIGUOUS` ou `UNAVAILABLE` de manière
+déterministe. La liste des Articles lit les tarifs courants visibles
+sur la page (pas de requête par Article), puis sérialise le tarif
+retenu et son état. Le résolveur de prix conserve les priorités
+facturé/négocié/fournisseur/indicatif existantes ; en l'absence de
+tarif applicable, il sélectionne le dernier expiré si disponible
+et expose `validityStatus=EXPIRED`, `fallbackApplied=true`,
+`fallbackReason=LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED` et la même
+valeur dans `alerts` pour traçabilité M-004. Les conflits actifs
+produisent toujours l'erreur `SUPPLIER_TARIFF_AMBIGUOUS`.
+
+`POST /workspaces/:workspaceId/supplier-articles/:articleId/tariffs/:tariffId/period-correction`
+utilise le verrou transactionnel Commerce et crée une nouvelle révision.
+Le modèle et les index existants ne sont pas modifiés ; l'événement
+`SUPPLIER_TARIFF_PERIOD_CORRECTED` trace anciennes et nouvelles bornes.
+Le contrôle d'intervalles est partagé avec l'import indépendant.
+
+Frontend : `SupplierArticleSupplierFilter` réutilise Popover et
+`useListSuppliersQuery`, avec recherche et pagination côté serveur
+limitée à 50 résultats par recherche. `SupplierArticlePeriodCorrectionDialog`
+réutilise le DatePicker commun. Aucune primitive Core modifiée.
+La présentation des avertissements FT se limite au code d'alerte
+existant dans la valorisation, sans calcul M-004 ajouté.

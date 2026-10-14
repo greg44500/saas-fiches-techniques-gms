@@ -19,6 +19,7 @@ import {
 import { AppError } from '../../utils/appError.js';
 import { SupplierTariff } from './supplierCatalog.model.js';
 import { supplierTariffPresentation } from './supplierArticlePresentation.service.js';
+import { selectSupplierTariffs } from './supplierTariffSelection.service.js';
 import {
     Supplier,
     SupplierArticle,
@@ -965,10 +966,6 @@ const listSupplierArticles = async ({
         supplierArticle: mongoose.trusted({ $in: articleIds }),
         isCurrent: true,
         ...buildWorkspaceVisibilityFilter(globalOnly ? null : workspaceId),
-        $and: mongoose.trusted([
-            { $or: [{ validFrom: null }, { validFrom: mongoose.trusted({ $lte: now }) }] },
-            { $or: [{ validTo: null }, { validTo: mongoose.trusted({ $gte: now }) }] },
-        ]),
     }).populate({
         path: 'catalogEdition',
         select: '_id name status',
@@ -987,13 +984,13 @@ const listSupplierArticles = async ({
         articles: articles.map((article) => {
             const serialized = serializeSupplierArticle(article);
             const candidates = byArticle.get(article._id.toString()) ?? [];
+            const selection = selectSupplierTariffs(candidates, now);
             return {
                 ...serialized,
                 supplierTariffStatus: !includeSupplierTariff ? 'RESTRICTED'
-                    : candidates.length > 1 ? 'AMBIGUOUS'
-                        : candidates.length ? 'AVAILABLE' : 'UNAVAILABLE',
-                supplierTariff: candidates.length === 1
-                    ? supplierTariffPresentation(candidates[0], article) : null,
+                    : selection.status,
+                supplierTariff: includeSupplierTariff && selection.tariff
+                    ? supplierTariffPresentation(selection.tariff, article) : null,
             };
         }),
         pagination: {

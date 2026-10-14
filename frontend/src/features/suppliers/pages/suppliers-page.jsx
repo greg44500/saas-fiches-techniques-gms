@@ -44,6 +44,8 @@ import {
 import { SupplierArticleDetailsDrawer } from '@/features/suppliers/components/supplier-article-details-drawer';
 import { SupplierArticleEditDialog } from '@/features/suppliers/components/supplier-article-edit-dialog';
 import { SupplierArticlePriceCorrectionDialog } from '@/features/suppliers/components/supplier-article-price-correction-dialog';
+import { SupplierArticlePeriodCorrectionDialog } from '@/features/suppliers/components/supplier-article-period-correction-dialog';
+import { SupplierArticleSupplierFilter } from '@/features/suppliers/components/supplier-article-supplier-filter';
 import {
   SupplierArticlePackagingPopover,
   SupplierArticlePricePopover,
@@ -120,6 +122,8 @@ function SuppliersPage() {
   const [status, setStatus] = useState(
     section === 'suppliers' ? ALL_SUPPLIER_STATUSES : 'ACTIVE',
   );
+  const [articleSupplierId, setArticleSupplierId] = useState(null);
+  const [articlePeriodToCorrect, setArticlePeriodToCorrect] = useState(null);
   const [supplierDialog, setSupplierDialog] = useState({
     open: false,
     supplier: null,
@@ -157,6 +161,7 @@ function SuppliersPage() {
       workspaceId: workspace.id,
       search: search || undefined,
       status: status === ALL_SUPPLIER_STATUSES ? 'ACTIVE' : status,
+      supplierId: articleSupplierId || undefined,
       page,
       limit: pageSize,
     },
@@ -214,6 +219,7 @@ function SuppliersPage() {
 
   function changeSection(nextSection) {
     setPage(1);
+    if (nextSection !== 'articles') setArticleSupplierId(null);
 
     if (
       nextSection !== 'suppliers'
@@ -439,7 +445,7 @@ function SuppliersPage() {
           return <StatusBadge tone="warning">Tarifs à vérifier</StatusBadge>;
         }
         const price = article.supplierTariff;
-        if (!price) return 'Aucun tarif valide';
+        if (!price) return 'Aucun tarif renseigné';
         return (
           <div className="inline-flex max-w-full items-center gap-1">
             <span className="font-medium">
@@ -449,6 +455,9 @@ function SuppliersPage() {
               price={price}
               supplierReference={article.supplierReference}
             />
+            {article.supplierTariffStatus === 'EXPIRED' && (
+              <StatusBadge tone="warning">Expiré</StatusBadge>
+            )}
           </div>
         );
       },
@@ -651,34 +660,40 @@ function SuppliersPage() {
       </Tabs>
 
       <section className="rounded-xl border border-border bg-card">
-        <div className="flex flex-col gap-3 border-b border-border p-5 md:flex-row md:items-end">
+        <div className="flex flex-col gap-3 border-b border-border p-5 md:flex-row md:items-center">
           {(section === 'suppliers' || section === 'articles') && (
-            <div className="w-full min-w-0 md:max-w-xl md:flex-1">
-              <label className="mb-2 block text-sm font-medium" htmlFor="supplier-search">
-                Recherche
-              </label>
+            <div className="w-full min-w-0 md:flex-1">
               <Input
                 aria-label="Rechercher"
                 autoComplete="off"
                 id="supplier-search"
                 maxLength={120}
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Rechercher un fournisseur ou un article…"
+                placeholder={section === 'articles'
+                  ? 'Rechercher un article…'
+                  : 'Rechercher un fournisseur…'}
                 type="search"
                 value={searchInput}
               />
             </div>
           )}
-
-          <div className="w-full md:ml-auto md:w-52 md:shrink-0">
-            <p className="mb-2 text-sm font-medium">Statut</p>
+          {section === 'articles' && (
+            <div className="w-full md:w-64 md:shrink-0">
+              <SupplierArticleSupplierFilter
+                onChange={(supplierId) => {
+                  setPage(1);
+                  setArticleSupplierId(supplierId);
+                }}
+                value={articleSupplierId}
+                workspaceId={workspace.id}
+              />
+            </div>
+          )}
+          <div className="w-full md:w-44 md:shrink-0">
             <Select
               items={[
                 ...(section === 'suppliers'
-                  ? [{
-                    value: ALL_SUPPLIER_STATUSES,
-                    label: 'Tous',
-                  }]
+                  ? [{ value: ALL_SUPPLIER_STATUSES, label: 'Tous' }]
                   : []),
                 { value: 'ACTIVE', label: 'Actifs' },
                 { value: 'ARCHIVED', label: 'Archivés' },
@@ -690,11 +705,7 @@ function SuppliersPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {section === 'suppliers' && (
-                  <SelectItem value={ALL_SUPPLIER_STATUSES}>
-                    Tous
-                  </SelectItem>
-                )}
+                {section === 'suppliers' && <SelectItem value={ALL_SUPPLIER_STATUSES}>Tous</SelectItem>}
                 <SelectItem value="ACTIVE">Actifs</SelectItem>
                 <SelectItem value="ARCHIVED">Archivés</SelectItem>
               </SelectContent>
@@ -862,7 +873,7 @@ function SuppliersPage() {
         canReadTariffs={canReadTariffs}
         canCorrectTariffs={canCorrectTariffs && Boolean(
           articleDetails?.supplierTariff?.sourceKind === 'PRICE_LIST'
-          && articleDetails?.supplierTariffStatus === 'AVAILABLE'
+          && ['AVAILABLE', 'EXPIRED'].includes(articleDetails?.supplierTariffStatus)
         )}
         onAssociate={(article) => {
           setArticleDetails(null);
@@ -872,6 +883,10 @@ function SuppliersPage() {
         onCorrectPrice={(article) => {
           setArticleDetails(null);
           setArticlePriceToCorrect(article);
+        }}
+        onCorrectPeriod={(article) => {
+          setArticleDetails(null);
+          setArticlePeriodToCorrect(article);
         }}
         onEdit={(article) => {
           setArticleDetails(null);
@@ -889,6 +904,17 @@ function SuppliersPage() {
           toast({ title: 'Article fournisseur modifié', variant: 'success' });
         }}
         open={Boolean(articleToEdit)}
+        workspaceId={workspace.id}
+      />
+
+      <SupplierArticlePeriodCorrectionDialog
+        article={articlePeriodToCorrect}
+        onClose={() => setArticlePeriodToCorrect(null)}
+        onSaved={() => {
+          setArticlePeriodToCorrect(null);
+          toast({ title: 'Période corrigée et historisée', variant: 'success' });
+        }}
+        open={Boolean(articlePeriodToCorrect)}
         workspaceId={workspace.id}
       />
 
