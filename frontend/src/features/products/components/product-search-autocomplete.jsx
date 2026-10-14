@@ -46,16 +46,17 @@ function isWorkspaceFavorite(result, metadata) {
 function ProductSearchAutocomplete({
   ariaLabel = 'Rechercher un Produit',
   categoryId,
-  contextArticleId,
   clearOnSelect = false,
+  externalQuery,
+  externalSearch = false,
   compact = false,
   conservationType,
   metadata,
+  onDebouncedSearchChange,
   onSelect,
   onValueChange,
   placeholder = 'Rechercher un produit…',
   scope,
-  searchHook = useSearchProductsQuery,
   showWorkspaceFavorite = false,
   status,
   value,
@@ -78,11 +79,13 @@ function ProductSearchAutocomplete({
     return () => window.clearTimeout(timeoutId);
   }, [value]);
 
-  const useSuggestionsQuery = searchHook;
-  const suggestionsQuery = useSuggestionsQuery(
+  useEffect(() => {
+    if (externalSearch) onDebouncedSearchChange?.(debouncedQuery);
+  }, [debouncedQuery, externalSearch, onDebouncedSearchChange]);
+
+  const standardQuery = useSearchProductsQuery(
     {
       workspaceId,
-      articleId: contextArticleId,
       scope,
       q: debouncedQuery || undefined,
       categoryId,
@@ -92,9 +95,12 @@ function ProductSearchAutocomplete({
       limit: PRODUCT_SEARCH_AUTOCOMPLETE_LIMIT,
     },
     {
-      skip: debouncedQuery.length < PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH,
+      skip: externalSearch
+        || debouncedQuery.length < PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH,
     },
   );
+
+  const suggestionsQuery = externalSearch ? externalQuery : standardQuery;
 
   const suggestions = useMemo(() => {
     if (debouncedQuery.length < PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH) {

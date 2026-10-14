@@ -15,15 +15,12 @@ import {
 import { useUpdateSupplierArticleMutation } from '@/features/suppliers/api/supplier-api';
 import { getApiErrorMessage } from '@/features/suppliers/lib/supplier-presentation';
 
-function useContextualArticleSearch(args, options) {
-  return useSearchSupplierArticleProductsQuery(args, options);
-}
-
 function SupplierArticleAssociationDialog({
   article, canCreateProduct = false, onClose, onCreateProduct, onSaved, open, workspaceId,
 }) {
   const cancelRef = useRef(null);
   const [search, setSearch] = useState('');
+  const [contextualSearch, setContextualSearch] = useState('');
   const [variant, setVariant] = useState(null);
   const [error, setError] = useState('');
   const standardMetadata = useGetProductMetadataQuery(
@@ -34,11 +31,22 @@ function SupplierArticleAssociationDialog({
     { skip: !open || !canCreateProduct || !article?.id },
   );
   const metadata = canCreateProduct ? articleMetadata : standardMetadata;
+  const contextualQuery = useSearchSupplierArticleProductsQuery({
+    workspaceId,
+    articleId: article?.id,
+    scope: 'REFERENCE',
+    q: contextualSearch || undefined,
+    page: 1,
+    limit: 6,
+  }, {
+    skip: !open || !canCreateProduct || !article?.id || contextualSearch.length < 3,
+  });
   const [updateArticle, updateState] = useUpdateSupplierArticleMutation();
 
   useEffect(() => {
     if (!open) return;
     setSearch(article?.productVariant?.name ?? '');
+    setContextualSearch('');
     setVariant(article?.productVariant ?? null);
     setError('');
   }, [open, article?.id]);
@@ -84,9 +92,10 @@ function SupplierArticleAssociationDialog({
             <Field>
               <FieldLabel>Rechercher une Référence Produit</FieldLabel>
               <ProductSearchAutocomplete
-                contextArticleId={canCreateProduct ? article?.id : undefined}
-                searchHook={canCreateProduct ? useContextualArticleSearch : undefined}
+                externalQuery={contextualQuery}
+                externalSearch={canCreateProduct}
                 metadata={metadata.data}
+                onDebouncedSearchChange={setContextualSearch}
                 onSelect={(result) => {
                   setVariant(result.variant ?? null);
                   setError(result.variant ? '' : 'Choisissez une Référence Produit exploitable.');
