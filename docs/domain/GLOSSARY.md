@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 
 **Statut :** VALIDÉ — vocabulaire transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-10-06
+**Dernière mise à jour :** 2026-10-14
 
 > Ce glossaire fixe le vocabulaire déjà stabilisé pendant le cadrage.  
 > Les termes marqués comme ouverts ne doivent pas être transformés en contrats techniques définitifs.
@@ -483,7 +483,7 @@ fournisseur d'origine ; aucun arbre récursif de contenants n'est construit.
 Lorsque l'unité vaut `UNIT`, elle compte l'unité de recette M-002 (par exemple
 des tranches), jamais le paquet ou le carton.
 
-Le conditionnement doit pouvoir être ramené à l'unité de référence du Produit lorsque les données disponibles le permettent.
+Le conditionnement doit pouvoir être ramené à l'unité de référence du Produit lorsque les données disponibles le permettent. Les projections M-003 distinguent quantité totale (kg/L/UNIT), prix au colis, prix par élément et prix normalisé lorsque les informations nécessaires sont disponibles ; les incohérences de poids net déclaré restent signalées.
 
 ---
 
@@ -494,6 +494,36 @@ Prix issu d'un catalogue ou d'une mercuriale Fournisseur sans condition commerci
 Il peut être associé à une édition/millésime et à une période de validité.
 
 Un tarif ancien reste historique ; s'il sert exceptionnellement de dernier fallback, son ancienneté et son édition doivent être signalées.
+
+---
+
+## Mercuriale / liste tarifaire autonome
+
+Fichier fournisseur qui peut contenir des Articles et leurs prix **sans
+créer d'édition de catalogue**. Un tarif issu de cette source est
+tracé comme `PRICE_LIST`, à distinguer du tarif `CATALOG`.
+La validité peut avoir des bornes explicites ou commencer lors
+de la confirmation de l'import sans date de fin imposée.
+
+---
+
+## Article fournisseur non associé
+
+Article identifié par sa référence, son Fournisseur et sa portée, mais
+sans `ProductVariant` M-002 associé. Il reste consultable et
+modifiable selon les droits. La valorisation d'une Fiche ne peut
+s'appuyer sur cet Article tant que l'association nécessaire et
+la normalisation du prix ne sont pas disponibles.
+
+---
+
+## Dernier tarif fournisseur expiré
+
+Dernier tarif historisé hors de sa période de validité courante,
+présenté explicitement comme `EXPIRED`. Lorsqu'il est retenu comme
+secours par le moteur de prix, l'alerte de dernier prix connu expiré
+reste traçable. Il ne devient pas une offre courante et aucun
+conflit entre tarifs actifs n'est résolu automatiquement.
 
 ---
 
@@ -701,7 +731,7 @@ Exemple :
 → 1,625 €/kg HT
 ```
 
-S'il manque des données fiables, le prix normalisé reste indisponible : il n'est pas deviné.
+S'il manque des données fiables, le prix normalisé reste indisponible : il n'est pas deviné. Le prix par pièce issu d'un conditionnement complet est une projection commerciale distincte, qui ne se substitue pas automatiquement à l'unité de référence M-002.
 
 ---
 
@@ -751,7 +781,7 @@ Puis, si aucune source commerciale n'est exploitable
 
 La source réellement utilisée et l'existence d'un fallback doivent rester traçables.
 
-Le Prix applicable n'est pas une propriété globale du Produit.
+Le Prix applicable n'est pas une propriété globale du Produit. La résolution M-003 signale le dernier tarif fournisseur connu expiré via l'alerte `LAST_KNOWN_SUPPLIER_TARIFF_EXPIRED` lorsqu'il est utilisé comme secours ; elle refuse les ambiguïtés de prix au lieu de choisir arbitrairement.
 
 ---
 

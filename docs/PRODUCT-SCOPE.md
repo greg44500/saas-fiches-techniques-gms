@@ -1,13 +1,13 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
 
 **Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
-**Dernière mise à jour :** 2026-09-28  
+**Synchronisation avec le code livré :** 2026-10-14 (cadrage historique conservé)  
 **Périmètre :** définition du problème métier, des principes produit et des invariants à préserver avant tout module métier
 
 > Ce document formalise les fondations transversales validées du produit.  
 > Les sujets différés restent rattachés au module qui les nécessite et ne doivent pas être transformés en règles techniques par anticipation.
 >
-> Le cadrage global est validé. Aucun modèle métier Mongoose ne doit toutefois être créé avant validation détaillée du module concerné, en commençant par M-001.
+> Ce document garde les décisions de cadrage initiales. La règle de validation préalable de chaque module reste applicable ; au 2026-10-14, M-001 à M-005 sont déjà intégrés sur `main`.
 
 ---
 
@@ -2165,17 +2165,19 @@ L'Économe ne valide pas les Fiches techniques par défaut. Acheteur et Économe
 
 Le cadrage global ne doit plus exiger la spécification exhaustive de toutes les extensions futures avant le premier module.
 
-Ordre recommandé :
+Ordre de cadrage initial (historique) :
 
 ```text
 M-001 → Dossiers / Magasins + affectations
 M-002 → Référentiel Produits
 M-003 → Fournisseurs + Articles + prix/catalogues
 M-004 → Fiches techniques + valorisation
-Bloc V1 après stabilisation M-004 → CSV / XLSX / PDF / impression / e-mail
+Bloc V1 de diffusion → CSV / XLSX / PDF / impression / e-mail
 M-005 → Atelier d'optimisation Premium
 M-006+ → Fiches process / OCR / IA / autres extensions
 ```
+
+**État constaté au 2026-10-14 :** M-001 à M-005 fusionnés sur `main` ; exports PDF/XLSX/CSV livrés ; impression et envoi par e-mail encore à cadrer et implémenter. Le complément M-003 a été intégré par la PR #44.
 
 Sont explicitement différés et non bloquants pour M-001 :
 
@@ -2202,7 +2204,7 @@ Décisions finales fermées le 2026-09-20 :
 - contraintes réglementaires structurantes de M-001 vérifiées : les éventuelles coordonnées nominatives sont des données personnelles à minimiser et protéger, mais aucune obligation démontrée n'impose un champ métier obligatoire supplémentaire au Dossier ;
 - conformité globale et rétention restent suivies par D-003 / D-006 avant production.
 
-Les questions restantes sont désormais rattachées au module concerné : M-002 et M-003 sont clôturés ; M-004 dispose d'un contrat fonctionnel validé ; les exports CSV/XLSX/PDF, l'impression et l'e-mail appartiennent à la V1 mais seront cadrés et développés dans un bloc séparé après stabilisation visuelle de M-004 ; optimisation avant M-005 ; Process avant son module.
+Les domaines M-001 à M-005 ainsi que les exports CSV/XLSX/PDF sont intégrés. Le complément de diffusion M-004 (impression et e-mail) reste à auditer/cadrer avant implémentation. Les Fiches process seront cadrées dans un lot ultérieur ; les invariants transversaux restent inchangés.
 
 La validation globale n'autorise pas encore l'implémentation de M-001 : son contrat détaillé doit d'abord être cadré et validé.
 

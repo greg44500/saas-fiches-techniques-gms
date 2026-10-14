@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
-**Statut :** M-005 fusionné sur `main` (PR #39) ; clôture documentaire en cours, gate post-merge non vérifiée
-**Dernière mise à jour :** 2026-10-08
+**Statut :** M-001 à M-005 intégrés ; M-003 complété par PR #44 ; Core Gate post-merge validée à la tentative 2
+**Dernière mise à jour :** 2026-10-14
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -13,7 +13,7 @@
 **Statut : VALIDÉ**
 
 - dérivation depuis `saas-core-api` ;
-- Core `v1.2.1` intégré sur la branche Core-update jusqu’au commit post-tag `6581e573c6a6885790b23fe502bd34d8199ea6ba`, avec provenance exacte dans `core-origin.json` ;
+- Core `v1.2.1` intégré ; provenance exacte et actuelle dans `core-origin.json` : `054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3` ;
 - provenance Core tracée ;
 - gate canonique validée ;
 - points d'extension Core disponibles ;
@@ -611,77 +611,37 @@ développement immédiat
 
 
 
-## 7. M-005 fusionné — prochaine étape
+## 7. État de livraison au 2026-10-14
 
-**Statut au 2026-10-08 :** implémentation M-005 fusionnée sur `main` par la [PR #39](https://github.com/greg44500/saas-fiches-techniques-gms/pull/39), commit de merge `5d0a3d9692343d60ccfec0e46759383d595680dd`. Le comparatif GitHub confirme que ce commit correspond au `main` examiné lors de cette mise à jour.
+| Lot | État |
+| --- | --- |
+| M-001 Dossiers / accès | Fusionné |
+| M-002 Référentiel Produit | Fusionné, dont adaptations UX ciblées de la PR #44 |
+| M-003 Fournisseurs / Articles / tarification | Baseline PR #22 + **complément [PR #44](https://github.com/greg44500/saas-fiches-techniques-gms/pull/44) fusionnés** |
+| M-004 Fiches techniques | Fusionné ; exports PDF, XLSX, CSV implémentés |
+| M-005 Atelier d'optimisation | Fusionné par [PR #39](https://github.com/greg44500/saas-fiches-techniques-gms/pull/39) |
+| Complément de diffusion M-004 | **Impression et envoi par e-mail non livrés** ; audit et cadrage requis |
+| Fiches process | À cadrer ultérieurement |
 
-Contrats canoniques :
+### Clôture M-003 — PR #44
 
-~~~text
-docs/m005/M-005-FINAL-CONTRACT.md
-docs/m005/M-005-TECHNICAL-DESIGN.md
-~~~
+Fusion sur `main` le 2026-10-14, commit `962177905bcc198e439a316d9610b23c60dd53cd`, sans changement du Core v1.2.1.
 
-M-005 fournit un Atelier d'optimisation économique, des simulations MANUAL/AUTO non persistées avant « Appliquer au brouillon », des contraintes et verrouillages par ingrédient, des alternatives Produit et Article accessibles, un profil à barres indépendantes par ingrédient et un indicateur économique global. Le backend réutilise les calculs M-004 et les prix applicables M-003 ; l'application au DRAFT est transactionnelle, contrôlée par révision et fingerprint. Les validations antérieures restent immuables.
+- [Core Gate PR](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/38537453030) (`38537453030`) : **success**.
+- [Core Gate post-merge](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/38539141748) (`38539141748`) : **success à la tentative 2** ; tentative 1 échouée sur un test frontend M-004 intermittent. Ne pas réécrire l'historique comme une réussite au premier passage.
 
-**Preuves et réserves :** la fusion est vérifiée. Le résultat de la Core Gate post-merge n'a pas été établi par les données accessibles lors de cette révision documentaire ; il reste à contrôler. Aucun bilan « tous les tests verts » n'est déduit de la seule fusion. Ne pas rouvrir M-005 sans anomalie démontrée.
+Le complément M-003 livre : import direct d'Articles et mercuriales indépendantes des catalogues, association Produit différable, période fournisseur avec ou sans date de fin explicite, corrections historisées des listes privées, signalement du tarif expiré, projections prix/conditionnements et UX Articles/Fournisseurs. Les assistants d'import Produits M-002 et l'alerte prix en M-004 ont été adaptés sans refonte de leurs domaines.
 
-**Prochaine priorité : compléter M-004 (diffusion V1) par l'impression et l'envoi par e-mail.** Selon le retour fonctionnel du responsable produit du 2026-10-08, les exports CSV, XLSX et PDF sont déjà réalisés ; cette information reste à rapprocher du code et des tests avant toute nouvelle implémentation. Ne pas redévelopper ces trois formats sans défaut prouvé. Auditer les mécanismes existants (API, services, UI, stockage, permissions, capabilities, quotas, tests) pour cadrer uniquement les deux parcours manquants : impression et diffusion par e-mail. Il s'agit d'un lot complémentaire du domaine M-004, pas d'un nouveau module métier numéroté par défaut. Ce lot doit être validé avant développement. Les Fiches process constituent le chantier métier candidat suivant, à cadrer séparément.
+Les suppressions contrôlées de catalogues, renouvellements prospectifs de listes tarifaires et arbitrages entre offres privées/globales restent dans `docs/DEBT.md`.
 
----
+### Prochain lot — diffusion M-004
 
-## Complément M-003 — import liste d'Articles (2026-10-09)
+**Déjà présents dans le code et contractés :** CSV, XLSX, PDF issus du snapshot validé ; `docs/m004/M-004-EXPORTS-FINAL-CONTRACT.md` et `docs/m004/M-004-EXPORTS-TECHNICAL-DESIGN.md`.
 
-Le lot courant ajoute un parcours indépendant « Importer des Articles » dans
-le référentiel Workspace et partagé, réutilisant l'inspection CSV/XLS/XLSX.
-L'association à la Référence Produit peut être différée ; les fonctionnalités
-économiques restent inaccessibles tant que l'Article n'est pas associé.
-Ce complément est **en attente de tests et de QA locale**. La suppression
-contrôlée d'éditions Catalogue est recensée en dette M-003 et ne fait pas
-partie des modifications de l'import d'Articles de ce passage.
+**À analyser puis cadrer avant toute modification :** impression et envoi par e-mail. Vérifier les points d'extension des exports existants, sécurité des destinataires, RBAC et capability, quotas, audit, confidentialité, stockage temporaire des pièces jointes et tests. Un seul lot complémentaire M-004, pas un nouveau module numéroté.
 
----
+### Historique M-003 (9 au 14 octobre 2026)
 
-## UX transversale des imports métier — livraison à valider (2026-10-13)
+Le contrat `docs/m003/M-003-FINAL-CONTRACT.md` et la conception `docs/m003/M-003-TECHNICAL-DESIGN.md` conservent les décisions détaillées : imports CSV/XLS/XLSX, mercuriales sans catalogue, corrections, périodes, tableaux et drawer Article à onglets. Leur livraison n'est plus « en attente de PR ». Les dettes différées ne sont pas assimilées à des fonctionnalités livrées.
 
-Harmonisation de l'import Produits M-002, des Articles fournisseur M-003 et
-des Catalogues M-003 : aide contextuelle utilisateur, sélecteur CSV/XLS/XLSX
-francisé, quatre étapes identifiées visuellement et accessibles, actions en pied
-de fenêtre et disposition responsive. Composants mutualisés sous
-`frontend/src/features/imports/components/`, sans changement Core ni contrat
-backend. **À confirmer par les tests et la QA visuelle locaux avant PR/merge.**
-
----
-
-## M-003 — listes tarifaires autonomes et lecture des Articles (2026-10-13)
-
-Extension approuvée : une liste fournisseur peut être importée avec ses prix
-et une validité explicite **sans édition de catalogue**. Le moteur de Prix
-applicable demeure commun au catalogue et à la mercuriale. L'import d'Articles
-sans prix reste inchangé. Les sorties serveur préparent prix par conditionnement,
-prix normalisé, libellé de conditionnement et état d'association ; onglets
-Fournisseurs et Articles présentent leurs compteurs actifs.
-
-**État :** code et tests ajoutés sur
-`feature/m003-catalog-management-and-import-ux`, en attente de pull,
-migration locale, tests et QA utilisateur ; aucune PR/merge autorisé avant accord.
-
-
-### Ajustement QA M-003 — validité sans échéance (2026-10-13)
-
-Décision produit : les tarifs sans période fournisseur explicite sont
-applicables dès leur confirmation, sans expiration déclarée ; seule une
-période connue demande dates et référence de liste. Formulaire conditionnel
-et DatePicker français ajoutés. Validation backend, provenance horodatée et
-tests à confirmer localement avant clôture du lot M-003.
-
----
-
-### Complément M-003 — gestion des corrections Articles (2026-10-13)
-
-Parcours détaillé permettant la correction d'association Produit, de
-désignation et conditionnement d'Article privé, et la correction d'erreur
-de prix sur une mercuriale privée avec historique et audit. Présentation
-désignation puis référence et retrait de la provenance du tableau.
-Livraison sur la branche M-003, en attente de pull, tests, QA et validation
-utilisateur avant PR unique ; aucune gate présumée verte.
+Après la PR strictement documentaire, synchroniser localement `main` et nettoyer uniquement les branches réellement fusionnées après vérification.

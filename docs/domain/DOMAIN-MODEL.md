@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
 
 **Statut :** VALIDÉ — modèle conceptuel transversal approuvé avant M-001  
-**Dernière mise à jour :** 2026-10-06
+**Dernière mise à jour :** 2026-10-14
 **Important :** ce document décrit des concepts métier et leurs relations. Il ne constitue pas un schéma Mongoose.
 
 ---
@@ -1564,21 +1564,22 @@ Les rôles personnalisés combinent les permissions lorsque plusieurs responsabi
 
 ## 21. Questions de domaine encore ouvertes
 
-### Bloqueurs restants avant cadrage M-001
+### Anciennes décisions M-001 — déjà validées
 
-- champs obligatoires minimaux du Dossier ;
-- représentation/persistance exacte des affectations Dossier ;
-- vérification des contraintes réglementaires réellement structurantes pour M-001 ;
-- validation documentaire globale.
+Le nom du Dossier est le seul champ métier obligatoire lors de sa création,
+la relation `DossierAccessGrant` porte l'affectation des magasins sans
+modifier `WorkspaceMember` Core, et le cadrage réglementaire structurel
+M-001 a été validé. Ces décisions ne sont plus des bloqueurs
+« avant M-001 », le module étant déjà intégré.
 
 ### À cadrer avant les modules concernés
 
 - M-002 : cadrage et implémentation clôturés ;
-- M-003 : contrat détaillé validé dans `docs/m003/M-003-FINAL-CONTRACT.md`, implémentation autorisée ;
-- détails complémentaires des revues tarifaires : à ajuster au besoin pendant M-003/M-004 sans remettre en cause les temporalités déjà séparées ;
-- types/motifs finaux de versions avant M-004 ;
+- M-003 : complément implémenté et fusionné (PR #44), dettes restantes dans `docs/DEBT.md` ;
+- remplacements prospectifs des tarifs, annulation d'imports et arbitrages privé/global : à cadrer ultérieurement ;
+- M-004 : Fiches techniques et exports PDF/XLSX/CSV livrés, impression et e-mail à cadrer ;
 - marge semi-nette lorsqu'une définition métier fiable sera disponible ;
-- paramètres mathématiques fins et garde-fous de l'Atelier avant M-005 ;
+- M-005 : Atelier d'optimisation intégré, extensions futures à cadrer séparément ;
 - Fiche process avant son module ;
 - purge/rétention physique avant implémentation ;
 - quotas et capabilities supplémentaires lorsqu'un besoin réel est démontré.
@@ -1610,3 +1611,26 @@ révision `isCurrent=false`. Les deux versions demeurent en base.
 Le moteur des prix ne considère que les versions courantes ; le détail
 Article peut lire leur historique dans son Workspace, selon RBAC.
 Aucune correction ne change la période effective initiale.
+
+
+---
+
+## Réconciliation avec M-003 livré — 2026-10-14
+
+L'`Article fournisseur` peut exister sans `ProductVariant` lors d'un
+import direct ; `SupplierArticleImportSession` permet inspection,
+prévisualisation et confirmation sans édition commerciale. Les index
+protègent l'identité de l'Article par portée, Fournisseur et référence.
+
+Les tarifs `SupplierTariff` proviennent d'une édition `CATALOG`
+ou d'une mercuriale autonome `PRICE_LIST`. Les corrections de montant
+ou de période pour les listes privées génèrent des **révisions**
+et de l'audit, sans écraser l'ancien tarif. Le moteur distingue
+`AVAILABLE`, `EXPIRED`, `AMBIGUOUS`, `UNAVAILABLE` et ne fabrique
+pas une valeur valide lorsque plusieurs offres restent incompatibles.
+
+Les quantités et prix complémentaires sont des projections backend
+à partir des conditionnements et du snapshot tarifaire. Les Tarifs
+négociés et Prix facturés restent strictement Dossier ; les Articles
+privés restent Workspace, les références globales restent partagées.
+Core v1.2.1 non modifié par la PR #44.

@@ -1,8 +1,8 @@
 # M-003 — Conception technique
 
-**Statut :** LIVRÉ pour la baseline ; extension conditionnement/Prix repère Workspace finalisée sur la branche courante, en attente de QA
+**Statut :** LIVRÉ — baseline PR #22 et complément PR #44 fusionnés sur `main`  
 **Contrat fonctionnel :** docs/m003/M-003-FINAL-CONTRACT.md  
-**Branche de livraison :** feature/m003-suppliers-catalogs-pricing — fusionnée via PR #22
+**Livraison :** PR #22 (initiale), PR #44 (complément) ; merge `962177905bcc198e439a316d9610b23c60dd53cd`, Core Gate post-merge réussie à la tentative 2
 
 ## 1. Principes
 
@@ -25,12 +25,12 @@ Invariants techniques :
 
 Supplier
 - Fournisseur global ou privé ;
-- les homonymes restent autorisés ;
-- normalizedName sert à la recherche, pas à une unicité métier non validée.
+- unicité effective de `normalizedName` par portée : globale, ou par couple (Workspace, nom) pour les Fournisseurs privés, avec index uniques partiels ;
+- audit des doublons/incohérences avant création de ces index ; les homonymes dans une même portée sont refusés.
 
 SupplierArticle
 - Fournisseur + référence fournisseur normalisée ;
-- relie l'Article à ProductVariant M-002 ;
+- association au `ProductVariant` M-002 facultative à l'import direct (`productVariant=null`), rapprochement requis avant valorisation ;
 - une ressource privée peut référencer un Fournisseur global sans modifier le global ;
 - replacedBy assure la traçabilité d'un changement de référence.
 
@@ -44,8 +44,8 @@ SupplierCatalogLine
 - corrections versionnées par revision / isCurrent.
 
 SupplierTariff
-- Tarif fournisseur Article × édition ;
-- corrections versionnées par revision / isCurrent ;
+- tarif fournisseur d'origine `CATALOG` (édition) ou `PRICE_LIST` (import autonome sans édition) ;
+- corrections versionnées par `revision` / `isCurrent` ;
 - montant source et montant normalisé restent distincts.
 
 ### Données strictement Dossier
@@ -95,6 +95,11 @@ SupplierCatalogImportSession
 - TTL MongoDB ;
 - aucun stockage documentaire durable.
 
+SupplierArticleImportSession
+- session temporaire d'inspection, prévisualisation, confirmation d'Articles ;
+- acteur et portée contrôlés à chaque étape, TTL MongoDB ;
+- pipeline ClamAV conservé, transaction et verrou Commerce à la confirmation.
+
 SupplierCommerceLock
 - verrou technique par clé déterministe ;
 - sérialise les invariants non exprimables par un index, notamment les chevauchements de périodes et les confirmations concurrentes d'une même édition.
@@ -114,6 +119,7 @@ SupplierCommerceLock
 | DossierSupplierReference | non | workspace requis | requis |
 | WorkspaceSupplierPricingPolicy | non | workspace requis | non |
 | SupplierCatalogImportSession | selon portée | selon portée | non |
+| SupplierArticleImportSession | selon portée | selon portée | non |
 
 Les services valident en plus la cohérence des relations. Une ressource globale ne dépend jamais d'une ressource privée.
 
@@ -290,9 +296,9 @@ avec les permissions Produits M-002 et Fournisseurs M-003.
 
 Si le Fondateur possède encore le rôle système M-002 \`product_reference_governor\`, son membership actif existant est migré vers le rôle combiné. Un rôle personnalisé ou un membership suspendu n'est jamais remplacé silencieusement.
 
-## 14. Validation opérationnelle avant PR
+## 14. Validation opérationnelle (consignes historiques)
 
-Sur une base locale existante :
+Sur une base locale existante (commandes à exécuter sur l'environnement visé ; le merge ne prouve pas leur exécution sur une base donnée) :
 
 ~~~bash
 npm run migration:m003-supplier-catalog
@@ -535,3 +541,27 @@ défilement interne, sans calcul serveur ni mutation des données.
 Tests RTL dédiés : sélection initiale, séparation du contenu,
 actions, consultation du prix expiré, permissions, historique replié,
 retour à l'onglet initial lors de la réouverture, cas Catalogue.
+
+
+---
+
+## Clôture technique complément M-003 — PR #44 (2026-10-14)
+
+`supplierTariffSelection.service.js` expose les états
+`AVAILABLE`, `EXPIRED`, `AMBIGUOUS`, `UNAVAILABLE`.
+Les corrections de période de `PRICE_LIST` privé créent une révision
+sous verrou Commerce et enregistrent l'événement
+`SUPPLIER_TARIFF_PERIOD_CORRECTED`. Les comparaisons de dates
+civiles prennent en compte le fuseau métier Europe/Paris.
+
+Les nouvelles sessions d'import et révisions s'appuient sur les index
+M-003, tandis que `audit:m003-supplier-names` vérifie la sécurité
+des contraintes uniques avant migration. Aucun environnement MongoDB
+non exécuté n'est déclaré « migré » du seul fait de la fusion.
+
+La primitive générique `Select` du Core est inchangée.
+**Preuves CI :** Core Gate PR `38537453030` success ;
+Core Gate post-merge `38539141748` success à la tentative 2
+(commit `962177905bcc198e439a316d9610b23c60dd53cd`).
+L'intermittence initiale du test M-004 reste suivie par
+`docs/DEBT.md`, sans changement de sécurité ni de logique économique.

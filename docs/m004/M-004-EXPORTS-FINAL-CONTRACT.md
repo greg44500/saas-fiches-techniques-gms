@@ -1,9 +1,12 @@
 # M-004 — Contrat final des exports de Fiches techniques
 
-**Statut : VALIDÉ**  
-**Date : 2026-10-06**
+**Statut : VALIDÉ ET LIVRÉ — formats PDF, XLSX, CSV**  
+**Date de validation : 2026-10-06**  
+**Mise au point documentaire : 2026-10-14**
 
 ## Objectif
+
+Ce contrat couvre uniquement les **trois exports déjà implémentés**. L'impression et la diffusion par e-mail de la Fiche validée constituent un complément M-004 à cadrer : leur disponibilité n'est pas déduite de l'existence du PDF téléchargeable.
 
 Permettre l'export d'une Fiche technique validée en PDF, XLSX ou CSV depuis son panneau de contrôle ou directement depuis la liste des Fiches techniques.
 
