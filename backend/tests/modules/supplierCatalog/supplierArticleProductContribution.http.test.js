@@ -164,16 +164,30 @@ describe('M-002/M-003 contribution Produit depuis un Article importé', () => {
         expect(created.status).toBe(201);
         const parentId = created.body.data.provisionalReference.id;
 
-        const variant = await request(app)
-            .post(pathFor() + '/' + parentId + '/variants')
+        const url = pathFor() + '/' + parentId + '/variants';
+        const payload = {
+            name: 'Croissant individuel prêt à cuire pour test',
+            conservationType: 'SURGELE',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'croissant',
+            countUnitLabelPlural: 'croissants',
+        };
+        let variant = await request(app)
+            .post(url)
             .set(bearer(ownerA.token))
-            .send({
-                name: 'Croissant individuel prêt à cuire pour test',
-                conservationType: 'SURGELE',
-                referenceUnit: 'UNIT',
-                countUnitLabelSingular: 'croissant',
-                countUnitLabelPlural: 'croissants',
-            });
+            .send(payload);
+        if (variant.body.data?.classification === 'USER_CONFIRMATION_REQUIRED') {
+            variant = await request(app)
+                .post(url)
+                .set(bearer(ownerA.token))
+                .send({
+                    ...payload,
+                    forceCreate: true,
+                    reviewedCandidateIds: variant.body.data.candidates.map(
+                        ({ id }) => id,
+                    ),
+                });
+        }
         expect(variant.status).toBe(201);
         expect(variant.body.data.classification).toBe('PROVISIONAL');
         expect(variant.body.data.variant.id).toBeTruthy();
