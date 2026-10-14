@@ -1241,9 +1241,11 @@ La V1 produit comprend :
 - impression ;
 - envoi par e-mail.
 
-Ces fonctions appartiennent à la V1 mais ne sont pas implémentées dans le premier bloc M-004 Fiche technique.
+Ces fonctions appartiennent à la V1, mais n'étaient pas implémentées dans le premier bloc M-004 Fiche technique.
 
-Ordre impératif :
+**État constaté au 2026-10-14 :** les exports CSV, XLSX et PDF sont déjà implémentés sur `main` (voir le contrat spécialisé `M-004-EXPORTS-FINAL-CONTRACT.md`). **L'impression et l'envoi par e-mail ne sont pas livrés** ; ils restent à auditer et cadrer avant développement. L'ordre suivant est conservé comme séquence de cadrage initiale, et non comme liste actuelle de travaux à réaliser.
+
+Ordre initial :
 
 ```text
 Bloc M-004 Fiche technique

@@ -1,14 +1,38 @@
 # M-003 — Fournisseurs, Articles, conditionnements, prix et catalogues
 
-**Statut : VALIDÉ — baseline V1 autorisant l'implémentation**  
+**Statut : VALIDÉ ET LIVRÉ — baseline M-003 + complément PR #44 fusionnés le 2026-10-14**  
 **Date de validation : 2026-09-27**  
 **Prérequis : M-001 et M-002 clôturés**  
-**Core intégré au moment du cadrage : v1.2.1 — d90d8f1e6034cbbf4f63de2be7312eae69b1d698**
+**Core référencé au moment du cadrage : v1.2.1 — d90d8f1e6034cbbf4f63de2be7312eae69b1d698**  
+**Core effectivement intégré : v1.2.1 — 054ecd5bff1f3e61e7e1871700fae05bcdc0bdd3 (`core-origin.json`)**
 
 > Ce contrat est la source de vérité fonctionnelle de M-003.
 > Les choix explicitement qualifiés de baseline V1 sont révisables après tests métier réels.
 > Les invariants de tenancy, d'isolation Dossier et d'historisation ne sont pas des préférences UX.
 > Aucun modèle Mongoose M-003 ne doit précéder ce contrat ; l'implémentation peut commencer après sa validation.
+
+---
+
+## État d'implémentation et clôture — 2026-10-14
+
+Les décisions et avenants métier ci-dessous restent les contrats de
+référence ; les formulations initiales « à implémenter » reflètent leur
+date de rédaction, pas l'état présent.
+
+La [PR #44](https://github.com/greg44500/saas-fiches-techniques-gms/pull/44)
+est fusionnée sur `main` au commit
+`962177905bcc198e439a316d9610b23c60dd53cd`.
+Core Gate PR `38537453030` : success ;
+Core Gate post-merge `38539141748` : success à la **tentative 2**,
+après une première tentative perturbée par un test M-004 intermittent.
+
+Le complément livré inclut les imports directs d'Articles, les tarifs
+de mercuriales autonomes, l'association différée, les corrections
+historisées de prix/période des listes privées, la présentation des
+prix expirés et les projections de conditionnement. La suppression
+contrôlée des catalogues, le renouvellement prospectif des mercuriales
+et l'arbitrage des conflits privé/global restent en dette, sans
+altérer les invariants de tenancy, RBAC et audit.
 
 ---
 
