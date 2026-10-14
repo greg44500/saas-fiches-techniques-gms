@@ -146,18 +146,33 @@ async function resolveArticlePrice(page, {
   articleLabel,
   expectedPrice,
 }) {
-  await page.getByRole('combobox', {
-    name: 'Article fournisseur à vérifier',
-  }).click();
-  await page.getByRole('option', {
-    name: articleLabel,
-  }).click();
-
   const applicablePriceCard = page.locator('section').filter({
     has: page.getByRole('heading', {
       name: 'Vérifier un prix applicable',
     }),
   });
+  await expect(applicablePriceCard).toBeVisible();
+
+  // La carte est sous le contenu du Dossier : la placer au centre avant
+  // d'ouvrir le sélecteur pour que la liste soit réellement accessible.
+  // Aucun clic forcé ni mutation directe de la valeur du composant.
+  await applicablePriceCard.evaluate((element) => {
+    element.scrollIntoView({ block: 'center', inline: 'nearest' });
+  });
+
+  const articleSelect = applicablePriceCard.getByRole('combobox', {
+    name: 'Article fournisseur à vérifier',
+  });
+  await articleSelect.click();
+
+  const option = page.getByRole('option', {
+    name: articleLabel,
+    exact: true,
+  });
+  await expect(option).toBeVisible();
+  await expect(option).toBeInViewport();
+  await option.click();
+  await expect(articleSelect).toContainText(articleLabel);
 
   await expect(
     applicablePriceCard.getByText(expectedPrice, {
@@ -431,7 +446,9 @@ test('M-003 owner importe une liste d’Articles sans créer de catalogue commer
   await expectVisibleToast(page, 'Import des Articles terminé');
   await expect(dialog.getByText('Import terminé')).toBeVisible();
   await dialog.getByRole('button', { name: 'Fermer' }).click();
-  await expect(dialog).toBeHidden();
+  // Les toasts Base UI ont aussi role="dialog" : isoler le contenu modal.
+  await expect(page.locator('[data-slot="dialog-content"][role="dialog"]'))
+    .toBeHidden();
 
   const { article, articleRow } = await expectImportedWorkspaceArticle(page, {
     workspaceId: workspace.workspaceId,
@@ -502,7 +519,9 @@ test('M-003 importe des prix Articles sans période saisie et les expose depuis 
   await expectVisibleToast(page, 'Import des Articles terminé');
   await expect(dialog.getByText('Import terminé')).toBeVisible();
   await dialog.getByRole('button', { name: 'Fermer' }).click();
-  await expect(dialog).toBeHidden();
+  // Les toasts Base UI ont aussi role="dialog" : isoler le contenu modal.
+  await expect(page.locator('[data-slot="dialog-content"][role="dialog"]'))
+    .toBeHidden();
 
   const { article, articleRow } = await expectImportedWorkspaceArticle(page, {
     workspaceId: workspace.workspaceId,
