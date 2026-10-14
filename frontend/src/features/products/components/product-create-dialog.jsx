@@ -299,7 +299,16 @@ function ProductCreateDialog({
                   {onUseExisting
                     && (isGlobal || duplicateResult.exactMatch.status === 'ACTIVE') && (
                     <Button
-                      onClick={() => onUseExisting(duplicateResult.exactMatch.id, duplicateResult.exactMatch)}
+                      onClick={() => {
+                        if (onUseCandidate) {
+                          onUseCandidate(
+                            duplicateResult.exactMatch.id,
+                            duplicateResult.exactMatch,
+                          );
+                        } else {
+                          onUseExisting(duplicateResult.exactMatch.id);
+                        }
+                      }}
                       type="button"
                       variant="outline"
                     >
