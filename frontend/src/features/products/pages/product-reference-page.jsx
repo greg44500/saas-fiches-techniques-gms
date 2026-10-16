@@ -33,6 +33,7 @@ import {
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
   useLazyListProductReferenceReviewQueueQuery,
+  useRestoreProductReferenceReviewContextMutation,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
@@ -125,6 +126,8 @@ function ProductReferencePage({ canManage }) {
     useUpdateProductReferenceCategoryStatusMutation();
   const [loadReviewTarget, reviewTargetState] =
     useLazyListProductReferenceReviewQueueQuery();
+  const [restoreReviewContext, restoreReviewState] =
+    useRestoreProductReferenceReviewContextMutation();
 
   useEffect(() => {
     const totalPages = section === 'reference'
@@ -212,16 +215,18 @@ function ProductReferencePage({ canManage }) {
         page: 1,
         limit: 1,
       }).unwrap();
-      const item = result.items?.find((entry) => (
+      let item = result.items?.find((entry) => (
         entry.targetId === targetId && entry.dataType === dataType
       ));
       if (!item) {
-        toast({
-          title: 'Contrôle indisponible',
-          description: 'Cette demande est peut-être déjà traitée. Consultez la file « À contrôler ».',
-          variant: 'destructive',
-        });
-        return;
+        // Une Référence PROVISIONAL sans contribution PENDING_REVIEW
+        // peut provenir de données historiques. Reprendre la même file
+        // de gouvernance, avec autorisation MANAGE et traçabilité serveur.
+        item = await restoreReviewContext({
+          productId: drawerState.productId,
+          dataType,
+          targetId,
+        }).unwrap();
       }
       examineReviewItem(item);
     } catch (error) {
@@ -759,7 +764,7 @@ function ProductReferencePage({ canManage }) {
           reviewContext: null,
         }))}
         onReviewRequested={openReviewTarget}
-        reviewLoading={reviewTargetState.isFetching}
+        reviewLoading={reviewTargetState.isFetching || restoreReviewState.isLoading}
         open={drawerState.open}
         productId={drawerState.productId}
       />

@@ -11,6 +11,8 @@ Implémentation préparée : `SupplierArticle.recipeUnitEquivalence`, normalisat
 
 **Complément QA M-002 du 2026-10-16 (validé pour implémentation)** : l'utilisateur a constaté que la Référence « Croissant individuel PAI » est passée de `G` à `KG` malgré l'association Article BRIDOR. La règle backend passe du blocage interdimensionnel au blocage de **tout changement d'unité** si un usage existe. L'ouverture d'un Produit retrouvé par la déduplication doit cibler directement l'onglet Références. L'Application Global présente « À contrôler » en petit bouton outline neutre ouvrant la décision existante via une recherche ciblée par `targetId`. Le dialogue de correction déplace le sous-titre technique vers une infobulle métier. Audits locaux, RTL, tests backend, E2E et gates restent à confirmer avant toute PR.
 
+**QA 2026-10-16 :** un correctif encadre maintenant le changement d’unité d’une Référence sans Fiche ni Prix historique, même si des Articles fournisseur restent associés. Confirmation explicite, maintien des tarifs source et invalidation des anciennes équivalences. Le petit bouton warning « À contrôler » peut retrouver ou rétablir une contribution manquante, avec audit et sans validation automatique. Tests locaux indispensables avant PR.
+
 **Validation encore attendue** : audit local de la Référence « Croissant individuel PAI » avant toute correction de données ; exécution locale des tests ciblés, lint, build, E2E et QA visuelle ; corrections sur la même branche. Aucun test vert ni migration effectuée par l'assistant. **Aucune PR/merge avant accord utilisateur.** Les archives ci-dessous peuvent décrire des états plus anciens et ne priment pas sur cet état actuel.
 
 ---

@@ -379,6 +379,11 @@ const referenceContributionListQuerySchema = z.strictObject({
     }
 });
 
+const productReviewRecoveryBodySchema = z.strictObject({
+    dataType: z.enum(['PRODUCT', 'REFERENCE']),
+    targetId: objectIdSchema,
+});
+
 const productReviewQueueListQuerySchema = z.strictObject({
     targetId: objectIdSchema.optional(),
     type: z.enum(Object.values(PRODUCT_REVIEW_QUEUE_TYPE)).optional(),
@@ -468,6 +473,7 @@ const updateProductStatusBodySchema = z.strictObject({
 });
 
 const updateVariantBodySchema = z.strictObject({
+    confirmSupplierArticleRevaluation: z.literal(true).optional(),
     name: z.string().trim().min(1).max(160).optional(),
     varietyId: objectIdSchema.nullable().optional(),
     characteristicIds: characteristicIdsSchema.optional(),
@@ -518,6 +524,7 @@ export {
     productIdParamsSchema,
     productSearchQuerySchema,
     productReviewQueueListQuerySchema,
+    productReviewRecoveryBodySchema,
     productVariantParamsSchema,
     referenceContributionDecisionBodySchema,
     referenceContributionListQuerySchema,

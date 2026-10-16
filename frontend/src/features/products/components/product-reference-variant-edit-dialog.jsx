@@ -59,6 +59,7 @@ function ProductReferenceVariantEditDialog({
   const [draft, setDraft] = useState(() => variantToDraft(variant));
   const [dimensionDialogOpen, setDimensionDialogOpen] = useState(false);
   const [formError, setFormError] = useState('');
+  const [confirmedUnitCorrection, setConfirmedUnitCorrection] = useState(false);
   const [updateVariant, updateState] = useUpdateProductReferenceVariantMutation();
   const dimensionsQuery = useGetProductReferenceDimensionsQuery(productId, {
     skip: !open || !productId,
@@ -73,6 +74,7 @@ function ProductReferenceVariantEditDialog({
     setDraft(variantToDraft(variant));
     setDimensionDialogOpen(false);
     setFormError('');
+    setConfirmedUnitCorrection(false);
   }, [open, variant]);
 
   async function submit() {
@@ -89,12 +91,20 @@ function ProductReferenceVariantEditDialog({
       return;
     }
 
+    const unitChanged = draft.referenceUnit !== variant.referenceUnit;
+    if (unitChanged && !confirmedUnitCorrection) {
+      setFormError('Confirmez la correction de l’unité de recette avant de continuer.');
+      return;
+    }
+
     setFormError('');
     try {
       const saved = await updateVariant({
         productId,
         variantId: variant.id,
         ...variantDraftToPayload(draft, { structured: true }),
+        ...(unitChanged && confirmedUnitCorrection
+          ? { confirmSupplierArticleRevaluation: true } : {}),
       }).unwrap();
       onSaved(saved);
     } catch (error) {
@@ -122,7 +132,7 @@ function ProductReferenceVariantEditDialog({
               <DialogTitle>Corriger la référence Produit</DialogTitle>
               <InfoTooltip
                 label="Aide sur la correction d’une référence Produit"
-                content="Vous pouvez corriger le nom et les caractéristiques de cette référence. L’unité de recette est utilisée pour calculer les quantités et les coûts des fiches techniques. Si elle est déjà utilisée par une fiche, un article fournisseur ou un prix, créez une nouvelle référence pour utiliser une autre unité."
+                content="Vous pouvez corriger les informations de cette référence. Si son unité change, l’application vérifie qu’aucune fiche technique ni aucun prix historique incompatible ne sera modifié. Les tarifs fournisseur et les quantités par colis seront conservés, mais le prix de recette devra être vérifié."
               />
             </div>
             <DialogDescription className="sr-only">
@@ -149,10 +159,34 @@ function ProductReferenceVariantEditDialog({
               dimensions={dimensions}
               disabled={updateState.isLoading}
               metadata={metadata}
-              onChange={setDraft}
+              onChange={(nextDraft) => {
+                if (nextDraft.referenceUnit !== draft.referenceUnit) {
+                  setConfirmedUnitCorrection(false);
+                }
+                setDraft(nextDraft);
+              }}
               structured
               value={draft}
             />
+            {draft.referenceUnit !== variant.referenceUnit && (
+              <div className="space-y-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
+                <p className="font-medium text-foreground">Correction de l’unité de recette</p>
+                <p className="text-muted-foreground">
+                  Les recettes et les prix historiques protégés bloqueront cette modification.
+                  Si seuls des Articles fournisseur sont liés, leur colisage sera conservé
+                  et leur valorisation sera à vérifier après enregistrement.
+                </p>
+                <label className="flex items-start gap-2">
+                  <input
+                    checked={confirmedUnitCorrection}
+                    className="mt-1"
+                    onChange={(event) => setConfirmedUnitCorrection(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span>Je confirme vouloir corriger l’unité de cette référence.</span>
+                </label>
+              </div>
+            )}
             <FieldError>{formError}</FieldError>
           </div>
 

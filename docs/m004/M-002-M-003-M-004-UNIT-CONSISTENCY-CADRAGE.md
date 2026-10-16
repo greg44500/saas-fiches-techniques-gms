@@ -159,12 +159,18 @@ Le test d'intégration doit **définir ou affirmer le mode de politique** avant 
 
 ### Complément stabilisation M-002 — QA du 2026-10-16
 
-- Le passage `G` → `KG` a été observé en base sur la Référence provisoire « Croissant individuel PAI » malgré l'Article BRIDOR encore associé et un tarif fournisseur. **Règle utilisateur validée** : toutes les modifications de `referenceUnit` d'une Référence ayant au moins un usage Fiche/Article/Prix sont interdites en édition directe, y compris entre unités compatibles ; aucune exemption Super Admin.
-- Audit local actuel (fourni par utilisateur) : `referenceUnit = KG`, Article privé BRIDOR `43279`, 1 Tarif fournisseur, 0 Brouillon, 0 validation. Ne pas réinterpréter rétroactivement `G` en `KG` ou `UNIT`. Créer une Référence `UNIT` distincte avant de traiter l'association fournisseur.
+- Le passage `G` → `KG` a été observé en base sur la Référence provisoire « Croissant individuel PAI » malgré l'Article BRIDOR encore associé et un tarif fournisseur. **Règle affinée à la suite de la QA** : les fiches, prix indicatifs, négociés et facturés interdisent toute modification directe d'unité ; des Articles et Tarifs fournisseur seuls n'empêchent plus une correction sur la même Référence après confirmation explicite, sans exemption d'autorisation.
+- Audit local actuel (fourni par utilisateur) : `referenceUnit = KG`, Article privé BRIDOR `43279`, 1 Tarif fournisseur, 0 Brouillon, 0 validation. Ne pas réinterpréter rétroactivement les quantités historiques. Corriger la même Référence en `UNIT` est possible si les contrôles transactionnels confirment toujours l'absence de Fiche ou de Prix historique protégé.
 - L'entrée « Créer un Produit » réutilise le Produit existant et ouvre directement ses Références. Ne pas créer d'identité Produit concurrente.
-- Le statut provisoire « À contrôler » doit être un petit bouton à contour neutre sur l'écran administratif autorisé ; son clic recherche la contribution correspondante par `targetId` depuis la file unifiée existante et ouvre une vraie décision, sans contourner RBAC ni effectuer de validation automatique.
+- Le statut provisoire « À contrôler » doit être un petit bouton à contour warning bien visible sur l'écran administratif autorisé ; son clic recherche la contribution correspondante par `targetId` depuis la file unifiée existante et ouvre une vraie décision, sans contourner RBAC ni effectuer de validation automatique.
 - Le dialogue « Corriger la référence Produit » présente une aide métier via l'icône `i`, conserve un titre simple et retire les sous-titres techniques visibles.
-- Tests ajoutés/prévus : sécurité `G` → `KG` et `G` → `UNIT`, ciblage paginé de la file, navigation UI depuis badge, bouton réduit neutre, écran de correction et déduplication. **Aucun test nouveau déclaré vert avant exécution locale.**
+- Tests ajoutés/prévus : sécurité `G` → `KG` et `G` → `UNIT`, ciblage paginé de la file, navigation UI depuis badge, bouton réduit warning, écran de correction et déduplication. **Aucun test nouveau déclaré vert avant exécution locale.**
+
+### Complément de recette — correction de première unité (2026-10-16)
+
+Le cas « Croissant individuel PAI » contient uniquement un Article BRIDOR et un tarif fournisseur, sans Fiche ni Prix négocié, facturé ou indicatif (selon le dernier audit local). Il est donc éligible à une correction confirmée `KG` vers `UNIT` sur la même Référence : le colis et le prix source sont conservés, l'équivalence pièce/colis doit être confirmée à nouveau, aucun tarif historique n'est réécrit. Le refus demeure obligatoire si une Fiche ou un Prix historique protégé apparaît.
+
+Un statut provisoire sans demande de gouvernance active peut être rétabli dans la file existante par un lien tracé, sans validation automatique. L'action est accessible via le petit bouton warning du drawer global.
 
 ## 11. État de livraison
 

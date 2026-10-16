@@ -8,6 +8,8 @@
 
 L'audit local a confirmé une modification `G` → `KG` sur « Croissant individuel PAI », toujours associée à BRIDOR réf. 43279 et à un tarif, mais sans brouillon ni validation. Ce changement **déjà effectué** ne doit pas être renormalisé automatiquement. La régularisation passe par une nouvelle Référence distincte en `UNIT` et un contrôle des associations, du prix et du conditionnement. Aucun changement de données n'a été automatisé. Suivi jusqu'à validation QA, reprise E2E et gates globaux.
 
+**QA en attente du 2026-10-16 :** vérifier la correction `KG` → `UNIT` sur la même Référence « Croissant individuel PAI » après confirmation humaine, et reconfirmer 36 pièces pour l'Article BRIDOR. Vérifier le lien de contribution `PROVISIONAL` sans validation automatique ; en l'absence d'origine Workspace, ne pas créer de lien fictif. Valider les tests locaux, permissions Application Global, transaction, snapshots de prix et conservation des identifiants. Aucune donnée métier locale n'a été corrigée par ce commit.
+
 ## UNIT-CONSISTENCY — vérifications de données préalables à la livraison (2026-10-16)
 
 - **À auditer localement** : unité réelle M-002 du Produit « Croissant individuel PAI » ; Articles/Tarifs/Fiches liés et existence de snapshots historiques. La branche ne réécrit aucune donnée de démonstration.

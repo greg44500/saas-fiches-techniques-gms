@@ -29,6 +29,12 @@ import {
     listProductReviewQueue,
 } from '../../../modules/productCatalog/productReferenceReviewQueue.service.js';
 import {
+    restoreProductReviewContext,
+} from '../../../modules/productCatalog/productReferenceReviewRecovery.service.js';
+import {
+    ReferenceContribution,
+} from '../../../modules/productCatalog/referenceContribution.model.js';
+import {
     markProductDimensionReviewed,
 } from '../../../modules/productCatalog/productReferenceReview.service.js';
 import {
@@ -47,6 +53,64 @@ beforeEach(async () => {
 });
 
 describe('M-002 unified product review queue', () => {
+    it('rétablit le contrôle d’une Référence provisoire orpheline, sans la valider ni la dupliquer', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Poires régularisation contrôle',
+        });
+        const created = await createWorkspaceVariant({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            forceCreate: true,
+            reviewedCandidateIds: [],
+            variant: {
+                name: 'Écorce zébrée orpheline XYZ',
+                conservationType: 'FRAIS',
+                foodRange: 1,
+                referenceUnit: 'KG',
+                characteristicIds: [],
+            },
+        });
+        expect(created.classification).toBe('PROVISIONAL');
+        await ReferenceContribution.deleteOne({ _id: created.contribution.id });
+        const empty = await listProductReviewQueue({
+            type: PRODUCT_REVIEW_QUEUE_TYPE.CONTRIBUTION,
+            targetId: created.variant.id,
+        });
+        expect(empty.items).toHaveLength(0);
+
+        const args = {
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            dataType: 'REFERENCE',
+            targetId: created.variant.id,
+        };
+        const recovered = await restoreProductReviewContext(args);
+        const again = await restoreProductReviewContext(args);
+        expect(recovered.sourceId).toBe(again.sourceId);
+        expect(recovered).toMatchObject({
+            dataType: 'REFERENCE',
+            targetId: created.variant.id,
+            productId: reference.product._id.toString(),
+        });
+        expect(await ReferenceContribution.countDocuments({
+            provisionalEntityId: created.variant.id,
+            status: 'PENDING_REVIEW',
+        })).toBe(1);
+
+        // L'identité ne devient APPROVED qu'après une vraie décision humaine.
+        await reviewReferenceContribution({
+            contributionId: recovered.sourceId,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+        const completed = await listProductReviewQueue({
+            targetId: created.variant.id,
+        });
+        expect(completed.items).toHaveLength(0);
+    });
+
     it('agrège les Contributions et Dimensions à vérifier sans doublonner une valeur provisoire', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,

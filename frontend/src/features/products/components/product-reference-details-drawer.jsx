@@ -523,7 +523,7 @@ function ProductReferenceDetailsDrawer({
                           ? (
                             <Button
                               aria-label={'Examiner le Produit ' + product.name}
-                              className="h-7 rounded-md border-border px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                              className="h-7 rounded-md border-warning/60 bg-warning/10 px-2.5 text-xs font-semibold text-warning hover:border-warning hover:bg-warning/20 hover:text-warning"
                               disabled={pending || reviewLoading}
                               onClick={() => onReviewRequested?.('PRODUCT', product.id)}
                               size="sm"
@@ -1212,7 +1212,7 @@ function ProductReferenceDetailsDrawer({
                             ? (
                               <Button
                                 aria-label={'Examiner la référence ' + getVariantLabel(variant)}
-                                className="h-7 rounded-md border-border px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                                className="h-7 rounded-md border-warning/60 bg-warning/10 px-2.5 text-xs font-semibold text-warning hover:border-warning hover:bg-warning/20 hover:text-warning"
                                 disabled={pending || reviewLoading}
                                 onClick={() => onReviewRequested?.('REFERENCE', variant.id)}
                                 size="sm"

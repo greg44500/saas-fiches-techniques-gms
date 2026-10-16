@@ -369,7 +369,7 @@ describe('ProductReferenceDetailsDrawer', () => {
     });
   });
 
-  it('rend la pastille provisoire comme un petit bouton neutre ouvrant le contrôle ciblé', async () => {
+  it('rend À contrôler comme un petit bouton warning ouvrant le contrôle ciblé', async () => {
     const user = userEvent.setup();
     const onReviewRequested = vi.fn();
     mocks.detail.mockReturnValue(queryResult({
@@ -399,7 +399,9 @@ describe('ProductReferenceDetailsDrawer', () => {
       name: 'Examiner la référence Croissant PAI',
     });
     expect(control).toHaveTextContent('À contrôler');
-    expect(control).toHaveClass('h-7', 'border-border', 'text-xs');
+    expect(control).toHaveClass(
+      'h-7', 'border-warning/60', 'bg-warning/10', 'text-warning', 'text-xs',
+    );
     await user.click(control);
     expect(onReviewRequested).toHaveBeenCalledWith('REFERENCE', 'variant-to-review');
   });

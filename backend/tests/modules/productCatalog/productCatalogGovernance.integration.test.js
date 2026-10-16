@@ -26,6 +26,9 @@ import {
     SupplierArticle,
 } from '../../../modules/supplierCatalog/supplier.model.js';
 import {
+    NegotiatedPrice,
+} from '../../../modules/supplierCatalog/supplierPricing.model.js';
+import {
     createCategory,
     createGlobalProduct,
     createGlobalVariant,
@@ -84,6 +87,140 @@ describe('M-002 product reference governance', () => {
             .toBe('G');
     });
 
+
+    it('corrige une unité sur la même Référence avec Articles fournisseur, après confirmation explicite', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Croissant de test avec erreur d’unité',
+            referenceUnit: 'KG',
+        });
+        const article = await SupplierArticle.create({
+            scope: 'WORKSPACE_PRIVATE',
+            workspace: ownerContext.workspace._id,
+            supplier: ownerContext.owner._id,
+            productVariant: reference.variant._id,
+            supplierReference: 'CRO-CORRECTION',
+            normalizedSupplierReference: 'cro-correction',
+            packaging: {
+                containerType: 'Carton',
+                unitCount: 36,
+                quantityPerUnit: '120',
+                unit: 'G',
+                totalQuantity: '4320',
+            },
+            recipeUnitEquivalence: {
+                unitsPerPackage: 36,
+                packagingSignature: 'ancienne-preuve',
+                productVariant: reference.variant._id,
+                verifiedBy: ownerContext.owner._id,
+                verifiedAt: new Date(),
+            },
+            createdBy: ownerContext.owner._id,
+            updatedBy: ownerContext.owner._id,
+        });
+        const changed = await updateVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variantId: reference.variant._id,
+            changes: {
+                referenceUnit: 'UNIT',
+                countUnitLabelSingular: 'pièce',
+                countUnitLabelPlural: 'pièces',
+                confirmSupplierArticleRevaluation: true,
+            },
+        });
+        expect(changed.id).toBe(reference.variant._id.toString());
+        expect(changed.referenceUnit).toBe('UNIT');
+        const sameArticle = await SupplierArticle.findById(article._id);
+        expect(sameArticle.productVariant.toString())
+            .toBe(reference.variant._id.toString());
+        expect(sameArticle.recipeUnitEquivalence).toBeNull();
+        expect(sameArticle.packaging.unitCount).toBe(36);
+        expect(sameArticle.packaging.totalQuantity.toString()).toBe('4320');
+
+        const event = await ProductReferenceEvent.findOne({
+            entityId: reference.variant._id,
+            action: 'VARIANT_UPDATED',
+        }).sort({ createdAt: -1 });
+        expect(event.metadata).toMatchObject({
+            previousReferenceUnit: 'KG',
+            nextReferenceUnit: 'UNIT',
+            confirmedSupplierArticleRevaluation: true,
+        });
+    });
+
+    it('interdit de réécrire une unité liée à un Prix négocié archivé', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Produit prix négocié à préserver',
+            referenceUnit: 'G',
+        });
+        const article = await SupplierArticle.create({
+            scope: 'WORKSPACE_PRIVATE',
+            workspace: ownerContext.workspace._id,
+            supplier: ownerContext.owner._id,
+            productVariant: reference.variant._id,
+            supplierReference: 'P-HISTO',
+            normalizedSupplierReference: 'p-histo',
+            createdBy: ownerContext.owner._id,
+            updatedBy: ownerContext.owner._id,
+        });
+        await NegotiatedPrice.create({
+            workspace: ownerContext.workspace._id,
+            dossier: ownerContext.workspace._id,
+            supplierArticle: article._id,
+            sourceAmount: '6.50',
+            sourceBasis: 'PACKAGE',
+            normalizedAmount: '0.0015',
+            normalizedUnit: 'G',
+            validFrom: new Date('2026-01-01'),
+            status: 'ARCHIVED',
+            createdBy: ownerContext.owner._id,
+            updatedBy: ownerContext.owner._id,
+        });
+        await expect(updateVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variantId: reference.variant._id,
+            changes: {
+                referenceUnit: 'UNIT',
+                confirmSupplierArticleRevaluation: true,
+            },
+        })).rejects.toMatchObject({ statusCode: 409 });
+        expect((await ProductVariant.findById(reference.variant._id)).referenceUnit)
+            .toBe('G');
+    });
+
+    it('refuse la correction confirmée si une Fiche technique dépend encore de la Référence', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Produit protégé malgré confirmation',
+            referenceUnit: 'G',
+        });
+        await TechnicalSheetDraft.create({
+            workspace: ownerContext.workspace._id,
+            dossier: reference.product._id,
+            technicalSheet: reference.variant._id,
+            lines: [{
+                kind: 'INGREDIENT',
+                productVariant: reference.variant._id,
+                netQuantity: '1',
+                inputUnit: 'G',
+                order: 0,
+            }],
+            createdBy: ownerContext.owner._id,
+            updatedBy: ownerContext.owner._id,
+        });
+        await expect(updateVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variantId: reference.variant._id,
+            changes: {
+                referenceUnit: 'UNIT',
+                confirmSupplierArticleRevaluation: true,
+            },
+        })).rejects.toMatchObject({ statusCode: 409 });
+    });
 
     it('refuse une requalification gramme vers pièce lorsqu’un brouillon utilise la Référence', async () => {
         const reference = await createActiveProductReference({

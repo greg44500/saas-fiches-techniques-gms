@@ -335,18 +335,24 @@ Dans les dialogues « Créer un Produit », la déduplication montre les corresp
 - **Application Global :** le même choix permet d'ouvrir un Produit proche, y compris archivé lorsque le compte dispose de l'accès à la gouvernance globale.
 - **Article fournisseur contextuel M-003 :** l'action existante « Utiliser ce Produit » reste inchangée et mène à l'association ou à la création de Référence selon le résultat de recherche.
 - **Différent :** conserve sa seule fonction : attester qu'un candidat proche n'est pas le Produit que l'on souhaite créer. La réutilisation ne coche pas cette case et ne déclenche aucune mutation de création.
-- La réutilisation d'un Produit ne modifie jamais automatiquement `ProductVariant.referenceUnit` ni les Fiches techniques existantes. Une autre unité de recette nécessite une Référence distincte et les autorisations de création correspondantes.
+- La réutilisation d'un Produit ne modifie jamais automatiquement `ProductVariant.referenceUnit` ni les Fiches techniques existantes. Un changement d'unité nécessite soit une correction encadrée de la Référence existante lorsque les dépendances le permettent, soit une migration métier distincte.
 
 
 ### Avenant métier et UX — unités utilisées et contrôle ciblé (2026-10-16)
 
-**Décision utilisateur validée** : une Référence déjà utilisée par une Fiche technique (brouillon ou validation), un Article fournisseur ou un Prix ne peut subir **aucun changement direct d'unité de recette**, y compris une conversion dans la même dimension (`G` ↔ `KG`). La valeur de référence peut être modifiée en édition directe uniquement si aucun de ces usages n'existe ; une nouvelle Référence ou une migration métier distincte est nécessaire dans le cas contraire. Les contrôles backend s'appliquent aussi aux gestionnaires de l'Application Global.
+**Règle révisée après la recette du 2026-10-16 :** une Référence ayant des usages dans une Fiche technique (brouillon ou validation), un Prix indicatif, un Tarif négocié ou un Prix facturé ne peut subir de changement direct d'unité, y compris `G` ↔ `KG`. En revanche, si seuls des Articles et Tarifs fournisseur subsistent, l'administrateur habilité peut corriger l'unité sur **la même Référence**, après une confirmation explicite et un contrôle transactionnel. Aucune équivalence pièce/colis antérieure n'est conservée et aucun prix source historique n'est réécrit. Les permissions Application Global restent requises.
 
 Depuis « Créer un Produit → Rechercher l'existant », une suggestion retrouvée mène directement à l'onglet **Références** de la fiche Produit, où le gestionnaire habilité peut créer une nouvelle Référence sous le Produit déjà existant. La recherche dans la liste Produits reste une voie directe de consultation : ces deux parcours réutilisent le même drawer et le même composant de création.
 
-Les identités provisoires (`PROVISIONAL`) conservent la mention « À contrôler » **indépendamment** du statut d'utilisation `ACTIVE`. Dans le drawer Application Global, cette mention, lorsqu'une décision est possible, devient un **petit bouton neutre à contour** (style du bouton d'annulation des ingrédients, sans accent orange ni jaune), accessible au clavier. Son action recherche la proposition exacte dans la file de gouvernance existante et ouvre les actions `Valider / Fusionner / Refuser`. Une décision prise par le workflow de gouvernance reste requise ; le bouton ne valide jamais automatiquement.
+Les identités provisoires (`PROVISIONAL`) conservent la mention « À contrôler » **indépendamment** du statut d'utilisation `ACTIVE`. Dans le drawer Application Global, cette mention, lorsqu'une décision est possible, devient un **petit bouton à contour warning**, bien contrasté sans prendre la taille d'un bouton principal (style compact du bouton d'annulation des ingrédients), accessible au clavier. Son action recherche la proposition exacte dans la file de gouvernance existante et ouvre les actions `Valider / Fusionner / Refuser`. Une décision prise par le workflow de gouvernance reste requise ; le bouton ne valide jamais automatiquement.
 
 Dans « Corriger la référence Produit », l'explication métier passe dans une infobulle d'information, la description accessible du dialogue est préservée et les formulations techniques « M-002 » / « dimensions structurées » disparaissent du texte visible.
+
+### Complément QA : correction contrôlée et gouvernance (2026-10-16)
+
+Une Référence Produit conserve son identifiant lors de la correction initiale de son unité, même si des Articles fournisseur restent associés, à condition qu'aucune Fiche (brouillon ou validation), aucun Prix indicatif et aucun Prix négocié ou facturé ne soient liés à cette identité. L'API Application Global exige une confirmation explicite si des Articles existent. Elle ne modifie jamais leurs montants ou conditionnements, mais invalide les équivalences pièce/colis antérieures et journalise l'ancienne et la nouvelle unité. Une Fiche ou un Prix historique normalisé interdit cette correction directe.
+
+Le petit bouton « À contrôler » reste compact mais utilise la couleur warning. Il ouvre la demande active de gouvernance et, si cette demande manque pour une identité encore provisoire, une action `MANAGE` rétablit son lien de manière idempotente uniquement si sa provenance Workspace est connue. Aucun changement de statut `APPROVED` n'est automatique.
 
 ## 10. Import et frontière M-003
 

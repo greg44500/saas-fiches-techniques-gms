@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   productsQuery: vi.fn(),
   reviewQueueQuery: vi.fn(),
   loadReviewTarget: vi.fn(),
+  restoreReviewContext: vi.fn(),
   updateCategoryStatus: vi.fn(),
   globalPricesQuery: vi.fn(),
 }));
@@ -26,6 +27,10 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
   useLazyListProductReferenceReviewQueueQuery: () => [
     mocks.loadReviewTarget,
     { isFetching: false },
+  ],
+  useRestoreProductReferenceReviewContextMutation: () => [
+    mocks.restoreReviewContext,
+    { isLoading: false },
   ],
   useUpdateProductReferenceCategoryStatusMutation: () => [
     mocks.updateCategoryStatus,
@@ -253,6 +258,9 @@ describe('ProductReferencePage', () => {
     vi.clearAllMocks();
     mocks.loadReviewTarget.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({ items: [] }),
+    });
+    mocks.restoreReviewContext.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue(null),
     });
 
     mocks.metadataQuery.mockReturnValue({
@@ -740,6 +748,35 @@ describe('ProductReferencePage', () => {
         origins: 'omit',
         page: 1,
         limit: 1,
+      });
+      expect(screen.getByText(
+        'Détail global ouvert · variants · active · pending · cible variant-pending-1',
+      )).toBeInTheDocument();
+    });
+  });
+
+  it('rétablit et ouvre le contrôle exact si la Référence est provisoire mais orpheline', async () => {
+    const user = userEvent.setup();
+    mocks.restoreReviewContext.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        sourceId: 'contribution-restored',
+        targetId: 'variant-pending-1',
+        type: 'CONTRIBUTION',
+        dataType: 'REFERENCE',
+        productId: 'product-1',
+        candidates: [],
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Contrôler la Référence courante',
+    }));
+    await waitFor(() => {
+      expect(mocks.restoreReviewContext).toHaveBeenCalledWith({
+        productId: 'product-1',
+        dataType: 'REFERENCE',
+        targetId: 'variant-pending-1',
       });
       expect(screen.getByText(
         'Détail global ouvert · variants · active · pending · cible variant-pending-1',
