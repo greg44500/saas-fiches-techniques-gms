@@ -37,13 +37,13 @@ if (!requestedName) {
             const articleIds = articles.map((article) => article._id);
             const counts = await Promise.all([
                 SupplierTariff.countDocuments({
-                    supplierArticle: { $in: articleIds },
+                    supplierArticle: mongoose.trusted({ $in: articleIds }),
                 }),
                 NegotiatedPrice.countDocuments({
-                    supplierArticle: { $in: articleIds },
+                    supplierArticle: mongoose.trusted({ $in: articleIds }),
                 }),
                 InvoicedPrice.countDocuments({
-                    supplierArticle: { $in: articleIds },
+                    supplierArticle: mongoose.trusted({ $in: articleIds }),
                 }),
                 IndicativePrice.countDocuments({ productVariant: variant._id }),
                 TechnicalSheetDraft.countDocuments({
