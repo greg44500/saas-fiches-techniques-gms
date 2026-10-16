@@ -369,6 +369,41 @@ describe('ProductReferenceDetailsDrawer', () => {
     });
   });
 
+  it('rend la pastille provisoire comme un petit bouton neutre ouvrant le contrôle ciblé', async () => {
+    const user = userEvent.setup();
+    const onReviewRequested = vi.fn();
+    mocks.detail.mockReturnValue(queryResult({
+      product: {
+        id: 'product-1',
+        name: 'Abricot',
+        category: null,
+        status: 'ACTIVE',
+        governanceStatus: 'APPROVED',
+      },
+      variants: [{
+        id: 'variant-to-review',
+        name: 'Croissant PAI',
+        status: 'ACTIVE',
+        governanceStatus: 'PROVISIONAL',
+        referenceUnit: 'KG',
+        conservationType: 'FRAIS',
+      }],
+      events: [],
+    }));
+
+    renderDrawer({
+      initialTab: 'variants',
+      onReviewRequested,
+    });
+    const control = screen.getByRole('button', {
+      name: 'Examiner la référence Croissant PAI',
+    });
+    expect(control).toHaveTextContent('À contrôler');
+    expect(control).toHaveClass('h-7', 'border-border', 'text-xs');
+    await user.click(control);
+    expect(onReviewRequested).toHaveBeenCalledWith('REFERENCE', 'variant-to-review');
+  });
+
   it('valide une Dimension ciblée depuis son détail sans seconde décision', async () => {
     const user = userEvent.setup();
 

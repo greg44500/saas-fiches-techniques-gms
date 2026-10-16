@@ -168,6 +168,7 @@ function ProductDetailsDrawer({
   onClose,
   open,
   productId,
+  initialSection = 'product',
   workspaceId,
 }) {
   const { can, hasFeature } = useWorkspaceContext();
@@ -246,11 +247,11 @@ function ProductDetailsDrawer({
   useEffect(() => {
     if (!open) return;
 
-    setSection('product');
+    setSection(initialSection);
     setVariantDialogOpen(false);
     setArticleVariant(null);
     setIndicativeVariant(null);
-  }, [open, productId]);
+  }, [open, productId, initialSection]);
 
   if (query.data) retainedRef.current = query.data;
   const detail = query.data ?? retainedRef.current;

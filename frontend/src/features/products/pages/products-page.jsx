@@ -239,8 +239,8 @@ function ProductsPage() {
     }
   }
 
-  function openProduct(productId) {
-    setDrawerState({ open: true, productId });
+  function openProduct(productId, initialSection = 'product') {
+    setDrawerState({ open: true, productId, initialSection });
   }
 
   const columns = [
@@ -525,6 +525,7 @@ function ProductsPage() {
         onClose={() => setDrawerState((current) => ({ ...current, open: false }))}
         open={drawerState.open}
         productId={drawerState.productId}
+        initialSection={drawerState.initialSection ?? 'product'}
         workspaceId={workspace.id}
       />
 
@@ -565,7 +566,7 @@ function ProductsPage() {
         }}
         onUseExisting={(productId) => {
           setCreateOpen(false);
-          openProduct(productId);
+          openProduct(productId, 'variants');
         }}
         open={createOpen}
         workspaceId={workspace.id}

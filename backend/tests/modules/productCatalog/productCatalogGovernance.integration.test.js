@@ -56,7 +56,7 @@ beforeEach(async () => {
 });
 
 describe('M-002 product reference governance', () => {
-    it('exige une nouvelle Référence si une modification de dimension affecterait un Article fournisseur', async () => {
+    it('bloque toute modification d’unité d’une Référence liée à un Article, même g vers kg', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,
             name: 'Produit déjà lié à un Article',
@@ -72,12 +72,16 @@ describe('M-002 product reference governance', () => {
             createdBy: ownerContext.owner._id,
             updatedBy: ownerContext.owner._id,
         });
-        await expect(updateVariant({
-            actorId: ownerContext.owner._id,
-            productId: reference.product._id,
-            variantId: reference.variant._id,
-            changes: { referenceUnit: 'UNIT' },
-        })).rejects.toMatchObject({ statusCode: 409 });
+        for (const unit of ['UNIT', 'KG']) {
+            await expect(updateVariant({
+                actorId: ownerContext.owner._id,
+                productId: reference.product._id,
+                variantId: reference.variant._id,
+                changes: { referenceUnit: unit },
+            })).rejects.toMatchObject({ statusCode: 409 });
+        }
+        expect((await ProductVariant.findById(reference.variant._id)).referenceUnit)
+            .toBe('G');
     });
 
 
@@ -111,6 +115,21 @@ describe('M-002 product reference governance', () => {
         expect(unchanged.referenceUnit).toBe('G');
     });
 
+
+    it('autorise la correction d’unité pour une Référence encore inutilisée', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Produit non utilisé pour changement unité',
+            referenceUnit: 'G',
+        });
+        const updated = await updateVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variantId: reference.variant._id,
+            changes: { referenceUnit: 'KG' },
+        });
+        expect(updated.referenceUnit).toBe('KG');
+    });
 
     it('autorise une catégorie facultative mais refuse une catégorie fournie invalide', async () => {
         await expect(createGlobalProduct({

@@ -338,6 +338,16 @@ Dans les dialogues « Créer un Produit », la déduplication montre les corresp
 - La réutilisation d'un Produit ne modifie jamais automatiquement `ProductVariant.referenceUnit` ni les Fiches techniques existantes. Une autre unité de recette nécessite une Référence distincte et les autorisations de création correspondantes.
 
 
+### Avenant métier et UX — unités utilisées et contrôle ciblé (2026-10-16)
+
+**Décision utilisateur validée** : une Référence déjà utilisée par une Fiche technique (brouillon ou validation), un Article fournisseur ou un Prix ne peut subir **aucun changement direct d'unité de recette**, y compris une conversion dans la même dimension (`G` ↔ `KG`). La valeur de référence peut être modifiée en édition directe uniquement si aucun de ces usages n'existe ; une nouvelle Référence ou une migration métier distincte est nécessaire dans le cas contraire. Les contrôles backend s'appliquent aussi aux gestionnaires de l'Application Global.
+
+Depuis « Créer un Produit → Rechercher l'existant », une suggestion retrouvée mène directement à l'onglet **Références** de la fiche Produit, où le gestionnaire habilité peut créer une nouvelle Référence sous le Produit déjà existant. La recherche dans la liste Produits reste une voie directe de consultation : ces deux parcours réutilisent le même drawer et le même composant de création.
+
+Les identités provisoires (`PROVISIONAL`) conservent la mention « À contrôler » **indépendamment** du statut d'utilisation `ACTIVE`. Dans le drawer Application Global, cette mention, lorsqu'une décision est possible, devient un **petit bouton neutre à contour** (style du bouton d'annulation des ingrédients, sans accent orange ni jaune), accessible au clavier. Son action recherche la proposition exacte dans la file de gouvernance existante et ouvre les actions `Valider / Fusionner / Refuser`. Une décision prise par le workflow de gouvernance reste requise ; le bouton ne valide jamais automatiquement.
+
+Dans « Corriger la référence Produit », l'explication métier passe dans une infobulle d'information, la description accessible du dialogue est préservée et les formulations techniques « M-002 » / « dimensions structurées » disparaissent du texte visible.
+
 ## 10. Import et frontière M-003
 
 L'import M-002 exposé dans le frontend peut mapper :

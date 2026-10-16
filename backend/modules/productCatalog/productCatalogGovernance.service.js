@@ -21,7 +21,6 @@ import {
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
-    PRODUCT_REFERENCE_UNIT_REGISTRY,
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
 import {
@@ -686,11 +685,10 @@ const updateVariant = async ({
     }
 
     if (changes.referenceUnit
-        && changes.referenceUnit !== variant.referenceUnit
-        && PRODUCT_REFERENCE_UNIT_REGISTRY[changes.referenceUnit]?.dimension
-            !== PRODUCT_REFERENCE_UNIT_REGISTRY[variant.referenceUnit]?.dimension) {
-        // Changer une dimension de recette ne doit pas réinterpréter « 1 g »
-        // comme « 1 pièce » dans un brouillon ou une reprise de validation.
+        && changes.referenceUnit !== variant.referenceUnit) {
+        // Le changement de toute unité sur une Référence utilisée est risqué :
+        // 1 g pourrait sinon devenir 1 kg, même dans la même dimension.
+        // Une migration métier ou une nouvelle Référence est requise.
         const [draftUsage, validatedUsage, articleUsage, priceUsage] = await Promise.all([
             TechnicalSheetDraft.exists({
                 'lines.productVariant': variant._id,
@@ -707,7 +705,7 @@ const updateVariant = async ({
         ]);
         if (draftUsage || validatedUsage || articleUsage || priceUsage) {
             throw new AppError(
-                'Cette Référence Produit possède déjà des usages en Fiches, Articles ou Prix. Auditez ses dépendances et créez une nouvelle Référence si le changement de dimension est nécessaire.',
+                'Cette Référence Produit est utilisée dans une Fiche, un Article ou un Prix. Son unité ne peut plus être modifiée directement. Créez une nouvelle Référence ou faites réaliser une correction contrôlée.',
                 409,
             );
         }

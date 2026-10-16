@@ -4,6 +4,10 @@
 **Dernière mise à jour :** 2026-10-16  
 **Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
 
+### Référence croissant historique — QA 2026-10-16
+
+L'audit local a confirmé une modification `G` → `KG` sur « Croissant individuel PAI », toujours associée à BRIDOR réf. 43279 et à un tarif, mais sans brouillon ni validation. Ce changement **déjà effectué** ne doit pas être renormalisé automatiquement. La régularisation passe par une nouvelle Référence distincte en `UNIT` et un contrôle des associations, du prix et du conditionnement. Aucun changement de données n'a été automatisé. Suivi jusqu'à validation QA, reprise E2E et gates globaux.
+
 ## UNIT-CONSISTENCY — vérifications de données préalables à la livraison (2026-10-16)
 
 - **À auditer localement** : unité réelle M-002 du Produit « Croissant individuel PAI » ; Articles/Tarifs/Fiches liés et existence de snapshots historiques. La branche ne réécrit aucune donnée de démonstration.

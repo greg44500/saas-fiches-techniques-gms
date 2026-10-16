@@ -56,6 +56,7 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
         type,
         workspaceId,
         origins,
+        targetId,
         page = 1,
         limit = 20,
       } = {}) => ({
@@ -64,6 +65,7 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
           type,
           workspaceId,
           origins,
+          targetId,
           page,
           limit,
         },
@@ -390,6 +392,7 @@ export const {
   useListProductReferenceMergeCandidatesQuery,
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
+  useLazyListProductReferenceReviewQueueQuery,
   useDeleteProductReferenceDimensionMutation,
   usePreviewProductReferenceImportMutation,
   usePreviewProductReferenceVariantMergeMutation,

@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FieldError } from '@/components/ui/field';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import {
   useGetProductReferenceDimensionsQuery,
   useUpdateProductReferenceVariantMutation,
@@ -117,16 +118,22 @@ function ProductReferenceVariantEditDialog({
         <DialogOverlay />
         <DialogContent className="max-w-2xl" initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>Corriger la référence Produit</DialogTitle>
-            <DialogDescription>
-              Modifiez l’identité et les enrichissements Produit. Les données fournisseur et prix ne font pas partie de M-002.
+            <div className="flex items-center gap-2">
+              <DialogTitle>Corriger la référence Produit</DialogTitle>
+              <InfoTooltip
+                label="Aide sur la correction d’une référence Produit"
+                content="Vous pouvez corriger le nom et les caractéristiques de cette référence. L’unité de recette est utilisée pour calculer les quantités et les coûts des fiches techniques. Si elle est déjà utilisée par une fiche, un article fournisseur ou un prix, créez une nouvelle référence pour utiliser une autre unité."
+              />
+            </div>
+            <DialogDescription className="sr-only">
+              Correction des informations d’une référence Produit.
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-5 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">
-                Les dimensions sont des références globales structurées.
+                Caractéristiques de la référence
               </p>
               <Button
                 disabled={updateState.isLoading}

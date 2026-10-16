@@ -95,6 +95,8 @@ function ProductReferenceDetailsDrawer({
   initialTab = 'product',
   metadata,
   onClose,
+  onReviewRequested,
+  reviewLoading = false,
   open,
   productId,
   reviewContext = null,
@@ -517,22 +519,24 @@ function ProductReferenceDetailsDrawer({
                         Contrôle
                       </dt>
                       <dd className="sm:text-right">
-                        <StatusBadge
-                          tone={
-                            product.governanceStatus === 'PROVISIONAL'
-                              ? 'warning'
-                              : 'success'
-                          }
-                        >
-                          {product.governanceStatus === 'PROVISIONAL'
-                            ? (
-                              reviewContext?.dataType === 'PRODUCT'
-                              && (reviewContext.candidates ?? []).length > 0
-                                ? 'Rapprochement à vérifier'
-                                : 'À contrôler'
-                            )
-                            : 'Validé'}
-                        </StatusBadge>
+                        {product.governanceStatus === 'PROVISIONAL' && canManage
+                          ? (
+                            <Button
+                              aria-label={'Examiner le Produit ' + product.name}
+                              className="h-7 rounded-md border-border px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                              disabled={pending || reviewLoading}
+                              onClick={() => onReviewRequested?.('PRODUCT', product.id)}
+                              size="sm"
+                              variant="outline"
+                            >
+                              À contrôler
+                            </Button>
+                          )
+                          : (
+                            <StatusBadge tone={product.governanceStatus === 'PROVISIONAL' ? 'warning' : 'success'}>
+                              {product.governanceStatus === 'PROVISIONAL' ? 'À contrôler' : 'Validé'}
+                            </StatusBadge>
+                          )}
                       </dd>
                     </div>
                     <div className="grid gap-1 py-3 sm:grid-cols-[160px_1fr]">
@@ -1204,23 +1208,29 @@ function ProductReferenceDetailsDrawer({
                           <StatusBadge tone={getProductStatusTone(variant.status)}>
                             {getProductStatusLabel(metadata, variant.status)}
                           </StatusBadge>
-                          <StatusBadge
-                            tone={
-                              variant.governanceStatus === 'PROVISIONAL'
-                                ? 'warning'
-                                : 'success'
-                            }
-                          >
-                            {variant.governanceStatus === 'PROVISIONAL'
-                              ? (
-                                reviewContext?.dataType === 'REFERENCE'
-                                && reviewContext.targetId === variant.id
-                                && (reviewContext.candidates ?? []).length > 0
-                                  ? 'Rapprochement à vérifier'
-                                  : 'À contrôler'
-                              )
-                              : 'Validée'}
-                          </StatusBadge>
+                          {variant.governanceStatus === 'PROVISIONAL' && canManage
+                            ? (
+                              <Button
+                                aria-label={'Examiner la référence ' + getVariantLabel(variant)}
+                                className="h-7 rounded-md border-border px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                                disabled={pending || reviewLoading}
+                                onClick={() => onReviewRequested?.('REFERENCE', variant.id)}
+                                size="sm"
+                                variant="outline"
+                              >
+                                {reviewContext?.dataType === 'REFERENCE'
+                                  && reviewContext.targetId === variant.id
+                                  && (reviewContext.candidates ?? []).length > 0
+                                    ? 'Rapprochement à vérifier'
+                                    : 'À contrôler'}
+                              </Button>
+                            )
+                            : (
+                              <StatusBadge tone={variant.governanceStatus === 'PROVISIONAL' ? 'warning' : 'success'}>
+                                {variant.governanceStatus === 'PROVISIONAL'
+                                  ? 'À contrôler' : 'Validée'}
+                              </StatusBadge>
+                            )}
                         </div>
                       </div>
 

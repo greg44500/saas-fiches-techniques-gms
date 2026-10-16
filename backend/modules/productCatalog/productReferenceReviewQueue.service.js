@@ -589,6 +589,7 @@ const loadReviewQueueOrigins = async ({ type = null }) => {
 };
 
 const listProductReviewQueue = async ({
+    targetId = null,
     type = null,
     workspaceId = null,
     origins = 'include',
@@ -600,6 +601,7 @@ const listProductReviewQueue = async ({
             type,
             workspaceId,
         }),
+        ...(targetId ? [{ $match: { targetId: toObjectId(targetId) } }] : []),
         {
             $sort: {
                 createdAt: 1,

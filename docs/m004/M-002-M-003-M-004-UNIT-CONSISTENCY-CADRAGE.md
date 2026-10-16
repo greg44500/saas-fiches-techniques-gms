@@ -157,6 +157,15 @@ Après correction du conditionnement d'un Article :
 
 Le test d'intégration doit **définir ou affirmer le mode de politique** avant chaque attente. Il ne faut pas exiger un Prix applicable `null` après un changement de colis si un Tarif négocié historiquement valide est toujours prioritaire.
 
+### Complément stabilisation M-002 — QA du 2026-10-16
+
+- Le passage `G` → `KG` a été observé en base sur la Référence provisoire « Croissant individuel PAI » malgré l'Article BRIDOR encore associé et un tarif fournisseur. **Règle utilisateur validée** : toutes les modifications de `referenceUnit` d'une Référence ayant au moins un usage Fiche/Article/Prix sont interdites en édition directe, y compris entre unités compatibles ; aucune exemption Super Admin.
+- Audit local actuel (fourni par utilisateur) : `referenceUnit = KG`, Article privé BRIDOR `43279`, 1 Tarif fournisseur, 0 Brouillon, 0 validation. Ne pas réinterpréter rétroactivement `G` en `KG` ou `UNIT`. Créer une Référence `UNIT` distincte avant de traiter l'association fournisseur.
+- L'entrée « Créer un Produit » réutilise le Produit existant et ouvre directement ses Références. Ne pas créer d'identité Produit concurrente.
+- Le statut provisoire « À contrôler » doit être un petit bouton à contour neutre sur l'écran administratif autorisé ; son clic recherche la contribution correspondante par `targetId` depuis la file unifiée existante et ouvre une vraie décision, sans contourner RBAC ni effectuer de validation automatique.
+- Le dialogue « Corriger la référence Produit » présente une aide métier via l'icône `i`, conserve un titre simple et retire les sous-titres techniques visibles.
+- Tests ajoutés/prévus : sécurité `G` → `KG` et `G` → `UNIT`, ciblage paginé de la file, navigation UI depuis badge, bouton réduit neutre, écran de correction et déduplication. **Aucun test nouveau déclaré vert avant exécution locale.**
+
 ## 11. État de livraison
 
 Modifications code et tests préparés sur la branche `feature/m002-m003-m004-unit-consistency`. **Aucun test local, lint, build ni E2E n'est prétendu vert.** Les corrections découvertes à la QA restent sur cette même branche, puis une seule PR après accord explicite.

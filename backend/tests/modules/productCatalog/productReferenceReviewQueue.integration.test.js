@@ -241,6 +241,31 @@ describe('M-002 unified product review queue', () => {
             }),
         ]));
 
+        // Un bouton « À contrôler » doit retrouver exactement la proposition
+        // ciblée sans dépendre de la page courante de la file globale.
+        const targeted = await listProductReviewQueue({
+            targetId: created.variant.id,
+            type: PRODUCT_REVIEW_QUEUE_TYPE.CONTRIBUTION,
+            origins: 'omit',
+            page: 1,
+            limit: 1,
+        });
+        expect(targeted.summary.total).toBe(1);
+        expect(targeted.items).toEqual([
+            expect.objectContaining({
+                sourceId: created.contribution.id,
+                targetId: created.variant.id,
+                dataType: 'REFERENCE',
+            }),
+        ]);
+        const missing = await listProductReviewQueue({
+            targetId: reference.variant._id.toString(),
+            type: PRODUCT_REVIEW_QUEUE_TYPE.CONTRIBUTION,
+            origins: 'omit',
+        });
+        expect(missing.summary.total).toBe(0);
+        expect(missing.items).toEqual([]);
+
         await updateVariant({
             actorId: ownerContext.owner._id,
             productId: reference.product._id,

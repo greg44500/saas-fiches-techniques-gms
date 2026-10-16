@@ -32,6 +32,7 @@ import {
   useGetProductReferenceMetadataQuery,
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
+  useLazyListProductReferenceReviewQueueQuery,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
@@ -122,6 +123,8 @@ function ProductReferencePage({ canManage }) {
 
   const [updateCategoryStatus, categoryStatusState] =
     useUpdateProductReferenceCategoryStatusMutation();
+  const [loadReviewTarget, reviewTargetState] =
+    useLazyListProductReferenceReviewQueueQuery();
 
   useEffect(() => {
     const totalPages = section === 'reference'
@@ -197,6 +200,37 @@ function ProductReferencePage({ canManage }) {
       initialReferenceFilter,
       reviewContext,
     });
+  }
+
+  async function openReviewTarget(dataType, targetId) {
+    if (!canManage) return;
+    try {
+      const result = await loadReviewTarget({
+        type: 'CONTRIBUTION',
+        targetId,
+        origins: 'omit',
+        page: 1,
+        limit: 1,
+      }).unwrap();
+      const item = result.items?.find((entry) => (
+        entry.targetId === targetId && entry.dataType === dataType
+      ));
+      if (!item) {
+        toast({
+          title: 'Contrôle indisponible',
+          description: 'Cette demande est peut-être déjà traitée. Consultez la file « À contrôler ».',
+          variant: 'destructive',
+        });
+        return;
+      }
+      examineReviewItem(item);
+    } catch (error) {
+      toast({
+        title: 'Contrôle indisponible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    }
   }
 
   function examineReviewItem(item) {
@@ -724,6 +758,8 @@ function ProductReferencePage({ canManage }) {
           open: false,
           reviewContext: null,
         }))}
+        onReviewRequested={openReviewTarget}
+        reviewLoading={reviewTargetState.isFetching}
         open={drawerState.open}
         productId={drawerState.productId}
       />
@@ -743,7 +779,7 @@ function ProductReferencePage({ canManage }) {
         }}
         onUseExisting={(productId) => {
           setCreateOpen(false);
-          openProduct(productId);
+          openProduct(productId, 'variants');
         }}
         open={createOpen}
       />
