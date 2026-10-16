@@ -231,6 +231,21 @@ test('M-002 autorité Application Global alimente directement le référentiel',
 
   await page.getByRole('button', { name: 'Fermer' }).click();
 
+  // Réutiliser un Produit trouvé parmi les candidats proches : ne jamais
+  // imposer « Différent » ni provoquer une seconde création.
+  await page.getByRole('button', { name: 'Créer un Produit' }).click();
+  dialog = page.getByRole('dialog', { name: 'Créer un Produit' });
+  await dialog.getByLabel('Nom du Produit').fill(productName.slice(0, -3));
+  await dialog.getByRole('button', { name: 'Rechercher l’existant' }).click();
+  const nearby = dialog.getByRole('listitem').filter({ hasText: productName });
+  await expect(nearby).toBeVisible();
+  await expect(nearby.getByRole('checkbox', { name: 'Différent' })).not.toBeChecked();
+  await nearby.getByRole('button', { name: 'Ouvrir ce Produit' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('heading', { name: productName, exact: true }))
+    .toBeVisible();
+  await page.getByRole('button', { name: 'Fermer' }).click();
+
   await expect(
     page.getByRole('tab', { name: /À contrôler \(\d+\)/ }),
   ).toBeVisible();

@@ -327,6 +327,17 @@ L'unicité exacte porte sur `ProductVariant.normalizedName`.
 
 Un import ou une création rencontrant exactement le même nom de Référence doit réutiliser cette référence plutôt que créer un doublon sous un autre `CanonicalProduct`.
 
+### Avenant UX — réutilisation d'un Produit proposé (2026-10-16)
+
+Dans les dialogues « Créer un Produit », la déduplication montre les correspondances exactes **et** les Produits proches. L'utilisateur qui reconnaît un Produit actif parmi ces propositions doit pouvoir **ouvrir le Produit existant depuis la suggestion**, sans être obligé de cocher « Différent » ni de créer une nouvelle identité. La fiche Produit existante permet ensuite de consulter ses Références et, selon les droits/capabilities existants, d'en créer une nouvelle ou de les ajouter aux favoris.
+
+- **Espace de travail :** « Ouvrir ce Produit » appelle le parcours d'ouverture de la fiche Produit déjà présent. Un Produit archivé n'est pas proposé à la réutilisation dans cet espace.
+- **Application Global :** le même choix permet d'ouvrir un Produit proche, y compris archivé lorsque le compte dispose de l'accès à la gouvernance globale.
+- **Article fournisseur contextuel M-003 :** l'action existante « Utiliser ce Produit » reste inchangée et mène à l'association ou à la création de Référence selon le résultat de recherche.
+- **Différent :** conserve sa seule fonction : attester qu'un candidat proche n'est pas le Produit que l'on souhaite créer. La réutilisation ne coche pas cette case et ne déclenche aucune mutation de création.
+- La réutilisation d'un Produit ne modifie jamais automatiquement `ProductVariant.referenceUnit` ni les Fiches techniques existantes. Une autre unité de recette nécessite une Référence distincte et les autorisations de création correspondantes.
+
+
 ## 10. Import et frontière M-003
 
 L'import M-002 exposé dans le frontend peut mapper :

@@ -7,6 +7,8 @@ Implémentation préparée : `SupplierArticle.recipeUnitEquivalence`, normalisat
 
 **Revue intégration du 2026-10-16 :** le scénario croissant doit distinguer la politique par défaut `NEGOTIATED_PRICE`, la politique `SUPPLIER_TARIFF` (conversion impossible lorsque la preuve ne correspond plus), puis `INVOICED_PRICE` (facture validée seulement). L'affichage commercial des Articles et le Prix applicable suivent les mêmes exigences de preuve pour les conversions `UNIT` des tarifs sans snapshot. Tests locaux à relancer ; aucune réussite annoncée.
 
+**QA M-002 — correction de navigation du 2026-10-16 :** dans le dialogue standard « Créer un Produit », les Produits proches ne présentaient que « Différent » malgré un callback `onUseExisting` déjà relié aux pages Workspace et Application Global. Correction frontend : action « Ouvrir ce Produit » pour les suggestions accessibles ; conservation de « Différent », du parcours contextuel M-003 et des restrictions des Produits archivés. Tests RTL et E2E M-002 étendus. Aucun backend/Core modifié pour cette anomalie. Vérification locale du lot requise avant PR.
+
 **Validation encore attendue** : audit local de la Référence « Croissant individuel PAI » avant toute correction de données ; exécution locale des tests ciblés, lint, build, E2E et QA visuelle ; corrections sur la même branche. Aucun test vert ni migration effectuée par l'assistant. **Aucune PR/merge avant accord utilisateur.** Les archives ci-dessous peuvent décrire des états plus anciens et ne priment pas sur cet état actuel.
 
 ---
