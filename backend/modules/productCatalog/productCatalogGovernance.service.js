@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import { AppError } from '../../utils/appError.js';
 import { TechnicalSheetDraft } from '../technicalSheet/technicalSheetDraft.model.js';
 import { TechnicalSheetValidation } from '../technicalSheet/technicalSheetValidation.model.js';
+import { SupplierArticle } from '../supplierCatalog/supplier.model.js';
+import { IndicativePrice } from '../supplierCatalog/supplierPricing.model.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
 import { listProductCategories } from './productCategoryProjection.service.js';
@@ -689,17 +691,23 @@ const updateVariant = async ({
             !== PRODUCT_REFERENCE_UNIT_REGISTRY[variant.referenceUnit]?.dimension) {
         // Changer une dimension de recette ne doit pas réinterpréter « 1 g »
         // comme « 1 pièce » dans un brouillon ou une reprise de validation.
-        const [draftUsage, validatedUsage] = await Promise.all([
+        const [draftUsage, validatedUsage, articleUsage, priceUsage] = await Promise.all([
             TechnicalSheetDraft.exists({
                 'lines.productVariant': variant._id,
             }).session(session),
             TechnicalSheetValidation.exists({
                 'linesSnapshot.productVariantId': variant._id,
             }).session(session),
+            SupplierArticle.exists({
+                productVariant: variant._id,
+            }).session(session),
+            IndicativePrice.exists({
+                productVariant: variant._id,
+            }).session(session),
         ]);
-        if (draftUsage || validatedUsage) {
+        if (draftUsage || validatedUsage || articleUsage || priceUsage) {
             throw new AppError(
-                'Cette Référence Produit est déjà utilisée dans des Fiches techniques. Une nouvelle Référence ou une correction métier contrôlée est nécessaire avant de changer de dimension.',
+                'Cette Référence Produit possède déjà des usages en Fiches, Articles ou Prix. Auditez ses dépendances et créez une nouvelle Référence si le changement de dimension est nécessaire.',
                 409,
             );
         }

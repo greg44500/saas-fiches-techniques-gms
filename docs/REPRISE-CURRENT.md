@@ -1,5 +1,6 @@
-## Lot actif — cohérence des unités M-002/M-003/M-004 (2026-10-16)
+# Reprise courante — cohérence des unités (2026-10-16)
 
+## Lot actif M-002/M-003/M-004
 Branche : `feature/m002-m003-m004-unit-consistency`. Les quatre règles métier (unité M-002 imposée dans les Fiches, preuve de pièces par colis, aucune conversion estimative de poids, correction gouvernée des Références déjà utilisées) sont **validées par l'utilisateur**. Contrat transversal : `docs/m004/M-002-M-003-M-004-UNIT-CONSISTENCY-CADRAGE.md`.
 
 Implémentation préparée : `SupplierArticle.recipeUnitEquivalence`, normalisation `UNIT` par colis vérifié et compatible avec le snapshot tarifaire, historisation des nouveaux prix négociés/facturés, interface Article (titre, aide, « Nb d'unités par colis », unité de fiche en lecture seule, confirmation conditionnelle), garde-fou sur changement interdimensionnel M-002, tests backend/frontend, audit DB en lecture seule. Core inchangé v1.2.1.
@@ -8,7 +9,9 @@ Implémentation préparée : `SupplierArticle.recipeUnitEquivalence`, normalisat
 
 ---
 
-# Reprise courante — complément d'association M-002/M-003 en QA ; M-004 ensuite
+---
+
+## Archive — reprise M-002/M-003 au 2026-10-14
 
 **Date : 2026-10-14**  
 **Dépôt : `greg44500/saas-fiches-techniques-gms`**  

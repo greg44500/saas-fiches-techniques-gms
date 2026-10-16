@@ -644,4 +644,17 @@ test('M-003 associe immédiatement une Référence provisoire créée après un 
   );
   expect(article?.associationStatus).toBe('ASSOCIATED');
   expect(article?.productVariant?.name).toBe(productName);
+
+  // La modification Article expose le libellé métier, sans choix d'unité en Fiche.
+  await page.getByRole('tab', { name: 'Infos Article' }).click();
+  await page.getByRole('button', { name: 'Modifier', exact: true }).click();
+  const editDialog = page.getByRole('dialog', {
+    name: /Modifier les informations de : Croissant individuel PAI/,
+  });
+  await expect(editDialog.getByText('Nb d’unités par colis')).toBeVisible();
+  await expect(editDialog.getByText('Unité utilisée en fiche technique')).toBeVisible();
+  await expect(editDialog.getByRole('button', {
+    name: 'Informations sur la correction du conditionnement',
+  })).toBeVisible();
+  await editDialog.getByRole('button', { name: 'Annuler' }).click();
 });

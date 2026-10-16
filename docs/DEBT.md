@@ -1,3 +1,9 @@
+# SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
+
+**Statut :** source de vérité documentaire pour les dettes non résolues  
+**Dernière mise à jour :** 2026-10-16  
+**Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
+
 ## UNIT-CONSISTENCY — vérifications de données préalables à la livraison (2026-10-16)
 
 - **À auditer localement** : unité réelle M-002 du Produit « Croissant individuel PAI » ; Articles/Tarifs/Fiches liés et existence de snapshots historiques. La branche ne réécrit aucune donnée de démonstration.
@@ -8,11 +14,6 @@
 
 ---
 
-# SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
-
-**Statut :** source de vérité documentaire pour les dettes non résolues  
-**Dernière mise à jour :** 2026-10-14  
-**Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
 
 ---
 

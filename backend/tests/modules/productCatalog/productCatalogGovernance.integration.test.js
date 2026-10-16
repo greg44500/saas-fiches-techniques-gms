@@ -23,6 +23,9 @@ import {
     TechnicalSheetDraft,
 } from '../../../modules/technicalSheet/technicalSheetDraft.model.js';
 import {
+    SupplierArticle,
+} from '../../../modules/supplierCatalog/supplier.model.js';
+import {
     createCategory,
     createGlobalProduct,
     createGlobalVariant,
@@ -53,6 +56,31 @@ beforeEach(async () => {
 });
 
 describe('M-002 product reference governance', () => {
+    it('exige une nouvelle Référence si une modification de dimension affecterait un Article fournisseur', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Produit déjà lié à un Article',
+            referenceUnit: 'G',
+        });
+        await SupplierArticle.create({
+            scope: 'WORKSPACE_PRIVATE',
+            workspace: ownerContext.workspace._id,
+            supplier: ownerContext.owner._id,
+            productVariant: reference.variant._id,
+            supplierReference: 'COU-001',
+            normalizedSupplierReference: 'cou-001',
+            createdBy: ownerContext.owner._id,
+            updatedBy: ownerContext.owner._id,
+        });
+        await expect(updateVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variantId: reference.variant._id,
+            changes: { referenceUnit: 'UNIT' },
+        })).rejects.toMatchObject({ statusCode: 409 });
+    });
+
+
     it('refuse une requalification gramme vers pièce lorsqu’un brouillon utilise la Référence', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,
