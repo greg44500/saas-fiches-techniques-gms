@@ -214,6 +214,8 @@ describe('M-003 dossier pricing HTTP', () => {
             .toBe(36);
         const after = await request(app).get(priceUrl).set(bearer(owner.token));
         expect(after.status).toBe(200);
+        // Sans prix négocié, le tarif fournisseur est bien la source utilisée.
+        expect(after.body.data.applicablePrice.resolvedSource).toBe('SUPPLIER_TARIFF');
         expect(after.body.data.applicablePrice.price.normalizedUnit).toBe('UNIT');
         expect(Number(after.body.data.applicablePrice.price.normalizedAmount))
             .toBeCloseTo(6.5 / 36, 10);
@@ -262,9 +264,90 @@ describe('M-003 dossier pricing HTTP', () => {
         expect(changed.status).toBe(200);
         expect(changed.body.data.article.recipeUnitEquivalence).toBeNull();
 
-        const stale = await request(app).get(priceUrl).set(bearer(owner.token));
-        expect(stale.status).toBe(200);
-        expect(stale.body.data.applicablePrice.price.normalizedAmount).toBeNull();
+        // Politique par défaut : NEGOTIATED_PRICE. Le prix négocié actif,
+        // déjà normalisé et historisé, reste légitimement applicable après
+        // le changement du colis courant. Il ne faut pas le revaloriser.
+        const historicalNegotiated = await request(app)
+            .get(priceUrl).set(bearer(owner.token));
+        expect(historicalNegotiated.status).toBe(200);
+        expect(historicalNegotiated.body.data.applicablePrice)
+            .toMatchObject({
+                requestedMode: 'NEGOTIATED_PRICE',
+                resolvedSource: 'NEGOTIATED_PRICE',
+                price: { normalizedUnit: 'UNIT' },
+            });
+        expect(Number(historicalNegotiated.body.data.applicablePrice.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
+        // Politique fournisseur : le tarif historique conserve le colis 36
+        // mais ne peut plus emprunter l'équivalence invalidée de l'Article 24.
+        const policyPath = '/api/workspaces/'
+            + owner.workspace._id.toString() + '/supplier-pricing-policy';
+        await request(app).put(policyPath)
+            .set(bearer(owner.token))
+            .send({ mode: 'SUPPLIER_TARIFF' })
+            .expect(200);
+        const unavailableTariff = await request(app)
+            .get(priceUrl).set(bearer(owner.token));
+        expect(unavailableTariff.status).toBe(200);
+        expect(unavailableTariff.body.data.applicablePrice).toMatchObject({
+            requestedMode: 'SUPPLIER_TARIFF',
+            resolvedSource: 'SUPPLIER_TARIFF',
+        });
+        expect(unavailableTariff.body.data.applicablePrice.price.normalizedUnit)
+            .toBeNull();
+        expect(unavailableTariff.body.data.applicablePrice.price.normalizedAmount)
+            .toBeNull();
+
+        // Une facture en attente ne devient pas un Prix applicable. En mode
+        // facture, le fallback négocié reste valable pour ce même Dossier.
+        await request(app).put(policyPath)
+            .set(bearer(owner.token))
+            .send({ mode: 'INVOICED_PRICE' })
+            .expect(200);
+        const pendingInvoice = await request(app)
+            .get(priceUrl).set(bearer(owner.token));
+        expect(pendingInvoice.status).toBe(200);
+        expect(pendingInvoice.body.data.applicablePrice)
+            .toMatchObject({
+                requestedMode: 'INVOICED_PRICE',
+                resolvedSource: 'NEGOTIATED_PRICE',
+                fallbackApplied: true,
+            });
+        expect(pendingInvoice.body.data.applicablePrice.alerts)
+            .toContain('NO_VALIDATED_INVOICE');
+
+        // Après validation, seule la facture vérifiée du Dossier prime sur
+        // le tarif négocié ; elle garde la photographie des 36 pièces.
+        await request(app)
+            .patch(pricingPath(dossierA)
+                + '/invoiced-prices/' + invoiced.body.data.price.id + '/status')
+            .set(bearer(owner.token))
+            .send({ status: 'VALIDATED' })
+            .expect(200);
+        const validatedInvoice = await request(app)
+            .get(priceUrl).set(bearer(owner.token));
+        expect(validatedInvoice.status).toBe(200);
+        expect(validatedInvoice.body.data.applicablePrice)
+            .toMatchObject({
+                requestedMode: 'INVOICED_PRICE',
+                resolvedSource: 'INVOICED_PRICE',
+                fallbackApplied: false,
+                price: { normalizedUnit: 'UNIT' },
+            });
+        expect(Number(validatedInvoice.body.data.applicablePrice.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
+        // Cette preuve ne doit pas être utilisable par un autre Dossier.
+        const otherDossier = await request(app)
+            .get(pricingPath(dossierB) + '/applicable')
+            .query({ articleId: created.id })
+            .set(bearer(owner.token));
+        expect(otherDossier.status).toBe(200);
+        expect(otherDossier.body.data.applicablePrice.resolvedSource)
+            .toBe('SUPPLIER_TARIFF');
+        expect(otherDossier.body.data.applicablePrice.price.normalizedAmount)
+            .toBeNull();
 
         const [frozenNegotiated, frozenInvoiced] = await Promise.all([
             NegotiatedPrice.findById(negotiated.body.data.price.id).lean(),

@@ -166,7 +166,10 @@ const supplierTariffPresentation = (tariff, article) => {
         sourceBasis: basis,
         packaging,
         targetUnit: target,
-        recipeUnitEquivalence: article.recipeUnitEquivalence,
+        // Même règle que le résolveur M-003 : une équivalence de pièces
+        // actuelle ne prouve pas le contenu d'un ancien tarif sans snapshot.
+        recipeUnitEquivalence: tariff.packagingSnapshot
+            ? article.recipeUnitEquivalence : null,
         productVariantId: article.productVariant?._id,
     }) : { normalizedAmount: null, normalizedUnit: null };
     const amountOfPackage = packagePriceAmount({

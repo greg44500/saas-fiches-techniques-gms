@@ -5,6 +5,8 @@ Branche : `feature/m002-m003-m004-unit-consistency`. Les quatre règles métier 
 
 Implémentation préparée : `SupplierArticle.recipeUnitEquivalence`, normalisation `UNIT` par colis vérifié et compatible avec le snapshot tarifaire, historisation des nouveaux prix négociés/facturés, interface Article (titre, aide, « Nb d'unités par colis », unité de fiche en lecture seule, confirmation conditionnelle), garde-fou sur changement interdimensionnel M-002, tests backend/frontend, audit DB en lecture seule. Core inchangé v1.2.1.
 
+**Revue intégration du 2026-10-16 :** le scénario croissant doit distinguer la politique par défaut `NEGOTIATED_PRICE`, la politique `SUPPLIER_TARIFF` (conversion impossible lorsque la preuve ne correspond plus), puis `INVOICED_PRICE` (facture validée seulement). L'affichage commercial des Articles et le Prix applicable suivent les mêmes exigences de preuve pour les conversions `UNIT` des tarifs sans snapshot. Tests locaux à relancer ; aucune réussite annoncée.
+
 **Validation encore attendue** : audit local de la Référence « Croissant individuel PAI » avant toute correction de données ; exécution locale des tests ciblés, lint, build, E2E et QA visuelle ; corrections sur la même branche. Aucun test vert ni migration effectuée par l'assistant. **Aucune PR/merge avant accord utilisateur.** Les archives ci-dessous peuvent décrire des états plus anciens et ne priment pas sur cet état actuel.
 
 ---

@@ -144,6 +144,19 @@ Conserver une **seule branche et une seule PR** pour ce lot ; les correctifs iss
   `npm run audit:recipe-unit-usage -- "Croissant individuel PAI"` (lecture seule, vérifier d'abord `MONGODB_URI`).
 - Aucun modèle Core, capability ou rôle nouveau. Nouveau sous-document métier M-003 facultatif, sans index supplémentaire ; aucun backfill automatique. Les tests/gates doivent être exécutés localement par l'utilisateur avant PR.
 
+### Règle de priorité et pérennité des prix (revue du 2026-10-16)
+
+La politique tarifaire par défaut d'un Workspace est `NEGOTIATED_PRICE`. La création d'un Tarif négocié actif produit donc une nouvelle source prioritaire lors de la résolution du Prix applicable ; une facture créée en `PENDING_VALIDATION` n'est pas encore prioritaire.
+
+Après correction du conditionnement d'un Article :
+- **Tarif fournisseur** : son snapshot de colis reste inchangé ; sans preuve actuelle correspondant précisément à ce snapshot, la conversion physique → `UNIT` doit être `null`. Ce comportement s'applique également aux libellés de prix normalisé dans la projection commerciale M-003.
+- **Tarif négocié actif** : son prix normalisé et sa preuve figés lors de la création restent valides dans le Dossier concerné tant que sa période/statut et la politique le permettent. La modification du colis courant ne revalorise pas ce prix historique.
+- **Prix facturé** : le prix et la preuve sont figés ; seule une facture `VALIDATED` suffisamment récente peut prendre la priorité dans le mode `INVOICED_PRICE`. Les factures `PENDING_VALIDATION` ne peuvent pas remplacer le Tarif négocié applicable.
+- **Isolation Dossier** : un prix négocié ou facturé d'un autre Dossier ne doit jamais devenir Prix applicable.
+- Une information de « prix commercial par élément de colis » peut rester visible séparément du **prix normalisé utilisable en Fiche** ; leur affichage ne doit pas laisser croire qu'une conversion est vérifiée lorsqu'elle ne l'est pas.
+
+Le test d'intégration doit **définir ou affirmer le mode de politique** avant chaque attente. Il ne faut pas exiger un Prix applicable `null` après un changement de colis si un Tarif négocié historiquement valide est toujours prioritaire.
+
 ## 11. État de livraison
 
 Modifications code et tests préparés sur la branche `feature/m002-m003-m004-unit-consistency`. **Aucun test local, lint, build ni E2E n'est prétendu vert.** Les corrections découvertes à la QA restent sur cette même branche, puis une seule PR après accord explicite.
