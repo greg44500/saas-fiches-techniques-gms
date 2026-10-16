@@ -1,3 +1,13 @@
+## Lot actif — cohérence des unités M-002/M-003/M-004 (2026-10-16)
+
+Branche : `feature/m002-m003-m004-unit-consistency`. Les quatre règles métier (unité M-002 imposée dans les Fiches, preuve de pièces par colis, aucune conversion estimative de poids, correction gouvernée des Références déjà utilisées) sont **validées par l'utilisateur**. Contrat transversal : `docs/m004/M-002-M-003-M-004-UNIT-CONSISTENCY-CADRAGE.md`.
+
+Implémentation préparée : `SupplierArticle.recipeUnitEquivalence`, normalisation `UNIT` par colis vérifié et compatible avec le snapshot tarifaire, historisation des nouveaux prix négociés/facturés, interface Article (titre, aide, « Nb d'unités par colis », unité de fiche en lecture seule, confirmation conditionnelle), garde-fou sur changement interdimensionnel M-002, tests backend/frontend, audit DB en lecture seule. Core inchangé v1.2.1.
+
+**Validation encore attendue** : audit local de la Référence « Croissant individuel PAI » avant toute correction de données ; exécution locale des tests ciblés, lint, build, E2E et QA visuelle ; corrections sur la même branche. Aucun test vert ni migration effectuée par l'assistant. **Aucune PR/merge avant accord utilisateur.** Les archives ci-dessous peuvent décrire des états plus anciens et ne priment pas sur cet état actuel.
+
+---
+
 # Reprise courante — complément d'association M-002/M-003 en QA ; M-004 ensuite
 
 **Date : 2026-10-14**  

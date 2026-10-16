@@ -9,6 +9,7 @@ import {
 } from '../dossier/dossier.model.js';
 import {
     PRODUCT_STATUS,
+    PRODUCT_REFERENCE_UNIT_REGISTRY,
 } from '../productCatalog/productCatalog.registry.js';
 import {
     ProductVariant,
@@ -634,6 +635,9 @@ const createNegotiatedPrice = async ({
                     sourceAmount,
                     sourceBasis,
                     currency,
+                    packagingSnapshot: article.packaging,
+                    recipeUnitEquivalenceSnapshot: article.recipeUnitEquivalence,
+                    productVariantAtPricing: article.productVariant._id,
                     normalizedAmount:
                         normalized
                             .normalizedAmount,
@@ -879,6 +883,9 @@ const createInvoicedPrice = async ({
                     sourceAmount,
                     sourceBasis,
                     currency,
+                    packagingSnapshot: article.packaging,
+                    recipeUnitEquivalenceSnapshot: article.recipeUnitEquivalence,
+                    productVariantAtPricing: article.productVariant._id,
                     normalizedAmount:
                         normalized
                             .normalizedAmount,
@@ -1747,6 +1754,16 @@ const serializeApplicableSource = ({
     ...extra,
 });
 
+const isHistoricalPriceCompatible = (price, variant) => {
+    if (price.productVariantAtPricing
+        && price.productVariantAtPricing.toString() !== variant._id.toString()) {
+        return false;
+    }
+    const sourceUnit = PRODUCT_REFERENCE_UNIT_REGISTRY[price.normalizedUnit];
+    const targetUnit = PRODUCT_REFERENCE_UNIT_REGISTRY[variant.referenceUnit];
+    return !sourceUnit || sourceUnit.dimension === targetUnit?.dimension;
+};
+
 const resolveApplicablePrice = async ({
     workspaceId,
     dossierId,
@@ -1801,7 +1818,9 @@ const resolveApplicablePrice = async ({
                 session,
             });
 
-        if (invoice.price) {
+        if (invoice.price && isHistoricalPriceCompatible(
+            invoice.price, productVariant,
+        )) {
             return {
                 article:
                     serializeSupplierArticleSummary(article),
@@ -1849,7 +1868,9 @@ const resolveApplicablePrice = async ({
                 session,
             });
 
-        if (negotiated) {
+        if (negotiated && isHistoricalPriceCompatible(
+            negotiated, productVariant,
+        )) {
             return {
                 article:
                     serializeSupplierArticleSummary(article),

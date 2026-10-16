@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
+import {
+  getReferenceUnitLabel,
+  getVariantReferenceUnitLabel,
+} from '@/features/products/lib/product-presentation';
 import {
   DialogClose, DialogContent, DialogFooter, DialogHeader,
   DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
@@ -14,6 +20,10 @@ import { useUpdateSupplierArticleMutation } from '@/features/suppliers/api/suppl
 import { getApiErrorMessage } from '@/features/suppliers/lib/supplier-presentation';
 
 const UNITS = ['G', 'KG', 'ML', 'CL', 'L', 'UNIT'];
+const PACKAGING_FIELDS = new Set([
+  'containerType', 'supplierLabel', 'unitCount', 'quantityPerUnit', 'unit',
+  'netWeight', 'netWeightUnit', 'drainedNetWeight', 'drainedNetWeightUnit',
+]);
 const EMPTY = {
   supplierDesignation: '', brand: '', containerType: '', supplierLabel: '',
   unitCount: '', quantityPerUnit: '', unit: 'KG',
@@ -25,6 +35,12 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
   const cancelRef = useRef(null);
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState('');
+  const [recipeCount, setRecipeCount] = useState('');
+  const [recipeConfirmed, setRecipeConfirmed] = useState(false);
+  const referenceUnit = article?.productVariant?.referenceUnit;
+  const canVerifyRecipeUnits = referenceUnit === 'UNIT'
+    && form.unit !== 'UNIT'
+    && Number(form.unitCount) > 1 && Boolean(form.quantityPerUnit);
   const [update, status] = useUpdateSupplierArticleMutation();
 
   useEffect(() => {
@@ -38,6 +54,8 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
           .map((field) => [field, String(article.packaging?.[field] ?? EMPTY[field])]),
       ),
     });
+    setRecipeCount(String(article.recipeUnitEquivalence?.unitsPerPackage ?? ''));
+    setRecipeConfirmed(Boolean(article.recipeUnitEquivalence?.unitsPerPackage));
     setError('');
   }, [open, article?.id]);
 
@@ -47,7 +65,10 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
         <FieldLabel htmlFor={'article-edit-' + name}>{label}</FieldLabel>
         <Input
           id={'article-edit-' + name}
-          onChange={(event) => setForm((prev) => ({ ...prev, [name]: event.target.value }))}
+          onChange={(event) => {
+            setForm((prev) => ({ ...prev, [name]: event.target.value }));
+            if (PACKAGING_FIELDS.has(name)) setRecipeConfirmed(false);
+          }}
           value={form[name]}
           {...inputProps}
         />
@@ -63,7 +84,7 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
     event.preventDefault();
     const unitCount = form.unitCount.trim() ? Number(form.unitCount) : null;
     if (unitCount !== null && (!Number.isInteger(unitCount) || unitCount < 1)) {
-      setError('Le nombre d’unités doit être un entier positif.');
+      setError('Le nombre d’unités par colis doit être un entier positif.');
       return;
     }
     const packaging = {
@@ -77,6 +98,18 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
       drainedNetWeight: numericValue(form.drainedNetWeight),
       drainedNetWeightUnit: form.drainedNetWeight.trim() ? form.drainedNetWeightUnit : null,
     };
+    const recipeUnitsPerPackage = canVerifyRecipeUnits && recipeCount.trim()
+      ? Number(recipeCount) : null;
+    if (recipeUnitsPerPackage !== null
+      && (!Number.isSafeInteger(recipeUnitsPerPackage)
+        || recipeUnitsPerPackage < 1 || recipeUnitsPerPackage > 1000000)) {
+      setError('Le nombre de pièces de recette par colis doit être un entier positif.');
+      return;
+    }
+    if (recipeUnitsPerPackage !== null && !recipeConfirmed) {
+      setError('Confirmez que ce nombre correspond bien aux pièces utilisées en recette.');
+      return;
+    }
     try {
       await update({
         workspaceId, articleId: article.id,
@@ -84,6 +117,10 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
         brand: form.brand.trim() || null,
         packaging: Object.values(packaging).some((value) => value !== null)
           ? packaging : null,
+        ...(referenceUnit === 'UNIT' ? {
+          recipeUnitsPerPackage,
+          ...(recipeUnitsPerPackage === null ? {} : { confirmRecipeUnits: true }),
+        } : {}),
       }).unwrap();
       onSaved();
     } catch (failure) {
@@ -99,14 +136,20 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
         <DialogOverlay />
         <DialogContent className="max-h-[calc(100vh-2rem)] max-w-2xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Modifier les informations de l’Article</DialogTitle>
+            <div className="flex items-start gap-2">
+              <DialogTitle className="min-w-0 break-words">
+                Modifier les informations de : {article?.supplierDesignation || 'Article fournisseur'}
+                {article?.supplierReference ? ' — réf. ' + article.supplierReference : ''}
+              </DialogTitle>
+              <InfoTooltip
+                className="mt-0.5"
+                label="Informations sur la correction du conditionnement"
+                content="Vous pouvez corriger le conditionnement actuel. Les anciens tarifs doivent conserver les données de conditionnement utilisées lors de leur enregistrement. Si un ancien tarif ne possède pas ces données, sa conversion ne sera pas supposée."
+              />
+            </div>
           </DialogHeader>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {article?.supplier?.name} · Réf. {article?.supplierReference}
-          </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Le conditionnement actuel peut être corrigé. Les anciens tarifs conservent
-            leur conditionnement historique.
+            {article?.supplier?.name}
           </p>
           <form className="mt-4 space-y-4" onSubmit={save}>
             {field('supplierDesignation', 'Désignation fournisseur', { maxLength: 300 })}
@@ -116,16 +159,25 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
               <div className="grid gap-3 sm:grid-cols-2">
                 {field('containerType', 'Type de colis', { maxLength: 80 })}
                 {field('supplierLabel', 'Libellé fournisseur', { maxLength: 240 })}
-                {field('unitCount', 'Nombre d’unités', { inputMode: 'numeric' })}
+                {field('unitCount', 'Nb d’unités par colis', { inputMode: 'numeric' })}
                 {field('quantityPerUnit', 'Quantité par unité', { inputMode: 'decimal' })}
                 <Field>
                   <FieldLabel>Unité de quantité</FieldLabel>
-                  <Select items={UNITS.map((unit) => ({ value: unit, label: unit }))}
-                    onValueChange={(unit) => setForm((prev) => ({ ...prev, unit }))}
+                  <Select items={UNITS.map((unit) => ({
+                    value: unit, label: getReferenceUnitLabel(null, unit),
+                  }))}
+                    onValueChange={(unit) => {
+                      setForm((prev) => ({ ...prev, unit }));
+                      setRecipeConfirmed(false);
+                    }}
                     value={form.unit}>
                     <SelectTrigger aria-label="Unité de quantité"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {UNITS.map((unit) => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
+                      {UNITS.map((unit) => (
+                        <SelectItem key={unit} value={unit}>
+                          {getReferenceUnitLabel(null, unit)}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>
@@ -157,6 +209,47 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
                   </Select>
                 </Field>
               </div>
+              <div className="mt-3 border-t border-border pt-3">
+                <FieldLabel>Unité utilisée en fiche technique</FieldLabel>
+                <p className="mt-1 text-sm font-medium" aria-label="Unité utilisée en fiche technique">
+                  {article?.productVariant
+                    ? getVariantReferenceUnitLabel(null, article.productVariant)
+                    : 'Référence Produit non associée'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Définie dans le Référentiel Produits : elle ne se modifie pas ici.
+                </p>
+              </div>
+              {canVerifyRecipeUnits && (
+                <div className="mt-3 space-y-2 border-t border-border pt-3">
+                  <Field>
+                    <FieldLabel htmlFor="article-recipe-units">
+                      Nombre de pièces de recette par colis (facultatif)
+                    </FieldLabel>
+                    <Input
+                      id="article-recipe-units"
+                      inputMode="numeric"
+                      onChange={(event) => {
+                        setRecipeCount(event.target.value);
+                        setRecipeConfirmed(false);
+                      }}
+                      value={recipeCount}
+                    />
+                  </Field>
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      checked={recipeConfirmed}
+                      disabled={!recipeCount.trim()}
+                      onChange={(event) => setRecipeConfirmed(event.target.checked)}
+                    />
+                    <span>Je confirme le nombre réel de pièces utilisables en recette dans ce colis.</span>
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Ne confirmez pas une estimation de poids ou un nombre de sachets
+                    qui ne correspond pas aux pièces de recette.
+                  </p>
+                </div>
+              )}
             </fieldset>
             <FieldError>{error}</FieldError>
             <DialogFooter>

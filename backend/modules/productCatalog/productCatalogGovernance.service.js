@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 
 import { AppError } from '../../utils/appError.js';
+import { TechnicalSheetDraft } from '../technicalSheet/technicalSheetDraft.model.js';
+import { TechnicalSheetValidation } from '../technicalSheet/technicalSheetValidation.model.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
 import { listProductCategories } from './productCategoryProjection.service.js';
@@ -17,6 +19,7 @@ import {
     PRODUCT_GOVERNANCE_STATUS,
     PRODUCT_REFERENCE_EVENT_ACTION,
     PRODUCT_REFERENCE_EVENT_ENTITY_TYPE,
+    PRODUCT_REFERENCE_UNIT_REGISTRY,
     PRODUCT_STATUS,
 } from './productCatalog.registry.js';
 import {
@@ -678,6 +681,28 @@ const updateVariant = async ({
 
     if (!variant) {
         throw new AppError('Référence modifiable introuvable.', 404);
+    }
+
+    if (changes.referenceUnit
+        && changes.referenceUnit !== variant.referenceUnit
+        && PRODUCT_REFERENCE_UNIT_REGISTRY[changes.referenceUnit]?.dimension
+            !== PRODUCT_REFERENCE_UNIT_REGISTRY[variant.referenceUnit]?.dimension) {
+        // Changer une dimension de recette ne doit pas réinterpréter « 1 g »
+        // comme « 1 pièce » dans un brouillon ou une reprise de validation.
+        const [draftUsage, validatedUsage] = await Promise.all([
+            TechnicalSheetDraft.exists({
+                'lines.productVariant': variant._id,
+            }).session(session),
+            TechnicalSheetValidation.exists({
+                'linesSnapshot.productVariantId': variant._id,
+            }).session(session),
+        ]);
+        if (draftUsage || validatedUsage) {
+            throw new AppError(
+                'Cette Référence Produit est déjà utilisée dans des Fiches techniques. Une nouvelle Référence ou une correction métier contrôlée est nécessaire avant de changer de dimension.',
+                409,
+            );
+        }
     }
 
     const normalized = await normalizeVariantInput({

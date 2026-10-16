@@ -139,6 +139,101 @@ beforeEach(async () => {
 });
 
 describe('M-003 dossier pricing HTTP', () => {
+
+    it('valorise 36 croissants à la pièce seulement après confirmation et pour le conditionnement du tarif', async () => {
+        const croissant = await createActiveProductReference({
+            actorId: owner.owner._id,
+            name: 'Croissant de recette vérifié',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'pièce',
+            countUnitLabelPlural: 'pièces',
+        });
+        const created = await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            data: {
+                supplierId: supplier.id,
+                productVariantId: croissant.variant._id,
+                supplierReference: 'CRO-43279',
+                packaging: {
+                    containerType: 'Carton',
+                    unitCount: 36,
+                    quantityPerUnit: '120',
+                    unit: 'G',
+                    netWeight: '4320',
+                    netWeightUnit: 'G',
+                },
+            },
+        });
+        await SupplierTariff.create({
+            supplierArticle: created.id,
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspace: owner.workspace._id,
+            sourceKind: 'PRICE_LIST',
+            sourceLabel: 'Tarif croissant',
+            sourceImportId: new mongoose.Types.ObjectId(),
+            packagingSnapshot: {
+                containerType: 'Carton',
+                unitCount: 36,
+                quantityPerUnit: '120',
+                unit: 'G',
+                totalQuantity: '4320',
+                netWeight: '4320',
+                netWeightUnit: 'G',
+            },
+            isCurrent: true,
+            sourceAmount: '6.50',
+            sourceBasis: 'PACKAGE',
+            currency: 'EUR',
+            validFrom: new Date('2026-01-01T00:00:00.000Z'),
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+        const articleUrl = '/api/workspaces/'
+            + owner.workspace._id + '/supplier-articles/' + created.id;
+        const priceUrl = pricingPath(dossierA)
+            + '/applicable?articleId=' + created.id;
+
+        const before = await request(app).get(priceUrl).set(bearer(owner.token));
+        expect(before.status).toBe(200);
+        expect(before.body.data.applicablePrice.price.normalizedAmount).toBeNull();
+
+        const refused = await request(app).patch(articleUrl)
+            .set(bearer(owner.token))
+            .send({ recipeUnitsPerPackage: 36 });
+        expect(refused.status).toBe(400);
+
+        const confirmed = await request(app).patch(articleUrl)
+            .set(bearer(owner.token))
+            .send({ recipeUnitsPerPackage: 36, confirmRecipeUnits: true });
+        expect(confirmed.status).toBe(200);
+        expect(confirmed.body.data.article.recipeUnitEquivalence.unitsPerPackage)
+            .toBe(36);
+        const after = await request(app).get(priceUrl).set(bearer(owner.token));
+        expect(after.status).toBe(200);
+        expect(after.body.data.applicablePrice.price.normalizedUnit).toBe('UNIT');
+        expect(Number(after.body.data.applicablePrice.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
+        const changed = await request(app).patch(articleUrl)
+            .set(bearer(owner.token))
+            .send({
+                packaging: {
+                    containerType: 'Carton',
+                    unitCount: 24,
+                    quantityPerUnit: '120',
+                    unit: 'G',
+                },
+            });
+        expect(changed.status).toBe(200);
+        expect(changed.body.data.article.recipeUnitEquivalence).toBeNull();
+
+        const stale = await request(app).get(priceUrl).set(bearer(owner.token));
+        expect(stale.status).toBe(200);
+        expect(stale.body.data.applicablePrice.price.normalizedAmount).toBeNull();
+    });
+
     it('expose les sources de Prix applicable depuis le backend', async () => {
         const response = await request(app)
             .get(

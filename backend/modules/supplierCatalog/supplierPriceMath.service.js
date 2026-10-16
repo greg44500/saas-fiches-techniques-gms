@@ -1,3 +1,5 @@
+import { verifiedRecipeUnitCount } from './supplierRecipeUnitEquivalence.service.js';
+
 import {
     PRODUCT_REFERENCE_UNIT_REGISTRY,
 } from '../productCatalog/productCatalog.registry.js';
@@ -117,6 +119,8 @@ const normalizeSupplierPrice = ({
     sourceBasis,
     packaging = null,
     targetUnit,
+    recipeUnitEquivalence = null,
+    productVariantId = null,
 }) => {
     const targetDefinition = getUnitDefinition(targetUnit);
 
@@ -128,6 +132,40 @@ const normalizeSupplierPrice = ({
     }
 
     const amount = parseDecimalFraction(sourceAmount);
+
+    // Conversion interdimensionnelle uniquement à partir d'une correspondance
+    // explicitement vérifiée pour CE Produit et CE conditionnement.
+    const verifiedPieces = targetUnit === 'UNIT'
+        ? verifiedRecipeUnitCount({
+            packaging,
+            equivalence: recipeUnitEquivalence,
+            productVariantId,
+        })
+        : null;
+    if (verifiedPieces && packaging?.totalQuantity) {
+        const packagingDefinition = getUnitDefinition(packaging.unit);
+        const quantity = parseDecimalFraction(packaging.totalQuantity);
+        const sourceDefinition = getUnitDefinition(sourceBasis);
+        if (quantity.numerator > 0n && packagingDefinition
+            && packagingDefinition.dimension !== 'COUNT'
+            && (sourceBasis === 'PACKAGE'
+                || sourceDefinition?.dimension === packagingDefinition.dimension)) {
+            return {
+                normalizedAmount: rationalToDecimal128String({
+                    numerator: sourceBasis === 'PACKAGE'
+                        ? amount.numerator
+                        : amount.numerator * quantity.numerator
+                            * BigInt(packagingDefinition.factorToBase),
+                    denominator: sourceBasis === 'PACKAGE'
+                        ? amount.denominator * BigInt(verifiedPieces)
+                        : amount.denominator * quantity.denominator
+                            * BigInt(sourceDefinition.factorToBase)
+                            * BigInt(verifiedPieces),
+                }),
+                normalizedUnit: 'UNIT',
+            };
+        }
+    }
 
     if (sourceBasis !== 'PACKAGE') {
         const sourceDefinition =

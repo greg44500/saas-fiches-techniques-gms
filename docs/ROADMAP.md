@@ -1,3 +1,7 @@
+## Lot transversal actif — unités de recette et colisage (2026-10-16)
+
+Travail sur `feature/m002-m003-m004-unit-consistency`. Quatre règles métier validées : l'unité M-002 s'impose à la fiche, l'Article M-003 peut attester explicitement un nombre de pièces de recette par colis, aucune conversion moyenne non vérifiée, changement de dimension déjà utilisée sous contrôle/audit. Code et tests en préparation ; **non validés localement**. Le complément impression/e-mail reste un chantier séparé. Contrat : `docs/m004/M-002-M-003-M-004-UNIT-CONSISTENCY-CADRAGE.md`.
+
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
 **Statut :** M-001 à M-005 intégrés ; M-003 complété par PR #44 ; Core Gate post-merge validée à la tentative 2

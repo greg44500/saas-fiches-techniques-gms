@@ -54,6 +54,7 @@
     "migration:application-global-authorization-indexes": "node backend/migrations/runAddApplicationGlobalAuthorizationIndexesMigration.js",
     "seed:m002-governance": "node backend/seeds/seedM002ProductGovernance.js",
     "dev:reset-m002-catalog": "node backend/operations/development/runResetM002CatalogDevelopment.js",
+    "audit:recipe-unit-usage": "node backend/operations/units/runAuditRecipeUnitUsage.js",
     "audit:m003-supplier-names": "node backend/migrations/runAuditM003SupplierNames.js",
     "migration:m003-supplier-catalog": "node backend/migrations/runEnsureM003SupplierCatalogMigration.js",
     "migration:m003-indicative-pricing": "node backend/migrations/runEnsureM003IndicativePricingMigration.js",

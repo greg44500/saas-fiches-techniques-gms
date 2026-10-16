@@ -19,6 +19,7 @@ import {
 import { AppError } from '../../utils/appError.js';
 import { SupplierTariff } from './supplierCatalog.model.js';
 import { supplierTariffPresentation } from './supplierArticlePresentation.service.js';
+import { packagingSignature } from './supplierRecipeUnitEquivalence.service.js';
 import { selectSupplierTariffs } from './supplierTariffSelection.service.js';
 import {
     Supplier,
@@ -724,6 +725,46 @@ const updateSupplierArticle = async ({
     if (Object.hasOwn(data, 'packaging')) {
         article.packaging = normalizePackaging(data.packaging);
         changedFields.push('packaging');
+    }
+
+    if (Object.hasOwn(data, 'recipeUnitsPerPackage')) {
+        if (data.recipeUnitsPerPackage === null) {
+            article.recipeUnitEquivalence = null;
+        } else {
+            if (!article.productVariant) {
+                throw new AppError('Associez d’abord une Référence Produit.', 409);
+            }
+            const variant = await assertActiveProductVariant({
+                productVariantId: article.productVariant,
+                workspaceId,
+                session,
+            });
+            if (variant.referenceUnit !== 'UNIT') {
+                throw new AppError('La Référence Produit n’utilise pas de pièces.', 409);
+            }
+            const signature = packagingSignature(article.packaging);
+            if (!signature) {
+                throw new AppError(
+                    'Le colis doit préciser plusieurs éléments et leur quantité physique pour confirmer des pièces de recette.',
+                    409,
+                );
+            }
+            if (data.confirmRecipeUnits !== true) {
+                throw new AppError('Confirmez explicitement le nombre de pièces.', 409);
+            }
+            article.recipeUnitEquivalence = {
+                unitsPerPackage: data.recipeUnitsPerPackage,
+                packagingSignature: signature,
+                productVariant: variant._id,
+                verifiedBy: actorId,
+                verifiedAt: new Date(),
+            };
+        }
+        changedFields.push('recipeUnitEquivalence');
+    } else if (changedFields.includes('productVariant') || changedFields.includes('packaging')) {
+        // Un lien périmé ne doit jamais survivre à une association ou à un colis modifié.
+        article.recipeUnitEquivalence = null;
+        changedFields.push('recipeUnitEquivalence');
     }
 
     if (changedFields.length === 0) {

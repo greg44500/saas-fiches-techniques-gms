@@ -1,3 +1,13 @@
+## UNIT-CONSISTENCY — vérifications de données préalables à la livraison (2026-10-16)
+
+- **À auditer localement** : unité réelle M-002 du Produit « Croissant individuel PAI » ; Articles/Tarifs/Fiches liés et existence de snapshots historiques. La branche ne réécrit aucune donnée de démonstration.
+- **Non automatique** : requalification `G` → `UNIT` d'une Référence déjà utilisée ; préférer une nouvelle Référence si des brouillons ou validations existent. Garder des snapshots immuables.
+- **Données héritées** : aucun tarif fournisseur dépourvu de `packagingSnapshot` n'est supposé disposer d'une preuve d'unités de recette ; ces tarifs devront être revus par le métier si nécessaire.
+- **Hors lot** : pondération estimative des fruits/légumes ; conversion pièce/poids à partir de poids moyen ; hiérarchies de colis complexes ; traitement de lots dont les poids fluctuent.
+- Gates locales, UX et tests E2E à valider. Pas de déclaration de réussite avant retour utilisateur.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
 
 **Statut :** source de vérité documentaire pour les dettes non résolues  

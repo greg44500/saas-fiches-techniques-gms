@@ -1,6 +1,6 @@
 # M-002 / M-003 / M-004 — Cohérence des unités, conditionnements et valorisation
 
-**Statut : PROPOSITION DE CADRAGE — NON VALIDÉE. Aucune implémentation métier autorisée à ce stade.**  
+**Statut : QUATRE RÈGLES MÉTIER VALIDÉES PAR L'UTILISATEUR LE 2026-10-16 — IMPLÉMENTATION EN ATTENTE DE TESTS LOCAUX ET QA.**  
 **Date : 2026-10-16**  
 **Branche de travail :** `feature/m002-m003-m004-unit-consistency`  
 **Core intégré :** v1.2.1 (`core-origin.json`, sans changement prévu)
@@ -123,11 +123,27 @@ Avant toute migration, établir un inventaire **en lecture seule** des Référen
 
 Conserver une **seule branche et une seule PR** pour ce lot ; les correctifs issus des tests locaux restent sur cette branche.
 
-## 9. Arbitrages à valider avant toute implémentation
+## 9. Décisions métier validées (2026-10-16)
 
 1. Confirmer que l'unité affichée dans l'Article est **en lecture seule**, issue de M-002, jamais une unité libre concurrente.
 2. Valider le principe d'une correspondance **explicite et vérifiée** « unités de recette / colis » pour rendre calculable le prix en `UNIT` lorsque le conditionnement source est en masse ou volume, avec saisie conditionnelle seulement dans les cas nécessaires.
 3. Confirmer qu'une équivalence approximative (citron « environ 6/kg ») **n'autorise jamais** une valorisation automatique.
 4. Décider du parcours de correction des Références Produit historiquement enregistrées avec la mauvaise dimension (`G` → `UNIT`) après audit des usages, sans altérer les versions validées.
 
-**Pas de nouveau modèle ni de code tant que ces décisions et l'analyse de la persistance historique ne sont pas validées.**
+**Décisions confirmées :** aucun sélecteur d'unité en fiche ; unité M-002 visible en lecture seule dans l'Article ; correspondance pièce/colis explicitement confirmée ; poids moyens approximatifs exclus des coûts ; correction des dimensions existantes contrôlée et précédée d'un audit.
+
+## 10. Contrat technique de ce lot
+
+- Article `SupplierArticle.recipeUnitEquivalence` facultatif : `unitsPerPackage` positif, `productVariant`, `packagingSignature`, `verifiedBy`, `verifiedAt`. Le champ indique le nombre **vérifié** d'unités de recette dénombrables contenues dans le colis, et non le nombre de sachets.
+- La confirmation est permise uniquement pour une Référence Produit `UNIT` et un colis avec au moins deux éléments, quantité physique unitaire connue et conditionnement cohérent. Les cas hors de ce périmètre restent non convertibles ; pas de conversion par poids moyen.
+- Le PATCH Article exige `recipeUnitsPerPackage` et `confirmRecipeUnits: true` ; une nouvelle modification du conditionnement ou de la Référence invalide la correspondance précédente. Un audit métier `ARTICLE_UPDATED` est enregistré.
+- M-003 normalise les sources en `UNIT` depuis un prix par colis ou une base physique uniquement si la preuve correspond **exactement** au conditionnement considéré et à la Référence Produit. Les tarifs fournisseur réutilisent le `packagingSnapshot` ; sans historique exploitable, le résultat reste `null`. Les prix négociés/facturés nouveaux figent le conditionnement et la preuve, en plus de leur prix normalisé. Les Prix indicatifs restent sous le contrat physique strict initial, sans équivalence inférée.
+- M-004 persiste `UNIT` et affiche le libellé métier M-002, sans nouveau sélecteur ni second moteur de calcul. Le résolveur M-003 reste l'autorité pour le coût. Le montant normalisé utilise la précision décimale existante (pas l'affichage 0,181 €).
+- L'édition M-002 interdit une mutation de dimension (ex. `G` → `UNIT`) lorsqu'une fiche brouillon ou validation historique référence déjà ce Produit. Ne pas contourner ce garde-fou par une mutation DB : auditer, arbitrer et éventuellement créer une nouvelle Référence.
+- Les anciennes données ne sont **pas** automatiquement requalifiées. Le cas BRIDOR doit être audité localement avant toute correction :
+  `npm run audit:recipe-unit-usage -- "Croissant individuel PAI"` (lecture seule, vérifier d'abord `MONGODB_URI`).
+- Aucun modèle Core, capability ou rôle nouveau. Nouveau sous-document métier M-003 facultatif, sans index supplémentaire ; aucun backfill automatique. Les tests/gates doivent être exécutés localement par l'utilisateur avant PR.
+
+## 11. État de livraison
+
+Modifications code et tests préparés sur la branche `feature/m002-m003-m004-unit-consistency`. **Aucun test local, lint, build ni E2E n'est prétendu vert.** Les corrections découvertes à la QA restent sur cette même branche, puis une seule PR après accord explicite.

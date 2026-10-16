@@ -135,6 +135,8 @@ const createArticleBodySchema = z.strictObject({
 });
 
 const updateArticleBodySchema = z.strictObject({
+    recipeUnitsPerPackage: z.number().int().min(1).max(1000000).nullable().optional(),
+    confirmRecipeUnits: z.literal(true).optional(),
     productVariantId: objectIdSchema.nullable().optional(),
     supplierDesignation: nullableText(300).optional(),
     brand: nullableText(160).optional(),
@@ -143,7 +145,15 @@ const updateArticleBodySchema = z.strictObject({
 }).refine(
     (value) => Object.keys(value).length > 0,
     'Au moins un champ doit être modifié.',
-);
+).superRefine((value, context) => {
+    if (value.recipeUnitsPerPackage != null && value.confirmRecipeUnits !== true) {
+        context.addIssue({
+            code: 'custom',
+            path: ['confirmRecipeUnits'],
+            message: 'Confirmez le nombre de pièces de recette par colis.',
+        });
+    }
+});
 
 const replaceArticleBodySchema = z.strictObject({
     supplierReference: z.string().trim().min(1).max(120),

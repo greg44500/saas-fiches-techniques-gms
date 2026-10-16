@@ -2,6 +2,7 @@ import {
     supplierPackagingLabel,
     supplierPackagingPresentation,
 } from './supplierArticlePresentation.service.js';
+import { verifiedRecipeUnitCount } from './supplierRecipeUnitEquivalence.service.js';
 
 const decimalToString = (value) => (
     value === null || value === undefined
@@ -97,6 +98,17 @@ const serializeSupplierArticle = (article) => ({
     supplierDesignation: article.supplierDesignation ?? null,
     brand: article.brand ?? null,
     packaging: serializePackaging(article.packaging),
+    recipeUnitEquivalence: (() => {
+        const unitsPerPackage = verifiedRecipeUnitCount({
+            packaging: article.packaging,
+            equivalence: article.recipeUnitEquivalence,
+            productVariantId: article.productVariant?._id ?? article.productVariant,
+        });
+        return unitsPerPackage === null ? null : {
+            unitsPerPackage,
+            verifiedAt: article.recipeUnitEquivalence.verifiedAt,
+        };
+    })(),
     packagingLabel: supplierPackagingLabel(article.packaging, article.productVariant),
     packagingPresentation: supplierPackagingPresentation(
         article.packaging, article.productVariant,

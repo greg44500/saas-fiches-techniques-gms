@@ -20,12 +20,16 @@ import {
     ProductVariant,
 } from '../../../modules/productCatalog/productVariant.model.js';
 import {
+    TechnicalSheetDraft,
+} from '../../../modules/technicalSheet/technicalSheetDraft.model.js';
+import {
     createCategory,
     createGlobalProduct,
     createGlobalVariant,
     listCategories,
     updateCategoryStatus,
     updateProductStatus,
+    updateVariant,
 } from '../../../modules/productCatalog/productCatalogGovernance.service.js';
 import {
     attachVariantToWorkspace,
@@ -49,6 +53,37 @@ beforeEach(async () => {
 });
 
 describe('M-002 product reference governance', () => {
+    it('refuse une requalification gramme vers pièce lorsqu’un brouillon utilise la Référence', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Croissant protégé pour changement de dimension',
+            referenceUnit: 'G',
+        });
+        await TechnicalSheetDraft.create({
+            workspace: ownerContext.workspace._id,
+            dossier: reference.product._id,
+            technicalSheet: reference.variant._id,
+            lines: [{
+                kind: 'INGREDIENT',
+                productVariant: reference.variant._id,
+                netQuantity: '1',
+                inputUnit: 'G',
+                order: 0,
+            }],
+            createdBy: ownerContext.owner._id,
+            updatedBy: ownerContext.owner._id,
+        });
+        await expect(updateVariant({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            variantId: reference.variant._id,
+            changes: { referenceUnit: 'UNIT' },
+        })).rejects.toMatchObject({ statusCode: 409 });
+        const unchanged = await ProductVariant.findById(reference.variant._id);
+        expect(unchanged.referenceUnit).toBe('G');
+    });
+
+
     it('autorise une catégorie facultative mais refuse une catégorie fournie invalide', async () => {
         await expect(createGlobalProduct({
             actorId: ownerContext.owner._id,

@@ -6,7 +6,7 @@ import {
 } from './supplierPriceMath.service.js';
 
 const unitLabel = (unit, variant = null) => unit === 'UNIT'
-    ? (variant?.countUnitLabelSingular || 'unité')
+    ? (variant?.countUnitLabelSingular || 'pièce')
     : PRODUCT_REFERENCE_UNIT_REGISTRY[unit]?.label ?? unit;
 const printQuantity = (value) => String(value).replace(/\.0+$/, '');
 const money = (value, currency = 'EUR') => {
@@ -103,8 +103,8 @@ const supplierPackagingPresentation = (packaging, productVariant = null) => {
             totalLabel = 'Volume total : ' + readableQuantity(total) + ' L';
         } else if (dimension === 'COUNT') {
             const countName = Number(total) === 1
-                ? (productVariant?.countUnitLabelSingular || 'unité')
-                : (productVariant?.countUnitLabelPlural || 'unités');
+                ? (productVariant?.countUnitLabelSingular || 'pièce')
+                : (productVariant?.countUnitLabelPlural || 'pièces');
             totalLabel = 'Quantité totale : ' + readableQuantity(total) + ' ' + countName;
         }
     }
@@ -166,6 +166,8 @@ const supplierTariffPresentation = (tariff, article) => {
         sourceBasis: basis,
         packaging,
         targetUnit: target,
+        recipeUnitEquivalence: article.recipeUnitEquivalence,
+        productVariantId: article.productVariant?._id,
     }) : { normalizedAmount: null, normalizedUnit: null };
     const amountOfPackage = packagePriceAmount({
         amount: tariff.sourceAmount, basis, packaging,
