@@ -36,6 +36,8 @@ import {
 } from '../../../modules/supplierCatalog/supplierReference.service.js';
 import {
     DossierSupplierReference,
+    InvoicedPrice,
+    NegotiatedPrice,
 } from '../../../modules/supplierCatalog/supplierPricing.model.js';
 import {
     setIndicativePrice,
@@ -216,6 +218,37 @@ describe('M-003 dossier pricing HTTP', () => {
         expect(Number(after.body.data.applicablePrice.price.normalizedAmount))
             .toBeCloseTo(6.5 / 36, 10);
 
+        // Les nouvelles sources négociées et facturées exploitent la même
+        // correspondance vérifiée et figent les données de leur calcul.
+        const negotiated = await request(app)
+            .post(pricingPath(dossierA) + '/negotiated-prices')
+            .set(bearer(owner.token))
+            .send({
+                articleId: created.id,
+                sourceAmount: '6.50',
+                sourceBasis: 'PACKAGE',
+                validFrom: '2026-01-01T00:00:00.000Z',
+            });
+        expect(negotiated.status).toBe(201);
+        expect(negotiated.body.data.price.normalizedUnit).toBe('UNIT');
+        expect(Number(negotiated.body.data.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
+        const invoiced = await request(app)
+            .post(pricingPath(dossierA) + '/invoiced-prices')
+            .set(bearer(owner.token))
+            .send({
+                supplierId: supplier.id,
+                articleId: created.id,
+                invoiceDate: '2026-10-01T00:00:00.000Z',
+                sourceAmount: '6.50',
+                sourceBasis: 'PACKAGE',
+            });
+        expect(invoiced.status).toBe(201);
+        expect(invoiced.body.data.price.normalizedUnit).toBe('UNIT');
+        expect(Number(invoiced.body.data.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
         const changed = await request(app).patch(articleUrl)
             .set(bearer(owner.token))
             .send({
@@ -232,6 +265,19 @@ describe('M-003 dossier pricing HTTP', () => {
         const stale = await request(app).get(priceUrl).set(bearer(owner.token));
         expect(stale.status).toBe(200);
         expect(stale.body.data.applicablePrice.price.normalizedAmount).toBeNull();
+
+        const [frozenNegotiated, frozenInvoiced] = await Promise.all([
+            NegotiatedPrice.findById(negotiated.body.data.price.id).lean(),
+            InvoicedPrice.findById(invoiced.body.data.price.id).lean(),
+        ]);
+        for (const historicalPrice of [frozenNegotiated, frozenInvoiced]) {
+            expect(historicalPrice.normalizedUnit).toBe('UNIT');
+            expect(Number(historicalPrice.normalizedAmount.toString()))
+                .toBeCloseTo(6.5 / 36, 10);
+            expect(historicalPrice.packagingSnapshot.unitCount).toBe(36);
+            expect(historicalPrice.recipeUnitEquivalenceSnapshot.unitsPerPackage)
+                .toBe(36);
+        }
     });
 
     it('expose les sources de Prix applicable depuis le backend', async () => {

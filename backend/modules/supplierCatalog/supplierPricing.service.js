@@ -491,22 +491,10 @@ const normalizePriceForArticle = ({
 }) => normalizeSupplierPrice({
     sourceAmount,
     sourceBasis,
-    packaging:
-        article.packaging
-            ? {
-                totalQuantity:
-                    decimalToString(
-                        article.packaging
-                            .totalQuantity,
-                    ),
-                unit:
-                    article.packaging
-                        .unit,
-            }
-            : null,
-    targetUnit:
-        article.productVariant
-            .referenceUnit,
+    packaging: article.packaging,
+    recipeUnitEquivalence: article.recipeUnitEquivalence,
+    productVariantId: article.productVariant._id,
+    targetUnit: article.productVariant.referenceUnit,
 });
 
 const intervalsOverlap = ({
@@ -1927,6 +1915,11 @@ const resolveApplicablePrice = async ({
                     sourceAmount: tariff.sourceAmount,
                     sourceBasis: tariff.sourceBasis,
                     packaging: tariff.packagingSnapshot ?? article.packaging,
+                    // Une preuve de pièces ne s'applique qu'au colis exact du tarif.
+                    // Un tarif historique sans snapshot ne peut pas l'hériter.
+                    recipeUnitEquivalence: tariff.packagingSnapshot
+                        ? article.recipeUnitEquivalence : null,
+                    productVariantId: productVariant._id,
                     targetUnit: productVariant.referenceUnit,
                 }),
             };
