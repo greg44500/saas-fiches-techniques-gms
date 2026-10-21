@@ -12,6 +12,8 @@ import {
     PRODUCT_REVIEW_QUEUE_TYPE,
 } from './productCatalog.registry.js';
 import { ProductVariant } from './productVariant.model.js';
+import { ProductVariety } from './productVariety.model.js';
+import { ProductCharacteristic } from './productCharacteristic.model.js';
 import { ReferenceContribution } from './referenceContribution.model.js';
 import { createProductReferenceEvent } from './productReferenceEvent.service.js';
 import { listProductReviewQueue } from './productReferenceReviewQueue.service.js';
@@ -29,14 +31,36 @@ const restoreProductReviewContext = async ({
     productId,
     dataType,
     targetId,
+    dimensionType = null,
 }) => {
-    const entityType = dataType === 'PRODUCT'
-        ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT
-        : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT;
+    const isDimension = dataType === 'DIMENSION';
+    if (isDimension && !['VARIETY', 'CHARACTERISTIC'].includes(dimensionType)) {
+        throw new AppError('Type de Dimension invalide pour la reprise du contrôle.', 400);
+    }
+    if (!['PRODUCT', 'REFERENCE', 'DIMENSION'].includes(dataType)) {
+        throw new AppError('Type de donnée invalide pour le contrôle.', 400);
+    }
     const contributionType = dataType === 'PRODUCT'
         ? PRODUCT_CONTRIBUTION_TYPE.CANONICAL_PRODUCT
-        : PRODUCT_CONTRIBUTION_TYPE.VARIANT;
-    const Model = dataType === 'PRODUCT' ? CanonicalProduct : ProductVariant;
+        : dataType === 'REFERENCE'
+            ? PRODUCT_CONTRIBUTION_TYPE.VARIANT
+            : dimensionType === 'VARIETY'
+                ? PRODUCT_CONTRIBUTION_TYPE.VARIETY
+                : PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC;
+    const entityType = dataType === 'PRODUCT'
+        ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.PRODUCT
+        : dataType === 'REFERENCE'
+            ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT
+            : dimensionType === 'VARIETY'
+                ? PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIETY
+                : PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CHARACTERISTIC;
+    const Model = dataType === 'PRODUCT'
+        ? CanonicalProduct
+        : dataType === 'REFERENCE'
+            ? ProductVariant
+            : dimensionType === 'VARIETY'
+                ? ProductVariety
+                : ProductCharacteristic;
     if (dataType === 'PRODUCT' && targetId.toString() !== productId.toString()) {
         throw new AppError('Le Produit demandé ne correspond pas au contrôle ciblé.', 409);
     }
@@ -46,7 +70,7 @@ const restoreProductReviewContext = async ({
             _id: targetId,
             identityActive: true,
             governanceStatus: PRODUCT_GOVERNANCE_STATUS.PROVISIONAL,
-            ...(dataType === 'REFERENCE'
+            ...(dataType !== 'PRODUCT'
                 ? { canonicalProduct: productId } : {}),
         };
         const identity = await Model.findOne(identityFilter).session(session);
@@ -79,6 +103,8 @@ const restoreProductReviewContext = async ({
 
         const [contribution] = await ReferenceContribution.create([{
             type: contributionType,
+            ...(contributionType === PRODUCT_CONTRIBUTION_TYPE.CHARACTERISTIC
+                ? { characteristicKind: identity.kind } : {}),
             canonicalProduct: dataType === 'PRODUCT'
                 ? identity._id : identity.canonicalProduct,
             workspace: identity.contributedFromWorkspace,
@@ -115,7 +141,9 @@ const restoreProductReviewContext = async ({
         page: 1,
     });
     const item = result.items.find((entry) => (
-        entry.targetId === targetId && entry.dataType === dataType
+        entry.targetId === targetId.toString()
+        && entry.dataType === dataType
+        && (!isDimension || entry.dimensionType === dimensionType)
     ));
     if (!item) {
         throw new AppError('Le contrôle n’est pas disponible dans la file.', 409);

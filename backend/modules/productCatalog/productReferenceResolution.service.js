@@ -116,15 +116,18 @@ const loadVariantIdentity = async ({ variantId, session }) => (
         .session(session)
 );
 
-const variantCanBeApproved = async ({ variant, session }) => {
+/**
+ * Même règle pour la décision backend et le diagnostic utilisateur.
+ * Le statut de revue qualité n'approuve jamais une identité provisoire.
+ */
+const listVariantApprovalBlockers = async ({ variant, session }) => {
     const product = await CanonicalProduct.findById(
         variant.canonicalProduct,
     ).session(session);
-    if (
-        !product
-        || product.governanceStatus !== PRODUCT_GOVERNANCE_STATUS.APPROVED
-    ) {
-        return false;
+    const blockers = [];
+
+    if (!product || product.governanceStatus !== PRODUCT_GOVERNANCE_STATUS.APPROVED) {
+        blockers.push('le Produit « ' + (product?.name ?? 'parent introuvable') + ' »');
     }
 
     const variety = variant.variety?._id
@@ -132,16 +135,11 @@ const variantCanBeApproved = async ({ variant, session }) => {
         : variant.variety
             ? await ProductVariety.findById(variant.variety).session(session)
             : null;
-    if (
-        variety
-        && variety.governanceStatus !== PRODUCT_GOVERNANCE_STATUS.APPROVED
-    ) {
-        return false;
+    if (variety && variety.governanceStatus !== PRODUCT_GOVERNANCE_STATUS.APPROVED) {
+        blockers.push('la Variété « ' + (variety.name ?? 'non résolue') + ' »');
     }
 
-    const characteristics = (
-        variant.characteristics ?? []
-    ).filter(Boolean);
+    const characteristics = (variant.characteristics ?? []).filter(Boolean);
     const hydrated = characteristics.some((value) => !value?._id)
         ? await ProductCharacteristic.find({
             _id: mongoose.trusted({
@@ -149,12 +147,18 @@ const variantCanBeApproved = async ({ variant, session }) => {
             }),
         }).session(session)
         : characteristics;
+    for (const characteristic of hydrated) {
+        if (characteristic.governanceStatus !== PRODUCT_GOVERNANCE_STATUS.APPROVED) {
+            blockers.push('la Caractéristique « ' + (characteristic.name ?? 'non résolue') + ' »');
+        }
+    }
 
-    return hydrated.every((characteristic) => (
-        characteristic.governanceStatus
-        === PRODUCT_GOVERNANCE_STATUS.APPROVED
-    ));
+    return blockers;
 };
+
+const variantCanBeApproved = async ({ variant, session }) => (
+    (await listVariantApprovalBlockers({ variant, session })).length === 0
+);
 
 const refreshVariantIdentity = async ({
     variantId,
@@ -322,10 +326,11 @@ const promoteProvisionalReference = async ({
             throw new AppError('Référence Produit provisoire introuvable.', 409);
         }
 
-        if (!(await variantCanBeApproved({ variant, session }))) {
+        const blockers = await listVariantApprovalBlockers({ variant, session });
+        if (blockers.length > 0) {
             conflict(
-                'Cette Référence dépend encore de valeurs à contrôler. '
-                + 'Validez d’abord ses Dimensions.',
+                'La validation de cette Référence nécessite d’abord '
+                + 'l’examen de : ' + blockers.join(', ') + '.',
             );
         }
 

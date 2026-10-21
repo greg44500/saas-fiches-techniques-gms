@@ -35,6 +35,9 @@ import {
     ReferenceContribution,
 } from '../../../modules/productCatalog/referenceContribution.model.js';
 import {
+    ProductCharacteristic,
+} from '../../../modules/productCatalog/productCharacteristic.model.js';
+import {
     markProductDimensionReviewed,
 } from '../../../modules/productCatalog/productReferenceReview.service.js';
 import {
@@ -53,6 +56,69 @@ beforeEach(async () => {
 });
 
 describe('M-002 unified product review queue', () => {
+    it('répare le contrôle d’une Caractéristique provisoire déjà vérifiée sans la valider automatiquement', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Produit contrôle guidé',
+        });
+        const created = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: PRODUCT_CHARACTERISTIC_KIND.QUALITY_DESIGNATION,
+            value: 'Caractéristique contrôlée mais provisoire',
+        });
+        expect(created.classification).toBe('PROVISIONAL');
+
+        await markProductDimensionReviewed({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            type: 'CHARACTERISTIC',
+            dimensionId: created.provisionalReference.id,
+        });
+        await ReferenceContribution.deleteOne({ _id: created.contribution.id });
+
+        const args = {
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            dataType: 'DIMENSION',
+            dimensionType: 'CHARACTERISTIC',
+            targetId: created.provisionalReference.id,
+        };
+        const recovered = await restoreProductReviewContext(args);
+        const again = await restoreProductReviewContext(args);
+        expect(again.sourceId).toBe(recovered.sourceId);
+        expect(recovered).toMatchObject({
+            dataType: 'DIMENSION',
+            dimensionType: 'CHARACTERISTIC',
+            targetId: created.provisionalReference.id,
+            type: 'CONTRIBUTION',
+        });
+
+        let characteristic = await ProductCharacteristic.findById(
+            created.provisionalReference.id,
+        );
+        expect(characteristic.governanceStatus).toBe('PROVISIONAL');
+        expect(characteristic.qualityReviewStatus).toBe('REVIEWED');
+
+        await expect(restoreProductReviewContext({
+            ...args,
+            dimensionType: 'VARIETY',
+        })).rejects.toMatchObject({ statusCode: 409 });
+
+        await reviewReferenceContribution({
+            contributionId: recovered.sourceId,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+        characteristic = await ProductCharacteristic.findById(
+            created.provisionalReference.id,
+        );
+        expect(characteristic.governanceStatus).toBe('APPROVED');
+        expect(characteristic.qualityReviewStatus).toBe('REVIEWED');
+    });
+
     it('rétablit le contrôle d’une Référence provisoire orpheline, sans la valider ni la dupliquer', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,

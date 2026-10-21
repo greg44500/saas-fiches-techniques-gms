@@ -380,8 +380,24 @@ const referenceContributionListQuerySchema = z.strictObject({
 });
 
 const productReviewRecoveryBodySchema = z.strictObject({
-    dataType: z.enum(['PRODUCT', 'REFERENCE']),
+    dataType: z.enum(['PRODUCT', 'REFERENCE', 'DIMENSION']),
     targetId: objectIdSchema,
+    dimensionType: z.enum(['VARIETY', 'CHARACTERISTIC']).optional(),
+}).superRefine((body, context) => {
+    if (body.dataType === 'DIMENSION' && !body.dimensionType) {
+        context.addIssue({
+            code: 'custom',
+            path: ['dimensionType'],
+            message: 'Le type de Dimension est requis pour son contrôle.',
+        });
+    }
+    if (body.dataType !== 'DIMENSION' && body.dimensionType) {
+        context.addIssue({
+            code: 'custom',
+            path: ['dimensionType'],
+            message: 'Le type de Dimension ne concerne que les Dimensions.',
+        });
+    }
 });
 
 const productReviewQueueListQuerySchema = z.strictObject({

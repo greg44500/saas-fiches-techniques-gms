@@ -496,3 +496,7 @@ Aucune nouvelle primitive Core n'est requise pour :
 - déduplication Produit.
 
 Toute évolution générique découverte ultérieurement doit continuer à être traitée dans `saas-core-api` puis intégrée par une branche `core-update/*`.
+
+### Complément de recette — parcours guidé de gouvernance (2026-10-21)
+
+L'administration du Produit conserve ses quatre onglets : Produit, Dimensions, Références et Historique. L'examen d'une Référence PROVISIONAL affiche les dépendances d'identité du Produit parent et de ses Dimensions liées, sans convertir les contrôles qualité en blocages de publication. Les décisions restent individuelles, soumises à la permission métier `product:reference:manage`, exécutées par les services de Contribution existants et auditées. L'identité d'une Dimension qui demeure PROVISIONAL peut être examinée même si sa revue qualité est déjà REVIEWED ; en cas de lien de Contribution perdu, l'API de reprise rétablit uniquement le lien de revue de façon idempotente, avec workspace d'origine vérifié. La décision finale de Référence est autorisée seulement quand le backend constate que toutes ses identités parentes sont APPROVED. Aucun statut n'est promu implicitement par le parcours guidé. Les diagnostics d'erreur précisent la ou les identités bloquantes.
