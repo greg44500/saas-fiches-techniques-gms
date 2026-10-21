@@ -1,6 +1,8 @@
 # Reprise courante — cohérence des unités (2026-10-16)
 
 ## Lot actif M-002/M-003/M-004
+**E2E ciblé gouvernance M-002 — 2026-10-21 :** un scénario Playwright initialise exclusivement la base `_e2e_test` avec une Dimension provisoire déjà REVIEWED dont la Contribution a disparu, une Référence liée PROVISIONAL, puis exerce le contrôle guidé jusqu'aux deux validations distinctes. Le scénario doit encore être exécuté localement ; aucune réussite de gate n'est revendiquée.
+
 **Invariant de validation explicite M-002 (2026-10-21) :** une résolution de Dimension ne peut pas promouvoir automatiquement une Référence encore PROVISIONAL. La mise à jour de signature des Références préserve cet état jusqu'à une décision explicite de Contribution. Test d'intégration étendu, scénario frontend de double bouton « Valider » rendu non ambigu. Gates locaux encore non exécutés.
 
 **UX implémentée — contrôle guidé M-002 (2026-10-21) :** depuis l'onglet Références, le panneau de gouvernance identifie Produit parent et Dimensions avec leur statut d'identité, autorise une revue ciblée dans la même carte, puis la validation finale seulement si les dépendances sont approuvées. La revue qualité reste distincte et les quatre onglets sont conservés. Les décisions et liens de reprise réutilisent les mutations existantes sous permission Application Global MANAGE ; tests frontend ajoutés, gates locaux et QA visuelle à confirmer.

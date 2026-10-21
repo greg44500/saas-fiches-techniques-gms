@@ -485,6 +485,35 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(onGuidedReviewClosed).toHaveBeenCalled();
   });
 
+  it('signale aussi le Produit parent provisoire, distinct de ses Dimensions', () => {
+    mocks.detail.mockReturnValue(queryResult({
+      product: { id: 'product-1', name: 'Croissant', status: 'ACTIVE', governanceStatus: 'PROVISIONAL' },
+      variants: [{
+        id: 'variant-3', name: 'Croissant PAI',
+        status: 'ACTIVE', governanceStatus: 'PROVISIONAL',
+        referenceUnit: 'KG', conservationType: 'FRAIS',
+        characteristics: [],
+      }],
+      events: [],
+    }));
+    mocks.dimensions.mockReturnValue(queryResult({ varieties: [], characteristics: [] }));
+    renderDrawer({
+      initialTab: 'variants',
+      reviewContext: {
+        sourceId: 'review-3', dataType: 'REFERENCE',
+        targetId: 'variant-3', type: 'CONTRIBUTION', candidates: [],
+      },
+    });
+    const workflow = screen.getByRole('region', {
+      name: 'Contrôle de publication de Croissant PAI',
+    });
+    expect(within(workflow).getByRole('button', {
+      name: 'Examiner Produit parent Croissant',
+    })).toBeInTheDocument();
+    expect(within(workflow).getByRole('button', { name: 'Valider' }))
+      .toBeDisabled();
+  });
+
   it('rend À contrôler comme un petit bouton warning ouvrant le contrôle ciblé', async () => {
     const user = userEvent.setup();
     const onReviewRequested = vi.fn();

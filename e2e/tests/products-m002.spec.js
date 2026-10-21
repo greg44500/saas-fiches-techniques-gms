@@ -2,6 +2,14 @@ import { randomUUID } from 'node:crypto';
 
 import { expect, test } from '@playwright/test';
 
+import { createActiveProductReference } from '../../backend/tests/helpers/productCatalogTest.fixtures.js';
+import { createWorkspaceVariant } from '../../backend/modules/productCatalog/productCatalog.service.js';
+import { submitReferenceContribution } from '../../backend/modules/productCatalog/productReferenceContribution.service.js';
+import { markProductDimensionReviewed } from '../../backend/modules/productCatalog/productReferenceReview.service.js';
+import { ReferenceContribution } from '../../backend/modules/productCatalog/referenceContribution.model.js';
+import { Workspace } from '../../backend/modules/workspace/workspace.model.js';
+import { withE2eDatabase } from '../support/dossier-fixtures.js';
+
 import {
   loginWithIdentity,
 } from '../support/auth.js';
@@ -113,6 +121,86 @@ test('M-002 la correction de référence conserve les actions visibles sur un é
 
   await cancel.click();
   await expect(dialog).toBeHidden();
+});
+
+
+test('M-002 contrôle guidé : la Dimension vérifiée mais provisoire se valide avant la Référence', async ({ page }) => {
+  const workspace = await provisionProductOwnerWorkspace();
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const productName = `Produit contrôle guidé ${suffix}`;
+  const referenceName = `Référence contrôle guidé ${suffix}`;
+
+  await withE2eDatabase(async () => {
+    const owner = await Workspace.findById(workspace.workspaceId);
+    const actorId = owner.createdBy;
+    const reference = await createActiveProductReference({
+      actorId,
+      name: productName,
+    });
+    const dimension = await submitReferenceContribution({
+      workspaceId: owner._id,
+      actorId,
+      type: 'CHARACTERISTIC',
+      productId: reference.product._id,
+      characteristicKind: 'QUALITY_DESIGNATION',
+      value: 'Individuel',
+    });
+    expect(dimension.classification).toBe('PROVISIONAL');
+    const created = await createWorkspaceVariant({
+      workspaceId: owner._id,
+      actorId,
+      productId: reference.product._id,
+      forceCreate: true,
+      reviewedCandidateIds: [],
+      variant: {
+        name: referenceName,
+        conservationType: 'FRAIS',
+        referenceUnit: 'KG',
+        characteristicIds: [dimension.provisionalReference.id],
+      },
+    });
+    expect(created.classification).toBe('PROVISIONAL');
+    await markProductDimensionReviewed({
+      actorId,
+      productId: reference.product._id,
+      type: 'CHARACTERISTIC',
+      dimensionId: dimension.provisionalReference.id,
+    });
+    await ReferenceContribution.deleteOne({ _id: dimension.contribution.id });
+  });
+
+  await loginWithIdentity(page, E2E_FOUNDER);
+  await page.goto('/product-reference');
+  await selectGlobalProductReference(page, productName);
+  await page.getByRole('tab', { name: /Références \(\d+\)/ }).click();
+  await page.getByRole('button', {
+    name: `Examiner la référence ${referenceName}`,
+  }).click();
+
+  const workflow = page.getByRole('region', {
+    name: `Contrôle de publication de ${referenceName}`,
+  });
+  await expect(workflow).toBeVisible();
+  await expect(workflow.getByText('Individuel')).toBeVisible();
+  await expect(workflow.getByRole('button', { name: 'Valider', exact: true }))
+    .toBeDisabled();
+
+  await workflow.getByRole('button', {
+    name: 'Examiner Désignation de qualité Individuel',
+  }).click();
+  await expect(workflow.getByRole('button', { name: 'Masquer le contrôle' }))
+    .toBeVisible();
+
+  const approveButtons = workflow.getByRole('button', { name: 'Valider', exact: true });
+  await expect(approveButtons).toHaveCount(2);
+  await approveButtons.first().click();
+  await expectVisibleToast(page, 'Dimension validée');
+
+  await expect(workflow.getByText('Les identités associées sont validées.')).toBeVisible();
+  await expect(workflow.getByRole('button', { name: 'Valider', exact: true }))
+    .toBeEnabled();
+  await workflow.getByRole('button', { name: 'Valider', exact: true }).click();
+  await expectVisibleToast(page, 'Référence validée');
 });
 
 test('M-002 contribution Workspace est revue puis publiée globalement', async ({ page }) => {
