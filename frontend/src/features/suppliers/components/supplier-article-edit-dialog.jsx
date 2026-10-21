@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import {
   getReferenceUnitLabel,
@@ -21,6 +23,11 @@ import { getApiErrorMessage } from '@/features/suppliers/lib/supplier-presentati
 import { cn } from '@/lib/utils';
 
 const UNITS = ['G', 'KG', 'ML', 'CL', 'L', 'UNIT'];
+const RECIPE_MODE = Object.freeze({
+  SAME: 'SAME',
+  DIFFERENT: 'DIFFERENT',
+  UNKNOWN: 'UNKNOWN',
+});
 const PACKAGING_FIELDS = new Set([
   'containerType', 'supplierLabel', 'unitCount', 'quantityPerUnit', 'unit',
   'netWeight', 'netWeightUnit', 'drainedNetWeight', 'drainedNetWeightUnit',
@@ -70,6 +77,7 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
   const cancelRef = useRef(null);
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState('');
+  const [recipeMode, setRecipeMode] = useState(RECIPE_MODE.SAME);
   const [recipeCount, setRecipeCount] = useState('');
   const [recipeConfirmed, setRecipeConfirmed] = useState(false);
   const referenceUnit = article?.productVariant?.referenceUnit;
@@ -89,8 +97,15 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
           .map((field) => [field, String(article.packaging?.[field] ?? EMPTY[field])]),
       ),
     });
-    setRecipeCount(String(article.recipeUnitEquivalence?.unitsPerPackage ?? ''));
-    setRecipeConfirmed(Boolean(article.recipeUnitEquivalence?.unitsPerPackage));
+    const verifiedCount = article.recipeUnitEquivalence?.unitsPerPackage ?? null;
+    const commercialCount = Number(article.packaging?.unitCount);
+    setRecipeMode(
+      verifiedCount !== null && Number(verifiedCount) !== commercialCount
+        ? RECIPE_MODE.DIFFERENT
+        : RECIPE_MODE.SAME,
+    );
+    setRecipeCount(verifiedCount !== null ? String(verifiedCount) : '');
+    setRecipeConfirmed(verifiedCount !== null);
     setError('');
   }, [open, article?.id]);
 
@@ -134,8 +149,18 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
       drainedNetWeight: numericValue(form.drainedNetWeight),
       drainedNetWeightUnit: form.drainedNetWeight.trim() ? form.drainedNetWeightUnit : null,
     };
-    const recipeUnitsPerPackage = canVerifyRecipeUnits && recipeCount.trim()
-      ? Number(recipeCount) : null;
+    // Une suggestion 1 pour 1 reprend le colisage sans nouvelle saisie.
+    // Le backend conserve l'exigence d'une confirmation humaine explicite.
+    const needsRecipeConfirmation = canVerifyRecipeUnits
+      && recipeMode !== RECIPE_MODE.UNKNOWN;
+    if (needsRecipeConfirmation && recipeMode === RECIPE_MODE.DIFFERENT
+      && !recipeCount.trim()) {
+      setError('Indiquez le nombre réel de pièces de recette par colis.');
+      return;
+    }
+    const recipeUnitsPerPackage = needsRecipeConfirmation
+      ? recipeMode === RECIPE_MODE.SAME ? unitCount : Number(recipeCount)
+      : null;
     if (recipeUnitsPerPackage !== null
       && (!Number.isSafeInteger(recipeUnitsPerPackage)
         || recipeUnitsPerPackage < 1 || recipeUnitsPerPackage > 1000000)) {
@@ -233,38 +258,113 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
                   </div>
 
                   {canVerifyRecipeUnits ? (
-                    <SupplierArticleOutlinedField
-                      filled={Boolean(recipeCount.trim())}
-                      id="article-recipe-units"
-                      label="Nombre de pièces de recette par colis (facultatif)"
-                    >
-                      <Input
-                        className="h-12"
-                        id="article-recipe-units"
-                        inputMode="numeric"
-                        onChange={(event) => {
-                          setRecipeCount(event.target.value);
-                          setRecipeConfirmed(false);
-                        }}
-                        value={recipeCount}
-                      />
-                    </SupplierArticleOutlinedField>
+                    <div className="space-y-3 sm:col-span-2">
+                      <fieldset className="space-y-2">
+                        <legend className="text-sm font-medium">
+                          Correspondance entre unités du colis et pièces de recette
+                        </legend>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                            <input
+                              checked={recipeMode === RECIPE_MODE.SAME}
+                              className="mt-1 accent-primary"
+                              name="article-recipe-mode"
+                              onChange={() => {
+                                setRecipeMode(RECIPE_MODE.SAME);
+                                setRecipeConfirmed(false);
+                                setError('');
+                              }}
+                              type="radio"
+                              value={RECIPE_MODE.SAME}
+                            />
+                            <span>1 unité du colis = 1 pièce en recette</span>
+                          </label>
+                          <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                            <input
+                              checked={recipeMode === RECIPE_MODE.DIFFERENT}
+                              className="mt-1 accent-primary"
+                              name="article-recipe-mode"
+                              onChange={() => {
+                                setRecipeMode(RECIPE_MODE.DIFFERENT);
+                                setRecipeCount('');
+                                setRecipeConfirmed(false);
+                                setError('');
+                              }}
+                              type="radio"
+                              value={RECIPE_MODE.DIFFERENT}
+                            />
+                            <span>Le nombre de pièces est différent</span>
+                          </label>
+                          <label className="flex cursor-pointer items-start gap-2 rounded-md border border-border px-3 py-2 text-sm sm:col-span-2">
+                            <input
+                              checked={recipeMode === RECIPE_MODE.UNKNOWN}
+                              className="mt-1 accent-primary"
+                              name="article-recipe-mode"
+                              onChange={() => {
+                                setRecipeMode(RECIPE_MODE.UNKNOWN);
+                                setRecipeConfirmed(false);
+                                setError('');
+                              }}
+                              type="radio"
+                              value={RECIPE_MODE.UNKNOWN}
+                            />
+                            <span>Je ne connais pas encore cette correspondance</span>
+                          </label>
+                        </div>
+                      </fieldset>
+                      {recipeMode === RECIPE_MODE.SAME && (
+                        <p className="text-sm" role="status">
+                          Proposition à confirmer : <strong>{form.unitCount} pièces par colis</strong>.
+                          Aucune deuxième saisie nécessaire.
+                        </p>
+                      )}
+                      {recipeMode === RECIPE_MODE.DIFFERENT && (
+                        <SupplierArticleOutlinedField
+                          filled={Boolean(recipeCount.trim())}
+                          id="article-recipe-units"
+                          label="Nombre réel de pièces utilisables par colis"
+                        >
+                          <Input
+                            className="h-12"
+                            id="article-recipe-units"
+                            inputMode="numeric"
+                            onChange={(event) => {
+                              setRecipeCount(event.target.value);
+                              setRecipeConfirmed(false);
+                            }}
+                            value={recipeCount}
+                          />
+                        </SupplierArticleOutlinedField>
+                      )}
+                      {recipeMode === RECIPE_MODE.UNKNOWN && (
+                        <p className="text-sm text-warning" role="status">
+                          L’Article pourra être enregistré, mais le tarif au carton ne pourra pas
+                          être converti en prix par pièce. Une équivalence déjà validée sera retirée.
+                        </p>
+                      )}
+                      {recipeMode !== RECIPE_MODE.UNKNOWN && (
+                        <label className="flex items-start gap-2 text-sm">
+                          <Checkbox
+                            checked={recipeConfirmed}
+                            disabled={
+                              recipeMode === RECIPE_MODE.DIFFERENT
+                              && !recipeCount.trim()
+                            }
+                            onChange={(event) => setRecipeConfirmed(event.target.checked)}
+                          />
+                          <span>
+                            Je confirme que cette correspondance représente les pièces
+                            réellement utilisables dans les fiches techniques.
+                          </span>
+                        </label>
+                      )}
+                    </div>
                   ) : referenceUnit === 'UNIT' ? (
                     <p className="self-center text-xs text-muted-foreground">
                       Indiquez d’abord le nombre d’unités et la quantité par unité dans le conditionnement ci-dessous.
                     </p>
                   ) : null}
                 </div>
-                {canVerifyRecipeUnits && (
-                  <label className="mt-3 flex items-start gap-2 text-sm">
-                    <Checkbox
-                      checked={recipeConfirmed}
-                      disabled={!recipeCount.trim()}
-                      onChange={(event) => setRecipeConfirmed(event.target.checked)}
-                    />
-                    <span>Je confirme le nombre réel de pièces utilisables en recette dans ce colis.</span>
-                  </label>
-                )}
               </section>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -276,7 +376,6 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
                 <legend className="px-1 text-sm font-medium">Conditionnement</legend>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {field('containerType', 'Type de colis', { maxLength: 80 })}
-                  {field('supplierLabel', 'Libellé fournisseur', { maxLength: 240 })}
                   {field('unitCount', 'Nb d’unités par colis', { inputMode: 'numeric' })}
                   {field('quantityPerUnit', 'Quantité par unité', { inputMode: 'decimal' })}
                   <SupplierArticleOutlinedField filled={Boolean(form.unit)} id="article-edit-unit" label="Unité de quantité">
@@ -337,6 +436,42 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
                     </Select>
                   </SupplierArticleOutlinedField>
                 </div>
+                <Collapsible
+                  className="mt-3 border-t border-border pt-2"
+                  defaultOpen={Boolean(article?.packaging?.supplierLabel)}
+                >
+                  <CollapsibleTrigger
+                    className="group flex w-full items-center justify-between gap-2 rounded-md px-1 py-2 text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    type="button"
+                  >
+                    <span>
+                      Informations complémentaires
+                      {form.supplierLabel.trim() && (
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          (mention renseignée)
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="size-4 shrink-0 transition-transform duration-200 group-data-[panel-open]:rotate-180 motion-reduce:transition-none"
+                    />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-2 pt-3">
+                    {field('supplierLabel', 'Mention du conditionnement fournisseur (facultatif)', {
+                      maxLength: 240,
+                    })}
+                    <div className="flex items-start gap-1 text-xs text-muted-foreground">
+                      <span>
+                        Mention d’origine telle qu’indiquée sur le catalogue ou la mercuriale.
+                      </span>
+                      <InfoTooltip
+                        label="À quoi sert la mention du conditionnement fournisseur ?"
+                        content="Ce texte conserve l’intitulé d’origine du colis (ex. CT 36 × 120 G). Il ne remplace ni la désignation de l’Article ni les quantités structurées utilisées pour calculer les prix."
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </fieldset>
             </div>
 
