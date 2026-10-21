@@ -172,6 +172,15 @@ test('M-002 contrôle guidé : la Dimension vérifiée mais provisoire se valide
   await loginWithIdentity(page, E2E_FOUNDER);
   await page.goto('/product-reference');
   await selectGlobalProductReference(page, productName);
+
+  // La sélection dans l'autocomplétion filtre le tableau, mais n'ouvre
+  // pas la fiche Produit. Ouvrir explicitement la ligne avant ses onglets.
+  const productRow = page.getByRole('row').filter({ hasText: productName });
+  await expect(productRow).toBeVisible();
+  await productRow.getByRole('button', { name: `Voir ${productName}` }).click();
+  await expect(page.getByRole('heading', { name: productName, exact: true }))
+    .toBeVisible();
+
   await page.getByRole('tab', { name: /Références \(\d+\)/ }).click();
   await page.getByRole('button', {
     name: `Examiner la référence ${referenceName}`,

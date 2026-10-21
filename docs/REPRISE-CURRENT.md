@@ -1,6 +1,8 @@
 # Reprise courante — cohérence des unités (2026-10-16)
 
 ## Lot actif M-002/M-003/M-004
+**Correction navigation E2E du contrôle guidé — 2026-10-21 :** le scénario Playwright ne pouvait pas trouver l'onglet Références, car l'autocomplétion ne fait que filtrer le tableau. Le test ouvre désormais explicitement le drawer via l'action « Voir » de la ligne Produit, puis vérifie son titre avant de sélectionner l'onglet. Aucun changement de contrat ni de comportement applicatif. Échec local initial constaté (timeout 30 s) ; relance locale requise après pull.
+
 **Cohérence des onglets M-002 — 2026-10-21 :** les Dimensions PROVISIONAL sont désormais signalées dans l'onglet Dimensions par une action distincte « Identité à examiner » même si qualityReviewStatus vaut REVIEWED. Le compteur À contrôler conserve son sens de revue qualité, et une Contribution de gouvernance ouvre la Dimension dans le filtre Toutes. Test RTL dédié ajouté, validation locale requise.
 
 **E2E ciblé gouvernance M-002 — 2026-10-21 :** un scénario Playwright initialise exclusivement la base `_e2e_test` avec une Dimension provisoire déjà REVIEWED dont la Contribution a disparu, une Référence liée PROVISIONAL, puis exerce le contrôle guidé jusqu'aux deux validations distinctes. Le scénario doit encore être exécuté localement ; aucune réussite de gate n'est revendiquée.
