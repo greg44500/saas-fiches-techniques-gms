@@ -111,11 +111,43 @@ describe('M-003 — édition de l’Article et unité de fiche', () => {
       ...article,
       recipeUnitEquivalence: { unitsPerPackage: 36 },
     });
+    const initialConfirmation = screen.getByRole('checkbox');
+    expect(initialConfirmation).toBeChecked();
+
+    // Un colisage incomplet masque le contrôle des pièces : l'ancienne
+    // checkbox est alors démontée. Il faut relire celle du DOM courant.
+    await user.clear(screen.getByLabelText('Nb d’unités par colis'));
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(initialConfirmation).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Nb d’unités par colis'), '25');
+    const currentConfirmation = screen.getByRole('checkbox');
+    expect(currentConfirmation).not.toBe(initialConfirmation);
+    expect(currentConfirmation).not.toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Confirmez que ce nombre correspond bien aux pièces utilisées en recette.',
+    );
+  });
+
+  it('annule également une confirmation après modification du poids sans démonter la case', async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      ...article,
+      recipeUnitEquivalence: { unitsPerPackage: 36 },
+    });
+
     const confirmation = screen.getByRole('checkbox');
     expect(confirmation).toBeChecked();
-    await user.clear(screen.getByLabelText('Nb d’unités par colis'));
-    await user.type(screen.getByLabelText('Nb d’unités par colis'), '25');
+
+    const quantity = screen.getByLabelText('Quantité par unité');
+    await user.type(quantity, '0');
+
+    expect(screen.getByRole('checkbox')).toBe(confirmation);
     expect(confirmation).not.toBeChecked();
+
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(mocks.update).not.toHaveBeenCalled();
     expect(screen.getByRole('alert')).toHaveTextContent(
