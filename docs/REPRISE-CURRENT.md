@@ -1,6 +1,8 @@
 # Reprise courante — cohérence des unités (2026-10-16)
 
 ## Lot actif M-002/M-003/M-004
+**UX implémentée — contrôle guidé M-002 (2026-10-21) :** depuis l'onglet Références, le panneau de gouvernance identifie Produit parent et Dimensions avec leur statut d'identité, autorise une revue ciblée dans la même carte, puis la validation finale seulement si les dépendances sont approuvées. La revue qualité reste distincte et les quatre onglets sont conservés. Les décisions et liens de reprise réutilisent les mutations existantes sous permission Application Global MANAGE ; tests frontend ajoutés, gates locaux et QA visuelle à confirmer.
+
 **Lot QA gouvernance M-002 — 2026-10-21 :** le parcours guidé de validation d'une Référence conserve les quatre onglets, expose les dépendances Produit/Dimensions et réutilise les décisions individuelles auditables. Le backend étend la reprise idempotente de Contribution aux Dimensions PROVISIONAL déjà REVIEWED, et remplace l'erreur générique par le nom des identités bloquantes ; contrat M-002 complété. Vérification E2E/RTL et gates locaux requis avant PR.
 
 **QA contrôle vide M-002 — 2026-10-21 :** correction ciblée des champs outlined sans options (Variété, Caractéristiques). Le libellé « Aucune valeur disponible » est une option sentinelle, pas une sélection réelle : elle ne doit plus forcer le label en haut. Les champs concernés restent désactivés et affichent le libellé au centre au repos ; au survol, le libellé monte sur la bordure et le motif d'indisponibilité apparaît. Pas de faux focus ni de sélection autorisée. Les listes non désactivées continuent de flotter au focus. Tests de structure RTL mis à jour ; recette locale requise.

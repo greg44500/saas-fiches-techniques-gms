@@ -77,6 +77,7 @@ function ProductReferencePage({ canManage }) {
     initialDimensionFilter: 'active',
     initialReferenceFilter: 'all',
     reviewContext: null,
+    guidedReviewContext: null,
   });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -205,30 +206,56 @@ function ProductReferencePage({ canManage }) {
     });
   }
 
+  async function loadTargetReviewContext(dataType, targetId, dimensionType = null) {
+    const result = await loadReviewTarget({
+      type: 'CONTRIBUTION',
+      targetId,
+      origins: 'omit',
+      page: 1,
+      limit: 1,
+    }).unwrap();
+    const existing = result.items?.find((entry) => (
+      entry.targetId === targetId
+      && entry.dataType === dataType
+      && (dataType !== 'DIMENSION' || entry.dimensionType === dimensionType)
+    ));
+    if (existing) return existing;
+
+    // Une identité PROVISIONAL peut perdre son lien de Contribution, même
+    // après une revue qualité terminée. La reprise est MANAGE et idempotente.
+    return restoreReviewContext({
+      productId: drawerState.productId,
+      dataType,
+      targetId,
+      ...(dimensionType ? { dimensionType } : {}),
+    }).unwrap();
+  }
+
   async function openReviewTarget(dataType, targetId) {
     if (!canManage) return;
     try {
-      const result = await loadReviewTarget({
-        type: 'CONTRIBUTION',
-        targetId,
-        origins: 'omit',
-        page: 1,
-        limit: 1,
-      }).unwrap();
-      let item = result.items?.find((entry) => (
-        entry.targetId === targetId && entry.dataType === dataType
-      ));
-      if (!item) {
-        // Une Référence PROVISIONAL sans contribution PENDING_REVIEW
-        // peut provenir de données historiques. Reprendre la même file
-        // de gouvernance, avec autorisation MANAGE et traçabilité serveur.
-        item = await restoreReviewContext({
-          productId: drawerState.productId,
-          dataType,
-          targetId,
-        }).unwrap();
-      }
-      examineReviewItem(item);
+      examineReviewItem(await loadTargetReviewContext(dataType, targetId));
+    } catch (error) {
+      toast({
+        title: 'Contrôle indisponible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    }
+  }
+
+  async function openGuidedReviewTarget(item) {
+    if (!canManage) return;
+    try {
+      const context = await loadTargetReviewContext(
+        item.dataType,
+        item.id,
+        item.dimensionType,
+      );
+      setDrawerState((current) => ({
+        ...current,
+        guidedReviewContext: context,
+      }));
     } catch (error) {
       toast({
         title: 'Contrôle indisponible',
@@ -758,10 +785,17 @@ function ProductReferencePage({ canManage }) {
         initialReferenceFilter={drawerState.initialReferenceFilter}
         initialTab={drawerState.initialTab}
         reviewContext={drawerState.reviewContext}
+        guidedReviewContext={drawerState.guidedReviewContext}
         onClose={() => setDrawerState((current) => ({
           ...current,
           open: false,
           reviewContext: null,
+          guidedReviewContext: null,
+        }))}
+        onGuidedReviewRequested={openGuidedReviewTarget}
+        onGuidedReviewClosed={() => setDrawerState((current) => ({
+          ...current,
+          guidedReviewContext: null,
         }))}
         onReviewRequested={openReviewTarget}
         reviewLoading={reviewTargetState.isFetching || restoreReviewState.isLoading}

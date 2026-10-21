@@ -45,6 +45,9 @@ import {
   ProductReferenceGovernanceReviewPanel,
 } from '@/features/products/components/product-reference-governance-review-panel';
 import { ProductReferenceVariantEditDialog } from '@/features/products/components/product-reference-variant-edit-dialog';
+import {
+  ProductReferenceReviewWorkflow,
+} from '@/features/products/components/product-reference-review-workflow';
 import { ProductVariantMergeDrawer } from '@/features/products/components/product-variant-merge-drawer';
 import { ProductVariantCreateDialog } from '@/features/products/components/product-variant-create-dialog';
 import {
@@ -96,6 +99,9 @@ function ProductReferenceDetailsDrawer({
   metadata,
   onClose,
   onReviewRequested,
+  onGuidedReviewRequested,
+  onGuidedReviewClosed,
+  guidedReviewContext = null,
   reviewLoading = false,
   open,
   productId,
@@ -355,19 +361,20 @@ function ProductReferenceDetailsDrawer({
   async function decideContribution(
     decision,
     targetReferenceId = null,
+    context = reviewContext,
   ) {
-    if (!reviewContext?.sourceId) return;
+    if (!context?.sourceId) return;
 
     try {
       await reviewContribution({
-        contributionId: reviewContext.sourceId,
+        contributionId: context.sourceId,
         decision,
         targetReferenceId,
       }).unwrap();
 
-      const subject = reviewContext.dataType === 'PRODUCT'
+      const subject = context.dataType === 'PRODUCT'
         ? 'Produit'
-        : reviewContext.dataType === 'REFERENCE'
+        : context.dataType === 'REFERENCE'
           ? 'Référence'
           : 'Dimension';
       const actionLabel = decision === 'MERGE'
@@ -378,12 +385,17 @@ function ProductReferenceDetailsDrawer({
 
       toast({
         title: subject + ' ' + actionLabel,
-        description: reviewContext.value,
+        description: context.value,
         variant: 'success',
       });
 
+      if (context === guidedReviewContext) {
+        onGuidedReviewClosed?.();
+      }
+
       if (
-        reviewContext.dataType === 'PRODUCT'
+        context === reviewContext
+        && reviewContext.dataType === 'PRODUCT'
         && decision !== 'APPROVE'
       ) {
         onClose();
@@ -1239,13 +1251,34 @@ function ProductReferenceDetailsDrawer({
                         && reviewContext.targetId === variant.id
                         && variant.governanceStatus === 'PROVISIONAL' && (
                         <div className="mt-4 border-t border-border pt-4">
-                          <ProductReferenceGovernanceReviewPanel
+                          <ProductReferenceReviewWorkflow
+                            product={product}
+                            variant={variant}
+                            varieties={varieties}
+                            characteristics={characteristics}
+                            kindLabels={characteristicKindLabels}
                             context={reviewContext}
+                            dependencyContext={guidedReviewContext}
+                            onExamine={(item) => onGuidedReviewRequested?.(item)}
+                            onCloseDependency={() => onGuidedReviewClosed?.()}
+                            onDecideDependency={(decision, targetId = null) => (
+                              decideContribution(decision, targetId, guidedReviewContext)
+                            )}
+                            onEditDependency={(item) => {
+                              if (item.dataType === 'PRODUCT') {
+                                setEditProductOpen(true);
+                              } else {
+                                setEditDimension({
+                                  type: item.dimensionType,
+                                  dimension: item.entity,
+                                });
+                              }
+                            }}
                             onApprove={approveReviewTarget}
                             onEdit={() => setEditVariant(variant)}
                             onMerge={mergeReviewTarget}
                             onReject={rejectReviewTarget}
-                            pending={pending}
+                            pending={pending || reviewLoading}
                           />
                         </div>
                       )}

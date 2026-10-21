@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 
 function ProductReferenceGovernanceReviewPanel({
   context,
+  approveDisabled = false,
   onApprove,
   onEdit,
   onMerge,
@@ -50,7 +51,7 @@ function ProductReferenceGovernanceReviewPanel({
         )}
 
         <Button
-          disabled={pending}
+          disabled={pending || approveDisabled}
           onClick={onApprove}
           type="button"
         >
