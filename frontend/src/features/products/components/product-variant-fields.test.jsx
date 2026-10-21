@@ -119,6 +119,47 @@ describe('ProductVariantFields', () => {
     expect(screen.getByRole('button', {
       name: 'Aide sur l’état ou la transformation du Produit',
     })).toBeInTheDocument();
+
+    const processingField = processing.closest('[data-slot="field"]');
+    const processingLabel = screen.getByText('État / transformation');
+    expect(processingField).toHaveAttribute('data-label-state', 'empty');
+    expect(processingLabel.parentElement).toHaveClass('top-8', 'group-focus-within:top-2');
+    expect(processingLabel).toHaveClass('group-focus-within:text-xs');
+
+    expect(name.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
+    expect(screen.getByLabelText('Variété').closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'filled');
+  });
+
+  it('remonte le libellé sur la bordure lorsqu’une sélection est renseignée', async () => {
+    const user = userEvent.setup();
+
+    render(<StructuredHarness onPayload={vi.fn()} />);
+
+    // Le parcours classique ne change pas ; seul le mode floating est animé.
+    const classic = screen.getByLabelText('Variété');
+    expect(classic.closest('[data-slot="field"]')).not.toHaveAttribute('data-label-state');
+
+    // Les champs de l’édition affichent leur valeur sélectionnée sans la masquer.
+    const value = createEmptyVariantDraft(metadata, { structured: true });
+    const populated = {
+      ...value,
+      varietyId: dimensions.varieties[0].id,
+    };
+    const { unmount } = render(
+      <ProductVariantFields
+        dimensions={dimensions}
+        floatingLabels
+        metadata={metadata}
+        onChange={vi.fn()}
+        structured
+        value={populated}
+      />,
+    );
+    expect(screen.getAllByLabelText('Variété')[1].closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'filled');
+    unmount();
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
   });
 
   it('conserve les labels classiques en dehors du prototype', () => {

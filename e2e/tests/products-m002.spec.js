@@ -75,10 +75,31 @@ test('M-002 la correction de référence conserve les actions visibles sur un é
     name: `Corriger la référence ${productName}`,
   }).click();
 
-  const dialog = page.getByRole('dialog', { name: 'Corriger la référence Produit' });
+  const dialog = page.getByRole('dialog', { name: `Corriger ${productName}` });
   const fields = dialog.getByRole('region', { name: 'Champs de la référence Produit' });
   const cancel = dialog.getByRole('button', { name: 'Annuler' });
   const save = dialog.getByRole('button', { name: 'Enregistrer' });
+
+  await expect(dialog.getByRole('button', { name: 'Enrichir le référentiel' }))
+    .toBeVisible();
+  await expect(dialog.getByText('Caractéristiques de la référence')).toHaveCount(0);
+
+  const processing = dialog.getByLabel('État / transformation');
+  const labelOffset = () => dialog
+    .locator('label[for="product-variant-processing"]')
+    .evaluate((element) => {
+      const field = element.closest('[data-slot="field"]');
+      return element.getBoundingClientRect().top - field.getBoundingClientRect().top;
+    });
+  const initialOffset = await labelOffset();
+  await processing.focus();
+  await expect.poll(labelOffset).toBeLessThan(initialOffset - 8);
+  await processing.fill('Prêt à cuire');
+  await cancel.focus();
+  await expect.poll(labelOffset).toBeLessThan(initialOffset - 8);
+  await processing.fill('');
+  await cancel.focus();
+  await expect.poll(labelOffset).toBeGreaterThan(initialOffset - 4);
 
   await expect(fields).toBeVisible();
   expect(await fields.evaluate((element) => element.scrollHeight > element.clientHeight))

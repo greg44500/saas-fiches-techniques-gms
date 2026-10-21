@@ -130,13 +130,25 @@ function ProductReferenceVariantEditDialog({
           className="flex max-h-[calc(100dvh-2rem)] max-w-4xl flex-col overflow-hidden p-0"
           initialFocus={cancelRef}
         >
-          <DialogHeader className="shrink-0 px-5 pt-5">
-            <div className="flex items-center gap-2">
-              <DialogTitle>Corriger la référence Produit</DialogTitle>
-              <InfoTooltip
-                label="Aide sur la correction d’une référence Produit"
-                content="Vous pouvez corriger les informations de cette référence. Si son unité change, l’application vérifie qu’aucune fiche technique ni aucun prix historique incompatible ne sera modifié. Les tarifs fournisseur et les quantités par colis seront conservés, mais le prix de recette devra être vérifié."
-              />
+          <DialogHeader className="shrink-0 px-5 pb-1 pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <DialogTitle className="min-w-0 break-words">
+                  Corriger {variant?.name ?? 'une référence Produit'}
+                </DialogTitle>
+                <InfoTooltip
+                  label="Aide sur la correction d’une référence Produit"
+                  content="Vous pouvez corriger les informations de cette référence. Si son unité change, l’application vérifie qu’aucune fiche technique ni aucun prix historique incompatible ne sera modifié. Les tarifs fournisseur et les quantités par colis seront conservés, mais le prix de recette devra être vérifié."
+                />
+              </div>
+              <Button
+                disabled={updateState.isLoading}
+                onClick={() => setDimensionDialogOpen(true)}
+                type="button"
+                variant="outline"
+              >
+                Enrichir le référentiel
+              </Button>
             </div>
             <DialogDescription className="sr-only">
               Correction des informations d’une référence Produit.
@@ -149,20 +161,6 @@ function ProductReferenceVariantEditDialog({
             role="region"
             tabIndex={0}
           >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground">
-                Caractéristiques de la référence
-              </p>
-              <Button
-                disabled={updateState.isLoading}
-                onClick={() => setDimensionDialogOpen(true)}
-                type="button"
-                variant="outline"
-              >
-                Enrichir le référentiel
-              </Button>
-            </div>
-
             <ProductVariantFields
               dimensions={dimensions}
               disabled={updateState.isLoading}

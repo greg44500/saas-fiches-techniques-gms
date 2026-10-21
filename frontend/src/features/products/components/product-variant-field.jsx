@@ -32,12 +32,15 @@ function ProductVariantField({
     );
   }
 
-  const raised = filled || Boolean(helpContent);
+  const raised = filled;
 
   return (
-    <Field className={cn('group relative gap-0 pt-2', className)}>
+    <Field
+      className={cn('group relative gap-0 pt-2', className)}
+      data-label-state={raised ? 'filled' : 'empty'}
+    >
       <div className={cn(
-        'absolute left-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center gap-1 transition-all duration-150',
+        'absolute left-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center gap-1 transition-all duration-200 ease-out motion-reduce:transition-none',
         raised
           ? 'top-2 -translate-y-1/2'
           : 'top-8 -translate-y-1/2 group-focus-within:top-2',
@@ -45,7 +48,7 @@ function ProductVariantField({
       >
         <FieldLabel
           className={cn(
-            'max-w-full truncate whitespace-nowrap rounded-sm transition-all duration-150',
+            'max-w-full truncate whitespace-nowrap rounded-sm transition-all duration-200 ease-out motion-reduce:transition-none',
             raised
               ? 'bg-popover px-1 text-xs text-foreground'
               : 'text-sm text-muted-foreground group-focus-within:bg-popover group-focus-within:px-1 group-focus-within:text-xs group-focus-within:text-foreground',

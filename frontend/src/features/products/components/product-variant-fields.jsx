@@ -117,7 +117,7 @@ function ProductVariantFields({
   }
 
   return (
-    <div className={floatingLabels ? "grid gap-3 sm:grid-cols-2" : "grid gap-4 sm:grid-cols-2"}>
+    <div className={floatingLabels ? 'grid gap-3 sm:grid-cols-2' : 'grid gap-4 sm:grid-cols-2'}>
       {showName && (
         <ProductVariantField
           className="sm:col-span-2"
@@ -141,7 +141,7 @@ function ProductVariantFields({
       {structured ? (
         <>
           <ProductVariantField
-            filled
+            filled={Boolean(value.varietyId) || varieties.length === 0}
             floating={floatingLabels}
             id="product-variant-variety"
             label="Variété"
@@ -165,7 +165,11 @@ function ProductVariantFields({
               value={value.varietyId || EMPTY_OPTION}
             >
               <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id="product-variant-variety">
-                <SelectValue />
+                <SelectValue
+                  className={floatingLabels && !value.varietyId && varieties.length > 0
+                    ? 'opacity-0 transition-opacity duration-200 group-focus-within:opacity-100'
+                    : undefined}
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={EMPTY_OPTION}>
@@ -196,7 +200,7 @@ function ProductVariantFields({
 
             return (
               <ProductVariantField
-                filled
+                filled={selected !== EMPTY_OPTION || options.length === 0}
                 floating={floatingLabels}
                 helpContent={kind.value === 'PRESENTATION' ? PRESENTATION_HELP : null}
                 helpLabel="Aide sur la présentation de la Référence Produit"
@@ -227,7 +231,11 @@ function ProductVariantFields({
                   value={selected}
                 >
                   <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id={fieldId}>
-                    <SelectValue />
+                    <SelectValue
+                      className={floatingLabels && selected === EMPTY_OPTION && options.length > 0
+                        ? 'opacity-0 transition-opacity duration-200 group-focus-within:opacity-100'
+                        : undefined}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={EMPTY_OPTION}>{emptyLabel}</SelectItem>
@@ -267,7 +275,7 @@ function ProductVariantFields({
       )}
 
       <ProductVariantField
-        filled
+        filled={Boolean(value.conservationType)}
         floating={floatingLabels}
         id="product-variant-conservation"
         label="Conservation *"
@@ -279,7 +287,12 @@ function ProductVariantFields({
           value={value.conservationType || null}
         >
           <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id="product-variant-conservation">
-            <SelectValue placeholder="Sélectionner une conservation" />
+            <SelectValue
+              className={floatingLabels && !value.conservationType
+                ? 'opacity-0 transition-opacity duration-200 group-focus-within:opacity-100'
+                : undefined}
+              placeholder="Sélectionner une conservation"
+            />
           </SelectTrigger>
           <SelectContent>
             {conservationItems.map((item) => (
@@ -292,7 +305,7 @@ function ProductVariantFields({
       </ProductVariantField>
 
       <ProductVariantField
-        filled
+        filled={Boolean(value.referenceUnit)}
         floating={floatingLabels}
         id="product-variant-unit"
         label="Unité de référence *"
@@ -304,7 +317,12 @@ function ProductVariantFields({
           value={value.referenceUnit || null}
         >
           <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id="product-variant-unit">
-            <SelectValue placeholder="Sélectionner une unité" />
+            <SelectValue
+              className={floatingLabels && !value.referenceUnit
+                ? 'opacity-0 transition-opacity duration-200 group-focus-within:opacity-100'
+                : undefined}
+              placeholder="Sélectionner une unité"
+            />
           </SelectTrigger>
           <SelectContent>
             {unitItems.map((item) => (

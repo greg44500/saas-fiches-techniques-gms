@@ -61,6 +61,29 @@ describe('M-002 correction encadrée de l’unité de référence', () => {
     });
   });
 
+  it('affiche le nom exact de la Référence et l’action d’enrichissement dans l’en-tête', () => {
+    render(
+      <TooltipProvider>
+        <ProductReferenceVariantEditDialog
+          metadata={{}}
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+          open
+          productId="product-1"
+          variant={variant}
+        />
+      </TooltipProvider>,
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Corriger Croissant individuel PAI' });
+    const header = dialog.querySelector('[data-slot="dialog-header"]');
+    const enrich = screen.getByRole('button', { name: 'Enrichir le référentiel' });
+
+    expect(header).toContainElement(enrich);
+    expect(screen.queryByText('Caractéristiques de la référence')).not.toBeInTheDocument();
+    expect(dialog.getAttribute('aria-labelledby')).toBeTruthy();
+  });
+
   it('exige une confirmation avant de modifier une unité avec conséquences économiques', async () => {
     const user = userEvent.setup();
     render(
@@ -137,7 +160,7 @@ describe('M-002 correction encadrée de l’unité de référence', () => {
       </TooltipProvider>,
     );
 
-    const dialog = screen.getByRole('dialog', { name: 'Corriger la référence Produit' });
+    const dialog = screen.getByRole('dialog', { name: 'Corriger Croissant individuel PAI' });
     const fields = screen.getByRole('region', {
       name: 'Champs de la référence Produit',
     });
