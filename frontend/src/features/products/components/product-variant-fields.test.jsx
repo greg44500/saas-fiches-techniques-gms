@@ -177,6 +177,29 @@ describe('ProductVariantFields', () => {
     await user.click(screen.getByRole('button', { name: 'Exporter' }));
   });
 
+  it('traite une caractéristique effacée comme un champ non renseigné', () => {
+    render(
+      <ProductVariantFields
+        dimensions={dimensions}
+        floatingLabels
+        metadata={metadata}
+        onChange={vi.fn()}
+        structured
+        value={{
+          ...createEmptyVariantDraft(metadata, { structured: true }),
+          characteristicIdsByKind: { PRESENTATION: '' },
+        }}
+      />,
+    );
+
+    const presentation = screen.getByLabelText('Présentation');
+    expect(presentation).toHaveTextContent('Non renseigné');
+    expect(presentation.closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'empty');
+    expect(screen.getByText('Présentation').parentElement)
+      .toHaveClass('top-8', 'group-focus-within:top-2');
+  });
+
   it('conserve les labels classiques en dehors du prototype', () => {
     render(
       <ProductVariantFields

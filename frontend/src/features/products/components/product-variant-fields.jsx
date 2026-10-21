@@ -196,7 +196,7 @@ function ProductVariantFields({
             );
             const fieldId = 'product-variant-characteristic-' + kind.value;
             const selected = value.characteristicIdsByKind?.[kind.value]
-              ?? EMPTY_OPTION;
+              || EMPTY_OPTION;
             const emptyLabel = options.length === 0
               ? 'Aucune valeur disponible'
               : 'Non renseigné';
