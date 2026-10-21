@@ -15,6 +15,7 @@ function ProductVariantField({
   helpLabel,
   id,
   label,
+  unavailable = false,
 }) {
   if (!floating) {
     return (
@@ -43,7 +44,8 @@ function ProductVariantField({
         'absolute left-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center gap-1 transition-all duration-200 ease-out motion-reduce:transition-none',
         raised
           ? 'top-2 -translate-y-1/2'
-          : 'top-8 -translate-y-1/2 group-focus-within:top-2',
+          : cn('top-8 -translate-y-1/2 group-focus-within:top-2',
+            unavailable && 'group-hover:top-2'),
       )}
       >
         <FieldLabel
@@ -51,7 +53,8 @@ function ProductVariantField({
             'max-w-full truncate whitespace-nowrap rounded-sm transition-all duration-200 ease-out motion-reduce:transition-none',
             raised
               ? 'bg-popover px-1 text-xs text-foreground'
-              : 'text-sm text-muted-foreground group-focus-within:bg-popover group-focus-within:px-1 group-focus-within:text-xs group-focus-within:text-foreground',
+              : cn('text-sm text-muted-foreground group-focus-within:bg-popover group-focus-within:px-1 group-focus-within:text-xs group-focus-within:text-foreground',
+                unavailable && 'group-hover:bg-popover group-hover:px-1 group-hover:text-xs group-hover:text-foreground'),
           )}
           htmlFor={id}
         >

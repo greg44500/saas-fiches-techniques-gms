@@ -127,8 +127,23 @@ describe('ProductVariantFields', () => {
     expect(processingLabel).toHaveClass('group-focus-within:text-xs');
 
     expect(name.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
-    expect(screen.getByLabelText('Variété').closest('[data-slot="field"]'))
-      .toHaveAttribute('data-label-state', 'filled');
+    const unavailableVariety = screen.getByLabelText('Variété');
+    const unavailableField = unavailableVariety.closest('[data-slot="field"]');
+    expect(unavailableVariety).toBeDisabled();
+    expect(unavailableVariety).toHaveTextContent('Aucune variété disponible');
+    expect(unavailableField).toHaveAttribute('data-label-state', 'empty');
+    expect(screen.getByText('Variété').parentElement)
+      .toHaveClass('top-8', 'group-hover:top-2');
+    expect(screen.getByText('Variété'))
+      .toHaveClass('group-hover:text-xs');
+    expect(unavailableVariety.querySelector('span[class*="group-hover:opacity-100"]'))
+      .toBeInTheDocument();
+    const unavailableCharacteristic = screen.getByLabelText('Présentation');
+    expect(unavailableCharacteristic).toBeDisabled();
+    expect(unavailableCharacteristic.closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'empty');
+    expect(screen.getByText('Présentation').parentElement)
+      .toHaveClass('top-8', 'group-hover:top-2');
   });
 
   it('remonte le libellé sur la bordure lorsqu’une sélection est renseignée', async () => {

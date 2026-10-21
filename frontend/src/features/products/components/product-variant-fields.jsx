@@ -141,10 +141,11 @@ function ProductVariantFields({
       {structured ? (
         <>
           <ProductVariantField
-            filled={Boolean(value.varietyId) || varieties.length === 0}
+            filled={Boolean(value.varietyId)}
             floating={floatingLabels}
             id="product-variant-variety"
             label="Variété"
+            unavailable={varieties.length === 0}
           >
             <Select
               disabled={disabled || varieties.length === 0}
@@ -166,8 +167,10 @@ function ProductVariantFields({
             >
               <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id="product-variant-variety">
                 <SelectValue
-                  className={floatingLabels && !value.varietyId && varieties.length > 0
-                    ? 'opacity-0 transition-opacity duration-200 group-focus-within:opacity-100'
+                  className={floatingLabels && !value.varietyId
+                    ? varieties.length === 0
+                      ? 'opacity-0 transition-opacity duration-200 group-hover:opacity-100'
+                      : 'opacity-0 transition-opacity duration-200 group-focus-within:opacity-100'
                     : undefined}
                 />
               </SelectTrigger>
@@ -200,13 +203,14 @@ function ProductVariantFields({
 
             return (
               <ProductVariantField
-                filled={selected !== EMPTY_OPTION || options.length === 0}
+                filled={selected !== EMPTY_OPTION}
                 floating={floatingLabels}
                 helpContent={kind.value === 'PRESENTATION' ? PRESENTATION_HELP : null}
                 helpLabel="Aide sur la présentation de la Référence Produit"
                 id={fieldId}
                 key={kind.value}
                 label={kind.label}
+                unavailable={options.length === 0}
               >
                 <Select
                   disabled={disabled || options.length === 0}
@@ -232,8 +236,10 @@ function ProductVariantFields({
                 >
                   <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id={fieldId}>
                     <SelectValue
-                      className={floatingLabels && selected === EMPTY_OPTION && options.length > 0
-                        ? 'opacity-0 transition-opacity duration-200 group-focus-within:opacity-100'
+                      className={floatingLabels && selected === EMPTY_OPTION
+                        ? options.length === 0
+                          ? 'opacity-0 transition-opacity duration-200 group-hover:opacity-100'
+                          : 'opacity-0 transition-opacity duration-200 group-focus-within:opacity-100'
                         : undefined}
                     />
                   </SelectTrigger>
