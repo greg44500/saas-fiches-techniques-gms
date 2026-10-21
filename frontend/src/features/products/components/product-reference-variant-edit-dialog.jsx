@@ -167,6 +167,7 @@ function ProductReferenceVariantEditDialog({
               dimensions={dimensions}
               disabled={updateState.isLoading}
               metadata={metadata}
+              floatingLabels
               onChange={(nextDraft) => {
                 if (nextDraft.referenceUnit !== draft.referenceUnit) {
                   setConfirmedUnitCorrection(false);
@@ -178,11 +179,15 @@ function ProductReferenceVariantEditDialog({
             />
             {draft.referenceUnit !== variant.referenceUnit && (
               <div className="space-y-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
-                <p className="font-medium text-foreground">Correction de l’unité de recette</p>
+                <div className="flex items-center gap-1">
+                  <p className="font-medium text-foreground">Correction de l’unité de recette</p>
+                  <InfoTooltip
+                    content="Les recettes et les prix historiques protégés bloqueront cette modification. Si seuls des Articles fournisseur sont liés, leur colisage sera conservé et leur valorisation sera à vérifier après enregistrement."
+                    label="Conséquences de la correction de l’unité de recette"
+                  />
+                </div>
                 <p className="text-muted-foreground">
-                  Les recettes et les prix historiques protégés bloqueront cette modification.
-                  Si seuls des Articles fournisseur sont liés, leur colisage sera conservé
-                  et leur valorisation sera à vérifier après enregistrement.
+                  Les coûts de recette devront être vérifiés après cette correction.
                 </p>
                 <label className="flex items-start gap-2">
                   <input

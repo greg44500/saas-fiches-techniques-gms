@@ -19,18 +19,15 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
 
 vi.mock('@/features/products/components/product-variant-fields', () => ({
   ProductVariantFields: ({ onChange, value }) => (
-    <label>
-      Unité de référence
-      <select
-        onChange={(event) => onChange({
-          ...value, referenceUnit: event.target.value,
-        })}
-        value={value.referenceUnit}
-      >
-        <option value="KG">kg</option>
-        <option value="UNIT">pièce</option>
-      </select>
-    </label>
+    <button
+      aria-label="Unité de référence"
+      onClick={() => onChange({
+        ...value, referenceUnit: value.referenceUnit === 'UNIT' ? 'KG' : 'UNIT',
+      })}
+      type="button"
+    >
+      {value.referenceUnit === 'UNIT' ? 'pièce' : 'kg'}
+    </button>
   ),
   variantDraftToPayload: (draft) => ({
     name: draft.name,
@@ -79,8 +76,13 @@ describe('M-002 correction encadrée de l’unité de référence', () => {
       </TooltipProvider>,
     );
 
-    await user.selectOptions(screen.getByLabelText('Unité de référence'), 'UNIT');
+    await user.click(screen.getByRole('button', { name: 'Unité de référence' }));
     expect(screen.getByText('Correction de l’unité de recette')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Conséquences de la correction de l’unité de recette',
+    })).toBeInTheDocument();
+    expect(screen.getByText(/Les coûts de recette devront être vérifiés/))
+      .toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(mocks.update).not.toHaveBeenCalled();
@@ -152,7 +154,7 @@ describe('M-002 correction encadrée de l’unité de référence', () => {
     const footer = dialog.querySelector('[data-slot="dialog-footer"]');
     expect(footer.parentElement).toHaveClass('shrink-0');
 
-    await user.selectOptions(screen.getByLabelText('Unité de référence'), 'UNIT');
+    await user.click(screen.getByRole('button', { name: 'Unité de référence' }));
     await user.click(save);
 
     const error = screen.getByRole('alert');

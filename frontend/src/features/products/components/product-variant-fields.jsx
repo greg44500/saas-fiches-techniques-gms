@@ -1,5 +1,4 @@
-import { Field, FieldLabel } from '@/components/ui/field';
-import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { ProductVariantField } from '@/features/products/components/product-variant-field';
 import {
   getReferenceUnitLabel,
 } from '@/features/products/lib/product-presentation';
@@ -81,6 +80,7 @@ function ProductVariantFields({
   metadata,
   onChange,
   showName = true,
+  floatingLabels = false,
   structured = false,
   value,
 }) {
@@ -117,11 +117,17 @@ function ProductVariantFields({
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className={floatingLabels ? "grid gap-3 sm:grid-cols-2" : "grid gap-4 sm:grid-cols-2"}>
       {showName && (
-        <Field className="sm:col-span-2">
-          <FieldLabel htmlFor="product-variant-name">Nom de la référence *</FieldLabel>
+        <ProductVariantField
+          className="sm:col-span-2"
+          filled={Boolean(value.name)}
+          floating={floatingLabels}
+          id="product-variant-name"
+          label="Nom de la référence *"
+        >
           <Input
+            className={floatingLabels ? 'h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground' : undefined}
             disabled={disabled}
             id="product-variant-name"
             maxLength={160}
@@ -129,13 +135,17 @@ function ProductVariantFields({
             placeholder="Ex. Carotte râpée"
             value={value.name ?? ''}
           />
-        </Field>
+        </ProductVariantField>
       )}
 
       {structured ? (
         <>
-          <Field>
-            <FieldLabel htmlFor="product-variant-variety">Variété</FieldLabel>
+          <ProductVariantField
+            filled
+            floating={floatingLabels}
+            id="product-variant-variety"
+            label="Variété"
+          >
             <Select
               disabled={disabled || varieties.length === 0}
               items={[
@@ -154,7 +164,7 @@ function ProductVariantFields({
               )}
               value={value.varietyId || EMPTY_OPTION}
             >
-              <SelectTrigger id="product-variant-variety">
+              <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id="product-variant-variety">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -171,7 +181,7 @@ function ProductVariantFields({
                 ))}
               </SelectContent>
             </Select>
-          </Field>
+          </ProductVariantField>
 
           {characteristicKinds.map((kind) => {
             const options = characteristics.filter(
@@ -185,16 +195,15 @@ function ProductVariantFields({
               : 'Non renseigné';
 
             return (
-              <Field key={kind.value}>
-                <div className="flex items-center gap-1">
-                  <FieldLabel htmlFor={fieldId}>{kind.label}</FieldLabel>
-                  {kind.value === 'PRESENTATION' && (
-                    <InfoTooltip
-                      content={PRESENTATION_HELP}
-                      label="Aide sur la présentation de la Référence Produit"
-                    />
-                  )}
-                </div>
+              <ProductVariantField
+                filled
+                floating={floatingLabels}
+                helpContent={kind.value === 'PRESENTATION' ? PRESENTATION_HELP : null}
+                helpLabel="Aide sur la présentation de la Référence Produit"
+                id={fieldId}
+                key={kind.value}
+                label={kind.label}
+              >
                 <Select
                   disabled={disabled || options.length === 0}
                   items={[
@@ -217,7 +226,7 @@ function ProductVariantFields({
                   })}
                   value={selected}
                 >
-                  <SelectTrigger id={fieldId}>
+                  <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id={fieldId}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -232,20 +241,21 @@ function ProductVariantFields({
                     ))}
                   </SelectContent>
                 </Select>
-              </Field>
+              </ProductVariantField>
             );
           })}
         </>
       ) : (
-        <Field>
-          <div className="flex items-center gap-1">
-            <FieldLabel htmlFor="product-variant-presentation">Présentation</FieldLabel>
-            <InfoTooltip
-              content={PRESENTATION_HELP}
-              label="Aide sur la présentation de la Référence Produit"
-            />
-          </div>
+        <ProductVariantField
+          filled={Boolean(value.presentation)}
+          floating={floatingLabels}
+          helpContent={PRESENTATION_HELP}
+          helpLabel="Aide sur la présentation de la Référence Produit"
+          id="product-variant-presentation"
+          label="Présentation"
+        >
           <Input
+            className={floatingLabels ? 'h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground' : undefined}
             disabled={disabled}
             id="product-variant-presentation"
             maxLength={120}
@@ -253,18 +263,22 @@ function ProductVariantFields({
             placeholder="Ex. entier, en tranches, râpé"
             value={value.presentation}
           />
-        </Field>
+        </ProductVariantField>
       )}
 
-      <Field>
-        <FieldLabel htmlFor="product-variant-conservation">Conservation *</FieldLabel>
+      <ProductVariantField
+        filled
+        floating={floatingLabels}
+        id="product-variant-conservation"
+        label="Conservation *"
+      >
         <Select
           disabled={disabled}
           items={conservationItems}
           onValueChange={(nextValue) => change('conservationType', nextValue)}
           value={value.conservationType || null}
         >
-          <SelectTrigger id="product-variant-conservation">
+          <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id="product-variant-conservation">
             <SelectValue placeholder="Sélectionner une conservation" />
           </SelectTrigger>
           <SelectContent>
@@ -275,17 +289,21 @@ function ProductVariantFields({
             ))}
           </SelectContent>
         </Select>
-      </Field>
+      </ProductVariantField>
 
-      <Field>
-        <FieldLabel htmlFor="product-variant-unit">Unité de référence *</FieldLabel>
+      <ProductVariantField
+        filled
+        floating={floatingLabels}
+        id="product-variant-unit"
+        label="Unité de référence *"
+      >
         <Select
           disabled={disabled}
           items={unitItems}
           onValueChange={(nextValue) => change('referenceUnit', nextValue)}
           value={value.referenceUnit || null}
         >
-          <SelectTrigger id="product-variant-unit">
+          <SelectTrigger className={floatingLabels ? 'h-12 pt-3' : undefined} id="product-variant-unit">
             <SelectValue placeholder="Sélectionner une unité" />
           </SelectTrigger>
           <SelectContent>
@@ -296,15 +314,18 @@ function ProductVariantFields({
             ))}
           </SelectContent>
         </Select>
-      </Field>
+      </ProductVariantField>
 
       {value.referenceUnit === 'UNIT' && (
         <>
-          <Field>
-            <FieldLabel htmlFor="product-variant-count-unit-singular">
-              Nom d’une unité
-            </FieldLabel>
+          <ProductVariantField
+            filled={Boolean(value.countUnitLabelSingular)}
+            floating={floatingLabels}
+            id="product-variant-count-unit-singular"
+            label="Nom d’une unité"
+          >
             <Input
+              className={floatingLabels ? 'h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground' : undefined}
               disabled={disabled}
               id="product-variant-count-unit-singular"
               maxLength={40}
@@ -315,13 +336,16 @@ function ProductVariantFields({
               placeholder="Ex. tranche, pain, œuf"
               value={value.countUnitLabelSingular ?? ''}
             />
-          </Field>
+          </ProductVariantField>
 
-          <Field>
-            <FieldLabel htmlFor="product-variant-count-unit-plural">
-              Nom de plusieurs unités
-            </FieldLabel>
+          <ProductVariantField
+            filled={Boolean(value.countUnitLabelPlural)}
+            floating={floatingLabels}
+            id="product-variant-count-unit-plural"
+            label="Nom de plusieurs unités"
+          >
             <Input
+              className={floatingLabels ? 'h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground' : undefined}
               disabled={disabled}
               id="product-variant-count-unit-plural"
               maxLength={40}
@@ -332,21 +356,20 @@ function ProductVariantFields({
               placeholder="Ex. tranches, pains, œufs"
               value={value.countUnitLabelPlural ?? ''}
             />
-          </Field>
+          </ProductVariantField>
         </>
       )}
 
-      <Field>
-        <div className="flex items-center gap-1">
-          <FieldLabel htmlFor="product-variant-processing">
-            État / transformation
-          </FieldLabel>
-          <InfoTooltip
-            content={PROCESSING_HELP}
-            label="Aide sur l’état ou la transformation du Produit"
-          />
-        </div>
+      <ProductVariantField
+        filled={Boolean(value.processingState)}
+        floating={floatingLabels}
+        helpContent={PROCESSING_HELP}
+        helpLabel="Aide sur l’état ou la transformation du Produit"
+        id="product-variant-processing"
+        label="État / transformation"
+      >
         <Input
+          className={floatingLabels ? 'h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground' : undefined}
           disabled={disabled}
           id="product-variant-processing"
           maxLength={80}
@@ -354,11 +377,16 @@ function ProductVariantFields({
           placeholder="Ex. cru, précuit, cuit, prêt à cuire"
           value={value.processingState}
         />
-      </Field>
+      </ProductVariantField>
 
-      <Field>
-        <FieldLabel htmlFor="product-variant-yield">Rendement (%)</FieldLabel>
+      <ProductVariantField
+        filled={Boolean(value.yieldPercent)}
+        floating={floatingLabels}
+        id="product-variant-yield"
+        label="Rendement (%)"
+      >
         <Input
+          className={floatingLabels ? 'h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground' : undefined}
           disabled={disabled}
           id="product-variant-yield"
           max="100"
@@ -369,7 +397,7 @@ function ProductVariantFields({
           type="number"
           value={value.yieldPercent}
         />
-      </Field>
+      </ProductVariantField>
     </div>
   );
 }

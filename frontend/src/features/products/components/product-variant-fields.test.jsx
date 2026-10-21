@@ -91,6 +91,49 @@ function StructuredHarness({
 }
 
 describe('ProductVariantFields', () => {
+  it('active les libellés outlined uniquement sur demande, sans changer les contrôles', () => {
+    const onChange = vi.fn();
+    render(
+      <ProductVariantFields
+        floatingLabels
+        metadata={metadata}
+        onChange={onChange}
+        structured
+        value={{
+          ...createEmptyVariantDraft(metadata, { structured: true }),
+          name: 'Croissant individuel PAI',
+        }}
+      />,
+    );
+
+    const name = screen.getByLabelText('Nom de la référence *');
+    const label = screen.getByText('Nom de la référence *');
+    const unit = screen.getByLabelText('Unité de référence *');
+    const processing = screen.getByLabelText('État / transformation');
+
+    expect(name).toHaveClass('h-12');
+    expect(unit).toHaveClass('h-12');
+    expect(label).toHaveClass('text-xs', 'bg-popover');
+    expect(processing.closest('[data-slot="field"]'))
+      .toHaveClass('group', 'relative', 'pt-2');
+    expect(screen.getByRole('button', {
+      name: 'Aide sur l’état ou la transformation du Produit',
+    })).toBeInTheDocument();
+  });
+
+  it('conserve les labels classiques en dehors du prototype', () => {
+    render(
+      <ProductVariantFields
+        metadata={metadata}
+        onChange={vi.fn()}
+        value={createEmptyVariantDraft(metadata)}
+      />,
+    );
+
+    expect(screen.getByLabelText('Nom de la référence *')).not.toHaveClass('h-12');
+    expect(screen.getByText('Nom de la référence *')).not.toHaveClass('text-xs');
+  });
+
   it('explique les dimensions métier sans imposer de valeur', () => {
     const onChange = vi.fn();
     const value = createEmptyVariantDraft(metadata);

@@ -202,7 +202,7 @@ function ProductCreateDialog({
     }
   }
 
-  function useExistingCandidate(candidate) {
+  function handleExistingCandidate(candidate) {
     if (pending || !candidate || (!isGlobal && candidate.status !== 'ACTIVE')) return;
     if (onUseCandidate) {
       onUseCandidate(candidate.id, candidate);
@@ -386,7 +386,7 @@ function ProductCreateDialog({
                     && (isGlobal || duplicateResult.exactMatch.status === 'ACTIVE') && (
                     <Button
                       disabled={pending}
-                      onClick={() => useExistingCandidate(duplicateResult.exactMatch)}
+                      onClick={() => handleExistingCandidate(duplicateResult.exactMatch)}
                       type="button"
                       variant="outline"
                     >
@@ -457,7 +457,7 @@ function ProductCreateDialog({
                           && (isGlobal || candidate.status === 'ACTIVE') && (
                           <Button
                             disabled={pending}
-                            onClick={() => useExistingCandidate(candidate)}
+                            onClick={() => handleExistingCandidate(candidate)}
                             size="sm"
                             type="button"
                             variant="outline"
