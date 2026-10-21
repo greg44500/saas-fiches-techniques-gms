@@ -178,9 +178,9 @@ const refreshVariantIdentity = async ({
         ),
     });
 
-    if (await variantCanBeApproved({ variant, session })) {
-        variant.governanceStatus = PRODUCT_GOVERNANCE_STATUS.APPROVED;
-    } else {
+    // Résoudre une Dimension ne vaut pas décision de gouvernance sur
+    // une Référence encore PROVISIONAL. Seule sa Contribution peut l'approuver.
+    if (!(await variantCanBeApproved({ variant, session }))) {
         variant.governanceStatus = PRODUCT_GOVERNANCE_STATUS.PROVISIONAL;
     }
 

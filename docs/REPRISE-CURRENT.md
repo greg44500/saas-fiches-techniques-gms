@@ -1,6 +1,8 @@
 # Reprise courante — cohérence des unités (2026-10-16)
 
 ## Lot actif M-002/M-003/M-004
+**Invariant de validation explicite M-002 (2026-10-21) :** une résolution de Dimension ne peut pas promouvoir automatiquement une Référence encore PROVISIONAL. La mise à jour de signature des Références préserve cet état jusqu'à une décision explicite de Contribution. Test d'intégration étendu, scénario frontend de double bouton « Valider » rendu non ambigu. Gates locaux encore non exécutés.
+
 **UX implémentée — contrôle guidé M-002 (2026-10-21) :** depuis l'onglet Références, le panneau de gouvernance identifie Produit parent et Dimensions avec leur statut d'identité, autorise une revue ciblée dans la même carte, puis la validation finale seulement si les dépendances sont approuvées. La revue qualité reste distincte et les quatre onglets sont conservés. Les décisions et liens de reprise réutilisent les mutations existantes sous permission Application Global MANAGE ; tests frontend ajoutés, gates locaux et QA visuelle à confirmer.
 
 **Lot QA gouvernance M-002 — 2026-10-21 :** le parcours guidé de validation d'une Référence conserve les quatre onglets, expose les dépendances Produit/Dimensions et réutilise les décisions individuelles auditables. Le backend étend la reprise idempotente de Contribution aux Dimensions PROVISIONAL déjà REVIEWED, et remplace l'erreur générique par le nom des identités bloquantes ; contrat M-002 complété. Vérification E2E/RTL et gates locaux requis avant PR.

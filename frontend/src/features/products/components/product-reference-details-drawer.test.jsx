@@ -139,6 +139,7 @@ const metadata = {
     { value: 'ARCHIVED', label: 'Archivé' },
   ],
   productCharacteristicKinds: [
+    { value: 'PRESENTATION', label: 'Présentation' },
     { value: 'CUT', label: 'Pièce / découpe' },
     { value: 'COLOR', label: 'Couleur' },
   ],
@@ -475,7 +476,7 @@ describe('ProductReferenceDetailsDrawer', () => {
     const workflow = screen.getByRole('region', {
       name: 'Contrôle de publication de Croissant individuel',
     });
-    await user.click(within(workflow).getByRole('button', { name: 'Valider' }));
+    await user.click(within(workflow).getAllByRole('button', { name: 'Valider' })[0]);
     expect(mocks.reviewContribution).toHaveBeenCalledWith({
       contributionId: 'contribution-dimension',
       decision: 'APPROVE',

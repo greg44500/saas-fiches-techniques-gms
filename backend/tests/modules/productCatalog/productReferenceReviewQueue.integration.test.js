@@ -38,6 +38,9 @@ import {
     ProductCharacteristic,
 } from '../../../modules/productCatalog/productCharacteristic.model.js';
 import {
+    ProductVariant,
+} from '../../../modules/productCatalog/productVariant.model.js';
+import {
     markProductDimensionReviewed,
 } from '../../../modules/productCatalog/productReferenceReview.service.js';
 import {
@@ -102,6 +105,18 @@ describe('M-002 unified product review queue', () => {
         expect(characteristic.governanceStatus).toBe('PROVISIONAL');
         expect(characteristic.qualityReviewStatus).toBe('REVIEWED');
 
+        // Référence dépendante : une approbation de Dimension ne doit pas
+        // approuver silencieusement cette Référence encore à examiner.
+        await ProductVariant.updateOne(
+            { _id: reference.variant._id },
+            {
+                $set: {
+                    characteristics: [characteristic._id],
+                    governanceStatus: 'PROVISIONAL',
+                },
+            },
+        );
+
         await expect(restoreProductReviewContext({
             ...args,
             dimensionType: 'VARIETY',
@@ -117,6 +132,8 @@ describe('M-002 unified product review queue', () => {
         );
         expect(characteristic.governanceStatus).toBe('APPROVED');
         expect(characteristic.qualityReviewStatus).toBe('REVIEWED');
+        const stillProvisional = await ProductVariant.findById(reference.variant._id);
+        expect(stillProvisional.governanceStatus).toBe('PROVISIONAL');
     });
 
     it('rétablit le contrôle d’une Référence provisoire orpheline, sans la valider ni la dupliquer', async () => {
