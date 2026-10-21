@@ -1,6 +1,8 @@
 # Reprise courante — cohérence des unités (2026-10-16)
 
 ## Lot actif M-002/M-003/M-004
+**QA M-002 — correction complète du contrôle guidé (2026-10-21) :** après le correctif de navigation E2E, le scénario a échoué sur « Masquer le contrôle ». Deux défauts identifiés par lecture de la chaîne entière : (1) le endpoint RTK Query `restoreProductReferenceReviewContext` omettait `dimensionType`, pourtant exigé par Zod pour `dataType=DIMENSION` ; (2) l'attribut `aria-label` restait sur « Examiner ... » après sélection, masquant le libellé accessible « Masquer ... ». Les deux corrigés en une intervention, avec test API du corps HTTP, test du passage de paramètre depuis la page, test du libellé accessible, et assertion E2E sur la requête/réponse de reprise. Aucune modification du Core, du backend ou des données métier. Résultats des gates et du E2E local encore à confirmer ; aucune PR.
+
 **Correction navigation E2E du contrôle guidé — 2026-10-21 :** le scénario Playwright ne pouvait pas trouver l'onglet Références, car l'autocomplétion ne fait que filtrer le tableau. Le test ouvre désormais explicitement le drawer via l'action « Voir » de la ligne Produit, puis vérifie son titre avant de sélectionner l'onglet. Aucun changement de contrat ni de comportement applicatif. Échec local initial constaté (timeout 30 s) ; relance locale requise après pull.
 
 **Cohérence des onglets M-002 — 2026-10-21 :** les Dimensions PROVISIONAL sont désormais signalées dans l'onglet Dimensions par une action distincte « Identité à examiner » même si qualityReviewStatus vaut REVIEWED. Le compteur À contrôler conserve son sens de revue qualité, et une Contribution de gouvernance ouvre la Dimension dans le filtre Toutes. Test RTL dédié ajouté, validation locale requise.

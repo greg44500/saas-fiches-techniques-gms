@@ -82,6 +82,38 @@ describe('productReferenceApi', () => {
     });
 
     expect(
+      captured.endpointDefinitions.restoreProductReferenceReviewContext.query({
+        productId: 'product-1',
+        dataType: 'DIMENSION',
+        dimensionType: 'CHARACTERISTIC',
+        targetId: 'characteristic-1',
+      }),
+    ).toEqual({
+      url: '/product-reference/product-1/review-context',
+      method: 'POST',
+      body: {
+        dataType: 'DIMENSION',
+        dimensionType: 'CHARACTERISTIC',
+        targetId: 'characteristic-1',
+      },
+    });
+
+    expect(
+      captured.endpointDefinitions.restoreProductReferenceReviewContext.query({
+        productId: 'product-1',
+        dataType: 'REFERENCE',
+        targetId: 'variant-1',
+      }),
+    ).toEqual({
+      url: '/product-reference/product-1/review-context',
+      method: 'POST',
+      body: {
+        dataType: 'REFERENCE',
+        targetId: 'variant-1',
+      },
+    });
+
+    expect(
       captured.endpointDefinitions.listProductReferenceReviewQueue.query({
         type: 'DIMENSION_REVIEW',
         workspaceId: 'workspace-1',

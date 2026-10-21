@@ -52,10 +52,14 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       providesTags: ['ProductReference'],
     }),
     restoreProductReferenceReviewContext: builder.mutation({
-      query: ({ productId, dataType, targetId }) => ({
+      query: ({ productId, dataType, targetId, dimensionType }) => ({
         url: '/product-reference/' + productId + '/review-context',
         method: 'POST',
-        body: { dataType, targetId },
+        body: {
+          dataType,
+          targetId,
+          ...(dimensionType ? { dimensionType } : {}),
+        },
       }),
       transformResponse: (response) => response.data.item,
       invalidatesTags: ['ProductReference'],

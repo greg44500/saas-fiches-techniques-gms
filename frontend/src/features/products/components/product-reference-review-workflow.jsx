@@ -112,7 +112,8 @@ function ProductReferenceReviewWorkflow({
                   <StatusBadge tone="success">Identité validée</StatusBadge>
                 ) : canReview ? (
                   <Button
-                    aria-label={'Examiner ' + item.label + ' ' + item.name}
+                    aria-label={(selected ? 'Masquer le contrôle de ' : 'Examiner ')
+                      + item.label + ' ' + item.name}
                     disabled={pending}
                     onClick={() => (selected
                       ? onCloseDependency()

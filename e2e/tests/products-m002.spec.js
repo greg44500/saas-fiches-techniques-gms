@@ -194,11 +194,29 @@ test('M-002 contrôle guidé : la Dimension vérifiée mais provisoire se valide
   await expect(workflow.getByRole('button', { name: 'Valider', exact: true }))
     .toBeDisabled();
 
+  // Cette Dimension a volontairement perdu son lien de Contribution :
+  // la reprise doit poster dimensionType, sinon Zod refuse le corps HTTP.
+  const recoveryResponsePromise = page.waitForResponse((response) => (
+    response.url().endsWith('/review-context')
+    && response.request().method() === 'POST'
+  ));
   await workflow.getByRole('button', {
     name: 'Examiner Désignation de qualité Individuel',
   }).click();
-  await expect(workflow.getByRole('button', { name: 'Masquer le contrôle' }))
-    .toBeVisible();
+  const recoveryResponse = await recoveryResponsePromise;
+  expect(
+    recoveryResponse.request().postDataJSON(),
+  ).toMatchObject({
+    dataType: 'DIMENSION',
+    dimensionType: 'CHARACTERISTIC',
+  });
+  expect(
+    recoveryResponse.status(),
+    'La reprise de la Dimension a échoué : ' + await recoveryResponse.text(),
+  ).toBe(200);
+  await expect(workflow.getByRole('button', {
+    name: 'Masquer le contrôle de Désignation de qualité Individuel',
+  })).toBeVisible();
 
   const approveButtons = workflow.getByRole('button', { name: 'Valider', exact: true });
   await expect(approveButtons).toHaveCount(2);

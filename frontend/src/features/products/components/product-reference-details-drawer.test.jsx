@@ -510,6 +510,9 @@ describe('ProductReferenceDetailsDrawer', () => {
     const workflow = screen.getByRole('region', {
       name: 'Contrôle de publication de Croissant individuel',
     });
+    expect(within(workflow).getByRole('button', {
+      name: 'Masquer le contrôle de Présentation Individuel',
+    })).toBeInTheDocument();
     await user.click(within(workflow).getAllByRole('button', { name: 'Valider' })[0]);
     expect(mocks.reviewContribution).toHaveBeenCalledWith({
       contributionId: 'contribution-dimension',
