@@ -284,6 +284,40 @@ describe('ProductReferenceDetailsDrawer', () => {
   });
 
 
+  it('affiche la gouvernance provisoire indépendamment de la revue qualité dans Dimensions', async () => {
+    const user = userEvent.setup();
+    const onReviewRequested = vi.fn();
+    mocks.dimensions.mockReturnValue(queryResult({
+      varieties: [],
+      characteristics: [{
+        id: 'presentation-1',
+        name: 'Individuel',
+        kind: 'PRESENTATION',
+        status: 'ACTIVE',
+        governanceStatus: 'PROVISIONAL',
+        qualityReviewStatus: 'REVIEWED',
+      }],
+    }));
+
+    renderDrawer({
+      initialTab: 'dimensions',
+      onReviewRequested,
+    });
+
+    expect(screen.getByRole('button', { name: 'À contrôler (0)' }))
+      .toBeInTheDocument();
+    const identityButton = screen.getByRole('button', {
+      name: 'Examiner l’identité de la caractéristique Individuel',
+    });
+    expect(identityButton).toBeVisible();
+    await user.click(identityButton);
+    expect(onReviewRequested).toHaveBeenCalledWith(
+      'DIMENSION',
+      'presentation-1',
+      'CHARACTERISTIC',
+    );
+  });
+
   it('ouvre directement les Dimensions à vérifier depuis une notification Produit', () => {
     renderDrawer({
       initialDimensionFilter: 'pending',

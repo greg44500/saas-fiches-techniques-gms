@@ -231,10 +231,10 @@ function ProductReferencePage({ canManage }) {
     }).unwrap();
   }
 
-  async function openReviewTarget(dataType, targetId) {
+  async function openReviewTarget(dataType, targetId, dimensionType = null) {
     if (!canManage) return;
     try {
-      examineReviewItem(await loadTargetReviewContext(dataType, targetId));
+      examineReviewItem(await loadTargetReviewContext(dataType, targetId, dimensionType));
     } catch (error) {
       toast({
         title: 'Contrôle indisponible',
@@ -283,7 +283,7 @@ function ProductReferencePage({ canManage }) {
       openProduct(
         item.productId,
         'dimensions',
-        'pending',
+        item.type === 'CONTRIBUTION' ? 'all' : 'pending',
         'all',
         item,
       );

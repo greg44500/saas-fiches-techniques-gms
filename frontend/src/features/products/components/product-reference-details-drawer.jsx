@@ -738,6 +738,20 @@ function ProductReferenceDetailsDrawer({
                               >
                                 {getProductStatusLabel(metadata, variety.status)}
                               </StatusBadge>
+                              {variety.governanceStatus === 'PROVISIONAL'
+                                && variety.status === 'ACTIVE' && canManage && (
+                                <Button
+                                  aria-label={'Examiner l’identité de la variété ' + variety.name}
+                                  className="h-7 rounded-md border-warning/60 bg-warning/10 px-2 text-xs text-warning"
+                                  disabled={pending || reviewLoading}
+                                  onClick={() => onReviewRequested?.('DIMENSION', variety.id, 'VARIETY')}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  Identité à examiner
+                                </Button>
+                              )}
                               {variety.qualityReviewStatus === 'PENDING'
                                 && variety.status === 'ACTIVE' && (
                                 <StatusBadge
@@ -843,7 +857,10 @@ function ProductReferenceDetailsDrawer({
                           {canManage
                             && reviewContext?.dataType === 'DIMENSION'
                             && reviewContext.targetId === variety.id
-                            && variety.qualityReviewStatus === 'PENDING' && (
+                            && (
+                              variety.qualityReviewStatus === 'PENDING'
+                              || variety.governanceStatus === 'PROVISIONAL'
+                            ) && (
                             <div className="mt-3 border-t border-border pt-3">
                               <ProductReferenceGovernanceReviewPanel
                                 context={reviewContext}
@@ -917,6 +934,20 @@ function ProductReferenceDetailsDrawer({
                                   characteristic.status,
                                 )}
                               </StatusBadge>
+                              {characteristic.governanceStatus === 'PROVISIONAL'
+                                && characteristic.status === 'ACTIVE' && canManage && (
+                                <Button
+                                  aria-label={'Examiner l’identité de la caractéristique ' + characteristic.name}
+                                  className="h-7 rounded-md border-warning/60 bg-warning/10 px-2 text-xs text-warning"
+                                  disabled={pending || reviewLoading}
+                                  onClick={() => onReviewRequested?.('DIMENSION', characteristic.id, 'CHARACTERISTIC')}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  Identité à examiner
+                                </Button>
+                              )}
                               {characteristic.qualityReviewStatus === 'PENDING'
                                 && characteristic.status === 'ACTIVE' && (
                                 <StatusBadge
@@ -1034,7 +1065,10 @@ function ProductReferenceDetailsDrawer({
                           {canManage
                             && reviewContext?.dataType === 'DIMENSION'
                             && reviewContext.targetId === characteristic.id
-                            && characteristic.qualityReviewStatus === 'PENDING' && (
+                            && (
+                              characteristic.qualityReviewStatus === 'PENDING'
+                              || characteristic.governanceStatus === 'PROVISIONAL'
+                            ) && (
                             <div className="mt-3 border-t border-border pt-3">
                               <ProductReferenceGovernanceReviewPanel
                                 context={reviewContext}
