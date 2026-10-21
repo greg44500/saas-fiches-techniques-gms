@@ -60,6 +60,40 @@ async function createGlobalReferenceForMerge(
   await expectVisibleToast(page, 'Référence créée');
 }
 
+
+test('M-002 la correction de référence conserve les actions visibles sur un écran bas', async ({ page }) => {
+  await loginWithIdentity(page, E2E_FOUNDER);
+  await page.goto('/product-reference');
+
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const productName = `Produit ergonomie E2E ${suffix}`;
+  await createGlobalProductForMerge(page, productName);
+
+  await page.getByRole('tab', { name: 'Références (1)' }).click();
+  await page.setViewportSize({ width: 1080, height: 520 });
+  await page.getByRole('button', {
+    name: `Corriger la référence ${productName}`,
+  }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Corriger la référence Produit' });
+  const fields = dialog.getByRole('region', { name: 'Champs de la référence Produit' });
+  const cancel = dialog.getByRole('button', { name: 'Annuler' });
+  const save = dialog.getByRole('button', { name: 'Enregistrer' });
+
+  await expect(fields).toBeVisible();
+  expect(await fields.evaluate((element) => element.scrollHeight > element.clientHeight))
+    .toBe(true);
+  await expect(cancel).toBeInViewport();
+  await expect(save).toBeInViewport();
+
+  await fields.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await expect(cancel).toBeInViewport();
+  await expect(save).toBeInViewport();
+
+  await cancel.click();
+  await expect(dialog).toBeHidden();
+});
+
 test('M-002 contribution Workspace est revue puis publiée globalement', async ({ page }) => {
   const context = await provisionProductOwnerWorkspace();
 

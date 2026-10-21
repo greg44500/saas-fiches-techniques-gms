@@ -126,8 +126,11 @@ function ProductReferenceVariantEditDialog({
     >
       <DialogPortal>
         <DialogOverlay />
-        <DialogContent className="max-w-2xl" initialFocus={cancelRef}>
-          <DialogHeader>
+        <DialogContent
+          className="flex max-h-[calc(100dvh-2rem)] max-w-4xl flex-col overflow-hidden p-0"
+          initialFocus={cancelRef}
+        >
+          <DialogHeader className="shrink-0 px-5 pt-5">
             <div className="flex items-center gap-2">
               <DialogTitle>Corriger la référence Produit</DialogTitle>
               <InfoTooltip
@@ -140,7 +143,12 @@ function ProductReferenceVariantEditDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-5 space-y-4">
+          <div
+            aria-label="Champs de la référence Produit"
+            className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4"
+            role="region"
+            tabIndex={0}
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-muted-foreground">
                 Caractéristiques de la référence
@@ -187,21 +195,23 @@ function ProductReferenceVariantEditDialog({
                 </label>
               </div>
             )}
-            <FieldError>{formError}</FieldError>
           </div>
 
-          <DialogFooter>
-            <DialogClose
-              disabled={updateState.isLoading}
-              ref={cancelRef}
-              render={<Button type="button" variant="outline" />}
-            >
-              Annuler
-            </DialogClose>
-            <Button disabled={updateState.isLoading} onClick={submit} type="button">
-              {updateState.isLoading ? 'Enregistrement…' : 'Enregistrer'}
-            </Button>
-          </DialogFooter>
+          <div className="shrink-0 border-t border-border bg-popover px-5 py-4">
+            <FieldError className="mb-3">{formError}</FieldError>
+            <DialogFooter className="mt-0">
+              <DialogClose
+                disabled={updateState.isLoading}
+                ref={cancelRef}
+                render={<Button type="button" variant="outline" />}
+              >
+                Annuler
+              </DialogClose>
+              <Button disabled={updateState.isLoading} onClick={submit} type="button">
+                {updateState.isLoading ? 'Enregistrement…' : 'Enregistrer'}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </DialogPortal>
     </DialogRoot>

@@ -1,6 +1,8 @@
 # Reprise courante — cohérence des unités (2026-10-16)
 
 ## Lot actif M-002/M-003/M-004
+**QA ergonomie M-002 — 2026-10-21 :** la fenêtre « Corriger la référence Produit » débordait de la hauteur de l'écran et masquait « Annuler » / « Enregistrer ». Le dialogue est élargi sur ordinateur, limité à la hauteur visible, avec une zone de champs défilante et des actions/erreurs de validation conservées hors défilement. Ajustement uniquement frontend métier, sans évolution Core ni du contrat économique. Régression RTL et E2E écran bas ajoutées ; résultats locaux à confirmer par l'utilisateur avant PR.
+
 Branche : `feature/m002-m003-m004-unit-consistency`. Les quatre règles métier (unité M-002 imposée dans les Fiches, preuve de pièces par colis, aucune conversion estimative de poids, correction gouvernée des Références déjà utilisées) sont **validées par l'utilisateur**. Contrat transversal : `docs/m004/M-002-M-003-M-004-UNIT-CONSISTENCY-CADRAGE.md`.
 
 Implémentation préparée : `SupplierArticle.recipeUnitEquivalence`, normalisation `UNIT` par colis vérifié et compatible avec le snapshot tarifaire, historisation des nouveaux prix négociés/facturés, interface Article (titre, aide, « Nb d'unités par colis », unité de fiche en lecture seule, confirmation conditionnelle), garde-fou sur changement interdimensionnel M-002, tests backend/frontend, audit DB en lecture seule. Core inchangé v1.2.1.

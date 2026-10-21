@@ -120,4 +120,45 @@ describe('M-002 correction encadrée de l’unité de référence', () => {
       expect.not.objectContaining({ confirmSupplierArticleRevaluation: true }),
     );
   });
+  it('garde les actions et les erreurs hors de la zone défilante', async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ProductReferenceVariantEditDialog
+          metadata={{}}
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+          open
+          productId="product-1"
+          variant={variant}
+        />
+      </TooltipProvider>,
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Corriger la référence Produit' });
+    const fields = screen.getByRole('region', {
+      name: 'Champs de la référence Produit',
+    });
+    const cancel = screen.getByRole('button', { name: 'Annuler' });
+    const save = screen.getByRole('button', { name: 'Enregistrer' });
+
+    expect(dialog).toHaveClass(
+      'flex', 'flex-col', 'overflow-hidden', 'max-h-[calc(100dvh-2rem)]',
+    );
+    expect(fields).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto');
+    expect(fields).toContainElement(screen.getByLabelText('Unité de référence'));
+    expect(fields).not.toContainElement(cancel);
+    expect(fields).not.toContainElement(save);
+    const footer = dialog.querySelector('[data-slot="dialog-footer"]');
+    expect(footer.parentElement).toHaveClass('shrink-0');
+
+    await user.selectOptions(screen.getByLabelText('Unité de référence'), 'UNIT');
+    await user.click(save);
+
+    const error = screen.getByRole('alert');
+    expect(error).toHaveTextContent('Confirmez la correction');
+    expect(fields).not.toContainElement(error);
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
 });
