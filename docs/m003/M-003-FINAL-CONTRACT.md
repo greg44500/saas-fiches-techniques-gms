@@ -1720,3 +1720,8 @@ La réduction du scroll vise les cas courants ; elle ne masque
 aucune information nécessaire et ne prétend pas empêcher le défilement
 sur petit écran. L'accès historique, le backend, les règles de
 valorisation, les schémas MongoDB et les primitives Core sont inchangés.
+
+
+### Complément UX de recette — visibilité de l'équivalence pièce/colis (2026-10-21)
+
+Pour un Article fournisseur associé à une Référence Produit dont l'unité de recette est `UNIT`, le formulaire de correction présente la correspondance pièce/colis **avant** les champs commerciaux et de conditionnement : unité de recette en lecture seule, nombre de pièces réellement utilisables et confirmation explicite. Les explications secondaires sont accessibles via InfoTooltip, mais le rôle de cette confirmation dans la normalisation du prix au carton reste visible. Les libellés de saisie utilisent un habillage outlined animé propre à la fonctionnalité M-003 ; les actions de formulaire restent accessibles hors de la zone défilante. Le contrat de preuve liée à la Référence et au conditionnement, la nature facultative de cette correspondance et l'invariance tarifaire historique ne changent pas.

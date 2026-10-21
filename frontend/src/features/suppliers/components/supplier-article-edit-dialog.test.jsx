@@ -59,6 +59,70 @@ describe('M-003 — édition de l’Article et unité de fiche', () => {
     expect(screen.queryByText(/^UNIT$/)).toBeNull();
   });
 
+  it('affiche la correspondance pièce/colis avant le conditionnement sans masquer les actions', () => {
+    renderDialog();
+
+    const scrollRegion = screen.getByRole('region', {
+      name: 'Champs de l’Article fournisseur',
+    });
+    const section = screen.getByRole('region', {
+      name: 'Correspondance avec la fiche technique',
+    });
+    const saveButton = screen.getByRole('button', { name: 'Enregistrer' });
+
+    expect(scrollRegion.firstElementChild).toBe(section);
+    expect(section).toHaveTextContent('Valorisation à la pièce');
+    expect(section).toHaveTextContent('Pour utiliser un tarif au carton');
+    expect(section).toContainElement(screen.getByRole('checkbox'));
+    expect(scrollRegion).not.toContainElement(saveButton);
+    expect(saveButton.closest('.shrink-0')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Origine de l’unité utilisée en fiche technique',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Précisions sur la correspondance en pièces de recette',
+    })).toBeInTheDocument();
+    expect(screen.queryByText('Définie dans le Référentiel Produits : elle ne se modifie pas ici.'))
+      .not.toBeInTheDocument();
+    expect(screen.queryByText(/Ne confirmez pas une estimation de poids/))
+      .not.toBeInTheDocument();
+  });
+
+  it('anime les champs vides et laisse sur la bordure les champs renseignés', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+
+    const empty = screen.getByLabelText('Marque (facultatif)');
+    const filled = screen.getByLabelText('Désignation fournisseur');
+    expect(empty).toHaveClass('h-12');
+    expect(filled).toHaveClass('h-12');
+    expect(empty.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'empty');
+    expect(filled.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
+    expect(screen.getByText('Marque (facultatif)').parentElement)
+      .toHaveClass('top-8', 'group-focus-within:top-2');
+    await user.type(empty, 'BRIDOR');
+    expect(empty.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
+    expect(screen.getByLabelText('Nb d’unités par colis')).toHaveValue('36');
+  });
+
+  it('réinitialise la confirmation lorsque le conditionnement est modifié', async () => {
+    const user = userEvent.setup();
+    renderDialog({
+      ...article,
+      recipeUnitEquivalence: { unitsPerPackage: 36 },
+    });
+    const confirmation = screen.getByRole('checkbox');
+    expect(confirmation).toBeChecked();
+    await user.clear(screen.getByLabelText('Nb d’unités par colis'));
+    await user.type(screen.getByLabelText('Nb d’unités par colis'), '25');
+    expect(confirmation).not.toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Confirmez que ce nombre correspond bien aux pièces utilisées en recette.',
+    );
+  });
+
   it('exige une confirmation humaine du nombre de pièces de recette', async () => {
     const user = userEvent.setup();
     renderDialog();

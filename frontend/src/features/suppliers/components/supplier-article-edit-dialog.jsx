@@ -9,7 +9,7 @@ import {
 } from '@/features/products/lib/product-presentation';
 import {
   DialogClose, DialogContent, DialogFooter, DialogHeader,
-  DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
+  DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
 } from '@/components/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { useUpdateSupplierArticleMutation } from '@/features/suppliers/api/supplier-api';
 import { getApiErrorMessage } from '@/features/suppliers/lib/supplier-presentation';
+import { cn } from '@/lib/utils';
 
 const UNITS = ['G', 'KG', 'ML', 'CL', 'L', 'UNIT'];
 const PACKAGING_FIELDS = new Set([
@@ -30,6 +31,40 @@ const EMPTY = {
   netWeight: '', netWeightUnit: 'KG',
   drainedNetWeight: '', drainedNetWeightUnit: 'KG',
 };
+
+// Habillage propre à l'édition M-003 : conserve Field, Input et Select Base UI.
+// Ne crée pas de primitive UI transverse et ne modifie aucun contrat Core.
+function SupplierArticleOutlinedField({ children, filled, id, label }) {
+  return (
+    <Field
+      className="group relative gap-0 pt-2"
+      data-label-state={filled ? 'filled' : 'empty'}
+    >
+      <div className={cn(
+        'pointer-events-none absolute left-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center',
+        'transition-all duration-200 ease-out motion-reduce:transition-none',
+        filled
+          ? 'top-2 -translate-y-1/2'
+          : 'top-8 -translate-y-1/2 group-focus-within:top-2',
+      )}
+      >
+        <FieldLabel
+          className={cn(
+            'pointer-events-auto max-w-full truncate whitespace-nowrap rounded-sm',
+            'transition-all duration-200 ease-out motion-reduce:transition-none',
+            filled
+              ? 'bg-popover px-1 text-xs text-foreground'
+              : 'text-sm text-muted-foreground group-focus-within:bg-popover group-focus-within:px-1 group-focus-within:text-xs group-focus-within:text-foreground',
+          )}
+          htmlFor={id}
+        >
+          {label}
+        </FieldLabel>
+      </div>
+      {children}
+    </Field>
+  );
+}
 
 function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceId }) {
   const cancelRef = useRef(null);
@@ -60,11 +95,12 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
   }, [open, article?.id]);
 
   function field(name, label, inputProps = {}) {
+    const id = 'article-edit-' + name;
     return (
-      <Field>
-        <FieldLabel htmlFor={'article-edit-' + name}>{label}</FieldLabel>
+      <SupplierArticleOutlinedField filled={Boolean(form[name]?.trim())} id={id} label={label}>
         <Input
-          id={'article-edit-' + name}
+          className="h-12"
+          id={id}
           onChange={(event) => {
             setForm((prev) => ({ ...prev, [name]: event.target.value }));
             if (PACKAGING_FIELDS.has(name)) setRecipeConfirmed(false);
@@ -72,7 +108,7 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
           value={form[name]}
           {...inputProps}
         />
-      </Field>
+      </SupplierArticleOutlinedField>
     );
   }
 
@@ -134,8 +170,8 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
     }}>
       <DialogPortal>
         <DialogOverlay />
-        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-2xl overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-4xl flex-col overflow-hidden p-0">
+          <DialogHeader className="shrink-0 px-5 pt-5">
             <div className="flex items-start gap-2">
               <DialogTitle className="min-w-0 break-words">
                 Modifier les informations de : {article?.supplierDesignation || 'Article fournisseur'}
@@ -147,96 +183,80 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
                 content="Vous pouvez corriger le conditionnement actuel. Les anciens tarifs doivent conserver les données de conditionnement utilisées lors de leur enregistrement. Si un ancien tarif ne possède pas ces données, sa conversion ne sera pas supposée."
               />
             </div>
+            <DialogDescription className="sr-only">
+              Modification de l’Article fournisseur, de son conditionnement et de l’équivalence éventuelle en pièces de recette.
+            </DialogDescription>
+            <p className="text-sm text-muted-foreground">{article?.supplier?.name}</p>
           </DialogHeader>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {article?.supplier?.name}
-          </p>
-          <form className="mt-4 space-y-4" onSubmit={save}>
-            {field('supplierDesignation', 'Désignation fournisseur', { maxLength: 300 })}
-            {field('brand', 'Marque (facultatif)', { maxLength: 160 })}
-            <fieldset className="space-y-3 rounded-lg border border-border p-3">
-              <legend className="px-1 font-medium">Conditionnement</legend>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {field('containerType', 'Type de colis', { maxLength: 80 })}
-                {field('supplierLabel', 'Libellé fournisseur', { maxLength: 240 })}
-                {field('unitCount', 'Nb d’unités par colis', { inputMode: 'numeric' })}
-                {field('quantityPerUnit', 'Quantité par unité', { inputMode: 'decimal' })}
-                <Field>
-                  <FieldLabel>Unité de quantité</FieldLabel>
-                  <Select items={UNITS.map((unit) => ({
-                    value: unit, label: getReferenceUnitLabel(null, unit),
-                  }))}
-                    onValueChange={(unit) => {
-                      setForm((prev) => ({ ...prev, unit }));
-                      setRecipeConfirmed(false);
-                    }}
-                    value={form.unit}>
-                    <SelectTrigger aria-label="Unité de quantité"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {UNITS.map((unit) => (
-                        <SelectItem key={unit} value={unit}>
-                          {getReferenceUnitLabel(null, unit)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                {field('netWeight', 'Poids net', { inputMode: 'decimal' })}
-                <Field>
-                  <FieldLabel>Unité du poids net</FieldLabel>
-                  <Select items={['G', 'KG'].map((unit) => ({ value: unit, label: unit }))}
-                    onValueChange={(unit) => setForm((prev) => ({ ...prev, netWeightUnit: unit }))}
-                    value={form.netWeightUnit}>
-                    <SelectTrigger aria-label="Unité du poids net"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {['G', 'KG'].map((unit) => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                {field('drainedNetWeight', 'Poids net égoutté', { inputMode: 'decimal' })}
-                <Field>
-                  <FieldLabel>Unité du poids égoutté</FieldLabel>
-                  <Select items={['G', 'KG'].map((unit) => ({ value: unit, label: unit }))}
-                    onValueChange={(unit) => setForm((prev) => ({
-                      ...prev, drainedNetWeightUnit: unit,
-                    }))} value={form.drainedNetWeightUnit}>
-                    <SelectTrigger aria-label="Unité du poids égoutté"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {['G', 'KG'].map((unit) => (
-                        <SelectItem key={unit} value={unit}>{unit}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-              <div className="mt-3 border-t border-border pt-3">
-                <FieldLabel>Unité utilisée en fiche technique</FieldLabel>
-                <p className="mt-1 text-sm font-medium" aria-label="Unité utilisée en fiche technique">
-                  {article?.productVariant
-                    ? getVariantReferenceUnitLabel(null, article.productVariant)
-                    : 'Référence Produit non associée'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Définie dans le Référentiel Produits : elle ne se modifie pas ici.
-                </p>
-              </div>
-              {canVerifyRecipeUnits && (
-                <div className="mt-3 space-y-2 border-t border-border pt-3">
-                  <Field>
-                    <FieldLabel htmlFor="article-recipe-units">
-                      Nombre de pièces de recette par colis (facultatif)
-                    </FieldLabel>
-                    <Input
-                      id="article-recipe-units"
-                      inputMode="numeric"
-                      onChange={(event) => {
-                        setRecipeCount(event.target.value);
-                        setRecipeConfirmed(false);
-                      }}
-                      value={recipeCount}
+
+          <form className="flex min-h-0 flex-1 flex-col" onSubmit={save}>
+            <div
+              aria-label="Champs de l’Article fournisseur"
+              className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4"
+              role="region"
+              tabIndex={0}
+            >
+              <section aria-label="Correspondance avec la fiche technique" className="rounded-lg border border-border p-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold">
+                    {referenceUnit === 'UNIT' ? 'Valorisation à la pièce' : 'Unité de recette'}
+                  </h3>
+                  {referenceUnit === 'UNIT' && (
+                    <InfoTooltip
+                      label="Précisions sur la correspondance en pièces de recette"
+                      content="Ne confirmez pas une estimation de poids ou un nombre de sachets qui ne correspond pas aux pièces de recette."
                     />
-                  </Field>
-                  <label className="flex items-start gap-2 text-sm">
+                  )}
+                </div>
+                {referenceUnit === 'UNIT' && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Pour utiliser un tarif au carton comme prix par pièce, confirmez le nombre réel de pièces utilisables en recette.
+                  </p>
+                )}
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-md border border-border bg-muted/10 px-3 py-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        Unité utilisée en fiche technique
+                      </span>
+                      <InfoTooltip
+                        label="Origine de l’unité utilisée en fiche technique"
+                        content="Définie dans le Référentiel Produits : elle ne se modifie pas ici."
+                      />
+                    </div>
+                    <p className="mt-1 text-sm font-semibold" aria-label="Unité utilisée en fiche technique">
+                      {article?.productVariant
+                        ? getVariantReferenceUnitLabel(null, article.productVariant)
+                        : 'Référence Produit non associée'}
+                    </p>
+                  </div>
+
+                  {canVerifyRecipeUnits ? (
+                    <SupplierArticleOutlinedField
+                      filled={Boolean(recipeCount.trim())}
+                      id="article-recipe-units"
+                      label="Nombre de pièces de recette par colis (facultatif)"
+                    >
+                      <Input
+                        className="h-12"
+                        id="article-recipe-units"
+                        inputMode="numeric"
+                        onChange={(event) => {
+                          setRecipeCount(event.target.value);
+                          setRecipeConfirmed(false);
+                        }}
+                        value={recipeCount}
+                      />
+                    </SupplierArticleOutlinedField>
+                  ) : referenceUnit === 'UNIT' ? (
+                    <p className="self-center text-xs text-muted-foreground">
+                      Indiquez d’abord le nombre d’unités et la quantité par unité dans le conditionnement ci-dessous.
+                    </p>
+                  ) : null}
+                </div>
+                {canVerifyRecipeUnits && (
+                  <label className="mt-3 flex items-start gap-2 text-sm">
                     <Checkbox
                       checked={recipeConfirmed}
                       disabled={!recipeCount.trim()}
@@ -244,20 +264,97 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
                     />
                     <span>Je confirme le nombre réel de pièces utilisables en recette dans ce colis.</span>
                   </label>
-                  <p className="text-xs text-muted-foreground">
-                    Ne confirmez pas une estimation de poids ou un nombre de sachets
-                    qui ne correspond pas aux pièces de recette.
-                  </p>
+                )}
+              </section>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {field('supplierDesignation', 'Désignation fournisseur', { maxLength: 300 })}
+                {field('brand', 'Marque (facultatif)', { maxLength: 160 })}
+              </div>
+
+              <fieldset className="rounded-lg border border-border p-3">
+                <legend className="px-1 text-sm font-medium">Conditionnement</legend>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {field('containerType', 'Type de colis', { maxLength: 80 })}
+                  {field('supplierLabel', 'Libellé fournisseur', { maxLength: 240 })}
+                  {field('unitCount', 'Nb d’unités par colis', { inputMode: 'numeric' })}
+                  {field('quantityPerUnit', 'Quantité par unité', { inputMode: 'decimal' })}
+                  <SupplierArticleOutlinedField filled={Boolean(form.unit)} id="article-edit-unit" label="Unité de quantité">
+                    <Select
+                      items={UNITS.map((unit) => ({
+                        value: unit, label: getReferenceUnitLabel(null, unit),
+                      }))}
+                      onValueChange={(unit) => {
+                        setForm((prev) => ({ ...prev, unit }));
+                        setRecipeConfirmed(false);
+                      }}
+                      value={form.unit}
+                    >
+                      <SelectTrigger aria-label="Unité de quantité" className="h-12 pt-3" id="article-edit-unit">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNITS.map((unit) => (
+                          <SelectItem key={unit} value={unit}>
+                            {getReferenceUnitLabel(null, unit)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </SupplierArticleOutlinedField>
+                  {field('netWeight', 'Poids net', { inputMode: 'decimal' })}
+                  <SupplierArticleOutlinedField filled={Boolean(form.netWeightUnit)} id="article-edit-netWeightUnit" label="Unité du poids net">
+                    <Select
+                      items={['G', 'KG'].map((unit) => ({ value: unit, label: unit }))}
+                      onValueChange={(unit) => setForm((prev) => ({ ...prev, netWeightUnit: unit }))}
+                      value={form.netWeightUnit}
+                    >
+                      <SelectTrigger aria-label="Unité du poids net" className="h-12 pt-3" id="article-edit-netWeightUnit">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['G', 'KG'].map((unit) => (
+                          <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </SupplierArticleOutlinedField>
+                  {field('drainedNetWeight', 'Poids net égoutté', { inputMode: 'decimal' })}
+                  <SupplierArticleOutlinedField filled={Boolean(form.drainedNetWeightUnit)} id="article-edit-drainedNetWeightUnit" label="Unité du poids égoutté">
+                    <Select
+                      items={['G', 'KG'].map((unit) => ({ value: unit, label: unit }))}
+                      onValueChange={(unit) => setForm((prev) => ({ ...prev, drainedNetWeightUnit: unit }))}
+                      value={form.drainedNetWeightUnit}
+                    >
+                      <SelectTrigger aria-label="Unité du poids égoutté" className="h-12 pt-3" id="article-edit-drainedNetWeightUnit">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['G', 'KG'].map((unit) => (
+                          <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </SupplierArticleOutlinedField>
                 </div>
-              )}
-            </fieldset>
-            <FieldError>{error}</FieldError>
-            <DialogFooter>
-              <DialogClose ref={cancelRef} render={<Button type="button" variant="outline" />}>
-                Annuler
-              </DialogClose>
-              <Button disabled={status.isLoading} type="submit">Enregistrer</Button>
-            </DialogFooter>
+              </fieldset>
+            </div>
+
+            <div className="shrink-0 border-t border-border bg-popover px-5 py-4">
+              <FieldError className="mb-3">{error}</FieldError>
+              <DialogFooter className="mt-0">
+                <DialogClose
+                  disabled={status.isLoading}
+                  ref={cancelRef}
+                  render={<Button type="button" variant="outline" />}
+                >
+                  Annuler
+                </DialogClose>
+                <Button disabled={status.isLoading} type="submit">
+                  {status.isLoading ? 'Enregistrement…' : 'Enregistrer'}
+                </Button>
+              </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </DialogPortal>
