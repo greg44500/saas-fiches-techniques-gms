@@ -270,7 +270,8 @@ describe('DossierSupplierPricingPage', () => {
     })).toBeInTheDocument();
   });
 
-  it('affiche le Prix indicatif Workspace hérité lorsqu’aucune surcharge Dossier n’existe', () => {
+  it('affiche le Prix indicatif Workspace hérité lorsqu’aucune surcharge Dossier n’existe', async () => {
+    const user = userEvent.setup();
     mocks.workspaceContext.mockReturnValue({
       workspace: {
         id: 'workspace-1',
@@ -308,8 +309,21 @@ describe('DossierSupplierPricingPage', () => {
     expect(screen.getByText('1,800 / kg')).toBeInTheDocument();
     expect(screen.getByText('Espace de travail')).toBeInTheDocument();
     expect(screen.getByRole('button', {
-      name: 'Définir un prix indicatif pour ce Dossier',
+      name: 'Actions de Carotte',
     })).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Définir un prix indicatif pour ce Dossier',
+    })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de Carotte',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Définir un prix indicatif pour ce Dossier',
+    }));
+
+    expect(screen.getByText('Dialogue Prix indicatif ouvert'))
+      .toBeInTheDocument();
   });
 
   it('privilégie le Prix indicatif du Dossier sur la valeur Workspace affichée', () => {
