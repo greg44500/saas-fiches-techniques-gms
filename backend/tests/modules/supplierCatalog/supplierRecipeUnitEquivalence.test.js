@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     packagingSignature,
+    packagingSignaturesMatch,
     verifiedRecipeUnitCount,
 } from '../../../modules/supplierCatalog/supplierRecipeUnitEquivalence.service.js';
 import {
@@ -39,6 +40,76 @@ describe('M-002/M-003 — correspondance dénombrable vérifiée', () => {
         expect(converted.normalizedAmount).not.toBe('0.181');
         // 2 pièces, calculées depuis un prix non prématurément arrondi.
         expect(Number(converted.normalizedAmount) * 2).toBeCloseTo(6.5 / 18, 10);
+    });
+
+    it('reconnaît un carton historique 36 × 120 g équivalent au carton actuel 36 × 0,120 kg', () => {
+        const kgPackaging = {
+            containerType: 'Carton',
+            unitCount: 36,
+            quantityPerUnit: '0.120',
+            unit: 'KG',
+            totalQuantity: '4.320',
+            netWeight: '4.320',
+            netWeightUnit: 'KG',
+        };
+        const oldProof = {
+            ...verified,
+            packagingSignature: packagingSignature(kgPackaging),
+        };
+        expect(packagingSignaturesMatch(
+            oldProof.packagingSignature, packagingSignature(carton),
+        )).toBe(true);
+        expect(verifiedRecipeUnitCount({
+            packaging: carton,
+            equivalence: oldProof,
+            productVariantId: variantId,
+        })).toBe(36);
+        expect(verifiedRecipeUnitCount({
+            packaging: kgPackaging,
+            equivalence: verified,
+            productVariantId: variantId,
+        })).toBe(36);
+        const price = normalizeSupplierPrice({
+            sourceAmount: '6.50',
+            sourceBasis: 'PACKAGE',
+            packaging: carton,
+            targetUnit: 'UNIT',
+            recipeUnitEquivalence: oldProof,
+            productVariantId: variantId,
+        });
+        expect(price.normalizedUnit).toBe('UNIT');
+        expect(Number(price.normalizedAmount)).toBeCloseTo(6.5 / 36, 12);
+    });
+
+    it('n accepte que des conditionnements physiquement identiques, pas des approximations', () => {
+        const equivalence = {
+            ...verified,
+            packagingSignature: packagingSignature({
+                containerType: 'Carton', unitCount: 36, quantityPerUnit: '0.12',
+                unit: 'KG', totalQuantity: '4.32',
+                netWeight: '4.32', netWeightUnit: 'KG',
+            }),
+        };
+        const incompatible = [
+            { ...carton, unitCount: 24 },
+            { ...carton, quantityPerUnit: '110', totalQuantity: '3960', netWeight: '3960' },
+            { ...carton, netWeight: '4200' },
+            { ...carton, unit: 'ML' },
+            { ...carton, netWeight: null },
+            { ...carton, containerType: 'Sachet' },
+        ];
+        for (const packaging of incompatible) {
+            expect(packagingSignaturesMatch(
+                equivalence.packagingSignature, packagingSignature(packaging),
+            )).toBe(false);
+            expect(verifiedRecipeUnitCount({
+                packaging,
+                equivalence,
+                productVariantId: variantId,
+            })).toBeNull();
+        }
+        expect(packagingSignaturesMatch('invalid', packagingSignature(carton)))
+            .toBe(false);
     });
 
     it('ne fabrique jamais une équivalence à partir de unitCount seul', () => {
