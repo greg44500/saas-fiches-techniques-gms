@@ -984,6 +984,7 @@ const listSupplierArticles = async ({
     supplierId = null,
     productId = null,
     productVariantId = null,
+    usableForTechnicalSheet = false,
 }) => {
     const filter = globalOnly
         ? {
@@ -1011,10 +1012,32 @@ const listSupplierArticles = async ({
         });
     }
 
+    // Le filtre de visibilité du Workspace reste indépendant de la recherche :
+    // ne jamais écraser son $or (risque de fuite inter-Workspaces).
+    // Ce mode restreint la recherche aux Articles directement utilisables
+    // dans la composition d'une Fiche technique.
+    let visibleSupplierIds = null;
+    let usableVariantIds = null;
+    if (usableForTechnicalSheet) {
+        [visibleSupplierIds, usableVariantIds] = await Promise.all([
+            Supplier.find({
+                ...buildWorkspaceVisibilityFilter(workspaceId),
+                status: SUPPLIER_RESOURCE_STATUS.ACTIVE,
+            }).distinct('_id'),
+            ProductVariant.find({
+                status: PRODUCT_STATUS.ACTIVE,
+                identityActive: true,
+                ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
+            }).distinct('_id'),
+        ]);
+        filter.supplier = mongoose.trusted({ $in: visibleSupplierIds });
+        filter.productVariant = mongoose.trusted({ $in: usableVariantIds });
+    }
+
     if (search) {
         const normalized = normalizeSupplierText(search);
         const normalizedRef = normalizeSupplierReference(search);
-        filter.$or = mongoose.trusted([
+        const conditions = [
             {
                 supplierDesignation: new RegExp(
                     escapeRegex(search),
@@ -1033,7 +1056,26 @@ const listSupplierArticles = async ({
                     'i',
                 ),
             },
-        ]);
+        ];
+
+        if (usableForTechnicalSheet) {
+            const [matchingSuppliers, matchingVariants] = await Promise.all([
+                Supplier.find({
+                    _id: mongoose.trusted({ $in: visibleSupplierIds }),
+                    name: new RegExp(escapeRegex(search), 'i'),
+                }).distinct('_id'),
+                ProductVariant.find({
+                    _id: mongoose.trusted({ $in: usableVariantIds }),
+                    name: new RegExp(escapeRegex(search), 'i'),
+                }).distinct('_id'),
+            ]);
+            conditions.push(
+                { supplier: mongoose.trusted({ $in: matchingSuppliers }) },
+                { productVariant: mongoose.trusted({ $in: matchingVariants }) },
+            );
+        }
+
+        filter.$and = mongoose.trusted([{ $or: mongoose.trusted(conditions) }]);
     }
 
     const skip = (page - 1) * limit;

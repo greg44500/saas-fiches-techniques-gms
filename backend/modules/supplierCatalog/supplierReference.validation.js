@@ -207,6 +207,10 @@ const workspaceArticleListQuerySchema = z.strictObject({
     supplierId: objectIdSchema.optional(),
     productId: objectIdSchema.optional(),
     productVariantId: objectIdSchema.optional(),
+    // Recherche utilisable en Fiche : Articles actifs + Fournisseur et Produit actifs.
+    usableForTechnicalSheet: z.enum(['true', 'false'])
+        .transform((value) => value === 'true')
+        .optional(),
 }).refine(
     (value) => !(value.productId && value.productVariantId),
     {

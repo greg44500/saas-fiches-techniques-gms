@@ -279,6 +279,74 @@ const validateCurrentSheet = async () => {
 };
 
 describe('M-004 RBAC HTTP', () => {
+
+    it('enregistre atomiquement la Référence et l’Article du Workspace dans le brouillon', async () => {
+        const response = await request(app)
+            .put(basePath() + '/draft')
+            .set(bearer(owner.token))
+            .send({
+                expectedRevision: draft.revision,
+                lines: [{
+                    kind: 'INGREDIENT',
+                    productVariantId: reference.variant._id.toString(),
+                    netQuantity: '2',
+                    inputUnit: 'KG',
+                    order: 0,
+                    selectedSupplierArticleId: article.id,
+                }],
+            })
+            .expect(200);
+
+        const saved = response.body.data.draft;
+        expect(saved.lines).toHaveLength(1);
+        expect(saved.lines[0].productVariantId)
+            .toBe(reference.variant._id.toString());
+        expect(saved.lines[0].selectedSupplierArticleId).toBe(article.id);
+        expect(saved.revision).toBe(draft.revision + 1);
+    });
+
+    it('refuse un Article d’un autre Workspace sans modifier le brouillon', async () => {
+        const foreign = await createWorkspaceOwnerFixture();
+        const foreignSupplier = await createSupplier({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: foreign.workspace._id,
+            actorId: foreign.owner._id,
+            data: { name: 'Fournisseur privé interdit M004' },
+        });
+        const foreignArticle = await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: foreign.workspace._id,
+            actorId: foreign.owner._id,
+            data: {
+                supplierId: foreignSupplier.id,
+                productVariantId: reference.variant._id,
+                supplierReference: 'SECRET-M004',
+            },
+        });
+
+        const response = await request(app)
+            .put(basePath() + '/draft')
+            .set(bearer(owner.token))
+            .send({
+                expectedRevision: draft.revision,
+                lines: [{
+                    kind: 'INGREDIENT',
+                    productVariantId: reference.variant._id.toString(),
+                    netQuantity: '1',
+                    inputUnit: 'KG',
+                    order: 0,
+                    selectedSupplierArticleId: foreignArticle.id,
+                }],
+            });
+
+        expect([404, 409]).toContain(response.status);
+        const unchanged = await request(app)
+            .get(basePath())
+            .set(bearer(owner.token))
+            .expect(200);
+        expect(unchanged.body.data.sheet.draft.revision).toBe(draft.revision);
+    });
+
     it('expose les unités de production et bases de vente depuis le backend', async () => {
         const response = await request(app)
             .get(

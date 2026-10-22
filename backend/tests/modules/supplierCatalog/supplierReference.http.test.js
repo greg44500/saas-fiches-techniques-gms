@@ -25,6 +25,7 @@ import {
 } from '../../../modules/supplierCatalog/supplier.model.js';
 import {
     createSupplier,
+    createSupplierArticle,
 } from '../../../modules/supplierCatalog/supplierReference.service.js';
 import {
     SUPPLIER_SCOPE,
@@ -50,6 +51,59 @@ const articlePath = (context) =>
     '/api/workspaces/' + context.workspace._id.toString() + '/supplier-articles';
 
 describe('M-003 supplier/article HTTP contract', () => {
+
+    it('recherche les Articles utilisables sans divulguer ceux d’un autre Workspace', async () => {
+        const supplierA = await createSupplier({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: ownerA.workspace._id,
+            actorId: ownerA.owner._id,
+            data: { name: 'Bridor local M004' },
+        });
+        const supplierB = await createSupplier({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: ownerB.workspace._id,
+            actorId: ownerB.owner._id,
+            data: { name: 'Secret autre Workspace' },
+        });
+        const ownArticle = await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: ownerA.workspace._id,
+            actorId: ownerA.owner._id,
+            data: {
+                supplierId: supplierA.id,
+                productVariantId: productReference.variant._id,
+                supplierReference: 'BRI-43279',
+            },
+        });
+        await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: ownerB.workspace._id,
+            actorId: ownerB.owner._id,
+            data: {
+                supplierId: supplierB.id,
+                productVariantId: productReference.variant._id,
+                supplierReference: 'SECRET-43279',
+            },
+        });
+        const searchA = await request(app)
+            .get(articlePath(ownerA) + '?search=43279&usableForTechnicalSheet=true')
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(searchA.body.data.articles.map(({ id }) => id)).toEqual([ownArticle.id]);
+
+        const searchForeign = await request(app)
+            .get(articlePath(ownerA) + '?search=SECRET-43279')
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(searchForeign.body.data.articles).toEqual([]);
+
+        const bySupplier = await request(app)
+            .get(articlePath(ownerA) + '?search=Bridor&usableForTechnicalSheet=true')
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(bySupplier.body.data.articles.map(({ id }) => id)).toContain(ownArticle.id);
+    });
+
     it('normalise le nom en majuscules et refuse le doublon, la variante plurielle et le renommage', async () => {
         const first = await request(app)
             .post(supplierPath(ownerA))
