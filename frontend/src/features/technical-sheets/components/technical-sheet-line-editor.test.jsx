@@ -303,6 +303,31 @@ describe('TechnicalSheetLineEditor', () => {
     });
   });
 
+  it('explique un prix NC lorsque le tarif historique ne se convertit pas à la pièce', async () => {
+    const user = userEvent.setup();
+    renderEditor({
+      lines: [{
+        ...valuedLine,
+        netQuantity: '1',
+        inputUnit: 'UNIT',
+        productVariant: {
+          ...valuedLine.productVariant,
+          name: 'Croissant individuel PAI',
+          referenceUnit: 'UNIT',
+        },
+        valuation: {
+          status: 'NO_PRICE',
+          normalizedAmount: null,
+          normalizedUnit: null,
+          alerts: ['NO_VALID_NEGOTIATED_PRICE', 'SUPPLIER_TARIFF_NOT_NORMALIZABLE'],
+        },
+      }],
+    });
+    await user.hover(screen.getByRole('button', { name: 'Prix unitaire hors taxe' }));
+    expect(await screen.findByText(/conditionnement historique du tarif et les pièces confirmées/i))
+      .toBeInTheDocument();
+  });
+
   it('expose les sources Produit sous forme de contrôles réutilisables', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
