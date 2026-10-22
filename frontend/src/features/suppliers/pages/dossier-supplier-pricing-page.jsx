@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { DataTable } from '@/components/data-display/data-table';
+import { SupplierArticleSearchAutocomplete } from '@/features/suppliers/components/supplier-article-search-autocomplete';
 import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
@@ -20,13 +21,6 @@ import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Tabs,
   TabsList,
@@ -41,7 +35,6 @@ import {
   useListInvoicedPricesQuery,
   useListWorkspaceIndicativePricesQuery,
   useListNegotiatedPricesQuery,
-  useListSupplierArticlesQuery,
   useListSupplierCatalogsQuery,
   useRemoveDossierSupplierReferenceMutation,
 } from '@/features/suppliers/api/supplier-api';
@@ -64,8 +57,6 @@ import {
 import {
   useWorkspaceContext,
 } from '@/features/workspace/components/workspace-context';
-
-const NONE = '__NONE__';
 
 function normalizeArticle(article) {
   return {
@@ -107,17 +98,13 @@ function DossierSupplierPricingPage() {
     return null;
   });
   const [priceDialog, setPriceDialog] = useState(null);
-  const [articleToAdd, setArticleToAdd] = useState(NONE);
+  const [articleToAdd, setArticleToAdd] = useState(null);
   const [indicativeDialogOpen, setIndicativeDialogOpen] = useState(false);
   const [indicativeVariant, setIndicativeVariant] = useState(null);
 
   const referencesQuery = useListDossierSupplierReferencesQuery(
     { workspaceId: workspace.id, dossierId },
     { skip: !can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) },
-  );
-  const articlesQuery = useListSupplierArticlesQuery(
-    { workspaceId: workspace.id, limit: 100 },
-    { skip: !can(SUPPLIER_PERMISSION.ARTICLE_READ) },
   );
   const catalogsQuery = useListSupplierCatalogsQuery(
     {
@@ -215,37 +202,25 @@ function DossierSupplierPricingPage() {
   const invoicedCount = invoicedPrices.length;
   const indicativeCount = indicativePrices.length;
 
-  const visibleArticles = useMemo(
-    () => (
-      can(SUPPLIER_PERMISSION.ARTICLE_READ)
-        ? (articlesQuery.data?.articles ?? []).map(normalizeArticle)
-        : references.map(({ supplierArticle }) => normalizeArticle(supplierArticle))
-    ),
-    [
-      articlesQuery.data?.articles,
-      can,
-      references,
-    ],
+  const fallbackArticles = useMemo(
+    () => references.map(({ supplierArticle }) => normalizeArticle(supplierArticle)),
+    [references],
   );
-
-  const referenceIds = new Set(
-    references.map(({ supplierArticle }) => supplierArticle.id),
-  );
-
-  const availableToAdd = visibleArticles.filter(
-    ({ id }) => !referenceIds.has(id),
+  const referenceIds = useMemo(
+    () => references.map(({ supplierArticle }) => supplierArticle.id),
+    [references],
   );
 
   async function addFavorite() {
-    if (articleToAdd === NONE) return;
+    if (!articleToAdd) return;
 
     try {
       await addReference({
         workspaceId: workspace.id,
         dossierId,
-        articleId: articleToAdd,
+        articleId: articleToAdd.id,
       }).unwrap();
-      setArticleToAdd(NONE);
+      setArticleToAdd(null);
       toast({
         title: 'Référence ajoutée au Dossier',
         variant: 'success',
@@ -659,31 +634,15 @@ function DossierSupplierPricingPage() {
           {can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE)
           && can(SUPPLIER_PERMISSION.ARTICLE_READ) && (
             <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row">
-              <Select
-                items={[
-                  { value: NONE, label: 'Sélectionner un Article' },
-                  ...availableToAdd.map((article) => ({
-                    value: article.id,
-                    label: article.supplierName + ' · ' + article.supplierReference,
-                  })),
-                ]}
-                onValueChange={setArticleToAdd}
-                value={articleToAdd}
-              >
-                <SelectTrigger aria-label="Référence à ajouter au Dossier">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>Sélectionner un Article</SelectItem>
-                  {availableToAdd.map((article) => (
-                    <SelectItem key={article.id} value={article.id}>
-                      {article.supplierName} · {article.supplierReference}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SupplierArticleSearchAutocomplete
+                ariaLabel="Référence à ajouter au Dossier"
+                excludedIds={referenceIds}
+                onSelect={setArticleToAdd}
+                selectedArticle={articleToAdd}
+                workspaceId={workspace.id}
+              />
               <Button
-                disabled={articleToAdd === NONE || addReferenceState.isLoading}
+                disabled={!articleToAdd || addReferenceState.isLoading}
                 onClick={addFavorite}
                 type="button"
               >
@@ -927,7 +886,8 @@ function DossierSupplierPricingPage() {
       />
 
       <SupplierPriceFormDialog
-        articles={visibleArticles}
+        articles={fallbackArticles}
+        serverSearch={can(SUPPLIER_PERMISSION.ARTICLE_READ)}
         dossierId={dossierId}
         mode={priceDialog === 'invoice' ? 'invoice' : 'negotiated'}
         onClose={() => setPriceDialog(null)}

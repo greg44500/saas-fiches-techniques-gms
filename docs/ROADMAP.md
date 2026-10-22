@@ -8,6 +8,8 @@
 
 ## Lot UI/UX transversal actif — 2026-10-22
 
+Complément validé : recherche prédictive d'Articles fournisseur dans les trois parcours Dossier/Tarifs/prix applicable, affichage du nom métier, menus flottants sans agrandir les cartes, icône `FolderOpen` pour l'ouverture du Dossier.
+
 Sur `feature/ui-ux-improvements` : harmonisation des menus d'actions
 « … » pour les tableaux Fournisseurs/Articles/Catalogues, Dossiers
 et Fournisseurs et prix ; infobulle de portée et désactivation

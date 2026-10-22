@@ -153,6 +153,48 @@ describe('DossierSupplierPricingPage', () => {
     mocks.listWorkspaceIndicative.mockReturnValue(queryResult([]));
   });
 
+  it('recherche les Articles pour les Références du Dossier sans liste de 100 éléments', async () => {
+    const user = userEvent.setup();
+    mocks.workspaceContext.mockReturnValue({
+      workspace: { id: 'workspace-1', name: 'Acme' },
+      can: (permission) => [
+        SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ,
+        SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE,
+        SUPPLIER_PERMISSION.ARTICLE_READ,
+      ].includes(permission),
+    });
+    mocks.listArticles.mockImplementation((args, opts) => queryResult({
+      articles: opts?.skip || args.search !== '43279' ? [] : [{
+        id: 'article-43279',
+        supplierReference: '43279',
+        supplierDesignation: 'Croissant pur beurre',
+        supplier: { id: 'supplier-bridor', name: 'BRIDOR' },
+      }],
+    }));
+
+    renderPage();
+    const input = screen.getByRole('combobox', {
+      name: 'Référence à ajouter au Dossier',
+    });
+    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeDisabled();
+    await user.type(input, '43279');
+
+    const suggestion = await screen.findByRole('option', {
+      name: 'Croissant pur beurre · BRIDOR · 43279',
+    });
+    await user.click(suggestion);
+    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeEnabled();
+    expect(mocks.listArticles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'workspace-1',
+        search: '43279',
+        page: 1,
+        limit: 10,
+      }),
+      { skip: false },
+    );
+  });
+
   it('affiche les catalogues accessibles avec portée et provenance dans le contexte Dossier', () => {
     mocks.workspaceContext.mockReturnValue({
       workspace: {

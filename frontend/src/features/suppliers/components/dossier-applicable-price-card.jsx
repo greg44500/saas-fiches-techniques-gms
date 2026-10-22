@@ -1,18 +1,11 @@
 import { useMemo, useState } from 'react';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SupplierArticleSearchAutocomplete } from '@/features/suppliers/components/supplier-article-search-autocomplete';
 import {
   useGetSupplierPricingMetadataQuery,
   useLazyGetApplicableSupplierPriceQuery,
   useListDossierSupplierReferencesQuery,
-  useListSupplierArticlesQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
   SUPPLIER_PERMISSION,
@@ -24,13 +17,13 @@ import {
   useWorkspaceContext,
 } from '@/features/workspace/components/workspace-context';
 
-const NONE = '__NONE__';
-
 function normalizeArticle(article) {
   return {
     id: article.id,
     supplierName: article.supplier?.name ?? article.supplierName ?? 'Fournisseur',
     supplierReference: article.supplierReference,
+    supplierDesignation: article.supplierDesignation,
+    productVariantName: article.productVariantName ?? article.productVariant?.name,
   };
 }
 
@@ -45,7 +38,7 @@ function DossierApplicablePriceCard({
   workspaceId,
 }) {
   const { can } = useWorkspaceContext();
-  const [selectedArticleId, setSelectedArticleId] = useState(NONE);
+  const [selectedArticle, setSelectedArticle] = useState(null);
   const pricingMetadataQuery =
     useGetSupplierPricingMetadataQuery(
       { workspaceId, dossierId },
@@ -65,31 +58,18 @@ function DossierApplicablePriceCard({
       ),
     },
   );
-  const articlesQuery = useListSupplierArticlesQuery(
-    { workspaceId, limit: 100 },
-    { skip: !can(SUPPLIER_PERMISSION.ARTICLE_READ) },
-  );
   const [loadApplicablePrice, applicablePriceQuery] =
     useLazyGetApplicableSupplierPriceQuery();
 
-  const visibleArticles = useMemo(
-    () => (
-      can(SUPPLIER_PERMISSION.ARTICLE_READ)
-        ? (articlesQuery.data?.articles ?? []).map(normalizeArticle)
-        : (referencesQuery.data ?? [])
-          .map(({ supplierArticle }) => normalizeArticle(supplierArticle))
-    ),
-    [
-      articlesQuery.data?.articles,
-      can,
-      referencesQuery.data,
-    ],
+  const fallbackArticles = useMemo(
+    () => (referencesQuery.data ?? [])
+      .map(({ supplierArticle }) => normalizeArticle(supplierArticle)),
+    [referencesQuery.data],
   );
 
-  async function chooseArticle(articleId) {
-    setSelectedArticleId(articleId);
-
-    if (articleId === NONE) {
+  async function chooseArticle(article) {
+    setSelectedArticle(article);
+    if (!article) {
       applicablePriceQuery.reset();
       return;
     }
@@ -98,7 +78,7 @@ function DossierApplicablePriceCard({
       await loadApplicablePrice({
         workspaceId,
         dossierId,
-        articleId,
+        articleId: article.id,
       }).unwrap();
     } catch {
       // L'état RTK Query est présenté de façon compacte dans la carte.
@@ -107,7 +87,7 @@ function DossierApplicablePriceCard({
 
   const applicable = applicablePriceQuery.data;
 
-  const showResult = selectedArticleId !== NONE;
+  const showResult = Boolean(selectedArticle);
 
   return (
     <section className="flex h-full flex-col rounded-xl border border-border bg-card px-5 py-4 lg:h-56">
@@ -123,29 +103,14 @@ function DossierApplicablePriceCard({
         <p className="mb-1.5 text-xs font-medium text-muted-foreground">
           Article fournisseur
         </p>
-        <Select
-          items={[
-            { value: NONE, label: 'Sélectionner' },
-            ...visibleArticles.map((article) => ({
-              value: article.id,
-              label: article.supplierName + ' · ' + article.supplierReference,
-            })),
-          ]}
-          onValueChange={chooseArticle}
-          value={selectedArticleId}
-        >
-          <SelectTrigger aria-label="Article fournisseur à vérifier">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NONE}>Sélectionner</SelectItem>
-            {visibleArticles.map((article) => (
-              <SelectItem key={article.id} value={article.id}>
-                {article.supplierName} · {article.supplierReference}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SupplierArticleSearchAutocomplete
+          ariaLabel="Article fournisseur à vérifier"
+          fallbackArticles={fallbackArticles}
+          onSelect={chooseArticle}
+          selectedArticle={selectedArticle}
+          serverSearch={can(SUPPLIER_PERMISSION.ARTICLE_READ)}
+          workspaceId={workspaceId}
+        />
       </div>
 
       <div

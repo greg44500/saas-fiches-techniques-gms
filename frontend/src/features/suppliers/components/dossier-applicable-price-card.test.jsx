@@ -40,26 +40,15 @@ function queryResult(data) {
   };
 }
 
-async function selectArticleOption(user, optionName) {
-  const trigger = screen.getByRole('combobox', {
+async function selectArticleOption(user) {
+  const input = screen.getByRole('combobox', {
     name: 'Article fournisseur à vérifier',
   });
-
-  await user.click(trigger);
-  await waitFor(() => {
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  const option = await screen.findByRole('option', {
-    name: optionName,
-  });
-  await user.click(option);
-
-  await waitFor(() => {
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  return trigger;
+  await user.type(input, 'Ali321');
+  await user.click(await screen.findByRole('option', {
+    name: 'Ail semoule · Sysco · Ali321',
+  }));
+  return input;
 }
 
 describe('DossierApplicablePriceCard', () => {
@@ -82,6 +71,7 @@ describe('DossierApplicablePriceCard', () => {
       articles: [{
         id: 'article-1',
         supplierReference: 'Ali321',
+        supplierDesignation: 'Ail semoule',
         supplier: { name: 'Sysco' },
       }],
     }));
@@ -123,7 +113,7 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
-    await selectArticleOption(user, 'Sysco · Ali321');
+    await selectArticleOption(user);
 
     expect(mocks.loadApplicable).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
@@ -157,7 +147,7 @@ describe('DossierApplicablePriceCard', () => {
       },
     ]);
     render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
-    await selectArticleOption(user, 'Sysco · Ali321');
+    await selectArticleOption(user);
     expect(screen.getByRole('note')).toHaveTextContent(
       'Dernier prix connu — tarif expiré',
     );
@@ -191,7 +181,7 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
-    await selectArticleOption(user, 'Sysco · Ali321');
+    await selectArticleOption(user);
 
     expect(screen.getByText('3,100 / kg')).toBeInTheDocument();
     expect(screen.getByText(/Prix indicatif espace de travail/))
@@ -210,14 +200,17 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
-    await selectArticleOption(user, 'Sysco · Ali321');
+    await selectArticleOption(user);
 
     expect(screen.getByText('12,500 / tranche')).toBeInTheDocument();
 
-    const trigger = await selectArticleOption(user, 'Sélectionner');
+    const input = screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    });
+    await user.clear(input);
 
     expect(mocks.resetApplicable).toHaveBeenCalledTimes(1);
-    expect(trigger).toHaveTextContent('Sélectionner');
+    expect(input).toHaveValue('');
     expect(mocks.loadApplicable).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('12,500 / tranche')).not.toBeInTheDocument();
     expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();

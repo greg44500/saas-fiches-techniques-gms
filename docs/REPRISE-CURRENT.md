@@ -5,6 +5,7 @@
 - `main` Produit de référence : `46411c8d5c554f12bf2ec5a27328373c57a2019b` (PR #48 fusionnée ; Core Gate post-merge #229 verte).
 - Branche de travail unique : `feature/ui-ux-improvements`, sans modification de `main`.
 - Périmètre validé : infobulle de portée Fournisseur, bouton « Enregistrer » désactivé sans nom, menus « … » de lignes Fournisseurs, Articles, Catalogues, Dossiers et Fournisseurs et prix ; composant partagé avec les Fiches techniques.
+- Complément UI/UX validé : icône FolderOpen du lien Dossier ; trois sélecteurs d'Article en recherche prédictive (Références, Tarif négocié/Prix facturé, prix applicable), suggestions enrichies, dropdown en Portal sans redimensionnement ; recherche M-003 standard par désignation, référence, Fournisseur et Référence Produit.
 - Contrat du lot : `docs/ux/UI-UX-TABLE-ACTIONS-SUPPLIERS-DOSSIERS-2026-10-22.md`.
 - Aucun changement backend, Core, MongoDB, ownership, RBAC, capabilities ni quotas prévu.
 - Tests locaux Windows, gate `npm run release:check`, QA visuelle et autorisation de PR : **en attente de confirmation de l'utilisateur**. Ne pas considérer le lot comme validé sans résultats réels.

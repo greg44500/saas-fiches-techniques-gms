@@ -18,26 +18,23 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
     mocks.createInvoice,
     { isLoading: false },
   ],
+  useListSupplierArticlesQuery: () => ({
+    data: undefined, isError: false, isFetching: false,
+  }),
 }));
 
 import {
   SupplierPriceFormDialog,
 } from '@/features/suppliers/components/supplier-price-form-dialog';
 
-async function selectOption(user, triggerName, optionName) {
-  const trigger = screen.getByRole('combobox', {
-    name: triggerName,
-  });
-
-  vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(
-    DOMRect.fromRect({ x: 24, y: 24, width: 240, height: 40 }),
-  );
-
-  await user.click(trigger);
+async function selectArticle(user) {
+  const input = screen.getByRole('combobox', { name: 'Article fournisseur' });
+  await user.type(input, 'BRU-001');
   await user.click(await screen.findByRole('option', {
-    name: optionName,
+    name: 'Pain bruschetta · Sysco · BRU-001',
   }));
 }
+
 
 describe('SupplierPriceFormDialog', () => {
   beforeEach(() => {
@@ -62,6 +59,7 @@ describe('SupplierPriceFormDialog', () => {
             supplierId: 'supplier-1',
             supplierName: 'Sysco',
             supplierReference: 'BRU-001',
+            supplierDesignation: 'Pain bruschetta',
             productVariant: {
               id: 'variant-unit',
               referenceUnit: 'UNIT',
@@ -79,11 +77,7 @@ describe('SupplierPriceFormDialog', () => {
       </TooltipProvider>,
     );
 
-    await selectOption(
-      user,
-      'Article fournisseur',
-      'Sysco · BRU-001',
-    );
+    await selectArticle(user);
 
     const unitTrigger = screen.getByRole('combobox', {
       name: 'Unité du prix',

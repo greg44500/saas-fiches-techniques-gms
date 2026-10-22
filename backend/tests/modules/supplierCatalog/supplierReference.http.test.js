@@ -129,6 +129,30 @@ describe('M-003 supplier/article HTTP contract', () => {
             .set(bearer(ownerA.token))
             .expect(200);
         expect(bySupplier.body.data.articles.map(({ id }) => id)).toContain(ownArticle.id);
+
+        // Les sélecteurs tarifaires utilisent la recherche standard
+        // (sans usableForTechnicalSheet), avec la même isolation Workspace.
+        const standardSupplier = await request(app)
+            .get(articlePath(ownerA) + '?search=Bridor')
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(standardSupplier.body.data.articles.map(({ id }) => id))
+            .toContain(ownArticle.id);
+
+        const standardVariant = await request(app)
+            .get(articlePath(ownerA))
+            .query({ search: 'Carotte fournisseur' })
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(standardVariant.body.data.articles.map(({ id }) => id))
+            .toContain(ownArticle.id);
+
+        const hiddenSupplier = await request(app)
+            .get(articlePath(ownerA))
+            .query({ search: 'Secret autre Workspace' })
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(hiddenSupplier.body.data.articles).toEqual([]);
     });
 
     it('normalise le nom en majuscules et refuse le doublon, la variante plurielle et le renommage', async () => {

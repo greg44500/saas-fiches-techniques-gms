@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, Plus } from 'lucide-react';
+import { Eye, FolderOpen, Plus } from 'lucide-react';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { DataTable } from '@/components/data-display/data-table';
@@ -228,6 +228,7 @@ function DossiersPage() {
             },
             ...(dossier.status === 'ACTIVE' ? [{
               key: 'open',
+              Icon: FolderOpen,
               label: 'Ouvrir',
               to: `/workspaces/${workspace.id}/dossiers/${dossier.id}`,
             }] : []),

@@ -141,6 +141,7 @@ describe('DossiersPage', () => {
 
     const openLink = screen.getByRole('link', { name: 'Ouvrir' });
     expect(openLink).toHaveAttribute('href', '/workspaces/workspace-1/dossiers/dossier-1');
+    expect(openLink.querySelector('svg.lucide-folder-open')).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Voir' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Voir' }));

@@ -85,3 +85,39 @@ npm run release:check
 
 Revoir les résultats réels, appliquer les corrections éventuelles dans
 la même branche, puis demander l'accord avant PR.
+
+## Complément validé — identification et recherche d'Articles
+
+L'utilisateur a validé le 2026-10-22 :
+
+- Action `Ouvrir` du tableau Dossiers avec icône `FolderOpen`, lien inchangé.
+- Sélecteurs d'Articles dans les Références favorites du Dossier,
+  le dialogue d'ajout de Tarif négocié / Prix facturé et la carte de
+  vérification du prix applicable : champ de recherche prédictive
+  remplaçant les listes déroulantes.
+- Présentation métier des suggestions sur deux lignes :
+  désignation de l'Article si disponible (sinon nom de Référence Produit),
+  puis Fournisseur et référence fournisseur.
+- Recherche côté serveur dès trois caractères, avec temporisation de
+  300 ms et pagination limitée à 10 suggestions ; pas de chargement
+  de 1 000 Articles côté navigateur.
+- Réutilisation des composants `components/ui/autocomplete.jsx` existants.
+  Le popup est rendu dans un Portal et borné en hauteur (`max-h-64`) ;
+  il ne modifie ni le flux ni la taille initiale de la carte ou de la modale.
+- Le filtre standard M-003 côté serveur est complété par le nom de
+  Fournisseur et le nom de Référence Produit ; la recherche conserve
+  les filtres de visibilité Workspace existants.
+- Si l'utilisateur n'a accès qu'aux Références du Dossier, la recherche
+  de la carte fonctionne sur ces données déjà autorisées, sans
+  déclencher l'API de liste d'Articles.
+- Une saisie qui modifie l'Article retenu invalide le choix précédent
+  et empêche d'envoyer un identifiant obsolète.
+- Les actions et validations de prix demeurent inchangées.
+- Tests ajoutés / ajustés pour recherche, sélection, affichage,
+  permissions/tenancy et comportement de l'icône.
+
+**Recette en attente :** vérifier localement les trois recherches, les
+libellés des Articles avec et sans désignation, la recherche sur des
+catalogues volumineux, les résultats vides, la recherche clavier et la
+stabilité de hauteur de la carte « Vérifier un prix applicable » ainsi
+que de la modale tarifaire avant toute PR.

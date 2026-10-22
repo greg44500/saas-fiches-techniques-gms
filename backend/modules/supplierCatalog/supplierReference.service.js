@@ -1061,22 +1061,33 @@ const listSupplierArticles = async ({
             },
         ];
 
-        if (usableForTechnicalSheet) {
-            const [matchingSuppliers, matchingVariants] = await Promise.all([
-                Supplier.find({
-                    _id: mongoose.trusted({ $in: visibleSupplierIds }),
-                    name: new RegExp(escapeRegex(search), 'i'),
-                }).distinct('_id'),
-                ProductVariant.find({
-                    _id: mongoose.trusted({ $in: usableVariantIds }),
-                    name: new RegExp(escapeRegex(search), 'i'),
-                }).distinct('_id'),
-            ]);
-            conditions.push(
-                { supplier: mongoose.trusted({ $in: matchingSuppliers }) },
-                { productVariant: mongoose.trusted({ $in: matchingVariants }) },
-            );
-        }
+        // Même recherche métier pour les sélecteurs et les listes :
+        // désignation, référence, nom du Fournisseur ou Référence Produit.
+        // Chaque recherche jointe est bornée par la visibilité autorisée ;
+        // le filtre principal de tenancy n'est jamais remplacé.
+        const supplierSearchFilter = usableForTechnicalSheet
+            ? { _id: mongoose.trusted({ $in: visibleSupplierIds }) }
+            : (globalOnly
+                ? { scope: SUPPLIER_SCOPE.GLOBAL_SHARED, workspace: null }
+                : buildWorkspaceVisibilityFilter(workspaceId));
+        const variantSearchFilter = usableForTechnicalSheet
+            ? { _id: mongoose.trusted({ $in: usableVariantIds }) }
+            : buildWorkspaceGovernanceVisibilityFilter(workspaceId);
+
+        const [matchingSuppliers, matchingVariants] = await Promise.all([
+            Supplier.find({
+                ...supplierSearchFilter,
+                name: new RegExp(escapeRegex(search), 'i'),
+            }).distinct('_id'),
+            ProductVariant.find({
+                ...variantSearchFilter,
+                name: new RegExp(escapeRegex(search), 'i'),
+            }).distinct('_id'),
+        ]);
+        conditions.push(
+            { supplier: mongoose.trusted({ $in: matchingSuppliers }) },
+            { productVariant: mongoose.trusted({ $in: matchingVariants }) },
+        );
 
         filter.$and = mongoose.trusted([{ $or: mongoose.trusted(conditions) }]);
     }
