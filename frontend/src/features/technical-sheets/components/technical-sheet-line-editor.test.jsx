@@ -696,6 +696,43 @@ describe('TechnicalSheetLineEditor', () => {
       .toBeInTheDocument();
   });
 
+  it('affiche le poids net BRIDOR sous le conditionnement sans répéter la quantité totale', async () => {
+    const user = userEvent.setup();
+    mocks.articleQuery.mockReturnValue({
+      data: {
+        articles: [{
+          id: 'article-1',
+          supplierReference: '43279',
+          supplierDesignation: 'Croissant 120 g',
+          packaging: {
+            containerType: 'Carton',
+            unitCount: 36,
+            quantityPerUnit: '0.120',
+            unit: 'KG',
+            totalQuantity: '4.32',
+            netWeight: '4.320',
+            netWeightUnit: 'KG',
+          },
+          supplier: { id: 'supplier-1', name: 'BRIDOR' },
+        }],
+      },
+      isError: false,
+      isLoading: false,
+    });
+    renderEditor();
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Fournisseur : BRIDOR'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Conditionnement : Carton · 36 × 0.120 kg'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Poids net : 4.320 kg'))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/Quantité totale calculée/))
+      .not.toBeInTheDocument();
+  });
+
   it('autorise le sourcing même lorsque la composition est en lecture seule', async () => {
     const user = userEvent.setup();
 
