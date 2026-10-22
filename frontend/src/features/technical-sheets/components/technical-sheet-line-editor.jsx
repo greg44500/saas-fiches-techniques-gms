@@ -58,6 +58,24 @@ const COMPOSITION_GRID_CLASS = [
   'lg:items-center',
 ].join(' ');
 
+const UNPRICED_LINE_REASONS = [
+  ['SUPPLIER_ARTICLE_SELECTION_REQUIRED',
+    'Plusieurs Articles fournisseur correspondent à cette Référence. Choisissez l’Article à utiliser dans les actions de la ligne.'],
+  ['SUPPLIER_TARIFF_NOT_NORMALIZABLE',
+    'Le tarif fournisseur existe mais ne peut pas être converti dans l’unité de recette. Vérifiez le conditionnement historique du tarif et les pièces confirmées.'],
+  ['NO_USABLE_SUPPLIER_ARTICLE',
+    'Aucun Article fournisseur exploitable n’est associé à cette Référence. Vérifiez son association et son état.'],
+  ['NO_APPLICABLE_SUPPLIER_TARIFF',
+    'Aucun tarif fournisseur applicable à la date de valorisation. Vérifiez la période et les autres sources de prix.'],
+];
+
+function missingPriceReason(line, defaultLabel) {
+  if (line.valuation?.normalizedAmount != null) return defaultLabel;
+  const alerts = line.valuation?.alerts ?? [];
+  const explanation = UNPRICED_LINE_REASONS.find(([code]) => alerts.includes(code));
+  return explanation?.[1] ?? defaultLabel;
+}
+
 let localLineSequence = 0;
 
 function createLocalLineClientKey() {
@@ -967,7 +985,7 @@ function TechnicalSheetLineEditor({
                         )
                       : ''
                   )
-                : valuationPresentation.label}
+                : missingPriceReason(line, valuationPresentation.label)}
             </TooltipContent>
           </Tooltip>
           {usesExpiredTariff && (
