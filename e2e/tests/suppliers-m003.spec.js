@@ -584,11 +584,11 @@ test('M-003 crée manuellement un Article et propose sa Référence sans quitter
   await dialog.getByRole('combobox', { name: 'Sélectionner le Fournisseur' }).click();
   await page.getByRole('option', { name: supplierName }).click();
   await dialog.getByRole('combobox', { name: 'Rechercher un Produit' }).fill(productName);
+  // L'action contextuelle n'apparaît qu'après la réponse vide de la recherche.
+  await expect(page.getByRole('button', { name: 'Créer cette Référence' })).toBeVisible();
+  await page.getByRole('button', { name: 'Créer cette Référence' }).click();
   await dialog.getByLabel('Référence fournisseur').fill(reference);
   await dialog.getByLabel('Désignation fournisseur').fill(productName);
-  await expect(dialog.getByRole('button', { name: 'Créer une Référence manquante' }))
-    .toBeVisible();
-  await dialog.getByRole('button', { name: 'Créer une Référence manquante' }).click();
   await dialog.getByRole('button', { name: 'Créer l’Article et la Référence' }).click();
 
   const productDialog = page.getByRole('dialog', { name: 'Créer un Produit' });
