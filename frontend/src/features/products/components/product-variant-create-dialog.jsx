@@ -225,6 +225,7 @@ function ProductVariantCreateDialog({
                 defaultOpen={false}
               >
                 <CollapsibleTrigger
+                  aria-label={`Références existantes (${existingVariants.length})`}
                   className="group flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   type="button"
                 >
