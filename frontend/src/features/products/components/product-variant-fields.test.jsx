@@ -146,22 +146,20 @@ describe('ProductVariantFields', () => {
       .toHaveClass('top-8', 'group-hover:top-2');
   });
 
-  it('remonte le libellé sur la bordure lorsqu’une sélection est renseignée', async () => {
-    const user = userEvent.setup();
+  it('remonte le libellé sur la bordure lorsqu’une sélection est renseignée', () => {
+    const { rerender } = render(<StructuredHarness onPayload={vi.fn()} />);
 
-    render(<StructuredHarness onPayload={vi.fn()} />);
-
-    // Le parcours classique ne change pas ; seul le mode floating est animé.
+    // Vérifier les deux modes successivement pour éviter deux champs
+    // portant le même id HTML dans le DOM du test.
     const classic = screen.getByLabelText('Variété');
     expect(classic.closest('[data-slot="field"]')).not.toHaveAttribute('data-label-state');
 
-    // Les champs de l’édition affichent leur valeur sélectionnée sans la masquer.
     const value = createEmptyVariantDraft(metadata, { structured: true });
     const populated = {
       ...value,
       varietyId: dimensions.varieties[0].id,
     };
-    const { unmount } = render(
+    rerender(
       <ProductVariantFields
         dimensions={dimensions}
         floatingLabels
@@ -171,10 +169,8 @@ describe('ProductVariantFields', () => {
         value={populated}
       />,
     );
-    expect(screen.getAllByLabelText('Variété')[1].closest('[data-slot="field"]'))
+    expect(screen.getByLabelText('Variété').closest('[data-slot="field"]'))
       .toHaveAttribute('data-label-state', 'filled');
-    unmount();
-    await user.click(screen.getByRole('button', { name: 'Exporter' }));
   });
 
   it('traite une caractéristique effacée comme un champ non renseigné', () => {
