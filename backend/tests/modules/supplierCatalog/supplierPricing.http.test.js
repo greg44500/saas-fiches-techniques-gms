@@ -201,6 +201,23 @@ describe('M-003 dossier pricing HTTP', () => {
         expect(sameProof.body.data.article.recipeUnitEquivalence.verifiedAt)
             .toBe(initialDate);
 
+        const unitConversionOnly = await request(app).patch(editUrl)
+            .set(bearer(owner.token)).send({
+                packaging: {
+                    ...packaging,
+                    unit: 'KG',
+                    quantityPerUnit: '0.120',
+                    netWeight: '4.320',
+                    netWeightUnit: 'KG',
+                    supplierLabel: 'Carton de 36',
+                },
+            });
+        expect(unitConversionOnly.status).toBe(200);
+        expect(unitConversionOnly.body.data.article.recipeUnitEquivalence.unitsPerPackage)
+            .toBe(36);
+        expect(unitConversionOnly.body.data.article.recipeUnitEquivalence.verifiedAt)
+            .toBe(initialDate);
+
         const changed = await request(app).patch(editUrl)
             .set(bearer(owner.token)).send({
                 packaging: { ...packaging, unitCount: 24 },
@@ -357,6 +374,21 @@ describe('M-003 dossier pricing HTTP', () => {
             .send({ recipeUnitsPerPackage: 36 });
         expect(refused.status).toBe(400);
 
+        // Reproduction BRIDOR : le tarif historique est en grammes,
+        // l'Article corrigé est en kilogrammes, et la preuve sera en KG.
+        const kgArticle = await request(app).patch(articleUrl)
+            .set(bearer(owner.token))
+            .send({
+                packaging: {
+                    containerType: 'Carton',
+                    unitCount: 36,
+                    quantityPerUnit: '0.120',
+                    unit: 'KG',
+                    netWeight: '4.320',
+                    netWeightUnit: 'KG',
+                },
+            });
+        expect(kgArticle.status).toBe(200);
         const confirmed = await request(app).patch(articleUrl)
             .set(bearer(owner.token))
             .send({ recipeUnitsPerPackage: 36, confirmRecipeUnits: true });
@@ -365,7 +397,8 @@ describe('M-003 dossier pricing HTTP', () => {
             .toBe(36);
         const after = await request(app).get(priceUrl).set(bearer(owner.token));
         expect(after.status).toBe(200);
-        // Sans prix négocié, le tarif fournisseur est bien la source utilisée.
+        // La preuve KG de l'Article justifie le tarif G du même colis
+        // sans réécrire le snapshot historique ni utiliser le repli indicatif.
         expect(after.body.data.applicablePrice.resolvedSource).toBe('SUPPLIER_TARIFF');
         expect(after.body.data.applicablePrice.price.normalizedUnit).toBe('UNIT');
         expect(Number(after.body.data.applicablePrice.price.normalizedAmount))
