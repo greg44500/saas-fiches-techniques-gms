@@ -568,6 +568,57 @@ test('M-003 importe des prix Articles sans période saisie et les expose depuis 
 });
 
 
+test('M-003 crée manuellement un Article et propose sa Référence sans quitter le parcours', async ({ page }) => {
+  const workspace = await provisionSupplierOwnerWorkspace({ withProductReference: false });
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const supplierName = 'Fournisseur manuel E2E ' + suffix;
+  const productName = 'Œufs blancs pasteurisés E2E ' + suffix;
+  const reference = 'OVO-' + suffix;
+
+  const token = await loginWithIdentity(page, workspace.identity);
+  await page.goto(workspace.suppliersUrl);
+  await createSupplierFromUi(page, supplierName);
+  await page.getByRole('tab', { name: /^Articles \(/ }).click();
+  await page.getByRole('button', { name: 'Créer un Article' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Créer un Article fournisseur' });
+  await dialog.getByRole('combobox', { name: 'Sélectionner le Fournisseur' }).click();
+  await page.getByRole('option', { name: supplierName }).click();
+  await dialog.getByRole('combobox', { name: 'Rechercher un Produit' }).fill(productName);
+  await dialog.getByLabel('Référence fournisseur').fill(reference);
+  await dialog.getByLabel('Désignation fournisseur').fill(productName);
+  await expect(dialog.getByRole('button', { name: 'Créer une Référence manquante' }))
+    .toBeVisible();
+  await dialog.getByRole('button', { name: 'Créer une Référence manquante' }).click();
+  await dialog.getByRole('button', { name: 'Créer l’Article et la Référence' }).click();
+
+  const productDialog = page.getByRole('dialog', { name: 'Créer un Produit' });
+  await expect(productDialog).toBeVisible();
+  await productDialog.getByLabel('Nom du Produit').fill(productName);
+  await expect(productDialog.getByText(
+    /Aucun Produit existant correspondant|Produits correspondants/,
+  )).toBeVisible();
+  const confirmDistinct = productDialog.getByRole('checkbox', {
+    name: /J’ai examiné ces Produits/,
+  });
+  if (await confirmDistinct.count()) await confirmDistinct.check();
+  await productDialog.getByRole('button', { name: 'Soumettre la proposition' }).click();
+  await expectVisibleToast(page, 'Référence Produit créée et associée');
+
+  const response = await page.request.get(
+    '/api/workspaces/' + workspace.workspaceId + '/supplier-articles',
+    {
+      headers: { Authorization: 'Bearer ' + token },
+      params: { search: reference },
+    },
+  );
+  expect(response.status()).toBe(200);
+  const saved = (await response.json()).data.articles.find(
+    (entry) => entry.supplierReference === reference,
+  );
+  expect(saved?.associationStatus).toBe('ASSOCIATED');
+  expect(saved?.productVariant?.name).toBe(productName);
+});
+
 test('M-003 associe immédiatement une Référence provisoire créée après un import Article', async ({ page }) => {
   const workspace = await provisionSupplierOwnerWorkspace({ withProductReference: false });
   const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
@@ -652,7 +703,8 @@ test('M-003 associe immédiatement une Référence provisoire créée après un 
     name: /Modifier les informations de : Croissant individuel PAI/,
   });
   await expect(editDialog.getByText('Nb d’unités par colis')).toBeVisible();
-  await expect(editDialog.getByText('Unité utilisée en fiche technique')).toBeVisible();
+  await expect(editDialog.getByRole('button', { name: 'Enregistrer' })).toBeVisible();
+  await expect(editDialog.getByRole('radio')).toHaveCount(0);
   await expect(editDialog.getByRole('button', {
     name: 'Informations sur la correction du conditionnement',
   })).toBeVisible();
