@@ -323,7 +323,7 @@ describe('TechnicalSheetLineEditor', () => {
         },
       }],
     });
-    await user.hover(screen.getByRole('button', { name: 'Prix unitaire hors taxe' }));
+    await user.hover(screen.getByText('NC', { selector: 'button[aria-label="Prix unitaire hors taxe"]' }));
     expect(await screen.findByText(/conditionnement historique du tarif et les pièces confirmées/i))
       .toBeInTheDocument();
   });
