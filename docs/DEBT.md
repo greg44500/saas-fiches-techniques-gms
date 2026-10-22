@@ -4,6 +4,10 @@
 **Dernière mise à jour :** 2026-10-16  
 **Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
 
+### Audit BRIDOR 43279 reçu le 2026-10-22 — racine identifiée, QA à confirmer
+
+Constat en base de développement : une preuve humaine valide de 36 pièces (conditionnement Article `0,120 KG × 36`) ne correspondait pas littéralement à la signature du tarif historique (`120 G × 36`) alors que leur contenu physique est identique. Tarif historique de 6,50 € / colis ; repli global de 0,20 € / pièce ; brouillon encore stocké `NO_PRICE`. Correctif sans migration : comparaison physique exacte des signatures conservées ; contrôle inchangé des réels changements de contenu/Produit. Tests unitaires et HTTP ajoutés, à exécuter localement. Vérifier après pull et audit que le Tarif fournisseur redevient applicable, puis cliquer « Actualiser les coûts » sur la Fiche brouillon. **Ne pas modifier le tarif ou les snapshots en base ; ne pas renouveler la preuve des 36 pièces.**
+
 ### QA complémentaire du 2026-10-22 — non résolue en données réelles
 
 Exécuter l'audit en lecture seule du Croissant individuel PAI : preuve, signature du conditionnement actuel, snapshot tarifaire, politique et Prix applicable dans le Dossier, montant stocké dans la ligne de Fiche. Valider aussi la création provisoire à la volée et la conservation des preuves sans nouvelle confirmation. Les tests et gates restent à exécuter localement avant PR. Ne jamais corriger directement les historiques.
