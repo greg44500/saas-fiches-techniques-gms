@@ -712,6 +712,9 @@ test('M-004 ambiguïté Article, changement de prix, actualisation automatique p
     }),
   ).toBeEnabled();
 
+  await page.getByRole('button', { name: 'Actualiser les coûts' }).click();
+  await expectVisibleToast(page, 'Coûts actualisés');
+
   await validateCurrentDraft(page, {
     comment:
       'Validation après actualisation',
