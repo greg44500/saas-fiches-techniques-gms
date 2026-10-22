@@ -11,6 +11,10 @@ import { ProductVariant } from '../../modules/productCatalog/productVariant.mode
 import { SupplierArticle } from '../../modules/supplierCatalog/supplier.model.js';
 import { SupplierTariff } from '../../modules/supplierCatalog/supplierCatalog.model.js';
 import {
+    packagingSignature, verifiedRecipeUnitCount,
+} from '../../modules/supplierCatalog/supplierRecipeUnitEquivalence.service.js';
+import { resolveApplicablePrice } from '../../modules/supplierCatalog/supplierPricing.service.js';
+import {
     IndicativePrice,
     InvoicedPrice,
     NegotiatedPrice,
@@ -33,7 +37,7 @@ if (!requestedName) {
         for (const variant of variants) {
             const articles = await SupplierArticle.find({
                 productVariant: variant._id,
-            }).select('_id scope workspace supplierReference packaging').lean();
+            }).select('_id scope workspace supplierReference packaging recipeUnitEquivalence productVariant').lean();
             const articleIds = articles.map((article) => article._id);
             const counts = await Promise.all([
                 SupplierTariff.countDocuments({
@@ -53,7 +57,51 @@ if (!requestedName) {
                     'linesSnapshot.productVariantId': variant._id,
                 }),
             ]);
+            // Lecture ciblée : preuve, snapshot tarifaire et état économique
+            // de la ligne M-004, sans écriture ni réévaluation du brouillon.
+            const tariffs = await SupplierTariff.find({
+                supplierArticle: mongoose.trusted({ $in: articleIds }),
+                isCurrent: true,
+            }).select('supplierArticle sourceKind sourceAmount sourceBasis packagingSnapshot validFrom validTo').lean();
+            const drafts = await TechnicalSheetDraft.find({
+                'lines.productVariant': variant._id,
+            }).select('workspace dossier lines valuationStatus valuedAt').limit(30).lean();
+            const draftDiagnostics = await Promise.all(drafts.flatMap((draft) =>
+                (draft.lines ?? []).filter((line) =>
+                    line.productVariant?.toString() === variant._id.toString(),
+                ).map(async (line) => {
+                    let currentPrice = null;
+                    let resolverError = null;
+                    try {
+                        const resolved = await resolveApplicablePrice({
+                            workspaceId: draft.workspace,
+                            dossierId: draft.dossier,
+                            articleId: line.selectedSupplierArticle?.toString() ?? null,
+                            productVariantId: variant._id.toString(),
+                        });
+                        currentPrice = {
+                            source: resolved.resolvedSource,
+                            normalizedAmount: resolved.price?.normalizedAmount ?? null,
+                            normalizedUnit: resolved.price?.normalizedUnit ?? null,
+                            alerts: resolved.alerts,
+                        };
+                    } catch (error) {
+                        resolverError = error.message;
+                    }
+                    return {
+                        dossierId: draft.dossier?.toString() ?? null,
+                        articleSelectedId: line.selectedSupplierArticle?.toString() ?? null,
+                        storedLineStatus: line.valuation?.status ?? null,
+                        storedAmount: line.valuation?.normalizedAmount?.toString() ?? null,
+                        valuationStatus: draft.valuationStatus,
+                        valuedAt: draft.valuedAt,
+                        currentPrice,
+                        resolverError,
+                    };
+                }),
+            ));
             output.push({
+                draftPricing: draftDiagnostics,
                 reference: {
                     id: variant._id.toString(),
                     name: variant.name,
@@ -69,6 +117,28 @@ if (!requestedName) {
                     unitCount: article.packaging?.unitCount ?? null,
                     quantityPerUnit: article.packaging?.quantityPerUnit?.toString() ?? null,
                     unit: article.packaging?.unit ?? null,
+                    confirmedRecipePieces: verifiedRecipeUnitCount({
+                        packaging: article.packaging,
+                        equivalence: article.recipeUnitEquivalence,
+                        productVariantId: variant._id,
+                    }),
+                    evidenceRecorded: Boolean(article.recipeUnitEquivalence),
+                    storedSignature: article.recipeUnitEquivalence?.packagingSignature ?? null,
+                    currentSignature: packagingSignature(article.packaging),
+                    tariffs: tariffs.filter((tariff) =>
+                        tariff.supplierArticle.toString() === article._id.toString(),
+                    ).map((tariff) => ({
+                        id: tariff._id.toString(),
+                        basis: tariff.sourceBasis,
+                        amount: tariff.sourceAmount?.toString() ?? null,
+                        validFrom: tariff.validFrom,
+                        validTo: tariff.validTo,
+                        hasSnapshot: Boolean(tariff.packagingSnapshot),
+                        snapshotSignature: packagingSignature(tariff.packagingSnapshot),
+                        matchesCurrentEvidence: Boolean(article.recipeUnitEquivalence
+                            && packagingSignature(tariff.packagingSnapshot)
+                                === article.recipeUnitEquivalence.packagingSignature),
+                    })),
                 })),
                 usage: {
                     supplierTariffs: counts[0],
