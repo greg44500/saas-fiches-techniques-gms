@@ -34,7 +34,7 @@ const packagingSignature = (packaging) => {
 // Comparer leur contenu physique sans les réécrire : 120 g = 0,120 kg.
 const exactDecimal = (value) => {
     if (value == null) return null;
-    const match = String(value).match(/^(\\d+)(?:\\.(\\d+))?$/);
+    const match = String(value).match(/^(\d+)(?:\.(\d+))?$/);
     if (!match) return null;
     const fraction = match[2] ?? '';
     return {
