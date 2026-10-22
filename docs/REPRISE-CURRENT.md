@@ -2,6 +2,19 @@
 
 ## Lot actif M-002/M-003/M-004
 
+**Finition infobulle identité M-004 (2026-10-22) — implémentée,
+non testée localement.** Suppression de « Calcul du » et de l'heure de
+calcul dans le survol de la ligne. Affichage du nom, de l'unité officielle,
+de la gouvernance M-002 (Validée / À valider lorsque fournie), de la date
+de modification de la Référence, et pour un Article effectivement
+sélectionné, sa référence commerciale et sa date de modification.
+Dates `JJ/MM/AAAA` uniquement ; aucune conclusion automatique
+« À jour ». Les réponses M-004 exposent désormais les champs
+`governanceStatus`/`updatedAt` de la Référence courante. Statut
+de la valorisation et calculs inchangés. Tests HTTP, RTL et E2E
+ajoutés/étendus, gates globaux et recette visuelle à exécuter
+localement par l'utilisateur. Aucune PR/merge avant résultats verts.
+
 **UX M-004 sélecteur Articles et traçabilité des prix (2026-10-22) — code
 publié sur la branche, tests locaux NON exécutés.** Choix validé :
 `Favoris | Articles | Tous`, même emprise visuelle, indicateur glissant

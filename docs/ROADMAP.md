@@ -18,7 +18,10 @@ Implémenté en branche (non fusionné) : sélecteur compact
 `Favoris | Articles | Tous`, mode `Tous` initial, transition glissante ;
 sélection directe d'Articles actifs du Workspace et partage global autorisé,
 sauvegarde atomique Référence/Article ; affichage de la source réelle
-de valorisation dans l'infobulle. Les contrôles de tenancy et RBAC et
+de valorisation dans l'infobulle. Finition identité (2026-10-22) :
+statut de gouvernance, unité officielle et dates de modification
+Référence/Article sans heure ; suppression de l'horodatage du calcul.
+Les contrôles de tenancy et RBAC et
 les tests unitaires/HTTP/E2E sont ajoutés. **Tests locaux, gates et
 validation visuelle non réalisés à ce stade ; pas de PR ni merge.**
 Le chantier d'impression et d'e-mail reste distinct, après clôture.

@@ -240,6 +240,9 @@ const valuedLine = normalizeDraftLine({
     name: 'Carotte râpée',
     referenceUnit: 'KG',
     yieldPercent: '90',
+    status: 'ACTIVE',
+    governanceStatus: 'APPROVED',
+    updatedAt: '2026-10-22T08:00:00.000Z',
   },
   netQuantity: '2.5',
   inputUnit: 'KG',
@@ -571,6 +574,108 @@ describe('TechnicalSheetLineEditor', () => {
     })).toBe('Choisir un Article fournisseur');
   });
 
+
+  it('expose identité validée, unité et date de modification sans horodatage économique', async () => {
+    const user = userEvent.setup();
+    renderEditor({ lines: [{
+      ...valuedLine,
+      valuation: {
+        ...valuedLine.valuation,
+        pricedAt: '2026-10-22T08:29:26.000Z',
+      },
+    }] });
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Référence Produit : Validée'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Unité de référence : kg'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Référence modifiée le : 22/10/2026'))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/Calcul du :/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/10:29:26/)).not.toBeInTheDocument();
+  });
+
+  it('distingue une Référence provisoire d’une Référence validée', async () => {
+    const user = userEvent.setup();
+    renderEditor({ lines: [{
+      ...valuedLine,
+      productVariant: {
+        ...valuedLine.productVariant,
+        governanceStatus: 'PROVISIONAL',
+        updatedAt: '2026-10-21T10:00:00.000Z',
+      },
+    }] });
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Référence Produit : À valider'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Référence modifiée le : 21/10/2026'))
+      .toBeInTheDocument();
+    expect(screen.queryByText('Référence Produit : Validée'))
+      .not.toBeInTheDocument();
+  });
+
+  it('identifie le fournisseur réellement choisi et sa date de mise à jour', async () => {
+    const user = userEvent.setup();
+    mocks.articleQuery.mockReturnValue({
+      data: {
+        articles: [{
+          id: 'article-1',
+          supplierReference: 'SYS-001',
+          supplierDesignation: 'Carotte râpée 10 kg',
+          supplier: { id: 'supplier-1', name: 'Sysco' },
+          packaging: null,
+          updatedAt: '2026-10-20T12:00:00.000Z',
+        }],
+      },
+      isError: false,
+      isLoading: false,
+    });
+    renderEditor();
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Fournisseur : Sysco'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Article modifié le : 20/10/2026'))
+      .toBeInTheDocument();
+  });
+
+  it('n’affirme pas que le Produit a été actualisé si aucune date n’est disponible', async () => {
+    const user = userEvent.setup();
+    renderEditor({ lines: [{
+      ...valuedLine,
+      productVariant: {
+        id: 'variant-1',
+        name: 'Carotte râpée',
+        referenceUnit: 'KG',
+      },
+      selectedSupplierArticleId: null,
+      valuation: {
+        ...valuedLine.valuation,
+        supplierArticleId: null,
+        applicableSource: 'INDICATIVE_GLOBAL',
+      },
+    }] });
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Article fournisseur : Aucun sélectionné'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Source du prix : Prix repère global'))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/modifiée le :/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Calcul du :/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Aucun Article fournisseur disponible.'))
+      .not.toBeInTheDocument();
+  });
 
   it('montre la source de valorisation réelle dans l’infobulle Produit', async () => {
     const user = userEvent.setup();

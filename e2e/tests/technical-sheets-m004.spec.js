@@ -445,8 +445,14 @@ test('M-004 le mode Articles sélectionne le fournisseur et conserve la source t
   });
   await expect(productButton).toBeVisible();
   await productButton.hover();
+  await expect(page.getByText('Référence Produit : Validée'))
+    .toBeVisible();
+  await expect(page.getByText(/Référence modifiée le : \d{2}\/\d{2}\/\d{4}/))
+    .toBeVisible();
   await expect(page.getByText(/Source du prix : (Tarif|Prix)/i))
     .toBeVisible();
+  await expect(page.getByText(/Calcul du :/))
+    .toHaveCount(0);
 });
 
 test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', async ({ page }) => {

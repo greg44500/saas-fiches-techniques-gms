@@ -1569,9 +1569,9 @@ L'infobulle de la ligne affiche distinctement l'Article choisi et la
 **source de prix réellement enregistrée dans la valorisation de la Fiche**.
 Il peut s'agir d'un Tarif fournisseur, d'un Tarif négocié du Dossier,
 d'un Prix facturé, ou d'un indicatif Dossier, Workspace ou global.
-L'infobulle présente le prix unitaire HT normalisé et la date de calcul
-s'ils sont présents, sans fabriquer de tarif source ni modifier la
-résolution M-003. L'absence de prix reste explicite.
+L'infobulle présente le prix unitaire HT normalisé s'il est disponible,
+sans fabriquer de tarif source ni modifier la résolution M-003.
+L'absence de prix reste explicite.
 
 Aucun nouveau modèle MongoDB, aucune migration, aucun changement Core.
 Implémentation dans la branche `feature/m002-m003-m004-unit-consistency`.
@@ -1583,3 +1583,33 @@ indexées et des listes d'identifiants de Fournisseurs / Références accessible
 Si les référentiels deviennent très volumineux, mesurer son coût et prévoir
 une requête agrégée paginée, sans relâcher les invariants de visibilité et
 de sécurité. La validation de la performance n'est pas présumée.
+
+
+### Finition UX — identification métier de l'ingrédient (2026-10-22)
+
+La fiche de survol sert à **vérifier l'identité du Produit utilisé**,
+pas à suivre l'exécution du moteur de calcul. La mention « Calcul du »
+et l'heure de valorisation sont supprimées de cette infobulle ;
+le backend continue de conserver `pricedAt` pour ses propres usages.
+
+L'infobulle de chaque ingrédient affiche :
+- nom de la Référence Produit et unité officielle M-002 ;
+- statut de gouvernance **Validée** (APPROVED) ou **À valider**
+  (PROVISIONAL), uniquement si réellement présent dans les données ;
+- date de **dernière modification de la Référence** au format
+  `JJ/MM/AAAA`, sans heure et seulement si `updatedAt` est disponible ;
+- si un Article est choisi et consultable : fournisseur, référence
+  commerciale, désignation, conditionnement, et date de **dernière
+  modification de l'Article** (`updatedAt`, date seule) ;
+- si aucun Article n'est choisi : « Article fournisseur : Aucun
+  sélectionné ». Ne pas confondre absence de sélection, indisponibilité
+  de la liste et absence de tout Article exploitable ;
+- source réelle du prix et PU HT normalisé de la valorisation en cours.
+
+Une date récente **n'atteste ni une validation de la Référence ni
+la validité du tarif** ; aucun badge « À jour » n'est déduit d'un
+horodatage. Les champs M-002 proviennent de la projection courante
+des Références Produit dans le brouillon, pas d'un snapshot économique
+historique. Aucun changement des règles M-003, de la base de données
+ou du Core. Tests RTL, HTTP et E2E prévus dans le même lot, à exécuter
+localement avant PR.

@@ -280,6 +280,21 @@ const validateCurrentSheet = async () => {
 
 describe('M-004 RBAC HTTP', () => {
 
+    it('expose gouvernance et date de modification de la Référence depuis le backend', async () => {
+        const response = await request(app)
+            .get(basePath() + '/draft')
+            .set(bearer(owner.token))
+            .expect(200);
+
+        const lineVariant = response.body.data.draft.lines[0].productVariant;
+        expect(lineVariant.name).toBe('Tomate RBAC M004');
+        expect(lineVariant.referenceUnit).toBe('KG');
+        expect(lineVariant.status).toBe('ACTIVE');
+        expect(lineVariant.governanceStatus).toBe('APPROVED');
+        expect(new Date(lineVariant.updatedAt).getTime()).not.toBeNaN();
+    });
+
+
     it('enregistre atomiquement la Référence et l’Article du Workspace dans le brouillon', async () => {
         const response = await request(app)
             .put(basePath() + '/draft')
