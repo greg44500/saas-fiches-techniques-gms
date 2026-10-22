@@ -659,6 +659,15 @@ Le complément M-003 livre : import direct d'Articles et mercuriales indépendan
 
 Les suppressions contrôlées de catalogues, renouvellements prospectifs de listes tarifaires et arbitrages entre offres privées/globales restent dans `docs/DEBT.md`.
 
+### Stabilisation M-002/M-003/M-004 du 2026-10-22 — QA locale requise
+
+- Réutilisation du workflow de contribution provisoire depuis la création manuelle d'Article, sans système Produit parallèle.
+- Preuve de pièces saisie à la création manuelle lorsqu'un colis physique sert à valoriser une Référence UNIT ; imports sans association conservés.
+- Édition simplifiée, patch des seuls champs modifiés, préservation des preuves valides et de leur date ; invalider seulement lors de changement réel de la signature métier.
+- Prix historiques non normalisables écartés du choix prioritaire au profit d'une source fiable ; repli indicatif autorisé, sinon NC préservé et explicable.
+- Action « Actualiser les coûts » de M-004 réutilisant la valorisation backend pour un brouillon, sans modifier les snapshots validés.
+- Tests backend/frontend/E2E ajoutés, audit BRIDOR en lecture seule enrichi. **Gates, QA visuelle et PR en attente de validation locale.**
+
 ### Prochain lot — diffusion M-004
 
 **Déjà présents dans le code et contractés :** CSV, XLSX, PDF issus du snapshot validé ; `docs/m004/M-004-EXPORTS-FINAL-CONTRACT.md` et `docs/m004/M-004-EXPORTS-TECHNICAL-DESIGN.md`.
