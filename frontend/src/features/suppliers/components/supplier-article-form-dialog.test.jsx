@@ -14,7 +14,7 @@ vi.mock('@/features/products/api/product-catalog-api', () => ({
 }));
 
 vi.mock('@/features/products/components/product-search-autocomplete', () => ({
-  ProductSearchAutocomplete: ({ onSelect, onValueChange }) => (
+  ProductSearchAutocomplete: ({ onSelect, onValueChange, onCreateMissingReference }) => (
     <>
       <button
       onClick={() => {
@@ -40,6 +40,16 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
       >
         Rechercher Œufs blancs pasteurisés
       </button>
+      {onCreateMissingReference && (
+        <div aria-label="Suggestions Produits">
+          <button
+            onClick={() => onCreateMissingReference('Œufs blancs pasteurisés')}
+            type="button"
+          >
+            Créer cette Référence
+          </button>
+        </div>
+      )}
     </>
   ),
 }));
@@ -150,7 +160,7 @@ describe('SupplierArticleFormDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Rechercher Œufs blancs pasteurisés' }));
     await user.type(screen.getByLabelText('Référence fournisseur'), 'OVO-123');
     await user.type(screen.getByLabelText('Désignation fournisseur'), 'Œufs blancs pasteurisés');
-    await user.click(screen.getByRole('button', { name: 'Créer une Référence manquante' }));
+    await user.click(screen.getByRole('button', { name: 'Créer cette Référence' }));
     await user.click(screen.getByRole('button', { name: 'Créer l’Article et la Référence' }));
 
     expect(mocks.createArticle).toHaveBeenCalledWith(expect.objectContaining({
@@ -243,9 +253,12 @@ describe('SupplierArticleFormDialog', () => {
     expect(screen.getByRole('button', {
       name: 'À propos de l’Article fournisseur',
     })).toBeInTheDocument();
-    expect(screen.getByText(
+    expect(screen.getByRole('button', {
+      name: 'Informations sur la recherche de Référence Produit',
+    })).toBeInTheDocument();
+    expect(screen.queryByText(
       'Recherchez une Référence existante avant d’en proposer une nouvelle.',
-    )).toBeInTheDocument();
+    )).not.toBeInTheDocument();
     expect(screen.queryByText(/M-002/)).not.toBeInTheDocument();
 
     const unitTrigger = screen.getByRole('combobox', {
