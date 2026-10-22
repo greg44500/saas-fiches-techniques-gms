@@ -1743,13 +1743,16 @@ const serializeApplicableSource = ({
 });
 
 const isHistoricalPriceCompatible = (price, variant) => {
+    // Une source historique sans prix exploitable ne doit pas masquer un
+    // éventuel tarif ou prix indicatif de repli.
+    if (price.normalizedAmount == null || price.normalizedUnit == null) return false;
     if (price.productVariantAtPricing
         && price.productVariantAtPricing.toString() !== variant._id.toString()) {
         return false;
     }
     const sourceUnit = PRODUCT_REFERENCE_UNIT_REGISTRY[price.normalizedUnit];
     const targetUnit = PRODUCT_REFERENCE_UNIT_REGISTRY[variant.referenceUnit];
-    return !sourceUnit || sourceUnit.dimension === targetUnit?.dimension;
+    return Boolean(sourceUnit && sourceUnit.dimension === targetUnit?.dimension);
 };
 
 const resolveApplicablePrice = async ({
@@ -1891,6 +1894,7 @@ const resolveApplicablePrice = async ({
         alerts.push('NO_VALID_NEGOTIATED_PRICE');
     }
 
+    let unusableSupplierTariff = null;
     if (article) {
         attempted.push('SUPPLIER_TARIFF');
         const selectedTariff = await selectSupplierTariffForDate({
@@ -1923,7 +1927,7 @@ const resolveApplicablePrice = async ({
                     targetUnit: productVariant.referenceUnit,
                 }),
             };
-            return {
+            const supplierTariffResolution = {
                 article:
                     serializeSupplierArticleSummary(article),
                 productVariant:
@@ -1959,9 +1963,15 @@ const resolveApplicablePrice = async ({
                 alerts,
                 atDate,
             };
+            if (pricedTariff.normalizedAmount != null
+                && pricedTariff.normalizedUnit != null) {
+                return supplierTariffResolution;
+            }
+            alerts.push('SUPPLIER_TARIFF_NOT_NORMALIZABLE');
+            unusableSupplierTariff = supplierTariffResolution;
+        } else {
+            alerts.push('NO_APPLICABLE_SUPPLIER_TARIFF');
         }
-
-        alerts.push('NO_APPLICABLE_SUPPLIER_TARIFF');
     }
 
     attempted.push('INDICATIVE_DOSSIER');
@@ -2056,6 +2066,12 @@ const resolveApplicablePrice = async ({
     }
 
     alerts.push('NO_GLOBAL_INDICATIVE_PRICE');
+
+    // Préserver le diagnostic explicite du tarif historique si aucun
+    // prix indicatif de dernier recours ne permet de valoriser la ligne.
+    if (unusableSupplierTariff) {
+        return { ...unusableSupplierTariff, alerts };
+    }
 
     if (!article) {
         throw new AppError(
