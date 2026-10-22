@@ -1019,6 +1019,9 @@ const listSupplierArticles = async ({
     let visibleSupplierIds = null;
     let usableVariantIds = null;
     if (usableForTechnicalSheet) {
+        // Ce contrat n'expose jamais un Article archivé, même si un client
+        // demande explicitement status=ARCHIVED.
+        filter.status = SUPPLIER_RESOURCE_STATUS.ACTIVE;
         [visibleSupplierIds, usableVariantIds] = await Promise.all([
             Supplier.find({
                 ...buildWorkspaceVisibilityFilter(workspaceId),

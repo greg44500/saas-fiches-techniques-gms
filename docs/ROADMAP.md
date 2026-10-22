@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
 **Statut :** M-001 à M-005 intégrés ; M-003 complété par PR #44 ; Core Gate post-merge validée à la tentative 2
-**Dernière mise à jour :** 2026-10-16
+**Dernière mise à jour :** 2026-10-22
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -11,6 +11,17 @@
 Ajout au lot actif de la protection de tout changement d'unité sur Référence utilisée (masse→masse incluse), de la navigation vers les Références du Produit retrouvé, du contrôle de gouvernance ciblé avec petit bouton neutre et de l'infobulle métier du dialogue d'édition. Même branche, tests locaux et gates avant PR.
 
 **Stabilisation après QA (2026-10-16) :** permettre la correction encadrée d'une unité sur la même Référence en présence d'Articles et Tarifs fournisseur seuls, sans altérer les Fiches et Prix historiques ; rétablir le lien de gouvernance d'une identité provisoire orpheline dans la file existante ; bouton « À contrôler » petit et warning. Tests backend, HTTP, frontend, E2E/gates à vérifier localement avant PR.
+
+## Complément UX M-004 — sélection d'Articles et origine tarifaire (2026-10-22)
+
+Implémenté en branche (non fusionné) : sélecteur compact
+`Favoris | Articles | Tous`, mode `Tous` initial, transition glissante ;
+sélection directe d'Articles actifs du Workspace et partage global autorisé,
+sauvegarde atomique Référence/Article ; affichage de la source réelle
+de valorisation dans l'infobulle. Les contrôles de tenancy et RBAC et
+les tests unitaires/HTTP/E2E sont ajoutés. **Tests locaux, gates et
+validation visuelle non réalisés à ce stade ; pas de PR ni merge.**
+Le chantier d'impression et d'e-mail reste distinct, après clôture.
 
 ## Lot transversal actif — unités de recette et colisage (2026-10-16)
 

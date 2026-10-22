@@ -306,6 +306,31 @@ describe('M-004 RBAC HTTP', () => {
     });
 
 
+
+    it('conserve l’ID de ligne lorsqu’un Article est choisi pour le même Produit', async () => {
+        const originalLineId = draft.lines[0].id;
+        const response = await request(app)
+            .put(basePath() + '/draft')
+            .set(bearer(owner.token))
+            .send({
+                expectedRevision: draft.revision,
+                lines: [{
+                    id: originalLineId,
+                    kind: 'INGREDIENT',
+                    productVariantId: reference.variant._id.toString(),
+                    netQuantity: '1',
+                    inputUnit: 'KG',
+                    order: 0,
+                    selectedSupplierArticleId: article.id,
+                }],
+            })
+            .expect(200);
+
+        expect(response.body.data.draft.lines[0].id).toBe(originalLineId);
+        expect(response.body.data.draft.lines[0].selectedSupplierArticleId)
+            .toBe(article.id);
+    });
+
     it('ne peut pas sourcer via une sauvegarde de composition sans permission', async () => {
         await expect(saveTechnicalSheetDraft({
             workspaceId: owner.workspace._id,

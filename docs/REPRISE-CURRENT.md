@@ -2,6 +2,22 @@
 
 ## Lot actif M-002/M-003/M-004
 
+**UX M-004 sélecteur Articles et traçabilité des prix (2026-10-22) — code
+publié sur la branche, tests locaux NON exécutés.** Choix validé :
+`Favoris | Articles | Tous`, même emprise visuelle, indicateur glissant
+200 ms et `Tous` par défaut. Le mode Articles utilise la liste M-003,
+filtrée par droits, Workspace, fournisseur/Référence actifs et association
+exploitable. Choisir un Article en création/remplacement enregistre
+Référence + Article ensemble avec contrôle transactionnel, sans nouveau
+moteur de prix. Même Référence, autre Article : conserver la ligne et
+changer le sourcing. L'infobulle Produit affiche désormais la source
+effective enregistrée (prix tarifaire, négocié/facturé ou indicatif)
+et le prix normalisé ; anomalie `getPricingSourceLabel` corrigée.
+Correctif sécurité associé : recherche d'Articles sans écrasement
+du filtre de visibilité Workspace. Tests frontend, HTTP et E2E ajoutés,
+gates/QA utilisateur et PR encore en attente. Contrat :
+`docs/m004/M-004-FINAL-CONTRACT.md`.
+
 **QA présentation Fiche M-004 (2026-10-22) — tests locaux en attente :** l'infobulle de la ligne Produit affiche désormais le conditionnement sur une ligne, le poids net et le poids net égoutté sur des lignes distinctes, et la quantité totale calculée uniquement lorsqu'elle diffère du poids net (ou si le poids net est absent). La comparaison d'affichage G/KG utilise des décimaux exacts ; le conditionnement historique reste inchangé en dehors de cette infobulle. Tests RTL et de présentation ajoutés ; aucune gate ni QA visuelle déclarée verte.
 
 **Audit BRIDOR 43279 reçu le 2026-10-22 — diagnostic confirmé, correction en attente de tests locaux.** Base `saas_fiches_techniques_gms_dev` : Référence « Croissant individuel PAI » en `UNIT`, un Article privé associé, preuve humaine de 36 pièces valide sur l'Article actuel (36 × 0,120 kg ; 4,32 kg), Tarif fournisseur de 6,50 € par carton, snapshot historique du même contenu (36 × 120 g ; 4 320 g). L'ancienne comparaison littérale de signatures renvoyait `matchesCurrentEvidence: false` malgré l'équivalence physique exacte. Le résolveur retombait sur le prix global indicatif de 0,20 € / pièce ; le brouillon conservait `NO_PRICE`. Correctif métier : comparer les quantités physiques dans des unités communes à précision décimale exacte, en relisant les signatures héritées sans migration ni réattestation, préserver le refus des colis réellement différents. Tests unitaires et HTTP reproduisant le décalage ajoutés ; **aucune gate exécutée par l'assistant**. Rejouer l'audit local, attendre `matchesCurrentEvidence: true`, `currentPrice.source: SUPPLIER_TARIFF`, montant `6,5 / 36`, puis dans le brouillon utiliser « Actualiser les coûts » ; aucune correction de données MongoDB ni migration recommandée.
