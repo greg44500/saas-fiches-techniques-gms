@@ -58,7 +58,7 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
               // Reproduit un événement de fermeture tardif de Base UI :
               // il ne doit pas annuler la décision explicite.
               onValueChange('');
-            }
+            }}
             type="button"
           >
             Créer cette Référence
