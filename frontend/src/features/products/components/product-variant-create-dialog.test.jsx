@@ -107,6 +107,74 @@ describe('ProductVariantCreateDialog', () => {
     }));
   });
 
+  it('replie par défaut les Références existantes avec leur nombre', async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <ProductVariantCreateDialog
+          existingVariants={[
+            { id: 'a', name: 'Abricot', referenceUnit: 'KG' },
+            { id: 'b', name: 'Abricots secs', referenceUnit: 'KG' },
+          ]}
+          metadata={metadata}
+          onClose={vi.fn()}
+          onCreated={vi.fn()}
+          open
+          product={{ id: 'product-abricot', name: 'Abricot' }}
+          workspaceId="workspace-1"
+        />
+      </TooltipProvider>,
+    );
+
+    const trigger = screen.getByRole('button', {
+      name: 'Références existantes (2)',
+    });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const items = screen.getByRole('list', {
+      name: 'Liste des références existantes',
+    });
+    expect(items).toHaveClass('max-h-44', 'overflow-y-auto');
+    expect(items.querySelectorAll('li')).toHaveLength(2);
+    expect(screen.getByText('Abricots secs')).toBeInTheDocument();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('borne le défilement des Références existantes même avec 30 entrées', async () => {
+    const user = userEvent.setup();
+    const existingVariants = Array.from({ length: 30 }, (_, index) => ({
+      id: 'variant-' + index,
+      name: 'Abricot ' + index,
+      referenceUnit: 'KG',
+    }));
+
+    render(
+      <TooltipProvider>
+        <ProductVariantCreateDialog
+          existingVariants={existingVariants}
+          metadata={metadata}
+          onClose={vi.fn()}
+          onCreated={vi.fn()}
+          open
+          product={{ id: 'product-abricot', name: 'Abricot' }}
+          workspaceId="workspace-1"
+        />
+      </TooltipProvider>,
+    );
+
+    await user.click(screen.getByRole('button', {
+      name: 'Références existantes (30)',
+    }));
+    const items = screen.getByRole('list', {
+      name: 'Liste des références existantes',
+    });
+    expect(items).toHaveClass('max-h-44', 'overflow-y-auto', 'overscroll-contain');
+    expect(items.querySelectorAll('li')).toHaveLength(30);
+  });
+
   it('demande de comparer une Référence proche avant de confirmer une création distincte', async () => {
     const user = userEvent.setup();
     const onCreated = vi.fn();

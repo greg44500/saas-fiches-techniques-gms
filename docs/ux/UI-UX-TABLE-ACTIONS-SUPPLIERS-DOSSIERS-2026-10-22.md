@@ -138,3 +138,20 @@ que de la modale tarifaire avant toute PR.
 - Vérification : tests RTL des champs et du dialogue de création,
   lint/build, puis QA visuelle locale (focus, saisie, effacement,
   champs préremplis, options indisponibles) avant PR.
+
+## Complément M-002 — Références existantes repliables
+
+- Demande du 2026-10-22 : ne pas allonger la fenêtre de création
+  de Référence Produit à cause de la liste des références déjà présentes.
+- Réutiliser `components/ui/collapsible.jsx` déjà présent dans le Produit.
+- Si des références existent, afficher un en-tête « Références existantes »
+  avec leur nombre et un chevron ; panneau fermé par défaut, ouverture et
+  fermeture au clic ou au clavier.
+- Conserver les libellés métier et unités des références existantes.
+- Lors de l'ouverture, limiter la liste à une hauteur de `max-h-44`
+  avec défilement interne (`overflow-y-auto`, `overscroll-contain`).
+  Cela évite l'allongement de la modale lorsque la liste est importante.
+- Si aucune référence n'existe, ne pas afficher le panneau.
+- Aucun changement métier, API, DB, permission ou Core.
+- Tests RTL : nombre, état replié, ouverture/fermeture et défilement borné
+  avec 30 entrées ; QA visuelle sous Windows avant PR.
