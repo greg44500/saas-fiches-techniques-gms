@@ -597,9 +597,32 @@ test('M-003 crée manuellement un Article et propose sa Référence sans quitter
   expect((await searched.json()).data.results).toEqual([]);
   await expect(page.getByRole('button', { name: 'Créer cette Référence' })).toBeVisible();
   await page.getByRole('button', { name: 'Créer cette Référence' }).click();
+  const pendingReference = dialog.getByRole('status', {
+    name: 'Référence Produit à créer',
+  });
+  await expect(pendingReference).toContainText(productName);
+  await expect(dialog.getByRole('button', { name: 'Créer l’Article et la Référence' }))
+    .toBeVisible();
+
+  // La sélection est persistante : remplir les champs commerciaux ne doit
+  // pas revenir silencieusement au mode « Créer l’Article ».
   await dialog.getByLabel('Référence fournisseur').fill(reference);
   await dialog.getByLabel('Désignation fournisseur').fill(productName);
+  await expect(pendingReference).toContainText(productName);
+  await expect(dialog.getByRole('button', { name: 'Créer l’Article et la Référence' }))
+    .toBeVisible();
+
+  const createdArticleResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return response.request().method() === 'POST'
+      && url.pathname.endsWith('/supplier-articles');
+  });
   await dialog.getByRole('button', { name: 'Créer l’Article et la Référence' }).click();
+  const createdArticle = await createdArticleResponse;
+  expect(createdArticle.status(), 'Création de l’Article fournisseur M-003')
+    .toBe(201);
+  expect((await createdArticle.json()).data.article.productVariant)
+    .toBeFalsy();
 
   const productDialog = page.getByRole('dialog', { name: 'Créer un Produit' });
   await expect(productDialog).toBeVisible();

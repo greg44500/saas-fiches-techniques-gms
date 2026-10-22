@@ -53,7 +53,12 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
       {onCreateMissingReference && (
         <div aria-label="Suggestions Produits">
           <button
-            onClick={() => onCreateMissingReference('Œufs blancs pasteurisés')}
+            onClick={() => {
+              onCreateMissingReference('Œufs blancs pasteurisés');
+              // Reproduit un événement de fermeture tardif de Base UI :
+              // il ne doit pas annuler la décision explicite.
+              onValueChange('');
+            }
             type="button"
           >
             Créer cette Référence
@@ -231,9 +236,20 @@ describe('SupplierArticleFormDialog', () => {
 
     await selectOption(user, 'Sélectionner le Fournisseur', 'Sysco');
     await user.click(screen.getByRole('button', { name: 'Rechercher Œufs blancs pasteurisés' }));
+    await user.click(screen.getByRole('button', { name: 'Créer cette Référence' }));
+
+    const pending = screen.getByRole('status', { name: 'Référence Produit à créer' });
+    expect(pending).toHaveTextContent('Œufs blancs pasteurisés');
+    expect(screen.getByRole('button', { name: 'Créer l’Article et la Référence' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rechercher Œufs blancs pasteurisés' }))
+      .not.toBeInTheDocument();
+
+    // Changement de focus et de champs commerciaux : la décision persiste.
     await user.type(screen.getByLabelText('Référence fournisseur'), 'OVO-123');
     await user.type(screen.getByLabelText('Désignation fournisseur'), 'Œufs blancs pasteurisés');
-    await user.click(screen.getByRole('button', { name: 'Créer cette Référence' }));
+    expect(screen.getByRole('button', { name: 'Créer l’Article et la Référence' }))
+      .toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Créer l’Article et la Référence' }));
 
     expect(mocks.createArticle).toHaveBeenCalledWith(expect.objectContaining({
@@ -244,6 +260,28 @@ describe('SupplierArticleFormDialog', () => {
       { id: 'article-1' },
       { createMissingReference: 'Œufs blancs pasteurisés' },
     );
+  });
+
+  it('n’annule la création envisagée que sur action explicite Modifier la recherche', async () => {
+    const user = userEvent.setup();
+    renderDialog(vi.fn(), { canCreateProduct: true });
+
+    await user.click(screen.getByRole('button', {
+      name: 'Rechercher Œufs blancs pasteurisés',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Créer cette Référence',
+    }));
+
+    expect(screen.getByRole('button', { name: 'Créer l’Article et la Référence' }))
+      .toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Modifier la recherche' }));
+    expect(screen.queryByRole('status', { name: 'Référence Produit à créer' }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer l’Article', exact: true }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rechercher Œufs blancs pasteurisés' }))
+      .toBeInTheDocument();
   });
 
   it('exige le nombre de pièces déclaré à la création d’un Article au poids vendu à la pièce', async () => {

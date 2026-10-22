@@ -96,7 +96,11 @@ function SupplierArticleFormDialog({
   const [netWeightUnit, setNetWeightUnit] = useState('G');
   const [supplierLabel, setSupplierLabel] = useState('');
   const [recipeCount, setRecipeCount] = useState('');
-  const [createMissingReference, setCreateMissingReference] = useState(false);
+  // La décision explicite reste indépendante des événements de l'autocomplétion
+  // (fermeture du popover, perte de focus, normalisation de la saisie).
+  const [pendingReferenceName, setPendingReferenceName] = useState(null);
+  const pendingReferenceNameRef = useRef(null);
+  const createMissingReference = Boolean(pendingReferenceName);
   const [error, setError] = useState('');
   const needsPieceCount = productVariant?.referenceUnit === 'UNIT'
     && unit !== 'UNIT' && Boolean(quantityPerUnit);
@@ -131,7 +135,8 @@ function SupplierArticleFormDialog({
     setNetWeightUnit('G');
     setSupplierLabel('');
     setRecipeCount('');
-    setCreateMissingReference(false);
+    pendingReferenceNameRef.current = null;
+    setPendingReferenceName(null);
     setError('');
   }, [initialProductVariant, open]);
 
@@ -204,7 +209,7 @@ function SupplierArticleFormDialog({
       }).unwrap();
 
       if (createMissingReference) {
-        onSaved(article, { createMissingReference: productSearch.trim() });
+        onSaved(article, { createMissingReference: pendingReferenceName });
       } else {
         onSaved(article);
       }
@@ -285,25 +290,55 @@ function SupplierArticleFormDialog({
                   content="Recherchez une Référence existante avant d’en proposer une nouvelle. Une création sera examinée par le gestionnaire."
                   label="Informations sur la recherche de Référence Produit"
                 />
-                {createMissingReference && (
-                  <span className="ml-auto text-xs text-muted-foreground" role="status">
-                    Référence à créer
-                  </span>
-                )}
+
               </div>
               {initialProductVariant ? (
                 <p className="rounded-md border border-border px-3 py-2 text-sm">
                   {initialProductVariant.name}
                 </p>
+              ) : createMissingReference ? (
+                <div
+                  aria-label="Référence Produit à créer"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2"
+                  role="status"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">
+                      Référence Produit à créer
+                    </p>
+                    <p className="break-words text-sm font-medium">
+                      {pendingReferenceName}
+                    </p>
+                  </div>
+                  <Button
+                    disabled={createState.isLoading}
+                    onClick={() => {
+                      pendingReferenceNameRef.current = null;
+                      setPendingReferenceName(null);
+                      setError('');
+                    }}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Modifier la recherche
+                  </Button>
+                </div>
               ) : (
                 <ProductSearchAutocomplete
                   externalQuery={creationSearch}
                   externalSearch={canCreateProduct}
                   metadata={metadataQuery.data}
                   onDebouncedSearchChange={setContextualSearch}
-                  onCreateMissingReference={canCreateProduct ? () => {
+                  onCreateMissingReference={canCreateProduct ? (name) => {
+                    const requestedName = name?.trim();
+                    if (!requestedName) return;
+                    // Fixer immédiatement le choix pour ignorer les éventuels
+                    // onValueChange tardifs de la popup qui se referme.
+                    pendingReferenceNameRef.current = requestedName;
+                    setPendingReferenceName(requestedName);
+                    setProductSearch(requestedName);
                     setProductVariant(null);
-                    setCreateMissingReference(true);
                     setError('');
                   } : undefined}
                   onSelect={(result) => {
@@ -315,18 +350,19 @@ function SupplierArticleFormDialog({
                       return;
                     }
 
+                    pendingReferenceNameRef.current = null;
+                    setPendingReferenceName(null);
                     setProductVariant(result.variant);
-                    setCreateMissingReference(false);
                     setRecipeCount('');
                     setUnit(result.variant.referenceUnit);
                     setError('');
                   }}
                   onValueChange={(value) => {
+                    if (pendingReferenceNameRef.current !== null) return;
                     setProductSearch(value);
                     setProductVariant((current) => (
                       current?.name === value ? current : null
                     ));
-                    setCreateMissingReference(false);
                   }}
                   scope="REFERENCE"
                   value={productSearch}

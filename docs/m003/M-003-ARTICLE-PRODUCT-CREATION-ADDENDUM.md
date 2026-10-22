@@ -195,3 +195,31 @@ pour vérifier les onglets et le formulaire d'édition. Il ne doit pas
 présumer qu'un drawer antérieur reste affiché.
 Tests HTTP (RBAC, capability, séparation des Workspaces), RTL et E2E
 complétés. Résultats locaux / gates non encore vérifiés ; aucune PR.
+
+
+## Correction de stabilité du choix de création — 22/10/2026
+
+Une recherche contextuelle vide et effectivement réussie permet à l'utilisateur
+de choisir « Créer cette Référence ». Ce choix est une **intention explicite** :
+il mémorise le nom demandé indépendamment de la saisie sous-jacente de
+l'autocomplétion et de son cycle de focus. Le formulaire affiche alors la
+Référence en attente et une action « Modifier la recherche ». La recherche
+est démontée tant que cette décision est active ; sa fermeture ne peut donc
+annuler la décision ou changer le libellé « Créer l’Article et la Référence ».
+
+Une annulation doit être **volontaire** : « Modifier la recherche » rouvre
+la recherche, remet à zéro uniquement ce choix, et préserve les données
+fournisseur déjà saisies. Le nom de contribution utilisé après création
+de l'Article est la valeur **confirmée**, et non une valeur susceptible
+d'être altérée par l'autocomplétion.
+
+Le chemin de création reste : validation du Fournisseur et de la référence
+commerciale, création d'Article privé sans Produit, contribution M-002
+vérifiée contre les doublons, association M-003 soumise au RBAC et à
+l'appartenance Workspace, sans publication globale immédiate.
+Les contrôles de capability, visibilité et gouvernance sont inchangés.
+
+Régression ajoutée : simulation d'un `onValueChange` tardif, persistance
+du mode après saisie commerciale, annulation explicite, et parcours E2E
+vérifiant la réponse HTTP de création avant l'ouverture du formulaire M-002.
+**Tests locaux et gates non encore exécutés sur le commit de correction.**

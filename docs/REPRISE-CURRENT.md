@@ -2,6 +2,20 @@
 
 ## Lot actif M-002/M-003/M-004
 
+**Gate E2E M-003 — correction de la sélection « Créer cette Référence »
+(22/10/2026, à retester localement).** Le nouveau retour utilisateur confirme
+7/8 tests M-003 verts ; la recherche contextuelle est restaurée, mais le
+bouton de soumission redevient introuvable après saisie commerciale.
+Cause dans le code : l'état de création reposait sur un booléen réinitialisé
+par `onValueChange` de l'autocomplétion. Correctif : mémoriser l'intention
+et le nom confirmé indépendamment du champ, verrou immédiat contre les
+événements tardifs de fermeture, recherche démontée pendant la décision,
+et possibilité explicite « Modifier la recherche ». La sauvegarde reprend
+le nom confirmé, pas une saisie effacée par le popover. Tests RTL et E2E
+du parcours complet ajoutés ; pouvoirs commerciaux, RBAC, isolation
+Workspace et contrôles anti-doublon inchangés. Aucune PR/merge. Gate
+locale globale encore à confirmer.
+
 **Avertissements Mongoose M-001 (22/10/2026) — correction à revérifier localement.**
 Le contrôle transactionnel de mutation des grants Dossier utilisait l'option
 `new: true` dépréciée dans `Dossier.findOneAndUpdate`. Remplacement strict
