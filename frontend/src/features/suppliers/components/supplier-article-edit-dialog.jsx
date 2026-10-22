@@ -154,7 +154,7 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
       drainedNetWeight: numericValue(form.drainedNetWeight),
       drainedNetWeightUnit: form.drainedNetWeight.trim() ? form.drainedNetWeightUnit : null,
     };
-     const packagingChanged = PACKAGING_FIELDS.some((name) => (
+    const packagingChanged = PACKAGING_FIELDS.some((name) => (
       String(article.packaging?.[name] ?? EMPTY[name])
         !== String(packaging[name] ?? EMPTY[name])
     ));
