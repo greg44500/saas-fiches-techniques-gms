@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -377,7 +378,8 @@ describe('DossierSupplierPricingPage', () => {
       .not.toBeInTheDocument();
   });
 
-  it('utilise une action Retirer dédiée plutôt qu’une suppression', () => {
+  it('utilise une action Retirer dédiée plutôt qu’une suppression', async () => {
+    const user = userEvent.setup();
     mocks.workspaceContext.mockReturnValue({
       workspace: {
         id: 'workspace-1',
@@ -400,8 +402,11 @@ describe('DossierSupplierPricingPage', () => {
 
     renderPage();
 
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de Ali321',
+    }));
     expect(screen.getByRole('button', {
-      name: 'Retirer Ali321 du Dossier',
+      name: 'Retirer du Dossier',
     })).toBeInTheDocument();
     expect(screen.queryByRole('button', {
       name: /Supprimer Ali321/i,

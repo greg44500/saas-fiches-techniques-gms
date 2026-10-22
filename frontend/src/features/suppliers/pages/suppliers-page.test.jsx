@@ -394,7 +394,7 @@ describe('SuppliersPage', () => {
       .toBeInTheDocument();
     expect(screen.getByText('58')).toBeInTheDocument();
     expect(screen.getByRole('button', {
-      name: 'Voir Catalogue septembre',
+      name: 'Actions de Catalogue septembre',
     })).toBeInTheDocument();
   });
 
@@ -419,8 +419,9 @@ describe('SuppliersPage', () => {
     expect(screen.getByText('Fournisseur archivé')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
-      name: 'Réactiver Fournisseur archivé',
+      name: 'Actions de Fournisseur archivé',
     }));
+    await user.click(screen.getByRole('button', { name: 'Réactiver' }));
 
     expect(mocks.updateSupplierStatus).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
@@ -435,12 +436,22 @@ describe('SuppliersPage', () => {
     renderPage();
 
     await user.click(screen.getByRole('button', {
-      name: 'Voir Fournisseur local',
+      name: 'Actions de Fournisseur local',
     }));
+    await user.click(screen.getByRole('button', { name: 'Voir' }));
 
     expect(
       screen.getByText('Détail Fournisseur : Fournisseur local'),
     ).toBeInTheDocument();
+  });
+
+  it('ne propose que la consultation pour le Fournisseur partagé', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Actions de Sysco partagé' }));
+    expect(screen.getByRole('button', { name: 'Voir' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archiver' })).not.toBeInTheDocument();
   });
 
   it('masque l import catalogue sans capability même avec la permission RBAC', async () => {
@@ -651,7 +662,8 @@ describe('SuppliersPage', () => {
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Détails du conditionnement de REF-42' }))
       .not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Détails de REF-42' }));
+    await user.click(screen.getByRole('button', { name: 'Actions de REF-42' }));
+    await user.click(screen.getByRole('button', { name: 'Consulter l’Article' }));
     expect(screen.getByText('Détails Article : REF-42')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Corriger l’association' }));
     expect(screen.getByText('Association Article ouverte')).toBeInTheDocument();

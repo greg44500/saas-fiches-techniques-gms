@@ -3,11 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
-import {
-  DataTable,
-  DataTableActions,
-} from '@/components/data-display/data-table';
-import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { DataTable } from '@/components/data-display/data-table';
+import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 import { EmptyState } from '@/components/shared/empty-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { ErrorState } from '@/components/shared/error-state';
@@ -348,43 +345,34 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (supplier) => (
-        <DataTableActions>
-          <ActionIconButton
-            Icon={Eye}
-            label={'Voir ' + supplier.name}
-            onClick={() => setSupplierDetails({
-              open: true,
-              supplier,
-            })}
-            tooltipLabel="Voir"
-            variant="outline"
-          />
-          {supplier.scope === 'WORKSPACE_PRIVATE' && canManageSuppliers && (
-            <>
-              <ActionIconButton
-                Icon={Pencil}
-                label={'Modifier ' + supplier.name}
-                onClick={() => setSupplierDialog({ open: true, supplier })}
-                tooltipLabel="Modifier"
-                variant="outline"
-              />
-              <ActionIconButton
-                Icon={supplier.status === 'ACTIVE' ? Archive : RotateCcw}
-                disabled={supplierStatusState.isLoading}
-                label={
-                  (supplier.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
-                  + supplier.name
-                }
-                onClick={() => toggleSupplierStatus(supplier)}
-                tooltipLabel={
-                  supplier.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
-                }
-                variant="outline"
-              />
-            </>
-          )}
-        </DataTableActions>
-      ),
+        <TableRowActionsMenu
+          label={supplier.name}
+          actions={[
+            {
+              key: 'view',
+              Icon: Eye,
+              label: 'Voir',
+              onClick: () => setSupplierDetails({ open: true, supplier }),
+            },
+            ...(supplier.scope === 'WORKSPACE_PRIVATE' && canManageSuppliers ? [
+              {
+                key: 'edit',
+                Icon: Pencil,
+                label: 'Modifier',
+                onClick: () => setSupplierDialog({ open: true, supplier }),
+              },
+              {
+                key: 'status',
+                Icon: supplier.status === 'ACTIVE' ? Archive : RotateCcw,
+                label: supplier.status === 'ACTIVE' ? 'Archiver' : 'Réactiver',
+                destructive: supplier.status === 'ACTIVE',
+                disabled: supplierStatusState.isLoading,
+                onClick: () => toggleSupplierStatus(supplier),
+              },
+            ] : []),
+          ]}
+        />
+      )
     },
   ];
 
@@ -468,29 +456,26 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (article) => (
-        <DataTableActions>
-          <ActionIconButton
-            Icon={Eye}
-            label={'Détails de ' + article.supplierReference}
-            onClick={() => setArticleDetails(article)}
-            tooltipLabel="Consulter l’Article"
-            variant="outline"
-          />
-          {article.scope === 'WORKSPACE_PRIVATE' && canManageArticles && (
-            <ActionIconButton
-              Icon={article.status === 'ACTIVE' ? Archive : RotateCcw}
-              disabled={articleStatusState.isLoading}
-              label={
-                (article.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
-                + article.supplierReference
-              }
-              onClick={() => toggleArticleStatus(article)}
-              tooltipLabel={article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
-              variant="outline"
-            />
-          )}
-        </DataTableActions>
-      ),
+        <TableRowActionsMenu
+          label={article.supplierReference}
+          actions={[
+            {
+              key: 'view',
+              Icon: Eye,
+              label: 'Consulter l’Article',
+              onClick: () => setArticleDetails(article),
+            },
+            ...(article.scope === 'WORKSPACE_PRIVATE' && canManageArticles ? [{
+              key: 'status',
+              Icon: article.status === 'ACTIVE' ? Archive : RotateCcw,
+              label: article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver',
+              destructive: article.status === 'ACTIVE',
+              disabled: articleStatusState.isLoading,
+              onClick: () => toggleArticleStatus(article),
+            }] : []),
+          ]}
+        />
+      )
     },
   ];
 
@@ -551,37 +536,30 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (catalog) => (
-        <DataTableActions>
-          <ActionIconButton
-            Icon={Eye}
-            label={'Voir ' + catalog.name}
-            onClick={() => navigate(
-              '/workspaces/'
-              + workspace.id
-              + '/suppliers/catalogs/'
-              + catalog.id,
-            )}
-            tooltipLabel="Voir"
-            variant="outline"
-          />
-          {catalog.scope === 'WORKSPACE_PRIVATE'
-            && can(SUPPLIER_PERMISSION.CATALOG_MANAGE) && (
-            <ActionIconButton
-              Icon={catalog.status === 'ACTIVE' ? Archive : RotateCcw}
-              disabled={catalogStatusState.isLoading}
-              label={
-                (catalog.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
-                + catalog.name
-              }
-              onClick={() => toggleCatalogStatus(catalog)}
-              tooltipLabel={
-                catalog.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
-              }
-              variant="outline"
-            />
-          )}
-        </DataTableActions>
-      ),
+        <TableRowActionsMenu
+          label={catalog.name}
+          actions={[
+            {
+              key: 'view',
+              Icon: Eye,
+              label: 'Voir',
+              onClick: () => navigate(
+                '/workspaces/' + workspace.id
+                + '/suppliers/catalogs/' + catalog.id,
+              ),
+            },
+            ...(catalog.scope === 'WORKSPACE_PRIVATE'
+              && can(SUPPLIER_PERMISSION.CATALOG_MANAGE) ? [{
+                key: 'status',
+                Icon: catalog.status === 'ACTIVE' ? Archive : RotateCcw,
+                label: catalog.status === 'ACTIVE' ? 'Archiver' : 'Réactiver',
+                destructive: catalog.status === 'ACTIVE',
+                disabled: catalogStatusState.isLoading,
+                onClick: () => toggleCatalogStatus(catalog),
+              }] : []),
+          ]}
+        />
+      )
     },
   ];
 

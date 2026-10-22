@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -88,6 +89,48 @@ describe('SupplierFormDialog', () => {
       id: 'supplier-1',
       name: 'GROSSISTE TEST',
     });
+  });
+
+  it('désactive Enregistrer jusqu’à la saisie d’un nom non vide', async () => {
+    const user = userEvent.setup();
+    render(
+      <SupplierFormDialog
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+
+    const save = screen.getByRole('button', { name: 'Enregistrer' });
+    const name = screen.getByLabelText('Nom');
+    expect(save).toBeDisabled();
+    await user.type(name, '   ');
+    expect(save).toBeDisabled();
+    await user.type(name, 'SOCIÉTÉ TEST');
+    expect(save).toBeEnabled();
+    await user.clear(name);
+    expect(save).toBeDisabled();
+  });
+
+  it('présente la portée Workspace dans une infobulle, pas sous le titre', () => {
+    render(
+      <TooltipProvider>
+        <SupplierFormDialog
+          onClose={vi.fn()}
+          onSaved={vi.fn()}
+          open
+          workspaceId="workspace-1"
+        />
+      </TooltipProvider>,
+    );
+
+    expect(screen.getByRole('button', {
+      name: 'À propos de la portée du Fournisseur',
+    })).toBeInTheDocument();
+    expect(screen.getByText(
+      'Ce Fournisseur restera propre à cet espace de travail.',
+    )).toHaveClass('sr-only');
   });
 
   it('préselectionne les catégories déjà affectées lors de la modification', () => {

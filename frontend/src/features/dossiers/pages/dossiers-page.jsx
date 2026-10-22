@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Eye, Plus } from 'lucide-react';
-import { Link } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
-import { DataTable, DataTableActions } from '@/components/data-display/data-table';
-import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { DataTable } from '@/components/data-display/data-table';
+import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
@@ -215,26 +214,26 @@ function DossiersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (dossier) => (
-        <DataTableActions>
-          <ActionIconButton
-            Icon={Eye}
-            label={`Voir ${dossier.name}`}
-            tooltipLabel="Voir"
-            onClick={() => setDrawerState({
-              dossierId: dossier.id,
-              open: true,
-            })}
-            variant="outline"
-          />
-          {dossier.status === 'ACTIVE' && (
-            <Button asChild variant="outline">
-              <Link to={`/workspaces/${workspace.id}/dossiers/${dossier.id}`}>
-                Ouvrir
-              </Link>
-            </Button>
-          )}
-        </DataTableActions>
-      ),
+        <TableRowActionsMenu
+          label={dossier.name}
+          actions={[
+            {
+              key: 'view',
+              Icon: Eye,
+              label: 'Voir',
+              onClick: () => setDrawerState({
+                dossierId: dossier.id,
+                open: true,
+              }),
+            },
+            ...(dossier.status === 'ACTIVE' ? [{
+              key: 'open',
+              label: 'Ouvrir',
+              to: `/workspaces/${workspace.id}/dossiers/${dossier.id}`,
+            }] : []),
+          ]}
+        />
+      )
     },
   ];
 

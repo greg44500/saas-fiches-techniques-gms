@@ -12,11 +12,8 @@ import {
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
-import {
-  DataTable,
-  DataTableActions,
-} from '@/components/data-display/data-table';
-import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { DataTable } from '@/components/data-display/data-table';
+import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
@@ -349,21 +346,18 @@ function DossierSupplierPricingPage() {
       id: 'actions',
       header: 'Actions',
       cell: (reference) => (
-        can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE) ? (
-          <ActionIconButton
-            Icon={CircleMinus}
-            disabled={removeReferenceState.isLoading}
-            label={
-              'Retirer '
-              + reference.supplierArticle.supplierReference
-              + ' du Dossier'
-            }
-            onClick={() => removeFavorite(reference.supplierArticle.id)}
-            tooltipLabel="Retirer du Dossier"
-            variant="outline"
-          />
-        ) : null
-      ),
+        <TableRowActionsMenu
+          label={reference.supplierArticle.supplierReference}
+          actions={can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE) ? [{
+            key: 'remove',
+            Icon: CircleMinus,
+            label: 'Retirer du Dossier',
+            destructive: true,
+            disabled: removeReferenceState.isLoading,
+            onClick: () => removeFavorite(reference.supplierArticle.id),
+          }] : []}
+        />
+      )
     },
   ];
 
@@ -415,18 +409,19 @@ function DossierSupplierPricingPage() {
       id: 'actions',
       header: 'Actions',
       cell: (price) => (
-        price.status === 'ACTIVE'
-        && can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE) ? (
-          <ActionIconButton
-            Icon={Archive}
-            disabled={archiveNegotiatedState.isLoading}
-            label="Archiver le tarif négocié"
-            onClick={() => archiveNegotiatedPrice(price.id)}
-            tooltipLabel="Archiver le tarif négocié"
-            variant="outline"
-          />
-        ) : null
-      ),
+        <TableRowActionsMenu
+          label={price.supplierArticle?.supplierReference ?? 'Tarif négocié'}
+          actions={price.status === 'ACTIVE'
+            && can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_MANAGE) ? [{
+              key: 'archive',
+              Icon: Archive,
+              label: 'Archiver le tarif négocié',
+              destructive: true,
+              disabled: archiveNegotiatedState.isLoading,
+              onClick: () => archiveNegotiatedPrice(price.id),
+            }] : []}
+        />
+      )
     },
   ];
 
@@ -524,28 +519,23 @@ function DossierSupplierPricingPage() {
         if (!can(SUPPLIER_PERMISSION.INDICATIVE_PRICE_MANAGE)) return null;
 
         const isDossierPrice = price.priceScope === 'DOSSIER';
-
         return (
-          <ActionIconButton
-            Icon={isDossierPrice ? Pencil : Euro}
-            label={
-              isDossierPrice
+          <TableRowActionsMenu
+            label={price.productVariant?.name ?? 'Prix indicatif'}
+            actions={[{
+              key: 'edit',
+              Icon: isDossierPrice ? Pencil : Euro,
+              label: isDossierPrice
                 ? 'Modifier le prix indicatif du Dossier'
-                : 'Définir un prix indicatif pour ce Dossier'
-            }
-            onClick={() => {
-              setIndicativeVariant(price.productVariant);
-              setIndicativeDialogOpen(true);
-            }}
-            tooltipLabel={
-              isDossierPrice
-                ? 'Modifier le prix indicatif du Dossier'
-                : 'Définir un prix indicatif pour ce Dossier'
-            }
-            variant="outline"
+                : 'Définir un prix indicatif pour ce Dossier',
+              onClick: () => {
+                setIndicativeVariant(price.productVariant);
+                setIndicativeDialogOpen(true);
+              },
+            }]}
           />
         );
-      },
+      }
     },
   ];
 
@@ -595,27 +585,28 @@ function DossierSupplierPricingPage() {
       id: 'actions',
       header: 'Actions',
       cell: (price) => (
-        price.status === 'PENDING_VALIDATION'
-        && can(SUPPLIER_PERMISSION.INVOICED_PRICE_VALIDATE) ? (
-          <DataTableActions>
-            <ActionIconButton
-              Icon={Check}
-              disabled={decideInvoiceState.isLoading}
-              label="Valider le prix facturé"
-              onClick={() => decideInvoicedPrice(price.id, 'VALIDATED')}
-              tooltipLabel="Valider le prix facturé"
-            />
-            <ActionIconButton
-              Icon={X}
-              disabled={decideInvoiceState.isLoading}
-              label="Rejeter le prix facturé"
-              onClick={() => decideInvoicedPrice(price.id, 'REJECTED')}
-              tooltipLabel="Rejeter le prix facturé"
-              variant="outline"
-            />
-          </DataTableActions>
-        ) : null
-      ),
+        <TableRowActionsMenu
+          label={price.supplierArticle?.supplierReference ?? 'Prix facturé'}
+          actions={price.status === 'PENDING_VALIDATION'
+            && can(SUPPLIER_PERMISSION.INVOICED_PRICE_VALIDATE) ? [
+              {
+                key: 'validate',
+                Icon: Check,
+                label: 'Valider le prix facturé',
+                disabled: decideInvoiceState.isLoading,
+                onClick: () => decideInvoicedPrice(price.id, 'VALIDATED'),
+              },
+              {
+                key: 'reject',
+                Icon: X,
+                label: 'Rejeter le prix facturé',
+                destructive: true,
+                disabled: decideInvoiceState.isLoading,
+                onClick: () => decideInvoicedPrice(price.id, 'REJECTED'),
+              },
+            ] : []}
+        />
+      )
     },
   ];
 

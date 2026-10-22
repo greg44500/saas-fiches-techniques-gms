@@ -6,6 +6,17 @@
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
 
+## Lot UI/UX transversal actif — 2026-10-22
+
+Sur `feature/ui-ux-improvements` : harmonisation des menus d'actions
+« … » pour les tableaux Fournisseurs/Articles/Catalogues, Dossiers
+et Fournisseurs et prix ; infobulle de portée et désactivation
+d'« Enregistrer » sans nom dans le formulaire Fournisseur.
+Cadrage : `docs/ux/UI-UX-TABLE-ACTIONS-SUPPLIERS-DOSSIERS-2026-10-22.md`.
+**Validation locale, gate et QA visuelle en attente ; aucune PR prévue avant accord.**
+Ce lot n'ouvre pas une fonctionnalité métier, un changement de Core
+ou une refonte des permissions.
+
 ### Recette visuelle M-002 — complément de stabilisation (2026-10-16)
 
 Ajout au lot actif de la protection de tout changement d'unité sur Référence utilisée (masse→masse incluse), de la navigation vers les Références du Produit retrouvé, du contrôle de gouvernance ciblé avec petit bouton neutre et de l'infobulle métier du dialogue d'édition. Même branche, tests locaux et gates avant PR.

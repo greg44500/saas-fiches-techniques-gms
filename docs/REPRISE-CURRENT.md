@@ -1,3 +1,18 @@
+# Reprise courante — UX Fournisseurs / Dossiers (2026-10-22)
+
+## Lot UI/UX transversal — en recette locale
+
+- `main` Produit de référence : `46411c8d5c554f12bf2ec5a27328373c57a2019b` (PR #48 fusionnée ; Core Gate post-merge #229 verte).
+- Branche de travail unique : `feature/ui-ux-improvements`, sans modification de `main`.
+- Périmètre validé : infobulle de portée Fournisseur, bouton « Enregistrer » désactivé sans nom, menus « … » de lignes Fournisseurs, Articles, Catalogues, Dossiers et Fournisseurs et prix ; composant partagé avec les Fiches techniques.
+- Contrat du lot : `docs/ux/UI-UX-TABLE-ACTIONS-SUPPLIERS-DOSSIERS-2026-10-22.md`.
+- Aucun changement backend, Core, MongoDB, ownership, RBAC, capabilities ni quotas prévu.
+- Tests locaux Windows, gate `npm run release:check`, QA visuelle et autorisation de PR : **en attente de confirmation de l'utilisateur**. Ne pas considérer le lot comme validé sans résultats réels.
+- Les branches fusionnées #47/#48 peuvent être nettoyées selon audit antérieur ; `fix/m001-final-ux-review` doit rester conservée jusqu'à étude séparée.
+- L'impression est couverte par l'export PDF existant ; la diffusion e-mail automatique est différée, hors de ce lot.
+
+---
+
 # Reprise courante — cohérence des unités (2026-10-16)
 
 ## Synchronisation Core — 22 octobre 2026
