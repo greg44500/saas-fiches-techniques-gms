@@ -583,8 +583,18 @@ test('M-003 crée manuellement un Article et propose sa Référence sans quitter
   const dialog = page.getByRole('dialog', { name: 'Créer un Article fournisseur' });
   await dialog.getByRole('combobox', { name: 'Sélectionner le Fournisseur' }).click();
   await page.getByRole('option', { name: supplierName }).click();
+  const creationSearchResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return response.request().method() === 'GET'
+      && url.pathname.endsWith('/supplier-articles/product-contributions/search')
+      && url.searchParams.get('q') === productName;
+  });
   await dialog.getByRole('combobox', { name: 'Rechercher un Produit' }).fill(productName);
-  // L'action contextuelle n'apparaît qu'après la réponse vide de la recherche.
+  // La création n'est proposée qu'après une réponse de recherche M-003 autorisée
+  // et réellement vide. Un HTTP 403/500 ne doit jamais valoir « aucun Produit ».
+  const searched = await creationSearchResponse;
+  expect(searched.status(), 'Recherche Produit contextuelle M-003').toBe(200);
+  expect((await searched.json()).data.results).toEqual([]);
   await expect(page.getByRole('button', { name: 'Créer cette Référence' })).toBeVisible();
   await page.getByRole('button', { name: 'Créer cette Référence' }).click();
   await dialog.getByLabel('Référence fournisseur').fill(reference);

@@ -19,6 +19,7 @@ import {
 } from '../../helpers/dossierTest.fixtures.js';
 import { SUPPLIER_CATALOG_PERMISSION } from '../../../modules/supplierCatalog/supplierCatalogPermission.registry.js';
 import { listProductSearch } from '../../../modules/productCatalog/productCatalog.service.js';
+import { createActiveProductReference } from '../../helpers/productCatalogTest.fixtures.js';
 
 let ownerA;
 let ownerB;
@@ -76,6 +77,116 @@ beforeEach(async () => {
 });
 
 describe('M-002/M-003 contribution Produit depuis un Article importé', () => {
+
+    it('autorise la recherche avant création avec import M-003, sans capability Produit', async () => {
+        await feature(ownerA, SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT, true);
+        await feature(ownerA, PRODUCT_CATALOG_FEATURE.REFERENCE_ACCESS, false);
+
+        const reference = await createActiveProductReference({
+            actorId: ownerA.owner._id,
+            name: 'Œufs pasteurisés création fournisseur',
+        });
+        const base = '/api/workspaces/' + ownerA.workspace._id.toString();
+        // La recherche M-002 générale reste protégée par son entitlement.
+        await request(app)
+            .get(base + '/products/search')
+            .query({ scope: 'REFERENCE', q: 'pasteurisés', page: 1, limit: 6 })
+            .set(bearer(ownerA.token))
+            .expect(403);
+
+        const metadata = await request(app)
+            .get(base + '/supplier-articles/product-contributions/metadata')
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(metadata.body.data.metadata.referenceUnits).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ value: 'UNIT' }),
+            ]),
+        );
+
+        const search = await request(app)
+            .get(base + '/supplier-articles/product-contributions/search')
+            .query({ scope: 'REFERENCE', q: 'pasteurisés', page: 1, limit: 6 })
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(search.body.data.results).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                variant: expect.objectContaining({
+                    id: reference.variant._id.toString(),
+                }),
+            }),
+        ]));
+    });
+
+    it('refuse la recherche de pré-création sans capability d’import M-003', async () => {
+        await feature(ownerA, SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT, false);
+        const base = '/api/workspaces/' + ownerA.workspace._id.toString()
+            + '/supplier-articles/product-contributions';
+
+        await request(app)
+            .get(base + '/metadata')
+            .set(bearer(ownerA.token))
+            .expect(403);
+        await request(app)
+            .get(base + '/search')
+            .query({ scope: 'REFERENCE', q: 'Croissant' })
+            .set(bearer(ownerA.token))
+            .expect(403);
+    });
+
+    it('refuse la recherche avant création sans les permissions M-003 nécessaires', async () => {
+        await feature(ownerA, SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT, true);
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: ownerA.workspace._id,
+            actorId: ownerA.owner._id,
+            permissions: [SUPPLIER_CATALOG_PERMISSION.ARTICLE_READ],
+        });
+        const base = '/api/workspaces/' + ownerA.workspace._id.toString()
+            + '/supplier-articles/product-contributions';
+        await request(app)
+            .get(base + '/metadata')
+            .set(bearer(member.token))
+            .expect(403);
+        await request(app)
+            .get(base + '/search')
+            .query({ scope: 'REFERENCE', q: 'Croissant' })
+            .set(bearer(member.token))
+            .expect(403);
+    });
+
+    it('n’expose pas les Références provisoires d’un autre Workspace en pré-création', async () => {
+        await feature(ownerA, SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT, true);
+        await feature(ownerB, SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT, true);
+        const created = await request(app)
+            .post(pathFor())
+            .set(bearer(ownerA.token))
+            .send(newProduct)
+            .expect(201);
+        const privateVariantId = created.body.data.provisionalReference.variant.id;
+
+        const searchPath = (workspace) =>
+            '/api/workspaces/' + workspace._id.toString()
+            + '/supplier-articles/product-contributions/search';
+        const query = { scope: 'REFERENCE', q: 'Croissant individuel PAI pour test' };
+        const own = await request(app)
+            .get(searchPath(ownerA.workspace))
+            .query(query)
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(own.body.data.results.some(
+            ({ variant }) => variant?.id === privateVariantId,
+        )).toBe(true);
+
+        const other = await request(app)
+            .get(searchPath(ownerB.workspace))
+            .query(query)
+            .set(bearer(ownerB.token))
+            .expect(200);
+        expect(other.body.data.results.some(
+            ({ variant }) => variant?.id === privateVariantId,
+        )).toBe(false);
+    });
+
     it('interdit la création sans capability import fournisseur', async () => {
         await feature(ownerA, SUPPLIER_CATALOG_FEATURE.CATALOG_IMPORT, false);
         const response = await request(app)

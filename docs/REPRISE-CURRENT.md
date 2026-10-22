@@ -2,6 +2,23 @@
 
 ## Lot actif M-002/M-003/M-004
 
+**Correction de la gate Playwright M-003 — 22/10/2026, à revérifier localement.**
+Deux échecs signalés (tests 21/22 sur 34) : l'ajout manuel d'Article
+faisait une recherche `/products/search` qui exige une capability Produit
+absente du contexte import M-003 ; nouvelles lectures pré-création
+`/supplier-articles/product-contributions/metadata|search`, sécurisées
+par membership, mode écriture, `supplier:article:manage`,
+`supplier:catalog:import` et capability `supplier_catalog_import`.
+Le moteur de recherche et la gouvernance M-002 sont réutilisés sans
+assouplissement de son endpoint général. Tests de permissions,
+capabilities et non-divulgation entre Workspaces ajoutés.
+Le second échec venait du test qui cherchait l'onglet « Infos Article »
+dans un drawer fermé lors du parcours de contribution : le test rouvre
+l'Article réellement associé après succès. Les captures, traces et
+vidéos locales n'ont pas été consultées dans ce contexte ;
+les 32 autres E2E ont été annoncés verts par l'utilisateur.
+**Exécution locale des gates complètes requise avant PR / merge.**
+
 **Finition infobulle identité M-004 (2026-10-22) — implémentée,
 non testée localement.** Suppression de « Calcul du » et de l'heure de
 calcul dans le survol de la ligne. Affichage du nom, de l'unité officielle,

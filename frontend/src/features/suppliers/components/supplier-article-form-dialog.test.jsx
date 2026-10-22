@@ -7,6 +7,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const mocks = vi.hoisted(() => ({
   createArticle: vi.fn(),
   metadataQuery: vi.fn(),
+  creationSearchQuery: vi.fn(),
 }));
 
 vi.mock('@/features/products/api/product-catalog-api', () => ({
@@ -14,7 +15,10 @@ vi.mock('@/features/products/api/product-catalog-api', () => ({
 }));
 
 vi.mock('@/features/products/components/product-search-autocomplete', () => ({
-  ProductSearchAutocomplete: ({ onSelect, onValueChange, onCreateMissingReference }) => (
+  ProductSearchAutocomplete: ({
+    onSelect, onValueChange, onCreateMissingReference,
+    onDebouncedSearchChange, externalSearch, externalQuery,
+  }) => (
     <>
       <button
       onClick={() => {
@@ -35,7 +39,12 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
       Choisir Abricot
       </button>
       <button
-        onClick={() => onValueChange('Œufs blancs pasteurisés')}
+        data-contextual-search={externalSearch ? 'enabled' : 'disabled'}
+        data-contextual-query={externalQuery ? 'provided' : 'absent'}
+        onClick={() => {
+          onValueChange('Œufs blancs pasteurisés');
+          onDebouncedSearchChange?.('Œufs blancs pasteurisés');
+        }}
         type="button"
       >
         Rechercher Œufs blancs pasteurisés
@@ -55,6 +64,8 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
 }));
 
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
+  useGetSupplierArticleCreationProductMetadataQuery: mocks.metadataQuery,
+  useSearchSupplierArticleCreationProductsQuery: mocks.creationSearchQuery,
   useCreateSupplierArticleMutation: () => [
     mocks.createArticle,
     { isLoading: false },
@@ -101,6 +112,13 @@ async function selectOption(user, triggerName, optionName) {
 describe('SupplierArticleFormDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.creationSearchQuery.mockReturnValue({
+      currentData: { results: [] },
+      data: { results: [] },
+      isSuccess: true,
+      isFetching: false,
+      isError: false,
+    });
 
     mocks.metadataQuery.mockReturnValue({
       data: {
@@ -149,6 +167,46 @@ describe('SupplierArticleFormDialog', () => {
       }),
     );
     expect(onSaved).toHaveBeenCalledWith({ id: 'article-1' });
+  });
+
+
+  it('cherche une Référence avant création par le seul contexte M-003 autorisé', async () => {
+    const user = userEvent.setup();
+    renderDialog(vi.fn(), { canCreateProduct: true });
+
+    await user.click(screen.getByRole('button', {
+      name: 'Rechercher Œufs blancs pasteurisés',
+    }));
+    expect(mocks.creationSearchQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'workspace-1',
+        scope: 'REFERENCE',
+        q: 'Œufs blancs pasteurisés',
+        page: 1,
+        limit: 6,
+      }),
+      { skip: false },
+    );
+    expect(mocks.metadataQuery).toHaveBeenCalledWith(
+      'workspace-1',
+      { skip: false },
+    );
+    expect(screen.getByRole('button', {
+      name: 'Rechercher Œufs blancs pasteurisés',
+    })).toHaveAttribute('data-contextual-search', 'enabled');
+  });
+
+  it('ne lance pas la recherche contextuelle si le droit d’import est absent', () => {
+    renderDialog(vi.fn(), { canCreateProduct: false });
+    expect(mocks.creationSearchQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceId: 'workspace-1' }),
+      { skip: true },
+    );
+    expect(screen.getByRole('button', {
+      name: 'Rechercher Œufs blancs pasteurisés',
+    })).toHaveAttribute('data-contextual-search', 'disabled');
+    expect(screen.queryByRole('button', { name: 'Créer cette Référence' }))
+      .not.toBeInTheDocument();
   });
 
   it('permet une création en deux temps sans Référence existante, avec contribution immédiate', async () => {
