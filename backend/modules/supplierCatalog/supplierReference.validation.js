@@ -124,19 +124,35 @@ const packagingBodySchema = z.strictObject({
     }
 });
 
+const recipeUnitConfirmationFields = {
+    recipeUnitsPerPackage: z.number().int().min(1).max(1000000).nullable().optional(),
+    confirmRecipeUnits: z.literal(true).optional(),
+};
+
+const validateRecipeUnitConfirmation = (value, context) => {
+    if (value.recipeUnitsPerPackage != null && value.confirmRecipeUnits !== true) {
+        context.addIssue({
+            code: 'custom',
+            path: ['confirmRecipeUnits'],
+            message: 'Confirmez le nombre de pièces de recette par colis.',
+        });
+    }
+};
+
 const createArticleBodySchema = z.strictObject({
     supplierId: objectIdSchema,
-    productVariantId: objectIdSchema,
+    // Un Article privé peut être créé avant la contribution provisoire M-002.
+    productVariantId: objectIdSchema.nullable(),
     supplierReference: z.string().trim().min(1).max(120),
     supplierDesignation: nullableText(300).optional(),
     brand: nullableText(160).optional(),
     packaging: packagingBodySchema.nullable().optional(),
     provenance: nullableText(240).optional(),
-});
+    ...recipeUnitConfirmationFields,
+}).superRefine(validateRecipeUnitConfirmation);
 
 const updateArticleBodySchema = z.strictObject({
-    recipeUnitsPerPackage: z.number().int().min(1).max(1000000).nullable().optional(),
-    confirmRecipeUnits: z.literal(true).optional(),
+    ...recipeUnitConfirmationFields,
     productVariantId: objectIdSchema.nullable().optional(),
     supplierDesignation: nullableText(300).optional(),
     brand: nullableText(160).optional(),
@@ -145,15 +161,7 @@ const updateArticleBodySchema = z.strictObject({
 }).refine(
     (value) => Object.keys(value).length > 0,
     'Au moins un champ doit être modifié.',
-).superRefine((value, context) => {
-    if (value.recipeUnitsPerPackage != null && value.confirmRecipeUnits !== true) {
-        context.addIssue({
-            code: 'custom',
-            path: ['confirmRecipeUnits'],
-            message: 'Confirmez le nombre de pièces de recette par colis.',
-        });
-    }
-});
+).superRefine(validateRecipeUnitConfirmation);
 
 const replaceArticleBodySchema = z.strictObject({
     supplierReference: z.string().trim().min(1).max(120),
