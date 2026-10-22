@@ -258,7 +258,18 @@ function SupplierArticleFormDialog({
             </Field>
 
             <Field>
-              <FieldLabel>Référence Produit</FieldLabel>
+              <div className="flex items-center gap-1">
+                <FieldLabel>Référence Produit</FieldLabel>
+                <InfoTooltip
+                  content="Recherchez une Référence existante avant d’en proposer une nouvelle. Une création sera examinée par le gestionnaire."
+                  label="Informations sur la recherche de Référence Produit"
+                />
+                {createMissingReference && (
+                  <span className="ml-auto text-xs text-muted-foreground" role="status">
+                    Référence à créer
+                  </span>
+                )}
+              </div>
               {initialProductVariant ? (
                 <p className="rounded-md border border-border px-3 py-2 text-sm">
                   {initialProductVariant.name}
@@ -266,6 +277,11 @@ function SupplierArticleFormDialog({
               ) : (
                 <ProductSearchAutocomplete
                   metadata={metadataQuery.data}
+                  onCreateMissingReference={canCreateProduct ? () => {
+                    setProductVariant(null);
+                    setCreateMissingReference(true);
+                    setError('');
+                  } : undefined}
                   onSelect={(result) => {
                     if (!result.variant) {
                       setProductVariant(null);
@@ -293,31 +309,10 @@ function SupplierArticleFormDialog({
                   workspaceId={workspaceId}
                 />
               )}
-              <FieldDescription>
-                {initialProductVariant
-                  ? 'La Référence Produit est préremplie depuis le Produit consulté.'
-                  : 'Recherchez une Référence existante avant d’en proposer une nouvelle.'}
-              </FieldDescription>
-              {canCreateProduct && !initialProductVariant && !productVariant?.id
-                && productSearch.trim().length >= 3 && (
-                <div className="space-y-2 rounded-md border border-border p-3">
-                  <p className="text-sm text-muted-foreground">
-                    Aucune suggestion ne correspond ? Vous pouvez proposer une Référence
-                    et poursuivre immédiatement. Elle sera examinée par le gestionnaire.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setCreateMissingReference(true);
-                      setError('');
-                    }}
-                    type="button"
-                    variant={createMissingReference ? 'secondary' : 'outline'}
-                  >
-                    {createMissingReference
-                      ? 'Référence à créer après l’Article'
-                      : 'Créer une Référence manquante'}
-                  </Button>
-                </div>
+              {initialProductVariant && (
+                <FieldDescription>
+                  La Référence Produit est préremplie depuis le Produit consulté.
+                </FieldDescription>
               )}
             </Field>
 
