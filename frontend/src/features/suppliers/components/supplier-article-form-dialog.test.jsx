@@ -282,6 +282,19 @@ describe('SupplierArticleFormDialog', () => {
       .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Rechercher Œufs blancs pasteurisés' }))
       .toBeInTheDocument();
+    // Après annulation, un Produit existant doit pouvoir être sélectionné
+    // sans recréer de contribution provisoire et sans réutiliser l'ancien nom.
+    // Le comportement de sélection est vérifié ici par le formulaire lui-même.
+    await user.click(screen.getByRole('button', { name: 'Choisir Abricot' }));
+    await selectOption(user, 'Sélectionner le Fournisseur', 'Sysco');
+    await user.type(screen.getByLabelText('Référence fournisseur'), 'ABR-REUSE');
+    await user.click(screen.getByRole('button', { name: 'Créer l’Article', exact: true }));
+    expect(mocks.createArticle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productVariantId: 'variant-abricot',
+        supplierReference: 'ABR-REUSE',
+      }),
+    );
   });
 
   it('exige le nombre de pièces déclaré à la création d’un Article au poids vendu à la pièce', async () => {
