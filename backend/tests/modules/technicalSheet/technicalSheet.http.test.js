@@ -305,6 +305,67 @@ describe('M-004 RBAC HTTP', () => {
         expect(saved.revision).toBe(draft.revision + 1);
     });
 
+
+    it('ne peut pas sourcer via une sauvegarde de composition sans permission', async () => {
+        await expect(saveTechnicalSheetDraft({
+            workspaceId: owner.workspace._id,
+            dossierId: dossier._id,
+            technicalSheetId: sheet.id,
+            actorId: owner.owner._id,
+            expectedRevision: draft.revision,
+            canManageSourcing: false,
+            canManageValuation: true,
+            data: {
+                lines: [{
+                    kind: 'INGREDIENT',
+                    productVariantId: reference.variant._id.toString(),
+                    netQuantity: '1',
+                    inputUnit: 'KG',
+                    order: 0,
+                    selectedSupplierArticleId: article.id,
+                }],
+            },
+        })).rejects.toMatchObject({ statusCode: 403 });
+    });
+
+    it('refuse une association Article/Référence incohérente', async () => {
+        const otherReference = await createActiveProductReference({
+            actorId: owner.owner._id,
+            name: 'Pomme distincte test association',
+        });
+        const anotherSupplier = await createSupplier({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            data: { name: 'Fournisseur autre référence M004' },
+        });
+        const otherArticle = await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            data: {
+                supplierId: anotherSupplier.id,
+                productVariantId: otherReference.variant._id,
+                supplierReference: 'AUTRE-REF-M004',
+            },
+        });
+        await request(app)
+            .put(basePath() + '/draft')
+            .set(bearer(owner.token))
+            .send({
+                expectedRevision: draft.revision,
+                lines: [{
+                    kind: 'INGREDIENT',
+                    productVariantId: reference.variant._id.toString(),
+                    netQuantity: '1',
+                    inputUnit: 'KG',
+                    order: 0,
+                    selectedSupplierArticleId: otherArticle.id,
+                }],
+            })
+            .expect(409);
+    });
+
     it('refuse un Article d’un autre Workspace sans modifier le brouillon', async () => {
         const foreign = await createWorkspaceOwnerFixture();
         const foreignSupplier = await createSupplier({

@@ -428,6 +428,7 @@ function ProductDetailsTrigger({
   line,
   metadata,
   onEdit,
+  productMetadata,
   workspaceId,
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -524,8 +525,14 @@ function ProductDetailsTrigger({
                   line.valuation.normalizedAmount,
                 )}
                 {line.valuation.normalizedUnit
-                  ? ' / ' + getVariantReferenceUnitLabel(
-                    metadata, line.productVariant,
+                  ? ' / ' + (
+                    line.valuation.normalizedUnit === 'UNIT'
+                      ? getVariantReferenceUnitLabel(
+                        productMetadata, line.productVariant,
+                      )
+                      : getReferenceUnitLabel(
+                        productMetadata, line.valuation.normalizedUnit,
+                      )
                   )
                   : ''}
               </p>
@@ -1011,6 +1018,7 @@ function TechnicalSheetLineEditor({
             <ProductDetailsTrigger
               line={line}
               metadata={metadata}
+              productMetadata={productMetadata}
               onEdit={
                 disabled
                   ? undefined

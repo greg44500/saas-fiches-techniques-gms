@@ -1577,3 +1577,9 @@ Aucun nouveau modèle MongoDB, aucune migration, aucun changement Core.
 Implémentation dans la branche `feature/m002-m003-m004-unit-consistency`.
 **Validation des tests, revue visuelle et Core Gate : en attente
 d'exécution locale par le développeur.**
+
+Note de vérification : le filtrage du mode Articles repose sur des recherches
+indexées et des listes d'identifiants de Fournisseurs / Références accessibles.
+Si les référentiels deviennent très volumineux, mesurer son coût et prévoir
+une requête agrégée paginée, sans relâcher les invariants de visibilité et
+de sécurité. La validation de la performance n'est pas présumée.

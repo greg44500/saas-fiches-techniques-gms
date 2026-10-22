@@ -52,6 +52,33 @@ const articlePath = (context) =>
 
 describe('M-003 supplier/article HTTP contract', () => {
 
+
+    it('écarte les Articles sans association du sélecteur Fiche technique', async () => {
+        const supplier = await createSupplier({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: ownerA.workspace._id,
+            actorId: ownerA.owner._id,
+            data: { name: 'Fournisseur association M004' },
+        });
+        const pending = await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: ownerA.workspace._id,
+            actorId: ownerA.owner._id,
+            data: {
+                supplierId: supplier.id,
+                productVariantId: null,
+                supplierReference: 'PENDING-43279',
+            },
+        });
+        const result = await request(app)
+            .get(articlePath(ownerA) + '?search=PENDING-43279&usableForTechnicalSheet=true')
+            .set(bearer(ownerA.token))
+            .expect(200);
+        expect(result.body.data.articles.map(({ id }) => id))
+            .not.toContain(pending.id);
+        expect(result.body.data.pagination.total).toBe(0);
+    });
+
     it('recherche les Articles utilisables sans divulguer ceux d’un autre Workspace', async () => {
         const supplierA = await createSupplier({
             scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
