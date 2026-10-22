@@ -43,7 +43,7 @@ function getPackagingUnitLabel(packaging, productVariant, quantity) {
 
 function formatPackaging(
   packaging,
-  { productVariant = null } = {},
+  { productVariant = null, includeAggregateAmounts = true } = {},
 ) {
   if (!packaging) return 'Non renseigné';
 
@@ -73,7 +73,7 @@ function formatPackaging(
   } else if (packaging.unitCount) {
     parts.push(String(packaging.unitCount) + ' sous-unités');
   }
-  if (packaging.totalQuantity && packaging.unit) {
+  if (includeAggregateAmounts && packaging.totalQuantity && packaging.unit) {
     parts.push(
       'total '
       + String(packaging.totalQuantity)
@@ -85,7 +85,7 @@ function formatPackaging(
       ),
     );
   }
-  if (packaging.netWeight && packaging.netWeightUnit) {
+  if (includeAggregateAmounts && packaging.netWeight && packaging.netWeightUnit) {
     parts.push(
       'net '
       + String(packaging.netWeight)
@@ -93,7 +93,7 @@ function formatPackaging(
       + getReferenceUnitLabel(null, packaging.netWeightUnit),
     );
   }
-  if (packaging.drainedNetWeight && packaging.drainedNetWeightUnit) {
+  if (includeAggregateAmounts && packaging.drainedNetWeight && packaging.drainedNetWeightUnit) {
     parts.push(
       'égoutté '
       + String(packaging.drainedNetWeight)
@@ -103,6 +103,69 @@ function formatPackaging(
   }
 
   return parts.length > 0 ? parts.join(' · ') : 'Non renseigné';
+}
+
+// Comparaison d'affichage exacte, sans Number ni déduction de conditionnement.
+const massAsFraction = (value, unit) => {
+  if (!['G', 'KG'].includes(unit)) return null;
+  const match = String(value).match(/^(\d+)(?:\.(\d+))?$/);
+  if (!match) return null;
+  const decimalPlaces = match[2]?.length ?? 0;
+  return {
+    numerator: BigInt(match[1] + (match[2] ?? '')) * (unit === 'KG' ? 1000n : 1n),
+    denominator: 10n ** BigInt(decimalPlaces),
+  };
+};
+
+const sameMass = (left, leftUnit, right, rightUnit) => {
+  const a = massAsFraction(left, leftUnit);
+  const b = massAsFraction(right, rightUnit);
+  return Boolean(a && b && a.numerator * b.denominator === b.numerator * a.denominator);
+};
+
+/**
+ * Infobulle M-004 : une information par ligne. La quantité totale calculée
+ * reste visible uniquement si elle apporte autre chose que le poids net déclaré.
+ * Aucune quantité métier ni donnée historique n'est modifiée.
+ */
+function getPackagingTooltipDetails(packaging, { productVariant = null } = {}) {
+  const rows = [{
+    label: 'Conditionnement',
+    value: formatPackaging(packaging, {
+      productVariant,
+      includeAggregateAmounts: false,
+    }),
+  }];
+  if (!packaging) return rows;
+
+  const hasNetWeight = packaging.netWeight != null && packaging.netWeightUnit;
+  const hasTotal = packaging.totalQuantity != null && packaging.unit;
+
+  if (hasNetWeight) {
+    rows.push({
+      label: 'Poids net',
+      value: String(packaging.netWeight) + ' '
+        + getReferenceUnitLabel(null, packaging.netWeightUnit),
+    });
+  }
+  if (hasTotal && (!hasNetWeight || !sameMass(
+    packaging.totalQuantity, packaging.unit,
+    packaging.netWeight, packaging.netWeightUnit,
+  ))) {
+    rows.push({
+      label: 'Quantité totale calculée',
+      value: String(packaging.totalQuantity) + ' '
+        + getPackagingUnitLabel(packaging, productVariant, packaging.totalQuantity),
+    });
+  }
+  if (packaging.drainedNetWeight != null && packaging.drainedNetWeightUnit) {
+    rows.push({
+      label: 'Poids net égoutté',
+      value: String(packaging.drainedNetWeight) + ' '
+        + getReferenceUnitLabel(null, packaging.drainedNetWeightUnit),
+    });
+  }
+  return rows;
 }
 
 function formatPrice(
@@ -217,6 +280,7 @@ function getImportClassificationLabel(classification) {
 export {
   formatIndicativePriceSource,
   formatPackaging,
+  getPackagingTooltipDetails,
   formatPrice,
   formatSourcePrice,
   getApiErrorMessage,
