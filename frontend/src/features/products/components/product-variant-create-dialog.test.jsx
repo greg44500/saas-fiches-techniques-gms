@@ -57,11 +57,12 @@ vi.mock('@/features/products/components/product-variant-fields', () => ({
     foodRange: value.foodRange,
     characteristicIds: [],
   }),
-  ProductVariantFields: ({ onChange, value }) => (
+  ProductVariantFields: ({ floatingLabels, onChange, value }) => (
     <label>
       Nom de la référence
       <input
         aria-label="Nom de la référence"
+        data-outlined={floatingLabels ? 'true' : 'false'}
         onChange={(event) => onChange({
           ...value,
           name: event.target.value,
@@ -147,10 +148,12 @@ describe('ProductVariantCreateDialog', () => {
       </TooltipProvider>,
     );
 
-    await user.type(
-      screen.getByRole('textbox', { name: 'Nom de la référence' }),
-      'Galla',
-    );
+    const name = screen.getByRole('textbox', {
+      name: 'Nom de la référence',
+    });
+    expect(name).toHaveAttribute('data-outlined', 'true');
+
+    await user.type(name, 'Galla');
     await user.click(screen.getByRole('button', {
       name: 'Créer la référence',
     }));

@@ -121,3 +121,20 @@ libellés des Articles avec et sans désignation, la recherche sur des
 catalogues volumineux, les résultats vides, la recherche clavier et la
 stabilité de hauteur de la carte « Vérifier un prix applicable » ainsi
 que de la modale tarifaire avant toute PR.
+
+## Complément M-002 — Libellés Outlined dans « Créer une référence Produit »
+
+- Demande validée le 2026-10-22 : aligner les champs de création sur le
+  comportement Outlined déjà disponible dans la modification d'une Référence
+  Produit. Ne pas dupliquer la primitive ni retoucher les composants Core.
+- Utiliser `ProductVariantFields floatingLabels` dans
+  `ProductVariantCreateDialog` (même composant que pour la modification).
+- Champ vide : libellé dans le champ ; focus : libellé sur la bordure avec
+  exemple contextuel visible ; valeur renseignée : libellé maintenu en haut.
+  Les listes désactivées, champs requis et messages d'aide restent intacts.
+- Indiquer un exemple numérique pertinent pour le rendement facultatif
+  (95 %) en mode Outlined, en conservant le libellé historique hors de ce mode.
+- Pas de modification backend, du schéma de validation ni de la sérialisation.
+- Vérification : tests RTL des champs et du dialogue de création,
+  lint/build, puis QA visuelle locale (focus, saisie, effacement,
+  champs préremplis, options indisponibles) avant PR.

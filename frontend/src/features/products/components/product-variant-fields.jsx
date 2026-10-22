@@ -416,7 +416,7 @@ function ProductVariantFields({
           max="100"
           min="0.01"
           onChange={(event) => change('yieldPercent', event.target.value)}
-          placeholder="Facultatif"
+          placeholder={floatingLabels ? 'Ex. 95 (facultatif)' : 'Facultatif'}
           step="0.01"
           type="number"
           value={value.yieldPercent}

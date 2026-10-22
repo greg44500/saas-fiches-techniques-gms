@@ -254,6 +254,7 @@ function ProductVariantCreateDialog({
             <ProductVariantFields
               dimensions={dimensions}
               disabled={pending}
+              floatingLabels
               metadata={metadata}
               onChange={(nextVariant) => {
                 setVariant(nextVariant);

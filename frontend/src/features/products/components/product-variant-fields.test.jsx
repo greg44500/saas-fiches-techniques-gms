@@ -146,6 +146,44 @@ describe('ProductVariantFields', () => {
       .toHaveClass('top-8', 'group-hover:top-2');
   });
 
+  it('présente un champ vide avec libellé flottant et exemple au focus', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ProductVariantFields
+        floatingLabels
+        metadata={metadata}
+        onChange={vi.fn()}
+        structured
+        value={createEmptyVariantDraft(metadata, { structured: true })}
+      />,
+    );
+
+    const name = screen.getByLabelText('Nom de la référence *');
+    const nameField = name.closest('[data-slot="field"]');
+    const nameLabel = screen.getByText('Nom de la référence *');
+
+    expect(nameField).toHaveAttribute('data-label-state', 'empty');
+    expect(nameLabel.parentElement)
+      .toHaveClass('top-8', 'group-focus-within:top-2');
+    expect(name).toHaveAttribute('placeholder', 'Ex. Carotte râpée');
+    expect(name).toHaveClass(
+      'placeholder:text-transparent',
+      'focus:placeholder:text-muted-foreground',
+    );
+
+    await user.click(name);
+    expect(name).toHaveFocus();
+
+    const yieldInput = screen.getByLabelText('Rendement (%)');
+    expect(yieldInput).toHaveAttribute(
+      'placeholder',
+      'Ex. 95 (facultatif)',
+    );
+    expect(yieldInput.closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'empty');
+  });
+
   it('remonte le libellé sur la bordure lorsqu’une sélection est renseignée', () => {
     const { rerender } = render(<StructuredHarness onPayload={vi.fn()} />);
 
