@@ -11,7 +11,7 @@ import { ProductVariant } from '../../modules/productCatalog/productVariant.mode
 import { SupplierArticle } from '../../modules/supplierCatalog/supplier.model.js';
 import { SupplierTariff } from '../../modules/supplierCatalog/supplierCatalog.model.js';
 import {
-    packagingSignature, verifiedRecipeUnitCount,
+    packagingSignature, packagingSignaturesMatch, verifiedRecipeUnitCount,
 } from '../../modules/supplierCatalog/supplierRecipeUnitEquivalence.service.js';
 import { resolveApplicablePrice } from '../../modules/supplierCatalog/supplierPricing.service.js';
 import {
@@ -136,8 +136,10 @@ if (!requestedName) {
                         hasSnapshot: Boolean(tariff.packagingSnapshot),
                         snapshotSignature: packagingSignature(tariff.packagingSnapshot),
                         matchesCurrentEvidence: Boolean(article.recipeUnitEquivalence
-                            && packagingSignature(tariff.packagingSnapshot)
-                                === article.recipeUnitEquivalence.packagingSignature),
+                            && packagingSignaturesMatch(
+                                packagingSignature(tariff.packagingSnapshot),
+                                article.recipeUnitEquivalence.packagingSignature,
+                            )),
                     })),
                 })),
                 usage: {
