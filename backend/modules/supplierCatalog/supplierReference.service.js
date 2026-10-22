@@ -19,7 +19,9 @@ import {
 import { AppError } from '../../utils/appError.js';
 import { SupplierTariff } from './supplierCatalog.model.js';
 import { supplierTariffPresentation } from './supplierArticlePresentation.service.js';
-import { packagingSignature } from './supplierRecipeUnitEquivalence.service.js';
+import {
+    packagingSignature, packagingSignaturesMatch,
+} from './supplierRecipeUnitEquivalence.service.js';
 import { selectSupplierTariffs } from './supplierTariffSelection.service.js';
 import {
     Supplier,
@@ -771,10 +773,12 @@ const updateSupplierArticle = async ({
     }
     const currentSignature = packagingSignature(article.packaging);
     const identityChanged = changedFields.includes('productVariant');
-    const physicalContentChanged = previousSignature !== currentSignature;
+    const physicalContentChanged = !packagingSignaturesMatch(
+        previousSignature, currentSignature,
+    );
     const oldProof = article.recipeUnitEquivalence;
     const proofValid = Boolean(oldProof
-        && oldProof.packagingSignature === currentSignature
+        && packagingSignaturesMatch(oldProof.packagingSignature, currentSignature)
         && oldProof.productVariant?.toString() === article.productVariant?.toString());
 
     if (Object.hasOwn(data, 'recipeUnitsPerPackage')) {
