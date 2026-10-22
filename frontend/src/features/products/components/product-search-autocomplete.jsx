@@ -195,26 +195,26 @@ function ProductSearchAutocomplete({
           <AutocompletePopup className="border-primary/25 bg-popover/95 shadow-2xl ring-1 ring-foreground/5 backdrop-blur-md">
             <div className="border-b border-border bg-muted/35 px-3 py-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {externalSearch ? 'Articles fournisseur' : 'Suggestions Produits'}
+                {scope === 'ARTICLES' ? 'Articles fournisseur' : 'Suggestions Produits'}
               </p>
             </div>
 
             <AutocompleteStatus>
               {suggestionsQuery.isFetching
-                ? (externalSearch ? 'Recherche des Articles en cours' : 'Recherche des Produits en cours')
+                ? (scope === 'ARTICLES' ? 'Recherche des Articles en cours' : 'Recherche des Produits en cours')
                 : suggestions.length + ' résultat(s) proposé(s)'}
             </AutocompleteStatus>
 
             <AutocompleteEmpty>
               {suggestionsQuery.isFetching
-                ? (externalSearch ? 'Recherche des Articles…' : 'Recherche des Produits…')
+                ? (scope === 'ARTICLES' ? 'Recherche des Articles…' : 'Recherche des Produits…')
                 : suggestionsQuery.isError
                   ? 'La recherche prédictive est temporairement indisponible.'
                   : waitingForMinimum
                     ? 'Saisissez au moins 3 caractères.'
                     : normalizedValue.length === 0
-                      ? (externalSearch ? 'Recherchez un Article fournisseur.' : 'Commencez à saisir un produit.')
-                      : externalSearch
+                      ? (scope === 'ARTICLES' ? 'Recherchez un Article fournisseur.' : 'Commencez à saisir un produit.')
+                      : scope === 'ARTICLES'
                         ? 'Aucun Article fournisseur utilisable ne correspond à cette recherche.'
                         : 'Aucun Produit ne correspond à cette recherche.'}
               {canOfferCreation && (

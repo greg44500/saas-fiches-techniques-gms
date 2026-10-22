@@ -41,6 +41,26 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
           Pomme
         </button>
         <button
+          aria-label={'Sélectionner Article Carotte depuis ' + props.ariaLabel}
+          onClick={() => props.onSelect({
+            product: { id: 'product-1', name: 'Carotte' },
+            variant: {
+              id: 'variant-1',
+              name: 'Carotte râpée',
+              referenceUnit: 'KG',
+              yieldPercent: '90',
+            },
+            supplierArticle: {
+              id: 'article-2',
+              supplierReference: 'CAR-02',
+              supplier: { name: 'Autre fournisseur' },
+            },
+          })}
+          type="button"
+        >
+          Article Carotte
+        </button>
+        <button
           aria-label={'Sélectionner Farine grammes depuis ' + props.ariaLabel}
           onClick={() => props.onSelect({
             product: {
@@ -345,15 +365,16 @@ describe('TechnicalSheetLineEditor', () => {
     const scopeControl = document.querySelector(
       '[aria-label="Source des Produits"]',
     );
-    const globalButton = screen.getByRole('button', {
-      name: 'Tous les produits',
-    });
-    const favoritesButton = screen.getByRole('button', {
-      name: 'Favoris',
-    });
+    const allButton = screen.getByRole('button', { name: 'Tous' });
+    const articlesButton = screen.getByRole('button', { name: 'Articles' });
+    const favoritesButton = screen.getByRole('button', { name: 'Favoris' });
 
-    expect(scopeControl).toHaveClass('h-9', 'p-px');
-    expect(globalButton).toHaveAttribute('aria-pressed', 'true');
+    expect(scopeControl).toHaveClass('h-9', 'max-w-64');
+    expect(allButton).toHaveAttribute('aria-pressed', 'true');
+    expect(scopeControl.querySelector('[aria-hidden="true"]'))
+      .toHaveStyle({ transform: 'translateX(200%)' });
+    await user.click(articlesButton);
+    expect(onChange).toHaveBeenCalledWith('ARTICLES');
     await user.click(favoritesButton);
     expect(onChange).toHaveBeenCalledWith('WORKSPACE');
   });
@@ -548,6 +569,62 @@ describe('TechnicalSheetLineEditor', () => {
       canManageSourcing: true,
       line: { ...unresolvedLine, id: undefined },
     })).toBe('Choisir un Article fournisseur');
+  });
+
+
+  it('montre la source de valorisation réelle dans l’infobulle Produit', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Source du prix : Tarif négocié'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Valorisation enregistrée')).toBeInTheDocument();
+  });
+
+  it('ajoute une ligne avec l’Article explicitement sélectionné en une sauvegarde', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor({ productScope: 'ARTICLES' });
+
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Article Carotte depuis Ajouter un produit aux Ingrédients',
+    }));
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        valuedLine,
+        expect.objectContaining({
+          productVariantId: 'variant-1',
+          selectedSupplierArticleId: 'article-2',
+          sourcingSelectionPending: true,
+        }),
+      ],
+      { immediate: true },
+    );
+  });
+
+  it('remplace uniquement l’Article sur une même Référence sans changer la ligne', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor({ productScope: 'ARTICLES' });
+
+    await user.click(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Article Carotte depuis Modifier le produit Carotte râpée',
+    }));
+    expect(onChange).toHaveBeenCalledWith(
+      [expect.objectContaining({
+        id: 'line-1',
+        productVariantId: 'variant-1',
+        netQuantity: '2.5',
+        selectedSupplierArticleId: 'article-2',
+        sourcingSelectionPending: true,
+        valuation: null,
+      })],
+      { immediate: true },
+    );
   });
 
   it('ajoute un Produit directement depuis la ligne de saisie de la section', async () => {

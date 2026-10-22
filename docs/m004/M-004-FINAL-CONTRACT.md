@@ -1537,3 +1537,43 @@ Décisions validées après QA visuelle :
 - la colonne `Coût HT` est conservée sans changement de sémantique : elle représente le coût total HT de la ligne pour les quantités de la Fiche.
 
 Aucun de ces états d'interface ne remplace les contrôles backend de révision, permission, ownership ou cycle de vie.
+
+
+## Extension UX — recherche des ingrédients et provenance tarifaire (22 octobre 2026)
+
+Sur le brouillon actif d'une Fiche technique, le contrôle de recherche est unique
+et compact, avec trois modes exclusifs dans cet ordre : **Favoris | Articles | Tous**.
+Le mode par défaut reste **Tous** (`REFERENCE`). Le fond de sélection se
+déplace horizontalement avec une transition discrète (200 ms) et respecte
+`prefers-reduced-motion`. Les modes fonctionnent aussi bien pour l'ajout que
+pour le remplacement, avec les interactions clavier de l'autocomplétion.
+
+- **Favoris** (`WORKSPACE`) : Références Produit favorites du Workspace.
+- **Tous** (`REFERENCE`) : Références Produit accessibles, soumises à la
+  gouvernance M-002.
+- **Articles** (`ARTICLES`, mode UX propre à M-004) : Articles fournisseur
+  actifs accessibles, dont le Fournisseur et la Référence Produit sont actifs,
+  associés et visibles au Workspace. Recherche par référence, désignation,
+  marque, fournisseur et nom de Référence Produit. La liste reste paginée
+  côté serveur, sans données commerciales des autres Workspaces.
+
+La sélection d'un Article transmet **Référence Produit + ID d'Article** dans
+la même sauvegarde de composition. Le backend valide, au sein de la
+transaction, l'association, les statuts, la visibilité et le droit
+`technical-sheet:sourcing:manage`. Le mode Articles requiert aussi le droit
+de lecture des Articles fournisseur. Le remplacement par un autre Article
+sur la même Référence modifie le sourcing, sans recréer la ligne ni
+modifier sa quantité.
+
+L'infobulle de la ligne affiche distinctement l'Article choisi et la
+**source de prix réellement enregistrée dans la valorisation de la Fiche**.
+Il peut s'agir d'un Tarif fournisseur, d'un Tarif négocié du Dossier,
+d'un Prix facturé, ou d'un indicatif Dossier, Workspace ou global.
+L'infobulle présente le prix unitaire HT normalisé et la date de calcul
+s'ils sont présents, sans fabriquer de tarif source ni modifier la
+résolution M-003. L'absence de prix reste explicite.
+
+Aucun nouveau modèle MongoDB, aucune migration, aucun changement Core.
+Implémentation dans la branche `feature/m002-m003-m004-unit-consistency`.
+**Validation des tests, revue visuelle et Core Gate : en attente
+d'exécution locale par le développeur.**

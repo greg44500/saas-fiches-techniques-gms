@@ -115,6 +115,57 @@ describe('ProductSearchAutocomplete', () => {
     vi.clearAllMocks();
   });
 
+
+  it('présente la Référence fournisseur et le Produit associé dans les suggestions Articles', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const article = {
+      id: 'article-43279',
+      supplier: { name: 'BRIDOR' },
+      supplierReference: '43279',
+      supplierDesignation: 'Croissant 120 g',
+      packagingLabel: 'Carton de 36',
+    };
+    const articleResult = {
+      product: { id: 'variant-bridor', name: 'Croissant individuel PAI' },
+      variant: { id: 'variant-bridor', name: 'Croissant individuel PAI', referenceUnit: 'UNIT' },
+      supplierArticle: article,
+    };
+
+    function ArticleHarness() {
+      const [value, setValue] = useState('');
+      return (
+        <ProductSearchAutocomplete
+          externalSearch
+          externalQuery={{
+            data: { results: [articleResult] },
+            isFetching: false,
+            isSuccess: true,
+            isError: false,
+          }}
+          metadata={metadata}
+          onSelect={onSelect}
+          onValueChange={setValue}
+          scope="ARTICLES"
+          value={value}
+          workspaceId="workspace-1"
+        />
+      );
+    }
+
+    render(<ArticleHarness />);
+    await user.type(screen.getByRole('combobox', {
+      name: 'Rechercher un Produit',
+    }), '43279');
+    const option = await screen.findByRole('option', {
+      name: /Croissant individuel PAI.*BRIDOR.*43279.*Croissant 120 g/i,
+    });
+    expect(option).toHaveTextContent('Produit associé : Croissant individuel PAI');
+    expect(option).toHaveTextContent('Carton de 36');
+    await user.click(option);
+    expect(onSelect).toHaveBeenCalledWith(articleResult);
+  });
+
   it('transmet la description de saisie au champ de recherche', () => {
     render(<>
       <p id="product-search-help">Saisissez au moins 3 caractères</p>

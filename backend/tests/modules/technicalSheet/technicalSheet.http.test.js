@@ -344,7 +344,7 @@ describe('M-004 RBAC HTTP', () => {
             .get(basePath())
             .set(bearer(owner.token))
             .expect(200);
-        expect(unchanged.body.data.sheet.draft.revision).toBe(draft.revision);
+        expect(unchanged.body.data.draft.revision).toBe(draft.revision);
     });
 
     it('expose les unités de production et bases de vente depuis le backend', async () => {
