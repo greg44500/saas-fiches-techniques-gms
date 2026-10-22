@@ -5,6 +5,10 @@
 **Branche de travail :** `feature/m002-m003-m004-unit-consistency`  
 **Core intégré :** v1.2.1 (`core-origin.json`, sans changement prévu)
 
+### Clarification du 2026-10-22 — équivalence physique des signatures (QA requise)
+
+L'audit réel BRIDOR 43279 confirme une représentation différente d'un **même** colis physique : 36 × 0,120 kg / 4,32 kg pour l'Article et 36 × 120 g / 4 320 g pour le snapshot tarifaire. L'exigence de correspondance « exacte » s'entend comme **égalité des quantités physiques** après conversion déterministe entre unités compatibles (G/KG, ML/CL/L), jamais égalité textuelle des champs JSON. Les chaînes historiques demeurent enregistrées à l'identique, mais leur lecture admet ces équivalences exactes ; colis, quantité, poids net/égoutté, dimension, Référence Produit ou nombre de pièces réellement différents restent incompatibles. Une preuve humaine existante demeure valable ; aucun recalcul ne crée une attestation. Aucune migration ni réécriture de snapshot n'est prévue. Le brouillon M-004 déjà `NO_PRICE` doit être revalorisé explicitement ; les validations restent immuables. Correctif codé sur la branche en cours, tests locaux à exécuter.
+
 ## 1. Problème observé et preuve
 
 Cas de QA : Article BRIDOR réf. 43279 « Croissant 120 g », rattaché à la Référence Produit « Croissant individuel PAI ».
