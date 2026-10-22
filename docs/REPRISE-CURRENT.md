@@ -1,5 +1,16 @@
 # Reprise courante — cohérence des unités (2026-10-16)
 
+## Synchronisation Core — 22 octobre 2026
+
+- PR métier [#47](https://github.com/greg44500/saas-fiches-techniques-gms/pull/47) fusionnée dans `main` au commit `b48cb3fb807f41d612df5a5d88954c0abbf0aa1f`.
+- Correctif de CI MongoDB issu de la PR Core [#50](https://github.com/greg44500/saas-core-api/pull/50), Core Gate post-merge [#103](https://github.com/greg44500/saas-core-api/actions/runs/39778978338) verte.
+- Commit Core intégré : `35758f7a3067911244f94b81e7cc3ddd22882eaa`, via un merge Git conservant la filiation entre les dépôts.
+- Version et tag Core conservés : `1.2.1` / `v1.2.1`. Provenance renseignée dans `core-origin.json`.
+- Périmètre limité à `.github/workflows/core-gate.yml` : runner `ubuntu-22.04` temporaire en raison de l'incompatibilité de MongoDB 8.0 avec certains noyaux Linux récents ; diagnostic et nettoyage Docker renforcés ; replica set `rs0` et URI de test propre au produit conservés.
+- `npm run release:check` : gate locale complète verte, exécutée et confirmée par l'utilisateur dans le worktree `saas-gms-core-ci` le 22 octobre 2026.
+- Gate GitHub de la PR d'intégration et gate post-merge du produit : **en attente**, à contrôler avant clôture de la synchronisation.
+- Aucun changement fonctionnel métier et aucune nouvelle release Core.
+
 ## Lot actif M-002/M-003/M-004
 
 **Gate E2E M-003 — correction de la sélection « Créer cette Référence »
