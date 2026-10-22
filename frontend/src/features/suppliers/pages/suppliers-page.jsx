@@ -959,8 +959,18 @@ function SuppliersPage() {
         <SupplierArticleProductCreationFlow
           article={articleProductFlow.article}
           initialName={articleProductFlow.initialName}
-          onAssociated={() => {
+          onAssociated={(linkedArticle) => {
             setArticleProductFlow(null);
+            // L'unité de recette devient connue à l'association :
+            // proposer aussitôt le nombre de pièces si la création initiale ne
+            // pouvait pas encore le demander (Référence nouvelle PROVISIONAL).
+            if (linkedArticle?.productVariant?.referenceUnit === 'UNIT'
+              && linkedArticle.packaging?.unit !== 'UNIT'
+              && linkedArticle.packaging?.unitCount > 1
+              && linkedArticle.packaging?.quantityPerUnit
+              && !linkedArticle.recipeUnitEquivalence) {
+              setArticleToEdit(linkedArticle);
+            }
             toast({
               title: 'Référence Produit créée et associée',
               description: 'La gouvernance globale pourra la contrôler sans bloquer votre travail.',
