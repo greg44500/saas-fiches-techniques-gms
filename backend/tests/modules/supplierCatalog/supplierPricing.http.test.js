@@ -142,6 +142,88 @@ beforeEach(async () => {
 
 describe('M-003 dossier pricing HTTP', () => {
 
+    it('crée et conserve la preuve des pièces tant que le colis physique reste identique', async () => {
+        const variant = await createActiveProductReference({
+            actorId: owner.owner._id,
+            name: 'Croissant création vérifiée',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'pièce',
+            countUnitLabelPlural: 'pièces',
+        });
+        const articleUrl = '/api/workspaces/' + owner.workspace._id + '/supplier-articles';
+        const packaging = {
+            containerType: 'Carton',
+            unitCount: 36,
+            quantityPerUnit: '120',
+            unit: 'G',
+            netWeight: '4320',
+            netWeightUnit: 'G',
+        };
+        const missingConfirmation = await request(app).post(articleUrl)
+            .set(bearer(owner.token)).send({
+                supplierId: supplier.id,
+                productVariantId: variant.variant._id.toString(),
+                supplierReference: 'CRO-CREATE-INVALID',
+                packaging,
+                recipeUnitsPerPackage: 36,
+            });
+        expect(missingConfirmation.status).toBe(400);
+
+        const created = await request(app).post(articleUrl)
+            .set(bearer(owner.token)).send({
+                supplierId: supplier.id,
+                productVariantId: variant.variant._id.toString(),
+                supplierReference: 'CRO-CREATE-36',
+                packaging,
+                recipeUnitsPerPackage: 36,
+                confirmRecipeUnits: true,
+            });
+        expect(created.status).toBe(201);
+        expect(created.body.data.article.recipeUnitEquivalence.unitsPerPackage).toBe(36);
+        const initialDate = created.body.data.article.recipeUnitEquivalence.verifiedAt;
+        const editUrl = articleUrl + '/' + created.body.data.article.id;
+
+        const renamed = await request(app).patch(editUrl)
+            .set(bearer(owner.token)).send({
+                supplierDesignation: 'Croissant individuel corrigé',
+            });
+        expect(renamed.status).toBe(200);
+        expect(renamed.body.data.article.recipeUnitEquivalence.verifiedAt)
+            .toBe(initialDate);
+
+        const sameProof = await request(app).patch(editUrl)
+            .set(bearer(owner.token)).send({
+                packaging: { ...packaging, supplierLabel: 'Carton de 36' },
+                recipeUnitsPerPackage: 36,
+                confirmRecipeUnits: true,
+            });
+        expect(sameProof.status).toBe(200);
+        expect(sameProof.body.data.article.recipeUnitEquivalence.verifiedAt)
+            .toBe(initialDate);
+
+        const changed = await request(app).patch(editUrl)
+            .set(bearer(owner.token)).send({
+                packaging: { ...packaging, unitCount: 24 },
+            });
+        expect(changed.status).toBe(200);
+        expect(changed.body.data.article.recipeUnitEquivalence).toBeNull();
+    });
+
+    it('permet à un Article privé de rester non associé pendant une contribution Produit', async () => {
+        const response = await request(app)
+            .post('/api/workspaces/' + owner.workspace._id + '/supplier-articles')
+            .set(bearer(owner.token)).send({
+                supplierId: supplier.id,
+                productVariantId: null,
+                supplierReference: 'OVO-PENDING-001',
+                supplierDesignation: 'Œufs blancs pasteurisés',
+            });
+        expect(response.status).toBe(201);
+        expect(response.body.data.article.associationStatus).toBe('PENDING');
+        expect(response.body.data.article.productVariant).toBeNull();
+    });
+
+
     it('valorise 36 croissants à la pièce seulement après confirmation et pour le conditionnement du tarif', async () => {
         const croissant = await createActiveProductReference({
             actorId: owner.owner._id,
