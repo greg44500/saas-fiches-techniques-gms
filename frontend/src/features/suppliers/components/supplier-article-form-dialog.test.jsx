@@ -15,7 +15,8 @@ vi.mock('@/features/products/api/product-catalog-api', () => ({
 
 vi.mock('@/features/products/components/product-search-autocomplete', () => ({
   ProductSearchAutocomplete: ({ onSelect, onValueChange }) => (
-    <button
+    <>
+      <button
       onClick={() => {
         const result = {
           product: { id: 'product-abricot', name: 'Abricot' },
@@ -32,7 +33,14 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
       type="button"
     >
       Choisir Abricot
-    </button>
+      </button>
+      <button
+        onClick={() => onValueChange('Œufs blancs pasteurisés')}
+        type="button"
+      >
+        Rechercher Œufs blancs pasteurisés
+      </button>
+    </>
   ),
 }));
 
@@ -131,6 +139,59 @@ describe('SupplierArticleFormDialog', () => {
       }),
     );
     expect(onSaved).toHaveBeenCalledWith({ id: 'article-1' });
+  });
+
+  it('permet une création en deux temps sans Référence existante, avec contribution immédiate', async () => {
+    const user = userEvent.setup();
+    const onSaved = vi.fn();
+    renderDialog(onSaved, { canCreateProduct: true });
+
+    await selectOption(user, 'Sélectionner le Fournisseur', 'Sysco');
+    await user.click(screen.getByRole('button', { name: 'Rechercher Œufs blancs pasteurisés' }));
+    await user.type(screen.getByLabelText('Référence fournisseur'), 'OVO-123');
+    await user.type(screen.getByLabelText('Désignation fournisseur'), 'Œufs blancs pasteurisés');
+    await user.click(screen.getByRole('button', { name: 'Créer une Référence manquante' }));
+    await user.click(screen.getByRole('button', { name: 'Créer l’Article et la Référence' }));
+
+    expect(mocks.createArticle).toHaveBeenCalledWith(expect.objectContaining({
+      supplierReference: 'OVO-123',
+      productVariantId: null,
+    }));
+    expect(onSaved).toHaveBeenCalledWith(
+      { id: 'article-1' },
+      { createMissingReference: 'Œufs blancs pasteurisés' },
+    );
+  });
+
+  it('exige le nombre de pièces déclaré à la création d’un Article au poids vendu à la pièce', async () => {
+    const user = userEvent.setup();
+    renderDialog(vi.fn(), {
+      initialProductVariant: {
+        id: 'variant-croissant',
+        name: 'Croissant individuel PAI',
+        referenceUnit: 'UNIT',
+        countUnitLabelSingular: 'pièce',
+        countUnitLabelPlural: 'pièces',
+      },
+    });
+    await selectOption(user, 'Sélectionner le Fournisseur', 'Sysco');
+    await user.type(screen.getByLabelText('Référence fournisseur'), 'CRO-43279');
+    await user.type(screen.getByLabelText('Contenant principal'), 'Carton');
+    await user.type(screen.getByLabelText('Sous-unités'), '36');
+    await user.type(screen.getByLabelText('Quantité / sous-unité'), '120');
+    await selectOption(user, 'Unité du conditionnement', 'g');
+    expect(screen.getByLabelText('Nombre exact de pièces utilisables par colis')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Créer l’Article' }));
+    expect(mocks.createArticle).not.toHaveBeenCalled();
+    expect(screen.getByText(/Précisez le nombre exact de pièces/)).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Nombre exact de pièces utilisables par colis'), '36');
+    await user.click(screen.getByRole('button', { name: 'Créer l’Article' }));
+    expect(mocks.createArticle).toHaveBeenCalledWith(expect.objectContaining({
+      productVariantId: 'variant-croissant',
+      recipeUnitsPerPackage: 36,
+      confirmRecipeUnits: true,
+      packaging: expect.objectContaining({ unitCount: 36, unit: 'G' }),
+    }));
   });
 
   it('réutilise le même workflow avec une Référence Produit préremplie', async () => {
