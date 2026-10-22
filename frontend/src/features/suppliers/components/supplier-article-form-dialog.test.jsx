@@ -244,7 +244,7 @@ describe('SupplierArticleFormDialog', () => {
       name: 'À propos de l’Article fournisseur',
     })).toBeInTheDocument();
     expect(screen.getByText(
-      'Recherchez puis sélectionnez le Produit correspondant à cet Article fournisseur.',
+      'Recherchez une Référence existante avant d’en proposer une nouvelle.',
     )).toBeInTheDocument();
     expect(screen.queryByText(/M-002/)).not.toBeInTheDocument();
 
