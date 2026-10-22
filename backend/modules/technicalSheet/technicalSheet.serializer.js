@@ -110,6 +110,10 @@ const serializeLine = (line) => {
                     yieldPercent:
                         line.productVariant.yieldPercent ?? null,
                     status: line.productVariant.status,
+                    governanceStatus:
+                        line.productVariant.governanceStatus ?? null,
+                    updatedAt:
+                        line.productVariant.updatedAt ?? null,
                 }
                 : null,
         netQuantity:

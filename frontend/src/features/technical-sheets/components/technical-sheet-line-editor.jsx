@@ -424,6 +424,13 @@ function MobileLabel({ children }) {
   );
 }
 
+function formatIngredientIdentityDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+}
+
 function ProductDetailsTrigger({
   line,
   metadata,
@@ -456,6 +463,18 @@ function ProductDetailsTrigger({
     metadata,
     line.valuation?.applicableSource,
   );
+  const governanceStatus = line.productVariant?.governanceStatus;
+  const referenceStatus = governanceStatus === 'APPROVED'
+    ? 'Validée'
+    : governanceStatus === 'PROVISIONAL'
+      ? 'À valider'
+      : null;
+  const referenceUpdatedDate = formatIngredientIdentityDate(
+    line.productVariant?.updatedAt,
+  );
+  const articleUpdatedDate = formatIngredientIdentityDate(
+    selectedArticle?.updatedAt,
+  );
 
   return (
     <div className="min-w-0">
@@ -481,8 +500,20 @@ function ProductDetailsTrigger({
           side="top"
         >
           <p className="font-semibold">{line.productVariantName}</p>
+          {referenceStatus && (
+            <p>Référence Produit : {referenceStatus}</p>
+          )}
+          <p>
+            Unité de référence : {getVariantReferenceUnitLabel(
+              productMetadata,
+              line.productVariant ?? { referenceUnit: line.referenceUnit },
+            )}
+          </p>
+          {referenceUpdatedDate && (
+            <p>Référence modifiée le : {referenceUpdatedDate}</p>
+          )}
 
-          {articlesQuery.isLoading && (
+          {selectedArticleId && articlesQuery.isLoading && (
             <p>Chargement des informations fournisseur…</p>
           )}
 
@@ -503,16 +534,24 @@ function ProductDetailsTrigger({
               ).map(({ label, value }) => (
                 <p key={label}>{label} : {value}</p>
               ))}
+              {articleUpdatedDate && (
+                <p>Article modifié le : {articleUpdatedDate}</p>
+              )}
             </>
           )}
 
-          {!articlesQuery.isLoading && !selectedArticle && (
-            <p>
-              {articles.length === 0
-                ? 'Aucun Article fournisseur disponible.'
-                : articles.length + ' Article(s) fournisseur disponible(s).'}
-            </p>
+          {!selectedArticleId && (
+            <p>Article fournisseur : Aucun sélectionné</p>
           )}
+          {selectedArticleId && articlesQuery.isError && (
+            <p>Informations sur l’Article fournisseur indisponibles.</p>
+          )}
+          {selectedArticleId
+            && !articlesQuery.isLoading
+            && !articlesQuery.isError
+            && !selectedArticle && (
+              <p>Article sélectionné non retrouvé dans la liste disponible.</p>
+            )}
 
           <div className="mt-2 border-t border-border/50 pt-2">
             <p className="font-semibold">Valorisation enregistrée</p>
@@ -535,11 +574,6 @@ function ProductDetailsTrigger({
                       )
                   )
                   : ''}
-              </p>
-            )}
-            {line.valuation?.pricedAt && (
-              <p>
-                Calcul du : {new Date(line.valuation.pricedAt).toLocaleString('fr-FR')}
               </p>
             )}
           </div>

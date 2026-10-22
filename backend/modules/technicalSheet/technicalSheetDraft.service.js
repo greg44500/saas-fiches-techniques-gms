@@ -459,7 +459,7 @@ const saveTechnicalSheetDraft = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status governanceStatus updatedAt',
         });
 
         return serializeTechnicalSheetDraft(
@@ -505,7 +505,7 @@ const getTechnicalSheetDraft = async ({
         ).populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status governanceStatus updatedAt',
         });
 
     return draft
@@ -721,7 +721,7 @@ const createDraftFromValidatedState = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status governanceStatus updatedAt',
         });
 
         return serializeTechnicalSheetDraft(
@@ -835,7 +835,7 @@ const selectTechnicalSheetSupplierArticle = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status governanceStatus updatedAt',
         });
 
         return serializeTechnicalSheetDraft(
