@@ -182,8 +182,11 @@ function SupplierArticleFormDialog({
           : null,
       }).unwrap();
 
-      onSaved(article, createMissingReference
-        ? { createMissingReference: productSearch.trim() } : {});
+      if (createMissingReference) {
+        onSaved(article, { createMissingReference: productSearch.trim() });
+      } else {
+        onSaved(article);
+      }
     } catch (submissionError) {
       setError(getApiErrorMessage(
         submissionError,
