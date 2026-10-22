@@ -47,6 +47,7 @@ const NO_SUPPLIER = '__NONE__';
 const PACKAGING_UNITS = Object.freeze(['G', 'KG', 'ML', 'CL', 'L', 'UNIT']);
 
 function SupplierArticleFormDialog({
+  canCreateProduct = false,
   initialProductVariant = null,
   onClose,
   onSaved,
@@ -74,7 +75,11 @@ function SupplierArticleFormDialog({
   const [netWeight, setNetWeight] = useState('');
   const [netWeightUnit, setNetWeightUnit] = useState('G');
   const [supplierLabel, setSupplierLabel] = useState('');
+  const [recipeCount, setRecipeCount] = useState('');
+  const [createMissingReference, setCreateMissingReference] = useState(false);
   const [error, setError] = useState('');
+  const needsPieceCount = productVariant?.referenceUnit === 'UNIT'
+    && unit !== 'UNIT' && Boolean(quantityPerUnit);
   const packagingUnitItems = PACKAGING_UNITS.map((value) => ({
     value,
     label:
@@ -104,6 +109,8 @@ function SupplierArticleFormDialog({
     setNetWeight('');
     setNetWeightUnit('G');
     setSupplierLabel('');
+    setRecipeCount('');
+    setCreateMissingReference(false);
     setError('');
   }, [initialProductVariant, open]);
 
@@ -115,8 +122,16 @@ function SupplierArticleFormDialog({
       return;
     }
 
-    if (!productVariant?.id) {
-      setError('Sélectionnez une Référence Produit exploitable.');
+    if (!productVariant?.id && !createMissingReference) {
+      setError('Sélectionnez une Référence ou créez la Référence manquante.');
+      return;
+    }
+    if (needsPieceCount && (
+      !Number.isSafeInteger(Number(recipeCount))
+      || Number(recipeCount) < 1 || Number(recipeCount) > 1000000
+      || !Number.isSafeInteger(Number(unitCount)) || Number(unitCount) < 2
+    )) {
+      setError('Précisez le nombre exact de pièces utilisables et le colisage complet.');
       return;
     }
 
@@ -139,10 +154,15 @@ function SupplierArticleFormDialog({
       const article = await createArticle({
         workspaceId,
         supplierId,
-        productVariantId: productVariant.id,
+        productVariantId: productVariant?.id ?? null,
         supplierReference: supplierReference.trim(),
         supplierDesignation: designation.trim() || null,
         brand: brand.trim() || null,
+        ...(needsPieceCount ? {
+          recipeUnitsPerPackage: Number(recipeCount),
+          // L'acte de création atteste explicitement le nombre indiqué à l'écran.
+          confirmRecipeUnits: true,
+        } : {}),
         packaging: (
           containerType.trim()
           || parsedUnitCount
@@ -162,7 +182,8 @@ function SupplierArticleFormDialog({
           : null,
       }).unwrap();
 
-      onSaved(article);
+      onSaved(article, createMissingReference
+        ? { createMissingReference: productSearch.trim() } : {});
     } catch (submissionError) {
       setError(getApiErrorMessage(
         submissionError,
@@ -252,6 +273,8 @@ function SupplierArticleFormDialog({
                     }
 
                     setProductVariant(result.variant);
+                    setCreateMissingReference(false);
+                    setRecipeCount('');
                     setUnit(result.variant.referenceUnit);
                     setError('');
                   }}
@@ -260,6 +283,7 @@ function SupplierArticleFormDialog({
                     setProductVariant((current) => (
                       current?.name === value ? current : null
                     ));
+                    setCreateMissingReference(false);
                   }}
                   scope="REFERENCE"
                   value={productSearch}
@@ -269,8 +293,29 @@ function SupplierArticleFormDialog({
               <FieldDescription>
                 {initialProductVariant
                   ? 'La Référence Produit est préremplie depuis le Produit consulté.'
-                  : 'Recherchez puis sélectionnez le Produit correspondant à cet Article fournisseur.'}
+                  : 'Recherchez une Référence existante avant d’en proposer une nouvelle.'}
               </FieldDescription>
+              {canCreateProduct && !initialProductVariant && !productVariant?.id
+                && productSearch.trim().length >= 3 && (
+                <div className="space-y-2 rounded-md border border-border p-3">
+                  <p className="text-sm text-muted-foreground">
+                    Aucune suggestion ne correspond ? Vous pouvez proposer une Référence
+                    et poursuivre immédiatement. Elle sera examinée par le gestionnaire.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setCreateMissingReference(true);
+                      setError('');
+                    }}
+                    type="button"
+                    variant={createMissingReference ? 'secondary' : 'outline'}
+                  >
+                    {createMissingReference
+                      ? 'Référence à créer après l’Article'
+                      : 'Créer une Référence manquante'}
+                  </Button>
+                </div>
+              )}
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -414,6 +459,26 @@ function SupplierArticleFormDialog({
               </div>
             </div>
 
+            {needsPieceCount && (
+              <Field>
+                <FieldLabel htmlFor="supplier-recipe-count">
+                  Nombre exact de pièces utilisables par colis
+                </FieldLabel>
+                <Input
+                  id="supplier-recipe-count"
+                  inputMode="numeric"
+                  min="1"
+                  max="1000000"
+                  onChange={(event) => setRecipeCount(event.target.value)}
+                  type="number"
+                  value={recipeCount}
+                />
+                <FieldDescription>
+                  En créant l’Article, vous confirmez ce nombre pour la valorisation à la pièce.
+                  Le poids d’une pièce ne permet pas de le déduire.
+                </FieldDescription>
+              </Field>
+            )}
             <FieldError>{error}</FieldError>
 
             <DialogFooter>
@@ -432,7 +497,11 @@ function SupplierArticleFormDialog({
                 }
                 type="submit"
               >
-                {createState.isLoading ? 'Création…' : 'Créer l’Article'}
+                {createState.isLoading
+                  ? 'Création…'
+                  : createMissingReference
+                    ? 'Créer l’Article et la Référence'
+                    : 'Créer l’Article'}
               </Button>
             </DialogFooter>
           </form>
