@@ -54,6 +54,7 @@ function ProductSearchAutocomplete({
   descriptionId,
   metadata,
   onDebouncedSearchChange,
+  onCreateMissingReference,
   onSelect,
   onValueChange,
   placeholder = 'Rechercher un produit…',
@@ -136,6 +137,14 @@ function ProductSearchAutocomplete({
     normalizedValue.length > 0
     && normalizedValue.length < PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH
   );
+  const canOfferCreation = Boolean(
+    onCreateMissingReference
+    && normalizedValue.length >= PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH
+    && debouncedQuery === normalizedValue
+    && suggestionsQuery.isSuccess
+    && !suggestionsQuery.isFetching
+    && suggestions.length === 0,
+  );
 
   return (
     <Autocomplete
@@ -195,6 +204,15 @@ function ProductSearchAutocomplete({
                     : normalizedValue.length === 0
                       ? 'Commencez à saisir un produit.'
                       : 'Aucun Produit ne correspond à cette recherche.'}
+              {canOfferCreation && (
+                <button
+                  className="mx-auto mt-2 inline-flex min-h-8 items-center rounded-md border border-border px-3 py-1 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => onCreateMissingReference(normalizedValue)}
+                  type="button"
+                >
+                  Créer cette Référence
+                </button>
+              )}
             </AutocompleteEmpty>
 
             <AutocompleteList>
