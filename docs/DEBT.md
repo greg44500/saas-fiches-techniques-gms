@@ -4,6 +4,10 @@
 **Dernière mise à jour :** 2026-10-16  
 **Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
 
+### QA complémentaire du 2026-10-22 — non résolue en données réelles
+
+Exécuter l'audit en lecture seule du Croissant individuel PAI : preuve, signature du conditionnement actuel, snapshot tarifaire, politique et Prix applicable dans le Dossier, montant stocké dans la ligne de Fiche. Valider aussi la création provisoire à la volée et la conservation des preuves sans nouvelle confirmation. Les tests et gates restent à exécuter localement avant PR. Ne jamais corriger directement les historiques.
+
 ### Référence croissant historique — QA 2026-10-16
 
 L'audit local a confirmé une modification `G` → `KG` sur « Croissant individuel PAI », toujours associée à BRIDOR réf. 43279 et à un tarif, mais sans brouillon ni validation. Ce changement **déjà effectué** ne doit pas être renormalisé automatiquement. La régularisation passe par une nouvelle Référence distincte en `UNIT` et un contrôle des associations, du prix et du conditionnement. Aucun changement de données n'a été automatisé. Suivi jusqu'à validation QA, reprise E2E et gates globaux.
