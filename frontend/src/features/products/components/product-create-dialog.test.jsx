@@ -78,6 +78,45 @@ describe('ProductCreateDialog', () => {
   });
 
 
+  it('préserve la saisie lorsque les métadonnées arrivent après ouverture', async () => {
+    const user = userEvent.setup();
+    const callbacks = {
+      onClose: vi.fn(),
+      onCreated: vi.fn(),
+      onUseExisting: vi.fn(),
+    };
+    mocks.globalDuplicateCheck.mockReturnValue(resolved({
+      exactMatch: null,
+      candidates: [],
+    }));
+
+    const renderDialog = (currentMetadata) => (
+      <ProductCreateDialog
+        {...callbacks}
+        metadata={currentMetadata}
+        mode="global"
+        open
+      />
+    );
+    const { rerender } = render(renderDialog(undefined));
+    const input = screen.getByLabelText('Nom du Produit');
+    const productName = 'Produit saisi avant chargement des métadonnées';
+
+    await user.type(input, productName);
+    rerender(renderDialog(metadata));
+
+    expect(input).toHaveValue(productName);
+    expect(screen.getByRole('button', { name: 'Rechercher l’existant' }))
+      .toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', {
+        name: 'Créer dans le référentiel global',
+      })).toBeEnabled();
+    });
+  });
+
   it('confirme explicitement qu’aucun Produit existant ne correspond avant la création', async () => {
     const user = userEvent.setup();
 

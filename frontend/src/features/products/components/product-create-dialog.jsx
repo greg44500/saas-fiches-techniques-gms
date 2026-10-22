@@ -81,6 +81,8 @@ function ProductCreateDialog({
   const [createGlobalProduct, globalCreateState] =
     useCreateProductReferenceMutation();
 
+  // L'arrivée tardive des métadonnées ne doit jamais effacer la saisie en cours.
+  // Seule l'ouverture du dialogue (ou le changement du nom initial) réinitialise le formulaire.
   useEffect(() => {
     if (!open) return;
 
@@ -88,11 +90,28 @@ function ProductCreateDialog({
     setCategoryId(NO_CATEGORY);
     setDuplicateResult(null);
     setReviewedCandidateIds([]);
-    setVariant(createEmptyVariantDraft(metadata));
+    setVariant(createEmptyVariantDraft());
     setFormError('');
     setConfirmedDistinct(false);
     setContextualLookupStatus('idle');
-  }, [metadata, open, initialName]);
+  }, [open, initialName]);
+
+  // Hydrater seulement les valeurs par défaut manquantes, sans remplacer les
+  // valeurs déjà saisies lorsque les métadonnées sont rafraîchies.
+  useEffect(() => {
+    if (!open || !metadata) return;
+
+    const defaults = createEmptyVariantDraft(metadata);
+    setVariant((current) => {
+      const conservationType = current.conservationType || defaults.conservationType;
+      const referenceUnit = current.referenceUnit || defaults.referenceUnit;
+
+      if (current.conservationType === conservationType
+        && current.referenceUnit === referenceUnit) return current;
+
+      return { ...current, conservationType, referenceUnit };
+    });
+  }, [metadata, open]);
 
   // La recherche est prédictive dans le parcours Article fournisseur.
   // Une réponse ancienne ne peut pas remplacer une recherche plus récente.
