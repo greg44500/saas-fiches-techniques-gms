@@ -42,7 +42,7 @@ import {
   useListSupplierArticlesQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
-  formatPackaging,
+  getPackagingTooltipDetails,
 } from '@/features/suppliers/lib/supplier-presentation';
 import {
   TechnicalSheetSourcingSelect,
@@ -419,12 +419,12 @@ function ProductDetailsTrigger({
               <p>
                 Article : {selectedArticle.supplierDesignation ?? 'Non renseigné'}
               </p>
-              <p>
-                Conditionnement : {formatPackaging(
-                  selectedArticle.packaging,
-                  { productVariant: line.productVariant },
-                )}
-              </p>
+              {getPackagingTooltipDetails(
+                selectedArticle.packaging,
+                { productVariant: line.productVariant },
+              ).map(({ label, value }) => (
+                <p key={label}>{label} : {value}</p>
+              ))}
             </>
           )}
 
