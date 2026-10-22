@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({ update: vi.fn() }));
 vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useUpdateSupplierArticleMutation: () => [mocks.update, { isLoading: false }],
 }));
+
 import { SupplierArticleEditDialog } from './supplier-article-edit-dialog';
 
 const article = {
@@ -26,7 +27,13 @@ const article = {
     totalQuantity: '4320', netWeight: '4320', netWeightUnit: 'G',
   },
 };
-
+const withProof = () => ({
+  ...article,
+  recipeUnitEquivalence: {
+    unitsPerPackage: 36,
+    verifiedAt: '2026-10-20T10:00:00.000Z',
+  },
+});
 function renderDialog(customArticle = article) {
   return render(
     <TooltipProvider>
@@ -41,96 +48,66 @@ function renderDialog(customArticle = article) {
   );
 }
 
-const packagingCount = () => screen.getByLabelText('Nb d’unités par colis');
-
-describe('M-003 — édition de l’Article et unité de fiche', () => {
+describe('M-003 — édition simple et persistance de la preuve', () => {
   beforeEach(() => {
     mocks.update.mockReset();
     mocks.update.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({}) });
   });
 
-  it('présente l’Article, son unité de recette et le nombre d’unités commerciales', () => {
+  it('affiche le contenu du colis avant le nombre de pièces, sans radios ni checkbox', () => {
     renderDialog();
-    expect(screen.getByText(/Modifier les informations de : Croissant 120 g/)).toBeInTheDocument();
-    expect(screen.getByText('BRIDOR')).toBeInTheDocument();
-    expect(packagingCount()).toHaveValue('36');
+    expect(screen.getByLabelText('Nb d’unités par colis')).toHaveValue('36');
+    expect(screen.getByLabelText('Nombre réel de pièces par colis')).toHaveValue('36');
     expect(screen.getByLabelText('Unité utilisée en fiche technique')).toHaveTextContent('pièce');
-    expect(screen.getByRole('button', {
-      name: 'Informations sur la correction du conditionnement',
-    })).toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    const region = screen.getByRole('region', { name: 'Champs de l’Article fournisseur' });
+    expect(region.lastElementChild).toHaveAttribute('aria-label', 'Correspondance avec la fiche technique');
   });
 
-  it('présente la proposition 1 pour 1 avant le conditionnement, sans doubler la saisie', () => {
-    renderDialog();
-    const section = screen.getByRole('region', {
-      name: 'Correspondance avec la fiche technique',
-    });
-    const scrollRegion = screen.getByRole('region', {
-      name: 'Champs de l’Article fournisseur',
-    });
-    const saveButton = screen.getByRole('button', { name: 'Enregistrer' });
-
-    expect(scrollRegion.firstElementChild).toBe(section);
-    expect(section).toHaveTextContent('36 pièces par colis');
-    expect(section).toHaveTextContent('Proposition à confirmer');
-    expect(screen.getByRole('radio', { name: '1 unité du colis = 1 pièce en recette' }))
-      .toBeChecked();
-    expect(screen.queryByLabelText('Nombre réel de pièces utilisables par colis'))
-      .not.toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).not.toBeChecked();
-    expect(scrollRegion).not.toContainElement(saveButton);
-    expect(saveButton.closest('.shrink-0')).toBeInTheDocument();
-    expect(screen.getByRole('button', {
-      name: 'Origine de l’unité utilisée en fiche technique',
-    })).toBeInTheDocument();
-    expect(screen.getByRole('button', {
-      name: 'Précisions sur la correspondance en pièces de recette',
-    })).toBeInTheDocument();
-  });
-
-  it('anime les champs vides et laisse les champs renseignés sur la bordure', async () => {
+  it('enregistre une correction de marque sans réattester les 36 pièces', async () => {
     const user = userEvent.setup();
-    renderDialog();
-    const empty = screen.getByLabelText('Marque (facultatif)');
-    const filled = screen.getByLabelText('Désignation fournisseur');
-    expect(empty).toHaveClass('h-12');
-    expect(filled).toHaveClass('h-12');
-    expect(empty.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'empty');
-    expect(filled.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
-    expect(screen.getByText('Marque (facultatif)').parentElement)
-      .toHaveClass('top-8', 'group-focus-within:top-2');
-    await user.type(empty, 'BRIDOR');
-    expect(empty.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
-  });
-
-  it('requiert une confirmation explicite avant d’utiliser les 36 pièces proposées', async () => {
-    const user = userEvent.setup();
-    renderDialog();
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(mocks.update).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Confirmez que ce nombre correspond bien aux pièces utilisées en recette.',
-    );
-    await user.click(screen.getByRole('checkbox'));
+    renderDialog(withProof());
+    expect(screen.getByRole('status')).toHaveTextContent('36 pièces déjà vérifiées');
+    await user.type(screen.getByLabelText('Marque (facultatif)'), 'BRIDOR');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
-      articleId: 'article-1',
+      brand: 'BRIDOR',
+    }));
+    const payload = mocks.update.mock.calls[0][0];
+    expect(payload).not.toHaveProperty('recipeUnitsPerPackage');
+    expect(payload).not.toHaveProperty('confirmRecipeUnits');
+    expect(payload).not.toHaveProperty('packaging');
+  });
+
+  it('ne relance aucune mutation en cas de formulaire inchangé', async () => {
+    const user = userEvent.setup();
+    renderDialog(withProof());
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+
+  it('atteste 36 pièces par une action explicite lorsque la preuve manque', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+    await user.click(screen.getByRole('button', { name: 'Confirmer ce nombre' }));
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
       recipeUnitsPerPackage: 36,
       confirmRecipeUnits: true,
     }));
   });
 
-  it('permet un nombre de pièces différent, sans le présumer confirmé', async () => {
+  it('exige une nouvelle confirmation si le nombre de pièces est réellement modifié', async () => {
     const user = userEvent.setup();
-    renderDialog();
-    await user.click(screen.getByRole('radio', { name: 'Le nombre de pièces est différent' }));
-    const count = screen.getByLabelText('Nombre réel de pièces utilisables par colis');
-    expect(count).toHaveValue('');
-    await user.type(count, '48');
+    renderDialog(withProof());
+    const input = screen.getByLabelText('Nombre réel de pièces par colis');
+    await user.clear(input);
+    await user.type(input, '48');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(mocks.update).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent('Confirmez que ce nombre');
-    await user.click(screen.getByRole('checkbox'));
+    expect(screen.getByRole('alert')).toHaveTextContent('Confirmez le nouveau nombre');
+    await user.click(screen.getByRole('button', { name: 'Confirmer ce nombre' }));
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
       recipeUnitsPerPackage: 48,
@@ -138,171 +115,40 @@ describe('M-003 — édition de l’Article et unité de fiche', () => {
     }));
   });
 
-  it('demande un nombre valide en mode différent avant la confirmation', async () => {
+  it('autorise le changement de colis sans confirmation mais signale la perte de preuve', async () => {
     const user = userEvent.setup();
-    renderDialog();
-    await user.click(screen.getByRole('radio', { name: 'Le nombre de pièces est différent' }));
-    expect(screen.getByRole('checkbox')).toBeDisabled();
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(mocks.update).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Indiquez le nombre réel de pièces de recette par colis.',
-    );
-  });
-
-  it('enregistre une équivalence inconnue sans confirmation en prévenant de la perte du prix', async () => {
-    const user = userEvent.setup();
-    renderDialog({
-      ...article,
-      recipeUnitEquivalence: { unitsPerPackage: 36 },
-    });
-    expect(screen.getByRole('checkbox')).toBeChecked();
-    await user.click(screen.getByRole('radio', {
-      name: 'Je ne connais pas encore cette correspondance',
-    }));
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Une équivalence déjà validée sera retirée.',
-    );
+    renderDialog(withProof());
+    const count = screen.getByLabelText('Nb d’unités par colis');
+    await user.clear(count);
+    await user.type(count, '24');
+    expect(screen.getByRole('status')).toHaveTextContent('ancienne correspondance sera retirée');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
-      recipeUnitsPerPackage: null,
+      packaging: expect.objectContaining({ unitCount: 24 }),
     }));
     expect(mocks.update.mock.calls[0][0]).not.toHaveProperty('confirmRecipeUnits');
   });
 
-  it('conserve une correspondance existante différente et sa confirmation', async () => {
+  it('conserve une attestation lorsque seule la mention fournisseur change', async () => {
     const user = userEvent.setup();
-    renderDialog({
-      ...article,
-      recipeUnitEquivalence: { unitsPerPackage: 48 },
-    });
-    expect(screen.getByRole('radio', { name: 'Le nombre de pièces est différent' }))
-      .toBeChecked();
-    expect(screen.getByLabelText('Nombre réel de pièces utilisables par colis')).toHaveValue('48');
-    expect(screen.getByRole('checkbox')).toBeChecked();
+    renderDialog({ ...withProof(), packaging: {
+      ...article.packaging, supplierLabel: 'CT 36 X 120 G',
+    } });
+    const input = screen.getByLabelText('Mention du conditionnement fournisseur (facultatif)');
+    await user.clear(input);
+    await user.type(input, 'Carton de 36 croissants');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
-      recipeUnitsPerPackage: 48,
-      confirmRecipeUnits: true,
-    }));
+    const payload = mocks.update.mock.calls[0][0];
+    expect(payload.packaging.supplierLabel).toBe('Carton de 36 croissants');
+    expect(payload).not.toHaveProperty('confirmRecipeUnits');
+    expect(payload).not.toHaveProperty('recipeUnitsPerPackage');
   });
 
-  it('annule la confirmation d’une équivalence différente lors du retour au mode 1 pour 1', async () => {
-    const user = userEvent.setup();
+  it('ne propose pas de preuve de pièces pour une Référence au kilogramme', () => {
     renderDialog({
       ...article,
-      recipeUnitEquivalence: { unitsPerPackage: 48 },
+      productVariant: { ...article.productVariant, referenceUnit: 'KG' },
     });
-    await user.click(screen.getByRole('radio', { name: '1 unité du colis = 1 pièce en recette' }));
-    expect(screen.queryByLabelText('Nombre réel de pièces utilisables par colis'))
-      .not.toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).not.toBeChecked();
-    expect(screen.getByRole('status')).toHaveTextContent('36 pièces par colis');
-    await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
-      recipeUnitsPerPackage: 36,
-      confirmRecipeUnits: true,
-    }));
-  });
-
-  it('réinitialise la confirmation après modification du nombre commercial', async () => {
-    const user = userEvent.setup();
-    renderDialog({
-      ...article,
-      recipeUnitEquivalence: { unitsPerPackage: 36 },
-    });
-    const initial = screen.getByRole('checkbox');
-    expect(initial).toBeChecked();
-
-    await user.clear(packagingCount());
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    expect(initial).not.toBeInTheDocument();
-    await user.type(packagingCount(), '25');
-    const current = screen.getByRole('checkbox');
-    expect(current).not.toBe(initial);
-    expect(current).not.toBeChecked();
-    expect(screen.getByRole('status')).toHaveTextContent('25 pièces par colis');
-
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(mocks.update).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Confirmez que ce nombre correspond bien aux pièces utilisées en recette.',
-    );
-    await user.click(current);
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
-      recipeUnitsPerPackage: 25,
-      confirmRecipeUnits: true,
-    }));
-  });
-
-  it('annule une confirmation après changement de quantité physique sans démonter la case', async () => {
-    const user = userEvent.setup();
-    renderDialog({
-      ...article,
-      recipeUnitEquivalence: { unitsPerPackage: 36 },
-    });
-    const confirmation = screen.getByRole('checkbox');
-    expect(confirmation).toBeChecked();
-
-    await user.type(screen.getByLabelText('Quantité par unité'), '0');
-    expect(screen.getByRole('checkbox')).toBe(confirmation);
-    expect(confirmation).not.toBeChecked();
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(mocks.update).not.toHaveBeenCalled();
-  });
-
-  it('conserve la mention fournisseur dans un volet complémentaire, sans changer son champ DB', async () => {
-    const user = userEvent.setup();
-    renderDialog({
-      ...article,
-      productVariant: { ...article.productVariant, referenceUnit: 'G' },
-      packaging: {
-        ...article.packaging,
-        supplierLabel: 'CT 36 X 120 G',
-      },
-    });
-    const field = screen.getByLabelText('Mention du conditionnement fournisseur (facultatif)');
-    expect(field).toHaveValue('CT 36 X 120 G');
-    expect(screen.getByRole('button', { name: /Informations complémentaires/ }))
-      .toBeInTheDocument();
-    expect(screen.getByRole('button', {
-      name: 'À quoi sert la mention du conditionnement fournisseur ?',
-    })).toBeInTheDocument();
-    await user.clear(field);
-    await user.type(field, 'Carton de 36 croissants');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
-      packaging: expect.objectContaining({
-        supplierLabel: 'Carton de 36 croissants',
-      }),
-    }));
-  });
-
-  it('replie la mention fournisseur vide pour alléger le formulaire courant', async () => {
-    const user = userEvent.setup();
-    renderDialog({
-      ...article,
-      productVariant: { ...article.productVariant, referenceUnit: 'G' },
-    });
-    const more = screen.getByRole('button', { name: 'Informations complémentaires' });
-    expect(more).toHaveAttribute('data-slot', 'collapsible-trigger');
-    await user.click(more);
-    expect(screen.getByLabelText('Mention du conditionnement fournisseur (facultatif)'))
-      .toBeInTheDocument();
-  });
-
-  it('ne propose pas de confirmation en pièces si la Référence Produit est au poids', () => {
-    renderDialog({
-      ...article,
-      productVariant: { ...article.productVariant, referenceUnit: 'G' },
-    });
-    expect(screen.getByLabelText('Unité utilisée en fiche technique')).toHaveTextContent('g');
-    expect(screen.queryByRole('radio', {
-      name: '1 unité du colis = 1 pièce en recette',
-    })).not.toBeInTheDocument();
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Nombre réel de pièces par colis')).not.toBeInTheDocument();
   });
 });
