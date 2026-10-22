@@ -2,6 +2,15 @@
 
 ## Lot actif M-002/M-003/M-004
 
+**Avertissements Mongoose M-001 (22/10/2026) — correction à revérifier localement.**
+Le contrôle transactionnel de mutation des grants Dossier utilisait l'option
+`new: true` dépréciée dans `Dossier.findOneAndUpdate`. Remplacement strict
+par `returnDocument: 'after'`, sémantique identique : l'incrément
+`accessMutationVersion`, le filtre du Dossier, l'appartenance Workspace,
+le statut admissible, la session et le conflit transactionnel restent intacts.
+Les deux messages d'avertissement du journal E2E concernaient une API
+dépréciée, et non deux échecs fonctionnels distincts. Gates locales à confirmer.
+
 **Correction de la gate Playwright M-003 — 22/10/2026, à revérifier localement.**
 Deux échecs signalés (tests 21/22 sur 34) : l'ajout manuel d'Article
 faisait une recherche `/products/search` qui exige une capability Produit

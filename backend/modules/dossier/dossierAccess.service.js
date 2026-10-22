@@ -60,7 +60,7 @@ const assertDossierAllowsGrantMutation = async ({
             },
         },
         {
-            new: true,
+            returnDocument: 'after',
             session,
             timestamps: false,
         },
