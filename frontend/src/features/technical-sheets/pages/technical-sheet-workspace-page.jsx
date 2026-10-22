@@ -802,6 +802,28 @@ function TechnicalSheetWorkspacePage() {
     }
   }
 
+  async function refreshApplicablePrices() {
+    // La validation automatique ne se relance pas toujours après une mise à jour
+    // indépendante des Articles ou tarifs M-003. Ce recalcul reste volontaire.
+    if (!draft || draftFormRevision === null
+      || draftDirty || autosaveHasUnsavedChanges || autosaveIsSaving) return;
+    try {
+      await valuate({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        expectedRevision: draftFormRevision,
+      }).unwrap();
+      toast({
+        title: 'Coûts actualisés',
+        description: 'Les Prix applicables ont été recalculés pour ce brouillon.',
+        variant: 'success',
+      });
+    } catch (error) {
+      notifyError(error, 'Impossible d’actualiser les Prix applicables de la fiche.');
+    }
+  }
+
   async function validateDraft() {
     try {
       await validateSheet({
@@ -1404,8 +1426,20 @@ function TechnicalSheetWorkspacePage() {
             />
           </div>
           <Card>
-            <div className="border-b border-border px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
               <h2 className="text-sm font-semibold">Composition</h2>
+              {can(TECHNICAL_SHEET_PERMISSION.VALUATION_MANAGE) && (
+                <Button
+                  disabled={economicsUpdating || draftSynchronizing
+                    || draftFormRevision === null || !parametersComplete}
+                  onClick={refreshApplicablePrices}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Actualiser les coûts
+                </Button>
+              )}
             </div>
             <CardContent className="p-0">
               {!parametersComplete && (
