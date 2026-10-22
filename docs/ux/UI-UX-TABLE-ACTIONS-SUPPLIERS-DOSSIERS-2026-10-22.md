@@ -155,3 +155,21 @@ que de la modale tarifaire avant toute PR.
 - Aucun changement métier, API, DB, permission ou Core.
 - Tests RTL : nombre, état replié, ouverture/fermeture et défilement borné
   avec 30 entrées ; QA visuelle sous Windows avant PR.
+
+## Complément M-002 — Animation du repli des Références existantes
+
+- Ajustement UX demandé le 2026-10-22 : ouverture/fermeture du panneau
+  perçues comme trop abruptes.
+- Réutilisation des états d'animation natifs de Base UI sur
+  `CollapsibleContent` : `data-starting-style`, `data-ending-style`
+  et hauteur mesurée `--collapsible-panel-height`. Transition
+  hauteur + opacité en 300 ms (`ease-out`), reversible lors
+  d'un clic rapide ; chevron synchronisé sur 300 ms.
+- Contenu et bordure internes masqués par `overflow-hidden` pendant
+  le déploiement ; liste plafonnée à `max-h-44`, sans changement
+  des valeurs, de l'ownership ni du comportement du formulaire.
+- Respect du paramètre système `prefers-reduced-motion` grâce à
+  `motion-reduce:transition-none`.
+- Tests RTL : conserver la validation fonctionnelle précédente et
+  vérifier les classes d'animation ; la fluidité visuelle réelle
+  doit être contrôlée par l'utilisateur sous Windows.

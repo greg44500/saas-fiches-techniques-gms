@@ -237,26 +237,36 @@ function ProductVariantCreateDialog({
                   </span>
                   <ChevronDown
                     aria-hidden="true"
-                    className="size-4 shrink-0 transition-transform duration-200 group-data-[panel-open]:rotate-180 motion-reduce:transition-none"
+                    className="size-4 shrink-0 transition-transform duration-300 ease-out group-data-[panel-open]:rotate-180 motion-reduce:transition-none"
                   />
                 </CollapsibleTrigger>
-                <CollapsibleContent className="border-t border-border px-4 pb-3">
-                  <ul
-                    aria-label="Liste des références existantes"
-                    className="mt-3 max-h-44 space-y-2 overflow-y-auto overscroll-contain pr-2 text-sm"
-                  >
-                    {existingVariants.map((existing) => (
-                      <li
-                        className="flex flex-wrap justify-between gap-2"
-                        key={existing.id}
-                      >
-                        <span>{getVariantLabel(existing)}</span>
-                        <span className="text-muted-foreground">
-                          {getVariantReferenceUnitLabel(metadata, existing)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                <CollapsibleContent
+                  className={
+                    'h-[var(--collapsible-panel-height)] overflow-hidden '
+                    + 'transition-[height,opacity] duration-300 ease-out '
+                    + 'data-[starting-style]:h-0 data-[starting-style]:opacity-0 '
+                    + 'data-[ending-style]:h-0 data-[ending-style]:opacity-0 '
+                    + 'motion-reduce:transition-none'
+                  }
+                >
+                  <div className="border-t border-border px-4 pb-3">
+                    <ul
+                      aria-label="Liste des références existantes"
+                      className="mt-3 max-h-44 space-y-2 overflow-y-auto overscroll-contain pr-2 text-sm"
+                    >
+                      {existingVariants.map((existing) => (
+                        <li
+                          className="flex flex-wrap justify-between gap-2"
+                          key={existing.id}
+                        >
+                          <span>{getVariantLabel(existing)}</span>
+                          <span className="text-muted-foreground">
+                            {getVariantReferenceUnitLabel(metadata, existing)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </CollapsibleContent>
               </Collapsible>
             )}

@@ -136,6 +136,16 @@ describe('ProductVariantCreateDialog', () => {
       name: 'Liste des références existantes',
     });
     expect(items).toHaveClass('max-h-44', 'overflow-y-auto');
+    const panel = items.closest('[data-slot="collapsible-content"]');
+    expect(panel).toHaveClass(
+      'h-[var(--collapsible-panel-height)]',
+      'overflow-hidden',
+      'transition-[height,opacity]',
+      'duration-300',
+      'data-[starting-style]:h-0',
+      'data-[ending-style]:h-0',
+      'motion-reduce:transition-none',
+    );
     expect(items.querySelectorAll('li')).toHaveLength(2);
     expect(screen.getByText('Abricots secs')).toBeInTheDocument();
 
@@ -172,6 +182,8 @@ describe('ProductVariantCreateDialog', () => {
       name: 'Liste des références existantes',
     });
     expect(items).toHaveClass('max-h-44', 'overflow-y-auto', 'overscroll-contain');
+    expect(items.closest('[data-slot="collapsible-content"]'))
+      .toHaveClass('overflow-hidden', 'duration-300');
     expect(items.querySelectorAll('li')).toHaveLength(30);
   });
 
