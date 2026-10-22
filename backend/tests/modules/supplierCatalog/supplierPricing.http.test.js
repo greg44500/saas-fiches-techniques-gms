@@ -224,6 +224,75 @@ describe('M-003 dossier pricing HTTP', () => {
     });
 
 
+    it('utilise un prix indicatif fiable si le tarif fournisseur ne se convertit pas en pièces', async () => {
+        const variant = await createActiveProductReference({
+            actorId: owner.owner._id,
+            name: 'Croissant sans équivalence avec secours',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'pièce',
+            countUnitLabelPlural: 'pièces',
+        });
+        const created = await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            data: {
+                supplierId: supplier.id,
+                productVariantId: variant.variant._id,
+                supplierReference: 'CRO-UNPRICED-INDIC',
+                packaging: {
+                    containerType: 'Carton',
+                    unitCount: 36,
+                    quantityPerUnit: '120',
+                    unit: 'G',
+                },
+            },
+        });
+        await SupplierTariff.create({
+            supplierArticle: created.id,
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspace: owner.workspace._id,
+            sourceKind: 'PRICE_LIST',
+            sourceLabel: 'Liste sans équivalence',
+            sourceImportId: new mongoose.Types.ObjectId(),
+            packagingSnapshot: {
+                containerType: 'Carton',
+                unitCount: 36,
+                quantityPerUnit: '120',
+                unit: 'G',
+                totalQuantity: '4320',
+            },
+            isCurrent: true,
+            sourceAmount: '6.50',
+            sourceBasis: 'PACKAGE',
+            currency: 'EUR',
+            validFrom: new Date('2026-01-01T00:00:00.000Z'),
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+        const priceUrl = pricingPath(dossierA) + '/applicable?articleId=' + created.id;
+        const before = await request(app).get(priceUrl).set(bearer(owner.token));
+        expect(before.status).toBe(200);
+        expect(before.body.data.applicablePrice.price.normalizedAmount).toBeNull();
+
+        await setIndicativePrice({
+            workspaceId: null,
+            dossierId: null,
+            productVariantId: variant.variant._id,
+            actorId: owner.owner._id,
+            sourceAmount: '0.25',
+            sourceBasis: 'UNIT',
+        });
+        const after = await request(app).get(priceUrl).set(bearer(owner.token));
+        expect(after.status).toBe(200);
+        expect(after.body.data.applicablePrice.resolvedSource).toBe('INDICATIVE_GLOBAL');
+        expect(after.body.data.applicablePrice.price.normalizedUnit).toBe('UNIT');
+        expect(Number(after.body.data.applicablePrice.price.normalizedAmount))
+            .toBeCloseTo(0.25, 8);
+        expect(after.body.data.applicablePrice.alerts)
+            .toContain('SUPPLIER_TARIFF_NOT_NORMALIZABLE');
+    });
+
     it('valorise 36 croissants à la pièce seulement après confirmation et pour le conditionnement du tarif', async () => {
         const croissant = await createActiveProductReference({
             actorId: owner.owner._id,
