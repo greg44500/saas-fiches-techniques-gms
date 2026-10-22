@@ -115,7 +115,7 @@ describe('SupplierArticleSearchAutocomplete', () => {
 
   it('efface le choix au changement de saisie pour ne pas garder un identifiant périmé', async () => {
     const user = userEvent.setup();
-    render(<Harness fallback={[bridor] serverSearch={false} />);
+    render(<Harness fallback={[bridor]} serverSearch={false} />);
     const input = screen.getByRole('combobox', { name: 'Rechercher un Article' });
     await user.type(input, '43279');
     await user.click(await screen.findByRole('option', {
