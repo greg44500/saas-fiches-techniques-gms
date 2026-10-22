@@ -7,11 +7,12 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 const mocks = vi.hoisted(() => ({
   createArticle: vi.fn(),
   metadataQuery: vi.fn(),
+  standardMetadataQuery: vi.fn(),
   creationSearchQuery: vi.fn(),
 }));
 
 vi.mock('@/features/products/api/product-catalog-api', () => ({
-  useGetProductMetadataQuery: mocks.metadataQuery,
+  useGetProductMetadataQuery: mocks.standardMetadataQuery,
 }));
 
 vi.mock('@/features/products/components/product-search-autocomplete', () => ({
@@ -120,14 +121,16 @@ describe('SupplierArticleFormDialog', () => {
       isError: false,
     });
 
-    mocks.metadataQuery.mockReturnValue({
+    const metadata = {
       data: {
         referenceUnits: [
           { value: 'KG', label: 'kg' },
-          { value: 'UNIT', label: 'unité' },
+          { value: 'UNIT', label: 'pièce' },
         ],
       },
-    });
+    };
+    mocks.metadataQuery.mockReturnValue(metadata);
+    mocks.standardMetadataQuery.mockReturnValue(metadata);
     mocks.createArticle.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({
         id: 'article-1',
@@ -191,6 +194,10 @@ describe('SupplierArticleFormDialog', () => {
       'workspace-1',
       { skip: false },
     );
+    expect(mocks.standardMetadataQuery).toHaveBeenCalledWith(
+      'workspace-1',
+      { skip: true },
+    );
     expect(screen.getByRole('button', {
       name: 'Rechercher Œufs blancs pasteurisés',
     })).toHaveAttribute('data-contextual-search', 'enabled');
@@ -201,6 +208,14 @@ describe('SupplierArticleFormDialog', () => {
     expect(mocks.creationSearchQuery).toHaveBeenCalledWith(
       expect.objectContaining({ workspaceId: 'workspace-1' }),
       { skip: true },
+    );
+    expect(mocks.metadataQuery).toHaveBeenCalledWith(
+      'workspace-1',
+      { skip: true },
+    );
+    expect(mocks.standardMetadataQuery).toHaveBeenCalledWith(
+      'workspace-1',
+      { skip: false },
     );
     expect(screen.getByRole('button', {
       name: 'Rechercher Œufs blancs pasteurisés',
