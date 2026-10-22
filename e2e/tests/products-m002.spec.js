@@ -28,6 +28,10 @@ import {
 } from '../support/toast.js';
 
 async function createGlobalProductForMerge(page, productName) {
+  // Attendre les métadonnées et la liste chargées avant d'ouvrir le dialogue :
+  // leur arrivée tardive peut réinitialiser le nom saisi par ce test E2E.
+  await expect(page.getByRole('table', { name: 'Référentiel Produits global' }))
+    .toBeVisible();
   await page.getByRole('button', { name: 'Créer un Produit' }).click();
 
   const dialog = page.getByRole('dialog');
