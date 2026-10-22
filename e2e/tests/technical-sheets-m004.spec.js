@@ -375,7 +375,8 @@ test('M-004 une Référence Produit globale non favorite reste composable et val
 
   await expect(
     page.getByRole('button', {
-      name: 'Tous les produits',
+      name: 'Tous',
+      exact: true,
     }),
   ).toHaveAttribute('aria-pressed', 'true');
 
@@ -395,6 +396,57 @@ test('M-004 une Référence Produit globale non favorite reste composable et val
     comment:
       'Référence globale non favorite',
   });
+});
+
+
+test('M-004 le mode Articles sélectionne le fournisseur et conserve la source tarifaire', async ({ page }) => {
+  const context = await provisionTechnicalSheetWorkspace({ ambiguous: true });
+  await loginWithIdentity(page, context.identity);
+  await createTechnicalSheet(page, {
+    name: 'Fiche M004 recherche Articles',
+    technicalSheetsUrl: context.dossierATechnicalSheetsUrl,
+  });
+
+  const searchModes = page.getByRole('group', { name: 'Source des Produits' });
+  await expect(searchModes.getByRole('button', { name: 'Tous', exact: true }))
+    .toHaveAttribute('aria-pressed', 'true');
+  await searchModes.getByRole('button', { name: 'Articles' }).click();
+  await expect(searchModes.getByRole('button', { name: 'Articles' }))
+    .toHaveAttribute('aria-pressed', 'true');
+
+  const ingredientSearch = page.getByRole('combobox', {
+    name: 'Ajouter un produit aux Ingrédients',
+  });
+  await ingredientSearch.fill(context.articleReference);
+  const suggestion = page.getByRole('option')
+    .filter({ hasText: context.articleReference })
+    .first();
+  await expect(suggestion).toContainText(context.productReferenceName);
+
+  const savedResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url()).pathname;
+    if (response.request().method() !== 'PUT' || !url.endsWith('/draft')) {
+      return false;
+    }
+    const payload = response.request().postDataJSON();
+    return payload?.lines?.some((line) =>
+      line.productVariantId === context.productVariantId
+      && line.selectedSupplierArticleId === context.articleId);
+  });
+  await suggestion.click();
+  const response = await savedResponse;
+  expect(response.ok()).toBeTruthy();
+  expect((await response.json()).data.draft.lines[0].selectedSupplierArticleId)
+    .toBe(context.articleId);
+
+  await page.reload();
+  const productButton = page.getByRole('button', {
+    name: 'Modifier le produit ' + context.productReferenceName,
+  });
+  await expect(productButton).toBeVisible();
+  await productButton.hover();
+  await expect(page.getByText(/Source du prix : (Tarif|Prix)/i))
+    .toBeVisible();
 });
 
 test('M-004 exporte une Fiche validée puis permet de masquer le KPI mensuel', async ({ page }) => {
