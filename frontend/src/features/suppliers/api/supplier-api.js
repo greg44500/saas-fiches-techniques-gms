@@ -74,6 +74,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
         supplierId,
         productId,
         productVariantId,
+        usableForTechnicalSheet,
       }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-articles',
         params: {
@@ -85,6 +86,9 @@ const supplierApi = supplierApiBase.injectEndpoints({
           supplierId,
           productId,
           productVariantId,
+          ...(usableForTechnicalSheet
+            ? { usableForTechnicalSheet: 'true' }
+            : {}),
         },
       }),
       transformResponse: (response) => response.data,

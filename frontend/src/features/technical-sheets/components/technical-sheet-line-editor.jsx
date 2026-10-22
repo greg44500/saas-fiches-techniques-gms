@@ -12,7 +12,6 @@ import { useEffect, useRef, useState } from 'react';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SegmentedControl } from '@/components/ui/segmented-control';
 import {
   Popover,
   PopoverContent,
@@ -324,19 +323,95 @@ function ColumnHeading({ align = 'left', children, tooltip }) {
   );
 }
 
+const TECHNICAL_SHEET_SEARCH_MODES = Object.freeze([
+  { value: 'WORKSPACE', label: 'Favoris' },
+  { value: 'ARTICLES', label: 'Articles' },
+  { value: 'REFERENCE', label: 'Tous' },
+]);
+
 function TechnicalSheetProductScopeControls({
   items = [],
   onChange,
   productScope,
 }) {
+  const selectedIndex = Math.max(
+    0,
+    TECHNICAL_SHEET_SEARCH_MODES.findIndex(({ value }) => value === productScope),
+  );
+  const disabledModes = new Set(
+    items.filter((item) => item.disabled).map((item) => item.value),
+  );
+
   return (
-    <SegmentedControl
-      ariaLabel="Source des Produits"
-      className="h-9 p-px"
-      items={items}
-      onValueChange={onChange}
-      size="sm"
-      value={productScope}
+    <div
+      aria-label="Source des Produits"
+      className="relative grid h-9 w-full max-w-64 grid-cols-3 rounded-lg border border-border bg-muted/40 p-1"
+      role="group"
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-1 left-1 top-1 w-[calc((100%-0.5rem)/3)] rounded-md bg-primary/15 shadow-sm ring-1 ring-primary/25 transition-transform duration-200 ease-out motion-reduce:transition-none"
+        style={{ transform: 'translateX(' + selectedIndex * 100 + '%)' }}
+      />
+      {TECHNICAL_SHEET_SEARCH_MODES.map((mode) => (
+        <button
+          aria-pressed={productScope === mode.value}
+          className={
+            'relative z-10 min-w-0 rounded-md px-1 text-xs font-medium transition-colors duration-200'
+            + ' focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+            + ' disabled:cursor-not-allowed disabled:opacity-40'
+            + (productScope === mode.value
+              ? ' text-primary'
+              : ' text-muted-foreground hover:text-foreground')
+          }
+          disabled={disabledModes.has(mode.value)}
+          key={mode.value}
+          onClick={() => onChange(mode.value)}
+          type="button"
+        >
+          {mode.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TechnicalSheetIngredientAutocomplete({ scope, workspaceId, ...props }) {
+  const [debouncedArticleSearch, setDebouncedArticleSearch] = useState('');
+  const articleMode = scope === 'ARTICLES';
+  const articlesQuery = useListSupplierArticlesQuery(
+    {
+      workspaceId,
+      page: 1,
+      limit: 6,
+      status: 'ACTIVE',
+      search: debouncedArticleSearch,
+      usableForTechnicalSheet: true,
+    },
+    {
+      skip: !articleMode || debouncedArticleSearch.length < 3,
+    },
+  );
+  const articleResults = (articlesQuery.data?.articles ?? []).map((article) => ({
+    product: {
+      id: article.productVariant?.id,
+      name: article.productVariant?.name,
+    },
+    variant: article.productVariant,
+    supplierArticle: article,
+  }));
+
+  return (
+    <ProductSearchAutocomplete
+      {...props}
+      externalSearch={articleMode}
+      externalQuery={{
+        ...articlesQuery,
+        data: { results: articleResults },
+      }}
+      onDebouncedSearchChange={setDebouncedArticleSearch}
+      scope={scope}
+      workspaceId={workspaceId}
     />
   );
 }
@@ -351,6 +426,7 @@ function MobileLabel({ children }) {
 
 function ProductDetailsTrigger({
   line,
+  metadata,
   onEdit,
   workspaceId,
 }) {
@@ -376,6 +452,7 @@ function ProductDetailsTrigger({
     (article) => article.id === selectedArticleId,
   );
   const pricingSource = getPricingSourceLabel(
+    metadata,
     line.valuation?.applicableSource,
   );
 
@@ -436,9 +513,29 @@ function ProductDetailsTrigger({
             </p>
           )}
 
-          {pricingSource && (
-            <p>Source du prix : {pricingSource}</p>
-          )}
+          <div className="mt-2 border-t border-border/50 pt-2">
+            <p className="font-semibold">Valorisation enregistrée</p>
+            <p>
+              Source du prix : {pricingSource ?? 'Prix non disponible'}
+            </p>
+            {line.valuation?.normalizedAmount != null && (
+              <p>
+                Prix unitaire HT : {formatDecimalCurrency(
+                  line.valuation.normalizedAmount,
+                )}
+                {line.valuation.normalizedUnit
+                  ? ' / ' + getVariantReferenceUnitLabel(
+                    metadata, line.productVariant,
+                  )
+                  : ''}
+              </p>
+            )}
+            {line.valuation?.pricedAt && (
+              <p>
+                Calcul du : {new Date(line.valuation.pricedAt).toLocaleString('fr-FR')}
+              </p>
+            )}
+          </div>
 
           {onEdit && (
             <p>Cliquez sur le Produit pour le remplacer.</p>
@@ -720,7 +817,8 @@ function TechnicalSheetLineEditor({
         inputUnit: result.variant.referenceUnit,
         order: lines.length,
         note: '',
-        selectedSupplierArticleId: null,
+        selectedSupplierArticleId: result.supplierArticle?.id ?? null,
+        sourcingSelectionPending: Boolean(result.supplierArticle?.id),
         calculation: null,
         valuation: null,
       },
@@ -747,6 +845,16 @@ function TechnicalSheetLineEditor({
     }
 
     if (result.variant.id === line.productVariantId) {
+      if (
+        result.supplierArticle?.id
+        && result.supplierArticle.id !== line.selectedSupplierArticleId
+      ) {
+        updateLine(index, {
+          selectedSupplierArticleId: result.supplierArticle.id,
+          sourcingSelectionPending: true,
+          valuation: null,
+        }, { immediate: true });
+      }
       setEditingLineKey(null);
       setEditSearch('');
       return;
@@ -782,7 +890,8 @@ function TechnicalSheetLineEditor({
       netQuantity:
         adaptedQuantity.netQuantity,
       inputUnit: nextUnit,
-      selectedSupplierArticleId: null,
+      selectedSupplierArticleId: result.supplierArticle?.id ?? null,
+      sourcingSelectionPending: Boolean(result.supplierArticle?.id),
       calculation: null,
       valuation: null,
     }, { immediate: true });
@@ -869,7 +978,7 @@ function TechnicalSheetLineEditor({
           {editing ? (
             <div className="flex min-w-0 items-center gap-2 transition-all duration-200 ease-out">
               <div className="min-w-0 flex-1">
-                <ProductSearchAutocomplete
+                <TechnicalSheetIngredientAutocomplete
                   ariaLabel={'Modifier le produit ' + line.productVariantName}
                   compact
                   metadata={productMetadata}
@@ -901,6 +1010,7 @@ function TechnicalSheetLineEditor({
           ) : (
             <ProductDetailsTrigger
               line={line}
+              metadata={metadata}
               onEdit={
                 disabled
                   ? undefined
@@ -1080,7 +1190,7 @@ function TechnicalSheetLineEditor({
         key={'add-' + kind}
       >
         <div className="min-w-0">
-          <ProductSearchAutocomplete
+          <TechnicalSheetIngredientAutocomplete
             ariaLabel={
               'Ajouter un produit aux '
               + (definition?.label ?? kind)

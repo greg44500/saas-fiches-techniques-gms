@@ -81,6 +81,7 @@ import {
 } from '@/features/technical-sheets/components/technical-sheet-line-editor';
 import {
   DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
+  SUPPLIER_PERMISSION,
 } from '@/features/suppliers/constants/supplier-permissions';
 import {
   TECHNICAL_SHEET_FEATURE,
@@ -190,6 +191,9 @@ function buildDraftSaveRequest({
           ?? line.inputUnit,
         order: index,
         note: line.note.trim() || null,
+        ...(line.sourcingSelectionPending
+          ? { selectedSupplierArticleId: line.selectedSupplierArticleId }
+          : {}),
       })),
     },
   };
@@ -215,11 +219,21 @@ function mergeSavedLineIds(currentForm, snapshotForm, savedDraft) {
   return {
     ...currentForm,
     totalPortions: savedForm.totalPortions,
-    lines: currentForm.lines.map((line) => (
-      idsByClientKey.has(line.clientKey)
-        ? { ...line, id: idsByClientKey.get(line.clientKey) }
-        : line
-    )),
+    lines: currentForm.lines.map((line) => {
+      const committed = snapshotForm.lines.find(
+        (snapshot) => snapshot.clientKey === line.clientKey
+          && snapshot.productVariantId === line.productVariantId
+          && snapshot.selectedSupplierArticleId === line.selectedSupplierArticleId
+          && snapshot.sourcingSelectionPending,
+      );
+      return {
+        ...line,
+        ...(idsByClientKey.has(line.clientKey)
+          ? { id: idsByClientKey.get(line.clientKey) }
+          : {}),
+        ...(committed ? { sourcingSelectionPending: false } : {}),
+      };
+    }),
   };
 }
 
@@ -556,9 +570,16 @@ function TechnicalSheetWorkspacePage() {
   }));
   const finalPriceModeItems =
     metadata?.finalPriceModeDefinitions ?? [];
-  const productSearchScopes =
-    productMetadataQuery.data
-      ?.productSearchScopes ?? [];
+  const productSearchScopes = [
+    { value: 'WORKSPACE', label: 'Favoris' },
+    {
+      value: 'ARTICLES',
+      label: 'Articles',
+      disabled: !can(TECHNICAL_SHEET_PERMISSION.SOURCING_MANAGE)
+        || !can(SUPPLIER_PERMISSION.ARTICLE_READ),
+    },
+    { value: 'REFERENCE', label: 'Tous' },
+  ];
   const effectiveProductScope =
     productScope
     ?? metadata?.defaults
