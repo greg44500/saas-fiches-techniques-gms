@@ -74,11 +74,20 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
   const [error, setError] = useState('');
   const [recipeCount, setRecipeCount] = useState('');
   const [recipeConfirmed, setRecipeConfirmed] = useState(false);
+  const [recipeCountEdited, setRecipeCountEdited] = useState(false);
   const referenceUnit = article?.productVariant?.referenceUnit;
   const canVerifyRecipeUnits = referenceUnit === 'UNIT'
     && form.unit !== 'UNIT'
     && Number(form.unitCount) > 1 && Boolean(form.quantityPerUnit);
   const [update, status] = useUpdateSupplierArticleMutation();
+  const previousCount = article?.recipeUnitEquivalence?.unitsPerPackage ?? null;
+  const recipeCountChanged = recipeCount.trim() !== String(
+    previousCount ?? article?.packaging?.unitCount ?? '',
+  );
+  const physicalChanged = PHYSICAL_FIELDS.some((name) => (
+    String(article?.packaging?.[name] ?? EMPTY[name])
+      !== String(form[name] ?? EMPTY[name])
+  ));
 
   useEffect(() => {
     if (!open || !article) return;
@@ -96,6 +105,7 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
       ? String(verifiedCount) : String(article.packaging?.unitCount ?? ''));
     // Une preuve existante est conservée par le backend, sans nouvelle attestation.
     setRecipeConfirmed(false);
+    setRecipeCountEdited(false);
     setError('');
   }, [open, article?.id]);
 
@@ -144,20 +154,12 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
       drainedNetWeight: numericValue(form.drainedNetWeight),
       drainedNetWeightUnit: form.drainedNetWeight.trim() ? form.drainedNetWeightUnit : null,
     };
-    const previousCount = article.recipeUnitEquivalence?.unitsPerPackage ?? null;
-    const recipeCountChanged = recipeCount.trim() !== String(
-      previousCount ?? article.packaging?.unitCount ?? '',
-    );
-    const physicalChanged = PHYSICAL_FIELDS.some((name) => (
-      String(article.packaging?.[name] ?? EMPTY[name])
-        !== String(packaging[name] ?? EMPTY[name])
-    ));
-    const packagingChanged = PACKAGING_FIELDS.some((name) => (
+     const packagingChanged = PACKAGING_FIELDS.some((name) => (
       String(article.packaging?.[name] ?? EMPTY[name])
         !== String(packaging[name] ?? EMPTY[name])
     ));
     const wantsNewConfirmation = canVerifyRecipeUnits
-      && (recipeConfirmed || recipeCountChanged);
+      && (recipeConfirmed || recipeCountEdited);
     if (wantsNewConfirmation && (!Number.isSafeInteger(Number(recipeCount))
       || !recipeCount.trim() || Number(recipeCount) < 1 || Number(recipeCount) > 1000000)) {
       setError('Indiquez un nombre entier de pièces utilisables.');
@@ -365,6 +367,7 @@ function SupplierArticleEditDialog({ article, onClose, onSaved, open, workspaceI
                           inputMode="numeric"
                           onChange={(event) => {
                             setRecipeCount(event.target.value);
+                            setRecipeCountEdited(true);
                             setRecipeConfirmed(false);
                           }}
                           value={recipeCount}
