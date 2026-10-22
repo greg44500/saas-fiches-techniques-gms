@@ -163,6 +163,22 @@ const normalizePackaging = (packaging) => {
     return normalized;
 };
 
+// La preuve ne doit changer que si le contenu physique ou l'identité change.
+const PACKAGING_KEYS = [
+    'containerType', 'unitCount', 'quantityPerUnit', 'unit', 'totalQuantity',
+    'netWeight', 'netWeightUnit', 'drainedNetWeight', 'drainedNetWeightUnit',
+    'supplierLabel',
+];
+const samePackaging = (left, right) => {
+    const a = normalizePackaging(left);
+    const b = normalizePackaging(right);
+    return PACKAGING_KEYS.every((key) => {
+        const value = (packaging, name) => packaging?.[name] == null
+            ? null : String(packaging[name]);
+        return value(a, key) === value(b, key);
+    });
+};
+
 const buildWorkspaceVisibilityFilter = (workspaceId) => mongoose.trusted({
     $or: [
         {
@@ -589,12 +605,33 @@ const createArticleInSession = async ({
         workspaceId,
     });
 
-    if (data.productVariantId) {
-        await assertActiveProductVariant({
+    if (!data.productVariantId && scope === SUPPLIER_SCOPE.GLOBAL_SHARED) {
+        throw new AppError('Une Référence Produit est obligatoire pour un Article global.', 409);
+    }
+    const variant = data.productVariantId
+        ? await assertActiveProductVariant({
             productVariantId: data.productVariantId,
             workspaceId,
             session,
-        });
+        }) : null;
+    const packaging = normalizePackaging(data.packaging);
+    let recipeUnitEquivalence = null;
+    if (data.recipeUnitsPerPackage != null) {
+        const signature = packagingSignature(packaging);
+        if (!variant || variant.referenceUnit !== 'UNIT' || !signature
+            || data.confirmRecipeUnits !== true) {
+            throw new AppError(
+                'La confirmation des pièces exige une Référence en pièces et un colisage physique complet.',
+                409,
+            );
+        }
+        recipeUnitEquivalence = {
+            unitsPerPackage: data.recipeUnitsPerPackage,
+            packagingSignature: signature,
+            productVariant: variant._id,
+            verifiedBy: actorId,
+            verifiedAt: new Date(),
+        };
     }
 
     const normalizedSupplierReference =
@@ -621,7 +658,8 @@ const createArticleInSession = async ({
                 supplierDesignation:
                     data.supplierDesignation ?? null,
                 brand: data.brand ?? null,
-                packaging: normalizePackaging(data.packaging),
+                packaging,
+                recipeUnitEquivalence,
                 provenance: data.provenance ?? null,
                 createdBy: actorId,
                 updatedBy: actorId,
@@ -640,6 +678,7 @@ const createArticleInSession = async ({
                 supplierId: supplier._id.toString(),
                 productVariantId:
                     data.productVariantId?.toString() ?? null,
+                recipeUnitsVerified: Boolean(recipeUnitEquivalence),
             },
             session,
         });
@@ -722,14 +761,28 @@ const updateSupplierArticle = async ({
         }
     }
 
+    const previousSignature = packagingSignature(article.packaging);
     if (Object.hasOwn(data, 'packaging')) {
-        article.packaging = normalizePackaging(data.packaging);
-        changedFields.push('packaging');
+        const nextPackaging = normalizePackaging(data.packaging);
+        if (!samePackaging(article.packaging, nextPackaging)) {
+            article.packaging = nextPackaging;
+            changedFields.push('packaging');
+        }
     }
+    const currentSignature = packagingSignature(article.packaging);
+    const identityChanged = changedFields.includes('productVariant');
+    const physicalContentChanged = previousSignature !== currentSignature;
+    const oldProof = article.recipeUnitEquivalence;
+    const proofValid = Boolean(oldProof
+        && oldProof.packagingSignature === currentSignature
+        && oldProof.productVariant?.toString() === article.productVariant?.toString());
 
     if (Object.hasOwn(data, 'recipeUnitsPerPackage')) {
         if (data.recipeUnitsPerPackage === null) {
-            article.recipeUnitEquivalence = null;
+            if (oldProof) {
+                article.recipeUnitEquivalence = null;
+                changedFields.push('recipeUnitEquivalence');
+            }
         } else {
             if (!article.productVariant) {
                 throw new AppError('Associez d’abord une Référence Produit.', 409);
@@ -739,30 +792,28 @@ const updateSupplierArticle = async ({
                 workspaceId,
                 session,
             });
-            if (variant.referenceUnit !== 'UNIT') {
-                throw new AppError('La Référence Produit n’utilise pas de pièces.', 409);
-            }
-            const signature = packagingSignature(article.packaging);
-            if (!signature) {
+            if (variant.referenceUnit !== 'UNIT' || !currentSignature) {
                 throw new AppError(
-                    'Le colis doit préciser plusieurs éléments et leur quantité physique pour confirmer des pièces de recette.',
+                    'Le colis doit contenir plusieurs éléments de quantité physique connue.',
                     409,
                 );
             }
             if (data.confirmRecipeUnits !== true) {
                 throw new AppError('Confirmez explicitement le nombre de pièces.', 409);
             }
-            article.recipeUnitEquivalence = {
-                unitsPerPackage: data.recipeUnitsPerPackage,
-                packagingSignature: signature,
-                productVariant: variant._id,
-                verifiedBy: actorId,
-                verifiedAt: new Date(),
-            };
+            // Une confirmation identique ne recrée ni preuve, ni horodatage.
+            if (!proofValid || oldProof.unitsPerPackage !== data.recipeUnitsPerPackage) {
+                article.recipeUnitEquivalence = {
+                    unitsPerPackage: data.recipeUnitsPerPackage,
+                    packagingSignature: currentSignature,
+                    productVariant: variant._id,
+                    verifiedBy: actorId,
+                    verifiedAt: new Date(),
+                };
+                changedFields.push('recipeUnitEquivalence');
+            }
         }
-        changedFields.push('recipeUnitEquivalence');
-    } else if (changedFields.includes('productVariant') || changedFields.includes('packaging')) {
-        // Un lien périmé ne doit jamais survivre à une association ou à un colis modifié.
+    } else if (oldProof && (identityChanged || physicalContentChanged || !proofValid)) {
         article.recipeUnitEquivalence = null;
         changedFields.push('recipeUnitEquivalence');
     }
