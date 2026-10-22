@@ -235,15 +235,39 @@ supplierArticleRouter.post(
     createWorkspaceArticle,
 );
 
-const supplierArticleProductAccess = [
+// Pré-création : mêmes permissions et entitlement que la contribution
+// contextuelle d'un Article existant, mais sans articleId (pas encore créé).
+// Ne jamais utiliser ici le parcours M-002 général pour contourner son plan.
+const supplierArticleProductCreationAccess = [
     authenticate,
     loadWorkspaceContext,
     authorizePermission(SUPPLIER_CATALOG_PERMISSION.ARTICLE_MANAGE),
     authorizePermission(SUPPLIER_CATALOG_PERMISSION.CATALOG_IMPORT),
     enforceWorkspaceAccessMode(),
     enforceSupplierCatalogImportFeature,
+];
+
+const supplierArticleProductAccess = [
+    ...supplierArticleProductCreationAccess,
     assertPrivateActiveSupplierArticle,
 ];
+
+supplierArticleRouter.get(
+    '/product-contributions/metadata',
+    validateRequest({ params: workspaceIdParamsSchema }),
+    ...supplierArticleProductCreationAccess,
+    productMetadata,
+);
+
+supplierArticleRouter.get(
+    '/product-contributions/search',
+    validateRequest({
+        params: workspaceIdParamsSchema,
+        query: productSearchQuerySchema,
+    }),
+    ...supplierArticleProductCreationAccess,
+    searchProductReferences,
+);
 
 // Ces lectures sont limitées au même Article/import et ne nécessitent pas
 // les capabilities commerciales indépendantes du référentiel Produit.

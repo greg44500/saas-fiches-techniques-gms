@@ -38,6 +38,8 @@ import {
 } from '@/features/products/lib/product-presentation';
 import {
   useCreateSupplierArticleMutation,
+  useGetSupplierArticleCreationProductMetadataQuery,
+  useSearchSupplierArticleCreationProductsQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
   getApiErrorMessage,
@@ -57,9 +59,27 @@ function SupplierArticleFormDialog({
   workspaceId,
 }) {
   const cancelRef = useRef(null);
-  const metadataQuery = useGetProductMetadataQuery(workspaceId, {
-    skip: !open,
+  const standardMetadata = useGetProductMetadataQuery(workspaceId, {
+    skip: !open || canCreateProduct,
   });
+  const creationMetadata = useGetSupplierArticleCreationProductMetadataQuery(
+    workspaceId,
+    { skip: !open || !canCreateProduct },
+  );
+  const metadataQuery = canCreateProduct ? creationMetadata : standardMetadata;
+  const [contextualSearch, setContextualSearch] = useState('');
+  const creationSearch = useSearchSupplierArticleCreationProductsQuery(
+    {
+      workspaceId,
+      scope: 'REFERENCE',
+      q: contextualSearch || undefined,
+      page: 1,
+      limit: 6,
+    },
+    {
+      skip: !open || !canCreateProduct || contextualSearch.length < 3,
+    },
+  );
   const [createArticle, createState] =
     useCreateSupplierArticleMutation();
   const [supplierId, setSupplierId] = useState(NO_SUPPLIER);
@@ -98,6 +118,7 @@ function SupplierArticleFormDialog({
 
     setSupplierId(NO_SUPPLIER);
     setProductSearch(initialProductVariant?.name ?? '');
+    setContextualSearch('');
     setProductVariant(initialProductVariant ?? null);
     setSupplierReference('');
     setDesignation('');
@@ -276,7 +297,10 @@ function SupplierArticleFormDialog({
                 </p>
               ) : (
                 <ProductSearchAutocomplete
+                  externalQuery={creationSearch}
+                  externalSearch={canCreateProduct}
                   metadata={metadataQuery.data}
+                  onDebouncedSearchChange={setContextualSearch}
                   onCreateMissingReference={canCreateProduct ? () => {
                     setProductVariant(null);
                     setCreateMissingReference(true);

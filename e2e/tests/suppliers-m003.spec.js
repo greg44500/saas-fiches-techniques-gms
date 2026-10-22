@@ -696,6 +696,15 @@ test('M-003 associe immédiatement une Référence provisoire créée après un 
   expect(article?.associationStatus).toBe('ASSOCIATED');
   expect(article?.productVariant?.name).toBe(productName);
 
+  // La contribution ferme volontairement le drawer précédent. Retrouver
+  // l'Article persisté après invalidation RTK Query, puis le rouvrir.
+  // Ne pas forcer le drawer à rester ouvert pendant des dialogues distincts.
+  const reopenArticle = page.getByRole('button', {
+    name: 'Détails de ' + reference,
+  });
+  await expect(reopenArticle).toBeVisible();
+  await reopenArticle.click();
+  await expect(page.getByRole('tab', { name: 'Infos Article' })).toBeVisible();
   // La modification Article expose le libellé métier, sans choix d'unité en Fiche.
   await page.getByRole('tab', { name: 'Infos Article' }).click();
   await page.getByRole('button', { name: 'Modifier', exact: true }).click();
