@@ -19,6 +19,9 @@ import {
 import { AppError } from '../../utils/appError.js';
 import { SupplierTariff } from './supplierCatalog.model.js';
 import { supplierTariffPresentation } from './supplierArticlePresentation.service.js';
+import {
+    packagingSignature, packagingSignaturesMatch,
+} from './supplierRecipeUnitEquivalence.service.js';
 import { selectSupplierTariffs } from './supplierTariffSelection.service.js';
 import {
     Supplier,
@@ -160,6 +163,22 @@ const normalizePackaging = (packaging) => {
     }
 
     return normalized;
+};
+
+// La preuve ne doit changer que si le contenu physique ou l'identité change.
+const PACKAGING_KEYS = [
+    'containerType', 'unitCount', 'quantityPerUnit', 'unit', 'totalQuantity',
+    'netWeight', 'netWeightUnit', 'drainedNetWeight', 'drainedNetWeightUnit',
+    'supplierLabel',
+];
+const samePackaging = (left, right) => {
+    const a = normalizePackaging(left);
+    const b = normalizePackaging(right);
+    return PACKAGING_KEYS.every((key) => {
+        const value = (packaging, name) => packaging?.[name] == null
+            ? null : String(packaging[name]);
+        return value(a, key) === value(b, key);
+    });
 };
 
 const buildWorkspaceVisibilityFilter = (workspaceId) => mongoose.trusted({
@@ -588,12 +607,33 @@ const createArticleInSession = async ({
         workspaceId,
     });
 
-    if (data.productVariantId) {
-        await assertActiveProductVariant({
+    if (!data.productVariantId && scope === SUPPLIER_SCOPE.GLOBAL_SHARED) {
+        throw new AppError('Une Référence Produit est obligatoire pour un Article global.', 409);
+    }
+    const variant = data.productVariantId
+        ? await assertActiveProductVariant({
             productVariantId: data.productVariantId,
             workspaceId,
             session,
-        });
+        }) : null;
+    const packaging = normalizePackaging(data.packaging);
+    let recipeUnitEquivalence = null;
+    if (data.recipeUnitsPerPackage != null) {
+        const signature = packagingSignature(packaging);
+        if (!variant || variant.referenceUnit !== 'UNIT' || !signature
+            || data.confirmRecipeUnits !== true) {
+            throw new AppError(
+                'La confirmation des pièces exige une Référence en pièces et un colisage physique complet.',
+                409,
+            );
+        }
+        recipeUnitEquivalence = {
+            unitsPerPackage: data.recipeUnitsPerPackage,
+            packagingSignature: signature,
+            productVariant: variant._id,
+            verifiedBy: actorId,
+            verifiedAt: new Date(),
+        };
     }
 
     const normalizedSupplierReference =
@@ -620,7 +660,8 @@ const createArticleInSession = async ({
                 supplierDesignation:
                     data.supplierDesignation ?? null,
                 brand: data.brand ?? null,
-                packaging: normalizePackaging(data.packaging),
+                packaging,
+                recipeUnitEquivalence,
                 provenance: data.provenance ?? null,
                 createdBy: actorId,
                 updatedBy: actorId,
@@ -639,6 +680,7 @@ const createArticleInSession = async ({
                 supplierId: supplier._id.toString(),
                 productVariantId:
                     data.productVariantId?.toString() ?? null,
+                recipeUnitsVerified: Boolean(recipeUnitEquivalence),
             },
             session,
         });
@@ -721,9 +763,63 @@ const updateSupplierArticle = async ({
         }
     }
 
+    const previousSignature = packagingSignature(article.packaging);
     if (Object.hasOwn(data, 'packaging')) {
-        article.packaging = normalizePackaging(data.packaging);
-        changedFields.push('packaging');
+        const nextPackaging = normalizePackaging(data.packaging);
+        if (!samePackaging(article.packaging, nextPackaging)) {
+            article.packaging = nextPackaging;
+            changedFields.push('packaging');
+        }
+    }
+    const currentSignature = packagingSignature(article.packaging);
+    const identityChanged = changedFields.includes('productVariant');
+    const physicalContentChanged = !packagingSignaturesMatch(
+        previousSignature, currentSignature,
+    );
+    const oldProof = article.recipeUnitEquivalence;
+    const proofValid = Boolean(oldProof
+        && packagingSignaturesMatch(oldProof.packagingSignature, currentSignature)
+        && oldProof.productVariant?.toString() === article.productVariant?.toString());
+
+    if (Object.hasOwn(data, 'recipeUnitsPerPackage')) {
+        if (data.recipeUnitsPerPackage === null) {
+            if (oldProof) {
+                article.recipeUnitEquivalence = null;
+                changedFields.push('recipeUnitEquivalence');
+            }
+        } else {
+            if (!article.productVariant) {
+                throw new AppError('Associez d’abord une Référence Produit.', 409);
+            }
+            const variant = await assertActiveProductVariant({
+                productVariantId: article.productVariant,
+                workspaceId,
+                session,
+            });
+            if (variant.referenceUnit !== 'UNIT' || !currentSignature) {
+                throw new AppError(
+                    'Le colis doit contenir plusieurs éléments de quantité physique connue.',
+                    409,
+                );
+            }
+            if (data.confirmRecipeUnits !== true) {
+                throw new AppError('Confirmez explicitement le nombre de pièces.', 409);
+            }
+            // Une confirmation identique ne recrée ni preuve, ni horodatage.
+            if (!proofValid || oldProof.unitsPerPackage !== data.recipeUnitsPerPackage) {
+                article.recipeUnitEquivalence = {
+                    unitsPerPackage: data.recipeUnitsPerPackage,
+                    packagingSignature: currentSignature,
+                    productVariant: variant._id,
+                    verifiedBy: actorId,
+                    verifiedAt: new Date(),
+                };
+                changedFields.push('recipeUnitEquivalence');
+            }
+        }
+    } else if (oldProof && (identityChanged || physicalContentChanged || !proofValid)) {
+        article.recipeUnitEquivalence = null;
+        changedFields.push('recipeUnitEquivalence');
     }
 
     if (changedFields.length === 0) {
@@ -888,6 +984,7 @@ const listSupplierArticles = async ({
     supplierId = null,
     productId = null,
     productVariantId = null,
+    usableForTechnicalSheet = false,
 }) => {
     const filter = globalOnly
         ? {
@@ -915,10 +1012,35 @@ const listSupplierArticles = async ({
         });
     }
 
+    // Le filtre de visibilité du Workspace reste indépendant de la recherche :
+    // ne jamais écraser son $or (risque de fuite inter-Workspaces).
+    // Ce mode restreint la recherche aux Articles directement utilisables
+    // dans la composition d'une Fiche technique.
+    let visibleSupplierIds = null;
+    let usableVariantIds = null;
+    if (usableForTechnicalSheet) {
+        // Ce contrat n'expose jamais un Article archivé, même si un client
+        // demande explicitement status=ARCHIVED.
+        filter.status = SUPPLIER_RESOURCE_STATUS.ACTIVE;
+        [visibleSupplierIds, usableVariantIds] = await Promise.all([
+            Supplier.find({
+                ...buildWorkspaceVisibilityFilter(workspaceId),
+                status: SUPPLIER_RESOURCE_STATUS.ACTIVE,
+            }).distinct('_id'),
+            ProductVariant.find({
+                status: PRODUCT_STATUS.ACTIVE,
+                identityActive: true,
+                ...buildWorkspaceGovernanceVisibilityFilter(workspaceId),
+            }).distinct('_id'),
+        ]);
+        filter.supplier = mongoose.trusted({ $in: visibleSupplierIds });
+        filter.productVariant = mongoose.trusted({ $in: usableVariantIds });
+    }
+
     if (search) {
         const normalized = normalizeSupplierText(search);
         const normalizedRef = normalizeSupplierReference(search);
-        filter.$or = mongoose.trusted([
+        const conditions = [
             {
                 supplierDesignation: new RegExp(
                     escapeRegex(search),
@@ -937,7 +1059,26 @@ const listSupplierArticles = async ({
                     'i',
                 ),
             },
-        ]);
+        ];
+
+        if (usableForTechnicalSheet) {
+            const [matchingSuppliers, matchingVariants] = await Promise.all([
+                Supplier.find({
+                    _id: mongoose.trusted({ $in: visibleSupplierIds }),
+                    name: new RegExp(escapeRegex(search), 'i'),
+                }).distinct('_id'),
+                ProductVariant.find({
+                    _id: mongoose.trusted({ $in: usableVariantIds }),
+                    name: new RegExp(escapeRegex(search), 'i'),
+                }).distinct('_id'),
+            ]);
+            conditions.push(
+                { supplier: mongoose.trusted({ $in: matchingSuppliers }) },
+                { productVariant: mongoose.trusted({ $in: matchingVariants }) },
+            );
+        }
+
+        filter.$and = mongoose.trusted([{ $or: mongoose.trusted(conditions) }]);
     }
 
     const skip = (page - 1) * limit;

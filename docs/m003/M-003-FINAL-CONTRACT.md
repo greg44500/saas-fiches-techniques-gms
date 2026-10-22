@@ -1720,3 +1720,24 @@ La réduction du scroll vise les cas courants ; elle ne masque
 aucune information nécessaire et ne prétend pas empêcher le défilement
 sur petit écran. L'accès historique, le backend, les règles de
 valorisation, les schémas MongoDB et les primitives Core sont inchangés.
+
+
+### Complément UX de recette — visibilité de l'équivalence pièce/colis (2026-10-21)
+
+Pour un Article fournisseur associé à une Référence Produit dont l'unité de recette est `UNIT`, le formulaire de correction présente la correspondance pièce/colis **avant** les champs commerciaux et de conditionnement : unité de recette en lecture seule, nombre de pièces réellement utilisables et confirmation explicite. Les explications secondaires sont accessibles via InfoTooltip, mais le rôle de cette confirmation dans la normalisation du prix au carton reste visible. Les libellés de saisie utilisent un habillage outlined animé propre à la fonctionnalité M-003 ; les actions de formulaire restent accessibles hors de la zone défilante. Le contrat de preuve liée à la Référence et au conditionnement, la nature facultative de cette correspondance et l'invariance tarifaire historique ne changent pas.
+
+### Complément UX validé — correspondance commerciale et mention de conditionnement (2026-10-21)
+
+Le nombre de pièces de recette ne doit pas être ressaisi lorsque l'utilisateur déclare une correspondance `1 unité commerciale = 1 pièce de recette`. Le formulaire présente alors le nombre d'unités du conditionnement en **proposition non confirmée** ; la vérification humaine de l'équivalence reste explicite et obligatoire pour normaliser le tarif au carton en unité `UNIT`. Si les pièces de recette diffèrent des unités commerciales (par exemple plusieurs pains par sachet), l'utilisateur choisit `différent`, saisit le nombre réel et le confirme. Si la correspondance est inconnue, le formulaire peut enregistrer l'Article sans prix de recette calculable, avec avertissement visible. La confirmation de l'équivalence déjà enregistrée est affichée uniquement si elle a été vérifiée pour le conditionnement et la Référence courants ; changer de mode ou de conditionnement annule le consentement courant.
+
+Le champ persistant `packaging.supplierLabel`, distinct de la désignation de l'Article, porte la **mention d'origine du conditionnement** (par exemple `CT 36 X 120 G`). Il conserve sa valeur, sa limite de saisie et les informations importées mais se trouve désormais sous « Informations complémentaires » dans l'édition. Un champ déjà renseigné s'affiche dans le volet ouvert par défaut. Les schémas, signatures de colisage, l'historique tarifaire et les contrats API sont inchangés. Aucun calcul de prix n'est ajouté en React.
+
+
+### Stabilisation création/édition des Articles et preuves (2026-10-22) — à recetter
+
+- La création manuelle d'un Article privé peut amorcer une Référence Produit manquante : l'Article est d'abord persisté sans association, puis le flux M-002 contextuel existant se lance immédiatement, avec vérification des doublons, statut PROVISIONAL, restrictions Workspace et décision finale Application Global. Aucun second moteur Produit et aucune entité fictive ne sont créés.
+- Pour une Référence à l'unité et un conditionnement décrit en masse ou volume contenant plusieurs éléments, la création manuelle exige le nombre exact de pièces utilisables. L'action de création atteste explicitement ce nombre et enregistre la preuve dès la transaction de création. Lorsque le conditionnement est directement en UNIT, son nombre structuré suffit ; aucune attestation supplémentaire n'est demandée.
+- La modification est une édition simple : seul un nouveau nombre de pièces nécessite confirmation ; une preuve inchangée conserve son auteur et son horodatage. Modifier la désignation, la marque ou la mention d'origine n'invalide pas la preuve. Le conditionnement physique ou la Référence changés peuvent l'invalider, selon la signature métier existante.
+- Les prix historiques négociés/facturés non normalisables ne masquent plus les autres sources de repli disponibles ; un tarif fournisseur non convertible peut laisser utiliser un prix indicatif fiable. Les snapshots des prix et fiches validées restent immuables.
+- Le brouillon M-004 peut être explicitement revalorisé après modification externe des Articles ou tarifs. Une création provisoire non associée ou une source non calculable ne produit aucun faux prix.
+- La présente stabilisation n'est pas encore validée par les tests/gates locaux, la QA visuelle ou l'audit BRIDOR 43279. Le lot reste sur la branche transversale active, sans PR ni merge.

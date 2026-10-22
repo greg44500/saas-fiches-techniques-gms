@@ -81,6 +81,7 @@ import {
 } from '@/features/technical-sheets/components/technical-sheet-line-editor';
 import {
   DOSSIER_SUPPLIER_PAGE_PERMISSIONS,
+  SUPPLIER_PERMISSION,
 } from '@/features/suppliers/constants/supplier-permissions';
 import {
   TECHNICAL_SHEET_FEATURE,
@@ -190,6 +191,9 @@ function buildDraftSaveRequest({
           ?? line.inputUnit,
         order: index,
         note: line.note.trim() || null,
+        ...(line.sourcingSelectionPending
+          ? { selectedSupplierArticleId: line.selectedSupplierArticleId }
+          : {}),
       })),
     },
   };
@@ -215,11 +219,21 @@ function mergeSavedLineIds(currentForm, snapshotForm, savedDraft) {
   return {
     ...currentForm,
     totalPortions: savedForm.totalPortions,
-    lines: currentForm.lines.map((line) => (
-      idsByClientKey.has(line.clientKey)
-        ? { ...line, id: idsByClientKey.get(line.clientKey) }
-        : line
-    )),
+    lines: currentForm.lines.map((line) => {
+      const committed = snapshotForm.lines.find(
+        (snapshot) => snapshot.clientKey === line.clientKey
+          && snapshot.productVariantId === line.productVariantId
+          && snapshot.selectedSupplierArticleId === line.selectedSupplierArticleId
+          && snapshot.sourcingSelectionPending,
+      );
+      return {
+        ...line,
+        ...(idsByClientKey.has(line.clientKey)
+          ? { id: idsByClientKey.get(line.clientKey) }
+          : {}),
+        ...(committed ? { sourcingSelectionPending: false } : {}),
+      };
+    }),
   };
 }
 
@@ -556,9 +570,16 @@ function TechnicalSheetWorkspacePage() {
   }));
   const finalPriceModeItems =
     metadata?.finalPriceModeDefinitions ?? [];
-  const productSearchScopes =
-    productMetadataQuery.data
-      ?.productSearchScopes ?? [];
+  const productSearchScopes = [
+    { value: 'WORKSPACE', label: 'Favoris' },
+    {
+      value: 'ARTICLES',
+      label: 'Articles',
+      disabled: !can(TECHNICAL_SHEET_PERMISSION.SOURCING_MANAGE)
+        || !can(SUPPLIER_PERMISSION.ARTICLE_READ),
+    },
+    { value: 'REFERENCE', label: 'Tous' },
+  ];
   const effectiveProductScope =
     productScope
     ?? metadata?.defaults
@@ -799,6 +820,28 @@ function TechnicalSheetWorkspacePage() {
       );
     } finally {
       setOptimizerOpening(false);
+    }
+  }
+
+  async function refreshApplicablePrices() {
+    // La validation automatique ne se relance pas toujours après une mise à jour
+    // indépendante des Articles ou tarifs M-003. Ce recalcul reste volontaire.
+    if (!draft || draftFormRevision === null
+      || draftDirty || autosaveHasUnsavedChanges || autosaveIsSaving) return;
+    try {
+      await valuate({
+        workspaceId: workspace.id,
+        dossierId,
+        technicalSheetId,
+        expectedRevision: draftFormRevision,
+      }).unwrap();
+      toast({
+        title: 'Coûts actualisés',
+        description: 'Les Prix applicables ont été recalculés pour ce brouillon.',
+        variant: 'success',
+      });
+    } catch (error) {
+      notifyError(error, 'Impossible d’actualiser les Prix applicables de la fiche.');
     }
   }
 
@@ -1404,8 +1447,20 @@ function TechnicalSheetWorkspacePage() {
             />
           </div>
           <Card>
-            <div className="border-b border-border px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
               <h2 className="text-sm font-semibold">Composition</h2>
+              {can(TECHNICAL_SHEET_PERMISSION.VALUATION_MANAGE) && (
+                <Button
+                  disabled={economicsUpdating || draftSynchronizing
+                    || draftFormRevision === null || !parametersComplete}
+                  onClick={refreshApplicablePrices}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Actualiser les coûts
+                </Button>
+              )}
             </div>
             <CardContent className="p-0">
               {!parametersComplete && (

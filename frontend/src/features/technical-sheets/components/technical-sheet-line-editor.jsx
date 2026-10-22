@@ -12,7 +12,6 @@ import { useEffect, useRef, useState } from 'react';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SegmentedControl } from '@/components/ui/segmented-control';
 import {
   Popover,
   PopoverContent,
@@ -42,7 +41,7 @@ import {
   useListSupplierArticlesQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
-  formatPackaging,
+  getPackagingTooltipDetails,
 } from '@/features/suppliers/lib/supplier-presentation';
 import {
   TechnicalSheetSourcingSelect,
@@ -57,6 +56,24 @@ const COMPOSITION_GRID_CLASS = [
   'lg:grid-cols-[minmax(0,2fr)_4.25rem_3.5rem_5rem_5.25rem_5.5rem_minmax(0,1.25fr)_3.25rem]',
   'lg:items-center',
 ].join(' ');
+
+const UNPRICED_LINE_REASONS = [
+  ['SUPPLIER_ARTICLE_SELECTION_REQUIRED',
+    'Plusieurs Articles fournisseur correspondent à cette Référence. Choisissez l’Article à utiliser dans les actions de la ligne.'],
+  ['SUPPLIER_TARIFF_NOT_NORMALIZABLE',
+    'Le tarif fournisseur existe mais ne peut pas être converti dans l’unité de recette. Vérifiez le conditionnement historique du tarif et les pièces confirmées.'],
+  ['NO_USABLE_SUPPLIER_ARTICLE',
+    'Aucun Article fournisseur exploitable n’est associé à cette Référence. Vérifiez son association et son état.'],
+  ['NO_APPLICABLE_SUPPLIER_TARIFF',
+    'Aucun tarif fournisseur applicable à la date de valorisation. Vérifiez la période et les autres sources de prix.'],
+];
+
+function missingPriceReason(line, defaultLabel) {
+  if (line.valuation?.normalizedAmount != null) return defaultLabel;
+  const alerts = line.valuation?.alerts ?? [];
+  const explanation = UNPRICED_LINE_REASONS.find(([code]) => alerts.includes(code));
+  return explanation?.[1] ?? defaultLabel;
+}
 
 let localLineSequence = 0;
 
@@ -306,19 +323,95 @@ function ColumnHeading({ align = 'left', children, tooltip }) {
   );
 }
 
+const TECHNICAL_SHEET_SEARCH_MODES = Object.freeze([
+  { value: 'WORKSPACE', label: 'Favoris' },
+  { value: 'ARTICLES', label: 'Articles' },
+  { value: 'REFERENCE', label: 'Tous' },
+]);
+
 function TechnicalSheetProductScopeControls({
   items = [],
   onChange,
   productScope,
 }) {
+  const selectedIndex = Math.max(
+    0,
+    TECHNICAL_SHEET_SEARCH_MODES.findIndex(({ value }) => value === productScope),
+  );
+  const disabledModes = new Set(
+    items.filter((item) => item.disabled).map((item) => item.value),
+  );
+
   return (
-    <SegmentedControl
-      ariaLabel="Source des Produits"
-      className="h-9 p-px"
-      items={items}
-      onValueChange={onChange}
-      size="sm"
-      value={productScope}
+    <div
+      aria-label="Source des Produits"
+      className="relative grid h-9 w-full max-w-64 grid-cols-3 rounded-lg border border-border bg-muted/40 p-1"
+      role="group"
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-1 left-1 top-1 w-[calc((100%-0.5rem)/3)] rounded-md bg-primary/15 shadow-sm ring-1 ring-primary/25 transition-transform duration-200 ease-out motion-reduce:transition-none"
+        style={{ transform: 'translateX(' + selectedIndex * 100 + '%)' }}
+      />
+      {TECHNICAL_SHEET_SEARCH_MODES.map((mode) => (
+        <button
+          aria-pressed={productScope === mode.value}
+          className={
+            'relative z-10 min-w-0 rounded-md px-1 text-xs font-medium transition-colors duration-200'
+            + ' focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+            + ' disabled:cursor-not-allowed disabled:opacity-40'
+            + (productScope === mode.value
+              ? ' text-primary'
+              : ' text-muted-foreground hover:text-foreground')
+          }
+          disabled={disabledModes.has(mode.value)}
+          key={mode.value}
+          onClick={() => onChange(mode.value)}
+          type="button"
+        >
+          {mode.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TechnicalSheetIngredientAutocomplete({ scope, workspaceId, ...props }) {
+  const [debouncedArticleSearch, setDebouncedArticleSearch] = useState('');
+  const articleMode = scope === 'ARTICLES';
+  const articlesQuery = useListSupplierArticlesQuery(
+    {
+      workspaceId,
+      page: 1,
+      limit: 6,
+      status: 'ACTIVE',
+      search: debouncedArticleSearch,
+      usableForTechnicalSheet: true,
+    },
+    {
+      skip: !articleMode || debouncedArticleSearch.length < 3,
+    },
+  );
+  const articleResults = (articlesQuery.data?.articles ?? []).map((article) => ({
+    product: {
+      id: article.productVariant?.id,
+      name: article.productVariant?.name,
+    },
+    variant: article.productVariant,
+    supplierArticle: article,
+  }));
+
+  return (
+    <ProductSearchAutocomplete
+      {...props}
+      externalSearch={articleMode}
+      externalQuery={{
+        ...articlesQuery,
+        data: { results: articleResults },
+      }}
+      onDebouncedSearchChange={setDebouncedArticleSearch}
+      scope={scope}
+      workspaceId={workspaceId}
     />
   );
 }
@@ -331,9 +424,18 @@ function MobileLabel({ children }) {
   );
 }
 
+function formatIngredientIdentityDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+}
+
 function ProductDetailsTrigger({
   line,
+  metadata,
   onEdit,
+  productMetadata,
   workspaceId,
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -358,7 +460,20 @@ function ProductDetailsTrigger({
     (article) => article.id === selectedArticleId,
   );
   const pricingSource = getPricingSourceLabel(
+    metadata,
     line.valuation?.applicableSource,
+  );
+  const governanceStatus = line.productVariant?.governanceStatus;
+  const referenceStatus = governanceStatus === 'APPROVED'
+    ? 'Validée'
+    : governanceStatus === 'PROVISIONAL'
+      ? 'À valider'
+      : null;
+  const referenceUpdatedDate = formatIngredientIdentityDate(
+    line.productVariant?.updatedAt,
+  );
+  const articleUpdatedDate = formatIngredientIdentityDate(
+    selectedArticle?.updatedAt,
   );
 
   return (
@@ -385,8 +500,20 @@ function ProductDetailsTrigger({
           side="top"
         >
           <p className="font-semibold">{line.productVariantName}</p>
+          {referenceStatus && (
+            <p>Référence Produit : {referenceStatus}</p>
+          )}
+          <p>
+            Unité de référence : {getVariantReferenceUnitLabel(
+              productMetadata,
+              line.productVariant ?? { referenceUnit: line.referenceUnit },
+            )}
+          </p>
+          {referenceUpdatedDate && (
+            <p>Référence modifiée le : {referenceUpdatedDate}</p>
+          )}
 
-          {articlesQuery.isLoading && (
+          {selectedArticleId && articlesQuery.isLoading && (
             <p>Chargement des informations fournisseur…</p>
           )}
 
@@ -401,26 +528,55 @@ function ProductDetailsTrigger({
               <p>
                 Article : {selectedArticle.supplierDesignation ?? 'Non renseigné'}
               </p>
-              <p>
-                Conditionnement : {formatPackaging(
-                  selectedArticle.packaging,
-                  { productVariant: line.productVariant },
-                )}
-              </p>
+              {getPackagingTooltipDetails(
+                selectedArticle.packaging,
+                { productVariant: line.productVariant },
+              ).map(({ label, value }) => (
+                <p key={label}>{label} : {value}</p>
+              ))}
+              {articleUpdatedDate && (
+                <p>Article modifié le : {articleUpdatedDate}</p>
+              )}
             </>
           )}
 
-          {!articlesQuery.isLoading && !selectedArticle && (
-            <p>
-              {articles.length === 0
-                ? 'Aucun Article fournisseur disponible.'
-                : articles.length + ' Article(s) fournisseur disponible(s).'}
-            </p>
+          {!selectedArticleId && (
+            <p>Article fournisseur : Aucun sélectionné</p>
           )}
+          {selectedArticleId && articlesQuery.isError && (
+            <p>Informations sur l’Article fournisseur indisponibles.</p>
+          )}
+          {selectedArticleId
+            && !articlesQuery.isLoading
+            && !articlesQuery.isError
+            && !selectedArticle && (
+              <p>Article sélectionné non retrouvé dans la liste disponible.</p>
+            )}
 
-          {pricingSource && (
-            <p>Source du prix : {pricingSource}</p>
-          )}
+          <div className="mt-2 border-t border-border/50 pt-2">
+            <p className="font-semibold">Valorisation enregistrée</p>
+            <p>
+              Source du prix : {pricingSource ?? 'Prix non disponible'}
+            </p>
+            {line.valuation?.normalizedAmount != null && (
+              <p>
+                Prix unitaire HT : {formatDecimalCurrency(
+                  line.valuation.normalizedAmount,
+                )}
+                {line.valuation.normalizedUnit
+                  ? ' / ' + (
+                    line.valuation.normalizedUnit === 'UNIT'
+                      ? getVariantReferenceUnitLabel(
+                        productMetadata, line.productVariant,
+                      )
+                      : getReferenceUnitLabel(
+                        productMetadata, line.valuation.normalizedUnit,
+                      )
+                  )
+                  : ''}
+              </p>
+            )}
+          </div>
 
           {onEdit && (
             <p>Cliquez sur le Produit pour le remplacer.</p>
@@ -702,7 +858,8 @@ function TechnicalSheetLineEditor({
         inputUnit: result.variant.referenceUnit,
         order: lines.length,
         note: '',
-        selectedSupplierArticleId: null,
+        selectedSupplierArticleId: result.supplierArticle?.id ?? null,
+        sourcingSelectionPending: Boolean(result.supplierArticle?.id),
         calculation: null,
         valuation: null,
       },
@@ -729,6 +886,16 @@ function TechnicalSheetLineEditor({
     }
 
     if (result.variant.id === line.productVariantId) {
+      if (
+        result.supplierArticle?.id
+        && result.supplierArticle.id !== line.selectedSupplierArticleId
+      ) {
+        updateLine(index, {
+          selectedSupplierArticleId: result.supplierArticle.id,
+          sourcingSelectionPending: true,
+          valuation: null,
+        }, { immediate: true });
+      }
       setEditingLineKey(null);
       setEditSearch('');
       return;
@@ -764,7 +931,8 @@ function TechnicalSheetLineEditor({
       netQuantity:
         adaptedQuantity.netQuantity,
       inputUnit: nextUnit,
-      selectedSupplierArticleId: null,
+      selectedSupplierArticleId: result.supplierArticle?.id ?? null,
+      sourcingSelectionPending: Boolean(result.supplierArticle?.id),
       calculation: null,
       valuation: null,
     }, { immediate: true });
@@ -851,7 +1019,7 @@ function TechnicalSheetLineEditor({
           {editing ? (
             <div className="flex min-w-0 items-center gap-2 transition-all duration-200 ease-out">
               <div className="min-w-0 flex-1">
-                <ProductSearchAutocomplete
+                <TechnicalSheetIngredientAutocomplete
                   ariaLabel={'Modifier le produit ' + line.productVariantName}
                   compact
                   metadata={productMetadata}
@@ -883,6 +1051,8 @@ function TechnicalSheetLineEditor({
           ) : (
             <ProductDetailsTrigger
               line={line}
+              metadata={metadata}
+              productMetadata={productMetadata}
               onEdit={
                 disabled
                   ? undefined
@@ -967,7 +1137,7 @@ function TechnicalSheetLineEditor({
                         )
                       : ''
                   )
-                : valuationPresentation.label}
+                : missingPriceReason(line, valuationPresentation.label)}
             </TooltipContent>
           </Tooltip>
           {usesExpiredTariff && (
@@ -1062,7 +1232,7 @@ function TechnicalSheetLineEditor({
         key={'add-' + kind}
       >
         <div className="min-w-0">
-          <ProductSearchAutocomplete
+          <TechnicalSheetIngredientAutocomplete
             ariaLabel={
               'Ajouter un produit aux '
               + (definition?.label ?? kind)

@@ -45,12 +45,12 @@ function SupplierArticleProductCreationFlow({
     setError('');
     setStep('associate');
     try {
-      await updateArticle({
+      const linkedArticle = await updateArticle({
         workspaceId,
         articleId: article.id,
         productVariantId: id,
       }).unwrap();
-      onAssociated();
+      onAssociated(linkedArticle);
     } catch (failure) {
       setError(getApiErrorMessage(failure, 'La Référence a été créée, mais son association a échoué.'));
     }

@@ -1537,3 +1537,79 @@ Décisions validées après QA visuelle :
 - la colonne `Coût HT` est conservée sans changement de sémantique : elle représente le coût total HT de la ligne pour les quantités de la Fiche.
 
 Aucun de ces états d'interface ne remplace les contrôles backend de révision, permission, ownership ou cycle de vie.
+
+
+## Extension UX — recherche des ingrédients et provenance tarifaire (22 octobre 2026)
+
+Sur le brouillon actif d'une Fiche technique, le contrôle de recherche est unique
+et compact, avec trois modes exclusifs dans cet ordre : **Favoris | Articles | Tous**.
+Le mode par défaut reste **Tous** (`REFERENCE`). Le fond de sélection se
+déplace horizontalement avec une transition discrète (200 ms) et respecte
+`prefers-reduced-motion`. Les modes fonctionnent aussi bien pour l'ajout que
+pour le remplacement, avec les interactions clavier de l'autocomplétion.
+
+- **Favoris** (`WORKSPACE`) : Références Produit favorites du Workspace.
+- **Tous** (`REFERENCE`) : Références Produit accessibles, soumises à la
+  gouvernance M-002.
+- **Articles** (`ARTICLES`, mode UX propre à M-004) : Articles fournisseur
+  actifs accessibles, dont le Fournisseur et la Référence Produit sont actifs,
+  associés et visibles au Workspace. Recherche par référence, désignation,
+  marque, fournisseur et nom de Référence Produit. La liste reste paginée
+  côté serveur, sans données commerciales des autres Workspaces.
+
+La sélection d'un Article transmet **Référence Produit + ID d'Article** dans
+la même sauvegarde de composition. Le backend valide, au sein de la
+transaction, l'association, les statuts, la visibilité et le droit
+`technical-sheet:sourcing:manage`. Le mode Articles requiert aussi le droit
+de lecture des Articles fournisseur. Le remplacement par un autre Article
+sur la même Référence modifie le sourcing, sans recréer la ligne ni
+modifier sa quantité.
+
+L'infobulle de la ligne affiche distinctement l'Article choisi et la
+**source de prix réellement enregistrée dans la valorisation de la Fiche**.
+Il peut s'agir d'un Tarif fournisseur, d'un Tarif négocié du Dossier,
+d'un Prix facturé, ou d'un indicatif Dossier, Workspace ou global.
+L'infobulle présente le prix unitaire HT normalisé s'il est disponible,
+sans fabriquer de tarif source ni modifier la résolution M-003.
+L'absence de prix reste explicite.
+
+Aucun nouveau modèle MongoDB, aucune migration, aucun changement Core.
+Implémentation dans la branche `feature/m002-m003-m004-unit-consistency`.
+**Validation des tests, revue visuelle et Core Gate : en attente
+d'exécution locale par le développeur.**
+
+Note de vérification : le filtrage du mode Articles repose sur des recherches
+indexées et des listes d'identifiants de Fournisseurs / Références accessibles.
+Si les référentiels deviennent très volumineux, mesurer son coût et prévoir
+une requête agrégée paginée, sans relâcher les invariants de visibilité et
+de sécurité. La validation de la performance n'est pas présumée.
+
+
+### Finition UX — identification métier de l'ingrédient (2026-10-22)
+
+La fiche de survol sert à **vérifier l'identité du Produit utilisé**,
+pas à suivre l'exécution du moteur de calcul. La mention « Calcul du »
+et l'heure de valorisation sont supprimées de cette infobulle ;
+le backend continue de conserver `pricedAt` pour ses propres usages.
+
+L'infobulle de chaque ingrédient affiche :
+- nom de la Référence Produit et unité officielle M-002 ;
+- statut de gouvernance **Validée** (APPROVED) ou **À valider**
+  (PROVISIONAL), uniquement si réellement présent dans les données ;
+- date de **dernière modification de la Référence** au format
+  `JJ/MM/AAAA`, sans heure et seulement si `updatedAt` est disponible ;
+- si un Article est choisi et consultable : fournisseur, référence
+  commerciale, désignation, conditionnement, et date de **dernière
+  modification de l'Article** (`updatedAt`, date seule) ;
+- si aucun Article n'est choisi : « Article fournisseur : Aucun
+  sélectionné ». Ne pas confondre absence de sélection, indisponibilité
+  de la liste et absence de tout Article exploitable ;
+- source réelle du prix et PU HT normalisé de la valorisation en cours.
+
+Une date récente **n'atteste ni une validation de la Référence ni
+la validité du tarif** ; aucun badge « À jour » n'est déduit d'un
+horodatage. Les champs M-002 proviennent de la projection courante
+des Références Produit dans le brouillon, pas d'un snapshot économique
+historique. Aucun changement des règles M-003, de la base de données
+ou du Core. Tests RTL, HTTP et E2E prévus dans le même lot, à exécuter
+localement avant PR.

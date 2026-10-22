@@ -327,6 +327,33 @@ L'unicité exacte porte sur `ProductVariant.normalizedName`.
 
 Un import ou une création rencontrant exactement le même nom de Référence doit réutiliser cette référence plutôt que créer un doublon sous un autre `CanonicalProduct`.
 
+### Avenant UX — réutilisation d'un Produit proposé (2026-10-16)
+
+Dans les dialogues « Créer un Produit », la déduplication montre les correspondances exactes **et** les Produits proches. L'utilisateur qui reconnaît un Produit actif parmi ces propositions doit pouvoir **ouvrir le Produit existant depuis la suggestion**, sans être obligé de cocher « Différent » ni de créer une nouvelle identité. La fiche Produit existante permet ensuite de consulter ses Références et, selon les droits/capabilities existants, d'en créer une nouvelle ou de les ajouter aux favoris.
+
+- **Espace de travail :** « Ouvrir ce Produit » appelle le parcours d'ouverture de la fiche Produit déjà présent. Un Produit archivé n'est pas proposé à la réutilisation dans cet espace.
+- **Application Global :** le même choix permet d'ouvrir un Produit proche, y compris archivé lorsque le compte dispose de l'accès à la gouvernance globale.
+- **Article fournisseur contextuel M-003 :** l'action existante « Utiliser ce Produit » reste inchangée et mène à l'association ou à la création de Référence selon le résultat de recherche.
+- **Différent :** conserve sa seule fonction : attester qu'un candidat proche n'est pas le Produit que l'on souhaite créer. La réutilisation ne coche pas cette case et ne déclenche aucune mutation de création.
+- La réutilisation d'un Produit ne modifie jamais automatiquement `ProductVariant.referenceUnit` ni les Fiches techniques existantes. Un changement d'unité nécessite soit une correction encadrée de la Référence existante lorsque les dépendances le permettent, soit une migration métier distincte.
+
+
+### Avenant métier et UX — unités utilisées et contrôle ciblé (2026-10-16)
+
+**Règle révisée après la recette du 2026-10-16 :** une Référence ayant des usages dans une Fiche technique (brouillon ou validation), un Prix indicatif, un Tarif négocié ou un Prix facturé ne peut subir de changement direct d'unité, y compris `G` ↔ `KG`. En revanche, si seuls des Articles et Tarifs fournisseur subsistent, l'administrateur habilité peut corriger l'unité sur **la même Référence**, après une confirmation explicite et un contrôle transactionnel. Aucune équivalence pièce/colis antérieure n'est conservée et aucun prix source historique n'est réécrit. Les permissions Application Global restent requises.
+
+Depuis « Créer un Produit → Rechercher l'existant », une suggestion retrouvée mène directement à l'onglet **Références** de la fiche Produit, où le gestionnaire habilité peut créer une nouvelle Référence sous le Produit déjà existant. La recherche dans la liste Produits reste une voie directe de consultation : ces deux parcours réutilisent le même drawer et le même composant de création.
+
+Les identités provisoires (`PROVISIONAL`) conservent la mention « À contrôler » **indépendamment** du statut d'utilisation `ACTIVE`. Dans le drawer Application Global, cette mention, lorsqu'une décision est possible, devient un **petit bouton à contour warning**, bien contrasté sans prendre la taille d'un bouton principal (style compact du bouton d'annulation des ingrédients), accessible au clavier. Son action recherche la proposition exacte dans la file de gouvernance existante et ouvre les actions `Valider / Fusionner / Refuser`. Une décision prise par le workflow de gouvernance reste requise ; le bouton ne valide jamais automatiquement.
+
+Dans « Corriger la référence Produit », l'explication métier passe dans une infobulle d'information, la description accessible du dialogue est préservée et les formulations techniques « M-002 » / « dimensions structurées » disparaissent du texte visible.
+
+### Complément QA : correction contrôlée et gouvernance (2026-10-16)
+
+Une Référence Produit conserve son identifiant lors de la correction initiale de son unité, même si des Articles fournisseur restent associés, à condition qu'aucune Fiche (brouillon ou validation), aucun Prix indicatif et aucun Prix négocié ou facturé ne soient liés à cette identité. L'API Application Global exige une confirmation explicite si des Articles existent. Elle ne modifie jamais leurs montants ou conditionnements, mais invalide les équivalences pièce/colis antérieures et journalise l'ancienne et la nouvelle unité. Une Fiche ou un Prix historique normalisé interdit cette correction directe.
+
+Le petit bouton « À contrôler » reste compact mais utilise la couleur warning. Il ouvre la demande active de gouvernance et, si cette demande manque pour une identité encore provisoire, une action `MANAGE` rétablit son lien de manière idempotente uniquement si sa provenance Workspace est connue. Aucun changement de statut `APPROVED` n'est automatique.
+
 ## 10. Import et frontière M-003
 
 L'import M-002 exposé dans le frontend peut mapper :
@@ -469,3 +496,11 @@ Aucune nouvelle primitive Core n'est requise pour :
 - déduplication Produit.
 
 Toute évolution générique découverte ultérieurement doit continuer à être traitée dans `saas-core-api` puis intégrée par une branche `core-update/*`.
+
+### Complément de recette — parcours guidé de gouvernance (2026-10-21)
+
+L'administration du Produit conserve ses quatre onglets : Produit, Dimensions, Références et Historique. L'examen d'une Référence PROVISIONAL affiche les dépendances d'identité du Produit parent et de ses Dimensions liées, sans convertir les contrôles qualité en blocages de publication. Les décisions restent individuelles, soumises à la permission métier `product:reference:manage`, exécutées par les services de Contribution existants et auditées. L'identité d'une Dimension qui demeure PROVISIONAL peut être examinée même si sa revue qualité est déjà REVIEWED ; en cas de lien de Contribution perdu, l'API de reprise rétablit uniquement le lien de revue de façon idempotente, avec workspace d'origine vérifié. La décision finale de Référence est autorisée seulement quand le backend constate que toutes ses identités parentes sont APPROVED. Aucun statut n'est promu implicitement par le parcours guidé. Les diagnostics d'erreur précisent la ou les identités bloquantes.
+
+En particulier, l'approbation d'une Dimension liée ne promeut jamais automatiquement une Référence encore `PROVISIONAL` : cette dernière requiert sa propre décision explicite de Contribution, même lorsque tous ses prérequis deviennent approuvés.
+
+Dans l'onglet Dimensions, l'état de revue qualité conserve son compteur propre. Une identité de Dimension encore `PROVISIONAL` est signalée séparément par l'action « Identité à examiner », même lorsque la revue qualité vaut `REVIEWED`. Cette action cible la Contribution de gouvernance et fonctionne indépendamment du filtre qualité.

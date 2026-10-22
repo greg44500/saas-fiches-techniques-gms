@@ -56,6 +56,7 @@ import {
 import {
     listProductReviewQueue,
 } from './productReferenceReviewQueue.service.js';
+import { restoreProductReviewContext } from './productReferenceReviewRecovery.service.js';
 import {
     listProductVariantMergeCandidates,
     mergeProductVariants,
@@ -131,6 +132,15 @@ const createVariantController = async (req, res) => {
         variant: req.validated.body,
     });
     res.status(201).json({ status: 'success', data: { variant } });
+};
+
+const restoreReviewContextController = async (req, res) => {
+    const item = await restoreProductReviewContext({
+        actorId: req.user._id,
+        productId: req.validated.params.productId,
+        ...req.validated.body,
+    });
+    res.status(200).json({ status: 'success', data: { item } });
 };
 
 const reviewQueue = async (req, res) => {
@@ -470,6 +480,7 @@ export {
     reviewContribution,
     reviewDimension,
     reviewQueue,
+    restoreReviewContextController,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,

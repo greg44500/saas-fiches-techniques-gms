@@ -379,7 +379,29 @@ const referenceContributionListQuerySchema = z.strictObject({
     }
 });
 
+const productReviewRecoveryBodySchema = z.strictObject({
+    dataType: z.enum(['PRODUCT', 'REFERENCE', 'DIMENSION']),
+    targetId: objectIdSchema,
+    dimensionType: z.enum(['VARIETY', 'CHARACTERISTIC']).optional(),
+}).superRefine((body, context) => {
+    if (body.dataType === 'DIMENSION' && !body.dimensionType) {
+        context.addIssue({
+            code: 'custom',
+            path: ['dimensionType'],
+            message: 'Le type de Dimension est requis pour son contrôle.',
+        });
+    }
+    if (body.dataType !== 'DIMENSION' && body.dimensionType) {
+        context.addIssue({
+            code: 'custom',
+            path: ['dimensionType'],
+            message: 'Le type de Dimension ne concerne que les Dimensions.',
+        });
+    }
+});
+
 const productReviewQueueListQuerySchema = z.strictObject({
+    targetId: objectIdSchema.optional(),
     type: z.enum(Object.values(PRODUCT_REVIEW_QUEUE_TYPE)).optional(),
     workspaceId: objectIdSchema.optional(),
     origins: z.enum(['include', 'omit']).optional().default('include'),
@@ -467,6 +489,7 @@ const updateProductStatusBodySchema = z.strictObject({
 });
 
 const updateVariantBodySchema = z.strictObject({
+    confirmSupplierArticleRevaluation: z.literal(true).optional(),
     name: z.string().trim().min(1).max(160).optional(),
     varietyId: objectIdSchema.nullable().optional(),
     characteristicIds: characteristicIdsSchema.optional(),
@@ -517,6 +540,7 @@ export {
     productIdParamsSchema,
     productSearchQuerySchema,
     productReviewQueueListQuerySchema,
+    productReviewRecoveryBodySchema,
     productVariantParamsSchema,
     referenceContributionDecisionBodySchema,
     referenceContributionListQuerySchema,

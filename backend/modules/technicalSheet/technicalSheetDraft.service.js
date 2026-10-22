@@ -279,6 +279,30 @@ const saveTechnicalSheetDraft = async ({
         let preparedLines = current.lines;
 
         if (Array.isArray(data.lines)) {
+            // Même vérification que PATCH /draft/sourcing : un Article choisi
+            // explicitement doit être actif, visible et associé à la Référence
+            // de la ligne. Contrôle dans la transaction avant toute écriture.
+            const explicitSelections = data.lines.filter(
+                (line) => line.selectedSupplierArticleId != null,
+            );
+            for (const line of explicitSelections) {
+                const article = await resolveSupplierArticle({
+                    workspaceId,
+                    articleId: line.selectedSupplierArticleId,
+                    session,
+                });
+                const articleVariantId = (
+                    article.productVariant?._id
+                    ?? article.productVariant
+                ).toString();
+                if (articleVariantId !== line.productVariantId.toString()) {
+                    throw new AppError(
+                        'L’Article fournisseur ne correspond pas à la Référence Produit de cette ligne.',
+                        409,
+                    );
+                }
+            }
+
             const prepared =
                 await prepareTechnicalSheetComposition({
                     lines: data.lines,
@@ -435,7 +459,7 @@ const saveTechnicalSheetDraft = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status governanceStatus updatedAt',
         });
 
         return serializeTechnicalSheetDraft(
@@ -481,7 +505,7 @@ const getTechnicalSheetDraft = async ({
         ).populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status governanceStatus updatedAt',
         });
 
     return draft
@@ -697,7 +721,7 @@ const createDraftFromValidatedState = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status governanceStatus updatedAt',
         });
 
         return serializeTechnicalSheetDraft(
@@ -811,7 +835,7 @@ const selectTechnicalSheetSupplierArticle = async ({
         await draft.populate({
             path: 'lines.productVariant',
             select:
-                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status',
+                '_id name referenceUnit countUnitLabelSingular countUnitLabelPlural yieldPercent status governanceStatus updatedAt',
         });
 
         return serializeTechnicalSheetDraft(

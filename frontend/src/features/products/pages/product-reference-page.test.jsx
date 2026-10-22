@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   metadataQuery: vi.fn(),
   productsQuery: vi.fn(),
   reviewQueueQuery: vi.fn(),
+  loadReviewTarget: vi.fn(),
+  restoreReviewContext: vi.fn(),
   updateCategoryStatus: vi.fn(),
   globalPricesQuery: vi.fn(),
 }));
@@ -22,6 +24,14 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
   useGetProductReferenceMetadataQuery: mocks.metadataQuery,
   useListProductReferenceProductsQuery: mocks.productsQuery,
   useListProductReferenceReviewQueueQuery: mocks.reviewQueueQuery,
+  useLazyListProductReferenceReviewQueueQuery: () => [
+    mocks.loadReviewTarget,
+    { isFetching: false },
+  ],
+  useRestoreProductReferenceReviewContextMutation: () => [
+    mocks.restoreReviewContext,
+    { isLoading: false },
+  ],
   useUpdateProductReferenceCategoryStatusMutation: () => [
     mocks.updateCategoryStatus,
     { isLoading: false },
@@ -75,9 +85,28 @@ vi.mock('@/features/products/components/product-reference-details-drawer', () =>
     initialTab,
     open,
     reviewContext,
+    guidedReviewContext,
+    onReviewRequested,
+    onGuidedReviewRequested,
   }) => (
     open ? (
       <div>
+        <button onClick={() => onReviewRequested('REFERENCE', 'variant-pending-1')} type="button">
+          Contrôler la Référence courante
+        </button>
+        <button
+          onClick={() => onGuidedReviewRequested({
+            dataType: 'DIMENSION',
+            dimensionType: 'CHARACTERISTIC',
+            id: 'characteristic-1',
+          })}
+          type="button"
+        >
+          Examiner la Dimension depuis la Référence
+        </button>
+        {guidedReviewContext?.targetId
+          ? ' · dépendance ' + guidedReviewContext.targetId
+          : ''}
         Détail global ouvert · {initialTab} · {initialDimensionFilter}
         {' · '}{initialReferenceFilter}
         {reviewContext?.targetId
@@ -242,6 +271,12 @@ async function selectOption(user, triggerName, optionName) {
 describe('ProductReferencePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.loadReviewTarget.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({ items: [] }),
+    });
+    mocks.restoreReviewContext.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue(null),
+    });
 
     mocks.metadataQuery.mockReturnValue({
       data: metadata,
@@ -699,6 +734,103 @@ describe('ProductReferencePage', () => {
     expect(screen.getByText(
       'Détail global ouvert · variants · active · pending · cible variant-pending-1',
     )).toBeInTheDocument();
+  });
+
+  it('ouvre le contrôle exact depuis le petit bouton du drawer, sans parcours parallèle', async () => {
+    const user = userEvent.setup();
+    mocks.loadReviewTarget.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        items: [{
+          sourceId: 'contribution-reference-1',
+          targetId: 'variant-pending-1',
+          type: 'CONTRIBUTION',
+          dataType: 'REFERENCE',
+          productId: 'product-1',
+          value: 'Carotte entière',
+          candidates: [],
+        }],
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Contrôler la Référence courante',
+    }));
+    await waitFor(() => {
+      expect(mocks.loadReviewTarget).toHaveBeenCalledWith({
+        type: 'CONTRIBUTION',
+        targetId: 'variant-pending-1',
+        origins: 'omit',
+        page: 1,
+        limit: 1,
+      });
+      expect(screen.getByText(
+        'Détail global ouvert · variants · active · pending · cible variant-pending-1',
+      )).toBeInTheDocument();
+    });
+  });
+
+  it('rétablit et ouvre le contrôle exact si la Référence est provisoire mais orpheline', async () => {
+    const user = userEvent.setup();
+    mocks.restoreReviewContext.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        sourceId: 'contribution-restored',
+        targetId: 'variant-pending-1',
+        type: 'CONTRIBUTION',
+        dataType: 'REFERENCE',
+        productId: 'product-1',
+        candidates: [],
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Contrôler la Référence courante',
+    }));
+    await waitFor(() => {
+      expect(mocks.restoreReviewContext).toHaveBeenCalledWith({
+        productId: 'product-1',
+        dataType: 'REFERENCE',
+        targetId: 'variant-pending-1',
+      });
+      expect(screen.getByText(
+        'Détail global ouvert · variants · active · pending · cible variant-pending-1',
+      )).toBeInTheDocument();
+    });
+  });
+
+  it('transmet le type de Dimension jusqu’à la mutation de reprise du contrôle guidé', async () => {
+    const user = userEvent.setup();
+    mocks.restoreReviewContext.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        sourceId: 'recovered-dimension',
+        targetId: 'characteristic-1',
+        type: 'CONTRIBUTION',
+        dataType: 'DIMENSION',
+        dimensionType: 'CHARACTERISTIC',
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Examiner la Dimension depuis la Référence',
+    }));
+    await waitFor(() => {
+      expect(mocks.loadReviewTarget).toHaveBeenCalledWith({
+        type: 'CONTRIBUTION',
+        targetId: 'characteristic-1',
+        origins: 'omit',
+        page: 1,
+        limit: 1,
+      });
+      expect(mocks.restoreReviewContext).toHaveBeenCalledWith({
+        productId: 'product-1',
+        dataType: 'DIMENSION',
+        dimensionType: 'CHARACTERISTIC',
+        targetId: 'characteristic-1',
+      });
+      expect(screen.getByText(/dépendance characteristic-1/)).toBeInTheDocument();
+    });
   });
 
   it('ouvre le détail global depuis la liste', async () => {

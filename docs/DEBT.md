@@ -1,8 +1,33 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
 
 **Statut :** source de vérité documentaire pour les dettes non résolues  
-**Dernière mise à jour :** 2026-10-14  
+**Dernière mise à jour :** 2026-10-16  
 **Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
+
+### Audit BRIDOR 43279 reçu le 2026-10-22 — racine identifiée, QA à confirmer
+
+Constat en base de développement : une preuve humaine valide de 36 pièces (conditionnement Article `0,120 KG × 36`) ne correspondait pas littéralement à la signature du tarif historique (`120 G × 36`) alors que leur contenu physique est identique. Tarif historique de 6,50 € / colis ; repli global de 0,20 € / pièce ; brouillon encore stocké `NO_PRICE`. Correctif sans migration : comparaison physique exacte des signatures conservées ; contrôle inchangé des réels changements de contenu/Produit. Tests unitaires et HTTP ajoutés, à exécuter localement. Vérifier après pull et audit que le Tarif fournisseur redevient applicable, puis cliquer « Actualiser les coûts » sur la Fiche brouillon. **Ne pas modifier le tarif ou les snapshots en base ; ne pas renouveler la preuve des 36 pièces.**
+
+### QA complémentaire du 2026-10-22 — non résolue en données réelles
+
+Exécuter l'audit en lecture seule du Croissant individuel PAI : preuve, signature du conditionnement actuel, snapshot tarifaire, politique et Prix applicable dans le Dossier, montant stocké dans la ligne de Fiche. Valider aussi la création provisoire à la volée et la conservation des preuves sans nouvelle confirmation. Les tests et gates restent à exécuter localement avant PR. Ne jamais corriger directement les historiques.
+
+### Référence croissant historique — QA 2026-10-16
+
+L'audit local a confirmé une modification `G` → `KG` sur « Croissant individuel PAI », toujours associée à BRIDOR réf. 43279 et à un tarif, mais sans brouillon ni validation. Ce changement **déjà effectué** ne doit pas être renormalisé automatiquement. La régularisation passe par une nouvelle Référence distincte en `UNIT` et un contrôle des associations, du prix et du conditionnement. Aucun changement de données n'a été automatisé. Suivi jusqu'à validation QA, reprise E2E et gates globaux.
+
+**QA en attente du 2026-10-16 :** vérifier la correction `KG` → `UNIT` sur la même Référence « Croissant individuel PAI » après confirmation humaine, et reconfirmer 36 pièces pour l'Article BRIDOR. Vérifier le lien de contribution `PROVISIONAL` sans validation automatique ; en l'absence d'origine Workspace, ne pas créer de lien fictif. Valider les tests locaux, permissions Application Global, transaction, snapshots de prix et conservation des identifiants. Aucune donnée métier locale n'a été corrigée par ce commit.
+
+## UNIT-CONSISTENCY — vérifications de données préalables à la livraison (2026-10-16)
+
+- **À auditer localement** : unité réelle M-002 du Produit « Croissant individuel PAI » ; Articles/Tarifs/Fiches liés et existence de snapshots historiques. La branche ne réécrit aucune donnée de démonstration.
+- **Non automatique** : requalification `G` → `UNIT` d'une Référence déjà utilisée ; préférer une nouvelle Référence si des brouillons ou validations existent. Garder des snapshots immuables.
+- **Données héritées** : aucun tarif fournisseur dépourvu de `packagingSnapshot` n'est supposé disposer d'une preuve d'unités de recette ; ces tarifs devront être revus par le métier si nécessaire.
+- **Hors lot** : pondération estimative des fruits/légumes ; conversion pièce/poids à partir de poids moyen ; hiérarchies de colis complexes ; traitement de lots dont les poids fluctuent.
+- Gates locales, UX et tests E2E à valider. Pas de déclaration de réussite avant retour utilisateur.
+
+---
+
 
 ---
 

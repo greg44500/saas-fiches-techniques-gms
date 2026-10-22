@@ -45,6 +45,12 @@ import {
     ReferenceContribution,
 } from '../../../modules/productCatalog/referenceContribution.model.js';
 import {
+    createWorkspaceVariant,
+} from '../../../modules/productCatalog/productCatalog.service.js';
+import {
+    createActiveProductReference,
+} from '../../helpers/productCatalogTest.fixtures.js';
+import {
     User,
 } from '../../../modules/users/user.model.js';
 import {
@@ -700,6 +706,62 @@ describe('M-002 global product reference HTTP contract', () => {
             total: 1,
             totalPages: 1,
         });
+    });
+
+    it('répare via MANAGE une Référence provisoire orpheline et retrouve exactement son contrôle', async () => {
+        const workspace = await createWorkspaceOwnerFixture();
+        const seed = await createActiveProductReference({
+            actorId: workspace.owner._id,
+            name: 'Produit contrôle HTTP orphelin',
+        });
+        const created = await createWorkspaceVariant({
+            workspaceId: workspace.workspace._id,
+            actorId: workspace.owner._id,
+            productId: seed.product._id,
+            variant: {
+                name: 'Quartz paillettes orphelines ZYX',
+                conservationType: 'FRAIS',
+                referenceUnit: 'KG',
+            },
+        });
+        expect(created.classification).toBe('PROVISIONAL');
+        await ReferenceContribution.deleteOne({
+            _id: created.contribution.id,
+        });
+
+        const path = '/api/product-reference/'
+            + seed.product._id + '/review-context';
+        const payload = {
+            dataType: 'REFERENCE',
+            targetId: created.variant.id,
+        };
+        const wrongTarget = await request(app)
+            .post(path).set(bearer(governorToken))
+            .send({ dataType: 'REFERENCE', targetId: seed.variant._id.toString() });
+        expect(wrongTarget.status).toBe(409);
+
+        const recovered = await request(app)
+            .post(path).set(bearer(governorToken)).send(payload);
+        expect(recovered.status).toBe(200);
+        expect(recovered.body.data.item).toMatchObject({
+            dataType: 'REFERENCE',
+            targetId: created.variant.id,
+            productId: seed.product._id.toString(),
+        });
+
+        const again = await request(app)
+            .post(path).set(bearer(governorToken)).send(payload);
+        expect(again.status).toBe(200);
+        expect(again.body.data.item.sourceId)
+            .toBe(recovered.body.data.item.sourceId);
+
+        const restricted = await createUserToken({
+            email: 'product-review-recovery-platform-only@example.test',
+            platformRole: PLATFORM_ROLE.SUPER_ADMIN,
+        });
+        const denied = await request(app)
+            .post(path).set(bearer(restricted.token)).send(payload);
+        expect(denied.status).toBe(403);
     });
 
     it('retourne ensemble les Contributions traitées dans l’Historique', async () => {

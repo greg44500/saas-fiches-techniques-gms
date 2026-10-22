@@ -202,6 +202,15 @@ function ProductCreateDialog({
     }
   }
 
+  function handleExistingCandidate(candidate) {
+    if (pending || !candidate || (!isGlobal && candidate.status !== 'ACTIVE')) return;
+    if (onUseCandidate) {
+      onUseCandidate(candidate.id, candidate);
+      return;
+    }
+    onUseExisting?.(candidate.id);
+  }
+
   function toggleCandidate(candidateId) {
     setReviewedCandidateIds((current) => (
       current.includes(candidateId)
@@ -376,20 +385,12 @@ function ProductCreateDialog({
                   {onUseExisting
                     && (isGlobal || duplicateResult.exactMatch.status === 'ACTIVE') && (
                     <Button
-                      onClick={() => {
-                        if (onUseCandidate) {
-                          onUseCandidate(
-                            duplicateResult.exactMatch.id,
-                            duplicateResult.exactMatch,
-                          );
-                        } else {
-                          onUseExisting(duplicateResult.exactMatch.id);
-                        }
-                      }}
+                      disabled={pending}
+                      onClick={() => handleExistingCandidate(duplicateResult.exactMatch)}
                       type="button"
                       variant="outline"
                     >
-                      {onUseCandidate ? 'Utiliser ce Produit' : 'Ouvrir cette référence'}
+                      {onUseCandidate ? 'Utiliser ce Produit' : 'Ouvrir ce Produit'}
                     </Button>
                   )}
                   {!isGlobal && duplicateResult.exactMatch.status === 'ARCHIVED' && (
@@ -436,6 +437,12 @@ function ProductCreateDialog({
                     label="Aide sur les Produits proches"
                   />
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  {contextualCreation
+                    ? 'Choisissez le Produit correspondant pour le réutiliser, ou confirmez qu’aucun ne convient.'
+                    : 'Ouvrez un Produit existant pour consulter ses Références. '
+                      + 'Cochez « Différent » uniquement si vous voulez réellement créer un autre Produit.'}
+                </p>
                 <ul className="space-y-2">
                   {candidates.map((candidate) => (
                     <li className="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3" key={candidate.id}>
@@ -446,14 +453,22 @@ function ProductCreateDialog({
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {onUseCandidate && candidate.status === 'ACTIVE' && (
+                        {(onUseCandidate || onUseExisting)
+                          && (isGlobal || candidate.status === 'ACTIVE') && (
                           <Button
                             disabled={pending}
-                            onClick={() => onUseCandidate(candidate.id, candidate)}
+                            onClick={() => handleExistingCandidate(candidate)}
                             size="sm"
                             type="button"
                             variant="outline"
-                          >Utiliser ce Produit</Button>
+                          >
+                            {onUseCandidate ? 'Utiliser ce Produit' : 'Ouvrir ce Produit'}
+                          </Button>
+                        )}
+                        {!isGlobal && candidate.status === 'ARCHIVED' && (
+                          <span className="text-xs text-muted-foreground">
+                            Produit archivé — non réutilisable
+                          </span>
                         )}
                         {!contextualCreation && (
                           <label className="flex cursor-pointer items-center gap-2 text-sm">

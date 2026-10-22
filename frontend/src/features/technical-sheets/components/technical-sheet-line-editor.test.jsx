@@ -41,6 +41,26 @@ vi.mock('@/features/products/components/product-search-autocomplete', () => ({
           Pomme
         </button>
         <button
+          aria-label={'Sélectionner Article Carotte depuis ' + props.ariaLabel}
+          onClick={() => props.onSelect({
+            product: { id: 'product-1', name: 'Carotte' },
+            variant: {
+              id: 'variant-1',
+              name: 'Carotte râpée',
+              referenceUnit: 'KG',
+              yieldPercent: '90',
+            },
+            supplierArticle: {
+              id: 'article-2',
+              supplierReference: 'CAR-02',
+              supplier: { name: 'Autre fournisseur' },
+            },
+          })}
+          type="button"
+        >
+          Article Carotte
+        </button>
+        <button
           aria-label={'Sélectionner Farine grammes depuis ' + props.ariaLabel}
           onClick={() => props.onSelect({
             product: {
@@ -220,6 +240,9 @@ const valuedLine = normalizeDraftLine({
     name: 'Carotte râpée',
     referenceUnit: 'KG',
     yieldPercent: '90',
+    status: 'ACTIVE',
+    governanceStatus: 'APPROVED',
+    updatedAt: '2026-10-22T08:00:00.000Z',
   },
   netQuantity: '2.5',
   inputUnit: 'KG',
@@ -303,6 +326,31 @@ describe('TechnicalSheetLineEditor', () => {
     });
   });
 
+  it('explique un prix NC lorsque le tarif historique ne se convertit pas à la pièce', async () => {
+    const user = userEvent.setup();
+    renderEditor({
+      lines: [{
+        ...valuedLine,
+        netQuantity: '1',
+        inputUnit: 'UNIT',
+        productVariant: {
+          ...valuedLine.productVariant,
+          name: 'Croissant individuel PAI',
+          referenceUnit: 'UNIT',
+        },
+        valuation: {
+          status: 'NO_PRICE',
+          normalizedAmount: null,
+          normalizedUnit: null,
+          alerts: ['NO_VALID_NEGOTIATED_PRICE', 'SUPPLIER_TARIFF_NOT_NORMALIZABLE'],
+        },
+      }],
+    });
+    await user.hover(screen.getByText('NC', { selector: 'button[aria-label="Prix unitaire hors taxe"]' }));
+    expect(await screen.findByText(/conditionnement historique du tarif et les pièces confirmées/i))
+      .toBeInTheDocument();
+  });
+
   it('expose les sources Produit sous forme de contrôles réutilisables', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -320,15 +368,16 @@ describe('TechnicalSheetLineEditor', () => {
     const scopeControl = document.querySelector(
       '[aria-label="Source des Produits"]',
     );
-    const globalButton = screen.getByRole('button', {
-      name: 'Tous les produits',
-    });
-    const favoritesButton = screen.getByRole('button', {
-      name: 'Favoris',
-    });
+    const allButton = screen.getByRole('button', { name: 'Tous' });
+    const articlesButton = screen.getByRole('button', { name: 'Articles' });
+    const favoritesButton = screen.getByRole('button', { name: 'Favoris' });
 
-    expect(scopeControl).toHaveClass('h-9', 'p-px');
-    expect(globalButton).toHaveAttribute('aria-pressed', 'true');
+    expect(scopeControl).toHaveClass('h-9', 'max-w-64');
+    expect(allButton).toHaveAttribute('aria-pressed', 'true');
+    expect(scopeControl.querySelector('[aria-hidden="true"]'))
+      .toHaveStyle({ transform: 'translateX(200%)' });
+    await user.click(articlesButton);
+    expect(onChange).toHaveBeenCalledWith('ARTICLES');
     await user.click(favoritesButton);
     expect(onChange).toHaveBeenCalledWith('WORKSPACE');
   });
@@ -525,6 +574,164 @@ describe('TechnicalSheetLineEditor', () => {
     })).toBe('Choisir un Article fournisseur');
   });
 
+
+  it('expose identité validée, unité et date de modification sans horodatage économique', async () => {
+    const user = userEvent.setup();
+    renderEditor({ lines: [{
+      ...valuedLine,
+      valuation: {
+        ...valuedLine.valuation,
+        pricedAt: '2026-10-22T08:29:26.000Z',
+      },
+    }] });
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Référence Produit : Validée'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Unité de référence : kg'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Référence modifiée le : 22/10/2026'))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/Calcul du :/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/10:29:26/)).not.toBeInTheDocument();
+  });
+
+  it('distingue une Référence provisoire d’une Référence validée', async () => {
+    const user = userEvent.setup();
+    renderEditor({ lines: [{
+      ...valuedLine,
+      productVariant: {
+        ...valuedLine.productVariant,
+        governanceStatus: 'PROVISIONAL',
+        updatedAt: '2026-10-21T10:00:00.000Z',
+      },
+    }] });
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Référence Produit : À valider'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Référence modifiée le : 21/10/2026'))
+      .toBeInTheDocument();
+    expect(screen.queryByText('Référence Produit : Validée'))
+      .not.toBeInTheDocument();
+  });
+
+  it('identifie le fournisseur réellement choisi et sa date de mise à jour', async () => {
+    const user = userEvent.setup();
+    mocks.articleQuery.mockReturnValue({
+      data: {
+        articles: [{
+          id: 'article-1',
+          supplierReference: 'SYS-001',
+          supplierDesignation: 'Carotte râpée 10 kg',
+          supplier: { id: 'supplier-1', name: 'Sysco' },
+          packaging: null,
+          updatedAt: '2026-10-20T12:00:00.000Z',
+        }],
+      },
+      isError: false,
+      isLoading: false,
+    });
+    renderEditor();
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Fournisseur : Sysco'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Article modifié le : 20/10/2026'))
+      .toBeInTheDocument();
+  });
+
+  it('n’affirme pas que le Produit a été actualisé si aucune date n’est disponible', async () => {
+    const user = userEvent.setup();
+    renderEditor({ lines: [{
+      ...valuedLine,
+      productVariant: {
+        id: 'variant-1',
+        name: 'Carotte râpée',
+        referenceUnit: 'KG',
+      },
+      selectedSupplierArticleId: null,
+      valuation: {
+        ...valuedLine.valuation,
+        supplierArticleId: null,
+        applicableSource: 'INDICATIVE_GLOBAL',
+      },
+    }] });
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Article fournisseur : Aucun sélectionné'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Source du prix : Prix repère global'))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/modifiée le :/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Calcul du :/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Aucun Article fournisseur disponible.'))
+      .not.toBeInTheDocument();
+  });
+
+  it('montre la source de valorisation réelle dans l’infobulle Produit', async () => {
+    const user = userEvent.setup();
+    renderEditor();
+
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Source du prix : Tarif négocié'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Valorisation enregistrée')).toBeInTheDocument();
+  });
+
+  it('ajoute une ligne avec l’Article explicitement sélectionné en une sauvegarde', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor({ productScope: 'ARTICLES' });
+
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Article Carotte depuis Ajouter un produit aux Ingrédients',
+    }));
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        valuedLine,
+        expect.objectContaining({
+          productVariantId: 'variant-1',
+          selectedSupplierArticleId: 'article-2',
+          sourcingSelectionPending: true,
+        }),
+      ],
+      { immediate: true },
+    );
+  });
+
+  it('remplace uniquement l’Article sur une même Référence sans changer la ligne', async () => {
+    const user = userEvent.setup();
+    const { onChange } = renderEditor({ productScope: 'ARTICLES' });
+
+    await user.click(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Sélectionner Article Carotte depuis Modifier le produit Carotte râpée',
+    }));
+    expect(onChange).toHaveBeenCalledWith(
+      [expect.objectContaining({
+        id: 'line-1',
+        productVariantId: 'variant-1',
+        netQuantity: '2.5',
+        selectedSupplierArticleId: 'article-2',
+        sourcingSelectionPending: true,
+        valuation: null,
+      })],
+      { immediate: true },
+    );
+  });
+
   it('ajoute un Produit directement depuis la ligne de saisie de la section', async () => {
     const user = userEvent.setup();
     const { onChange } = renderEditor();
@@ -669,6 +876,43 @@ describe('TechnicalSheetLineEditor', () => {
       .toBeInTheDocument();
     expect(screen.getByText(/Conditionnement : 1 × 10 kg/))
       .toBeInTheDocument();
+  });
+
+  it('affiche le poids net BRIDOR sous le conditionnement sans répéter la quantité totale', async () => {
+    const user = userEvent.setup();
+    mocks.articleQuery.mockReturnValue({
+      data: {
+        articles: [{
+          id: 'article-1',
+          supplierReference: '43279',
+          supplierDesignation: 'Croissant 120 g',
+          packaging: {
+            containerType: 'Carton',
+            unitCount: 36,
+            quantityPerUnit: '0.120',
+            unit: 'KG',
+            totalQuantity: '4.32',
+            netWeight: '4.320',
+            netWeightUnit: 'KG',
+          },
+          supplier: { id: 'supplier-1', name: 'BRIDOR' },
+        }],
+      },
+      isError: false,
+      isLoading: false,
+    });
+    renderEditor();
+    await user.hover(screen.getByRole('button', {
+      name: 'Modifier le produit Carotte râpée',
+    }));
+    expect(await screen.findByText('Fournisseur : BRIDOR'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Conditionnement : Carton · 36 × 0.120 kg'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Poids net : 4.320 kg'))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/Quantité totale calculée/))
+      .not.toBeInTheDocument();
   });
 
   it('autorise le sourcing même lorsque la composition est en lecture seule', async () => {

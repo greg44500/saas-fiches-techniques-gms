@@ -15,6 +15,7 @@ vi.mock('@/components/shared/info-tooltip', () => ({
 const mocks = vi.hoisted(() => ({
   duplicateCheck: vi.fn(),
   createProduct: vi.fn(),
+  globalDuplicateCheck: vi.fn(),
 }));
 
 vi.mock('@/features/products/api/product-catalog-api', () => ({
@@ -34,7 +35,7 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
     { isLoading: false },
   ],
   useDuplicateCheckProductReferenceMutation: () => [
-    vi.fn(),
+    mocks.globalDuplicateCheck,
     { isLoading: false },
   ],
 }));
@@ -178,6 +179,100 @@ describe('ProductCreateDialog', () => {
     );
   });
 
+  it('ouvre un Produit actif parmi les proches au lieu de forcer un doublon', async () => {
+    const user = userEvent.setup();
+    const onUseExisting = vi.fn();
+    const onCreated = vi.fn();
+
+    mocks.duplicateCheck.mockReturnValue(resolved({
+      exactMatch: null,
+      candidates: [{
+        id: 'product-croissant',
+        name: 'Croissant individuel PAI',
+        status: 'ACTIVE',
+        category: { name: 'Matières premières de pâtisserie et boulangerie' },
+      }],
+    }));
+
+    render(<ProductCreateDialog
+      metadata={metadata}
+      onClose={vi.fn()}
+      onCreated={onCreated}
+      onUseExisting={onUseExisting}
+      open
+      workspaceId="workspace-1"
+    />);
+
+    await user.type(screen.getByLabelText('Nom du Produit'), 'croissant');
+    await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
+    expect(await screen.findByText('Croissant individuel PAI')).toBeInTheDocument();
+    expect(screen.getByText(/Cochez « Différent » uniquement/)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Différent' })).not.toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Ouvrir ce Produit' }));
+    expect(onUseExisting).toHaveBeenCalledTimes(1);
+    expect(onUseExisting).toHaveBeenCalledWith('product-croissant');
+    expect(mocks.createProduct).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
+  });
+
+  it('n’offre pas de réutilisation Workspace pour un Produit proche archivé', async () => {
+    const user = userEvent.setup();
+    const onUseExisting = vi.fn();
+    mocks.duplicateCheck.mockReturnValue(resolved({
+      exactMatch: null,
+      candidates: [{
+        id: 'product-old',
+        name: 'Croissant ancien',
+        status: 'ARCHIVED',
+      }],
+    }));
+    render(<ProductCreateDialog
+      metadata={metadata}
+      onClose={vi.fn()}
+      onCreated={vi.fn()}
+      onUseExisting={onUseExisting}
+      open
+      workspaceId="workspace-1"
+    />);
+
+    await user.type(screen.getByLabelText('Nom du Produit'), 'croissant');
+    await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
+    expect(await screen.findByText('Croissant ancien')).toBeInTheDocument();
+    expect(screen.getByText('Produit archivé — non réutilisable')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ouvrir ce Produit' }))
+      .not.toBeInTheDocument();
+    expect(onUseExisting).not.toHaveBeenCalled();
+  });
+
+  it('permet à l’administration globale d’ouvrir un Produit proche archivé', async () => {
+    const user = userEvent.setup();
+    const onUseExisting = vi.fn();
+    mocks.globalDuplicateCheck.mockReturnValue(resolved({
+      exactMatch: null,
+      candidates: [{
+        id: 'product-archived',
+        name: 'Croissant ancien',
+        status: 'ARCHIVED',
+      }],
+    }));
+    render(<ProductCreateDialog
+      metadata={metadata}
+      mode="global"
+      onClose={vi.fn()}
+      onCreated={vi.fn()}
+      onUseExisting={onUseExisting}
+      open
+    />);
+
+    await user.type(screen.getByLabelText('Nom du Produit'), 'croissant');
+    await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
+    expect(await screen.findByText('Croissant ancien')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ouvrir ce Produit' }));
+    expect(onUseExisting).toHaveBeenCalledWith('product-archived');
+    expect(screen.getByRole('checkbox', { name: 'Différent' })).not.toBeChecked();
+  });
+
   it('demande une confirmation globale explicite avant de créer un Produit proche', async () => {
     const user = userEvent.setup();
     const createRequest = vi.fn().mockResolvedValue({
@@ -275,7 +370,7 @@ describe('ProductCreateDialog', () => {
 
     await user.type(screen.getByLabelText('Nom du Produit'), 'Carotte');
     await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
-    await user.click(await screen.findByRole('button', { name: 'Ouvrir cette référence' }));
+    await user.click(await screen.findByRole('button', { name: 'Ouvrir ce Produit' }));
 
     expect(onUseExisting).toHaveBeenCalledWith('product-existing');
     expect(mocks.createProduct).not.toHaveBeenCalled();
@@ -311,7 +406,7 @@ describe('ProductCreateDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Rechercher l’existant' }));
 
     expect(await screen.findByText(/référence est archivée/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ouvrir cette référence' }))
+    expect(screen.queryByRole('button', { name: 'Ouvrir ce Produit' }))
       .not.toBeInTheDocument();
   });
 

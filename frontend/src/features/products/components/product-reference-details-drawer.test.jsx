@@ -139,6 +139,7 @@ const metadata = {
     { value: 'ARCHIVED', label: 'Archivé' },
   ],
   productCharacteristicKinds: [
+    { value: 'PRESENTATION', label: 'Présentation' },
     { value: 'CUT', label: 'Pièce / découpe' },
     { value: 'COLOR', label: 'Couleur' },
   ],
@@ -283,6 +284,40 @@ describe('ProductReferenceDetailsDrawer', () => {
   });
 
 
+  it('affiche la gouvernance provisoire indépendamment de la revue qualité dans Dimensions', async () => {
+    const user = userEvent.setup();
+    const onReviewRequested = vi.fn();
+    mocks.dimensions.mockReturnValue(queryResult({
+      varieties: [],
+      characteristics: [{
+        id: 'presentation-1',
+        name: 'Individuel',
+        kind: 'PRESENTATION',
+        status: 'ACTIVE',
+        governanceStatus: 'PROVISIONAL',
+        qualityReviewStatus: 'REVIEWED',
+      }],
+    }));
+
+    renderDrawer({
+      initialTab: 'dimensions',
+      onReviewRequested,
+    });
+
+    expect(screen.getByRole('button', { name: 'À contrôler (0)' }))
+      .toBeInTheDocument();
+    const identityButton = screen.getByRole('button', {
+      name: 'Examiner l’identité de la caractéristique Individuel',
+    });
+    expect(identityButton).toBeVisible();
+    await user.click(identityButton);
+    expect(onReviewRequested).toHaveBeenCalledWith(
+      'DIMENSION',
+      'presentation-1',
+      'CHARACTERISTIC',
+    );
+  });
+
   it('ouvre directement les Dimensions à vérifier depuis une notification Produit', () => {
     renderDrawer({
       initialDimensionFilter: 'pending',
@@ -367,6 +402,190 @@ describe('ProductReferenceDetailsDrawer', () => {
       decision: 'APPROVE',
       targetReferenceId: null,
     });
+  });
+
+
+  it('guide la validation d’une Référence sur les identités Produit et Dimension sans changer d’onglet', async () => {
+    const user = userEvent.setup();
+    const onGuidedReviewRequested = vi.fn();
+
+    mocks.detail.mockReturnValue(queryResult({
+      product: {
+        id: 'product-1', name: 'Croissant', status: 'ACTIVE',
+        governanceStatus: 'APPROVED',
+      },
+      variants: [{
+        id: 'variant-guide', name: 'Croissant individuel PAI',
+        conservationType: 'FRAIS', referenceUnit: 'KG',
+        status: 'ACTIVE', governanceStatus: 'PROVISIONAL',
+        characteristics: [{
+          id: 'characteristic-guide',
+          name: 'Individuel',
+          kind: 'PRESENTATION',
+          governanceStatus: 'PROVISIONAL',
+          qualityReviewStatus: 'REVIEWED',
+        }],
+      }],
+      events: [],
+    }));
+    mocks.dimensions.mockReturnValue(queryResult({
+      varieties: [],
+      characteristics: [{
+        id: 'characteristic-guide',
+        name: 'Individuel',
+        kind: 'PRESENTATION',
+        status: 'ACTIVE',
+        governanceStatus: 'PROVISIONAL',
+        qualityReviewStatus: 'REVIEWED',
+      }],
+    }));
+
+    renderDrawer({
+      initialTab: 'variants',
+      onGuidedReviewRequested,
+      reviewContext: {
+        sourceId: 'contribution-reference',
+        targetId: 'variant-guide',
+        type: 'CONTRIBUTION',
+        dataType: 'REFERENCE',
+        value: 'Croissant individuel PAI',
+        candidates: [],
+      },
+    });
+
+    expect(screen.getByRole('tab', { name: 'Dimensions (1)' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Produit' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Historique' })).toBeInTheDocument();
+    const workflow = screen.getByRole('region', {
+      name: 'Contrôle de publication de Croissant individuel PAI',
+    });
+    expect(within(workflow).getByText('Présentation')).toBeInTheDocument();
+    expect(within(workflow).getByText('Individuel')).toBeInTheDocument();
+    expect(within(workflow).getByRole('button', { name: 'Valider' }))
+      .toBeDisabled();
+
+    await user.click(within(workflow).getByRole('button', {
+      name: 'Examiner Présentation Individuel',
+    }));
+    expect(onGuidedReviewRequested).toHaveBeenCalledWith(expect.objectContaining({
+      dataType: 'DIMENSION',
+      dimensionType: 'CHARACTERISTIC',
+      id: 'characteristic-guide',
+    }));
+    expect(screen.getByRole('tabpanel')).toBeInTheDocument();
+  });
+
+  it('permet la décision sur une Dimension provisoire sans quitter le contrôle de la Référence', async () => {
+    const user = userEvent.setup();
+    mocks.detail.mockReturnValue(queryResult({
+      product: { id: 'product-1', name: 'Croissant', status: 'ACTIVE', governanceStatus: 'APPROVED' },
+      variants: [{
+        id: 'variant-guide', name: 'Croissant individuel',
+        status: 'ACTIVE', governanceStatus: 'PROVISIONAL',
+        conservationType: 'FRAIS', referenceUnit: 'KG',
+        characteristics: [{ id: 'characteristic-guide', name: 'Individuel', kind: 'PRESENTATION', governanceStatus: 'PROVISIONAL' }],
+      }],
+      events: [],
+    }));
+    mocks.dimensions.mockReturnValue(queryResult({
+      varieties: [],
+      characteristics: [{ id: 'characteristic-guide', name: 'Individuel', kind: 'PRESENTATION', status: 'ACTIVE', governanceStatus: 'PROVISIONAL', qualityReviewStatus: 'REVIEWED' }],
+    }));
+    const onGuidedReviewClosed = vi.fn();
+    renderDrawer({
+      initialTab: 'variants',
+      onGuidedReviewClosed,
+      reviewContext: {
+        sourceId: 'contribution-reference', targetId: 'variant-guide',
+        dataType: 'REFERENCE', type: 'CONTRIBUTION', candidates: [],
+      },
+      guidedReviewContext: {
+        sourceId: 'contribution-dimension', targetId: 'characteristic-guide',
+        dataType: 'DIMENSION', type: 'CONTRIBUTION', value: 'Individuel',
+        candidates: [],
+      },
+    });
+
+    const workflow = screen.getByRole('region', {
+      name: 'Contrôle de publication de Croissant individuel',
+    });
+    expect(within(workflow).getByRole('button', {
+      name: 'Masquer le contrôle de Présentation Individuel',
+    })).toBeInTheDocument();
+    await user.click(within(workflow).getAllByRole('button', { name: 'Valider' })[0]);
+    expect(mocks.reviewContribution).toHaveBeenCalledWith({
+      contributionId: 'contribution-dimension',
+      decision: 'APPROVE',
+      targetReferenceId: null,
+    });
+    expect(onGuidedReviewClosed).toHaveBeenCalled();
+  });
+
+  it('signale aussi le Produit parent provisoire, distinct de ses Dimensions', () => {
+    mocks.detail.mockReturnValue(queryResult({
+      product: { id: 'product-1', name: 'Croissant', status: 'ACTIVE', governanceStatus: 'PROVISIONAL' },
+      variants: [{
+        id: 'variant-3', name: 'Croissant PAI',
+        status: 'ACTIVE', governanceStatus: 'PROVISIONAL',
+        referenceUnit: 'KG', conservationType: 'FRAIS',
+        characteristics: [],
+      }],
+      events: [],
+    }));
+    mocks.dimensions.mockReturnValue(queryResult({ varieties: [], characteristics: [] }));
+    renderDrawer({
+      initialTab: 'variants',
+      reviewContext: {
+        sourceId: 'review-3', dataType: 'REFERENCE',
+        targetId: 'variant-3', type: 'CONTRIBUTION', candidates: [],
+      },
+    });
+    const workflow = screen.getByRole('region', {
+      name: 'Contrôle de publication de Croissant PAI',
+    });
+    expect(within(workflow).getByRole('button', {
+      name: 'Examiner Produit parent Croissant',
+    })).toBeInTheDocument();
+    expect(within(workflow).getByRole('button', { name: 'Valider' }))
+      .toBeDisabled();
+  });
+
+  it('rend À contrôler comme un petit bouton warning ouvrant le contrôle ciblé', async () => {
+    const user = userEvent.setup();
+    const onReviewRequested = vi.fn();
+    mocks.detail.mockReturnValue(queryResult({
+      product: {
+        id: 'product-1',
+        name: 'Abricot',
+        category: null,
+        status: 'ACTIVE',
+        governanceStatus: 'APPROVED',
+      },
+      variants: [{
+        id: 'variant-to-review',
+        name: 'Croissant PAI',
+        status: 'ACTIVE',
+        governanceStatus: 'PROVISIONAL',
+        referenceUnit: 'KG',
+        conservationType: 'FRAIS',
+      }],
+      events: [],
+    }));
+
+    renderDrawer({
+      initialTab: 'variants',
+      onReviewRequested,
+    });
+    const control = screen.getByRole('button', {
+      name: 'Examiner la référence Croissant PAI',
+    });
+    expect(control).toHaveTextContent('À contrôler');
+    expect(control).toHaveClass(
+      'h-7', 'border-warning/60', 'bg-warning/10', 'text-warning', 'text-xs',
+    );
+    await user.click(control);
+    expect(onReviewRequested).toHaveBeenCalledWith('REFERENCE', 'variant-to-review');
   });
 
   it('valide une Dimension ciblée depuis son détail sans seconde décision', async () => {

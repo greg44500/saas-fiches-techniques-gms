@@ -9,6 +9,7 @@ import {
     createAuditFields,
     createScopeFields,
     packagingSchema,
+    recipeUnitEquivalenceSchema,
 } from './supplierCatalog.schemas.js';
 
 const { Schema, model } = mongoose;
@@ -114,6 +115,10 @@ const supplierArticleSchema = new Schema(
         },
         brand: { type: String, trim: true, maxlength: 160, default: null },
         packaging: { type: packagingSchema, default: null },
+        recipeUnitEquivalence: {
+            type: recipeUnitEquivalenceSchema,
+            default: null,
+        },
         status: {
             type: String,
             enum: Object.values(SUPPLIER_RESOURCE_STATUS),

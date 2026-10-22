@@ -2,6 +2,14 @@ import { randomUUID } from 'node:crypto';
 
 import { expect, test } from '@playwright/test';
 
+import { createActiveProductReference } from '../../backend/tests/helpers/productCatalogTest.fixtures.js';
+import { createWorkspaceVariant } from '../../backend/modules/productCatalog/productCatalog.service.js';
+import { submitReferenceContribution } from '../../backend/modules/productCatalog/productReferenceContribution.service.js';
+import { markProductDimensionReviewed } from '../../backend/modules/productCatalog/productReferenceReview.service.js';
+import { ReferenceContribution } from '../../backend/modules/productCatalog/referenceContribution.model.js';
+import { Workspace } from '../../backend/modules/workspace/workspace.model.js';
+import { withE2eDatabase } from '../support/dossier-fixtures.js';
+
 import {
   loginWithIdentity,
 } from '../support/auth.js';
@@ -59,6 +67,168 @@ async function createGlobalReferenceForMerge(
   await dialog.getByRole('button', { name: 'Créer la référence' }).click();
   await expectVisibleToast(page, 'Référence créée');
 }
+
+
+test('M-002 la correction de référence conserve les actions visibles sur un écran bas', async ({ page }) => {
+  await loginWithIdentity(page, E2E_FOUNDER);
+  await page.goto('/product-reference');
+
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const productName = `Produit ergonomie E2E ${suffix}`;
+  await createGlobalProductForMerge(page, productName);
+
+  await page.getByRole('tab', { name: 'Références (1)' }).click();
+  await page.setViewportSize({ width: 1080, height: 520 });
+  await page.getByRole('button', {
+    name: `Corriger la référence ${productName}`,
+  }).click();
+
+  const dialog = page.getByRole('dialog', { name: `Corriger ${productName}` });
+  const fields = dialog.getByRole('region', { name: 'Champs de la référence Produit' });
+  const cancel = dialog.getByRole('button', { name: 'Annuler' });
+  const save = dialog.getByRole('button', { name: 'Enregistrer' });
+
+  await expect(dialog.getByRole('button', { name: 'Enrichir le référentiel' }))
+    .toBeVisible();
+  await expect(dialog.getByText('Caractéristiques de la référence')).toHaveCount(0);
+
+  const processing = dialog.getByLabel('État / transformation');
+  const labelOffset = () => dialog
+    .locator('label[for="product-variant-processing"]')
+    .evaluate((element) => {
+      const field = element.closest('[data-slot="field"]');
+      return element.getBoundingClientRect().top - field.getBoundingClientRect().top;
+    });
+  const initialOffset = await labelOffset();
+  await processing.focus();
+  await expect.poll(labelOffset).toBeLessThan(initialOffset - 8);
+  await processing.fill('Prêt à cuire');
+  await cancel.focus();
+  await expect.poll(labelOffset).toBeLessThan(initialOffset - 8);
+  await processing.fill('');
+  await cancel.focus();
+  await expect.poll(labelOffset).toBeGreaterThan(initialOffset - 4);
+
+  await expect(fields).toBeVisible();
+  expect(await fields.evaluate((element) => element.scrollHeight > element.clientHeight))
+    .toBe(true);
+  await expect(cancel).toBeInViewport();
+  await expect(save).toBeInViewport();
+
+  await fields.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+  await expect(cancel).toBeInViewport();
+  await expect(save).toBeInViewport();
+
+  await cancel.click();
+  await expect(dialog).toBeHidden();
+});
+
+
+test('M-002 contrôle guidé : la Dimension vérifiée mais provisoire se valide avant la Référence', async ({ page }) => {
+  const workspace = await provisionProductOwnerWorkspace();
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const productName = `Produit contrôle guidé ${suffix}`;
+  const referenceName = `Référence contrôle guidé ${suffix}`;
+
+  await withE2eDatabase(async () => {
+    const owner = await Workspace.findById(workspace.workspaceId);
+    const actorId = owner.createdBy;
+    const reference = await createActiveProductReference({
+      actorId,
+      name: productName,
+    });
+    const dimension = await submitReferenceContribution({
+      workspaceId: owner._id,
+      actorId,
+      type: 'CHARACTERISTIC',
+      productId: reference.product._id,
+      characteristicKind: 'QUALITY_DESIGNATION',
+      value: 'Individuel',
+    });
+    expect(dimension.classification).toBe('PROVISIONAL');
+    const created = await createWorkspaceVariant({
+      workspaceId: owner._id,
+      actorId,
+      productId: reference.product._id,
+      forceCreate: true,
+      reviewedCandidateIds: [],
+      variant: {
+        name: referenceName,
+        conservationType: 'FRAIS',
+        referenceUnit: 'KG',
+        characteristicIds: [dimension.provisionalReference.id],
+      },
+    });
+    expect(created.classification).toBe('PROVISIONAL');
+    await markProductDimensionReviewed({
+      actorId,
+      productId: reference.product._id,
+      type: 'CHARACTERISTIC',
+      dimensionId: dimension.provisionalReference.id,
+    });
+    await ReferenceContribution.deleteOne({ _id: dimension.contribution.id });
+  });
+
+  await loginWithIdentity(page, E2E_FOUNDER);
+  await page.goto('/product-reference');
+  await selectGlobalProductReference(page, productName);
+
+  // La sélection dans l'autocomplétion filtre le tableau, mais n'ouvre
+  // pas la fiche Produit. Ouvrir explicitement la ligne avant ses onglets.
+  const productRow = page.getByRole('row').filter({ hasText: productName });
+  await expect(productRow).toBeVisible();
+  await productRow.getByRole('button', { name: `Voir ${productName}` }).click();
+  await expect(page.getByRole('heading', { name: productName, exact: true }))
+    .toBeVisible();
+
+  await page.getByRole('tab', { name: /Références \(\d+\)/ }).click();
+  await page.getByRole('button', {
+    name: `Examiner la référence ${referenceName}`,
+  }).click();
+
+  const workflow = page.getByRole('region', {
+    name: `Contrôle de publication de ${referenceName}`,
+  });
+  await expect(workflow).toBeVisible();
+  await expect(workflow.getByText('Individuel')).toBeVisible();
+  await expect(workflow.getByRole('button', { name: 'Valider', exact: true }))
+    .toBeDisabled();
+
+  // Cette Dimension a volontairement perdu son lien de Contribution :
+  // la reprise doit poster dimensionType, sinon Zod refuse le corps HTTP.
+  const recoveryResponsePromise = page.waitForResponse((response) => (
+    response.url().endsWith('/review-context')
+    && response.request().method() === 'POST'
+  ));
+  await workflow.getByRole('button', {
+    name: 'Examiner Désignation de qualité Individuel',
+  }).click();
+  const recoveryResponse = await recoveryResponsePromise;
+  expect(
+    recoveryResponse.request().postDataJSON(),
+  ).toMatchObject({
+    dataType: 'DIMENSION',
+    dimensionType: 'CHARACTERISTIC',
+  });
+  expect(
+    recoveryResponse.status(),
+    'La reprise de la Dimension a échoué : ' + await recoveryResponse.text(),
+  ).toBe(200);
+  await expect(workflow.getByRole('button', {
+    name: 'Masquer le contrôle de Désignation de qualité Individuel',
+  })).toBeVisible();
+
+  const approveButtons = workflow.getByRole('button', { name: 'Valider', exact: true });
+  await expect(approveButtons).toHaveCount(2);
+  await approveButtons.first().click();
+  await expectVisibleToast(page, 'Dimension validée');
+
+  await expect(workflow.getByText('Les identités associées sont validées.')).toBeVisible();
+  await expect(workflow.getByRole('button', { name: 'Valider', exact: true }))
+    .toBeEnabled();
+  await workflow.getByRole('button', { name: 'Valider', exact: true }).click();
+  await expectVisibleToast(page, 'Référence validée');
+});
 
 test('M-002 contribution Workspace est revue puis publiée globalement', async ({ page }) => {
   const context = await provisionProductOwnerWorkspace();
@@ -229,6 +399,21 @@ test('M-002 autorité Application Global alimente directement le référentiel',
     page.getByText(productName, { exact: true }).first(),
   ).toBeVisible();
 
+  await page.getByRole('button', { name: 'Fermer' }).click();
+
+  // Réutiliser un Produit trouvé parmi les candidats proches : ne jamais
+  // imposer « Différent » ni provoquer une seconde création.
+  await page.getByRole('button', { name: 'Créer un Produit' }).click();
+  dialog = page.getByRole('dialog', { name: 'Créer un Produit' });
+  await dialog.getByLabel('Nom du Produit').fill(productName.slice(0, -3));
+  await dialog.getByRole('button', { name: 'Rechercher l’existant' }).click();
+  const nearby = dialog.getByRole('listitem').filter({ hasText: productName });
+  await expect(nearby).toBeVisible();
+  await expect(nearby.getByRole('checkbox', { name: 'Différent' })).not.toBeChecked();
+  await nearby.getByRole('button', { name: 'Ouvrir ce Produit' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('heading', { name: productName, exact: true }))
+    .toBeVisible();
   await page.getByRole('button', { name: 'Fermer' }).click();
 
   await expect(

@@ -568,6 +568,90 @@ test('M-003 importe des prix Articles sans période saisie et les expose depuis 
 });
 
 
+test('M-003 crée manuellement un Article et propose sa Référence sans quitter le parcours', async ({ page }) => {
+  const workspace = await provisionSupplierOwnerWorkspace({ withProductReference: false });
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
+  const supplierName = 'Fournisseur manuel E2E ' + suffix;
+  const productName = 'Œufs blancs pasteurisés E2E ' + suffix;
+  const reference = 'OVO-' + suffix;
+
+  const token = await loginWithIdentity(page, workspace.identity);
+  await page.goto(workspace.suppliersUrl);
+  await createSupplierFromUi(page, supplierName);
+  await page.getByRole('tab', { name: /^Articles \(/ }).click();
+  await page.getByRole('button', { name: 'Créer un Article' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Créer un Article fournisseur' });
+  await dialog.getByRole('combobox', { name: 'Sélectionner le Fournisseur' }).click();
+  await page.getByRole('option', { name: supplierName }).click();
+  const creationSearchResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return response.request().method() === 'GET'
+      && url.pathname.endsWith('/supplier-articles/product-contributions/search')
+      && url.searchParams.get('q') === productName;
+  });
+  await dialog.getByRole('combobox', { name: 'Rechercher un Produit' }).fill(productName);
+  // La création n'est proposée qu'après une réponse de recherche M-003 autorisée
+  // et réellement vide. Un HTTP 403/500 ne doit jamais valoir « aucun Produit ».
+  const searched = await creationSearchResponse;
+  expect(searched.status(), 'Recherche Produit contextuelle M-003').toBe(200);
+  expect((await searched.json()).data.results).toEqual([]);
+  await expect(page.getByRole('button', { name: 'Créer cette Référence' })).toBeVisible();
+  await page.getByRole('button', { name: 'Créer cette Référence' }).click();
+  const pendingReference = dialog.getByRole('status', {
+    name: 'Référence Produit à créer',
+  });
+  await expect(pendingReference).toContainText(productName);
+  await expect(dialog.getByRole('button', { name: 'Créer l’Article et la Référence' }))
+    .toBeVisible();
+
+  // La sélection est persistante : remplir les champs commerciaux ne doit
+  // pas revenir silencieusement au mode « Créer l’Article ».
+  await dialog.getByLabel('Référence fournisseur').fill(reference);
+  await dialog.getByLabel('Désignation fournisseur').fill(productName);
+  await expect(pendingReference).toContainText(productName);
+  await expect(dialog.getByRole('button', { name: 'Créer l’Article et la Référence' }))
+    .toBeVisible();
+
+  const createdArticleResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return response.request().method() === 'POST'
+      && url.pathname.endsWith('/supplier-articles');
+  });
+  await dialog.getByRole('button', { name: 'Créer l’Article et la Référence' }).click();
+  const createdArticle = await createdArticleResponse;
+  expect(createdArticle.status(), 'Création de l’Article fournisseur M-003')
+    .toBe(201);
+  expect((await createdArticle.json()).data.article.productVariant)
+    .toBeFalsy();
+
+  const productDialog = page.getByRole('dialog', { name: 'Créer un Produit' });
+  await expect(productDialog).toBeVisible();
+  await productDialog.getByLabel('Nom du Produit').fill(productName);
+  await expect(productDialog.getByText(
+    /Aucun Produit existant correspondant|Produits correspondants/,
+  )).toBeVisible();
+  const confirmDistinct = productDialog.getByRole('checkbox', {
+    name: /J’ai examiné ces Produits/,
+  });
+  if (await confirmDistinct.count()) await confirmDistinct.check();
+  await productDialog.getByRole('button', { name: 'Soumettre la proposition' }).click();
+  await expectVisibleToast(page, 'Référence Produit créée et associée');
+
+  const response = await page.request.get(
+    '/api/workspaces/' + workspace.workspaceId + '/supplier-articles',
+    {
+      headers: { Authorization: 'Bearer ' + token },
+      params: { search: reference },
+    },
+  );
+  expect(response.status()).toBe(200);
+  const saved = (await response.json()).data.articles.find(
+    (entry) => entry.supplierReference === reference,
+  );
+  expect(saved?.associationStatus).toBe('ASSOCIATED');
+  expect(saved?.productVariant?.name).toBe(productName);
+});
+
 test('M-003 associe immédiatement une Référence provisoire créée après un import Article', async ({ page }) => {
   const workspace = await provisionSupplierOwnerWorkspace({ withProductReference: false });
   const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
@@ -644,4 +728,27 @@ test('M-003 associe immédiatement une Référence provisoire créée après un 
   );
   expect(article?.associationStatus).toBe('ASSOCIATED');
   expect(article?.productVariant?.name).toBe(productName);
+
+  // La contribution ferme volontairement le drawer précédent. Retrouver
+  // l'Article persisté après invalidation RTK Query, puis le rouvrir.
+  // Ne pas forcer le drawer à rester ouvert pendant des dialogues distincts.
+  const reopenArticle = page.getByRole('button', {
+    name: 'Détails de ' + reference,
+  });
+  await expect(reopenArticle).toBeVisible();
+  await reopenArticle.click();
+  await expect(page.getByRole('tab', { name: 'Infos Article' })).toBeVisible();
+  // La modification Article expose le libellé métier, sans choix d'unité en Fiche.
+  await page.getByRole('tab', { name: 'Infos Article' }).click();
+  await page.getByRole('button', { name: 'Modifier', exact: true }).click();
+  const editDialog = page.getByRole('dialog', {
+    name: /Modifier les informations de : Croissant individuel PAI/,
+  });
+  await expect(editDialog.getByText('Nb d’unités par colis')).toBeVisible();
+  await expect(editDialog.getByRole('button', { name: 'Enregistrer' })).toBeVisible();
+  await expect(editDialog.getByRole('radio')).toHaveCount(0);
+  await expect(editDialog.getByRole('button', {
+    name: 'Informations sur la correction du conditionnement',
+  })).toBeVisible();
+  await editDialog.getByRole('button', { name: 'Annuler' }).click();
 });

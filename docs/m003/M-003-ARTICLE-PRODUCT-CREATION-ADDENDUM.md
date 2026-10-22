@@ -160,3 +160,66 @@ capability M-002 indépendante ; création liée à l'Article ; provisoire visib
 uniquement au Workspace ; gestionnaire capable de résoudre sans casser le lien ;
 échecs et retry non destructifs ; aucune régression M-002/M-003/M-004 ;
 gates réellement exécutées et communiquées, puis PR unique approuvée.
+
+
+## Complément de stabilisation E2E du 22/10/2026 — recherche avant création
+
+La création manuelle d'un Article doit pouvoir vérifier les Références Produit
+avant même de disposer d'un identifiant Article. Le Workspace disposant
+de `supplier:article:manage`, `supplier:catalog:import`, de la capability
+`supplier_catalog_import` et d'un accès écriture dispose désormais de
+**deux lectures contextuelles de pré-création** :
+
+- `GET /api/workspaces/:workspaceId/supplier-articles/product-contributions/metadata`
+- `GET /api/workspaces/:workspaceId/supplier-articles/product-contributions/search`
+
+Ces routes réutilisent la métadonnée et la recherche M-002 avec les
+contraintes de visibilité des Références (APPROVED globales ou PROVISIONAL
+du Workspace auteur). Elles n'ouvrent pas la capability générale
+`product_reference_access` et ne changent aucun endpoint M-002.
+Les routes de contribution après création d'un Article conservent
+leur contrôle supplémentaire : Article privé, actif, et appartenant
+au Workspace. Aucun POST de contribution n'est ajouté avant
+l'existence de cet Article : création, déduplication gouvernée,
+association et audit restent soumis aux contrôles M-002/M-003.
+
+L'interface de création manuelle utilise les nouvelles lectures uniquement
+lorsque le contexte autorise la création de Référence ; dans les autres
+cas, elle conserve le parcours et les permissions existants. Une erreur
+de recherche ne vaut pas un résultat vide. La création contextuelle
+n'est proposée qu'après une recherche réellement terminée.
+
+Le drawer Article est fermé pendant le formulaire de contribution :
+le scénario E2E doit retrouver puis rouvrir l'Article après association
+pour vérifier les onglets et le formulaire d'édition. Il ne doit pas
+présumer qu'un drawer antérieur reste affiché.
+Tests HTTP (RBAC, capability, séparation des Workspaces), RTL et E2E
+complétés. Résultats locaux / gates non encore vérifiés ; aucune PR.
+
+
+## Correction de stabilité du choix de création — 22/10/2026
+
+Une recherche contextuelle vide et effectivement réussie permet à l'utilisateur
+de choisir « Créer cette Référence ». Ce choix est une **intention explicite** :
+il mémorise le nom demandé indépendamment de la saisie sous-jacente de
+l'autocomplétion et de son cycle de focus. Le formulaire affiche alors la
+Référence en attente et une action « Modifier la recherche ». La recherche
+est démontée tant que cette décision est active ; sa fermeture ne peut donc
+annuler la décision ou changer le libellé « Créer l’Article et la Référence ».
+
+Une annulation doit être **volontaire** : « Modifier la recherche » rouvre
+la recherche, remet à zéro uniquement ce choix, et préserve les données
+fournisseur déjà saisies. Le nom de contribution utilisé après création
+de l'Article est la valeur **confirmée**, et non une valeur susceptible
+d'être altérée par l'autocomplétion.
+
+Le chemin de création reste : validation du Fournisseur et de la référence
+commerciale, création d'Article privé sans Produit, contribution M-002
+vérifiée contre les doublons, association M-003 soumise au RBAC et à
+l'appartenance Workspace, sans publication globale immédiate.
+Les contrôles de capability, visibilité et gouvernance sont inchangés.
+
+Régression ajoutée : simulation d'un `onValueChange` tardif, persistance
+du mode après saisie commerciale, annulation explicite, et parcours E2E
+vérifiant la réponse HTTP de création avant l'ouverture du formulaire M-002.
+**Tests locaux et gates non encore exécutés sur le commit de correction.**

@@ -124,17 +124,35 @@ const packagingBodySchema = z.strictObject({
     }
 });
 
+const recipeUnitConfirmationFields = {
+    recipeUnitsPerPackage: z.number().int().min(1).max(1000000).nullable().optional(),
+    confirmRecipeUnits: z.literal(true).optional(),
+};
+
+const validateRecipeUnitConfirmation = (value, context) => {
+    if (value.recipeUnitsPerPackage != null && value.confirmRecipeUnits !== true) {
+        context.addIssue({
+            code: 'custom',
+            path: ['confirmRecipeUnits'],
+            message: 'Confirmez le nombre de pièces de recette par colis.',
+        });
+    }
+};
+
 const createArticleBodySchema = z.strictObject({
     supplierId: objectIdSchema,
-    productVariantId: objectIdSchema,
+    // Un Article privé peut être créé avant la contribution provisoire M-002.
+    productVariantId: objectIdSchema.nullable(),
     supplierReference: z.string().trim().min(1).max(120),
     supplierDesignation: nullableText(300).optional(),
     brand: nullableText(160).optional(),
     packaging: packagingBodySchema.nullable().optional(),
     provenance: nullableText(240).optional(),
-});
+    ...recipeUnitConfirmationFields,
+}).superRefine(validateRecipeUnitConfirmation);
 
 const updateArticleBodySchema = z.strictObject({
+    ...recipeUnitConfirmationFields,
     productVariantId: objectIdSchema.nullable().optional(),
     supplierDesignation: nullableText(300).optional(),
     brand: nullableText(160).optional(),
@@ -143,7 +161,7 @@ const updateArticleBodySchema = z.strictObject({
 }).refine(
     (value) => Object.keys(value).length > 0,
     'Au moins un champ doit être modifié.',
-);
+).superRefine(validateRecipeUnitConfirmation);
 
 const replaceArticleBodySchema = z.strictObject({
     supplierReference: z.string().trim().min(1).max(120),
@@ -189,6 +207,10 @@ const workspaceArticleListQuerySchema = z.strictObject({
     supplierId: objectIdSchema.optional(),
     productId: objectIdSchema.optional(),
     productVariantId: objectIdSchema.optional(),
+    // Recherche utilisable en Fiche : Articles actifs + Fournisseur et Produit actifs.
+    usableForTechnicalSheet: z.enum(['true', 'false'])
+        .transform((value) => value === 'true')
+        .optional(),
 }).refine(
     (value) => !(value.productId && value.productVariantId),
     {

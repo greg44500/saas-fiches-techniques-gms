@@ -33,6 +33,7 @@ import {
     reviewContribution,
     reviewDimension,
     reviewQueue,
+    restoreReviewContextController,
     updateCategoryController,
     updateCharacteristicController,
     updateCharacteristicStatusController,
@@ -70,6 +71,7 @@ import {
     referenceContributionListQuerySchema,
     referenceContributionParamsSchema,
     productReviewQueueListQuerySchema,
+    productReviewRecoveryBodySchema,
     updateCategoryBodySchema,
     updateCharacteristicBodySchema,
     updateCategoryStatusBodySchema,
@@ -225,6 +227,16 @@ productCatalogGlobalRouter.patch(
         body: updateProductStatusBodySchema,
     }),
     updateProductStatusController,
+);
+
+productCatalogGlobalRouter.post(
+    '/:productId/review-context',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalProductIdParamsSchema,
+        body: productReviewRecoveryBodySchema,
+    }),
+    restoreReviewContextController,
 );
 
 productCatalogGlobalRouter.get(

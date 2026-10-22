@@ -83,8 +83,14 @@ describe('M-002 product catalog registries', () => {
                 factorToBase: 1000,
             }),
         );
-        expect(PRODUCT_REFERENCE_UNIT_REGISTRY.UNIT.label)
-            .toBe('unité');
+        expect(PRODUCT_REFERENCE_UNIT_REGISTRY.UNIT).toEqual(
+            expect.objectContaining({
+                value: 'UNIT',
+                label: 'pièce',
+                dimension: 'COUNT',
+                factorToBase: 1,
+            }),
+        );
     });
 
     it('décrit les scopes de recherche Produit depuis le backend', () => {

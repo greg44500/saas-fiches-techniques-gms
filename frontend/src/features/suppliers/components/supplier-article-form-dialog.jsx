@@ -38,6 +38,8 @@ import {
 } from '@/features/products/lib/product-presentation';
 import {
   useCreateSupplierArticleMutation,
+  useGetSupplierArticleCreationProductMetadataQuery,
+  useSearchSupplierArticleCreationProductsQuery,
 } from '@/features/suppliers/api/supplier-api';
 import {
   getApiErrorMessage,
@@ -47,6 +49,7 @@ const NO_SUPPLIER = '__NONE__';
 const PACKAGING_UNITS = Object.freeze(['G', 'KG', 'ML', 'CL', 'L', 'UNIT']);
 
 function SupplierArticleFormDialog({
+  canCreateProduct = false,
   initialProductVariant = null,
   onClose,
   onSaved,
@@ -56,9 +59,27 @@ function SupplierArticleFormDialog({
   workspaceId,
 }) {
   const cancelRef = useRef(null);
-  const metadataQuery = useGetProductMetadataQuery(workspaceId, {
-    skip: !open,
+  const standardMetadata = useGetProductMetadataQuery(workspaceId, {
+    skip: !open || canCreateProduct,
   });
+  const creationMetadata = useGetSupplierArticleCreationProductMetadataQuery(
+    workspaceId,
+    { skip: !open || !canCreateProduct },
+  );
+  const metadataQuery = canCreateProduct ? creationMetadata : standardMetadata;
+  const [contextualSearch, setContextualSearch] = useState('');
+  const creationSearch = useSearchSupplierArticleCreationProductsQuery(
+    {
+      workspaceId,
+      scope: 'REFERENCE',
+      q: contextualSearch || undefined,
+      page: 1,
+      limit: 6,
+    },
+    {
+      skip: !open || !canCreateProduct || contextualSearch.length < 3,
+    },
+  );
   const [createArticle, createState] =
     useCreateSupplierArticleMutation();
   const [supplierId, setSupplierId] = useState(NO_SUPPLIER);
@@ -74,7 +95,15 @@ function SupplierArticleFormDialog({
   const [netWeight, setNetWeight] = useState('');
   const [netWeightUnit, setNetWeightUnit] = useState('G');
   const [supplierLabel, setSupplierLabel] = useState('');
+  const [recipeCount, setRecipeCount] = useState('');
+  // La décision explicite reste indépendante des événements de l'autocomplétion
+  // (fermeture du popover, perte de focus, normalisation de la saisie).
+  const [pendingReferenceName, setPendingReferenceName] = useState(null);
+  const pendingReferenceNameRef = useRef(null);
+  const createMissingReference = Boolean(pendingReferenceName);
   const [error, setError] = useState('');
+  const needsPieceCount = productVariant?.referenceUnit === 'UNIT'
+    && unit !== 'UNIT' && Boolean(quantityPerUnit);
   const packagingUnitItems = PACKAGING_UNITS.map((value) => ({
     value,
     label:
@@ -93,6 +122,7 @@ function SupplierArticleFormDialog({
 
     setSupplierId(NO_SUPPLIER);
     setProductSearch(initialProductVariant?.name ?? '');
+    setContextualSearch('');
     setProductVariant(initialProductVariant ?? null);
     setSupplierReference('');
     setDesignation('');
@@ -104,6 +134,9 @@ function SupplierArticleFormDialog({
     setNetWeight('');
     setNetWeightUnit('G');
     setSupplierLabel('');
+    setRecipeCount('');
+    pendingReferenceNameRef.current = null;
+    setPendingReferenceName(null);
     setError('');
   }, [initialProductVariant, open]);
 
@@ -115,8 +148,16 @@ function SupplierArticleFormDialog({
       return;
     }
 
-    if (!productVariant?.id) {
-      setError('Sélectionnez une Référence Produit exploitable.');
+    if (!productVariant?.id && !createMissingReference) {
+      setError('Sélectionnez une Référence ou créez la Référence manquante.');
+      return;
+    }
+    if (needsPieceCount && (
+      !Number.isSafeInteger(Number(recipeCount))
+      || Number(recipeCount) < 1 || Number(recipeCount) > 1000000
+      || !Number.isSafeInteger(Number(unitCount)) || Number(unitCount) < 2
+    )) {
+      setError('Précisez le nombre exact de pièces utilisables et le colisage complet.');
       return;
     }
 
@@ -139,10 +180,15 @@ function SupplierArticleFormDialog({
       const article = await createArticle({
         workspaceId,
         supplierId,
-        productVariantId: productVariant.id,
+        productVariantId: productVariant?.id ?? null,
         supplierReference: supplierReference.trim(),
         supplierDesignation: designation.trim() || null,
         brand: brand.trim() || null,
+        ...(needsPieceCount ? {
+          recipeUnitsPerPackage: Number(recipeCount),
+          // L'acte de création atteste explicitement le nombre indiqué à l'écran.
+          confirmRecipeUnits: true,
+        } : {}),
         packaging: (
           containerType.trim()
           || parsedUnitCount
@@ -162,7 +208,11 @@ function SupplierArticleFormDialog({
           : null,
       }).unwrap();
 
-      onSaved(article);
+      if (createMissingReference) {
+        onSaved(article, { createMissingReference: pendingReferenceName });
+      } else {
+        onSaved(article);
+      }
     } catch (submissionError) {
       setError(getApiErrorMessage(
         submissionError,
@@ -234,14 +284,63 @@ function SupplierArticleFormDialog({
             </Field>
 
             <Field>
-              <FieldLabel>Référence Produit</FieldLabel>
+              <div className="flex items-center gap-1">
+                <FieldLabel>Référence Produit</FieldLabel>
+                <InfoTooltip
+                  content="Recherchez une Référence existante avant d’en proposer une nouvelle. Une création sera examinée par le gestionnaire."
+                  label="Informations sur la recherche de Référence Produit"
+                />
+
+              </div>
               {initialProductVariant ? (
                 <p className="rounded-md border border-border px-3 py-2 text-sm">
                   {initialProductVariant.name}
                 </p>
+              ) : createMissingReference ? (
+                <div
+                  aria-label="Référence Produit à créer"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-3 py-2"
+                  role="status"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">
+                      Référence Produit à créer
+                    </p>
+                    <p className="break-words text-sm font-medium">
+                      {pendingReferenceName}
+                    </p>
+                  </div>
+                  <Button
+                    disabled={createState.isLoading}
+                    onClick={() => {
+                      pendingReferenceNameRef.current = null;
+                      setPendingReferenceName(null);
+                      setError('');
+                    }}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Modifier la recherche
+                  </Button>
+                </div>
               ) : (
                 <ProductSearchAutocomplete
+                  externalQuery={creationSearch}
+                  externalSearch={canCreateProduct}
                   metadata={metadataQuery.data}
+                  onDebouncedSearchChange={setContextualSearch}
+                  onCreateMissingReference={canCreateProduct ? (name) => {
+                    const requestedName = name?.trim();
+                    if (!requestedName) return;
+                    // Fixer immédiatement le choix pour ignorer les éventuels
+                    // onValueChange tardifs de la popup qui se referme.
+                    pendingReferenceNameRef.current = requestedName;
+                    setPendingReferenceName(requestedName);
+                    setProductSearch(requestedName);
+                    setProductVariant(null);
+                    setError('');
+                  } : undefined}
                   onSelect={(result) => {
                     if (!result.variant) {
                       setProductVariant(null);
@@ -251,11 +350,15 @@ function SupplierArticleFormDialog({
                       return;
                     }
 
+                    pendingReferenceNameRef.current = null;
+                    setPendingReferenceName(null);
                     setProductVariant(result.variant);
+                    setRecipeCount('');
                     setUnit(result.variant.referenceUnit);
                     setError('');
                   }}
                   onValueChange={(value) => {
+                    if (pendingReferenceNameRef.current !== null) return;
                     setProductSearch(value);
                     setProductVariant((current) => (
                       current?.name === value ? current : null
@@ -266,11 +369,11 @@ function SupplierArticleFormDialog({
                   workspaceId={workspaceId}
                 />
               )}
-              <FieldDescription>
-                {initialProductVariant
-                  ? 'La Référence Produit est préremplie depuis le Produit consulté.'
-                  : 'Recherchez puis sélectionnez le Produit correspondant à cet Article fournisseur.'}
-              </FieldDescription>
+              {initialProductVariant && (
+                <FieldDescription>
+                  La Référence Produit est préremplie depuis le Produit consulté.
+                </FieldDescription>
+              )}
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -414,6 +517,26 @@ function SupplierArticleFormDialog({
               </div>
             </div>
 
+            {needsPieceCount && (
+              <Field>
+                <FieldLabel htmlFor="supplier-recipe-count">
+                  Nombre exact de pièces utilisables par colis
+                </FieldLabel>
+                <Input
+                  id="supplier-recipe-count"
+                  inputMode="numeric"
+                  min="1"
+                  max="1000000"
+                  onChange={(event) => setRecipeCount(event.target.value)}
+                  type="number"
+                  value={recipeCount}
+                />
+                <FieldDescription>
+                  En créant l’Article, vous confirmez ce nombre pour la valorisation à la pièce.
+                  Le poids d’une pièce ne permet pas de le déduire.
+                </FieldDescription>
+              </Field>
+            )}
             <FieldError>{error}</FieldError>
 
             <DialogFooter>
@@ -432,7 +555,11 @@ function SupplierArticleFormDialog({
                 }
                 type="submit"
               >
-                {createState.isLoading ? 'Création…' : 'Créer l’Article'}
+                {createState.isLoading
+                  ? 'Création…'
+                  : createMissingReference
+                    ? 'Créer l’Article et la Référence'
+                    : 'Créer l’Article'}
               </Button>
             </DialogFooter>
           </form>

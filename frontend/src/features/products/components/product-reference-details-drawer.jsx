@@ -45,6 +45,9 @@ import {
   ProductReferenceGovernanceReviewPanel,
 } from '@/features/products/components/product-reference-governance-review-panel';
 import { ProductReferenceVariantEditDialog } from '@/features/products/components/product-reference-variant-edit-dialog';
+import {
+  ProductReferenceReviewWorkflow,
+} from '@/features/products/components/product-reference-review-workflow';
 import { ProductVariantMergeDrawer } from '@/features/products/components/product-variant-merge-drawer';
 import { ProductVariantCreateDialog } from '@/features/products/components/product-variant-create-dialog';
 import {
@@ -95,6 +98,11 @@ function ProductReferenceDetailsDrawer({
   initialTab = 'product',
   metadata,
   onClose,
+  onReviewRequested,
+  onGuidedReviewRequested,
+  onGuidedReviewClosed,
+  guidedReviewContext = null,
+  reviewLoading = false,
   open,
   productId,
   reviewContext = null,
@@ -353,19 +361,20 @@ function ProductReferenceDetailsDrawer({
   async function decideContribution(
     decision,
     targetReferenceId = null,
+    context = reviewContext,
   ) {
-    if (!reviewContext?.sourceId) return;
+    if (!context?.sourceId) return;
 
     try {
       await reviewContribution({
-        contributionId: reviewContext.sourceId,
+        contributionId: context.sourceId,
         decision,
         targetReferenceId,
       }).unwrap();
 
-      const subject = reviewContext.dataType === 'PRODUCT'
+      const subject = context.dataType === 'PRODUCT'
         ? 'Produit'
-        : reviewContext.dataType === 'REFERENCE'
+        : context.dataType === 'REFERENCE'
           ? 'Référence'
           : 'Dimension';
       const actionLabel = decision === 'MERGE'
@@ -376,12 +385,17 @@ function ProductReferenceDetailsDrawer({
 
       toast({
         title: subject + ' ' + actionLabel,
-        description: reviewContext.value,
+        description: context.value,
         variant: 'success',
       });
 
+      if (context === guidedReviewContext) {
+        onGuidedReviewClosed?.();
+      }
+
       if (
-        reviewContext.dataType === 'PRODUCT'
+        context === reviewContext
+        && reviewContext.dataType === 'PRODUCT'
         && decision !== 'APPROVE'
       ) {
         onClose();
@@ -517,22 +531,24 @@ function ProductReferenceDetailsDrawer({
                         Contrôle
                       </dt>
                       <dd className="sm:text-right">
-                        <StatusBadge
-                          tone={
-                            product.governanceStatus === 'PROVISIONAL'
-                              ? 'warning'
-                              : 'success'
-                          }
-                        >
-                          {product.governanceStatus === 'PROVISIONAL'
-                            ? (
-                              reviewContext?.dataType === 'PRODUCT'
-                              && (reviewContext.candidates ?? []).length > 0
-                                ? 'Rapprochement à vérifier'
-                                : 'À contrôler'
-                            )
-                            : 'Validé'}
-                        </StatusBadge>
+                        {product.governanceStatus === 'PROVISIONAL' && canManage
+                          ? (
+                            <Button
+                              aria-label={'Examiner le Produit ' + product.name}
+                              className="h-7 rounded-md border-warning/60 bg-warning/10 px-2.5 text-xs font-semibold text-warning hover:border-warning hover:bg-warning/20 hover:text-warning"
+                              disabled={pending || reviewLoading}
+                              onClick={() => onReviewRequested?.('PRODUCT', product.id)}
+                              size="sm"
+                              variant="outline"
+                            >
+                              À contrôler
+                            </Button>
+                          )
+                          : (
+                            <StatusBadge tone={product.governanceStatus === 'PROVISIONAL' ? 'warning' : 'success'}>
+                              {product.governanceStatus === 'PROVISIONAL' ? 'À contrôler' : 'Validé'}
+                            </StatusBadge>
+                          )}
                       </dd>
                     </div>
                     <div className="grid gap-1 py-3 sm:grid-cols-[160px_1fr]">
@@ -722,6 +738,20 @@ function ProductReferenceDetailsDrawer({
                               >
                                 {getProductStatusLabel(metadata, variety.status)}
                               </StatusBadge>
+                              {variety.governanceStatus === 'PROVISIONAL'
+                                && variety.status === 'ACTIVE' && canManage && (
+                                <Button
+                                  aria-label={'Examiner l’identité de la variété ' + variety.name}
+                                  className="h-7 rounded-md border-warning/60 bg-warning/10 px-2 text-xs text-warning"
+                                  disabled={pending || reviewLoading}
+                                  onClick={() => onReviewRequested?.('DIMENSION', variety.id, 'VARIETY')}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  Identité à examiner
+                                </Button>
+                              )}
                               {variety.qualityReviewStatus === 'PENDING'
                                 && variety.status === 'ACTIVE' && (
                                 <StatusBadge
@@ -827,7 +857,10 @@ function ProductReferenceDetailsDrawer({
                           {canManage
                             && reviewContext?.dataType === 'DIMENSION'
                             && reviewContext.targetId === variety.id
-                            && variety.qualityReviewStatus === 'PENDING' && (
+                            && (
+                              variety.qualityReviewStatus === 'PENDING'
+                              || variety.governanceStatus === 'PROVISIONAL'
+                            ) && (
                             <div className="mt-3 border-t border-border pt-3">
                               <ProductReferenceGovernanceReviewPanel
                                 context={reviewContext}
@@ -901,6 +934,20 @@ function ProductReferenceDetailsDrawer({
                                   characteristic.status,
                                 )}
                               </StatusBadge>
+                              {characteristic.governanceStatus === 'PROVISIONAL'
+                                && characteristic.status === 'ACTIVE' && canManage && (
+                                <Button
+                                  aria-label={'Examiner l’identité de la caractéristique ' + characteristic.name}
+                                  className="h-7 rounded-md border-warning/60 bg-warning/10 px-2 text-xs text-warning"
+                                  disabled={pending || reviewLoading}
+                                  onClick={() => onReviewRequested?.('DIMENSION', characteristic.id, 'CHARACTERISTIC')}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                >
+                                  Identité à examiner
+                                </Button>
+                              )}
                               {characteristic.qualityReviewStatus === 'PENDING'
                                 && characteristic.status === 'ACTIVE' && (
                                 <StatusBadge
@@ -1018,7 +1065,10 @@ function ProductReferenceDetailsDrawer({
                           {canManage
                             && reviewContext?.dataType === 'DIMENSION'
                             && reviewContext.targetId === characteristic.id
-                            && characteristic.qualityReviewStatus === 'PENDING' && (
+                            && (
+                              characteristic.qualityReviewStatus === 'PENDING'
+                              || characteristic.governanceStatus === 'PROVISIONAL'
+                            ) && (
                             <div className="mt-3 border-t border-border pt-3">
                               <ProductReferenceGovernanceReviewPanel
                                 context={reviewContext}
@@ -1204,23 +1254,29 @@ function ProductReferenceDetailsDrawer({
                           <StatusBadge tone={getProductStatusTone(variant.status)}>
                             {getProductStatusLabel(metadata, variant.status)}
                           </StatusBadge>
-                          <StatusBadge
-                            tone={
-                              variant.governanceStatus === 'PROVISIONAL'
-                                ? 'warning'
-                                : 'success'
-                            }
-                          >
-                            {variant.governanceStatus === 'PROVISIONAL'
-                              ? (
-                                reviewContext?.dataType === 'REFERENCE'
-                                && reviewContext.targetId === variant.id
-                                && (reviewContext.candidates ?? []).length > 0
-                                  ? 'Rapprochement à vérifier'
-                                  : 'À contrôler'
-                              )
-                              : 'Validée'}
-                          </StatusBadge>
+                          {variant.governanceStatus === 'PROVISIONAL' && canManage
+                            ? (
+                              <Button
+                                aria-label={'Examiner la référence ' + getVariantLabel(variant)}
+                                className="h-7 rounded-md border-warning/60 bg-warning/10 px-2.5 text-xs font-semibold text-warning hover:border-warning hover:bg-warning/20 hover:text-warning"
+                                disabled={pending || reviewLoading}
+                                onClick={() => onReviewRequested?.('REFERENCE', variant.id)}
+                                size="sm"
+                                variant="outline"
+                              >
+                                {reviewContext?.dataType === 'REFERENCE'
+                                  && reviewContext.targetId === variant.id
+                                  && (reviewContext.candidates ?? []).length > 0
+                                    ? 'Rapprochement à vérifier'
+                                    : 'À contrôler'}
+                              </Button>
+                            )
+                            : (
+                              <StatusBadge tone={variant.governanceStatus === 'PROVISIONAL' ? 'warning' : 'success'}>
+                                {variant.governanceStatus === 'PROVISIONAL'
+                                  ? 'À contrôler' : 'Validée'}
+                              </StatusBadge>
+                            )}
                         </div>
                       </div>
 
@@ -1229,13 +1285,34 @@ function ProductReferenceDetailsDrawer({
                         && reviewContext.targetId === variant.id
                         && variant.governanceStatus === 'PROVISIONAL' && (
                         <div className="mt-4 border-t border-border pt-4">
-                          <ProductReferenceGovernanceReviewPanel
+                          <ProductReferenceReviewWorkflow
+                            product={product}
+                            variant={variant}
+                            varieties={varieties}
+                            characteristics={characteristics}
+                            kindLabels={characteristicKindLabels}
                             context={reviewContext}
+                            dependencyContext={guidedReviewContext}
+                            onExamine={(item) => onGuidedReviewRequested?.(item)}
+                            onCloseDependency={() => onGuidedReviewClosed?.()}
+                            onDecideDependency={(decision, targetId = null) => (
+                              decideContribution(decision, targetId, guidedReviewContext)
+                            )}
+                            onEditDependency={(item) => {
+                              if (item.dataType === 'PRODUCT') {
+                                setEditProductOpen(true);
+                              } else {
+                                setEditDimension({
+                                  type: item.dimensionType,
+                                  dimension: item.entity,
+                                });
+                              }
+                            }}
                             onApprove={approveReviewTarget}
                             onEdit={() => setEditVariant(variant)}
                             onMerge={mergeReviewTarget}
                             onReject={rejectReviewTarget}
-                            pending={pending}
+                            pending={pending || reviewLoading}
                           />
                         </div>
                       )}

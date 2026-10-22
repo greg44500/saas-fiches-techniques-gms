@@ -14,6 +14,7 @@ import {
 import {
     createAuditFields,
     packagingSchema,
+    recipeUnitEquivalenceSchema,
 } from './supplierCatalog.schemas.js';
 
 const { Schema, model } = mongoose;
@@ -48,6 +49,22 @@ const priceFields = () => ({
     normalizedUnit: {
         type: String,
         enum: Object.values(PRODUCT_REFERENCE_UNIT),
+        default: null,
+        immutable: true,
+    },
+    packagingSnapshot: {
+        type: packagingSchema,
+        default: null,
+        immutable: true,
+    },
+    recipeUnitEquivalenceSnapshot: {
+        type: recipeUnitEquivalenceSchema,
+        default: null,
+        immutable: true,
+    },
+    productVariantAtPricing: {
+        type: Schema.Types.ObjectId,
+        ref: 'ProductVariant',
         default: null,
         immutable: true,
     },

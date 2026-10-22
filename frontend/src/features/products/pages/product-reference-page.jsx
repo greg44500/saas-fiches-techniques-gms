@@ -32,6 +32,8 @@ import {
   useGetProductReferenceMetadataQuery,
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
+  useLazyListProductReferenceReviewQueueQuery,
+  useRestoreProductReferenceReviewContextMutation,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
@@ -75,6 +77,7 @@ function ProductReferencePage({ canManage }) {
     initialDimensionFilter: 'active',
     initialReferenceFilter: 'all',
     reviewContext: null,
+    guidedReviewContext: null,
   });
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -122,6 +125,10 @@ function ProductReferencePage({ canManage }) {
 
   const [updateCategoryStatus, categoryStatusState] =
     useUpdateProductReferenceCategoryStatusMutation();
+  const [loadReviewTarget, reviewTargetState] =
+    useLazyListProductReferenceReviewQueueQuery();
+  const [restoreReviewContext, restoreReviewState] =
+    useRestoreProductReferenceReviewContextMutation();
 
   useEffect(() => {
     const totalPages = section === 'reference'
@@ -199,6 +206,65 @@ function ProductReferencePage({ canManage }) {
     });
   }
 
+  async function loadTargetReviewContext(dataType, targetId, dimensionType = null) {
+    const result = await loadReviewTarget({
+      type: 'CONTRIBUTION',
+      targetId,
+      origins: 'omit',
+      page: 1,
+      limit: 1,
+    }).unwrap();
+    const existing = result.items?.find((entry) => (
+      entry.targetId === targetId
+      && entry.dataType === dataType
+      && (dataType !== 'DIMENSION' || entry.dimensionType === dimensionType)
+    ));
+    if (existing) return existing;
+
+    // Une identité PROVISIONAL peut perdre son lien de Contribution, même
+    // après une revue qualité terminée. La reprise est MANAGE et idempotente.
+    return restoreReviewContext({
+      productId: drawerState.productId,
+      dataType,
+      targetId,
+      ...(dimensionType ? { dimensionType } : {}),
+    }).unwrap();
+  }
+
+  async function openReviewTarget(dataType, targetId, dimensionType = null) {
+    if (!canManage) return;
+    try {
+      examineReviewItem(await loadTargetReviewContext(dataType, targetId, dimensionType));
+    } catch (error) {
+      toast({
+        title: 'Contrôle indisponible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    }
+  }
+
+  async function openGuidedReviewTarget(item) {
+    if (!canManage) return;
+    try {
+      const context = await loadTargetReviewContext(
+        item.dataType,
+        item.id,
+        item.dimensionType,
+      );
+      setDrawerState((current) => ({
+        ...current,
+        guidedReviewContext: context,
+      }));
+    } catch (error) {
+      toast({
+        title: 'Contrôle indisponible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    }
+  }
+
   function examineReviewItem(item) {
     if (!item.productId) return;
 
@@ -217,7 +283,7 @@ function ProductReferencePage({ canManage }) {
       openProduct(
         item.productId,
         'dimensions',
-        'pending',
+        item.type === 'CONTRIBUTION' ? 'all' : 'pending',
         'all',
         item,
       );
@@ -719,11 +785,20 @@ function ProductReferencePage({ canManage }) {
         initialReferenceFilter={drawerState.initialReferenceFilter}
         initialTab={drawerState.initialTab}
         reviewContext={drawerState.reviewContext}
+        guidedReviewContext={drawerState.guidedReviewContext}
         onClose={() => setDrawerState((current) => ({
           ...current,
           open: false,
           reviewContext: null,
+          guidedReviewContext: null,
         }))}
+        onGuidedReviewRequested={openGuidedReviewTarget}
+        onGuidedReviewClosed={() => setDrawerState((current) => ({
+          ...current,
+          guidedReviewContext: null,
+        }))}
+        onReviewRequested={openReviewTarget}
+        reviewLoading={reviewTargetState.isFetching || restoreReviewState.isLoading}
         open={drawerState.open}
         productId={drawerState.productId}
       />
@@ -743,7 +818,7 @@ function ProductReferencePage({ canManage }) {
         }}
         onUseExisting={(productId) => {
           setCreateOpen(false);
-          openProduct(productId);
+          openProduct(productId, 'variants');
         }}
         open={createOpen}
       />

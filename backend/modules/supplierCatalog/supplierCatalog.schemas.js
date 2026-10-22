@@ -38,6 +38,21 @@ const packagingSchema = new Schema(
     { _id: false },
 );
 
+const recipeUnitEquivalenceSchema = new Schema(
+    {
+        unitsPerPackage: { type: Number, required: true, min: 1, max: 1000000 },
+        packagingSignature: { type: String, required: true },
+        productVariant: {
+            type: Schema.Types.ObjectId,
+            ref: 'ProductVariant',
+            required: true,
+        },
+        verifiedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        verifiedAt: { type: Date, required: true },
+    },
+    { _id: false },
+);
+
 const sourcePriceSchema = new Schema(
     {
         amount: { type: Schema.Types.Decimal128, required: true },
@@ -119,5 +134,6 @@ export {
     createAuditFields,
     createScopeFields,
     packagingSchema,
+    recipeUnitEquivalenceSchema,
     sourcePriceSchema,
 };

@@ -36,6 +36,8 @@ import {
 } from '../../../modules/supplierCatalog/supplierReference.service.js';
 import {
     DossierSupplierReference,
+    InvoicedPrice,
+    NegotiatedPrice,
 } from '../../../modules/supplierCatalog/supplierPricing.model.js';
 import {
     setIndicativePrice,
@@ -139,6 +141,412 @@ beforeEach(async () => {
 });
 
 describe('M-003 dossier pricing HTTP', () => {
+
+    it('crée et conserve la preuve des pièces tant que le colis physique reste identique', async () => {
+        const variant = await createActiveProductReference({
+            actorId: owner.owner._id,
+            name: 'Croissant création vérifiée',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'pièce',
+            countUnitLabelPlural: 'pièces',
+        });
+        const articleUrl = '/api/workspaces/' + owner.workspace._id + '/supplier-articles';
+        const packaging = {
+            containerType: 'Carton',
+            unitCount: 36,
+            quantityPerUnit: '120',
+            unit: 'G',
+            netWeight: '4320',
+            netWeightUnit: 'G',
+        };
+        const missingConfirmation = await request(app).post(articleUrl)
+            .set(bearer(owner.token)).send({
+                supplierId: supplier.id,
+                productVariantId: variant.variant._id.toString(),
+                supplierReference: 'CRO-CREATE-INVALID',
+                packaging,
+                recipeUnitsPerPackage: 36,
+            });
+        expect(missingConfirmation.status).toBe(400);
+
+        const created = await request(app).post(articleUrl)
+            .set(bearer(owner.token)).send({
+                supplierId: supplier.id,
+                productVariantId: variant.variant._id.toString(),
+                supplierReference: 'CRO-CREATE-36',
+                packaging,
+                recipeUnitsPerPackage: 36,
+                confirmRecipeUnits: true,
+            });
+        expect(created.status).toBe(201);
+        expect(created.body.data.article.recipeUnitEquivalence.unitsPerPackage).toBe(36);
+        const initialDate = created.body.data.article.recipeUnitEquivalence.verifiedAt;
+        const editUrl = articleUrl + '/' + created.body.data.article.id;
+
+        const renamed = await request(app).patch(editUrl)
+            .set(bearer(owner.token)).send({
+                supplierDesignation: 'Croissant individuel corrigé',
+            });
+        expect(renamed.status).toBe(200);
+        expect(renamed.body.data.article.recipeUnitEquivalence.verifiedAt)
+            .toBe(initialDate);
+
+        const sameProof = await request(app).patch(editUrl)
+            .set(bearer(owner.token)).send({
+                packaging: { ...packaging, supplierLabel: 'Carton de 36' },
+                recipeUnitsPerPackage: 36,
+                confirmRecipeUnits: true,
+            });
+        expect(sameProof.status).toBe(200);
+        expect(sameProof.body.data.article.recipeUnitEquivalence.verifiedAt)
+            .toBe(initialDate);
+
+        const unitConversionOnly = await request(app).patch(editUrl)
+            .set(bearer(owner.token)).send({
+                packaging: {
+                    ...packaging,
+                    unit: 'KG',
+                    quantityPerUnit: '0.120',
+                    netWeight: '4.320',
+                    netWeightUnit: 'KG',
+                    supplierLabel: 'Carton de 36',
+                },
+            });
+        expect(unitConversionOnly.status).toBe(200);
+        expect(unitConversionOnly.body.data.article.recipeUnitEquivalence.unitsPerPackage)
+            .toBe(36);
+        expect(unitConversionOnly.body.data.article.recipeUnitEquivalence.verifiedAt)
+            .toBe(initialDate);
+
+        const changed = await request(app).patch(editUrl)
+            .set(bearer(owner.token)).send({
+                packaging: { ...packaging, unitCount: 24 },
+            });
+        expect(changed.status).toBe(200);
+        expect(changed.body.data.article.recipeUnitEquivalence).toBeNull();
+    });
+
+    it('permet à un Article privé de rester non associé pendant une contribution Produit', async () => {
+        const response = await request(app)
+            .post('/api/workspaces/' + owner.workspace._id + '/supplier-articles')
+            .set(bearer(owner.token)).send({
+                supplierId: supplier.id,
+                productVariantId: null,
+                supplierReference: 'OVO-PENDING-001',
+                supplierDesignation: 'Œufs blancs pasteurisés',
+            });
+        expect(response.status).toBe(201);
+        expect(response.body.data.article.associationStatus).toBe('PENDING');
+        expect(response.body.data.article.productVariant).toBeNull();
+    });
+
+
+    it('utilise un prix indicatif fiable si le tarif fournisseur ne se convertit pas en pièces', async () => {
+        const variant = await createActiveProductReference({
+            actorId: owner.owner._id,
+            name: 'Croissant sans équivalence avec secours',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'pièce',
+            countUnitLabelPlural: 'pièces',
+        });
+        const created = await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            data: {
+                supplierId: supplier.id,
+                productVariantId: variant.variant._id,
+                supplierReference: 'CRO-UNPRICED-INDIC',
+                packaging: {
+                    containerType: 'Carton',
+                    unitCount: 36,
+                    quantityPerUnit: '120',
+                    unit: 'G',
+                },
+            },
+        });
+        await SupplierTariff.create({
+            supplierArticle: created.id,
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspace: owner.workspace._id,
+            sourceKind: 'PRICE_LIST',
+            sourceLabel: 'Liste sans équivalence',
+            sourceImportId: new mongoose.Types.ObjectId(),
+            packagingSnapshot: {
+                containerType: 'Carton',
+                unitCount: 36,
+                quantityPerUnit: '120',
+                unit: 'G',
+                totalQuantity: '4320',
+            },
+            isCurrent: true,
+            sourceAmount: '6.50',
+            sourceBasis: 'PACKAGE',
+            currency: 'EUR',
+            validFrom: new Date('2026-01-01T00:00:00.000Z'),
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+        const priceUrl = pricingPath(dossierA) + '/applicable?articleId=' + created.id;
+        const before = await request(app).get(priceUrl).set(bearer(owner.token));
+        expect(before.status).toBe(200);
+        expect(before.body.data.applicablePrice.price.normalizedAmount).toBeNull();
+
+        await setIndicativePrice({
+            workspaceId: null,
+            dossierId: null,
+            productVariantId: variant.variant._id,
+            actorId: owner.owner._id,
+            sourceAmount: '0.25',
+            sourceBasis: 'UNIT',
+        });
+        const after = await request(app).get(priceUrl).set(bearer(owner.token));
+        expect(after.status).toBe(200);
+        expect(after.body.data.applicablePrice.resolvedSource).toBe('INDICATIVE_GLOBAL');
+        expect(after.body.data.applicablePrice.price.normalizedUnit).toBe('UNIT');
+        expect(Number(after.body.data.applicablePrice.price.normalizedAmount))
+            .toBeCloseTo(0.25, 8);
+        expect(after.body.data.applicablePrice.alerts)
+            .toContain('SUPPLIER_TARIFF_NOT_NORMALIZABLE');
+    });
+
+    it('valorise 36 croissants à la pièce seulement après confirmation et pour le conditionnement du tarif', async () => {
+        const croissant = await createActiveProductReference({
+            actorId: owner.owner._id,
+            name: 'Croissant de recette vérifié',
+            referenceUnit: 'UNIT',
+            countUnitLabelSingular: 'pièce',
+            countUnitLabelPlural: 'pièces',
+        });
+        const created = await createSupplierArticle({
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            data: {
+                supplierId: supplier.id,
+                productVariantId: croissant.variant._id,
+                supplierReference: 'CRO-43279',
+                packaging: {
+                    containerType: 'Carton',
+                    unitCount: 36,
+                    quantityPerUnit: '120',
+                    unit: 'G',
+                    netWeight: '4320',
+                    netWeightUnit: 'G',
+                },
+            },
+        });
+        await SupplierTariff.create({
+            supplierArticle: created.id,
+            scope: SUPPLIER_SCOPE.WORKSPACE_PRIVATE,
+            workspace: owner.workspace._id,
+            sourceKind: 'PRICE_LIST',
+            sourceLabel: 'Tarif croissant',
+            sourceImportId: new mongoose.Types.ObjectId(),
+            packagingSnapshot: {
+                containerType: 'Carton',
+                unitCount: 36,
+                quantityPerUnit: '120',
+                unit: 'G',
+                totalQuantity: '4320',
+                netWeight: '4320',
+                netWeightUnit: 'G',
+            },
+            isCurrent: true,
+            sourceAmount: '6.50',
+            sourceBasis: 'PACKAGE',
+            currency: 'EUR',
+            validFrom: new Date('2026-01-01T00:00:00.000Z'),
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+        const articleUrl = '/api/workspaces/'
+            + owner.workspace._id + '/supplier-articles/' + created.id;
+        const priceUrl = pricingPath(dossierA)
+            + '/applicable?articleId=' + created.id;
+
+        const before = await request(app).get(priceUrl).set(bearer(owner.token));
+        expect(before.status).toBe(200);
+        expect(before.body.data.applicablePrice.price.normalizedAmount).toBeNull();
+
+        const refused = await request(app).patch(articleUrl)
+            .set(bearer(owner.token))
+            .send({ recipeUnitsPerPackage: 36 });
+        expect(refused.status).toBe(400);
+
+        // Reproduction BRIDOR : le tarif historique est en grammes,
+        // l'Article corrigé est en kilogrammes, et la preuve sera en KG.
+        const kgArticle = await request(app).patch(articleUrl)
+            .set(bearer(owner.token))
+            .send({
+                packaging: {
+                    containerType: 'Carton',
+                    unitCount: 36,
+                    quantityPerUnit: '0.120',
+                    unit: 'KG',
+                    netWeight: '4.320',
+                    netWeightUnit: 'KG',
+                },
+            });
+        expect(kgArticle.status).toBe(200);
+        const confirmed = await request(app).patch(articleUrl)
+            .set(bearer(owner.token))
+            .send({ recipeUnitsPerPackage: 36, confirmRecipeUnits: true });
+        expect(confirmed.status).toBe(200);
+        expect(confirmed.body.data.article.recipeUnitEquivalence.unitsPerPackage)
+            .toBe(36);
+        const after = await request(app).get(priceUrl).set(bearer(owner.token));
+        expect(after.status).toBe(200);
+        // La preuve KG de l'Article justifie le tarif G du même colis
+        // sans réécrire le snapshot historique ni utiliser le repli indicatif.
+        expect(after.body.data.applicablePrice.resolvedSource).toBe('SUPPLIER_TARIFF');
+        expect(after.body.data.applicablePrice.price.normalizedUnit).toBe('UNIT');
+        expect(Number(after.body.data.applicablePrice.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
+        // Les nouvelles sources négociées et facturées exploitent la même
+        // correspondance vérifiée et figent les données de leur calcul.
+        const negotiated = await request(app)
+            .post(pricingPath(dossierA) + '/negotiated-prices')
+            .set(bearer(owner.token))
+            .send({
+                articleId: created.id,
+                sourceAmount: '6.50',
+                sourceBasis: 'PACKAGE',
+                validFrom: '2026-01-01T00:00:00.000Z',
+            });
+        expect(negotiated.status).toBe(201);
+        expect(negotiated.body.data.price.normalizedUnit).toBe('UNIT');
+        expect(Number(negotiated.body.data.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
+        const invoiced = await request(app)
+            .post(pricingPath(dossierA) + '/invoiced-prices')
+            .set(bearer(owner.token))
+            .send({
+                supplierId: supplier.id,
+                articleId: created.id,
+                invoiceDate: '2026-10-01T00:00:00.000Z',
+                sourceAmount: '6.50',
+                sourceBasis: 'PACKAGE',
+            });
+        expect(invoiced.status).toBe(201);
+        expect(invoiced.body.data.price.normalizedUnit).toBe('UNIT');
+        expect(Number(invoiced.body.data.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
+        const changed = await request(app).patch(articleUrl)
+            .set(bearer(owner.token))
+            .send({
+                packaging: {
+                    containerType: 'Carton',
+                    unitCount: 24,
+                    quantityPerUnit: '120',
+                    unit: 'G',
+                },
+            });
+        expect(changed.status).toBe(200);
+        expect(changed.body.data.article.recipeUnitEquivalence).toBeNull();
+
+        // Politique par défaut : NEGOTIATED_PRICE. Le prix négocié actif,
+        // déjà normalisé et historisé, reste légitimement applicable après
+        // le changement du colis courant. Il ne faut pas le revaloriser.
+        const historicalNegotiated = await request(app)
+            .get(priceUrl).set(bearer(owner.token));
+        expect(historicalNegotiated.status).toBe(200);
+        expect(historicalNegotiated.body.data.applicablePrice)
+            .toMatchObject({
+                requestedMode: 'NEGOTIATED_PRICE',
+                resolvedSource: 'NEGOTIATED_PRICE',
+                price: { normalizedUnit: 'UNIT' },
+            });
+        expect(Number(historicalNegotiated.body.data.applicablePrice.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
+        // Politique fournisseur : le tarif historique conserve le colis 36
+        // mais ne peut plus emprunter l'équivalence invalidée de l'Article 24.
+        const policyPath = '/api/workspaces/'
+            + owner.workspace._id.toString() + '/supplier-pricing-policy';
+        await request(app).put(policyPath)
+            .set(bearer(owner.token))
+            .send({ mode: 'SUPPLIER_TARIFF' })
+            .expect(200);
+        const unavailableTariff = await request(app)
+            .get(priceUrl).set(bearer(owner.token));
+        expect(unavailableTariff.status).toBe(200);
+        expect(unavailableTariff.body.data.applicablePrice).toMatchObject({
+            requestedMode: 'SUPPLIER_TARIFF',
+            resolvedSource: 'SUPPLIER_TARIFF',
+        });
+        expect(unavailableTariff.body.data.applicablePrice.price.normalizedUnit)
+            .toBeNull();
+        expect(unavailableTariff.body.data.applicablePrice.price.normalizedAmount)
+            .toBeNull();
+
+        // Une facture en attente ne devient pas un Prix applicable. En mode
+        // facture, le fallback négocié reste valable pour ce même Dossier.
+        await request(app).put(policyPath)
+            .set(bearer(owner.token))
+            .send({ mode: 'INVOICED_PRICE' })
+            .expect(200);
+        const pendingInvoice = await request(app)
+            .get(priceUrl).set(bearer(owner.token));
+        expect(pendingInvoice.status).toBe(200);
+        expect(pendingInvoice.body.data.applicablePrice)
+            .toMatchObject({
+                requestedMode: 'INVOICED_PRICE',
+                resolvedSource: 'NEGOTIATED_PRICE',
+                fallbackApplied: true,
+            });
+        expect(pendingInvoice.body.data.applicablePrice.alerts)
+            .toContain('NO_VALIDATED_INVOICE');
+
+        // Après validation, seule la facture vérifiée du Dossier prime sur
+        // le tarif négocié ; elle garde la photographie des 36 pièces.
+        await request(app)
+            .patch(pricingPath(dossierA)
+                + '/invoiced-prices/' + invoiced.body.data.price.id + '/status')
+            .set(bearer(owner.token))
+            .send({ status: 'VALIDATED' })
+            .expect(200);
+        const validatedInvoice = await request(app)
+            .get(priceUrl).set(bearer(owner.token));
+        expect(validatedInvoice.status).toBe(200);
+        expect(validatedInvoice.body.data.applicablePrice)
+            .toMatchObject({
+                requestedMode: 'INVOICED_PRICE',
+                resolvedSource: 'INVOICED_PRICE',
+                fallbackApplied: false,
+                price: { normalizedUnit: 'UNIT' },
+            });
+        expect(Number(validatedInvoice.body.data.applicablePrice.price.normalizedAmount))
+            .toBeCloseTo(6.5 / 36, 10);
+
+        // Cette preuve ne doit pas être utilisable par un autre Dossier.
+        const otherDossier = await request(app)
+            .get(pricingPath(dossierB) + '/applicable')
+            .query({ articleId: created.id })
+            .set(bearer(owner.token));
+        expect(otherDossier.status).toBe(200);
+        expect(otherDossier.body.data.applicablePrice.resolvedSource)
+            .toBe('SUPPLIER_TARIFF');
+        expect(otherDossier.body.data.applicablePrice.price.normalizedAmount)
+            .toBeNull();
+
+        const [frozenNegotiated, frozenInvoiced] = await Promise.all([
+            NegotiatedPrice.findById(negotiated.body.data.price.id).lean(),
+            InvoicedPrice.findById(invoiced.body.data.price.id).lean(),
+        ]);
+        for (const historicalPrice of [frozenNegotiated, frozenInvoiced]) {
+            expect(historicalPrice.normalizedUnit).toBe('UNIT');
+            expect(Number(historicalPrice.normalizedAmount.toString()))
+                .toBeCloseTo(6.5 / 36, 10);
+            expect(historicalPrice.packagingSnapshot.unitCount).toBe(36);
+            expect(historicalPrice.recipeUnitEquivalenceSnapshot.unitsPerPackage)
+                .toBe(36);
+        }
+    });
+
     it('expose les sources de Prix applicable depuis le backend', async () => {
         const response = await request(app)
             .get(

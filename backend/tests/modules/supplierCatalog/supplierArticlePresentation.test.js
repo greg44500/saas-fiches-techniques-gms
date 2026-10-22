@@ -1,11 +1,79 @@
 import { describe, expect, it } from 'vitest';
 import {
+    packagingSignature,
+} from '../../../modules/supplierCatalog/supplierRecipeUnitEquivalence.service.js';
+import {
     supplierPackagingLabel,
     supplierPackagingPresentation,
     supplierTariffPresentation,
 } from '../../../modules/supplierCatalog/supplierArticlePresentation.service.js';
 
 describe('M-003 projections commerciales préparées côté backend', () => {
+    it('n’attribue pas un coût normalisé en pièces sans snapshot de tarif compatible', () => {
+        const oldPackaging = {
+            containerType: 'Carton',
+            unitCount: 36,
+            quantityPerUnit: '120',
+            unit: 'G',
+            totalQuantity: '4320',
+        };
+        const variant = { _id: 'reference-croissant', referenceUnit: 'UNIT' };
+        const article = {
+            productVariant: variant,
+            packaging: oldPackaging,
+            recipeUnitEquivalence: {
+                unitsPerPackage: 36,
+                productVariant: variant._id,
+                packagingSignature: packagingSignature(oldPackaging),
+            },
+        };
+        const tariff = {
+            _id: { toString: () => 'tariff-croissant' },
+            sourceKind: 'PRICE_LIST',
+            sourceAmount: '6.50',
+            sourceBasis: 'PACKAGE',
+            currency: 'EUR',
+            packagingSnapshot: oldPackaging,
+        };
+
+        const verified = supplierTariffPresentation(tariff, article);
+        expect(verified.normalizedUnit).toBe('UNIT');
+        expect(Number(verified.normalizedAmount)).toBeCloseTo(6.5 / 36, 10);
+        expect(verified.unitPriceLabel).toBe('0,181 € HT / pièce');
+
+        // Une conversion physique ancienne est encore affichable, mais
+        // elle n'autorise jamais une conversion métier vers les pièces
+        // lorsqu'aucun snapshot de conditionnement n'a été enregistré.
+        const withoutSnapshot = supplierTariffPresentation({
+            ...tariff,
+            packagingSnapshot: null,
+        }, article);
+        expect(withoutSnapshot.normalizedUnit).toBeNull();
+        expect(withoutSnapshot.normalizedAmount).toBeNull();
+        expect(withoutSnapshot.unitPriceLabel).toBeNull();
+
+        const changedArticle = {
+            ...article,
+            packaging: {
+                ...oldPackaging, unitCount: 24, totalQuantity: '2880',
+            },
+            recipeUnitEquivalence: null,
+        };
+        const historical = supplierTariffPresentation(tariff, changedArticle);
+        expect(historical.normalizedUnit).toBeNull();
+        expect(historical.normalizedAmount).toBeNull();
+        // Le prix commercial par élément du tarif historique reste lisible.
+        expect(historical.piecePriceLabel).toBe('0,181 € HT / pièce');
+
+        // Une preuve concernant le carton 36 ne doit jamais valoriser
+        // le tarif d'un autre conditionnement de 24.
+        const otherTariff = supplierTariffPresentation({
+            ...tariff,
+            packagingSnapshot: changedArticle.packaging,
+        }, article);
+        expect(otherTariff.normalizedAmount).toBeNull();
+    });
+
     it('évite la répétition du poids total et net équivalents', () => {
         expect(supplierPackagingLabel({
             containerType: 'Carton',

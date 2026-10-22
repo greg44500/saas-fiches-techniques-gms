@@ -1,10 +1,35 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
 **Statut :** M-001 à M-005 intégrés ; M-003 complété par PR #44 ; Core Gate post-merge validée à la tentative 2
-**Dernière mise à jour :** 2026-10-14
+**Dernière mise à jour :** 2026-10-22
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
+
+### Recette visuelle M-002 — complément de stabilisation (2026-10-16)
+
+Ajout au lot actif de la protection de tout changement d'unité sur Référence utilisée (masse→masse incluse), de la navigation vers les Références du Produit retrouvé, du contrôle de gouvernance ciblé avec petit bouton neutre et de l'infobulle métier du dialogue d'édition. Même branche, tests locaux et gates avant PR.
+
+**Stabilisation après QA (2026-10-16) :** permettre la correction encadrée d'une unité sur la même Référence en présence d'Articles et Tarifs fournisseur seuls, sans altérer les Fiches et Prix historiques ; rétablir le lien de gouvernance d'une identité provisoire orpheline dans la file existante ; bouton « À contrôler » petit et warning. Tests backend, HTTP, frontend, E2E/gates à vérifier localement avant PR.
+
+## Complément UX M-004 — sélection d'Articles et origine tarifaire (2026-10-22)
+
+Implémenté en branche (non fusionné) : sélecteur compact
+`Favoris | Articles | Tous`, mode `Tous` initial, transition glissante ;
+sélection directe d'Articles actifs du Workspace et partage global autorisé,
+sauvegarde atomique Référence/Article ; affichage de la source réelle
+de valorisation dans l'infobulle. Finition identité (2026-10-22) :
+statut de gouvernance, unité officielle et dates de modification
+Référence/Article sans heure ; suppression de l'horodatage du calcul.
+Les contrôles de tenancy et RBAC et
+les tests unitaires/HTTP/E2E sont ajoutés. **Tests locaux, gates et
+validation visuelle non réalisés à ce stade ; pas de PR ni merge.**
+Le chantier d'impression et d'e-mail reste distinct, après clôture.
+
+## Lot transversal actif — unités de recette et colisage (2026-10-16)
+
+Travail sur `feature/m002-m003-m004-unit-consistency`. Quatre règles métier validées : l'unité M-002 s'impose à la fiche, l'Article M-003 peut attester explicitement un nombre de pièces de recette par colis, aucune conversion moyenne non vérifiée, changement de dimension déjà utilisée sous contrôle/audit. Code et tests publiés sur la branche, mais non vérifiés localement ; **non validés localement**. Le complément impression/e-mail reste un chantier séparé. Contrat : `docs/m004/M-002-M-003-M-004-UNIT-CONSISTENCY-CADRAGE.md`.
+
 
 ---
 
@@ -647,6 +672,15 @@ Fusion sur `main` le 2026-10-14, commit `962177905bcc198e439a316d9610b23c60dd53c
 Le complément M-003 livre : import direct d'Articles et mercuriales indépendantes des catalogues, association Produit différable, période fournisseur avec ou sans date de fin explicite, corrections historisées des listes privées, signalement du tarif expiré, projections prix/conditionnements et UX Articles/Fournisseurs. Les assistants d'import Produits M-002 et l'alerte prix en M-004 ont été adaptés sans refonte de leurs domaines.
 
 Les suppressions contrôlées de catalogues, renouvellements prospectifs de listes tarifaires et arbitrages entre offres privées/globales restent dans `docs/DEBT.md`.
+
+### Stabilisation M-002/M-003/M-004 du 2026-10-22 — QA locale requise
+
+- Réutilisation du workflow de contribution provisoire depuis la création manuelle d'Article, sans système Produit parallèle.
+- Preuve de pièces saisie à la création manuelle lorsqu'un colis physique sert à valoriser une Référence UNIT ; imports sans association conservés.
+- Édition simplifiée, patch des seuls champs modifiés, préservation des preuves valides et de leur date ; invalider seulement lors de changement réel de la signature métier.
+- Prix historiques non normalisables écartés du choix prioritaire au profit d'une source fiable ; repli indicatif autorisé, sinon NC préservé et explicable.
+- Action « Actualiser les coûts » de M-004 réutilisant la valorisation backend pour un brouillon, sans modifier les snapshots validés.
+- Tests backend/frontend/E2E ajoutés, audit BRIDOR en lecture seule enrichi. **Gates, QA visuelle et PR en attente de validation locale.**
 
 ### Prochain lot — diffusion M-004
 

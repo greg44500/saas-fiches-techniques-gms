@@ -1,6 +1,14 @@
 import mongoose from 'mongoose';
 
 import { AppError } from '../../utils/appError.js';
+import { TechnicalSheetDraft } from '../technicalSheet/technicalSheetDraft.model.js';
+import { TechnicalSheetValidation } from '../technicalSheet/technicalSheetValidation.model.js';
+import { SupplierArticle } from '../supplierCatalog/supplier.model.js';
+import {
+    IndicativePrice,
+    NegotiatedPrice,
+    InvoicedPrice,
+} from '../supplierCatalog/supplierPricing.model.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
 import { listProductCategories } from './productCategoryProjection.service.js';
@@ -680,6 +688,72 @@ const updateVariant = async ({
         throw new AppError('Référence modifiable introuvable.', 404);
     }
 
+    if (changes.referenceUnit
+        && changes.referenceUnit !== variant.referenceUnit) {
+        // Le changement de toute unité sur une Référence utilisée est risqué :
+        // 1 g pourrait sinon devenir 1 kg, même dans la même dimension.
+        // Une migration métier ou une nouvelle Référence est requise.
+        const [draftUsage, validatedUsage, priceUsage, articles] = await Promise.all([
+            TechnicalSheetDraft.exists({
+                'lines.productVariant': variant._id,
+            }).session(session),
+            TechnicalSheetValidation.exists({
+                'linesSnapshot.productVariantId': variant._id,
+            }).session(session),
+            IndicativePrice.exists({
+                productVariant: variant._id,
+            }).session(session),
+            SupplierArticle.find({ productVariant: variant._id })
+                .select('_id')
+                .session(session)
+                .lean(),
+        ]);
+        const articleIds = articles.map(({ _id }) => _id);
+        const [negotiatedUsage, invoicedUsage] = articleIds.length
+            ? await Promise.all([
+                NegotiatedPrice.exists({
+                    supplierArticle: mongoose.trusted({ $in: articleIds }),
+                }).session(session),
+                InvoicedPrice.exists({
+                    supplierArticle: mongoose.trusted({ $in: articleIds }),
+                }).session(session),
+            ])
+            : [null, null];
+
+        // Une fiche ou un prix historique normalisé ne doit jamais être
+        // réinterprété. Un simple Article avec Tarif fournisseur constitue
+        // en revanche une dépendance revalorisable, sur confirmation humaine.
+        if (draftUsage || validatedUsage || priceUsage
+            || negotiatedUsage || invoicedUsage) {
+            throw new AppError(
+                'Cette Référence possède une Fiche technique ou un Prix historique. '
+                + 'La modification de son unité nécessite une migration métier contrôlée.',
+                409,
+            );
+        }
+        if (articleIds.length && changes.confirmSupplierArticleRevaluation !== true) {
+            throw new AppError(
+                'Cette Référence est associée à des Articles fournisseur. '
+                + 'Confirmez la correction de l’unité et la vérification ultérieure de leurs prix.',
+                409,
+            );
+        }
+        if (articleIds.length) {
+            // La nouvelle unité n'est pas une preuve de pièces par colis.
+            // Invalider les anciennes équivalences sans réécrire les tarifs
+            // fournisseur et leurs conditionnements historiques.
+            await SupplierArticle.updateMany({
+                productVariant: variant._id,
+            }, {
+                $set: {
+                    recipeUnitEquivalence: null,
+                    updatedBy: actorId,
+                },
+            }, { session });
+        }
+    }
+
+    const previousReferenceUnit = variant.referenceUnit;
     const normalized = await normalizeVariantInput({
         canonicalProductId: productId,
         workspaceId: variant.contributedFromWorkspace,
@@ -765,6 +839,14 @@ const updateVariant = async ({
         action: PRODUCT_REFERENCE_EVENT_ACTION.VARIANT_UPDATED,
         entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.VARIANT,
         entityId: variant._id,
+        metadata: previousReferenceUnit !== variant.referenceUnit
+            ? {
+                previousReferenceUnit,
+                nextReferenceUnit: variant.referenceUnit,
+                confirmedSupplierArticleRevaluation:
+                    changes.confirmSupplierArticleRevaluation === true,
+            }
+            : {},
         session,
     });
 

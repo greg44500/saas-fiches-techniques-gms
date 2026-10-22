@@ -1,4 +1,131 @@
-# Reprise courante — complément d'association M-002/M-003 en QA ; M-004 ensuite
+# Reprise courante — cohérence des unités (2026-10-16)
+
+## Lot actif M-002/M-003/M-004
+
+**Gate E2E M-003 — correction de la sélection « Créer cette Référence »
+(22/10/2026, à retester localement).** Le nouveau retour utilisateur confirme
+7/8 tests M-003 verts ; la recherche contextuelle est restaurée, mais le
+bouton de soumission redevient introuvable après saisie commerciale.
+Cause dans le code : l'état de création reposait sur un booléen réinitialisé
+par `onValueChange` de l'autocomplétion. Correctif : mémoriser l'intention
+et le nom confirmé indépendamment du champ, verrou immédiat contre les
+événements tardifs de fermeture, recherche démontée pendant la décision,
+et possibilité explicite « Modifier la recherche ». La sauvegarde reprend
+le nom confirmé, pas une saisie effacée par le popover. Tests RTL et E2E
+du parcours complet ajoutés ; pouvoirs commerciaux, RBAC, isolation
+Workspace et contrôles anti-doublon inchangés. Aucune PR/merge. Gate
+locale globale encore à confirmer.
+
+**Avertissements Mongoose M-001 (22/10/2026) — correction à revérifier localement.**
+Le contrôle transactionnel de mutation des grants Dossier utilisait l'option
+`new: true` dépréciée dans `Dossier.findOneAndUpdate`. Remplacement strict
+par `returnDocument: 'after'`, sémantique identique : l'incrément
+`accessMutationVersion`, le filtre du Dossier, l'appartenance Workspace,
+le statut admissible, la session et le conflit transactionnel restent intacts.
+Les deux messages d'avertissement du journal E2E concernaient une API
+dépréciée, et non deux échecs fonctionnels distincts. Gates locales à confirmer.
+
+**Correction de la gate Playwright M-003 — 22/10/2026, à revérifier localement.**
+Deux échecs signalés (tests 21/22 sur 34) : l'ajout manuel d'Article
+faisait une recherche `/products/search` qui exige une capability Produit
+absente du contexte import M-003 ; nouvelles lectures pré-création
+`/supplier-articles/product-contributions/metadata|search`, sécurisées
+par membership, mode écriture, `supplier:article:manage`,
+`supplier:catalog:import` et capability `supplier_catalog_import`.
+Le moteur de recherche et la gouvernance M-002 sont réutilisés sans
+assouplissement de son endpoint général. Tests de permissions,
+capabilities et non-divulgation entre Workspaces ajoutés.
+Le second échec venait du test qui cherchait l'onglet « Infos Article »
+dans un drawer fermé lors du parcours de contribution : le test rouvre
+l'Article réellement associé après succès. Les captures, traces et
+vidéos locales n'ont pas été consultées dans ce contexte ;
+les 32 autres E2E ont été annoncés verts par l'utilisateur.
+**Exécution locale des gates complètes requise avant PR / merge.**
+
+**Finition infobulle identité M-004 (2026-10-22) — implémentée,
+non testée localement.** Suppression de « Calcul du » et de l'heure de
+calcul dans le survol de la ligne. Affichage du nom, de l'unité officielle,
+de la gouvernance M-002 (Validée / À valider lorsque fournie), de la date
+de modification de la Référence, et pour un Article effectivement
+sélectionné, sa référence commerciale et sa date de modification.
+Dates `JJ/MM/AAAA` uniquement ; aucune conclusion automatique
+« À jour ». Les réponses M-004 exposent désormais les champs
+`governanceStatus`/`updatedAt` de la Référence courante. Statut
+de la valorisation et calculs inchangés. Tests HTTP, RTL et E2E
+ajoutés/étendus, gates globaux et recette visuelle à exécuter
+localement par l'utilisateur. Aucune PR/merge avant résultats verts.
+
+**UX M-004 sélecteur Articles et traçabilité des prix (2026-10-22) — code
+publié sur la branche, tests locaux NON exécutés.** Choix validé :
+`Favoris | Articles | Tous`, même emprise visuelle, indicateur glissant
+200 ms et `Tous` par défaut. Le mode Articles utilise la liste M-003,
+filtrée par droits, Workspace, fournisseur/Référence actifs et association
+exploitable. Choisir un Article en création/remplacement enregistre
+Référence + Article ensemble avec contrôle transactionnel, sans nouveau
+moteur de prix. Même Référence, autre Article : conserver la ligne et
+changer le sourcing. L'infobulle Produit affiche désormais la source
+effective enregistrée (prix tarifaire, négocié/facturé ou indicatif)
+et le prix normalisé ; anomalie `getPricingSourceLabel` corrigée.
+Correctif sécurité associé : recherche d'Articles sans écrasement
+du filtre de visibilité Workspace. Tests frontend, HTTP et E2E ajoutés,
+gates/QA utilisateur et PR encore en attente. Contrat :
+`docs/m004/M-004-FINAL-CONTRACT.md`.
+
+**QA présentation Fiche M-004 (2026-10-22) — tests locaux en attente :** l'infobulle de la ligne Produit affiche désormais le conditionnement sur une ligne, le poids net et le poids net égoutté sur des lignes distinctes, et la quantité totale calculée uniquement lorsqu'elle diffère du poids net (ou si le poids net est absent). La comparaison d'affichage G/KG utilise des décimaux exacts ; le conditionnement historique reste inchangé en dehors de cette infobulle. Tests RTL et de présentation ajoutés ; aucune gate ni QA visuelle déclarée verte.
+
+**Audit BRIDOR 43279 reçu le 2026-10-22 — diagnostic confirmé, correction en attente de tests locaux.** Base `saas_fiches_techniques_gms_dev` : Référence « Croissant individuel PAI » en `UNIT`, un Article privé associé, preuve humaine de 36 pièces valide sur l'Article actuel (36 × 0,120 kg ; 4,32 kg), Tarif fournisseur de 6,50 € par carton, snapshot historique du même contenu (36 × 120 g ; 4 320 g). L'ancienne comparaison littérale de signatures renvoyait `matchesCurrentEvidence: false` malgré l'équivalence physique exacte. Le résolveur retombait sur le prix global indicatif de 0,20 € / pièce ; le brouillon conservait `NO_PRICE`. Correctif métier : comparer les quantités physiques dans des unités communes à précision décimale exacte, en relisant les signatures héritées sans migration ni réattestation, préserver le refus des colis réellement différents. Tests unitaires et HTTP reproduisant le décalage ajoutés ; **aucune gate exécutée par l'assistant**. Rejouer l'audit local, attendre `matchesCurrentEvidence: true`, `currentPrice.source: SUPPLIER_TARIFF`, montant `6,5 / 36`, puis dans le brouillon utiliser « Actualiser les coûts » ; aucune correction de données MongoDB ni migration recommandée.
+
+**QA du 2026-10-22 — recherche et NC croissant (validation locale attendue) :** le champ Référence Produit de la création M-003 n'affiche plus l'aide en permanence : InfoTooltip au niveau du libellé ; le composant métier ProductSearchAutocomplete expose un bouton « Créer cette Référence » *uniquement* lorsque la recherche en cours est terminée sans résultat et que la capability/permission de contribution a été passée. Le bloc séparé a été supprimé ; le parcours provisoire, l'anti-doublon et la gouvernance restent inchangés. Pour M-004, l'info-bulle du prix NC présente maintenant le motif le plus pertinent si les alertes backend sont disponibles (plusieurs Articles à choisir / tarif non normalisable / Article indisponible / tarif hors période). **La cause réelle de BRIDOR 43279 n'est pas connue sans la sortie de l'audit MongoDB en lecture seule.** Tests RTL et E2E modifiés, *non exécutés dans cette conversation*. Pas de réécriture automatique des historiques, ni de contournement de l'équivalence vérifiée.
+
+**Stabilisation Article/valorisation (2026-10-22) — tests locaux et QA NON exécutés.** La création privée peut enregistrer un Article sans Référence puis ouvrir automatiquement le parcours M-002 de contribution PROVISIONAL déjà présent ; le nombre de pièces utilisables est déclaré et attesté dès la création manuelle lorsque le colisage physique et la Référence UNIT l'exigent. Si la Référence créée à la volée se révèle en UNIT avec un conditionnement physique complet, le même parcours ouvre directement l'édition simplifiée pour confirmer le nombre de pièces (l'unité n'était pas connue à la création). L'édition conserve toute preuve à signature inchangée et ne renouvelle pas son horodatage, avec un champ unique et confirmation seulement si nécessaire. Les tarifs historiques non normalisables laissent essayer les sources de repli fiables ; le brouillon M-004 dispose d'une action « Actualiser les coûts ». Audit en lecture seule enrichi : `npm run audit:recipe-unit-usage -- "Croissant individuel PAI"`. **BRIDOR 43279 reste à vérifier sur la base locale** : la présence du code ne prouve pas que le tarif historique possède un snapshot compatible. Aucun test/gate déclaré vert et aucune PR prête à fusionner.
+
+**QA ergonomie M-003/M-004 — correspondance 1 pour 1 et mention d'origine (2026-10-21) :** accord produit intégré : 1 unité du colis = 1 pièce de recette propose dynamiquement le nombre d'unités commerciales sans saisie dupliquée, sous confirmation humaine ; nombre différent avec champ conditionnel ; correspondance inconnue avec avertissement de non-valorisation ; équivalences existantes initialisées selon leur valeur ; changement de mode/colisage retire la confirmation. `packaging.supplierLabel` devient « Mention du conditionnement fournisseur (facultatif) » dans le volet « Informations complémentaires », ouvert si déjà renseigné. Mutation, modèles, calculs backend et historique inchangés. Tests React Testing Library des trois modes, des données existantes, des validations et de la mention ajoutés. Gates locaux non exécutés par l'assistant.
+
+**QA M-003 — test checkbox après modification du colisage (2026-10-21) :** échec Vitest constaté localement : le test gardait une référence vers la checkbox montée avant la suppression temporaire de l'édition des pièces (unitCount effacé => canVerifyRecipeUnits=false). La checkbox remonte lorsque le nombre d'unités est de nouveau renseigné. Correction du test : vérifier son démontage au vidage, relire la checkbox du DOM courant et vérifier qu'elle est décochée ; ajout d'une régression distincte où la quantité par unité change sans démontage, pour confirmer l'invalidation de la confirmation existante. Aucune modification fonctionnelle nécessaire ni modification Core/backend ; gates locaux non exécutés par l'assistant.
+
+**M-003 / M-004 — mise en évidence de l'équivalence pièce/colis (2026-10-21) :** l'édition d'un Article fournisseur UNIT présente désormais la correspondance de valorisation dès l'ouverture, avant les champs de conditionnement, avec la confirmation humaine visible. Les précisions sur l'unité du Référentiel et le risque de compter les sachets au lieu des pièces sont dans deux aides contextuelles InfoTooltip. Le reste du formulaire utilise des libellés outlined animés en mode feature-local (aucune primitive Core modifiée). La fenêtre est élargie sur desktop, seule la zone de champs défile et Annuler/Enregistrer restent hors défilement. La règle de vérification des pièces, l'invalidation de confirmation lorsque le colisage change, la mutation fournisseur et les tarifs historiques restent inchangés. Tests RTL ajoutés et gates locaux/recette visuelle à confirmer.
+
+**QA M-002 — correction complète du contrôle guidé (2026-10-21) :** après le correctif de navigation E2E, le scénario a échoué sur « Masquer le contrôle ». Deux défauts identifiés par lecture de la chaîne entière : (1) le endpoint RTK Query `restoreProductReferenceReviewContext` omettait `dimensionType`, pourtant exigé par Zod pour `dataType=DIMENSION` ; (2) l'attribut `aria-label` restait sur « Examiner ... » après sélection, masquant le libellé accessible « Masquer ... ». Les deux corrigés en une intervention, avec test API du corps HTTP, test du passage de paramètre depuis la page, test du libellé accessible, et assertion E2E sur la requête/réponse de reprise. Aucune modification du Core, du backend ou des données métier. Résultats des gates et du E2E local encore à confirmer ; aucune PR.
+
+**Correction navigation E2E du contrôle guidé — 2026-10-21 :** le scénario Playwright ne pouvait pas trouver l'onglet Références, car l'autocomplétion ne fait que filtrer le tableau. Le test ouvre désormais explicitement le drawer via l'action « Voir » de la ligne Produit, puis vérifie son titre avant de sélectionner l'onglet. Aucun changement de contrat ni de comportement applicatif. Échec local initial constaté (timeout 30 s) ; relance locale requise après pull.
+
+**Cohérence des onglets M-002 — 2026-10-21 :** les Dimensions PROVISIONAL sont désormais signalées dans l'onglet Dimensions par une action distincte « Identité à examiner » même si qualityReviewStatus vaut REVIEWED. Le compteur À contrôler conserve son sens de revue qualité, et une Contribution de gouvernance ouvre la Dimension dans le filtre Toutes. Test RTL dédié ajouté, validation locale requise.
+
+**E2E ciblé gouvernance M-002 — 2026-10-21 :** un scénario Playwright initialise exclusivement la base `_e2e_test` avec une Dimension provisoire déjà REVIEWED dont la Contribution a disparu, une Référence liée PROVISIONAL, puis exerce le contrôle guidé jusqu'aux deux validations distinctes. Le scénario doit encore être exécuté localement ; aucune réussite de gate n'est revendiquée.
+
+**Invariant de validation explicite M-002 (2026-10-21) :** une résolution de Dimension ne peut pas promouvoir automatiquement une Référence encore PROVISIONAL. La mise à jour de signature des Références préserve cet état jusqu'à une décision explicite de Contribution. Test d'intégration étendu, scénario frontend de double bouton « Valider » rendu non ambigu. Gates locaux encore non exécutés.
+
+**UX implémentée — contrôle guidé M-002 (2026-10-21) :** depuis l'onglet Références, le panneau de gouvernance identifie Produit parent et Dimensions avec leur statut d'identité, autorise une revue ciblée dans la même carte, puis la validation finale seulement si les dépendances sont approuvées. La revue qualité reste distincte et les quatre onglets sont conservés. Les décisions et liens de reprise réutilisent les mutations existantes sous permission Application Global MANAGE ; tests frontend ajoutés, gates locaux et QA visuelle à confirmer.
+
+**Lot QA gouvernance M-002 — 2026-10-21 :** le parcours guidé de validation d'une Référence conserve les quatre onglets, expose les dépendances Produit/Dimensions et réutilise les décisions individuelles auditables. Le backend étend la reprise idempotente de Contribution aux Dimensions PROVISIONAL déjà REVIEWED, et remplace l'erreur générique par le nom des identités bloquantes ; contrat M-002 complété. Vérification E2E/RTL et gates locaux requis avant PR.
+
+**QA contrôle vide M-002 — 2026-10-21 :** correction ciblée des champs outlined sans options (Variété, Caractéristiques). Le libellé « Aucune valeur disponible » est une option sentinelle, pas une sélection réelle : elle ne doit plus forcer le label en haut. Les champs concernés restent désactivés et affichent le libellé au centre au repos ; au survol, le libellé monte sur la bordure et le motif d'indisponibilité apparaît. Pas de faux focus ni de sélection autorisée. Les listes non désactivées continuent de flotter au focus. Tests de structure RTL mis à jour ; recette locale requise.
+
+**QA finition M-002 — 2026-10-21 :** la fenêtre « Corriger » affiche désormais le nom initial de la Référence Produit et aligne « Enrichir le référentiel » avec son titre, sans sous-titre redondant. Dans le prototype outlined, les libellés des champs réellement vides restent à l'intérieur puis montent au focus (transition CSS, respect de reduced motion) ; ils restent en haut en présence d’une valeur et redescendent lorsqu’un champ redevient vide. Les listes sans valeur exploitable évitent de masquer leurs libellés ; les listes désactivées conservent l'explication de leur indisponibilité. Tests RTL/E2E ajustés ; résultats à confirmer par l’utilisateur en local avant PR.
+
+**QA prototype UX M-002 — 2026-10-21 :** les libellés flottants « outlined » sont essayés uniquement dans la correction des Références Produit, via un habillage feature-local de Field/Input/Select existants ; le parcours de création conserve les libellés classiques. L'avertissement sur le changement d'unité est compacté avec une aide contextuelle conservant les conséquences complètes et une courte mention visible, sans retirer la confirmation explicite. Corrections ESLint associées : la fonction de réutilisation de Produit n'est plus préfixée par `use` (ce n'est pas un Hook) et le faux `<select>` natif du test devient un bouton de simulation. À valider en RTL, ESLint et recette visuelle locale ; aucune évolution Core ni API.
+
+**QA ergonomie M-002 — 2026-10-21 :** la fenêtre « Corriger la référence Produit » débordait de la hauteur de l'écran et masquait « Annuler » / « Enregistrer ». Le dialogue est élargi sur ordinateur, limité à la hauteur visible, avec une zone de champs défilante et des actions/erreurs de validation conservées hors défilement. Ajustement uniquement frontend métier, sans évolution Core ni du contrat économique. Régression RTL et E2E écran bas ajoutées ; résultats locaux à confirmer par l'utilisateur avant PR.
+
+Branche : `feature/m002-m003-m004-unit-consistency`. Les quatre règles métier (unité M-002 imposée dans les Fiches, preuve de pièces par colis, aucune conversion estimative de poids, correction gouvernée des Références déjà utilisées) sont **validées par l'utilisateur**. Contrat transversal : `docs/m004/M-002-M-003-M-004-UNIT-CONSISTENCY-CADRAGE.md`.
+
+Implémentation préparée : `SupplierArticle.recipeUnitEquivalence`, normalisation `UNIT` par colis vérifié et compatible avec le snapshot tarifaire, historisation des nouveaux prix négociés/facturés, interface Article (titre, aide, « Nb d'unités par colis », unité de fiche en lecture seule, confirmation conditionnelle), garde-fou sur changement interdimensionnel M-002, tests backend/frontend, audit DB en lecture seule. Core inchangé v1.2.1.
+
+**Revue intégration du 2026-10-16 :** le scénario croissant doit distinguer la politique par défaut `NEGOTIATED_PRICE`, la politique `SUPPLIER_TARIFF` (conversion impossible lorsque la preuve ne correspond plus), puis `INVOICED_PRICE` (facture validée seulement). L'affichage commercial des Articles et le Prix applicable suivent les mêmes exigences de preuve pour les conversions `UNIT` des tarifs sans snapshot. Tests locaux à relancer ; aucune réussite annoncée.
+
+**QA M-002 — correction de navigation du 2026-10-16 :** dans le dialogue standard « Créer un Produit », les Produits proches ne présentaient que « Différent » malgré un callback `onUseExisting` déjà relié aux pages Workspace et Application Global. Correction frontend : action « Ouvrir ce Produit » pour les suggestions accessibles ; conservation de « Différent », du parcours contextuel M-003 et des restrictions des Produits archivés. Tests RTL et E2E M-002 étendus. Aucun backend/Core modifié pour cette anomalie. Vérification locale du lot requise avant PR.
+
+**Complément QA M-002 du 2026-10-16 (validé pour implémentation)** : l'utilisateur a constaté que la Référence « Croissant individuel PAI » est passée de `G` à `KG` malgré l'association Article BRIDOR. La règle backend passe du blocage interdimensionnel au blocage de **tout changement d'unité** si un usage existe. L'ouverture d'un Produit retrouvé par la déduplication doit cibler directement l'onglet Références. L'Application Global présente « À contrôler » en petit bouton outline neutre ouvrant la décision existante via une recherche ciblée par `targetId`. Le dialogue de correction déplace le sous-titre technique vers une infobulle métier. Audits locaux, RTL, tests backend, E2E et gates restent à confirmer avant toute PR.
+
+**QA 2026-10-16 :** un correctif encadre maintenant le changement d’unité d’une Référence sans Fiche ni Prix historique, même si des Articles fournisseur restent associés. Confirmation explicite, maintien des tarifs source et invalidation des anciennes équivalences. Le petit bouton warning « À contrôler » peut retrouver ou rétablir une contribution manquante, avec audit et sans validation automatique. Tests locaux indispensables avant PR.
+
+**Validation encore attendue** : audit local de la Référence « Croissant individuel PAI » avant toute correction de données ; exécution locale des tests ciblés, lint, build, E2E et QA visuelle ; corrections sur la même branche. Aucun test vert ni migration effectuée par l'assistant. **Aucune PR/merge avant accord utilisateur.** Les archives ci-dessous peuvent décrire des états plus anciens et ne priment pas sur cet état actuel.
+
+---
+
+---
+
+## Archive — reprise M-002/M-003 au 2026-10-14
 
 **Date : 2026-10-14**  
 **Dépôt : `greg44500/saas-fiches-techniques-gms`**  

@@ -74,6 +74,7 @@ const supplierApi = supplierApiBase.injectEndpoints({
         supplierId,
         productId,
         productVariantId,
+        usableForTechnicalSheet,
       }) => ({
         url: '/workspaces/' + workspaceId + '/supplier-articles',
         params: {
@@ -85,6 +86,9 @@ const supplierApi = supplierApiBase.injectEndpoints({
           supplierId,
           productId,
           productVariantId,
+          ...(usableForTechnicalSheet
+            ? { usableForTechnicalSheet: 'true' }
+            : {}),
         },
       }),
       transformResponse: (response) => response.data,
@@ -98,6 +102,24 @@ const supplierApi = supplierApiBase.injectEndpoints({
       }),
       transformResponse: (response) => response.data.article,
       invalidatesTags: ['SupplierArticle', 'SupplierCatalog', 'SupplierPricing'],
+    }),
+    getSupplierArticleCreationProductMetadata: builder.query({
+      query: (workspaceId) => ({
+        url: '/workspaces/' + workspaceId
+          + '/supplier-articles/product-contributions/metadata',
+      }),
+      transformResponse: (response) => response.data.metadata,
+    }),
+    searchSupplierArticleCreationProducts: builder.query({
+      query: ({ workspaceId, ...params }) => ({
+        url: '/workspaces/' + workspaceId
+          + '/supplier-articles/product-contributions/search',
+        params,
+      }),
+      transformResponse: (response) => ({
+        results: response.data.results,
+        pagination: response.meta,
+      }),
     }),
     getSupplierArticleProductMetadata: builder.query({
       query: ({ workspaceId, articleId }) => ({
@@ -730,6 +752,8 @@ const supplierApi = supplierApiBase.injectEndpoints({
 export const {
   useAddDossierSupplierReferenceMutation,
   useCheckSupplierArticleProductDuplicateMutation,
+  useGetSupplierArticleCreationProductMetadataQuery,
+  useSearchSupplierArticleCreationProductsQuery,
   useGetSupplierArticleProductMetadataQuery,
   useGetSupplierArticleProductDimensionsQuery,
   useSearchSupplierArticleProductsQuery,

@@ -62,9 +62,11 @@ function Harness({
   compact = false,
   descriptionId,
   onSelect,
+  onCreateMissingReference,
   placeholder,
   resultOverride = result,
   showWorkspaceFavorite = false,
+  searchError = false,
 }) {
   const [value, setValue] = useState('');
 
@@ -84,6 +86,8 @@ function Harness({
         }
       : undefined,
     isFetching: false,
+    isSuccess: !options?.skip && !searchError,
+    isError: !options?.skip && searchError,
   }));
 
   return (
@@ -95,6 +99,7 @@ function Harness({
       descriptionId={descriptionId}
       metadata={metadata}
       onSelect={onSelect}
+      onCreateMissingReference={onCreateMissingReference}
       onValueChange={setValue}
       placeholder={placeholder}
       scope="REFERENCE"
@@ -109,6 +114,57 @@ function Harness({
 describe('ProductSearchAutocomplete', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+
+  it('présente la Référence fournisseur et le Produit associé dans les suggestions Articles', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const article = {
+      id: 'article-43279',
+      supplier: { name: 'BRIDOR' },
+      supplierReference: '43279',
+      supplierDesignation: 'Croissant 120 g',
+      packagingLabel: 'Carton de 36',
+    };
+    const articleResult = {
+      product: { id: 'variant-bridor', name: 'Croissant individuel PAI' },
+      variant: { id: 'variant-bridor', name: 'Croissant individuel PAI', referenceUnit: 'UNIT' },
+      supplierArticle: article,
+    };
+
+    function ArticleHarness() {
+      const [value, setValue] = useState('');
+      return (
+        <ProductSearchAutocomplete
+          externalSearch
+          externalQuery={{
+            data: { results: [articleResult] },
+            isFetching: false,
+            isSuccess: true,
+            isError: false,
+          }}
+          metadata={metadata}
+          onSelect={onSelect}
+          onValueChange={setValue}
+          scope="ARTICLES"
+          value={value}
+          workspaceId="workspace-1"
+        />
+      );
+    }
+
+    render(<ArticleHarness />);
+    await user.type(screen.getByRole('combobox', {
+      name: 'Rechercher un Produit',
+    }), '43279');
+    const option = await screen.findByRole('option', {
+      name: /Croissant individuel PAI.*BRIDOR.*43279.*Croissant 120 g/i,
+    });
+    expect(option).toHaveTextContent('Produit associé : Croissant individuel PAI');
+    expect(option).toHaveTextContent('Carton de 36');
+    await user.click(option);
+    expect(onSelect).toHaveBeenCalledWith(articleResult);
   });
 
   it('transmet la description de saisie au champ de recherche', () => {
@@ -236,6 +292,66 @@ describe('ProductSearchAutocomplete', () => {
     await waitFor(() => {
       expect(input).toHaveValue('');
     });
+  });
+
+  it('propose la création directement dans les suggestions vides et transmet le texte recherché', async () => {
+    const user = userEvent.setup();
+    const onCreate = vi.fn();
+    render(<Harness onSelect={vi.fn()} onCreateMissingReference={onCreate} />);
+
+    await user.type(screen.getByRole('combobox', {
+      name: 'Rechercher un Produit',
+    }), 'oeufs blancs pasteurises');
+
+    expect(await screen.findByText('Aucun Produit ne correspond à cette recherche.'))
+      .toBeInTheDocument();
+    const create = await screen.findByRole('button', { name: 'Créer cette Référence' });
+    await user.click(create);
+    expect(onCreate).toHaveBeenCalledWith('oeufs blancs pasteurises');
+  });
+
+  it('n’autorise jamais de création si la recherche échoue (droits ou serveur)', async () => {
+    const user = userEvent.setup();
+    const onCreate = vi.fn();
+    render(
+      <Harness onCreateMissingReference={onCreate} onSelect={vi.fn()} searchError />,
+    );
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Rechercher un Produit' }),
+      'oeufs blancs pasteurises',
+    );
+
+    expect(await screen.findByText(
+      'La recherche prédictive est temporairement indisponible.',
+    )).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Créer cette Référence' }))
+      .not.toBeInTheDocument();
+    expect(onCreate).not.toHaveBeenCalled();
+  });
+
+  it('ne propose pas de créer une Référence quand les suggestions existent', async () => {
+    const user = userEvent.setup();
+    render(<Harness onSelect={vi.fn()} onCreateMissingReference={vi.fn()} />);
+    await user.type(screen.getByRole('combobox', {
+      name: 'Rechercher un Produit',
+    }), 'car');
+    expect(await screen.findByRole('option', { name: /Carotte râpée/i }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Créer cette Référence' }))
+      .not.toBeInTheDocument();
+  });
+
+  it('ne suggère jamais de création si aucune permission de contribution n est fournie', async () => {
+    const user = userEvent.setup();
+    render(<Harness onSelect={vi.fn()} />);
+    await user.type(screen.getByRole('combobox', {
+      name: 'Rechercher un Produit',
+    }), 'oeufs');
+    expect(await screen.findByText('Aucun Produit ne correspond à cette recherche.'))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Créer cette Référence' }))
+      .not.toBeInTheDocument();
   });
 
   it('n interroge pas le serveur avant le seuil de trois caractères', async () => {

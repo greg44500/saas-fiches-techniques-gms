@@ -9,6 +9,7 @@ import {
 } from '../dossier/dossier.model.js';
 import {
     PRODUCT_STATUS,
+    PRODUCT_REFERENCE_UNIT_REGISTRY,
 } from '../productCatalog/productCatalog.registry.js';
 import {
     ProductVariant,
@@ -490,22 +491,10 @@ const normalizePriceForArticle = ({
 }) => normalizeSupplierPrice({
     sourceAmount,
     sourceBasis,
-    packaging:
-        article.packaging
-            ? {
-                totalQuantity:
-                    decimalToString(
-                        article.packaging
-                            .totalQuantity,
-                    ),
-                unit:
-                    article.packaging
-                        .unit,
-            }
-            : null,
-    targetUnit:
-        article.productVariant
-            .referenceUnit,
+    packaging: article.packaging,
+    recipeUnitEquivalence: article.recipeUnitEquivalence,
+    productVariantId: article.productVariant._id,
+    targetUnit: article.productVariant.referenceUnit,
 });
 
 const intervalsOverlap = ({
@@ -634,6 +623,9 @@ const createNegotiatedPrice = async ({
                     sourceAmount,
                     sourceBasis,
                     currency,
+                    packagingSnapshot: article.packaging,
+                    recipeUnitEquivalenceSnapshot: article.recipeUnitEquivalence,
+                    productVariantAtPricing: article.productVariant._id,
                     normalizedAmount:
                         normalized
                             .normalizedAmount,
@@ -879,6 +871,9 @@ const createInvoicedPrice = async ({
                     sourceAmount,
                     sourceBasis,
                     currency,
+                    packagingSnapshot: article.packaging,
+                    recipeUnitEquivalenceSnapshot: article.recipeUnitEquivalence,
+                    productVariantAtPricing: article.productVariant._id,
                     normalizedAmount:
                         normalized
                             .normalizedAmount,
@@ -1747,6 +1742,19 @@ const serializeApplicableSource = ({
     ...extra,
 });
 
+const isHistoricalPriceCompatible = (price, variant) => {
+    // Une source historique sans prix exploitable ne doit pas masquer un
+    // éventuel tarif ou prix indicatif de repli.
+    if (price.normalizedAmount == null || price.normalizedUnit == null) return false;
+    if (price.productVariantAtPricing
+        && price.productVariantAtPricing.toString() !== variant._id.toString()) {
+        return false;
+    }
+    const sourceUnit = PRODUCT_REFERENCE_UNIT_REGISTRY[price.normalizedUnit];
+    const targetUnit = PRODUCT_REFERENCE_UNIT_REGISTRY[variant.referenceUnit];
+    return Boolean(sourceUnit && sourceUnit.dimension === targetUnit?.dimension);
+};
+
 const resolveApplicablePrice = async ({
     workspaceId,
     dossierId,
@@ -1801,7 +1809,9 @@ const resolveApplicablePrice = async ({
                 session,
             });
 
-        if (invoice.price) {
+        if (invoice.price && isHistoricalPriceCompatible(
+            invoice.price, productVariant,
+        )) {
             return {
                 article:
                     serializeSupplierArticleSummary(article),
@@ -1849,7 +1859,9 @@ const resolveApplicablePrice = async ({
                 session,
             });
 
-        if (negotiated) {
+        if (negotiated && isHistoricalPriceCompatible(
+            negotiated, productVariant,
+        )) {
             return {
                 article:
                     serializeSupplierArticleSummary(article),
@@ -1882,6 +1894,7 @@ const resolveApplicablePrice = async ({
         alerts.push('NO_VALID_NEGOTIATED_PRICE');
     }
 
+    let unusableSupplierTariff = null;
     if (article) {
         attempted.push('SUPPLIER_TARIFF');
         const selectedTariff = await selectSupplierTariffForDate({
@@ -1906,10 +1919,15 @@ const resolveApplicablePrice = async ({
                     sourceAmount: tariff.sourceAmount,
                     sourceBasis: tariff.sourceBasis,
                     packaging: tariff.packagingSnapshot ?? article.packaging,
+                    // Une preuve de pièces ne s'applique qu'au colis exact du tarif.
+                    // Un tarif historique sans snapshot ne peut pas l'hériter.
+                    recipeUnitEquivalence: tariff.packagingSnapshot
+                        ? article.recipeUnitEquivalence : null,
+                    productVariantId: productVariant._id,
                     targetUnit: productVariant.referenceUnit,
                 }),
             };
-            return {
+            const supplierTariffResolution = {
                 article:
                     serializeSupplierArticleSummary(article),
                 productVariant:
@@ -1945,9 +1963,15 @@ const resolveApplicablePrice = async ({
                 alerts,
                 atDate,
             };
+            if (pricedTariff.normalizedAmount != null
+                && pricedTariff.normalizedUnit != null) {
+                return supplierTariffResolution;
+            }
+            alerts.push('SUPPLIER_TARIFF_NOT_NORMALIZABLE');
+            unusableSupplierTariff = supplierTariffResolution;
+        } else {
+            alerts.push('NO_APPLICABLE_SUPPLIER_TARIFF');
         }
-
-        alerts.push('NO_APPLICABLE_SUPPLIER_TARIFF');
     }
 
     attempted.push('INDICATIVE_DOSSIER');
@@ -2042,6 +2066,12 @@ const resolveApplicablePrice = async ({
     }
 
     alerts.push('NO_GLOBAL_INDICATIVE_PRICE');
+
+    // Préserver le diagnostic explicite du tarif historique si aucun
+    // prix indicatif de dernier recours ne permet de valoriser la ligne.
+    if (unusableSupplierTariff) {
+        return { ...unusableSupplierTariff, alerts };
+    }
 
     if (!article) {
         throw new AppError(

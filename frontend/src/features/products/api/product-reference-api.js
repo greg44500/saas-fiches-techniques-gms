@@ -51,11 +51,25 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data,
       providesTags: ['ProductReference'],
     }),
+    restoreProductReferenceReviewContext: builder.mutation({
+      query: ({ productId, dataType, targetId, dimensionType }) => ({
+        url: '/product-reference/' + productId + '/review-context',
+        method: 'POST',
+        body: {
+          dataType,
+          targetId,
+          ...(dimensionType ? { dimensionType } : {}),
+        },
+      }),
+      transformResponse: (response) => response.data.item,
+      invalidatesTags: ['ProductReference'],
+    }),
     listProductReferenceReviewQueue: builder.query({
       query: ({
         type,
         workspaceId,
         origins,
+        targetId,
         page = 1,
         limit = 20,
       } = {}) => ({
@@ -64,6 +78,7 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
           type,
           workspaceId,
           origins,
+          targetId,
           page,
           limit,
         },
@@ -390,6 +405,8 @@ export const {
   useListProductReferenceMergeCandidatesQuery,
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
+  useLazyListProductReferenceReviewQueueQuery,
+  useRestoreProductReferenceReviewContextMutation,
   useDeleteProductReferenceDimensionMutation,
   usePreviewProductReferenceImportMutation,
   usePreviewProductReferenceVariantMergeMutation,

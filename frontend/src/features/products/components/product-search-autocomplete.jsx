@@ -43,6 +43,17 @@ function isWorkspaceFavorite(result, metadata) {
   );
 }
 
+function articleSuggestionLabel(result) {
+  const article = result.supplierArticle;
+  return article
+    ? [
+        article.supplier?.name,
+        article.supplierReference,
+        article.supplierDesignation,
+      ].filter(Boolean).join(' · ')
+    : null;
+}
+
 function ProductSearchAutocomplete({
   ariaLabel = 'Rechercher un Produit',
   categoryId,
@@ -54,6 +65,7 @@ function ProductSearchAutocomplete({
   descriptionId,
   metadata,
   onDebouncedSearchChange,
+  onCreateMissingReference,
   onSelect,
   onValueChange,
   placeholder = 'Rechercher un produit…',
@@ -113,7 +125,7 @@ function ProductSearchAutocomplete({
   }, [debouncedQuery.length, suggestionsQuery.data?.results]);
 
   function selectSuggestion(result) {
-    const nextSearch = getReferenceLabel(
+    const nextSearch = articleSuggestionLabel(result) ?? getReferenceLabel(
       metadata,
       result.product,
       result.variant,
@@ -136,13 +148,21 @@ function ProductSearchAutocomplete({
     normalizedValue.length > 0
     && normalizedValue.length < PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH
   );
+  const canOfferCreation = Boolean(
+    onCreateMissingReference
+    && normalizedValue.length >= PRODUCT_SEARCH_AUTOCOMPLETE_MIN_LENGTH
+    && debouncedQuery === normalizedValue
+    && suggestionsQuery.isSuccess
+    && !suggestionsQuery.isFetching
+    && suggestions.length === 0,
+  );
 
   return (
     <Autocomplete
       autoHighlight
       filter={null}
       items={suggestions}
-      itemToStringValue={(result) => getReferenceLabel(
+      itemToStringValue={(result) => articleSuggestionLabel(result) ?? getReferenceLabel(
         metadata,
         result.product,
         result.variant,
@@ -175,26 +195,37 @@ function ProductSearchAutocomplete({
           <AutocompletePopup className="border-primary/25 bg-popover/95 shadow-2xl ring-1 ring-foreground/5 backdrop-blur-md">
             <div className="border-b border-border bg-muted/35 px-3 py-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Suggestions Produits
+                {scope === 'ARTICLES' ? 'Articles fournisseur' : 'Suggestions Produits'}
               </p>
             </div>
 
             <AutocompleteStatus>
               {suggestionsQuery.isFetching
-                ? 'Recherche des Produits en cours'
+                ? (scope === 'ARTICLES' ? 'Recherche des Articles en cours' : 'Recherche des Produits en cours')
                 : suggestions.length + ' résultat(s) proposé(s)'}
             </AutocompleteStatus>
 
             <AutocompleteEmpty>
               {suggestionsQuery.isFetching
-                ? 'Recherche des Produits…'
+                ? (scope === 'ARTICLES' ? 'Recherche des Articles…' : 'Recherche des Produits…')
                 : suggestionsQuery.isError
                   ? 'La recherche prédictive est temporairement indisponible.'
                   : waitingForMinimum
                     ? 'Saisissez au moins 3 caractères.'
                     : normalizedValue.length === 0
-                      ? 'Commencez à saisir un produit.'
-                      : 'Aucun Produit ne correspond à cette recherche.'}
+                      ? (scope === 'ARTICLES' ? 'Recherchez un Article fournisseur.' : 'Commencez à saisir un produit.')
+                      : scope === 'ARTICLES'
+                        ? 'Aucun Article fournisseur utilisable ne correspond à cette recherche.'
+                        : 'Aucun Produit ne correspond à cette recherche.'}
+              {canOfferCreation && (
+                <button
+                  className="mx-auto mt-2 inline-flex min-h-8 items-center rounded-md border border-border px-3 py-1 text-sm font-medium text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => onCreateMissingReference(normalizedValue)}
+                  type="button"
+                >
+                  Créer cette Référence
+                </button>
+              )}
             </AutocompleteEmpty>
 
             <AutocompleteList>
@@ -204,30 +235,41 @@ function ProductSearchAutocomplete({
                     getReferenceLabel(metadata, result.product, result.variant),
                     result.product.category?.name,
                     result.variant ? 'Référence Produit' : 'À enrichir',
+                    result.supplierArticle
+                      ? articleSuggestionLabel(result)
+                      : null,
                     showWorkspaceFavorite && isWorkspaceFavorite(result, metadata)
                       ? 'Favori'
                       : null,
                   ].filter(Boolean).join('. ')}
                   className="border-b border-border/50 last:border-b-0 data-highlighted:bg-accent/70"
                   index={index}
-                  key={result.variant?.id ?? result.product.id}
+                  key={result.supplierArticle?.id ?? result.variant?.id ?? result.product.id}
                   onClick={() => selectSuggestion(result)}
                   value={result}
                 >
                   <span className="font-medium">
-                    {getReferenceLabel(metadata, result.product, result.variant)}
+                    {result.supplierArticle
+                      ? articleSuggestionLabel(result)
+                      : getReferenceLabel(metadata, result.product, result.variant)}
                   </span>
                   <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span>
-                      {[
-                        result.product.category?.name,
-                        result.variant
-                          ? getConservationTypeLabel(
-                              metadata,
-                              result.variant.conservationType,
-                            )
-                          : 'Référence à enrichir',
-                      ].filter(Boolean).join(' · ')}
+                      {result.supplierArticle
+                        ? 'Produit associé : ' + getReferenceLabel(
+                          metadata, result.product, result.variant,
+                        ) + (result.supplierArticle.packagingLabel
+                          ? ' · ' + result.supplierArticle.packagingLabel
+                          : '')
+                        : [
+                          result.product.category?.name,
+                          result.variant
+                            ? getConservationTypeLabel(
+                                metadata,
+                                result.variant.conservationType,
+                              )
+                            : 'Référence à enrichir',
+                        ].filter(Boolean).join(' · ')}
                     </span>
                     {showWorkspaceFavorite
                     && isWorkspaceFavorite(result, metadata) && (

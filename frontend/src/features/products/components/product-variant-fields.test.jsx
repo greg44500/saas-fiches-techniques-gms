@@ -91,6 +91,124 @@ function StructuredHarness({
 }
 
 describe('ProductVariantFields', () => {
+  it('active les libellés outlined uniquement sur demande, sans changer les contrôles', () => {
+    const onChange = vi.fn();
+    render(
+      <ProductVariantFields
+        floatingLabels
+        metadata={metadata}
+        onChange={onChange}
+        structured
+        value={{
+          ...createEmptyVariantDraft(metadata, { structured: true }),
+          name: 'Croissant individuel PAI',
+        }}
+      />,
+    );
+
+    const name = screen.getByLabelText('Nom de la référence *');
+    const label = screen.getByText('Nom de la référence *');
+    const unit = screen.getByLabelText('Unité de référence *');
+    const processing = screen.getByLabelText('État / transformation');
+
+    expect(name).toHaveClass('h-12');
+    expect(unit).toHaveClass('h-12');
+    expect(label).toHaveClass('text-xs', 'bg-popover');
+    expect(processing.closest('[data-slot="field"]'))
+      .toHaveClass('group', 'relative', 'pt-2');
+    expect(screen.getByRole('button', {
+      name: 'Aide sur l’état ou la transformation du Produit',
+    })).toBeInTheDocument();
+
+    const processingField = processing.closest('[data-slot="field"]');
+    const processingLabel = screen.getByText('État / transformation');
+    expect(processingField).toHaveAttribute('data-label-state', 'empty');
+    expect(processingLabel.parentElement).toHaveClass('top-8', 'group-focus-within:top-2');
+    expect(processingLabel).toHaveClass('group-focus-within:text-xs');
+
+    expect(name.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
+    const unavailableVariety = screen.getByLabelText('Variété');
+    const unavailableField = unavailableVariety.closest('[data-slot="field"]');
+    expect(unavailableVariety).toBeDisabled();
+    expect(unavailableVariety).toHaveTextContent('Aucune variété disponible');
+    expect(unavailableField).toHaveAttribute('data-label-state', 'empty');
+    expect(screen.getByText('Variété').parentElement)
+      .toHaveClass('top-8', 'group-hover:top-2');
+    expect(screen.getByText('Variété'))
+      .toHaveClass('group-hover:text-xs');
+    expect(unavailableVariety.querySelector('span[class*="group-hover:opacity-100"]'))
+      .toBeInTheDocument();
+    const unavailableCharacteristic = screen.getByLabelText('Présentation');
+    expect(unavailableCharacteristic).toBeDisabled();
+    expect(unavailableCharacteristic.closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'empty');
+    expect(screen.getByText('Présentation').parentElement)
+      .toHaveClass('top-8', 'group-hover:top-2');
+  });
+
+  it('remonte le libellé sur la bordure lorsqu’une sélection est renseignée', () => {
+    const { rerender } = render(<StructuredHarness onPayload={vi.fn()} />);
+
+    // Vérifier les deux modes successivement pour éviter deux champs
+    // portant le même id HTML dans le DOM du test.
+    const classic = screen.getByLabelText('Variété');
+    expect(classic.closest('[data-slot="field"]')).not.toHaveAttribute('data-label-state');
+
+    const value = createEmptyVariantDraft(metadata, { structured: true });
+    const populated = {
+      ...value,
+      varietyId: dimensions.varieties[0].id,
+    };
+    rerender(
+      <ProductVariantFields
+        dimensions={dimensions}
+        floatingLabels
+        metadata={metadata}
+        onChange={vi.fn()}
+        structured
+        value={populated}
+      />,
+    );
+    expect(screen.getByLabelText('Variété').closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'filled');
+  });
+
+  it('traite une caractéristique effacée comme un champ non renseigné', () => {
+    render(
+      <ProductVariantFields
+        dimensions={dimensions}
+        floatingLabels
+        metadata={metadata}
+        onChange={vi.fn()}
+        structured
+        value={{
+          ...createEmptyVariantDraft(metadata, { structured: true }),
+          characteristicIdsByKind: { PRESENTATION: '' },
+        }}
+      />,
+    );
+
+    const presentation = screen.getByLabelText('Présentation');
+    expect(presentation).toHaveTextContent('Non renseigné');
+    expect(presentation.closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'empty');
+    expect(screen.getByText('Présentation').parentElement)
+      .toHaveClass('top-8', 'group-focus-within:top-2');
+  });
+
+  it('conserve les labels classiques en dehors du prototype', () => {
+    render(
+      <ProductVariantFields
+        metadata={metadata}
+        onChange={vi.fn()}
+        value={createEmptyVariantDraft(metadata)}
+      />,
+    );
+
+    expect(screen.getByLabelText('Nom de la référence *')).not.toHaveClass('h-12');
+    expect(screen.getByText('Nom de la référence *')).not.toHaveClass('text-xs');
+  });
+
   it('explique les dimensions métier sans imposer de valeur', () => {
     const onChange = vi.fn();
     const value = createEmptyVariantDraft(metadata);
