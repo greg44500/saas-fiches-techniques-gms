@@ -66,6 +66,7 @@ function Harness({
   placeholder,
   resultOverride = result,
   showWorkspaceFavorite = false,
+  searchError = false,
 }) {
   const [value, setValue] = useState('');
 
@@ -85,8 +86,8 @@ function Harness({
         }
       : undefined,
     isFetching: false,
-    isSuccess: !options?.skip,
-    isError: false,
+    isSuccess: !options?.skip && !searchError,
+    isError: !options?.skip && searchError,
   }));
 
   return (
@@ -307,6 +308,26 @@ describe('ProductSearchAutocomplete', () => {
     const create = await screen.findByRole('button', { name: 'Créer cette Référence' });
     await user.click(create);
     expect(onCreate).toHaveBeenCalledWith('oeufs blancs pasteurises');
+  });
+
+  it('n’autorise jamais de création si la recherche échoue (droits ou serveur)', async () => {
+    const user = userEvent.setup();
+    const onCreate = vi.fn();
+    render(
+      <Harness onCreateMissingReference={onCreate} onSelect={vi.fn()} searchError />,
+    );
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Rechercher un Produit' }),
+      'oeufs blancs pasteurises',
+    );
+
+    expect(await screen.findByText(
+      'La recherche prédictive est temporairement indisponible.',
+    )).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Créer cette Référence' }))
+      .not.toBeInTheDocument();
+    expect(onCreate).not.toHaveBeenCalled();
   });
 
   it('ne propose pas de créer une Référence quand les suggestions existent', async () => {
