@@ -98,6 +98,7 @@ function ProductReferenceDetailsDrawer({
   metadata,
   onClose,
   onReviewRequested,
+  onReviewCancelled,
   onApproveDimensionDirectly,
   onGuidedReviewRequested,
   onGuidedReviewClosed,
@@ -569,6 +570,7 @@ function ProductReferenceDetailsDrawer({
                   <ProductReferenceGovernanceReviewPanel
                     context={reviewContext}
                     onApprove={approveReviewTarget}
+                                onCancel={() => onReviewCancelled?.()}
                     onEdit={() => setEditProductOpen(true)}
                     onMerge={mergeReviewTarget}
                     onReject={rejectReviewTarget}
@@ -743,6 +745,7 @@ function ProductReferenceDetailsDrawer({
                               <ProductReferenceGovernanceReviewPanel
                                 context={reviewContext}
                                 onApprove={approveReviewTarget}
+                                onCancel={() => onReviewCancelled?.()}
                                 onEdit={() => setEditDimension({ type: 'VARIETY', dimension: variety })}
                                 onMerge={reviewContext.type === 'CONTRIBUTION'
                                   ? mergeReviewTarget : undefined}
@@ -806,6 +809,7 @@ function ProductReferenceDetailsDrawer({
                               <ProductReferenceGovernanceReviewPanel
                                 context={reviewContext}
                                 onApprove={approveReviewTarget}
+                                onCancel={() => onReviewCancelled?.()}
                                 onEdit={() => setEditDimension({
                                   type: 'CHARACTERISTIC', dimension: characteristic,
                                 })}

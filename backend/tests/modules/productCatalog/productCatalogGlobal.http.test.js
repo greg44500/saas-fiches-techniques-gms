@@ -199,6 +199,68 @@ describe('M-002 global product reference HTTP contract', () => {
         );
     });
 
+    it('supprime via HTTP une catégorie vide, mais refuse une catégorie avec Produit historique', async () => {
+        const empty = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Catégorie à supprimer' });
+        expect(empty.status).toBe(201);
+
+        const removed = await request(app)
+            .delete('/api/product-reference/categories/' + empty.body.data.category.id)
+            .set(bearer(governorToken));
+        expect(removed.status).toBe(204);
+
+        const existing = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Catégorie encore utilisée' });
+        const product = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Produit historique pour test catégorie', categoryId: existing.body.data.category.id });
+        expect(product.status).toBe(201);
+        const archived = await request(app)
+            .patch('/api/product-reference/' + product.body.data.product.id + '/status')
+            .set(bearer(governorToken))
+            .send({ status: 'ARCHIVED' });
+        expect(archived.status).toBe(200);
+        const blocked = await request(app)
+            .delete('/api/product-reference/categories/' + existing.body.data.category.id)
+            .set(bearer(governorToken));
+        expect(blocked.status).toBe(409);
+
+        const metadata = await request(app)
+            .get('/api/product-reference/metadata')
+            .set(bearer(governorToken));
+        expect(metadata.status).toBe(200);
+        expect(metadata.body.data.metadata.categories).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: existing.body.data.category.id,
+                    activeProductCount: 0,
+                    totalProductCount: 1,
+                }),
+            ]),
+        );
+    });
+
+    it('refuse la suppression de catégorie à un utilisateur Platform sans permission métier', async () => {
+        const guest = await createUserToken({
+            email: 'no-category-delete@example.test',
+            platformRole: PLATFORM_ROLE.SUPER_ADMIN,
+        });
+        const category = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Catégorie protégée' });
+        expect(category.status).toBe(201);
+        const denied = await request(app)
+            .delete('/api/product-reference/categories/' + category.body.data.category.id)
+            .set(bearer(guest.token));
+        expect(denied.status).toBe(403);
+    });
+
     it('permet à un membre Platform explicitement habilité d’abonder le référentiel', async () => {
         const platformMember = await createUserToken({
             email: 'platform-product-governor@example.test',

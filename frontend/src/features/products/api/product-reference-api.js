@@ -228,6 +228,13 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data.category,
       invalidatesTags: ['ProductReference'],
     }),
+    deleteProductReferenceCategory: builder.mutation({
+      query: ({ categoryId }) => ({
+        url: '/product-reference/categories/' + categoryId,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
     updateProductReferenceCategory: builder.mutation({
       query: ({ categoryId, ...body }) => ({
         url: '/product-reference/categories/' + categoryId,
@@ -391,6 +398,7 @@ export const {
   useCommitProductReferenceImportMutation,
   useCreateProductReferenceCharacteristicMutation,
   useCreateProductReferenceCategoryMutation,
+  useDeleteProductReferenceCategoryMutation,
   useCreateProductReferenceMutation,
   useCreateProductReferenceVarietyMutation,
   useCreateProductReferenceVariantMutation,

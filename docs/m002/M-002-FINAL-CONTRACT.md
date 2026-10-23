@@ -534,3 +534,13 @@ Dans l'onglet Dimensions, l'état de revue qualité conserve son compteur propre
 - Le filtre rétablit « Actives » pour `status = ACTIVE`, indépendamment de l'approbation. Il inclut normalement les identités provisoires non archivées.
 - Une catégorie globale a un `normalizedKey` unique, calculé par `normalizeProductText`. Création et renommage refusent une collision normalisée avec 409, y compris sur une catégorie archivée et en cas de conflit d'index au renommage.
 - L'unicité stricte ne détecte pas des fautes produisant une clé différente. Les rapprochements orthographiques sont à cadrer séparément avec suggestion et décision humaine ; ne pas ajouter de refus automatique fondé seulement sur une distance de chaînes.
+
+### Avenant de stabilisation Catégories et gouvernance (2026-10-23)
+
+- Dans la table Catégories, les actions de ligne sont regroupées dans le menu « … » partagé : Renommer, Archiver/Réactiver et Supprimer si la catégorie est réellement sans aucun Produit lié.
+- Le compteur « Produits actifs » conserve son sens : seul `status=ACTIVE` et `identityActive=true` y contribue. Un second compteur serveur `totalProductCount` (actifs, archivés et identités inactives) protège l'affichage de Supprimer. Un « 0 produit actif » ne prouve pas qu'une catégorie soit vide.
+- Suppression de catégorie : endpoint `DELETE /api/product-reference/categories/:categoryId`, permission Application Global `MANAGE` et validation ObjectId ; contrôle transactionnel de l'absence de tout `CanonicalProduct.category`, renvoi `409` si la catégorie est encore utilisée et `404` si inexistante. Suppression de la catégorie et événement immuable `CATEGORY_DELETED` incluant le nom historique dans la même transaction. Confirmation UI préalable et affichage des erreurs. Les catégories archivées suivent la même règle.
+- Les catégorisations existantes ne sont jamais détachées ni déplacées par une suppression. Les collisions de création/concurrence nécessitent des tests et une revue DB avant la gate finale ; aucune migration de modèle.
+- La page Catégories conserve le titre, les commandes et l'entête du tableau à l'écran ; la région de lignes se dimensionne par rapport à la hauteur réelle disponible sous les onglets et devient la seule région à défiler, accessible au clavier.
+- Dans le contrôle de gouvernance d'une Dimension `PROVISIONAL`, l'action « Approuver » remplace « Approuver l’identité » sans modifier la décision transactionnelle. « Annuler » ferme le contexte de contrôle, pas le drawer, et n'envoie aucune décision à l'API.
+- Les changements sont isolés au Produit ; tests backend, RTL et QA visuelle Windows requis avant validation.

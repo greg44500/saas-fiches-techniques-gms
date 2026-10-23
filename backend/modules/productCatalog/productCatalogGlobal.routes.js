@@ -15,6 +15,7 @@ import {
     commitImport,
     confirmVariantMerge,
     createCategoryController,
+    deleteCategoryController,
     createCharacteristicController,
     createProductController,
     createVarietyController,
@@ -107,6 +108,13 @@ productCatalogGlobalRouter.post(
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
     validateRequest({ body: createCategoryBodySchema }),
     createCategoryController,
+);
+
+productCatalogGlobalRouter.delete(
+    '/categories/:categoryId',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({ params: globalCategoryParamsSchema }),
+    deleteCategoryController,
 );
 
 productCatalogGlobalRouter.patch(

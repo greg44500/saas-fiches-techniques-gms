@@ -201,3 +201,11 @@ que de la modale tarifaire avant toute PR.
 - Le filtre reprend le libellé « Actives », sans modifier la valeur `active` ni la visibilité des identités provisoires.
 - Le dialogue de catégorie masque le sous-titre technique et conserve une description pour l'accessibilité.
 - Tests et QA Windows à réaliser ; ne déclarer aucune gate verte sans résultat.
+
+## QA complémentaire — Tableau Catégories et sortie des contrôles (2026-10-23)
+
+- Catégories : un menu contextuel « … » par ligne à la place des boutons multiples. Renommer et Archiver/Réactiver selon état ; Supprimer affiché uniquement avec `totalProductCount === 0` et permission MANAGE. Le compteur « Produits actifs » seul n'est pas suffisant pour autoriser une suppression.
+- Demande de suppression confirmée dans la modale réutilisée, erreur 409 visible et refus de suppression côté serveur si une association avec un Produit persiste.
+- Zone Catégories : les onglets, actions d'entête et colonnes restent visibles ; le conteneur des lignes est scrollable selon la hauteur de fenêtre, avec en-tête de table sticky et région focalisable pour le clavier.
+- Panneau examen Dimensions : texte « Approuver » et action « Annuler » qui quitte le contexte ciblé sans action de gouvernance. Pas de fermeture complète du drawer.
+- Vérifications navigateur obligatoires : largeur mobile, hauteur réduite, nombre élevé de catégories, popover au-dessus du tableau, navigation clavier, sélection de ligne et confirmations.

@@ -950,3 +950,5 @@ Test RTL renforcé sur la position des actions à l'intérieur de
 l'en-tête de la carte et leur absence pour les prix Catalogue.
 Aucun Core, backend, API ou modèle touché.
 Tests, lint et build à effectuer localement par l'utilisateur.
+
+Note de recette UI/UX (2026-10-23) : table Catégories compactée en menus « … », compteur `totalProductCount` distinct des produits actifs, suppression seulement si réellement vide et contrôlée au backend avec transaction / audit / HTTP 409, zone de lignes à défilement interne sous un en-tête sticky. Panneau de gouvernance : « Approuver » et « Annuler » pour fermer seulement l'examen. Attention : l'audit Core D-008 pièces jointes e-mail et l'ancienne branche M-001 restent différés. Les tests ciblés Windows, la QA et la gate restent à exécuter ; aucune PR ou fusion autorisée.

@@ -6,6 +6,7 @@ function ProductReferenceGovernanceReviewPanel({
   context,
   approveDisabled = false,
   onApprove,
+  onCancel,
   onEdit,
   onMerge,
   onReject,
@@ -38,6 +39,16 @@ function ProductReferenceGovernanceReviewPanel({
       )}
 
       <div className="flex flex-wrap gap-2">
+        {onCancel && (
+          <Button
+            disabled={pending}
+            onClick={onCancel}
+            type="button"
+            variant="outline"
+          >
+            Annuler
+          </Button>
+        )}
         {onEdit && (
           <Button
             disabled={pending}
@@ -57,7 +68,7 @@ function ProductReferenceGovernanceReviewPanel({
         >
           {context.dataType === 'DIMENSION'
             ? context.type === 'CONTRIBUTION'
-              ? 'Approuver l’identité'
+              ? 'Approuver'
               : 'Confirmer le contrôle qualité'
             : 'Valider'}
         </Button>

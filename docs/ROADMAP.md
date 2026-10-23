@@ -713,3 +713,5 @@ Les suppressions contrôlées de catalogues, renouvellements prospectifs de list
 Le contrat `docs/m003/M-003-FINAL-CONTRACT.md` et la conception `docs/m003/M-003-TECHNICAL-DESIGN.md` conservent les décisions détaillées : imports CSV/XLS/XLSX, mercuriales sans catalogue, corrections, périodes, tableaux et drawer Article à onglets. Leur livraison n'est plus « en attente de PR ». Les dettes différées ne sont pas assimilées à des fonctionnalités livrées.
 
 Après la PR strictement documentaire, synchroniser localement `main` et nettoyer uniquement les branches réellement fusionnées après vérification.
+
+Complément UI/UX M-002 (2026-10-23) : tableau Catégories à menus d'actions, suppression conditionnée à zéro Produit associé (y compris archives), contrôle de permission Application Global, audit transactionnel, en-tête fixe et données défilantes. Drawer : « Approuver » et « Annuler » pour sortir du contrôle sans quitter le Produit. Tests locaux et gate non attestés ; aucune PR/merge avant accord.

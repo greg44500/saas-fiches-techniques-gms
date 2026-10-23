@@ -3,6 +3,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   restoreReviewContext: vi.fn(),
   reviewContribution: vi.fn(),
   updateCategoryStatus: vi.fn(),
+  deleteCategory: vi.fn(),
   globalPricesQuery: vi.fn(),
 }));
 
@@ -39,6 +41,10 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
   ],
   useUpdateProductReferenceCategoryStatusMutation: () => [
     mocks.updateCategoryStatus,
+    { isLoading: false },
+  ],
+  useDeleteProductReferenceCategoryMutation: () => [
+    mocks.deleteCategory,
     { isLoading: false },
   ],
 }));
@@ -178,6 +184,7 @@ const metadata = {
     name: 'Légumes',
     status: 'ACTIVE',
     activeProductCount: 1,
+    totalProductCount: 1,
   }],
   productStatuses: [
     { value: 'ACTIVE', label: 'Actif' },
@@ -349,6 +356,9 @@ describe('ProductReferencePage', () => {
       refetch: vi.fn(),
     });
     mocks.updateCategoryStatus.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({}),
+    });
+    mocks.deleteCategory.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
     });
   });
@@ -616,10 +626,9 @@ describe('ProductReferencePage', () => {
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Créer une catégorie' }))
       .not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Renommer Légumes' }))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Archiver Légumes' }))
-      .not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Actions de la catégorie Légumes',
+    })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
       name: 'Voir les Produits actifs de Légumes',
@@ -653,10 +662,18 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
     expect(screen.getByRole('button', { name: 'Créer une catégorie' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Renommer Légumes' }))
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la catégorie Légumes',
+    }));
+    const actions = screen.getByRole('group', {
+      name: 'Actions de la catégorie Légumes',
+    });
+    expect(within(actions).getByRole('button', { name: 'Renommer' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Archiver Légumes' }))
+    expect(within(actions).getByRole('button', { name: 'Archiver' }))
       .toBeInTheDocument();
+    expect(within(actions).queryByRole('button', { name: 'Supprimer' }))
+      .not.toBeInTheDocument();
   });
 
   it('affiche une catégorie archivée et son action de réactivation', async () => {
@@ -680,9 +697,63 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
 
     expect(screen.getByText('Archivée')).toBeInTheDocument();
-    expect(screen.getByRole('button', {
-      name: 'Réactiver Ancienne catégorie',
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la catégorie Ancienne catégorie',
+    }));
+    const archivedActions = screen.getByRole('group', {
+      name: 'Actions de la catégorie Ancienne catégorie',
+    });
+    expect(within(archivedActions).getByRole('button', {
+      name: 'Réactiver',
     })).toBeInTheDocument();
+    expect(within(archivedActions).queryByRole('button', {
+      name: 'Supprimer',
+    })).not.toBeInTheDocument();
+  });
+
+  it('affiche le menu Supprimer seulement si tous les Produits liés sont absents', async () => {
+    const user = userEvent.setup();
+    mocks.metadataQuery.mockReturnValue({
+      data: {
+        ...metadata,
+        categories: [
+          { id: 'empty', name: 'Catégorie vide', status: 'ACTIVE', activeProductCount: 0, totalProductCount: 0 },
+          { id: 'historical', name: 'Catégorie historique', status: 'ARCHIVED', activeProductCount: 0, totalProductCount: 2 },
+        ],
+      },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Catégories (2)' }));
+
+    const region = screen.getByRole('region', { name: 'Lignes des catégories' });
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(within(region).getByRole('columnheader', { name: 'Catégorie' }).closest('thead'))
+      .toHaveClass('sticky', 'top-0');
+
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la catégorie Catégorie historique',
+    }));
+    const historicalActions = screen.getByRole('group', {
+      name: 'Actions de la catégorie Catégorie historique',
+    });
+    expect(within(historicalActions).queryByRole('button', { name: 'Supprimer' }))
+      .not.toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la catégorie Catégorie vide',
+    }));
+    const emptyActions = screen.getByRole('group', {
+      name: 'Actions de la catégorie Catégorie vide',
+    });
+    await user.click(within(emptyActions).getByRole('button', { name: 'Supprimer' }));
+    expect(screen.getByText('Supprimer cette catégorie ?')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
+    expect(mocks.deleteCategory).toHaveBeenCalledWith({ categoryId: 'empty' });
   });
 
   it('ouvre la file unifiée depuis l’onglet À contrôler', async () => {

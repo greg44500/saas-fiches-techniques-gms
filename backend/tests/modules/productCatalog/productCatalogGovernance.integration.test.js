@@ -30,6 +30,7 @@ import {
 } from '../../../modules/supplierCatalog/supplierPricing.model.js';
 import {
     createCategory,
+    deleteCategory,
     createGlobalProduct,
     createGlobalVariant,
     listCategories,
@@ -356,9 +357,9 @@ describe('M-002 product reference governance', () => {
 
         const categories = await listCategories();
         expect(categories.find(({ id }) => id === usedCategory.id))
-            .toMatchObject({ activeProductCount: 1 });
+            .toMatchObject({ activeProductCount: 1, totalProductCount: 3 });
         expect(categories.find(({ id }) => id === emptyCategory.id))
-            .toMatchObject({ activeProductCount: 0 });
+            .toMatchObject({ activeProductCount: 0, totalProductCount: 0 });
 
         const globalMetadata = await getProductMetadata({
             includeArchivedCategories: true,
@@ -372,6 +373,61 @@ describe('M-002 product reference governance', () => {
         expect(
             workspaceMetadata.categories.find(({ id }) => id === usedCategory.id),
         ).not.toHaveProperty('activeProductCount');
+    });
+
+    it('supprime une catégorie vide et conserve la trace de suppression', async () => {
+        const empty = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Catégorie temporaire vide',
+        });
+        const removed = await deleteCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: empty.id,
+        });
+        expect(removed.id).toBe(empty.id);
+        expect((await listCategories()).some(({ id }) => id === empty.id)).toBe(false);
+        const event = await ProductReferenceEvent.findOne({
+            entityId: empty.id,
+            action: 'CATEGORY_DELETED',
+        });
+        expect(event).toMatchObject({
+            metadata: { name: 'Catégorie temporaire vide' },
+        });
+        await expect(deleteCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: empty.id,
+        })).rejects.toMatchObject({ statusCode: 404 });
+    });
+
+    it('interdit de supprimer une catégorie avec un Produit archivé ou historique', async () => {
+        const category = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Catégorie anciennement utilisée',
+        });
+        const product = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Produit historique avec catégorie',
+            categoryId: category.id,
+        });
+        await updateProductStatus({
+            actorId: ownerContext.owner._id,
+            productId: product.product.id,
+            status: 'ARCHIVED',
+        });
+        expect((await listCategories()).find(({ id }) => id === category.id))
+            .toMatchObject({ activeProductCount: 0, totalProductCount: 1 });
+        await expect(deleteCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: category.id,
+        })).rejects.toMatchObject({ statusCode: 409 });
+        await CanonicalProduct.updateOne(
+            { _id: product.product.id },
+            { $set: { identityActive: false } },
+        );
+        await expect(deleteCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: category.id,
+        })).rejects.toMatchObject({ statusCode: 409 });
     });
 
     it('convertit la Présentation initiale en Caractéristique structurée', async () => {

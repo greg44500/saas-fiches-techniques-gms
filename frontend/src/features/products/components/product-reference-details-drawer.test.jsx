@@ -366,6 +366,30 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(mocks.reviewDimension).not.toHaveBeenCalled();
   });
 
+  it('permet de quitter le contrôle de gouvernance sans fermer le drawer ni décider', async () => {
+    const user = userEvent.setup();
+    const onReviewCancelled = vi.fn();
+    renderDrawer({
+      initialTab: 'dimensions',
+      onReviewCancelled,
+      reviewContext: {
+        sourceId: 'contribution-variety',
+        targetId: 'variety-2',
+        type: 'CONTRIBUTION',
+        dataType: 'DIMENSION',
+        dimensionType: 'VARIETY',
+        candidates: [],
+      },
+    });
+    const card = screen.getByText('Rouge du Roussillon').closest('li');
+    expect(within(card).getByRole('button', { name: 'Approuver' }))
+      .toBeInTheDocument();
+    await user.click(within(card).getByRole('button', { name: 'Annuler' }));
+    expect(onReviewCancelled).toHaveBeenCalledOnce();
+    expect(mocks.reviewContribution).not.toHaveBeenCalled();
+    expect(mocks.reviewDimension).not.toHaveBeenCalled();
+  });
+
   it('libère les actions après validation même si le contexte de contrôle est encore ouvert', async () => {
     mocks.dimensions.mockReturnValue(queryResult({
       varieties: [],
@@ -397,7 +421,7 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(screen.getByRole('button', {
       name: 'Actions de la caractéristique Rouge',
     })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Approuver l’identité' }))
+    expect(screen.queryByRole('button', { name: 'Approuver' }))
       .not.toBeInTheDocument();
   });
 
@@ -601,7 +625,7 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(within(workflow).getByRole('button', { name: 'Valider' }))
       .toBeDisabled();
     await user.click(within(workflow).getByRole('button', {
-      name: 'Approuver l’identité',
+      name: 'Approuver',
     }));
     expect(mocks.reviewContribution).toHaveBeenCalledWith({
       contributionId: 'contribution-dimension',

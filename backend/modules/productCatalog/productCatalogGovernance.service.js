@@ -141,6 +141,41 @@ const updateCategory = async ({
     return serializeCategory(category);
 });
 
+/**
+ * Une catégorie ne peut être supprimée que si aucun Produit, même archivé
+ * ou identité historique inactive, ne lui est encore lié. Audit immutable.
+ */
+const deleteCategory = async ({ actorId, categoryId }) => (
+    mongoose.connection.transaction(async (session) => {
+        const category = await ProductCategory.findById(categoryId).session(session);
+        if (!category) {
+            throw new AppError('Catégorie introuvable.', 404);
+        }
+
+        const attachedProduct = await CanonicalProduct.exists({
+            category: category._id,
+        }).session(session);
+        if (attachedProduct) {
+            throw new AppError(
+                'Cette catégorie contient encore des Produits, y compris archivés.',
+                409,
+            );
+        }
+
+        await ProductCategory.deleteOne({ _id: category._id }).session(session);
+        await createProductReferenceEvent({
+            actorId,
+            action: PRODUCT_REFERENCE_EVENT_ACTION.CATEGORY_DELETED,
+            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CATEGORY,
+            entityId: category._id,
+            metadata: { name: category.name, normalizedKey: category.normalizedKey },
+            session,
+        });
+
+        return serializeCategory(category);
+    })
+);
+
 const updateCategoryStatus = async ({
     actorId,
     categoryId,
@@ -919,6 +954,7 @@ const updateVariantStatus = async ({
 
 export {
     createCategory,
+    deleteCategory,
     createGlobalProduct,
     createGlobalProductInSession,
     createGlobalVariant,

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
+import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { DataTable, DataTableActions } from '@/components/data-display/data-table';
+import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { EmptyState } from '@/components/shared/empty-state';
@@ -29,6 +30,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
+  useDeleteProductReferenceCategoryMutation,
   useGetProductReferenceMetadataQuery,
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
@@ -84,6 +86,10 @@ function ProductReferencePage({ canManage }) {
   const [importOpen, setImportOpen] = useState(false);
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [categoryLifecycle, setCategoryLifecycle] = useState(null);
+  const [categoryDeletion, setCategoryDeletion] = useState(null);
+  const [categoryDeleteError, setCategoryDeleteError] = useState('');
+  const categoryScrollRef = useRef(null);
+  const [categoryScrollHeight, setCategoryScrollHeight] = useState(320);
   const [directApprovalPending, setDirectApprovalPending] = useState(false);
   const directApprovalLock = useRef(false);
 
@@ -128,6 +134,8 @@ function ProductReferencePage({ canManage }) {
 
   const [updateCategoryStatus, categoryStatusState] =
     useUpdateProductReferenceCategoryStatusMutation();
+  const [deleteCategory, deleteCategoryState] =
+    useDeleteProductReferenceCategoryMutation();
   const [loadReviewTarget, reviewTargetState] =
     useLazyListProductReferenceReviewQueueQuery();
   const [restoreReviewContext, restoreReviewState] =
@@ -393,6 +401,38 @@ function ProductReferencePage({ canManage }) {
     }
   }
 
+  async function confirmCategoryDeletion() {
+    if (!categoryDeletion || deleteCategoryState.isLoading) return;
+    setCategoryDeleteError('');
+    try {
+      await deleteCategory({ categoryId: categoryDeletion.id }).unwrap();
+      setCategoryDeletion(null);
+      toast({ title: 'Catégorie supprimée', variant: 'success' });
+    } catch (error) {
+      setCategoryDeleteError(getApiErrorMessage(
+        error,
+        'La catégorie ne peut pas être supprimée.',
+      ));
+    }
+  }
+
+  // La fenêtre Platform conserve ses commandes visibles ; seules les lignes
+  // du tableau Catégories occupent l'espace vertical encore disponible.
+  useEffect(() => {
+    if (section !== 'categories') return undefined;
+    function resizeCategoryViewport() {
+      const top = categoryScrollRef.current?.getBoundingClientRect().top;
+      if (typeof top !== 'number') return;
+      const available = Math.max(100, Math.floor(window.innerHeight - top - 24));
+      setCategoryScrollHeight((previous) => (
+        previous === available ? previous : available
+      ));
+    }
+    resizeCategoryViewport();
+    window.addEventListener('resize', resizeCategoryViewport);
+    return () => window.removeEventListener('resize', resizeCategoryViewport);
+  }, [section, categoryCount]);
+
   const productColumns = [
     {
       id: 'name',
@@ -579,27 +619,33 @@ function ProductReferencePage({ canManage }) {
       header: 'Actions',
       cell: (category) => (
         canManage ? (
-          <DataTableActions>
-            <ActionIconButton
-              Icon={Pencil}
-              label={'Renommer ' + category.name}
-              onClick={() => setCategoryDialog({ open: true, category })}
-              tooltipLabel="Renommer"
-              variant="outline"
-            />
-            <ActionIconButton
-              Icon={category.status === 'ACTIVE' ? Archive : RotateCcw}
-              label={
-                (category.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
-                + category.name
-              }
-              onClick={() => setCategoryLifecycle(category)}
-              tooltipLabel={
-                category.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
-              }
-              variant="outline"
-            />
-          </DataTableActions>
+          <TableRowActionsMenu
+            label={'la catégorie ' + category.name}
+            actions={[
+              {
+                key: 'rename',
+                Icon: Pencil,
+                label: 'Renommer',
+                onClick: () => setCategoryDialog({ open: true, category }),
+              },
+              {
+                key: 'lifecycle',
+                Icon: category.status === 'ACTIVE' ? Archive : RotateCcw,
+                label: category.status === 'ACTIVE' ? 'Archiver' : 'Réactiver',
+                onClick: () => setCategoryLifecycle(category),
+              },
+              ...(category.totalProductCount === 0 ? [{
+                key: 'delete',
+                Icon: Trash2,
+                label: 'Supprimer',
+                destructive: true,
+                onClick: () => {
+                  setCategoryDeleteError('');
+                  setCategoryDeletion(category);
+                },
+              }] : []),
+            ]}
+          />
         ) : null
       ),
     },
@@ -808,7 +854,7 @@ function ProductReferencePage({ canManage }) {
       )}
 
       {section === 'categories' && (
-        <section className="rounded-xl border border-border bg-card">
+        <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
           {initialLoading ? (
             <p className="p-5 text-sm text-muted-foreground">Chargement des catégories…</p>
           ) : metadataQuery.isError ? (
@@ -818,22 +864,53 @@ function ProductReferencePage({ canManage }) {
               title="Catégories indisponibles"
             />
           ) : (
-            <DataTable
-              caption="Catégories Produit"
-              columns={categoryColumns}
-              data={metadata?.categories ?? []}
-              emptyContent={(
-                <EmptyState
-                  className="p-0"
-                  description="Créez la première catégorie du référentiel Produit."
-                  title="Aucune catégorie"
-                />
-              )}
-              getRowKey={(category) => category.id}
-              rowClassName="transition-colors hover:bg-muted/50"
-            />
+            <div
+              aria-label="Lignes des catégories"
+              className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+              ref={categoryScrollRef}
+              role="region"
+              style={{ height: categoryScrollHeight }}
+              tabIndex={0}
+            >
+              <DataTable
+                caption="Catégories Produit"
+                columns={categoryColumns}
+                data={metadata?.categories ?? []}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Créez la première catégorie du référentiel Produit."
+                    title="Aucune catégorie"
+                  />
+                )}
+                getRowKey={(category) => category.id}
+                headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+            </div>
           )}
         </section>
+      )}
+
+      {categoryDeletion && (
+        <ConfirmationDialog
+          confirmLabel="Supprimer"
+          description={
+            'Supprimer définitivement « ' + categoryDeletion.name
+            + ' » ? Cette opération est uniquement autorisée si aucun Produit, '
+            + 'même archivé, ne dépend de cette catégorie.'
+          }
+          errorMessage={categoryDeleteError}
+          onCancel={() => {
+            setCategoryDeletion(null);
+            setCategoryDeleteError('');
+          }}
+          onConfirm={confirmCategoryDeletion}
+          open
+          pending={deleteCategoryState.isLoading}
+          pendingLabel="Suppression…"
+          title="Supprimer cette catégorie ?"
+        />
       )}
 
       <ProductReferenceDetailsDrawer
@@ -856,6 +933,10 @@ function ProductReferencePage({ canManage }) {
           guidedReviewContext: null,
         }))}
         onReviewRequested={openReviewTarget}
+        onReviewCancelled={() => setDrawerState((current) => ({
+          ...current,
+          reviewContext: null,
+        }))}
         onApproveDimensionDirectly={approveDimensionDirectly}
         reviewLoading={reviewTargetState.isFetching || restoreReviewState.isLoading || directApprovalPending}
         open={drawerState.open}

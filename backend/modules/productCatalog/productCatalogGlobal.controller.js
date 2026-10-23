@@ -23,6 +23,7 @@ import {
 } from './productCatalog.registry.js';
 import {
     createCategory,
+    deleteCategory,
     createGlobalProduct,
     createGlobalVariant,
     getGlobalProductDetail,
@@ -362,6 +363,14 @@ const createCategoryController = async (req, res) => {
     res.status(201).json({ status: 'success', data: { category } });
 };
 
+const deleteCategoryController = async (req, res) => {
+    await deleteCategory({
+        actorId: req.user._id,
+        categoryId: req.validated.params.categoryId,
+    });
+    res.status(204).end();
+};
+
 const updateCategoryController = async (req, res) => {
     const category = await updateCategory({
         actorId: req.user._id,
@@ -462,6 +471,7 @@ export {
     commitImport,
     confirmVariantMerge,
     createCategoryController,
+    deleteCategoryController,
     createCharacteristicController,
     createProductController,
     createVarietyController,
