@@ -60,6 +60,7 @@ import {
   useGetDossierByIdQuery,
 } from '@/features/dossiers/api/dossiers-api';
 import { useDataPagination } from '@/hooks/use-data-pagination';
+import { useTableViewport } from '@/hooks/use-table-viewport';
 import {
   useWorkspaceContext,
 } from '@/features/workspace/components/workspace-context';
@@ -98,6 +99,9 @@ function TechnicalSheetsPage() {
     page,
     limit: pageSize,
     search: search.trim() || undefined,
+  });
+  const viewport = useTableViewport({
+    dependency: listQuery.data?.sheets?.length,
   });
   const settingsQuery =
     useGetDossierTechnicalSheetSettingsQuery({
@@ -496,7 +500,7 @@ function TechnicalSheetsPage() {
         </Card>
       )}
 
-      <section className="overflow-hidden rounded-xl border border-border bg-card">
+      <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
         <div className="border-b border-border p-4">
           <div className="relative max-w-xl">
             <Search
@@ -511,6 +515,7 @@ function TechnicalSheetsPage() {
                   event.target.value,
                 );
                 setPage(1);
+                viewport.resetScroll();
               }}
               placeholder="Rechercher par nom ou description…"
               value={search}
@@ -518,35 +523,48 @@ function TechnicalSheetsPage() {
           </div>
         </div>
 
-        <DataTable
-          aria-label="Fiches techniques"
-          columns={columns}
-          data={sheets}
-          emptyContent={(
-            <EmptyState
-              className="p-0"
-              description={
-                search.trim()
-                  ? 'Aucune Fiche ne correspond à cette recherche.'
-                  : 'Créez la première Fiche technique de ce Dossier.'
-              }
-              title="Aucune Fiche technique"
-            />
-          )}
-          getRowKey={(sheet) =>
-            sheet.id}
-          rowClassName="transition-colors hover:bg-muted/50"
-        />
+        <div
+          aria-label="Lignes des Fiches techniques"
+          className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+          ref={viewport.ref}
+          role="region"
+          style={{ height: viewport.height }}
+          tabIndex={0}
+        >
+          <DataTable
+            aria-label="Fiches techniques"
+            columns={columns}
+            data={sheets}
+            emptyContent={(
+              <EmptyState
+                className="p-0"
+                description={
+                  search.trim()
+                    ? 'Aucune Fiche ne correspond à cette recherche.'
+                    : 'Créez la première Fiche technique de ce Dossier.'
+                }
+                title="Aucune Fiche technique"
+              />
+            )}
+            getRowKey={(sheet) => sheet.id}
+            headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+            rowClassName="transition-colors hover:bg-muted/50"
+          />
+        </div>
 
         <div className="px-5 pb-5">
           <DataPagination
             disabled={
               listQuery.isFetching
             }
-            onPageChange={setPage}
-            onPageSizeChange={
-              setPageSize
-            }
+            onPageChange={(nextPage) => {
+              setPage(nextPage);
+              viewport.resetScroll();
+            }}
+            onPageSizeChange={(nextSize) => {
+              setPageSize(nextSize);
+              viewport.resetScroll();
+            }}
             page={page}
             pageSize={pageSize}
             pagination={pagination}

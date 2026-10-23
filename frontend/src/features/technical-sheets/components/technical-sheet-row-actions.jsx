@@ -17,6 +17,13 @@ function TechnicalSheetRowActions({
   onDelete,
 }) {
   const actions = [
+    ...(canModify ? [{
+      key: 'modify',
+      Icon: Pencil,
+      label: 'Modifier',
+      disabled: isStartingDraft,
+      onClick: onModify,
+    }] : []),
     ...(hasValidatedState ? [{
       key: 'preview',
       Icon: Eye,
@@ -29,13 +36,6 @@ function TechnicalSheetRowActions({
       label: 'Optimiser',
       disabled: isOptimizing,
       onClick: onOptimize,
-    }] : []),
-    ...(canModify ? [{
-      key: 'modify',
-      Icon: Pencil,
-      label: 'Modifier',
-      disabled: isStartingDraft,
-      onClick: onModify,
     }] : []),
     ...(canDelete ? [{
       key: 'delete',

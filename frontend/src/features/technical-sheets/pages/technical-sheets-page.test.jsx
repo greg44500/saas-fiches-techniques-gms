@@ -1,6 +1,7 @@
 import {
   render,
   screen,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -245,6 +246,35 @@ describe('TechnicalSheetsPage', () => {
         'Aucun état validé',
       ),
     ).not.toBeInTheDocument();
+  });
+
+  it('conserve filtres, entête sticky et pagination hors des lignes défilantes', () => {
+    renderPage();
+
+    const lines = screen.getByRole('region', { name: 'Lignes des Fiches techniques' });
+    expect(lines).toHaveAttribute('tabindex', '0');
+    expect(lines).toHaveClass('overflow-auto');
+    expect(within(lines).getByRole('columnheader', { name: 'Fiche technique' })
+      .closest('thead')).toHaveClass('sticky', 'top-0');
+    expect(screen.getByRole('textbox', { name: 'Rechercher une Fiche technique' }))
+      .toBeInTheDocument();
+  });
+
+  it('ordonne les actions Modifier, Prévisualiser, Optimiser, Supprimer', async () => {
+    const user = userEvent.setup();
+    mocks.workspaceContext.mockReturnValue({
+      can: () => true,
+      hasFeature: (feature) => feature === TECHNICAL_SHEET_FEATURE.OPTIMIZER,
+      workspace: { id: 'workspace-1' },
+    });
+    renderPage();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de Tartine auvergnate',
+    }));
+    const group = screen.getByRole('group', { name: 'Actions de Tartine auvergnate' });
+    const labels = within(group).getAllByRole('button').map((button) => button.textContent.trim());
+    expect(labels).toEqual(['Modifier', 'Prévisualiser', 'Optimiser', 'Supprimer']);
   });
 
   it('regroupe Prévisualiser, Modifier et Supprimer sans proposer d’exports', async () => {
