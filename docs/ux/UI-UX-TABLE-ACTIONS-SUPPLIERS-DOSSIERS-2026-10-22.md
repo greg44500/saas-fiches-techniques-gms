@@ -193,3 +193,11 @@ que de la modale tarifaire avant toute PR.
 - Avant une validation directe, relire le contexte de gouvernance exact via les API métier existantes. Une liste de candidats absente, un rapprochement, une cible incohérente ou un contexte indisponible empêchent l'approbation rapide et imposent l'examen (ou un message d'erreur). Le serveur décide et audite `APPROVE` ; aucune seconde revue qualité n'est demandée.
 - Pour rendre le menu visible devant le drawer, un style temporaire strictement ciblé sur le portail Popover des Dimensions M-002 l'affiche entre les couches drawer et modal, sans modifier les primitives Core. Contrôle manuel du z-index, du clic, de l'accessibilité et du comportement mobile à effectuer en QA. Le besoin générique d'une superposition configurable reste candidat Core distinct.
 - Gates, tests et recette navigateur locale toujours non attestés avant retour utilisateur ; ne pas fusionner.
+
+## Finition QA M-002 — 2026-10-23
+
+- L'action du menu Dimensions se nomme « Valider » (et non « Valider directement »). Elle garde le contrôle de contribution exact et l'approbation `APPROVE`.
+- « Valider » a un survol/focus `success` ; « Examiner » a un survol/focus `warning`. Les autres actions et les styles destructifs conservent leurs comportements.
+- Le filtre reprend le libellé « Actives », sans modifier la valeur `active` ni la visibilité des identités provisoires.
+- Le dialogue de catégorie masque le sous-titre technique et conserve une description pour l'accessibilité.
+- Tests et QA Windows à réaliser ; ne déclarer aucune gate verte sans résultat.

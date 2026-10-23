@@ -8,6 +8,9 @@
 
 ## Lot UI/UX transversal actif — 2026-10-22
 
+QA du 2026-10-23 : menu M-002 « Valider » (survol/focus vert) et « Examiner » (survol/focus warning), filtre « Actives » rétabli ; dialogue Catégorie allégé. Protection actuelle des doublons normalisés auditée et renforcée par tests HTTP, avec gestion de conflit d'index au renommage. Suggestions de catégories orthographiquement proches à cadrer séparément avant implémentation.
+
+
 Complément validé : recherche prédictive d'Articles fournisseur dans les trois parcours Dossier/Tarifs/prix applicable, affichage du nom métier, menus flottants sans agrandir les cartes, icône `FolderOpen` pour l'ouverture du Dossier.
 
 Sur `feature/ui-ux-improvements` : harmonisation des menus d'actions

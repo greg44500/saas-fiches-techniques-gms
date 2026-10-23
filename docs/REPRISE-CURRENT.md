@@ -2,6 +2,10 @@
 
 ## Lot UI/UX transversal — en recette locale
 
+- Correctif QA du 2026-10-23 : « Valider » en survol/focus success, « Examiner » en warning, filtre « Actives » rétabli, dialogue de Catégorie sans sous-titre technique visible. Ces libellés remplacent « Valider directement » et « Non archivées » présents dans les synthèses précédentes.
+- Audit Catégories : unicité normalisée déjà contrôlée par MongoDB et le service ; nouvelle vérification HTTP des collisions à la création/archivage/renommage, avec conflit 409 en cas de renommage concurrent. Les ressemblances orthographiques sans clé identique demandent un cadrage dédié de suggestions, sans blocage automatique ajouté.
+- Les tests locaux du nouveau HEAD et la QA restent à confirmer par l'utilisateur. Aucune PR ni fusion autorisée sans son accord explicite.
+
 - `main` Produit de référence : `46411c8d5c554f12bf2ec5a27328373c57a2019b` (PR #48 fusionnée ; Core Gate post-merge #229 verte).
 - Branche de travail unique : `feature/ui-ux-improvements`, sans modification de `main`.
 - Périmètre validé : infobulle de portée Fournisseur, bouton « Enregistrer » désactivé sans nom, menus « … » de lignes Fournisseurs, Articles, Catalogues, Dossiers et Fournisseurs et prix ; composant partagé avec les Fiches techniques.

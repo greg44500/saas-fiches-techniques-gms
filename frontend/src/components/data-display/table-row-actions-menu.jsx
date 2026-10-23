@@ -43,12 +43,18 @@ function TableRowActionsMenu({ actions = [], label }) {
             label: actionLabel,
             destructive = false,
             disabled = false,
+            tone = 'neutral',
             onClick,
             to,
           }) => {
-            const itemClassName = destructive
-              ? 'w-full justify-start gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive'
-              : 'w-full justify-start gap-2';
+            const toneClassName = destructive
+              ? 'text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive'
+              : tone === 'success'
+                ? 'hover:bg-success/15 hover:text-success focus-visible:bg-success/15 focus-visible:text-success'
+                : tone === 'warning'
+                  ? 'hover:bg-warning/15 hover:text-warning focus-visible:bg-warning/15 focus-visible:text-warning'
+                  : '';
+            const itemClassName = 'w-full justify-start gap-2 ' + toneClassName;
             const content = (
               <>
                 {Icon && <Icon aria-hidden="true" className="size-4 shrink-0" />}

@@ -139,6 +139,66 @@ describe('M-002 global product reference HTTP contract', () => {
         expect(platformAccess.body.data.access.permissions).toEqual([]);
     });
 
+    it('refuse les doublons de catégorie malgré la casse, les accents et les séparateurs', async () => {
+        const first = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Épicerie - Fine' });
+
+        expect(first.status).toBe(201);
+        const duplicate = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: '  epicerie fine  ' });
+
+        expect(duplicate.status).toBe(409);
+        expect(duplicate.body.message).toMatch(/catégorie existe déjà/i);
+
+        const archive = await request(app)
+            .patch('/api/product-reference/categories/' + first.body.data.category.id + '/status')
+            .set(bearer(governorToken))
+            .send({ status: 'ARCHIVED' });
+        expect(archive.status).toBe(200);
+
+        const duplicateArchived = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'ÉPICERIE FINE' });
+        expect(duplicateArchived.status).toBe(409);
+    });
+
+    it('refuse de renommer une catégorie sur le nom normalisé d’une autre', async () => {
+        const existing = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Légumes' });
+        const other = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Épicerie' });
+
+        expect(existing.status).toBe(201);
+        expect(other.status).toBe(201);
+
+        const collision = await request(app)
+            .patch('/api/product-reference/categories/' + other.body.data.category.id)
+            .set(bearer(governorToken))
+            .send({ name: 'legumes' });
+
+        expect(collision.status).toBe(409);
+        expect(collision.body.message).toMatch(/catégorie existe déjà/i);
+        const categories = await request(app)
+            .get('/api/product-reference/categories')
+            .set(bearer(governorToken));
+
+        expect(categories.status).toBe(200);
+        expect(categories.body.data.categories).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ id: other.body.data.category.id, name: 'Épicerie' }),
+            ]),
+        );
+    });
+
     it('permet à un membre Platform explicitement habilité d’abonder le référentiel', async () => {
         const platformMember = await createUserToken({
             email: 'platform-product-governor@example.test',

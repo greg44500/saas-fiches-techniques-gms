@@ -120,7 +120,14 @@ const updateCategory = async ({
     category.name = name;
     category.normalizedKey = normalizedKey;
     category.updatedBy = actorId;
-    await category.save({ session });
+    try {
+        await category.save({ session });
+    } catch (error) {
+        if (error?.code === 11000) {
+            throw new AppError('Cette catégorie existe déjà.', 409);
+        }
+        throw error;
+    }
 
     await createProductReferenceEvent({
         actorId,

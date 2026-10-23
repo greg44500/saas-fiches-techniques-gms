@@ -659,7 +659,7 @@ function ProductReferenceDetailsDrawer({
                     },
                     {
                       value: 'active',
-                      label: 'Non archivées',
+                      label: 'Actives',
                       count: activeDimensionCount,
                     },
                     {

@@ -527,3 +527,10 @@ Dans l'onglet Dimensions, l'état de revue qualité conserve son compteur propre
 - Aucun raccourci ne valide une Référence Produit dépendante, n'augmente la visibilité inter-Workspaces ni ne neutralise les conflits d'unicité.
 - Le contournement d'empilement CSS est circonscrit aux menus Variétés/Caractéristiques M-002, sans modification de la primitive Core `PopoverContent`. La QA réelle sous Windows demeure indispensable pour vérifier visibilité, pointer/focus et défilement ; une extension Core générique sera étudiée séparément si nécessaire.
 - Les tests RTL et la gate sont à exécuter localement après publication sur la branche ; aucune PR ni fusion avant accord explicite.
+
+### Complément QA — libellés et contrôle des Catégories (2026-10-23)
+
+- Le menu de Dimension utilise « Valider » et « Examiner », différenciés respectivement par un survol/focus vert (succès) et warning. Leurs décisions et permissions restent inchangées.
+- Le filtre rétablit « Actives » pour `status = ACTIVE`, indépendamment de l'approbation. Il inclut normalement les identités provisoires non archivées.
+- Une catégorie globale a un `normalizedKey` unique, calculé par `normalizeProductText`. Création et renommage refusent une collision normalisée avec 409, y compris sur une catégorie archivée et en cas de conflit d'index au renommage.
+- L'unicité stricte ne détecte pas des fautes produisant une clé différente. Les rapprochements orthographiques sont à cadrer séparément avec suggestion et décision humaine ; ne pas ajouter de refus automatique fondé seulement sur une distance de chaînes.

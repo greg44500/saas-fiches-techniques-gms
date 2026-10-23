@@ -38,7 +38,8 @@ function ProductReferenceDimensionCard({
       {
         key: 'approve',
         Icon: CheckCheck,
-        label: 'Valider directement',
+        label: 'Valider',
+        tone: 'success',
         disabled,
         onClick: onApproveDirectly,
       },
@@ -46,6 +47,7 @@ function ProductReferenceDimensionCard({
         key: 'examine',
         Icon: Eye,
         label: 'Examiner',
+        tone: 'warning',
         disabled,
         onClick: onExamine,
       },

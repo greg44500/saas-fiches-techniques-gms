@@ -319,7 +319,7 @@ describe('ProductReferenceDetailsDrawer', () => {
       name: 'Actions de la caractéristique Individuel',
     });
     expect(within(actions).getByRole('button', {
-      name: 'Valider directement',
+      name: 'Valider',
     })).toBeInTheDocument();
     expect(within(actions).queryByRole('button', {
       name: 'Confirmer le contrôle qualité',
@@ -358,7 +358,7 @@ describe('ProductReferenceDetailsDrawer', () => {
       name: 'Actions de la caractéristique Orange',
     });
     await user.click(within(actions).getByRole('button', {
-      name: 'Valider directement',
+      name: 'Valider',
     }));
 
     expect(onApproveDimensionDirectly).toHaveBeenCalledOnce();
@@ -724,7 +724,7 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(screen.getByText('Caractéristiques (1)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'À contrôler (2)' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Non archivées (3)' }))
+    expect(screen.getByRole('button', { name: 'Actives (3)' }))
       .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Archivées (1)' }))
       .toBeInTheDocument();

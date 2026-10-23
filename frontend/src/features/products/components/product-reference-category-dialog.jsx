@@ -75,8 +75,8 @@ function ProductReferenceCategoryDialog({
         <DialogContent initialFocus={cancelRef}>
           <DialogHeader>
             <DialogTitle>{category ? 'Renommer la catégorie' : 'Créer une catégorie'}</DialogTitle>
-            <DialogDescription>
-              La taxonomie M-002 est globale et plate.
+            <DialogDescription className="sr-only">
+              Renseignez un nom unique pour cette catégorie.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-5 space-y-4">

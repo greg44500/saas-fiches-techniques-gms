@@ -417,6 +417,16 @@ Les constats actuels ne bloquent pas M-003 :
 
 Cette dette ne doit pas être implémentée sur la branche M-003 : elle appartient au périmètre M-002 et sera traitée dans un lot cohérent après livraison de M-003.
 
+### GMS-M002-CATEGORY-NEAR-DUPLICATES — Rapprochement des catégories similaires
+
+**Statut : À CADRER — métier Produit, non implémenté**
+
+La clé `normalizedKey` unique interdit déjà les collisions exactes après normalisation (casse, accents, espaces, ponctuation). Une erreur d'une lettre peut néanmoins générer une clé différente ; un index unique ne peut pas prouver une équivalence sémantique.
+
+Avant de modifier le workflow de création ou de renommage, préciser : seuil de suggestion, faux positifs (catégories proches mais distinctes), catégories archivées, proposition de réutilisation, confirmation explicite, contrôles backend et concurrence. `isNearDuplicateKey` existe dans M-002 mais son emploi sur les catégories doit être évalué. Aucune fusion automatique de catégories ni de leurs Produits.
+
+---
+
 ### GMS-CORE-UX-002 — Superposition des menus Popover dans les drawers
 
 **Statut : DIFFÉRÉ — candidat Core, aucun upgrade engagé**
