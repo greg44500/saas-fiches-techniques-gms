@@ -98,6 +98,7 @@ function ProductReferenceDetailsDrawer({
   metadata,
   onClose,
   onReviewRequested,
+  onApproveDimensionDirectly,
   onGuidedReviewRequested,
   onGuidedReviewClosed,
   guidedReviewContext = null,
@@ -658,7 +659,7 @@ function ProductReferenceDetailsDrawer({
                     },
                     {
                       value: 'active',
-                      label: 'Actives',
+                      label: 'Non archivées',
                       count: activeDimensionCount,
                     },
                     {
@@ -727,13 +728,13 @@ function ProductReferenceDetailsDrawer({
                             onDelete={() => requestDimensionDeletion('VARIETY', variety)}
                             onEdit={() => setEditDimension({ type: 'VARIETY', dimension: variety })}
                             onExamine={() => onReviewRequested?.('DIMENSION', variety.id, 'VARIETY')}
+                            onApproveDirectly={() => onApproveDimensionDirectly?.('VARIETY', variety.id)}
                             onReviewQuality={() => markDimensionReviewed('VARIETY', variety)}
                             onStatus={(status) => changeDimensionStatus('VARIETY', variety, status)}
                             pending={pending}
                             productActive={product.status === 'ACTIVE'}
                             reviewLoading={reviewLoading}
                             selected={selected}
-                            statusLabel={getProductStatusLabel(metadata, variety.status)}
                           >
                             {selected && (
                               variety.qualityReviewStatus === 'PENDING'
@@ -790,13 +791,13 @@ function ProductReferenceDetailsDrawer({
                             onExamine={() => onReviewRequested?.(
                               'DIMENSION', characteristic.id, 'CHARACTERISTIC'
                             )}
+                            onApproveDirectly={() => onApproveDimensionDirectly?.('CHARACTERISTIC', characteristic.id)}
                             onReviewQuality={() => markDimensionReviewed('CHARACTERISTIC', characteristic)}
                             onStatus={(status) => changeDimensionStatus('CHARACTERISTIC', characteristic, status)}
                             pending={pending}
                             productActive={product.status === 'ACTIVE'}
                             reviewLoading={reviewLoading}
                             selected={selected}
-                            statusLabel={getProductStatusLabel(metadata, characteristic.status)}
                           >
                             {selected && (
                               characteristic.qualityReviewStatus === 'PENDING'

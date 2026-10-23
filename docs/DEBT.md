@@ -417,6 +417,27 @@ Les constats actuels ne bloquent pas M-003 :
 
 Cette dette ne doit pas être implémentée sur la branche M-003 : elle appartient au périmètre M-002 et sera traitée dans un lot cohérent après livraison de M-003.
 
+### GMS-CORE-UX-002 — Superposition des menus Popover dans les drawers
+
+**Statut : DIFFÉRÉ — candidat Core, aucun upgrade engagé**
+
+Le menu partagé `TableRowActionsMenu` est rendu via la primitive Core
+`PopoverContent` en portail sur la couche `--layer-flyout` (70), tandis
+que le panneau `Sheet` utilise `--layer-drawer` (90/91). Dans le drawer
+M-002, les actions apparaissent derrière le panneau au lieu d'être visibles.
+
+Le lot UI/UX du 2026-10-23 utilise un correctif CSS **strictement ciblé**
+sur le menu des Variétés/Caractéristiques M-002, sans altérer la primitive
+Core. Recette réelle obligatoire : visibilité, clic, clavier, défilement,
+disposition mobile et priorité sous les boîtes de dialogue.
+
+Une solution générique robuste (couche ou conteneur de portail contextualisé)
+sera étudiée séparément dans `saas-core-api`, selon la gouvernance des upgrades.
+Ne pas mêler à D-008 communications/pièces jointes ; retirer le CSS ciblé
+uniquement après intégration et tests d'un mécanisme Core validé.
+
+---
+
 ### GMS-CORE-UX-001 — Canoniser le survol de ligne dans DataTable
 
 **Statut :** DIFFÉRÉ / ACCEPTÉ — décision confirmée le 2026-09-28 ; à traiter dans un vrai lot Core UI/UX  

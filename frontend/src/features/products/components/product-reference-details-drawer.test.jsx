@@ -306,23 +306,64 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     expect(screen.getByRole('button', { name: 'À contrôler (1)' }))
       .toBeInTheDocument();
-    const identityButton = screen.getByRole('button', {
-      name: 'Examiner l’identité de la caractéristique Individuel',
-    });
-    expect(identityButton).toBeVisible();
-    expect(screen.getByText('Identité à valider')).toBeInTheDocument();
-    expect(screen.queryByText('Validée')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', {
-      name: /Confirmer le contrôle qualité de la caractéristique Individuel/,
-    })).not.toBeInTheDocument();
+    const dimensionCard = screen.getByText('Individuel').closest('li');
+    expect(within(dimensionCard).getByText('Identité à valider')).toBeInTheDocument();
+    expect(within(dimensionCard).queryByText('Actif')).not.toBeInTheDocument();
+    expect(within(dimensionCard).queryByText('Validée')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'À contrôler (1)' }));
-    expect(screen.getByText('Individuel')).toBeInTheDocument();
-    await user.click(identityButton);
+    const actionMenu = within(dimensionCard).getByRole('button', {
+      name: 'Actions de la caractéristique Individuel',
+    });
+    await user.click(actionMenu);
+    const actions = screen.getByRole('group', {
+      name: 'Actions de la caractéristique Individuel',
+    });
+    expect(within(actions).getByRole('button', {
+      name: 'Valider directement',
+    })).toBeInTheDocument();
+    expect(within(actions).queryByRole('button', {
+      name: 'Confirmer le contrôle qualité',
+    })).not.toBeInTheDocument();
+    await user.click(within(actions).getByRole('button', { name: 'Examiner' }));
     expect(onReviewRequested).toHaveBeenCalledWith(
       'DIMENSION',
       'presentation-1',
       'CHARACTERISTIC',
     );
+  });
+
+  it('déclenche la demande de validation directe depuis le menu sans faire de revue qualité isolée', async () => {
+    const user = userEvent.setup();
+    const onApproveDimensionDirectly = vi.fn();
+    mocks.dimensions.mockReturnValue(queryResult({
+      varieties: [],
+      characteristics: [{
+        id: 'orange-id',
+        name: 'Orange',
+        kind: 'COLOR',
+        status: 'ACTIVE',
+        governanceStatus: 'PROVISIONAL',
+        qualityReviewStatus: 'PENDING',
+      }],
+    }));
+    renderDrawer({ initialTab: 'dimensions', onApproveDimensionDirectly });
+
+    const card = screen.getByText('Orange').closest('li');
+    expect(card).toHaveClass('py-2');
+    expect(within(card).queryByText('Actif')).not.toBeInTheDocument();
+    await user.click(within(card).getByRole('button', {
+      name: 'Actions de la caractéristique Orange',
+    }));
+    const actions = screen.getByRole('group', {
+      name: 'Actions de la caractéristique Orange',
+    });
+    await user.click(within(actions).getByRole('button', {
+      name: 'Valider directement',
+    }));
+
+    expect(onApproveDimensionDirectly).toHaveBeenCalledOnce();
+    expect(onApproveDimensionDirectly).toHaveBeenCalledWith('CHARACTERISTIC', 'orange-id');
+    expect(mocks.reviewDimension).not.toHaveBeenCalled();
   });
 
   it('libère les actions après validation même si le contexte de contrôle est encore ouvert', async () => {
@@ -683,6 +724,8 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(screen.getByText('Caractéristiques (1)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'À contrôler (2)' }))
       .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Non archivées (3)' }))
+      .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Archivées (1)' }))
       .toBeInTheDocument();
   });
@@ -701,7 +744,13 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(varietyRow).not.toBeNull();
 
     await user.click(within(varietyRow).getByRole('button', {
-      name: 'Confirmer le contrôle qualité de la variété Rouge du Roussillon',
+      name: 'Actions de la variété Rouge du Roussillon',
+    }));
+    const varietyActions = screen.getByRole('group', {
+      name: 'Actions de la variété Rouge du Roussillon',
+    });
+    await user.click(within(varietyActions).getByRole('button', {
+      name: 'Confirmer le contrôle qualité',
     }));
 
     expect(mocks.reviewDimension).toHaveBeenCalledWith({

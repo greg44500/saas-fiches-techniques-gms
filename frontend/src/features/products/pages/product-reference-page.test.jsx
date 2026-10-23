@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   reviewQueueQuery: vi.fn(),
   loadReviewTarget: vi.fn(),
   restoreReviewContext: vi.fn(),
+  reviewContribution: vi.fn(),
   updateCategoryStatus: vi.fn(),
   globalPricesQuery: vi.fn(),
 }));
@@ -30,6 +31,10 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
   ],
   useRestoreProductReferenceReviewContextMutation: () => [
     mocks.restoreReviewContext,
+    { isLoading: false },
+  ],
+  useReviewProductReferenceContributionMutation: () => [
+    mocks.reviewContribution,
     { isLoading: false },
   ],
   useUpdateProductReferenceCategoryStatusMutation: () => [
@@ -87,10 +92,17 @@ vi.mock('@/features/products/components/product-reference-details-drawer', () =>
     reviewContext,
     guidedReviewContext,
     onReviewRequested,
+    onApproveDimensionDirectly,
     onGuidedReviewRequested,
   }) => (
     open ? (
       <div>
+        <button
+          onClick={() => onApproveDimensionDirectly('CHARACTERISTIC', 'characteristic-1')}
+          type="button"
+        >
+          Valider directement la caractéristique
+        </button>
         <button onClick={() => onReviewRequested('REFERENCE', 'variant-pending-1')} type="button">
           Contrôler la Référence courante
         </button>
@@ -276,6 +288,9 @@ describe('ProductReferencePage', () => {
     });
     mocks.restoreReviewContext.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue(null),
+    });
+    mocks.reviewContribution.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({}),
     });
 
     mocks.metadataQuery.mockReturnValue({
@@ -831,6 +846,100 @@ describe('ProductReferencePage', () => {
       });
       expect(screen.getByText(/dépendance characteristic-1/)).toBeInTheDocument();
     });
+  });
+
+  it('approuve rapidement une Dimension sans rapprochement, via sa Contribution exacte', async () => {
+    const user = userEvent.setup();
+    mocks.loadReviewTarget.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        items: [{
+          sourceId: 'contribution-orange',
+          targetId: 'characteristic-1',
+          type: 'CONTRIBUTION',
+          dataType: 'DIMENSION',
+          dimensionType: 'CHARACTERISTIC',
+          productId: 'product-1',
+          candidates: [],
+        }],
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Valider directement la caractéristique',
+    }));
+    await waitFor(() => {
+      expect(mocks.reviewContribution).toHaveBeenCalledWith({
+        contributionId: 'contribution-orange',
+        decision: 'APPROVE',
+        targetReferenceId: null,
+      });
+    });
+    expect(mocks.restoreReviewContext).not.toHaveBeenCalled();
+  });
+
+  it('oriente vers Examiner lorsque des rapprochements existent, sans approbation rapide', async () => {
+    const user = userEvent.setup();
+    mocks.loadReviewTarget.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        items: [{
+          sourceId: 'contribution-orange',
+          targetId: 'characteristic-1',
+          type: 'CONTRIBUTION',
+          dataType: 'DIMENSION',
+          dimensionType: 'CHARACTERISTIC',
+          productId: 'product-1',
+          candidates: [{ id: 'candidate-existing', name: 'Orange doux' }],
+        }],
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Valider directement la caractéristique',
+    }));
+    await waitFor(() => {
+      expect(screen.getByText(
+        'Détail global ouvert · dimensions · all · all · cible characteristic-1',
+      )).toBeInTheDocument();
+    });
+    expect(mocks.reviewContribution).not.toHaveBeenCalled();
+  });
+
+  it('n’approuve pas rapidement lorsque la liste de rapprochements est absente', async () => {
+    const user = userEvent.setup();
+    mocks.loadReviewTarget.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        items: [{
+          sourceId: 'contribution-orange',
+          targetId: 'characteristic-1',
+          type: 'CONTRIBUTION',
+          dataType: 'DIMENSION',
+          dimensionType: 'CHARACTERISTIC',
+          productId: 'product-1',
+        }],
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Valider directement la caractéristique',
+    }));
+    await waitFor(() => {
+      expect(mocks.loadReviewTarget).toHaveBeenCalled();
+    });
+    expect(mocks.reviewContribution).not.toHaveBeenCalled();
+  });
+
+  it('n’autorise pas la validation rapide en consultation seule', async () => {
+    const user = userEvent.setup();
+    renderPage({ canManage: false });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Valider directement la caractéristique',
+    }));
+    expect(mocks.loadReviewTarget).not.toHaveBeenCalled();
+    expect(mocks.reviewContribution).not.toHaveBeenCalled();
   });
 
   it('ouvre le détail global depuis la liste', async () => {

@@ -1,24 +1,25 @@
-import { Archive, Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import { Archive, CheckCheck, Eye, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 
 import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { Button } from '@/components/ui/button';
+import './product-reference-dimension-card.css';
 
 /**
- * Carte commune aux Variétés et Caractéristiques M-002.
- * La gouvernance provisoire prime sur la revue qualité dans le statut visible.
+ * Carte compacte commune aux Variétés et Caractéristiques M-002.
+ * La gouvernance provisoire prime sur la qualité ; aucune action de
+ * validation n'est confondue avec l'état ACTIVE / ARCHIVED.
  */
 function ProductReferenceDimensionCard({
   dimension,
   dimensionType,
   kindLabel = null,
-  statusLabel,
   canManage,
   productActive,
   pending,
   reviewLoading,
   selected,
   onExamine,
+  onApproveDirectly,
   onReviewQuality,
   onEdit,
   onStatus,
@@ -30,26 +31,49 @@ function ProductReferenceDimensionCard({
   const qualityPending = dimension.qualityReviewStatus === 'PENDING';
   const noun = dimensionType === 'VARIETY' ? 'variété' : 'caractéristique';
   const subject = 'la ' + noun + ' ' + dimension.name;
+  const disabled = pending || reviewLoading;
 
   const actions = canManage && !selected ? [
+    ...(isActive && provisional ? [
+      {
+        key: 'approve',
+        Icon: CheckCheck,
+        label: 'Valider directement',
+        disabled,
+        onClick: onApproveDirectly,
+      },
+      {
+        key: 'examine',
+        Icon: Eye,
+        label: 'Examiner',
+        disabled,
+        onClick: onExamine,
+      },
+    ] : isActive && qualityPending ? [{
+      key: 'quality',
+      Icon: CheckCheck,
+      label: 'Confirmer le contrôle qualité',
+      disabled,
+      onClick: onReviewQuality,
+    }] : []),
     {
       key: 'edit',
       Icon: Pencil,
       label: 'Corriger',
-      disabled: pending,
+      disabled,
       onClick: onEdit,
     },
     ...(isActive ? [{
       key: 'archive',
       Icon: Archive,
       label: 'Archiver',
-      disabled: pending,
+      disabled,
       onClick: () => onStatus('ARCHIVED'),
     }] : productActive ? [{
       key: 'restore',
       Icon: RotateCcw,
       label: 'Réactiver',
-      disabled: pending,
+      disabled,
       onClick: () => onStatus('ACTIVE'),
     }] : []),
     {
@@ -57,67 +81,43 @@ function ProductReferenceDimensionCard({
       Icon: Trash2,
       label: 'Supprimer',
       destructive: true,
-      disabled: pending,
+      disabled,
       onClick: onDelete,
     },
   ] : [];
 
   return (
-    <li className={
-      'rounded-lg border px-3 py-3 '
-      + (selected ? 'border-warning/50 bg-warning/5' : 'border-border')
-    }>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1 space-y-2">
-          <div>
-            <p className="break-words font-medium">{dimension.name}</p>
-            {kindLabel && (
-              <p className="text-xs text-muted-foreground">{kindLabel}</p>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">{statusLabel}</span>
-            {isActive && (
-              <StatusBadge tone={provisional || qualityPending ? 'warning' : 'success'}>
-                {provisional
-                  ? 'Identité à valider'
-                  : qualityPending
-                    ? 'Qualité à vérifier'
-                    : 'Validée'}
-              </StatusBadge>
-            )}
-          </div>
+    <li
+      className={
+        'rounded-lg border px-3 py-2 '
+        + (selected ? 'border-warning/50 bg-warning/5' : 'border-border')
+      }
+    >
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="min-w-0 break-words text-sm font-semibold">
+            {dimension.name}
+          </span>
+          {kindLabel && (
+            <span className="text-xs text-muted-foreground">{kindLabel}</span>
+          )}
+          {!isActive ? (
+            <StatusBadge className="py-0.5" tone="neutral">Archivée</StatusBadge>
+          ) : (
+            <StatusBadge
+              className="py-0.5"
+              tone={provisional || qualityPending ? 'warning' : 'success'}
+            >
+              {provisional
+                ? 'Identité à valider'
+                : qualityPending
+                  ? 'Qualité à vérifier'
+                  : 'Validée'}
+            </StatusBadge>
+          )}
         </div>
-
-        {canManage && !selected && (
-          <div className="flex shrink-0 items-center gap-2 sm:justify-end">
-            {isActive && provisional && (
-              <Button
-                aria-label={'Examiner l’identité de ' + subject}
-                className="h-8 border-warning/60 bg-warning/10 px-3 text-xs font-semibold text-warning hover:border-warning hover:bg-warning/20 hover:text-warning"
-                disabled={pending || reviewLoading}
-                onClick={onExamine}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Examiner
-              </Button>
-            )}
-            {isActive && !provisional && qualityPending && (
-              <Button
-                aria-label={'Confirmer le contrôle qualité de ' + subject}
-                disabled={pending}
-                onClick={onReviewQuality}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Confirmer la qualité
-              </Button>
-            )}
-            <TableRowActionsMenu actions={actions} label={subject} />
-          </div>
+        {actions.length > 0 && (
+          <TableRowActionsMenu actions={actions} label={subject} />
         )}
       </div>
 

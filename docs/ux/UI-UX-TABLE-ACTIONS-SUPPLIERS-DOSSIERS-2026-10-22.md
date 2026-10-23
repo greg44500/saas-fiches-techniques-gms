@@ -184,3 +184,12 @@ que de la modale tarifaire avant toute PR.
 - Le filtre « À contrôler » local couvre les identités provisoires et les contrôles qualité en attente, sans double comptage. Compteur qualité de la liste Produit et file unifiée Platform non modifiés.
 - Protection backend : refus de la revue qualité isolée sur une Dimension `PROVISIONAL`, avec maintien de l'audit et de la reprise des Contributions historiques.
 - Tests RTL/integration, gate et QA Windows à vérifier. **Aucun résultat local ni gate n'est attesté.**
+
+## Complément M-002 validé — Densité des cartes et menu d'actions unique (2026-10-23)
+
+- Cartes Variétés / Caractéristiques : padding réduit, nom + type + badge métier en une ligne avec retour naturel quand la largeur ne suffit pas. Retirer « Actif » répétitif ; signaler « Archivée » seulement pour une valeur archivée. La validation reste distincte du lifecycle.
+- Filtre affiché « Non archivées », valeur technique `active` inchangée : comprend les dimensions provisoires utilisables dans leur Workspace d'origine. Le filtre « À contrôler » demeure transversal et peut recouper « Non archivées ».
+- Menu unique « … » : `Valider directement` et `Examiner` pour une identité provisoire, puis `Corriger`, `Archiver/Réactiver`, `Supprimer`. La confirmation qualité directe n'est offerte que si l'identité est déjà approuvée. Aucun bouton « Examiner » séparé sur la carte.
+- Avant une validation directe, relire le contexte de gouvernance exact via les API métier existantes. Une liste de candidats absente, un rapprochement, une cible incohérente ou un contexte indisponible empêchent l'approbation rapide et imposent l'examen (ou un message d'erreur). Le serveur décide et audite `APPROVE` ; aucune seconde revue qualité n'est demandée.
+- Pour rendre le menu visible devant le drawer, un style temporaire strictement ciblé sur le portail Popover des Dimensions M-002 l'affiche entre les couches drawer et modal, sans modifier les primitives Core. Contrôle manuel du z-index, du clic, de l'accessibilité et du comportement mobile à effectuer en QA. Le besoin générique d'une superposition configurable reste candidat Core distinct.
+- Gates, tests et recette navigateur locale toujours non attestés avant retour utilisateur ; ne pas fusionner.

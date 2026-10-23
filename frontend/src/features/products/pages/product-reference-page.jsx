@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
@@ -33,6 +33,7 @@ import {
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
   useLazyListProductReferenceReviewQueueQuery,
+  useReviewProductReferenceContributionMutation,
   useRestoreProductReferenceReviewContextMutation,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
@@ -83,6 +84,8 @@ function ProductReferencePage({ canManage }) {
   const [importOpen, setImportOpen] = useState(false);
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [categoryLifecycle, setCategoryLifecycle] = useState(null);
+  const [directApprovalPending, setDirectApprovalPending] = useState(false);
+  const directApprovalLock = useRef(false);
 
   const metadataQuery = useGetProductReferenceMetadataQuery();
   const metadata = metadataQuery.data;
@@ -129,6 +132,7 @@ function ProductReferencePage({ canManage }) {
     useLazyListProductReferenceReviewQueueQuery();
   const [restoreReviewContext, restoreReviewState] =
     useRestoreProductReferenceReviewContextMutation();
+  const [approveContribution] = useReviewProductReferenceContributionMutation();
 
   useEffect(() => {
     const totalPages = section === 'reference'
@@ -241,6 +245,60 @@ function ProductReferencePage({ canManage }) {
         description: getApiErrorMessage(error),
         variant: 'destructive',
       });
+    }
+  }
+
+  async function approveDimensionDirectly(dimensionType, targetId) {
+    if (!canManage || directApprovalLock.current || !drawerState.productId) return;
+    directApprovalLock.current = true;
+    setDirectApprovalPending(true);
+
+    try {
+      // Lire la Contribution exacte immédiatement avant la décision. Le
+      // navigateur ne peut jamais autoriser lui-même une identité globale.
+      const context = await loadTargetReviewContext(
+        'DIMENSION', targetId, dimensionType,
+      );
+      const isExactPendingContribution = (
+        context?.type === 'CONTRIBUTION'
+        && context.dataType === 'DIMENSION'
+        && context.dimensionType === dimensionType
+        && context.targetId === targetId
+        && context.productId === drawerState.productId
+        && Boolean(context.sourceId)
+      );
+
+      if (!isExactPendingContribution || !Array.isArray(context.candidates)
+        || context.candidates.length > 0) {
+        if (context?.productId === drawerState.productId) {
+          examineReviewItem(context);
+        }
+        toast({
+          title: 'Examen nécessaire',
+          description: 'Vérifiez les rapprochements ou le contexte avant de valider cette identité.',
+        });
+        return;
+      }
+
+      await approveContribution({
+        contributionId: context.sourceId,
+        decision: 'APPROVE',
+        targetReferenceId: null,
+      }).unwrap();
+      toast({
+        title: 'Identité validée',
+        description: 'La revue qualité a également été clôturée.',
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Validation impossible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    } finally {
+      directApprovalLock.current = false;
+      setDirectApprovalPending(false);
     }
   }
 
@@ -798,7 +856,8 @@ function ProductReferencePage({ canManage }) {
           guidedReviewContext: null,
         }))}
         onReviewRequested={openReviewTarget}
-        reviewLoading={reviewTargetState.isFetching || restoreReviewState.isLoading}
+        onApproveDimensionDirectly={approveDimensionDirectly}
+        reviewLoading={reviewTargetState.isFetching || restoreReviewState.isLoading || directApprovalPending}
         open={drawerState.open}
         productId={drawerState.productId}
       />

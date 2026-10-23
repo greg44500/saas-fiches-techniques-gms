@@ -17,6 +17,8 @@ d'« Enregistrer » sans nom dans le formulaire Fournisseur.
 Cadrage : `docs/ux/UI-UX-TABLE-ACTIONS-SUPPLIERS-DOSSIERS-2026-10-22.md`.
 Complément M-002 validé le 2026-10-23 : contrôle d'identité provisoire unique avec clôture qualité par l'approbation de gouvernance existante, interdiction de la revue qualité isolée et de l'acquittement implicite lors de la correction ; cartes Variétés/Caractéristiques harmonisées (statut priorisé, action Examiner/Confirmer la qualité, menu d'actions partagé), filtre « À contrôler » cohérent. Contrats M-002 et UI/UX mis à jour ; recette Windows et gate locales requises.
 
+Complément M-002 approuvé le 2026-10-23 : densifier les cartes Dimensions et regrouper dans « … » validation rapide conditionnelle, examen et maintenance ; retirer « Actif » redondant et afficher « Non archivées » dans le filtre. Le contrat Core reste inchangé, superposition M-002 ciblée à vérifier visuellement. Tests et gate en attente.
+
 **Validation locale, gate et QA visuelle en attente ; aucune PR prévue avant accord.**
 Ce lot n'ouvre pas une fonctionnalité métier, un changement de Core
 ou une refonte des permissions.
