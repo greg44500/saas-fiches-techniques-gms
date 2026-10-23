@@ -1,4 +1,4 @@
-# Reprise courante — UX Fournisseurs / Dossiers (2026-10-22)
+# Reprise courante — lot transversal UI/UX (2026-10-23)
 
 ## Lot UI/UX transversal — en recette locale
 
@@ -7,10 +7,13 @@
 - Périmètre validé : infobulle de portée Fournisseur, bouton « Enregistrer » désactivé sans nom, menus « … » de lignes Fournisseurs, Articles, Catalogues, Dossiers et Fournisseurs et prix ; composant partagé avec les Fiches techniques.
 - Complément UI/UX validé : icône FolderOpen du lien Dossier ; trois sélecteurs d'Article en recherche prédictive (Références, Tarif négocié/Prix facturé, prix applicable), suggestions enrichies, dropdown en Portal sans redimensionnement ; recherche M-003 standard par désignation, référence, Fournisseur et Référence Produit.
 - Contrat du lot : `docs/ux/UI-UX-TABLE-ACTIONS-SUPPLIERS-DOSSIERS-2026-10-22.md`.
-- Aucun changement backend, Core, MongoDB, ownership, RBAC, capabilities ni quotas prévu.
+- Le lot comporte déjà une extension ciblée de la recherche backend M-003 (Fournisseur / Référence Produit), sans changement de tenancy, ownership ni droits.
+- Complément M-002 du 2026-10-23 : cartes communes Variétés/Caractéristiques, statuts de validation non contradictoires et contrôle d'identité provisoire unique. L'API interdit la revue qualité isolée d'une identité `PROVISIONAL` ; la décision de gouvernance `APPROVE` existante clôt qualité et gouvernance. La correction d'une identité provisoire ne doit pas acquitter silencieusement sa revue qualité.
+- Aucun nouveau modèle MongoDB, quota, capability ni changement Core. Tests locaux Windows et QA visuelle après commit encore non vérifiés.
 - Tests locaux Windows, gate `npm run release:check`, QA visuelle et autorisation de PR : **en attente de confirmation de l'utilisateur**. Ne pas considérer le lot comme validé sans résultats réels.
 - Les branches fusionnées #47/#48 peuvent être nettoyées selon audit antérieur ; `fix/m001-final-ux-review` doit rester conservée jusqu'à étude séparée.
 - L'impression est couverte par l'export PDF existant ; la diffusion e-mail automatique est différée, hors de ce lot.
+- Après clôture du lot et accord explicite pour PR/merge : chantier Core D-008 pièces jointes e-mail à cadrer séparément ; audit de `fix/m001-final-ux-review` différé et branche conservée.
 
 ---
 

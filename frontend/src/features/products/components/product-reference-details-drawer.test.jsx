@@ -325,6 +325,41 @@ describe('ProductReferenceDetailsDrawer', () => {
     );
   });
 
+  it('libère les actions après validation même si le contexte de contrôle est encore ouvert', async () => {
+    mocks.dimensions.mockReturnValue(queryResult({
+      varieties: [],
+      characteristics: [{
+        id: 'characteristic-finished',
+        name: 'Rouge',
+        kind: 'COLOR',
+        status: 'ACTIVE',
+        governanceStatus: 'APPROVED',
+        qualityReviewStatus: 'REVIEWED',
+      }],
+    }));
+
+    renderDrawer({
+      initialTab: 'dimensions',
+      reviewContext: {
+        sourceId: 'old-contribution',
+        targetId: 'characteristic-finished',
+        type: 'CONTRIBUTION',
+        dataType: 'DIMENSION',
+        dimensionType: 'CHARACTERISTIC',
+        candidates: [],
+      },
+    });
+
+    expect(screen.getByRole('button', { name: 'À contrôler (0)' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Validée')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Actions de la caractéristique Rouge',
+    })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Approuver l’identité' }))
+      .not.toBeInTheDocument();
+  });
+
   it('ouvre directement les Dimensions à vérifier depuis une notification Produit', () => {
     renderDrawer({
       initialDimensionFilter: 'pending',

@@ -212,6 +212,17 @@ de modèle `Notification` spécifique. Si un besoin de notification persistée,
 distribuée ou multi-canal est confirmé, il doit être cadré comme évolution
 générique Core, versionné dans `saas-core-api`, puis réintégré au produit.
 
+**Transmission du 2026-10-23 — pièces jointes e-mail :** le Produit sait
+exporter ses Fiches techniques validées en PDF/XLSX/CSV. L'envoi automatique
+du PDF est différé ; la proposition d'évolution du contrat générique
+`sendEmail` (pièces jointes de taille et nombre bornés, contenu en mémoire,
+sécurité Nodemailer, échecs, audit) doit être cadrée dans le dépôt
+`saas-core-api` au titre de sa dette D-008 **après** clôture du frontend.
+Cette extension n'est ni implémentée, ni committée, ni publiée dans le Core.
+Le Produit ne doit pas créer de transport SMTP parallèle.
+L'audit de la branche historique `fix/m001-final-ux-review` reste distinct
+et différé.
+
 ### D-009 — API Keys et Webhooks
 
 **Statut :** CONDITIONNEL  

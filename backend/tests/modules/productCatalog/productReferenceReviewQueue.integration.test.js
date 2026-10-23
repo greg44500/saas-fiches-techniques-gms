@@ -20,6 +20,8 @@ import {
 } from '../../../modules/productCatalog/productCatalog.service.js';
 import {
     createProductVariety,
+    updateProductCharacteristic,
+    updateProductVariety,
 } from '../../../modules/productCatalog/productReferenceDimension.service.js';
 import {
     reviewReferenceContribution,
@@ -37,6 +39,7 @@ import {
 import {
     ProductCharacteristic,
 } from '../../../modules/productCatalog/productCharacteristic.model.js';
+import { ProductVariety } from '../../../modules/productCatalog/productVariety.model.js';
 import {
     ProductVariant,
 } from '../../../modules/productCatalog/productVariant.model.js';
@@ -59,6 +62,63 @@ beforeEach(async () => {
 });
 
 describe('M-002 unified product review queue', () => {
+    it('ne valide pas implicitement la qualité lors d’une correction de Dimension provisoire', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Produit correction de dimensions provisoires',
+        });
+        const varieties = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'VARIETY',
+            productId: reference.product._id,
+            value: 'Variété à corriger',
+        });
+        const characteristics = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: PRODUCT_CHARACTERISTIC_KIND.COLOR,
+            value: 'Couleur à corriger',
+        });
+
+        await updateProductVariety({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            varietyId: varieties.provisionalReference.id,
+            name: 'Variété corrigée',
+        });
+        await updateProductCharacteristic({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            characteristicId: characteristics.provisionalReference.id,
+            name: 'Couleur corrigée',
+        });
+
+        const variety = await ProductVariety.findById(varieties.provisionalReference.id);
+        const characteristic = await ProductCharacteristic.findById(
+            characteristics.provisionalReference.id,
+        );
+        expect(variety.governanceStatus).toBe('PROVISIONAL');
+        expect(variety.qualityReviewStatus).toBe('PENDING');
+        expect(characteristic.governanceStatus).toBe('PROVISIONAL');
+        expect(characteristic.qualityReviewStatus).toBe('PENDING');
+
+        for (const contribution of [varieties, characteristics]) {
+            await reviewReferenceContribution({
+                contributionId: contribution.contribution.id,
+                actorId: ownerContext.owner._id,
+                decision: 'APPROVE',
+            });
+        }
+
+        expect((await ProductVariety.findById(variety._id)).qualityReviewStatus)
+            .toBe('REVIEWED');
+        expect((await ProductCharacteristic.findById(characteristic._id)).qualityReviewStatus)
+            .toBe('REVIEWED');
+    });
+
     it('refuse la revue qualité isolée d’une identité provisoire', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,

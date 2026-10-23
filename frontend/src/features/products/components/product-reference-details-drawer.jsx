@@ -716,7 +716,8 @@ function ProductReferenceDetailsDrawer({
                     <ul className="space-y-2">
                       {filteredVarieties.map((variety) => {
                         const selected = reviewContext?.dataType === 'DIMENSION'
-                          && reviewContext.targetId === variety.id;
+                          && reviewContext.targetId === variety.id
+                          && needsDimensionControl(variety);
                         return (
                           <ProductReferenceDimensionCard
                             canManage={canManage}
@@ -772,7 +773,8 @@ function ProductReferenceDetailsDrawer({
                     <ul className="space-y-2">
                       {filteredCharacteristics.map((characteristic) => {
                         const selected = reviewContext?.dataType === 'DIMENSION'
-                          && reviewContext.targetId === characteristic.id;
+                          && reviewContext.targetId === characteristic.id
+                          && needsDimensionControl(characteristic);
                         return (
                           <ProductReferenceDimensionCard
                             canManage={canManage}

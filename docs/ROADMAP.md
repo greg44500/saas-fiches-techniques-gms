@@ -1,7 +1,7 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
 **Statut :** M-001 à M-005 intégrés ; M-003 complété par PR #44 ; Core Gate post-merge validée à la tentative 2
-**Dernière mise à jour :** 2026-10-22
+**Dernière mise à jour :** 2026-10-23
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
@@ -15,6 +15,8 @@ Sur `feature/ui-ux-improvements` : harmonisation des menus d'actions
 et Fournisseurs et prix ; infobulle de portée et désactivation
 d'« Enregistrer » sans nom dans le formulaire Fournisseur.
 Cadrage : `docs/ux/UI-UX-TABLE-ACTIONS-SUPPLIERS-DOSSIERS-2026-10-22.md`.
+Complément M-002 validé le 2026-10-23 : contrôle d'identité provisoire unique avec clôture qualité par l'approbation de gouvernance existante, interdiction de la revue qualité isolée et de l'acquittement implicite lors de la correction ; cartes Variétés/Caractéristiques harmonisées (statut priorisé, action Examiner/Confirmer la qualité, menu d'actions partagé), filtre « À contrôler » cohérent. Contrats M-002 et UI/UX mis à jour ; recette Windows et gate locales requises.
+
 **Validation locale, gate et QA visuelle en attente ; aucune PR prévue avant accord.**
 Ce lot n'ouvre pas une fonctionnalité métier, un changement de Core
 ou une refonte des permissions.
