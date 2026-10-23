@@ -24,6 +24,7 @@ import {
 import {
     createCategory,
     deleteCategory,
+    mergeCategories,
     createGlobalProduct,
     createGlobalVariant,
     getGlobalProductDetail,
@@ -363,6 +364,15 @@ const createCategoryController = async (req, res) => {
     res.status(201).json({ status: 'success', data: { category } });
 };
 
+const mergeCategoriesController = async (req, res) => {
+    const result = await mergeCategories({
+        actorId: req.user._id,
+        sourceCategoryId: req.validated.params.categoryId,
+        targetCategoryId: req.validated.body.targetCategoryId,
+    });
+    res.status(200).json({ status: 'success', data: { result } });
+};
+
 const deleteCategoryController = async (req, res) => {
     await deleteCategory({
         actorId: req.user._id,
@@ -472,6 +482,7 @@ export {
     confirmVariantMerge,
     createCategoryController,
     deleteCategoryController,
+    mergeCategoriesController,
     createCharacteristicController,
     createProductController,
     createVarietyController,

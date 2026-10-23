@@ -952,3 +952,6 @@ Aucun Core, backend, API ou modèle touché.
 Tests, lint et build à effectuer localement par l'utilisateur.
 
 Note de recette UI/UX (2026-10-23) : table Catégories compactée en menus « … », compteur `totalProductCount` distinct des produits actifs, suppression seulement si réellement vide et contrôlée au backend avec transaction / audit / HTTP 409, zone de lignes à défilement interne sous un en-tête sticky. Panneau de gouvernance : « Approuver » et « Annuler » pour fermer seulement l'examen. Attention : l'audit Core D-008 pièces jointes e-mail et l'ancienne branche M-001 restent différés. Les tests ciblés Windows, la QA et la gate restent à exécuter ; aucune PR ou fusion autorisée.
+
+
+Complément M-002 du 2026-10-23 : pagination locale du tableau Catégories avec `DataPagination`, scroll interne inchangé ; ajout de la fusion manuelle source→cible avec cible active, transaction réaffectant les `CanonicalProduct` même archivés et supprimant la source avec audit `CATEGORY_MERGED`. Dialogue de confirmation, guards Zod/MANAGE, tests backend HTTP/intégration et tests frontend en attente d'exécution locale. Conserver D-008 Core et l'ancienne branche M-001 hors de ce lot, aucune PR ni merge avant accord. Point de vigilance : concurrence des créations Produit ciblant une source pendant sa fusion, à caractériser sous MongoDB rs0.

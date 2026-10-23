@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { Archive, Eye, FileUp, GitMerge, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { DataTable, DataTableActions } from '@/components/data-display/data-table';
@@ -42,6 +42,7 @@ import {
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
 import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
 import { ProductReferenceCategoryDialog } from '@/features/products/components/product-reference-category-dialog';
+import { ProductReferenceCategoryMergeDialog } from '@/features/products/components/product-reference-category-merge-dialog';
 import { ProductReferenceDetailsDrawer } from '@/features/products/components/product-reference-details-drawer';
 import {
   ProductReferenceReviewQueue,
@@ -68,6 +69,12 @@ const ALL_REFERENCE_CATEGORIES = '__ALL__';
 function ProductReferencePage({ canManage }) {
   const { toast } = useToast();
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
+  const {
+    page: categoryPage,
+    pageSize: categoryPageSize,
+    setPage: setCategoryPage,
+    setPageSize: setCategoryPageSize,
+  } = useDataPagination();
   const [section, setSection] = useState('reference');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -87,6 +94,7 @@ function ProductReferencePage({ canManage }) {
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [categoryLifecycle, setCategoryLifecycle] = useState(null);
   const [categoryDeletion, setCategoryDeletion] = useState(null);
+  const [categoryMergeSource, setCategoryMergeSource] = useState(null);
   const [categoryDeleteError, setCategoryDeleteError] = useState('');
   const categoryScrollRef = useRef(null);
   const [categoryScrollHeight, setCategoryScrollHeight] = useState(320);
@@ -178,7 +186,29 @@ function ProductReferencePage({ canManage }) {
 
   const referenceCount = productsQuery.data?.pagination?.total ?? 0;
   const reviewCount = reviewQueueCountQuery.data?.summary?.total ?? 0;
-  const categoryCount = metadata?.categories?.length ?? 0;
+  const categories = metadata?.categories ?? [];
+  const categoryCount = categories.length;
+  const categoryTotalPages = Math.max(1, Math.ceil(categoryCount / categoryPageSize));
+  const visibleCategories = categories.slice(
+    (categoryPage - 1) * categoryPageSize,
+    categoryPage * categoryPageSize,
+  );
+
+  useEffect(() => {
+    if (categoryPage > categoryTotalPages) {
+      setCategoryPage(categoryTotalPages);
+    }
+  }, [categoryPage, categoryTotalPages, setCategoryPage]);
+
+  function changeCategoryPage(nextPage) {
+    setCategoryPage(nextPage);
+    if (categoryScrollRef.current) categoryScrollRef.current.scrollTop = 0;
+  }
+
+  function changeCategoryPageSize(nextSize) {
+    setCategoryPageSize(nextSize);
+    if (categoryScrollRef.current) categoryScrollRef.current.scrollTop = 0;
+  }
 
   function changeSection(nextSection) {
     setSection(nextSection);
@@ -423,7 +453,8 @@ function ProductReferencePage({ canManage }) {
     function resizeCategoryViewport() {
       const top = categoryScrollRef.current?.getBoundingClientRect().top;
       if (typeof top !== 'number') return;
-      const available = Math.max(100, Math.floor(window.innerHeight - top - 24));
+      // Réserver la hauteur de la pagination sous les lignes défilantes.
+      const available = Math.max(100, Math.floor(window.innerHeight - top - 96));
       setCategoryScrollHeight((previous) => (
         previous === available ? previous : available
       ));
@@ -627,6 +658,12 @@ function ProductReferencePage({ canManage }) {
                 Icon: Pencil,
                 label: 'Renommer',
                 onClick: () => setCategoryDialog({ open: true, category }),
+              },
+              {
+                key: 'merge',
+                Icon: GitMerge,
+                label: 'Fusionner',
+                onClick: () => setCategoryMergeSource(category),
               },
               {
                 key: 'lifecycle',
@@ -875,7 +912,7 @@ function ProductReferencePage({ canManage }) {
               <DataTable
                 caption="Catégories Produit"
                 columns={categoryColumns}
-                data={metadata?.categories ?? []}
+                data={visibleCategories}
                 emptyContent={(
                   <EmptyState
                     className="p-0"
@@ -889,7 +926,41 @@ function ProductReferencePage({ canManage }) {
               />
             </div>
           )}
+          {!initialLoading && !metadataQuery.isError && (
+            <div className="border-t border-border px-5 pb-4">
+              <DataPagination
+                ariaLabel="Pagination des catégories"
+                onPageChange={changeCategoryPage}
+                onPageSizeChange={changeCategoryPageSize}
+                page={categoryPage}
+                pageSize={categoryPageSize}
+                pagination={{
+                  page: categoryPage,
+                  limit: categoryPageSize,
+                  total: categoryCount,
+                  totalPages: categoryTotalPages,
+                }}
+              />
+            </div>
+          )}
         </section>
+      )}
+
+      {categoryMergeSource && (
+        <ProductReferenceCategoryMergeDialog
+          categories={categories}
+          onClose={() => setCategoryMergeSource(null)}
+          onMerged={(result) => {
+            setCategoryMergeSource(null);
+            toast({
+              title: 'Catégories fusionnées',
+              description: String(result?.movedProductCount ?? 0)
+                + ' Produit(s) regroupé(s).',
+              variant: 'success',
+            });
+          }}
+          source={categoryMergeSource}
+        />
       )}
 
       {categoryDeletion && (

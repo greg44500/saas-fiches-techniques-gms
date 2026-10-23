@@ -158,6 +158,15 @@ vi.mock('@/features/products/components/product-reference-review-queue', () => (
   ),
 }));
 
+vi.mock('@/features/products/components/product-reference-category-merge-dialog', () => ({
+  ProductReferenceCategoryMergeDialog: ({ source, onClose }) => (
+    <div role="dialog" aria-label="Fusionner des catégories">
+      Fusion de {source.name}
+      <button onClick={onClose} type="button">Annuler la fusion</button>
+    </div>
+  ),
+}));
+
 vi.mock('@/features/products/components/product-reference-category-dialog', () => ({
   ProductReferenceCategoryDialog: ({ open }) => (
     open ? <div>Catégorie globale ouverte</div> : null
@@ -754,6 +763,65 @@ describe('ProductReferencePage', () => {
     expect(screen.getByText('Supprimer cette catégorie ?')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Supprimer' }));
     expect(mocks.deleteCategory).toHaveBeenCalledWith({ categoryId: 'empty' });
+  });
+
+  it('pagine les Catégories sans abandonner le scroll interne et son entête fixe', async () => {
+    const user = userEvent.setup();
+    mocks.metadataQuery.mockReturnValue({
+      data: {
+        ...metadata,
+        categories: Array.from({ length: 23 }, (_, index) => ({
+          id: 'cat-' + index,
+          name: 'Catégorie ' + String(index + 1).padStart(2, '0'),
+          status: 'ACTIVE',
+          activeProductCount: 0,
+          totalProductCount: 0,
+        })),
+      },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Catégories (23)' }));
+    const region = screen.getByRole('region', { name: 'Lignes des catégories' });
+    expect(region).toHaveClass('overflow-auto');
+    expect(within(region).getByRole('columnheader', { name: 'Catégorie' })
+      .closest('thead')).toHaveClass('sticky');
+
+    expect(within(region).getByText('Catégorie 01')).toBeInTheDocument();
+    expect(within(region).queryByText('Catégorie 11')).not.toBeInTheDocument();
+    await user.click(within(screen.getByRole('navigation', {
+      name: 'Pagination des catégories',
+    })).getByRole('button', { name: 'Suivant' }));
+    expect(within(region).getByText('Catégorie 11')).toBeInTheDocument();
+    expect(within(region).queryByText('Catégorie 01')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer une catégorie' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Catégories (23)' })).toBeInTheDocument();
+  });
+
+  it('propose la fusion dans le menu, mais pas en mode lecture seule', async () => {
+    const user = userEvent.setup();
+    mocks.metadataQuery.mockReturnValue({
+      data: {
+        ...metadata,
+        categories: [
+          { id: 'source', name: 'Source', status: 'ACTIVE', activeProductCount: 2, totalProductCount: 2 },
+          { id: 'target', name: 'Cible', status: 'ACTIVE', activeProductCount: 1, totalProductCount: 1 },
+        ],
+      },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Catégories (2)' }));
+    await user.click(screen.getByRole('button', { name: 'Actions de la catégorie Source' }));
+    await user.click(within(screen.getByRole('group', {
+      name: 'Actions de la catégorie Source',
+    })).getByRole('button', { name: 'Fusionner' }));
+    expect(screen.getByRole('dialog', { name: 'Fusionner des catégories' }))
+      .toHaveTextContent('Fusion de Source');
   });
 
   it('ouvre la file unifiée depuis l’onglet À contrôler', async () => {

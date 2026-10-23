@@ -16,6 +16,7 @@ import {
     confirmVariantMerge,
     createCategoryController,
     deleteCategoryController,
+    mergeCategoriesController,
     createCharacteristicController,
     createProductController,
     createVarietyController,
@@ -58,6 +59,7 @@ import {
     createGlobalVariantBodySchema,
     duplicateCheckBodySchema,
     globalCategoryParamsSchema,
+    mergeCategoriesBodySchema,
     globalImportIdParamsSchema,
     globalProductCharacteristicParamsSchema,
     globalProductDimensionParamsSchema,
@@ -108,6 +110,16 @@ productCatalogGlobalRouter.post(
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
     validateRequest({ body: createCategoryBodySchema }),
     createCategoryController,
+);
+
+productCatalogGlobalRouter.post(
+    '/categories/:categoryId/merge',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalCategoryParamsSchema,
+        body: mergeCategoriesBodySchema,
+    }),
+    mergeCategoriesController,
 );
 
 productCatalogGlobalRouter.delete(

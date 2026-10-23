@@ -715,3 +715,6 @@ Le contrat `docs/m003/M-003-FINAL-CONTRACT.md` et la conception `docs/m003/M-003
 Après la PR strictement documentaire, synchroniser localement `main` et nettoyer uniquement les branches réellement fusionnées après vérification.
 
 Complément UI/UX M-002 (2026-10-23) : tableau Catégories à menus d'actions, suppression conditionnée à zéro Produit associé (y compris archives), contrôle de permission Application Global, audit transactionnel, en-tête fixe et données défilantes. Drawer : « Approuver » et « Annuler » pour sortir du contrôle sans quitter le Produit. Tests locaux et gate non attestés ; aucune PR/merge avant accord.
+
+
+Complément UI/UX M-002 du 2026-10-23 : pagination standard des catégories (10/20/50/100) en conservant le défilement interne et l'en-tête visible ; action explicite « Fusionner » réaffectant tous les Produits de la source à une cible active, suppression de la source et événement d'audit dans la même transaction. Tests de permissions, validations, intégrité d'association, catégories archivées et frontend préparés ; tests/gate et QA Windows non exécutés ici, pas de PR.

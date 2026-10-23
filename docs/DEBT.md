@@ -910,3 +910,12 @@ un upgrade versionné ; ne pas désactiver le contrôle de test.
 Core Gate PR `38537453030` success ; post-merge
 `38539141748` success (tentative 2). Les dettes M-003
 différées ci-dessus restent ouvertes.
+
+
+### GMS-M002-CATEGORY-MERGE-CONCURRENCY — Référence concurrente lors d'une fusion de catégories
+
+**Statut : À VÉRIFIER EN TEST LOCAL — sécurité des données Produit**
+
+Le service M-002 de fusion réaffecte tous les Produits de la source vers la cible dans une transaction et retire la source. MongoDB n'impose pas de clé étrangère sur `CanonicalProduct.category`. Il faut vérifier le cas où une création ou modification Produit concurrente a déjà lu l'ancienne catégorie source et finalise son écriture autour de la transaction. Prévoir un test d'intégration avec barrières de concurrence sous `rs0`, puis, si nécessaire, une coordination transactionnelle des écrivains de catégorie et une politique de retry idempotente avant gate finale. Ne pas considérer la fusion comme garantie contre cette anomalie en l'absence de ce contrôle.
+
+---

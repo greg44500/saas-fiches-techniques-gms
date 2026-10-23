@@ -468,6 +468,10 @@ const createCategoryBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
 });
 
+const mergeCategoriesBodySchema = z.strictObject({
+    targetCategoryId: objectIdSchema,
+});
+
 const updateCategoryBodySchema = createCategoryBodySchema;
 
 const updateCategoryStatusBodySchema = z.strictObject({
@@ -525,6 +529,7 @@ export {
     createWorkspaceVariantBodySchema,
     duplicateCheckBodySchema,
     globalCategoryParamsSchema,
+    mergeCategoriesBodySchema,
     globalProductCharacteristicParamsSchema,
     globalProductDimensionParamsSchema,
     globalImportIdParamsSchema,

@@ -176,6 +176,62 @@ const deleteCategory = async ({ actorId, categoryId }) => (
     })
 );
 
+/**
+ * Regroupe toute la classification de la source sous une catégorie cible
+ * existante et active. Les Produits (y compris archivés et historiques)
+ * conservent leur identité et leurs autres relations.
+ *
+ * La transaction garantit l'atomicité des réaffectations et de la décision ;
+ * les créations concurrentes sont à couvrir en QA transactionnelle.
+ */
+const mergeCategories = async ({
+    actorId,
+    sourceCategoryId,
+    targetCategoryId,
+}) => mongoose.connection.transaction(async (session) => {
+    if (String(sourceCategoryId) === String(targetCategoryId)) {
+        throw new AppError('Sélectionnez deux catégories différentes.', 400);
+    }
+
+    // Les opérations avec une session transactionnelle sont séquentielles :
+    // Promise.all sur la même session n'est pas un contrat Mongoose sûr.
+    const source = await ProductCategory.findById(sourceCategoryId).session(session);
+    const target = await ProductCategory.findById(targetCategoryId).session(session);
+    if (!source || !target) {
+        throw new AppError('Une des catégories est introuvable.', 404);
+    }
+    if (target.status !== PRODUCT_CATEGORY_STATUS.ACTIVE) {
+        throw new AppError('La catégorie conservée doit être active.', 409);
+    }
+
+    const moved = await CanonicalProduct.updateMany(
+        { category: source._id },
+        { $set: { category: target._id, updatedBy: actorId } },
+        { session },
+    );
+    await ProductCategory.deleteOne({ _id: source._id }).session(session);
+
+    await createProductReferenceEvent({
+        actorId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.CATEGORY_MERGED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CATEGORY,
+        entityId: source._id,
+        metadata: {
+            sourceName: source.name,
+            targetCategoryId: target._id.toString(),
+            targetName: target.name,
+            movedProductCount: moved.modifiedCount,
+        },
+        session,
+    });
+
+    return {
+        sourceCategoryId: source._id.toString(),
+        target: serializeCategory(target),
+        movedProductCount: moved.modifiedCount,
+    };
+});
+
 const updateCategoryStatus = async ({
     actorId,
     categoryId,
@@ -960,6 +1016,7 @@ export {
     createGlobalVariant,
     getGlobalProductDetail,
     listCategories,
+    mergeCategories,
     listGlobalProducts,
     updateCategory,
     updateCategoryStatus,

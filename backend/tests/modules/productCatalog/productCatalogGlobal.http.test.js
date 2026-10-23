@@ -261,6 +261,62 @@ describe('M-002 global product reference HTTP contract', () => {
         expect(denied.status).toBe(403);
     });
 
+    it('fusionne deux catégories en regroupant les Produits, sans droits implicites', async () => {
+        const source = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Produits proches' });
+        const target = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Produits réunis' });
+        expect(source.status).toBe(201);
+        expect(target.status).toBe(201);
+
+        const product = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({
+                name: 'Produit fusion catégories test',
+                categoryId: source.body.data.category.id,
+            });
+        expect(product.status).toBe(201);
+        const url = '/api/product-reference/categories/'
+            + source.body.data.category.id + '/merge';
+
+        const denied = await request(app).post(url)
+            .set(bearer((await createUserToken({
+                email: 'merge-category-no-rights@example.test',
+                platformRole: PLATFORM_ROLE.SUPER_ADMIN,
+            })).token))
+            .send({ targetCategoryId: target.body.data.category.id });
+        expect(denied.status).toBe(403);
+        const malformed = await request(app).post(url)
+            .set(bearer(governorToken))
+            .send({ targetCategoryId: 'invalid' });
+        expect(malformed.status).toBe(400);
+
+        const result = await request(app).post(url)
+            .set(bearer(governorToken))
+            .send({ targetCategoryId: target.body.data.category.id });
+        expect(result.status).toBe(200);
+        expect(result.body.data.result).toMatchObject({
+            sourceCategoryId: source.body.data.category.id,
+            target: { id: target.body.data.category.id, name: 'Produits réunis' },
+            movedProductCount: 1,
+        });
+        const updated = await request(app)
+            .get('/api/product-reference/' + product.body.data.product.id)
+            .set(bearer(governorToken));
+        expect(updated.status).toBe(200);
+        expect(updated.body.data.product.category.id)
+            .toBe(target.body.data.category.id);
+        const retry = await request(app).post(url)
+            .set(bearer(governorToken))
+            .send({ targetCategoryId: target.body.data.category.id });
+        expect(retry.status).toBe(404);
+    });
+
     it('permet à un membre Platform explicitement habilité d’abonder le référentiel', async () => {
         const platformMember = await createUserToken({
             email: 'platform-product-governor@example.test',

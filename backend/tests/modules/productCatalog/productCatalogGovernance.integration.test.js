@@ -34,6 +34,8 @@ import {
     createGlobalProduct,
     createGlobalVariant,
     listCategories,
+    mergeCategories,
+    updateCategory,
     updateCategoryStatus,
     updateProductStatus,
     updateVariant,
@@ -428,6 +430,110 @@ describe('M-002 product reference governance', () => {
             actorId: ownerContext.owner._id,
             categoryId: category.id,
         })).rejects.toMatchObject({ statusCode: 409 });
+    });
+
+    it('fusionne les catégories en conservant l’identité cible et tous les Produits', async () => {
+        const source = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Fruits de saison',
+        });
+        const target = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Fruits',
+        });
+        const first = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Pomme de saison à fusionner',
+            categoryId: source.id,
+        });
+        const second = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Prune de saison à fusionner',
+            categoryId: source.id,
+        });
+        await updateProductStatus({
+            actorId: ownerContext.owner._id,
+            productId: second.product.id,
+            status: 'ARCHIVED',
+        });
+
+        const merged = await mergeCategories({
+            actorId: ownerContext.owner._id,
+            sourceCategoryId: source.id,
+            targetCategoryId: target.id,
+        });
+        expect(merged).toMatchObject({
+            sourceCategoryId: source.id,
+            target: { id: target.id, name: 'Fruits' },
+            movedProductCount: 2,
+        });
+        expect((await listCategories()).some(({ id }) => id === source.id)).toBe(false);
+        expect((await listCategories()).find(({ id }) => id === target.id))
+            .toMatchObject({ totalProductCount: 2, activeProductCount: 1 });
+        for (const id of [first.product.id, second.product.id]) {
+            expect((await CanonicalProduct.findById(id)).category.toString())
+                .toBe(target.id);
+        }
+        const event = await ProductReferenceEvent.findOne({
+            entityId: source.id,
+            action: 'CATEGORY_MERGED',
+        });
+        expect(event).toMatchObject({
+            metadata: {
+                sourceName: 'Fruits de saison',
+                targetCategoryId: target.id,
+                targetName: 'Fruits',
+                movedProductCount: 2,
+            },
+        });
+        const renamed = await updateCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: target.id,
+            name: 'Fruits regroupés',
+        });
+        expect(renamed).toMatchObject({
+            id: target.id,
+            name: 'Fruits regroupés',
+        });
+    });
+
+    it('refuse fusion identique, cible archivée ou catégorie inexistante sans déplacer les Produits', async () => {
+        const source = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Source garde-fou',
+        });
+        const target = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Cible archivée garde-fou',
+        });
+        const product = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Produit garde-fou fusion catégorie',
+            categoryId: source.id,
+        });
+        await updateCategoryStatus({
+            actorId: ownerContext.owner._id,
+            categoryId: target.id,
+            status: 'ARCHIVED',
+        });
+
+        await expect(mergeCategories({
+            actorId: ownerContext.owner._id,
+            sourceCategoryId: source.id,
+            targetCategoryId: source.id,
+        })).rejects.toMatchObject({ statusCode: 400 });
+        await expect(mergeCategories({
+            actorId: ownerContext.owner._id,
+            sourceCategoryId: source.id,
+            targetCategoryId: target.id,
+        })).rejects.toMatchObject({ statusCode: 409 });
+        await expect(mergeCategories({
+            actorId: ownerContext.owner._id,
+            sourceCategoryId: source.id,
+            targetCategoryId: ownerContext.workspace._id,
+        })).rejects.toMatchObject({ statusCode: 404 });
+        expect((await CanonicalProduct.findById(product.product.id)).category.toString())
+            .toBe(source.id);
     });
 
     it('convertit la Présentation initiale en Caractéristique structurée', async () => {
