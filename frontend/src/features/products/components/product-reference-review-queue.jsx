@@ -7,6 +7,7 @@ import {
   DataTableActions,
 } from '@/components/data-display/data-table';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { useProductReferenceTableViewport } from '@/features/products/hooks/use-product-reference-table-viewport';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatusBadge } from '@/components/shared/status-badge';
@@ -26,6 +27,9 @@ function ProductReferenceReviewQueue({
     origins: 'omit',
     page,
     limit: pageSize,
+  });
+  const viewport = useProductReferenceTableViewport({
+    dependency: query.data?.items?.length,
   });
 
   useEffect(() => {
@@ -154,7 +158,7 @@ function ProductReferenceReviewQueue({
   };
 
   return (
-    <section className="rounded-xl border border-border bg-card">
+    <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-5">
         <div>
           <div className="flex items-center gap-2">
@@ -191,26 +195,42 @@ function ProductReferenceReviewQueue({
         />
       ) : (
         <>
-          <DataTable
-            caption="Données Produit à contrôler"
-            columns={columns}
-            data={query.data?.items ?? []}
-            emptyContent={(
-              <EmptyState
-                className="p-0"
-                description="Aucune donnée du référentiel n’attend de validation."
-                title="Rien à contrôler"
-              />
-            )}
-            getRowKey={(item) => item.id}
-            rowClassName="transition-colors hover:bg-muted/50"
-          />
+          <div
+            aria-label="Lignes des données à contrôler"
+            className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+            ref={viewport.ref}
+            role="region"
+            style={{ height: viewport.height }}
+            tabIndex={0}
+          >
+            <DataTable
+              caption="Données Produit à contrôler"
+              columns={columns}
+              data={query.data?.items ?? []}
+              emptyContent={(
+                <EmptyState
+                  className="p-0"
+                  description="Aucune donnée du référentiel n’attend de validation."
+                  title="Rien à contrôler"
+                />
+              )}
+              getRowKey={(item) => item.id}
+              headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+              rowClassName="transition-colors hover:bg-muted/50"
+            />
+          </div>
           <div className="px-5 pb-5">
             <DataPagination
               ariaLabel="Pagination des données à contrôler"
               disabled={query.isFetching}
-              onPageChange={setPage}
-              onPageSizeChange={setPageSize}
+              onPageChange={(nextPage) => {
+                setPage(nextPage);
+                viewport.resetScroll();
+              }}
+              onPageSizeChange={(nextSize) => {
+                setPageSize(nextSize);
+                viewport.resetScroll();
+              }}
               page={page}
               pageSize={pageSize}
               pagination={query.data?.pagination}

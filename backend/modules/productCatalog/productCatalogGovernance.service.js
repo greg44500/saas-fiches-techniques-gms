@@ -11,6 +11,7 @@ import {
 } from '../supplierCatalog/supplierPricing.model.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
+import { assertCategoryNameReviewed } from './productCategorySuggestions.service.js';
 import { listProductCategories } from './productCategoryProjection.service.js';
 import {
     assertProductCreationReviewed,
@@ -57,8 +58,10 @@ import {
 const createCategory = async ({
     actorId,
     name,
+    reviewedCandidateIds = [],
 }) => mongoose.connection.transaction(async (session) => {
     const normalizedKey = normalizeProductText(name);
+    await assertCategoryNameReviewed({ name, reviewedCandidateIds, session });
 
     let category;
     try {
@@ -99,6 +102,7 @@ const updateCategory = async ({
     actorId,
     categoryId,
     name,
+    reviewedCandidateIds = [],
 }) => mongoose.connection.transaction(async (session) => {
     const category = await ProductCategory.findById(categoryId).session(session);
 
@@ -116,6 +120,13 @@ const updateCategory = async ({
     if (duplicate) {
         throw new AppError('Cette catégorie existe déjà.', 409);
     }
+
+    await assertCategoryNameReviewed({
+        name,
+        excludeCategoryId: categoryId,
+        reviewedCandidateIds,
+        session,
+    });
 
     category.name = name;
     category.normalizedKey = normalizedKey;

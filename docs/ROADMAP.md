@@ -718,3 +718,5 @@ Complément UI/UX M-002 (2026-10-23) : tableau Catégories à menus d'actions, s
 
 
 Complément UI/UX M-002 du 2026-10-23 : pagination standard des catégories (10/20/50/100) en conservant le défilement interne et l'en-tête visible ; action explicite « Fusionner » réaffectant tous les Produits de la source à une cible active, suppression de la source et événement d'audit dans la même transaction. Tests de permissions, validations, intégrité d'association, catégories archivées et frontend préparés ; tests/gate et QA Windows non exécutés ici, pas de PR.
+
+Finition QA du 2026-10-23 (M-002) : les trois tableaux « Référentiel », « À contrôler » et « Catégories » utilisent une région de lignes à défilement interne avec en-tête sticky et pagination hors scroll. Le workflow de création/renommage de catégorie interroge le backend pour proposer les noms proches (y compris archives) et exige la confirmation d'une catégorie distincte, vérifiée aussi par le serveur. Tests et QA PowerShell non exécutés ici ; aucun merge/PR.

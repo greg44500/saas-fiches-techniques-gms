@@ -167,6 +167,40 @@ describe('M-002 global product reference HTTP contract', () => {
         expect(duplicateArchived.status).toBe(409);
     });
 
+    it('propose les catégories proches et interdit une création non examinée par API', async () => {
+        const source = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Épicerie' });
+        expect(source.status).toBe(201);
+
+        const suggestions = await request(app)
+            .get('/api/product-reference/categories/suggestions')
+            .query({ name: 'Épiserie' })
+            .set(bearer(governorToken));
+        expect(suggestions.status).toBe(200);
+        expect(suggestions.body.data.suggestions.candidates).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ id: source.body.data.category.id }),
+            ]),
+        );
+
+        const blocked = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Épiserie' });
+        expect(blocked.status).toBe(409);
+
+        const confirmed = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({
+                name: 'Épiserie',
+                reviewedCandidateIds: [source.body.data.category.id],
+            });
+        expect(confirmed.status).toBe(201);
+    });
+
     it('refuse de renommer une catégorie sur le nom normalisé d’une autre', async () => {
         const existing = await request(app)
             .post('/api/product-reference/categories')

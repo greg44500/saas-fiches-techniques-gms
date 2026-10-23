@@ -12,6 +12,7 @@ import {
 import {
     access,
     categories,
+    categorySuggestionsController,
     commitImport,
     confirmVariantMerge,
     createCategoryController,
@@ -53,6 +54,7 @@ import {
 } from './productCatalogGlobalPermission.registry.js';
 import {
     createCategoryBodySchema,
+    categorySuggestionsQuerySchema,
     createCharacteristicBodySchema,
     createGlobalProductBodySchema,
     createVarietyBodySchema,
@@ -103,6 +105,13 @@ productCatalogGlobalRouter.get(
     '/categories',
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.READ),
     categories,
+);
+
+productCatalogGlobalRouter.get(
+    '/categories/suggestions',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.READ),
+    validateRequest({ query: categorySuggestionsQuerySchema }),
+    categorySuggestionsController,
 );
 
 productCatalogGlobalRouter.post(

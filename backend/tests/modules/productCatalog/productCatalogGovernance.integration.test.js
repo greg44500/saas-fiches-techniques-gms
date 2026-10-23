@@ -7,6 +7,7 @@ import {
     it,
 } from 'vitest';
 
+import { findCategoryNameSuggestions } from '../../../modules/productCatalog/productCategorySuggestions.service.js';
 import {
     CanonicalProduct,
 } from '../../../modules/productCatalog/canonicalProduct.model.js';
@@ -377,6 +378,63 @@ describe('M-002 product reference governance', () => {
         ).not.toHaveProperty('activeProductCount');
     });
 
+    it('suggère les catégories proches et exige une confirmation avant création distincte', async () => {
+        const first = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Épicerie',
+        });
+        const suggestions = await findCategoryNameSuggestions({ name: 'Épiserie' });
+        expect(suggestions.exactMatch).toBeNull();
+        expect(suggestions.candidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: first.id, name: 'Épicerie' }),
+        ]));
+        await expect(createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Épiserie',
+        })).rejects.toMatchObject({ statusCode: 409 });
+        const confirmed = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Épiserie',
+            reviewedCandidateIds: [first.id],
+        });
+        expect(confirmed.name).toBe('Épiserie');
+    });
+
+    it('réexamine les doublons proches au renommage, y compris archivés', async () => {
+        const source = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Conditionnements',
+        });
+        const target = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Autre famille',
+        });
+        await updateCategoryStatus({
+            actorId: ownerContext.owner._id,
+            categoryId: source.id,
+            status: 'ARCHIVED',
+        });
+        const suggestions = await findCategoryNameSuggestions({
+            name: 'Conditionnement',
+            excludeCategoryId: target.id,
+        });
+        expect(suggestions.candidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: source.id, status: 'ARCHIVED' }),
+        ]));
+        await expect(updateCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: target.id,
+            name: 'Conditionnement',
+        })).rejects.toMatchObject({ statusCode: 409 });
+        const renamed = await updateCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: target.id,
+            name: 'Conditionnement',
+            reviewedCandidateIds: [source.id],
+        });
+        expect(renamed.name).toBe('Conditionnement');
+    });
+
     it('supprime une catégorie vide et conserve la trace de suppression', async () => {
         const empty = await createCategory({
             actorId: ownerContext.owner._id,
@@ -440,6 +498,7 @@ describe('M-002 product reference governance', () => {
         const target = await createCategory({
             actorId: ownerContext.owner._id,
             name: 'Fruits',
+            reviewedCandidateIds: [source.id],
         });
         const first = await createGlobalProduct({
             actorId: ownerContext.owner._id,

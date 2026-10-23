@@ -219,6 +219,14 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data,
       invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
+    getProductReferenceCategorySuggestions: builder.query({
+      query: ({ name, excludeCategoryId }) => ({
+        url: '/product-reference/categories/suggestions',
+        params: { name, excludeCategoryId },
+      }),
+      transformResponse: (response) => response.data.suggestions,
+      providesTags: ['ProductReference'],
+    }),
     createProductReferenceCategory: builder.mutation({
       query: (body) => ({
         url: '/product-reference/categories',
@@ -417,6 +425,7 @@ export const {
   useGetProductReferenceDimensionsQuery,
   useGetProductReferenceDetailQuery,
   useGetProductReferenceMetadataQuery,
+  useGetProductReferenceCategorySuggestionsQuery,
   useInspectProductReferenceImportMutation,
   useLazyGetProductReferenceDetailQuery,
   useListProductReferenceContributionsQuery,

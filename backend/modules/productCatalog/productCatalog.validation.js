@@ -466,6 +466,12 @@ const updateCharacteristicBodySchema = z.strictObject({
 
 const createCategoryBodySchema = z.strictObject({
     name: z.string().trim().min(1).max(120),
+    reviewedCandidateIds: z.array(objectIdSchema).max(100).optional().default([]),
+});
+
+const categorySuggestionsQuerySchema = z.strictObject({
+    name: z.string().trim().min(1).max(120),
+    excludeCategoryId: objectIdSchema.optional(),
 });
 
 const mergeCategoriesBodySchema = z.strictObject({
@@ -520,6 +526,7 @@ const updateVariantStatusBodySchema = updateProductStatusBodySchema;
 
 export {
     createCategoryBodySchema,
+    categorySuggestionsQuerySchema,
     createCharacteristicBodySchema,
     createVarietyBodySchema,
     createGlobalProductBodySchema,

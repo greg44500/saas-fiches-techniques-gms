@@ -419,11 +419,11 @@ Cette dette ne doit pas être implémentée sur la branche M-003 : elle appartie
 
 ### GMS-M002-CATEGORY-NEAR-DUPLICATES — Rapprochement des catégories similaires
 
-**Statut : À CADRER — métier Produit, non implémenté**
+**Statut : PARTIELLEMENT TRAITÉ — suivi QA et robustesse**
 
-La clé `normalizedKey` unique interdit déjà les collisions exactes après normalisation (casse, accents, espaces, ponctuation). Une erreur d'une lettre peut néanmoins générer une clé différente ; un index unique ne peut pas prouver une équivalence sémantique.
+Le lot UI/UX du 2026-10-23 introduit des suggestions backend de catégories exactes/proches avec `isNearDuplicateKey`, y compris archivées, et une confirmation humaine explicite vérifiée par le service lors de la création/du renommage (`reviewedCandidateIds`). L'index MongoDB unique conserve la protection contre les collisions exactes ; aucune fusion automatique.
 
-Avant de modifier le workflow de création ou de renommage, préciser : seuil de suggestion, faux positifs (catégories proches mais distinctes), catégories archivées, proposition de réutilisation, confirmation explicite, contrôles backend et concurrence. `isNearDuplicateKey` existe dans M-002 mais son emploi sur les catégories doit être évalué. Aucune fusion automatique de catégories ni de leurs Produits.
+À vérifier avant livraison : tests locaux de faux positifs et volumétrie d'une taxonomie qui grandit, transactions concurrentes créant des catégories proches, lisibilité et accessibilité des suggestions au clavier. Une distance orthographique ne prouve pas que deux catégories soient identiques.
 
 ---
 

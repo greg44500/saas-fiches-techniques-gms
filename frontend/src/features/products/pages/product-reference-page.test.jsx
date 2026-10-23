@@ -397,6 +397,20 @@ describe('ProductReferencePage', () => {
   });
 
 
+  it('garde les filtres Produits et la pagination fixes autour des lignes défilantes', () => {
+    renderPage();
+    const region = screen.getByRole('region', {
+      name: 'Lignes du référentiel Produits',
+    });
+    expect(region).toHaveClass('overflow-auto');
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(within(region).getByRole('columnheader', { name: 'Produit' })
+      .closest('thead')).toHaveClass('sticky', 'top-0');
+    expect(screen.getByRole('combobox', {
+      name: 'Filtrer par catégorie',
+    })).toBeInTheDocument();
+  });
+
   it('distingue la couverture des Prix repères de la valorisation M-004', () => {
     mocks.productsQuery.mockReturnValue({
       data: {

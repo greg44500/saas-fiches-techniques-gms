@@ -63,6 +63,7 @@ import {
   formatPrice,
 } from '@/features/suppliers/lib/supplier-presentation';
 import { useDataPagination } from '@/hooks/use-data-pagination';
+import { useProductReferenceTableViewport } from '@/features/products/hooks/use-product-reference-table-viewport';
 
 const ALL_REFERENCE_CATEGORIES = '__ALL__';
 
@@ -96,8 +97,6 @@ function ProductReferencePage({ canManage }) {
   const [categoryDeletion, setCategoryDeletion] = useState(null);
   const [categoryMergeSource, setCategoryMergeSource] = useState(null);
   const [categoryDeleteError, setCategoryDeleteError] = useState('');
-  const categoryScrollRef = useRef(null);
-  const [categoryScrollHeight, setCategoryScrollHeight] = useState(320);
   const [directApprovalPending, setDirectApprovalPending] = useState(false);
   const directApprovalLock = useRef(false);
 
@@ -113,6 +112,14 @@ function ProductReferencePage({ canManage }) {
     },
     { skip: false },
   );
+  const categoryViewport = useProductReferenceTableViewport({
+    active: section === 'categories',
+    dependency: metadataQuery.data?.categories?.length,
+  });
+  const productViewport = useProductReferenceTableViewport({
+    active: section === 'reference',
+    dependency: productsQuery.data?.products?.length,
+  });
   const globalPricesQuery = useListGlobalIndicativePricesQuery(
     {
       status: 'ACTIVE',
@@ -202,12 +209,12 @@ function ProductReferencePage({ canManage }) {
 
   function changeCategoryPage(nextPage) {
     setCategoryPage(nextPage);
-    if (categoryScrollRef.current) categoryScrollRef.current.scrollTop = 0;
+    categoryViewport.resetScroll();
   }
 
   function changeCategoryPageSize(nextSize) {
     setCategoryPageSize(nextSize);
-    if (categoryScrollRef.current) categoryScrollRef.current.scrollTop = 0;
+    categoryViewport.resetScroll();
   }
 
   function changeSection(nextSection) {
@@ -445,24 +452,6 @@ function ProductReferencePage({ canManage }) {
       ));
     }
   }
-
-  // La fenêtre Platform conserve ses commandes visibles ; seules les lignes
-  // du tableau Catégories occupent l'espace vertical encore disponible.
-  useEffect(() => {
-    if (section !== 'categories') return undefined;
-    function resizeCategoryViewport() {
-      const top = categoryScrollRef.current?.getBoundingClientRect().top;
-      if (typeof top !== 'number') return;
-      // Réserver la hauteur de la pagination sous les lignes défilantes.
-      const available = Math.max(100, Math.floor(window.innerHeight - top - 96));
-      setCategoryScrollHeight((previous) => (
-        previous === available ? previous : available
-      ));
-    }
-    resizeCategoryViewport();
-    window.addEventListener('resize', resizeCategoryViewport);
-    return () => window.removeEventListener('resize', resizeCategoryViewport);
-  }, [section, categoryCount]);
 
   const productColumns = [
     {
@@ -778,7 +767,7 @@ function ProductReferencePage({ canManage }) {
       </Tabs>
 
       {section === 'reference' && (
-        <section className="rounded-xl border border-border bg-card">
+        <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
           <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(260px,1fr)_240px_220px]">
             <form className="flex gap-2" onSubmit={applySearch}>
               <div className="min-w-0 flex-1">
@@ -849,26 +838,42 @@ function ProductReferencePage({ canManage }) {
             />
           ) : (
             <>
-              <DataTable
-                caption="Référentiel Produits global"
-                columns={productColumns}
-                data={productsQuery.data?.products ?? []}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucun Produit ne correspond aux critères."
-                    title="Aucun Produit"
-                  />
-                )}
-                getRowKey={(product) => product.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
+              <div
+                aria-label="Lignes du référentiel Produits"
+                className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+                ref={productViewport.ref}
+                role="region"
+                style={{ height: productViewport.height }}
+                tabIndex={0}
+              >
+                <DataTable
+                  caption="Référentiel Produits global"
+                  columns={productColumns}
+                  data={productsQuery.data?.products ?? []}
+                  emptyContent={(
+                    <EmptyState
+                      className="p-0"
+                      description="Aucun Produit ne correspond aux critères."
+                      title="Aucun Produit"
+                    />
+                  )}
+                  getRowKey={(product) => product.id}
+                  headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                  rowClassName="transition-colors hover:bg-muted/50"
+                />
+              </div>
               <div className="px-5 pb-5">
                 <DataPagination
                   ariaLabel="Pagination du référentiel Produits"
                   disabled={productsQuery.isFetching}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
+                  onPageChange={(value) => {
+                    setPage(value);
+                    productViewport.resetScroll();
+                  }}
+                  onPageSizeChange={(value) => {
+                    setPageSize(value);
+                    productViewport.resetScroll();
+                  }}
                   page={page}
                   pageSize={pageSize}
                   pagination={productsQuery.data?.pagination}
@@ -904,9 +909,9 @@ function ProductReferencePage({ canManage }) {
             <div
               aria-label="Lignes des catégories"
               className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
-              ref={categoryScrollRef}
+              ref={categoryViewport.ref}
               role="region"
-              style={{ height: categoryScrollHeight }}
+              style={{ height: categoryViewport.height }}
               tabIndex={0}
             >
               <DataTable
@@ -1054,6 +1059,19 @@ function ProductReferencePage({ canManage }) {
         onSaved={() => {
           setCategoryDialog({ open: false, category: null });
           toast({ title: 'Catégorie enregistrée', variant: 'success' });
+        }}
+        onUseExisting={(existing) => {
+          setCategoryDialog({ open: false, category: null });
+          setSection('categories');
+          const index = categories.findIndex((item) => item.id === existing.id);
+          if (index >= 0) setCategoryPage(Math.floor(index / categoryPageSize) + 1);
+          categoryViewport.resetScroll();
+          toast({
+            title: 'Catégorie déjà présente',
+            description: existing.status === 'ARCHIVED'
+              ? existing.name + ' est archivée. Vous pouvez la réactiver depuis son menu.'
+              : existing.name + ' est disponible dans la liste des catégories.',
+          });
         }}
         open={categoryDialog.open}
       />
