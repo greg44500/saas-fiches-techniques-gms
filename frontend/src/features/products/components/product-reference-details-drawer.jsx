@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Archive,
-  CircleCheck,
   Euro,
   GitMerge,
   Pencil,
   Plus,
   RotateCcw,
   Search,
-  Trash2,
   X,
 } from 'lucide-react';
 
@@ -40,6 +38,7 @@ import {
 } from '@/features/products/api/product-reference-api';
 import { ProductDimensionContributionDialog } from '@/features/products/components/product-dimension-contribution-dialog';
 import { ProductDimensionEditDialog } from '@/features/products/components/product-dimension-edit-dialog';
+import { ProductReferenceDimensionCard } from '@/features/products/components/product-reference-dimension-card';
 import { ProductReferenceEditDialog } from '@/features/products/components/product-reference-edit-dialog';
 import {
   ProductReferenceGovernanceReviewPanel,
@@ -183,13 +182,17 @@ function ProductReferenceDetailsDrawer({
     ),
   );
   const dimensionCount = varieties.length + characteristics.length;
+  const needsDimensionControl = (dimension) => (
+    dimension.status === 'ACTIVE'
+    && (
+      dimension.governanceStatus === 'PROVISIONAL'
+      || dimension.qualityReviewStatus === 'PENDING'
+    )
+  );
   const pendingDimensionCount = [
     ...varieties,
     ...characteristics,
-  ].filter((dimension) => (
-    dimension.status === 'ACTIVE'
-    && dimension.qualityReviewStatus === 'PENDING'
-  )).length;
+  ].filter(needsDimensionControl).length;
   const activeDimensionCount = [
     ...varieties,
     ...characteristics,
@@ -208,10 +211,7 @@ function ProductReferenceDetailsDrawer({
 
   const matchesDimensionFilter = (dimension) => {
     if (dimensionFilter === 'pending') {
-      return (
-        dimension.status === 'ACTIVE'
-        && dimension.qualityReviewStatus === 'PENDING'
-      );
+      return needsDimensionControl(dimension);
     }
     if (dimensionFilter === 'active') {
       return dimension.status === 'ACTIVE';
@@ -346,7 +346,7 @@ function ProductReferenceDetailsDrawer({
         dimensionId: dimension.id,
       }).unwrap();
       toast({
-        title: 'Dimension validée',
+        title: 'Contrôle qualité confirmé',
         variant: 'success',
       });
     } catch (error) {
@@ -714,177 +714,44 @@ function ProductReferenceDetailsDrawer({
                     </p>
                   ) : (
                     <ul className="space-y-2">
-                      {filteredVarieties.map((variety) => (
-                        <li
-                          className={
-                            'rounded-lg border px-3 py-2 '
-                            + (
-                              reviewContext?.dataType === 'DIMENSION'
-                              && reviewContext.targetId === variety.id
-                                ? 'border-warning/50 bg-warning/5'
-                                : 'border-border'
-                            )
-                          }
-                          key={variety.id}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <p className="truncate font-medium">
-                                {variety.name}
-                              </p>
-                              <StatusBadge
-                                className="shrink-0 py-0.5"
-                                tone={getProductStatusTone(variety.status)}
-                              >
-                                {getProductStatusLabel(metadata, variety.status)}
-                              </StatusBadge>
-                              {variety.governanceStatus === 'PROVISIONAL'
-                                && variety.status === 'ACTIVE' && canManage && (
-                                <Button
-                                  aria-label={'Examiner l’identité de la variété ' + variety.name}
-                                  className="h-7 rounded-md border-warning/60 bg-warning/10 px-2 text-xs text-warning"
-                                  disabled={pending || reviewLoading}
-                                  onClick={() => onReviewRequested?.('DIMENSION', variety.id, 'VARIETY')}
-                                  size="sm"
-                                  type="button"
-                                  variant="outline"
-                                >
-                                  Identité à examiner
-                                </Button>
-                              )}
-                              {variety.qualityReviewStatus === 'PENDING'
-                                && variety.status === 'ACTIVE' && (
-                                <StatusBadge
-                                  className="shrink-0 py-0.5"
-                                  tone="warning"
-                                >
-                                  {reviewContext?.dataType === 'DIMENSION'
-                                    && reviewContext.targetId === variety.id
-                                    && (reviewContext.candidates ?? []).length > 0
-                                    ? 'Rapprochement à vérifier'
-                                    : 'À contrôler'}
-                                </StatusBadge>
-                              )}
-                              {variety.qualityReviewStatus === 'REVIEWED'
-                                && variety.status === 'ACTIVE' && (
-                                <StatusBadge
-                                  className="shrink-0 py-0.5"
-                                  tone="success"
-                                >
-                                  Validée
-                                </StatusBadge>
-                              )}
-                            </div>
-                            {canManage
-                              && !(
-                                reviewContext?.dataType === 'DIMENSION'
-                                && reviewContext.targetId === variety.id
-                              ) && (
-                              <div className="flex shrink-0 items-center gap-2">
-                                {variety.qualityReviewStatus === 'PENDING'
-                                  && variety.status === 'ACTIVE' && (
-                                  <ActionIconButton
-                                    disabled={pending}
-                                    Icon={CircleCheck}
-                                    label={
-                                      'Marquer la variété '
-                                      + variety.name
-                                      + ' comme vérifiée'
-                                    }
-                                    onClick={() => markDimensionReviewed(
-                                      'VARIETY',
-                                      variety,
-                                    )}
-                                    tooltipLabel="Marquer comme vérifiée"
-                                    variant="outline"
-                                  />
-                                )}
-                                <ActionIconButton
-                                  disabled={pending}
-                                  Icon={Pencil}
-                                  label={'Corriger la variété ' + variety.name}
-                                  onClick={() => setEditDimension({
-                                    type: 'VARIETY',
-                                    dimension: variety,
-                                  })}
-                                  tooltipLabel="Corriger"
-                                  variant="outline"
-                                />
-                                {variety.status === 'ACTIVE' && (
-                                  <ActionIconButton
-                                    disabled={pending}
-                                    Icon={Archive}
-                                    label={'Archiver la variété ' + variety.name}
-                                    onClick={() => changeDimensionStatus(
-                                      'VARIETY',
-                                      variety,
-                                      'ARCHIVED',
-                                    )}
-                                    tooltipLabel="Archiver"
-                                    variant="outline"
-                                  />
-                                )}
-                                {variety.status === 'ARCHIVED'
-                                  && product.status === 'ACTIVE' && (
-                                  <ActionIconButton
-                                    disabled={pending}
-                                    Icon={RotateCcw}
-                                    label={'Réactiver la variété ' + variety.name}
-                                    onClick={() => changeDimensionStatus(
-                                      'VARIETY',
-                                      variety,
-                                      'ACTIVE',
-                                    )}
-                                    tooltipLabel="Réactiver"
-                                    variant="outline"
-                                  />
-                                )}
-                                <ActionIconButton
-                                  disabled={pending}
-                                  Icon={Trash2}
-                                  label={'Supprimer la variété ' + variety.name}
-                                  onClick={() => requestDimensionDeletion(
-                                    'VARIETY',
-                                    variety,
-                                  )}
-                                  tooltipLabel="Supprimer"
-                                  variant="outline"
-                                />
-                              </div>
-                            )}
-                          </div>
-
-                          {canManage
-                            && reviewContext?.dataType === 'DIMENSION'
-                            && reviewContext.targetId === variety.id
-                            && (
+                      {filteredVarieties.map((variety) => {
+                        const selected = reviewContext?.dataType === 'DIMENSION'
+                          && reviewContext.targetId === variety.id;
+                        return (
+                          <ProductReferenceDimensionCard
+                            canManage={canManage}
+                            dimension={variety}
+                            dimensionType="VARIETY"
+                            key={variety.id}
+                            onDelete={() => requestDimensionDeletion('VARIETY', variety)}
+                            onEdit={() => setEditDimension({ type: 'VARIETY', dimension: variety })}
+                            onExamine={() => onReviewRequested?.('DIMENSION', variety.id, 'VARIETY')}
+                            onReviewQuality={() => markDimensionReviewed('VARIETY', variety)}
+                            onStatus={(status) => changeDimensionStatus('VARIETY', variety, status)}
+                            pending={pending}
+                            productActive={product.status === 'ACTIVE'}
+                            reviewLoading={reviewLoading}
+                            selected={selected}
+                            statusLabel={getProductStatusLabel(metadata, variety.status)}
+                          >
+                            {selected && (
                               variety.qualityReviewStatus === 'PENDING'
                               || variety.governanceStatus === 'PROVISIONAL'
-                            ) && (
-                            <div className="mt-3 border-t border-border pt-3">
+                            ) && canManage && (
                               <ProductReferenceGovernanceReviewPanel
                                 context={reviewContext}
                                 onApprove={approveReviewTarget}
-                                onEdit={() => setEditDimension({
-                                  type: 'VARIETY',
-                                  dimension: variety,
-                                })}
-                                onMerge={
-                                  reviewContext.type === 'CONTRIBUTION'
-                                    ? mergeReviewTarget
-                                    : undefined
-                                }
-                                onReject={
-                                  reviewContext.type === 'CONTRIBUTION'
-                                    ? rejectReviewTarget
-                                    : undefined
-                                }
+                                onEdit={() => setEditDimension({ type: 'VARIETY', dimension: variety })}
+                                onMerge={reviewContext.type === 'CONTRIBUTION'
+                                  ? mergeReviewTarget : undefined}
+                                onReject={reviewContext.type === 'CONTRIBUTION'
+                                  ? rejectReviewTarget : undefined}
                                 pending={pending}
                               />
-                            </div>
-                          )}
-                        </li>
-                      ))}
+                            )}
+                          </ProductReferenceDimensionCard>
+                        );
+                      })}
                     </ul>
                   )}
                 </section>
@@ -903,196 +770,52 @@ function ProductReferenceDetailsDrawer({
                     </p>
                   ) : (
                     <ul className="space-y-2">
-                      {filteredCharacteristics.map((characteristic) => (
-                        <li
-                          className={
-                            'rounded-lg border px-3 py-2 '
-                            + (
-                              reviewContext?.dataType === 'DIMENSION'
-                              && reviewContext.targetId === characteristic.id
-                                ? 'border-warning/50 bg-warning/5'
-                                : 'border-border'
-                            )
-                          }
-                          key={characteristic.id}
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <p className="truncate font-medium">
-                                {characteristic.name}
-                              </p>
-                              <span className="shrink-0 text-xs text-muted-foreground">
-                                {characteristicKindLabels.get(characteristic.kind)
-                                  ?? characteristic.kind}
-                              </span>
-                              <StatusBadge
-                                className="shrink-0 py-0.5"
-                                tone={getProductStatusTone(characteristic.status)}
-                              >
-                                {getProductStatusLabel(
-                                  metadata,
-                                  characteristic.status,
-                                )}
-                              </StatusBadge>
-                              {characteristic.governanceStatus === 'PROVISIONAL'
-                                && characteristic.status === 'ACTIVE' && canManage && (
-                                <Button
-                                  aria-label={'Examiner l’identité de la caractéristique ' + characteristic.name}
-                                  className="h-7 rounded-md border-warning/60 bg-warning/10 px-2 text-xs text-warning"
-                                  disabled={pending || reviewLoading}
-                                  onClick={() => onReviewRequested?.('DIMENSION', characteristic.id, 'CHARACTERISTIC')}
-                                  size="sm"
-                                  type="button"
-                                  variant="outline"
-                                >
-                                  Identité à examiner
-                                </Button>
-                              )}
-                              {characteristic.qualityReviewStatus === 'PENDING'
-                                && characteristic.status === 'ACTIVE' && (
-                                <StatusBadge
-                                  className="shrink-0 py-0.5"
-                                  tone="warning"
-                                >
-                                  {reviewContext?.dataType === 'DIMENSION'
-                                    && reviewContext.targetId === characteristic.id
-                                    && (reviewContext.candidates ?? []).length > 0
-                                    ? 'Rapprochement à vérifier'
-                                    : 'À contrôler'}
-                                </StatusBadge>
-                              )}
-                              {characteristic.qualityReviewStatus === 'REVIEWED'
-                                && characteristic.status === 'ACTIVE' && (
-                                <StatusBadge
-                                  className="shrink-0 py-0.5"
-                                  tone="success"
-                                >
-                                  Validée
-                                </StatusBadge>
-                              )}
-                            </div>
-                            {canManage
-                              && !(
-                                reviewContext?.dataType === 'DIMENSION'
-                                && reviewContext.targetId === characteristic.id
-                              ) && (
-                              <div className="flex shrink-0 items-center gap-2">
-                                {characteristic.qualityReviewStatus === 'PENDING'
-                                  && characteristic.status === 'ACTIVE' && (
-                                  <ActionIconButton
-                                    disabled={pending}
-                                    Icon={CircleCheck}
-                                    label={
-                                      'Marquer la caractéristique '
-                                      + characteristic.name
-                                      + ' comme vérifiée'
-                                    }
-                                    onClick={() => markDimensionReviewed(
-                                      'CHARACTERISTIC',
-                                      characteristic,
-                                    )}
-                                    tooltipLabel="Marquer comme vérifiée"
-                                    variant="outline"
-                                  />
-                                )}
-                                <ActionIconButton
-                                  disabled={pending}
-                                  Icon={Pencil}
-                                  label={
-                                    'Corriger la caractéristique '
-                                    + characteristic.name
-                                  }
-                                  onClick={() => setEditDimension({
-                                    type: 'CHARACTERISTIC',
-                                    dimension: characteristic,
-                                  })}
-                                  tooltipLabel="Corriger"
-                                  variant="outline"
-                                />
-                                {characteristic.status === 'ACTIVE' && (
-                                  <ActionIconButton
-                                    disabled={pending}
-                                    Icon={Archive}
-                                    label={
-                                      'Archiver la caractéristique '
-                                      + characteristic.name
-                                    }
-                                    onClick={() => changeDimensionStatus(
-                                      'CHARACTERISTIC',
-                                      characteristic,
-                                      'ARCHIVED',
-                                    )}
-                                    tooltipLabel="Archiver"
-                                    variant="outline"
-                                  />
-                                )}
-                                {characteristic.status === 'ARCHIVED'
-                                  && product.status === 'ACTIVE' && (
-                                  <ActionIconButton
-                                    disabled={pending}
-                                    Icon={RotateCcw}
-                                    label={
-                                      'Réactiver la caractéristique '
-                                      + characteristic.name
-                                    }
-                                    onClick={() => changeDimensionStatus(
-                                      'CHARACTERISTIC',
-                                      characteristic,
-                                      'ACTIVE',
-                                    )}
-                                    tooltipLabel="Réactiver"
-                                    variant="outline"
-                                  />
-                                )}
-                                <ActionIconButton
-                                  disabled={pending}
-                                  Icon={Trash2}
-                                  label={
-                                    'Supprimer la caractéristique '
-                                    + characteristic.name
-                                  }
-                                  onClick={() => requestDimensionDeletion(
-                                    'CHARACTERISTIC',
-                                    characteristic,
-                                  )}
-                                  tooltipLabel="Supprimer"
-                                  variant="outline"
-                                />
-                              </div>
+                      {filteredCharacteristics.map((characteristic) => {
+                        const selected = reviewContext?.dataType === 'DIMENSION'
+                          && reviewContext.targetId === characteristic.id;
+                        return (
+                          <ProductReferenceDimensionCard
+                            canManage={canManage}
+                            dimension={characteristic}
+                            dimensionType="CHARACTERISTIC"
+                            kindLabel={characteristicKindLabels.get(characteristic.kind)
+                              ?? characteristic.kind}
+                            key={characteristic.id}
+                            onDelete={() => requestDimensionDeletion('CHARACTERISTIC', characteristic)}
+                            onEdit={() => setEditDimension({
+                              type: 'CHARACTERISTIC', dimension: characteristic,
+                            })}
+                            onExamine={() => onReviewRequested?.(
+                              'DIMENSION', characteristic.id, 'CHARACTERISTIC'
                             )}
-                          </div>
-
-                          {canManage
-                            && reviewContext?.dataType === 'DIMENSION'
-                            && reviewContext.targetId === characteristic.id
-                            && (
+                            onReviewQuality={() => markDimensionReviewed('CHARACTERISTIC', characteristic)}
+                            onStatus={(status) => changeDimensionStatus('CHARACTERISTIC', characteristic, status)}
+                            pending={pending}
+                            productActive={product.status === 'ACTIVE'}
+                            reviewLoading={reviewLoading}
+                            selected={selected}
+                            statusLabel={getProductStatusLabel(metadata, characteristic.status)}
+                          >
+                            {selected && (
                               characteristic.qualityReviewStatus === 'PENDING'
                               || characteristic.governanceStatus === 'PROVISIONAL'
-                            ) && (
-                            <div className="mt-3 border-t border-border pt-3">
+                            ) && canManage && (
                               <ProductReferenceGovernanceReviewPanel
                                 context={reviewContext}
                                 onApprove={approveReviewTarget}
                                 onEdit={() => setEditDimension({
-                                  type: 'CHARACTERISTIC',
-                                  dimension: characteristic,
+                                  type: 'CHARACTERISTIC', dimension: characteristic,
                                 })}
-                                onMerge={
-                                  reviewContext.type === 'CONTRIBUTION'
-                                    ? mergeReviewTarget
-                                    : undefined
-                                }
-                                onReject={
-                                  reviewContext.type === 'CONTRIBUTION'
-                                    ? rejectReviewTarget
-                                    : undefined
-                                }
+                                onMerge={reviewContext.type === 'CONTRIBUTION'
+                                  ? mergeReviewTarget : undefined}
+                                onReject={reviewContext.type === 'CONTRIBUTION'
+                                  ? rejectReviewTarget : undefined}
                                 pending={pending}
                               />
-                            </div>
-                          )}
-                        </li>
-                      ))}
+                            )}
+                          </ProductReferenceDimensionCard>
+                        );
+                      })}
                     </ul>
                   )}
                 </section>

@@ -55,7 +55,11 @@ function ProductReferenceGovernanceReviewPanel({
           onClick={onApprove}
           type="button"
         >
-          Valider
+          {context.dataType === 'DIMENSION'
+            ? context.type === 'CONTRIBUTION'
+              ? 'Approuver l’identité'
+              : 'Confirmer le contrôle qualité'
+            : 'Valider'}
         </Button>
 
         {onMerge && candidates.slice(0, 3).map((candidate) => (

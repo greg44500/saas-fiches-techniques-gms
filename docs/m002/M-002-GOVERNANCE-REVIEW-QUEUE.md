@@ -424,3 +424,10 @@ normalisation et déduplication.
 
 Ils ne sont plus affichés dans le drawer Produit ou dans la file de contrôle,
 sauf futur besoin métier explicitement validé.
+
+
+## Complément de stabilisation UI/UX — 2026-10-23
+
+L'approbation de gouvernance d'une Dimension `PROVISIONAL` est l'unique décision de validation ; elle clôt aussi sa revue qualité. La revue qualité indépendante est désormais réservée aux Dimensions déjà `APPROVED`. L'API rejette la revue isolée des identités provisoires (409). Le drawer présente un statut de validation unique et priorisé ; les cartes Variétés / Caractéristiques réutilisent le menu d'actions commun. Le filtre « À contrôler » local couvre l'union des identités provisoires et revues qualité en attente, sans modifier le compteur qualité historique de la liste de Produits ni la file unifiée Platform.
+
+Les données historiques `PROVISIONAL / REVIEWED` restent examinables grâce au mécanisme de récupération des Contributions orphelines, sans approbation silencieuse.

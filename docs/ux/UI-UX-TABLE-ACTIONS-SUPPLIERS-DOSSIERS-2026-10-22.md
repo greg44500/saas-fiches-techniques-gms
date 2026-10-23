@@ -173,3 +173,14 @@ que de la modale tarifaire avant toute PR.
 - Tests RTL : conserver la validation fonctionnelle précédente et
   vérifier les classes d'animation ; la fluidité visuelle réelle
   doit être contrôlée par l'utilisateur sous Windows.
+
+
+## Complément validé — cartes Dimensions M-002 et validation cohérente (2026-10-23)
+
+- Variétés et Caractéristiques du drawer Application Global : carte homogène, nom et type lisibles, statut de cycle de vie discret et une seule pastille de validation métier.
+- Priorité : identité `PROVISIONAL` → « Identité à valider » ; sinon revue `PENDING` → « Qualité à vérifier » ; sinon identité active approuvée → « Validée ». Une donnée `PROVISIONAL / REVIEWED` n'affiche jamais « Validée ».
+- Une seule décision pour une identité provisoire : « Examiner », puis décision de gouvernance dans le panneau contextuel existant ; approbation et clôture qualité atomiques. Pas de revue qualité parallèle. Pour `APPROVED / PENDING`, action « Confirmer la qualité ».
+- Actions de maintenance regroupées dans le menu `TableRowActionsMenu` réutilisé : Corriger, Archiver/Réactiver et Supprimer ; permissions et confirmations inchangées.
+- Le filtre « À contrôler » local couvre les identités provisoires et les contrôles qualité en attente, sans double comptage. Compteur qualité de la liste Produit et file unifiée Platform non modifiés.
+- Protection backend : refus de la revue qualité isolée sur une Dimension `PROVISIONAL`, avec maintien de l'audit et de la reprise des Contributions historiques.
+- Tests RTL/integration, gate et QA Windows à vérifier. **Aucun résultat local ni gate n'est attesté.**

@@ -59,6 +59,45 @@ beforeEach(async () => {
 });
 
 describe('M-002 unified product review queue', () => {
+    it('refuse la revue qualité isolée d’une identité provisoire', async () => {
+        const reference = await createActiveProductReference({
+            actorId: ownerContext.owner._id,
+            name: 'Produit identité à approuver',
+        });
+        const created = await submitReferenceContribution({
+            workspaceId: ownerContext.workspace._id,
+            actorId: ownerContext.owner._id,
+            type: 'CHARACTERISTIC',
+            productId: reference.product._id,
+            characteristicKind: PRODUCT_CHARACTERISTIC_KIND.QUALITY_DESIGNATION,
+            value: 'Qualité avant gouvernance',
+        });
+
+        await expect(markProductDimensionReviewed({
+            actorId: ownerContext.owner._id,
+            productId: reference.product._id,
+            type: 'CHARACTERISTIC',
+            dimensionId: created.provisionalReference.id,
+        })).rejects.toMatchObject({ statusCode: 409 });
+
+        const unchanged = await ProductCharacteristic.findById(
+            created.provisionalReference.id,
+        );
+        expect(unchanged.governanceStatus).toBe('PROVISIONAL');
+        expect(unchanged.qualityReviewStatus).toBe('PENDING');
+
+        await reviewReferenceContribution({
+            contributionId: created.contribution.id,
+            actorId: ownerContext.owner._id,
+            decision: 'APPROVE',
+        });
+        const approved = await ProductCharacteristic.findById(
+            created.provisionalReference.id,
+        );
+        expect(approved.governanceStatus).toBe('APPROVED');
+        expect(approved.qualityReviewStatus).toBe('REVIEWED');
+    });
+
     it('répare le contrôle d’une Caractéristique provisoire déjà vérifiée sans la valider automatiquement', async () => {
         const reference = await createActiveProductReference({
             actorId: ownerContext.owner._id,
@@ -74,12 +113,11 @@ describe('M-002 unified product review queue', () => {
         });
         expect(created.classification).toBe('PROVISIONAL');
 
-        await markProductDimensionReviewed({
-            actorId: ownerContext.owner._id,
-            productId: reference.product._id,
-            type: 'CHARACTERISTIC',
-            dimensionId: created.provisionalReference.id,
-        });
+        // Simuler une donnée historique contrôlée avant l'approbation.
+        await ProductCharacteristic.updateOne(
+            { _id: created.provisionalReference.id },
+            { $set: { qualityReviewStatus: 'REVIEWED' } },
+        );
         await ReferenceContribution.deleteOne({ _id: created.contribution.id });
 
         const args = {

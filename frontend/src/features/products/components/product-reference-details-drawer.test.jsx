@@ -304,12 +304,19 @@ describe('ProductReferenceDetailsDrawer', () => {
       onReviewRequested,
     });
 
-    expect(screen.getByRole('button', { name: 'À contrôler (0)' }))
+    expect(screen.getByRole('button', { name: 'À contrôler (1)' }))
       .toBeInTheDocument();
     const identityButton = screen.getByRole('button', {
       name: 'Examiner l’identité de la caractéristique Individuel',
     });
     expect(identityButton).toBeVisible();
+    expect(screen.getByText('Identité à valider')).toBeInTheDocument();
+    expect(screen.queryByText('Validée')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: /Confirmer le contrôle qualité de la caractéristique Individuel/,
+    })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'À contrôler (1)' }));
+    expect(screen.getByText('Individuel')).toBeInTheDocument();
     await user.click(identityButton);
     expect(onReviewRequested).toHaveBeenCalledWith(
       'DIMENSION',
@@ -607,10 +614,10 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     const target = screen.getByText('Rouge du Roussillon').closest('li');
     expect(target).not.toBeNull();
-    expect(within(target).getByText('À contrôler')).toBeInTheDocument();
+    expect(within(target).getByText('Qualité à vérifier')).toBeInTheDocument();
 
     await user.click(within(target).getByRole('button', {
-      name: 'Valider',
+      name: 'Confirmer le contrôle qualité',
     }));
 
     expect(mocks.reviewDimension).toHaveBeenCalledWith({
@@ -647,13 +654,13 @@ describe('ProductReferenceDetailsDrawer', () => {
       initialTab: 'dimensions',
     });
 
-    expect(screen.getAllByText('À contrôler')).toHaveLength(2);
+    expect(screen.getAllByText('Qualité à vérifier')).toHaveLength(2);
 
     const varietyRow = screen.getByText('Rouge du Roussillon').closest('li');
     expect(varietyRow).not.toBeNull();
 
     await user.click(within(varietyRow).getByRole('button', {
-      name: 'Marquer la variété Rouge du Roussillon comme vérifiée',
+      name: 'Confirmer le contrôle qualité de la variété Rouge du Roussillon',
     }));
 
     expect(mocks.reviewDimension).toHaveBeenCalledWith({
@@ -671,8 +678,9 @@ describe('ProductReferenceDetailsDrawer', () => {
     });
 
     await user.click(screen.getByRole('button', {
-      name: 'Supprimer la caractéristique Côte',
+      name: 'Actions de la caractéristique Côte',
     }));
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
 
     expect(screen.getByRole('heading', {
       name: 'Supprimer cette valeur ?',

@@ -504,3 +504,14 @@ L'administration du Produit conserve ses quatre onglets : Produit, Dimensions, R
 En particulier, l'approbation d'une Dimension liée ne promeut jamais automatiquement une Référence encore `PROVISIONAL` : cette dernière requiert sa propre décision explicite de Contribution, même lorsque tous ses prérequis deviennent approuvés.
 
 Dans l'onglet Dimensions, l'état de revue qualité conserve son compteur propre. Une identité de Dimension encore `PROVISIONAL` est signalée séparément par l'action « Identité à examiner », même lorsque la revue qualité vaut `REVIEWED`. Cette action cible la Contribution de gouvernance et fonctionne indépendamment du filtre qualité.
+
+
+### Avenant UI/UX — décision de validation unique pour les Dimensions (2026-10-23)
+
+- Pour une Variété ou Caractéristique `PROVISIONAL`, une revue qualité isolée ne peut plus être déclenchée : le contrôle d'identité par la Contribution existante est le seul parcours de validation. L'API de revue qualité renvoie un conflit (409) sur une identité provisoire ; une décision `APPROVE` fait passer transactionnellement l'identité à `APPROVED` et la revue qualité à `REVIEWED` (comportement backend déjà présent).
+- Les valeurs historiques `PROVISIONAL / REVIEWED` conservent une décision de gouvernance à réaliser. Le lien de Contribution orphelin demeure récupérable par le service idempotent ; aucune approbation automatique.
+- Pour une Dimension `APPROVED / PENDING`, seul le contrôle qualité reste nécessaire, sans deuxième gouvernance. Décisions et audits restent individuels.
+- Dans le drawer Dimensions, une seule pastille de validation priorisée apparaît : « Identité à valider » si provisoire, sinon « Qualité à vérifier » si qualité en attente, sinon « Validée » si active. Le statut d'utilisation reste distinct et discret.
+- Le filtre local « À contrôler » inclut toute Dimension active `PROVISIONAL` ou `PENDING` (union sans doublons). Le compteur de revue qualité de la liste principale des Produits conserve son contrat historique ; la file Platform unifiée conserve ses propres règles.
+- Les Variétés et Caractéristiques utilisent la même carte ; l'action principale « Examiner » ouvre la gouvernance ; « Confirmer la qualité » termine une revue seule lorsque l'identité est approuvée. Corriger, Archiver/Réactiver et Supprimer restent dans le menu commun, selon permissions.
+- Aucun modèle, rôle, capability, quota, snapshot M-004 ou primitive Core ne change. Tests frontend/backend, QA visuelle et gate à confirmer localement avant PR.
