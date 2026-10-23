@@ -555,7 +555,13 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(within(workflow).getByRole('button', {
       name: 'Masquer le contrôle de Présentation Individuel',
     })).toBeInTheDocument();
-    await user.click(within(workflow).getAllByRole('button', { name: 'Valider' })[0]);
+    // La validation finale de la Référence reste bloquée tant que
+    // sa Caractéristique provisoire n'est pas approuvée.
+    expect(within(workflow).getByRole('button', { name: 'Valider' }))
+      .toBeDisabled();
+    await user.click(within(workflow).getByRole('button', {
+      name: 'Approuver l’identité',
+    }));
     expect(mocks.reviewContribution).toHaveBeenCalledWith({
       contributionId: 'contribution-dimension',
       decision: 'APPROVE',
@@ -835,25 +841,48 @@ describe('ProductReferenceDetailsDrawer', () => {
     })).not.toBeInTheDocument();
   });
 
-  it('expose les actions du drawer sous forme de boutons icônes accessibles', async () => {
+  it('expose les actions des Dimensions dans des menus accessibles et conserve les boutons des Références', async () => {
     const user = userEvent.setup();
     renderDrawer();
 
     await user.click(screen.getByRole('tab', { name: 'Dimensions (4)' }));
 
-    expect(screen.getByRole('button', {
-      name: 'Corriger la variété Bergeron',
+    const varietyTrigger = screen.getByRole('button', {
+      name: 'Actions de la variété Bergeron',
+    });
+    expect(varietyTrigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(varietyTrigger);
+    const varietyActions = screen.getByRole('group', {
+      name: 'Actions de la variété Bergeron',
+    });
+    expect(within(varietyActions).getByRole('button', {
+      name: 'Corriger',
     })).toBeInTheDocument();
-    expect(screen.getByRole('button', {
-      name: 'Archiver la variété Bergeron',
+    expect(within(varietyActions).getByRole('button', {
+      name: 'Archiver',
     })).toBeInTheDocument();
+    expect(within(varietyActions).getByRole('button', {
+      name: 'Supprimer',
+    })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
     await user.click(screen.getByRole('button', {
       name: 'Archivées (1)',
     }));
-    expect(screen.getByRole('button', {
-      name: 'Réactiver la caractéristique Rouge',
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la caractéristique Rouge',
+    }));
+    const archivedActions = screen.getByRole('group', {
+      name: 'Actions de la caractéristique Rouge',
+    });
+    expect(within(archivedActions).getByRole('button', {
+      name: 'Réactiver',
     })).toBeInTheDocument();
+    expect(within(archivedActions).queryByRole('button', {
+      name: 'Archiver',
+    })).not.toBeInTheDocument();
 
+    await user.keyboard('{Escape}');
     await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
 
     expect(screen.getByRole('button', {
