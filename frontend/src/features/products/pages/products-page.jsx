@@ -59,6 +59,7 @@ import {
 } from '@/features/products/lib/product-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
+import { useTableViewport } from '@/hooks/use-table-viewport';
 
 const ALL_CATEGORIES = '__ALL__';
 const ALL_CONSERVATION_TYPES = '__ALL_CONSERVATION_TYPES__';
@@ -106,6 +107,20 @@ function ProductsPage() {
     page,
     limit: pageSize,
   });
+  const viewport = useTableViewport({
+    dependency: scope + ':' + String(productsQuery.isLoading) + ':'
+      + String(productsQuery.isError) + ':' + (productsQuery.data?.results?.length ?? 0),
+  });
+
+  function changePage(nextPage) {
+    setPage(nextPage);
+    viewport.resetScroll();
+  }
+
+  function changePageSize(nextSize) {
+    setPageSize(nextSize);
+    viewport.resetScroll();
+  }
   const [attachVariant, attachState] = useAttachProductVariantMutation();
   const [archiveVariant, archiveState] = useArchiveProductVariantMutation();
 
@@ -154,6 +169,7 @@ function ProductsPage() {
 
 
   function runSearch(nextSearch) {
+    viewport.resetScroll();
     setPage(1);
     setSearch(nextSearch.trim());
   }
@@ -162,6 +178,7 @@ function ProductsPage() {
     setSearchInput(value);
 
     if (!value.trim() && search) {
+      viewport.resetScroll();
       setPage(1);
       setSearch('');
     }
@@ -182,6 +199,7 @@ function ProductsPage() {
     );
 
     setSearchInput(nextSearch);
+    viewport.resetScroll();
     setPage(1);
     setSearch(nextSearch);
 
@@ -195,6 +213,7 @@ function ProductsPage() {
   }
 
   function changeScope(nextScope) {
+    viewport.resetScroll();
     setScope(nextScope);
     setPage(1);
   }
@@ -395,7 +414,7 @@ function ProductsPage() {
         </TabsList>
       </Tabs>
 
-      <section className="rounded-xl border border-border bg-card">
+      <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex flex-col gap-3 border-b border-border p-4 md:flex-row md:items-center">
           <form className="flex min-w-0 flex-1 gap-2" onSubmit={applySearch}>
             <div className="min-w-0 flex-1">
@@ -433,6 +452,7 @@ function ProductsPage() {
               items={categoryItems}
               onValueChange={(value) => {
                 setCategoryId(value);
+                viewport.resetScroll();
                 setPage(1);
               }}
               value={categoryId}
@@ -455,6 +475,7 @@ function ProductsPage() {
               items={conservationItems}
               onValueChange={(value) => {
                 setConservationType(value);
+                viewport.resetScroll();
                 setPage(1);
               }}
               value={conservationType}
@@ -483,34 +504,46 @@ function ProductsPage() {
           />
         ) : (
           <>
-            <DataTable
-              caption={scope === 'WORKSPACE' ? 'Favoris Produits' : 'Tous les Produits'}
-              columns={columns}
-              data={results}
-              emptyContent={(
-                <EmptyState
-                  className="p-0"
-                  description={
-                    search
-                    || categoryId !== ALL_CATEGORIES
-                    || conservationType !== ALL_CONSERVATION_TYPES
-                      ? 'Modifiez la recherche ou les filtres pour élargir les résultats.'
-                      : scope === 'WORKSPACE'
-                        ? 'Ajoutez des Produits depuis l’onglet Tous les produits.'
-                        : 'Aucune référence n’est disponible avec ces critères.'
-                  }
-                  title="Aucune référence à afficher"
-                />
-              )}
-              getRowKey={(result) => result.variant?.id ?? result.product.id + '-root'}
-              rowClassName="transition-colors hover:bg-muted/50"
-            />
-            <div className="px-5 pb-5">
+            <div
+              aria-label={scope === 'WORKSPACE'
+                ? 'Lignes des Produits favoris'
+                : 'Lignes de tous les Produits'}
+              className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+              ref={viewport.ref}
+              role="region"
+              style={{ height: viewport.height }}
+              tabIndex={0}
+            >
+              <DataTable
+                  caption={scope === 'WORKSPACE' ? 'Favoris Produits' : 'Tous les Produits'}
+                columns={columns}
+                data={results}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description={
+                      search
+                      || categoryId !== ALL_CATEGORIES
+                      || conservationType !== ALL_CONSERVATION_TYPES
+                        ? 'Modifiez la recherche ou les filtres pour élargir les résultats.'
+                        : scope === 'WORKSPACE'
+                          ? 'Ajoutez des Produits depuis l’onglet Tous les produits.'
+                          : 'Aucune référence n’est disponible avec ces critères.'
+                    }
+                    title="Aucune référence à afficher"
+                  />
+                )}
+                getRowKey={(result) => result.variant?.id ?? result.product.id + '-root'}
+                headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+            </div>
+            <div className="border-t border-border px-5 pb-5">
               <DataPagination
                 ariaLabel="Pagination des Produits"
                 disabled={productsQuery.isFetching}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
+                onPageChange={changePage}
+                onPageSizeChange={changePageSize}
                 page={page}
                 pageSize={pageSize}
                 pagination={productsQuery.data?.pagination}

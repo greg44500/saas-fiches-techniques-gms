@@ -77,6 +77,7 @@ import {
   useWorkspaceContext,
 } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
+import { useTableViewport } from '@/hooks/use-table-viewport';
 
 const ALL_SUPPLIER_STATUSES = 'ALL';
 
@@ -203,6 +204,26 @@ function SuppliersPage() {
     && hasFeature(SUPPLIER_CAPABILITY.CATALOG_IMPORT)
   );
 
+  const currentQuery = section === 'suppliers'
+    ? supplierQuery
+    : section === 'articles'
+      ? articleQuery
+      : catalogQuery;
+  const viewport = useTableViewport({
+    dependency: [section, currentQuery.isLoading, currentQuery.isError,
+      currentQuery.data?.pagination?.total, currentQuery.data?.pagination?.page].join(':'),
+  });
+
+  function changePage(nextPage) {
+    setPage(nextPage);
+    viewport.resetScroll();
+  }
+
+  function changePageSize(nextPageSize) {
+    setPageSize(nextPageSize);
+    viewport.resetScroll();
+  }
+
   // La recherche interroge le serveur plutôt que la seule page affichée.
   useEffect(() => {
     const nextSearch = searchInput.trim();
@@ -210,14 +231,16 @@ function SuppliersPage() {
 
     const timeoutId = window.setTimeout(() => {
       setPage(1);
+      viewport.resetScroll();
       setSearch(nextSearch);
     }, 300);
 
     return () => window.clearTimeout(timeoutId);
-  }, [searchInput, search, setPage]);
+  }, [searchInput, search, setPage, viewport.resetScroll]);
 
   function changeSection(nextSection) {
     setPage(1);
+    viewport.resetScroll();
     if (nextSection !== 'articles') setArticleSupplierId(null);
 
     if (
@@ -234,6 +257,7 @@ function SuppliersPage() {
   }
 
   function changeStatus(nextStatus) {
+    viewport.resetScroll();
     setPage(1);
     setStatus(nextStatus);
   }
@@ -563,12 +587,6 @@ function SuppliersPage() {
     },
   ];
 
-  const currentQuery = section === 'suppliers'
-    ? supplierQuery
-    : section === 'articles'
-      ? articleQuery
-      : catalogQuery;
-
   useEffect(() => {
     const totalPages = currentQuery.data?.pagination?.totalPages;
 
@@ -639,7 +657,7 @@ function SuppliersPage() {
         </TabsList>
       </Tabs>
 
-      <section className="rounded-xl border border-border bg-card">
+      <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex flex-col gap-3 border-b border-border p-5 md:flex-row md:items-center">
           {(section === 'suppliers' || section === 'articles') && (
             <div className="w-full min-w-0 md:flex-1">
@@ -662,6 +680,7 @@ function SuppliersPage() {
               <SupplierArticleSupplierFilter
                 onChange={(supplierId) => {
                   setPage(1);
+                  viewport.resetScroll();
                   setArticleSupplierId(supplierId);
                 }}
                 value={articleSupplierId}
@@ -713,54 +732,72 @@ function SuppliersPage() {
           />
         ) : (
           <>
-            {section === 'suppliers' ? (
-              <DataTable
-                caption="Fournisseurs de l’espace de travail"
-                columns={supplierColumns}
-                data={suppliers}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucun Fournisseur ne correspond aux critères."
-                    title="Aucun Fournisseur"
-                  />
-                )}
-                getRowKey={(supplier) => supplier.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
-            ) : section === 'articles' ? (
-              <DataTable
-                caption="Articles fournisseur"
-                columns={articleColumns}
-                data={articleQuery.data?.articles ?? []}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucun Article fournisseur ne correspond aux critères."
-                    title="Aucun Article"
-                  />
-                )}
-                getRowKey={(article) => article.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
-            ) : (
-              <DataTable
-                caption="Catalogues fournisseurs"
-                columns={catalogColumns}
-                data={catalogQuery.data?.catalogs ?? []}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucun catalogue fournisseur n’est disponible."
-                    title="Aucun catalogue"
-                  />
-                )}
-                getRowKey={(catalog) => catalog.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
-            )}
+            <div
+              aria-label={
+                section === 'suppliers'
+                  ? 'Lignes des Fournisseurs'
+                  : section === 'articles'
+                    ? 'Lignes des Articles fournisseur'
+                    : 'Lignes des Catalogues fournisseur'
+              }
+              className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+              ref={viewport.ref}
+              role="region"
+              style={{ height: viewport.height }}
+              tabIndex={0}
+            >
+              {section === 'suppliers' ? (
+                <DataTable
+                  caption="Fournisseurs de l’espace de travail"
+                  columns={supplierColumns}
+                  data={suppliers}
+                  emptyContent={(
+                    <EmptyState
+                      className="p-0"
+                      description="Aucun Fournisseur ne correspond aux critères."
+                      title="Aucun Fournisseur"
+                    />
+                  )}
+                  getRowKey={(supplier) => supplier.id}
+                  headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                  rowClassName="transition-colors hover:bg-muted/50"
+                />
+              ) : section === 'articles' ? (
+                <DataTable
+                  caption="Articles fournisseur"
+                  columns={articleColumns}
+                  data={articleQuery.data?.articles ?? []}
+                  emptyContent={(
+                    <EmptyState
+                      className="p-0"
+                      description="Aucun Article fournisseur ne correspond aux critères."
+                      title="Aucun Article"
+                    />
+                  )}
+                  getRowKey={(article) => article.id}
+                  headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                  rowClassName="transition-colors hover:bg-muted/50"
+                />
+              ) : (
+                <DataTable
+                  caption="Catalogues fournisseurs"
+                  columns={catalogColumns}
+                  data={catalogQuery.data?.catalogs ?? []}
+                  emptyContent={(
+                    <EmptyState
+                      className="p-0"
+                      description="Aucun catalogue fournisseur n’est disponible."
+                      title="Aucun catalogue"
+                    />
+                  )}
+                  getRowKey={(catalog) => catalog.id}
+                  headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                  rowClassName="transition-colors hover:bg-muted/50"
+                />
+              )}
+            </div>
 
-            <div className="px-5 pb-5">
+            <div className="border-t border-border px-5 pb-5">
               <DataPagination
                 ariaLabel={
                   section === 'suppliers'
@@ -770,8 +807,8 @@ function SuppliersPage() {
                       : 'Pagination des catalogues fournisseurs'
                 }
                 disabled={currentQuery.isFetching}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
+                onPageChange={changePage}
+                onPageSizeChange={changePageSize}
                 page={page}
                 pageSize={pageSize}
                 pagination={currentQuery.data?.pagination}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Hauteur disponible entre la première ligne d'un tableau métier et le bas
@@ -30,9 +30,9 @@ function useTableViewport({
     return () => window.removeEventListener('resize', measure);
   }, [active, dependency, reservedBottom]);
 
-  function resetScroll() {
+  const resetScroll = useCallback(() => {
     if (ref.current) ref.current.scrollTop = 0;
-  }
+  }, []);
 
   return { ref, height, resetScroll };
 }

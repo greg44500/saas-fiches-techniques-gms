@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -195,6 +195,55 @@ describe('ProductsPage', () => {
       isLoading: false,
       refetch: vi.fn(),
     });
+  });
+
+  it('fixe en-tête et pagination sous les commandes du Référentiel et des Favoris', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    for (const [tab, label] of [
+      ['Tous les produits (1)', 'Lignes de tous les Produits'],
+      ['Favoris (1)', 'Lignes des Produits favoris'],
+    ]) {
+      await user.click(screen.getByRole('tab', { name: tab }));
+      const region = screen.getByRole('region', { name: label });
+      expect(region).toHaveClass('overflow-auto');
+      expect(region).toHaveAttribute('tabindex', '0');
+      expect(within(region).getByRole('columnheader', { name: 'Produit' })
+        .closest('thead')).toHaveClass('sticky', 'top-0');
+      expect(screen.getByRole('combobox', { name: 'Filtrer par catégorie' }))
+        .toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: 'Filtrer par conservation' }))
+        .toBeInTheDocument();
+
+      const pagination = screen.getByRole('navigation', { name: 'Pagination des Produits' });
+      expect(region.contains(pagination)).toBe(false);
+      expect(within(pagination).getByRole('combobox', {
+        name: 'Nombre de lignes par page',
+      })).toBeInTheDocument();
+    }
+  });
+
+  it('pagine les Produits côté serveur sans déplacer la pagination dans les lignes', async () => {
+    const user = userEvent.setup();
+    mocks.searchQuery.mockImplementation(({ page, limit }) => ({
+      data: {
+        results: [result],
+        pagination: { page, limit, total: 25, totalPages: 3 },
+      },
+      isError: false, isFetching: false, isLoading: false, refetch: vi.fn(),
+    }));
+
+    renderPage();
+    const pagination = screen.getByRole('navigation', { name: 'Pagination des Produits' });
+    await user.click(within(pagination).getByRole('button', { name: 'Suivant' }));
+    expect(mocks.searchQuery).toHaveBeenCalledWith(expect.objectContaining({
+      scope: 'REFERENCE',
+      page: 2,
+      limit: 10,
+    }));
+    expect(screen.getByRole('region', { name: 'Lignes de tous les Produits' }))
+      .toBeInTheDocument();
   });
 
   it('affiche Produit, Conservation et Actions sans bruit secondaire', () => {
