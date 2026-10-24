@@ -107,7 +107,14 @@ function SupplierArticleSearchAutocomplete({
     term,
   ]);
 
-  function updateSearch(nextValue) {
+  function updateSearch(nextValue, eventDetails) {
+    // Fermer les suggestions avec Échap ne retire pas l'Article déjà choisi.
+    // Base UI émet aussi onValueChange lors de cette touche.
+    if (selectedArticle && eventDetails?.reason === 'escape-key') {
+      eventDetails.cancel();
+      return;
+    }
+
     setSearch(nextValue);
     if (selectedArticle && nextValue !== getSupplierArticleChoiceLabel(selectedArticle)) {
       ignoreExternalReset.current = true;
