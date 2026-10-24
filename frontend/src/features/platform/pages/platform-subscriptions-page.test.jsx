@@ -152,7 +152,8 @@ describe('PlatformSubscriptionsPage', () => {
     renderPage();
 
     await user.click(screen.getByRole('button', { name: 'Accorder un trial' }));
-    const trialDrawer = screen.getByRole('dialog', { name: 'Accorder un trial' });
+    // L'ouverture du drawer est différée au frame suivant par EntityDetailsDrawer.
+    const trialDrawer = await screen.findByRole('dialog', { name: 'Accorder un trial' });
     await chooseSelectOption(user, within(trialDrawer), 'Périodicité', 'Annuelle');
     await user.click(within(trialDrawer).getByRole('button', { name: 'Accorder le trial' }));
 
