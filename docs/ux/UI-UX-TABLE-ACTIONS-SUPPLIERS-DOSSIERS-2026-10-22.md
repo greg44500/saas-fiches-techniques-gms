@@ -226,3 +226,12 @@ que de la modale tarifaire avant toute PR.
 - La page Produits applique exactement la même règle aux onglets `Tous les produits` et `Favoris`. Le champ de recherche prédictive et les filtres Catégorie/Conservation restent visibles. Le panneau détail, les favoris, les capabilities et les permissions ne sont pas modifiés.
 - Aucun nouvel endpoint, changement d'autorisation, mutation métier ni pagination doublonnée. Le composant `DataPagination` n'affiche pas de navigation si la requête n'a aucun résultat ; une erreur de chargement conserve son état `ErrorState` au lieu d'afficher des contrôles factices.
 - La hauteur utilise la fenêtre courante et réserve l'espace nécessaire au footer. Les tests RTL vérifient les en-têtes sticky, les zones de lignes et la pagination disponible indépendamment du scroll ; tests local Windows et QA visuelle (hauteur réduite, menus de dernière ligne, changement de filtres et taille de page) restent requis.
+
+
+## Finition UI/UX — barre compacte du Dossier (2026-10-24)
+
+- L'en-tête Dossier regroupe retour, nom et statut, marge cible et recherche Article fournisseur ; les deux cartes à hauteur fixe disparaissent. Sur écran étroit, les commandes passent à la ligne sans masquer les fonctions.
+- Les coordonnées existantes (localisation, interlocuteur, e-mail documentaire, téléphone) sont consultables via survol/focus du nom (Tooltip) et clic sur l'information (Popover) pour l'accès tactile/clavier.
+- Champ de recherche compact visible, élargi au focus sur écran large (animation réduite selon `prefers-reduced-motion`) ; recherche prédictive, contrôle des droits, fallback sur les Références du Dossier et filtres serveur inchangés.
+- Après sélection seulement, panneau flottant de résultat : montant HT, source, alerte tarif expiré, chargement et erreur conservés. Fermeture au clic hors panneau, par bouton ou Échap sans effacer l'Article ; réouverture au focus de recherche.
+- Aucun changement API, Core, DB, permissions, capabilities ni quota. Tests RTL préparés ; tests locaux PowerShell, lint/build, gate et QA visuelle encore à confirmer. Ni PR ni merge avant accord explicite.
