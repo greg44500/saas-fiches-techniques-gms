@@ -403,6 +403,8 @@ const copyTechnicalSheet = async ({
                     source._id.toString(),
                 sourceDossierId:
                     source.dossier.toString(),
+                sourceRangeId: source.range?.toString() ?? null,
+                copiedRangeId: copiedRangeId?.toString() ?? null,
                 rangeNotCopiedReason,
             },
             session,

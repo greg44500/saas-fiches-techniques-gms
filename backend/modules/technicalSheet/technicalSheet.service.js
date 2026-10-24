@@ -175,6 +175,7 @@ const createTechnicalSheet = async ({
             technicalSheetId: sheet._id,
             metadata: {
                 draftId: draft._id.toString(),
+                rangeId: data.rangeId ?? null,
             },
             session,
         });

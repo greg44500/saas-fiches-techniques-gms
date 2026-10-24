@@ -464,11 +464,13 @@ nettoyage d'autres modules ou migration du `foodRange` M-002.
 8. Une seule PR pour le lot cohérent, Core Gate PR, merge autorisé par
    l'utilisateur, contrôle post-merge, documentation de clôture.
 
-La branche existe déjà. Elle inclut uniquement la correction ciblée du
-test frontend de trial liée à la Core Gate #231 et sa documentation dans
-`docs/DEBT.md`. Cette correction ne modifie pas le code de production et
-a été déclarée verte lors d'un `npm run release:check` local par
-l'utilisateur ; aucune gate GitHub de la future PR n'est encore attestée.
+La branche existe déjà. Outre la correction ciblée du test de trial
+et sa documentation dans `docs/DEBT.md`, elle comporte désormais
+l'implémentation des Gammes, les tests et les migrations du lot.
+La `release:check` verte rapportée par l'utilisateur **précédait**
+ces changements métier : elle ne les valide donc pas. Les tests
+et la gate du nouveau HEAD doivent être exécutés localement ;
+aucune gate GitHub de la future PR n'est encore attestée.
 
 ## 17. Approbation globale obtenue et conditions de livraison
 
