@@ -1,10 +1,11 @@
-import { Archive, Pencil, RotateCcw, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Archive, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { useCallback, useState } from 'react';
 
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { DataTable } from '@/components/data-display/data-table';
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ import {
 } from '@/features/technical-sheets/lib/technical-sheet-presentation';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
+import { TechnicalSheetRangeSearch } from '@/features/technical-sheets/components/technical-sheet-range-search';
 
 function TechnicalSheetRangesPage() {
   const { workspace, can } = useWorkspaceContext();
@@ -32,6 +34,7 @@ function TechnicalSheetRangesPage() {
   const canManage = can(TECHNICAL_SHEET_PERMISSION.RANGE_MANAGE);
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
   const [name, setName] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [search, setSearch] = useState('');
@@ -48,6 +51,10 @@ function TechnicalSheetRangesPage() {
   const [transitionRange, transitionState] = useChangeTechnicalSheetRangeStatusMutation();
   const [deleteRange, deleteState] = useDeleteTechnicalSheetRangeMutation();
   const busy = createState.isLoading || renameState.isLoading || transitionState.isLoading || deleteState.isLoading;
+  const handleSearchChange = useCallback((nextSearch) => {
+    setSearch(nextSearch);
+    setPage(1);
+  }, [setPage]);
 
   async function submit() {
     if (!name.trim() || busy) return;
@@ -64,6 +71,7 @@ function TechnicalSheetRangesPage() {
       toast({ title: editing ? 'Gamme renommée' : 'Gamme créée', variant: 'success' });
       setEditing(null);
       setName('');
+      setFormOpen(false);
     } catch (failure) {
       setError(getTechnicalSheetApiErrorMessage(failure, 'La Gamme n’a pas pu être enregistrée.'));
     }
@@ -130,7 +138,12 @@ function TechnicalSheetRangesPage() {
           actions={[
             ...(range.status === 'ACTIVE' ? [{
               key: 'rename', Icon: Pencil, label: 'Renommer',
-              disabled: busy, onClick: () => { setEditing(range); setName(range.name); setError(''); },
+              disabled: busy, onClick: () => {
+                setEditing(range);
+                setName(range.name);
+                setFormOpen(true);
+                setError('');
+              },
             }] : []),
             {
               key: 'status',
@@ -151,14 +164,37 @@ function TechnicalSheetRangesPage() {
 
   return (
     <section className="space-y-5">
-      <header>
-        <h1 className="text-2xl font-semibold">Gammes de Fiches techniques</h1>
-        <p className="text-sm text-muted-foreground">
-          Référentiel commun au Workspace. Les Fiches restent propres à chaque Dossier.
-        </p>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">Gamme de produits finis</h1>
+          <InfoTooltip
+            label="À propos des gammes de produits finis"
+            content="Regroupez vos fiches par activité (snacking, traiteur, pâtisserie…). Les mêmes noms de gammes sont disponibles dans vos différents magasins, mais chaque magasin conserve ses propres fiches."
+          />
+        </div>
+        {canManage && (
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setName('');
+              setError('');
+              setFormOpen(true);
+            }}
+            size="sm"
+            type="button"
+          >
+            <Plus aria-hidden="true" className="size-4" />
+            Créer une gamme
+          </Button>
+        )}
       </header>
 
-      {canManage && (
+      {!canManage && (
+        <p className="text-sm text-muted-foreground">
+          Vous pouvez consulter les gammes. Leur création et leur gestion nécessitent une autorisation.
+        </p>
+      )}
+      {canManage && formOpen && (
         <div className="space-y-2 rounded-xl border border-border bg-card p-4">
           <label className="text-sm font-medium" htmlFor="range-name">
             {editing ? 'Renommer la gamme' : 'Nouvelle gamme'}
@@ -176,7 +212,7 @@ function TechnicalSheetRangesPage() {
             {editing && (
               <Button
                 disabled={busy}
-                onClick={() => { setEditing(null); setName(''); setError(''); }}
+                onClick={() => { setEditing(null); setName(''); setError(''); setFormOpen(false); }}
                 type="button"
                 variant="outline"
               >Annuler</Button>
@@ -191,13 +227,11 @@ function TechnicalSheetRangesPage() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3">
-        <Input
-          aria-label="Rechercher une gamme"
-          className="max-w-sm"
-          onChange={(event) => { setSearch(event.target.value); setPage(1); }}
-          placeholder="Rechercher une gamme…"
-          value={search}
+      <div className="flex flex-wrap items-center gap-2">
+        <TechnicalSheetRangeSearch
+          workspaceId={workspace.id}
+          status={status}
+          onSearchChange={handleSearchChange}
         />
         <Select
           items={[
@@ -211,7 +245,7 @@ function TechnicalSheetRangesPage() {
           }}
           value={status || 'all'}
         >
-          <SelectTrigger aria-label="Filtrer les gammes par statut">
+          <SelectTrigger aria-label="Filtrer les gammes par statut" className="w-40 sm:w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -229,6 +263,11 @@ function TechnicalSheetRangesPage() {
             aria-label="Gammes de Fiches techniques"
             columns={columns}
             data={query.data?.ranges ?? []}
+            emptyContent={query.isFetching
+              ? 'Chargement des gammes…'
+              : search.trim()
+                ? 'Aucune gamme ne correspond à la recherche.'
+                : 'Aucune gamme enregistrée.'}
             getRowKey={(range) => range.id}
           />
           <div className="p-4">
