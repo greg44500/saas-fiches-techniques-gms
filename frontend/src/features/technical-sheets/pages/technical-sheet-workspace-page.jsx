@@ -1590,6 +1590,13 @@ function TechnicalSheetWorkspacePage() {
         onClose={() => setCopyOpen(false)}
         onCopied={(result) => {
           setCopyOpen(false);
+          if (result.rangeNotCopiedReason === 'ARCHIVED') {
+            toast({
+              title: 'Fiche copiée avec succès',
+              description: 'La Gamme d’origine est archivée : la copie est sans gamme.',
+              variant: 'success',
+            });
+          }
           navigate(
             '/workspaces/' + workspace.id
             + '/dossiers/' + result.sheet.dossierId

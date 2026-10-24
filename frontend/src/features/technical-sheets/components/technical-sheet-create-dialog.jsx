@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { TechnicalSheetRangePicker } from '@/features/technical-sheets/components/technical-sheet-range-picker';
 import {
   useCreateTechnicalSheetMutation,
   useGetTechnicalSheetMetadataQuery,
@@ -35,6 +36,7 @@ import {
 
 function TechnicalSheetCreateDialog({
   defaultTargetMarginBasisPoints,
+  canManageRanges = false,
   dossierId,
   onClose,
   onCreated,
@@ -43,6 +45,7 @@ function TechnicalSheetCreateDialog({
 }) {
   const cancelRef = useRef(null);
   const [name, setName] = useState('');
+  const [rangeId, setRangeId] = useState(null);
   const [description, setDescription] = useState('');
   const [productionQuantity, setProductionQuantity] = useState('');
   const [productionUnit, setProductionUnit] = useState('');
@@ -74,6 +77,7 @@ function TechnicalSheetCreateDialog({
   useEffect(() => {
     if (!open) return;
     setName('');
+    setRangeId(null);
     setDescription('');
     setProductionQuantity('');
     setProductionUnit('');
@@ -169,6 +173,7 @@ function TechnicalSheetCreateDialog({
         workspaceId,
         dossierId,
         name: normalizedName,
+        rangeId,
         description: description.trim() || null,
         productionQuantity: normalizedQuantity,
         productionUnit,
@@ -229,6 +234,14 @@ function TechnicalSheetCreateDialog({
                 value={name}
               />
             </Field>
+
+            <TechnicalSheetRangePicker
+              canCreate={canManageRanges}
+              disabled={createState.isLoading}
+              onChange={setRangeId}
+              value={rangeId}
+              workspaceId={workspaceId}
+            />
 
             <div className="grid gap-3 sm:grid-cols-2">
               <Field>

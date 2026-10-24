@@ -1,5 +1,6 @@
 import {
   Plus,
+  Tags,
   Search,
   WandSparkles,
 } from 'lucide-react';
@@ -29,6 +30,7 @@ import {
   useGetDossierTechnicalSheetSettingsQuery,
   useGetTechnicalSheetCapacityQuery,
   useGetTechnicalSheetMetadataQuery,
+  useListTechnicalSheetRangesQuery,
   useListTechnicalSheetsQuery,
   useStartTechnicalSheetDraftMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
@@ -38,6 +40,10 @@ import {
 import {
   TechnicalSheetRowActions,
 } from '@/features/technical-sheets/components/technical-sheet-row-actions';
+import { TechnicalSheetRangeAssignmentDialog } from '@/features/technical-sheets/components/technical-sheet-range-assignment-dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import {
   TechnicalSheetPreviewDialog,
 } from '@/features/technical-sheets/components/technical-sheet-preview-dialog';
@@ -75,6 +81,9 @@ function TechnicalSheetsPage() {
     workspace,
   } = useWorkspaceContext();
   const [search, setSearch] = useState('');
+  const [rangeFilter, setRangeFilter] = useState('all');
+  const [rangeSearch, setRangeSearch] = useState('');
+  const [sheetToClassify, setSheetToClassify] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [optimizerPickerOpen, setOptimizerPickerOpen] = useState(false);
   const [optimizerOpeningSheetId, setOptimizerOpeningSheetId] = useState(null);
@@ -99,6 +108,11 @@ function TechnicalSheetsPage() {
     page,
     limit: pageSize,
     search: search.trim() || undefined,
+    rangeId: rangeFilter === 'all' ? undefined : rangeFilter,
+  });
+  const rangesQuery = useListTechnicalSheetRangesQuery({
+    workspaceId: workspace.id, page: 1, limit: 100,
+    search: rangeSearch.trim() || undefined,
   });
   const viewport = useTableViewport({
     dependency: listQuery.data?.sheets?.length,
@@ -345,6 +359,16 @@ function TechnicalSheetsPage() {
       ),
     },
     {
+      id: 'range',
+      header: 'Gamme',
+      cell: (sheet) => (
+        <span>
+          {sheet.range?.name ?? 'Sans gamme'}
+          {sheet.range?.status === 'ARCHIVED' ? ' (archivée)' : ''}
+        </span>
+      ),
+    },
+    {
       id: 'editorialState',
       header: 'État',
       cell: (sheet) => {
@@ -406,6 +430,8 @@ function TechnicalSheetsPage() {
           <TechnicalSheetRowActions
             sheet={sheet}
             canModify={canModify}
+            canAssign={canModify && operational && sheet.status === 'ACTIVE'}
+            onAssign={() => setSheetToClassify(sheet)}
             canOptimize={canOptimize && sheet.status === 'ACTIVE'}
             canDelete={canDelete && sheet.status === 'ACTIVE'}
             hasValidatedState={hasValidatedState}
@@ -436,6 +462,19 @@ function TechnicalSheetsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {can(TECHNICAL_SHEET_PERMISSION.READ) && (
+            <Button
+              onClick={() => navigate(
+                '/workspaces/' + workspace.id + '/technical-sheets/ranges'
+              )}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Tags aria-hidden="true" className="size-4" />
+              Gérer les gammes
+            </Button>
+          )}
           {canOptimize && (
             <Button
               disabled={
@@ -502,6 +541,49 @@ function TechnicalSheetsPage() {
 
       <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
         <div className="border-b border-border p-4">
+          <div className="flex flex-wrap gap-2">
+            <div className="min-w-48 max-w-xl flex-1">
+              <Input
+                aria-label="Rechercher une gamme pour le filtre"
+                onChange={(event) => setRangeSearch(event.target.value)}
+                placeholder="Chercher une gamme…"
+                value={rangeSearch}
+              />
+            </div>
+            <Select
+              items={[
+                { value: 'all', label: 'Toutes les gammes' },
+                { value: 'unassigned', label: 'Sans gamme' },
+                ...(rangesQuery.data?.ranges ?? []).map((range) => ({
+                  value: range.id, label: range.name,
+                })),
+              ]}
+              onValueChange={(next) => {
+                setRangeFilter(next);
+                setPage(1);
+                viewport.resetScroll();
+              }}
+              value={rangeFilter}
+            >
+              <SelectTrigger aria-label="Filtrer les Fiches par gamme" className="min-w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les gammes</SelectItem>
+                <SelectItem value="unassigned">Sans gamme</SelectItem>
+                {(rangesQuery.data?.ranges ?? []).map((range) => (
+                  <SelectItem key={range.id} value={range.id}>
+                    {range.name}{range.status === 'ARCHIVED' ? ' (archivée)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {rangesQuery.isError && (
+            <p role="alert" className="text-sm text-destructive">
+              Impossible de charger le filtre des Gammes.
+            </p>
+          )}
           <div className="relative max-w-xl">
             <Search
               aria-hidden="true"
@@ -583,7 +665,22 @@ function TechnicalSheetsPage() {
         />
       )}
 
+      {sheetToClassify && (
+        <TechnicalSheetRangeAssignmentDialog
+          canManage={can(TECHNICAL_SHEET_PERMISSION.RANGE_MANAGE)}
+          dossierId={dossierId}
+          onClose={() => setSheetToClassify(null)}
+          onUpdated={() => {
+            setSheetToClassify(null);
+            toast({ title: 'Gamme de la Fiche mise à jour', variant: 'success' });
+          }}
+          sheet={sheetToClassify}
+          workspaceId={workspace.id}
+        />
+      )}
+
       <TechnicalSheetCreateDialog
+        canManageRanges={can(TECHNICAL_SHEET_PERMISSION.RANGE_MANAGE)}
         defaultTargetMarginBasisPoints={
           defaultTargetMarginBasisPoints
         }
