@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
@@ -43,7 +43,9 @@ function DossierApplicablePriceCard({
   const { can } = useWorkspaceContext();
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [resultVisible, setResultVisible] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const searchContainerRef = useRef(null);
+  const searchInputRef = useRef(null);
   const pricingMetadataQuery =
     useGetSupplierPricingMetadataQuery(
       { workspaceId, dossierId },
@@ -96,26 +98,44 @@ function DossierApplicablePriceCard({
   const showResult = Boolean(selectedArticle) && resultVisible;
 
   useEffect(() => {
-    if (!showResult) return undefined;
+    if (searchExpanded) searchInputRef.current?.focus();
+  }, [searchExpanded]);
+
+  useEffect(() => {
+    if (!searchExpanded) return undefined;
+
     function onOutsidePointer(event) {
-      if (!searchContainerRef.current?.contains(event.target)) {
+      // Les suggestions de l'Article sont rendues dans un Portal.
+      if (
+        searchContainerRef.current?.contains(event.target)
+        || event.target.closest?.('[data-supplier-article-suggestions]')
+      ) return;
+      setResultVisible(false);
+      setSearchExpanded(false);
+    }
+
+    function onEscape(event) {
+      if (event.key !== 'Escape') return;
+      if (showResult) {
         setResultVisible(false);
+      } else {
+        setSearchExpanded(false);
       }
     }
-    function onEscape(event) {
-      if (event.key === 'Escape') setResultVisible(false);
-    }
+
     document.addEventListener('pointerdown', onOutsidePointer);
     document.addEventListener('keydown', onEscape);
     return () => {
       document.removeEventListener('pointerdown', onOutsidePointer);
       document.removeEventListener('keydown', onEscape);
     };
-  }, [showResult]);
+  }, [searchExpanded, showResult]);
 
   return (
     <div
-      className="relative w-full"
+      className={searchExpanded
+        ? 'relative w-[min(22rem,calc(100vw-3rem))] shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none'
+        : 'relative w-10 shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none'}
       ref={searchContainerRef}
       onFocusCapture={(event) => {
         if (selectedArticle && event.target.getAttribute('role') === 'combobox') {
@@ -126,19 +146,32 @@ function DossierApplicablePriceCard({
         if (event.key === 'Escape' && selectedArticle) setResultVisible(false);
       }}
     >
-      <SupplierArticleSearchAutocomplete
-        ariaLabel="Article fournisseur à vérifier"
-        fallbackArticles={fallbackArticles}
-        onSelect={chooseArticle}
-        selectedArticle={selectedArticle}
-        serverSearch={can(SUPPLIER_PERMISSION.ARTICLE_READ)}
-        workspaceId={workspaceId}
-      />
+      {searchExpanded ? (
+        <SupplierArticleSearchAutocomplete
+          ariaLabel="Article fournisseur à vérifier"
+          fallbackArticles={fallbackArticles}
+          inputRef={searchInputRef}
+          onSelect={chooseArticle}
+          selectedArticle={selectedArticle}
+          serverSearch={can(SUPPLIER_PERMISSION.ARTICLE_READ)}
+          workspaceId={workspaceId}
+        />
+      ) : (
+        <Button
+          aria-label="Rechercher un Article fournisseur"
+          onClick={() => setSearchExpanded(true)}
+          size="icon"
+          type="button"
+          variant="outline"
+        >
+          <Search aria-hidden="true" className="size-4" />
+        </Button>
+      )}
       {showResult && (
         <section
           aria-label="Résultat du prix applicable"
           aria-live="polite"
-          className="absolute right-0 top-full z-[var(--layer-flyout)] mt-2 w-[min(26rem,calc(100vw-2rem))] rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-lg"
+          className="absolute left-0 top-full z-[var(--layer-flyout)] mt-2 w-[min(26rem,calc(100vw-2rem))] rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-lg"
         >
           <div className="mb-2 flex items-start justify-between gap-2">
             <div className="flex items-center gap-2">
