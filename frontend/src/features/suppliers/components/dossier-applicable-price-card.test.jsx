@@ -269,20 +269,36 @@ describe('DossierApplicablePriceCard', () => {
     const trigger = screen.getByRole('button', {
       name: 'Rechercher un Article fournisseur',
     });
-    expect(screen.queryByPlaceholderText("Rechercher le prix d'un article"))
-      .not.toBeInTheDocument();
+    const collapsedInput = screen.getByPlaceholderText(
+      "Rechercher le prix d'un article",
+    );
+    expect(collapsedInput).toBeInTheDocument();
+    expect(collapsedInput.closest('[aria-hidden="true"]'))
+      .toHaveAttribute('inert');
+    expect(screen.queryByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    })).not.toBeInTheDocument();
     await user.click(trigger);
     const input = screen.getByRole('combobox', {
       name: 'Article fournisseur à vérifier',
     });
     expect(input).toHaveFocus();
-    expect(input.closest('[data-slot="dossier-price-search"]'))
-      .toHaveClass('transition-[width]');
+    const container = input.closest('[data-slot="dossier-price-search"]');
+    expect(container).toHaveClass(
+      'transition-[width]',
+      'duration-300',
+      'w-[min(22rem,calc(100vw-3rem))]',
+    );
+    expect(input.closest('[aria-hidden="true"]')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Extérieur' }));
     expect(screen.getByRole('button', {
       name: 'Rechercher un Article fournisseur',
     })).toBeInTheDocument();
+    expect(container).toHaveClass('w-10', 'transition-[width]', 'duration-300');
+    // Le champ reste monté pendant la fermeture pour assurer l'animation retour.
+    expect(input).toBeInTheDocument();
+    expect(input.closest('[aria-hidden="true"]')).toHaveAttribute('inert');
     expect(screen.queryByRole('combobox', {
       name: 'Article fournisseur à vérifier',
     })).not.toBeInTheDocument();
@@ -322,5 +338,29 @@ describe('DossierApplicablePriceCard', () => {
     expect(screen.getByRole('region', {
       name: 'Résultat du prix applicable',
     })).toBeInTheDocument();
+  });
+
+  it('replie le champ par Échap en rendant le focus à la loupe', async () => {
+    const user = userEvent.setup();
+    render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
+    await user.click(screen.getByRole('button', {
+      name: 'Rechercher un Article fournisseur',
+    }));
+    const input = screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    });
+    expect(input).toHaveFocus();
+    await user.keyboard('{Escape}');
+    const trigger = screen.getByRole('button', {
+      name: 'Rechercher un Article fournisseur',
+    });
+    expect(trigger).toHaveFocus();
+    expect(trigger.closest('[data-slot="dossier-price-search"]')).toHaveClass(
+      'w-10',
+      'transition-[width]',
+      'duration-300',
+    );
+    expect(input).toBeInTheDocument();
+    expect(input.closest('[aria-hidden="true"]')).toHaveAttribute('inert');
   });
 });
