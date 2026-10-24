@@ -37,6 +37,7 @@ function SupplierArticleSearchAutocomplete({
   ariaLabel,
   excludedIds = [],
   fallbackArticles = [],
+  inputRef = null,
   onSelect,
   placeholder = 'Rechercher un Article fournisseur…',
   selectedArticle = null,
@@ -148,6 +149,7 @@ function SupplierArticleSearchAutocomplete({
         />
         <AutocompleteInput
           aria-label={ariaLabel}
+          ref={inputRef}
           className="h-10"
           maxLength={120}
           placeholder={placeholder}
@@ -158,7 +160,7 @@ function SupplierArticleSearchAutocomplete({
       </AutocompleteInputGroup>
       <AutocompletePortal>
         <AutocompletePositioner className="z-[calc(var(--layer-modal)_+_1)]">
-          <AutocompletePopup>
+          <AutocompletePopup data-supplier-article-suggestions>
             <AutocompleteStatus>
               {loading
                 ? 'Recherche des Articles en cours'
