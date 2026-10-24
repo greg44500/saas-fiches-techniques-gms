@@ -4,6 +4,28 @@
 **Dernière mise à jour :** 2026-10-16  
 **Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
 
+
+### CI-GMS-231 — Attente asynchrone du drawer Trial (2026-10-24)
+
+**Statut : EN COURS — test et gate à valider localement, puis sur la prochaine PR Produit.**
+La Core Gate post-merge de la PR #49 (commit `ac0145b`, run
+[40098823819](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40098823819))
+a échoué sur 1 test frontend sur 1 374 : le test d'accord de trial Platform
+recherchait immédiatement le dialogue alors que `EntityDetailsDrawer` ouvre son
+`Sheet` après un `requestAnimationFrame`. La gate de PR #49 était verte et le
+code du test identique entre Core et Produit ; l'intermittence est fortement
+suspectée, sans preuve de reproduction systématique.
+
+**Exception Produit volontaire et limitée au test** : attente via
+`screen.findByRole('dialog', { name: 'Accorder un trial' })`, sans changement de
+production, d'API, d'animation ni de primitive Core. À vérifier en répétitions
+ciblées puis via `npm run release:check` et la Core Gate de la prochaine PR.
+Écart temporaire avec le test hérité du Core à réévaluer lors d'une maintenance
+Core groupée ultérieure ; ne pas lancer de cycle de synchronisation Core
+isolé pour ce seul cas.
+
+---
+
 ### Audit BRIDOR 43279 reçu le 2026-10-22 — racine identifiée, QA à confirmer
 
 Constat en base de développement : une preuve humaine valide de 36 pièces (conditionnement Article `0,120 KG × 36`) ne correspondait pas littéralement à la signature du tarif historique (`120 G × 36`) alors que leur contenu physique est identique. Tarif historique de 6,50 € / colis ; repli global de 0,20 € / pièce ; brouillon encore stocké `NO_PRICE`. Correctif sans migration : comparaison physique exacte des signatures conservées ; contrôle inchangé des réels changements de contenu/Produit. Tests unitaires et HTTP ajoutés, à exécuter localement. Vérifier après pull et audit que le Tarif fournisseur redevient applicable, puis cliquer « Actualiser les coûts » sur la Fiche brouillon. **Ne pas modifier le tarif ou les snapshots en base ; ne pas renouveler la preuve des 36 pièces.**
