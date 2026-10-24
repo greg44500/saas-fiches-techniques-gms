@@ -9,6 +9,9 @@ import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   useChangeTechnicalSheetRangeStatusMutation,
   useCreateTechnicalSheetRangeMutation,
   useDeleteTechnicalSheetRangeMutation,
@@ -196,16 +199,27 @@ function TechnicalSheetRangesPage() {
           placeholder="Rechercher une gamme…"
           value={search}
         />
-        <select
-          aria-label="Filtrer les gammes par statut"
-          className="rounded-md border border-border bg-background px-3 text-sm"
-          onChange={(event) => { setStatus(event.target.value); setPage(1); }}
-          value={status}
+        <Select
+          items={[
+            { value: 'all', label: 'Toutes' },
+            { value: 'ACTIVE', label: 'Actives' },
+            { value: 'ARCHIVED', label: 'Archivées' },
+          ]}
+          onValueChange={(next) => {
+            setStatus(next === 'all' ? '' : next);
+            setPage(1);
+          }}
+          value={status || 'all'}
         >
-          <option value="">Toutes</option>
-          <option value="ACTIVE">Actives</option>
-          <option value="ARCHIVED">Archivées</option>
-        </select>
+          <SelectTrigger aria-label="Filtrer les gammes par statut">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes</SelectItem>
+            <SelectItem value="ACTIVE">Actives</SelectItem>
+            <SelectItem value="ARCHIVED">Archivées</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {query.isError && <p role="alert">Impossible de charger les Gammes.</p>}
