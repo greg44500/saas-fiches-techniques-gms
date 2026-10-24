@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   rename: vi.fn(),
   changeStatus: vi.fn(),
   remove: vi.fn(),
+  suggest: vi.fn(),
   toast: vi.fn(),
 }));
 
@@ -40,6 +41,10 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
     isFetching: false,
   }),
   useCreateTechnicalSheetRangeMutation: () => [mocks.create, { isLoading: false }],
+  useGetTechnicalSheetRangeSuggestionsQuery: (args, options) => (
+    options.skip ? { currentData: null, isError: false, isFetching: false }
+      : mocks.suggest(args)
+  ),
   useUpdateTechnicalSheetRangeMutation: () => [mocks.rename, { isLoading: false }],
   useChangeTechnicalSheetRangeStatusMutation: () => [mocks.changeStatus, { isLoading: false }],
   useDeleteTechnicalSheetRangeMutation: () => [mocks.remove, { isLoading: false }],
@@ -59,6 +64,12 @@ describe('M-004 Gammes — gestion Workspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.can.mockReturnValue(true);
+    mocks.suggest.mockReturnValue({
+      currentData: { exactMatch: null, candidates: [] },
+      isError: false,
+      isFetching: false,
+      refetch: vi.fn(),
+    });
     for (const action of [mocks.create, mocks.rename, mocks.changeStatus, mocks.remove]) {
       action.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({}) });
     }
@@ -81,11 +92,15 @@ describe('M-004 Gammes — gestion Workspace', () => {
     renderPage();
     expect(screen.queryByLabelText('Nouvelle gamme')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Créer une gamme' }));
-    await user.type(screen.getByLabelText('Nouvelle gamme'), 'Pâtisserie');
-    await user.click(screen.getByRole('button', { name: 'Créer la gamme' }));
-    expect(mocks.create).toHaveBeenCalledWith({
-      workspaceId: 'workspace-1',
-      name: 'Pâtisserie',
+    expect(await screen.findByRole('dialog', { name: 'Créer une gamme' })).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: 'Nom de la gamme' }), 'Pâtisserie');
+    await user.click(await screen.findByRole('button', { name: 'Créer la gamme' }));
+    await waitFor(() => {
+      expect(mocks.create).toHaveBeenCalledWith({
+        workspaceId: 'workspace-1',
+        name: 'Pâtisserie',
+        reviewedCandidateIds: [],
+      });
     });
   });
 

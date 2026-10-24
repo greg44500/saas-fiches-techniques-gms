@@ -85,6 +85,82 @@ describe('M-004 Gammes — HTTP, permissions et isolation', () => {
         expect(restored.body.data.range.status).toBe('ACTIVE');
     });
 
+
+    it('propose les doublons et les noms proches, archivés compris, avant la création', async () => {
+        const base = (await request(app).post(rangesPath())
+            .set(bearer(owner.token)).send({ name: 'Snacking' }).expect(201)).body.data.range;
+
+        const suggestions = await request(app)
+            .get(rangesPath() + '/suggestions')
+            .query({ name: 'Snackin' })
+            .set(bearer(owner.token)).expect(200);
+        expect(suggestions.body.data.suggestions).toMatchObject({
+            exactMatch: null,
+            candidates: [expect.objectContaining({ id: base.id, name: 'Snacking' })],
+        });
+
+        await request(app).post(rangesPath())
+            .set(bearer(owner.token)).send({ name: 'Snackin' }).expect(409);
+        const distinct = await request(app).post(rangesPath())
+            .set(bearer(owner.token)).send({
+                name: 'Snackin', reviewedCandidateIds: [base.id],
+            }).expect(201);
+        expect(distinct.body.data.range.name).toBe('Snackin');
+
+        const identical = await request(app)
+            .get(rangesPath() + '/suggestions')
+            .query({ name: ' SNACKING ' })
+            .set(bearer(owner.token)).expect(200);
+        expect(identical.body.data.suggestions.exactMatch)
+            .toMatchObject({ id: base.id, name: 'Snacking' });
+
+        await request(app).post(rangesPath())
+            .set(bearer(owner.token)).send({
+                name: 'SNACKING', reviewedCandidateIds: [base.id],
+            }).expect(409);
+    });
+
+    it('ne compare les suggestions qu’aux Gammes du Workspace autorisé', async () => {
+        const foreign = await createWorkspaceOwnerFixture();
+        const foreignUrl = '/api/workspaces/' + foreign.workspace._id
+            + '/technical-sheets/ranges';
+
+        await request(app).post(foreignUrl)
+            .set(bearer(foreign.token)).send({ name: 'Boulangerie' }).expect(201);
+
+        const ours = await request(app)
+            .get(rangesPath() + '/suggestions')
+            .query({ name: 'Boulangerie' })
+            .set(bearer(owner.token)).expect(200);
+        expect(ours.body.data.suggestions)
+            .toEqual({ exactMatch: null, candidates: [] });
+
+        await request(app).get(foreignUrl + '/suggestions')
+            .query({ name: 'Boulangerie' })
+            .set(bearer(owner.token)).expect(403);
+    });
+
+    it('propose aussi une Gamme archivée et vérifie les noms lors du renommage', async () => {
+        const range = (await request(app).post(rangesPath())
+            .set(bearer(owner.token)).send({ name: 'Traiteur' }).expect(201)).body.data.range;
+        await request(app).post(rangesPath() + '/' + range.id + '/archive')
+            .set(bearer(owner.token)).send({ expectedRevision: range.revision })
+            .expect(200);
+        const candidates = await request(app).get(rangesPath() + '/suggestions')
+            .query({ name: 'Traiteurr' }).set(bearer(owner.token)).expect(200);
+        expect(candidates.body.data.suggestions.candidates).toContainEqual(
+            expect.objectContaining({ id: range.id, status: 'ARCHIVED' }),
+        );
+
+        const editable = (await request(app).post(rangesPath())
+            .set(bearer(owner.token)).send({ name: 'Charcuterie' }).expect(201)).body.data.range;
+        const response = await request(app).patch(rangesPath() + '/' + editable.id)
+            .set(bearer(owner.token)).send({
+                expectedRevision: editable.revision, name: 'Traiteurr',
+            }).expect(409);
+        expect(response.body.status).not.toBe('success');
+    });
+
     it('classe une Fiche sans générer de brouillon supplémentaire ni nouveau quota', async () => {
         const range = (await request(app).post(rangesPath())
             .set(bearer(owner.token)).send({ name: 'Snacking' }).expect(201)).body.data.range;

@@ -5,6 +5,7 @@ import {
     createRangeSchema,
     deleteRangeSchema,
     rangeListQuerySchema,
+    rangeSuggestionsQuerySchema,
 } from '../../../modules/technicalSheet/technicalSheetRange.validation.js';
 import { normalizeRangeName } from '../../../modules/technicalSheet/technicalSheetRange.service.js';
 
@@ -21,6 +22,17 @@ describe('M-004 Gammes — entrées strictes et normalisation', () => {
         expect(createRangeSchema.safeParse({ name: '  ' }).success).toBe(false);
         expect(createRangeSchema.safeParse({ name: 'a'.repeat(101) }).success).toBe(false);
         expect(createRangeSchema.safeParse({ name: 'Snacking', dossierId: rangeId }).success).toBe(false);
+    });
+
+    it('valide la confirmation des suggestions et filtre les propriétés inattendues', () => {
+        expect(createRangeSchema.parse({ name: 'Snacking' }))
+            .toEqual({ name: 'Snacking', reviewedCandidateIds: [] });
+        expect(createRangeSchema.safeParse({
+            name: 'Snacking', reviewedCandidateIds: ['incorrect'],
+        }).success).toBe(false);
+        expect(rangeSuggestionsQuerySchema.safeParse({ name: '' }).success).toBe(false);
+        expect(rangeSuggestionsQuerySchema.parse({ name: 'Traiteur' }).name)
+            .toBe('Traiteur');
     });
 
     it('accepte Sans gamme mais refuse les identifiants invalides', () => {
