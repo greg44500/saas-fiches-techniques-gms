@@ -1,6 +1,32 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 ## État courant — M-004 Gammes, 2026-10-24
 
+### Reprise QA interface Gammes — 2026-10-24
+
+Après revue des captures utilisateurs : positionnement initial sous
+« Dossiers » inadapté à un référentiel global. La navigation du Produit
+place désormais « Gammes de produits finis » au même niveau que Produits
+et Fournisseurs. L'écran utilise le titre « Gamme de produits finis »,
+une aide accessible via l'icône (i) sans jargon technique, la recherche
+prédictive et animée avec les primitives Autocomplete existantes et
+un filtre de statut réduit sur la même ligne. Un bouton explicite
+« Créer une gamme » ouvre l'édition si le rôle dispose de
+`technical-sheet:range:manage`. Lecture seule sinon ; aucun contournement
+RBAC. Le bouton « Créer une Fiche technique » reste dans chaque Dossier,
+car une Fiche dépend toujours d'un magasin.
+
+**Vigilance pour la QA Windows** : si l'Owner voit la liste mais pas
+« Créer une gamme », vérifier l'exécution de
+`npm run migration:m004-ranges` sur la base de développement puis
+rafraîchir la session et les permissions effectives. Ne pas accorder
+manuellement des droits à tous les membres.
+
+Tests modifiés : composition navigation, page Gammes, prédiction Autocomplete
+et E2E. Ces tests n'ont **pas** encore été exécutés sur ce HEAD ;
+aucune PR, aucun merge.
+
+---
+
 Branche de développement : `feature/m004-gammes-fiches-techniques`, issue
 du merge de la PR Produit #49 (`ac0145bd`). Contrat global des Gammes
 explicitement approuvé le 2026-10-24 : G1 = B, G2 = A. Document canonique :

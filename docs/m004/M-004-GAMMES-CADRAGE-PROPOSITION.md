@@ -485,3 +485,33 @@ aucune gate GitHub de la future PR n'est encore attestée.
 - **Livraison conditionnelle** : migration, vérification fonctionnelle
   et sécurité, QA locale, `npm run release:check` puis PR unique.
   Aucun merge sans accord explicite du propriétaire du produit.
+
+## 18. Précisions d'ergonomie décidées pendant la recette (2026-10-24)
+
+À la suite des captures et de la recette visuelle du propriétaire produit :
+
+- Le libellé visible dans la navigation est **« Gammes de produits finis »**,
+  au premier niveau de l'espace de travail, au même rang que Produits
+  et Fournisseurs, et non dans le sous-menu Dossiers.
+- Le titre de page visible est **« Gamme de produits finis »**. La portée
+  et l'intérêt du classement sont expliqués dans une infobulle activable
+  au survol et au clavier via l'icône d'information déjà partagée.
+  Aucun terme technique comme « Workspace » ou « référentiel » dans cette aide.
+- Le filtre de statut réduit apparaît à côté d'une loupe de recherche.
+  Cliquer sur cette loupe déploie le champ avec une transition fluide.
+  La recherche propose, au fur et à mesure de la frappe, les Gammes
+  existantes, à partir du point de lecture sécurisé du Workspace ;
+  ne pas créer de deuxième moteur de recherche générique.
+- **« Créer une gamme »** est une action clairement identifiable pour
+  les rôles autorisés ; l'édition est cachée en lecture seule.
+  La nouvelle permission propriétaire doit être attribuée aux rôles
+  système persistés via la migration M-004.
+- La **création d'une Fiche technique** demeure propre à un Dossier et
+  n'est pas accessible depuis la page d'administration des Gammes,
+  puisqu'elle nécessite un magasin de destination.
+- Réutiliser shadcn/Base UI et les composants partagés du SaaS.
+  La validation du nouveau code nécessite tests RTL, E2E et
+  `npm run release:check` exécutés réellement sur la branche.
+
+Ces précisions de présentation ne modifient ni l'ownership des Gammes,
+ni G1/G2, ni le stockage, les droits, les quotas ou les exports.
