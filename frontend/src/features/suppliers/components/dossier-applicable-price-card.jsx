@@ -133,6 +133,7 @@ function DossierApplicablePriceCard({
 
   return (
     <div
+      data-slot="dossier-price-search"
       className={searchExpanded
         ? 'relative w-[min(22rem,calc(100vw-3rem))] shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none'
         : 'relative w-10 shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none'}
