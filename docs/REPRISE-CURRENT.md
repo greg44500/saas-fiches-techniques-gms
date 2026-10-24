@@ -1,8 +1,8 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 
-## Complément du 24 octobre 2026 — barre compacte du Dossier
+## Complément du 24 octobre 2026 — barre compacte du Dossier (QA mise à jour)
 
-L'en-tête du Dossier regroupe retour, titre/statut, marge cible et recherche d'Article fournisseur dans une barre compacte ; plus de grandes cartes fixes. Coordonnées accessibles au survol/focus du titre et dans un Popover cliquable. Après sélection, le résultat du prix s'affiche sans agrandir la page dans un panneau contextuel fermable, en conservant les autorisations, la source et les alertes. Code et tests RTL modifiés sur la branche UI/UX ; tests, lint/build, gate et QA Windows non attestés, aucune PR/merge. D-008 Core et audit M-001 restent différés.
+L'en-tête regroupe retour, titre/statut, marge cible et recherche d'Article fournisseur, sans grandes cartes fixes. Suite au retour QA, **le nom du Dossier est l'unique bouton ouvrant les coordonnées au clic/clavier** : plus d'infobulle au survol ni d'icône d'information supplémentaire. La recherche est immédiatement après la marge et **réellement réduite à une loupe seule au repos**, avant déploiement animé et focus. Le résultat du prix et les règles de sélection restent conservés, avec repli sans effacement lors d'un clic extérieur. Tests RTL ajustés, mais tests, lint/build, gate et QA Windows du nouveau HEAD non attestés ; aucune PR/merge. D-008 Core et audit M-001 restent différés.
 
 
 ## Lot UI/UX transversal — en recette locale
