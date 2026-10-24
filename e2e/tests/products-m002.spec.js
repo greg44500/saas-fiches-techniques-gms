@@ -5,7 +5,8 @@ import { expect, test } from '@playwright/test';
 import { createActiveProductReference } from '../../backend/tests/helpers/productCatalogTest.fixtures.js';
 import { createWorkspaceVariant } from '../../backend/modules/productCatalog/productCatalog.service.js';
 import { submitReferenceContribution } from '../../backend/modules/productCatalog/productReferenceContribution.service.js';
-import { markProductDimensionReviewed } from '../../backend/modules/productCatalog/productReferenceReview.service.js';
+import { ProductCharacteristic } from '../../backend/modules/productCatalog/productCharacteristic.model.js';
+import { ProductVariant } from '../../backend/modules/productCatalog/productVariant.model.js';
 import { ReferenceContribution } from '../../backend/modules/productCatalog/referenceContribution.model.js';
 import { Workspace } from '../../backend/modules/workspace/workspace.model.js';
 import { withE2eDatabase } from '../support/dossier-fixtures.js';
@@ -73,6 +74,31 @@ async function createGlobalReferenceForMerge(
 }
 
 
+async function findReviewQueueRow(page, name) {
+  const table = page.getByRole('table', { name: 'Données Produit à contrôler' });
+  await expect(table).toBeVisible();
+  const row = table.getByRole('row').filter({ hasText: name });
+  const navigation = page.getByRole('navigation', {
+    name: 'Pagination des données à contrôler',
+  });
+  // Parcours des pages : la base E2E peut contenir des Contributions précédentes.
+  for (let visited = 0; visited < 100; visited += 1) {
+    if (await row.count()) {
+      await expect(row).toBeVisible();
+      return row;
+    }
+    const next = navigation.getByRole('button', { name: 'Suivant' });
+    if (!(await next.count()) || await next.isDisabled()) break;
+    const match = (await navigation.innerText()).match(/Page (\d+) sur (\d+)/);
+    if (!match) throw new Error('Pagination M-002 introuvable.');
+    const current = Number(match[1]);
+    if (current >= Number(match[2])) break;
+    await next.click();
+    await expect(navigation).toContainText('Page ' + (current + 1) + ' sur');
+  }
+  throw new Error('Contribution E2E absente de la file paginée : ' + name);
+}
+
 test('M-002 la correction de référence conserve les actions visibles sur un écran bas', async ({ page }) => {
   await loginWithIdentity(page, E2E_FOUNDER);
   await page.goto('/product-reference');
@@ -133,6 +159,8 @@ test('M-002 contrôle guidé : la Dimension vérifiée mais provisoire se valide
   const suffix = randomUUID().replaceAll('-', '').slice(0, 8);
   const productName = `Produit contrôle guidé ${suffix}`;
   const referenceName = `Référence contrôle guidé ${suffix}`;
+  let characteristicId;
+  let variantId;
 
   await withE2eDatabase(async () => {
     const owner = await Workspace.findById(workspace.workspaceId);
@@ -164,12 +192,13 @@ test('M-002 contrôle guidé : la Dimension vérifiée mais provisoire se valide
       },
     });
     expect(created.classification).toBe('PROVISIONAL');
-    await markProductDimensionReviewed({
-      actorId,
-      productId: reference.product._id,
-      type: 'CHARACTERISTIC',
-      dimensionId: dimension.provisionalReference.id,
-    });
+    characteristicId = dimension.provisionalReference.id;
+    variantId = created.variant.id;
+    // Simuler une revue qualité historique sans approbation de gouvernance.
+    await ProductCharacteristic.updateOne(
+      { _id: dimension.provisionalReference.id },
+      { $set: { qualityReviewStatus: 'REVIEWED' } },
+    );
     await ReferenceContribution.deleteOne({ _id: dimension.contribution.id });
   });
 
@@ -222,16 +251,43 @@ test('M-002 contrôle guidé : la Dimension vérifiée mais provisoire se valide
     name: 'Masquer le contrôle de Désignation de qualité Individuel',
   })).toBeVisible();
 
-  const approveButtons = workflow.getByRole('button', { name: 'Valider', exact: true });
-  await expect(approveButtons).toHaveCount(2);
-  await approveButtons.first().click();
-  await expectVisibleToast(page, 'Dimension validée');
+  // Deux décisions distinctes : « Approuver » la Dimension provisoire,
+  // puis seulement « Valider » la Référence lorsque ses dépendances le permettent.
+  const approveDimension = workflow.getByRole('button', {
+    name: 'Approuver',
+    exact: true,
+  });
+  const validateReference = workflow.getByRole('button', {
+    name: 'Valider',
+    exact: true,
+  });
+  await expect(approveDimension).toHaveCount(1);
+  await expect(approveDimension).toBeEnabled();
+  await expect(validateReference).toHaveCount(1);
+  await expect(validateReference).toBeDisabled();
 
-  await expect(workflow.getByText('Les identités associées sont validées.')).toBeVisible();
-  await expect(workflow.getByRole('button', { name: 'Valider', exact: true }))
-    .toBeEnabled();
-  await workflow.getByRole('button', { name: 'Valider', exact: true }).click();
+  await approveDimension.click();
+  await expectVisibleToast(page, 'Dimension validée');
+  await expect(approveDimension).toHaveCount(0);
+  await expect(workflow.getByText('Les identités associées sont validées.'))
+    .toBeVisible();
+  await expect(validateReference).toBeEnabled();
+
+  // La première décision n'approuve jamais implicitement la Référence.
+  await withE2eDatabase(async () => {
+    const characteristic = await ProductCharacteristic.findById(characteristicId);
+    const variant = await ProductVariant.findById(variantId);
+    expect(characteristic?.governanceStatus).toBe('APPROVED');
+    expect(characteristic?.qualityReviewStatus).toBe('REVIEWED');
+    expect(variant?.governanceStatus).toBe('PROVISIONAL');
+  });
+
+  await validateReference.click();
   await expectVisibleToast(page, 'Référence validée');
+  await withE2eDatabase(async () => {
+    const variant = await ProductVariant.findById(variantId);
+    expect(variant?.governanceStatus).toBe('APPROVED');
+  });
 });
 
 test('M-002 contribution Workspace est revue puis publiée globalement', async ({ page }) => {
@@ -284,10 +340,7 @@ test('M-002 contribution Workspace est revue puis publiée globalement', async (
   await page.goto('/product-reference');
   await page.getByRole('tab', { name: /À contrôler \(\d+\)/ }).click();
 
-  const contributionRow = page.getByRole('row').filter({
-    hasText: context.productName,
-  });
-  await expect(contributionRow).toBeVisible();
+  const contributionRow = await findReviewQueueRow(page, context.productName);
   await contributionRow.getByRole('button', {
     name: `Examiner ${context.productName}`,
   }).click();

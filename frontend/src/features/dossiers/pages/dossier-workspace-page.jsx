@@ -29,6 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   SECTION_TAB_ACTIVE_CLASS_NAME,
   SECTION_TAB_INACTIVE_CLASS_NAME,
@@ -67,6 +68,37 @@ import {
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { cn } from '@/lib/utils';
+
+function DossierContactDetails({ dossier, locationLabel }) {
+  return (
+    <div className="space-y-2 text-sm">
+      {locationLabel && (
+        <div className="flex items-start gap-2">
+          <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0 opacity-75" />
+          <span><span className="sr-only">Localisation : </span>{locationLabel}</span>
+        </div>
+      )}
+      {dossier.contactName && (
+        <div className="flex items-start gap-2">
+          <UserRound aria-hidden="true" className="mt-0.5 size-4 shrink-0 opacity-75" />
+          <span><span className="sr-only">Interlocuteur : </span>{dossier.contactName}</span>
+        </div>
+      )}
+      {dossier.documentEmail && (
+        <div className="flex items-start gap-2">
+          <Mail aria-hidden="true" className="mt-0.5 size-4 shrink-0 opacity-75" />
+          <span className="min-w-0 break-all"><span className="sr-only">E-mail documentaire : </span>{dossier.documentEmail}</span>
+        </div>
+      )}
+      {dossier.phone && (
+        <div className="flex items-start gap-2">
+          <Phone aria-hidden="true" className="mt-0.5 size-4 shrink-0 opacity-75" />
+          <span><span className="sr-only">Téléphone : </span>{dossier.phone}</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function DossierWorkspacePage() {
   const { dossierId } = useParams();
@@ -169,106 +201,87 @@ function DossierWorkspacePage() {
     || dossier.location?.city,
   );
   const locationLabel = hasLocation ? formatDossierLocation(dossier) : null;
+  const hasContactDetails = Boolean(
+    locationLabel || dossier.contactName || dossier.documentEmail || dossier.phone,
+  );
   const showApplicablePriceCard = can(
     SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
   );
 
   return (
     <div className="space-y-5">
-      <Button asChild size="sm" variant="ghost">
-        <Link to={`/workspaces/${workspace.id}/dossiers`}>
-          <ArrowLeft aria-hidden="true" className="size-4" />
-          Dossiers
-        </Link>
-      </Button>
-
-      <div className={cn(
-        'grid items-stretch gap-4',
-        showApplicablePriceCard ? 'lg:grid-cols-2' : 'grid-cols-1',
-      )}>
-        <header className={cn(
-          'rounded-xl border border-border bg-card px-5 py-4',
-          showApplicablePriceCard && 'lg:h-56',
-        )}>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {dossier.name}
-            </h1>
-            <StatusBadge tone={getDossierStatusTone(dossier.status)}>
-              {getDossierStatusLabel(dossier.status, metadataQuery.data)}
-            </StatusBadge>
-
-            {canManageMargin && (
-              <Tooltip>
-                <TooltipTrigger
-                  render={(
-                    <Button
-                      aria-label="Modifier la marge cible par défaut des nouvelles Fiches"
-                      onClick={() => setMarginDialogOpen(true)}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    />
-                  )}
-                >
-                  <SlidersHorizontal aria-hidden="true" className="size-4" />
-                  {marginLabel}
-                </TooltipTrigger>
-                <TooltipContent>
-                  Modifier la marge cible par défaut des nouvelles Fiches.
-                </TooltipContent>
-              </Tooltip>
-            )}
-
-            {!canManageMargin
-            && canReadTechnicalSheets
-            && Number.isInteger(marginBasisPoints) && (
-              <span className="text-sm font-medium text-muted-foreground">
-                {marginLabel}
-              </span>
-            )}
-          </div>
-
-          {(locationLabel
-            || dossier.contactName
-            || dossier.documentEmail
-            || dossier.phone) && (
-            <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
-              {locationLabel && (
-                <div className="flex min-w-0 items-start gap-2">
-                  <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                  <span>{locationLabel}</span>
-                </div>
+      <header className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border pb-4">
+        <Button asChild size="sm" variant="ghost">
+          <Link to={`/workspaces/${workspace.id}/dossiers`}>
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Dossiers
+          </Link>
+        </Button>
+        <div aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
+        <h1 className="min-w-0 max-w-[min(19rem,60vw)]">
+          <Popover>
+            <PopoverTrigger
+              render={(
+                <Button
+                  className="h-auto max-w-full px-1 py-1 text-xl font-semibold tracking-tight text-foreground"
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                />
               )}
-              {dossier.contactName && (
-                <div className="flex min-w-0 items-start gap-2">
-                  <UserRound aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                  <span>{dossier.contactName}</span>
-                </div>
+            >
+              <span className="block truncate">{dossier.name}</span>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-80 max-w-[calc(100vw-2rem)] p-4"
+            >
+              <p className="mb-3 text-sm font-semibold">Informations du Dossier</p>
+              {hasContactDetails ? (
+                <DossierContactDetails dossier={dossier} locationLabel={locationLabel} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Aucune coordonnée complémentaire renseignée.
+                </p>
               )}
-              {dossier.documentEmail && (
-                <div className="flex min-w-0 items-start gap-2">
-                  <Mail aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                  <span className="break-all">{dossier.documentEmail}</span>
-                </div>
-              )}
-              {dossier.phone && (
-                <div className="flex min-w-0 items-start gap-2">
-                  <Phone aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                  <span>{dossier.phone}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </header>
-
+            </PopoverContent>
+          </Popover>
+        </h1>
+        <StatusBadge tone={getDossierStatusTone(dossier.status)}>
+          {getDossierStatusLabel(dossier.status, metadataQuery.data)}
+        </StatusBadge>
+        {canManageMargin && (
+          <Tooltip>
+            <TooltipTrigger render={(
+              <Button
+                aria-label="Modifier la marge cible par défaut des nouvelles Fiches"
+                onClick={() => setMarginDialogOpen(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              />
+            )}>
+              <SlidersHorizontal aria-hidden="true" className="size-4" />
+              {marginLabel}
+            </TooltipTrigger>
+            <TooltipContent>
+              Modifier la marge cible par défaut des nouvelles Fiches.
+            </TooltipContent>
+          </Tooltip>
+        )}
+        {!canManageMargin && canReadTechnicalSheets
+        && Number.isInteger(marginBasisPoints) && (
+          <span className="text-sm font-medium text-muted-foreground">
+            {marginLabel}
+          </span>
+        )}
         {showApplicablePriceCard && (
           <DossierApplicablePriceCard
             dossierId={dossier.id}
             workspaceId={workspace.id}
           />
         )}
-      </div>
+      </header>
 
       {!operational && (
         <Card>

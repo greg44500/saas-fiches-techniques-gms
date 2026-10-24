@@ -3,6 +3,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,7 +17,9 @@ const mocks = vi.hoisted(() => ({
   reviewQueueQuery: vi.fn(),
   loadReviewTarget: vi.fn(),
   restoreReviewContext: vi.fn(),
+  reviewContribution: vi.fn(),
   updateCategoryStatus: vi.fn(),
+  deleteCategory: vi.fn(),
   globalPricesQuery: vi.fn(),
 }));
 
@@ -32,8 +35,16 @@ vi.mock('@/features/products/api/product-reference-api', () => ({
     mocks.restoreReviewContext,
     { isLoading: false },
   ],
+  useReviewProductReferenceContributionMutation: () => [
+    mocks.reviewContribution,
+    { isLoading: false },
+  ],
   useUpdateProductReferenceCategoryStatusMutation: () => [
     mocks.updateCategoryStatus,
+    { isLoading: false },
+  ],
+  useDeleteProductReferenceCategoryMutation: () => [
+    mocks.deleteCategory,
     { isLoading: false },
   ],
 }));
@@ -87,10 +98,17 @@ vi.mock('@/features/products/components/product-reference-details-drawer', () =>
     reviewContext,
     guidedReviewContext,
     onReviewRequested,
+    onApproveDimensionDirectly,
     onGuidedReviewRequested,
   }) => (
     open ? (
       <div>
+        <button
+          onClick={() => onApproveDimensionDirectly('CHARACTERISTIC', 'characteristic-1')}
+          type="button"
+        >
+          Valider directement la caractéristique
+        </button>
         <button onClick={() => onReviewRequested('REFERENCE', 'variant-pending-1')} type="button">
           Contrôler la Référence courante
         </button>
@@ -140,6 +158,15 @@ vi.mock('@/features/products/components/product-reference-review-queue', () => (
   ),
 }));
 
+vi.mock('@/features/products/components/product-reference-category-merge-dialog', () => ({
+  ProductReferenceCategoryMergeDialog: ({ source, onClose }) => (
+    <div role="dialog" aria-label="Fusionner des catégories">
+      Fusion de {source.name}
+      <button onClick={onClose} type="button">Annuler la fusion</button>
+    </div>
+  ),
+}));
+
 vi.mock('@/features/products/components/product-reference-category-dialog', () => ({
   ProductReferenceCategoryDialog: ({ open }) => (
     open ? <div>Catégorie globale ouverte</div> : null
@@ -166,6 +193,7 @@ const metadata = {
     name: 'Légumes',
     status: 'ACTIVE',
     activeProductCount: 1,
+    totalProductCount: 1,
   }],
   productStatuses: [
     { value: 'ACTIVE', label: 'Actif' },
@@ -277,6 +305,9 @@ describe('ProductReferencePage', () => {
     mocks.restoreReviewContext.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue(null),
     });
+    mocks.reviewContribution.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({}),
+    });
 
     mocks.metadataQuery.mockReturnValue({
       data: metadata,
@@ -336,6 +367,9 @@ describe('ProductReferencePage', () => {
     mocks.updateCategoryStatus.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
     });
+    mocks.deleteCategory.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({}),
+    });
   });
 
   it('ouvre un référentiel Platform sobre sans alias ni colonnes redondantes', () => {
@@ -362,6 +396,20 @@ describe('ProductReferencePage', () => {
     );
   });
 
+
+  it('garde les filtres Produits et la pagination fixes autour des lignes défilantes', () => {
+    renderPage();
+    const region = screen.getByRole('region', {
+      name: 'Lignes du référentiel Produits',
+    });
+    expect(region).toHaveClass('overflow-auto');
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(within(region).getByRole('columnheader', { name: 'Produit' })
+      .closest('thead')).toHaveClass('sticky', 'top-0');
+    expect(screen.getByRole('combobox', {
+      name: 'Filtrer par catégorie',
+    })).toBeInTheDocument();
+  });
 
   it('distingue la couverture des Prix repères de la valorisation M-004', () => {
     mocks.productsQuery.mockReturnValue({
@@ -601,10 +649,9 @@ describe('ProductReferencePage', () => {
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Créer une catégorie' }))
       .not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Renommer Légumes' }))
-      .not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Archiver Légumes' }))
-      .not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Actions de la catégorie Légumes',
+    })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
       name: 'Voir les Produits actifs de Légumes',
@@ -638,10 +685,18 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
     expect(screen.getByRole('button', { name: 'Créer une catégorie' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Renommer Légumes' }))
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la catégorie Légumes',
+    }));
+    const actions = screen.getByRole('group', {
+      name: 'Actions de la catégorie Légumes',
+    });
+    expect(within(actions).getByRole('button', { name: 'Renommer' }))
       .toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Archiver Légumes' }))
+    expect(within(actions).getByRole('button', { name: 'Archiver' }))
       .toBeInTheDocument();
+    expect(within(actions).queryByRole('button', { name: 'Supprimer' }))
+      .not.toBeInTheDocument();
   });
 
   it('affiche une catégorie archivée et son action de réactivation', async () => {
@@ -665,9 +720,122 @@ describe('ProductReferencePage', () => {
     await user.click(screen.getByRole('tab', { name: 'Catégories (1)' }));
 
     expect(screen.getByText('Archivée')).toBeInTheDocument();
-    expect(screen.getByRole('button', {
-      name: 'Réactiver Ancienne catégorie',
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la catégorie Ancienne catégorie',
+    }));
+    const archivedActions = screen.getByRole('group', {
+      name: 'Actions de la catégorie Ancienne catégorie',
+    });
+    expect(within(archivedActions).getByRole('button', {
+      name: 'Réactiver',
     })).toBeInTheDocument();
+    expect(within(archivedActions).queryByRole('button', {
+      name: 'Supprimer',
+    })).not.toBeInTheDocument();
+  });
+
+  it('affiche le menu Supprimer seulement si tous les Produits liés sont absents', async () => {
+    const user = userEvent.setup();
+    mocks.metadataQuery.mockReturnValue({
+      data: {
+        ...metadata,
+        categories: [
+          { id: 'empty', name: 'Catégorie vide', status: 'ACTIVE', activeProductCount: 0, totalProductCount: 0 },
+          { id: 'historical', name: 'Catégorie historique', status: 'ARCHIVED', activeProductCount: 0, totalProductCount: 2 },
+        ],
+      },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Catégories (2)' }));
+
+    const region = screen.getByRole('region', { name: 'Lignes des catégories' });
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(within(region).getByRole('columnheader', { name: 'Catégorie' }).closest('thead'))
+      .toHaveClass('sticky', 'top-0');
+
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la catégorie Catégorie historique',
+    }));
+    const historicalActions = screen.getByRole('group', {
+      name: 'Actions de la catégorie Catégorie historique',
+    });
+    expect(within(historicalActions).queryByRole('button', { name: 'Supprimer' }))
+      .not.toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la catégorie Catégorie vide',
+    }));
+    const emptyActions = screen.getByRole('group', {
+      name: 'Actions de la catégorie Catégorie vide',
+    });
+    await user.click(within(emptyActions).getByRole('button', { name: 'Supprimer' }));
+    expect(screen.getByText('Supprimer cette catégorie ?')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
+    expect(mocks.deleteCategory).toHaveBeenCalledWith({ categoryId: 'empty' });
+  });
+
+  it('pagine les Catégories sans abandonner le scroll interne et son entête fixe', async () => {
+    const user = userEvent.setup();
+    mocks.metadataQuery.mockReturnValue({
+      data: {
+        ...metadata,
+        categories: Array.from({ length: 23 }, (_, index) => ({
+          id: 'cat-' + index,
+          name: 'Catégorie ' + String(index + 1).padStart(2, '0'),
+          status: 'ACTIVE',
+          activeProductCount: 0,
+          totalProductCount: 0,
+        })),
+      },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Catégories (23)' }));
+    const region = screen.getByRole('region', { name: 'Lignes des catégories' });
+    expect(region).toHaveClass('overflow-auto');
+    expect(within(region).getByRole('columnheader', { name: 'Catégorie' })
+      .closest('thead')).toHaveClass('sticky');
+
+    expect(within(region).getByText('Catégorie 01')).toBeInTheDocument();
+    expect(within(region).queryByText('Catégorie 11')).not.toBeInTheDocument();
+    await user.click(within(screen.getByRole('navigation', {
+      name: 'Pagination des catégories',
+    })).getByRole('button', { name: 'Suivant' }));
+    expect(within(region).getByText('Catégorie 11')).toBeInTheDocument();
+    expect(within(region).queryByText('Catégorie 01')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer une catégorie' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Catégories (23)' })).toBeInTheDocument();
+  });
+
+  it('propose la fusion dans le menu, mais pas en mode lecture seule', async () => {
+    const user = userEvent.setup();
+    mocks.metadataQuery.mockReturnValue({
+      data: {
+        ...metadata,
+        categories: [
+          { id: 'source', name: 'Source', status: 'ACTIVE', activeProductCount: 2, totalProductCount: 2 },
+          { id: 'target', name: 'Cible', status: 'ACTIVE', activeProductCount: 1, totalProductCount: 1 },
+        ],
+      },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('tab', { name: 'Catégories (2)' }));
+    await user.click(screen.getByRole('button', { name: 'Actions de la catégorie Source' }));
+    await user.click(within(screen.getByRole('group', {
+      name: 'Actions de la catégorie Source',
+    })).getByRole('button', { name: 'Fusionner' }));
+    expect(screen.getByRole('dialog', { name: 'Fusionner des catégories' }))
+      .toHaveTextContent('Fusion de Source');
   });
 
   it('ouvre la file unifiée depuis l’onglet À contrôler', async () => {
@@ -831,6 +999,100 @@ describe('ProductReferencePage', () => {
       });
       expect(screen.getByText(/dépendance characteristic-1/)).toBeInTheDocument();
     });
+  });
+
+  it('approuve rapidement une Dimension sans rapprochement, via sa Contribution exacte', async () => {
+    const user = userEvent.setup();
+    mocks.loadReviewTarget.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        items: [{
+          sourceId: 'contribution-orange',
+          targetId: 'characteristic-1',
+          type: 'CONTRIBUTION',
+          dataType: 'DIMENSION',
+          dimensionType: 'CHARACTERISTIC',
+          productId: 'product-1',
+          candidates: [],
+        }],
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Valider directement la caractéristique',
+    }));
+    await waitFor(() => {
+      expect(mocks.reviewContribution).toHaveBeenCalledWith({
+        contributionId: 'contribution-orange',
+        decision: 'APPROVE',
+        targetReferenceId: null,
+      });
+    });
+    expect(mocks.restoreReviewContext).not.toHaveBeenCalled();
+  });
+
+  it('oriente vers Examiner lorsque des rapprochements existent, sans approbation rapide', async () => {
+    const user = userEvent.setup();
+    mocks.loadReviewTarget.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        items: [{
+          sourceId: 'contribution-orange',
+          targetId: 'characteristic-1',
+          type: 'CONTRIBUTION',
+          dataType: 'DIMENSION',
+          dimensionType: 'CHARACTERISTIC',
+          productId: 'product-1',
+          candidates: [{ id: 'candidate-existing', name: 'Orange doux' }],
+        }],
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Valider directement la caractéristique',
+    }));
+    await waitFor(() => {
+      expect(screen.getByText(
+        'Détail global ouvert · dimensions · all · all · cible characteristic-1',
+      )).toBeInTheDocument();
+    });
+    expect(mocks.reviewContribution).not.toHaveBeenCalled();
+  });
+
+  it('n’approuve pas rapidement lorsque la liste de rapprochements est absente', async () => {
+    const user = userEvent.setup();
+    mocks.loadReviewTarget.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        items: [{
+          sourceId: 'contribution-orange',
+          targetId: 'characteristic-1',
+          type: 'CONTRIBUTION',
+          dataType: 'DIMENSION',
+          dimensionType: 'CHARACTERISTIC',
+          productId: 'product-1',
+        }],
+      }),
+    });
+    renderPage({ canManage: true });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Valider directement la caractéristique',
+    }));
+    await waitFor(() => {
+      expect(mocks.loadReviewTarget).toHaveBeenCalled();
+    });
+    expect(mocks.reviewContribution).not.toHaveBeenCalled();
+  });
+
+  it('n’autorise pas la validation rapide en consultation seule', async () => {
+    const user = userEvent.setup();
+    renderPage({ canManage: false });
+    await user.click(screen.getByRole('button', { name: 'Voir Carotte' }));
+    await user.click(screen.getByRole('button', {
+      name: 'Valider directement la caractéristique',
+    }));
+    expect(mocks.loadReviewTarget).not.toHaveBeenCalled();
+    expect(mocks.reviewContribution).not.toHaveBeenCalled();
   });
 
   it('ouvre le détail global depuis la liste', async () => {

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -244,6 +244,62 @@ describe('SuppliersPage', () => {
     }));
   });
 
+  it.each([
+    ['suppliers', 'Lignes des Fournisseurs', 'Fournisseur', 'Pagination des Fournisseurs'],
+    ['articles', 'Lignes des Articles fournisseur', 'Article fournisseur', 'Pagination des Articles fournisseur'],
+    ['catalogs', 'Lignes des Catalogues fournisseur', 'Catalogue', 'Pagination des catalogues fournisseurs'],
+  ])('maintient les commandes et la pagination accessibles dans %s', (
+    section,
+    regionLabel,
+    headerName,
+    paginationLabel,
+  ) => {
+    // Le contrôle de pagination n'est pas montré lorsque l'API n'a aucun résultat.
+    mocks.listArticles.mockReturnValue(queryResult({
+      articles: [],
+      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+    }));
+    renderPage('/workspaces/workspace-1/suppliers?section=' + section);
+
+    const region = screen.getByRole('region', { name: regionLabel });
+    expect(region).toHaveClass('overflow-auto');
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(within(region).getByRole('columnheader', { name: headerName })
+      .closest('thead')).toHaveClass('sticky', 'top-0');
+    if (section !== 'catalogs') {
+      expect(screen.getByRole('searchbox', { name: 'Rechercher' })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('combobox', { name: 'Filtrer par statut' }))
+      .toBeInTheDocument();
+    const pagination = screen.getByRole('navigation', { name: paginationLabel });
+    expect(region.contains(pagination)).toBe(false);
+    expect(within(pagination).getByRole('combobox', {
+      name: 'Nombre de lignes par page',
+    })).toBeInTheDocument();
+  });
+
+  it('conserve la pagination serveur en passant à la page suivante', async () => {
+    const user = userEvent.setup();
+    mocks.listSuppliers.mockImplementation(({ page, limit }) => queryResult({
+      suppliers: [{
+        id: 'supplier-' + page, name: 'Fournisseur page ' + page,
+        status: 'ACTIVE', scope: 'WORKSPACE_PRIVATE',
+      }],
+      pagination: { page, limit, total: 24, totalPages: 3 },
+    }));
+    renderPage();
+
+    const pagination = screen.getByRole('navigation', { name: 'Pagination des Fournisseurs' });
+    await user.click(within(pagination).getByRole('button', { name: 'Suivant' }));
+    expect(mocks.listSuppliers).toHaveBeenCalledWith(expect.objectContaining({
+      page: 2,
+      limit: 10,
+    }));
+    expect(screen.getByText('Fournisseur page 2')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Lignes des Fournisseurs' }))
+      .toBeInTheDocument();
+  });
+
   it('présente les catégories métier plutôt que la portée technique du Fournisseur', () => {
     renderPage();
 
@@ -394,7 +450,7 @@ describe('SuppliersPage', () => {
       .toBeInTheDocument();
     expect(screen.getByText('58')).toBeInTheDocument();
     expect(screen.getByRole('button', {
-      name: 'Voir Catalogue septembre',
+      name: 'Actions de Catalogue septembre',
     })).toBeInTheDocument();
   });
 
@@ -419,8 +475,9 @@ describe('SuppliersPage', () => {
     expect(screen.getByText('Fournisseur archivé')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {
-      name: 'Réactiver Fournisseur archivé',
+      name: 'Actions de Fournisseur archivé',
     }));
+    await user.click(screen.getByRole('button', { name: 'Réactiver' }));
 
     expect(mocks.updateSupplierStatus).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
@@ -435,12 +492,22 @@ describe('SuppliersPage', () => {
     renderPage();
 
     await user.click(screen.getByRole('button', {
-      name: 'Voir Fournisseur local',
+      name: 'Actions de Fournisseur local',
     }));
+    await user.click(screen.getByRole('button', { name: 'Voir' }));
 
     expect(
       screen.getByText('Détail Fournisseur : Fournisseur local'),
     ).toBeInTheDocument();
+  });
+
+  it('ne propose que la consultation pour le Fournisseur partagé', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Actions de Sysco partagé' }));
+    expect(screen.getByRole('button', { name: 'Voir' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Modifier' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archiver' })).not.toBeInTheDocument();
   });
 
   it('masque l import catalogue sans capability même avec la permission RBAC', async () => {
@@ -651,7 +718,8 @@ describe('SuppliersPage', () => {
       .not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Détails du conditionnement de REF-42' }))
       .not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Détails de REF-42' }));
+    await user.click(screen.getByRole('button', { name: 'Actions de REF-42' }));
+    await user.click(screen.getByRole('button', { name: 'Consulter l’Article' }));
     expect(screen.getByText('Détails Article : REF-42')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Corriger l’association' }));
     expect(screen.getByText('Association Article ouverte')).toBeInTheDocument();

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -40,26 +40,18 @@ function queryResult(data) {
   };
 }
 
-async function selectArticleOption(user, optionName) {
-  const trigger = screen.getByRole('combobox', {
+async function selectArticleOption(user) {
+  await user.click(screen.getByRole('button', {
+    name: 'Rechercher un Article fournisseur',
+  }));
+  const input = screen.getByRole('combobox', {
     name: 'Article fournisseur à vérifier',
   });
-
-  await user.click(trigger);
-  await waitFor(() => {
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  const option = await screen.findByRole('option', {
-    name: optionName,
-  });
-  await user.click(option);
-
-  await waitFor(() => {
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  return trigger;
+  await user.type(input, 'Ali321');
+  await user.click(await screen.findByRole('option', {
+    name: 'Ail semoule · Sysco · Ali321',
+  }));
+  return input;
 }
 
 describe('DossierApplicablePriceCard', () => {
@@ -82,6 +74,7 @@ describe('DossierApplicablePriceCard', () => {
       articles: [{
         id: 'article-1',
         supplierReference: 'Ali321',
+        supplierDesignation: 'Ail semoule',
         supplier: { name: 'Sysco' },
       }],
     }));
@@ -113,7 +106,7 @@ describe('DossierApplicablePriceCard', () => {
     ]);
   });
 
-  it('résout le prix dans une carte compacte dédiée au shell Dossier', async () => {
+  it('affiche le prix après sélection, sans réserver d’espace vide', async () => {
     const user = userEvent.setup();
 
     render(
@@ -123,7 +116,19 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
-    await selectArticleOption(user, 'Sysco · Ali321');
+    expect(screen.queryByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Rechercher un Article fournisseur',
+    }).parentElement).toHaveClass('w-10');
+    expect(screen.queryByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).not.toBeInTheDocument();
+    await selectArticleOption(user);
+    expect(screen.getByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).toBeInTheDocument();
 
     expect(mocks.loadApplicable).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
@@ -157,7 +162,7 @@ describe('DossierApplicablePriceCard', () => {
       },
     ]);
     render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
-    await selectArticleOption(user, 'Sysco · Ali321');
+    await selectArticleOption(user);
     expect(screen.getByRole('note')).toHaveTextContent(
       'Dernier prix connu — tarif expiré',
     );
@@ -191,7 +196,7 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
-    await selectArticleOption(user, 'Sysco · Ali321');
+    await selectArticleOption(user);
 
     expect(screen.getByText('3,100 / kg')).toBeInTheDocument();
     expect(screen.getByText(/Prix indicatif espace de travail/))
@@ -210,16 +215,152 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
-    await selectArticleOption(user, 'Sysco · Ali321');
+    await selectArticleOption(user);
 
     expect(screen.getByText('12,500 / tranche')).toBeInTheDocument();
 
-    const trigger = await selectArticleOption(user, 'Sélectionner');
+    const input = screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    });
+    await user.clear(input);
 
     expect(mocks.resetApplicable).toHaveBeenCalledTimes(1);
-    expect(trigger).toHaveTextContent('Sélectionner');
+    expect(input).toHaveValue('');
     expect(mocks.loadApplicable).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('12,500 / tranche')).not.toBeInTheDocument();
     expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();
+  });
+  it('ferme puis rouvre le résultat sans perdre l’Article choisi', async () => {
+    const user = userEvent.setup();
+    render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
+    const input = await selectArticleOption(user);
+    await user.click(screen.getByRole('button', {
+      name: 'Fermer le résultat du prix applicable',
+    }));
+    expect(screen.queryByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).not.toBeInTheDocument();
+    expect(input).toHaveValue('Ail semoule · Sysco · Ali321');
+    await user.click(input);
+    expect(screen.getByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).toBeInTheDocument();
+  });
+
+  it('ferme le résultat par Échap sans effacer la sélection', async () => {
+    const user = userEvent.setup();
+    render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
+    const input = await selectArticleOption(user);
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).not.toBeInTheDocument();
+    expect(input).toHaveValue('Ail semoule · Sysco · Ali321');
+  });
+
+  it('n’affiche que la loupe au repos et replie la recherche hors du champ', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Extérieur</button>
+        <DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />
+      </>,
+    );
+    const trigger = screen.getByRole('button', {
+      name: 'Rechercher un Article fournisseur',
+    });
+    const collapsedInput = screen.getByPlaceholderText(
+      "Rechercher le prix d'un article",
+    );
+    expect(collapsedInput).toBeInTheDocument();
+    expect(collapsedInput.closest('[aria-hidden="true"]'))
+      .toHaveAttribute('inert');
+    expect(screen.queryByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    })).not.toBeInTheDocument();
+    await user.click(trigger);
+    const input = screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    });
+    expect(input).toHaveFocus();
+    const container = input.closest('[data-slot="dossier-price-search"]');
+    expect(container).toHaveClass(
+      'transition-[width]',
+      'duration-300',
+      'w-[min(22rem,calc(100vw-3rem))]',
+    );
+    expect(input.closest('[aria-hidden="true"]')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Extérieur' }));
+    expect(screen.getByRole('button', {
+      name: 'Rechercher un Article fournisseur',
+    })).toBeInTheDocument();
+    expect(container).toHaveClass('w-10', 'transition-[width]', 'duration-300');
+    // Le champ reste monté pendant la fermeture pour assurer l'animation retour.
+    expect(input).toBeInTheDocument();
+    expect(input.closest('[aria-hidden="true"]')).toHaveAttribute('inert');
+    expect(screen.queryByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    })).not.toBeInTheDocument();
+  });
+
+  it('conserve l’Article et le prix après repli puis réouverture', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Extérieur</button>
+        <DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />
+      </>,
+    );
+    await selectArticleOption(user);
+    expect(screen.getByText('12,500 / tranche')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Extérieur' }));
+    expect(screen.queryByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', {
+      name: 'Rechercher un Article fournisseur',
+    }));
+    expect(screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    })).toHaveValue('Ail semoule · Sysco · Ali321');
+    expect(screen.getByText('12,500 / tranche')).toBeInTheDocument();
+    expect(mocks.loadApplicable).toHaveBeenCalledTimes(1);
+  });
+
+  it('ne replie pas la recherche lors de la sélection d’une suggestion dans le portail', async () => {
+    const user = userEvent.setup();
+    render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
+    await selectArticleOption(user);
+    expect(screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    })).toHaveValue('Ail semoule · Sysco · Ali321');
+    expect(screen.getByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).toBeInTheDocument();
+  });
+
+  it('replie le champ par Échap en rendant le focus à la loupe', async () => {
+    const user = userEvent.setup();
+    render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
+    await user.click(screen.getByRole('button', {
+      name: 'Rechercher un Article fournisseur',
+    }));
+    const input = screen.getByRole('combobox', {
+      name: 'Article fournisseur à vérifier',
+    });
+    expect(input).toHaveFocus();
+    await user.keyboard('{Escape}');
+    const trigger = screen.getByRole('button', {
+      name: 'Rechercher un Article fournisseur',
+    });
+    expect(trigger).toHaveFocus();
+    expect(trigger.closest('[data-slot="dossier-price-search"]')).toHaveClass(
+      'w-10',
+      'transition-[width]',
+      'duration-300',
+    );
+    expect(input).toBeInTheDocument();
+    expect(input.closest('[aria-hidden="true"]')).toHaveAttribute('inert');
   });
 });

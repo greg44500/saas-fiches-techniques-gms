@@ -139,6 +139,218 @@ describe('M-002 global product reference HTTP contract', () => {
         expect(platformAccess.body.data.access.permissions).toEqual([]);
     });
 
+    it('refuse les doublons de catégorie malgré la casse, les accents et les séparateurs', async () => {
+        const first = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Épicerie - Fine' });
+
+        expect(first.status).toBe(201);
+        const duplicate = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: '  epicerie fine  ' });
+
+        expect(duplicate.status).toBe(409);
+        expect(duplicate.body.message).toMatch(/catégorie existe déjà/i);
+
+        const archive = await request(app)
+            .patch('/api/product-reference/categories/' + first.body.data.category.id + '/status')
+            .set(bearer(governorToken))
+            .send({ status: 'ARCHIVED' });
+        expect(archive.status).toBe(200);
+
+        const duplicateArchived = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'ÉPICERIE FINE' });
+        expect(duplicateArchived.status).toBe(409);
+    });
+
+    it('propose les catégories proches et interdit une création non examinée par API', async () => {
+        const source = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Épicerie' });
+        expect(source.status).toBe(201);
+
+        const suggestions = await request(app)
+            .get('/api/product-reference/categories/suggestions')
+            .query({ name: 'Épiserie' })
+            .set(bearer(governorToken));
+        expect(suggestions.status).toBe(200);
+        expect(suggestions.body.data.suggestions.candidates).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ id: source.body.data.category.id }),
+            ]),
+        );
+
+        const blocked = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Épiserie' });
+        expect(blocked.status).toBe(409);
+
+        const confirmed = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({
+                name: 'Épiserie',
+                reviewedCandidateIds: [source.body.data.category.id],
+            });
+        expect(confirmed.status).toBe(201);
+    });
+
+    it('refuse de renommer une catégorie sur le nom normalisé d’une autre', async () => {
+        const existing = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Légumes' });
+        const other = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Épicerie' });
+
+        expect(existing.status).toBe(201);
+        expect(other.status).toBe(201);
+
+        const collision = await request(app)
+            .patch('/api/product-reference/categories/' + other.body.data.category.id)
+            .set(bearer(governorToken))
+            .send({ name: 'legumes' });
+
+        expect(collision.status).toBe(409);
+        expect(collision.body.message).toMatch(/catégorie existe déjà/i);
+        const categories = await request(app)
+            .get('/api/product-reference/categories')
+            .set(bearer(governorToken));
+
+        expect(categories.status).toBe(200);
+        expect(categories.body.data.categories).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ id: other.body.data.category.id, name: 'Épicerie' }),
+            ]),
+        );
+    });
+
+    it('supprime via HTTP une catégorie vide, mais refuse une catégorie avec Produit historique', async () => {
+        const empty = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Catégorie à supprimer' });
+        expect(empty.status).toBe(201);
+
+        const removed = await request(app)
+            .delete('/api/product-reference/categories/' + empty.body.data.category.id)
+            .set(bearer(governorToken));
+        expect(removed.status).toBe(204);
+
+        const existing = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Catégorie encore utilisée' });
+        const product = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({ name: 'Produit historique pour test catégorie', categoryId: existing.body.data.category.id });
+        expect(product.status).toBe(201);
+        const archived = await request(app)
+            .patch('/api/product-reference/' + product.body.data.product.id + '/status')
+            .set(bearer(governorToken))
+            .send({ status: 'ARCHIVED' });
+        expect(archived.status).toBe(200);
+        const blocked = await request(app)
+            .delete('/api/product-reference/categories/' + existing.body.data.category.id)
+            .set(bearer(governorToken));
+        expect(blocked.status).toBe(409);
+
+        const metadata = await request(app)
+            .get('/api/product-reference/metadata')
+            .set(bearer(governorToken));
+        expect(metadata.status).toBe(200);
+        expect(metadata.body.data.metadata.categories).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: existing.body.data.category.id,
+                    activeProductCount: 0,
+                    totalProductCount: 1,
+                }),
+            ]),
+        );
+    });
+
+    it('refuse la suppression de catégorie à un utilisateur Platform sans permission métier', async () => {
+        const guest = await createUserToken({
+            email: 'no-category-delete@example.test',
+            platformRole: PLATFORM_ROLE.SUPER_ADMIN,
+        });
+        const category = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Catégorie protégée' });
+        expect(category.status).toBe(201);
+        const denied = await request(app)
+            .delete('/api/product-reference/categories/' + category.body.data.category.id)
+            .set(bearer(guest.token));
+        expect(denied.status).toBe(403);
+    });
+
+    it('fusionne deux catégories en regroupant les Produits, sans droits implicites', async () => {
+        const source = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Produits proches' });
+        const target = await request(app)
+            .post('/api/product-reference/categories')
+            .set(bearer(governorToken))
+            .send({ name: 'Produits réunis' });
+        expect(source.status).toBe(201);
+        expect(target.status).toBe(201);
+
+        const product = await request(app)
+            .post('/api/product-reference')
+            .set(bearer(governorToken))
+            .send({
+                name: 'Produit fusion catégories test',
+                categoryId: source.body.data.category.id,
+            });
+        expect(product.status).toBe(201);
+        const url = '/api/product-reference/categories/'
+            + source.body.data.category.id + '/merge';
+
+        const denied = await request(app).post(url)
+            .set(bearer((await createUserToken({
+                email: 'merge-category-no-rights@example.test',
+                platformRole: PLATFORM_ROLE.SUPER_ADMIN,
+            })).token))
+            .send({ targetCategoryId: target.body.data.category.id });
+        expect(denied.status).toBe(403);
+        const malformed = await request(app).post(url)
+            .set(bearer(governorToken))
+            .send({ targetCategoryId: 'invalid' });
+        expect(malformed.status).toBe(400);
+
+        const result = await request(app).post(url)
+            .set(bearer(governorToken))
+            .send({ targetCategoryId: target.body.data.category.id });
+        expect(result.status).toBe(200);
+        expect(result.body.data.result).toMatchObject({
+            sourceCategoryId: source.body.data.category.id,
+            target: { id: target.body.data.category.id, name: 'Produits réunis' },
+            movedProductCount: 1,
+        });
+        const updated = await request(app)
+            .get('/api/product-reference/' + product.body.data.product.id)
+            .set(bearer(governorToken));
+        expect(updated.status).toBe(200);
+        expect(updated.body.data.product.category.id)
+            .toBe(target.body.data.category.id);
+        const retry = await request(app).post(url)
+            .set(bearer(governorToken))
+            .send({ targetCategoryId: target.body.data.category.id });
+        expect(retry.status).toBe(404);
+    });
+
     it('permet à un membre Platform explicitement habilité d’abonder le référentiel', async () => {
         const platformMember = await createUserToken({
             email: 'platform-product-governor@example.test',

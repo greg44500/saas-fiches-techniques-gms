@@ -3,11 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
-import {
-  DataTable,
-  DataTableActions,
-} from '@/components/data-display/data-table';
-import { ActionIconButton } from '@/components/shared/action-icon-button';
+import { DataTable } from '@/components/data-display/data-table';
+import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 import { EmptyState } from '@/components/shared/empty-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { ErrorState } from '@/components/shared/error-state';
@@ -80,6 +77,7 @@ import {
   useWorkspaceContext,
 } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
+import { useTableViewport } from '@/hooks/use-table-viewport';
 
 const ALL_SUPPLIER_STATUSES = 'ALL';
 
@@ -206,6 +204,26 @@ function SuppliersPage() {
     && hasFeature(SUPPLIER_CAPABILITY.CATALOG_IMPORT)
   );
 
+  const currentQuery = section === 'suppliers'
+    ? supplierQuery
+    : section === 'articles'
+      ? articleQuery
+      : catalogQuery;
+  const viewport = useTableViewport({
+    dependency: [section, currentQuery.isLoading, currentQuery.isError,
+      currentQuery.data?.pagination?.total, currentQuery.data?.pagination?.page].join(':'),
+  });
+
+  function changePage(nextPage) {
+    setPage(nextPage);
+    viewport.resetScroll();
+  }
+
+  function changePageSize(nextPageSize) {
+    setPageSize(nextPageSize);
+    viewport.resetScroll();
+  }
+
   // La recherche interroge le serveur plutôt que la seule page affichée.
   useEffect(() => {
     const nextSearch = searchInput.trim();
@@ -213,14 +231,16 @@ function SuppliersPage() {
 
     const timeoutId = window.setTimeout(() => {
       setPage(1);
+      viewport.resetScroll();
       setSearch(nextSearch);
     }, 300);
 
     return () => window.clearTimeout(timeoutId);
-  }, [searchInput, search, setPage]);
+  }, [searchInput, search, setPage, viewport.resetScroll]);
 
   function changeSection(nextSection) {
     setPage(1);
+    viewport.resetScroll();
     if (nextSection !== 'articles') setArticleSupplierId(null);
 
     if (
@@ -237,6 +257,7 @@ function SuppliersPage() {
   }
 
   function changeStatus(nextStatus) {
+    viewport.resetScroll();
     setPage(1);
     setStatus(nextStatus);
   }
@@ -348,43 +369,34 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (supplier) => (
-        <DataTableActions>
-          <ActionIconButton
-            Icon={Eye}
-            label={'Voir ' + supplier.name}
-            onClick={() => setSupplierDetails({
-              open: true,
-              supplier,
-            })}
-            tooltipLabel="Voir"
-            variant="outline"
-          />
-          {supplier.scope === 'WORKSPACE_PRIVATE' && canManageSuppliers && (
-            <>
-              <ActionIconButton
-                Icon={Pencil}
-                label={'Modifier ' + supplier.name}
-                onClick={() => setSupplierDialog({ open: true, supplier })}
-                tooltipLabel="Modifier"
-                variant="outline"
-              />
-              <ActionIconButton
-                Icon={supplier.status === 'ACTIVE' ? Archive : RotateCcw}
-                disabled={supplierStatusState.isLoading}
-                label={
-                  (supplier.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
-                  + supplier.name
-                }
-                onClick={() => toggleSupplierStatus(supplier)}
-                tooltipLabel={
-                  supplier.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
-                }
-                variant="outline"
-              />
-            </>
-          )}
-        </DataTableActions>
-      ),
+        <TableRowActionsMenu
+          label={supplier.name}
+          actions={[
+            {
+              key: 'view',
+              Icon: Eye,
+              label: 'Voir',
+              onClick: () => setSupplierDetails({ open: true, supplier }),
+            },
+            ...(supplier.scope === 'WORKSPACE_PRIVATE' && canManageSuppliers ? [
+              {
+                key: 'edit',
+                Icon: Pencil,
+                label: 'Modifier',
+                onClick: () => setSupplierDialog({ open: true, supplier }),
+              },
+              {
+                key: 'status',
+                Icon: supplier.status === 'ACTIVE' ? Archive : RotateCcw,
+                label: supplier.status === 'ACTIVE' ? 'Archiver' : 'Réactiver',
+                destructive: supplier.status === 'ACTIVE',
+                disabled: supplierStatusState.isLoading,
+                onClick: () => toggleSupplierStatus(supplier),
+              },
+            ] : []),
+          ]}
+        />
+      )
     },
   ];
 
@@ -468,29 +480,26 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (article) => (
-        <DataTableActions>
-          <ActionIconButton
-            Icon={Eye}
-            label={'Détails de ' + article.supplierReference}
-            onClick={() => setArticleDetails(article)}
-            tooltipLabel="Consulter l’Article"
-            variant="outline"
-          />
-          {article.scope === 'WORKSPACE_PRIVATE' && canManageArticles && (
-            <ActionIconButton
-              Icon={article.status === 'ACTIVE' ? Archive : RotateCcw}
-              disabled={articleStatusState.isLoading}
-              label={
-                (article.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
-                + article.supplierReference
-              }
-              onClick={() => toggleArticleStatus(article)}
-              tooltipLabel={article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'}
-              variant="outline"
-            />
-          )}
-        </DataTableActions>
-      ),
+        <TableRowActionsMenu
+          label={article.supplierReference}
+          actions={[
+            {
+              key: 'view',
+              Icon: Eye,
+              label: 'Consulter l’Article',
+              onClick: () => setArticleDetails(article),
+            },
+            ...(article.scope === 'WORKSPACE_PRIVATE' && canManageArticles ? [{
+              key: 'status',
+              Icon: article.status === 'ACTIVE' ? Archive : RotateCcw,
+              label: article.status === 'ACTIVE' ? 'Archiver' : 'Réactiver',
+              destructive: article.status === 'ACTIVE',
+              disabled: articleStatusState.isLoading,
+              onClick: () => toggleArticleStatus(article),
+            }] : []),
+          ]}
+        />
+      )
     },
   ];
 
@@ -551,45 +560,32 @@ function SuppliersPage() {
       id: 'actions',
       header: 'Actions',
       cell: (catalog) => (
-        <DataTableActions>
-          <ActionIconButton
-            Icon={Eye}
-            label={'Voir ' + catalog.name}
-            onClick={() => navigate(
-              '/workspaces/'
-              + workspace.id
-              + '/suppliers/catalogs/'
-              + catalog.id,
-            )}
-            tooltipLabel="Voir"
-            variant="outline"
-          />
-          {catalog.scope === 'WORKSPACE_PRIVATE'
-            && can(SUPPLIER_PERMISSION.CATALOG_MANAGE) && (
-            <ActionIconButton
-              Icon={catalog.status === 'ACTIVE' ? Archive : RotateCcw}
-              disabled={catalogStatusState.isLoading}
-              label={
-                (catalog.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
-                + catalog.name
-              }
-              onClick={() => toggleCatalogStatus(catalog)}
-              tooltipLabel={
-                catalog.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
-              }
-              variant="outline"
-            />
-          )}
-        </DataTableActions>
-      ),
+        <TableRowActionsMenu
+          label={catalog.name}
+          actions={[
+            {
+              key: 'view',
+              Icon: Eye,
+              label: 'Voir',
+              onClick: () => navigate(
+                '/workspaces/' + workspace.id
+                + '/suppliers/catalogs/' + catalog.id,
+              ),
+            },
+            ...(catalog.scope === 'WORKSPACE_PRIVATE'
+              && can(SUPPLIER_PERMISSION.CATALOG_MANAGE) ? [{
+                key: 'status',
+                Icon: catalog.status === 'ACTIVE' ? Archive : RotateCcw,
+                label: catalog.status === 'ACTIVE' ? 'Archiver' : 'Réactiver',
+                destructive: catalog.status === 'ACTIVE',
+                disabled: catalogStatusState.isLoading,
+                onClick: () => toggleCatalogStatus(catalog),
+              }] : []),
+          ]}
+        />
+      )
     },
   ];
-
-  const currentQuery = section === 'suppliers'
-    ? supplierQuery
-    : section === 'articles'
-      ? articleQuery
-      : catalogQuery;
 
   useEffect(() => {
     const totalPages = currentQuery.data?.pagination?.totalPages;
@@ -661,7 +657,7 @@ function SuppliersPage() {
         </TabsList>
       </Tabs>
 
-      <section className="rounded-xl border border-border bg-card">
+      <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
         <div className="flex flex-col gap-3 border-b border-border p-5 md:flex-row md:items-center">
           {(section === 'suppliers' || section === 'articles') && (
             <div className="w-full min-w-0 md:flex-1">
@@ -684,6 +680,7 @@ function SuppliersPage() {
               <SupplierArticleSupplierFilter
                 onChange={(supplierId) => {
                   setPage(1);
+                  viewport.resetScroll();
                   setArticleSupplierId(supplierId);
                 }}
                 value={articleSupplierId}
@@ -735,54 +732,72 @@ function SuppliersPage() {
           />
         ) : (
           <>
-            {section === 'suppliers' ? (
-              <DataTable
-                caption="Fournisseurs de l’espace de travail"
-                columns={supplierColumns}
-                data={suppliers}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucun Fournisseur ne correspond aux critères."
-                    title="Aucun Fournisseur"
-                  />
-                )}
-                getRowKey={(supplier) => supplier.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
-            ) : section === 'articles' ? (
-              <DataTable
-                caption="Articles fournisseur"
-                columns={articleColumns}
-                data={articleQuery.data?.articles ?? []}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucun Article fournisseur ne correspond aux critères."
-                    title="Aucun Article"
-                  />
-                )}
-                getRowKey={(article) => article.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
-            ) : (
-              <DataTable
-                caption="Catalogues fournisseurs"
-                columns={catalogColumns}
-                data={catalogQuery.data?.catalogs ?? []}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucun catalogue fournisseur n’est disponible."
-                    title="Aucun catalogue"
-                  />
-                )}
-                getRowKey={(catalog) => catalog.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
-            )}
+            <div
+              aria-label={
+                section === 'suppliers'
+                  ? 'Lignes des Fournisseurs'
+                  : section === 'articles'
+                    ? 'Lignes des Articles fournisseur'
+                    : 'Lignes des Catalogues fournisseur'
+              }
+              className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+              ref={viewport.ref}
+              role="region"
+              style={{ height: viewport.height }}
+              tabIndex={0}
+            >
+              {section === 'suppliers' ? (
+                <DataTable
+                  caption="Fournisseurs de l’espace de travail"
+                  columns={supplierColumns}
+                  data={suppliers}
+                  emptyContent={(
+                    <EmptyState
+                      className="p-0"
+                      description="Aucun Fournisseur ne correspond aux critères."
+                      title="Aucun Fournisseur"
+                    />
+                  )}
+                  getRowKey={(supplier) => supplier.id}
+                  headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                  rowClassName="transition-colors hover:bg-muted/50"
+                />
+              ) : section === 'articles' ? (
+                <DataTable
+                  caption="Articles fournisseur"
+                  columns={articleColumns}
+                  data={articleQuery.data?.articles ?? []}
+                  emptyContent={(
+                    <EmptyState
+                      className="p-0"
+                      description="Aucun Article fournisseur ne correspond aux critères."
+                      title="Aucun Article"
+                    />
+                  )}
+                  getRowKey={(article) => article.id}
+                  headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                  rowClassName="transition-colors hover:bg-muted/50"
+                />
+              ) : (
+                <DataTable
+                  caption="Catalogues fournisseurs"
+                  columns={catalogColumns}
+                  data={catalogQuery.data?.catalogs ?? []}
+                  emptyContent={(
+                    <EmptyState
+                      className="p-0"
+                      description="Aucun catalogue fournisseur n’est disponible."
+                      title="Aucun catalogue"
+                    />
+                  )}
+                  getRowKey={(catalog) => catalog.id}
+                  headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                  rowClassName="transition-colors hover:bg-muted/50"
+                />
+              )}
+            </div>
 
-            <div className="px-5 pb-5">
+            <div className="border-t border-border px-5 pb-5">
               <DataPagination
                 ariaLabel={
                   section === 'suppliers'
@@ -792,8 +807,8 @@ function SuppliersPage() {
                       : 'Pagination des catalogues fournisseurs'
                 }
                 disabled={currentQuery.isFetching}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
+                onPageChange={changePage}
+                onPageSizeChange={changePageSize}
                 page={page}
                 pageSize={pageSize}
                 pagination={currentQuery.data?.pagination}

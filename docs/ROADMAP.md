@@ -1,10 +1,30 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
 **Statut :** M-001 à M-005 intégrés ; M-003 complété par PR #44 ; Core Gate post-merge validée à la tentative 2
-**Dernière mise à jour :** 2026-10-22
+**Dernière mise à jour :** 2026-10-23
 
 > Cette roadmap décrit l'ordre de cadrage et de livraison.  
 > Elle ne constitue pas encore un engagement de périmètre V1 ni un calendrier daté.
+
+## Lot UI/UX transversal actif — 2026-10-22
+
+QA du 2026-10-23 : menu M-002 « Valider » (survol/focus vert) et « Examiner » (survol/focus warning), filtre « Actives » rétabli ; dialogue Catégorie allégé. Protection actuelle des doublons normalisés auditée et renforcée par tests HTTP, avec gestion de conflit d'index au renommage. Suggestions de catégories orthographiquement proches à cadrer séparément avant implémentation.
+
+
+Complément validé : recherche prédictive d'Articles fournisseur dans les trois parcours Dossier/Tarifs/prix applicable, affichage du nom métier, menus flottants sans agrandir les cartes, icône `FolderOpen` pour l'ouverture du Dossier.
+
+Sur `feature/ui-ux-improvements` : harmonisation des menus d'actions
+« … » pour les tableaux Fournisseurs/Articles/Catalogues, Dossiers
+et Fournisseurs et prix ; infobulle de portée et désactivation
+d'« Enregistrer » sans nom dans le formulaire Fournisseur.
+Cadrage : `docs/ux/UI-UX-TABLE-ACTIONS-SUPPLIERS-DOSSIERS-2026-10-22.md`.
+Complément M-002 validé le 2026-10-23 : contrôle d'identité provisoire unique avec clôture qualité par l'approbation de gouvernance existante, interdiction de la revue qualité isolée et de l'acquittement implicite lors de la correction ; cartes Variétés/Caractéristiques harmonisées (statut priorisé, action Examiner/Confirmer la qualité, menu d'actions partagé), filtre « À contrôler » cohérent. Contrats M-002 et UI/UX mis à jour ; recette Windows et gate locales requises.
+
+Complément M-002 approuvé le 2026-10-23 : densifier les cartes Dimensions et regrouper dans « … » validation rapide conditionnelle, examen et maintenance ; retirer « Actif » redondant et afficher « Non archivées » dans le filtre. Le contrat Core reste inchangé, superposition M-002 ciblée à vérifier visuellement. Tests et gate en attente.
+
+**Validation locale, gate et QA visuelle en attente ; aucune PR prévue avant accord.**
+Ce lot n'ouvre pas une fonctionnalité métier, un changement de Core
+ou une refonte des permissions.
 
 ### Recette visuelle M-002 — complément de stabilisation (2026-10-16)
 
@@ -693,3 +713,14 @@ Les suppressions contrôlées de catalogues, renouvellements prospectifs de list
 Le contrat `docs/m003/M-003-FINAL-CONTRACT.md` et la conception `docs/m003/M-003-TECHNICAL-DESIGN.md` conservent les décisions détaillées : imports CSV/XLS/XLSX, mercuriales sans catalogue, corrections, périodes, tableaux et drawer Article à onglets. Leur livraison n'est plus « en attente de PR ». Les dettes différées ne sont pas assimilées à des fonctionnalités livrées.
 
 Après la PR strictement documentaire, synchroniser localement `main` et nettoyer uniquement les branches réellement fusionnées après vérification.
+
+Complément UI/UX M-002 (2026-10-23) : tableau Catégories à menus d'actions, suppression conditionnée à zéro Produit associé (y compris archives), contrôle de permission Application Global, audit transactionnel, en-tête fixe et données défilantes. Drawer : « Approuver » et « Annuler » pour sortir du contrôle sans quitter le Produit. Tests locaux et gate non attestés ; aucune PR/merge avant accord.
+
+
+Complément UI/UX M-002 du 2026-10-23 : pagination standard des catégories (10/20/50/100) en conservant le défilement interne et l'en-tête visible ; action explicite « Fusionner » réaffectant tous les Produits de la source à une cible active, suppression de la source et événement d'audit dans la même transaction. Tests de permissions, validations, intégrité d'association, catégories archivées et frontend préparés ; tests/gate et QA Windows non exécutés ici, pas de PR.
+
+Finition QA du 2026-10-23 (M-002) : les trois tableaux « Référentiel », « À contrôler » et « Catégories » utilisent une région de lignes à défilement interne avec en-tête sticky et pagination hors scroll. Le workflow de création/renommage de catégorie interroge le backend pour proposer les noms proches (y compris archives) et exige la confirmation d'une catégorie distincte, vérifiée aussi par le serveur. Tests et QA PowerShell non exécutés ici ; aucun merge/PR.
+
+Finition du lot UI/UX du 2026-10-23 : menu Fiches techniques réordonné Modifier → Prévisualiser → Optimiser → Supprimer, listage des Fiches avec en-tête sticky et scroll interne, même disposition des tableaux Fournisseurs et prix (Références, Catalogues, Tarifs négociés, Prix facturés, Prix indicatifs). Action isolée « Retirer du Dossier » représentée par un bouton direct icône + texte, rouge au survol/focus, sans modifier les permissions ni les mutations. L'outil de hauteur de tableau est mutualisé sans toucher au Core. Gates Windows et QA à confirmer, aucune PR/merge avant accord.
+
+Lot de finition UI/UX du 2026-10-23 : Fournisseurs, Articles et Catalogues (page Fournisseurs) ainsi que Tous les produits et Favoris (page Produits) disposent de lignes à défilement interne, d'un en-tête sticky et du footer de pagination serveur laissé hors du scroll. Réutilisation du hook transverse UI et de `DataPagination` existant ; pas de changement Core, backend, RBAC ou données. Tests RTL ciblés intégrés ; validation locale Windows, lint/build, gate et QA visuelle toujours en attente, sans PR ni fusion.

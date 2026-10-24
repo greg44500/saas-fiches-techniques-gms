@@ -212,6 +212,17 @@ de modèle `Notification` spécifique. Si un besoin de notification persistée,
 distribuée ou multi-canal est confirmé, il doit être cadré comme évolution
 générique Core, versionné dans `saas-core-api`, puis réintégré au produit.
 
+**Transmission du 2026-10-23 — pièces jointes e-mail :** le Produit sait
+exporter ses Fiches techniques validées en PDF/XLSX/CSV. L'envoi automatique
+du PDF est différé ; la proposition d'évolution du contrat générique
+`sendEmail` (pièces jointes de taille et nombre bornés, contenu en mémoire,
+sécurité Nodemailer, échecs, audit) doit être cadrée dans le dépôt
+`saas-core-api` au titre de sa dette D-008 **après** clôture du frontend.
+Cette extension n'est ni implémentée, ni committée, ni publiée dans le Core.
+Le Produit ne doit pas créer de transport SMTP parallèle.
+L'audit de la branche historique `fix/m001-final-ux-review` reste distinct
+et différé.
+
 ### D-009 — API Keys et Webhooks
 
 **Statut :** CONDITIONNEL  
@@ -405,6 +416,37 @@ Les constats actuels ne bloquent pas M-003 :
 - le défaut porte sur la compréhension, la densité visuelle et la capacité d'action de l'utilisateur Platform.
 
 Cette dette ne doit pas être implémentée sur la branche M-003 : elle appartient au périmètre M-002 et sera traitée dans un lot cohérent après livraison de M-003.
+
+### GMS-M002-CATEGORY-NEAR-DUPLICATES — Rapprochement des catégories similaires
+
+**Statut : PARTIELLEMENT TRAITÉ — suivi QA et robustesse**
+
+Le lot UI/UX du 2026-10-23 introduit des suggestions backend de catégories exactes/proches avec `isNearDuplicateKey`, y compris archivées, et une confirmation humaine explicite vérifiée par le service lors de la création/du renommage (`reviewedCandidateIds`). L'index MongoDB unique conserve la protection contre les collisions exactes ; aucune fusion automatique.
+
+À vérifier avant livraison : tests locaux de faux positifs et volumétrie d'une taxonomie qui grandit, transactions concurrentes créant des catégories proches, lisibilité et accessibilité des suggestions au clavier. Une distance orthographique ne prouve pas que deux catégories soient identiques.
+
+---
+
+### GMS-CORE-UX-002 — Superposition des menus Popover dans les drawers
+
+**Statut : DIFFÉRÉ — candidat Core, aucun upgrade engagé**
+
+Le menu partagé `TableRowActionsMenu` est rendu via la primitive Core
+`PopoverContent` en portail sur la couche `--layer-flyout` (70), tandis
+que le panneau `Sheet` utilise `--layer-drawer` (90/91). Dans le drawer
+M-002, les actions apparaissent derrière le panneau au lieu d'être visibles.
+
+Le lot UI/UX du 2026-10-23 utilise un correctif CSS **strictement ciblé**
+sur le menu des Variétés/Caractéristiques M-002, sans altérer la primitive
+Core. Recette réelle obligatoire : visibilité, clic, clavier, défilement,
+disposition mobile et priorité sous les boîtes de dialogue.
+
+Une solution générique robuste (couche ou conteneur de portail contextualisé)
+sera étudiée séparément dans `saas-core-api`, selon la gouvernance des upgrades.
+Ne pas mêler à D-008 communications/pièces jointes ; retirer le CSS ciblé
+uniquement après intégration et tests d'un mécanisme Core validé.
+
+---
 
 ### GMS-CORE-UX-001 — Canoniser le survol de ligne dans DataTable
 
@@ -868,3 +910,12 @@ un upgrade versionné ; ne pas désactiver le contrôle de test.
 Core Gate PR `38537453030` success ; post-merge
 `38539141748` success (tentative 2). Les dettes M-003
 différées ci-dessus restent ouvertes.
+
+
+### GMS-M002-CATEGORY-MERGE-CONCURRENCY — Référence concurrente lors d'une fusion de catégories
+
+**Statut : À VÉRIFIER EN TEST LOCAL — sécurité des données Produit**
+
+Le service M-002 de fusion réaffecte tous les Produits de la source vers la cible dans une transaction et retire la source. MongoDB n'impose pas de clé étrangère sur `CanonicalProduct.category`. Il faut vérifier le cas où une création ou modification Produit concurrente a déjà lu l'ancienne catégorie source et finalise son écriture autour de la transaction. Prévoir un test d'intégration avec barrières de concurrence sous `rs0`, puis, si nécessaire, une coordination transactionnelle des écrivains de catégorie et une politique de retry idempotente avant gate finale. Ne pas considérer la fusion comme garantie contre cette anomalie en l'absence de ce contrôle.
+
+---

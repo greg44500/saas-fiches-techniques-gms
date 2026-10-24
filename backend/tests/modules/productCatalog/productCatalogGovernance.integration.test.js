@@ -7,6 +7,7 @@ import {
     it,
 } from 'vitest';
 
+import { findCategoryNameSuggestions } from '../../../modules/productCatalog/productCategorySuggestions.service.js';
 import {
     CanonicalProduct,
 } from '../../../modules/productCatalog/canonicalProduct.model.js';
@@ -30,9 +31,12 @@ import {
 } from '../../../modules/supplierCatalog/supplierPricing.model.js';
 import {
     createCategory,
+    deleteCategory,
     createGlobalProduct,
     createGlobalVariant,
     listCategories,
+    mergeCategories,
+    updateCategory,
     updateCategoryStatus,
     updateProductStatus,
     updateVariant,
@@ -356,9 +360,9 @@ describe('M-002 product reference governance', () => {
 
         const categories = await listCategories();
         expect(categories.find(({ id }) => id === usedCategory.id))
-            .toMatchObject({ activeProductCount: 1 });
+            .toMatchObject({ activeProductCount: 1, totalProductCount: 3 });
         expect(categories.find(({ id }) => id === emptyCategory.id))
-            .toMatchObject({ activeProductCount: 0 });
+            .toMatchObject({ activeProductCount: 0, totalProductCount: 0 });
 
         const globalMetadata = await getProductMetadata({
             includeArchivedCategories: true,
@@ -372,6 +376,223 @@ describe('M-002 product reference governance', () => {
         expect(
             workspaceMetadata.categories.find(({ id }) => id === usedCategory.id),
         ).not.toHaveProperty('activeProductCount');
+    });
+
+    it('suggère les catégories proches et exige une confirmation avant création distincte', async () => {
+        const first = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Épicerie',
+        });
+        const suggestions = await findCategoryNameSuggestions({ name: 'Épiserie' });
+        expect(suggestions.exactMatch).toBeNull();
+        expect(suggestions.candidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: first.id, name: 'Épicerie' }),
+        ]));
+        await expect(createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Épiserie',
+        })).rejects.toMatchObject({ statusCode: 409 });
+        const confirmed = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Épiserie',
+            reviewedCandidateIds: [first.id],
+        });
+        expect(confirmed.name).toBe('Épiserie');
+    });
+
+    it('réexamine les doublons proches au renommage, y compris archivés', async () => {
+        const source = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Conditionnements',
+        });
+        const target = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Autre famille',
+        });
+        await updateCategoryStatus({
+            actorId: ownerContext.owner._id,
+            categoryId: source.id,
+            status: 'ARCHIVED',
+        });
+        const suggestions = await findCategoryNameSuggestions({
+            name: 'Conditionnement',
+            excludeCategoryId: target.id,
+        });
+        expect(suggestions.candidates).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: source.id, status: 'ARCHIVED' }),
+        ]));
+        await expect(updateCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: target.id,
+            name: 'Conditionnement',
+        })).rejects.toMatchObject({ statusCode: 409 });
+        const renamed = await updateCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: target.id,
+            name: 'Conditionnement',
+            reviewedCandidateIds: [source.id],
+        });
+        expect(renamed.name).toBe('Conditionnement');
+    });
+
+    it('supprime une catégorie vide et conserve la trace de suppression', async () => {
+        const empty = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Catégorie temporaire vide',
+        });
+        const removed = await deleteCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: empty.id,
+        });
+        expect(removed.id).toBe(empty.id);
+        expect((await listCategories()).some(({ id }) => id === empty.id)).toBe(false);
+        const event = await ProductReferenceEvent.findOne({
+            entityId: empty.id,
+            action: 'CATEGORY_DELETED',
+        });
+        expect(event).toMatchObject({
+            metadata: { name: 'Catégorie temporaire vide' },
+        });
+        await expect(deleteCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: empty.id,
+        })).rejects.toMatchObject({ statusCode: 404 });
+    });
+
+    it('interdit de supprimer une catégorie avec un Produit archivé ou historique', async () => {
+        const category = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Catégorie anciennement utilisée',
+        });
+        const product = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Produit historique avec catégorie',
+            categoryId: category.id,
+        });
+        await updateProductStatus({
+            actorId: ownerContext.owner._id,
+            productId: product.product.id,
+            status: 'ARCHIVED',
+        });
+        expect((await listCategories()).find(({ id }) => id === category.id))
+            .toMatchObject({ activeProductCount: 0, totalProductCount: 1 });
+        await expect(deleteCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: category.id,
+        })).rejects.toMatchObject({ statusCode: 409 });
+        await CanonicalProduct.updateOne(
+            { _id: product.product.id },
+            { $set: { identityActive: false } },
+        );
+        await expect(deleteCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: category.id,
+        })).rejects.toMatchObject({ statusCode: 409 });
+    });
+
+    it('fusionne les catégories en conservant l’identité cible et tous les Produits', async () => {
+        const source = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Fruits de saison',
+        });
+        const target = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Fruits',
+            reviewedCandidateIds: [source.id],
+        });
+        const first = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Pomme de saison à fusionner',
+            categoryId: source.id,
+        });
+        const second = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Prune de saison à fusionner',
+            categoryId: source.id,
+        });
+        await updateProductStatus({
+            actorId: ownerContext.owner._id,
+            productId: second.product.id,
+            status: 'ARCHIVED',
+        });
+
+        const merged = await mergeCategories({
+            actorId: ownerContext.owner._id,
+            sourceCategoryId: source.id,
+            targetCategoryId: target.id,
+        });
+        expect(merged).toMatchObject({
+            sourceCategoryId: source.id,
+            target: { id: target.id, name: 'Fruits' },
+            movedProductCount: 2,
+        });
+        expect((await listCategories()).some(({ id }) => id === source.id)).toBe(false);
+        expect((await listCategories()).find(({ id }) => id === target.id))
+            .toMatchObject({ totalProductCount: 2, activeProductCount: 1 });
+        for (const id of [first.product.id, second.product.id]) {
+            expect((await CanonicalProduct.findById(id)).category.toString())
+                .toBe(target.id);
+        }
+        const event = await ProductReferenceEvent.findOne({
+            entityId: source.id,
+            action: 'CATEGORY_MERGED',
+        });
+        expect(event).toMatchObject({
+            metadata: {
+                sourceName: 'Fruits de saison',
+                targetCategoryId: target.id,
+                targetName: 'Fruits',
+                movedProductCount: 2,
+            },
+        });
+        const renamed = await updateCategory({
+            actorId: ownerContext.owner._id,
+            categoryId: target.id,
+            name: 'Fruits regroupés',
+        });
+        expect(renamed).toMatchObject({
+            id: target.id,
+            name: 'Fruits regroupés',
+        });
+    });
+
+    it('refuse fusion identique, cible archivée ou catégorie inexistante sans déplacer les Produits', async () => {
+        const source = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Source garde-fou',
+        });
+        const target = await createCategory({
+            actorId: ownerContext.owner._id,
+            name: 'Cible archivée garde-fou',
+        });
+        const product = await createGlobalProduct({
+            actorId: ownerContext.owner._id,
+            name: 'Produit garde-fou fusion catégorie',
+            categoryId: source.id,
+        });
+        await updateCategoryStatus({
+            actorId: ownerContext.owner._id,
+            categoryId: target.id,
+            status: 'ARCHIVED',
+        });
+
+        await expect(mergeCategories({
+            actorId: ownerContext.owner._id,
+            sourceCategoryId: source.id,
+            targetCategoryId: source.id,
+        })).rejects.toMatchObject({ statusCode: 400 });
+        await expect(mergeCategories({
+            actorId: ownerContext.owner._id,
+            sourceCategoryId: source.id,
+            targetCategoryId: target.id,
+        })).rejects.toMatchObject({ statusCode: 409 });
+        await expect(mergeCategories({
+            actorId: ownerContext.owner._id,
+            sourceCategoryId: source.id,
+            targetCategoryId: ownerContext.workspace._id,
+        })).rejects.toMatchObject({ statusCode: 404 });
+        expect((await CanonicalProduct.findById(product.product.id)).category.toString())
+            .toBe(source.id);
     });
 
     it('convertit la Présentation initiale en Caractéristique structurée', async () => {

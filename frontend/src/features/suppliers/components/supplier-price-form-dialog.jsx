@@ -18,6 +18,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { SupplierArticleSearchAutocomplete } from '@/features/suppliers/components/supplier-article-search-autocomplete';
 import {
   Select,
   SelectContent,
@@ -41,26 +42,28 @@ const NONE = '__NONE__';
 const PRICE_BASES = ['PACKAGE', 'G', 'KG', 'ML', 'CL', 'L', 'UNIT'];
 
 function SupplierPriceFormDialog({
-  articles,
+  articles = [],
   dossierId,
   mode,
   onClose,
   onSaved,
   open,
+  serverSearch = false,
   workspaceId,
 }) {
   const isInvoice = mode === 'invoice';
   const cancelRef = useRef(null);
   const [articleId, setArticleId] = useState(NONE);
+  const [articleSelection, setArticleSelection] = useState(null);
   const [amount, setAmount] = useState('');
   const [basis, setBasis] = useState('KG');
   const [date, setDate] = useState('');
   const [validTo, setValidTo] = useState('');
   const [source, setSource] = useState('');
   const [error, setError] = useState('');
-  const selectedArticle = articles.find(
-    ({ id }) => id === articleId,
-  ) ?? null;
+  const selectedArticle = articleSelection
+    ?? articles.find(({ id }) => id === articleId)
+    ?? null;
 
   const [createNegotiated, negotiatedState] =
     useCreateNegotiatedPriceMutation();
@@ -72,6 +75,7 @@ function SupplierPriceFormDialog({
     if (!open) return;
 
     setArticleId(NONE);
+    setArticleSelection(null);
     setAmount('');
     setBasis('KG');
     setDate('');
@@ -143,17 +147,10 @@ function SupplierPriceFormDialog({
     }
   }
 
-  function selectArticle(nextArticleId) {
-    setArticleId(nextArticleId);
-
-    const nextArticle = articles.find(
-      ({ id }) => id === nextArticleId,
-    );
-
-    setBasis(
-      nextArticle?.productVariant?.referenceUnit
-      ?? 'KG',
-    );
+  function selectArticle(article) {
+    setArticleId(article?.id ?? NONE);
+    setArticleSelection(article);
+    setBasis(article?.productVariant?.referenceUnit ?? 'KG');
   }
 
   function getPriceBaseLabel(value) {
@@ -194,32 +191,14 @@ function SupplierPriceFormDialog({
           <form className="mt-5 space-y-4" onSubmit={submit}>
             <Field>
               <FieldLabel>Article fournisseur</FieldLabel>
-              <Select
-                items={[
-                  { value: NONE, label: 'Sélectionner' },
-                  ...articles.map((article) => ({
-                    value: article.id,
-                    label:
-                      article.supplierName
-                      + ' · '
-                      + article.supplierReference,
-                  })),
-                ]}
-                onValueChange={selectArticle}
-                value={articleId}
-              >
-                <SelectTrigger aria-label="Article fournisseur">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE}>Sélectionner</SelectItem>
-                  {articles.map((article) => (
-                    <SelectItem key={article.id} value={article.id}>
-                      {article.supplierName} · {article.supplierReference}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SupplierArticleSearchAutocomplete
+                ariaLabel="Article fournisseur"
+                fallbackArticles={articles}
+                onSelect={selectArticle}
+                selectedArticle={selectedArticle}
+                serverSearch={serverSearch}
+                workspaceId={workspaceId}
+              />
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">

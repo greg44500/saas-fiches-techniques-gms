@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   listInvoiced: vi.fn(),
   listIndicative: vi.fn(),
   listWorkspaceIndicative: vi.fn(),
+  removeReference: vi.fn(),
 }));
 
 vi.mock('react-router', async (importOriginal) => {
@@ -48,7 +50,7 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
     { isLoading: false },
   ],
   useRemoveDossierSupplierReferenceMutation: () => [
-    vi.fn(),
+    mocks.removeReference,
     { isLoading: false },
   ],
   useArchiveNegotiatedPriceMutation: () => [
@@ -129,6 +131,9 @@ describe('normalizeArticle', () => {
 describe('DossierSupplierPricingPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.removeReference.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({}),
+    });
 
     mocks.params.mockReturnValue({
       dossierId: 'dossier-1',
@@ -150,6 +155,48 @@ describe('DossierSupplierPricingPage', () => {
     mocks.listInvoiced.mockReturnValue(queryResult([]));
     mocks.listIndicative.mockReturnValue(queryResult([]));
     mocks.listWorkspaceIndicative.mockReturnValue(queryResult([]));
+  });
+
+  it('recherche les Articles pour les Références du Dossier sans liste de 100 éléments', async () => {
+    const user = userEvent.setup();
+    mocks.workspaceContext.mockReturnValue({
+      workspace: { id: 'workspace-1', name: 'Acme' },
+      can: (permission) => [
+        SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ,
+        SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE,
+        SUPPLIER_PERMISSION.ARTICLE_READ,
+      ].includes(permission),
+    });
+    mocks.listArticles.mockImplementation((args, opts) => queryResult({
+      articles: opts?.skip || args.search !== '43279' ? [] : [{
+        id: 'article-43279',
+        supplierReference: '43279',
+        supplierDesignation: 'Croissant pur beurre',
+        supplier: { id: 'supplier-bridor', name: 'BRIDOR' },
+      }],
+    }));
+
+    renderPage();
+    const input = screen.getByRole('combobox', {
+      name: 'Référence à ajouter au Dossier',
+    });
+    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeDisabled();
+    await user.type(input, '43279');
+
+    const suggestion = await screen.findByRole('option', {
+      name: 'Croissant pur beurre · BRIDOR · 43279',
+    });
+    await user.click(suggestion);
+    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeEnabled();
+    expect(mocks.listArticles).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'workspace-1',
+        search: '43279',
+        page: 1,
+        limit: 10,
+      }),
+      { skip: false },
+    );
   });
 
   it('affiche les catalogues accessibles avec portée et provenance dans le contexte Dossier', () => {
@@ -269,7 +316,8 @@ describe('DossierSupplierPricingPage', () => {
     })).toBeInTheDocument();
   });
 
-  it('affiche le Prix indicatif Workspace hérité lorsqu’aucune surcharge Dossier n’existe', () => {
+  it('affiche le Prix indicatif Workspace hérité lorsqu’aucune surcharge Dossier n’existe', async () => {
+    const user = userEvent.setup();
     mocks.workspaceContext.mockReturnValue({
       workspace: {
         id: 'workspace-1',
@@ -307,8 +355,21 @@ describe('DossierSupplierPricingPage', () => {
     expect(screen.getByText('1,800 / kg')).toBeInTheDocument();
     expect(screen.getByText('Espace de travail')).toBeInTheDocument();
     expect(screen.getByRole('button', {
-      name: 'Définir un prix indicatif pour ce Dossier',
+      name: 'Actions de Carotte',
     })).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Définir un prix indicatif pour ce Dossier',
+    })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de Carotte',
+    }));
+    await user.click(screen.getByRole('button', {
+      name: 'Définir un prix indicatif pour ce Dossier',
+    }));
+
+    expect(screen.getByText('Dialogue Prix indicatif ouvert'))
+      .toBeInTheDocument();
   });
 
   it('privilégie le Prix indicatif du Dossier sur la valeur Workspace affichée', () => {
@@ -377,7 +438,52 @@ describe('DossierSupplierPricingPage', () => {
       .not.toBeInTheDocument();
   });
 
-  it('utilise une action Retirer dédiée plutôt qu’une suppression', () => {
+  it.each([
+    ['Références (0)', 'Lignes des références fournisseurs', 'Référence'],
+    ['Catalogues (0)', 'Lignes des catalogues fournisseurs', 'Catalogue'],
+    ['Tarifs négociés (0)', 'Lignes des tarifs négociés', 'Article'],
+    ['Prix facturés (0)', 'Lignes des prix facturés', 'Article'],
+    ['Prix indicatifs (0)', 'Lignes des prix indicatifs', 'Produit'],
+  ])('conserve l’entête visible avec défilement interne dans %s', async (
+    tab,
+    regionName,
+    firstColumn,
+  ) => {
+    const user = userEvent.setup();
+    mocks.workspaceContext.mockReturnValue({
+      workspace: { id: 'workspace-1', name: 'Acme' },
+      can: () => true,
+    });
+    renderPage();
+    await user.click(screen.getByRole('tab', { name: tab }));
+    const region = screen.getByRole('region', { name: regionName });
+    expect(region).toHaveClass('overflow-auto');
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(within(region).getByRole('columnheader', { name: firstColumn })
+      .closest('thead')).toHaveClass('sticky', 'top-0');
+  });
+
+  it('ne propose pas Retirer du Dossier sans permission de gestion', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: { id: 'workspace-1', name: 'Acme' },
+      can: (permission) => permission === SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ,
+    });
+    mocks.listReferences.mockReturnValue(queryResult([{
+      id: 'dossier-reference-readonly',
+      supplierArticle: {
+        id: 'article-readonly',
+        supplierReference: 'Lecture seule',
+        supplierName: 'BRIDOR',
+        productVariantName: 'Pâte feuilletée',
+      },
+    }]));
+    renderPage();
+    expect(screen.queryByRole('button', { name: /Retirer du Dossier/ }))
+      .not.toBeInTheDocument();
+  });
+
+  it('utilise une action Retirer dédiée plutôt qu’une suppression', async () => {
+    const user = userEvent.setup();
     mocks.workspaceContext.mockReturnValue({
       workspace: {
         id: 'workspace-1',
@@ -400,11 +506,19 @@ describe('DossierSupplierPricingPage', () => {
 
     renderPage();
 
-    expect(screen.getByRole('button', {
-      name: 'Retirer Ali321 du Dossier',
-    })).toBeInTheDocument();
+    const remove = screen.getByRole('button', {
+      name: 'Retirer du Dossier : Ali321',
+    });
+    expect(remove).toHaveClass('hover:text-destructive', 'focus-visible:text-destructive');
+    expect(remove).not.toHaveClass('text-destructive');
     expect(screen.queryByRole('button', {
-      name: /Supprimer Ali321/i,
+      name: 'Actions de Ali321',
     })).not.toBeInTheDocument();
+    await user.click(remove);
+    expect(mocks.removeReference).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      dossierId: 'dossier-1',
+      articleId: 'article-1',
+    });
   });
 });

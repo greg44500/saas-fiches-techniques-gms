@@ -1,0 +1,17 @@
+/*
+ * Ajustement circonscrit au drawer M-002 :
+ * la Positioner du Popover partagé se trouve sous la couche Sheet.
+ * Ne modifie aucune primitive Core ; à retirer après évolution Core
+ * exposant un niveau de Portal configurable et versionnée.
+ *
+ * La cible est la Positioner qui porte un menu de Dimension M-002.
+ * Cette couche passe au-dessus du drawer, mais reste sous les modales.
+ */
+[class*="layer-flyout"]:has(
+  > [data-slot="popover-content"] > [role="group"][aria-label^="Actions de la variété "]
+),
+[class*="layer-flyout"]:has(
+  > [data-slot="popover-content"] > [role="group"][aria-label^="Actions de la caractéristique "]
+) {
+  z-index: calc(var(--layer-drawer) + 2);
+}

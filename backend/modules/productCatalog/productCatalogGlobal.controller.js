@@ -21,8 +21,11 @@ import {
 import {
     PRODUCT_IMPORT_SCOPE,
 } from './productCatalog.registry.js';
+import { findCategoryNameSuggestions } from './productCategorySuggestions.service.js';
 import {
     createCategory,
+    deleteCategory,
+    mergeCategories,
     createGlobalProduct,
     createGlobalVariant,
     getGlobalProductDetail,
@@ -354,12 +357,35 @@ const categories = async (_req, res) => {
     });
 };
 
+const categorySuggestionsController = async (req, res) => {
+    const suggestions = await findCategoryNameSuggestions(req.validated.query);
+    res.status(200).json({ status: 'success', data: { suggestions } });
+};
+
 const createCategoryController = async (req, res) => {
     const category = await createCategory({
         actorId: req.user._id,
         name: req.validated.body.name,
+        reviewedCandidateIds: req.validated.body.reviewedCandidateIds,
     });
     res.status(201).json({ status: 'success', data: { category } });
+};
+
+const mergeCategoriesController = async (req, res) => {
+    const result = await mergeCategories({
+        actorId: req.user._id,
+        sourceCategoryId: req.validated.params.categoryId,
+        targetCategoryId: req.validated.body.targetCategoryId,
+    });
+    res.status(200).json({ status: 'success', data: { result } });
+};
+
+const deleteCategoryController = async (req, res) => {
+    await deleteCategory({
+        actorId: req.user._id,
+        categoryId: req.validated.params.categoryId,
+    });
+    res.status(204).end();
 };
 
 const updateCategoryController = async (req, res) => {
@@ -367,6 +393,7 @@ const updateCategoryController = async (req, res) => {
         actorId: req.user._id,
         categoryId: req.validated.params.categoryId,
         name: req.validated.body.name,
+        reviewedCandidateIds: req.validated.body.reviewedCandidateIds,
     });
     res.status(200).json({ status: 'success', data: { category } });
 };
@@ -459,9 +486,12 @@ const updateVariantStatusController = async (req, res) => {
 export {
     access,
     categories,
+    categorySuggestionsController,
     commitImport,
     confirmVariantMerge,
     createCategoryController,
+    deleteCategoryController,
+    mergeCategoriesController,
     createCharacteristicController,
     createProductController,
     createVarietyController,

@@ -11,6 +11,7 @@ import {
 } from '../supplierCatalog/supplierPricing.model.js';
 import { CanonicalProduct } from './canonicalProduct.model.js';
 import { ProductCategory } from './productCategory.model.js';
+import { assertCategoryNameReviewed } from './productCategorySuggestions.service.js';
 import { listProductCategories } from './productCategoryProjection.service.js';
 import {
     assertProductCreationReviewed,
@@ -57,8 +58,10 @@ import {
 const createCategory = async ({
     actorId,
     name,
+    reviewedCandidateIds = [],
 }) => mongoose.connection.transaction(async (session) => {
     const normalizedKey = normalizeProductText(name);
+    await assertCategoryNameReviewed({ name, reviewedCandidateIds, session });
 
     let category;
     try {
@@ -99,6 +102,7 @@ const updateCategory = async ({
     actorId,
     categoryId,
     name,
+    reviewedCandidateIds = [],
 }) => mongoose.connection.transaction(async (session) => {
     const category = await ProductCategory.findById(categoryId).session(session);
 
@@ -117,10 +121,24 @@ const updateCategory = async ({
         throw new AppError('Cette catégorie existe déjà.', 409);
     }
 
+    await assertCategoryNameReviewed({
+        name,
+        excludeCategoryId: categoryId,
+        reviewedCandidateIds,
+        session,
+    });
+
     category.name = name;
     category.normalizedKey = normalizedKey;
     category.updatedBy = actorId;
-    await category.save({ session });
+    try {
+        await category.save({ session });
+    } catch (error) {
+        if (error?.code === 11000) {
+            throw new AppError('Cette catégorie existe déjà.', 409);
+        }
+        throw error;
+    }
 
     await createProductReferenceEvent({
         actorId,
@@ -132,6 +150,97 @@ const updateCategory = async ({
     });
 
     return serializeCategory(category);
+});
+
+/**
+ * Une catégorie ne peut être supprimée que si aucun Produit, même archivé
+ * ou identité historique inactive, ne lui est encore lié. Audit immutable.
+ */
+const deleteCategory = async ({ actorId, categoryId }) => (
+    mongoose.connection.transaction(async (session) => {
+        const category = await ProductCategory.findById(categoryId).session(session);
+        if (!category) {
+            throw new AppError('Catégorie introuvable.', 404);
+        }
+
+        const attachedProduct = await CanonicalProduct.exists({
+            category: category._id,
+        }).session(session);
+        if (attachedProduct) {
+            throw new AppError(
+                'Cette catégorie contient encore des Produits, y compris archivés.',
+                409,
+            );
+        }
+
+        await ProductCategory.deleteOne({ _id: category._id }).session(session);
+        await createProductReferenceEvent({
+            actorId,
+            action: PRODUCT_REFERENCE_EVENT_ACTION.CATEGORY_DELETED,
+            entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CATEGORY,
+            entityId: category._id,
+            metadata: { name: category.name, normalizedKey: category.normalizedKey },
+            session,
+        });
+
+        return serializeCategory(category);
+    })
+);
+
+/**
+ * Regroupe toute la classification de la source sous une catégorie cible
+ * existante et active. Les Produits (y compris archivés et historiques)
+ * conservent leur identité et leurs autres relations.
+ *
+ * La transaction garantit l'atomicité des réaffectations et de la décision ;
+ * les créations concurrentes sont à couvrir en QA transactionnelle.
+ */
+const mergeCategories = async ({
+    actorId,
+    sourceCategoryId,
+    targetCategoryId,
+}) => mongoose.connection.transaction(async (session) => {
+    if (String(sourceCategoryId) === String(targetCategoryId)) {
+        throw new AppError('Sélectionnez deux catégories différentes.', 400);
+    }
+
+    // Les opérations avec une session transactionnelle sont séquentielles :
+    // Promise.all sur la même session n'est pas un contrat Mongoose sûr.
+    const source = await ProductCategory.findById(sourceCategoryId).session(session);
+    const target = await ProductCategory.findById(targetCategoryId).session(session);
+    if (!source || !target) {
+        throw new AppError('Une des catégories est introuvable.', 404);
+    }
+    if (target.status !== PRODUCT_CATEGORY_STATUS.ACTIVE) {
+        throw new AppError('La catégorie conservée doit être active.', 409);
+    }
+
+    const moved = await CanonicalProduct.updateMany(
+        { category: source._id },
+        { $set: { category: target._id, updatedBy: actorId } },
+        { session },
+    );
+    await ProductCategory.deleteOne({ _id: source._id }).session(session);
+
+    await createProductReferenceEvent({
+        actorId,
+        action: PRODUCT_REFERENCE_EVENT_ACTION.CATEGORY_MERGED,
+        entityType: PRODUCT_REFERENCE_EVENT_ENTITY_TYPE.CATEGORY,
+        entityId: source._id,
+        metadata: {
+            sourceName: source.name,
+            targetCategoryId: target._id.toString(),
+            targetName: target.name,
+            movedProductCount: moved.modifiedCount,
+        },
+        session,
+    });
+
+    return {
+        sourceCategoryId: source._id.toString(),
+        target: serializeCategory(target),
+        movedProductCount: moved.modifiedCount,
+    };
 });
 
 const updateCategoryStatus = async ({
@@ -912,11 +1021,13 @@ const updateVariantStatus = async ({
 
 export {
     createCategory,
+    deleteCategory,
     createGlobalProduct,
     createGlobalProductInSession,
     createGlobalVariant,
     getGlobalProductDetail,
     listCategories,
+    mergeCategories,
     listGlobalProducts,
     updateCategory,
     updateCategoryStatus,

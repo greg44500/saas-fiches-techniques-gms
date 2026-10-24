@@ -31,30 +31,42 @@ const listProductCategories = async ({
         {
             $match: {
                 category: { $in: categories.map(({ _id }) => _id) },
-                status: PRODUCT_STATUS.ACTIVE,
-                identityActive: true,
             },
         },
         {
             $group: {
                 _id: '$category',
-                activeProductCount: { $sum: 1 },
+                totalProductCount: { $sum: 1 },
+                activeProductCount: {
+                    $sum: {
+                        $cond: [
+                            {
+                                $and: [
+                                    { $eq: ['$status', PRODUCT_STATUS.ACTIVE] },
+                                    { $eq: ['$identityActive', true] },
+                                ],
+                            },
+                            1,
+                            0,
+                        ],
+                    },
+                },
             },
         },
     ]);
 
-    const activeCountByCategoryId = new Map(
-        usage.map(({ _id, activeProductCount }) => [
-            _id.toString(),
-            activeProductCount,
-        ]),
+    const usageByCategoryId = new Map(
+        usage.map((item) => [item._id.toString(), item]),
     );
 
     return categories.map((category) => ({
         ...serializeCategory(category),
-        activeProductCount: activeCountByCategoryId.get(
+        activeProductCount: usageByCategoryId.get(
             category._id.toString(),
-        ) ?? 0,
+        )?.activeProductCount ?? 0,
+        totalProductCount: usageByCategoryId.get(
+            category._id.toString(),
+        )?.totalProductCount ?? 0,
     }));
 };
 

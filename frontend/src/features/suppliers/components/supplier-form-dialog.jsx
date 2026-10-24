@@ -19,6 +19,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import {
   useCreateGlobalSupplierMutation,
   useCreateSupplierMutation,
@@ -70,12 +71,18 @@ function SupplierFormDialog({
   const [updateGlobal, updateGlobalState] =
     useUpdateGlobalSupplierMutation();
 
+  const scopeDescription = isGlobal
+    ? 'Cette identité sera partagée entre les espaces de travail autorisés.'
+    : 'Ce Fournisseur restera propre à cet espace de travail.';
+
   const pending = [
     createWorkspaceState,
     updateWorkspaceState,
     createGlobalState,
     updateGlobalState,
   ].some(({ isLoading }) => isLoading);
+
+  const canSubmit = Boolean(name.trim()) && !pending;
 
   useEffect(() => {
     if (!open) return;
@@ -152,13 +159,17 @@ function SupplierFormDialog({
         <DialogOverlay />
         <DialogContent initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>
-              {supplier ? 'Modifier le Fournisseur' : 'Créer un Fournisseur'}
-            </DialogTitle>
-            <DialogDescription>
-              {isGlobal
-                ? 'Cette identité sera partagée entre les espaces de travail autorisés.'
-                : 'Ce Fournisseur restera propre à cet espace de travail.'}
+            <div className="flex items-center gap-2">
+              <DialogTitle>
+                {supplier ? 'Modifier le Fournisseur' : 'Créer un Fournisseur'}
+              </DialogTitle>
+              <InfoTooltip
+                content={scopeDescription}
+                label="À propos de la portée du Fournisseur"
+              />
+            </div>
+            <DialogDescription className="sr-only">
+              {scopeDescription}
             </DialogDescription>
           </DialogHeader>
 
@@ -252,7 +263,7 @@ function SupplierFormDialog({
               >
                 Annuler
               </DialogClose>
-              <Button disabled={pending} type="submit">
+              <Button disabled={!canSubmit} type="submit">
                 {pending ? 'Enregistrement…' : 'Enregistrer'}
               </Button>
             </DialogFooter>

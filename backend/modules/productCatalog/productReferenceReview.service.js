@@ -110,6 +110,15 @@ const markProductDimensionReviewed = async ({
         throw new AppError('Dimension Produit introuvable.', 404);
     }
 
+    // Une identité provisoire se valide par la Contribution : cette décision
+    // approuve la gouvernance et clôt la qualité dans la même transaction.
+    if (dimension.governanceStatus === PRODUCT_GOVERNANCE_STATUS.PROVISIONAL) {
+        throw new AppError(
+            'Cette identité doit d’abord être approuvée dans le contrôle du référentiel.',
+            409,
+        );
+    }
+
     if (
         dimension.qualityReviewStatus
         === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING

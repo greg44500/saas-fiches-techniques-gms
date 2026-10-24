@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -42,7 +43,7 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
 
 vi.mock('@/features/suppliers/components/dossier-applicable-price-card', () => ({
   DossierApplicablePriceCard: () => (
-    <section aria-label="Carte prix applicable">Prix applicable compact</section>
+    <section aria-label="Recherche du prix applicable">Recherche compacte</section>
   ),
 }));
 
@@ -113,7 +114,7 @@ describe('DossierWorkspacePage', () => {
     }));
   });
 
-  it('présente le contexte Dossier compact et ses onglets métier', () => {
+  it('présente la barre compacte et les coordonnées accessibles sur demande', async () => {
     mocks.detailQuery.mockReturnValue(queryResult({
       id: 'dossier-1',
       name: 'Nantes Centre',
@@ -132,7 +133,10 @@ describe('DossierWorkspacePage', () => {
 
     expect(screen.getByRole('heading', { name: 'Nantes Centre' })).toBeInTheDocument();
     expect(screen.getByText('Actif')).toBeInTheDocument();
-    expect(screen.getByText(/44000/)).toBeInTheDocument();
+    expect(screen.queryByText(/44000/)).not.toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Nantes Centre' }));
+    expect(await screen.findByText(/44000/)).toBeInTheDocument();
     expect(screen.getByText('Responsable')).toBeInTheDocument();
     expect(screen.getByText('docs@example.test')).toBeInTheDocument();
     expect(screen.getByText('0200000000')).toBeInTheDocument();
@@ -170,7 +174,7 @@ describe('DossierWorkspacePage', () => {
     );
   });
 
-  it('maintient la carte de prix dans le contexte Dossier jusque dans les Fiches techniques', () => {
+  it('maintient la recherche de prix dans la barre du Dossier jusque dans les Fiches techniques', () => {
     mocks.detailQuery.mockReturnValue(queryResult({
       id: 'dossier-1',
       name: 'Nantes Centre',
@@ -186,7 +190,7 @@ describe('DossierWorkspacePage', () => {
     );
 
     expect(screen.getByRole('region', {
-      name: 'Carte prix applicable',
+      name: 'Recherche du prix applicable',
     })).toBeInTheDocument();
 
     const technicalSheetsTab = screen.getByRole('link', {
@@ -195,10 +199,11 @@ describe('DossierWorkspacePage', () => {
     expect(technicalSheetsTab).toHaveClass('border-primary');
     expect(technicalSheetsTab).toHaveClass('text-primary');
 
-    const identityCard = screen.getByRole('heading', {
+    const compactHeader = screen.getByRole('heading', {
       name: 'Nantes Centre',
     }).closest('header');
-    expect(identityCard).toHaveClass('lg:h-56');
+    expect(compactHeader).toHaveClass('border-b');
+    expect(compactHeader).not.toHaveClass('lg:h-56');
   });
 
   it.each([
@@ -219,7 +224,7 @@ describe('DossierWorkspacePage', () => {
         name: 'Nantes Centre',
       })).not.toBeInTheDocument();
       expect(screen.queryByRole('region', {
-        name: 'Carte prix applicable',
+        name: 'Recherche du prix applicable',
       })).not.toBeInTheDocument();
     },
   );
@@ -244,6 +249,43 @@ describe('DossierWorkspacePage', () => {
     expect(screen.queryByText('Email documents non renseigné')).not.toBeInTheDocument();
     expect(screen.queryByText('Téléphone non renseigné')).not.toBeInTheDocument();
     expect(screen.queryByText('Non renseignée')).not.toBeInTheDocument();
+    const titleButton = screen.getByRole('button', { name: 'Nantes Centre' });
+    expect(titleButton).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Afficher les informations du Dossier',
+    })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Fiches techniques (3)' })).toBeInTheDocument();
+  });
+
+  it('ouvre les informations du Dossier même sans coordonnées', async () => {
+    mocks.detailQuery.mockReturnValue(queryResult({
+      id: 'dossier-1',
+      name: 'Nantes Centre',
+      status: 'PAUSED',
+    }));
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Nantes Centre' }));
+    expect(await screen.findByText('Aucune coordonnée complémentaire renseignée.'))
+      .toBeInTheDocument();
+  });
+
+  it('masque la recherche de prix et l’édition de marge sans permissions', () => {
+    mocks.workspaceContext.mockReturnValue({
+      can: (permission) => permission === TECHNICAL_SHEET_PERMISSION.READ,
+      canAny: () => false,
+      workspace: { id: 'workspace-1', name: 'Acme' },
+    });
+    mocks.detailQuery.mockReturnValue(queryResult({
+      id: 'dossier-1', name: 'Nantes Centre', status: 'ACTIVE',
+    }));
+    renderPage();
+    expect(screen.queryByRole('region', {
+      name: 'Recherche du prix applicable',
+    })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Nantes Centre' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Modifier la marge cible par défaut des nouvelles Fiches',
+    })).not.toBeInTheDocument();
   });
 });

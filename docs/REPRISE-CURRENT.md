@@ -1,3 +1,52 @@
+# Reprise courante — lot transversal UI/UX (2026-10-23)
+
+## Revue finale du contrôle guidé M-002 — 2026-10-24, gate non validée
+
+Nouveau rapport local après le lot transversal précédent : **17/18 E2E ciblés réussis**. Le seul échec concernait l'attente de deux boutons « Valider » dans le contrôle guidé M-002. Relecture de `ProductReferenceReviewWorkflow`, de `ProductReferenceGovernanceReviewPanel`, de `ProductReferenceDetailsDrawer`, de la revue backend, des tests RTL et des étapes finales du scénario :
+- Une Contribution de Dimension provisoire se traite par « Approuver » ; la Référence reste sous « Valider », désactivé jusqu'à l'approbation des dépendances.
+- E2E aligné sur les deux libellés, leurs cardinalités et états ; contrôle DB explicite après la décision Dimension (`APPROVED/REVIEWED`) et invariance provisoire de la Référence ; vérification de l'approbation de la Référence après la décision finale.
+- Test RTL existant renforcé pour empêcher la régression sur les deux actions et leurs états.
+- Aucun code de production ou Core modifié ; tests de ce nouveau correctif **non exécutés**. Rejouer d'abord l'E2E ciblé puis le sous-ensemble complet, et enfin `npm run release:check`. Aucune PR/merge sans confirmation utilisateur.
+
+
+## Stabilisation des E2E — 2026-10-24 (QA locale requise)
+
+Rapport utilisateur : 34 tests Playwright, 26 réussis et 8 en échec. Audit des 12 fichiers de scénarios, avec correctif groupé :
+- M-001 : les liens « Ouvrir » et l'action « Voir » sont désormais dans le menu de ligne « Actions de … ». Helpers et scénarios adaptés sans modifier le composant.
+- M-002 : fixture historique de Dimension REVIEWED mais identité encore PROVISIONAL, sans utiliser la revue directe désormais interdite (409). Parcours de la file « À contrôler » avec pagination serveur, sans hypothèse sur la première page.
+- M-003 : autocomplétion par Référence fournisseur, prix applicable consulté depuis la barre compacte du Dossier et Article consulté depuis son menu de ligne (avant et après création de Référence).
+- Aucun backend/frontend métier, modèle DB ni Core modifié. Tests du nouveau HEAD non exécutés par l'assistant. Faire E2E M-001/M-002/M-003 ciblés, puis `npm run release:check` sous PowerShell. Aucune PR ni fusion sans accord explicite.
+
+
+## Complément du 24 octobre 2026 — barre compacte du Dossier (QA mise à jour)
+
+L'en-tête regroupe retour, titre/statut, marge cible et recherche d'Article fournisseur, sans grandes cartes fixes. Suite au retour QA, **le nom du Dossier est l'unique bouton ouvrant les coordonnées au clic/clavier** : plus d'infobulle au survol ni d'icône d'information supplémentaire. La recherche est immédiatement après la marge et **réellement réduite à une loupe seule au repos**, avant déploiement animé et focus. Le résultat du prix et les règles de sélection restent conservés, avec repli sans effacement lors d'un clic extérieur. Tests RTL ajustés, mais tests, lint/build, gate et QA Windows du nouveau HEAD non attestés ; aucune PR/merge. D-008 Core et audit M-001 restent différés.
+
+
+Complément QA du 24 octobre : animation inverse de la recherche de prix corrigée en conservant le champ monté pendant le repli, avec une seule loupe accessible au repos et restitution du focus clavier sur Échap. Les contrôles et la QA locale du nouveau commit restent à effectuer.
+
+## Lot UI/UX transversal — en recette locale
+
+- Correctif QA du 2026-10-23 : « Valider » en survol/focus success, « Examiner » en warning, filtre « Actives » rétabli, dialogue de Catégorie sans sous-titre technique visible. Ces libellés remplacent « Valider directement » et « Non archivées » présents dans les synthèses précédentes.
+- Audit Catégories : unicité normalisée déjà contrôlée par MongoDB et le service ; nouvelle vérification HTTP des collisions à la création/archivage/renommage, avec conflit 409 en cas de renommage concurrent. Les ressemblances orthographiques sans clé identique demandent un cadrage dédié de suggestions, sans blocage automatique ajouté.
+- Les tests locaux du nouveau HEAD et la QA restent à confirmer par l'utilisateur. Aucune PR ni fusion autorisée sans son accord explicite.
+
+- `main` Produit de référence : `46411c8d5c554f12bf2ec5a27328373c57a2019b` (PR #48 fusionnée ; Core Gate post-merge #229 verte).
+- Branche de travail unique : `feature/ui-ux-improvements`, sans modification de `main`.
+- Périmètre validé : infobulle de portée Fournisseur, bouton « Enregistrer » désactivé sans nom, menus « … » de lignes Fournisseurs, Articles, Catalogues, Dossiers et Fournisseurs et prix ; composant partagé avec les Fiches techniques.
+- Complément UI/UX validé : icône FolderOpen du lien Dossier ; trois sélecteurs d'Article en recherche prédictive (Références, Tarif négocié/Prix facturé, prix applicable), suggestions enrichies, dropdown en Portal sans redimensionnement ; recherche M-003 standard par désignation, référence, Fournisseur et Référence Produit.
+- Contrat du lot : `docs/ux/UI-UX-TABLE-ACTIONS-SUPPLIERS-DOSSIERS-2026-10-22.md`.
+- Le lot comporte déjà une extension ciblée de la recherche backend M-003 (Fournisseur / Référence Produit), sans changement de tenancy, ownership ni droits.
+- Finition M-002 validée : cartes compactes une ligne et badge prioritaire, suppression de « Actif » par carte, filtre « Non archivées », menu unique incluant approbation directe contrôlée / examen facultatif. Un style de superposition ciblé répare les menus de Dimensions dans le drawer sans changer le Core ; tests RTL et QA visuelle à vérifier localement, PR toujours interdite sans accord.
+- Complément M-002 du 2026-10-23 : cartes communes Variétés/Caractéristiques, statuts de validation non contradictoires et contrôle d'identité provisoire unique. L'API interdit la revue qualité isolée d'une identité `PROVISIONAL` ; la décision de gouvernance `APPROVE` existante clôt qualité et gouvernance. La correction d'une identité provisoire ne doit pas acquitter silencieusement sa revue qualité.
+- Aucun nouveau modèle MongoDB, quota, capability ni changement Core. Tests locaux Windows et QA visuelle après commit encore non vérifiés.
+- Tests locaux Windows, gate `npm run release:check`, QA visuelle et autorisation de PR : **en attente de confirmation de l'utilisateur**. Ne pas considérer le lot comme validé sans résultats réels.
+- Les branches fusionnées #47/#48 peuvent être nettoyées selon audit antérieur ; `fix/m001-final-ux-review` doit rester conservée jusqu'à étude séparée.
+- L'impression est couverte par l'export PDF existant ; la diffusion e-mail automatique est différée, hors de ce lot.
+- Après clôture du lot et accord explicite pour PR/merge : chantier Core D-008 pièces jointes e-mail à cadrer séparément ; audit de `fix/m001-final-ux-review` différé et branche conservée.
+
+---
+
 # Reprise courante — cohérence des unités (2026-10-16)
 
 ## Synchronisation Core — 22 octobre 2026
@@ -926,3 +975,14 @@ Test RTL renforcé sur la position des actions à l'intérieur de
 l'en-tête de la carte et leur absence pour les prix Catalogue.
 Aucun Core, backend, API ou modèle touché.
 Tests, lint et build à effectuer localement par l'utilisateur.
+
+Note de recette UI/UX (2026-10-23) : table Catégories compactée en menus « … », compteur `totalProductCount` distinct des produits actifs, suppression seulement si réellement vide et contrôlée au backend avec transaction / audit / HTTP 409, zone de lignes à défilement interne sous un en-tête sticky. Panneau de gouvernance : « Approuver » et « Annuler » pour fermer seulement l'examen. Attention : l'audit Core D-008 pièces jointes e-mail et l'ancienne branche M-001 restent différés. Les tests ciblés Windows, la QA et la gate restent à exécuter ; aucune PR ou fusion autorisée.
+
+
+Complément M-002 du 2026-10-23 : pagination locale du tableau Catégories avec `DataPagination`, scroll interne inchangé ; ajout de la fusion manuelle source→cible avec cible active, transaction réaffectant les `CanonicalProduct` même archivés et supprimant la source avec audit `CATEGORY_MERGED`. Dialogue de confirmation, guards Zod/MANAGE, tests backend HTTP/intégration et tests frontend en attente d'exécution locale. Conserver D-008 Core et l'ancienne branche M-001 hors de ce lot, aucune PR ni merge avant accord. Point de vigilance : concurrence des créations Produit ciblant une source pendant sa fusion, à caractériser sous MongoDB rs0.
+
+Finition UI/UX M-002 (2026-10-23) : nouveau hook métier partagé pour calculer la hauteur de table ; vues Référentiel, À contrôler et Catégories avec scrolling des lignes seulement, entêtes sticky et pagination extérieure. Création/renommage de catégories : recherche de noms exacts/proches serveur (GET suggestions) avec normalisation existante, propositions live, consultation/réutilisation dans le tableau et confirmation explicite des catégories réellement distinctes ; nouveaux garde-fous transactionnels backend par `reviewedCandidateIds`. Les anciennes notes marquant ce rapprochement « non implémenté » sont supersédées pour ce périmètre. Gate, tests Windows et QA visuelle encore à exécuter ; ne pas ouvrir de PR ni fusionner. D-008 Core et audit M-001 séparés.
+
+Complément QA frontend du 2026-10-23 : Fiches techniques (ordre des menus Modifier / Prévisualiser / Optimiser / Supprimer) ; tableau des Fiches avec pagination et en-tête fixes, lignes défilantes ; tableaux de « Fournisseurs et prix » du Dossier sur le même modèle, sans pagination ajoutée. L'unique action des Références fournisseur « Retirer du Dossier » quitte le menu « … » pour un bouton texte + icône, rouge seulement au survol/focus. Aucun changement API, RBAC, tenancy ou Core ; les mutations et confirmations existantes restent inchangées. `useTableViewport` devient l'utilitaire UI réutilisé avec alias M-002 conservé. Tous les tests locaux, lint/build, gate et QA visuelle de ce lot sont à exécuter sous Windows, PR/merge interdits sans autorisation. D-008 pièces jointes Core et audit historique M-001 sont différés.
+
+Complément Frontend UI/UX (2026-10-23) : la page Fournisseurs (onglets Fournisseurs, Articles, Catalogues) et la page Produits (Tous les produits, Favoris) ont maintenant une région défilante pour les seules lignes, un header sticky et le footer `DataPagination` hors scroll. Les recherches, filtres, droits et requêtes serveur paginées sont conservés ; le scroll revient en haut lors des changements de page/taille de page/onglet/filtre. Tests RTL préparés et à exécuter sur Windows ; gate et QA à confirmer. Des captures utilisateurs montrent aussi des erreurs de chargement API : ne pas les confondre avec la mise en page, diagnostic séparé si reproductibles. Aucune PR ni merge autorisés ; Core D-008 et audit M-001 demeurent séparés.

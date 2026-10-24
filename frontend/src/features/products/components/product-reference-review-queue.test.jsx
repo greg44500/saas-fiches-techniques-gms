@@ -194,6 +194,20 @@ describe('ProductReferenceReviewQueue', () => {
       .not.toBeInTheDocument();
   });
 
+  it('garde le tableau des contrôles dans une région défilante avec en-tête sticky', () => {
+    renderQueue();
+    const region = screen.getByRole('region', {
+      name: 'Lignes des données à contrôler',
+    });
+    expect(region).toHaveClass('overflow-auto');
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(within(region).getByRole('columnheader', { name: 'Type' })
+      .closest('thead')).toHaveClass('sticky', 'top-0');
+    expect(screen.getByRole('navigation', {
+      name: 'Pagination des données à contrôler',
+    })).toBeInTheDocument();
+  });
+
   it('recale la pagination lorsque la dernière page disparaît', async () => {
     const setPage = vi.fn();
 

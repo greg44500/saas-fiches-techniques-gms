@@ -12,9 +12,12 @@ import {
 import {
     access,
     categories,
+    categorySuggestionsController,
     commitImport,
     confirmVariantMerge,
     createCategoryController,
+    deleteCategoryController,
+    mergeCategoriesController,
     createCharacteristicController,
     createProductController,
     createVarietyController,
@@ -51,12 +54,14 @@ import {
 } from './productCatalogGlobalPermission.registry.js';
 import {
     createCategoryBodySchema,
+    categorySuggestionsQuerySchema,
     createCharacteristicBodySchema,
     createGlobalProductBodySchema,
     createVarietyBodySchema,
     createGlobalVariantBodySchema,
     duplicateCheckBodySchema,
     globalCategoryParamsSchema,
+    mergeCategoriesBodySchema,
     globalImportIdParamsSchema,
     globalProductCharacteristicParamsSchema,
     globalProductDimensionParamsSchema,
@@ -102,11 +107,35 @@ productCatalogGlobalRouter.get(
     categories,
 );
 
+productCatalogGlobalRouter.get(
+    '/categories/suggestions',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.READ),
+    validateRequest({ query: categorySuggestionsQuerySchema }),
+    categorySuggestionsController,
+);
+
 productCatalogGlobalRouter.post(
     '/categories',
     authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
     validateRequest({ body: createCategoryBodySchema }),
     createCategoryController,
+);
+
+productCatalogGlobalRouter.post(
+    '/categories/:categoryId/merge',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({
+        params: globalCategoryParamsSchema,
+        body: mergeCategoriesBodySchema,
+    }),
+    mergeCategoriesController,
+);
+
+productCatalogGlobalRouter.delete(
+    '/categories/:categoryId',
+    authorizeApplicationGlobalPermission(PRODUCT_CATALOG_GLOBAL_PERMISSION.MANAGE),
+    validateRequest({ params: globalCategoryParamsSchema }),
+    deleteCategoryController,
 );
 
 productCatalogGlobalRouter.patch(

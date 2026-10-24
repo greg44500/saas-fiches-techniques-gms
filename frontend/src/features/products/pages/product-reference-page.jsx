@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Archive, Eye, FileUp, Pencil, Plus, RotateCcw } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Archive, Eye, FileUp, GitMerge, Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { DataTable, DataTableActions } from '@/components/data-display/data-table';
+import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 import { ActionIconButton } from '@/components/shared/action-icon-button';
 import { ConfirmationDialog } from '@/components/shared/confirmation-dialog';
 import { EmptyState } from '@/components/shared/empty-state';
@@ -29,16 +30,19 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
+  useDeleteProductReferenceCategoryMutation,
   useGetProductReferenceMetadataQuery,
   useListProductReferenceProductsQuery,
   useListProductReferenceReviewQueueQuery,
   useLazyListProductReferenceReviewQueueQuery,
+  useReviewProductReferenceContributionMutation,
   useRestoreProductReferenceReviewContextMutation,
   useUpdateProductReferenceCategoryStatusMutation,
 } from '@/features/products/api/product-reference-api';
 import { ProductCreateDialog } from '@/features/products/components/product-create-dialog';
 import { ProductImportDialog } from '@/features/products/components/product-import-dialog';
 import { ProductReferenceCategoryDialog } from '@/features/products/components/product-reference-category-dialog';
+import { ProductReferenceCategoryMergeDialog } from '@/features/products/components/product-reference-category-merge-dialog';
 import { ProductReferenceDetailsDrawer } from '@/features/products/components/product-reference-details-drawer';
 import {
   ProductReferenceReviewQueue,
@@ -59,12 +63,19 @@ import {
   formatPrice,
 } from '@/features/suppliers/lib/supplier-presentation';
 import { useDataPagination } from '@/hooks/use-data-pagination';
+import { useProductReferenceTableViewport } from '@/features/products/hooks/use-product-reference-table-viewport';
 
 const ALL_REFERENCE_CATEGORIES = '__ALL__';
 
 function ProductReferencePage({ canManage }) {
   const { toast } = useToast();
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
+  const {
+    page: categoryPage,
+    pageSize: categoryPageSize,
+    setPage: setCategoryPage,
+    setPageSize: setCategoryPageSize,
+  } = useDataPagination();
   const [section, setSection] = useState('reference');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -83,6 +94,11 @@ function ProductReferencePage({ canManage }) {
   const [importOpen, setImportOpen] = useState(false);
   const [categoryDialog, setCategoryDialog] = useState({ open: false, category: null });
   const [categoryLifecycle, setCategoryLifecycle] = useState(null);
+  const [categoryDeletion, setCategoryDeletion] = useState(null);
+  const [categoryMergeSource, setCategoryMergeSource] = useState(null);
+  const [categoryDeleteError, setCategoryDeleteError] = useState('');
+  const [directApprovalPending, setDirectApprovalPending] = useState(false);
+  const directApprovalLock = useRef(false);
 
   const metadataQuery = useGetProductReferenceMetadataQuery();
   const metadata = metadataQuery.data;
@@ -96,6 +112,14 @@ function ProductReferencePage({ canManage }) {
     },
     { skip: false },
   );
+  const categoryViewport = useProductReferenceTableViewport({
+    active: section === 'categories',
+    dependency: metadataQuery.data?.categories?.length,
+  });
+  const productViewport = useProductReferenceTableViewport({
+    active: section === 'reference',
+    dependency: productsQuery.data?.products?.length,
+  });
   const globalPricesQuery = useListGlobalIndicativePricesQuery(
     {
       status: 'ACTIVE',
@@ -125,10 +149,13 @@ function ProductReferencePage({ canManage }) {
 
   const [updateCategoryStatus, categoryStatusState] =
     useUpdateProductReferenceCategoryStatusMutation();
+  const [deleteCategory, deleteCategoryState] =
+    useDeleteProductReferenceCategoryMutation();
   const [loadReviewTarget, reviewTargetState] =
     useLazyListProductReferenceReviewQueueQuery();
   const [restoreReviewContext, restoreReviewState] =
     useRestoreProductReferenceReviewContextMutation();
+  const [approveContribution] = useReviewProductReferenceContributionMutation();
 
   useEffect(() => {
     const totalPages = section === 'reference'
@@ -166,7 +193,29 @@ function ProductReferencePage({ canManage }) {
 
   const referenceCount = productsQuery.data?.pagination?.total ?? 0;
   const reviewCount = reviewQueueCountQuery.data?.summary?.total ?? 0;
-  const categoryCount = metadata?.categories?.length ?? 0;
+  const categories = metadata?.categories ?? [];
+  const categoryCount = categories.length;
+  const categoryTotalPages = Math.max(1, Math.ceil(categoryCount / categoryPageSize));
+  const visibleCategories = categories.slice(
+    (categoryPage - 1) * categoryPageSize,
+    categoryPage * categoryPageSize,
+  );
+
+  useEffect(() => {
+    if (categoryPage > categoryTotalPages) {
+      setCategoryPage(categoryTotalPages);
+    }
+  }, [categoryPage, categoryTotalPages, setCategoryPage]);
+
+  function changeCategoryPage(nextPage) {
+    setCategoryPage(nextPage);
+    categoryViewport.resetScroll();
+  }
+
+  function changeCategoryPageSize(nextSize) {
+    setCategoryPageSize(nextSize);
+    categoryViewport.resetScroll();
+  }
 
   function changeSection(nextSection) {
     setSection(nextSection);
@@ -241,6 +290,60 @@ function ProductReferencePage({ canManage }) {
         description: getApiErrorMessage(error),
         variant: 'destructive',
       });
+    }
+  }
+
+  async function approveDimensionDirectly(dimensionType, targetId) {
+    if (!canManage || directApprovalLock.current || !drawerState.productId) return;
+    directApprovalLock.current = true;
+    setDirectApprovalPending(true);
+
+    try {
+      // Lire la Contribution exacte immédiatement avant la décision. Le
+      // navigateur ne peut jamais autoriser lui-même une identité globale.
+      const context = await loadTargetReviewContext(
+        'DIMENSION', targetId, dimensionType,
+      );
+      const isExactPendingContribution = (
+        context?.type === 'CONTRIBUTION'
+        && context.dataType === 'DIMENSION'
+        && context.dimensionType === dimensionType
+        && context.targetId === targetId
+        && context.productId === drawerState.productId
+        && Boolean(context.sourceId)
+      );
+
+      if (!isExactPendingContribution || !Array.isArray(context.candidates)
+        || context.candidates.length > 0) {
+        if (context?.productId === drawerState.productId) {
+          examineReviewItem(context);
+        }
+        toast({
+          title: 'Examen nécessaire',
+          description: 'Vérifiez les rapprochements ou le contexte avant de valider cette identité.',
+        });
+        return;
+      }
+
+      await approveContribution({
+        contributionId: context.sourceId,
+        decision: 'APPROVE',
+        targetReferenceId: null,
+      }).unwrap();
+      toast({
+        title: 'Identité validée',
+        description: 'La revue qualité a également été clôturée.',
+        variant: 'success',
+      });
+    } catch (error) {
+      toast({
+        title: 'Validation impossible',
+        description: getApiErrorMessage(error),
+        variant: 'destructive',
+      });
+    } finally {
+      directApprovalLock.current = false;
+      setDirectApprovalPending(false);
     }
   }
 
@@ -332,6 +435,21 @@ function ProductReferencePage({ canManage }) {
         description: getApiErrorMessage(error),
         variant: 'destructive',
       });
+    }
+  }
+
+  async function confirmCategoryDeletion() {
+    if (!categoryDeletion || deleteCategoryState.isLoading) return;
+    setCategoryDeleteError('');
+    try {
+      await deleteCategory({ categoryId: categoryDeletion.id }).unwrap();
+      setCategoryDeletion(null);
+      toast({ title: 'Catégorie supprimée', variant: 'success' });
+    } catch (error) {
+      setCategoryDeleteError(getApiErrorMessage(
+        error,
+        'La catégorie ne peut pas être supprimée.',
+      ));
     }
   }
 
@@ -521,27 +639,39 @@ function ProductReferencePage({ canManage }) {
       header: 'Actions',
       cell: (category) => (
         canManage ? (
-          <DataTableActions>
-            <ActionIconButton
-              Icon={Pencil}
-              label={'Renommer ' + category.name}
-              onClick={() => setCategoryDialog({ open: true, category })}
-              tooltipLabel="Renommer"
-              variant="outline"
-            />
-            <ActionIconButton
-              Icon={category.status === 'ACTIVE' ? Archive : RotateCcw}
-              label={
-                (category.status === 'ACTIVE' ? 'Archiver ' : 'Réactiver ')
-                + category.name
-              }
-              onClick={() => setCategoryLifecycle(category)}
-              tooltipLabel={
-                category.status === 'ACTIVE' ? 'Archiver' : 'Réactiver'
-              }
-              variant="outline"
-            />
-          </DataTableActions>
+          <TableRowActionsMenu
+            label={'la catégorie ' + category.name}
+            actions={[
+              {
+                key: 'rename',
+                Icon: Pencil,
+                label: 'Renommer',
+                onClick: () => setCategoryDialog({ open: true, category }),
+              },
+              {
+                key: 'merge',
+                Icon: GitMerge,
+                label: 'Fusionner',
+                onClick: () => setCategoryMergeSource(category),
+              },
+              {
+                key: 'lifecycle',
+                Icon: category.status === 'ACTIVE' ? Archive : RotateCcw,
+                label: category.status === 'ACTIVE' ? 'Archiver' : 'Réactiver',
+                onClick: () => setCategoryLifecycle(category),
+              },
+              ...(category.totalProductCount === 0 ? [{
+                key: 'delete',
+                Icon: Trash2,
+                label: 'Supprimer',
+                destructive: true,
+                onClick: () => {
+                  setCategoryDeleteError('');
+                  setCategoryDeletion(category);
+                },
+              }] : []),
+            ]}
+          />
         ) : null
       ),
     },
@@ -637,7 +767,7 @@ function ProductReferencePage({ canManage }) {
       </Tabs>
 
       {section === 'reference' && (
-        <section className="rounded-xl border border-border bg-card">
+        <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
           <div className="grid gap-3 border-b border-border p-5 xl:grid-cols-[minmax(260px,1fr)_240px_220px]">
             <form className="flex gap-2" onSubmit={applySearch}>
               <div className="min-w-0 flex-1">
@@ -708,26 +838,42 @@ function ProductReferencePage({ canManage }) {
             />
           ) : (
             <>
-              <DataTable
-                caption="Référentiel Produits global"
-                columns={productColumns}
-                data={productsQuery.data?.products ?? []}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucun Produit ne correspond aux critères."
-                    title="Aucun Produit"
-                  />
-                )}
-                getRowKey={(product) => product.id}
-                rowClassName="transition-colors hover:bg-muted/50"
-              />
+              <div
+                aria-label="Lignes du référentiel Produits"
+                className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+                ref={productViewport.ref}
+                role="region"
+                style={{ height: productViewport.height }}
+                tabIndex={0}
+              >
+                <DataTable
+                  caption="Référentiel Produits global"
+                  columns={productColumns}
+                  data={productsQuery.data?.products ?? []}
+                  emptyContent={(
+                    <EmptyState
+                      className="p-0"
+                      description="Aucun Produit ne correspond aux critères."
+                      title="Aucun Produit"
+                    />
+                  )}
+                  getRowKey={(product) => product.id}
+                  headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                  rowClassName="transition-colors hover:bg-muted/50"
+                />
+              </div>
               <div className="px-5 pb-5">
                 <DataPagination
                   ariaLabel="Pagination du référentiel Produits"
                   disabled={productsQuery.isFetching}
-                  onPageChange={setPage}
-                  onPageSizeChange={setPageSize}
+                  onPageChange={(value) => {
+                    setPage(value);
+                    productViewport.resetScroll();
+                  }}
+                  onPageSizeChange={(value) => {
+                    setPageSize(value);
+                    productViewport.resetScroll();
+                  }}
                   page={page}
                   pageSize={pageSize}
                   pagination={productsQuery.data?.pagination}
@@ -750,7 +896,7 @@ function ProductReferencePage({ canManage }) {
       )}
 
       {section === 'categories' && (
-        <section className="rounded-xl border border-border bg-card">
+        <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
           {initialLoading ? (
             <p className="p-5 text-sm text-muted-foreground">Chargement des catégories…</p>
           ) : metadataQuery.isError ? (
@@ -760,22 +906,87 @@ function ProductReferencePage({ canManage }) {
               title="Catégories indisponibles"
             />
           ) : (
-            <DataTable
-              caption="Catégories Produit"
-              columns={categoryColumns}
-              data={metadata?.categories ?? []}
-              emptyContent={(
-                <EmptyState
-                  className="p-0"
-                  description="Créez la première catégorie du référentiel Produit."
-                  title="Aucune catégorie"
-                />
-              )}
-              getRowKey={(category) => category.id}
-              rowClassName="transition-colors hover:bg-muted/50"
-            />
+            <div
+              aria-label="Lignes des catégories"
+              className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+              ref={categoryViewport.ref}
+              role="region"
+              style={{ height: categoryViewport.height }}
+              tabIndex={0}
+            >
+              <DataTable
+                caption="Catégories Produit"
+                columns={categoryColumns}
+                data={visibleCategories}
+                emptyContent={(
+                  <EmptyState
+                    className="p-0"
+                    description="Créez la première catégorie du référentiel Produit."
+                    title="Aucune catégorie"
+                  />
+                )}
+                getRowKey={(category) => category.id}
+                headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                rowClassName="transition-colors hover:bg-muted/50"
+              />
+            </div>
+          )}
+          {!initialLoading && !metadataQuery.isError && (
+            <div className="border-t border-border px-5 pb-4">
+              <DataPagination
+                ariaLabel="Pagination des catégories"
+                onPageChange={changeCategoryPage}
+                onPageSizeChange={changeCategoryPageSize}
+                page={categoryPage}
+                pageSize={categoryPageSize}
+                pagination={{
+                  page: categoryPage,
+                  limit: categoryPageSize,
+                  total: categoryCount,
+                  totalPages: categoryTotalPages,
+                }}
+              />
+            </div>
           )}
         </section>
+      )}
+
+      {categoryMergeSource && (
+        <ProductReferenceCategoryMergeDialog
+          categories={categories}
+          onClose={() => setCategoryMergeSource(null)}
+          onMerged={(result) => {
+            setCategoryMergeSource(null);
+            toast({
+              title: 'Catégories fusionnées',
+              description: String(result?.movedProductCount ?? 0)
+                + ' Produit(s) regroupé(s).',
+              variant: 'success',
+            });
+          }}
+          source={categoryMergeSource}
+        />
+      )}
+
+      {categoryDeletion && (
+        <ConfirmationDialog
+          confirmLabel="Supprimer"
+          description={
+            'Supprimer définitivement « ' + categoryDeletion.name
+            + ' » ? Cette opération est uniquement autorisée si aucun Produit, '
+            + 'même archivé, ne dépend de cette catégorie.'
+          }
+          errorMessage={categoryDeleteError}
+          onCancel={() => {
+            setCategoryDeletion(null);
+            setCategoryDeleteError('');
+          }}
+          onConfirm={confirmCategoryDeletion}
+          open
+          pending={deleteCategoryState.isLoading}
+          pendingLabel="Suppression…"
+          title="Supprimer cette catégorie ?"
+        />
       )}
 
       <ProductReferenceDetailsDrawer
@@ -798,7 +1009,12 @@ function ProductReferencePage({ canManage }) {
           guidedReviewContext: null,
         }))}
         onReviewRequested={openReviewTarget}
-        reviewLoading={reviewTargetState.isFetching || restoreReviewState.isLoading}
+        onReviewCancelled={() => setDrawerState((current) => ({
+          ...current,
+          reviewContext: null,
+        }))}
+        onApproveDimensionDirectly={approveDimensionDirectly}
+        reviewLoading={reviewTargetState.isFetching || restoreReviewState.isLoading || directApprovalPending}
         open={drawerState.open}
         productId={drawerState.productId}
       />
@@ -843,6 +1059,19 @@ function ProductReferencePage({ canManage }) {
         onSaved={() => {
           setCategoryDialog({ open: false, category: null });
           toast({ title: 'Catégorie enregistrée', variant: 'success' });
+        }}
+        onUseExisting={(existing) => {
+          setCategoryDialog({ open: false, category: null });
+          setSection('categories');
+          const index = categories.findIndex((item) => item.id === existing.id);
+          if (index >= 0) setCategoryPage(Math.floor(index / categoryPageSize) + 1);
+          categoryViewport.resetScroll();
+          toast({
+            title: 'Catégorie déjà présente',
+            description: existing.status === 'ARCHIVED'
+              ? existing.name + ' est archivée. Vous pouvez la réactiver depuis son menu.'
+              : existing.name + ' est disponible dans la liste des catégories.',
+          });
         }}
         open={categoryDialog.open}
       />

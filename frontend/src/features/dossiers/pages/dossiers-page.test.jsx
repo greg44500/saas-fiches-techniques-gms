@@ -136,16 +136,25 @@ describe('DossiersPage', () => {
     const dossierRow = screen.getByText('Nantes Centre').closest('tr');
     expect(dossierRow).toHaveClass('hover:bg-muted/50');
 
+    expect(screen.queryByRole('link', { name: 'Ouvrir' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Actions de Nantes Centre' }));
+
     const openLink = screen.getByRole('link', { name: 'Ouvrir' });
-    const viewButton = screen.getByRole('button', { name: 'Voir Nantes Centre' });
+    expect(openLink).toHaveAttribute('href', '/workspaces/workspace-1/dossiers/dossier-1');
+    expect(openLink.querySelector('svg.lucide-folder-open')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Voir' })).toBeInTheDocument();
 
-    expect(screen.getAllByRole('link', { name: 'Ouvrir' })).toHaveLength(1);
-    expect(openLink).toHaveClass('h-10');
-    expect(viewButton).toHaveClass('size-10');
-
-    await user.click(viewButton);
+    await user.click(screen.getByRole('button', { name: 'Voir' }));
 
     expect(screen.getByText('Drawer ouvert')).toBeInTheDocument();
+  });
+
+  it('ne permet pas d’ouvrir un Dossier en pause via les actions', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Actions de Saint-Nazaire' }));
+    expect(screen.getByRole('button', { name: 'Voir' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Ouvrir' })).not.toBeInTheDocument();
   });
 
   it('applique une recherche côté serveur au submit', async () => {

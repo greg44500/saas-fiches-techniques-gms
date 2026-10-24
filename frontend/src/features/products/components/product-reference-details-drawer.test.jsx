@@ -304,18 +304,125 @@ describe('ProductReferenceDetailsDrawer', () => {
       onReviewRequested,
     });
 
-    expect(screen.getByRole('button', { name: 'À contrôler (0)' }))
+    expect(screen.getByRole('button', { name: 'À contrôler (1)' }))
       .toBeInTheDocument();
-    const identityButton = screen.getByRole('button', {
-      name: 'Examiner l’identité de la caractéristique Individuel',
+    const dimensionCard = screen.getByText('Individuel').closest('li');
+    expect(within(dimensionCard).getByText('Identité à valider')).toBeInTheDocument();
+    expect(within(dimensionCard).queryByText('Actif')).not.toBeInTheDocument();
+    expect(within(dimensionCard).queryByText('Validée')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'À contrôler (1)' }));
+    const actionMenu = within(dimensionCard).getByRole('button', {
+      name: 'Actions de la caractéristique Individuel',
     });
-    expect(identityButton).toBeVisible();
-    await user.click(identityButton);
+    await user.click(actionMenu);
+    const actions = screen.getByRole('group', {
+      name: 'Actions de la caractéristique Individuel',
+    });
+    expect(within(actions).getByRole('button', {
+      name: 'Valider',
+    })).toBeInTheDocument();
+    expect(within(actions).queryByRole('button', {
+      name: 'Confirmer le contrôle qualité',
+    })).not.toBeInTheDocument();
+    await user.click(within(actions).getByRole('button', { name: 'Examiner' }));
     expect(onReviewRequested).toHaveBeenCalledWith(
       'DIMENSION',
       'presentation-1',
       'CHARACTERISTIC',
     );
+  });
+
+  it('déclenche la demande de validation directe depuis le menu sans faire de revue qualité isolée', async () => {
+    const user = userEvent.setup();
+    const onApproveDimensionDirectly = vi.fn();
+    mocks.dimensions.mockReturnValue(queryResult({
+      varieties: [],
+      characteristics: [{
+        id: 'orange-id',
+        name: 'Orange',
+        kind: 'COLOR',
+        status: 'ACTIVE',
+        governanceStatus: 'PROVISIONAL',
+        qualityReviewStatus: 'PENDING',
+      }],
+    }));
+    renderDrawer({ initialTab: 'dimensions', onApproveDimensionDirectly });
+
+    const card = screen.getByText('Orange').closest('li');
+    expect(card).toHaveClass('py-2');
+    expect(within(card).queryByText('Actif')).not.toBeInTheDocument();
+    await user.click(within(card).getByRole('button', {
+      name: 'Actions de la caractéristique Orange',
+    }));
+    const actions = screen.getByRole('group', {
+      name: 'Actions de la caractéristique Orange',
+    });
+    await user.click(within(actions).getByRole('button', {
+      name: 'Valider',
+    }));
+
+    expect(onApproveDimensionDirectly).toHaveBeenCalledOnce();
+    expect(onApproveDimensionDirectly).toHaveBeenCalledWith('CHARACTERISTIC', 'orange-id');
+    expect(mocks.reviewDimension).not.toHaveBeenCalled();
+  });
+
+  it('permet de quitter le contrôle de gouvernance sans fermer le drawer ni décider', async () => {
+    const user = userEvent.setup();
+    const onReviewCancelled = vi.fn();
+    renderDrawer({
+      initialTab: 'dimensions',
+      onReviewCancelled,
+      reviewContext: {
+        sourceId: 'contribution-variety',
+        targetId: 'variety-2',
+        type: 'CONTRIBUTION',
+        dataType: 'DIMENSION',
+        dimensionType: 'VARIETY',
+        candidates: [],
+      },
+    });
+    const card = screen.getByText('Rouge du Roussillon').closest('li');
+    expect(within(card).getByRole('button', { name: 'Approuver' }))
+      .toBeInTheDocument();
+    await user.click(within(card).getByRole('button', { name: 'Annuler' }));
+    expect(onReviewCancelled).toHaveBeenCalledOnce();
+    expect(mocks.reviewContribution).not.toHaveBeenCalled();
+    expect(mocks.reviewDimension).not.toHaveBeenCalled();
+  });
+
+  it('libère les actions après validation même si le contexte de contrôle est encore ouvert', async () => {
+    mocks.dimensions.mockReturnValue(queryResult({
+      varieties: [],
+      characteristics: [{
+        id: 'characteristic-finished',
+        name: 'Rouge',
+        kind: 'COLOR',
+        status: 'ACTIVE',
+        governanceStatus: 'APPROVED',
+        qualityReviewStatus: 'REVIEWED',
+      }],
+    }));
+
+    renderDrawer({
+      initialTab: 'dimensions',
+      reviewContext: {
+        sourceId: 'old-contribution',
+        targetId: 'characteristic-finished',
+        type: 'CONTRIBUTION',
+        dataType: 'DIMENSION',
+        dimensionType: 'CHARACTERISTIC',
+        candidates: [],
+      },
+    });
+
+    expect(screen.getByRole('button', { name: 'À contrôler (0)' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Validée')).toBeInTheDocument();
+    expect(screen.getByRole('button', {
+      name: 'Actions de la caractéristique Rouge',
+    })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Approuver' }))
+      .not.toBeInTheDocument();
   });
 
   it('ouvre directement les Dimensions à vérifier depuis une notification Produit', () => {
@@ -513,7 +620,22 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(within(workflow).getByRole('button', {
       name: 'Masquer le contrôle de Présentation Individuel',
     })).toBeInTheDocument();
-    await user.click(within(workflow).getAllByRole('button', { name: 'Valider' })[0]);
+    // Contrat distinct et cardinalité stable des deux décisions métier.
+    const validateReference = within(workflow).getByRole('button', {
+      name: 'Valider', exact: true,
+    });
+    const approveDimension = within(workflow).getByRole('button', {
+      name: 'Approuver', exact: true,
+    });
+    expect(within(workflow).getAllByRole('button', {
+      name: 'Valider', exact: true,
+    })).toHaveLength(1);
+    expect(within(workflow).getAllByRole('button', {
+      name: 'Approuver', exact: true,
+    })).toHaveLength(1);
+    expect(validateReference).toBeDisabled();
+    expect(approveDimension).toBeEnabled();
+    await user.click(approveDimension);
     expect(mocks.reviewContribution).toHaveBeenCalledWith({
       contributionId: 'contribution-dimension',
       decision: 'APPROVE',
@@ -607,10 +729,10 @@ describe('ProductReferenceDetailsDrawer', () => {
 
     const target = screen.getByText('Rouge du Roussillon').closest('li');
     expect(target).not.toBeNull();
-    expect(within(target).getByText('À contrôler')).toBeInTheDocument();
+    expect(within(target).getByText('Qualité à vérifier')).toBeInTheDocument();
 
     await user.click(within(target).getByRole('button', {
-      name: 'Valider',
+      name: 'Confirmer le contrôle qualité',
     }));
 
     expect(mocks.reviewDimension).toHaveBeenCalledWith({
@@ -635,6 +757,8 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(screen.getByText('Caractéristiques (1)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'À contrôler (2)' }))
       .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Actives (3)' }))
+      .toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Archivées (1)' }))
       .toBeInTheDocument();
   });
@@ -647,13 +771,19 @@ describe('ProductReferenceDetailsDrawer', () => {
       initialTab: 'dimensions',
     });
 
-    expect(screen.getAllByText('À contrôler')).toHaveLength(2);
+    expect(screen.getAllByText('Qualité à vérifier')).toHaveLength(2);
 
     const varietyRow = screen.getByText('Rouge du Roussillon').closest('li');
     expect(varietyRow).not.toBeNull();
 
     await user.click(within(varietyRow).getByRole('button', {
-      name: 'Marquer la variété Rouge du Roussillon comme vérifiée',
+      name: 'Actions de la variété Rouge du Roussillon',
+    }));
+    const varietyActions = screen.getByRole('group', {
+      name: 'Actions de la variété Rouge du Roussillon',
+    });
+    await user.click(within(varietyActions).getByRole('button', {
+      name: 'Confirmer le contrôle qualité',
     }));
 
     expect(mocks.reviewDimension).toHaveBeenCalledWith({
@@ -671,8 +801,9 @@ describe('ProductReferenceDetailsDrawer', () => {
     });
 
     await user.click(screen.getByRole('button', {
-      name: 'Supprimer la caractéristique Côte',
+      name: 'Actions de la caractéristique Côte',
     }));
+    await user.click(screen.getByRole('button', { name: 'Supprimer' }));
 
     expect(screen.getByRole('heading', {
       name: 'Supprimer cette valeur ?',
@@ -792,25 +923,48 @@ describe('ProductReferenceDetailsDrawer', () => {
     })).not.toBeInTheDocument();
   });
 
-  it('expose les actions du drawer sous forme de boutons icônes accessibles', async () => {
+  it('expose les actions des Dimensions dans des menus accessibles et conserve les boutons des Références', async () => {
     const user = userEvent.setup();
     renderDrawer();
 
     await user.click(screen.getByRole('tab', { name: 'Dimensions (4)' }));
 
-    expect(screen.getByRole('button', {
-      name: 'Corriger la variété Bergeron',
+    const varietyTrigger = screen.getByRole('button', {
+      name: 'Actions de la variété Bergeron',
+    });
+    expect(varietyTrigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(varietyTrigger);
+    const varietyActions = screen.getByRole('group', {
+      name: 'Actions de la variété Bergeron',
+    });
+    expect(within(varietyActions).getByRole('button', {
+      name: 'Corriger',
     })).toBeInTheDocument();
-    expect(screen.getByRole('button', {
-      name: 'Archiver la variété Bergeron',
+    expect(within(varietyActions).getByRole('button', {
+      name: 'Archiver',
     })).toBeInTheDocument();
+    expect(within(varietyActions).getByRole('button', {
+      name: 'Supprimer',
+    })).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
     await user.click(screen.getByRole('button', {
       name: 'Archivées (1)',
     }));
-    expect(screen.getByRole('button', {
-      name: 'Réactiver la caractéristique Rouge',
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la caractéristique Rouge',
+    }));
+    const archivedActions = screen.getByRole('group', {
+      name: 'Actions de la caractéristique Rouge',
+    });
+    expect(within(archivedActions).getByRole('button', {
+      name: 'Réactiver',
     })).toBeInTheDocument();
+    expect(within(archivedActions).queryByRole('button', {
+      name: 'Archiver',
+    })).not.toBeInTheDocument();
 
+    await user.keyboard('{Escape}');
     await user.click(screen.getByRole('tab', { name: 'Références (2)' }));
 
     expect(screen.getByRole('button', {

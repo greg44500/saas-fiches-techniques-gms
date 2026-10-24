@@ -314,19 +314,19 @@ const updateProductVariety = async ({
     }
 
     const searchKeys = buildSearchKeys(nextName, nextAliases);
+    // Corriger une identité provisoire ne doit pas être pris pour sa validation.
+    // La décision de gouvernance APPROVE clôt elle-même la revue qualité.
     const wasPendingReview = (
         variety.qualityReviewStatus
         === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+        && variety.governanceStatus === PRODUCT_GOVERNANCE_STATUS.APPROVED
     );
     variety.name = nextName;
     variety.normalizedName = normalizedName;
     variety.aliases = nextAliases;
     variety.searchKeys = searchKeys;
     variety.searchGrams = buildSearchGrams(searchKeys);
-    if (
-        variety.qualityReviewStatus
-        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
-    ) {
+    if (wasPendingReview) {
         variety.qualityReviewStatus =
             PRODUCT_DIMENSION_REVIEW_STATUS.REVIEWED;
         variety.qualityReviewedAt = new Date();
@@ -408,19 +408,19 @@ const updateProductCharacteristic = async ({
     }
 
     const searchKeys = buildSearchKeys(nextName, nextAliases);
+    // Corriger une identité provisoire ne doit pas être pris pour sa validation.
+    // La décision de gouvernance APPROVE clôt elle-même la revue qualité.
     const wasPendingReview = (
         characteristic.qualityReviewStatus
         === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
+        && characteristic.governanceStatus === PRODUCT_GOVERNANCE_STATUS.APPROVED
     );
     characteristic.name = nextName;
     characteristic.normalizedName = normalizedName;
     characteristic.aliases = nextAliases;
     characteristic.searchKeys = searchKeys;
     characteristic.searchGrams = buildSearchGrams(searchKeys);
-    if (
-        characteristic.qualityReviewStatus
-        === PRODUCT_DIMENSION_REVIEW_STATUS.PENDING
-    ) {
+    if (wasPendingReview) {
         characteristic.qualityReviewStatus =
             PRODUCT_DIMENSION_REVIEW_STATUS.REVIEWED;
         characteristic.qualityReviewedAt = new Date();

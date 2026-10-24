@@ -219,6 +219,14 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       transformResponse: (response) => response.data,
       invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
+    getProductReferenceCategorySuggestions: builder.query({
+      query: ({ name, excludeCategoryId }) => ({
+        url: '/product-reference/categories/suggestions',
+        params: { name, excludeCategoryId },
+      }),
+      transformResponse: (response) => response.data.suggestions,
+      providesTags: ['ProductReference'],
+    }),
     createProductReferenceCategory: builder.mutation({
       query: (body) => ({
         url: '/product-reference/categories',
@@ -227,6 +235,22 @@ const productReferenceApi = productReferenceApiBase.injectEndpoints({
       }),
       transformResponse: (response) => response.data.category,
       invalidatesTags: ['ProductReference'],
+    }),
+    mergeProductReferenceCategories: builder.mutation({
+      query: ({ sourceCategoryId, targetCategoryId }) => ({
+        url: '/product-reference/categories/' + sourceCategoryId + '/merge',
+        method: 'POST',
+        body: { targetCategoryId },
+      }),
+      transformResponse: (response) => response.data.result,
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
+    }),
+    deleteProductReferenceCategory: builder.mutation({
+      query: ({ categoryId }) => ({
+        url: '/product-reference/categories/' + categoryId,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['ProductReference', 'ProductCatalog'],
     }),
     updateProductReferenceCategory: builder.mutation({
       query: ({ categoryId, ...body }) => ({
@@ -391,6 +415,8 @@ export const {
   useCommitProductReferenceImportMutation,
   useCreateProductReferenceCharacteristicMutation,
   useCreateProductReferenceCategoryMutation,
+  useDeleteProductReferenceCategoryMutation,
+  useMergeProductReferenceCategoriesMutation,
   useCreateProductReferenceMutation,
   useCreateProductReferenceVarietyMutation,
   useCreateProductReferenceVariantMutation,
@@ -399,6 +425,7 @@ export const {
   useGetProductReferenceDimensionsQuery,
   useGetProductReferenceDetailQuery,
   useGetProductReferenceMetadataQuery,
+  useGetProductReferenceCategorySuggestionsQuery,
   useInspectProductReferenceImportMutation,
   useLazyGetProductReferenceDetailQuery,
   useListProductReferenceContributionsQuery,
