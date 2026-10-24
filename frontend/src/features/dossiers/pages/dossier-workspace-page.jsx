@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Info,
   Mail,
   MapPin,
   Phone,
@@ -219,43 +218,35 @@ function DossierWorkspacePage() {
           </Link>
         </Button>
         <div aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
-        <div className="flex min-w-0 items-center gap-1">
-          {hasContactDetails ? (
-            <Tooltip>
-              <TooltipTrigger render={<div className="min-w-0 cursor-help" tabIndex={0} />}>
-                <h1 className="max-w-[min(19rem,60vw)] truncate text-xl font-semibold tracking-tight">
-                  {dossier.name}
-                </h1>
-              </TooltipTrigger>
-              <TooltipContent align="start" className="max-w-80" side="bottom">
-                <DossierContactDetails dossier={dossier} locationLabel={locationLabel} />
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <h1 className="max-w-[min(19rem,60vw)] truncate text-xl font-semibold tracking-tight">
-              {dossier.name}
-            </h1>
-          )}
-          {hasContactDetails && (
-            <Popover>
-              <PopoverTrigger render={(
+        <h1 className="min-w-0 max-w-[min(19rem,60vw)]">
+          <Popover>
+            <PopoverTrigger
+              render={(
                 <Button
-                  aria-label="Afficher les informations du Dossier"
-                  className="size-7 shrink-0"
-                  size="icon"
+                  className="h-auto max-w-full px-1 py-1 text-xl font-semibold tracking-tight text-foreground"
+                  size="sm"
                   type="button"
                   variant="ghost"
                 />
-              )}>
-                <Info aria-hidden="true" className="size-4" />
-              </PopoverTrigger>
-              <PopoverContent align="start" className="max-w-[calc(100vw-2rem)] p-4">
-                <p className="mb-3 text-sm font-semibold">Informations du Dossier</p>
+              )}
+            >
+              <span className="block truncate">{dossier.name}</span>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-80 max-w-[calc(100vw-2rem)] p-4"
+            >
+              <p className="mb-3 text-sm font-semibold">Informations du Dossier</p>
+              {hasContactDetails ? (
                 <DossierContactDetails dossier={dossier} locationLabel={locationLabel} />
-              </PopoverContent>
-            </Popover>
-          )}
-        </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Aucune coordonnée complémentaire renseignée.
+                </p>
+              )}
+            </PopoverContent>
+          </Popover>
+        </h1>
         <StatusBadge tone={getDossierStatusTone(dossier.status)}>
           {getDossierStatusLabel(dossier.status, metadataQuery.data)}
         </StatusBadge>
@@ -285,12 +276,10 @@ function DossierWorkspacePage() {
           </span>
         )}
         {showApplicablePriceCard && (
-          <div className="w-full min-w-0 transition-[width] duration-200 motion-reduce:transition-none sm:ml-auto sm:w-72 lg:focus-within:w-[min(30rem,45vw)]">
-            <DossierApplicablePriceCard
-              dossierId={dossier.id}
-              workspaceId={workspace.id}
-            />
-          </div>
+          <DossierApplicablePriceCard
+            dossierId={dossier.id}
+            workspaceId={workspace.id}
+          />
         )}
       </header>
 
