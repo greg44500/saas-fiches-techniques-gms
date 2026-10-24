@@ -37,6 +37,7 @@ function SupplierArticleSearchAutocomplete({
   ariaLabel,
   excludedIds = [],
   fallbackArticles = [],
+  inputGroupClassName = '',
   inputRef = null,
   onSelect,
   placeholder = 'Rechercher un Article fournisseur…',
@@ -142,7 +143,7 @@ function SupplierArticleSearchAutocomplete({
       onValueChange={updateSearch}
       value={search}
     >
-      <AutocompleteInputGroup className="h-10 min-h-10">
+      <AutocompleteInputGroup className={`h-10 min-h-10 ${inputGroupClassName}`.trim()}>
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute left-3 size-4 text-muted-foreground"
