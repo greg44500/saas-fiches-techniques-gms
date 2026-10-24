@@ -276,7 +276,7 @@ describe('DossierApplicablePriceCard', () => {
       name: 'Article fournisseur à vérifier',
     });
     expect(input).toHaveFocus();
-    expect(input.parentElement.parentElement.parentElement)
+    expect(input.parentElement.parentElement)
       .toHaveClass('transition-[width]');
 
     await user.click(screen.getByRole('button', { name: 'Extérieur' }));
