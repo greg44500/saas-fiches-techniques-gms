@@ -1,5 +1,10 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 
+## Complément du 24 octobre 2026 — barre compacte du Dossier
+
+L'en-tête du Dossier regroupe retour, titre/statut, marge cible et recherche d'Article fournisseur dans une barre compacte ; plus de grandes cartes fixes. Coordonnées accessibles au survol/focus du titre et dans un Popover cliquable. Après sélection, le résultat du prix s'affiche sans agrandir la page dans un panneau contextuel fermable, en conservant les autorisations, la source et les alertes. Code et tests RTL modifiés sur la branche UI/UX ; tests, lint/build, gate et QA Windows non attestés, aucune PR/merge. D-008 Core et audit M-001 restent différés.
+
+
 ## Lot UI/UX transversal — en recette locale
 
 - Correctif QA du 2026-10-23 : « Valider » en survol/focus success, « Examiner » en warning, filtre « Actives » rétabli, dialogue de Catégorie sans sous-titre technique visible. Ces libellés remplacent « Valider directement » et « Non archivées » présents dans les synthèses précédentes.
