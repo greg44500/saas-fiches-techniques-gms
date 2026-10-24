@@ -59,6 +59,23 @@ describe('M-004 — modale Gamme, anti-doublon et confirmation humaine', () => {
       .toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Nom de la gamme' }))
       .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'À propos de la création d’une gamme' }))
+      .toBeInTheDocument();
+    expect(screen.getByLabelText('Nom de la gamme').closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'empty');
+  });
+
+  it('affiche les explications uniquement au survol de l’icône (i)', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+    const info = screen.getByRole('button', {
+      name: 'À propos de la création d’une gamme',
+    });
+    expect(screen.queryByText(/La gamme sera disponible dans tous vos magasins/))
+      .not.toBeInTheDocument();
+    await user.hover(info);
+    expect(await screen.findByText(/La gamme sera disponible dans tous vos magasins/))
+      .toBeInTheDocument();
   });
 
   it('interdit la création lorsqu’une Gamme de même nom existe déjà', async () => {

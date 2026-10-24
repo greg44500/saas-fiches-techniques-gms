@@ -229,6 +229,33 @@ describe('TechnicalSheetCreateDialog', () => {
     );
   });
 
+  it('réutilise les libellés flottants et révèle les exemples au focus', async () => {
+    const user = userEvent.setup();
+    render(
+      <TechnicalSheetCreateDialog
+        defaultTargetMarginBasisPoints={3000}
+        dossierId="dossier-1"
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+    const name = screen.getByLabelText('Nom');
+    const quantity = screen.getByLabelText('Quantité produite');
+    expect(name.closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'empty');
+    expect(name).toHaveClass('placeholder:text-transparent', 'focus:placeholder:text-muted-foreground');
+    expect(quantity).toHaveAttribute('placeholder', 'Ex. 10');
+    await user.click(name);
+    expect(name).toHaveFocus();
+    expect(name.closest('[data-slot="field"]').querySelector('label').parentElement)
+      .toHaveClass('group-focus-within:top-2');
+    await user.type(name, 'Blanquette de veau');
+    expect(name.closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'filled');
+  });
+
   it('place l’explication de capacité dans une infobulle', async () => {
     const user = userEvent.setup();
 

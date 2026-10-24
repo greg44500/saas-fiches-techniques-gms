@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
-  useListTechnicalSheetRangesQuery: mocks.listRanges,
+  useListTechnicalSheetRangeOptionsQuery: mocks.listRanges,
 }));
 
 vi.mock('@/features/technical-sheets/components/technical-sheet-range-form-dialog', () => ({
@@ -31,8 +31,8 @@ describe('M-004 — création rapide depuis une Fiche', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.listRanges.mockReturnValue({
-      data: { ranges: [] },
-      isFetching: false,
+      data: [{ id: 'range-1', name: 'Snacking' }],
+      isLoading: false,
       isError: false,
     });
   });
@@ -49,6 +49,10 @@ describe('M-004 — création rapide depuis une Fiche', () => {
     );
     expect(screen.queryByRole('dialog', { name: 'Créer une gamme' }))
       .not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /rechercher une gamme/i }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Gamme (facultative)' }))
+      .toHaveTextContent('Sans gamme');
     await user.click(screen.getByRole('button', { name: 'Créer une gamme' }));
     expect(screen.getByRole('dialog', { name: 'Créer une gamme' }))
       .toBeInTheDocument();
@@ -56,6 +60,21 @@ describe('M-004 — création rapide depuis une Fiche', () => {
     expect(mocks.onChange).toHaveBeenCalledWith('range-new');
     expect(screen.queryByRole('dialog', { name: 'Créer une gamme' }))
       .not.toBeInTheDocument();
+  });
+
+  it('permet de choisir une Gamme active ou Sans gamme par défaut', async () => {
+    const user = userEvent.setup();
+    render(
+      <TechnicalSheetRangePicker
+        canCreate
+        onChange={mocks.onChange}
+        value={null}
+        workspaceId="workspace-1"
+      />,
+    );
+    await user.click(screen.getByRole('combobox', { name: 'Gamme (facultative)' }));
+    await user.click(screen.getByRole('option', { name: 'Snacking' }));
+    expect(mocks.onChange).toHaveBeenCalledWith('range-1');
   });
 
   it('ne propose pas la création rapide sans permission', () => {

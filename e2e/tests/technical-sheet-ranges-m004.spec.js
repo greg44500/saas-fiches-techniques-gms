@@ -31,7 +31,7 @@ test('M-004 Gammes : un référentiel Workspace classe les Fiches du Dossier san
   await page.getByRole('button', { name: 'Changer de gamme' }).click();
 
   const rangeDialog = page.getByRole('dialog');
-  await rangeDialog.getByRole('combobox', { name: 'Gamme de la Fiche technique' }).click();
+  await rangeDialog.getByRole('combobox', { name: 'Gamme (facultative)' }).click();
   await page.getByRole('option', { name: 'Snacking', exact: true }).click();
   await rangeDialog.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('row', { name: /Fiche Gammes E2E/ })).toContainText('Snacking');
