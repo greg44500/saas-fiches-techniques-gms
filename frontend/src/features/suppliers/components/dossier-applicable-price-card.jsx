@@ -46,6 +46,8 @@ function DossierApplicablePriceCard({
   const [searchExpanded, setSearchExpanded] = useState(false);
   const searchContainerRef = useRef(null);
   const searchInputRef = useRef(null);
+  const searchButtonRef = useRef(null);
+  const returnFocusToButtonRef = useRef(false);
   const pricingMetadataQuery =
     useGetSupplierPricingMetadataQuery(
       { workspaceId, dossierId },
@@ -98,7 +100,12 @@ function DossierApplicablePriceCard({
   const showResult = Boolean(selectedArticle) && resultVisible;
 
   useEffect(() => {
-    if (searchExpanded) searchInputRef.current?.focus();
+    if (searchExpanded) {
+      searchInputRef.current?.focus();
+    } else if (returnFocusToButtonRef.current) {
+      searchButtonRef.current?.focus();
+      returnFocusToButtonRef.current = false;
+    }
   }, [searchExpanded]);
 
   useEffect(() => {
@@ -119,6 +126,7 @@ function DossierApplicablePriceCard({
       if (showResult) {
         setResultVisible(false);
       } else {
+        returnFocusToButtonRef.current = true;
         setSearchExpanded(false);
       }
     }
@@ -134,9 +142,12 @@ function DossierApplicablePriceCard({
   return (
     <div
       data-slot="dossier-price-search"
-      className={searchExpanded
-        ? 'relative w-[min(22rem,calc(100vw-3rem))] shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none'
-        : 'relative w-10 shrink-0 transition-[width] duration-300 ease-out motion-reduce:transition-none'}
+      className={[
+        'relative h-10 shrink-0 rounded-md border border-input bg-background shadow-xs',
+        'transition-[width] duration-300 ease-out motion-reduce:transition-none',
+        'focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20',
+        searchExpanded ? 'w-[min(22rem,calc(100vw-3rem))]' : 'w-10',
+      ].join(' ')}
       ref={searchContainerRef}
       onFocusCapture={(event) => {
         if (selectedArticle && event.target.getAttribute('role') === 'combobox') {
@@ -147,24 +158,38 @@ function DossierApplicablePriceCard({
         if (event.key === 'Escape' && selectedArticle) setResultVisible(false);
       }}
     >
-      {searchExpanded ? (
-        <SupplierArticleSearchAutocomplete
-          ariaLabel="Article fournisseur à vérifier"
-          fallbackArticles={fallbackArticles}
-          inputRef={searchInputRef}
-          onSelect={chooseArticle}
-          placeholder="Rechercher le prix d'un article"
-          selectedArticle={selectedArticle}
-          serverSearch={can(SUPPLIER_PERMISSION.ARTICLE_READ)}
-          workspaceId={workspaceId}
-        />
-      ) : (
+      <div className="h-full overflow-hidden rounded-[inherit]">
+        <div
+          aria-hidden={!searchExpanded}
+          className={[
+            'w-[min(22rem,calc(100vw-3rem))]',
+            'transition-opacity duration-300 ease-out motion-reduce:transition-none',
+            searchExpanded ? 'opacity-100' : 'pointer-events-none opacity-0',
+          ].join(' ')}
+          inert={!searchExpanded}
+        >
+          <SupplierArticleSearchAutocomplete
+            ariaLabel="Article fournisseur à vérifier"
+            fallbackArticles={fallbackArticles}
+            inputGroupClassName="h-10 min-h-10 border-0 shadow-none focus-within:border-0 focus-within:ring-0"
+            inputRef={searchInputRef}
+            onSelect={chooseArticle}
+            placeholder="Rechercher le prix d'un article"
+            selectedArticle={selectedArticle}
+            serverSearch={can(SUPPLIER_PERMISSION.ARTICLE_READ)}
+            workspaceId={workspaceId}
+          />
+        </div>
+      </div>
+      {!searchExpanded && (
         <Button
           aria-label="Rechercher un Article fournisseur"
+          className="absolute inset-0 h-full w-full rounded-[inherit]"
           onClick={() => setSearchExpanded(true)}
+          ref={searchButtonRef}
           size="icon"
           type="button"
-          variant="outline"
+          variant="ghost"
         >
           <Search aria-hidden="true" className="size-4" />
         </Button>
