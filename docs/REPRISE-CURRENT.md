@@ -1,5 +1,14 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 
+## Stabilisation des E2E — 2026-10-24 (QA locale requise)
+
+Rapport utilisateur : 34 tests Playwright, 26 réussis et 8 en échec. Audit des 12 fichiers de scénarios, avec correctif groupé :
+- M-001 : les liens « Ouvrir » et l'action « Voir » sont désormais dans le menu de ligne « Actions de … ». Helpers et scénarios adaptés sans modifier le composant.
+- M-002 : fixture historique de Dimension REVIEWED mais identité encore PROVISIONAL, sans utiliser la revue directe désormais interdite (409). Parcours de la file « À contrôler » avec pagination serveur, sans hypothèse sur la première page.
+- M-003 : autocomplétion par Référence fournisseur, prix applicable consulté depuis la barre compacte du Dossier et Article consulté depuis son menu de ligne (avant et après création de Référence).
+- Aucun backend/frontend métier, modèle DB ni Core modifié. Tests du nouveau HEAD non exécutés par l'assistant. Faire E2E M-001/M-002/M-003 ciblés, puis `npm run release:check` sous PowerShell. Aucune PR ni fusion sans accord explicite.
+
+
 ## Complément du 24 octobre 2026 — barre compacte du Dossier (QA mise à jour)
 
 L'en-tête regroupe retour, titre/statut, marge cible et recherche d'Article fournisseur, sans grandes cartes fixes. Suite au retour QA, **le nom du Dossier est l'unique bouton ouvrant les coordonnées au clic/clavier** : plus d'infobulle au survol ni d'icône d'information supplémentaire. La recherche est immédiatement après la marge et **réellement réduite à une loupe seule au repos**, avant déploiement animé et focus. Le résultat du prix et les règles de sélection restent conservés, avec repli sans effacement lors d'un clic extérieur. Tests RTL ajustés, mais tests, lint/build, gate et QA Windows du nouveau HEAD non attestés ; aucune PR/merge. D-008 Core et audit M-001 restent différés.

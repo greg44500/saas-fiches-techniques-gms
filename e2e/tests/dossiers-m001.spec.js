@@ -8,6 +8,7 @@ import {
   createDossierFromUi,
   getDossiersUrl,
   openDossierDrawer,
+  openDossierFromList,
   openDossiersPage,
   selectDossierDrawerTab,
 } from '../support/dossier.js';
@@ -76,7 +77,7 @@ test('M-001 owner crée, consulte et ouvre un Dossier', async ({ page }) => {
   ).toBeVisible();
 
   await closeDossierDrawer(page);
-  await page.getByRole('link', { name: 'Ouvrir' }).click();
+  await openDossierFromList(page, 'Magasin E2E Owner');
 
   await expect(page).toHaveURL(context.dossierUrl);
   await expect(
@@ -125,7 +126,7 @@ test('M-001 owner affecte un membre qui voit et ouvre le Dossier', async ({ page
     page.getByText('Magasin E2E Affecté', { exact: true }),
   ).toBeVisible();
 
-  await page.getByRole('link', { name: 'Ouvrir' }).click();
+  await openDossierFromList(page, 'Magasin E2E Affecté');
   await expect(page).toHaveURL(context.dossierUrl);
   await expectDossierWorkspaceShell(page, 'Magasin E2E Affecté');
 });

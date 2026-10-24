@@ -29,6 +29,17 @@ async function openDossiersPage(page, dossiersUrl) {
   ).toBeVisible({ timeout: DOSSIERS_ROUTE_READY_TIMEOUT_MS });
 }
 
+async function openDossierActions(page, name) {
+  const row = page.getByRole('row').filter({ hasText: name });
+  await expect(row).toBeVisible();
+  await row.getByRole('button', { name: 'Actions de ' + name }).click();
+}
+
+async function openDossierFromList(page, name) {
+  await openDossierActions(page, name);
+  await page.getByRole('link', { name: 'Ouvrir', exact: true }).click();
+}
+
 async function createDossierFromUi(page, {
   dashboardUrl,
   name,
@@ -48,8 +59,11 @@ async function createDossierFromUi(page, {
   await expect(page.getByText('Dossier créé', { exact: true })).toBeVisible();
   await expect(page.getByText(name, { exact: true })).toBeVisible();
 
-  const openLink = page.getByRole('link', { name: 'Ouvrir' }).first();
+  await openDossierActions(page, name);
+  const openLink = page.getByRole('link', { name: 'Ouvrir', exact: true });
+  await expect(openLink).toBeVisible();
   const dossierUrl = await openLink.getAttribute('href');
+  await page.keyboard.press('Escape');
 
   if (!dossierUrl) {
     throw new Error('Created dossier has no work-page link');
@@ -65,9 +79,8 @@ async function createDossierFromUi(page, {
 }
 
 async function openDossierDrawer(page, dossierName) {
-  await page
-    .getByRole('button', { name: `Voir ${dossierName}` })
-    .click();
+  await openDossierActions(page, dossierName);
+  await page.getByRole('button', { name: 'Voir', exact: true }).click();
 
   const tabNames = [
     'Infos',
@@ -101,6 +114,7 @@ export {
   getDossiersUrl,
   getWorkspaceIdFromDashboardUrl,
   openDossierDrawer,
+  openDossierFromList,
   openDossiersPage,
   selectDossierDrawerTab,
 };

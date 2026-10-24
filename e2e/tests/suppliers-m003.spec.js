@@ -17,6 +17,27 @@ import {
   expectVisibleToast,
 } from '../support/toast.js';
 
+function escapeRegex(value) {
+  return value.replace(/[^a-zA-Z0-9]/g, '\\$&');
+}
+
+async function chooseArticleByReference(page, input, reference) {
+  // Les suggestions sont libellées « désignation · fournisseur · référence ».
+  await input.fill(reference);
+  const option = page.getByRole('option', {
+    name: new RegExp('· ' + escapeRegex(reference) + '$'),
+  });
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(input).toHaveValue(new RegExp('· ' + escapeRegex(reference) + '$'));
+}
+
+async function openArticleDetails(page, row, reference) {
+  await expect(row).toBeVisible();
+  await row.getByRole('button', { name: 'Actions de ' + reference }).click();
+  await page.getByRole('button', { name: 'Consulter l’Article', exact: true }).click();
+}
+
 async function createSupplierFromUi(page, supplierName) {
   await page.getByRole('button', {
     name: 'Créer un Fournisseur',
@@ -111,7 +132,7 @@ async function importCatalogFromUi(page, {
 
 async function createNegotiatedPriceFromUi(page, {
   amount,
-  articleLabel,
+  articleReference,
 }) {
   await page.getByRole('tab', {
     name: 'Tarifs négociés',
@@ -122,12 +143,11 @@ async function createNegotiatedPriceFromUi(page, {
 
   const dialog = page.getByRole('dialog');
 
-  await dialog.getByRole('combobox', {
-    name: 'Article fournisseur',
-  }).click();
-  await page.getByRole('option', {
-    name: articleLabel,
-  }).click();
+  await chooseArticleByReference(
+    page,
+    dialog.getByRole('combobox', { name: 'Article fournisseur' }),
+    articleReference,
+  );
 
   await dialog.getByLabel('Montant HT').fill(amount);
   await dialog.getByLabel('Valide à partir du')
@@ -143,59 +163,21 @@ async function createNegotiatedPriceFromUi(page, {
 }
 
 async function resolveArticlePrice(page, {
-  articleLabel,
+  articleReference,
   expectedPrice,
 }) {
-  const applicablePriceCard = page.locator('section').filter({
-    has: page.getByRole('heading', {
-      name: 'Vérifier un prix applicable',
-    }),
-  });
-  await expect(applicablePriceCard).toBeVisible();
-
-  const articleSelect = applicablePriceCard.getByRole('combobox', {
-    name: 'Article fournisseur à vérifier',
-  });
-
-  // Un parcours clavier complet évite de réactiver le trigger au milieu
-  // de la navigation, ce qui fermait le popup dans la version précédente.
-  // Base UI gère les touches Home / ArrowDown / Enter sur le Select ouvert.
-  await articleSelect.press('Enter');
-  await expect(articleSelect).toHaveAttribute('aria-expanded', 'true');
-
-  const option = page.getByRole('option', {
-    name: articleLabel,
-    exact: true,
-  });
-  await expect(option).toHaveCount(1);
-
-  // Déterminer l'index de l'Article réellement proposé, sans supposer qu'il
-  // est l'unique option ni écrire sa valeur artificiellement dans React.
-  const labels = (await page.getByRole('option').allTextContents())
-    .map((label) => label.trim());
-  const targetIndex = labels.indexOf(articleLabel);
-  expect(targetIndex, 'Article absent de la sélection du Dossier')
-    .toBeGreaterThanOrEqual(0);
-  await page.keyboard.press('Home');
-  for (let index = 0; index < targetIndex; index += 1) {
-    await page.keyboard.press('ArrowDown');
-  }
-  await page.keyboard.press('Enter');
-
-  await expect(articleSelect).toHaveAttribute('aria-expanded', 'false');
-  await expect(articleSelect).toContainText(articleLabel);
-
-  await expect(
-    applicablePriceCard.getByText(expectedPrice, {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await expect(
-    applicablePriceCard.getByText(
-      'Source : Tarif négocié',
-      { exact: true },
-    ),
-  ).toBeVisible();
+  // Le prix applicable est désormais consulté dans le shell Dossier.
+  await page.getByRole('button', { name: 'Rechercher un Article fournisseur' }).click();
+  await chooseArticleByReference(
+    page,
+    page.getByRole('combobox', { name: 'Article fournisseur à vérifier' }),
+    articleReference,
+  );
+  const result = page.getByRole('region', { name: 'Résultat du prix applicable' });
+  await expect(result).toBeVisible();
+  await expect(result.getByText(expectedPrice, { exact: true })).toBeVisible();
+  await expect(result.getByText('Source : Tarif négocié', { exact: true }))
+    .toBeVisible();
 }
 
 // Vérifier la lecture avec la session et la tenancy réelles, puis la projection
@@ -316,10 +298,7 @@ test('M-003 owner importe un catalogue privé, le réimporte sans doublon et un 
 test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés et Prix applicables distincts', async ({ page }) => {
   const context =
     await provisionSupplierPricingWorkspace();
-  const articleLabel =
-    context.supplierName
-    + ' · '
-    + context.articleReference;
+  const articleReference = context.articleReference;
 
   await loginWithIdentity(
     page,
@@ -337,10 +316,10 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
 
   await createNegotiatedPriceFromUi(page, {
     amount: '10',
-    articleLabel,
+    articleReference,
   });
   await resolveArticlePrice(page, {
-    articleLabel,
+    articleReference,
     expectedPrice: '10,000 / kg',
   });
 
@@ -350,10 +329,10 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
 
   await createNegotiatedPriceFromUi(page, {
     amount: '20',
-    articleLabel,
+    articleReference,
   });
   await resolveArticlePrice(page, {
-    articleLabel,
+    articleReference,
     expectedPrice: '20,000 / kg',
   });
 
@@ -361,7 +340,7 @@ test('M-003 deux Dossiers utilisent le même Article avec des Tarifs négociés 
     context.dossierAPricingUrl,
   );
   await resolveArticlePrice(page, {
-    articleLabel,
+    articleReference,
     expectedPrice: '10,000 / kg',
   });
 });
@@ -689,7 +668,7 @@ test('M-003 associe immédiatement une Référence provisoire créée après un 
   const { articleRow } = await expectImportedWorkspaceArticle(page, {
     workspaceId: workspace.workspaceId, reference, accessToken: token,
   });
-  await articleRow.getByRole('button', { name: 'Détails de ' + reference }).click();
+  await openArticleDetails(page, articleRow, reference);
   await page.getByRole('tab', { name: 'Association' }).click();
   await page.getByRole('button', { name: 'Modifier l’association' }).click();
   const associationDialog = page.getByRole('dialog', { name: 'Modifier le Produit associé' });
@@ -732,11 +711,7 @@ test('M-003 associe immédiatement une Référence provisoire créée après un 
   // La contribution ferme volontairement le drawer précédent. Retrouver
   // l'Article persisté après invalidation RTK Query, puis le rouvrir.
   // Ne pas forcer le drawer à rester ouvert pendant des dialogues distincts.
-  const reopenArticle = page.getByRole('button', {
-    name: 'Détails de ' + reference,
-  });
-  await expect(reopenArticle).toBeVisible();
-  await reopenArticle.click();
+  await openArticleDetails(page, articleRow, reference);
   await expect(page.getByRole('tab', { name: 'Infos Article' })).toBeVisible();
   // La modification Article expose le libellé métier, sans choix d'unité en Fiche.
   await page.getByRole('tab', { name: 'Infos Article' }).click();
