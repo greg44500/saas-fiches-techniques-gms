@@ -235,3 +235,11 @@ que de la modale tarifaire avant toute PR.
 - Champ de recherche compact visible, élargi au focus sur écran large (animation réduite selon `prefers-reduced-motion`) ; recherche prédictive, contrôle des droits, fallback sur les Références du Dossier et filtres serveur inchangés.
 - Après sélection seulement, panneau flottant de résultat : montant HT, source, alerte tarif expiré, chargement et erreur conservés. Fermeture au clic hors panneau, par bouton ou Échap sans effacer l'Article ; réouverture au focus de recherche.
 - Aucun changement API, Core, DB, permissions, capabilities ni quota. Tests RTL préparés ; tests locaux PowerShell, lint/build, gate et QA visuelle encore à confirmer. Ni PR ni merge avant accord explicite.
+
+
+## Ajustement QA — Déclencheur d'information et recherche compacte (2026-10-24)
+
+- Suppression de l'infobulle au survol du nom et de l'icône d'information distincte : **le nom du Dossier devient l'unique bouton** ouvrant le Popover « Informations du Dossier » au clic ou au clavier. Les coordonnées existantes conservent leurs icônes ; sans coordonnées, afficher un message neutre. Aucun affichage automatique au survol.
+- Dans l'en-tête, la recherche de prix se place immédiatement après le contrôle de marge cible (ou après le statut si le contrôle est absent). **Au repos, seule une loupe est rendue** : ni champ ni placeholder partiellement visible. Au clic, la recherche se déploie avec une transition de largeur réversible (300 ms, réduction des animations selon préférences système) puis reçoit le focus.
+- Les suggestions M-003 continuent de s'afficher dans leur Portal. Un clic sur une suggestion ne replie pas la recherche. Un clic extérieur la replie sans effacer l'Article sélectionné ; la recherche rouverte retrouve la sélection et son résultat. Échap conserve le comportement tarifaire validé (fermeture du résultat sans perte de l'Article).
+- Permissions, API et calculs inchangés. Tests RTL Dossier/prix ajustés ; tests locaux, lint, build, gate et QA Windows à effectuer avant toute PR ou fusion.
