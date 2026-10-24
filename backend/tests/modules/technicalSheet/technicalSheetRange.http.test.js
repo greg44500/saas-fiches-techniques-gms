@@ -179,4 +179,82 @@ describe('M-004 Gammes — HTTP, permissions et isolation', () => {
                 rangeId: foreignRange.body.data.range.id,
             }).expect(409);
     });
+
+    it('conserve le classement archivé mais refuse de lui associer une nouvelle Fiche', async () => {
+        const range = (await request(app).post(rangesPath())
+            .set(bearer(owner.token)).send({ name: 'Traiteur' }).expect(201)).body.data.range;
+        const first = await createSheet({ rangeId: range.id });
+        const second = await createSheet();
+        const archived = (await request(app).post(
+            rangesPath() + '/' + range.id + '/archive',
+        ).set(bearer(owner.token))
+            .send({ expectedRevision: range.revision }).expect(200)).body.data.range;
+        expect(archived.status).toBe('ARCHIVED');
+
+        const existing = await request(app).get(sheetPath(first.sheet.id))
+            .set(bearer(owner.token)).expect(200);
+        expect(existing.body.data.sheet.range).toMatchObject({
+            name: 'Traiteur', status: 'ARCHIVED',
+        });
+
+        await request(app).patch(sheetPath(second.sheet.id) + '/range')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: second.sheet.revision, rangeId: range.id })
+            .expect(409);
+
+        const unassigned = await request(app).patch(sheetPath(first.sheet.id) + '/range')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: first.sheet.revision, rangeId: null }).expect(200);
+        expect(unassigned.body.data.sheet.rangeId).toBeNull();
+    });
+
+    it('ne supprime pas une Gamme utilisée dans un autre Dossier du Workspace', async () => {
+        const range = (await request(app).post(rangesPath())
+            .set(bearer(owner.token)).send({ name: 'Cuisine chaude' }).expect(201)).body.data.range;
+        const anotherDossier = await Dossier.create({
+            workspace: owner.workspace._id,
+            name: 'Deuxième magasin',
+            technicalSheetSettings: { defaultTargetMarginBasisPoints: 4000 },
+            statusChangedBy: owner.owner._id,
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+        await createTechnicalSheet({
+            workspaceId: owner.workspace._id,
+            dossierId: anotherDossier._id,
+            actorId: owner.owner._id,
+            data: {
+                name: 'Plat du jour',
+                rangeId: range.id,
+                productionQuantity: '10',
+                productionUnit: 'UNIT',
+                vatRateBasisPoints: 550,
+            },
+        });
+        await request(app).delete(rangesPath() + '/' + range.id)
+            .set(bearer(owner.token))
+            .send({ expectedRevision: range.revision, confirmation: 'DELETE' })
+            .expect(409);
+    });
+
+    it('sépare le droit de gérer les Gammes du droit de classer une Fiche dans un Dossier', async () => {
+        const manager = await createWorkspaceMemberFixture({
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            permissions: [
+                TECHNICAL_SHEET_PERMISSION.READ,
+                TECHNICAL_SHEET_PERMISSION.RANGE_MANAGE,
+            ],
+        });
+        const created = await request(app).post(rangesPath())
+            .set(bearer(manager.token)).send({ name: 'Gamme partagée' }).expect(201);
+        const sheet = await createSheet();
+        await request(app).patch(sheetPath(sheet.sheet.id) + '/range')
+            .set(bearer(manager.token))
+            .send({
+                expectedRevision: sheet.sheet.revision,
+                rangeId: created.body.data.range.id,
+            }).expect(403);
+    });
+
 });
