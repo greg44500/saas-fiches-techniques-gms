@@ -515,3 +515,35 @@ aucune gate GitHub de la future PR n'est encore attestée.
 
 Ces précisions de présentation ne modifient ni l'ownership des Gammes,
 ni G1/G2, ni le stockage, les droits, les quotas ou les exports.
+
+## 19. Contrôle anti-doublon lors de la création et du renommage (recette du 2026-10-24)
+
+À la demande du propriétaire du produit, les actions « Créer une gamme »
+et « Renommer » ouvrent une **modale**, à la place du formulaire intégré
+à la page. La création rapide depuis un Dossier reprend ce même dialogue.
+La présentation et le contrôle du nom s'inspirent des catégories de
+Produits existantes, sans modifier les composants génériques du Core.
+
+- Pendant la saisie, le serveur propose les Gammes **du Workspace courant**
+  dont les noms sont proches, y compris les Gammes archivées.
+- Un nom exactement égal selon la clé d'unicité validée (espaces/casse)
+  interdit la création ou le renommage vers une autre Gamme.
+- Un nom proche non identique déclenche une liste d'avertissements.
+  L'utilisateur peut créer un nom distinct seulement après avoir
+  confirmé explicitement avoir examiné ces propositions.
+- La confirmation est contrôlée **côté serveur** via les identifiants
+  des candidats examinés ; les nouveaux noms voisins apparus entre
+  la vérification et l'écriture provoquent un conflit, avec possibilité
+  de réexaminer les résultats. L'index unique reste le garde ultime
+  contre les doublons exacts concurrents.
+- Le même contrôle s'applique aux créations et aux renommages ;
+  le renommage ignore sa propre identité parmi les suggestions.
+- La requête de suggestions exige la permission de lecture métier
+  et l'appartenance au Workspace. La création et le renommage
+  continuent à exiger `technical-sheet:range:manage`.
+- Une impossibilité de vérifier les suggestions bloque la validation,
+  avec un message explicite, plutôt que d'autoriser un doublon probable.
+- L'algorithme de similitude réutilise les critères déjà en place
+  pour les noms voisins des catégories de Produits. Les suggestions
+  n'ont pas pour effet de renommer ou de fusionner automatiquement
+  des Gammes ; une validation humaine est requise pour un nom proche.

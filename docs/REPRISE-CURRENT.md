@@ -1,6 +1,19 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 ## État courant — M-004 Gammes, 2026-10-24
 
+### Ajustement demandé en recette — modale et noms proches (2026-10-24)
+
+Le formulaire intégré à la page est remplacé par une modale
+commune à création, renommage et création rapide depuis un Dossier.
+Le contrôle des noms proches reprend les critères métier des catégories
+Produit, avec suggestions Workspace-scoped, avertissements de doublons
+exacts/voisins, confirmation explicite des noms différents et refus
+serveur lorsque les propositions changent. Contrat complété en
+section 19 du cadrage validé.
+
+**Non vérifié à ce stade** : tests ciblés backend/RTL/Playwright et
+`npm run release:check` de la nouvelle révision. Pas de PR ni merge.
+
 ### Reprise QA interface Gammes — 2026-10-24
 
 Après revue des captures utilisateurs : positionnement initial sous

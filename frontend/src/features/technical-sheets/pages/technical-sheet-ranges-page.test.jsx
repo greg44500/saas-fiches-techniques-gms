@@ -94,7 +94,8 @@ describe('M-004 Gammes — gestion Workspace', () => {
     await user.click(screen.getByRole('button', { name: 'Créer une gamme' }));
     expect(await screen.findByRole('dialog', { name: 'Créer une gamme' })).toBeInTheDocument();
     await user.type(screen.getByRole('textbox', { name: 'Nom de la gamme' }), 'Pâtisserie');
-    await user.click(await screen.findByRole('button', { name: 'Créer la gamme' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Créer la gamme' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: 'Créer la gamme' }));
     await waitFor(() => {
       expect(mocks.create).toHaveBeenCalledWith({
         workspaceId: 'workspace-1',

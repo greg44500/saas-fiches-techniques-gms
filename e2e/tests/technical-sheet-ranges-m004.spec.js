@@ -13,7 +13,8 @@ test('M-004 Gammes : un référentiel Workspace classe les Fiches du Dossier san
     .toBeVisible();
 
   await page.getByRole('button', { name: 'Créer une gamme' }).click();
-  await page.getByLabel('Nouvelle gamme').fill('Snacking');
+  await page.getByRole('dialog', { name: 'Créer une gamme' })
+    .getByRole('textbox', { name: 'Nom de la gamme' }).fill('Snacking');
   await page.getByRole('button', { name: 'Créer la gamme' }).click();
   await expect(page.getByText('Snacking', { exact: true })).toBeVisible();
 
