@@ -128,4 +128,24 @@ describe('SupplierArticleSearchAutocomplete', () => {
       name: 'Croissant au beurre 120 g · BRIDOR · 43279',
     })).toBeInTheDocument();
   });
+  it('conserve un Article sélectionné à Échap mais permet toujours son effacement explicite', async () => {
+    const user = userEvent.setup();
+    render(<Harness fallback={[sysco]} serverSearch={false} />);
+    const input = screen.getByRole('combobox', { name: 'Rechercher un Article' });
+    await user.type(input, 'Ali321');
+    await user.click(await screen.findByRole('option', {
+      name: 'Ail semoule · SYSCO · Ali321',
+    }));
+
+    expect(input).toHaveValue('Ail semoule · SYSCO · Ali321');
+    await user.keyboard('{Escape}');
+    expect(input).toHaveValue('Ail semoule · SYSCO · Ali321');
+
+    await user.clear(input);
+    expect(input).toHaveValue('');
+    await user.type(input, 'Ali321');
+    expect(await screen.findByRole('option', {
+      name: 'Ail semoule · SYSCO · Ali321',
+    })).toBeInTheDocument();
+  });
 });
