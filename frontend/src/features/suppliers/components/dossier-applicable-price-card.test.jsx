@@ -276,7 +276,7 @@ describe('DossierApplicablePriceCard', () => {
       name: 'Article fournisseur à vérifier',
     });
     expect(input).toHaveFocus();
-    expect(input.parentElement.parentElement)
+    expect(input.closest('[data-slot="dossier-price-search"]'))
       .toHaveClass('transition-[width]');
 
     await user.click(screen.getByRole('button', { name: 'Extérieur' }));
