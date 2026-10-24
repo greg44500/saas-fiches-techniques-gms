@@ -103,7 +103,7 @@ describe('DossierApplicablePriceCard', () => {
     ]);
   });
 
-  it('résout le prix dans une carte compacte dédiée au shell Dossier', async () => {
+  it('affiche le prix après sélection, sans réserver d’espace vide', async () => {
     const user = userEvent.setup();
 
     render(
@@ -113,7 +113,13 @@ describe('DossierApplicablePriceCard', () => {
       />,
     );
 
+    expect(screen.queryByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).not.toBeInTheDocument();
     await selectArticleOption(user);
+    expect(screen.getByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).toBeInTheDocument();
 
     expect(mocks.loadApplicable).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
@@ -214,5 +220,32 @@ describe('DossierApplicablePriceCard', () => {
     expect(mocks.loadApplicable).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('12,500 / tranche')).not.toBeInTheDocument();
     expect(screen.queryByText(/source de remplacement/)).not.toBeInTheDocument();
+  });
+  it('ferme puis rouvre le résultat sans perdre l’Article choisi', async () => {
+    const user = userEvent.setup();
+    render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
+    const input = await selectArticleOption(user);
+    await user.click(screen.getByRole('button', {
+      name: 'Fermer le résultat du prix applicable',
+    }));
+    expect(screen.queryByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).not.toBeInTheDocument();
+    expect(input).toHaveValue('Ail semoule · Sysco · Ali321');
+    await user.click(input);
+    expect(screen.getByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).toBeInTheDocument();
+  });
+
+  it('ferme le résultat par Échap sans effacer la sélection', async () => {
+    const user = userEvent.setup();
+    render(<DossierApplicablePriceCard dossierId="dossier-1" workspaceId="workspace-1" />);
+    const input = await selectArticleOption(user);
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('region', {
+      name: 'Résultat du prix applicable',
+    })).not.toBeInTheDocument();
+    expect(input).toHaveValue('Ail semoule · Sysco · Ali321');
   });
 });
