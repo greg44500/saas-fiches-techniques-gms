@@ -237,7 +237,8 @@ const listTechnicalSheets = async ({
             TechnicalSheet.find(filter)
                 .sort({ updatedAt: -1, _id: -1 })
                 .skip(skip)
-                .limit(limit),
+                .limit(limit)
+                .populate({ path: 'range', select: '_id name status' }),
             TechnicalSheet.countDocuments(filter),
         ]);
 
@@ -305,7 +306,7 @@ const getTechnicalSheet = async ({
 
     const [sheet, draft] =
         await Promise.all([
-            TechnicalSheet.findOne(filter),
+            TechnicalSheet.findOne(filter).populate({ path: 'range', select: '_id name status' }),
             TechnicalSheetDraft.findOne(
                 mongoose.trusted({
                     technicalSheet: technicalSheetId,
