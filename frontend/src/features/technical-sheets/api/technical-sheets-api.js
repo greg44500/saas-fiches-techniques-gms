@@ -72,11 +72,22 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
       ],
     }),
 
+    getTechnicalSheetRangeSuggestions: builder.query({
+      query: ({ workspaceId, name, excludeRangeId }) => ({
+        url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/suggestions',
+        params: compactParams({ name, excludeRangeId }),
+      }),
+      transformResponse: (response) => response.data.suggestions,
+      providesTags: (_result, _error, { workspaceId }) => [
+        { type: 'TechnicalSheetRanges', id: workspaceId },
+      ],
+    }),
+
     createTechnicalSheetRange: builder.mutation({
-      query: ({ workspaceId, name }) => ({
+      query: ({ workspaceId, name, reviewedCandidateIds = [] }) => ({
         url: '/workspaces/' + workspaceId + '/technical-sheets/ranges',
         method: 'POST',
-        body: { name },
+        body: { name, reviewedCandidateIds },
       }),
       transformResponse: (response) => response.data.range,
       invalidatesTags: (_result, _error, { workspaceId }) => [
@@ -85,10 +96,10 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
     }),
 
     updateTechnicalSheetRange: builder.mutation({
-      query: ({ workspaceId, rangeId, expectedRevision, name }) => ({
+      query: ({ workspaceId, rangeId, expectedRevision, name, reviewedCandidateIds = [] }) => ({
         url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/' + rangeId,
         method: 'PATCH',
-        body: { expectedRevision, name },
+        body: { expectedRevision, name, reviewedCandidateIds },
       }),
       transformResponse: (response) => response.data.range,
       invalidatesTags: (_result, _error, { workspaceId }) => [
@@ -968,6 +979,7 @@ export const {
   useChangeTechnicalSheetRangeStatusMutation,
   useCreateTechnicalSheetRangeMutation,
   useDeleteTechnicalSheetRangeMutation,
+  useGetTechnicalSheetRangeSuggestionsQuery,
   useListTechnicalSheetRangesQuery,
   useUpdateTechnicalSheetRangeMutation,
   useApplyTechnicalSheetOptimizationMutation,
