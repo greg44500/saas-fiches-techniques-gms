@@ -8,16 +8,13 @@ import { TableRowActionsMenu } from '@/components/data-display/table-row-actions
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
   useChangeTechnicalSheetRangeStatusMutation,
-  useCreateTechnicalSheetRangeMutation,
   useDeleteTechnicalSheetRangeMutation,
   useListTechnicalSheetRangesQuery,
-  useUpdateTechnicalSheetRangeMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import { TECHNICAL_SHEET_PERMISSION } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 import {
@@ -26,6 +23,7 @@ import {
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { useDataPagination } from '@/hooks/use-data-pagination';
 import { TechnicalSheetRangeSearch } from '@/features/technical-sheets/components/technical-sheet-range-search';
+import { TechnicalSheetRangeFormDialog } from '@/features/technical-sheets/components/technical-sheet-range-form-dialog';
 
 function TechnicalSheetRangesPage() {
   const { workspace, can } = useWorkspaceContext();
@@ -33,48 +31,29 @@ function TechnicalSheetRangesPage() {
   const canRead = can(TECHNICAL_SHEET_PERMISSION.READ);
   const canManage = can(TECHNICAL_SHEET_PERMISSION.RANGE_MANAGE);
   const { page, pageSize, setPage, setPageSize } = useDataPagination();
-  const [name, setName] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
-  const [error, setError] = useState('');
   const query = useListTechnicalSheetRangesQuery({
     workspaceId: workspace.id,
     page, limit: pageSize,
     search: search.trim() || undefined,
     status: status || undefined,
   }, { skip: !canRead });
-  const [createRange, createState] = useCreateTechnicalSheetRangeMutation();
-  const [renameRange, renameState] = useUpdateTechnicalSheetRangeMutation();
   const [transitionRange, transitionState] = useChangeTechnicalSheetRangeStatusMutation();
   const [deleteRange, deleteState] = useDeleteTechnicalSheetRangeMutation();
-  const busy = createState.isLoading || renameState.isLoading || transitionState.isLoading || deleteState.isLoading;
+  const busy = transitionState.isLoading || deleteState.isLoading;
   const handleSearchChange = useCallback((nextSearch) => {
     setSearch(nextSearch);
     setPage(1);
   }, [setPage]);
 
-  async function submit() {
-    if (!name.trim() || busy) return;
-    setError('');
-    try {
-      if (editing) {
-        await renameRange({
-          workspaceId: workspace.id, rangeId: editing.id,
-          expectedRevision: editing.revision, name: name.trim(),
-        }).unwrap();
-      } else {
-        await createRange({ workspaceId: workspace.id, name: name.trim() }).unwrap();
-      }
-      toast({ title: editing ? 'Gamme renommée' : 'Gamme créée', variant: 'success' });
-      setEditing(null);
-      setName('');
-      setFormOpen(false);
-    } catch (failure) {
-      setError(getTechnicalSheetApiErrorMessage(failure, 'La Gamme n’a pas pu être enregistrée.'));
-    }
+  function savedRange() {
+    toast({ title: editing ? 'Gamme renommée' : 'Gamme créée', variant: 'success' });
+    setEditing(null);
+    setFormOpen(false);
   }
 
   async function changeStatus(range) {
@@ -140,9 +119,7 @@ function TechnicalSheetRangesPage() {
               key: 'rename', Icon: Pencil, label: 'Renommer',
               disabled: busy, onClick: () => {
                 setEditing(range);
-                setName(range.name);
                 setFormOpen(true);
-                setError('');
               },
             }] : []),
             {
@@ -176,8 +153,6 @@ function TechnicalSheetRangesPage() {
           <Button
             onClick={() => {
               setEditing(null);
-              setName('');
-              setError('');
               setFormOpen(true);
             }}
             size="sm"
@@ -195,36 +170,16 @@ function TechnicalSheetRangesPage() {
         </p>
       )}
       {canManage && formOpen && (
-        <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-          <label className="text-sm font-medium" htmlFor="range-name">
-            {editing ? 'Renommer la gamme' : 'Nouvelle gamme'}
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <Input
-              className="min-w-48 flex-1"
-              disabled={busy}
-              id="range-name"
-              maxLength={100}
-              onChange={(event) => setName(event.target.value)}
-              value={name}
-              placeholder="Ex. Snacking"
-            />
-            {editing && (
-              <Button
-                disabled={busy}
-                onClick={() => { setEditing(null); setName(''); setError(''); setFormOpen(false); }}
-                type="button"
-                variant="outline"
-              >Annuler</Button>
-            )}
-            <Button
-              disabled={!name.trim() || busy}
-              onClick={submit}
-              type="button"
-            >{editing ? 'Enregistrer' : 'Créer la gamme'}</Button>
-          </div>
-          {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-        </div>
+        <TechnicalSheetRangeFormDialog
+          key={editing?.id ?? 'create'}
+          onClose={() => {
+            setEditing(null);
+            setFormOpen(false);
+          }}
+          onSaved={savedRange}
+          range={editing}
+          workspaceId={workspace.id}
+        />
       )}
 
       <div className="flex flex-wrap items-center gap-2">
