@@ -13,12 +13,8 @@ import { TECHNICAL_SHEET_STATUS } from './technicalSheet.registry.js';
 import { createTechnicalSheetEvent } from './technicalSheetEvent.service.js';
 import { serializeTechnicalSheet } from './technicalSheet.serializer.js';
 import { TechnicalSheetRange } from './technicalSheetRange.model.js';
-
-const normalizeRangeName = (name) => name
-    .normalize('NFKC')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .toLocaleLowerCase('fr-FR');
+import { normalizeRangeName } from './technicalSheetRangeName.js';
+import { assertRangeNameReviewed } from './technicalSheetRangeSuggestions.service.js';
 
 const serializeRange = (range) => ({
     id: range._id.toString(),
@@ -75,8 +71,11 @@ const listRanges = async ({ workspaceId, page = 1, limit = 50, status, search })
     };
 };
 
-const createRange = ({ workspaceId, actorId, name }) =>
+const createRange = ({ workspaceId, actorId, name, reviewedCandidateIds = [] }) =>
     handleDuplicateName(() => mongoose.connection.transaction(async (session) => {
+        await assertRangeNameReviewed({
+            workspaceId, name, reviewedCandidateIds, session,
+        });
         const [range] = await TechnicalSheetRange.create([{
             workspace: workspaceId,
             name: name.trim().replace(/\s+/g, ' '),
@@ -92,7 +91,7 @@ const createRange = ({ workspaceId, actorId, name }) =>
         return serializeRange(range);
     }));
 
-const renameRange = ({ workspaceId, rangeId, actorId, name, expectedRevision }) =>
+const renameRange = ({ workspaceId, rangeId, actorId, name, expectedRevision, reviewedCandidateIds = [] }) =>
     handleDuplicateName(() => mongoose.connection.transaction(async (session) => {
         const range = await TechnicalSheetRange.findOne(
             mongoose.trusted({
@@ -100,6 +99,9 @@ const renameRange = ({ workspaceId, rangeId, actorId, name, expectedRevision }) 
             }),
         ).session(session);
         if (!range) throw conflict('Gamme indisponible ou modifiée entre-temps.');
+        await assertRangeNameReviewed({
+            workspaceId, name, excludeRangeId: rangeId, reviewedCandidateIds, session,
+        });
         const previousName = range.name;
         range.name = name.trim().replace(/\s+/g, ' ');
         range.normalizedName = normalizeRangeName(name);

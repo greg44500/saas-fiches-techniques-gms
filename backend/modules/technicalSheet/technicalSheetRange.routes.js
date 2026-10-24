@@ -7,7 +7,7 @@ import { loadWorkspaceContext } from '../../middlewares/loadWorkspaceContext.js'
 import { validateRequest } from '../../middlewares/validateRequest.js';
 import { TECHNICAL_SHEET_PERMISSION } from './technicalSheetPermission.registry.js';
 import {
-    archive, create, list, reactivate, remove, rename,
+    archive, create, list, reactivate, remove, rename, suggestions,
 } from './technicalSheetRange.controller.js';
 import {
     createRangeSchema,
@@ -15,6 +15,7 @@ import {
     rangeListQuerySchema,
     rangeParamsSchema,
     rangeRevisionSchema,
+    rangeSuggestionsQuerySchema,
     updateRangeSchema,
     workspaceRangeParamsSchema,
 } from './technicalSheetRange.validation.js';
@@ -28,6 +29,15 @@ technicalSheetRangeRouter.get(
     loadWorkspaceContext,
     authorizePermission(TECHNICAL_SHEET_PERMISSION.READ),
     list,
+);
+
+technicalSheetRangeRouter.get(
+    '/suggestions',
+    authenticate,
+    validateRequest({ params: workspaceRangeParamsSchema, query: rangeSuggestionsQuerySchema }),
+    loadWorkspaceContext,
+    authorizePermission(TECHNICAL_SHEET_PERMISSION.READ),
+    suggestions,
 );
 
 const writeChain = [

@@ -15,7 +15,15 @@ const rangeListQuerySchema = z.strictObject({
     search: z.string().trim().min(1).max(100).optional(),
 });
 const rangeNameSchema = z.string().trim().min(1).max(100);
-const createRangeSchema = z.strictObject({ name: rangeNameSchema });
+const reviewedCandidateIdsSchema = z.array(objectIdSchema).max(100).optional().default([]);
+const rangeSuggestionsQuerySchema = z.strictObject({
+    name: rangeNameSchema,
+    excludeRangeId: objectIdSchema.optional(),
+});
+const createRangeSchema = z.strictObject({
+    name: rangeNameSchema,
+    reviewedCandidateIds: reviewedCandidateIdsSchema,
+});
 const updateRangeSchema = createRangeSchema.extend({
     expectedRevision: z.number().int().min(0),
 });
@@ -37,6 +45,7 @@ export {
     rangeListQuerySchema,
     rangeParamsSchema,
     rangeRevisionSchema,
+    rangeSuggestionsQuerySchema,
     updateRangeSchema,
     workspaceRangeParamsSchema,
 };

@@ -1,3 +1,4 @@
+import { findRangeNameSuggestions } from './technicalSheetRangeSuggestions.service.js';
 import {
     archiveRange,
     assignTechnicalSheetRange,
@@ -15,11 +16,19 @@ const list = async (req, res) => {
     res.status(200).json({ status: 'success', data: result });
 };
 
+const suggestions = async (req, res) => {
+    const result = await findRangeNameSuggestions({
+        workspaceId: req.workspace._id,
+        ...req.validated.query,
+    });
+    res.status(200).json({ status: 'success', data: { suggestions: result } });
+};
+
 const create = async (req, res) => {
     const range = await createRange({
         workspaceId: req.workspace._id,
         actorId: req.user._id,
-        name: req.validated.body.name,
+        ...req.validated.body,
     });
     res.status(201).json({ status: 'success', data: { range } });
 };
@@ -75,4 +84,4 @@ const assign = async (req, res) => {
     res.status(200).json({ status: 'success', data: { sheet } });
 };
 
-export { archive, assign, create, list, reactivate, remove, rename };
+export { archive, assign, create, list, reactivate, remove, rename, suggestions };
