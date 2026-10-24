@@ -5,6 +5,7 @@ const REQUIRED = Object.freeze([
     'technical_sheet_range_workspace_name_unique',
     'technical_sheet_range_workspace_status_name',
     'technical_sheet_workspace_dossier_range_status',
+    'technical_sheet_workspace_range_reference',
 ]);
 
 const ensureM004RangeIndexes = async () => {

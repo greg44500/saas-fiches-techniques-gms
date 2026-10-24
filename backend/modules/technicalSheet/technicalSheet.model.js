@@ -119,6 +119,10 @@ technicalSheetSchema.index(
     { name: 'technical_sheet_workspace_status_updated_at' },
 );
 technicalSheetSchema.index(
+    { workspace: 1, range: 1 },
+    { name: 'technical_sheet_workspace_range_reference' },
+);
+technicalSheetSchema.index(
     { workspace: 1, dossier: 1, range: 1, status: 1, updatedAt: -1 },
     { name: 'technical_sheet_workspace_dossier_range_status' },
 );
