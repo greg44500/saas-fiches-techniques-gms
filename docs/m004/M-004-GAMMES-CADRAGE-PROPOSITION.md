@@ -1,15 +1,17 @@
 # M-004 — Gammes de Fiches techniques — proposition de contrat fonctionnel
 
-**Statut : PROPOSITION À VALIDER — AUCUNE AUTORISATION DE DÉVELOPPER**  
+**Statut : CONTRAT CONSOLIDÉ SOUMIS À APPROBATION — G1 ET G2 ARBITRÉS — AUCUNE AUTORISATION DE DÉVELOPPER**  
 **Date : 2026-10-24**  
 **Branche de préparation :** `feature/m004-gammes-fiches-techniques`  
 **Périmètre :** extension organisationnelle du module M-004 existant, sans évolution du Core.
 
-> Les 11 arbitrages ci-dessous ont été transmis par le propriétaire du produit.
-> Ce texte en précise les conséquences et propose des détails nécessaires à
-> l'implémentation. Les points marqués **À CONFIRMER** ne sont pas décidés ;
-> le document complet doit faire l'objet d'une approbation explicite avant
-> toute évolution de schéma, d'API ou de code métier.
+> Les 11 arbitrages initiaux ainsi que les décisions complémentaires
+> **G1 = B** (suppression définitive d'une Gamme sans aucune Fiche liée) et
+> **G2 = A** (copie sans Gamme avec message explicite si l'ancienne Gamme
+> est archivée) ont été confirmés par le propriétaire du produit.
+> Les précisions d'application du contrat ci-dessous sont soumises à une
+> **approbation globale explicite avant tout développement métier**.
+> Aucun changement de schéma, d'API ou de code métier n'est autorisé à ce stade.
 >
 > Sources faisant autorité : code et tests effectifs, puis
 > `docs/m004/M-004-FINAL-CONTRACT.md`,
@@ -52,6 +54,11 @@ actuellement associées à l'identifiant de cette Gamme.
 10. Administration depuis le Workspace + création rapide depuis le Dossier.
 11. Aucun quota/capability commerciale supplémentaire pour les Gammes ;
     fonctionnalité disponible dans tous les plans.
+12. **G1 = B — confirmé :** suppression définitive permise uniquement si
+    aucune Fiche technique n'est encore associée à la Gamme.
+13. **G2 = A — confirmé :** si la Gamme source est archivée au moment de
+    la copie, la nouvelle Fiche est « Sans gamme » et le résultat en informe
+    explicitement l'utilisateur.
 
 ## 3. Ownership, isolation et visibilité
 
@@ -94,11 +101,31 @@ ou réactiver une Gamme ne permet pas de doublons. Les règles exactes de
 normalisation seront déterminées et testées sans fusion heuristique
 de libellés distincts.
 
-**À CONFIRMER — G1 :** une Gamme n'a pas de suppression définitive en V1 :
-l'archivage est l'unique retrait, y compris lorsque la Gamme est vide.
-Cette proposition protège la réversibilité et les Fiches associées.
-Si une suppression de Gamme vide est souhaitée, définir avant code les
-préconditions, impacts d'audit et interdictions de référence.
+**G1 = B — validé en arbitrage métier :** une Gamme peut être supprimée
+**définitivement si, et uniquement si, aucune Fiche technique ne lui est
+associée dans l'ensemble du Workspace**. Le contrôle englobe tous les
+Dossiers et tous les états de Fiche : `ACTIVE`, `ARCHIVED` et `DELETED`
+(corbeille comprise). Une Gamme dont la dernière Fiche associée a été
+purgée, ou dont toutes les Fiches ont été explicitement déclassées, devient
+éligible à la suppression. Il ne suffit pas que la Gamme soit vide dans
+le Dossier consulté.
+
+La suppression n'est **jamais** une opération de déclassement en masse :
+aucune Fiche ne doit être modifiée, détachée ou purgée automatiquement.
+Un contrôle de simple décompte suivi d'une suppression sans coordination
+serait insuffisant : la vérification d'absence de références et la
+suppression doivent être garanties face aux nouvelles affectations
+concurrentes, avec transactions et synchronisation adaptées à MongoDB.
+Une seule requête concurrente peut gagner ; jamais une Fiche orpheline.
+
+**Proposition d'application soumise à l'approbation globale :** la
+suppression d'une Gamme vide est possible depuis son action de gestion,
+qu'elle soit `ACTIVE` ou `ARCHIVED`, avec confirmation explicite de son
+caractère irréversible. Un historique d'audit autonome (identifiant,
+ancien nom, Workspace, auteur, date) reste consultable selon la politique
+d'audit, même après la suppression physique. La suppression libère le
+libellé dans le référentiel courant ; un nouveau référentiel pourra
+réutiliser ce nom sans réutiliser l'ancien identifiant.
 
 ## 5. Cycle de vie de la Gamme
 
@@ -112,14 +139,19 @@ préconditions, impacts d'audit et interdictions de référence.
 | Affecter | ACTIVE uniquement | La Gamme peut être sélectionnée pour une Fiche |
 | Affecter | ARCHIVED | Interdit, même lors d'une copie vers un autre Dossier |
 | Retirer une affectation existante | ACTIVE / ARCHIVED | Autorisé si Fiche ACTIVE et permission de modification |
-| Supprimer | — | Hors V1 si G1 confirmé |
+| Supprimer définitivement | ACTIVE / ARCHIVED, aucune Fiche liée dans aucun Dossier ni statut | Suppression irréversible après confirmation ; aucune Fiche affectée ou modifiée ; audit conservé |
+| Supprimer définitivement | Au moins une Fiche liée, y compris archivée ou en corbeille | Refus explicite 409, sans suppression ni déclassement |
 
 **Proposition :** une Gamme archivée reste présente dans les filtres et
 les vues de gestion, avec son statut explicite, lorsque cela est nécessaire
 pour retrouver des Fiches déjà classées. Elle ne figure plus parmi les choix
 disponibles pour une nouvelle affectation. La réactivation ne modifie pas
 les Fiches liées. Les éventuelles valeurs de compte sont calculées par
-Dossier autorisé, pas sur l'ensemble des magasins.
+Dossier autorisé, pas sur l'ensemble des magasins. À l'inverse, le
+contrôle de suppression porte obligatoirement sur **toutes** les Fiches
+du Workspace, même dans les Dossiers non accessibles à l'opérateur :
+le serveur renvoie seulement l'éligibilité, sans divulguer les Fiches ou
+les magasins concernés.
 
 ## 6. Cycle de vie de la Fiche et affectation
 
@@ -146,8 +178,10 @@ Dossier autorisé, pas sur l'ensemble des magasins.
 de la Fiche et refuse toute écriture périmée (409). La transition du statut
 d'une Gamme et la création d'une nouvelle affectation doivent empêcher
 qu'un archivage concurrent laisse passer une affectation interdite.
-Les transactions, protections et éventuels retries sont détaillés au
-design technique, avec tests dédiés.
+**La suppression définitive d'une Gamme et une affectation concurrente
+exigent la même protection transactionnelle contre les références
+orphelines.** Les transactions, protections et éventuels retries sont
+détaillés au design technique, avec tests dédiés.
 
 ## 7. Copie inter-Dossier
 
@@ -157,16 +191,21 @@ conditions de copie M-004 satisfaites) reste l'autorité.
 - Si la Fiche source possède une Gamme ACTIVE au moment effectif de la
   copie, la nouvelle Fiche reçoit le même identifiant de Gamme.
 - Si la source n'a pas de Gamme, la copie est sans Gamme.
+- **G2 = A — confirmé :** si la Gamme de la source est `ARCHIVED` lors
+  de la copie, celle-ci est créée « Sans gamme ». La réponse métier et
+  l'interface signalent explicitement que la Gamme n'a pas été reprise
+  car elle est archivée, sans présenter la copie comme un échec.
 - Les prix, Articles applicables, coûts et marges sont reconstruits selon
   le Dossier cible : jamais transportés par la Gamme.
 - La Fiche copiée reste une nouvelle identité et consomme +1 unité du
   quota des Fiches existant.
 
-**À CONFIRMER — G2 :** si la Gamme source est ARCHIVED à l'instant de
-copie, la copie est créée « Sans gamme », avec une information explicite
-dans le résultat utilisateur. Alternative à arbitrer : obliger à choisir
-une Gamme ACTIVE ou refuser la copie. La copie ne doit jamais réattribuer
-silencieusement une Gamme archivée.
+La copie et la détermination de la Gamme de destination se font sur
+un état cohérent en transaction. Un archivage concurrent ne doit jamais
+aboutir à une nouvelle Fiche référant à une Gamme devenue archivée.
+En cas de changement concurrent, l'opération applique la règle G2 sur
+l'état autoritaire ou signale un conflit explicite à rejouer ; elle ne
+réattribue jamais silencieusement la Gamme archivée.
 
 ## 8. Autorisations et RBAC
 
@@ -177,7 +216,7 @@ personnalisés existants.
 | Action | Permission et garde |
 |---|---|
 | Voir les Gammes accessibles au Workspace | Membership et `technical-sheet:read` |
-| Créer / renommer / archiver / réactiver une Gamme | Nouvelle permission métier `technical-sheet:range:manage` |
+| Créer / renommer / archiver / réactiver / supprimer définitivement une Gamme | Nouvelle permission métier `technical-sheet:range:manage` |
 | Créer une Fiche déjà classée | `technical-sheet:create` + accès au Dossier + Gamme ACTIVE du Workspace |
 | Modifier / retirer l'affectation d'une Fiche ACTIVE | `technical-sheet:update` + accès au Dossier + statut opérationnel |
 | Copier une Fiche et sa Gamme active | `technical-sheet:copy` + contrôles existants source/cible |
@@ -207,6 +246,9 @@ restent obligatoires quel que soit le plan commercial.
 - créer une Gamme ;
 - renommer une Gamme ;
 - archiver et réactiver ;
+- supprimer définitivement une Gamme uniquement après vérification
+  de l'absence totale de Fiches associées dans le Workspace, confirmation
+  explicite et contrôle transactionnel des affectations concurrentes ;
 - exposer identifiants, noms et statuts nécessaires à l'UI.
 
 **Fiches au niveau Dossier :**
@@ -223,13 +265,16 @@ restent obligatoires quel que soit le plan commercial.
 
 **Validation stricte :** entrées Zod fermées, `ObjectId` contrôlés,
 longueurs et unicité, propriété Workspace, statut ACTIVE,
-autorisation, état Dossier/Fiche et contrôle de concurrence.
+autorisation, état Dossier/Fiche et contrôle de concurrence. La
+suppression vérifie tous les statuts des Fiches et tous les Dossiers du
+Workspace, indépendamment des grants individuels, sans divulgation.
 Les références croisées doivent être vérifiées côté serveur ; jamais
 se fier au seul menu de sélection.
 
 **Erreurs :** 400 en cas de données invalides, 403 selon les règles
 d'accès applicables, 404 sans fuite inter-Workspace, 409 pour doublons,
-états incompatibles ou conflits de révision. Le design technique fixera
+états incompatibles, tentative de suppression d'une Gamme liée, ou
+conflits de révision. Le design technique fixera
 les codes exacts compatibles avec les conventions du dépôt.
 
 Les noms des routes, serializers et fichiers seront définis au design
@@ -241,10 +286,12 @@ Les événements suivants doivent être auditables avec auteur, Workspace,
 date et identifiants pertinents :
 
 - création, renommage (ancien/nouveau nom), archivage, réactivation
-  d'une Gamme ;
+  et suppression définitive d'une Gamme, en conservant le dernier
+  nom métier utile à la compréhension de son audit ;
 - affectation, déplacement et retrait de Gamme pour une Fiche, avec
   ancien et nouvel identifiant, Dossier et Fiche ;
-- copie avec Gamme reprise ou non reprise.
+- copie avec Gamme reprise ou non reprise, et motif `GAMME_ARCHIVEE`
+  lorsque la nouvelle Fiche reste sans Gamme pour cette raison.
 
 Réutiliser les mécanismes d'audit et d'activité métier existants selon
 leur responsabilité. La traçabilité permet de comprendre les changements
@@ -263,7 +310,9 @@ du Workspace permet, selon les permissions :
 
 - consulter la liste avec nom et état ;
 - créer une Gamme avec validation et protection contre les doublons ;
-- renommer, archiver et réactiver ;
+- renommer, archiver, réactiver et supprimer définitivement une Gamme
+  vide dans **tout** le Workspace, avec confirmation de l'irréversibilité
+  et refus si une seule Fiche lui est encore associée ;
 - retrouver une Gamme même si elle est archivée ;
 - expliquer qu'un renommage est commun à tous les Dossiers du Workspace.
 
@@ -286,6 +335,9 @@ tableaux, menus de ligne, dialogues, champs et notifications.
   `technical-sheet:range:manage`; l'interface indique la portée Workspace.
   La nouvelle Gamme est disponible immédiatement, sans présumer
   de l'autorisation de classer la Fiche concernée.
+- Après copie d'une Fiche dont la Gamme source est archivée, afficher
+  un message de réussite précisant que la copie est « Sans gamme » et
+  pourquoi ; la Fiche reste accessible dans le Dossier cible.
 - Sur les Fiches déjà liées à une Gamme archivée, conserver un libellé
   visible avec statut « Archivée » ; permettre le déplacement vers une
   Gamme ACTIVE ou « Sans gamme » si la Fiche est ACTIVE.
@@ -302,7 +354,7 @@ de Fiches dupliquées pour représenter les Gammes.
 - Une Fiche change de Gamme sans consommation supplémentaire du quota
   existant ; seule la création/copie de Fiche consomme selon M-004.
 - Aucun document `File`, octet de stockage ou export supplémentaire.
-- Existing Fiches (actives, archivées, supprimées) : sans Gamme par défaut ;
+- Fiches existantes (actives, archivées, supprimées) : sans Gamme par défaut ;
   aucun classement inféré, aucune génération automatique de catégories.
 - Référentiel initial vide ; aucune Gamme métier préchargée sans décision.
 - Index pour unicité Workspace + clé normalisée, filtres performants sur
@@ -329,6 +381,14 @@ de Fiches dupliquées pour représenter les Gammes.
    sans toucher aux Fiches, historiques et prix.
 9. Archiver une Gamme ne détruit aucune relation existante ; aucune
    affectation nouvelle (y compris en copie) ne peut la choisir.
+9a. Une Gamme n'est supprimable physiquement que si aucune Fiche du
+    Workspace, y compris archivée ou en corbeille, n'y fait référence.
+    La suppression est atomiquement protégée contre les affectations
+    concurrentes et ne déclasse jamais les Fiches automatiquement.
+9b. L'auteur de la suppression doit posséder la permission Workspace
+    d'administration ; l'audit historique reste explicable après retrait.
+9c. Une Gamme vide dans un magasin mais utilisée dans un autre n'est
+    pas supprimable.
 10. Une Fiche ARCHIVED ou DELETED refuse le changement de classement.
 11. La restauration d'une Fiche ne crée aucune affectation nouvelle ;
     elle préserve son lien même si la Gamme est depuis archivée.
@@ -344,6 +404,9 @@ de Fiches dupliquées pour représenter les Gammes.
     restent cohérents sous contrôle serveur.
 17. Les règles de copie inter-Dossier et de recalcul économique sont
     préservées ; une copie consomme une seule unité de Fiche.
+17a. Copier une Fiche dont la Gamme source est archivée crée une Fiche
+    « Sans gamme », avec message explicite, sans copie de l'historique
+    économique ni attribution implicite d'une autre Gamme.
 18. La création rapide ne donne pas à un Contributeur un droit
     d'administration implicite.
 19. L'audit trace la création, le renommage, les transitions de statut,
@@ -353,20 +416,26 @@ de Fiches dupliquées pour représenter les Gammes.
 ## 14. Stratégie de tests
 
 - **Unitaires :** normalisation/unicité, statuts, affectation nullable,
-  autorisations, choix de Gamme à la copie, sérialisation.
+  autorisations, choix de Gamme à la copie (active, archivée, absente),
+  signalement G2, sérialisation.
 - **HTTP/Supertest :** création/liste/renommage/archivage/réactivation,
-  création/édition de Fiche, validation Zod, filtres/pagination, erreurs.
+  suppression définitive autorisée/refusée, création/édition de Fiche,
+  validation Zod, filtres/pagination, erreurs.
 - **Sécurité/tenancy :** deux Workspaces, plusieurs Dossiers, utilisateur
   avec grant sur un seul Dossier, rôles avec/sans permission admin,
   IDs étrangers, accès suspendu.
 - **Concurrence :** écriture obsolète, renommages concurrents, archivage
-  de Gamme face à affectation, états Fiche invalides.
+  de Gamme face à affectation, suppression de Gamme face à création
+  ou changement de classement, états Fiche invalides.
 - **Frontend/RTL :** lecture seule vs actions permises, filtres et compte,
   création rapide, Gamme archivée, messages, accessibilité, RTK Query.
 - **E2E :** créer une Gamme Workspace → classer des Fiches dans deux
   Dossiers → déplacer → valider puis reclasser → archiver la Gamme →
-  conserver les liens → copier inter-Dossier → vérifier coûts locaux,
-  historique inchangé et isolation.
+  conserver les liens → copier inter-Dossier en G2 → vérifier le message
+  « Sans gamme », les coûts locaux, l'historique et l'isolation →
+  refuser la suppression tant qu'une Fiche de n'importe quel statut
+  reste liée → déclasser/purger les Fiches selon leurs droits → supprimer
+  une Gamme devenue entièrement libre avec confirmation.
 - **Gates :** exécution locale par l'utilisateur (`npm run release:check`),
   puis Core Gate PR et post-merge ; aucun vert présumé.
 
@@ -380,10 +449,10 @@ nettoyage d'autres modules ou migration du `foodRange` M-002.
 
 ## 16. Ordre d'implémentation proposé après validation
 
-1. Validation explicite du présent contrat et des points G1/G2.
+1. Validation explicite du contrat consolidé (G1 = B et G2 = A déjà arbitrés).
 2. Mise à jour des contrats canoniques et du glossaire/modèle de domaine,
-   de la roadmap et du suivi de dette au fil du lot, sans « valider »
-   rétroactivement les choix encore ouverts.
+   de la roadmap et du suivi de dette au fil du lot, sans antedater la
+   validation globale du contrat.
 3. Backend : registre permissions, modèle métier, Zod, services,
    endpoints, sérialisation, index/migrations, audit.
 4. Tests backend unitaires, intégration et scénarios de sécurité.
@@ -400,11 +469,20 @@ test frontend de trial liée à la Core Gate #231 et sa documentation dans
 a été déclarée verte lors d'un `npm run release:check` local par
 l'utilisateur ; aucune gate GitHub de la future PR n'est encore attestée.
 
-## 17. Validation attendue
+## 17. Approbation globale attendue avant développement
 
-- **G1 :** confirme-t-on « archivage uniquement, jamais de suppression
-  physique de Gamme en V1, même vide » ?
-- **G2 :** confirme-t-on « copie sans Gamme avec avertissement si la
-  Gamme source est archivée » ?
-- **Contrat global :** après réponse à G1/G2, approuver ou demander
-  la correction du présent document ; aucun code métier avant cet accord.
+- **G1 : B — arbitré le 2026-10-24** : suppression définitive uniquement
+  si aucune Fiche, quel que soit son Dossier ou son statut, n'est liée.
+- **G2 : A — arbitré le 2026-10-24** : copie depuis une Gamme archivée
+  sans Gamme dans la destination, avec message explicite de réussite.
+- **Contrat global : À APPROUVER** : les règles d'application, le RBAC,
+  la suppression concurrente, les parcours et les tests ci-dessus doivent
+  être validés ou corrigés explicitement avant création des modèles,
+  des API, de l'interface métier et de la migration.
+- **Après accord global uniquement** : finaliser l'avenant canonique,
+  engager l'implémentation sur la branche existante, puis QA locale et
+  une unique PR du lot M-004.
+
+**Formulation d'approbation attendue :** « J'approuve le contrat global
+M-004 Gammes du document consolidé et autorise le développement sur
+la branche dédiée. »
