@@ -22,7 +22,15 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
 }));
 
 vi.mock('@/features/technical-sheets/components/technical-sheet-range-picker', () => ({
-  TechnicalSheetRangePicker: () => <div>Gamme facultative</div>,
+  TechnicalSheetRangePicker: ({ onChange, value }) => (
+    <div>
+      <span>Gamme facultative</span>
+      <span>Gamme courante : {value ?? 'Sans gamme'}</span>
+      <button type="button" onClick={() => onChange('range-new')}>
+        Simuler une nouvelle gamme créée dans la modale
+      </button>
+    </div>
+  ),
 }));
 
 import {
@@ -225,6 +233,35 @@ describe('TechnicalSheetCreateDialog', () => {
         productionUnit: 'UNIT',
         portionsPerProductionUnit: '8',
         saleBasis: 'PORTION',
+      }),
+    );
+  });
+
+  it('conserve les saisies et affecte une Gamme créée dans la modale imbriquée', async () => {
+    const user = userEvent.setup();
+    render(
+      <TechnicalSheetCreateDialog
+        defaultTargetMarginBasisPoints={3000}
+        dossierId="dossier-1"
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+    await user.type(screen.getByLabelText('Nom'), 'Tarte aux pommes');
+    await user.type(screen.getByLabelText('Quantité produite'), '10');
+    await user.click(screen.getByRole('button', {
+      name: 'Simuler une nouvelle gamme créée dans la modale',
+    }));
+    expect(screen.getByLabelText('Nom')).toHaveValue('Tarte aux pommes');
+    expect(screen.getByText('Gamme courante : range-new')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Créer', exact: true }));
+    expect(mocks.createSheet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Tarte aux pommes',
+        rangeId: 'range-new',
+        productionQuantity: '10',
       }),
     );
   });
