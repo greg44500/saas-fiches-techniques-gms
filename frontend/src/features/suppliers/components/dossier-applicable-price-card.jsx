@@ -87,7 +87,7 @@ function DossierApplicablePriceCard({
         articleId: article.id,
       }).unwrap();
     } catch {
-      // L'état RTK Query est présenté de façon compacte dans la carte.
+      // L'état RTK Query est présenté dans le panneau contextuel.
     }
   }
 
@@ -121,6 +121,9 @@ function DossierApplicablePriceCard({
         if (selectedArticle && event.target.getAttribute('role') === 'combobox') {
           setResultVisible(true);
         }
+      }}
+      onKeyDownCapture={(event) => {
+        if (event.key === 'Escape' && selectedArticle) setResultVisible(false);
       }}
     >
       <SupplierArticleSearchAutocomplete
