@@ -160,7 +160,7 @@ function SupplierArticleSearchAutocomplete({
       </AutocompleteInputGroup>
       <AutocompletePortal>
         <AutocompletePositioner className="z-[calc(var(--layer-modal)_+_1)]">
-          <AutocompletePopup data-supplier-article-suggestions>
+          <AutocompletePopup data-supplier-article-suggestions="true">
             <AutocompleteStatus>
               {loading
                 ? 'Recherche des Articles en cours'
