@@ -9,9 +9,10 @@ test('M-004 Gammes : un référentiel Workspace classe les Fiches du Dossier san
 
   await page.goto(context.dossierATechnicalSheetsUrl);
   await page.getByRole('button', { name: 'Gérer les gammes' }).click();
-  await expect(page.getByRole('heading', { name: 'Gammes de Fiches techniques' }))
+  await expect(page.getByRole('heading', { name: 'Gamme de produits finis' }))
     .toBeVisible();
 
+  await page.getByRole('button', { name: 'Créer une gamme' }).click();
   await page.getByLabel('Nouvelle gamme').fill('Snacking');
   await page.getByRole('button', { name: 'Créer la gamme' }).click();
   await expect(page.getByText('Snacking', { exact: true })).toBeVisible();

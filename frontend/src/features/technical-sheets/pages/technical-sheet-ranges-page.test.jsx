@@ -3,6 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
+
+vi.mock('@/features/technical-sheets/components/technical-sheet-range-search', () => ({
+  TechnicalSheetRangeSearch: () => <div>Recherche prédictive des gammes</div>,
+}));
 import { TECHNICAL_SHEET_PERMISSION } from '@/features/technical-sheets/constants/technical-sheet-permissions';
 
 const mocks = vi.hoisted(() => ({
@@ -65,11 +69,18 @@ describe('M-004 Gammes — gestion Workspace', () => {
     expect(screen.getByText('Snacking')).toBeInTheDocument();
     expect(screen.getByText('Traiteur')).toBeInTheDocument();
     expect(screen.getByText('Archivée')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Gamme de produits finis' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'À propos des gammes de produits finis' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Recherche prédictive des gammes')).toBeInTheDocument();
   });
 
   it('crée une gamme après saisie et validation', async () => {
     const user = userEvent.setup();
     renderPage();
+    expect(screen.queryByLabelText('Nouvelle gamme')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Créer une gamme' }));
     await user.type(screen.getByLabelText('Nouvelle gamme'), 'Pâtisserie');
     await user.click(screen.getByRole('button', { name: 'Créer la gamme' }));
     expect(mocks.create).toHaveBeenCalledWith({
@@ -82,7 +93,9 @@ describe('M-004 Gammes — gestion Workspace', () => {
     mocks.can.mockImplementation((permission) =>
       permission === TECHNICAL_SHEET_PERMISSION.READ);
     renderPage();
+    expect(screen.queryByRole('button', { name: 'Créer une gamme' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Créer la gamme' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Vous pouvez consulter les gammes/)).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Actions' })).not.toBeInTheDocument();
   });
 });
