@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -13,7 +14,8 @@ import {
   DialogRoot,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { FieldError } from '@/components/ui/field';
+import { ProductVariantField } from '@/features/products/components/product-variant-field';
 import { Input } from '@/components/ui/input';
 import {
   useCreateTechnicalSheetRangeMutation,
@@ -115,17 +117,27 @@ function TechnicalSheetRangeFormDialog({
         <DialogOverlay />
         <DialogContent initialFocus={cancelRef}>
           <DialogHeader>
-            <DialogTitle>{range ? 'Renommer la gamme' : 'Créer une gamme'}</DialogTitle>
-            <DialogDescription>
-              Indiquez un nom pour cette gamme de produits finis.
-              Elle sera disponible dans tous vos magasins.
+            <div className="flex items-center gap-2">
+              <DialogTitle>{range ? 'Renommer la gamme' : 'Créer une gamme'}</DialogTitle>
+              <InfoTooltip
+                label="À propos de la création d’une gamme"
+                content="La gamme sera disponible dans tous vos magasins. Une fiche peut rester sans gamme ou être classée dans une seule gamme."
+              />
+            </div>
+            <DialogDescription className="sr-only">
+              Saisissez un nom et vérifiez les gammes existantes avant de confirmer.
             </DialogDescription>
           </DialogHeader>
           <form className="mt-5 space-y-4" onSubmit={submit}>
-            <Field>
-              <FieldLabel htmlFor="technical-sheet-range-name">Nom de la gamme</FieldLabel>
+            <ProductVariantField
+              filled={Boolean(trimmedName)}
+              floating
+              id="technical-sheet-range-name"
+              label="Nom de la gamme"
+            >
               <Input
                 autoComplete="off"
+                className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
                 disabled={pending}
                 id="technical-sheet-range-name"
                 maxLength={100}
@@ -133,7 +145,7 @@ function TechnicalSheetRangeFormDialog({
                 placeholder="Ex. Snacking"
                 value={name}
               />
-            </Field>
+            </ProductVariantField>
             {trimmedName && !suggestionsReady && !suggestionQuery.isError && (
               <p className="text-sm text-muted-foreground" role="status">
                 Vérification des gammes existantes…
